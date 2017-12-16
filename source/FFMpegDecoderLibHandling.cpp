@@ -386,6 +386,50 @@ typedef struct AVCodecParameters_57
   // Actually, there is more here, but the variables above are the only we need.
 } AVCodecParameters_57;
 
+// AVFrames is part of AVUtil
+typedef struct AVFrame_55 
+{
+  uint8_t *data[AV_NUM_DATA_POINTERS];
+  int linesize[AV_NUM_DATA_POINTERS];
+  uint8_t **extended_data;
+  int width, height;
+  int nb_samples;
+  int format;
+  int key_frame;
+  AVPictureType pict_type;
+  AVRational sample_aspect_ratio;
+  int64_t pts;
+  int64_t pkt_pts;
+  int64_t pkt_dts;
+  int coded_picture_number;
+  int display_picture_number;
+  int quality;
+
+  // Actually, there is more here, but the variables above are the only we need.
+} AVFrame_55;
+
+typedef struct AVFrame_54 
+{
+  uint8_t *data[AV_NUM_DATA_POINTERS];
+  int linesize[AV_NUM_DATA_POINTERS];
+  uint8_t **extended_data;
+  int width, height;
+  int nb_samples;
+  int format;
+  int key_frame;
+  AVPictureType pict_type;
+  uint8_t *base[AV_NUM_DATA_POINTERS];
+  AVRational sample_aspect_ratio;
+  int64_t pts;
+  int64_t pkt_pts;
+  int64_t pkt_dts;
+  int coded_picture_number;
+  int display_picture_number;
+  int quality;
+
+  // Actually, there is more here, but the variables above are the only we need.
+} AVFrame_54;
+
 // ------------------- AVInputFormat ---------------
 // AVInputFormat is part of AVFormat
 typedef struct AVInputFormat_56_57
@@ -922,6 +966,14 @@ void AVFormatContextWrapper::update()
     assert(false);
 }
 
+int AVFormatContextWrapper::read_frame(FFmpegVersionHandler &ff, AVPacketWrapper &pkt)
+{
+  if (ctx == nullptr || !pkt)
+    return -1;
+
+  ff.lib.av_read_frame(ctx, pkt.get_packet());
+}
+
 void AVCodecContextWrapper::update()
 {
   if (codec == nullptr)
@@ -1101,7 +1153,7 @@ void AVCodecContextWrapper::update()
     assert(false);
 }
 
-void AVStreamWrapper::update_values()
+void AVStreamWrapper::update()
 {
   if (str == nullptr)
     return;
@@ -1150,7 +1202,7 @@ void AVStreamWrapper::update_values()
 
 AVMediaType AVStreamWrapper::getCodecType()
 {
-  update_values();
+  update();
   if (libVer.avformat <= 56 || !codecpar)
     return codec.getCodecType();
   return codecpar.getCodecType();
@@ -1158,10 +1210,34 @@ AVMediaType AVStreamWrapper::getCodecType()
 
 AVCodecID AVStreamWrapper::getCodecID()
 {
-  update_values();
+  update();
   if (libVer.avformat <= 56 || !codecpar)
     return codec.getCodecID();
   return codecpar.getCodecID();
+}
+
+int AVStreamWrapper::get_frame_width()
+{
+  update();
+  if (libVer.avformat <= 56 || !codecpar)
+    return codec.get_width();
+  return codecpar.get_width();
+}
+
+int AVStreamWrapper::get_frame_height()
+{
+  update();
+  if (libVer.avformat <= 56 || !codecpar)
+    return codec.get_height();
+  return codecpar.get_height();
+}
+
+AVColorSpace AVStreamWrapper::get_colorspace()
+{
+  update();
+  if (libVer.avformat <= 56 || !codecpar)
+    return codec.get_colorspace();
+  return codecpar.get_colorspace();
 }
 
 void AVCodecParametersWrapper::update()
@@ -1282,158 +1358,125 @@ int FFmpegVersionHandler::getLibVersionSwresample(FFmpegVersions ver)
   return -1;
 }
 
-AVPacket *FFmpegVersionHandler::getNewPacket()
-{
-  if (libVersion.avcodec == 56)
-  {
-    AVPacket_56 *pkt = new AVPacket_56;
-    pkt->data = nullptr;
-    pkt->size = 0;
-    return reinterpret_cast<AVPacket*>(pkt);
-  }
-  else if (libVersion.avcodec == 57)
-  {
-    AVPacket_57 *pkt = new AVPacket_57;
-    pkt->data = nullptr;
-    pkt->size = 0;
-    return reinterpret_cast<AVPacket*>(pkt);
-  }
-  else
-    assert(false);
-  return nullptr;
-}
-
-void FFmpegVersionHandler::deletePacket(AVPacket *pkt)
-{
-  if (libVersion.avcodec == 56)
-  {
-    AVPacket_56 *p = reinterpret_cast<AVPacket_56*>(pkt);
-    delete p;
-  }
-  else if (libVersion.avcodec == 57)
-  {
-    AVPacket_57 *p = reinterpret_cast<AVPacket_57*>(pkt);
-    delete p;
-  }
-  else
-    assert(false);
-}
-
-
-int FFmpegVersionHandler::AVPacketGetStreamIndex(AVPacket *pkt)
-{
-  if (libVersion.avcodec == 56)
-    return reinterpret_cast<AVPacket_56*>(pkt)->stream_index;
-  else if (libVersion.avcodec == 57)
-    return reinterpret_cast<AVPacket_57*>(pkt)->stream_index;
-  else
-    assert(false);
-  return -1;
-}
-
-int64_t FFmpegVersionHandler::AVPacketGetPTS(AVPacket *pkt)
-{
-  if (libVersion.avcodec == 56)
-    return reinterpret_cast<AVPacket_56*>(pkt)->pts;
-  else if (libVersion.avcodec == 57)
-    return reinterpret_cast<AVPacket_57*>(pkt)->pts;
-  else
-    assert(false);
-  return -1;
-}
-
-int FFmpegVersionHandler::AVPacketGetDuration(AVPacket *pkt)
-{
-  if (libVersion.avcodec == 56)
-    return reinterpret_cast<AVPacket_56*>(pkt)->duration;
-  else if (libVersion.avcodec == 57)
-    return reinterpret_cast<AVPacket_57*>(pkt)->duration;
-  else
-    assert(false);
-  return -1;
-}
-
-int FFmpegVersionHandler::AVPacketGetFlags(AVPacket *pkt)
-{
-  if (libVersion.avcodec == 56)
-    return reinterpret_cast<AVPacket_56*>(pkt)->flags;
-  else if (libVersion.avcodec == 57)
-    return reinterpret_cast<AVPacket_57*>(pkt)->flags;
-  else
-    assert(false);
-  return -1;
-}
-
-AVPixelFormat FFmpegVersionHandler::AVCodecContextGetPixelFormat(AVCodecContext *codecCtx)
-{
-  if (libVersion.avcodec == 56)
-    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->pix_fmt;
-  else if (libVersion.avcodec == 57)
-    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->pix_fmt;
-  else
-    assert(false);
-  return AV_PIX_FMT_NONE;
-}
-
-int FFmpegVersionHandler::AVCodecContexGetWidth(AVCodecContext *codecCtx)
-{
-  if (libVersion.avcodec == 56)
-    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->width;
-  else if (libVersion.avcodec == 57)
-    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->width;
-  else
-    assert(false);
-  return -1;
-}
-
-int FFmpegVersionHandler::AVCodecContextGetHeight(AVCodecContext *codecCtx)
-{
-  if (libVersion.avcodec == 56)
-    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->height;
-  else if (libVersion.avcodec == 57)
-    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->height;
-  else
-    assert(false);
-  return -1;
-}
-
-AVColorSpace FFmpegVersionHandler::AVCodecContextGetColorSpace(AVCodecContext *codecCtx)
-{
-  if (libVersion.avcodec == 56)
-    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->colorspace;
-  else if (libVersion.avcodec == 57)
-    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->colorspace;
-  else
-    assert(false);
-  return AVCOL_SPC_UNSPECIFIED;
-}
-
-int FFmpegVersionHandler::AVCodecParametersGetWidth(AVCodecParameters *param)
-{
-  if (libVersion.avcodec)
-    return reinterpret_cast<AVCodecParameters_57*>(param)->width;
-  else
-    assert(false);
-  return -1;
-}
-
-int FFmpegVersionHandler::AVCodecParametersGetHeight(AVCodecParameters *param)
-{
-  if (libVersion.avcodec)
-    return reinterpret_cast<AVCodecParameters_57*>(param)->height;
-  else
-    assert(false);
-  return -1;
-}
-
-AVColorSpace FFmpegVersionHandler::AVCodecParametersGetColorSpace(AVCodecParameters *param)
-{
-  if (libVersion.avcodec)
-    return reinterpret_cast<AVCodecParameters_57*>(param)->color_space;
-  else
-    assert(false);
-  return AVCOL_SPC_UNSPECIFIED;
-}
+//AVPacket *FFmpegVersionHandler::getNewPacket()
+//{
+//  
+//}
+//
+//int FFmpegVersionHandler::AVPacketGetStreamIndex(AVPacket *pkt)
+//{
+//  if (libVersion.avcodec == 56)
+//    return reinterpret_cast<AVPacket_56*>(pkt)->stream_index;
+//  else if (libVersion.avcodec == 57)
+//    return reinterpret_cast<AVPacket_57*>(pkt)->stream_index;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//int64_t FFmpegVersionHandler::AVPacketGetPTS(AVPacket *pkt)
+//{
+//  if (libVersion.avcodec == 56)
+//    return reinterpret_cast<AVPacket_56*>(pkt)->pts;
+//  else if (libVersion.avcodec == 57)
+//    return reinterpret_cast<AVPacket_57*>(pkt)->pts;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//int FFmpegVersionHandler::AVPacketGetDuration(AVPacket *pkt)
+//{
+//  if (libVersion.avcodec == 56)
+//    return reinterpret_cast<AVPacket_56*>(pkt)->duration;
+//  else if (libVersion.avcodec == 57)
+//    return reinterpret_cast<AVPacket_57*>(pkt)->duration;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//int FFmpegVersionHandler::AVPacketGetFlags(AVPacket *pkt)
+//{
+//  if (libVersion.avcodec == 56)
+//    return reinterpret_cast<AVPacket_56*>(pkt)->flags;
+//  else if (libVersion.avcodec == 57)
+//    return reinterpret_cast<AVPacket_57*>(pkt)->flags;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//AVPixelFormat FFmpegVersionHandler::AVCodecContextGetPixelFormat(AVCodecContext *codecCtx)
+//{
+//  if (libVersion.avcodec == 56)
+//    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->pix_fmt;
+//  else if (libVersion.avcodec == 57)
+//    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->pix_fmt;
+//  else
+//    assert(false);
+//  return AV_PIX_FMT_NONE;
+//}
+//
+//int FFmpegVersionHandler::AVCodecContexGetWidth(AVCodecContext *codecCtx)
+//{
+//  if (libVersion.avcodec == 56)
+//    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->width;
+//  else if (libVersion.avcodec == 57)
+//    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->width;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//int FFmpegVersionHandler::AVCodecContextGetHeight(AVCodecContext *codecCtx)
+//{
+//  if (libVersion.avcodec == 56)
+//    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->height;
+//  else if (libVersion.avcodec == 57)
+//    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->height;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//AVColorSpace FFmpegVersionHandler::AVCodecContextGetColorSpace(AVCodecContext *codecCtx)
+//{
+//  if (libVersion.avcodec == 56)
+//    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->colorspace;
+//  else if (libVersion.avcodec == 57)
+//    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->colorspace;
+//  else
+//    assert(false);
+//  return AVCOL_SPC_UNSPECIFIED;
+//}
+//
+//int FFmpegVersionHandler::AVCodecParametersGetWidth(AVCodecParameters *param)
+//{
+//  if (libVersion.avcodec)
+//    return reinterpret_cast<AVCodecParameters_57*>(param)->width;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//int FFmpegVersionHandler::AVCodecParametersGetHeight(AVCodecParameters *param)
+//{
+//  if (libVersion.avcodec)
+//    return reinterpret_cast<AVCodecParameters_57*>(param)->height;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//AVColorSpace FFmpegVersionHandler::AVCodecParametersGetColorSpace(AVCodecParameters *param)
+//{
+//  if (libVersion.avcodec)
+//    return reinterpret_cast<AVCodecParameters_57*>(param)->color_space;
+//  else
+//    assert(false);
+//  return AVCOL_SPC_UNSPECIFIED;
+//}
 
 //AVInputFormat *FFmpegVersionHandler::AVFormatContextGetAVInputFormat(AVFormatContext *fmtCtx)
 //{
@@ -1546,230 +1589,230 @@ AVColorSpace FFmpegVersionHandler::AVCodecParametersGetColorSpace(AVCodecParamet
 //  return AVRational();
 //}
 
-bool FFmpegVersionHandler::AVCodecContextCopyParameters(AVCodecContext *srcCtx, AVCodecContext *dstCtx)
-{
-  if (libVersion.avcodec == 56)
-  {
-    AVCodecContext_56 *dst = reinterpret_cast<AVCodecContext_56*>(dstCtx);
-    AVCodecContext_56 *src = reinterpret_cast<AVCodecContext_56*>(srcCtx);
-
-    dst->codec_type            = src->codec_type;
-    dst->codec_id              = src->codec_id;
-    dst->codec_tag             = src->codec_tag;
-    dst->bit_rate              = src->bit_rate;
-
-    // We don't parse these ...
-    //decCtx->bits_per_coded_sample = ctx->bits_per_coded_sample;
-    //decCtx->bits_per_raw_sample   = ctx->bits_per_raw_sample;
-    //decCtx->profile               = ctx->profile;
-    //decCtx->level                 = ctx->level;
-
-    if (src->codec_type == AVMEDIA_TYPE_VIDEO)
-    {
-      dst->pix_fmt                = src->pix_fmt;
-      dst->width                  = src->width;
-      dst->height                 = src->height;
-      //dst->field_order            = src->field_order;
-      dst->color_range            = src->color_range;
-      dst->color_primaries        = src->color_primaries;
-      dst->color_trc              = src->color_trc;
-      dst->colorspace             = src->colorspace;
-      dst->chroma_sample_location = src->chroma_sample_location;
-      dst->sample_aspect_ratio    = src->sample_aspect_ratio;
-      dst->has_b_frames           = src->has_b_frames;
-    }
-
-    // Extradata
-    if (src->extradata_size != 0 && dst->extradata_size == 0)
-    {
-      assert(dst->extradata == nullptr);
-      dst->extradata = (uint8_t*)lib.av_mallocz(src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
-      if (dst->extradata == nullptr)
-        return false;
-      memcpy(dst->extradata, src->extradata, src->extradata_size);
-      dst->extradata_size = src->extradata_size;
-    }
-  }
-  else if (libVersion.avcodec == 57)
-  {
-    AVCodecContext_57 *dst = reinterpret_cast<AVCodecContext_57*>(dstCtx);
-    AVCodecContext_57 *src = reinterpret_cast<AVCodecContext_57*>(srcCtx);
-
-    dst->codec_type            = src->codec_type;
-    dst->codec_id              = src->codec_id;
-    dst->codec_tag             = src->codec_tag;
-    dst->bit_rate              = src->bit_rate;
-
-    // We don't parse these ...
-    //decCtx->bits_per_coded_sample = ctx->bits_per_coded_sample;
-    //decCtx->bits_per_raw_sample   = ctx->bits_per_raw_sample;
-    //decCtx->profile               = ctx->profile;
-    //decCtx->level                 = ctx->level;
-
-    if (src->codec_type == AVMEDIA_TYPE_VIDEO)
-    {
-      dst->pix_fmt                = src->pix_fmt;
-      dst->width                  = src->width;
-      dst->height                 = src->height;
-      //dst->field_order            = src->field_order;
-      dst->color_range            = src->color_range;
-      dst->color_primaries        = src->color_primaries;
-      dst->color_trc              = src->color_trc;
-      dst->colorspace             = src->colorspace;
-      dst->chroma_sample_location = src->chroma_sample_location;
-      dst->sample_aspect_ratio    = src->sample_aspect_ratio;
-      dst->has_b_frames           = src->has_b_frames;
-    }
-
-    // Extradata
-    if (src->extradata_size != 0 && dst->extradata_size == 0)
-    {
-      assert(dst->extradata == nullptr);
-      dst->extradata = (uint8_t*)lib.av_mallocz(src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
-      if (dst->extradata == nullptr)
-        return false;
-      memcpy(dst->extradata, src->extradata, src->extradata_size);
-      dst->extradata_size = src->extradata_size;
-    }
-  }
-  else
-    assert(false);
-  return true;
-}
-
-int FFmpegVersionHandler::AVFrameGetWidth(AVFrame *frame)
-{
-  if (libVersion.avutil == 54)
-    return reinterpret_cast<AVFrame_54*>(frame)->width;
-  else if (libVersion.avutil == 55)
-    return reinterpret_cast<AVFrame_55*>(frame)->width;
-  else
-    assert(false);
-  return -1;
-}
-
-int FFmpegVersionHandler::AVFrameGetHeight(AVFrame *frame)
-{
-  if (libVersion.avutil == 54)
-    return reinterpret_cast<AVFrame_54*>(frame)->height;
-  else if (libVersion.avutil == 55)
-    return reinterpret_cast<AVFrame_55*>(frame)->height;
-  else
-    assert(false);
-  return -1;
-}
-
-int64_t FFmpegVersionHandler::AVFrameGetPTS(AVFrame *frame)
-{
-  if (libVersion.avutil == 54)
-    return reinterpret_cast<AVFrame_54*>(frame)->pts;
-  else if (libVersion.avutil == 55)
-    return reinterpret_cast<AVFrame_55*>(frame)->pts;
-  else
-    assert(false);
-  return -1;
-}
-
-AVPictureType FFmpegVersionHandler::AVFrameGetPictureType(AVFrame *frame)
-{
-  if (libVersion.avutil == 54)
-    return reinterpret_cast<AVFrame_54*>(frame)->pict_type;
-  else if (libVersion.avutil == 55)
-    return reinterpret_cast<AVFrame_55*>(frame)->pict_type;
-  else
-    assert(false);
-  return (AVPictureType)0;
-}
-
-int FFmpegVersionHandler::AVFrameGetKeyFrame(AVFrame *frame)
-{
-  if (libVersion.avutil == 54)
-    return reinterpret_cast<AVFrame_54*>(frame)->key_frame;
-  else if (libVersion.avutil == 55)
-    return reinterpret_cast<AVFrame_55*>(frame)->key_frame;
-  else
-    assert(false);
-  return -1;
-}
-
-int FFmpegVersionHandler::AVFrameGetLinesize(AVFrame *frame, int idx)
-{
-  if (libVersion.avutil == 54)
-    return reinterpret_cast<AVFrame_54*>(frame)->linesize[idx];
-  else if (libVersion.avutil == 55)
-    return reinterpret_cast<AVFrame_55*>(frame)->linesize[idx];
-  else
-    assert(false);
-  return -1;
-}
-
-uint8_t *FFmpegVersionHandler::AVFrameGetData(AVFrame *frame, int idx)
-{
-  if (libVersion.avutil == 54)
-    return reinterpret_cast<AVFrame_54*>(frame)->data[idx];
-  else if (libVersion.avutil == 55)
-    return reinterpret_cast<AVFrame_55*>(frame)->data[idx];
-  else
-    assert(false);
-  return nullptr;
-}
-
-AVFrameSideDataType FFmpegVersionHandler::getSideDataType(AVFrameSideData * sideData)
-{
-  if (libVersion.avutil == 54 || libVersion.avutil == 55)
-    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->type;
-  else
-    assert(false);
-  return AV_FRAME_DATA_PANSCAN;
-}
-
-uint8_t * FFmpegVersionHandler::getSideDataData(AVFrameSideData * sideData)
-{
-  if (libVersion.avutil == 54 || libVersion.avutil == 55)
-    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->data;
-  else
-    assert(false);
-  return nullptr;
-}
-
-int FFmpegVersionHandler::getSideDataNrMotionVectors(AVFrameSideData * sideData)
-{
-  if (libVersion.avutil == 54)
-    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->size / sizeof(AVMotionVector_54);
-  else if (libVersion.avutil == 55)
-    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->size / sizeof(AVMotionVector_55);
-  else
-    assert(false);
-  return 0;
-}
-
-void FFmpegVersionHandler::getMotionVectorValues(AVMotionVector * mv, int idx, int32_t &source, uint8_t &blockWidth, uint8_t &blockHeight, int16_t &src_x, int16_t &src_y, int16_t &dst_x, int16_t &dst_y)
-{
-  if (libVersion.avutil == 54)
-  {
-    AVMotionVector_54 *m = reinterpret_cast<AVMotionVector_54*>(mv);
-    source = m[idx].source;
-    blockWidth = m[idx].w;
-    blockHeight = m[idx].h;
-    src_x = m[idx].src_x;
-    src_y = m[idx].src_y;
-    dst_x = m[idx].dst_x;
-    dst_y = m[idx].dst_y;
-  }
-  else if (libVersion.avutil == 55)
-  {
-    AVMotionVector_55 *m = reinterpret_cast<AVMotionVector_55*>(mv);
-    source = m[idx].source;
-    blockWidth = m[idx].w;
-    blockHeight = m[idx].h;
-    src_x = m[idx].src_x;
-    src_y = m[idx].src_y;
-    dst_x = m[idx].dst_x;
-    dst_y = m[idx].dst_y;
-  }
-  else
-    assert(false);
-}
+//bool FFmpegVersionHandler::AVCodecContextCopyParameters(AVCodecContext *srcCtx, AVCodecContext *dstCtx)
+//{
+//  if (libVersion.avcodec == 56)
+//  {
+//    AVCodecContext_56 *dst = reinterpret_cast<AVCodecContext_56*>(dstCtx);
+//    AVCodecContext_56 *src = reinterpret_cast<AVCodecContext_56*>(srcCtx);
+//
+//    dst->codec_type            = src->codec_type;
+//    dst->codec_id              = src->codec_id;
+//    dst->codec_tag             = src->codec_tag;
+//    dst->bit_rate              = src->bit_rate;
+//
+//    // We don't parse these ...
+//    //decCtx->bits_per_coded_sample = ctx->bits_per_coded_sample;
+//    //decCtx->bits_per_raw_sample   = ctx->bits_per_raw_sample;
+//    //decCtx->profile               = ctx->profile;
+//    //decCtx->level                 = ctx->level;
+//
+//    if (src->codec_type == AVMEDIA_TYPE_VIDEO)
+//    {
+//      dst->pix_fmt                = src->pix_fmt;
+//      dst->width                  = src->width;
+//      dst->height                 = src->height;
+//      //dst->field_order            = src->field_order;
+//      dst->color_range            = src->color_range;
+//      dst->color_primaries        = src->color_primaries;
+//      dst->color_trc              = src->color_trc;
+//      dst->colorspace             = src->colorspace;
+//      dst->chroma_sample_location = src->chroma_sample_location;
+//      dst->sample_aspect_ratio    = src->sample_aspect_ratio;
+//      dst->has_b_frames           = src->has_b_frames;
+//    }
+//
+//    // Extradata
+//    if (src->extradata_size != 0 && dst->extradata_size == 0)
+//    {
+//      assert(dst->extradata == nullptr);
+//      dst->extradata = (uint8_t*)lib.av_mallocz(src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+//      if (dst->extradata == nullptr)
+//        return false;
+//      memcpy(dst->extradata, src->extradata, src->extradata_size);
+//      dst->extradata_size = src->extradata_size;
+//    }
+//  }
+//  else if (libVersion.avcodec == 57)
+//  {
+//    AVCodecContext_57 *dst = reinterpret_cast<AVCodecContext_57*>(dstCtx);
+//    AVCodecContext_57 *src = reinterpret_cast<AVCodecContext_57*>(srcCtx);
+//
+//    dst->codec_type            = src->codec_type;
+//    dst->codec_id              = src->codec_id;
+//    dst->codec_tag             = src->codec_tag;
+//    dst->bit_rate              = src->bit_rate;
+//
+//    // We don't parse these ...
+//    //decCtx->bits_per_coded_sample = ctx->bits_per_coded_sample;
+//    //decCtx->bits_per_raw_sample   = ctx->bits_per_raw_sample;
+//    //decCtx->profile               = ctx->profile;
+//    //decCtx->level                 = ctx->level;
+//
+//    if (src->codec_type == AVMEDIA_TYPE_VIDEO)
+//    {
+//      dst->pix_fmt                = src->pix_fmt;
+//      dst->width                  = src->width;
+//      dst->height                 = src->height;
+//      //dst->field_order            = src->field_order;
+//      dst->color_range            = src->color_range;
+//      dst->color_primaries        = src->color_primaries;
+//      dst->color_trc              = src->color_trc;
+//      dst->colorspace             = src->colorspace;
+//      dst->chroma_sample_location = src->chroma_sample_location;
+//      dst->sample_aspect_ratio    = src->sample_aspect_ratio;
+//      dst->has_b_frames           = src->has_b_frames;
+//    }
+//
+//    // Extradata
+//    if (src->extradata_size != 0 && dst->extradata_size == 0)
+//    {
+//      assert(dst->extradata == nullptr);
+//      dst->extradata = (uint8_t*)lib.av_mallocz(src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+//      if (dst->extradata == nullptr)
+//        return false;
+//      memcpy(dst->extradata, src->extradata, src->extradata_size);
+//      dst->extradata_size = src->extradata_size;
+//    }
+//  }
+//  else
+//    assert(false);
+//  return true;
+//}
+//
+//int FFmpegVersionHandler::AVFrameGetWidth(AVFrame *frame)
+//{
+//  if (libVersion.avutil == 54)
+//    return reinterpret_cast<AVFrame_54*>(frame)->width;
+//  else if (libVersion.avutil == 55)
+//    return reinterpret_cast<AVFrame_55*>(frame)->width;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//int FFmpegVersionHandler::AVFrameGetHeight(AVFrame *frame)
+//{
+//  if (libVersion.avutil == 54)
+//    return reinterpret_cast<AVFrame_54*>(frame)->height;
+//  else if (libVersion.avutil == 55)
+//    return reinterpret_cast<AVFrame_55*>(frame)->height;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//int64_t FFmpegVersionHandler::AVFrameGetPTS(AVFrame *frame)
+//{
+//  if (libVersion.avutil == 54)
+//    return reinterpret_cast<AVFrame_54*>(frame)->pts;
+//  else if (libVersion.avutil == 55)
+//    return reinterpret_cast<AVFrame_55*>(frame)->pts;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//AVPictureType FFmpegVersionHandler::AVFrameGetPictureType(AVFrame *frame)
+//{
+//  if (libVersion.avutil == 54)
+//    return reinterpret_cast<AVFrame_54*>(frame)->pict_type;
+//  else if (libVersion.avutil == 55)
+//    return reinterpret_cast<AVFrame_55*>(frame)->pict_type;
+//  else
+//    assert(false);
+//  return (AVPictureType)0;
+//}
+//
+//int FFmpegVersionHandler::AVFrameGetKeyFrame(AVFrame *frame)
+//{
+//  if (libVersion.avutil == 54)
+//    return reinterpret_cast<AVFrame_54*>(frame)->key_frame;
+//  else if (libVersion.avutil == 55)
+//    return reinterpret_cast<AVFrame_55*>(frame)->key_frame;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//int FFmpegVersionHandler::AVFrameGetLinesize(AVFrame *frame, int idx)
+//{
+//  if (libVersion.avutil == 54)
+//    return reinterpret_cast<AVFrame_54*>(frame)->linesize[idx];
+//  else if (libVersion.avutil == 55)
+//    return reinterpret_cast<AVFrame_55*>(frame)->linesize[idx];
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//uint8_t *FFmpegVersionHandler::AVFrameGetData(AVFrame *frame, int idx)
+//{
+//  if (libVersion.avutil == 54)
+//    return reinterpret_cast<AVFrame_54*>(frame)->data[idx];
+//  else if (libVersion.avutil == 55)
+//    return reinterpret_cast<AVFrame_55*>(frame)->data[idx];
+//  else
+//    assert(false);
+//  return nullptr;
+//}
+//
+//AVFrameSideDataType FFmpegVersionHandler::getSideDataType(AVFrameSideData * sideData)
+//{
+//  if (libVersion.avutil == 54 || libVersion.avutil == 55)
+//    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->type;
+//  else
+//    assert(false);
+//  return AV_FRAME_DATA_PANSCAN;
+//}
+//
+//uint8_t * FFmpegVersionHandler::getSideDataData(AVFrameSideData * sideData)
+//{
+//  if (libVersion.avutil == 54 || libVersion.avutil == 55)
+//    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->data;
+//  else
+//    assert(false);
+//  return nullptr;
+//}
+//
+//int FFmpegVersionHandler::getSideDataNrMotionVectors(AVFrameSideData * sideData)
+//{
+//  if (libVersion.avutil == 54)
+//    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->size / sizeof(AVMotionVector_54);
+//  else if (libVersion.avutil == 55)
+//    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->size / sizeof(AVMotionVector_55);
+//  else
+//    assert(false);
+//  return 0;
+//}
+//
+//void FFmpegVersionHandler::getMotionVectorValues(AVMotionVector * mv, int idx, int32_t &source, uint8_t &blockWidth, uint8_t &blockHeight, int16_t &src_x, int16_t &src_y, int16_t &dst_x, int16_t &dst_y)
+//{
+//  if (libVersion.avutil == 54)
+//  {
+//    AVMotionVector_54 *m = reinterpret_cast<AVMotionVector_54*>(mv);
+//    source = m[idx].source;
+//    blockWidth = m[idx].w;
+//    blockHeight = m[idx].h;
+//    src_x = m[idx].src_x;
+//    src_y = m[idx].src_y;
+//    dst_x = m[idx].dst_x;
+//    dst_y = m[idx].dst_y;
+//  }
+//  else if (libVersion.avutil == 55)
+//  {
+//    AVMotionVector_55 *m = reinterpret_cast<AVMotionVector_55*>(mv);
+//    source = m[idx].source;
+//    blockWidth = m[idx].w;
+//    blockHeight = m[idx].h;
+//    src_x = m[idx].src_x;
+//    src_y = m[idx].src_y;
+//    dst_x = m[idx].dst_x;
+//    dst_y = m[idx].dst_y;
+//  }
+//  else
+//    assert(false);
+//}
 
 QString FFmpegVersionHandler::getLibVersionString() const
 {
@@ -1782,9 +1825,64 @@ QString FFmpegVersionHandler::getLibVersionString() const
   return s;
 }
 
-AVFrameWrapper::AVFrameWrapper(FFmpegVersionHandler &ff) 
+void AVFrameWrapper::update()
+{
+  if (frame == nullptr)
+    return;
+
+    if (libVer.avutil == 54)
+    {
+      AVFrame_54 *src = reinterpret_cast<AVFrame_54*>(frame);
+      for(int i=0; i<AV_NUM_DATA_POINTERS; i++)
+      {
+        data[i] = src->data[i];
+        linesize[i] = src->linesize[i];
+      }
+      width = src->width;
+      height = src->height;
+      nb_samples = src->nb_samples;
+      format = src->format;
+      key_frame = src->key_frame;
+      pict_type = src->pict_type;
+      sample_aspect_ratio = src->sample_aspect_ratio;
+      pts = src->pts;
+      pkt_pts = src->pkt_pts;
+      pkt_dts = src->pkt_dts;
+      coded_picture_number = src->coded_picture_number;
+      display_picture_number = src->display_picture_number;
+      quality = src->quality;
+    }
+    else if (libVer.avutil == 55)
+    {
+      AVFrame_55 *src = reinterpret_cast<AVFrame_55*>(frame);
+      for(int i=0; i<AV_NUM_DATA_POINTERS; i++)
+      {
+        data[i] = src->data[i];
+        linesize[i] = src->linesize[i];
+      }
+      width = src->width;
+      height = src->height;
+      nb_samples = src->nb_samples;
+      format = src->format;
+      key_frame = src->key_frame;
+      pict_type = src->pict_type;
+      sample_aspect_ratio = src->sample_aspect_ratio;
+      pts = src->pts;
+      pkt_pts = src->pkt_pts;
+      pkt_dts = src->pkt_dts;
+      coded_picture_number = src->coded_picture_number;
+      display_picture_number = src->display_picture_number;
+      quality = src->quality;
+    }
+    else
+      assert(false);
+}
+
+void AVFrameWrapper::allocate_frame(FFmpegVersionHandler &ff) 
 { 
-  frame = ff.lib.av_frame_alloc(); 
+  assert(frame == nullptr);
+  libVer = ff.libVersion;
+  frame = ff.lib.av_frame_alloc();
 }
 
 void AVFrameWrapper::free_frame(FFmpegVersionHandler &ff) 
@@ -1793,16 +1891,85 @@ void AVFrameWrapper::free_frame(FFmpegVersionHandler &ff)
   frame = nullptr;
 }
 
-uint8_t *AVFrameWrapper::get_data(FFmpegVersionHandler &ff, int component)
+void AVPacketWrapper::allocate_paket(FFmpegVersionHandler &ff)
 {
-  if (frame != nullptr)
-    return ff.AVFrameGetData(frame, component);
-  return nullptr;
+  assert(pkt == nullptr);
+  libVer = ff.libVersion;
+
+  if (libVer.avcodec == 56)
+  {
+    AVPacket_56 *p = new AVPacket_56;
+    p->data = nullptr;
+    p->size = 0;
+    pkt = reinterpret_cast<AVPacket*>(p);
+  }
+  else if (libVer.avcodec == 57)
+  {
+    AVPacket_57 *p = new AVPacket_57;
+    p->data = nullptr;
+    p->size = 0;
+    pkt = reinterpret_cast<AVPacket*>(p);
+  }
+  else
+    assert(false);
+
+  ff.lib.av_init_packet(pkt);
 }
 
-int AVFrameWrapper::get_line_size(FFmpegVersionHandler &ff, int component)
+void AVPacketWrapper::free_packet()
 {
-  if (frame != nullptr)
-    return ff.AVFrameGetLinesize(frame, component);
-  return -1;
+  if (libVer.avcodec == 56)
+  {
+    AVPacket_56 *p = reinterpret_cast<AVPacket_56*>(pkt);
+    delete p;
+  }
+  else if (libVer.avcodec == 57)
+  {
+    AVPacket_57 *p = reinterpret_cast<AVPacket_57*>(pkt);
+    delete p;
+  }
+  else
+    assert(false);
+  
+  pkt = nullptr;
+}
+
+void AVPacketWrapper::update()
+{
+  if (libVer.avcodec == 56)
+  {
+    AVPacket_56 *src = reinterpret_cast<AVPacket_56*>(pkt);
+
+    buf = src->buf;
+    pts = src->pts;
+    dts = src->dts;
+    data = src->data;
+    size = src->size;
+    stream_index = src->stream_index;
+    flags = src->flags;
+    side_data = src->side_data;
+    side_data_elems = src->side_data_elems;
+    duration = src->duration;
+    pos = src->pos;
+    convergence_duration = src->convergence_duration;
+  }
+  else if (libVer.avcodec == 57)
+  {
+    AVPacket_57 *src = reinterpret_cast<AVPacket_57*>(pkt);
+
+    buf = src->buf;
+    pts = src->pts;
+    dts = src->dts;
+    data = src->data;
+    size = src->size;
+    stream_index = src->stream_index;
+    flags = src->flags;
+    side_data = src->side_data;
+    side_data_elems = src->side_data_elems;
+    duration = src->duration;
+    pos = src->pos;
+    convergence_duration = src->convergence_duration;
+  }
+  else
+    assert(false);
 }

@@ -63,7 +63,6 @@ FFmpegDecoder::FFmpegDecoder()
   endOfFile = false;
   frameRate = -1;
   colorConversionType = BT709_LimitedRange;
-  pkt = nullptr;
   canShowNALUnits = false;
 
   // Initialize the file watcher and install it (if enabled)
@@ -82,10 +81,7 @@ FFmpegDecoder::~FFmpegDecoder()
 {
   // Free all the allocated data structures
   if (pkt)
-  {
-    ff.deletePacket(pkt);
-    pkt = nullptr;
-  }
+    pkt.free_packet();
   /*if (decCtx)
     ff.avcodec_free_context(&decCtx);*/
   if (frame)
@@ -183,66 +179,52 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
     if (ret < 0)
       return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
 
-    //// Allocate the frame
-    //frame = ff.av_frame_alloc();
-    //if (!frame)
-    //  return setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
+    frame.allocate_frame(ff);
+    if (!frame)
+      return setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 
-    //if (otherDec)
-    //{
-    //  // Copy the key picture list and nrFrames from the other decoder
-    //  keyFrameList = otherDec->keyFrameList;
-    //  nrFrames = otherDec->nrFrames;
-    //}
-    //else
-    //  if (!scanBitstream())
-    //    return setOpeningError(QStringLiteral("Error scanning bitstream for key pictures."));
+    if (otherDec)
+    {
+      // Copy the key picture list and nrFrames from the other decoder
+      keyFrameList = otherDec->keyFrameList;
+      nrFrames = otherDec->nrFrames;
+    }
+    else
+      if (!scanBitstream())
+        return setOpeningError(QStringLiteral("Error scanning bitstream for key pictures."));
 
-    //// Initialize an empty packet
-    //assert(pkt == nullptr);
-    //pkt = ff.getNewPacket();
-    //ff.av_init_packet(pkt);
+    // Initialize an empty packet
+    pkt.allocate_paket(ff);
 
-    //// Get the frame rate, picture size and color conversion mode
-    //AVRational avgFrameRate = ff.AVFormatContextGetAvgFrameRate(fmt_ctx, videoStreamIdx);
-    //frameRate = avgFrameRate.num / double(avgFrameRate.den);
-    //pixelFormat = ff.AVCodecContextGetPixelFormat(decCtx);
+    // Get the frame rate, picture size and color conversion mode
+    AVRational avgFrameRate = video_stream.get_avg_frame_rate();
+    frameRate = avgFrameRate.num / double(avgFrameRate.den);
+    pixelFormat = decCtx.get_pixel_format();
 
-    //int w,h;
-    //AVColorSpace colSpace;
-    //if (ff.newParametersAPIAvailable)
-    //{
-    //  // Get values from the AVCodecParameters API
-    //  w = ff.AVCodecParametersGetWidth(origin_par);
-    //  h = ff.AVCodecParametersGetHeight(origin_par);
-    //  colSpace = ff.AVCodecParametersGetColorSpace(origin_par);
-    //}
-    //else
-    //{
-    //  // Get values from the old *codec
-    //  w = ff.AVCodecContexGetWidth(decCtx);
-    //  h = ff.AVCodecContextGetHeight(decCtx);
-    //  colSpace = ff.AVCodecContextGetColorSpace(decCtx);
-    //}
-    //frameSize.setWidth(w);
-    //frameSize.setHeight(h);
+    AVColorSpace colSpace = video_stream.get_colorspace();
+    int w = video_stream.get_frame_width();
+    int h = video_stream.get_frame_height();
+    frameSize.setWidth(w);
+    frameSize.setHeight(h);
 
-    //if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
-    //  colorConversionType = BT2020;
-    //else
-    //  colorConversionType = BT709;
+    if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
+      colorConversionType = BT2020_LimitedRange;
+    else if (colSpace == AVCOL_SPC_BT470BG || colSpace == AVCOL_SPC_SMPTE170M)
+      colorConversionType = BT601_LimitedRange;
+    else
+      colorConversionType = BT709_LimitedRange;
 
-    //// Get the first video stream packet into the packet buffer.
-    //do
-    //{
-    //  ret = ff.av_read_frame(fmt_ctx, pkt);
-    //  if (ret < 0)
-    //    return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
-    //}
-    //while (ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
+    // Get the first video stream packet into the packet buffer.
+    do
+    {
+      ret = fmt_ctx.read_frame(ff, pkt);
+      if (ret < 0)
+        return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
+    }
+    while (pkt.get_stream_index() != video_stream.get_index());
 
-    //// Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
-    //loadYUVFrameData(0);
+    // Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
+    loadYUVFrameData(0);
   }
 
   return true;
@@ -751,8 +733,8 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
   // Copy line by line. The linesize of the source may be larger than the width of the frame.
   // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
   // resolution may be larger than the output frame size.
-  uint8_t *src = frame.get_data(ff, 0);
-  int linesize = frame.get_line_size(ff, 0);
+  uint8_t *src = frame.get_data(0);
+  int linesize = frame.get_line_size(0);
   char* dst = currentOutputBuffer.data();
   int wDst = frameSize.width();
   int hDst = frameSize.height();
@@ -770,8 +752,8 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
   hDst = frameSize.height() / pixFmt.getSubsamplingVer();
   for (int c = 0; c < 2; c++)
   {
-    uint8_t *src = frame.get_data(ff, 1+c);
-    linesize = frame.get_line_size(ff, 1+c);
+    uint8_t *src = frame.get_data(1+c);
+    linesize = frame.get_line_size(1+c);
     dst = currentOutputBuffer.data();
     dst += (nrBytesY + ((c == 0) ? 0 : nrBytesC));
     for (int y = 0; y < hDst; y++)

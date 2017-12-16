@@ -31,6 +31,7 @@
 */
 
 #ifndef FFMPEGDECODER_FFMPEGDEFS
+#define FFMPEGDECODER_FFMPEGDEFS
 
 #include "stdint.h"
 #include <errno.h>
@@ -61,32 +62,6 @@ namespace FFmpeg
   struct AVFrameSideData;
   struct AVMotionVector;
   struct AVStream;
-
-  // The type we use internally
-  /*typedef struct AVStream
-  {
-    int index;
-    int id;
-    AVCodecContext *codec;
-    void *priv_data;
-    struct AVFrac pts;
-    AVRational time_base;
-    int64_t start_time;
-    int64_t duration;
-    int64_t nb_frames;
-    int disposition;
-    AVDiscard discard;
-    AVRational sample_aspect_ratio;
-    AVDictionary *metadata;
-    AVRational avg_frame_rate;
-    AVPacket attached_pic;
-    AVPacketSideData *side_data;
-    int nb_side_data;
-    int event_flags;
-    AVRational r_frame_rate;
-    char *recommended_encoder_configuration;
-    AVCodecParameters *codecpar;
-  };*/
 
   // How to convert the avXXX_getVersion() int to major, minor and micro
   #define AV_VERSION_MAJOR(a) ((a) >> 16)

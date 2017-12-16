@@ -31,6 +31,7 @@
 */
 
 #ifndef FFMPEGDECODERLIBHANDLING_H
+#define FFMPEGDECODERLIBHANDLING_H
 
 #include "FFMpegDecoderCommonDefs.h"
 #include "stdint.h"
@@ -186,6 +187,10 @@ public:
   AVMediaType getCodecType()  { update(); return codec_type; }
   AVCodecID getCodecID()      { update(); return codec_id; }
   AVCodecContext *get_codec() { return codec; }
+  AVPixelFormat get_pixel_format() { update(); return pix_fmt; }
+  int get_width() { update(); return width; }
+  int get_height() { update(); return height; }
+  AVColorSpace get_colorspace() { update(); return colorspace; }
 
   // Set when the context is openend (open_input)
   QString codec_id_string;
@@ -293,6 +298,9 @@ public:
 
   AVMediaType getCodecType() { update(); return codec_type; }
   AVCodecID   getCodecID()   { update(); return codec_id; }
+  int get_width()            { update(); return width; }
+  int get_height()           { update(); return height; }
+  AVColorSpace get_colorspace() { update(); return color_space; }
 
 private:
   // Update all private values from the AVCodecParameters
@@ -331,16 +339,22 @@ class AVStreamWrapper
 {
 public:
   AVStreamWrapper() { str = nullptr; }
-  AVStreamWrapper(AVStream *src_str, FFmpegLibraryVersion v) { str = src_str; libVer = v; update_values(); }
-  void update_values();
+  AVStreamWrapper(AVStream *src_str, FFmpegLibraryVersion v) { str = src_str; libVer = v; update(); }
   explicit operator bool() const { return str != nullptr; };
 
   AVMediaType getCodecType();
   AVCodecID getCodecID();
-  AVCodecContextWrapper &getCodec() { update_values(); return codec; };
+  AVCodecContextWrapper &getCodec() { update(); return codec; };
+  AVRational get_avg_frame_rate()   { update(); return avg_frame_rate; }
+  int get_frame_width();
+  int get_frame_height();
+  AVColorSpace get_colorspace();
+  int get_index() { update(); return index; }
 
 private:
-  // These are just here for debugging purposes
+  void update();
+
+  // These are private. Use "update" to update them from the AVFormatContext
   int index;
   int id;
   AVCodecContextWrapper codec;
@@ -362,6 +376,38 @@ private:
   FFmpegLibraryVersion libVer;
 };
 
+class AVPacketWrapper
+{
+public:
+  AVPacketWrapper() { pkt = nullptr; }
+  // Create a new paket and initilize it using av_init_packet.
+  void allocate_paket(FFmpegVersionHandler &ff);
+  void free_packet();
+  explicit operator bool() const { return pkt != nullptr; };
+  AVPacket *get_packet() { return pkt; }
+  int get_stream_index() { update(); return stream_index; }
+
+private:
+  void update();
+
+  // These are private. Use "update" to update them from the AVFormatContext
+  AVBufferRef *buf;
+  int64_t pts;
+  int64_t dts;
+  uint8_t *data;
+  int size;
+  int stream_index;
+  int flags;
+  AVPacketSideData *side_data;
+  int side_data_elems;
+  int64_t duration;
+  int64_t pos;
+  int64_t convergence_duration;
+
+  AVPacket *pkt;
+  FFmpegLibraryVersion libVer;
+};
+
 // This is a version independent wrapper for the version dependent ffmpeg AVFormatContext
 // It is our own and can be created on the stack and is nicer to debug.
 class AVFormatContextWrapper
@@ -376,6 +422,9 @@ public:
   unsigned int get_nb_streams() { update(); return nb_streams; }
   AVStreamWrapper get_stream(int idx) { update(); return streams[idx]; }
   AVInputFormatWrapper get_input_format() { update(); return iformat; }
+
+  // Read a frame into the given pacetk (av_read_frame)
+  int read_frame(FFmpegVersionHandler &ff, AVPacketWrapper &pkt);
 
 private:
   // Update all private values from the AVFormatContext
@@ -431,15 +480,34 @@ class AVFrameWrapper
 public:
   AVFrameWrapper() { frame = nullptr; };
   ~AVFrameWrapper() { assert(frame == nullptr); }
-  AVFrameWrapper(FFmpegVersionHandler &ff);
+  void allocate_frame(FFmpegVersionHandler &ff);
   void free_frame(FFmpegVersionHandler &ff);
-  uint8_t *get_data(FFmpegVersionHandler &ff, int component);
-  int get_line_size(FFmpegVersionHandler &ff, int component);
+  uint8_t *get_data(int component) { update(); return data[component]; }
+  int get_line_size(int component) { update(); return linesize[component]; }
     
   explicit operator bool() const { return frame != nullptr; };
 
 private:
+  void update();
+
+  // These are private. Use "update" to update them from the AVFormatContext
+  uint8_t *data[AV_NUM_DATA_POINTERS];
+  int linesize[AV_NUM_DATA_POINTERS];
+  int width, height;
+  int nb_samples;
+  int format;
+  int key_frame;
+  AVPictureType pict_type;
+  AVRational sample_aspect_ratio;
+  int64_t pts;
+  int64_t pkt_pts;
+  int64_t pkt_dts;
+  int coded_picture_number;
+  int display_picture_number;
+  int quality;
+
   AVFrame *frame;
+  FFmpegLibraryVersion libVer;
 };
 
 /* This class abstracts from the different versions of FFmpeg (and the libraries within it).
@@ -461,54 +529,6 @@ public:
 
   // Check if the given four files can be used to open FFmpeg.
   static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error);
-
-  // Get values from AVPacket
-  AVPacket *getNewPacket();
-  void deletePacket(AVPacket *pkt);
-  int AVPacketGetStreamIndex(AVPacket *pkt);
-  int64_t AVPacketGetPTS(AVPacket *pkt);
-  int AVPacketGetDuration(AVPacket *pkt);
-  int AVPacketGetFlags(AVPacket *pkt);
-
-  // AVContext related functions
-  AVPixelFormat AVCodecContextGetPixelFormat(AVCodecContext *codecCtx);
-  int AVCodecContexGetWidth(AVCodecContext *codecCtx);
-  int AVCodecContextGetHeight(AVCodecContext *codecCtx);
-  AVColorSpace AVCodecContextGetColorSpace(AVCodecContext *codecCtx);
-
-  // AVCodecParameters related functions
-  int AVCodecParametersGetWidth(AVCodecParameters *param);
-  int AVCodecParametersGetHeight(AVCodecParameters *param);
-  AVColorSpace AVCodecParametersGetColorSpace(AVCodecParameters *param);
-
-  // AVFormatContext related functions
-  /*AVInputFormat *AVFormatContextGetAVInputFormat(AVFormatContext *fmtCtx);
-  AVMediaType AVFormatContextGetCodecTypeFromCodec(AVFormatContext *fmtCtx, int streamIdx);
-  AVCodecID AVFormatContextGetCodecIDFromCodec(AVFormatContext *fmtCtx, int streamIdx);
-  AVMediaType AVFormatContextGetCodecTypeFromCodecpar(AVFormatContext *fmtCtx, int streamIdx);
-  AVCodecID AVFormatContextGetCodecIDFromCodecpar(AVFormatContext *fmtCtx, int streamIdx);
-  AVRational AVFormatContextGetAvgFrameRate(AVFormatContext *fmtCtx, int streamIdx);
-  int64_t AVFormatContextGetDuration(AVFormatContext *fmtCtx);
-  AVRational AVFormatContextGetTimeBase(AVFormatContext *fmtCtx, int streamIdx);*/
-
-  bool AVCodecContextCopyParameters(AVCodecContext *srcCtx, AVCodecContext *dstCtx);
-
-  // AVFrame related functions
-  int AVFrameGetWidth(AVFrame *frame);
-  int AVFrameGetHeight(AVFrame *frame);
-  int64_t AVFrameGetPTS(AVFrame *frame);
-  AVPictureType AVFrameGetPictureType(AVFrame *frame);
-  int AVFrameGetKeyFrame(AVFrame *frame);
-  int AVFrameGetLinesize(AVFrame *frame, int idx);
-  uint8_t *AVFrameGetData(AVFrame *frame, int idx);
-
-  // AVFrameSideData
-  AVFrameSideDataType getSideDataType(AVFrameSideData *sideData);
-  uint8_t *getSideDataData(AVFrameSideData *sideData);
-  int getSideDataNrMotionVectors(AVFrameSideData *sideData);
-
-  // AVMotionVector
-  void getMotionVectorValues(AVMotionVector *mv, int idx, int32_t &source, uint8_t &blockWidth, uint8_t &blockHeight, int16_t &src_x, int16_t &src_y, int16_t &dst_x, int16_t &dst_y );
   
   QString getLibPath() const { return lib.getLibPath(); }
   QString getLibVersionString() const;
@@ -552,52 +572,6 @@ private:
 
   // What error occured while opening the libraries?
   QString versionErrorString;
-  
-  // ------------------- AVFrame ---------------
-  // AVFrames is part of AVUtil
-
-  typedef struct AVFrame_55 
-  {
-    uint8_t *data[AV_NUM_DATA_POINTERS];
-    int linesize[AV_NUM_DATA_POINTERS];
-    uint8_t **extended_data;
-    int width, height;
-    int nb_samples;
-    int format;
-    int key_frame;
-    AVPictureType pict_type;
-    AVRational sample_aspect_ratio;
-    int64_t pts;
-    int64_t pkt_pts;
-    int64_t pkt_dts;
-    int coded_picture_number;
-    int display_picture_number;
-    int quality;
-  
-    // Actually, there is more here, but the variables above are the only we need.
-  } AVFrame_55;
-
-  typedef struct AVFrame_54 
-  {
-    uint8_t *data[AV_NUM_DATA_POINTERS];
-    int linesize[AV_NUM_DATA_POINTERS];
-    uint8_t **extended_data;
-    int width, height;
-    int nb_samples;
-    int format;
-    int key_frame;
-    AVPictureType pict_type;
-    uint8_t *base[AV_NUM_DATA_POINTERS];
-    AVRational sample_aspect_ratio;
-    int64_t pts;
-    int64_t pkt_pts;
-    int64_t pkt_dts;
-    int coded_picture_number;
-    int display_picture_number;
-    int quality;
-
-    // Actually, there is more here, but the variables above are the only we need.
-  } AVFrame_54;
 
   // ------------------- AVFrameSideData ---------------
   // AVFrameSideData is part of AVUtil

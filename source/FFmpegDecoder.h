@@ -145,9 +145,8 @@ private:
   AVCodecWrapper videoCodec;        //< The video decoder codec
   AVCodecContextWrapper decCtx;     //< The decoder context
   AVFrameWrapper frame;             //< The frame that we use for decoding
-
-  AVPacket *pkt;              //< A place for the curren (frame) input buffer
-  bool endOfFile;             //< Are we at the end of file (draining mode)?
+  AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
+  bool endOfFile;                   //< Are we at the end of file (draining mode)?
 
   // The information on the file which was opened with openFile
   QString   fullFilePath;
