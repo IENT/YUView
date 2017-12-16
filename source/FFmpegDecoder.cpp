@@ -59,7 +59,6 @@ FFmpegDecoder::FFmpegDecoder()
   // Set default values
   pixelFormat = AV_PIX_FMT_NONE;
   
-  frame = nullptr;
   nrFrames = -1;
   endOfFile = false;
   frameRate = -1;
@@ -88,9 +87,9 @@ FFmpegDecoder::~FFmpegDecoder()
     pkt = nullptr;
   }
   /*if (decCtx)
-    ff.avcodec_free_context(&decCtx);
+    ff.avcodec_free_context(&decCtx);*/
   if (frame)
-    ff.av_frame_free(&frame);*/
+    frame.free_frame(ff);
   fmt_ctx.avformat_close_input(ff);
 }
 
@@ -126,12 +125,13 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
       return setOpeningError(QStringLiteral("Could not open the input file (open_input). Return code %1.").arg(ret));
 
     // What is the input format?
-    FFmpegVersionHandler::AVInputFormatWrapper inp_format = fmt_ctx.iformat;
+    AVInputFormatWrapper inp_format = fmt_ctx.get_input_format();
         
     // Get the first video stream
-    for(auto stream : fmt_ctx.streams)
+    for(unsigned int idx=0; idx < fmt_ctx.get_nb_streams(); idx++)
     {
-      AVMediaType streamType = stream.codec.codec_type;
+      AVStreamWrapper stream = fmt_ctx.get_stream(idx);
+      AVMediaType streamType =  stream.getCodecType();
       if(streamType == AVMEDIA_TYPE_VIDEO)
       {
         video_stream = stream;
@@ -173,14 +173,15 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
     //    return setOpeningError(QStringLiteral("Could not copy decoder parameters from stream decoder."));
     //}
 
-    //// Ask the decoder to provide motion vectors (if possible)
-    //AVDictionary *opts = nullptr;
-    //ff.av_dict_set(&opts, "flags2", "+export_mvs", 0);
+    // Ask the decoder to provide motion vectors (if possible)
+    AVDictionaryWrapper opts;
+    if (ff.av_dict_set(opts, "flags2", "+export_mvs", 0))
+      return setOpeningError(QStringLiteral("Could not request motion vector retrieval.").arg(ret));
 
-    //// Open codec
-    //ret = ff.avcodec_open2(decCtx, videoCodec, &opts);
-    //if (ret < 0)
-    //  return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
+    // Open codec
+    ret = ff.avcodec_open2(decCtx, videoCodec, opts);
+    if (ret < 0)
+      return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
 
     //// Allocate the frame
     //frame = ff.av_frame_alloc();
@@ -667,8 +668,8 @@ QList<infoItem> FFmpegDecoder::getDecoderInfo() const
 
   retList.append(infoItem("Lib Path", ff.getLibPath(), "The library was loaded from this path."));
   retList.append(infoItem("Lib Version", ff.getLibVersionString(), "The version of the loaded libraries"));
-  if (video_stream)
-    retList.append(infoItem("Codec", video_stream.codec.codec_id_string, "The codec of the stream that was opened"));
+  if (decCtx)
+    retList.append(infoItem("Codec", decCtx.codec_id_string, "The codec of the stream that was opened"));
 
   return retList;
 }
@@ -750,8 +751,8 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
   // Copy line by line. The linesize of the source may be larger than the width of the frame.
   // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
   // resolution may be larger than the output frame size.
-  uint8_t *src = ff.AVFrameGetData(frame, 0);
-  int linesize = ff.AVFrameGetLinesize(frame, 0);
+  uint8_t *src = frame.get_data(ff, 0);
+  int linesize = frame.get_line_size(ff, 0);
   char* dst = currentOutputBuffer.data();
   int wDst = frameSize.width();
   int hDst = frameSize.height();
@@ -769,8 +770,8 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
   hDst = frameSize.height() / pixFmt.getSubsamplingVer();
   for (int c = 0; c < 2; c++)
   {
-    uint8_t *src = ff.AVFrameGetData(frame, 1+c);
-    linesize = ff.AVFrameGetLinesize(frame, 1+c);
+    uint8_t *src = frame.get_data(ff, 1+c);
+    linesize = frame.get_line_size(ff, 1+c);
     dst = currentOutputBuffer.data();
     dst += (nrBytesY + ((c == 0) ? 0 : nrBytesC));
     for (int y = 0; y < hDst; y++)

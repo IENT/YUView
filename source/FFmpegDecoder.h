@@ -140,12 +140,12 @@ private:
   bool decodeOneFrame();
 
   // The input file context
-  FFmpegVersionHandler::AVFormatContextWrapper fmt_ctx;
-  FFmpegVersionHandler::AVStreamWrapper video_stream;
-  FFmpegVersionHandler::AVCodecWrapper videoCodec;        //< The video decoder codec
-  FFmpegVersionHandler::AVCodecContextWrapper decCtx;     //< The decoder context
+  AVFormatContextWrapper fmt_ctx;
+  AVStreamWrapper video_stream;
+  AVCodecWrapper videoCodec;        //< The video decoder codec
+  AVCodecContextWrapper decCtx;     //< The decoder context
+  AVFrameWrapper frame;             //< The frame that we use for decoding
 
-  AVFrame *frame;             //< The frame that we use for decoding
   AVPacket *pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile;             //< Are we at the end of file (draining mode)?
 
