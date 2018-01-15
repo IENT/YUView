@@ -645,6 +645,11 @@ protected:
     int preferred_transfer_characteristics;
   };
 
+  // Get the meaning/interpretation mapping of some values
+  static QStringList get_colour_primaries_meaning();
+  static QStringList get_transfer_characteristics_meaning();
+  static QStringList get_matrix_coefficients_meaning();
+
   void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;
 
   // When we start to parse the bitstream we will remember the first RAP POC

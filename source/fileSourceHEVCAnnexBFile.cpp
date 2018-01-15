@@ -547,74 +547,9 @@ void fileSourceHEVCAnnexBFile::vui_parameters::parse_vui_parameters(sub_byte_rea
     READFLAG(colour_description_present_flag);
     if(colour_description_present_flag)
     {
-      QStringList colour_primaries_meaning = QStringList() 
-        << "Reserved For future use by ITU-T | ISO/IEC"
-        << "Rec. ITU-R BT.709-6 / BT.1361 / IEC 61966-2-1 (sRGB or sYCC)"
-        << "Unspecified"
-        << "Reserved For future use by ITU - T | ISO / IEC"
-        << "Rec. ITU-R BT.470-6 System M (historical) (NTSC)"
-        << "Rec. ITU-R BT.470-6 System B, G (historical) / BT.601 / BT.1358 / BT.1700 PAL and 625 SECAM"
-        << "Rec. ITU-R BT.601-6 525 / BT.1358 525 / BT.1700 NTSC"
-        << "Society of Motion Picture and Television Engineers 240M (1999)"
-        << "Generic film (colour filters using Illuminant C)"
-        << "Rec. ITU-R BT.2020-2 Rec. ITU-R BT.2100-0"
-        << "SMPTE ST 428-1 (CIE 1931 XYZ)"
-        << "SMPTE RP 431-2 (2011)"
-        << "SMPTE EG 432-1 (2010)"
-        << "Reserved For future use by ITU - T | ISO / IEC"
-        << "Reserved For future use by ITU - T | ISO / IEC"
-        << "Reserved For future use by ITU - T | ISO / IEC"
-        << "Reserved For future use by ITU - T | ISO / IEC"
-        << "Reserved For future use by ITU - T | ISO / IEC"
-        << "Reserved For future use by ITU - T | ISO / IEC"
-        << "Reserved For future use by ITU - T | ISO / IEC"
-        << "Reserved For future use by ITU - T | ISO / IEC"
-        << "Reserved For future use by ITU - T | ISO / IEC"
-        << "EBU Tech. 3213-E (1975)"
-        << "Reserved For future use by ITU - T | ISO / IEC";
-      READBITS_M(colour_primaries, 8, colour_primaries_meaning);
-
-      QStringList transfer_characteristics_meaning = QStringList()
-        << "Reserved For future use by ITU-T | ISO/IEC"
-        << "Rec. ITU-R BT.709-6 Rec.ITU - R BT.1361-0 conventional colour gamut system"
-        << "Unspecified"
-        << "Reserved For future use by ITU-T | ISO / IEC"
-        << "Rec. ITU-R BT.470-6 System M (historical) (NTSC)"
-        << "Rec. ITU-R BT.470-6 System B, G (historical)"
-        << "Rec. ITU-R BT.601-6 525 or 625, Rec.ITU - R BT.1358 525 or 625, Rec.ITU - R BT.1700 NTSC Society of Motion Picture and Television Engineers 170M(2004)"
-        << "Society of Motion Picture and Television Engineers 240M (1999)"
-        << "Linear transfer characteristics"
-        << "Logarithmic transfer characteristic (100:1 range)"
-        << "Logarithmic transfer characteristic (100 * Sqrt( 10 ) : 1 range)"
-        << "IEC 61966-2-4"
-        << "Rec. ITU-R BT.1361 extended colour gamut system"
-        << "IEC 61966-2-1 (sRGB or sYCC)"
-        << "Rec. ITU-R BT.2020-2 for 10 bit system"
-        << "Rec. ITU-R BT.2020-2 for 12 bit system"
-        << "SMPTE ST 2084 for 10, 12, 14 and 16-bit systems Rec. ITU-R BT.2100-0 perceptual quantization (PQ) system"
-        << "SMPTE ST 428-1"
-        << "Association of Radio Industries and Businesses (ARIB) STD-B67 Rec. ITU-R BT.2100-0 hybrid log-gamma (HLG) system"
-        << "Reserved For future use by ITU-T | ISO/IEC";
-      READBITS_M(transfer_characteristics, 8, transfer_characteristics_meaning);
-
-      QStringList matrix_coefficients_meaning = QStringList()
-        << "The identity matrix. RGB IEC 61966-2-1 (sRGB)"
-        << "Rec. ITU-R BT.709-6, Rec. ITU-R BT.1361-0"
-        << "Image characteristics are unknown or are determined by the application"
-        << "For future use by ITU-T | ISO/IEC"
-        << "United States Federal Communications Commission Title 47 Code of Federal Regulations (2003) 73.682 (a) (20)"
-        << "Rec. ITU-R BT.470-6 System B, G (historical), Rec. ITU-R BT.601-6 625, Rec. ITU-R BT.1358 625, Rec. ITU-R BT.1700 625 PAL and 625 SECAM"
-        << "Rec. ITU-R BT.601-6 525, Rec. ITU-R BT.1358 525, Rec. ITU-R BT.1700 NTSC, Society of Motion Picture and Television Engineers 170M (2004)"
-        << "Society of Motion Picture and Television Engineers 240M (1999)"
-        << "YCgCo"
-        << "Rec. ITU-R BT.2020-2 non-constant luminance system"
-        << "Rec. ITU-R BT.2020-2 constant luminance system"
-        << "SMPTE ST 2085 (2015)"
-        << "Chromaticity-derived non-constant luminance system"
-        << "Chromaticity-derived constant luminance system"
-        << "Rec. ITU-R BT.2100-0 ICTCP"
-        << "For future use by ITU-T | ISO/IEC";
-      READBITS_M(matrix_coeffs, 8, matrix_coefficients_meaning);
+      READBITS_M(colour_primaries, 8, get_colour_primaries_meaning());
+      READBITS_M(transfer_characteristics, 8, get_transfer_characteristics_meaning());
+      READBITS_M(matrix_coeffs, 8, get_matrix_coefficients_meaning());
     }
   }
 
@@ -2104,7 +2039,7 @@ void fileSourceHEVCAnnexBFile::alternative_transfer_characteristics_sei::parse_a
 {
   TreeItem *const itemTree = root ? new TreeItem("alternative transfer characteristics", root) : nullptr;
   sub_byte_reader reader(sliceHeaderData);
-  READBITS(preferred_transfer_characteristics, 8);
+  READBITS_M(preferred_transfer_characteristics, 8, get_transfer_characteristics_meaning());
 }
 
 void fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, TreeItem *root)
@@ -2129,4 +2064,82 @@ void fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse_active_parameter
   {
     READUEV_A(layer_sps_idx, i);
   }
+}
+
+QStringList fileSourceHEVCAnnexBFile::get_colour_primaries_meaning()
+{
+  QStringList colour_primaries_meaning = QStringList() 
+    << "Reserved For future use by ITU-T | ISO/IEC"
+    << "Rec. ITU-R BT.709-6 / BT.1361 / IEC 61966-2-1 (sRGB or sYCC)"
+    << "Unspecified"
+    << "Reserved For future use by ITU - T | ISO / IEC"
+    << "Rec. ITU-R BT.470-6 System M (historical) (NTSC)"
+    << "Rec. ITU-R BT.470-6 System B, G (historical) / BT.601 / BT.1358 / BT.1700 PAL and 625 SECAM"
+    << "Rec. ITU-R BT.601-6 525 / BT.1358 525 / BT.1700 NTSC"
+    << "Society of Motion Picture and Television Engineers 240M (1999)"
+    << "Generic film (colour filters using Illuminant C)"
+    << "Rec. ITU-R BT.2020-2 Rec. ITU-R BT.2100-0"
+    << "SMPTE ST 428-1 (CIE 1931 XYZ)"
+    << "SMPTE RP 431-2 (2011)"
+    << "SMPTE EG 432-1 (2010)"
+    << "Reserved For future use by ITU - T | ISO / IEC"
+    << "Reserved For future use by ITU - T | ISO / IEC"
+    << "Reserved For future use by ITU - T | ISO / IEC"
+    << "Reserved For future use by ITU - T | ISO / IEC"
+    << "Reserved For future use by ITU - T | ISO / IEC"
+    << "Reserved For future use by ITU - T | ISO / IEC"
+    << "Reserved For future use by ITU - T | ISO / IEC"
+    << "Reserved For future use by ITU - T | ISO / IEC"
+    << "Reserved For future use by ITU - T | ISO / IEC"
+    << "EBU Tech. 3213-E (1975)"
+    << "Reserved For future use by ITU - T | ISO / IEC";
+  return colour_primaries_meaning;
+}
+
+QStringList fileSourceHEVCAnnexBFile::get_transfer_characteristics_meaning()
+{
+  QStringList transfer_characteristics_meaning = QStringList()
+    << "Reserved For future use by ITU-T | ISO/IEC"
+    << "Rec. ITU-R BT.709-6 Rec.ITU - R BT.1361-0 conventional colour gamut system"
+    << "Unspecified"
+    << "Reserved For future use by ITU-T | ISO / IEC"
+    << "Rec. ITU-R BT.470-6 System M (historical) (NTSC)"
+    << "Rec. ITU-R BT.470-6 System B, G (historical)"
+    << "Rec. ITU-R BT.601-6 525 or 625, Rec.ITU - R BT.1358 525 or 625, Rec.ITU - R BT.1700 NTSC Society of Motion Picture and Television Engineers 170M(2004)"
+    << "Society of Motion Picture and Television Engineers 240M (1999)"
+    << "Linear transfer characteristics"
+    << "Logarithmic transfer characteristic (100:1 range)"
+    << "Logarithmic transfer characteristic (100 * Sqrt( 10 ) : 1 range)"
+    << "IEC 61966-2-4"
+    << "Rec. ITU-R BT.1361 extended colour gamut system"
+    << "IEC 61966-2-1 (sRGB or sYCC)"
+    << "Rec. ITU-R BT.2020-2 for 10 bit system"
+    << "Rec. ITU-R BT.2020-2 for 12 bit system"
+    << "SMPTE ST 2084 for 10, 12, 14 and 16-bit systems Rec. ITU-R BT.2100-0 perceptual quantization (PQ) system"
+    << "SMPTE ST 428-1"
+    << "Association of Radio Industries and Businesses (ARIB) STD-B67 Rec. ITU-R BT.2100-0 hybrid log-gamma (HLG) system"
+    << "Reserved For future use by ITU-T | ISO/IEC";
+  return transfer_characteristics_meaning;
+}
+
+QStringList fileSourceHEVCAnnexBFile::get_matrix_coefficients_meaning()
+{
+  QStringList matrix_coefficients_meaning = QStringList()
+    << "The identity matrix. RGB IEC 61966-2-1 (sRGB)"
+    << "Rec. ITU-R BT.709-6, Rec. ITU-R BT.1361-0"
+    << "Image characteristics are unknown or are determined by the application"
+    << "For future use by ITU-T | ISO/IEC"
+    << "United States Federal Communications Commission Title 47 Code of Federal Regulations (2003) 73.682 (a) (20)"
+    << "Rec. ITU-R BT.470-6 System B, G (historical), Rec. ITU-R BT.601-6 625, Rec. ITU-R BT.1358 625, Rec. ITU-R BT.1700 625 PAL and 625 SECAM"
+    << "Rec. ITU-R BT.601-6 525, Rec. ITU-R BT.1358 525, Rec. ITU-R BT.1700 NTSC, Society of Motion Picture and Television Engineers 170M (2004)"
+    << "Society of Motion Picture and Television Engineers 240M (1999)"
+    << "YCgCo"
+    << "Rec. ITU-R BT.2020-2 non-constant luminance system"
+    << "Rec. ITU-R BT.2020-2 constant luminance system"
+    << "SMPTE ST 2085 (2015)"
+    << "Chromaticity-derived non-constant luminance system"
+    << "Chromaticity-derived constant luminance system"
+    << "Rec. ITU-R BT.2100-0 ICTCP"
+    << "For future use by ITU-T | ISO/IEC";
+  return matrix_coefficients_meaning;
 }
