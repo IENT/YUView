@@ -624,6 +624,19 @@ protected:
     QString user_data_message;
   };
 
+  struct active_parameter_sets_sei : sei
+  {
+    active_parameter_sets_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    void parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, TreeItem *root);
+
+    int active_video_parameter_set_id;
+    bool self_contained_cvs_flag;
+    bool no_parameter_set_update_flag;
+    int num_sps_ids_minus1;
+    QList<int> active_seq_parameter_set_id;
+    QList<int> layer_sps_idx;
+  };
+
   struct alternative_transfer_characteristics_sei : sei
   {
     alternative_transfer_characteristics_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
@@ -640,6 +653,7 @@ protected:
 
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
+  QMap<int, QSharedPointer<vps>> active_VPS_list;
   QMap<int, QSharedPointer<sps>> active_SPS_list;
   QMap<int, QSharedPointer<pps>> active_PPS_list;
   // We keept a pointer to the last slice with first_slice_segment_in_pic_flag set. 

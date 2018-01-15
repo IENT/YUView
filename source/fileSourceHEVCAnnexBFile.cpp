@@ -1445,6 +1445,9 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     // Put parameter sets into the NAL unit list
     nalUnitList.append(new_vps);
 
+    // Add vps (replace old one if existed)
+    active_VPS_list.insert(new_vps->vps_video_parameter_set_id, new_vps);
+
     // Add the VPS ID
     specificDescription = QString(" VPS_NUT ID %1").arg(new_vps->vps_video_parameter_set_id);
   }
@@ -1555,6 +1558,11 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     {
       auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
       new_user_data_sei->parse_user_data_sei(sei_data, nalRoot);
+    }
+    else if (new_sei->payloadType == 129)
+    {
+      auto new_active_parameter_sets_sei = QSharedPointer<active_parameter_sets_sei>(new active_parameter_sets_sei(new_sei));
+      new_active_parameter_sets_sei->parse_active_parameter_sets_sei(sei_data, active_VPS_list, nalRoot);
     }
     else if (new_sei->payloadType == 147)
     {
@@ -2097,4 +2105,28 @@ void fileSourceHEVCAnnexBFile::alternative_transfer_characteristics_sei::parse_a
   TreeItem *const itemTree = root ? new TreeItem("alternative transfer characteristics", root) : nullptr;
   sub_byte_reader reader(sliceHeaderData);
   READBITS(preferred_transfer_characteristics, 8);
+}
+
+void fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, TreeItem *root)
+{
+  TreeItem *const itemTree = root ? new TreeItem("active parameter sets", root) : nullptr;
+  sub_byte_reader reader(sliceHeaderData);
+
+  READBITS(active_video_parameter_set_id, 4);
+  if (!p_active_VPS_list.contains(active_video_parameter_set_id))
+    throw std::logic_error("The signaled VPS was not found in the bitstream.");
+  QSharedPointer<vps> actVPS = p_active_VPS_list.value(active_video_parameter_set_id);
+
+  READFLAG(self_contained_cvs_flag);
+  READFLAG(no_parameter_set_update_flag);
+  READUEV(num_sps_ids_minus1);
+  for (int i=0; i<=num_sps_ids_minus1; i++)
+  {
+    READUEV_A(active_seq_parameter_set_id, i);
+  }
+  int MaxLayersMinus1 = std::min(62, actVPS->vps_max_layers_minus1);
+  for (int i=actVPS->vps_base_layer_internal_flag; i<=MaxLayersMinus1; i++)
+  {
+    READUEV_A(layer_sps_idx, i);
+  }
 }
