@@ -624,6 +624,14 @@ protected:
     QString user_data_message;
   };
 
+  struct alternative_transfer_characteristics_sei : sei
+  {
+    alternative_transfer_characteristics_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    void parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, TreeItem *root);
+
+    int preferred_transfer_characteristics;
+  };
+
   void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;
 
   // When we start to parse the bitstream we will remember the first RAP POC

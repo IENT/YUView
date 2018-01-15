@@ -1556,6 +1556,11 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
       auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
       new_user_data_sei->parse_user_data_sei(sei_data, nalRoot);
     }
+    else if (new_sei->payloadType == 147)
+    {
+      auto new_alternative_transfer_characteristics_sei = QSharedPointer<alternative_transfer_characteristics_sei>(new alternative_transfer_characteristics_sei(new_sei));
+      new_alternative_transfer_characteristics_sei->parse_alternative_transfer_characteristics_sei(sei_data, nalRoot);
+    }
   }
 
   if (nalRoot)
@@ -2085,4 +2090,11 @@ void fileSourceHEVCAnnexBFile::user_data_sei::parse_user_data_sei(QByteArray &sl
       }
     }
   }
+}
+
+void fileSourceHEVCAnnexBFile::alternative_transfer_characteristics_sei::parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, TreeItem *root)
+{
+  TreeItem *const itemTree = root ? new TreeItem("alternative transfer characteristics", root) : nullptr;
+  sub_byte_reader reader(sliceHeaderData);
+  READBITS(preferred_transfer_characteristics, 8);
 }
