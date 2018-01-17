@@ -117,6 +117,8 @@ struct collectedData
   // second: count, how often the value was found in the frame
   QList<int*> mValueList;
 
+  QList<QPair<QVariant, int>*> mValues;
+
   /**
    * @brief collectedData
    * default-constructor
@@ -134,12 +136,39 @@ struct collectedData
   {
     this->mLabel = aData->mLabel;
     this->mValueList = aData->mValueList;
+    this->mValues   = aData->mValues;
   }
 
   // destructor
   ~collectedData()
   {
     this->mValueList.clear();
+  }
+
+
+  void addValue(QVariant aTypeValue, int aAmount)
+  {
+    QPair<QVariant, int>* pair = new QPair<QVariant, int>(aTypeValue, aAmount);
+
+    this->mValues.append(pair);
+  }
+
+  void addValues(collectedData aData)
+  {
+    for (int i = 0; i < aData.mValues.count(); i++)
+    {
+      auto valuePair = aData.mValues.at(i);
+      this->addValue(valuePair->first, valuePair->second);
+    }
+  }
+
+  void addValueList(QList<QPair<QVariant, int>*>* aList)
+  {
+    for (int i = 0; i < aList->count(); i++)
+    {
+      auto valuePair = aList->at(i);
+      this->addValue(valuePair->first, valuePair->second);
+    }
   }
 
   /**
@@ -188,6 +217,11 @@ struct collectedData
   bool operator==(const collectedData aData)
   {
     return (this->mLabel == aData.mLabel);
+  }
+
+  bool is3DData()
+  {
+    return this->mStatDataType == sdtStructStatisticsItem_Vector;
   }
 
 };
@@ -470,6 +504,24 @@ class EnumAuxiliary : private QObject {
    */
   static ChartOrderBy makeChartOrderBy(ChartShow aShow, ChartGroupBy aGroup, ChartNormalize aNormalize);
 };
+
+// other necessary implementations
+
+/**
+ * @brief qHash
+ * creates an hash to an QPoint, necessary in using QHash as container
+ *
+ * @param key
+ * QPoint to get an hash
+ *
+ * @return
+ * hash-value
+ */
+inline uint qHash (const QPoint & key)
+{
+  return qHash (QPair<int,int>(key.x(), key.y()) );
+}
+
 
 // Metatype-Information
 // necessary that QVariant can handle the enums

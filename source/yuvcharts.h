@@ -1,4 +1,4 @@
-/*  This file is part of YUView - The YUV player with advanced analytics toolset
+﻿/*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
 *   Copyright (C) 2017  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
@@ -71,10 +71,15 @@ class YUVCharts : public QObject
    * @param aType
    * if statistics-item: the selected type is needed
    *
+   * @param aSortedData
+   * the amount of data if avaible
+   * this parameter is optional
+   * if aSorted is null, we get the data from the item new otherwise we use the parameter
+   *
    * @return
    * a complete chartview with the data
    */
-  virtual QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType) = 0;
+  virtual QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData = NULL) = 0;
 
   /**
    * @brief getTotalAmountOfPixel
@@ -91,22 +96,66 @@ class YUVCharts : public QObject
    */
   int getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, indexRange aRange);
 
+  /**
+   * @brief is2DData
+   * the function will check if the data is only 2D
+   *
+   * @param aSortedData
+   * data to check
+   *
+   * @return
+   * true if 2D otherwise false
+   */
+  bool is2DData(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief is3DData
+   * the function will check if the data is only 2D
+   *
+   * @param aSortedData
+   * data to check
+   *
+   * @return
+   * true if 3D otherwise false
+   */
+  bool is3DData(QList<collectedData>* aSortedData);
+
 protected:
   // holder for invalid data or if no data can display as chart
   QWidget* mNoDataToShowWidget;
   QWidget* mDataIsLoadingWidget;
 };
 
+/**
+ * @brief The YUVChartFactory class
+ * The factory class decides by his own wether it creates a 2D or a 3D plot
+ */
+class YUVChartFactory : public YUVCharts
+{
+  Q_OBJECT
+public:
+  //reintroduce the constructor
+  YUVChartFactory(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget) : YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget){}
+
+  //documentation see @YUVCharts::createChart
+  //! aSortedData is not used in this function
+  QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
+};
+
+/**
+ * @brief The YUVBarChart class
+ * the YUVBarChart class can display 2D Data
+ */
 class YUVBarChart : public YUVCharts
 {
   Q_OBJECT
 
-  public:
+public:
   //reintroduce the constructor
   YUVBarChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget) : YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget){}
 
   //documentation see @YUVCharts::createChart
-  QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType) Q_DECL_OVERRIDE;
+  QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
 private:
   /**
@@ -336,6 +385,43 @@ private:
    * defined chartSettingsData
    */
   chartSettingsData calculateAndDefineGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, int aTotalAmountPixel);
+};
+
+/**
+ * @brief The YUV3DBarChart class
+ * the YUV3DBarChart class can display 3D Data
+ */
+class YUV3DBarChart : public YUVCharts
+{
+  Q_OBJECT
+public:
+  //reintroduce the constructor
+  YUV3DBarChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget) : YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget){}
+
+  //documentation see @YUVCharts::createChart
+  QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
+
+private:
+  /**
+   * @brief makeStatistic
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @param aOrderBy
+   * option-enum how the sorted Data will display
+   *
+   * @param aItem
+   * from the item we get the actual frame-dimension
+   *
+   * @param aRange
+   * range, we look at
+   *
+   * @return
+   * a chartview, that can be placed
+   */
+  QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange);
 };
 
 

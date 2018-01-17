@@ -778,15 +778,12 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   else
     topLayout->addRow(lblStat, cbxTypes);
 
-
-
   // adding the widgets from the list to the toplayout
   // we do this here at this way, because if we use generateOrderByLayout we get a distance-difference in the layout
   foreach (auto widget, listGeneratedWidgets)
   {
     if(hashOddAmount)
       topLayout->addWidget(widget);
-
 
     if((widget->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
        || (widget->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
@@ -908,8 +905,8 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   else // this case should never happen, but who now :D
     return &(this->mNoDataToShowWidget);
 
-  YUVBarChart barchart(&this->mNoDataToShowWidget, &this->mDataIsLoadingWidget);
-  this->mLastStatisticsWidget = barchart.createChart(order, aCoord.mItem, range, type);
+  YUVChartFactory factory(&this->mNoDataToShowWidget, &this->mDataIsLoadingWidget);
+  this->mLastStatisticsWidget = factory.createChart(order, aCoord.mItem, range, type);
 
   return this->mLastStatisticsWidget;
 }

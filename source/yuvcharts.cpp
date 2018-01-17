@@ -1,13 +1,6 @@
 #include "yuvcharts.h"
 #include "playlistItem.h"
 
-QWidget* YUVBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem *aItem, indexRange aRange, QString aType)
-{
-  QList<collectedData>* sortedData = aItem->sortAndCategorizeDataByRange(aType, aRange);
-
-  return this->makeStatistic(sortedData, aOrderBy, aItem, aRange);
-}
-
 int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, indexRange aRange)
 {
   // first calculate total amount of pixel
@@ -23,6 +16,82 @@ int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, index
     return (totalAmountPixel * (aRange.second - aRange.first + 1));
   else
     return 0;
+}
+
+bool YUVCharts::is2DData(QList<collectedData>* aSortedData)
+{
+  bool is2DData = true;
+
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    collectedData data = aSortedData->at(i);
+    if(data.is3DData())
+    {
+      is2DData = false;
+      break;
+    }
+  }
+
+  return is2DData;
+}
+
+bool YUVCharts::is3DData(QList<collectedData>* aSortedData)
+{
+  bool is3DData = true;
+
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    collectedData data = aSortedData->at(i);
+    if(! data.is3DData())
+    {
+      is3DData = false;
+      break;
+    }
+  }
+
+  return is3DData;
+}
+
+QWidget* YUVChartFactory::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData)
+{
+  Q_UNUSED(aSortedData)
+
+  QList<collectedData>* sortedData = aItem->sortAndCategorizeDataByRange(aType, aRange);
+
+  // our bar chart can not display 3D, so we check if in one collectedData has 3D-Data
+  bool is2DData = this->is2DData(sortedData);
+  if(is2DData)
+  {
+    YUVBarChart barChart(this->mNoDataToShowWidget, this->mDataIsLoadingWidget);
+    return barChart.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+  }
+
+  bool is3DData = this->is3DData(sortedData);
+  if(is3DData)
+  {
+    YUV3DBarChart barChart3D(this->mNoDataToShowWidget, this->mDataIsLoadingWidget);
+    return barChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+  }
+
+  return this->mNoDataToShowWidget;
+}
+
+QWidget* YUVBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData)
+{
+  // just a holder
+  QList<collectedData>* sortedData = NULL;
+
+  // check the datasource
+  if(aSortedData)
+    sortedData = aSortedData;
+  else
+    sortedData = aItem->sortAndCategorizeDataByRange(aType, aRange);
+
+  // can we display it?
+  if(this->is2DData(sortedData))
+    return this->makeStatistic(sortedData, aOrderBy, aItem, aRange);
+  else // at this point we have 3D Data and we can not display it with YUVBarChart
+    return this->mNoDataToShowWidget;
 }
 
 QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange)
@@ -215,25 +284,31 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
   {
     // first getting the data
     collectedData data = aSortedData->at(i);
-
-    // if we have more than one value
-    foreach (int* chartData, data.mValueList)
+    if(data.mStatDataType == sdtStructStatisticsItem_Value)
     {
-      int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
-      // check if we have insert the count yet
-      if(hashValueCount.value(chartData[0]))
-        count = hashValueCount.value(chartData[0]); // was inserted
-      else
+      // if we have more than one value
+      foreach (auto chartData, data.mValues)
       {
-        // at this point we have to get a new int by the system and we save the adress of this int in count
-        // so we have later for each int a new adress! and an new int, which we can save
-        count = new int(0);
-        // inserting the adress to get it later back
-        hashValueCount.insert(chartData[0], count);
-      }
+        QVariant variant = chartData->first;
+        int value = variant.toInt(); // because auf sdtStructStatisticsItem_Value we know that the variant is an int
+        int amount = chartData->second;
 
-      // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
-      *count += chartData[1];
+        int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
+        // check if we have insert the count yet
+        if(hashValueCount.value(value))
+          count = hashValueCount.value(value); // was inserted
+        else
+        {
+          // at this point we have to get a new int by the system and we save the adress of this int in count
+          // so we have later for each int a new adress! and an new int, which we can save
+          count = new int(0);
+          // inserting the adress to get it later back
+          hashValueCount.insert(value, count);
+        }
+
+        // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
+        *count += amount;
+      }
     }
   }
 
@@ -463,4 +538,87 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
   }
 
   return settings;
+}
+
+QWidget*YUV3DBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData)
+{
+  // just a holder
+  QList<collectedData>* sortedData = NULL;
+
+  // check the datasource
+  if(aSortedData)
+    sortedData = aSortedData;
+  else
+    sortedData = aItem->sortAndCategorizeDataByRange(aType, aRange);
+
+  // can we display it?
+  if(this->is3DData(sortedData))
+    return  this->makeStatistic(sortedData, aOrderBy, aItem, aRange);
+  else // at this point we have 3D Data and we can not display it with YUVBarChart
+    return this->mNoDataToShowWidget;
+}
+
+QWidget*YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange)
+{
+  // if we have no keys, we cant show any data so return at this point
+  if(!aSortedData->count())
+    return this->mNoDataToShowWidget;
+
+  chartSettingsData settings;
+
+  switch (aOrderBy) {
+    case cobPerFrameGrpByValueNrmNone:
+      break;
+    case cobPerFrameGrpByValueNrmByArea:
+      break;
+    case cobPerFrameGrpByBlocksizeNrmNone:
+      break;
+    case cobPerFrameGrpByBlocksizeNrmByArea:
+      break;
+
+    case cobRangeGrpByValueNrmNone:
+      break;
+    case cobRangeGrpByValueNrmByArea:
+      break;
+    case cobRangeGrpByBlocksizeNrmNone:
+      break;
+    case cobRangeGrpByBlocksizeNrmByArea:
+      break;
+
+    case cobAllFramesGrpByValueNrmNone:
+      break;
+    case cobAllFramesGrpByValueNrmByArea:
+      break;
+    case cobAllFramesGrpByBlocksizeNrmNone:
+      break;
+    case cobAllFramesGrpByBlocksizeNrmByArea:
+      break;
+
+    default:
+      return this->mNoDataToShowWidget;
+  }
+
+  if(!settings.mSettingsIsValid)
+    return this->mNoDataToShowWidget;
+
+  // creating the result
+  QChart* chart = new QChart();
+
+  // appending the series to the chart
+  chart->addSeries(settings.mSeries);
+  // setting an animationoption (not necessary but it's nice to see)
+  chart->setAnimationOptions(QChart::SeriesAnimations);
+  // creating default-axes: always have to be called before you add some custom axes
+  chart->createDefaultAxes();
+
+  // setting Options for the chart-legend
+  chart->legend()->setVisible(true);
+  chart->legend()->setAlignment(Qt::AlignBottom);
+
+  // creating result chartview and set the data
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+
+  // final return the created chart
+  return chartView;
 }
