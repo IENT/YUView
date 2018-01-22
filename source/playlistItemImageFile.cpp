@@ -174,8 +174,16 @@ ValuePairListSets playlistItemImageFile::getPixelValues(const QPoint &pixelPos, 
 infoData playlistItemImageFile::getInfo() const
 {
   infoData info("Image Info");
+  if (imageLoading == false)
+  {
+    info.items.append(infoItem("File", plItemNameOrFileName));
 
-  info.items.append(infoItem("File", plItemNameOrFileName));
+    // Append the file information (path, date created, file size...)
+    info.items.append(frame.getFileInfoList());
+  }
+
+
+  /**
   if (frame.isFormatValid())
   {
     QSize frameSize = frame.getFrameSize();
@@ -186,6 +194,7 @@ infoData playlistItemImageFile::getInfo() const
     info.items.append(infoItem("Status", "Loading...", "The image is being loaded. Please wait."));
   else
     info.items.append(infoItem("Status", "Error", "There was an error loading the image."));
+  **/
 
   return info;
 }

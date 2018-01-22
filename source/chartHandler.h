@@ -346,7 +346,7 @@ private:
 /*----------playListItemStatisticsFile----------*/
   /**
    * @brief createStatisticFileWidget
-   * creates Widget based on an "playListItemStatisticsFile"
+   * creates Widget based on a "playListItemStatisticsFile"
    *
    * @param aItem
    * a explicit playlistItemStatisticsFile
@@ -370,6 +370,36 @@ private:
    * a chartview, that can be placed
    */
   QWidget* createStatisticsChart(itemWidgetCoord& aCoord);
+
+/*----------testtesttest----------*/
+  /**
+   * @brief createStatisticFileWidget
+   * creates Widget based on a "playListItemStatisticsFile"
+   *
+   * @param aItem
+   * a explicit playlistItemStatisticsFile
+   *
+   * @param aCoord
+   * a itemWidgetCoord where data can be saved in
+   *
+   * @return
+   * a option-widget for the playlistItemStatisticsFile
+   */
+  QWidget* createImageFileColorAnalysisWidget(playlistItemImageFile* aItem, itemWidgetCoord& aCoord);
+
+  /**
+   * @brief createStatisticsChart
+   * creating the Chart depending on the data
+   *
+   * @param aCoord
+   * data for the chart
+   *
+   * @return
+   * a chartview, that can be placed
+   */
+  QWidget* createImageColorAnalysisChart(itemWidgetCoord& aCoord);
+
+
 };
 
 

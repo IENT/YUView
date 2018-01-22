@@ -80,6 +80,17 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
     // in case of getting the widget a second time, we just have to load it from the list
     this->mListItemWidget << coord;
   }
+  // in case of playlistItemImageFile
+  else if (dynamic_cast<playlistItemImageFile*>(aItem))
+  {
+    // cast item to right type
+    playlistItemImageFile* pltsf = dynamic_cast<playlistItemImageFile*>(aItem);
+    // get the widget and save it
+    coord.mWidget = this->createImageFileColorAnalysisWidget(pltsf, coord);
+    // we save an item-widget combination in a list
+    // in case of getting the widget a second time, we just have to load it from the list
+    this->mListItemWidget << coord;
+  }
   else
   {
     // in case of default, that we dont know the item-type
@@ -96,6 +107,10 @@ QString ChartHandler::getChartsTitle(playlistItem *aItem)
   // in case of playlistItemStatisticsFile
   if(dynamic_cast<playlistItemStatisticsFile*> (aItem))
     return CHARTSWIDGET_WINDOW_TITLE_STATISTICS;
+
+  // in case of playlistItemImageFile
+  if(dynamic_cast<playlistItemImageFile*> (aItem))
+    return CHARTSWIDGET_WINDOW_TITLE_IMAGE;
 
   // return default name
   return CHARTSWIDGET_WINDOW_TITLE_DEFAULT;
@@ -690,6 +705,8 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
     // check what form of playlistitem was selected
     if(dynamic_cast<playlistItemStatisticsFile*> (items[0]))
       chart = this->createStatisticsChart(coord);
+    else if(dynamic_cast<playlistItemImageFile*> (items[0]))
+      chart = this->createImageColorAnalysisChart(coord);
     else
       // the selected item is not defined at this point, so show a default
       chart = &(this->mNoDataToShowWidget);
@@ -699,6 +716,7 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
 }
 
 /*-------------------- playListItemStatisticsFile and the private slots --------------------*/
+
 QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aItem, itemWidgetCoord& aCoord)
 {
   //define a simple layout for the statistic file
@@ -882,7 +900,7 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
     range = aCoord.mItem->getFrameIdxRange();
   else if(showart == csRange)
     range = this->getFrameRange(aCoord);
-  else // this case should never happen, but who now :D
+  else // this case should never happen, but who knows :D
     return &(this->mNoDataToShowWidget);
 
   YUVBarChart barchart(&this->mNoDataToShowWidget, &this->mDataIsLoadingWidget);
@@ -1027,4 +1045,212 @@ void ChartHandler::timerEvent(QTimerEvent *event)
     return;
 
   this->currentSelectedItemsChanged(items[0], items[0]);
+}
+
+/*--------------------Functions for Image Color Analysis--------------------*/
+
+QWidget* ChartHandler::createImageFileColorAnalysisWidget(playlistItemImageFile *aItem, itemWidgetCoord& aCoord)
+{
+
+
+  //define a simple layout for the Image file Widget
+  QWidget *basicWidget      = new QWidget;
+  QVBoxLayout *basicLayout  = new QVBoxLayout(basicWidget);
+  QComboBox* cbxTypes       = new QComboBox;
+  QLabel* lblStat           = new QLabel(CBX_LABEL_IMAGE_TYPE);
+  QFormLayout* topLayout    = new QFormLayout;
+
+  basicLayout->addWidget(lblStat);
+
+  //setting name for the combobox, to find it later dynamicly
+  cbxTypes->setObjectName(OPTION_NAME_CBX_CHART_TYPES);
+
+  // getting the range
+  auto range = aItem->getFrameIdxRange();
+
+  // save the data, that we dont have to load it later again
+  aCoord.mData = aItem->getData(range, true);
+/**
+  //check if map contains items
+  if(aCoord.mData->keys().count() > 0)
+  {
+    //map has items, so add them
+    cbxTypes->addItem(CBX_OPTION_SELECT);
+
+    foreach (QString type, aCoord.mData->keys())
+      cbxTypes->addItem(type); // fill with data
+  }
+  else
+    // no items, add a info
+    cbxTypes->addItem(CBX_OPTION_NO_TYPES);
+
+  // @see http://stackoverflow.com/questions/16794695/connecting-overloaded-signals-and-slots-in-qt-5
+  // do the connect after adding the items otherwise the connect will be call
+  connect(cbxTypes,
+          static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+          this,
+          &ChartHandler::onStatisticsChange);
+  // this will connect checks that the order combobox is enabled or disabled. disable the combobox for the type "Select..."
+  connect(cbxTypes,
+          static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+          this,
+          &ChartHandler::switchOrderEnableStatistics);
+
+
+  // getting the list to the order by - components
+  QList<QWidget*> listGeneratedWidgets = this->generateOrderWidgetsOnly(cbxTypes->count() > 1);
+  bool hashOddAmount = listGeneratedWidgets.count() % 2 == 1;
+
+  // adding the components, check how we add them
+  if(hashOddAmount)
+  {
+    topLayout->addWidget(lblStat);
+    topLayout->addWidget(cbxTypes);
+  }
+  else
+    topLayout->addRow(lblStat, cbxTypes);
+
+
+
+  // adding the widgets from the list to the toplayout
+  // we do this here at this way, because if we use generateOrderByLayout we get a distance-difference in the layout
+  foreach (auto widget, listGeneratedWidgets)
+  {
+    if(hashOddAmount)
+      topLayout->addWidget(widget);
+
+
+    if((widget->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
+       || (widget->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
+       || (widget->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE))
+      // finding the combobox and define the action
+    {
+      connect(dynamic_cast<QComboBox*> (widget),
+              static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+              this,
+              &ChartHandler::onStatisticsChange);
+      connect(dynamic_cast<QComboBox*> (widget),
+              static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+              this,
+              &ChartHandler::switchOrderEnableStatistics);
+    }
+    if(widget->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
+      QWidget::setTabOrder(cbxTypes, widget);
+  }
+
+  if(!hashOddAmount)
+    for (int i = 0; i < listGeneratedWidgets.count(); i +=2) // take care, we increment i every time by 2!!
+      topLayout->addRow(listGeneratedWidgets.at(i), listGeneratedWidgets.at(i+1));
+
+  basicLayout->addLayout(topLayout);
+  basicLayout->addWidget(aCoord.mChart);
+
+
+
+  if (this->mChartWidget->parentWidget())
+    this->mChartWidget->parentWidget()->setWindowTitle(this->getChartsTitle(aItem));
+
+   auto widget = this->createChartWidget(aItem);
+
+   this->mChartWidget->setChartWidget(widget);
+**/
+  return basicWidget;
+}
+
+QWidget* ChartHandler::createImageColorAnalysisChart(itemWidgetCoord& aCoord)
+{
+  // TODO -oCH: maybe save a created statistic-chart by an key
+
+  // if aCoord.mWidget is null, can happen if loading a new file and the playbackcontroller will be set to 0
+  // return that we cant show data
+  if(!aCoord.mWidget)
+    return &(this->mNoDataToShowWidget);
+
+  // get current frame index, we use the playback controller
+  int frameIndex = this->mPlayback->getCurrentFrame();
+
+
+  QString type("");
+  QVariant showVariant(csUnknown);
+  QVariant groupVariant(cgbUnknown);
+  QVariant normaVariant(cnUnknown);
+
+  // we need the selected StatisticType, so we have to find the combobox and get the text of it
+  QObjectList children = aCoord.mWidget->children();
+  foreach (auto child, children)
+  {
+    if(dynamic_cast<QComboBox*> (child)) // finding the combobox
+    {
+      // we need to differentiate between the type-combobox and order-combobox, but we have to find both values
+      if(child->objectName() == OPTION_NAME_CBX_CHART_TYPES)
+        type = (dynamic_cast<QComboBox*>(child))->currentText();
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
+        showVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
+        groupVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)
+        normaVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+
+      // all found, so we can leave here
+      if((type != "")
+         && (showVariant.value<ChartShow>() != csUnknown)
+         && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
+         && (normaVariant.value<ChartNormalize>() != cnUnknown))
+        break;
+    }
+  }
+
+  // type was not found, so we return a default
+  if(type == "" || type == CBX_OPTION_SELECT)
+    return &(this->mNoDataToShowWidget);
+
+
+  ChartOrderBy order = cobUnknown; // set an default
+  // we dont have found the sort-order so set it
+  ChartShow showart = showVariant.value<ChartShow>();
+
+  if(showart == csPerFrame)
+  {
+    // this is for the case, that the playlistitem selection changed and the playbackcontroller has a selected frame
+    // which is greater than the maxFrame of the new selected file
+    indexRange maxrange = aCoord.mItem->getStartEndFrameLimits();
+    if(frameIndex > maxrange.second)
+    {
+      frameIndex = maxrange.second;
+      this->mPlayback->setCurrentFrame(frameIndex);
+    }
+  }
+
+  if((showart != csUnknown)
+     && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
+     && (normaVariant.value<ChartNormalize>() != cnUnknown))
+    // get selected one
+    order = EnumAuxiliary::makeChartOrderBy(showVariant.value<ChartShow>(), groupVariant.value<ChartGroupBy>(), normaVariant.value<ChartNormalize>());
+
+  if(showart == csAllFrames && order == this->mLastChartOrderBy && type == this->mLastStatisticsType)
+    return this->mLastStatisticsWidget;
+  else
+  {
+    this->mLastChartOrderBy = order;
+    this->mLastStatisticsType = type;
+  }
+
+  // and at this point we create the statistic
+  indexRange range;
+  if(showart == csPerFrame)
+  {
+    range.first = frameIndex;
+    range.second = frameIndex;
+  }
+  else if(showart == csAllFrames)
+    range = aCoord.mItem->getFrameIdxRange();
+  else if(showart == csRange)
+    range = this->getFrameRange(aCoord);
+  else // this case should never happen, but who now :D
+    return &(this->mNoDataToShowWidget);
+
+  YUVBarChart barchart(&this->mNoDataToShowWidget, &this->mDataIsLoadingWidget);
+  this->mLastStatisticsWidget = barchart.createChart(order, aCoord.mItem, range, type);
+
+  return this->mLastStatisticsWidget;
 }

@@ -38,7 +38,7 @@
 #include <QWidget>
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
-#define FILEINFOWIDGET_DEFAULT_WINDOW_TITLE "Info"
+#define FILEINFOWIDGET_DEFAULT_WINDOW_TITLE "Info3334"
 
 // An info item has a name, a text and an optional toolTip. These are used to show them in the fileInfoWidget.
 // For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]

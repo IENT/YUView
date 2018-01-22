@@ -58,6 +58,9 @@ public:
   // Get the size/bit depth of the (current) frame
   QSize getFrameSize() const { return frameSize; }
   int getImageBitDepth() const { return currentImage.depth(); }
+
+  // Return information on this file (like path, date created file Size ...)
+  virtual QList<infoItem> getFileInfoList() const;
   
   // Draw the (current) frame with the given zoom factor
   void drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues);
@@ -107,6 +110,7 @@ protected:
 
   QImage currentImage;
   QSize  frameSize;
+  bool isFileOpened;
 
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
   QRgb getPixelVal(const QPoint &pos)    { return getPixelVal(pos.x(), pos.y()); }

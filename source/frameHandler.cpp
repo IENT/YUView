@@ -91,6 +91,7 @@ frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
 
 frameHandler::frameHandler()
 {
+    isFileOpened = false;
 }
 
 QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
@@ -135,6 +136,8 @@ bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
   // Load the image and return if loading was successful
   currentImage = QImage(filePath);
   setFrameSize(currentImage.size());
+
+  isFileOpened = currentImage.load(filePath);
 
   return (!currentImage.isNull());
 }
@@ -392,4 +395,45 @@ ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx,
   }
 
   return values;
+}
+
+QList<infoItem> frameHandler::getFileInfoList() const
+{
+
+  QList<infoItem> infoList;
+
+  if (!isFileOpened)
+    return infoList;
+
+    // Image Depth
+    QString imageDepth = QString("%1").arg(currentImage.byteCount());
+    infoList.append(infoItem("File Depth: ", imageDepth));
+
+    // Number of bits of color and transparency info for each pixel
+    QString bitPlane = QString("%1").arg(currentImage.bitPlaneCount());
+    infoList.append(infoItem("# of bit Planes: ", bitPlane));
+
+    // Color Table
+    //QString colorTableSize = QString("%1").arg(currentImage.colorCount());
+    //infoList.append(infoItem("Size of the Color Table: ", colorTableSize));
+
+  /**
+
+  if (!isFileOpened)
+    return infoList;
+
+  // The file creation time
+  QString createdtime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
+  infoList.append(infoItem("Time Created", createdtime));
+
+  // The last modification time
+  QString modifiedtime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
+  infoList.append(infoItem("Time Modified", modifiedtime));
+
+  // The file size in bytes
+  QString fileSize = QString("%1").arg(fileInfo.size());
+  infoList.append(infoItem("Nr Bytes", fileSize));
+  **/
+
+  return infoList;
 }
