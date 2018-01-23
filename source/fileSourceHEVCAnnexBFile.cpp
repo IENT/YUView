@@ -1477,33 +1477,51 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   }
   else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
   {
-    // An SEI message
+    // An SEI NAL. Each SEI NAL may contain multiple sei_payloads
     auto new_sei = QSharedPointer<sei>(new sei(nal_hevc));
     QByteArray sei_data = getRemainingNALBytes();
-    int nrBytes = new_sei->parse_sei_message(sei_data, nalRoot);
-    sei_data.remove(0, nrBytes);
 
-    specificDescription = QString(" payloadType %1").arg(new_sei->payloadType);
-    if (!new_sei->payloadTypeName.isEmpty())
-      specificDescription += " - " + new_sei->payloadTypeName;
+    int sei_count = 0;
+    while(!sei_data.isEmpty())
+    {
+      TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
 
-    // We don't use the SEI message
-    // TODO: Parsing of some of the SEI messages may be very useful
-    if (new_sei->payloadType == 5)
-    {
-      auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
-      new_user_data_sei->parse_user_data_sei(sei_data, nalRoot);
+      int nrBytes = new_sei->parse_sei_message(sei_data, message_tree);
+      sei_data.remove(0, nrBytes);
+      
+      if (message_tree)
+        message_tree->itemData[0] = QString("sei_message %1 - %2").arg(sei_count).arg(new_sei->payloadTypeName);
+
+      QByteArray sub_sei_data = sei_data.mid(0, new_sei->payloadSize);
+
+      if (new_sei->payloadType == 5)
+      {
+        auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
+        new_user_data_sei->parse_user_data_sei(sub_sei_data, message_tree);
+      }
+      else if (new_sei->payloadType == 129)
+      {
+        auto new_active_parameter_sets_sei = QSharedPointer<active_parameter_sets_sei>(new active_parameter_sets_sei(new_sei));
+        new_active_parameter_sets_sei->parse_active_parameter_sets_sei(sub_sei_data, active_VPS_list, message_tree);
+      }
+      else if (new_sei->payloadType == 147)
+      {
+        auto new_alternative_transfer_characteristics_sei = QSharedPointer<alternative_transfer_characteristics_sei>(new alternative_transfer_characteristics_sei(new_sei));
+        new_alternative_transfer_characteristics_sei->parse_alternative_transfer_characteristics_sei(sub_sei_data, message_tree);
+      }
+      
+      // Remove the sei payload bytes from the data
+      sei_data.remove(0, new_sei->payloadSize);
+      if (sei_data.length() == 1)
+      {
+        // This should be the rspb trailing bits (10000000)
+        sei_data.remove(0, 1);
+      }
+
+      sei_count++;
     }
-    else if (new_sei->payloadType == 129)
-    {
-      auto new_active_parameter_sets_sei = QSharedPointer<active_parameter_sets_sei>(new active_parameter_sets_sei(new_sei));
-      new_active_parameter_sets_sei->parse_active_parameter_sets_sei(sei_data, active_VPS_list, nalRoot);
-    }
-    else if (new_sei->payloadType == 147)
-    {
-      auto new_alternative_transfer_characteristics_sei = QSharedPointer<alternative_transfer_characteristics_sei>(new alternative_transfer_characteristics_sei(new_sei));
-      new_alternative_transfer_characteristics_sei->parse_alternative_transfer_characteristics_sei(sei_data, nalRoot);
-    }
+
+    specificDescription = QString(" Number Messages: %1").arg(sei_count);
   }
 
   if (nalRoot)

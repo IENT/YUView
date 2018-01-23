@@ -153,8 +153,8 @@ protected:
     sub_byte_reader(const QByteArray &inArr) : p_byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) {}
     // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
     unsigned int readBits(int nrBits, QString *bitsRead=nullptr);
-    // Read an UE(v) code from the array
-    int readUE_V(QString *bitsRead=nullptr);
+    // Read an UE(v) code from the array. If given, increase bit_count with every bit read.
+    int readUE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);
     // Read an SE(v) code from the array
     int readSE_V(QString *bitsRead=nullptr);
     // Is there more RBSP data or are we at the end?

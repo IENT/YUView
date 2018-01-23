@@ -109,9 +109,11 @@ unsigned int fileSourceAnnexBFile::sub_byte_reader::readBits(int nrBits, QString
   return out;
 }
 
-int fileSourceAnnexBFile::sub_byte_reader::readUE_V(QString *bitsRead)
+int fileSourceAnnexBFile::sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
 {
   int readBit = readBits(1, bitsRead);
+  if (bit_count)
+    bit_count++;
   if (readBit == 1)
     return 0;
   
@@ -122,11 +124,14 @@ int fileSourceAnnexBFile::sub_byte_reader::readUE_V(QString *bitsRead)
     readBit = readBits(1, bitsRead);
     golLength++;
   }
-
+  
   // Read "golLength" bits
   int val = readBits(golLength, bitsRead);
   // Add the exponentional part
   val += (1 << golLength)-1;
+
+  if (bit_count)
+    bit_count += 2 * golLength;
   
   return val;
 }
