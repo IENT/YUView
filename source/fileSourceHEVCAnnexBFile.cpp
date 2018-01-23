@@ -469,6 +469,8 @@ void fileSourceHEVCAnnexBFile::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_rea
       else
         DeltaPocS0[stRpsIdx][i] = DeltaPocS0[stRpsIdx][i-1] - (delta_poc_s0_minus1.last() + 1); // (7-67)
       LOGSTRVAL(QString("DeltaPocS0[%1][%2]").arg(stRpsIdx).arg(i), DeltaPocS0[stRpsIdx][i]);
+      UsedByCurrPicS0[stRpsIdx][i] = used_by_curr_pic_s0_flag[i];
+      LOGSTRVAL(QString("UsedByCurrPicS0[%1][%2]").arg(stRpsIdx).arg(i), UsedByCurrPicS0[stRpsIdx][i]);
     }
     for(int i = 0; i < num_positive_pics; i++)
     {
@@ -480,6 +482,8 @@ void fileSourceHEVCAnnexBFile::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_rea
       else
         DeltaPocS1[stRpsIdx][i] = DeltaPocS1[stRpsIdx][i-1] + (delta_poc_s1_minus1.last() + 1); // (7-68)
       LOGSTRVAL(QString("DeltaPocS1[%1][%2]").arg(stRpsIdx).arg(i), DeltaPocS1[stRpsIdx][i]);
+      UsedByCurrPicS1[stRpsIdx][i] = used_by_curr_pic_s1_flag[i];
+      LOGSTRVAL(QString("UsedByCurrPicS1[%1][%2]").arg(stRpsIdx).arg(i), UsedByCurrPicS1[stRpsIdx][i]);
     }
 
     NumNegativePics[stRpsIdx] = num_negative_pics;
