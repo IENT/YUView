@@ -338,5 +338,39 @@ private:
   chartSettingsData calculateAndDefineGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, int aTotalAmountPixel);
 };
 
+class YUVLineChart : public YUVCharts
+{
+    Q_OBJECT
+
+    public:
+    //reintroduce the constructor
+    YUVLineChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget) : YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget){}
+
+    //documentation see @YUVCharts::createChart
+    QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType) Q_DECL_OVERRIDE;
+
+private:
+  /**
+   * @brief makeStatistic
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @param aOrderBy
+   * option-enum how the sorted Data will display
+   *
+   * @param aItem
+   * from the item we get the actual frame-dimension
+   *
+   * @param aRange
+   * range, we look at
+   *
+   * @return
+   * a chartview, that can be placed
+   */
+  QWidget* plotLineGraph(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange);
+};
+
 
 #endif // YUVCHARTS_H

@@ -191,6 +191,8 @@ private slots:
    */
   void onStatisticsChange(const QString aString);
 
+  void onBasicColorChange(const QString aString);
+
   /**
    * @brief switchOrderEnableStatistics
    * if the selected statistic-type changed, we have to decide if the order/sort-combobox is enabled

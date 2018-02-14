@@ -69,7 +69,6 @@ void playlistItemImageFile::loadFrame(int frameIndex, bool playing, bool loadRaw
   Q_UNUSED(playing);
   Q_UNUSED(loadRawdata);
 
-  imageLoading = true;
   frame.loadCurrentImageFromFile(plItemNameOrFileName);
   imageLoading = false;
   needToLoadImage = false;
@@ -213,10 +212,57 @@ void playlistItemImageFile::updateSettings()
 
 QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData (indexRange range, bool reset)
 {
-  Q_UNUSED(range);
+  QMap<QString, QList<QList<QVariant>>> data;
+
   if(reset)
   {
     this->mStatisticData.clear();
+    QSize imageSize = this->getSize();
+
+    for (int frame = range.first; frame <= range.second; frame++)
+    {
+      QMap<QString, QList<QVariant>> map;
+
+      for (int width = 0; width < 50; width++)
+      {
+        for (int height = 0; height < 50; height++)
+        {
+          ValuePairListSets pixelValueSets = this->getPixelValues(QPoint(width, height),  frame);
+
+          ValuePairList pixelValueList = pixelValueSets.at(0).second;
+
+          for (int pos = 0; pos < pixelValueList.count(); pos++)
+          {
+            ValuePair pixelValue = pixelValueList.at(pos);
+
+            // getting the old / new datalist
+            QList<QVariant> dataList = map.value(pixelValue.first);
+
+            // appending the new data
+            dataList.append(QVariant::fromValue(pixelValue.second));          
+
+            // insert new datalist to refresh
+            map.insert(pixelValue.first, dataList);
+          }
+        }
+
+        foreach (QString key, map.keys())
+        {
+          QList<QVariant> dataList = map.value(key);
+          QList<QList<QVariant>> resultList;
+          resultList.append(dataList);
+          data.insert(key, resultList);
+        }
+
+      }
+    }
+
+  this->mStatisticData = data;
+
+  //QList<QList<QVariant>> listen = this->mStatisticData.value("R");
+  //QList<QVariant> liste = listen.at(0);
+  //qDebug() << liste.count();
+
   }
 
   return &this->mStatisticData;
@@ -224,17 +270,78 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData (indexRang
 
 QList<collectedData>* playlistItemImageFile::sortAndCategorizeData(const QString aType, const int aFrameIndex)
 {
-  Q_UNUSED(aType);
-  Q_UNUSED(aFrameIndex);
+  Q_UNUSED(aFrameIndex)
+
+  QList<QPair<QVariant, int>*> mValue;
+
+  //prepare the result
+  QMap<QString, QMap<int, int*>*>* dataMap = new QMap<QString, QMap<int, int*>*>;
+
+  //check if data was loaded
+  if(!(&this->mStatisticData))
+    this->getData(this->getFrameIdxRange(), true);
+
+  // getting allData from the type
+  QList<QList<QVariant>> allData = this->mStatisticData.value(aType);
+
+  // getting the data depends on the actual selected frameIndex / POC
+  //QList<QVariant> data = allData.at(aFrameIndex);
+
+  QList<collectedData>* resultData = new QList<collectedData>;
+  collectedData data;
+  QString key = aType;
+  data.mLabel = key;
+
+  //qDebug() << this->mStatisticData.values(aType);
+
+  QList<QList<QVariant>> resultLists = this->mStatisticData.value(key);
+  QMap<int, int> map;
+
+  for (int i = 0; i < resultLists.count(); i++)
+  {
+    QList<QVariant> dataList = resultLists.at(i);
+
+    for (int j = 0; j < dataList.count(); j++)
+    {
+      QVariant variant = dataList.at(j);
+
+      int colorValue = variant.toInt();
+
+      int value = map.value(colorValue);
+      value++;
+
+      map.insert(colorValue, value);
+
+      //qDebug() << map.value(245);
+
+    }
+
+  }
+
+  foreach (int key, map.keys())
+  {
+    int* arr = new int[2];
+    arr[0] = key;
+    arr[1] = map.value(key);
+
+    data.mValueList.append(arr);
+  }
+
+
 
   QList<collectedData>* result = new QList<collectedData>();
+  result->append(data);
+
+
   return result;
 }
 
+
 QList<collectedData>* playlistItemImageFile::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
 {
-  Q_UNUSED(aType);
-  Q_UNUSED(aRange);
+  //if we have the same frame --> just one frame we look at
+  if(aRange.first == aRange.second) // same frame --> just one frame same as current frame
+    return this->sortAndCategorizeData(aType, aRange.first);
 
   QList<collectedData>* result = new QList<collectedData>();
   return result;

@@ -8,6 +8,13 @@ QWidget* YUVBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem *aIt
   return this->makeStatistic(sortedData, aOrderBy, aItem, aRange);
 }
 
+QWidget* YUVLineChart::createChart(const ChartOrderBy aOrderBy, playlistItem *aItem, indexRange aRange, QString aType)
+{
+  QList<collectedData>* sortedData = aItem->sortAndCategorizeDataByRange(aType, aRange);
+
+  return this->plotLineGraph(sortedData, aOrderBy, aItem, aRange);
+}
+
 int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, indexRange aRange)
 {
   // first calculate total amount of pixel
@@ -23,6 +30,37 @@ int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, index
     return (totalAmountPixel * (aRange.second - aRange.first + 1));
   else
     return 0;
+}
+
+QWidget* YUVLineChart::plotLineGraph(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange)
+{
+
+    QLineSeries *series = new QLineSeries();
+
+    series->append(0, 6);
+    series->append(2, 4);
+    series->append(3, 8);
+    series->append(7, 4);
+    series->append(10, 5);
+    *series << QPointF(11, 1) << QPointF(13, 3) << QPointF(17, 6) << QPointF(18, 3) << QPointF(20, 2);
+
+    QChart *chart = new QChart();
+    chart->legend()->hide();
+    chart->addSeries(series);
+    chart->createDefaultAxes();
+    chart->setTitle("Simple line chart example");
+
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+
+    //QMainWindow window;
+    //window.setCentralWidget(chartView);
+    //window.resize(400, 300);
+    //window.show();
+
+    // final return the created chart
+    return chartView;
+
 }
 
 QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange)
