@@ -3565,8 +3565,20 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuff
   return true;
 }
 
+YUV_Internals::yuvPixelFormat videoHandlerYUV::getDiffYUVFormat() const
+{
+    return diffYUVFormat;
+}
+
+QByteArray videoHandlerYUV::getDiffYUV() const
+{
+    return diffYUV;
+}
+
 QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
+  is_YUV_diff = false;
+
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
   if (yuvItem2 == nullptr)
     // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
@@ -3616,16 +3628,11 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
     differenceInfoList.append(infoItem("Warning", "The size of the two items differs.", "The size of the two input items is different. The difference of the top left aligned part that overlaps will be calculated."));
 
   yuvPixelFormat tmpDiffYUVFormat(srcPixelFormat.subsampling, bps_out, Order_YUV, true);
+  diffYUVFormat = tmpDiffYUVFormat;
 
   if (!canConvertToRGB(tmpDiffYUVFormat, QSize(w_out, h_out)))
     return QImage();
 
-  // Create a buffer for the YUV difference values ans resize it to the same size as the input values.
-#if SSE_CONVERSION
-  byteArrayAligned tmpDiffYUV;
-#else
-  QByteArray tmpDiffYUV;
-#endif
 
   // Get subsampling modes (they are identical for both inputs and the output)
   const int subH = srcPixelFormat.getSubsamplingHor();
@@ -3652,8 +3659,8 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
   const int componentSizeLuma_out = w_out*h_out * (bps_out > 8 ? 2 : 1); // Size in bytes
   const int componentSizeChroma_out = (w_out/subH) * (h_out/subV) * (bps_out > 8 ? 2 : 1);
   // Resize the output buffer to the right size
-  tmpDiffYUV.resize(componentSizeLuma_out + 2*componentSizeChroma_out);
-  unsigned char * restrict dstY = (unsigned char*)tmpDiffYUV.data();
+  diffYUV.resize(componentSizeLuma_out + 2*componentSizeChroma_out);
+  unsigned char * restrict dstY = (unsigned char*)diffYUV.data();
   unsigned char * restrict dstU = dstY + componentSizeLuma_out;
   unsigned char * restrict dstV = dstU + componentSizeChroma_out;
 
@@ -3723,13 +3730,13 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
       if (amplification)
       {
         diffU *= amplificationFactor;
-        diffU *= amplificationFactor;
+        diffV *= amplificationFactor;
       }
       diffU = clip(diffU + diffZero, 0, maxVal);
       diffV = clip(diffV + diffZero, 0, maxVal);
 
       setValueInBuffer(dstU, diffU, 0, bps_out, true);
-      setValueInBuffer(dstV, diffU, 0, bps_out, true);
+      setValueInBuffer(dstV, diffV, 0, bps_out, true);
       dstU += (bps_out > 8) ? 2 : 1;
       dstV += (bps_out > 8) ? 2 : 1;
     }
@@ -3764,10 +3771,10 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
 
   if (markDifference)
     // We don't want to see the actual difference but just where differences are.
-    markDifferencesYUVPlanarToRGB(tmpDiffYUV, outputImage.bits(), QSize(w_out, h_out), tmpDiffYUVFormat);
+    markDifferencesYUVPlanarToRGB(diffYUV, outputImage.bits(), QSize(w_out, h_out), tmpDiffYUVFormat);
   else
     // Get the format of the tmpDiffYUV buffer and convert it to RGB
-    convertYUVPlanarToRGB(tmpDiffYUV, outputImage.bits(), QSize(w_out, h_out), tmpDiffYUVFormat);
+    convertYUVPlanarToRGB(diffYUV, outputImage.bits(), QSize(w_out, h_out), tmpDiffYUVFormat);
 
   // Append the conversion information that will be returned
   QStringList yuvSubsamplings = QStringList() << "4:4:4" << "4:2:2" << "4:2:0" << "4:4:0" << "4:1:0" << "4:1:1" << "4:0:0";
@@ -3789,7 +3796,10 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
     QImage::Format f = platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 && f != QImage::Format_RGB32)
       return outputImage.convertToFormat(f);
-  }
+  }  
+
+  // we have a yuv differance available
+  is_YUV_diff = true;
   return outputImage;
 }
 
@@ -3826,6 +3836,12 @@ void videoHandlerYUV::setYUVPixelFormat(const yuvPixelFormat &newFormat, bool em
     setSrcPixelFormat(newFormat, emitSignal);
   }
 }
+
+bool videoHandlerYUV::getIs_YUV_diff() const
+{
+    return is_YUV_diff;
+}
+
 
 void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
 {
