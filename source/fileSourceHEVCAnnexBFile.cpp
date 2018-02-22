@@ -1375,6 +1375,21 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   nal_unit_hevc nal_hevc(curFilePos, nalID);
   nal_hevc.parse_nal_unit_header(nalHeaderBytes, nalRoot);
 
+  if (nal_hevc.isSlice())
+  {
+    // Reparse the SEI messages that we could not parse so far
+    while (!reparse_sei.empty())
+    {
+      auto sei = reparse_sei.front();
+      reparse_sei.pop_front();
+      if (sei->payloadType == 129)
+      {
+        auto active_param_set_sei = sei.dynamicCast<active_parameter_sets_sei>();
+        active_param_set_sei->reparse_active_parameter_sets_sei(active_VPS_list);
+      }
+    }
+  }
+
   if (nal_hevc.nal_type == VPS_NUT) 
   {
     // A video parameter set
@@ -1506,7 +1521,9 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
       else if (new_sei->payloadType == 129)
       {
         auto new_active_parameter_sets_sei = QSharedPointer<active_parameter_sets_sei>(new active_parameter_sets_sei(new_sei));
-        new_active_parameter_sets_sei->parse_active_parameter_sets_sei(sub_sei_data, active_VPS_list, message_tree);
+        if (new_active_parameter_sets_sei->parse_active_parameter_sets_sei(sub_sei_data, active_VPS_list, message_tree) == SEI_PARSING_WAIT_FOR_VPS)
+          // We have to parse this sei again when we have the VPS
+          reparse_sei.append(new_active_parameter_sets_sei);
       }
       else if (new_sei->payloadType == 147)
       {
@@ -2064,14 +2081,33 @@ void fileSourceHEVCAnnexBFile::alternative_transfer_characteristics_sei::parse_a
   READBITS_M(preferred_transfer_characteristics, 8, get_transfer_characteristics_meaning());
 }
 
-void fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, TreeItem *root)
+fileSourceHEVCAnnexBFile::sei_parsing_return_t fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, TreeItem *root)
 {
-  TreeItem *const itemTree = root ? new TreeItem("active parameter sets", root) : nullptr;
-  sub_byte_reader reader(sliceHeaderData);
+  itemTree = root ? new TreeItem("active parameter sets", root) : nullptr;
+  sei_data_storage = sliceHeaderData;
+  if (!parse(p_active_VPS_list, false))
+    return SEI_PARSING_WAIT_FOR_VPS;
+  return SEI_PARSING_OK;
+}
+
+void fileSourceHEVCAnnexBFile::active_parameter_sets_sei::reparse_active_parameter_sets_sei(const QMap<int, QSharedPointer<vps>> &p_active_VPS_list)
+{
+  parse(p_active_VPS_list, true);
+}
+
+bool fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse(const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, bool reparse)
+{
+  sub_byte_reader reader(sei_data_storage);
 
   READBITS(active_video_parameter_set_id, 4);
   if (!p_active_VPS_list.contains(active_video_parameter_set_id))
-    throw std::logic_error("The signaled VPS was not found in the bitstream.");
+  {
+    if (reparse)
+      // When reparsing after the VPS, this must not happen
+      throw std::logic_error("The signaled VPS was not found in the bitstream.");
+    else
+      return false;
+  }
   QSharedPointer<vps> actVPS = p_active_VPS_list.value(active_video_parameter_set_id);
 
   READFLAG(self_contained_cvs_flag);
@@ -2086,6 +2122,7 @@ void fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse_active_parameter
   {
     READUEV_A(layer_sps_idx, i);
   }
+  return true;
 }
 
 QStringList fileSourceHEVCAnnexBFile::get_colour_primaries_meaning()

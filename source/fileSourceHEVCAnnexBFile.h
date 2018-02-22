@@ -615,6 +615,12 @@ protected:
     QString payloadTypeName;
   };
 
+  enum sei_parsing_return_t
+  {
+    SEI_PARSING_OK,           // Parsing is done
+    SEI_PARSING_WAIT_FOR_VPS  // We have to wait for a valid VPS before we can parse this SEI
+  };
+
   struct user_data_sei : sei
   {
     user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
@@ -624,10 +630,14 @@ protected:
     QString user_data_message;
   };
 
-  struct active_parameter_sets_sei : sei
+  class active_parameter_sets_sei : public sei
   {
+  public:
     active_parameter_sets_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    void parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, TreeItem *root);
+    // Parsing might return SEI_PARSING_WAIT_FOR_VPS if the referenced VPS was not found (yet).
+    // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
+    sei_parsing_return_t parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, TreeItem *root);
+    void reparse_active_parameter_sets_sei(const QMap<int, QSharedPointer<vps>> &p_active_VPS_list);
 
     int active_video_parameter_set_id;
     bool self_contained_cvs_flag;
@@ -635,6 +645,12 @@ protected:
     int num_sps_ids_minus1;
     QList<int> active_seq_parameter_set_id;
     QList<int> layer_sps_idx;
+
+  private:
+    // These are used internally when parsing of the SEI must be prosponed until the VPS is received.
+    bool parse(const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, bool reparse);
+    TreeItem *itemTree;
+    QByteArray sei_data_storage;
   };
 
   struct alternative_transfer_characteristics_sei : sei
@@ -664,6 +680,8 @@ protected:
   // We keept a pointer to the last slice with first_slice_segment_in_pic_flag set. 
   // All following slices with dependent_slice_segment_flag set need this slice to infer some values.
   QSharedPointer<slice> lastFirstSliceSegmentInPic;
+  // A list of seis that need to be parsed after the parameter sets were recieved.
+  QList<QSharedPointer<sei>> reparse_sei;
 };
 
 #endif //FILESOURCEAVCANNEXBFILE_H
