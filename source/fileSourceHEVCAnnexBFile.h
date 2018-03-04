@@ -175,6 +175,7 @@ protected:
   // E.2.2 HRD parameters syntax
   struct hrd_parameters
   {
+    hrd_parameters();
     void parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root);
 
     bool nal_hrd_parameters_present_flag;
@@ -465,6 +466,10 @@ protected:
     int log2_sao_offset_scale_chroma;
   };
 
+  typedef QMap<int, QSharedPointer<vps>> vps_map;
+  typedef QMap<int, QSharedPointer<sps>> sps_map;
+  typedef QMap<int, QSharedPointer<pps>> pps_map;
+
   // The picture parameter set.
   struct pps : nal_unit_hevc
   {
@@ -523,7 +528,7 @@ protected:
   struct slice : nal_unit_hevc
   {
     slice(const nal_unit_hevc &nal);
-    void parse_slice(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
+    void parse_slice(const QByteArray &sliceHeaderData, const sps_map &p_active_SPS_list, const pps_map &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
     virtual int getPOC() const override { return PicOrderCntVal; }
     
     bool first_slice_segment_in_pic_flag;
@@ -617,8 +622,8 @@ protected:
 
   enum sei_parsing_return_t
   {
-    SEI_PARSING_OK,           // Parsing is done
-    SEI_PARSING_WAIT_FOR_VPS  // We have to wait for a valid VPS before we can parse this SEI
+    SEI_PARSING_OK,                      // Parsing is done
+    SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
   };
 
   struct user_data_sei : sei
@@ -636,8 +641,8 @@ protected:
     active_parameter_sets_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
     // Parsing might return SEI_PARSING_WAIT_FOR_VPS if the referenced VPS was not found (yet).
     // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
-    sei_parsing_return_t parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, TreeItem *root);
-    void reparse_active_parameter_sets_sei(const QMap<int, QSharedPointer<vps>> &p_active_VPS_list);
+    sei_parsing_return_t parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, TreeItem *root);
+    void reparse_active_parameter_sets_sei(const vps_map &p_active_VPS_list);
 
     int active_video_parameter_set_id;
     bool self_contained_cvs_flag;
@@ -648,7 +653,36 @@ protected:
 
   private:
     // These are used internally when parsing of the SEI must be prosponed until the VPS is received.
-    bool parse(const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, bool reparse);
+    bool parse(const vps_map &p_active_VPS_list, bool reparse);
+    TreeItem *itemTree;
+    QByteArray sei_data_storage;
+  };
+
+  class pic_timing_sei : public sei
+  {
+  public:
+    pic_timing_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    // Parsing might return SEI_PARSING_WAIT_FOR_VPS if the referenced VPS was not found (yet).
+    // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
+    sei_parsing_return_t parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, TreeItem *root);
+    void reparse_pic_timing_sei(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list);
+
+    int pic_struct;
+    int source_scan_type;
+    bool duplicate_flag;
+
+    int au_cpb_removal_delay_minus1;
+    int pic_dpb_output_delay;
+    int pic_dpb_output_du_delay;
+    int num_decoding_units_minus1;
+    bool du_common_cpb_removal_delay_flag;
+    int du_common_cpb_removal_delay_increment_minus1;
+    QList<int> num_nalus_in_du_minus1;
+    QList<int> du_cpb_removal_delay_increment_minus1;
+
+  private:
+    // These are used internally when parsing of the SEI must be prosponed until the VPS is received.
+    bool parse(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, bool reparse);
     TreeItem *itemTree;
     QByteArray sei_data_storage;
   };
@@ -674,9 +708,9 @@ protected:
 
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
-  QMap<int, QSharedPointer<vps>> active_VPS_list;
-  QMap<int, QSharedPointer<sps>> active_SPS_list;
-  QMap<int, QSharedPointer<pps>> active_PPS_list;
+  vps_map active_VPS_list;
+  sps_map active_SPS_list;
+  pps_map active_PPS_list;
   // We keept a pointer to the last slice with first_slice_segment_in_pic_flag set. 
   // All following slices with dependent_slice_segment_flag set need this slice to infer some values.
   QSharedPointer<slice> lastFirstSliceSegmentInPic;

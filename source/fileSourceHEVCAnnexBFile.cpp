@@ -239,6 +239,12 @@ void fileSourceHEVCAnnexBFile::sub_layer_hrd_parameters::parse_sub_layer_hrd_par
   }
 }
 
+fileSourceHEVCAnnexBFile::hrd_parameters::hrd_parameters()
+{
+  nal_hrd_parameters_present_flag = false;
+  vcl_hrd_parameters_present_flag = false;
+}
+
 void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
 {
   // Create a new TreeItem root for the item
@@ -1070,11 +1076,7 @@ fileSourceHEVCAnnexBFile::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc
 }
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
-void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderData,
-                        const QMap<int, QSharedPointer<sps>> &p_active_SPS_list,
-                        const QMap<int, QSharedPointer<pps>> &p_active_PPS_list,
-                        QSharedPointer<slice> firstSliceInSegment,
-                        TreeItem *root)
+void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &p_active_SPS_list, const pps_map &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1382,6 +1384,11 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     {
       auto sei = reparse_sei.front();
       reparse_sei.pop_front();
+      if (sei->payloadType == 1)
+      {
+        auto pic_timing = sei.dynamicCast<pic_timing_sei>();
+        pic_timing->reparse_pic_timing_sei(active_VPS_list, active_SPS_list);
+      }
       if (sei->payloadType == 129)
       {
         auto active_param_set_sei = sei.dynamicCast<active_parameter_sets_sei>();
@@ -1513,7 +1520,13 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
 
       QByteArray sub_sei_data = sei_data.mid(0, new_sei->payloadSize);
 
-      if (new_sei->payloadType == 5)
+      if (new_sei->payloadType == 1)
+      {
+        auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
+        if (new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, active_VPS_list, active_SPS_list, message_tree) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
+          reparse_sei.append(new_pic_timing_sei);
+      }
+      else if (new_sei->payloadType == 5)
       {
         auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
         new_user_data_sei->parse_user_data_sei(sub_sei_data, message_tree);
@@ -1521,7 +1534,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
       else if (new_sei->payloadType == 129)
       {
         auto new_active_parameter_sets_sei = QSharedPointer<active_parameter_sets_sei>(new active_parameter_sets_sei(new_sei));
-        if (new_active_parameter_sets_sei->parse_active_parameter_sets_sei(sub_sei_data, active_VPS_list, message_tree) == SEI_PARSING_WAIT_FOR_VPS)
+        if (new_active_parameter_sets_sei->parse_active_parameter_sets_sei(sub_sei_data, active_VPS_list, message_tree) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
           // We have to parse this sei again when we have the VPS
           reparse_sei.append(new_active_parameter_sets_sei);
       }
@@ -1556,9 +1569,9 @@ QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
   int iPOC = POC_List[iFrameNr];
 
   // Collect the active parameter sets
-  QMap<int, QSharedPointer<vps>> active_VPS_list;
-  QMap<int, QSharedPointer<sps>> active_SPS_list;
-  QMap<int, QSharedPointer<pps>> active_PPS_list;
+  vps_map active_VPS_list;
+  sps_map active_SPS_list;
+  pps_map active_PPS_list;
   
   for (auto nal : nalUnitList)
   {
@@ -2081,21 +2094,21 @@ void fileSourceHEVCAnnexBFile::alternative_transfer_characteristics_sei::parse_a
   READBITS_M(preferred_transfer_characteristics, 8, get_transfer_characteristics_meaning());
 }
 
-fileSourceHEVCAnnexBFile::sei_parsing_return_t fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, TreeItem *root)
+fileSourceHEVCAnnexBFile::sei_parsing_return_t fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, TreeItem *root)
 {
   itemTree = root ? new TreeItem("active parameter sets", root) : nullptr;
   sei_data_storage = sliceHeaderData;
   if (!parse(p_active_VPS_list, false))
-    return SEI_PARSING_WAIT_FOR_VPS;
+    return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
   return SEI_PARSING_OK;
 }
 
-void fileSourceHEVCAnnexBFile::active_parameter_sets_sei::reparse_active_parameter_sets_sei(const QMap<int, QSharedPointer<vps>> &p_active_VPS_list)
+void fileSourceHEVCAnnexBFile::active_parameter_sets_sei::reparse_active_parameter_sets_sei(const vps_map &p_active_VPS_list)
 {
   parse(p_active_VPS_list, true);
 }
 
-bool fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse(const QMap<int, QSharedPointer<vps>> &p_active_VPS_list, bool reparse)
+bool fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse(const vps_map &p_active_VPS_list, bool reparse)
 {
   sub_byte_reader reader(sei_data_storage);
 
@@ -2124,6 +2137,100 @@ bool fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse(const QMap<int, 
   }
   return true;
 }
+
+fileSourceHEVCAnnexBFile::sei_parsing_return_t fileSourceHEVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, TreeItem *root)
+{
+  itemTree = root ? new TreeItem("picture timing", root) : nullptr;
+  sei_data_storage = sliceHeaderData;
+  if (!parse(p_active_VPS_list, p_active_SPS_list, false))
+    return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
+  return SEI_PARSING_OK;
+}
+
+void fileSourceHEVCAnnexBFile::pic_timing_sei::reparse_pic_timing_sei(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list)
+{
+  parse(p_active_VPS_list, p_active_SPS_list, true);
+}
+
+bool fileSourceHEVCAnnexBFile::pic_timing_sei::parse(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, bool reparse)
+{
+  // TODO: Is this really ID 0? The standard does not really say which one (or I did not find it).
+  if (!p_active_SPS_list.contains(0))
+  {
+    if (reparse)
+      // When reparsing after the VPS, this must not happen
+      throw std::logic_error("The SPS containing the VUI information was not found in the bitstream.");
+    else
+      return false;
+  }
+  QSharedPointer<sps> actSPS = p_active_SPS_list.value(0);
+
+  if (!p_active_VPS_list.contains(0))
+  {
+    if (reparse)
+      // When reparsing after the VPS, this must not happen
+      throw std::logic_error("The VPS containing the VUI information was not found in the bitstream.");
+    else
+      return false;
+  }
+  QSharedPointer<vps> actVPS = p_active_VPS_list.value(0);
+
+  sub_byte_reader reader(sei_data_storage);
+  if (actSPS->sps_vui_parameters.frame_field_info_present_flag)
+  {
+    READBITS(pic_struct, 4);
+    READBITS(source_scan_type, 2);
+    READFLAG(duplicate_flag);
+  }
+
+  // Get the hrd parameters. It this really always correct?
+  hrd_parameters hrd;
+  if (actSPS->vui_parameters_present_flag && actSPS->sps_vui_parameters.vui_hrd_parameters_present_flag)
+    hrd = actSPS->sps_vui_parameters.vui_hrd_parameters;
+  else if (actVPS->vps_timing_info_present_flag && actVPS->vps_num_hrd_parameters > 0)
+    // What if there are multiple sets?
+    hrd = actVPS->vps_hrd_parameters[0];
+
+  // true if nal_hrd_parameters_present_flag or vcl_hrd_parameters_present_flag is present in the bitstream and is equal to 1.
+  bool CpbDpbDelaysPresentFlag = (hrd.nal_hrd_parameters_present_flag || hrd.vcl_hrd_parameters_present_flag);
+
+  if (CpbDpbDelaysPresentFlag)
+  {
+    int nr_bits = hrd.au_cpb_removal_delay_length_minus1 + 1;
+    READBITS(au_cpb_removal_delay_minus1, nr_bits);
+    nr_bits = hrd.dpb_output_delay_length_minus1 + 1;
+    READBITS(pic_dpb_output_delay, nr_bits);
+    if(hrd.sub_pic_hrd_params_present_flag)
+    {
+      nr_bits = hrd.dpb_output_delay_du_length_minus1 + 1;
+      READBITS(pic_dpb_output_du_delay, nr_bits);
+    }
+    if(hrd.sub_pic_hrd_params_present_flag && hrd.sub_pic_cpb_params_in_pic_timing_sei_flag)
+    {
+      READUEV(num_decoding_units_minus1);
+      if (num_decoding_units_minus1 > actSPS->PicSizeInCtbsY - 1)
+        throw("The value of num_decoding_units_minus1 shall be in the range of 0 to PicSizeInCtbsY − 1, inclusive.");
+      READFLAG(du_common_cpb_removal_delay_flag);
+      if (du_common_cpb_removal_delay_flag)
+      {
+        nr_bits = hrd.du_cpb_removal_delay_increment_length_minus1 + 1;
+        READBITS(du_common_cpb_removal_delay_increment_minus1, nr_bits);
+      }
+      for (int i=0; i<=num_decoding_units_minus1; i++)
+      {
+        READUEV_A(num_nalus_in_du_minus1, i);
+        if (!du_common_cpb_removal_delay_flag && i < num_decoding_units_minus1)
+        {
+          nr_bits = hrd.du_cpb_removal_delay_increment_length_minus1 + 1;
+          READBITS_A(du_cpb_removal_delay_increment_minus1, nr_bits, i);
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
 
 QStringList fileSourceHEVCAnnexBFile::get_colour_primaries_meaning()
 {
