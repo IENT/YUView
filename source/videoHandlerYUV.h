@@ -267,6 +267,12 @@ public:
   // E.g: The bit depth is 8 and the pixel value is 127, then the value shown will be -1.
   bool showPixelValuesAsDiff;
 
+  QByteArray getDiffYUV() const;
+
+  YUV_Internals::yuvPixelFormat getDiffYUVFormat() const;
+
+  bool getIs_YUV_diff() const;
+
 signals:
 
   // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
@@ -353,6 +359,10 @@ private:
 #endif
 
   SafeUi<Ui::videoHandlerYUV> ui;
+
+  bool is_YUV_diff;
+  QByteArray diffYUV;
+  YUV_Internals::yuvPixelFormat diffYUVFormat;
 
 private slots:
 
