@@ -191,6 +191,7 @@ public:
   int get_width() { update(); return width; }
   int get_height() { update(); return height; }
   AVColorSpace get_colorspace() { update(); return colorspace; }
+  AVRational get_time_base() { update(); return time_base; }
 
   // Set when the context is openend (open_input)
   QString codec_id_string;
@@ -346,6 +347,7 @@ public:
   AVCodecID getCodecID();
   AVCodecContextWrapper &getCodec() { update(); return codec; };
   AVRational get_avg_frame_rate()   { update(); return avg_frame_rate; }
+  AVRational get_time_base();
   int get_frame_width();
   int get_frame_height();
   AVColorSpace get_colorspace();
@@ -376,16 +378,24 @@ private:
   FFmpegLibraryVersion libVer;
 };
 
+// A wrapper around the different versions of the AVPacket versions.
+// It also adds some functions like automatic deletion when it goes out of scope.
 class AVPacketWrapper
 {
 public:
   AVPacketWrapper() { pkt = nullptr; }
+  AVPacketWrapper(FFmpegVersionHandler &ff) { pkt = nullptr; allocate_paket(ff); }
+  ~AVPacketWrapper();
   // Create a new paket and initilize it using av_init_packet.
   void allocate_paket(FFmpegVersionHandler &ff);
+  void unref_packet(FFmpegVersionHandler &ff);
   void free_packet();
   explicit operator bool() const { return pkt != nullptr; };
   AVPacket *get_packet() { return pkt; }
   int get_stream_index() { update(); return stream_index; }
+  int64_t get_pts()      { update(); return pts; }
+  int64_t get_dts()      { update(); return dts; }
+  int     get_flags()    { update(); return flags; }
 
 private:
   void update();
@@ -415,13 +425,15 @@ class AVFormatContextWrapper
 public:
   AVFormatContextWrapper() { ctx = nullptr; };
   AVFormatContextWrapper(AVFormatContext *c, FFmpegLibraryVersion v) { ctx = c; libVer = v; update(); }
-  void updateFrom(AVFormatContext *c) { assert(ctx != nullptr); ctx = c; update(); }
+  void updateFrom(AVFormatContext *c) { assert(ctx == nullptr); ctx = c; update(); }
   void avformat_close_input(FFmpegVersionHandler &ver);
   explicit operator bool() const { return ctx != nullptr; };
 
   unsigned int get_nb_streams() { update(); return nb_streams; }
   AVStreamWrapper get_stream(int idx) { update(); return streams[idx]; }
   AVInputFormatWrapper get_input_format() { update(); return iformat; }
+  int64_t get_duration() { update(); return duration; }
+  AVFormatContext *get_format_ctx() { return ctx; }
 
   // Read a frame into the given pacetk (av_read_frame)
   int read_frame(FFmpegVersionHandler &ff, AVPacketWrapper &pkt);
@@ -555,6 +567,9 @@ public:
   int av_dict_set(AVDictionaryWrapper &dict, const char *key, const char *value, int flags);
   // Open the codec
   int avcodec_open2(AVCodecContextWrapper &decCtx, AVCodecWrapper &codec, AVDictionaryWrapper &dict);
+
+  // Seek to a specific frame
+  int seek_frame(AVFormatContextWrapper &fmt, int stream_idx, int pts);
 
   // All the function pointers of the ffmpeg library
   FFmpegLibraryFunctions lib;

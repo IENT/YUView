@@ -198,7 +198,10 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
 
     // Get the frame rate, picture size and color conversion mode
     AVRational avgFrameRate = video_stream.get_avg_frame_rate();
-    frameRate = avgFrameRate.num / double(avgFrameRate.den);
+    if (avgFrameRate.den == 0)
+      frameRate = -1;
+    else
+      frameRate = avgFrameRate.num / double(avgFrameRate.den);
     pixelFormat = decCtx.get_pixel_format();
 
     AVColorSpace colSpace = video_stream.get_colorspace();
@@ -516,105 +519,99 @@ void FFmpegDecoder::loadFFmpegLibraries()
 
 bool FFmpegDecoder::scanBitstream()
 {
-  //// Seek to the beginning of the stream.
-  //// The stream should be at the beginning when calling this function, but it does not hurt.
-  //int ret = ff.av_seek_frame(fmt_ctx, videoStreamIdx, 0, AVSEEK_FLAG_BACKWARD);
-  //if (ret != 0)
-  //  // Seeking failed. Maybe the stream is not opened correctly?
-  //  return false;
+  // Seek to the beginning of the stream.
+  // The stream should be at the beginning when calling this function, but it does not hurt.
+  int ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), 0);
+  if (ret != 0)
+    // Seeking failed. Maybe the stream is not opened correctly?
+    return false;
 
-  //// Show a modal QProgressDialog while this operation is running.
-  //// If the user presses cancel, we will cancel and return false (opening the file failed).
-  //// First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
-  //QWidgetList l = QApplication::topLevelWidgets();
-  //QWidget *mainWindow = nullptr;
-  //for (QWidget *w : l)
-  //{
-  //  MainWindow *mw = dynamic_cast<MainWindow*>(w);
-  //  if (mw)
-  //    mainWindow = mw;
-  //}
-  //// Create the dialog
-  //int64_t duration = fmt_ctx.duration;
-  ////AVRational timeBase = ff.AVFormatContextGetTimeBase(fmt_ctx, videoStreamIdx);
-  //AVRational timeBase;
+  // Show a modal QProgressDialog while this operation is running.
+  // If the user presses cancel, we will cancel and return false (opening the file failed).
+  // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
+  QWidgetList l = QApplication::topLevelWidgets();
+  QWidget *mainWindow = nullptr;
+  for (QWidget *w : l)
+  {
+    MainWindow *mw = dynamic_cast<MainWindow*>(w);
+    if (mw)
+      mainWindow = mw;
+  }
+  // Create the dialog
+  int64_t duration = fmt_ctx.get_duration();
+  AVRational timeBase = video_stream.get_time_base();
 
-  //qint64 maxPTS = duration * timeBase.den / timeBase.num / AV_TIME_BASE;
-  //// Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
-  //int curPercentValue = 0;
-  //QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
-  //progress.setMinimumDuration(1000);  // Show after 1s
-  //progress.setAutoClose(false);
-  //progress.setAutoReset(false);
-  //progress.setWindowModality(Qt::WindowModal);
+  qint64 maxPTS = duration * timeBase.den / timeBase.num / 1000;
+  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
+  int curPercentValue = 0;
+  QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
+  progress.setMinimumDuration(1000);  // Show after 1s
+  progress.setAutoClose(false);
+  progress.setAutoReset(false);
+  progress.setWindowModality(Qt::WindowModal);
 
-  //// Initialize an empty packet (data and size set to 0).
-  //AVPacket *p = ff.getNewPacket();
-  //ff.av_init_packet(p);
+  // Initialize an empty packet (data and size set to 0).
+  AVPacketWrapper p(ff);
 
-  //qint64 lastKeyFramePTS = 0;
-  //do
-  //{
-  //  // Get one packet
-  //  ret = ff.av_read_frame(fmt_ctx, p);
+  qint64 lastKeyFramePTS = 0;
+  const int stream_idx = video_stream.get_index();
+  do
+  {
+    // Get one packet
+    ret = fmt_ctx.read_frame(ff, p);
 
-  //  if (ret == 0 && ff.AVPacketGetStreamIndex(p) == videoStreamIdx)
-  //  {
-  //    int64_t pts = ff.AVPacketGetPTS(p);
+    if (ret == 0 && p.get_stream_index() == stream_idx)
+    {
+      int64_t pts = p.get_pts();
 
-  //    // Next video frame found
-  //    if (ff.AVPacketGetFlags(p) & AV_PKT_FLAG_KEY)
-  //    {
-  //      if (nrFrames == -1)
-  //        nrFrames = 0;
-  //      keyFrameList.append(pictureIdx(nrFrames, pts));
-  //      lastKeyFramePTS = pts;
-  //    }
-  //    if (pts < lastKeyFramePTS)
-  //    {
-  //      // What now? Can this happen? If this happens, the frame count/PTS combination of the last key frame
-  //      // is wrong.
-  //      keyFrameList.clear();
-  //      nrFrames = -1;
-  //      // Free the packet (this will automatically unref the packet as weel)
-  //      ff.av_packet_unref(p);
-  //      ff.deletePacket(p);
-  //      return false;
-  //    }
-  //    nrFrames++;
+      // Next video frame found
+      if (p.get_flags() & AV_PKT_FLAG_KEY)
+      {
+        if (nrFrames == -1)
+          nrFrames = 0;
+        keyFrameList.append(pictureIdx(nrFrames, pts));
+        lastKeyFramePTS = pts;
+      }
+      if (pts < lastKeyFramePTS)
+      {
+        // What now? Can this happen? If this happens, the frame count/PTS combination of the last key frame
+        // is wrong.
+        keyFrameList.clear();
+        nrFrames = -1;
+        // Free the packet (this will automatically unref the packet as weel)
+        p.unref_packet(ff);
+        return false;
+      }
+      nrFrames++;
 
-  //    // Update the progress dialog
-  //    if (progress.wasCanceled())
-  //    {
-  //      keyFrameList.clear();
-  //      nrFrames = -1;
-  //      // Free the packet (this will automatically unref the packet as weel)
-  //      ff.av_packet_unref(p);
-  //      ff.deletePacket(p);
-  //      return false;
-  //    }
-  //    int newPercentValue = pts * 100 / maxPTS;
-  //    if (newPercentValue != curPercentValue)
-  //    {
-  //      progress.setValue(newPercentValue);
-  //      curPercentValue = newPercentValue;
-  //    }
-  //  }
+      // Update the progress dialog
+      if (progress.wasCanceled())
+      {
+        keyFrameList.clear();
+        nrFrames = -1;
+        // Free the packet (this will automatically unref the packet as weel)
+        p.unref_packet(ff);
+        return false;
+      }
+      int newPercentValue = pts * 100 / maxPTS;
+      if (newPercentValue != curPercentValue)
+      {
+        progress.setValue(newPercentValue);
+        curPercentValue = newPercentValue;
+      }
+    }
 
-  //  // Unref the packet
-  //  ff.av_packet_unref(p);
-  //} while (ret == 0);
+    // Unref the packet
+    p.unref_packet(ff);
+  } while (ret == 0);
 
-  //// Delete the packet again
-  //ff.deletePacket(p);
+  progress.close();
 
-  //progress.close();
-
-  //// Seek back to the beginning of the stream.
-  //ret = ff.av_seek_frame(fmt_ctx, videoStreamIdx, 0, AVSEEK_FLAG_BACKWARD);
-  //if (ret != 0)
-  //  // Seeking failed.
-  //  return false;
+  // Seek back to the beginning of the stream.
+  ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), 0);
+  if (ret != 0)
+    // Seeking failed.
+    return false;
 
   return true;
 }

@@ -741,9 +741,14 @@ int FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
   int ret = lib.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
   if (ret < 0)
     return ret;
+  if (f_ctx == nullptr)
+    return -1;
   ret = lib.avformat_find_stream_info(f_ctx, nullptr);
   if (ret < 0)
     return ret;
+
+  // The wrapper will take ownership of this pointer
+  fmt = AVFormatContextWrapper(f_ctx, libVersion);
 
   // Get the codec id string using avcodec_get_name for each stream
   for(unsigned int idx=0; idx < fmt.get_nb_streams(); idx++)
@@ -779,6 +784,12 @@ int FFmpegVersionHandler::avcodec_open2(AVCodecContextWrapper &decCtx, AVCodecWr
   AVDictionary *d = dict.get_dictionary();
   int ret = lib.avcodec_open2(decCtx.get_codec(), codec.getAVCodec(), &d);
   dict.setDictionary(d);
+  return ret;
+}
+
+int FFmpegVersionHandler::seek_frame(AVFormatContextWrapper & fmt, int stream_idx, int pts)
+{
+  int ret = lib.av_seek_frame(fmt.get_format_ctx(), stream_idx, pts, AVSEEK_FLAG_BACKWARD);
   return ret;
 }
 
@@ -926,6 +937,8 @@ void AVFormatContextWrapper::update()
 {
   if (ctx == nullptr)
     return;
+
+  streams.clear();
   
   // Copy values from the source pointer
   if (libVer.avformat == 56)
@@ -1214,6 +1227,15 @@ AVCodecID AVStreamWrapper::getCodecID()
   if (libVer.avformat <= 56 || !codecpar)
     return codec.getCodecID();
   return codecpar.getCodecID();
+}
+
+AVRational AVStreamWrapper::get_time_base()
+{
+  update();
+  if (time_base.den == 0 || time_base.num == 0)
+    // The stream time_base seems not to be set. Try the time_base in the codec.
+    return codec.get_time_base();
+  return time_base;
 }
 
 int AVStreamWrapper::get_frame_width()
@@ -1891,6 +1913,12 @@ void AVFrameWrapper::free_frame(FFmpegVersionHandler &ff)
   frame = nullptr;
 }
 
+AVPacketWrapper::~AVPacketWrapper()
+{
+  if (pkt != nullptr)
+    free_packet();
+}
+
 void AVPacketWrapper::allocate_paket(FFmpegVersionHandler &ff)
 {
   assert(pkt == nullptr);
@@ -1914,6 +1942,12 @@ void AVPacketWrapper::allocate_paket(FFmpegVersionHandler &ff)
     assert(false);
 
   ff.lib.av_init_packet(pkt);
+  update();
+}
+
+void AVPacketWrapper::unref_packet(FFmpegVersionHandler &ff)
+{
+  ff.lib.av_packet_unref(pkt);
 }
 
 void AVPacketWrapper::free_packet()
