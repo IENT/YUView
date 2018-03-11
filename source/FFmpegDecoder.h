@@ -71,7 +71,7 @@ public:
   ColorConversion getColorConversionType() const { return colorConversionType; }
 
   // Get the error string (if openFile returend false)
-  QString decoderErrorString() const { return errorString; }
+  QString decoderErrorString() const;
   bool errorInDecoder() const { return decodingError != ffmpeg_noError; }
   bool errorLoadingLibraries() const { return decodingError == ffmpeg_errorLoadingLibrary; }
   bool errorOpeningFile() const { return decodingError == ffmpeg_errorOpeningFile; }
@@ -93,7 +93,7 @@ public:
   statisticsData getStatisticsData(int frameIdx, int typeIdx);
 
   // Check if the given libraries can be used to open ffmpeg
-  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error) { return FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error); }
+  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error);
 
   // Annex B files
   bool canShowNALInfo() const { return canShowNALUnits; }

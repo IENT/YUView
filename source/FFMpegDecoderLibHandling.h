@@ -57,7 +57,7 @@ public:
   bool loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib);
   
   // If loadFFmpegLibraryInPath returned false, this contains a string why.
-  QString getErrorString() const { return errorString; }
+  QStringList getErrors() const { return error_list; }
 
   QString getLibPath() const { return libPath; }
 
@@ -126,8 +126,8 @@ private:
   template <typename T> bool resolveSwresample(T &ptr, const char *symbol);
 
   // Error handling
-  bool setLibraryError(const QString &reason) { errorString = reason; return false; }
-  QString errorString;
+  bool setError(const QString &reason) { error_list.append(reason); return false; }
+  QStringList error_list;
 
   QLibrary libAvutil;
   QLibrary libSwresample;
@@ -303,6 +303,8 @@ public:
   int get_height()           { update(); return height; }
   AVColorSpace get_colorspace() { update(); return color_space; }
 
+  AVCodecParameters *getCodecParameters() { return param; }
+
 private:
   // Update all private values from the AVCodecParameters
   void update();
@@ -353,6 +355,8 @@ public:
   AVColorSpace get_colorspace();
   int get_index() { update(); return index; }
 
+  AVCodecParametersWrapper get_codecpar() { update(); return codecpar; }
+
 private:
   void update();
 
@@ -391,11 +395,12 @@ public:
   void unref_packet(FFmpegVersionHandler &ff);
   void free_packet();
   explicit operator bool() const { return pkt != nullptr; };
-  AVPacket *get_packet() { return pkt; }
+  AVPacket *get_packet() { update(); return pkt; }
   int get_stream_index() { update(); return stream_index; }
   int64_t get_pts()      { update(); return pts; }
   int64_t get_dts()      { update(); return dts; }
   int     get_flags()    { update(); return flags; }
+  int64_t get_duration() { update(); return duration; }
 
 private:
   void update();
@@ -496,6 +501,12 @@ public:
   void free_frame(FFmpegVersionHandler &ff);
   uint8_t *get_data(int component) { update(); return data[component]; }
   int get_line_size(int component) { update(); return linesize[component]; }
+  AVFrame *get_frame() { return frame; }
+  int get_width() { update(); return width; }
+  int get_height() { update(); return height; }
+  int get_pts() { update(); return pts; }
+  AVPictureType get_pict_type() { update(); return pict_type; }
+  int get_key_frame() { update(); return key_frame; }
     
   explicit operator bool() const { return frame != nullptr; };
 
@@ -531,7 +542,7 @@ class FFmpegVersionHandler
 public:
   FFmpegVersionHandler();
 
-  QString getErrorString() const { return lib.getErrorString(); }
+  QStringList getErrors() const { return error_list + lib.getErrors(); }
 
   // Try to load the FFmpeg libraries from the given path.
   // Try the system paths if no path is provided. This function can be called multiple times.
@@ -540,10 +551,17 @@ public:
   bool loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib);
 
   // Check if the given four files can be used to open FFmpeg.
-  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error);
+  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error);
   
   QString getLibPath() const { return lib.getLibPath(); }
   QString getLibVersionString() const;
+
+  bool parse_decoder_parameters(AVCodecContextWrapper &decCtx, AVStreamWrapper &videoStream);
+
+  // endOfFile: Are we at the end of the file? In this case we will decode frames (if possible) but feed no new data to the decoder.
+  bool decode_frame(AVCodecContextWrapper &decCtx, AVFormatContextWrapper &fmt_ctx, AVFrameWrapper &frame, AVPacketWrapper &pkt, bool &endOfFile, int videoStreamIdx);
+
+  void flush_buffers(AVCodecContextWrapper &decCtx) { lib.avcodec_flush_buffers(decCtx.get_codec()); }
 
   FFmpegLibraryVersion libVersion;
 
@@ -585,8 +603,9 @@ private:
   int getLibVersionFormat(FFmpegVersions ver);
   int getLibVersionSwresample(FFmpegVersions ver);
 
-  // What error occured while opening the libraries?
-  QString versionErrorString;
+  // Error handling
+  bool setError(const QString &reason) { error_list.append(reason); return false; }
+  QStringList error_list;
 
   // ------------------- AVFrameSideData ---------------
   // AVFrameSideData is part of AVUtil

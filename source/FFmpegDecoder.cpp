@@ -137,8 +137,8 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
     if(!video_stream)
       return setOpeningError(QStringLiteral("Could not find a video stream."));
 
-     AVCodecID streamCodecID = video_stream.getCodecID();
-     videoCodec = ff.find_decoder(streamCodecID);
+    AVCodecID streamCodecID = video_stream.getCodecID();
+    videoCodec = ff.find_decoder(streamCodecID);
 
     if(!videoCodec)
       return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
@@ -148,26 +148,7 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
     if(!decCtx)
       return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
 
-    //AVCodecParameters *origin_par = nullptr;
-    //if (ff.newParametersAPIAvailable)
-    //{
-    //  // Use the new avcodec_parameters_to_context function.
-    //  AVStream *str = ff.AVFormatContextGetStream(fmt_ctx, videoStreamIdx);
-    //  origin_par = ff.AVStreamGetCodecpar(str);
-
-    //  ret = ff.avcodec_parameters_to_context(decCtx, origin_par);
-    //  if (ret < 0)
-    //    return setOpeningError(QStringLiteral("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
-    //}
-    //else
-    //{
-    //  // The new parameters API is not available. Perform what the function would do.
-    //  // This is equal to the implementation of avcodec_parameters_to_context.
-    //  AVStream *str = ff.AVFormatContextGetStream(fmt_ctx, videoStreamIdx);
-    //  AVCodecContext *ctxSrc = ff.AVStreamGetCodec(str);
-    //  if (!ff.AVCodecContextCopyParameters(ctxSrc, decCtx))
-    //    return setOpeningError(QStringLiteral("Could not copy decoder parameters from stream decoder."));
-    //}
+    ff.parse_decoder_parameters(decCtx, video_stream);
 
     // Ask the decoder to provide motion vectors (if possible)
     AVDictionaryWrapper opts;
@@ -238,8 +219,10 @@ bool FFmpegDecoder::decodeOneFrame()
   if (decodingError != ffmpeg_noError)
     return false;
 
+  return ff.decode_frame(decCtx, fmt_ctx, frame, pkt, endOfFile, video_stream.get_index());
+  
   //if (!ff.newParametersAPIAvailable)
-  //{
+  {
   //  // Old API using avcodec_decode_video2
   //  int got_frame;
   //  do
@@ -292,7 +275,7 @@ bool FFmpegDecoder::decodeOneFrame()
   //    ff.AVFrameGetPictureType(frame),
   //    ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
   //  return true;
-  //}
+  }
 
   //// First, try if there is a frame waiting in the decoder
   //int retRecieve = ff.avcodec_receive_frame(decCtx, frame);
@@ -314,79 +297,6 @@ bool FFmpegDecoder::decodeOneFrame()
   //  setDecodingError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
   //  return false;
   //}
-
-  //// There was no frame waiting in the decoder. Feed data to the decoder until it returns AVERROR(EAGAIN)
-  //int retPush;
-  //do
-  //{
-  //  // Push the video packet to the decoder
-  //  if (endOfFile)
-  //    retPush = ff.avcodec_send_packet(decCtx, nullptr);
-  //  else
-  //    retPush = ff.avcodec_send_packet(decCtx, pkt);
-
-  //  if (retPush < 0 && retPush != AVERROR(EAGAIN))
-  //  {
-  //    setDecodingError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
-  //    return false;
-  //  }
-  //  if (retPush != AVERROR(EAGAIN))
-  //    DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d",
-  //      ff.AVPacketGetPTS(pkt),
-  //      ff.AVPacketGetDuration(pkt),
-  //      ff.AVPacketGetFlags(pkt));
-
-  //  if (!endOfFile && retPush == 0)
-  //  {
-  //    // Pushing was successfull, read the next video packet ...
-  //    do
-  //    {
-  //      // Unref the old packet
-  //      ff.av_packet_unref(pkt);
-  //      // Get the next one
-  //      int ret = ff.av_read_frame(fmt_ctx, pkt);
-  //      if (ret == AVERROR_EOF)
-  //      {
-  //        // No more packets. End of file. Enter draining mode.
-  //        DEBUG_FFMPEG("No more packets. End of file.");
-  //        endOfFile = true;
-  //      }
-  //      else if (ret < 0)
-  //      {
-  //        setDecodingError(QStringLiteral("Error reading packet (av_read_frame). Return code %1").arg(ret));
-  //        return false;
-  //      }
-  //    } while (!endOfFile && ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
-  //  }
-  //} while (retPush == 0);
-
-  //// Now retry to get a frame
-  //retRecieve = ff.avcodec_receive_frame(decCtx, frame);
-  //if (retRecieve == 0)
-  //{
-  //  // We recieved a frame.
-  //  // Recieved a frame
-  //  DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
-  //    ff.AVFrameGetWidth(frame),
-  //    ff.AVFrameGetHeight(frame),
-  //    ff.AVFrameGetPTS(frame),
-  //    ff.AVFrameGetPictureType(frame),
-  //    ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
-  //  return true;
-  //}
-  //if (endOfFile && retRecieve == AVERROR_EOF)
-  //{
-  //  // There are no more frames. If we want more frames, we have to seek to the start of the sequence and restart decoding.
-
-  //}
-  //if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
-  //{
-  //  // An error occured
-  //  setDecodingError(QStringLiteral("Error recieving  frame (avcodec_receive_frame). Return code %1").arg(retRecieve));
-  //  return false;
-  //}
-
-  return false;
 }
 
 yuvPixelFormat FFmpegDecoder::getYUVPixelFormat()
@@ -514,7 +424,6 @@ void FFmpegDecoder::loadFFmpegLibraries()
 
   // Loading the libraries failed
   decodingError = ffmpeg_errorLoadingLibrary;
-  errorString = ff.getErrorString();
 }
 
 bool FFmpegDecoder::scanBitstream()
@@ -639,6 +548,14 @@ QList<infoItem> FFmpegDecoder::getFileInfoList() const
   }
 
   return infoList;
+}
+
+QString FFmpegDecoder::decoderErrorString() const
+{
+  QString retError = errorString;
+  for (QString e : ff.getErrors())
+    retError += e + "\n";
+  return retError;
 }
 
 QList<infoItem> FFmpegDecoder::getDecoderInfo() const
@@ -831,29 +748,29 @@ FFmpegDecoder::pictureIdx FFmpegDecoder::getClosestSeekableFrameNumberBefore(int
 
 bool FFmpegDecoder::seekToPTS(qint64 pts)
 {
-  //int ret = ff.av_seek_frame(fmt_ctx, videoStreamIdx, pts, AVSEEK_FLAG_BACKWARD);
-  //if (ret != 0)
-  //{
-  //  DEBUG_FFMPEG("FFmpegDecoder::seekToPTS Error PTS %ld. Return Code %d", pts, ret);
-  //  return false;
-  //}
+  int ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), pts);
+  if (ret != 0)
+  {
+    DEBUG_FFMPEG("FFmpegDecoder::seekToPTS Error PTS %ld. Return Code %d", pts, ret);
+    return false;
+  }
+    
+  // Flush the video decoder buffer
+  ff.flush_buffers(decCtx);
 
-  //// Flush the video decoder buffer
-  //ff.avcodec_flush_buffers(decCtx);
+  // Get the first video stream packet into the packet buffer.
+  do
+  {
+    ret = fmt_ctx.read_frame(ff, pkt);
+    if (ret < 0)
+      return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
+  }
+  while (pkt.get_stream_index() != video_stream.get_index());
 
-  //// Get the first video stream packet into the packet buffer.
-  //do
-  //{
-  //  // Unref the packet that we hold right now
-  //  if (!endOfFile)
-  //    ff.av_packet_unref((AVPacket*)pkt);
-  //  ret = ff.av_read_frame(fmt_ctx, (AVPacket*)pkt);
-  //} while (ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
+  // We seeked somewhere, so we are not at the end of the file anymore.
+  endOfFile = false;
 
-  //// We seeked somewhere, so we are not at the end of the file anymore.
-  //endOfFile = false;
-
-  //DEBUG_FFMPEG("FFmpegDecoder::seekToPTS Successfully seeked to PTS %d", pts);
+  DEBUG_FFMPEG("FFmpegDecoder::seekToPTS Successfully seeked to PTS %d", pts);
   return true;
 }
 
@@ -870,6 +787,15 @@ statisticsData FFmpegDecoder::getStatisticsData(int frameIdx, int typeIdx)
   }
 
   return curFrameStats[typeIdx];
+}
+
+bool FFmpegDecoder::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString & error)
+{
+  QStringList errors;
+  bool result = FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, errors);
+  for (QString e : errors)
+    error += e + "\n";
+  return result;
 }
 
 void FFmpegDecoder::getFormatInfo()
