@@ -422,6 +422,46 @@ private:
    * a chartview, that can be placed
    */
   QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange);
+
+  /**
+   * @brief makeStatisticsPerFrameGrpByValNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobPerFrameGrpByValueNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsFrameRangeGrpByValNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsFrameRangeGrpByValNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByValNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobAllFramesGrpByValueNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData);
+
 };
 
 

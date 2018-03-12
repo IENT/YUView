@@ -1,5 +1,16 @@
 #include "yuvcharts.h"
 #include "playlistItem.h"
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QWidget>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QSlider>
+#include <QtWidgets/QFontComboBox>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QMessageBox>
+#include "graphmodifier.h"
 
 int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, indexRange aRange)
 {
@@ -20,7 +31,7 @@ int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, index
 
 bool YUVCharts::is2DData(QList<collectedData>* aSortedData)
 {
-  bool is2DData = true;
+  bool is2DData = aSortedData->count() > 0;
 
   for (int i = 0; i < aSortedData->count(); i++)
   {
@@ -37,7 +48,7 @@ bool YUVCharts::is2DData(QList<collectedData>* aSortedData)
 
 bool YUVCharts::is3DData(QList<collectedData>* aSortedData)
 {
-  bool is3DData = true;
+  bool is3DData = aSortedData->count() > 0;
 
   for (int i = 0; i < aSortedData->count(); i++)
   {
@@ -102,7 +113,8 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const Cha
 
   chartSettingsData settings;
 
-  switch (aOrderBy) {
+  switch (aOrderBy)
+  {
     case cobPerFrameGrpByValueNrmNone:
       settings = this->makeStatisticsPerFrameGrpByValNrmNone(aSortedData);
       break;
@@ -191,58 +203,68 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
 
   // just a holder
   QBarSet *set;
+  // auxililary var, to coordinate categories and sets
+  QHash<QString, QBarSet*> coordCategorieSet;
+
 
   // running thru the sorted Data
   for(int i = 0; i < aSortedData->count(); i++)
   {
     // first getting the data
     collectedData data = aSortedData->at(i);
-
-    // ceate an auxiliary var's
-    bool moreThanOneElement = data.mValueList.count() > 1;
-
-    // creating the set
-    set = new QBarSet(data.mLabel);
-
-    // if we have more than one value
-    foreach (int* chartData, data.mValueList)
+    if(data.mStatDataType == sdtStructStatisticsItem_Value)
     {
-      if(moreThanOneElement)
+      // ceate an auxiliary var's
+      bool moreThanOneElement = data.mValues.count() > 1;
+
+      // creating the set
+      set = new QBarSet(data.mLabel);
+      // if we have more than one value
+      foreach (auto chartData, data.mValues)
       {
-        if(!settings.mTmpCoordCategorieSet.contains(QString::number(chartData[0])))
+        QVariant variant = chartData->first;
+        int value = variant.toInt(); // because auf sdtStructStatisticsItem_Value we know that the variant is an int
+        int amount = chartData->second;
+
+        // convert the number to a String, we can use it as key or something other
+        QString valueString = QString::number(value);
+
+        if(moreThanOneElement)
         {
-          set = new QBarSet(QString::number(chartData[0]));
-          settings.mTmpCoordCategorieSet.insert(QString::number(chartData[0]), set);
+          if(!coordCategorieSet.contains(valueString))
+          {
+            set = new QBarSet(valueString);
+            coordCategorieSet.insert(valueString, set);
+          }
+          else
+            set = coordCategorieSet.value(valueString);
+
+          *set << amount;
         }
         else
-          set = settings.mTmpCoordCategorieSet.value(QString::number(chartData[0]));
+        {
+          // appending data to the set
+          *set << amount;
+        }
+      }
 
-        *set << chartData[1];
+      // check if we just had one data for each label
+      if(! moreThanOneElement)
+      {
+        set->setLabel(data.mLabel); // setting new label
+        series->append(set);      // appending the set to the series
       }
       else
       {
-        // appending data to the set
-        *set << chartData[1];
+        foreach (QString key, coordCategorieSet.keys())
+          series->append(coordCategorieSet.value(key));
       }
-    }
 
-    // check if we just had one data for each label
-    if(! moreThanOneElement)
-    {
-      set->setLabel(data.mLabel); // setting new label
-      series->append(set);      // appending the set to the series
+      if(moreThanOneElement)
+        //at least appending the label to the categories for the axes if necessary
+         settings.mCategories << data.mLabel;
     }
-    else
-    {
-      foreach (QString key, settings.mTmpCoordCategorieSet.keys())
-        series->append(settings.mTmpCoordCategorieSet.value(key));
-    }
-
-    if(moreThanOneElement)
-      //at least appending the label to the categories for the axes if necessary
-       settings.mCategories << data.mLabel;
   }
-
   return settings;
 }
 
@@ -424,38 +446,44 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
 
   for (int i = 0; i < aSortedData->count(); i++)
   {
+
     // first getting the data
     collectedData data = aSortedData->at(i);
-
-    // get the width and the heigth
-    QStringList numberStrings = data.mLabel.split("x");
-    QString widthStr  = numberStrings.at(0);
-    QString heightStr = numberStrings.at(1);
-    int width = widthStr.toInt();
-    int height = heightStr.toInt();
-
-    // if we have more than one value
-    foreach (int* chartData, data.mValueList)
+    if(data.mStatDataType == sdtStructStatisticsItem_Value)
     {
-      int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
-      // check if we have insert the count yet
-      if(hashValueCount.value(chartData[0]))
-        count = hashValueCount.value(chartData[0]); // was inserted
-      else
-      {
-        // at this point we have to get a new int by the system and we save the adress of this int in count
-        // so we have later for each int a new adress! and an new int, which we can save
-        count = new int(0);
-        // inserting the adress to get it later back
-        hashValueCount.insert(chartData[0], count);
-      }
+      // get the width and the heigth
+      QStringList numberStrings = data.mLabel.split("x");
+      QString widthStr  = numberStrings.at(0);
+      QString heightStr = numberStrings.at(1);
+      int width = widthStr.toInt();
+      int height = heightStr.toInt();
 
-      // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
-      *count += (width * height) * chartData[1];
+      // if we have more than one value
+      foreach (auto chartData, data.mValues)
+      {
+        QVariant variant = chartData->first;
+        int value = variant.toInt(); // because auf sdtStructStatisticsItem_Value we know that the variant is an int
+        int amount = chartData->second;
+        int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
+        // check if we have insert the count yet
+        if(hashValueCount.value(value))
+          count = hashValueCount.value(value); // was inserted
+        else
+        {
+          // at this point we have to get a new int by the system and we save the adress of this int in count
+          // so we have later for each int a new adress! and an new int, which we can save
+          count = new int(0);
+          // inserting the adress to get it later back
+          hashValueCount.insert(value, count);
+        }
+
+        // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
+        *count += (width * height) * amount;
+      }
     }
   }
 
-  // we cant use QHash at this point, because Qthe items are arbitrarily ordered in QHash, so we have to use QMap at this point
+  // we cant use QHash at this point, because the items are arbitrarily ordered in QHash, so we have to use QMap at this point
   QMap<int, int*> mapValueCountSorted;
   int smallestKey = INT_MAX;
   int maxElementsNeeded = hashValueCount.keys().count();
@@ -504,43 +532,42 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
   // calculate total amount of pixel depends on the blocksize
   for (int i = 0; i < aSortedData->count(); i++)
   {
-    // get the data
+    // first getting the data
     collectedData data = aSortedData->at(i);
-
-    // get the width and the heigth
-    QStringList numberStrings = data.mLabel.split("x");
-    QString widthStr  = numberStrings.at(0);
-    QString heightStr = numberStrings.at(1);
-    int width = widthStr.toInt();
-    int height = heightStr.toInt();
-
-
-    int amountPixelofValue = 0;
-    for (int j = 0; j < data.mValueList.count(); j++)
+    if(data.mStatDataType == sdtStructStatisticsItem_Value)
     {
-      int* chartData = data.mValueList.at(j);
-      amountPixelofValue += ((width * height) * chartData[1]);
+      // get the width and the heigth
+      QStringList numberStrings = data.mLabel.split("x");
+      QString widthStr  = numberStrings.at(0);
+      QString heightStr = numberStrings.at(1);
+      int width = widthStr.toInt();
+      int height = heightStr.toInt();
+
+      int amountPixelofValue = 0;
+      // if we have more than one value
+      foreach (auto chartData, data.mValues)
+        amountPixelofValue += ((width * height) * chartData->second); // chartData->second holds the amount
+
+      // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
+      double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
+
+      // cause of maybe other pixelvalues it can happen that we calculate more pixel than we have really
+      if(ratio > 100.0)
+        ratio = 100.0;
+
+      // create the set
+      set = new QBarSet(data.mLabel);
+      // fill the set with the data
+      *set << ratio;
+      // appen the set to the series
+      series->append(set);
     }
-
-    // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
-    double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
-
-    // cause of maybe other pixelvalues it can happen that we calculate more pixel than we have really
-    if(ratio > 100.0)
-      ratio = 100.0;
-
-    // create the set
-    set = new QBarSet(data.mLabel);
-    // fill the set with the data
-    *set << ratio;
-    // appen the set to the series
-    series->append(set);
   }
 
   return settings;
 }
 
-QWidget*YUV3DBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData)
+QWidget* YUV3DBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData)
 {
   // just a holder
   QList<collectedData>* sortedData = NULL;
@@ -558,7 +585,7 @@ QWidget*YUV3DBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* aI
     return this->mNoDataToShowWidget;
 }
 
-QWidget*YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange)
+QWidget* YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange)
 {
   // if we have no keys, we cant show any data so return at this point
   if(!aSortedData->count())
@@ -566,32 +593,45 @@ QWidget*YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const Ch
 
   chartSettingsData settings;
 
-  switch (aOrderBy) {
+  switch (aOrderBy)
+  {
     case cobPerFrameGrpByValueNrmNone:
+      settings = this->makeStatisticsPerFrameGrpByValNrmNone(aSortedData);
       break;
     case cobPerFrameGrpByValueNrmByArea:
+      settings.mSettingsIsValid = false;
       break;
     case cobPerFrameGrpByBlocksizeNrmNone:
+      settings.mSettingsIsValid = false;
       break;
     case cobPerFrameGrpByBlocksizeNrmByArea:
+      settings.mSettingsIsValid = false;
       break;
 
     case cobRangeGrpByValueNrmNone:
+      settings = this->makeStatisticsFrameRangeGrpByValNrmNone(aSortedData);
       break;
     case cobRangeGrpByValueNrmByArea:
+    settings.mSettingsIsValid = false;
       break;
     case cobRangeGrpByBlocksizeNrmNone:
+    settings.mSettingsIsValid = false;
       break;
     case cobRangeGrpByBlocksizeNrmByArea:
+    settings.mSettingsIsValid = false;
       break;
 
     case cobAllFramesGrpByValueNrmNone:
+      settings = this->makeStatisticsAllFramesGrpByValNrmNone(aSortedData);
       break;
     case cobAllFramesGrpByValueNrmByArea:
+    settings.mSettingsIsValid = false;
       break;
     case cobAllFramesGrpByBlocksizeNrmNone:
+    settings.mSettingsIsValid = false;
       break;
     case cobAllFramesGrpByBlocksizeNrmByArea:
+    settings.mSettingsIsValid = false;
       break;
 
     default:
@@ -601,24 +641,131 @@ QWidget*YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const Ch
   if(!settings.mSettingsIsValid)
     return this->mNoDataToShowWidget;
 
-  // creating the result
-  QChart* chart = new QChart();
 
-  // appending the series to the chart
-  chart->addSeries(settings.mSeries);
-  // setting an animationoption (not necessary but it's nice to see)
-  chart->setAnimationOptions(QChart::SeriesAnimations);
-  // creating default-axes: always have to be called before you add some custom axes
-  chart->createDefaultAxes();
+  // create the graph
+  Q3DBars* widgetgraph = new Q3DBars();
 
-  // setting Options for the chart-legend
-  chart->legend()->setVisible(true);
-  chart->legend()->setAlignment(Qt::AlignBottom);
+  // necessary! get an container and check that we can init OpenGL
+  QWidget* container = QWidget::createWindowContainer(widgetgraph);
 
-  // creating result chartview and set the data
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
+  if (!widgetgraph->hasContext()) // check for OpenGL
+  {
+    QMessageBox msgBox;
+    msgBox.setText("Couldn't initialize the OpenGL context. Can´t display 3D charts.");
+    msgBox.exec();
+    return this->mNoDataToShowWidget;
+  }
 
-  // final return the created chart
-  return chartView;
+  // get basic widget
+  QWidget* widget = new QWidget;
+
+  // create basic-layout and set to widget
+  QVBoxLayout* lyBasic = new QVBoxLayout(widget);
+
+  // create gridlayout for the controls
+  QGridLayout* lyGridControls = new QGridLayout();
+
+  // add container and control-layout to basiclayout
+  lyBasic->addWidget(container, 1);
+  lyBasic->addLayout(lyGridControls);
+
+  // create a button to zoom to an specific bar
+  QPushButton* zoomToSelectedButton = new QPushButton(widget);
+  zoomToSelectedButton->setText(QStringLiteral("Zoom to selected bar"));
+
+  // create a slider to rotate around the x-axis
+  QSlider *rotationSliderX = new QSlider(Qt::Horizontal, widget);
+  rotationSliderX->setTickInterval(30);
+  rotationSliderX->setTickPosition(QSlider::TicksBelow);
+  rotationSliderX->setMinimum(-180);
+  rotationSliderX->setValue(0);
+  rotationSliderX->setMaximum(180);
+
+  // create a slider to rotate around the y-axis
+  QSlider *rotationSliderY = new QSlider(Qt::Horizontal, widget);
+  rotationSliderY->setTickInterval(15);
+  rotationSliderY->setTickPosition(QSlider::TicksBelow);
+  rotationSliderY->setMinimum(-90);
+  rotationSliderY->setValue(0);
+  rotationSliderY->setMaximum(90);
+
+  // create a slider to rotate the labels
+  QSlider *axisLabelRotationSlider = new QSlider(Qt::Horizontal, widget);
+  axisLabelRotationSlider->setTickInterval(10);
+  axisLabelRotationSlider->setTickPosition(QSlider::TicksBelow);
+  axisLabelRotationSlider->setMinimum(0);
+  axisLabelRotationSlider->setValue(30);
+  axisLabelRotationSlider->setMaximum(90);
+
+  // create the control-layout
+  // all labels in row 0
+  lyGridControls->addWidget(new QLabel(QStringLiteral("Rotate horizontally")),0, 0);
+  lyGridControls->addWidget(new QLabel(QStringLiteral("Rotate vertically")), 0, 1);
+  lyGridControls->addWidget(new QLabel(QStringLiteral("Axis label rotation")), 0, 2);
+  lyGridControls->addWidget(new QLabel(QStringLiteral("Zoom zo selected value")), 0, 3);
+
+  // all controls in row 1
+  lyGridControls->addWidget(rotationSliderX, 1, 0);
+  lyGridControls->addWidget(rotationSliderY, 1, 1);
+  lyGridControls->addWidget(axisLabelRotationSlider, 1, 2);
+  lyGridControls->addWidget(zoomToSelectedButton, 1, 3);
+
+  // create modifier to handle the sliders and so on
+  GraphModifier3DBars* modifier = new GraphModifier3DBars(widgetgraph, settings);
+
+  // connect modifier to handle the actions
+  connect(rotationSliderX, &QSlider::valueChanged, modifier, &GraphModifier3DBars::rotateX);
+  connect(rotationSliderY, &QSlider::valueChanged, modifier, &GraphModifier3DBars::rotateY);
+  connect(axisLabelRotationSlider, &QSlider::valueChanged, modifier, &GraphModifier3DBars::changeLabelRotation);
+  connect(zoomToSelectedButton, &QPushButton::clicked, modifier, &GraphModifier3DBars::zoomToSelectedBar);
+
+  return widget;
+}
+
+chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData)
+{
+  chartSettingsData settings;
+
+  // the result-value is a 2D-Array
+  // we realize the array with an 2 dimensiol qmap, so we don´t have to search for the maximum x-value and y-value
+  // in case of this, we can reduce the amount of loops
+  // each x and y index we use is already defined with 0 (int)
+  QMap<int, QMap<int, int>> resultValueCount;
+
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    collectedData data = aSortedData->at(i);
+
+    if(data.mStatDataType == sdtStructStatisticsItem_Vector)
+    {
+      foreach (auto valuepair, data.mValues)
+      {
+        // getting the values
+        QVariant variant = valuepair->first;
+        int amount = valuepair->second;
+
+        // in case of sdtStructStatisticsItem_Vector we know that we can cast the QVariant to an QPoint
+        QPoint point = variant.toPoint();
+
+        // getting the coordinates from the point and use them as index for our 2D-Map
+        resultValueCount[point.x()][point.y()] += amount;
+      }
+    }
+  }
+
+  settings.m3DData = resultValueCount;
+
+  return settings;
+}
+
+chartSettingsData YUV3DBarChart::makeStatisticsFrameRangeGrpByValNrmNone(QList<collectedData>* aSortedData)
+{
+  // does the same as makeStatisticsPerFrameGrpByValNrmNone just the amount of sortedData is other
+  return this->makeStatisticsPerFrameGrpByValNrmNone(aSortedData);
+}
+
+chartSettingsData YUV3DBarChart::makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData)
+{
+  // does the same as makeStatisticsPerFrameGrpByValNrmNone just the amount of sortedData is other
+  return this->makeStatisticsPerFrameGrpByValNrmNone(aSortedData);
 }

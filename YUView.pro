@@ -1,4 +1,4 @@
-QT += gui opengl xml concurrent network charts
+QT += gui opengl xml concurrent network charts datavisualization
 
 TARGET = YUView
 TEMPLATE = app
@@ -57,7 +57,8 @@ SOURCES += \
     source/videoHandlerYUV.cpp \
     source/viewStateHandler.cpp \
     source/yuviewapp.cpp \
-    source/yuvcharts.cpp
+    source/yuvcharts.cpp \
+    source/graphmodifier.cpp
 
 
 HEADERS += \
@@ -115,7 +116,8 @@ HEADERS += \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
     source/yuviewapp.h \
-    source/yuvcharts.h
+    source/yuvcharts.h \
+    source/graphmodifier.h
 
 
 FORMS += \

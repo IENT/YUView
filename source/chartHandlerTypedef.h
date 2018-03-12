@@ -117,6 +117,9 @@ struct collectedData
   // second: count, how often the value was found in the frame
   QList<int*> mValueList;
 
+  // list of all values
+  // QPair can be used to count all possible value-types (int, QString, QPoint, ...)
+  // the QPair is always a specifc type and the total amount of the type
   QList<QPair<QVariant, int>*> mValues;
 
   /**
@@ -145,7 +148,16 @@ struct collectedData
     this->mValueList.clear();
   }
 
-
+  /**
+   * @brief addValue
+   * adding a specific combination of QVariant and amount to the valuelist
+   *
+   * @param aTypeValue
+   * qvariant of type
+   *
+   * @param aAmount
+   * how often does the qvariant exist
+   */
   void addValue(QVariant aTypeValue, int aAmount)
   {
     QPair<QVariant, int>* pair = new QPair<QVariant, int>(aTypeValue, aAmount);
@@ -153,6 +165,13 @@ struct collectedData
     this->mValues.append(pair);
   }
 
+  /**
+   * @brief addValues
+   * adding all values from an existing collectedData
+   *
+   * @param aData
+   * existing collectedData to append
+   */
   void addValues(collectedData aData)
   {
     for (int i = 0; i < aData.mValues.count(); i++)
@@ -162,6 +181,13 @@ struct collectedData
     }
   }
 
+  /**
+   * @brief addValueList
+   * adding a list of QPair-pointers to the collectedData
+   *
+   * @param aList
+   * list to append
+   */
   void addValueList(QList<QPair<QVariant, int>*>* aList)
   {
     for (int i = 0; i < aList->count(); i++)
@@ -290,10 +316,18 @@ struct itemWidgetCoord
  */
 struct chartSettingsData
 {
+  // bool to check if our data is valid
   bool mSettingsIsValid = true;
+
+  // list of categories
   QStringList mCategories;
+
+  // for 2D data we use the QAbstractSeries
+  // the abstract series can be placed  to QChart
   QAbstractSeries* mSeries;
-  QHash<QString, QBarSet*> mTmpCoordCategorieSet;
+
+  //for 3D data we use
+  QMap<int, QMap<int, int>> m3DData;
 };
 
 

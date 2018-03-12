@@ -55,7 +55,7 @@ ChartHandler::ChartHandler()
   QPixmap image(":/img_hourglass.png");
   lblImageHolder->setPixmap(image);
 
-  dataLoadingLayout->addWidget(lblImageHolder, 0, 0);
+  dataLoadingLayout->addWidget(lblImageHolder, 0, 0, Qt::AlignRight);
   dataLoadingLayout->addWidget(lblDataLoadingInformation, 0, 1);
 
   basicLayout->addLayout(dataLoadingLayout);
@@ -237,11 +237,6 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
           static_cast<void (QSpinBox::*)(int)> (&QSpinBox::valueChanged),
           this,
           &ChartHandler::spinboxRangeChange);
-
-
-  // setting the tab order
-  QWidget::setTabOrder(cbxOptionsShow, cbxOptionsGroup);
-  QWidget::setTabOrder(cbxOptionsGroup, cbxOptionsNormalize);
 
   // add the elements to the layout and add the layout to the widget
   lyBeginFrame->addWidget(sldBeginFrame, 0, 1);
@@ -799,8 +794,6 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
               this,
               &ChartHandler::switchOrderEnableStatistics);
     }
-    if(widget->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
-      QWidget::setTabOrder(cbxTypes, widget);
   }
 
   if(!hashOddAmount)
