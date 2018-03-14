@@ -33,7 +33,7 @@ public:
    * @param aSettings
    * necessary settings to set the data
    */
-  explicit GraphModifier3DBars(Q3DBars* aBarGraph, chartSettingsData aSettings);
+  explicit GraphModifier3DBars(Q3DBars* aBarGraph);
 
   /**
   * @brief
@@ -45,7 +45,7 @@ public:
    * @brief applyDataToGraph
    * sets the data to the graph
    */
-  void applyDataToGraph();
+  void applyDataToGraph(chartSettingsData aSettings);
 
   /**
    * @brief changePresetCamera

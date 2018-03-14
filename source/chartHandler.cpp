@@ -31,11 +31,10 @@
 */
 
 #include "chartHandler.h"
-#include "yuvcharts.h"
 
 
 // Default-Constructor
-ChartHandler::ChartHandler()
+ChartHandler::ChartHandler() : mYUVChartFactory(&this->mNoDataToShowWidget, &this->mDataIsLoadingWidget)
 {
   // creating the default widget if no data is avaible
   QFormLayout  noDataLayout(&(this->mNoDataToShowWidget));
@@ -68,10 +67,10 @@ ChartHandler::ChartHandler()
 QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
 {
   //! a small lambda; the lambda is a workaround for the timer.
-  //! if all items implement the iDataAvaible() correct, the lambda
+  //! if all items implement the isDataAvaible() correct, the lambda
   //! can be removed
   auto playlistItemIsSupported = [=](playlistItem* aItem) {
-    // replace false with dynamic_cast<YOURPLAYLISTITEMTYPE*>(aItem)
+    // add dynamic_cast<YOURPLAYLISTITEMTYPE*>(aItem) with OR-check to support your playlistitem
     return dynamic_cast<playlistItemStatisticsFile*>(aItem)
            || false;
   };
@@ -174,7 +173,6 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
   QLabel* lblOptionsNormalize    = new QLabel(CBX_LABEL_NORMALIZE );
   // furthermore we need the combobox
   QComboBox* cbxOptionsNormalize = new QComboBox;
-
 
   // init all members we need for the showing the range
   // we need: a label to show the name
@@ -328,26 +326,32 @@ QLayout* ChartHandler::generateOrderByLayout(bool aAddOptions)
 void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
 {
 
-//  // a small lambda function, to reduce same code
-//  auto findAndSetComponents = [] (QObject* aChild, QSlider* aBeginSlider, QSlider* aEndSlider, QSpinBox* aBeginSpin, QSpinBox* aEndSpin)
-//  {
-//    QString objectname = aChild->objectName();
 
-//    if(objectname == "")
-//      return;
+  // the object holders
+  QSlider* sldBeginFrame  = NULL;
+  QSlider* sldEndFrame    = NULL;
+  QSpinBox* sbxBeginFrame = NULL;
+  QSpinBox* sbxEndFrame   = NULL;
+  // a small lambda function, to reduce same code
+  auto findAndSetComponents = [&] (QObject* aChild)
+  {
+    QString objectname = aChild->objectName();
 
-//    if(objectname == SLIDER_FRAME_RANGE_BEGIN)
-//      aBeginSlider = dynamic_cast<QSlider*> (aChild);
+    if(objectname == "")
+      return;
 
-//    if(objectname == SLIDER_FRAME_RANGE_END)
-//      aEndSlider = dynamic_cast<QSlider*> (aChild);
+    if(objectname == SLIDER_FRAME_RANGE_BEGIN)
+      sldBeginFrame = dynamic_cast<QSlider*> (aChild);
 
-//    if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
-//      aBeginSpin = dynamic_cast<QSpinBox*> (aChild);
+    if(objectname == SLIDER_FRAME_RANGE_END)
+      sldEndFrame = dynamic_cast<QSlider*> (aChild);
 
-//    if(objectname == SPINBOX_FRAME_RANGE_END)
-//      aEndSpin = dynamic_cast<QSpinBox*> (aChild);
-//  };
+    if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
+      sbxBeginFrame = dynamic_cast<QSpinBox*> (aChild);
+
+    if(objectname == SPINBOX_FRAME_RANGE_END)
+      sbxEndFrame = dynamic_cast<QSpinBox*> (aChild);
+  };
 
   auto items = this->mPlaylist->getSelectedItems();
   bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
@@ -360,11 +364,6 @@ void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
   // we need the order-combobox, so we have to find the combobox and get the text of it
   QObjectList children = coord.mWidget->children();
 
-  // the object holders
-  QSlider* sldBeginFrame  = NULL;
-  QSlider* sldEndFrame    = NULL;
-  QSpinBox* sbxBeginFrame = NULL;
-  QSpinBox* sbxEndFrame   = NULL;
 
   //try to find the childs
   foreach (auto child, children)
@@ -372,48 +371,12 @@ void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
     if(child->children().count() > 1)
     {
       foreach (auto innerchild, child->children())
-        // findAndSetComponents(innerchild, sldBeginFrame, sldEndFrame, sbxBeginFrame, sbxEndFrame);
-      {
-        QString objectname = innerchild->objectName();
-
-        if(objectname == "")
-          continue;
-
-        if(objectname == SLIDER_FRAME_RANGE_BEGIN)
-          sldBeginFrame = dynamic_cast<QSlider*> (innerchild);
-
-        if(objectname == SLIDER_FRAME_RANGE_END)
-          sldEndFrame = dynamic_cast<QSlider*> (innerchild);
-
-        if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
-          sbxBeginFrame = dynamic_cast<QSpinBox*> (innerchild);
-
-        if(objectname == SPINBOX_FRAME_RANGE_END)
-          sbxEndFrame = dynamic_cast<QSpinBox*> (innerchild);
-      }
+        findAndSetComponents(innerchild);
     }
     else
-      // findAndSetComponents(child, sldBeginFrame, sldEndFrame, sbxBeginFrame, sbxEndFrame);
-    {
-      QString objectname = child->objectName();
+      findAndSetComponents(child);
 
-      if(objectname == "")
-        continue;
-
-      if(objectname == SLIDER_FRAME_RANGE_BEGIN)
-        sldBeginFrame = dynamic_cast<QSlider*> (child);
-
-      if(objectname == SLIDER_FRAME_RANGE_END)
-        sldEndFrame = dynamic_cast<QSlider*> (child);
-
-      if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
-        sbxBeginFrame = dynamic_cast<QSpinBox*> (child);
-
-      if(objectname == SPINBOX_FRAME_RANGE_END)
-        sbxEndFrame = dynamic_cast<QSpinBox*> (child);
-    }
-
-    if(sldBeginFrame && sldEndFrame && sbxBeginFrame &&  sbxEndFrame) // want to do in a lambda with variable parameters, but dont get it
+    if(sldBeginFrame && sldEndFrame && sbxBeginFrame &&  sbxEndFrame)
       break;
   }
 
@@ -762,10 +725,10 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
 
   // getting the list to the order by - components
   QList<QWidget*> listGeneratedWidgets = this->generateOrderWidgetsOnly(cbxTypes->count() > 1);
-  bool hashOddAmount = listGeneratedWidgets.count() % 2 == 1;
+  bool hasOddAmount = listGeneratedWidgets.count() % 2 == 1;
 
   // adding the components, check how we add them
-  if(hashOddAmount)
+  if(hasOddAmount)
   {
     topLayout->addWidget(lblStat);
     topLayout->addWidget(cbxTypes);
@@ -777,7 +740,7 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   // we do this here at this way, because if we use generateOrderByLayout we get a distance-difference in the layout
   foreach (auto widget, listGeneratedWidgets)
   {
-    if(hashOddAmount)
+    if(hasOddAmount)
       topLayout->addWidget(widget);
 
     if((widget->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
@@ -796,9 +759,147 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
     }
   }
 
-  if(!hashOddAmount)
+  if(!hasOddAmount)
     for (int i = 0; i < listGeneratedWidgets.count(); i +=2) // take care, we increment i every time by 2!!
       topLayout->addRow(listGeneratedWidgets.at(i), listGeneratedWidgets.at(i+1));
+
+  // generate groubbox for 3D-Data
+  CollapsibleWidget* collapseGroup = new CollapsibleWidget("3D-Data options");
+
+  QGridLayout* lyGrid3dLimits = new QGridLayout();
+
+  QLabel* lblXLimNegative = new QLabel("-x limit:");
+  QLineEdit* edXLimNegative = new QLineEdit();
+
+  QLabel* lblXLimPositive = new QLabel("x limit:");
+  QLineEdit* edXLimPositive = new QLineEdit();
+
+  QLabel* lblYLimNegative = new QLabel("-y limit:");
+  QLineEdit* edYLimNegative = new QLineEdit();
+
+  QLabel* lblYLimPositive = new QLabel("y limit:");
+  QLineEdit* edYLimPositive = new QLineEdit();
+
+  // setting the object-names
+  edXLimNegative->setObjectName(EDIT_NAME_LIMIT_NEGX);
+  edXLimPositive->setObjectName(EDIT_NAME_LIMIT_POSX);
+  edYLimNegative->setObjectName(EDIT_NAME_LIMIT_NEGY);
+  edYLimPositive->setObjectName(EDIT_NAME_LIMIT_POSY);
+
+  // setting some placeholders
+  edXLimNegative->setPlaceholderText("negative x");
+  edXLimPositive->setPlaceholderText("positive x");
+  edYLimNegative->setPlaceholderText("negative y");
+  edYLimPositive->setPlaceholderText("positive y");
+
+  // only numbers are allowed
+  edXLimNegative->setValidator(new QIntValidator(INT_MIN, INT_MAX, this));
+  edXLimPositive->setValidator(new QIntValidator(INT_MIN, INT_MAX, this));
+  edYLimNegative->setValidator(new QIntValidator(INT_MIN, INT_MAX, this));
+  edYLimPositive->setValidator(new QIntValidator(INT_MIN, INT_MAX, this));
+
+  // position the elements
+  lyGrid3dLimits->addWidget(lblXLimNegative, 0, 0);
+  lyGrid3dLimits->addWidget(edXLimNegative,  0, 1);
+  lyGrid3dLimits->addWidget(lblXLimPositive, 0, 2);
+  lyGrid3dLimits->addWidget(edXLimPositive,  0, 3);
+
+  lyGrid3dLimits->addWidget(lblYLimNegative, 1, 0);
+  lyGrid3dLimits->addWidget(edYLimNegative,  1, 1);
+  lyGrid3dLimits->addWidget(lblYLimPositive, 1, 2);
+  lyGrid3dLimits->addWidget(edYLimPositive,  1, 3);
+
+  // connects to react if text changed
+  { // mostly same code for all connects, but we cant implement in one method, because of the signal-slot-machenism we need a method with only one parameter. To check everything we need about 3 or 4 parameters
+    connect(edXLimNegative, &QLineEdit::textChanged, this, [edXLimNegative, edXLimPositive, this](QString aString) {
+        Q_UNUSED(aString)
+        // getting the strings from the edits
+        QString xneg = edXLimNegative->text();
+        QString xpos = edXLimPositive->text();
+
+        // if xpos has no string, we have no value
+        if(xpos == "")
+          return;
+
+        // check: if negative limit is greater
+        if(xneg.toInt() > xpos.toInt())
+        {
+          QMessageBox::information(NULL, "x-limits", "The negative limit (" + xneg + ") is greater than the positive (" + xpos + ") limit.", QMessageBox::Ok);
+          edXLimNegative->setText(QString::number(xpos.toInt() - 1));
+          return;
+        }
+
+        playbackControllerFrameChanged(42);
+      }
+    );
+
+    connect(edXLimPositive, &QLineEdit::textChanged, this, [edXLimNegative, edXLimPositive, this](QString aString) {
+        Q_UNUSED(aString)
+        QString xneg = edXLimNegative->text();
+        QString xpos = edXLimPositive->text();
+
+        // if xneg has no string, we have no value
+        if(xneg == "")
+          return;
+
+        // check: if negative limit is greater
+        if(xneg.toInt() > xpos.toInt())
+        {
+          QMessageBox::information(NULL, "x-limits", "The negative limit (" + xneg + ") is greater than the positive (" + xpos + ") limit.", QMessageBox::Ok);
+          edXLimNegative->setText(QString::number(xpos.toInt() - 1));
+          return;
+        }
+
+        playbackControllerFrameChanged(42);
+      }
+    );
+
+    connect(edYLimNegative, &QLineEdit::textChanged, this, [edYLimNegative, edYLimPositive, this](QString aString) {
+        Q_UNUSED(aString)
+        QString yneg = edYLimNegative->text();
+        QString ypos = edYLimPositive->text();
+
+        // if ypos has no string, we have no value
+        if(ypos == "")
+          return;
+
+        // check: if negative limit is greater
+        if(yneg.toInt() > ypos.toInt())
+        {
+          QMessageBox::information(NULL, "y-limits", "The negative limit (" + yneg + ") is greater than the positive (" + ypos + ") limit.", QMessageBox::Ok);
+          edYLimNegative->setText(QString::number(ypos.toInt() - 1));
+          return;
+        }
+
+        playbackControllerFrameChanged(42);
+      }
+    );
+
+    connect(edYLimPositive, &QLineEdit::textChanged, this, [edYLimNegative, edYLimPositive, this](QString aString) {
+        Q_UNUSED(aString)
+        QString yneg = edYLimNegative->text();
+        QString ypos = edYLimPositive->text();
+
+        // if yneg has no string, we have no value
+        if(yneg == "")
+          return;
+
+        // check: if negative limit is greater
+        if(yneg.toInt() > ypos.toInt())
+        {
+          QMessageBox::information(NULL, "y-limits", "The negative limit (" + yneg + ") is greater than the positive (" + ypos + ") limit.", QMessageBox::Ok);
+          edYLimNegative->setText(QString::number(ypos.toInt() - 1));
+          return;
+        }
+
+        playbackControllerFrameChanged(42);
+      }
+    );
+  }
+  collapseGroup->setContentLayout(*lyGrid3dLimits);
+
+  // at least, add to the widget
+  topLayout->addRow(collapseGroup);
 
   basicLayout->addLayout(topLayout);
   basicLayout->addWidget(aCoord.mChart);
@@ -853,6 +954,35 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   if(type == "" || type == CBX_OPTION_SELECT)
     return &(this->mNoDataToShowWidget);
 
+  // results for the lambda
+  QString negXstring = "";
+  QString posXstring = "";
+  QString negYstring = "";
+  QString posYstring = "";
+
+  // small lambda to find the edits with the max and min of 3d data
+  std::function<void(QObjectList)> findAndSetNumberStrings3D = [&] (QObjectList aChildrenList)
+  {
+    foreach (auto child, aChildrenList)
+    {
+      if(child->children().count() > 1)
+        findAndSetNumberStrings3D(child->children());
+      else
+      {
+        if(child->objectName() == EDIT_NAME_LIMIT_NEGX)
+          negXstring = (dynamic_cast<QLineEdit*>(child))->text();
+        if(child->objectName() == EDIT_NAME_LIMIT_POSX)
+          posXstring = (dynamic_cast<QLineEdit*>(child))->text();
+        if(child->objectName() == EDIT_NAME_LIMIT_NEGY)
+          negYstring = (dynamic_cast<QLineEdit*>(child))->text();
+        if(child->objectName() == EDIT_NAME_LIMIT_POSY)
+          posYstring = (dynamic_cast<QLineEdit*>(child))->text();
+      }
+    }
+  };
+
+  // call the lambda not only define it
+  findAndSetNumberStrings3D(children);
 
   ChartOrderBy order = cobUnknown; // set an default
   // we dont have found the sort-order so set it
@@ -898,8 +1028,26 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   else // this case should never happen, but who now :D
     return &(this->mNoDataToShowWidget);
 
-  YUVChartFactory factory(&this->mNoDataToShowWidget, &this->mDataIsLoadingWidget);
-  this->mLastStatisticsWidget = factory.createChart(order, aCoord.mItem, range, type);
+  //define the max and min; set INT_MIN as min and INT_MAX as max as default
+  int negX = INT_MIN;
+  if(negXstring != "")
+    negX = negXstring.toInt();
+
+  int posX = INT_MAX;
+  if(posXstring != "")
+    posX = posXstring.toInt();
+
+  int negY = INT_MIN;
+  if(negYstring != "")
+    negY = negYstring.toInt();
+
+  int posY = INT_MAX;
+  if(posYstring != "")
+    posY = posYstring.toInt();
+
+  this->mYUVChartFactory.set3DCoordinationRange(negX, posX, negY, posY);
+
+  this->mLastStatisticsWidget = this->mYUVChartFactory.createChart(order, aCoord.mItem, range, type);
 
   return this->mLastStatisticsWidget;
 }

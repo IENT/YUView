@@ -14,10 +14,9 @@ using namespace QtDataVisualization;
 
 const QString celsiusString = QString(QChar(0xB0)) + "C";
 
-GraphModifier3DBars::GraphModifier3DBars(Q3DBars* aBarGraph, chartSettingsData aSettings)
+GraphModifier3DBars::GraphModifier3DBars(Q3DBars* aBarGraph)
   : mGraph(aBarGraph),
     mPrimarySeries(new QBar3DSeries),
-    mSettings(aSettings),
     mRotationX(0.0f),
     mRotationY(0.0f),
     mMinval(0.0f),
@@ -66,8 +65,6 @@ GraphModifier3DBars::GraphModifier3DBars(Q3DBars* aBarGraph, chartSettingsData a
 
   this->changePresetCamera();
 
-  this->applyDataToGraph();
-
   // Set up property animations for zooming to the selected bar
   Q3DCamera* camera     = mGraph->scene()->activeCamera();
   this->mDefaultAngleX  = camera->xRotation();
@@ -104,13 +101,15 @@ GraphModifier3DBars::~GraphModifier3DBars()
     delete this->mGraph;
 }
 
-void GraphModifier3DBars::applyDataToGraph()
+void GraphModifier3DBars::applyDataToGraph(chartSettingsData aSettings)
 {
+  this->mSettings = aSettings;
+
   this->mCategoriesX.clear();
   this->mCategoriesY.clear();
 
   //holder for the maximum amount for the amount-axis
-  int maxAmount = -1;
+  float maxAmount = -1.0f;
 
   // Set up data
   // Create data arrays
@@ -118,38 +117,46 @@ void GraphModifier3DBars::applyDataToGraph()
   QBarDataRow* dataRow;
 
   dataSet->reserve(this->mSettings.m3DData.keys().count());
-  for (int x = 0; x < this->mSettings.m3DData.keys().count(); x++)
+
+  foreach (int x, this->mSettings.m3DData.keys())
   {
     this->mCategoriesX << QString::number(x);
-    QMap<int, int> map = this->mSettings.m3DData.value(x);
-    // Create a data row
-    dataRow = new QBarDataRow(map.keys().count());
-    //go thru all elements
-    for (int y = 0; y < map.keys().count(); y++)
+
+    QMap<int, double> row = this->mSettings.m3DData.value(x);
+
+    dataRow = new QBarDataRow(row.keys().count());
+    int posY = 0; // this is necessary for the position in the row. The value of y is not always the position in the row
+    foreach (int y, row.keys())
     {
       this->mCategoriesY << QString::number(y);
+
       // Add data to the row
-      int amount = this->mSettings.m3DData[x][y];
-      (*dataRow)[y].setValue(amount);
+      double amount = this->mSettings.m3DData[x][y];
+      (*dataRow)[posY++].setValue(amount);
 
       // getting the maximun amount to resize the axis
       if(amount > maxAmount)
           maxAmount = amount;
     }
-    // Add the row to the set
+
     dataSet->append(dataRow);
   }
-
 
   // Add data to the data proxy (the data proxy assumes ownership of it)
   this->mPrimarySeries->dataProxy()->resetArray(dataSet, mCategoriesX, mCategoriesY);
 
   // setting the new maxval
-  if(maxAmount != -1)
-    this->mMaxval = (float)maxAmount;
+  if(maxAmount != -1.0f)
+    this->mMaxval = maxAmount;
 
   // setting the new range
   this->mAmountAxis->setRange(this->mMinval, this->mMaxval);
+
+  if(this->mMaxval != (int)this->mMaxval) // check if number has precision
+    this->mAmountAxis->setLabelFormat(QString(QStringLiteral("%.4f ")));
+  else
+    this->mAmountAxis->setLabelFormat(QString(QStringLiteral("%.0f ")));
+
   int segments = ((int)this->mMaxval) % 2;
   this->mAmountAxis->setSubSegmentCount(segments);
 }

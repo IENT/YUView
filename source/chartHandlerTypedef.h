@@ -327,7 +327,7 @@ struct chartSettingsData
   QAbstractSeries* mSeries;
 
   //for 3D data we use
-  QMap<int, QMap<int, int>> m3DData;
+  QMap<int, QMap<int, double>> m3DData;
 };
 
 

@@ -33,11 +33,11 @@
 #ifndef CHARTHANDLER_H
 #define CHARTHANDLER_H
 
-
 #include <QVector>
 #include "chartWidget.h"
 #include "chartHandlerTypedef.h"
 #include "playbackController.h"
+#include "yuvcharts.h"
 
 
 #define OPTION_NAME_CBX_CHART_TYPES     "cbxTypes"
@@ -50,6 +50,10 @@
 #define SLIDER_FRAME_RANGE_END          "sldEndFrameRange"
 #define SPINBOX_FRAME_RANGE_BEGIN       "sbxBeginFrameRange"
 #define SPINBOX_FRAME_RANGE_END         "sbxEndFrameRange"
+#define EDIT_NAME_LIMIT_NEGX            "edXLimNegative"
+#define EDIT_NAME_LIMIT_POSX            "edXLimPositive"
+#define EDIT_NAME_LIMIT_NEGY            "edYLimNegative"
+#define EDIT_NAME_LIMIT_POSY            "edYLimPositive"
 
 /**
  * @brief The ChartHandler class
@@ -220,6 +224,7 @@ private slots:
 
 private:
 // variables
+  YUVChartFactory mYUVChartFactory;
   // holds the ChartWidget for showing the charts
   ChartWidget* mChartWidget;
   // an empty default-charview
