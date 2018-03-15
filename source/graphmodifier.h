@@ -95,7 +95,7 @@ private:
     float mRotationX;
     float mRotationY;
     float mMinval;
-    float mMaxval;
+    float mMaxVal;
     QStringList mCategoriesY;
     QStringList mCategoriesX;
     QValue3DAxis* mAmountAxis;

@@ -814,18 +814,31 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
     connect(edXLimNegative, &QLineEdit::textChanged, this, [edXLimNegative, edXLimPositive, this](QString aString) {
         Q_UNUSED(aString)
         // getting the strings from the edits
-        QString xneg = edXLimNegative->text();
-        QString xpos = edXLimPositive->text();
+        QString xnegstr = edXLimNegative->text();
+        QString xposstr = edXLimPositive->text();
 
-        // if xpos has no string, we have no value
-        if(xpos == "")
+        // just the minus for the negative number
+        if((xnegstr == "-") || (xposstr == "-"))
           return;
 
+        int xneg = xnegstr.toInt();
+        int xpos = xposstr.toInt();
+
+        // if xpos has no string, we have no value
+        if(xposstr == "")
+          xpos = INT_MAX;
+
+        // if xneg has no string
+        if(xnegstr == "")
+          xneg = INT_MIN;
+
         // check: if negative limit is greater
-        if(xneg.toInt() > xpos.toInt())
+        if(xneg > xpos)
         {
-          QMessageBox::information(NULL, "x-limits", "The negative limit (" + xneg + ") is greater than the positive (" + xpos + ") limit.", QMessageBox::Ok);
-          edXLimNegative->setText(QString::number(xpos.toInt() - 1));
+          QMessageBox::information(NULL, "x-limits", "The negative limit (" + xnegstr + ") is greater than the positive (" + xposstr + ") limit.", QMessageBox::Ok);
+          edXLimNegative->blockSignals(true);
+          edXLimNegative->setText(QString::number(xpos - 1));
+          edXLimNegative->blockSignals(false);
           return;
         }
 
@@ -835,18 +848,31 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
 
     connect(edXLimPositive, &QLineEdit::textChanged, this, [edXLimNegative, edXLimPositive, this](QString aString) {
         Q_UNUSED(aString)
-        QString xneg = edXLimNegative->text();
-        QString xpos = edXLimPositive->text();
+        QString xnegstr = edXLimNegative->text();
+        QString xposstr = edXLimPositive->text();
 
-        // if xneg has no string, we have no value
-        if(xneg == "")
+        // just the minus for the negative number
+        if((xnegstr == "-") || (xposstr == "-"))
           return;
 
+        int xneg = xnegstr.toInt();
+        int xpos = xposstr.toInt();
+
+        // if xpos has no string, we have no value
+        if(xposstr == "")
+          xpos = INT_MAX;
+
+        // if xneg has no string
+        if(xnegstr == "")
+          xneg = INT_MIN;
+
         // check: if negative limit is greater
-        if(xneg.toInt() > xpos.toInt())
+        if(xneg > xpos)
         {
-          QMessageBox::information(NULL, "x-limits", "The negative limit (" + xneg + ") is greater than the positive (" + xpos + ") limit.", QMessageBox::Ok);
-          edXLimNegative->setText(QString::number(xpos.toInt() - 1));
+          QMessageBox::information(NULL, "x-limits", "The negative limit (" + xnegstr + ") is greater than the positive (" + xposstr + ") limit.", QMessageBox::Ok);
+          edXLimNegative->blockSignals(true);
+          edXLimNegative->setText(QString::number(xpos - 1));
+          edXLimNegative->blockSignals(false);
           return;
         }
 
@@ -856,18 +882,31 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
 
     connect(edYLimNegative, &QLineEdit::textChanged, this, [edYLimNegative, edYLimPositive, this](QString aString) {
         Q_UNUSED(aString)
-        QString yneg = edYLimNegative->text();
-        QString ypos = edYLimPositive->text();
+        QString ynegstr = edYLimNegative->text();
+        QString yposstr = edYLimPositive->text();
 
-        // if ypos has no string, we have no value
-        if(ypos == "")
+        // just the minus for the negative number
+        if((ynegstr == "-") || (yposstr == "-"))
           return;
 
+        int yneg = ynegstr.toInt();
+        int ypos = yposstr.toInt();
+
+        // if xpos has no string, we have no value
+        if(yposstr == "")
+          ypos = INT_MAX;
+
+        // if xneg has no string
+        if(ynegstr == "")
+          yneg = INT_MIN;
+
         // check: if negative limit is greater
-        if(yneg.toInt() > ypos.toInt())
+        if(yneg > ypos)
         {
-          QMessageBox::information(NULL, "y-limits", "The negative limit (" + yneg + ") is greater than the positive (" + ypos + ") limit.", QMessageBox::Ok);
-          edYLimNegative->setText(QString::number(ypos.toInt() - 1));
+          QMessageBox::information(NULL, "y-limits", "The negative limit (" + ynegstr + ") is greater than the positive (" + yposstr + ") limit.", QMessageBox::Ok);
+          edYLimNegative->blockSignals(true);
+          edYLimNegative->setText(QString::number(ypos - 1));
+          edYLimNegative->blockSignals(false);
           return;
         }
 
@@ -877,18 +916,31 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
 
     connect(edYLimPositive, &QLineEdit::textChanged, this, [edYLimNegative, edYLimPositive, this](QString aString) {
         Q_UNUSED(aString)
-        QString yneg = edYLimNegative->text();
-        QString ypos = edYLimPositive->text();
+        QString ynegstr = edYLimNegative->text();
+        QString yposstr = edYLimPositive->text();
 
-        // if yneg has no string, we have no value
-        if(yneg == "")
+        // just the minus for the negative number
+        if((ynegstr == "-") || (yposstr == "-"))
           return;
 
+        int yneg = ynegstr.toInt();
+        int ypos = yposstr.toInt();
+
+        // if xpos has no string, we have no value
+        if(yposstr == "")
+          ypos = INT_MAX;
+
+        // if xneg has no string
+        if(ynegstr == "")
+          yneg = INT_MIN;
+
         // check: if negative limit is greater
-        if(yneg.toInt() > ypos.toInt())
+        if(yneg > ypos)
         {
-          QMessageBox::information(NULL, "y-limits", "The negative limit (" + yneg + ") is greater than the positive (" + ypos + ") limit.", QMessageBox::Ok);
-          edYLimNegative->setText(QString::number(ypos.toInt() - 1));
+          QMessageBox::information(NULL, "y-limits", "The negative limit (" + ynegstr + ") is greater than the positive (" + yposstr + ") limit.", QMessageBox::Ok);
+          edYLimNegative->blockSignals(true);
+          edYLimNegative->setText(QString::number(ypos- 1));
+          edYLimNegative->blockSignals(false);
           return;
         }
 

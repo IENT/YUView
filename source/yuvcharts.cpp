@@ -901,7 +901,7 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrm(QList<collect
           {
             // getting the coordinates from the point and use them as index for our 2D-Map
             resultValueCount[x][y] += amount;
-            maxAmountVector++;
+            maxAmountVector += amount;
           }
         }
       }
@@ -918,7 +918,6 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrm(QList<collect
       {
         foreach (auto valuepair, data.mValues)
         {
-          maxAmountVector++;
           // getting the values
           QVariant variant = valuepair->first;
           int amount = valuepair->second;
@@ -928,6 +927,7 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrm(QList<collect
 
           // getting the coordinates from the point and use them as index for our 2D-Map
           resultValueCount[point.x()][point.y()] += amount;
+          maxAmountVector += amount;
         }
       }
     }
@@ -938,9 +938,7 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrm(QList<collect
   {
     QMap<int, double> row = resultValueCount.value(x);
     foreach (int y, row.keys())
-    {
       resultValue[x][y] = (resultValueCount[x][y] / maxAmountVector) * 100.0;
-    }
   }
 
   settings.m3DData = resultValue;

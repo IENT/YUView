@@ -12,27 +12,26 @@
 
 using namespace QtDataVisualization;
 
-const QString celsiusString = QString(QChar(0xB0)) + "C";
-
 GraphModifier3DBars::GraphModifier3DBars(Q3DBars* aBarGraph)
   : mGraph(aBarGraph),
     mPrimarySeries(new QBar3DSeries),
     mRotationX(0.0f),
     mRotationY(0.0f),
     mMinval(0.0f),
-    mMaxval(10.0f),
+    mMaxVal(10.0f),
     mAmountAxis(new QValue3DAxis),
     mXValueAxis(new QCategory3DAxis),
     mYValueAxis(new QCategory3DAxis)
 {
   this->mGraph->setShadowQuality(QAbstract3DGraph::ShadowQualitySoftMedium);
   this->mGraph->activeTheme()->setBackgroundEnabled(false);
-  this->mGraph->activeTheme()->setFont(QFont("Times New Roman", 10));
+  this->mGraph->activeTheme()->setFont(QFont("Times New Roman", 8));
   this->mGraph->activeTheme()->setLabelBackgroundEnabled(true);
   this->mGraph->setMultiSeriesUniform(true);
 
+  this->mGraph->setBarSpacingRelative(true);
   this->mGraph->setBarThickness(0.5f);
-  this->mGraph->setBarSpacing(QSizeF(2.0, 2.0));
+  this->mGraph->setBarSpacing(QSizeF(2.5, 2.5));
 
   // necessary, that we can display the title of the axis, the stringlists includes at minimum of one element
   this->mCategoriesY << "";
@@ -40,7 +39,7 @@ GraphModifier3DBars::GraphModifier3DBars(Q3DBars* aBarGraph)
 
   // generate default settings
   this->mAmountAxis->setTitle("Amount (z-axis)");
-  this->mAmountAxis->setRange(mMinval, mMaxval);
+  this->mAmountAxis->setRange(mMinval, mMaxVal);
   this->mAmountAxis->setLabelFormat(QString(QStringLiteral("%.0f ")));
   this->mAmountAxis->setLabelAutoRotation(30.0f);
   this->mAmountAxis->setTitleVisible(true);
@@ -147,18 +146,47 @@ void GraphModifier3DBars::applyDataToGraph(chartSettingsData aSettings)
 
   // setting the new maxval
   if(maxAmount != -1.0f)
-    this->mMaxval = maxAmount;
+    this->mMaxVal = maxAmount;
 
   // setting the new range
-  this->mAmountAxis->setRange(this->mMinval, this->mMaxval);
+  this->mAmountAxis->setRange(this->mMinval, this->mMaxVal);
 
-  if(this->mMaxval != (int)this->mMaxval) // check if number has precision
-    this->mAmountAxis->setLabelFormat(QString(QStringLiteral("%.4f ")));
+  int segments = 1;
+
+  if(this->mMaxVal != (int)this->mMaxVal) // check if number has precision, so we have percentages
+  {
+    this->mAmountAxis->setLabelFormat(QString(QStringLiteral("%.4f\%")));
+
+    // calculate the amount of segments for the amount-axis
+    if(this->mMaxVal > 1.0 && this->mMaxVal < 10.0)
+      segments = (int)this->mMaxVal;
+    else if(this->mMaxVal >= 10.0 && this->mMaxVal <= 100.0)
+      segments = 5;
+  }
   else
-    this->mAmountAxis->setLabelFormat(QString(QStringLiteral("%.0f ")));
+  {
+    this->mPrimarySeries->setItemLabelFormat(QStringLiteral("(x:@rowLabel/y:@colLabel) - amount:@valueLabel"));
+    this->mAmountAxis->setLabelFormat(QString(QStringLiteral("%.0f")));
 
-  int segments = ((int)this->mMaxval) % 2;
-  this->mAmountAxis->setSubSegmentCount(segments);
+    int maxval = ((int)this->mMaxVal);
+
+    if(maxval > 1 && maxval <= 10)
+      segments = maxval;
+
+    // calculate the amount of segments for the amount-axis
+    int pass = 1; // how often the loop was passed
+    while(segments == 1)
+    {
+      int left  = 1 + pass * 10;
+      int right = pass++ * 100;
+      int dev   = right / 10;
+
+      if(maxval > left && maxval <= right)
+        segments = maxval / dev;
+    }
+  }
+
+  this->mAmountAxis->setSegmentCount(segments);
 }
 
 void GraphModifier3DBars::changePresetCamera()
