@@ -62,13 +62,14 @@ public:
   QString getLibPath() const { return libPath; }
 
   // From avformat
-  void     (*av_register_all)           ();
-  int      (*avformat_open_input)       (AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options);
-  void     (*avformat_close_input)      (AVFormatContext **s);
-  int      (*avformat_find_stream_info) (AVFormatContext *ic, AVDictionary **options);
-  int      (*av_read_frame)             (AVFormatContext *s, AVPacket *pkt);
-  int      (*av_seek_frame)             (AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
-  unsigned (*avformat_version)          (void);
+  void             (*av_register_all)           ();
+  AVFormatContext *(*avformat_alloc_context)    ();
+  int              (*avformat_open_input)       (AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options);
+  void             (*avformat_close_input)      (AVFormatContext **s);
+  int              (*avformat_find_stream_info) (AVFormatContext *ic, AVDictionary **options);
+  int              (*av_read_frame)             (AVFormatContext *s, AVPacket *pkt);
+  int              (*av_seek_frame)             (AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
+  unsigned         (*avformat_version)          (void);
 
   // From avcodec
   AVCodec        *(*avcodec_find_decoder)   (AVCodecID id);
