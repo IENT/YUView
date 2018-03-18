@@ -650,7 +650,7 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
   uint8_t *src = frame.get_data(0);
   int linesize = frame.get_line_size(0);
   char* dst = currentOutputBuffer.data();
-  int wDst = frameSize.width();
+  int wDst = frameSize.width() * nrBytesPerSample;
   int hDst = frameSize.height();
   for (int y = 0; y < hDst; y++)
   {
@@ -662,7 +662,7 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
   }
 
   // Chroma
-  wDst = frameSize.width() / pixFmt.getSubsamplingHor();
+  wDst = frameSize.width() / pixFmt.getSubsamplingHor() * nrBytesPerSample;
   hDst = frameSize.height() / pixFmt.getSubsamplingVer();
   for (int c = 0; c < 2; c++)
   {
