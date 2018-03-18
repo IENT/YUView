@@ -533,6 +533,54 @@ private:
   FFmpegLibraryVersion libVer;
 };
 
+class AVMotionVectorWrapper
+{
+public:
+  AVMotionVectorWrapper() { vec = nullptr; }
+  AVMotionVectorWrapper(AVMotionVector *vec, FFmpegLibraryVersion libVer) : vec(vec), libVer(libVer) { update(); };
+
+  // For performance reasons, these are public here. Since update is called at construction, these should be valid.
+  int32_t source;
+  uint8_t w, h;
+  int16_t src_x, src_y;
+  int16_t dst_x, dst_y;
+  uint64_t flags;
+  // The following may be invalid (-1) in older ffmpeg versions)
+  int32_t motion_x, motion_y;
+  uint16_t motion_scale;
+
+  explicit operator bool() const { return vec != nullptr; };
+
+private:
+  void update();
+
+  AVMotionVector *vec;
+  FFmpegLibraryVersion libVer;
+};
+
+class AVFrameSideDataWrapper
+{
+public:
+  AVFrameSideDataWrapper() { data = nullptr; }
+  AVFrameSideDataWrapper(AVFrameSideData *sideData, FFmpegLibraryVersion libVer) : sideData(sideData), libVer(libVer) { update(); };
+  int get_number_motion_vectors();
+  AVMotionVectorWrapper get_motion_vector(int idx);
+
+  explicit operator bool() const { return sideData != nullptr; };
+
+private:
+  void update();
+  
+  enum AVFrameSideDataType type;
+  uint8_t *data;
+  int size;
+  AVDictionary *metadata;
+  AVBufferRef *buf;
+  
+  AVFrameSideData *sideData;
+  FFmpegLibraryVersion libVer;
+};
+
 /* This class abstracts from the different versions of FFmpeg (and the libraries within it).
  * With a given path, it will try to open all supported library versions, starting with the 
  * newest one. If a new FFmpeg version is released, support for it will have to be added here.
@@ -585,6 +633,8 @@ public:
   int av_dict_set(AVDictionaryWrapper &dict, const char *key, const char *value, int flags);
   // Open the codec
   int avcodec_open2(AVCodecContextWrapper &decCtx, AVCodecWrapper &codec, AVDictionaryWrapper &dict);
+  // Get side data
+  AVFrameSideDataWrapper get_side_data(AVFrameWrapper &frame, AVFrameSideDataType type);
 
   // Seek to a specific frame
   int seek_frame(AVFormatContextWrapper &fmt, int stream_idx, int pts);
@@ -606,40 +656,6 @@ private:
   // Error handling
   bool setError(const QString &reason) { error_list.append(reason); return false; }
   QStringList error_list;
-
-  // ------------------- AVFrameSideData ---------------
-  // AVFrameSideData is part of AVUtil
-  typedef struct AVFrameSideData_54_55
-  {
-    enum AVFrameSideDataType type;
-    uint8_t *data;
-    int      size;
-    AVDictionary *metadata;
-    AVBufferRef *buf;
-  } AVFrameSideData_54_55;
-  
-  // ------------------- AVMotionVector ---------------
-
-  typedef struct AVMotionVector_54
-  {
-    int32_t source;
-    uint8_t w, h;
-    int16_t src_x, src_y;
-    int16_t dst_x, dst_y;
-    uint64_t flags;
-  } AVMotionVector_54;
-
-  typedef struct AVMotionVector_55 
-  {
-    int32_t source;
-    uint8_t w, h;
-    int16_t src_x, src_y;
-    int16_t dst_x, dst_y;
-    uint64_t flags;
-    int32_t motion_x, motion_y;
-    uint16_t motion_scale;
-  } AVMotionVector_55;
-
 };
 
 #endif // FFMPEGDECODERLIBHANDLING_H

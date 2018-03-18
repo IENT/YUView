@@ -619,6 +619,7 @@ QByteArray FFmpegDecoder::loadYUVFrameData(int frameIdx)
       copyFrameToOutputBuffer();
 
       // Get the motion vectors from the image as well...
+      // TODO: Only perform this if the statistics are shown. 
       copyFrameMotionInformation();
       statsCacheCurFrameIdx = currentOutputBufferFrameIndex;
 
@@ -688,28 +689,26 @@ void FFmpegDecoder::copyFrameMotionInformation()
   curFrameStats.clear();
 
   // Try to get the motion information
-  //AVFrameSideData *sd = ff.av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
-  //if (sd)
-  //{
-  //  AVMotionVector *mvs = (AVMotionVector*)ff.getSideDataData(sd);
-  //  int nrMVs = ff.getSideDataNrMotionVectors(sd);
-  //  for (int i = 0; i < nrMVs; i++)
-  //  {
-  //    int32_t source;
-  //    uint8_t w,h;
-  //    int16_t src_x, src_y, dst_x, dst_y;
-  //    ff.getMotionVectorValues(mvs, i, source, w, h, src_x, src_y, dst_x, dst_y);
+  AVFrameSideDataWrapper sideData = ff.get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+  if (sideData)
+  {
+    int nrMVs = sideData.get_number_motion_vectors();
+    for (int i = 0; i < nrMVs; i++)
+    {
+      AVMotionVectorWrapper mv = sideData.get_motion_vector(i);
+      if (mv)
+      {
+        // dst marks the center of the current block so the block position is:
+        int blockX = mv.dst_x - mv.w/2;
+        int blockY = mv.dst_y - mv.h/2;
+        int16_t mvX = mv.dst_x - mv.src_x;
+        int16_t mvY = mv.dst_y - mv.src_y;
 
-  //    // dst marks the center of the current block so the block position is:
-  //    int blockX = dst_x - w/2;
-  //    int blockY = dst_y - h/2;
-  //    int16_t mvX = dst_x - src_x;
-  //    int16_t mvY = dst_y - src_y;
-
-  //    curFrameStats[source < 0 ? 0 : 1].addBlockValue(blockX, blockY, w, h, (int)source);
-  //    curFrameStats[source < 0 ? 2 : 3].addBlockVector(blockX, blockY, w, h, mvX, mvY);
-  //  }
-  //}
+        curFrameStats[mv.source < 0 ? 0 : 1].addBlockValue(blockX, blockY, mv.w, mv.h, (int)mv.source);
+        curFrameStats[mv.source < 0 ? 2 : 3].addBlockVector(blockX, blockY, mv.w, mv.h, mvX, mvY);
+      }
+    }
+  }
 }
 
 void FFmpegDecoder::updateFileWatchSetting()
