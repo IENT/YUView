@@ -524,7 +524,6 @@ typedef struct AVInputFormat_56_57
 FFmpegLibraryFunctions::FFmpegLibraryFunctions()
 {
   av_register_all = nullptr;
-  avformat_alloc_context = nullptr;
   avformat_open_input = nullptr;
   avformat_close_input = nullptr;
   avformat_find_stream_info = nullptr;
@@ -558,7 +557,6 @@ FFmpegLibraryFunctions::FFmpegLibraryFunctions()
 bool FFmpegLibraryFunctions::bindFunctionsFromAVFormatLib()
 {
   if (!resolveAvFormat(av_register_all, "av_register_all")) return false;
-  if (!resolveAvFormat(avformat_alloc_context, "avformat_alloc_context")) return false;
   if (!resolveAvFormat(avformat_open_input, "avformat_open_input")) return false;
   if (!resolveAvFormat(avformat_close_input, "avformat_close_input")) return false;
   if (!resolveAvFormat(avformat_find_stream_info, "avformat_find_stream_info")) return false;
@@ -815,10 +813,7 @@ FFmpegVersionHandler::FFmpegVersionHandler()
 
 int FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
 {
-  AVFormatContext *f_ctx = lib.avformat_alloc_context();
-  if (f_ctx == nullptr)
-    return -1;
-
+  AVFormatContext *f_ctx = nullptr;
   int ret = lib.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
   if (ret < 0)
     return ret;
