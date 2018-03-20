@@ -986,7 +986,6 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
       {
         int* valueAmount = map->value(value);
         data.addValue(QVariant::fromValue(valueAmount[0]), valueAmount[1]);
-        data.mValueList.append(valueAmount);
       }
 
       // appending the collectedData to the result

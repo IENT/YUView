@@ -67,6 +67,10 @@ public:
    *
    * @param aContentLayout
    * the new layout
+   *
+   * @param aDisplay
+   * default: false
+   * if this option is true, the widget will unfold
    */
   void setContentLayout(QLayout& aContentLayout, const bool aDisplay = false);
 
@@ -464,11 +468,18 @@ public:
    */
   void set3DCoordinationtoDefault();
 
+  /**
+   * @brief hasOpenGL
+   * creating an YUV3DBarChart-Object, we check that we can init OpenGL
+   *
+   * @return
+   * true, if it is possible to init OpenGl otherwise false
+   */
   bool hasOpenGL() const;
 
 private:
   // identifier to use the coordinates
-  bool mUse3DCoordination = false;
+  bool mUse3DCoordinationLimits = false;
   // minimum x coordinate
   int mMinX;
   // maximum x coordinate
@@ -478,8 +489,11 @@ private:
   // maximum y coordinate
   int mMaxY;
 
-  QWidget* mWidget;
+  // the graph / chart / histogram
+  QWidget* mWidgetGraph;
+  // modifier to set the new data to the graph
   GraphModifier3DBars* mModifier;
+  // check if we can init OpenGL
   bool mHasOpenGL = false;
 
   /**
@@ -519,7 +533,7 @@ private:
   /**
    * @brief makeStatisticsFrameRangeGrpByValNrmNone
    * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
+   * provides the ChartOrderBy: cobRangeGrpByValueNrmNone
    *
    * @param aSortedData
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
@@ -558,7 +572,7 @@ private:
   /**
    * @brief makeStatisticsFrameRangeGrpByValNrm
    * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
+   * provides the ChartOrderBy: cobPerFrameGrpByValueNrmByArea
    *
    * @param aSortedData
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
@@ -567,7 +581,6 @@ private:
    * a struct, contains all chart settings and options
    */
   chartSettingsData makeStatisticsFrameRangeGrpByValNrm(QList<collectedData>* aSortedData);
-
 
   /**
    * @brief makeStatisticsAllFramesGrpByValNrm
@@ -581,6 +594,50 @@ private:
    * a struct, contains all chart settings and options
    */
   chartSettingsData makeStatisticsAllFramesGrpByValNrm(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsPerFrameGrpByBlocksizeNrmNone
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
+  QWidget* makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsFrameRangeGrpByBlocksizeNrmNone
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobRangeGrpByBlocksizeNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
+  QWidget* makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByBlocksizeNrmNone
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
+  QWidget* makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+
+  QWidget* makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+  QWidget* makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+  QWidget* makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+
 };
 
 
@@ -626,7 +683,7 @@ public:
 
 private:
   // identifier to use the coordinates
-  bool mUse3DCoordination = false;
+  bool mUse3DCoordinationLimits = false;
   // minimum x coordinate
   int mMinX;
   // maximum x coordinate
@@ -636,8 +693,9 @@ private:
   // maximum y coordinate
   int mMaxY;
 
-  YUVBarChart mBarChart;
+  // 2D-Barchart
+  YUVBarChart   mBarChart;
+  // 3D-Barchart
   YUV3DBarChart mBbarChart3D;
-
 };
 #endif // YUVCHARTS_H

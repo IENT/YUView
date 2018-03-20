@@ -112,10 +112,7 @@ struct collectedData
 
   // the label
   QString mLabel = "";
-  // each int* should be an array with two ints
-  // first: value
-  // second: count, how often the value was found in the frame
-  QList<int*> mValueList;
+
 
   // list of all values
   // QPair can be used to count all possible value-types (int, QString, QPoint, ...)
@@ -138,14 +135,7 @@ struct collectedData
   collectedData(const collectedData* aData)
   {
     this->mLabel = aData->mLabel;
-    this->mValueList = aData->mValueList;
     this->mValues   = aData->mValues;
-  }
-
-  // destructor
-  ~collectedData()
-  {
-    this->mValueList.clear();
   }
 
   /**

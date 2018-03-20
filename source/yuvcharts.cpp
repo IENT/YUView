@@ -79,15 +79,13 @@ QWidget* YUVChartFactory::createChart(const ChartOrderBy aOrderBy, playlistItem*
   // our bar chart can not display 3D, so we check if in one collectedData has 3D-Data
   bool is2DData = this->is2DData(sortedData);
   if(is2DData)
-  {
     return this->mBarChart.createChart(aOrderBy, aItem, aRange, aType, sortedData);
-  }
 
   bool is3DData = this->is3DData(sortedData);
   if(is3DData)
   {
     //check if we have to take care of the 3D-data-range
-    if(this->mUse3DCoordination)
+    if(this->mUse3DCoordinationLimits)
       this->mBbarChart3D.set3DCoordinationRange(this->mMinX, this->mMaxX, this->mMinY, this->mMaxY);
 
     return this->mBbarChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
@@ -98,7 +96,9 @@ QWidget* YUVChartFactory::createChart(const ChartOrderBy aOrderBy, playlistItem*
 
 void YUVChartFactory::set3DCoordinationRange(const int aMinX, const int aMaxX, const int aMinY, const int aMaxY)
 {
-  this->mUse3DCoordination = true;
+  // mark that we have to use the 3D limits
+  this->mUse3DCoordinationLimits = true;
+  // set the limits
   this->mMinX = aMinX;
   this->mMaxX = aMaxX;
   this->mMinY = aMinY;
@@ -107,7 +107,13 @@ void YUVChartFactory::set3DCoordinationRange(const int aMinX, const int aMaxX, c
 
 void YUVChartFactory::set3DCoordinationtoDefault()
 {
-  this->mUse3DCoordination = false;
+  // using the 3d limit should be false, so we have the default
+  this->mUse3DCoordinationLimits = false;
+  // set the limits to the min / max of int
+  this->mMinX = INT_MIN;
+  this->mMaxX = INT_MAX;
+  this->mMinY = INT_MIN;
+  this->mMaxY = INT_MAX;
 }
 
 QWidget* YUVBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
@@ -134,8 +140,10 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const Cha
   if(!aSortedData->count())
     return this->mNoDataToShowWidget;
 
+  // define the settings
   chartSettingsData settings;
 
+  // check what we have to do
   switch (aOrderBy)
   {
     case cobPerFrameGrpByValueNrmNone:
@@ -181,6 +189,7 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const Cha
       return this->mNoDataToShowWidget;
   }
 
+  // check if settings are not valid, so we display a default-widget
   if(!settings.mSettingsIsValid)
     return this->mNoDataToShowWidget;
 
@@ -193,7 +202,6 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const Cha
   chart->setAnimationOptions(QChart::SeriesAnimations);
   // creating default-axes: always have to be called before you add some custom axes
   chart->createDefaultAxes();
-
 
   // if we have set any categories, we can add a custom x-axis
   if(settings.mCategories.count() > 0)
@@ -223,12 +231,10 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
   chartSettingsData settings;
   settings.mSeries = series;
 
-
   // just a holder
   QBarSet *set;
   // auxililary var, to coordinate categories and sets
   QHash<QString, QBarSet*> coordCategorieSet;
-
 
   // running thru the sorted Data
   for(int i = 0; i < aSortedData->count(); i++)
@@ -254,6 +260,7 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
 
         if(moreThanOneElement)
         {
+          // getting the set, if possible otherwise create a new set and add to the coordCategorieSet
           if(!coordCategorieSet.contains(valueString))
           {
             set = new QBarSet(valueString);
@@ -262,6 +269,7 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
           else
             set = coordCategorieSet.value(valueString);
 
+          // appending data to the set
           *set << amount;
         }
         else
@@ -279,6 +287,7 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
       }
       else
       {
+        // append all sets to the series
         foreach (QString key, coordCategorieSet.keys())
           series->append(coordCategorieSet.value(key));
       }
@@ -357,9 +366,8 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
     }
   }
 
-
-  // at this pint we order the keys new from low to high
-  // we cant use QHash at this point, because Qthe items are arbitrarily ordered in QHash, so we have to use QMap at this point
+  // at this point we order the keys new from low to high
+  // we cant use QHash at this point, because the items are arbitrarily ordered in QHash, so we have to use QMap at this point
   QMap<int, int*> mapValueCountSorted;
   int smallestKey = INT_MAX;
   int maxElementsNeeded = hashValueCount.keys().count();
@@ -376,7 +384,6 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
     hashValueCount.remove(smallestKey);
     smallestKey = INT_MAX;
   }
-
 
   // because of the QHash we know how many QBarSet we have to create and add to the series in settings-struct
   foreach (int key, mapValueCountSorted.keys())
@@ -406,7 +413,6 @@ chartSettingsData YUVBarChart::makeStatisticsFrameRangeGrpByValNrmArea(QList<col
   int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csRange, aRange);
 
   return this->calculateAndDefineGrpByValueNrmArea(aSortedData, totalAmountPixel);
-
 }
 
 chartSettingsData YUVBarChart::makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData)
@@ -417,6 +423,7 @@ chartSettingsData YUVBarChart::makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QLi
 
 chartSettingsData YUVBarChart::makeStatisticsFrameRangeGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem, const indexRange aRange)
 {
+  // calc the total amount of pixel
   int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csRange, aRange);
 
   return this->calculateAndDefineGrpByBlocksizeNrmArea(aSortedData, totalAmountPixel);
@@ -469,7 +476,6 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
 
   for (int i = 0; i < aSortedData->count(); i++)
   {
-
     // first getting the data
     collectedData data = aSortedData->at(i);
     if(data.mStatDataType == sdtStructStatisticsItem_Value)
@@ -506,6 +512,8 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
     }
   }
 
+
+  // order the items from low to high
   // we cant use QHash at this point, because the items are arbitrarily ordered in QHash, so we have to use QMap at this point
   QMap<int, int*> mapValueCountSorted;
   int smallestKey = INT_MAX;
@@ -514,10 +522,8 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
   while (mapValueCountSorted.keys().count() < maxElementsNeeded)
   {
     foreach (int key, hashValueCount.keys())
-    {
       if(key < smallestKey)
         smallestKey = key;
-    }
 
     mapValueCountSorted.insert(smallestKey, hashValueCount.value(smallestKey));
     hashValueCount.remove(smallestKey);
@@ -559,7 +565,7 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
     collectedData data = aSortedData->at(i);
     if(data.mStatDataType == sdtStructStatisticsItem_Value)
     {
-      // get the width and the heigth
+      // get the width and the height
       QStringList numberStrings = data.mLabel.split("x");
       QString widthStr  = numberStrings.at(0);
       QString heightStr = numberStrings.at(1);
@@ -611,10 +617,10 @@ YUV3DBarChart::YUV3DBarChart(QWidget *aNoDataToShowWidget, QWidget *aDataIsLoadi
   else
   {
     // get basic widget
-    this->mWidget = new QWidget;
+    this->mWidgetGraph = new QWidget;
 
     // create basic-layout and set to widget
-    QVBoxLayout* lyBasic = new QVBoxLayout(this->mWidget);
+    QVBoxLayout* lyBasic = new QVBoxLayout(this->mWidgetGraph);
 
     // create gridlayout for the controls
     QGridLayout* lyGridControls = new QGridLayout();
@@ -624,11 +630,11 @@ YUV3DBarChart::YUV3DBarChart(QWidget *aNoDataToShowWidget, QWidget *aDataIsLoadi
     lyBasic->addLayout(lyGridControls);
 
     // create a button to zoom to an specific bar
-    QPushButton* zoomToSelectedButton = new QPushButton(this->mWidget);
+    QPushButton* zoomToSelectedButton = new QPushButton(this->mWidgetGraph);
     zoomToSelectedButton->setText(QStringLiteral("Zoom to selected bar"));
 
     // create a slider to rotate around the x-axis
-    QSlider *rotationSliderX = new QSlider(Qt::Horizontal, this->mWidget);
+    QSlider *rotationSliderX = new QSlider(Qt::Horizontal, this->mWidgetGraph);
     rotationSliderX->setTickInterval(30);
     rotationSliderX->setTickPosition(QSlider::TicksBelow);
     rotationSliderX->setMinimum(-180);
@@ -636,7 +642,7 @@ YUV3DBarChart::YUV3DBarChart(QWidget *aNoDataToShowWidget, QWidget *aDataIsLoadi
     rotationSliderX->setMaximum(180);
 
     // create a slider to rotate around the y-axis
-    QSlider *rotationSliderY = new QSlider(Qt::Horizontal, this->mWidget);
+    QSlider *rotationSliderY = new QSlider(Qt::Horizontal, this->mWidgetGraph);
     rotationSliderY->setTickInterval(15);
     rotationSliderY->setTickPosition(QSlider::TicksBelow);
     rotationSliderY->setMinimum(-90);
@@ -644,7 +650,7 @@ YUV3DBarChart::YUV3DBarChart(QWidget *aNoDataToShowWidget, QWidget *aDataIsLoadi
     rotationSliderY->setMaximum(90);
 
     // create a slider to rotate the labels
-    QSlider *axisLabelRotationSlider = new QSlider(Qt::Horizontal, this->mWidget);
+    QSlider *axisLabelRotationSlider = new QSlider(Qt::Horizontal, this->mWidgetGraph);
     axisLabelRotationSlider->setTickInterval(10);
     axisLabelRotationSlider->setTickPosition(QSlider::TicksBelow);
     axisLabelRotationSlider->setMinimum(0);
@@ -688,18 +694,21 @@ QWidget* YUV3DBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* a
   if(aSortedData)
     sortedData = aSortedData;
   else
-    sortedData = aItem->sortAndCategorizeDataByRange(aType, aRange);
+    sortedData = aItem->sortAndCategorizeDataByRange(aType, aRange); // no source given, get the data
 
   // can we display it?
   if(this->is3DData(sortedData))
     return  this->makeStatistic(sortedData, aOrderBy, aItem, aRange);
-  else // at this point we have 3D Data and we can not display it with YUVBarChart
+  else // at this point we have 3D Data and we can not display it with YUV3DBarChart
     return this->mNoDataToShowWidget;
 }
 
 void YUV3DBarChart::set3DCoordinationRange(const int aMinX, const int aMaxX, const int aMinY, const int aMaxY)
 {
-  this->mUse3DCoordination = true;
+  // mark that we use the 3d limits
+  this->mUse3DCoordinationLimits = true;
+
+  // set the new limits
   this->mMinX = aMinX;
   this->mMaxX = aMaxX;
   this->mMinY = aMinY;
@@ -708,7 +717,14 @@ void YUV3DBarChart::set3DCoordinationRange(const int aMinX, const int aMaxX, con
 
 void YUV3DBarChart::set3DCoordinationtoDefault()
 {
-  this->mUse3DCoordination = false;
+  // mark taht we dont use the limits
+  this->mUse3DCoordinationLimits = false;
+
+  // set the new limits
+  this->mMinX = INT_MIN;
+  this->mMaxX = INT_MAX;
+  this->mMinY = INT_MIN;
+  this->mMaxY = INT_MAX;
 }
 
 bool YUV3DBarChart::hasOpenGL() const
@@ -718,6 +734,8 @@ bool YUV3DBarChart::hasOpenGL() const
 
 QWidget* YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
 {
+  Q_UNUSED(aItem)
+  Q_UNUSED(aRange)
   // if we have no keys, we cant show any data so return at this point
   if(!aSortedData->count())
     return this->mNoDataToShowWidget;
@@ -733,11 +751,9 @@ QWidget* YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const C
       settings = this->makeStatisticsPerFrameGrpByValNrm(aSortedData);
       break;
     case cobPerFrameGrpByBlocksizeNrmNone:
-      settings.mSettingsIsValid = false;
-      break;
+      return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);    // take care, we leave here! We create a 2D graph, bo 3D graph possible
     case cobPerFrameGrpByBlocksizeNrmByArea:
-      settings.mSettingsIsValid = false;
-      break;
+      return this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);        // take care, we leave here! We create a 2D graph, bo 3D graph possible
 
     case cobRangeGrpByValueNrmNone:
       settings = this->makeStatisticsFrameRangeGrpByValNrmNone(aSortedData);
@@ -746,11 +762,9 @@ QWidget* YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const C
       settings = this->makeStatisticsFrameRangeGrpByValNrm(aSortedData);
       break;
     case cobRangeGrpByBlocksizeNrmNone:
-    settings.mSettingsIsValid = false;
-      break;
+      return this->makeStatisticsFrameRangeGrpByBlocksizeNrmNone(aSortedData);  // take care, we leave here! We create a 2D graph, bo 3D graph possible
     case cobRangeGrpByBlocksizeNrmByArea:
-    settings.mSettingsIsValid = false;
-      break;
+      return this->makeStatisticsFrameRangeGrpByBlocksizeNrm(aSortedData);      // take care, we leave here! We create a 2D graph, bo 3D graph possible
 
     case cobAllFramesGrpByValueNrmNone:
       settings = this->makeStatisticsAllFramesGrpByValNrmNone(aSortedData);
@@ -759,23 +773,22 @@ QWidget* YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const C
       settings = this->makeStatisticsAllFramesGrpByValNrm(aSortedData);
       break;
     case cobAllFramesGrpByBlocksizeNrmNone:
-    settings.mSettingsIsValid = false;
-      break;
+      return this->makeStatisticsAllFramesGrpByBlocksizeNrmNone(aSortedData);   // take care, we leave here! We create a 2D graph, bo 3D graph possible
     case cobAllFramesGrpByBlocksizeNrmByArea:
-    settings.mSettingsIsValid = false;
-      break;
+      return this->makeStatisticsAllFramesGrpByBlocksizeNrm(aSortedData);       // take care, we leave here! We create a 2D graph, bo 3D graph possible
 
     default:
       return this->mNoDataToShowWidget;
   }
 
+  // settings are not valid? so we display a default widget
   if(!settings.mSettingsIsValid)
     return this->mNoDataToShowWidget;
 
-
+  // change data in the 3D-graph
   this->mModifier->applyDataToGraph(settings);
 
-  return this->mWidget;
+  return this->mWidgetGraph;
 }
 
 chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData)
@@ -791,7 +804,7 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<col
   // in this case we programm two identic loops and we check the 3D-coordinates before.
   // the advantage is, that we dont need to check every loop pass
   // we look at a specific range
-  if(this->mUse3DCoordination)
+  if(this->mUse3DCoordinationLimits)
   {
     for (int i = 0; i < aSortedData->count(); i++)
     {
@@ -812,14 +825,15 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<col
           int x = point.x();
           int y = point.y();
 
+          // check that our values is in the limit-range
           if((x >= this->mMinX && x <= this->mMaxX) && (y >= this->mMinY && y <= this->mMaxY))
-              // getting the coordinates from the point and use them as index for our 2D-Map
-              resultValueCount[x][y] += amount;
+            // getting the coordinates from the point and use them as index for our 2D-Map
+            resultValueCount[x][y] += amount;
         }
       }
     }
   }
-  // we look a all items we have
+  // we look at all items we have
   else
   {
     for (int i = 0; i < aSortedData->count(); i++)
@@ -876,7 +890,7 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrm(QList<collect
   // in this case we programm two identic loops and we check the 3D-coordinates before.
   // the advantage is, that we dont need to check every loop pass
   // we look at a specific range
-  if(this->mUse3DCoordination)
+  if(this->mUse3DCoordinationLimits)
   {
     for (int i = 0; i < aSortedData->count(); i++)
     {
@@ -897,6 +911,7 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrm(QList<collect
           int x = point.x();
           int y = point.y();
 
+          // check that our value is in the limit-range
           if((x >= this->mMinX && x <= this->mMaxX) && (y >= this->mMinY && y <= this->mMaxY))
           {
             // getting the coordinates from the point and use them as index for our 2D-Map
@@ -933,6 +948,7 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrm(QList<collect
     }
   }
 
+  // calculate the ratio of the items to normalize
   QMap<int, QMap<int, double>> resultValue;
   foreach (int x, resultValueCount.keys())
   {
@@ -958,6 +974,155 @@ chartSettingsData YUV3DBarChart::makeStatisticsAllFramesGrpByValNrm(QList<collec
   return this->makeStatisticsPerFrameGrpByValNrm(aSortedData);
 }
 
+QWidget *YUV3DBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
+{
+  QBarSeries* series = new QBarSeries();
+  // just a holder
+  QBarSet *set;
+
+  // go thru all elements
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    // get the element at pos i
+    collectedData data = aSortedData->at(i);
+
+    if(data.mStatDataType == sdtStructStatisticsItem_Vector) // check that we can use the data
+    {
+      QString blocksize = data.mLabel;
+
+      // creating the set with the blocksize label
+      set = new QBarSet(blocksize);
+      int totalAmount = 0;
+      foreach (auto valuepair, data.mValues)
+        // getting the values, we just need the amount, the vector doesnt matter
+        totalAmount += valuepair->second;
+
+      // append the data
+      *set << totalAmount;
+      series->append(set);
+    }
+  }
+
+  // creating the result
+  QChart* chart = new QChart();
+
+  // appending the series to the chart
+  chart->addSeries(series);
+  // setting an animationoption (not necessary but it's nice to see)
+  chart->setAnimationOptions(QChart::SeriesAnimations);
+  // creating default-axes: always have to be called before you add some custom axes
+  chart->createDefaultAxes();
+
+  // setting Options for the chart-legend
+  chart->legend()->setVisible(true);
+  chart->legend()->setAlignment(Qt::AlignBottom);
+
+  // creating result chartview and set the data
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+
+  // final return the created chart
+  return chartView;
+}
+
+QWidget *YUV3DBarChart::makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
+{
+  // the amount of data is not the same, but the code is the same
+  return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
+}
+
+QWidget *YUV3DBarChart::makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
+{
+  // the amount of data is not the same, but the code is the same
+  return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
+}
+
+QWidget *YUV3DBarChart::makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
+{
+  QBarSeries* series = new QBarSeries();
+
+  // just a holder
+  QBarSet *set;
+
+  // calculating the total amount of all vector
+  int totalAmount = 0;
+
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    collectedData data = aSortedData->at(i);
+
+    if(data.mStatDataType == sdtStructStatisticsItem_Vector)
+      foreach (auto valuepair, data.mValues)
+        totalAmount += valuepair->second;
+  }
+
+  // normalize
+  // go thru all elements
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    // get the element at pos i
+    collectedData data = aSortedData->at(i);
+
+    if(data.mStatDataType == sdtStructStatisticsItem_Vector) // check that we can handle it
+    {
+      QString blocksize = data.mLabel;
+
+      // creating the set with the blocksize as label
+      set = new QBarSet(blocksize);
+
+      // getting the amount of one vecotr in one blocksize
+      int amount = 0;
+      foreach (auto valuepair, data.mValues)
+        // getting the values, we just need the amount, the vektor doesnt matter
+        amount += valuepair->second;
+
+      // calc the ratio
+      double ratio = (amount /(double) totalAmount) * 100.0;
+
+      // check if ratio is higher than 100%
+      if(ratio > 100.0)
+        ratio = 100.0;
+
+      // append data
+      *set << ratio;
+      series->append(set);
+    }
+  }
+
+  // creating the result to display the data
+  QChart* chart = new QChart();
+
+  // appending the series to the chart
+  chart->addSeries(series);
+  // setting an animationoption (not necessary but it's nice to see)
+  chart->setAnimationOptions(QChart::SeriesAnimations);
+  // creating default-axes: always have to be called before you add some custom axes
+  chart->createDefaultAxes();
+
+  // setting Options for the chart-legend
+  chart->legend()->setVisible(true);
+  chart->legend()->setAlignment(Qt::AlignBottom);
+
+  // creating result chartview and set the data
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+
+  // final return the created chart
+  return chartView;
+}
+
+QWidget *YUV3DBarChart::makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
+{
+  // the amount of data is not the same, but the code is the same
+  return this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);
+}
+
+QWidget *YUV3DBarChart::makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
+{
+  // the amount of data is not the same, but the code is the same
+  return this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);
+}
+
 CollapsibleWidget::CollapsibleWidget(const QString& aTitle, const int aAnimationDuration, QWidget* aParent) : QWidget(aParent), mAnimationDuration(aAnimationDuration)
 {
   // define the toggle button
@@ -968,10 +1133,12 @@ CollapsibleWidget::CollapsibleWidget(const QString& aTitle, const int aAnimation
   this->mToggleButton.setCheckable(true);
   this->mToggleButton.setChecked(false);
 
+  // define the headerline
   this->mHeaderLine.setFrameShape(QFrame::HLine);
   this->mHeaderLine.setFrameShadow(QFrame::Sunken);
   this->mHeaderLine.setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 
+  // define the content
   this->mContentArea.setStyleSheet("QScrollArea { background-color: white; border: none; }");
   this->mContentArea.setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
@@ -1005,11 +1172,17 @@ CollapsibleWidget::CollapsibleWidget(const QString& aTitle, const int aAnimation
 
 void CollapsibleWidget::setContentLayout(QLayout& aContentLayout, const bool aDisplay)
 {
+  // delete the old layout from our content
   delete this->mContentArea.layout();
+
+  // set the new layout to the content-area
   this->mContentArea.setLayout(&aContentLayout);
+
+  // calculate the height's
   const auto collapsedHeight = sizeHint().height() - this->mContentArea.maximumHeight();
   auto contentHeight = aContentLayout.sizeHint().height();
 
+  // set for all animations the height (start and end-values)
   for (int i = 0; i < this->mToggleAnimation.animationCount() - 1; ++i)
   {
     QPropertyAnimation* animation = static_cast<QPropertyAnimation*>(this->mToggleAnimation.animationAt(i));
@@ -1018,11 +1191,13 @@ void CollapsibleWidget::setContentLayout(QLayout& aContentLayout, const bool aDi
     animation->setEndValue(collapsedHeight + contentHeight);
   }
 
+  // set the animation for the content
   QPropertyAnimation* contentAnimation = static_cast<QPropertyAnimation*>(this->mToggleAnimation.animationAt(this->mToggleAnimation.animationCount() - 1));
   contentAnimation->setDuration(this->mAnimationDuration);
   contentAnimation->setStartValue(0);
   contentAnimation->setEndValue(contentHeight);
 
+  // the widget is always collapsed, at this point it will unfold
   if(aDisplay)
     this->mToggleButton.clicked();
 }
