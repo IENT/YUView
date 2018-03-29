@@ -7,15 +7,15 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
+    source/annexBParser.cpp \
+    source/annexBParserAVC.cpp \
+    source/annexBParserHEVC.cpp \
+    source/annexBParserJEM.cpp \
     source/decoderBase.cpp \
     source/FFmpegDecoder.cpp \
     source/FFMpegDecoderLibHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
-    source/fileSourceAnnexBFile.cpp \
-    source/fileSourceAVCAnnexBFile.cpp \
-    source/fileSourceHEVCAnnexBFile.cpp \
-    source/fileSourceJEMAnnexBFile.cpp \
     source/frameHandler.cpp \
     source/hevcDecoderLibde265.cpp \
     source/hevcDecoderHM.cpp \
@@ -23,13 +23,12 @@ SOURCES += \
     source/mainwindow.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
+    source/playlistItemCompressedVideo.cpp \
     source/playlistItemContainer.cpp \
     source/playlistItemDifference.cpp \
-    source/playlistItemFFmpegFile.cpp \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
     source/playlistItemOverlay.cpp \
-    source/playlistItemRawCodedVideo.cpp \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
     source/playlistItemStatisticsFile.cpp \
@@ -57,16 +56,16 @@ SOURCES += \
     source/yuviewapp.cpp
 
 HEADERS += \
+    source/annexBParser.h \
+    source/annexBParserAVC.h \
+    source/annexBParserHEVC.h \
+    source/annexBParserJEM.h \
     source/decoderBase.h \
     source/FFmpegDecoder.h \
     source/FFMpegDecoderLibHandling.h \
     source/FFMpegDecoderCommonDefs.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
-    source/fileSourceAnnexBFile.h \
-    source/fileSourceAVCAnnexBFile.h \
-    source/fileSourceHEVCAnnexBFile.h \
-    source/fileSourceJEMAnnexBFile.h \
     source/frameHandler.h \
     source/hevcDecoderHM.h \
     source/hevcDecoderLibde265.h \
@@ -76,13 +75,12 @@ HEADERS += \
     source/mainwindow_performanceTestDialog.h \
     source/playbackController.h \
     source/playlistItem.h \
+    source/playlistItemCompressedVideo.cpp \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
-    source/playlistItemFFmpegFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
     source/playlistItemOverlay.h \
-    source/playlistItemRawCodedVideo.h \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
     source/playlistItemStatisticsFile.h \
@@ -115,6 +113,7 @@ FORMS += \
     ui/mainwindow_performanceTestDialog.ui \
     ui/playbackController.ui \
     ui/playlistItem.ui \
+    ui/playlistItemCompressedFile.ui \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
     ui/playlistItemHEVCFile.ui \

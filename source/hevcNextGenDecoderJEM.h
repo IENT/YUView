@@ -35,7 +35,6 @@
 
 #include "decoderBase.h"
 #include "fileInfoWidget.h"
-#include "fileSourceJEMAnnexBFile.h"
 #include "libJEMDecoder.h"
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"

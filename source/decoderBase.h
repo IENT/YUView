@@ -57,12 +57,6 @@ public:
   // If another decoder is given, don't parse the annex B bitstream again.
   virtual bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) = 0;
 
-  // Get some infos on the file
-  QList<infoItem> getFileInfoList() const { return annexBFile->getFileInfoList(); }
-  int getNumberPOCs() const { return annexBFile->getNumberPOCs(); }
-  bool isFileChanged() { return annexBFile->isFileChanged(); }
-  void updateFileWatchSetting() { annexBFile->updateFileWatchSetting(); }
-
   // Which signal should we read from the decoder? Reconstruction(0, default), Prediction(1) or Residual(2)
   void setDecodeSignal(int signalID);
 
@@ -99,10 +93,7 @@ public:
   // Get the deocder name (everyting that is needed to identify the deocder library)
   // If needed, also version information (like HM 16.4)
   virtual QString getDecoderName() const = 0;
-
-  // Get a pointer to the fileSource
-  fileSourceAnnexBFile *getFileSource() { return annexBFile.data(); }
-
+  
 protected:
   void loadDecoderLibrary(QString specificLibrary);
 
@@ -139,10 +130,6 @@ protected:
 
   // This holds the file path to the loaded library
   QString libraryPath;
-
-  // A pointer to the source file. This is either a fileSourceAnnexBFile or in case of an HEVC bitstream, 
-  // a fileSourceHEVCAnnexBFile
-  QScopedPointer<fileSourceAnnexBFile> annexBFile;
 };
 
 #endif // DECODERBASE_H

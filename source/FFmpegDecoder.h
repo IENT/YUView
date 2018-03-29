@@ -37,7 +37,6 @@
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 #include "FFMpegDecoderLibHandling.h"
-#include "fileSourceAVCAnnexBFile.h"
 #include <QLibrary>
 #include <QFileSystemWatcher>
 
@@ -184,7 +183,6 @@ private:
   void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
 #endif
 
-  fileSourceAVCAnnexBFile annexBFile;
   bool canShowNALUnits;
 
   // Caching

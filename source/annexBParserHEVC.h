@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,39 +30,38 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILESOURCEAVCANNEXBFILE_H
-#define FILESOURCEAVCANNEXBFILE_H
+#ifndef ANNEXBPARSERHEVC_H
+#define ANNEXBPARSERHEVC_H
 
-#include <QAbstractItemModel>
-#include <QMap>
-#include "fileSourceAnnexBFile.h"
+#include "annexBParser.h"
 #include "videoHandlerYUV.h"
+
+#include <QSharedPointer>
 
 using namespace YUV_Internals;
 
-class fileSourceHEVCAnnexBFile : public fileSourceAnnexBFile
+// This class knows how to parse the bitrstream of HEVC annexB files
+class annexBParserHEVC : public annexBParser
 {
-  Q_OBJECT
-
 public:
-  fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; pocCounterOffset = 0; }
-  ~fileSourceHEVCAnnexBFile() {}
+  annexBParserHEVC() : annexBParser() { firstPOCRandomAccess = INT_MAX; pocCounterOffset = 0; }
+  ~annexBParserHEVC() {};
 
   // What it the framerate?
-  double getFramerate() const;
+  double getFramerate() const Q_DECL_OVERRIDE;
   // What is the sequence resolution?
-  QSize getSequenceSizeSamples() const;
+  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   // What is the chroma format?
-  YUVSubsamplingType getSequenceSubsampling() const;
-  // What is the bit depth of the output?
-  int getSequenceBitDepth(Component c) const;
+  YUVSubsamplingType getSequenceSubsampling() const Q_DECL_OVERRIDE;
+  // What is the bit depth of the reconstruction?
+  int getSequenceBitDepth(Component c) const Q_DECL_OVERRIDE;
 
-  // Seek the file to the given frame number. The given frame number has to be a random 
-  // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
-  // Returns the active parameter sets as a byte array. This has to be given to the decoder first.
-  // The fileSourceAnnexBFile can also seekt to a certain frame number. But, we know more about parameter sets and will only
-  // return the active parameter sets.
-  QList<QByteArray> seekToFrameNumber(int iFrameNr) Q_DECL_OVERRIDE;
+  void parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos = -1) Q_DECL_OVERRIDE;
+
+  // When we want to seek to a specific frame number, this function return the parameter sets that you need
+  // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
+  // also be returned.
+  QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -97,7 +96,7 @@ protected:
     bool isRADL();
     bool isRASL();
     bool isSlice();
-    
+
     // The information of the NAL unit header
     nal_unit_type nal_type;
     int nuh_layer_id;
@@ -229,7 +228,7 @@ protected:
     QList<int> luma_offset_l0;
     QList<int> delta_chroma_weight_l0;
     QList<int> delta_chroma_offset_l0;
-    
+
     QList<bool> luma_weight_l1_flag;
     QList<bool> chroma_weight_l1_flag;
     QList<int> delta_luma_weight_l1;
@@ -297,7 +296,7 @@ protected:
     int def_disp_win_right_offset;
     int def_disp_win_top_offset;
     int def_disp_win_bottom_offset;
-    
+
     bool vui_timing_info_present_flag;
     int vui_num_units_in_tick;
     int vui_time_scale;
@@ -329,7 +328,7 @@ protected:
     bool ref_pic_list_modification_flag_l1;
     QList<int> list_entry_l1;
   };
-    
+
   // The video parameter set. 7.3.2.1
   struct vps : nal_unit_hevc
   {
@@ -381,19 +380,19 @@ protected:
     int sps_max_sub_layers_minus1;
     bool sps_temporal_id_nesting_flag;
     profile_tier_level ptl;
-    
+
     int sps_seq_parameter_set_id;
     int chroma_format_idc;
     int separate_colour_plane_flag;
     int pic_width_in_luma_samples;
     int pic_height_in_luma_samples;
     int conformance_window_flag;
-  
+
     int conf_win_left_offset;
     int conf_win_right_offset;
     int conf_win_top_offset;
     int conf_win_bottom_offset;
-  
+
     int bit_depth_luma_minus8;
     int bit_depth_chroma_minus8;
     int log2_max_pic_order_cnt_lsb_minus4;
@@ -429,7 +428,7 @@ protected:
 
     bool sps_temporal_mvp_enabled_flag;
     bool strong_intra_smoothing_enabled_flag;
-    
+
     bool vui_parameters_present_flag;
     vui_parameters sps_vui_parameters;
 
@@ -443,8 +442,8 @@ protected:
     int ChromaArrayType;
     int SubWidthC, SubHeightC;
     int MinCbLog2SizeY, CtbLog2SizeY, CtbSizeY, PicWidthInCtbsY, PicHeightInCtbsY, PicSizeInCtbsY;  // 7.4.3.2.1
-  
-    // Get the actual size of the image that will be returned. Internally the image might be bigger.
+
+                                                                                                    // Get the actual size of the image that will be returned. Internally the image might be bigger.
     int get_conformance_cropping_width() const { return (pic_width_in_luma_samples - (SubWidthC * conf_win_right_offset) - SubWidthC * conf_win_left_offset); }
     int get_conformance_cropping_height() const { return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
   };
@@ -475,7 +474,7 @@ protected:
   {
     pps(const nal_unit_hevc &nal);
     void parse_pps(const QByteArray &parameterSetData, TreeItem *root);
-    
+
     int pps_pic_parameter_set_id;
     int pps_seq_parameter_set_id;
     bool dependent_slice_segments_enabled_flag;
@@ -530,7 +529,7 @@ protected:
     slice(const nal_unit_hevc &nal);
     void parse_slice(const QByteArray &sliceHeaderData, const sps_map &p_active_SPS_list, const pps_map &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
     virtual int getPOC() const override { return PicOrderCntVal; }
-    
+
     bool first_slice_segment_in_pic_flag;
     bool no_output_of_prior_pics_flag;
     bool dependent_slice_segment_flag;
@@ -575,7 +574,7 @@ protected:
     int slice_beta_offset_div2;
     int slice_tc_offset_div2;
     bool slice_loop_filter_across_slices_enabled_flag;
-    
+
     int num_entry_point_offsets;
     int offset_len_minus1;
     QList<int> entry_point_offset_minus1;
@@ -700,12 +699,10 @@ protected:
   static QStringList get_transfer_characteristics_meaning();
   static QStringList get_matrix_coefficients_meaning();
 
-  void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;
-
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.
   int firstPOCRandomAccess;
-
+  
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
   vps_map active_VPS_list;
@@ -718,4 +715,4 @@ protected:
   QList<QSharedPointer<sei>> reparse_sei;
 };
 
-#endif //FILESOURCEAVCANNEXBFILE_H
+#endif //ANNEXBPARSERHEVC_H

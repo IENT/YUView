@@ -41,191 +41,6 @@
 #define DEBUG_ANNEXB(fmt,...) ((void)0)
 #endif
 
-#define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
-#define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
-
-unsigned int fileSourceAnnexBFile::sub_byte_reader::readBits(int nrBits, QString *bitsRead)
-{
-  int out = 0;
-  int nrBitsRead = nrBits;
-
-  // The return unsigned int is of depth 32 bits
-  if (nrBits > 32)
-    throw std::logic_error("Trying to read more than 32 bits at once from the bitstream.");
-
-  while (nrBits > 0)
-  {
-    if (posInBuffer_bits == 8 && nrBits != 0) 
-    {
-      // We read all bits we could from the current byte but we need more. Go to the next byte.
-      if (!p_gotoNextByte())
-        // We are at the end of the buffer but we need to read more. Error.
-        throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
-    }
-
-    // How many bits can be gotton from the current byte?
-    int curBitsLeft = 8 - posInBuffer_bits;
-
-    int readBits; // Nr of bits to read
-    int offset;   // Offset for reading from the right
-    if (nrBits >= curBitsLeft)
-    {
-      // Read "curBitsLeft" bits
-      readBits = curBitsLeft;
-      offset = 0;
-    }
-    else 
-    {
-      // Read "nrBits" bits
-      assert(nrBits < 8 && nrBits < curBitsLeft);
-      readBits = nrBits;
-      offset = curBitsLeft - nrBits;
-    }
-
-    // Shift output value so that the new bits fit
-    out = out << readBits;
-
-    char c = p_byteArray[posInBuffer_bytes];
-    c = c >> offset;
-    int mask = ((1<<readBits) - 1);
-
-    // Write bits to output
-    out += (c & mask);
-
-    // Update counters
-    nrBits -= readBits;
-    posInBuffer_bits += readBits;
-  }
-  
-  if (bitsRead)
-    for (int i = nrBitsRead-1; i >= 0; i--)
-    {
-      if (out & (1 << i))
-        bitsRead->append("1");
-      else
-        bitsRead->append("0");
-    }
-
-  return out;
-}
-
-int fileSourceAnnexBFile::sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
-{
-  int readBit = readBits(1, bitsRead);
-  if (bit_count)
-    bit_count++;
-  if (readBit == 1)
-    return 0;
-  
-  // Get the length of the golomb
-  int golLength = 0;
-  while (readBit == 0) 
-  {
-    readBit = readBits(1, bitsRead);
-    golLength++;
-  }
-  
-  // Read "golLength" bits
-  int val = readBits(golLength, bitsRead);
-  // Add the exponentional part
-  val += (1 << golLength)-1;
-
-  if (bit_count)
-    bit_count += 2 * golLength;
-  
-  return val;
-}
-
-int fileSourceAnnexBFile::sub_byte_reader::readSE_V(QString *bitsRead)
-{
-  int val = readUE_V(bitsRead);
-  if (val%2 == 0) 
-    return -(val+1)/2;
-  else
-    return (val+1)/2;
-}
-
-/* Is there more data? There is no more data if the next bit is the terminating bit and all
- * following bits are 0. */
-bool fileSourceAnnexBFile::sub_byte_reader::more_rbsp_data()
-{
-  int posBytes = posInBuffer_bytes;
-  int posBits  = posInBuffer_bits;
-  bool terminatingBitFound = false;
-  if (posBits == 8)
-  {
-    posBytes++;
-    posBits = 0;
-  }
-  else
-  {
-    // Check the remainder of the current byte
-    unsigned char c = p_byteArray[posBytes];
-    if (c & (1 << (7-posBits)))
-      terminatingBitFound = true;
-    else
-      return true;
-    posBits++;
-    while (posBits != 8)
-    {
-      if (c & (1 << (7-posBits)))
-        // Only zeroes should follow
-        return true;
-      posBits++;
-    }
-    posBytes++;
-  }
-  while(posBytes < p_byteArray.size())
-  {
-    unsigned char c = p_byteArray[posBytes];
-    if (terminatingBitFound && c != 0)
-      return true;
-    else if (!terminatingBitFound && (c & 128))
-      terminatingBitFound = true;
-    else
-      return true;
-    posBytes++;
-  }
-  if (!terminatingBitFound)
-    return true;
-  return false;
-}
-
-bool fileSourceAnnexBFile::sub_byte_reader::p_gotoNextByte()
-{
-  // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
-  if (p_byteArray[posInBuffer_bytes] == (char)0)
-    p_numEmuPrevZeroBytes++;
-
-  // Skip the remaining sub-byte-bits
-  posInBuffer_bits = 0;
-  // Advance pointer
-  posInBuffer_bytes++;
-  
-  if (posInBuffer_bytes >= p_byteArray.size()) 
-    // The next byte is outside of the current buffer. Error.
-    return false;    
-
-  if (p_numEmuPrevZeroBytes == 2 && p_byteArray[posInBuffer_bytes] == (char)3) 
-  {
-    // The current byte is an emulation prevention 3 byte. Skip it.
-    posInBuffer_bytes++; // Skip byte
-
-    if (posInBuffer_bytes >= p_byteArray.size()) {
-      // The next byte is outside of the current buffer. Error
-      return false;
-    }
-
-    // Reset counter
-    p_numEmuPrevZeroBytes = 0;
-  }
-  else if (p_byteArray[posInBuffer_bytes] != (char)0)
-    // No zero byte. No emulation prevention 3 byte
-    p_numEmuPrevZeroBytes = 0;
-
-  return true;
-}
-
 fileSourceAnnexBFile::fileSourceAnnexBFile()
 {
   fileBuffer.resize(BUFFER_SIZE);
@@ -241,7 +56,6 @@ fileSourceAnnexBFile::fileSourceAnnexBFile()
 
 fileSourceAnnexBFile::~fileSourceAnnexBFile()
 {
-  clearData();
 }
 
 // Open the file and fill the read buffer. 
@@ -252,9 +66,7 @@ bool fileSourceAnnexBFile::openFile(const QString &fileName, bool saveAllUnits, 
 {
   DEBUG_ANNEXB("fileSourceAnnexBFile::openFile fileName %s %s", fileName, saveAllUnits ? "saveAllUnits" : "");
 
-  if (srcFile.isOpen())
-    // A file was already open. We are re-opening the file.
-    clearData();
+  parser->clearData();
 
   // Open the input file (again)
   fileSource::openFile(fileName);
@@ -266,16 +78,27 @@ bool fileSourceAnnexBFile::openFile(const QString &fileName, bool saveAllUnits, 
     return false;
     
   // Get the positions where we can start decoding
-  nalUnitListCopied = (otherFile != nullptr);
-  if (otherFile)
+  if (otherFile != nullptr)
   {
-    // Copy the nalUnitList and POC_List from the other file
-    nalUnitList = otherFile->nalUnitList;
-    POC_List = otherFile->POC_List;
+    // Let the allocated annexBParser copy the NAL unit information from the other file
+    // TODO!
+    // parser = new ...
+    // parser->copy...
     return true;
   }
   else
+  {
+    // Create a new parser (depending on the format)
+    QString s = fileInfo.suffix();
+    if (s == "hevc" || s == "h265")
+      parser.reset(new annexBParserHEVC);
+    if (s == "avc" || s == "h264")
+      parser.reset(new annexBParserAVC);
+    else
+      return false;
+    
     return scanFileForNalUnits(saveAllUnits);
+  }
 }
 
 bool fileSourceAnnexBFile::updateBuffer()

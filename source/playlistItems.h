@@ -33,9 +33,8 @@
 #ifndef PLAYLISTITEMHANDLER_H
 #define PLAYLISTITEMHANDLER_H
 
+#include "playlistItemCompressedVideo.h"
 #include "playlistItemDifference.h"
-#include "playlistItemRawCodedVideo.h"
-#include "playlistItemFFmpegFile.h"
 #include "playlistItemStatisticsFile.h"
 #include "playlistItemImageFile.h"
 #include "playlistItemImageFileSequence.h"

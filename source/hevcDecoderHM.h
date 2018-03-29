@@ -35,7 +35,6 @@
 
 #include "decoderBase.h"
 #include "fileInfoWidget.h"
-#include "fileSourceHEVCAnnexBFile.h"
 #include "libHMDecoder.h"
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"

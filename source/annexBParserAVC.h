@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,39 +30,38 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILESOURCEHEVCANNEXBFILE_H
-#define FILESOURCEHEVCANNEXBFILE_H
+#ifndef ANNEXBPARSERAVC_H
+#define ANNEXBPARSERAVC_H
 
-#include <QAbstractItemModel>
-#include <QMap>
-#include "fileSourceAnnexBFile.h"
+#include "annexBParser.h"
 #include "videoHandlerYUV.h"
+
+#include <QSharedPointer>
 
 using namespace YUV_Internals;
 
-class fileSourceAVCAnnexBFile : public fileSourceAnnexBFile
+// This class knows how to parse the bitrstream of HEVC annexB files
+class annexBParserAVC : public annexBParser
 {
-  Q_OBJECT
-
 public:
-  fileSourceAVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; CpbDpbDelaysPresentFlag = false; }
-  ~fileSourceAVCAnnexBFile() {}
+  annexBParserAVC() : annexBParser() { firstPOCRandomAccess = INT_MAX; CpbDpbDelaysPresentFlag = false; }
+  ~annexBParserAVC() {};
 
   // What it the framerate?
-  double getFramerate() const;
+  double getFramerate() const Q_DECL_OVERRIDE;
   // What is the sequence resolution?
-  QSize getSequenceSizeSamples() const;
+  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   // What is the chroma format?
-  YUVSubsamplingType getSequenceSubsampling() const;
-  // What is the bit depth of the output?
-  int getSequenceBitDepth(Component c) const;
+  YUVSubsamplingType getSequenceSubsampling() const Q_DECL_OVERRIDE;
+  // What is the bit depth of the reconstruction?
+  int getSequenceBitDepth(Component c) const Q_DECL_OVERRIDE;
 
-  // Seek the file to the given frame number. The given frame number has to be a random 
-  // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
-  // Returns the active parameter sets as a byte array. This has to be given to the decoder first.
-  // The fileSourceAnnexBFile can also seekt to a certain frame number. But, we know more about parameter sets and will only
-  // return the active parameter sets.
-  QList<QByteArray> seekToFrameNumber(int iFrameNr) Q_DECL_OVERRIDE;
+  void parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos = -1) Q_DECL_OVERRIDE;
+
+  // When we want to seek to a specific frame number, this function return the parameter sets that you need
+  // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
+  // also be returned.
+  QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -112,7 +111,7 @@ protected:
     bool isSlice()        { return nal_unit_type >= CODED_SLICE_NON_IDR && nal_unit_type <= CODED_SLICE_IDR; }
     virtual QByteArray getNALHeader() const override;
     virtual bool isParameterSet() const override { return nal_unit_type == SPS || nal_unit_type == PPS; }
-    
+
     /// The information of the NAL unit header
     int nal_ref_idc;
     nal_unit_type_enum nal_unit_type;
@@ -278,7 +277,7 @@ protected:
     bool deblocking_filter_control_present_flag;
     bool constrained_intra_pred_flag;
     bool redundant_pic_cnt_present_flag;
-    
+
     bool transform_8x8_mode_flag;
     bool pic_scaling_matrix_present_flag;
     int second_chroma_qp_index_offset;
@@ -394,7 +393,7 @@ protected:
       QList<int> max_long_term_frame_idx_plus1;
     };
     dec_ref_pic_marking_struct dec_ref_pic_marking;
-    
+
     int cabac_init_idc;
     int slice_qp_delta;
     bool sp_for_switch_flag;
@@ -409,7 +408,7 @@ protected:
     int IdrPicFlag;
     slice_type_enum slice_type;
     bool slice_type_fixed;  // slice_type_id is > 4
-    // For pic_order_cnt_type == 0
+                            // For pic_order_cnt_type == 0
     int prevPicOrderCntMsb;
     int prevPicOrderCntLsb;
     int PicOrderCntMsb;
@@ -487,8 +486,6 @@ protected:
 
   static void read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree);
 
-  void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;
-
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.
   int firstPOCRandomAccess;
@@ -504,4 +501,4 @@ protected:
   bool CpbDpbDelaysPresentFlag;
 };
 
-#endif //FILESOURCEHEVCANNEXBFILE_H
+#endif // ANNEXBPARSERAVC_H

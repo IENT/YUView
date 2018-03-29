@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,27 +30,21 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "fileSourceJEMAnnexBFile.h"
+#include "annexBParserJEM.h"
 
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 
-void fileSourceJEMAnnexBFile::parseAndAddNALUnit(int nalID)
+void annexBParserJEM::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
 {
   // Reset the values before emitting
   nalInfoPoc = -1;
   nalInfoIsRAP = false;
   nalInfoIsParameterSet = false;
-
-  // Save the position of the first byte of the start code
-  quint64 curFilePos = tell() - 3;
-
+  
   // Read two bytes (the nal header)
-  QByteArray nalHeaderBytes;
-  nalHeaderBytes.append(getCurByte());
-  gotoNextByte();
-  nalHeaderBytes.append(getCurByte());
-  gotoNextByte();
+  QByteArray nalHeaderBytes = data.left(2);
+  QByteArray payload = data.right(2);
 
   // Create a new TreeItem root for the NAL unit.
   TreeItem *nalRoot = nullptr;
@@ -61,9 +55,8 @@ void fileSourceJEMAnnexBFile::parseAndAddNALUnit(int nalID)
   nal_jem->parse_nal_unit_header(nalHeaderBytes, nalRoot);
 
   // Get the NAL as raw bytes and emit the signal to get some information on the NAL.
-  nal_jem->nalPayload = getRemainingNALBytes();
-  emit signalGetNALUnitInfo(nal_jem->getRawNALData());
-
+  nal_jem->nalPayload = payload;
+  
   // If this NAL will generate an output POC, save the POC number.
   if (nalInfoPoc >= 0)
     addPOCToList(nalInfoPoc);
@@ -88,7 +81,7 @@ void fileSourceJEMAnnexBFile::parseAndAddNALUnit(int nalID)
     nalRoot->itemData.append(QString("NAL %1").arg(nal_jem->nal_idx));
 }
 
-void fileSourceJEMAnnexBFile::nal_unit_jem::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+void annexBParserJEM::nal_unit_jem::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   sub_byte_reader reader(parameterSetData);
@@ -112,42 +105,42 @@ void fileSourceJEMAnnexBFile::nal_unit_jem::parse_nal_unit_header(const QByteArr
   nal_type = (nal_unit_type_id > UNSPECIFIED || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type)nal_unit_type_id;
 }
 
-bool fileSourceJEMAnnexBFile::nal_unit_jem::isIRAP()
+bool annexBParserJEM::nal_unit_jem::isIRAP()
 { 
   return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
-          nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
-          nal_type == IDR_N_LP       || nal_type == CRA_NUT    ||
-          nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); 
+    nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
+    nal_type == IDR_N_LP       || nal_type == CRA_NUT    ||
+    nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); 
 }
 
-bool fileSourceJEMAnnexBFile::nal_unit_jem::isSLNR() 
+bool annexBParserJEM::nal_unit_jem::isSLNR() 
 { 
   return (nal_type == TRAIL_N     || nal_type == TSA_N       ||
-          nal_type == STSA_N      || nal_type == RADL_N      ||
-          nal_type == RASL_N      || nal_type == RSV_VCL_N10 ||
-          nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); 
+    nal_type == STSA_N      || nal_type == RADL_N      ||
+    nal_type == RASL_N      || nal_type == RSV_VCL_N10 ||
+    nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); 
 }
 
-bool fileSourceJEMAnnexBFile::nal_unit_jem::isRADL() { 
+bool annexBParserJEM::nal_unit_jem::isRADL() { 
   return (nal_type == RADL_N || nal_type == RADL_R); 
 }
 
-bool fileSourceJEMAnnexBFile::nal_unit_jem::isRASL() 
+bool annexBParserJEM::nal_unit_jem::isRASL() 
 { 
   return (nal_type == RASL_N || nal_type == RASL_R); 
 }
 
-bool fileSourceJEMAnnexBFile::nal_unit_jem::isSlice() 
+bool annexBParserJEM::nal_unit_jem::isSlice() 
 { 
   return (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT  ||
-          nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
-          nal_type == TRAIL_N    || nal_type == TRAIL_R    || nal_type == TSA_N    ||
-          nal_type == TSA_R      || nal_type == STSA_N     || nal_type == STSA_R   ||
-          nal_type == RADL_N     || nal_type == RADL_R     || nal_type == RASL_N   ||
-          nal_type == RASL_R); 
+    nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
+    nal_type == TRAIL_N    || nal_type == TRAIL_R    || nal_type == TSA_N    ||
+    nal_type == TSA_R      || nal_type == STSA_N     || nal_type == STSA_R   ||
+    nal_type == RADL_N     || nal_type == RADL_R     || nal_type == RASL_N   ||
+    nal_type == RASL_R); 
 }
 
-QByteArray fileSourceJEMAnnexBFile::nal_unit_jem::getNALHeader() const
+QByteArray annexBParserJEM::nal_unit_jem::getNALHeader() const
 { 
   int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
   char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };

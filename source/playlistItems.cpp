@@ -43,8 +43,7 @@ namespace playlistItems
     QStringList allExtensions, filtersList;
 
     playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemCompressedVideo::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
 
@@ -73,9 +72,8 @@ namespace playlistItems
   {
     QStringList allExtensions, filtersList;
 
+    playlistItemCompressedVideo::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
 
@@ -110,30 +108,20 @@ namespace playlistItems
       }
     }
 
-    // Check playlistItemRawCodedVideo
+    // Check playlistItemCompressedVideo
     {
       QStringList allExtensions, filtersList;
-      playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
+      playlistItemCompressedVideo::getSupportedFileExtensions(allExtensions, filtersList);
 
       if (allExtensions.contains(ext))
       {
-        playlistItemRawCodedVideo::decoderEngine engine = playlistItemRawCodedVideo::askForDecoderEngine(parent);
-        if (engine == playlistItemRawCodedVideo::decoderInvalid)
+        playlistItemCompressedVideo::decoderEngine engine;
+        playlistItemCompressedVideo::readerEngine reader;
+        playlistItemCompressedVideo::determineReaderAndDecoder(parent, fileName, reader, engine);
+        if (engine == playlistItemCompressedVideo::decoderInvalid)
           return nullptr;
-        playlistItemRawCodedVideo *newRawCodedVideo = new playlistItemRawCodedVideo(fileName, 0, engine);
+        playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0, reader, engine);
         return newRawCodedVideo;
-      }
-    }
-
-    // Check playlistItemFFmpegFile
-    {
-      QStringList allExtensions, filtersList;
-      playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
-
-      if (allExtensions.contains(ext))
-      {
-        playlistItemFFmpegFile *newFFMPEGFile = new playlistItemFFmpegFile(fileName);
-        return newFFMPEGFile;
       }
     }
 
@@ -199,18 +187,14 @@ namespace playlistItems
       }
       else if (asType == types[2])
       {
-        // HEVC file
-        playlistItemRawCodedVideo::decoderEngine engine = playlistItemRawCodedVideo::askForDecoderEngine(parent);
-        if (engine == playlistItemRawCodedVideo::decoderInvalid)
+        // Compressed video
+        playlistItemCompressedVideo::decoderEngine engine;
+        playlistItemCompressedVideo::readerEngine reader;
+        playlistItemCompressedVideo::determineReaderAndDecoder(parent, fileName, reader, engine);
+        if (engine == playlistItemCompressedVideo::decoderInvalid)
           return nullptr;
-        playlistItemRawCodedVideo *newRawCodedVideo = new playlistItemRawCodedVideo(fileName, 0, engine);
+        playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0, reader, engine);
         return newRawCodedVideo;
-      }
-      else if (asType == types[3])
-      {
-        // FFmpeg file
-        playlistItemFFmpegFile *newFFmpegFile = new playlistItemFFmpegFile(fileName);
-        return newFFmpegFile;
       }
       else if (asType == types[4])
       {
@@ -236,16 +220,11 @@ namespace playlistItems
       // This is a playlistItemYUVFile. Create a new one and add it to the playlist
       newItem = playlistItemRawFile::newplaylistItemRawFile(elem, filePath);
     }
-    // For backwards compability (the playlistItemRawCodedVideo used to be called playlistItemHEVCFile)
-    else if (elem.tagName() == "playlistItemHEVCFile" || elem.tagName() == "playlistItemRawCodedVideo")
+    // For backwards compability (playlistItemCompressedFile used to be called playlistItemRawCodedVideo or playlistItemHEVCFile)
+    else if (elem.tagName() == "playlistItemCompressedFile" || elem.tagName() == "playlistItemFFmpegFile" || elem.tagName() == "playlistItemHEVCFile" || elem.tagName() == "playlistItemRawCodedVideo")
     {
       // Load the playlistItemHEVCFile
-      newItem = playlistItemRawCodedVideo::newplaylistItemRawCodedVideo(elem, filePath);
-    }
-    else if (elem.tagName() == "playlistItemFFmpegFile")
-    {
-      // Load the playlistItemFFmpegFile
-      newItem = playlistItemFFmpegFile::newplaylistItemFFmpegFile(elem, filePath);
+      newItem = playlistItemCompressedVideo::newPlaylistItemCompressedVideo(elem, filePath);
     }
     else if (elem.tagName() == "playlistItemStatisticsFile")
     {

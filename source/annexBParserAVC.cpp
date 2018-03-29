@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,10 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "fileSourceAVCAnnexBFile.h"
-
-#include <cmath>
-#include <QDebug>
+#include "annexBParserAVC.h"
 
 // Read "numBits" bits into the variable "into". 
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
@@ -57,20 +54,17 @@
 // Log a custom message (add a cutom item in the tree)
 #define LOGPARAM(name, val, coding, code, meaning) {if (itemTree) new TreeItem(name, val, coding, code, meaning, itemTree);}
 
-double fileSourceAVCAnnexBFile::getFramerate() const
+double annexBParserAVC::getFramerate() const
 {
   return 0.0;
 }
 
-void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
+void annexBParserAVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
 {
-  // Save the position of the first byte of the start code
-  quint64 curFilePos = tell() - 3;
-
   // Read two bytes (the nal header)
-  QByteArray nalHeaderBytes;
-  nalHeaderBytes.append(getCurByte());
-  gotoNextByte();
+  // Read two bytes (the nal header)
+  QByteArray nalHeaderBytes = data.left(2);
+  QByteArray payload = data.right(2);
 
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
@@ -87,8 +81,8 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
   {
     // A sequence parameter set
     auto new_sps = QSharedPointer<sps>(new sps(nal_avc));
-    new_sps->parse_sps(getRemainingNALBytes(), nalRoot);
-      
+    new_sps->parse_sps(payload, nalRoot);
+
     // Add sps (replace old one if existed)
     active_SPS_list.insert(new_sps->seq_parameter_set_id, new_sps);
 
@@ -105,8 +99,8 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
   {
     // A picture parameter set
     auto new_pps = QSharedPointer<pps>(new pps(nal_avc));
-    new_pps->parse_pps(getRemainingNALBytes(), nalRoot, active_SPS_list);
-      
+    new_pps->parse_pps(payload, nalRoot, active_SPS_list);
+
     // Add pps (replace old one if existed)
     active_PPS_list.insert(new_pps->pic_parameter_set_id, new_pps);
 
@@ -120,11 +114,11 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
   {
     // Create a new slice unit
     auto new_slice = QSharedPointer<slice_header>(new slice_header(nal_avc));
-    new_slice->parse_slice_header(getRemainingNALBytes(), active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
+    new_slice->parse_slice_header(payload, active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
 
     if (!new_slice->bottom_field_flag && 
-       (last_picture_first_slice.isNull() || new_slice->TopFieldOrderCnt != last_picture_first_slice->TopFieldOrderCnt) &&
-        new_slice->first_mb_in_slice == 0)
+      (last_picture_first_slice.isNull() || new_slice->TopFieldOrderCnt != last_picture_first_slice->TopFieldOrderCnt) &&
+      new_slice->first_mb_in_slice == 0)
       last_picture_first_slice = new_slice;
 
     // Add the POC of the slice
@@ -145,7 +139,7 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
   {
     // Create a new SEI
     auto new_sei = QSharedPointer<sei>(new sei(nal_avc));
-    QByteArray sei_data = getRemainingNALBytes();
+    QByteArray sei_data = payload;
     int nrBytes = new_sei->parse_sei_message(sei_data, nalRoot);
     sei_data.remove(0, nrBytes);
 
@@ -175,14 +169,14 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_avc.nal_idx).arg(nal_unit_type_toString.value(nal_avc.nal_unit_type)) + specificDescription);
 }
 
-const QStringList fileSourceAVCAnnexBFile::nal_unit_type_toString = QStringList()
-   << "UNSPECIFIED" << "CODED_SLICE_NON_IDR" << "CODED_SLICE_DATA_PARTITION_A" << "CODED_SLICE_DATA_PARTITION_B" << "CODED_SLICE_DATA_PARTITION_C" 
-   << "CODED_SLICE_IDR" << "SEI" << "SPS" << "PPS" << "AUD" << "END_OF_SEQUENCE" << "END_OF_STREAM" << "FILLER" << "SPS_EXT" << "PREFIX_NAL" 
-   << "SUBSET_SPS" << "DEPTH_PARAMETER_SET" << "RESERVED_17" << "RESERVED_18" << "CODED_SLICE_AUX" << "CODED_SLICE_EXTENSION" << "CODED_SLICE_EXTENSION_DEPTH_MAP" 
-   << "RESERVED_22" << "RESERVED_23" << "UNSPCIFIED_24" << "UNSPCIFIED_25" << "UNSPCIFIED_26" << "UNSPCIFIED_27" << "UNSPCIFIED_28" << "UNSPCIFIED_29" 
-   << "UNSPCIFIED_30" << "UNSPCIFIED_31";
+const QStringList annexBParserAVC::nal_unit_type_toString = QStringList()
+<< "UNSPECIFIED" << "CODED_SLICE_NON_IDR" << "CODED_SLICE_DATA_PARTITION_A" << "CODED_SLICE_DATA_PARTITION_B" << "CODED_SLICE_DATA_PARTITION_C" 
+<< "CODED_SLICE_IDR" << "SEI" << "SPS" << "PPS" << "AUD" << "END_OF_SEQUENCE" << "END_OF_STREAM" << "FILLER" << "SPS_EXT" << "PREFIX_NAL" 
+<< "SUBSET_SPS" << "DEPTH_PARAMETER_SET" << "RESERVED_17" << "RESERVED_18" << "CODED_SLICE_AUX" << "CODED_SLICE_EXTENSION" << "CODED_SLICE_EXTENSION_DEPTH_MAP" 
+<< "RESERVED_22" << "RESERVED_23" << "UNSPCIFIED_24" << "UNSPCIFIED_25" << "UNSPCIFIED_26" << "UNSPCIFIED_27" << "UNSPCIFIED_28" << "UNSPCIFIED_29" 
+<< "UNSPCIFIED_30" << "UNSPCIFIED_31";
 
-void fileSourceAVCAnnexBFile::nal_unit_avc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+void annexBParserAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   sub_byte_reader reader(parameterSetData);
@@ -232,7 +226,7 @@ void fileSourceAVCAnnexBFile::nal_unit_avc::parse_nal_unit_header(const QByteArr
   nal_unit_type = (nal_unit_type_id > UNSPCIFIED_31 || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type_enum)nal_unit_type_id;
 }
 
-fileSourceAVCAnnexBFile::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
+annexBParserAVC::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
 {
   chroma_format_idc = 1;
   bit_depth_luma_minus8 = 0;
@@ -249,7 +243,7 @@ fileSourceAVCAnnexBFile::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
   ExpectedDeltaPerPicOrderCntCycle = 0;
 }
 
-void fileSourceAVCAnnexBFile::read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree)
+void annexBParserAVC::read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree)
 {
   int lastScale = 8;
   int nextScale = 8;
@@ -257,17 +251,17 @@ void fileSourceAVCAnnexBFile::read_scaling_list(sub_byte_reader &reader, int *sc
   {
     if (nextScale != 0)
     {
-        int delta_scale;
-        READSEV(delta_scale);
-        nextScale = (lastScale + delta_scale + 256) % 256;
-        *useDefaultScalingMatrixFlag = (j == 0 && nextScale == 0);
+      int delta_scale;
+      READSEV(delta_scale);
+      nextScale = (lastScale + delta_scale + 256) % 256;
+      *useDefaultScalingMatrixFlag = (j == 0 && nextScale == 0);
     }
     scalingList[j] = (nextScale == 0) ? lastScale : nextScale;
     lastScale = scalingList[j];
   }
 }
 
-void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
+void annexBParserAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
   sub_byte_reader reader(parameterSetData);
@@ -275,7 +269,7 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
   TreeItem *const itemTree = root ? new TreeItem("seq_parameter_set_rbsp()", root) : nullptr;
-    
+
   READBITS(profile_idc, 8);
   READFLAG(constraint_set0_flag);
   READFLAG(constraint_set1_flag);
@@ -288,7 +282,7 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   READUEV(seq_parameter_set_id);
 
   if ( profile_idc == 100 || profile_idc == 110 || profile_idc == 122 || profile_idc == 244 || profile_idc ==  44 || profile_idc ==  83 || 
-      profile_idc ==  86 || profile_idc == 118 || profile_idc == 128 || profile_idc == 138 || profile_idc == 139 || profile_idc == 134 )
+    profile_idc ==  86 || profile_idc == 118 || profile_idc == 128 || profile_idc == 138 || profile_idc == 139 || profile_idc == 134 )
   {
     QStringList chroma_format_idc_meaning = QStringList() << "moochrome" << "4:2:0" << "4:2:2" << "4:4:4" << "4:4:4";
     READUEV_M(chroma_format_idc, chroma_format_idc_meaning);
@@ -323,8 +317,8 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   if (pic_order_cnt_type == 0)
   {
     READUEV(log2_max_pic_order_cnt_lsb_minus4)
-    if (log2_max_pic_order_cnt_lsb_minus4 > 12)
-      throw std::logic_error("The value of log2_max_pic_order_cnt_lsb_minus4 shall be in the range of 0 to 12, inclusive.");
+      if (log2_max_pic_order_cnt_lsb_minus4 > 12)
+        throw std::logic_error("The value of log2_max_pic_order_cnt_lsb_minus4 shall be in the range of 0 to 12, inclusive.");
     MaxPicOrderCntLsb = 1 << (log2_max_pic_order_cnt_lsb_minus4 + 4);
   }
   else if (pic_order_cnt_type == 1)
@@ -350,14 +344,14 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
     throw std::logic_error("When frame_mbs_only_flag is equal to 0, direct_8x8_inference_flag shall be equal to 1.");
 
   READFLAG(frame_cropping_flag)
-  if (frame_cropping_flag)
-  {
-    READUEV(frame_crop_left_offset);
-    READUEV(frame_crop_right_offset);
-    READUEV(frame_crop_top_offset);
-    READUEV(frame_crop_bottom_offset);
-  }
-  
+    if (frame_cropping_flag)
+    {
+      READUEV(frame_crop_left_offset);
+      READUEV(frame_crop_right_offset);
+      READUEV(frame_crop_top_offset);
+      READUEV(frame_crop_bottom_offset);
+    }
+
   // Calculate some values
   BitDepthY = 8 + bit_depth_luma_minus8;
   QpBdOffsetY = 6 * bit_depth_luma_minus8;
@@ -368,7 +362,7 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   FrameHeightInMbs = frame_mbs_only_flag ? PicHeightInMapUnits : PicHeightInMapUnits * 2;
   PicHeightInMbs = FrameHeightInMbs;
   PicSizeInMbs = PicWidthInMbs * PicHeightInMbs;
-  
+
   PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;
   if (!separate_colour_plane_flag)
     ChromaArrayType = chroma_format_idc;
@@ -385,14 +379,14 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   }
   // 7-10
   MaxFrameNum = 1 << (log2_max_frame_num_minus4 + 4);
-  
+
   // Parse the VUI
   READFLAG(vui_parameters_present_flag);
   if (vui_parameters_present_flag)
     vui_parameters.read(reader, itemTree, BitDepthY, BitDepthC, chroma_format_idc);
 }
 
-fileSourceAVCAnnexBFile::sps::vui_parameters_struct::vui_parameters_struct()
+annexBParserAVC::sps::vui_parameters_struct::vui_parameters_struct()
 {
   aspect_ratio_idc = 0;
   video_format = 5;
@@ -407,7 +401,7 @@ fileSourceAVCAnnexBFile::sps::vui_parameters_struct::vui_parameters_struct()
   vcl_hrd_parameters_present_flag = false;
 }
 
-void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree, int BitDepthY, int BitDepthC, int chroma_format_idc)
+void annexBParserAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree, int BitDepthY, int BitDepthC, int chroma_format_idc)
 {
   READFLAG(aspect_ratio_info_present_flag);
   if (aspect_ratio_info_present_flag) 
@@ -429,7 +423,7 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
   if (video_signal_type_present_flag)
   {
     QStringList video_format_meaning = QStringList()
-    << "Component" << "PAL" << "NTSC" << "SECAM" << "MAC" << "Unspecified video format" << "Reserved";
+      << "Component" << "PAL" << "NTSC" << "SECAM" << "MAC" << "Unspecified video format" << "Reserved";
     READBITS_M(video_format, 3, video_format_meaning);
     READFLAG(video_full_range_flag);
     READFLAG(colour_description_present_flag);
@@ -448,7 +442,7 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
         << "Rec. ITU-R BT.2020"
         << "Reserved For future use by ITU-T | ISO/IEC";
       READBITS_M(colour_primaries, 8, colour_primaries_meaning);
-      
+
       QStringList transfer_characteristics_meaning = QStringList()
         << "Reserved For future use by ITU-T | ISO/IEC"
         << "Rec. ITU-R BT.709-5 Rec.ITU - R BT.1361 conventional colour gamut system"
@@ -506,7 +500,7 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
       throw std::logic_error("time_scale shall be greater than 0.");
     READFLAG(fixed_frame_rate_flag);
   }
-  
+
   READFLAG(nal_hrd_parameters_present_flag);
   if (nal_hrd_parameters_present_flag)
     nal_hrd.read(reader, itemTree);
@@ -542,13 +536,13 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
   }
 }
 
-fileSourceAVCAnnexBFile::sps::vui_parameters_struct::hrd_parameters_struct::hrd_parameters_struct()
+annexBParserAVC::sps::vui_parameters_struct::hrd_parameters_struct::hrd_parameters_struct()
 {
   cpb_removal_delay_length_minus1 = 23;
   time_offset_length = 24;
 }
 
-void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::hrd_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree)
+void annexBParserAVC::sps::vui_parameters_struct::hrd_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree)
 {
   READUEV(cpb_cnt_minus1);
   if (cpb_cnt_minus1 > 31)
@@ -572,13 +566,13 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::hrd_parameters_struct:
   READBITS(time_offset_length, 5);
 }
 
-fileSourceAVCAnnexBFile::pps::pps(const nal_unit_avc &nal) : nal_unit_avc(nal)
+annexBParserAVC::pps::pps(const nal_unit_avc &nal) : nal_unit_avc(nal)
 {
   transform_8x8_mode_flag = false;
   pic_scaling_matrix_present_flag = false;
 }
 
-void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list)
+void annexBParserAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list)
 {
   nalPayload = parameterSetData;
   sub_byte_reader reader(parameterSetData);
@@ -586,7 +580,7 @@ void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData,
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
   TreeItem *const itemTree = root ? new TreeItem("pic_parameter_set_rbsp()", root) : nullptr;
-  
+
   READUEV(pic_parameter_set_id);
   if (pic_parameter_set_id > 255)
     throw std::logic_error("The value of pic_parameter_set_id shall be in the range of 0 to 255, inclusive.");
@@ -681,7 +675,7 @@ void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData,
   // rbsp_trailing_bits( )
 }
 
-fileSourceAVCAnnexBFile::slice_header::slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal)
+annexBParserAVC::slice_header::slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal)
 {
   field_pic_flag = false;
   bottom_field_flag = false;
@@ -697,14 +691,14 @@ fileSourceAVCAnnexBFile::slice_header::slice_header(const nal_unit_avc &nal) : n
   globalPOC_highestGlobalPOCLastGOP = -1;
 }
 
-void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
+void annexBParserAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
   TreeItem *const itemTree = root ? new TreeItem("slice_header()", root) : nullptr;
-  
+
   READUEV(first_mb_in_slice);
   QStringList slice_type_id_meaning = QStringList() 
     << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)" << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)";
@@ -734,8 +728,8 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
     if (field_pic_flag)
     {
       READFLAG(bottom_field_flag)
-      // Update 
-      refSPS->MbaffFrameFlag = (refSPS->mb_adaptive_frame_field_flag && !field_pic_flag);
+        // Update 
+        refSPS->MbaffFrameFlag = (refSPS->mb_adaptive_frame_field_flag && !field_pic_flag);
       refSPS->PicHeightInMbs = refSPS->FrameHeightInMbs / 2;
       refSPS->PicSizeInMbs = refSPS->PicWidthInMbs * refSPS->PicHeightInMbs;
     }
@@ -799,7 +793,7 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
   else
     ref_pic_list_modification.read(reader, itemTree, slice_type);
   if ((refPPS->weighted_pred_flag && (slice_type == SLICE_P || slice_type == SLICE_SP)) || 
-     (refPPS->weighted_bipred_idc == 1 && slice_type == SLICE_B))
+    (refPPS->weighted_bipred_idc == 1 && slice_type == SLICE_B))
     pred_weight_table.read(reader, itemTree, slice_type, refSPS->ChromaArrayType, num_ref_idx_l0_active_minus1, num_ref_idx_l1_active_minus1);
   if (nal_ref_idc != 0)
     dec_ref_pic_marking.read(reader, itemTree, IdrPicFlag);
@@ -982,7 +976,7 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
         TopFieldOrderCnt = tempPicOrderCnt;
     }
   }
-  
+
   if (prev_pic.isNull())
   {
     globalPOC = 0;
@@ -1013,7 +1007,7 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
   }
 }
 
-void fileSourceAVCAnnexBFile::slice_header::ref_pic_list_mvc_modification_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type)
+void annexBParserAVC::slice_header::ref_pic_list_mvc_modification_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type)
 {
   if (slice_type != SLICE_I && slice_type != SLICE_SI)
   {
@@ -1042,90 +1036,90 @@ void fileSourceAVCAnnexBFile::slice_header::ref_pic_list_mvc_modification_struct
           READUEV(abs_diff_view_idx_minus1);
           abs_diff_view_idx_minus1_l0.append(abs_diff_view_idx_minus1);
         }
-       } while (modification_of_pic_nums_idc != 3);
+      } while (modification_of_pic_nums_idc != 3);
   }
   if (slice_type == SLICE_B) 
   {
     READFLAG(ref_pic_list_modification_flag_l1);
     int modification_of_pic_nums_idc;
     if (ref_pic_list_modification_flag_l1)
-    do 
-    {
-      READUEV(modification_of_pic_nums_idc);
-      modification_of_pic_nums_idc_l1.append(modification_of_pic_nums_idc);
-      if (modification_of_pic_nums_idc == 0 || modification_of_pic_nums_idc == 1)
+      do 
       {
-        int abs_diff_pic_num_minus1;
-        READUEV(abs_diff_pic_num_minus1);
-        abs_diff_pic_num_minus1_l1.append(abs_diff_pic_num_minus1);
-      }
-      else if (modification_of_pic_nums_idc == 2)
-      {
-        int long_term_pic_num;
-        READUEV(long_term_pic_num);
-        long_term_pic_num_l1.append(long_term_pic_num);
-      }
-      else if (modification_of_pic_nums_idc == 4 || modification_of_pic_nums_idc == 5)
-      {
-        int abs_diff_view_idx_minus1;
-        READUEV(abs_diff_view_idx_minus1);
-        abs_diff_view_idx_minus1_l1.append(abs_diff_view_idx_minus1);
-      }
+        READUEV(modification_of_pic_nums_idc);
+        modification_of_pic_nums_idc_l1.append(modification_of_pic_nums_idc);
+        if (modification_of_pic_nums_idc == 0 || modification_of_pic_nums_idc == 1)
+        {
+          int abs_diff_pic_num_minus1;
+          READUEV(abs_diff_pic_num_minus1);
+          abs_diff_pic_num_minus1_l1.append(abs_diff_pic_num_minus1);
+        }
+        else if (modification_of_pic_nums_idc == 2)
+        {
+          int long_term_pic_num;
+          READUEV(long_term_pic_num);
+          long_term_pic_num_l1.append(long_term_pic_num);
+        }
+        else if (modification_of_pic_nums_idc == 4 || modification_of_pic_nums_idc == 5)
+        {
+          int abs_diff_view_idx_minus1;
+          READUEV(abs_diff_view_idx_minus1);
+          abs_diff_view_idx_minus1_l1.append(abs_diff_view_idx_minus1);
+        }
       } while(modification_of_pic_nums_idc != 3);
   }
 }
 
-void fileSourceAVCAnnexBFile::slice_header::ref_pic_list_modification_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type)
+void annexBParserAVC::slice_header::ref_pic_list_modification_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type)
 {
   if (slice_type != SLICE_I && slice_type != SLICE_SI)
   {
     READFLAG(ref_pic_list_modification_flag_l0);
     int modification_of_pic_nums_idc;
     if (ref_pic_list_modification_flag_l0)
-    do 
-    { 
-      READUEV(modification_of_pic_nums_idc);
-      modification_of_pic_nums_idc_l0.append(modification_of_pic_nums_idc);
-      if (modification_of_pic_nums_idc == 0 || modification_of_pic_nums_idc == 1)
-      {
-        int abs_diff_pic_num_minus1;
-        READUEV(abs_diff_pic_num_minus1);
-        abs_diff_pic_num_minus1_l0.append(abs_diff_pic_num_minus1);
-      }
-      else if (modification_of_pic_nums_idc == 2)
-      {
-        int long_term_pic_num;
-        READUEV(long_term_pic_num);
-        long_term_pic_num_l0.append(long_term_pic_num);
-      }
-    } while (modification_of_pic_nums_idc != 3);
+      do 
+      { 
+        READUEV(modification_of_pic_nums_idc);
+        modification_of_pic_nums_idc_l0.append(modification_of_pic_nums_idc);
+        if (modification_of_pic_nums_idc == 0 || modification_of_pic_nums_idc == 1)
+        {
+          int abs_diff_pic_num_minus1;
+          READUEV(abs_diff_pic_num_minus1);
+          abs_diff_pic_num_minus1_l0.append(abs_diff_pic_num_minus1);
+        }
+        else if (modification_of_pic_nums_idc == 2)
+        {
+          int long_term_pic_num;
+          READUEV(long_term_pic_num);
+          long_term_pic_num_l0.append(long_term_pic_num);
+        }
+      } while (modification_of_pic_nums_idc != 3);
   }
   if (slice_type == 1) 
   {
     READFLAG(ref_pic_list_modification_flag_l1);
     int modification_of_pic_nums_idc;
     if (ref_pic_list_modification_flag_l1)
-    do 
-    {
-      READUEV(modification_of_pic_nums_idc);
-      modification_of_pic_nums_idc_l1.append(modification_of_pic_nums_idc);
-      if (modification_of_pic_nums_idc == 0 || modification_of_pic_nums_idc == 1)
+      do 
       {
-        int abs_diff_pic_num_minus1;
-        READUEV(abs_diff_pic_num_minus1);
-        abs_diff_pic_num_minus1_l1.append(abs_diff_pic_num_minus1);
-      }
-      else if (modification_of_pic_nums_idc == 2)
-      {
-        int long_term_pic_num;
-        READUEV(long_term_pic_num);
-        long_term_pic_num_l1.append(long_term_pic_num);
-      }
-    } while (modification_of_pic_nums_idc != 3);
+        READUEV(modification_of_pic_nums_idc);
+        modification_of_pic_nums_idc_l1.append(modification_of_pic_nums_idc);
+        if (modification_of_pic_nums_idc == 0 || modification_of_pic_nums_idc == 1)
+        {
+          int abs_diff_pic_num_minus1;
+          READUEV(abs_diff_pic_num_minus1);
+          abs_diff_pic_num_minus1_l1.append(abs_diff_pic_num_minus1);
+        }
+        else if (modification_of_pic_nums_idc == 2)
+        {
+          int long_term_pic_num;
+          READUEV(long_term_pic_num);
+          long_term_pic_num_l1.append(long_term_pic_num);
+        }
+      } while (modification_of_pic_nums_idc != 3);
   }
 }
 
-void fileSourceAVCAnnexBFile::slice_header::pred_weight_table_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1)
+void annexBParserAVC::slice_header::pred_weight_table_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1)
 {
   READUEV(luma_log2_weight_denom);
   if (ChromaArrayType != 0)
@@ -1180,7 +1174,7 @@ void fileSourceAVCAnnexBFile::slice_header::pred_weight_table_struct::read(sub_b
 }
 
 
-void fileSourceAVCAnnexBFile::slice_header::dec_ref_pic_marking_struct::read(sub_byte_reader & reader, TreeItem * itemTree, bool IdrPicFlag)
+void annexBParserAVC::slice_header::dec_ref_pic_marking_struct::read(sub_byte_reader & reader, TreeItem * itemTree, bool IdrPicFlag)
 {
   if (IdrPicFlag)
   {
@@ -1192,23 +1186,23 @@ void fileSourceAVCAnnexBFile::slice_header::dec_ref_pic_marking_struct::read(sub
     READFLAG(adaptive_ref_pic_marking_mode_flag);
     int memory_management_control_operation;
     if (adaptive_ref_pic_marking_mode_flag)
-    do 
-    {
-      READUEV(memory_management_control_operation)
-      memory_management_control_operation_list.append(memory_management_control_operation);
-      if (memory_management_control_operation == 1 || memory_management_control_operation == 3)
-        READUEV_APP(difference_of_pic_nums_minus1)
-      if (memory_management_control_operation == 2)
-        READUEV_APP(long_term_pic_num);
-      if (memory_management_control_operation == 3 || memory_management_control_operation == 6)
-        READUEV_APP(long_term_frame_idx);
-      if (memory_management_control_operation == 4)
-        READUEV_APP(max_long_term_frame_idx_plus1);
-    } while (memory_management_control_operation != 0);
+      do 
+      {
+        READUEV(memory_management_control_operation)
+          memory_management_control_operation_list.append(memory_management_control_operation);
+        if (memory_management_control_operation == 1 || memory_management_control_operation == 3)
+          READUEV_APP(difference_of_pic_nums_minus1)
+          if (memory_management_control_operation == 2)
+            READUEV_APP(long_term_pic_num);
+        if (memory_management_control_operation == 3 || memory_management_control_operation == 6)
+          READUEV_APP(long_term_frame_idx);
+        if (memory_management_control_operation == 4)
+          READUEV_APP(max_long_term_frame_idx_plus1);
+      } while (memory_management_control_operation != 0);
   }
 }
 
-QByteArray fileSourceAVCAnnexBFile::nal_unit_avc::getNALHeader() const
+QByteArray annexBParserAVC::nal_unit_avc::getNALHeader() const
 {
   // TODO: 
   // if ( nal_unit_type = = 14 | | nal_unit_type = = 20 | | nal_unit_type = = 21 ) ...
@@ -1217,7 +1211,7 @@ QByteArray fileSourceAVCAnnexBFile::nal_unit_avc::getNALHeader() const
   return QByteArray(c, 5);
 }
 
-int fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root)
+int annexBParserAVC::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1364,7 +1358,7 @@ int fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData,
     payloadTypeName = "reserved_sei_message";
 
   LOGVAL_M(payloadType,payloadTypeName);
-  
+
   payloadSize = 0;
 
   // Read the next byte
@@ -1393,7 +1387,7 @@ int fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData,
   return reader.nrBytesRead();
 }
 
-void fileSourceAVCAnnexBFile::buffering_period_sei::parse_buffering_period_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, TreeItem *root)
+void annexBParserAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1429,7 +1423,7 @@ void fileSourceAVCAnnexBFile::buffering_period_sei::parse_buffering_period_sei(Q
   }
 }
 
-void fileSourceAVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
+void annexBParserAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1467,15 +1461,15 @@ void fileSourceAVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &s
   {
     QStringList pic_struct_meaings = QStringList() 
       << "(progressive) frame"
-     << "top field"
-     << "bottom field"
-     << "top field, bottom field, in that order"
-     << "bottom field, top field, in that order"
-     << "top field, bottom field, top field repeated, in that order"
-     << "bottom field, top field, bottom field repeated, in that order"
-     << "frame doubling"
-     << "frame tripling"
-     << "reserved";
+      << "top field"
+      << "bottom field"
+      << "top field, bottom field, in that order"
+      << "bottom field, top field, in that order"
+      << "top field, bottom field, top field repeated, in that order"
+      << "bottom field, top field, bottom field repeated, in that order"
+      << "frame doubling"
+      << "frame tripling"
+      << "reserved";
     READBITS_M(pic_struct, 4, pic_struct_meaings);
     int NumClockTS = 0;
     if (pic_struct < 3)
@@ -1538,7 +1532,7 @@ void fileSourceAVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &s
   }
 }
 
-void fileSourceAVCAnnexBFile::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
+void annexBParserAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
 {
   if (sliceHeaderData.mid(16, 4) == "x264")
   {
@@ -1570,7 +1564,7 @@ void fileSourceAVCAnnexBFile::user_data_sei::parse_user_data_sei(QByteArray &sli
         {
           if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
             LOGPARAM("Info", aggregate_string, "", "", "")
-          aggregate_string = "";
+            aggregate_string = "";
         }
         else if (val == "options:")
         {
@@ -1585,7 +1579,9 @@ void fileSourceAVCAnnexBFile::user_data_sei::parse_user_data_sei(QByteArray &sli
   }
 }
 
-QList<QByteArray> fileSourceAVCAnnexBFile::seekToFrameNumber(int iFrameNr)
+QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos)
 {
+  // TODO ... :)
+  filePos = 0;
   return QList<QByteArray>();
 }

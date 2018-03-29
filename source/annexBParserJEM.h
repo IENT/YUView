@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,34 +30,38 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILESOURCEJEMANNEXBFILE_H
-#define FILESOURCEJEMANNEXBFILE_H
+#ifndef ANNEXBPARSERJEM_H
+#define ANNEXBPARSERJEM_H
 
-#include <QAbstractItemModel>
-#include <QMap>
-#include "fileSourceAnnexBFile.h"
+#include "annexBParser.h"
 #include "videoHandlerYUV.h"
+
+#include <QSharedPointer>
 
 using namespace YUV_Internals;
 
-#define BUFFER_SIZE 40960
-
-class fileSourceJEMAnnexBFile : public fileSourceAnnexBFile
+// This class knows how to parse the bitrstream of HEVC annexB files
+class annexBParserJEM : public annexBParser
 {
-  Q_OBJECT
-
 public:
-  fileSourceJEMAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; }
-  ~fileSourceJEMAnnexBFile() {}
+  annexBParserJEM() : annexBParser() { firstPOCRandomAccess = INT_MAX; }
+  ~annexBParserJEM() {};
 
-  // When the signal signalGetNALUnitInfo is emitted, this function can be used to return information.
-  void setNALUnitInfo(int poc, bool isRAP, bool isParameterSet) { nalInfoPoc = poc; nalInfoIsRAP = isRAP; nalInfoIsParameterSet = isParameterSet; }
+  // What it the framerate?
+  double getFramerate() const Q_DECL_OVERRIDE;
+  // What is the sequence resolution?
+  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
+  // What is the chroma format?
+  YUVSubsamplingType getSequenceSubsampling() const Q_DECL_OVERRIDE;
+  // What is the bit depth of the reconstruction?
+  int getSequenceBitDepth(Component c) const Q_DECL_OVERRIDE;
 
-signals:
-  // This class does not know how to interprete any data from within a NAL unit (except for the NAL unit header).
-  // So if we want to know more about a NAL unit, we emit this signal and hope that this will result in a call to
-  // setNALUnitInfo so that we get some info on the NAL unit.
-  void signalGetNALUnitInfo(QByteArray nalData);
+  void parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos = -1) Q_DECL_OVERRIDE;
+
+  // When we want to seek to a specific frame number, this function return the parameter sets that you need
+  // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
+  // also be returned.
+  QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos) Q_DECL_OVERRIDE;
 
 protected:
 
@@ -93,19 +97,18 @@ protected:
 
     bool isParameterSetNAL;
     int poc;
-    
+
     // The information of the NAL unit header
     nal_unit_type nal_type;
     int nuh_layer_id;
     int nuh_temporal_id_plus1;
   };
-
-  void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;
   
   int nalInfoPoc;
   bool nalInfoIsRAP;
   bool nalInfoIsParameterSet;
 
+  int firstPOCRandomAccess;
 };
 
-#endif //FILESOURCEJEMANNEXBFILE_H
+#endif // ANNEXBPARSERJEM_H

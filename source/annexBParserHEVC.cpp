@@ -1,4 +1,4 @@
-/*  This file is part of YUView - The YUV player with advanced analytics toolset
+﻿/*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
 *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
@@ -30,12 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "fileSourceHEVCAnnexBFile.h"
-
-#include <algorithm>
-#include <cmath>
-#include <QSize>
-#include "typedef.h"
+#include "annexBParserHEVC.h"
 
 #define HEVCANNEXBFILE_DEBUG_OUTPUT 0
 #if HEVCANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
@@ -46,8 +41,8 @@
 #endif
 
 /* Some macros that we use to read syntax elements from the bitstream.
- * The advantage of these macros is, that they can directly also create the tree structure for the QAbstractItemModel that is 
- * used to show the NAL units and their content. The tree will only be added if the pointer to the given tree itemTree is valid.
+* The advantage of these macros is, that they can directly also create the tree structure for the QAbstractItemModel that is 
+* used to show the NAL units and their content. The tree will only be added if the pointer to the given tree itemTree is valid.
 */
 // Read "numBits" bits into the variable "into". 
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
@@ -76,7 +71,7 @@
 // Read an UEV code and ignore the value. Return false if -1 was returned by the reading function.
 #define IGNOREUEV() {int into = reader.readUE_V();}
 
-void fileSourceHEVCAnnexBFile::profile_tier_level::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
+void annexBParserHEVC::profile_tier_level::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -98,9 +93,9 @@ void fileSourceHEVCAnnexBFile::profile_tier_level::parse_profile_tier_level(sub_
 
     int nrGeneralReservedZeroBits = 0;
     if(general_profile_idc == 4 || general_profile_compatibility_flag[4] || 
-       general_profile_idc == 5 || general_profile_compatibility_flag[5] || 
-       general_profile_idc == 6 || general_profile_compatibility_flag[6] || 
-       general_profile_idc == 7 || general_profile_compatibility_flag[7]) 
+      general_profile_idc == 5 || general_profile_compatibility_flag[5] || 
+      general_profile_idc == 6 || general_profile_compatibility_flag[6] || 
+      general_profile_idc == 7 || general_profile_compatibility_flag[7]) 
     {
       READFLAG(general_max_12bit_constraint_flag);
       READFLAG(general_max_10bit_constraint_flag);
@@ -130,16 +125,16 @@ void fileSourceHEVCAnnexBFile::profile_tier_level::parse_profile_tier_level(sub_
       if (itemTree) new TreeItem("general_reserved_zero_bits",0,QString("u(v) -> u(%1)").arg(nrGeneralReservedZeroBits),code, itemTree);
 
     if((general_profile_idc >= 1 && general_profile_idc <= 5) ||
-        general_profile_compatibility_flag[1] || general_profile_compatibility_flag[2] || 
-        general_profile_compatibility_flag[3] || general_profile_compatibility_flag[4] || 
-        general_profile_compatibility_flag[5])
+      general_profile_compatibility_flag[1] || general_profile_compatibility_flag[2] || 
+      general_profile_compatibility_flag[3] || general_profile_compatibility_flag[4] || 
+      general_profile_compatibility_flag[5])
       READFLAG(general_inbld_flag)
     else 
       READFLAG(general_reserved_zero_bit);
   }
 
   READBITS(general_level_idc, 8);
-    
+
   for(int i = 0; i < maxNumSubLayersMinus1; i++)
   {
     READFLAG(sub_layer_profile_present_flag[i]);
@@ -156,9 +151,9 @@ void fileSourceHEVCAnnexBFile::profile_tier_level::parse_profile_tier_level(sub_
     {
       READBITS(sub_layer_profile_space[i], 2);
       READFLAG(sub_layer_tier_flag[i]);
-        
+
       READBITS(sub_layer_profile_idc[i], 5);
-      
+
       for(int j = 0; j < 32; j++)
         READFLAG(sub_layer_profile_compatibility_flag[i][j]);
 
@@ -166,12 +161,12 @@ void fileSourceHEVCAnnexBFile::profile_tier_level::parse_profile_tier_level(sub_
       READFLAG(sub_layer_interlaced_source_flag[i]);
       READFLAG(sub_layer_non_packed_constraint_flag[i]);
       READFLAG(sub_layer_frame_only_constraint_flag[i]);
-        
+
       int nrSubLayerReservedZeroBits;
       if(sub_layer_profile_idc[i] == 4 || sub_layer_profile_compatibility_flag[i][4] || 
-         sub_layer_profile_idc[i] == 5 || sub_layer_profile_compatibility_flag[i][5] || 
-         sub_layer_profile_idc[i] == 6 || sub_layer_profile_compatibility_flag[i][6] || 
-         sub_layer_profile_idc[i] == 7 || sub_layer_profile_compatibility_flag[i][7])
+        sub_layer_profile_idc[i] == 5 || sub_layer_profile_compatibility_flag[i][5] || 
+        sub_layer_profile_idc[i] == 6 || sub_layer_profile_compatibility_flag[i][6] || 
+        sub_layer_profile_idc[i] == 7 || sub_layer_profile_compatibility_flag[i][7])
       {
         READFLAG(sub_layer_max_12bit_constraint_flag[i]);
         READFLAG(sub_layer_max_10bit_constraint_flag[i]);
@@ -202,9 +197,9 @@ void fileSourceHEVCAnnexBFile::profile_tier_level::parse_profile_tier_level(sub_
 
 
       if((sub_layer_profile_idc[i] >= 1 && sub_layer_profile_idc[i] <= 5) ||
-          sub_layer_profile_compatibility_flag[1] || sub_layer_profile_compatibility_flag[2] || 
-          sub_layer_profile_compatibility_flag[3] || sub_layer_profile_compatibility_flag[4] || 
-          sub_layer_profile_compatibility_flag[5])
+        sub_layer_profile_compatibility_flag[1] || sub_layer_profile_compatibility_flag[2] || 
+        sub_layer_profile_compatibility_flag[3] || sub_layer_profile_compatibility_flag[4] || 
+        sub_layer_profile_compatibility_flag[5])
         READFLAG(sub_layer_inbld_flag[i])
       else
         READFLAG(sub_layer_reserved_zero_bit[i]);
@@ -215,7 +210,7 @@ void fileSourceHEVCAnnexBFile::profile_tier_level::parse_profile_tier_level(sub_
   }
 }
 
-void fileSourceHEVCAnnexBFile::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(sub_byte_reader &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, TreeItem *root)
+void annexBParserHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(sub_byte_reader &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, TreeItem *root)
 {
   Q_UNUSED(subLayerId);
 
@@ -239,13 +234,13 @@ void fileSourceHEVCAnnexBFile::sub_layer_hrd_parameters::parse_sub_layer_hrd_par
   }
 }
 
-fileSourceHEVCAnnexBFile::hrd_parameters::hrd_parameters()
+annexBParserHEVC::hrd_parameters::hrd_parameters()
 {
   nal_hrd_parameters_present_flag = false;
   vcl_hrd_parameters_present_flag = false;
 }
 
-void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
+void annexBParserHEVC::hrd_parameters::parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -272,7 +267,7 @@ void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_rea
       READBITS(cpb_size_scale, 4);
       if(sub_pic_hrd_params_present_flag)
         READBITS(cpb_size_du_scale, 4)
-      READBITS(initial_cpb_removal_delay_length_minus1, 5);
+        READBITS(initial_cpb_removal_delay_length_minus1, 5);
       READBITS(au_cpb_removal_delay_length_minus1, 5);
       READBITS(dpb_output_delay_length_minus1, 5);
     }
@@ -304,7 +299,7 @@ void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_rea
   }
 }
 
-void fileSourceHEVCAnnexBFile::pred_weight_table::parse_pred_weight_table(sub_byte_reader &reader, sps *actSPS, slice *actSlice, TreeItem *root)
+void annexBParserHEVC::pred_weight_table::parse_pred_weight_table(sub_byte_reader &reader, sps *actSPS, slice *actSlice, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -357,15 +352,15 @@ void fileSourceHEVCAnnexBFile::pred_weight_table::parse_pred_weight_table(sub_by
   }
 }
 
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumNegativePics[65];
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumPositivePics[65];
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::DeltaPocS0[65][16];
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::DeltaPocS1[65][16];
-bool fileSourceHEVCAnnexBFile::st_ref_pic_set::UsedByCurrPicS0[65][16];
-bool fileSourceHEVCAnnexBFile::st_ref_pic_set::UsedByCurrPicS1[65][16];
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumDeltaPocs[65];
+int annexBParserHEVC::st_ref_pic_set::NumNegativePics[65];
+int annexBParserHEVC::st_ref_pic_set::NumPositivePics[65];
+int annexBParserHEVC::st_ref_pic_set::DeltaPocS0[65][16];
+int annexBParserHEVC::st_ref_pic_set::DeltaPocS1[65][16];
+bool annexBParserHEVC::st_ref_pic_set::UsedByCurrPicS0[65][16];
+bool annexBParserHEVC::st_ref_pic_set::UsedByCurrPicS1[65][16];
+int annexBParserHEVC::st_ref_pic_set::NumDeltaPocs[65];
 
-void fileSourceHEVCAnnexBFile::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_reader &reader, int stRpsIdx, sps *actSPS, TreeItem *root)
+void annexBParserHEVC::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_reader &reader, int stRpsIdx, sps *actSPS, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -385,7 +380,7 @@ void fileSourceHEVCAnnexBFile::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_rea
       READUEV(delta_idx_minus1);
     READFLAG(delta_rps_sign);
     READUEV(abs_delta_rps_minus1);
-    
+
     int RefRpsIdx = stRpsIdx - (delta_idx_minus1 + 1);                     // Rec. ITU-T H.265 v3 (04/2015) (7-57)
     int deltaRps = (1 - 2 * delta_rps_sign) * (abs_delta_rps_minus1 + 1);  // Rec. ITU-T H.265 v3 (04/2015) (7-58)
     LOGVAL(RefRpsIdx);
@@ -469,7 +464,7 @@ void fileSourceHEVCAnnexBFile::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_rea
     {
       READUEV_A(delta_poc_s0_minus1, i);
       READFLAG_A(used_by_curr_pic_s0_flag, i);
-      
+
       if (i==0)
         DeltaPocS0[stRpsIdx][i] = -(delta_poc_s0_minus1.last() + 1); // (7-65)
       else
@@ -502,7 +497,7 @@ void fileSourceHEVCAnnexBFile::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_rea
 }
 
 // (7-55)
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *actSlice)
+int annexBParserHEVC::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *actSlice)
 {
   int NumPicTotalCurr = 0;
   for(int i = 0; i < NumNegativePics[CurrRpsIdx]; i++)
@@ -517,13 +512,13 @@ int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, sl
   return NumPicTotalCurr;
 }
 
-fileSourceHEVCAnnexBFile::vui_parameters::vui_parameters()
+annexBParserHEVC::vui_parameters::vui_parameters()
 {
   video_format = 5;
   video_full_range_flag = false;
 }
 
-void fileSourceHEVCAnnexBFile::vui_parameters::parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root)
+void annexBParserHEVC::vui_parameters::parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -614,7 +609,7 @@ void fileSourceHEVCAnnexBFile::vui_parameters::parse_vui_parameters(sub_byte_rea
   }
 }
 
-void fileSourceHEVCAnnexBFile::scaling_list_data::parse_scaling_list_data(sub_byte_reader &reader, TreeItem *root)
+void annexBParserHEVC::scaling_list_data::parse_scaling_list_data(sub_byte_reader &reader, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -652,16 +647,16 @@ void fileSourceHEVCAnnexBFile::scaling_list_data::parse_scaling_list_data(sub_by
   }
 }
 
-void fileSourceHEVCAnnexBFile::vps::parse_vps(const QByteArray &parameterSetData, TreeItem *root)
+void annexBParserHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
-  
+
   sub_byte_reader reader(parameterSetData);
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
   TreeItem *const itemTree = root ? new TreeItem("video_parameter_set_rbsp()", root) : nullptr;
-  
+
   READBITS(vps_video_parameter_set_id, 4);
   READFLAG(vps_base_layer_internal_flag);
   READFLAG(vps_base_layer_available_flag);
@@ -672,7 +667,7 @@ void fileSourceHEVCAnnexBFile::vps::parse_vps(const QByteArray &parameterSetData
 
   // Parse the profile tier level
   ptl.parse_profile_tier_level(reader, true, vps_max_sub_layers_minus1, itemTree);
-    
+
   READFLAG(vps_sub_layer_ordering_info_present_flag);
   for(int i = (vps_sub_layer_ordering_info_present_flag ? 0 : vps_max_sub_layers_minus1); i <= vps_max_sub_layers_minus1; i++)
   {
@@ -706,7 +701,7 @@ void fileSourceHEVCAnnexBFile::vps::parse_vps(const QByteArray &parameterSetData
 
       if(i > 0)
         READFLAG_A(cprms_present_flag, i);
-      
+
       // hrd_parameters...
       vps_hrd_parameters.append(hrd_parameters());
       vps_hrd_parameters.last().parse_hrd_parameters(reader, cprms_present_flag[i], vps_max_sub_layers_minus1, itemTree);
@@ -727,7 +722,7 @@ void fileSourceHEVCAnnexBFile::vps::parse_vps(const QByteArray &parameterSetData
   // ... later
 }
 
-fileSourceHEVCAnnexBFile::sps::sps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
+annexBParserHEVC::sps::sps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 {
   // Infer some default values (if not present)
   separate_colour_plane_flag = false;
@@ -742,10 +737,10 @@ fileSourceHEVCAnnexBFile::sps::sps(const nal_unit_hevc &nal) : nal_unit_hevc(nal
   sps_extension_5bits = 0;
 }
 
-void fileSourceHEVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
+void annexBParserHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
-  
+
   sub_byte_reader reader(parameterSetData);
 
   // Create a new TreeItem root for the item
@@ -755,17 +750,17 @@ void fileSourceHEVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData
   READBITS(sps_video_parameter_set_id,4);
   READBITS(sps_max_sub_layers_minus1, 3);
   READFLAG(sps_temporal_id_nesting_flag);
-  
+
   // parse profile tier level
   ptl.parse_profile_tier_level(reader, true, sps_max_sub_layers_minus1, itemTree);
-  
+
   /// Back to the seq_parameter_set_rbsp
   READUEV(sps_seq_parameter_set_id);
   QStringList chroma_format_idc_meaning = QStringList() << "moochrome" << "4:2:0" << "4:2:2" << "4:4:4" << "4:4:4";
   READUEV_M(chroma_format_idc, chroma_format_idc_meaning);
   if (chroma_format_idc == 3) 
     READBITS(separate_colour_plane_flag,1)
-  ChromaArrayType = (separate_colour_plane_flag) ? 0 : chroma_format_idc;
+    ChromaArrayType = (separate_colour_plane_flag) ? 0 : chroma_format_idc;
   LOGVAL(ChromaArrayType);
 
   // Rec. ITU-T H.265 v3 (04/2015) - 6.2 - Table 6-1 
@@ -894,7 +889,7 @@ void fileSourceHEVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData
   LOGVAL(PicSizeInCtbsY);
 }
 
-fileSourceHEVCAnnexBFile::pps::pps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
+annexBParserHEVC::pps::pps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 {
   deblocking_filter_override_enabled_flag = false;
   pps_range_extension_flag = false;
@@ -903,10 +898,10 @@ fileSourceHEVCAnnexBFile::pps::pps(const nal_unit_hevc &nal) : nal_unit_hevc(nal
   pps_extension_5bits = false;
 }
 
-void fileSourceHEVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root)
+void annexBParserHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
-  
+
   sub_byte_reader reader(parameterSetData);
 
   // Create a new TreeItem root for the item
@@ -977,7 +972,7 @@ void fileSourceHEVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData
     READFLAG(pps_3d_extension_flag);
     READBITS(pps_extension_5bits, 5);
   }
-  
+
   // Now the extensions follow ...
   // This would also be interesting but later.
   if(pps_range_extension_flag)
@@ -998,12 +993,12 @@ void fileSourceHEVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData
   // There is more to parse but we are not interested in this information (for now)
 }
 
-fileSourceHEVCAnnexBFile::pps_range_extension::pps_range_extension()
+annexBParserHEVC::pps_range_extension::pps_range_extension()
 {
   chroma_qp_offset_list_enabled_flag = false;
 }
 
-void fileSourceHEVCAnnexBFile::pps_range_extension::parse_pps_range_extension(sub_byte_reader &reader, pps *actPPS, TreeItem *root)
+void annexBParserHEVC::pps_range_extension::parse_pps_range_extension(sub_byte_reader &reader, pps *actPPS, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -1027,7 +1022,7 @@ void fileSourceHEVCAnnexBFile::pps_range_extension::parse_pps_range_extension(su
   READUEV(log2_sao_offset_scale_chroma);
 }
 
-void fileSourceHEVCAnnexBFile::ref_pic_lists_modification::parse_ref_pic_lists_modification(sub_byte_reader &reader, slice *actSlice, int NumPicTotalCurr, TreeItem *root)
+void annexBParserHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modification(sub_byte_reader &reader, slice *actSlice, int NumPicTotalCurr, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -1050,11 +1045,11 @@ void fileSourceHEVCAnnexBFile::ref_pic_lists_modification::parse_ref_pic_lists_m
 }
 
 // Initialize static member. Only true for the first slice instance
-bool fileSourceHEVCAnnexBFile::slice::bFirstAUInDecodingOrder = true;
-int fileSourceHEVCAnnexBFile::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
-int fileSourceHEVCAnnexBFile::slice::prevTid0Pic_PicOrderCntMsb = 0;
+bool annexBParserHEVC::slice::bFirstAUInDecodingOrder = true;
+int annexBParserHEVC::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
+int annexBParserHEVC::slice::prevTid0Pic_PicOrderCntMsb = 0;
 
-fileSourceHEVCAnnexBFile::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
+annexBParserHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 {
   PicOrderCntVal = -1;
   PicOrderCntMsb = -1;
@@ -1077,7 +1072,7 @@ fileSourceHEVCAnnexBFile::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc
 }
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
-void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &p_active_SPS_list, const pps_map &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
+void annexBParserHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &p_active_SPS_list, const pps_map &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1086,7 +1081,7 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
   TreeItem *const itemTree = root ? new TreeItem("slice_segment_header()", root) : nullptr;
 
   READFLAG(first_slice_segment_in_pic_flag);
-  
+
   if (isIRAP())
     READFLAG(no_output_of_prior_pics_flag);
 
@@ -1173,8 +1168,8 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
           }  
 
           READFLAG_A(delta_poc_msb_present_flag, i)
-          if(delta_poc_msb_present_flag.last())
-            READUEV_A(delta_poc_msb_cycle_lt, i)
+            if(delta_poc_msb_present_flag.last())
+              READUEV_A(delta_poc_msb_cycle_lt, i)
         }
       }
       if(actSPS->sps_temporal_mvp_enabled_flag)
@@ -1259,7 +1254,7 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
 
     slice_pic_order_cnt_lsb = firstSliceInSegment->slice_pic_order_cnt_lsb;
   }
-  
+
   if(actPPS->tiles_enabled_flag || actPPS->entropy_coding_sync_enabled_flag)
   {
     READUEV(num_entry_point_offsets);
@@ -1301,14 +1296,14 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
   }
 
   // T-REC-H.265-201410 - 8.3.1 Decoding process for picture order count
-  
+
   int prevPicOrderCntLsb = 0;
   int prevPicOrderCntMsb = 0;
   // When the current picture is not an IRAP picture with NoRaslOutputFlag equal to 1, ...
   if (!(isIRAP() && NoRaslOutputFlag)) 
   {
     // the variables prevPicOrderCntLsb and prevPicOrderCntMsb are derived as follows:
-     
+
     prevPicOrderCntLsb = prevTid0Pic_slice_pic_order_cnt_lsb;
     prevPicOrderCntMsb = prevTid0Pic_PicOrderCntMsb;
   }
@@ -1348,25 +1343,19 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
   }
 }
 
-const QStringList fileSourceHEVCAnnexBFile::nal_unit_type_toString = QStringList()
-   << "TRAIL_N" << "TRAIL_R" << "TSA_N" << "TSA_R" << "STSA_N" << "STSA_R" << "RADL_N" << "RADL_R" << "RASL_N" << "RASL_R" << "RSV_VCL_N10" << "RSV_VCL_N12" << "RSV_VCL_N14" << 
-      "RSV_VCL_R11" << "RSV_VCL_R13" << "RSV_VCL_R15" << "BLA_W_LP" << "BLA_W_RADL" << "BLA_N_LP" << "IDR_W_RADL" <<
-      "IDR_N_LP" << "CRA_NUT" << "RSV_IRAP_VCL22" << "RSV_IRAP_VCL23" << "RSV_VCL24" << "RSV_VCL25" << "RSV_VCL26" << "RSV_VCL27" << "RSV_VCL28" << "RSV_VCL29" <<
-      "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
-      "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
+const QStringList annexBParserHEVC::nal_unit_type_toString = QStringList()
+<< "TRAIL_N" << "TRAIL_R" << "TSA_N" << "TSA_R" << "STSA_N" << "STSA_R" << "RADL_N" << "RADL_R" << "RASL_N" << "RASL_R" << "RSV_VCL_N10" << "RSV_VCL_N12" << "RSV_VCL_N14" << 
+"RSV_VCL_R11" << "RSV_VCL_R13" << "RSV_VCL_R15" << "BLA_W_LP" << "BLA_W_RADL" << "BLA_N_LP" << "IDR_W_RADL" <<
+"IDR_N_LP" << "CRA_NUT" << "RSV_IRAP_VCL22" << "RSV_IRAP_VCL23" << "RSV_VCL24" << "RSV_VCL25" << "RSV_VCL26" << "RSV_VCL27" << "RSV_VCL28" << "RSV_VCL29" <<
+"RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
+"SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
-void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
+void annexBParserHEVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
 {
-  // Save the position of the first byte of the start code
-  quint64 curFilePos = tell() - 3;
-
   // Read two bytes (the nal header)
-  QByteArray nalHeaderBytes;
-  nalHeaderBytes.append(getCurByte());
-  gotoNextByte();
-  nalHeaderBytes.append(getCurByte());
-  gotoNextByte();
-
+  QByteArray nalHeaderBytes = data.left(2);
+  QByteArray payload = data.right(2);
+  
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
   QString specificDescription;
@@ -1402,7 +1391,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   {
     // A video parameter set
     auto new_vps = QSharedPointer<vps>(new vps(nal_hevc));
-    new_vps->parse_vps(getRemainingNALBytes(), nalRoot);
+    new_vps->parse_vps(payload, nalRoot);
 
     // Put parameter sets into the NAL unit list
     nalUnitList.append(new_vps);
@@ -1417,8 +1406,8 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   {
     // A sequence parameter set
     auto new_sps = QSharedPointer<sps>(new sps(nal_hevc));
-    new_sps->parse_sps(getRemainingNALBytes(), nalRoot);
-      
+    new_sps->parse_sps(payload, nalRoot);
+
     // Add sps (replace old one if existed)
     active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
 
@@ -1432,8 +1421,8 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   {
     // A picture parameter set
     auto new_pps = QSharedPointer<pps>(new pps(nal_hevc));
-    new_pps->parse_pps(getRemainingNALBytes(), nalRoot);
-      
+    new_pps->parse_pps(payload, nalRoot);
+
     // Add pps (replace old one if existed)
     active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
 
@@ -1447,7 +1436,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   {
     // Create a new slice unit
     auto new_slice = QSharedPointer<slice>(new slice(nal_hevc));
-    new_slice->parse_slice(getRemainingNALBytes(), active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
+    new_slice->parse_slice(payload, active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
 
     // Add the POC of the slice
     if (new_slice->isIRAP() && new_slice->NoRaslOutputFlag && maxPOCCount > 0)
@@ -1506,7 +1495,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   {
     // An SEI NAL. Each SEI NAL may contain multiple sei_payloads
     auto new_sei = QSharedPointer<sei>(new sei(nal_hevc));
-    QByteArray sei_data = getRemainingNALBytes();
+    QByteArray sei_data = payload;
 
     int sei_count = 0;
     while(!sei_data.isEmpty())
@@ -1515,7 +1504,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
 
       int nrBytes = new_sei->parse_sei_message(sei_data, message_tree);
       sei_data.remove(0, nrBytes);
-      
+
       if (message_tree)
         message_tree->itemData[0] = QString("sei_message %1 - %2").arg(sei_count).arg(new_sei->payloadTypeName);
 
@@ -1544,7 +1533,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
         auto new_alternative_transfer_characteristics_sei = QSharedPointer<alternative_transfer_characteristics_sei>(new alternative_transfer_characteristics_sei(new_sei));
         new_alternative_transfer_characteristics_sei->parse_alternative_transfer_characteristics_sei(sub_sei_data, message_tree);
       }
-      
+
       // Remove the sei payload bytes from the data
       sei_data.remove(0, new_sei->payloadSize);
       if (sei_data.length() == 1)
@@ -1564,7 +1553,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
 }
 
-QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
+QList<QByteArray> annexBParserHEVC::determineSeekPoint(int iFrameNr, quint64 &filePos)
 {
   // Get the POC for the frame number
   int iPOC = POC_List[iFrameNr];
@@ -1573,7 +1562,7 @@ QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
   vps_map active_VPS_list;
   sps_map active_SPS_list;
   pps_map active_PPS_list;
-  
+
   for (auto nal : nalUnitList)
   {
     // This should be an hevc nal
@@ -1587,7 +1576,7 @@ QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
       if (s->PicOrderCntVal == iPOC) 
       {
         // Seek here
-        seekToFilePos(s->filePos);
+        filePos = s->filePos;
 
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
@@ -1625,7 +1614,7 @@ QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
   return QList<QByteArray>();
 }
 
-QSize fileSourceHEVCAnnexBFile::getSequenceSizeSamples() const
+QSize annexBParserHEVC::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
   for (auto nal : nalUnitList)
@@ -1643,7 +1632,7 @@ QSize fileSourceHEVCAnnexBFile::getSequenceSizeSamples() const
   return QSize(-1,-1);
 }
 
-double fileSourceHEVCAnnexBFile::getFramerate() const
+double annexBParserHEVC::getFramerate() const
 {
   // First try to get the framerate from the parameter sets themselves
   for (auto nal : nalUnitList)
@@ -1677,18 +1666,10 @@ double fileSourceHEVCAnnexBFile::getFramerate() const
     }
   }
 
-  // Try to find the framerate from the file name
-  QSize frameSize;
-  int frameRate, bitDepth;
-  QString subFormat;
-  formatFromFilename(frameSize, frameRate, bitDepth);
-  if (frameRate != -1)
-    return (double)frameRate;
-
   return DEFAULT_FRAMERATE;
 }
 
-YUVSubsamplingType fileSourceHEVCAnnexBFile::getSequenceSubsampling() const
+YUVSubsamplingType annexBParserHEVC::getSequenceSubsampling() const
 {
   // Get the subsampling from the sps
   for (auto nal : nalUnitList)
@@ -1713,7 +1694,7 @@ YUVSubsamplingType fileSourceHEVCAnnexBFile::getSequenceSubsampling() const
   return YUV_NUM_SUBSAMPLINGS;
 }
 
-int fileSourceHEVCAnnexBFile::getSequenceBitDepth(Component c) const
+int annexBParserHEVC::getSequenceBitDepth(Component c) const
 {
   for (auto nal : nalUnitList)
   {
@@ -1729,18 +1710,18 @@ int fileSourceHEVCAnnexBFile::getSequenceBitDepth(Component c) const
         return s->bit_depth_chroma_minus8 + 8;
     }
   }
-  
+
   return -1;
 }
 
-QByteArray fileSourceHEVCAnnexBFile::nal_unit_hevc::getNALHeader() const
+QByteArray annexBParserHEVC::nal_unit_hevc::getNALHeader() const
 { 
   int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
   char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
   return QByteArray(c, 6);
 }
 
-void fileSourceHEVCAnnexBFile::nal_unit_hevc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+void annexBParserHEVC::nal_unit_hevc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   sub_byte_reader reader(parameterSetData);
@@ -1814,42 +1795,42 @@ void fileSourceHEVCAnnexBFile::nal_unit_hevc::parse_nal_unit_header(const QByteA
   nal_type = (nal_unit_type_id > UNSPECIFIED || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type)nal_unit_type_id;
 }
 
-bool fileSourceHEVCAnnexBFile::nal_unit_hevc::isIRAP()
+bool annexBParserHEVC::nal_unit_hevc::isIRAP()
 { 
   return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
-          nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
-          nal_type == IDR_N_LP       || nal_type == CRA_NUT    ||
-          nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); 
+    nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
+    nal_type == IDR_N_LP       || nal_type == CRA_NUT    ||
+    nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); 
 }
 
-bool fileSourceHEVCAnnexBFile::nal_unit_hevc::isSLNR() 
+bool annexBParserHEVC::nal_unit_hevc::isSLNR() 
 { 
   return (nal_type == TRAIL_N     || nal_type == TSA_N       ||
-          nal_type == STSA_N      || nal_type == RADL_N      ||
-          nal_type == RASL_N      || nal_type == RSV_VCL_N10 ||
-          nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); 
+    nal_type == STSA_N      || nal_type == RADL_N      ||
+    nal_type == RASL_N      || nal_type == RSV_VCL_N10 ||
+    nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); 
 }
 
-bool fileSourceHEVCAnnexBFile::nal_unit_hevc::isRADL() { 
+bool annexBParserHEVC::nal_unit_hevc::isRADL() { 
   return (nal_type == RADL_N || nal_type == RADL_R); 
 }
 
-bool fileSourceHEVCAnnexBFile::nal_unit_hevc::isRASL() 
+bool annexBParserHEVC::nal_unit_hevc::isRASL() 
 { 
   return (nal_type == RASL_N || nal_type == RASL_R); 
 }
 
-bool fileSourceHEVCAnnexBFile::nal_unit_hevc::isSlice() 
+bool annexBParserHEVC::nal_unit_hevc::isSlice() 
 { 
   return (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT  ||
-          nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
-          nal_type == TRAIL_N    || nal_type == TRAIL_R    || nal_type == TSA_N    ||
-          nal_type == TSA_R      || nal_type == STSA_N     || nal_type == STSA_R   ||
-          nal_type == RADL_N     || nal_type == RADL_R     || nal_type == RASL_N   ||
-          nal_type == RASL_R); 
+    nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
+    nal_type == TRAIL_N    || nal_type == TRAIL_R    || nal_type == TSA_N    ||
+    nal_type == TSA_R      || nal_type == STSA_N     || nal_type == STSA_R   ||
+    nal_type == RADL_N     || nal_type == RADL_R     || nal_type == RASL_N   ||
+    nal_type == RASL_R); 
 }
 
-int fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root)
+int annexBParserHEVC::sei::parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1863,7 +1844,7 @@ int fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHead
   int byte;
   QString code;
   byte = reader.readBits(8, &code);
-  
+
   while (byte == 255) // 0xFF
   {
     payloadType += 255;
@@ -1882,7 +1863,7 @@ int fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHead
     new TreeItem("last_payload_type_byte", byte, QString("u(8)"), code, itemTree);
 
   payloadType += last_payload_type_byte;
-  
+
   if (nal_type == PREFIX_SEI_NUT)
   {
     if (payloadType == 0)
@@ -1994,25 +1975,25 @@ int fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHead
   }
   else /* nal_unit_type == SUFFIX_SEI_NUT */
   {
-      if (payloadType == 3)
-        payloadTypeName = "filler_payload";
-      else if (payloadType == 4)
-        payloadTypeName = "user_data_registered_itu_t_t35";
-      else if (payloadType == 5)
-        payloadTypeName = "user_data_unregistered";
-      else if (payloadType == 17)
-        payloadTypeName = "progressive_refinement_segment_end";
-      else if (payloadType == 22)
-        payloadTypeName = "post_filter_hint";
-      else if (payloadType == 132)
-        payloadTypeName = "decoded_picture_hash";
-      else if (payloadType == 146)
-        payloadTypeName = "coded_region_completion";
-      else
-        payloadTypeName = "reserved_sei_message";
+    if (payloadType == 3)
+      payloadTypeName = "filler_payload";
+    else if (payloadType == 4)
+      payloadTypeName = "user_data_registered_itu_t_t35";
+    else if (payloadType == 5)
+      payloadTypeName = "user_data_unregistered";
+    else if (payloadType == 17)
+      payloadTypeName = "progressive_refinement_segment_end";
+    else if (payloadType == 22)
+      payloadTypeName = "post_filter_hint";
+    else if (payloadType == 132)
+      payloadTypeName = "decoded_picture_hash";
+    else if (payloadType == 146)
+      payloadTypeName = "coded_region_completion";
+    else
+      payloadTypeName = "reserved_sei_message";
   }
   LOGVAL_M(payloadType, payloadTypeName);
-  
+
   payloadSize = 0;
 
   // Read the next byte
@@ -2041,7 +2022,7 @@ int fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHead
   return reader.nrBytesRead();
 }
 
-void fileSourceHEVCAnnexBFile::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
+void annexBParserHEVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
 {
   if (sliceHeaderData.mid(16, 4) == "x265")
   {
@@ -2088,14 +2069,14 @@ void fileSourceHEVCAnnexBFile::user_data_sei::parse_user_data_sei(QByteArray &sl
   }
 }
 
-void fileSourceHEVCAnnexBFile::alternative_transfer_characteristics_sei::parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, TreeItem *root)
+void annexBParserHEVC::alternative_transfer_characteristics_sei::parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, TreeItem *root)
 {
   TreeItem *const itemTree = root ? new TreeItem("alternative transfer characteristics", root) : nullptr;
   sub_byte_reader reader(sliceHeaderData);
   READBITS_M(preferred_transfer_characteristics, 8, get_transfer_characteristics_meaning());
 }
 
-fileSourceHEVCAnnexBFile::sei_parsing_return_t fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, TreeItem *root)
+annexBParserHEVC::sei_parsing_return_t annexBParserHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, TreeItem *root)
 {
   itemTree = root ? new TreeItem("active parameter sets", root) : nullptr;
   sei_data_storage = sliceHeaderData;
@@ -2104,12 +2085,12 @@ fileSourceHEVCAnnexBFile::sei_parsing_return_t fileSourceHEVCAnnexBFile::active_
   return SEI_PARSING_OK;
 }
 
-void fileSourceHEVCAnnexBFile::active_parameter_sets_sei::reparse_active_parameter_sets_sei(const vps_map &p_active_VPS_list)
+void annexBParserHEVC::active_parameter_sets_sei::reparse_active_parameter_sets_sei(const vps_map &p_active_VPS_list)
 {
   parse(p_active_VPS_list, true);
 }
 
-bool fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse(const vps_map &p_active_VPS_list, bool reparse)
+bool annexBParserHEVC::active_parameter_sets_sei::parse(const vps_map &p_active_VPS_list, bool reparse)
 {
   sub_byte_reader reader(sei_data_storage);
 
@@ -2139,7 +2120,7 @@ bool fileSourceHEVCAnnexBFile::active_parameter_sets_sei::parse(const vps_map &p
   return true;
 }
 
-fileSourceHEVCAnnexBFile::sei_parsing_return_t fileSourceHEVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, TreeItem *root)
+annexBParserHEVC::sei_parsing_return_t annexBParserHEVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, TreeItem *root)
 {
   itemTree = root ? new TreeItem("picture timing", root) : nullptr;
   sei_data_storage = sliceHeaderData;
@@ -2148,12 +2129,12 @@ fileSourceHEVCAnnexBFile::sei_parsing_return_t fileSourceHEVCAnnexBFile::pic_tim
   return SEI_PARSING_OK;
 }
 
-void fileSourceHEVCAnnexBFile::pic_timing_sei::reparse_pic_timing_sei(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list)
+void annexBParserHEVC::pic_timing_sei::reparse_pic_timing_sei(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list)
 {
   parse(p_active_VPS_list, p_active_SPS_list, true);
 }
 
-bool fileSourceHEVCAnnexBFile::pic_timing_sei::parse(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, bool reparse)
+bool annexBParserHEVC::pic_timing_sei::parse(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, bool reparse)
 {
   // TODO: Is this really ID 0? The standard does not really say which one (or I did not find it).
   if (!p_active_SPS_list.contains(0))
@@ -2233,7 +2214,7 @@ bool fileSourceHEVCAnnexBFile::pic_timing_sei::parse(const vps_map &p_active_VPS
 }
 
 
-QStringList fileSourceHEVCAnnexBFile::get_colour_primaries_meaning()
+QStringList annexBParserHEVC::get_colour_primaries_meaning()
 {
   QStringList colour_primaries_meaning = QStringList() 
     << "Reserved For future use by ITU-T | ISO/IEC"
@@ -2263,7 +2244,7 @@ QStringList fileSourceHEVCAnnexBFile::get_colour_primaries_meaning()
   return colour_primaries_meaning;
 }
 
-QStringList fileSourceHEVCAnnexBFile::get_transfer_characteristics_meaning()
+QStringList annexBParserHEVC::get_transfer_characteristics_meaning()
 {
   QStringList transfer_characteristics_meaning = QStringList()
     << "Reserved For future use by ITU-T | ISO/IEC"
@@ -2289,7 +2270,7 @@ QStringList fileSourceHEVCAnnexBFile::get_transfer_characteristics_meaning()
   return transfer_characteristics_meaning;
 }
 
-QStringList fileSourceHEVCAnnexBFile::get_matrix_coefficients_meaning()
+QStringList annexBParserHEVC::get_matrix_coefficients_meaning()
 {
   QStringList matrix_coefficients_meaning = QStringList()
     << "The identity matrix. RGB IEC 61966-2-1 (sRGB)"

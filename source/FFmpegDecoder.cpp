@@ -105,13 +105,14 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   QString ext = fileInfo.suffix().toLower();
   if (ext == "h264" || ext == "264")
   {
-    bool parsingError;
+    // TODO: We need a new interface for this (to attach decoders)
+    /*bool parsingError;
     if (otherDec)
       parsingError = !annexBFile.openFile(fileName, false, &otherDec->annexBFile);
     else
       parsingError = !annexBFile.openFile(fileName);
     if (!parsingError)
-      canShowNALUnits = true;
+      canShowNALUnits = true;*/
   }
   else
   {

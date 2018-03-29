@@ -37,7 +37,6 @@
 #include "de265_internals.h"
 #include "decoderBase.h"
 #include "fileInfoWidget.h"
-#include "fileSourceHEVCAnnexBFile.h"
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 #include <QLibrary>

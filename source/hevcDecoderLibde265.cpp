@@ -73,9 +73,6 @@ hevcDecoderLibde265::hevcDecoderLibde265(int signalID, bool cachingDecoder) :
   else
     decodeSignal = 0;
   
-  // Create a new fileSource
-  annexBFile.reset(new fileSourceHEVCAnnexBFile);
-
   // Allocate a decoder
   if (!decoderError)
     allocateNewDecoder();
@@ -98,19 +95,19 @@ hevcDecoderLibde265::~hevcDecoderLibde265()
 bool hevcDecoderLibde265::openFile(QString fileName, decoderBase *otherDecoder)
 { 
   // Open the file, decode the first frame and return if this was successfull.
-  if (otherDecoder)
-    parsingError = !annexBFile->openFile(fileName, false, otherDecoder->getFileSource());
-  else
-    parsingError = !annexBFile->openFile(fileName);
-  
-  if (!parsingError)
-  {
-    // Once the annexB file is opened, the frame size and the YUV format is known.
-    fileSourceHEVCAnnexBFile *hevcFile = dynamic_cast<fileSourceHEVCAnnexBFile*>(annexBFile.data());
-    frameSize = hevcFile->getSequenceSizeSamples();
-    nrBitsC0 = hevcFile->getSequenceBitDepth(Luma);
-    pixelFormat = hevcFile->getSequenceSubsampling();
-  }
+  //if (otherDecoder)
+  //  parsingError = !annexBFile->openFile(fileName, false, otherDecoder->getFileSource());
+  //else
+  //  parsingError = !annexBFile->openFile(fileName);
+  //
+  //if (!parsingError)
+  //{
+  //  // Once the annexB file is opened, the frame size and the YUV format is known.
+  //  fileSourceHEVCAnnexBFile *hevcFile = dynamic_cast<fileSourceHEVCAnnexBFile*>(annexBFile.data());
+  //  frameSize = hevcFile->getSequenceSizeSamples();
+  //  nrBitsC0 = hevcFile->getSequenceBitDepth(Luma);
+  //  pixelFormat = hevcFile->getSequenceSubsampling();
+  //}
 
   return !parsingError && !decoderError;
 }
@@ -249,178 +246,178 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
 
   DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Start request %d", frameIdx);
 
-  // We have to decode the requested frame.
-  bool seeked = false;
-  QList<QByteArray> parameterSets;
-  if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
-  {
-    // The requested frame lies before the current one. We will have to rewind and start decoding from there.
-    int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
+  //// We have to decode the requested frame.
+  //bool seeked = false;
+  //QList<QByteArray> parameterSets;
+  //if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
+  //{
+  //  // The requested frame lies before the current one. We will have to rewind and start decoding from there.
+  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
 
-    DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
-    parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
-    currentOutputBufferFrameIndex = seekFrameIdx - 1;
-    seeked = true;
-  }
-  else if (frameIdx > currentOutputBufferFrameIndex+2)
-  {
-    // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
-    // Check if there is a random access point closer to the requested frame than the position that we are at right now.
-    int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
-    if (seekFrameIdx > currentOutputBufferFrameIndex)
-    {
-      // Yes we can (and should) seek ahead in the file
-      DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
-      parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
-      currentOutputBufferFrameIndex = seekFrameIdx - 1;
-      seeked = true;
-    }
-  }
+  //  DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
+  //  parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
+  //  currentOutputBufferFrameIndex = seekFrameIdx - 1;
+  //  seeked = true;
+  //}
+  //else if (frameIdx > currentOutputBufferFrameIndex+2)
+  //{
+  //  // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
+  //  // Check if there is a random access point closer to the requested frame than the position that we are at right now.
+  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
+  //  if (seekFrameIdx > currentOutputBufferFrameIndex)
+  //  {
+  //    // Yes we can (and should) seek ahead in the file
+  //    DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
+  //    parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
+  //    currentOutputBufferFrameIndex = seekFrameIdx - 1;
+  //    seeked = true;
+  //  }
+  //}
 
-  if (seeked)
-  {
-    // Reset the decoder and feed the parameter sets to it.
-    // Then start normal decoding
+  //if (seeked)
+  //{
+  //  // Reset the decoder and feed the parameter sets to it.
+  //  // Then start normal decoding
 
-    if (parameterSets.size() == 0)
-      return QByteArray();
+  //  if (parameterSets.size() == 0)
+  //    return QByteArray();
 
-    // Delete decoder
-    de265_error err = de265_free_decoder(decoder);
-    if (err != DE265_OK)
-    {
-      // Freeing the decoder failed.
-      if (decError != err)
-        decError = err;
-      return QByteArray();
-    }
+  //  // Delete decoder
+  //  de265_error err = de265_free_decoder(decoder);
+  //  if (err != DE265_OK)
+  //  {
+  //    // Freeing the decoder failed.
+  //    if (decError != err)
+  //      decError = err;
+  //    return QByteArray();
+  //  }
 
-    decoder = nullptr;
+  //  decoder = nullptr;
 
-    // Create new decoder
-    allocateNewDecoder();
+  //  // Create new decoder
+  //  allocateNewDecoder();
 
-    // Feed the parameter sets
-    for (QByteArray ps : parameterSets)
-      err = de265_push_data(decoder, ps.data(), ps.size(), 0, nullptr);
-  }
+  //  // Feed the parameter sets
+  //  for (QByteArray ps : parameterSets)
+  //    err = de265_push_data(decoder, ps.data(), ps.size(), 0, nullptr);
+  //}
 
-  // Perform the decoding right now blocking the main thread.
-  // Decode frames until we receive the one we are looking for.
-  de265_error err;
-  while (true)
-  {
-    int more = 1;
-    while (more)
-    {
-      more = 0;
+  //// Perform the decoding right now blocking the main thread.
+  //// Decode frames until we receive the one we are looking for.
+  //de265_error err;
+  //while (true)
+  //{
+  //  int more = 1;
+  //  while (more)
+  //  {
+  //    more = 0;
 
-      err = de265_decode(decoder, &more);
-      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !annexBFile->atEnd())
-      {
-        // The decoder needs more data. Get it from the file.
-        QByteArray chunk = annexBFile->getRemainingBuffer_Update();
+  //    err = de265_decode(decoder, &more);
+  //    while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !annexBFile->atEnd())
+  //    {
+  //      // The decoder needs more data. Get it from the file.
+  //      QByteArray chunk = annexBFile->getRemainingBuffer_Update();
 
-        // Push the data to the decoder
-        if (chunk.size() > 0)
-        {
-          err = de265_push_data(decoder, chunk.data(), chunk.size(), 0, nullptr);
-          DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData push data %d bytes - err %s", chunk.size(), de265_get_error_text(err));
-          if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
-          {
-            // An error occurred
-            if (decError != err)
-              decError = err;
-            DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
-            return QByteArray();
-          }
-        }
+  //      // Push the data to the decoder
+  //      if (chunk.size() > 0)
+  //      {
+  //        err = de265_push_data(decoder, chunk.data(), chunk.size(), 0, nullptr);
+  //        DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData push data %d bytes - err %s", chunk.size(), de265_get_error_text(err));
+  //        if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
+  //        {
+  //          // An error occurred
+  //          if (decError != err)
+  //            decError = err;
+  //          DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
+  //          return QByteArray();
+  //        }
+  //      }
 
-        if (annexBFile->atEnd())
-          // The file ended.
-          err = de265_flush_data(decoder);
-      }
+  //      if (annexBFile->atEnd())
+  //        // The file ended.
+  //        err = de265_flush_data(decoder);
+  //    }
 
-      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && annexBFile->atEnd())
-      {
-        // The decoder wants more data but there is no more file.
-        // We found the end of the sequence. Get the remaining frames from the decoder until
-        // more is 0.
-        DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Waiting for input bit file at end.");
-      }
-      else if (err != DE265_OK)
-      {
-        // Something went wrong
-        more = 0;
-        DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
-        break;
-      }
+  //    if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && annexBFile->atEnd())
+  //    {
+  //      // The decoder wants more data but there is no more file.
+  //      // We found the end of the sequence. Get the remaining frames from the decoder until
+  //      // more is 0.
+  //      DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Waiting for input bit file at end.");
+  //    }
+  //    else if (err != DE265_OK)
+  //    {
+  //      // Something went wrong
+  //      more = 0;
+  //      DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
+  //      break;
+  //    }
 
-      const de265_image* img = de265_get_next_picture(decoder);
-      if (img)
-      {
-        // We have received an output image
-        currentOutputBufferFrameIndex++;
-        DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Picture decoded %d", currentOutputBufferFrameIndex);
+  //    const de265_image* img = de265_get_next_picture(decoder);
+  //    if (img)
+  //    {
+  //      // We have received an output image
+  //      currentOutputBufferFrameIndex++;
+  //      DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Picture decoded %d", currentOutputBufferFrameIndex);
 
-        // Check if the chroma format and the frame size matches the already set values (these were read from the annex B file).
-        de265_chroma fmt = de265_get_chroma_format(img);
-        if ((fmt == de265_chroma_mono && pixelFormat != YUV_400) ||
-            (fmt == de265_chroma_420 && pixelFormat != YUV_420) ||
-            (fmt == de265_chroma_422 && pixelFormat != YUV_422) ||
-            (fmt == de265_chroma_444 && pixelFormat != YUV_444))
-          DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
-        int bits = de265_get_bits_per_pixel(img, 0);
-        if (bits != nrBitsC0)
-          DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
-        QSize picSize = QSize(de265_get_image_width(img, 0), de265_get_image_height(img, 0));
-        if (picSize != frameSize)
-          DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
+  //      // Check if the chroma format and the frame size matches the already set values (these were read from the annex B file).
+  //      de265_chroma fmt = de265_get_chroma_format(img);
+  //      if ((fmt == de265_chroma_mono && pixelFormat != YUV_400) ||
+  //          (fmt == de265_chroma_420 && pixelFormat != YUV_420) ||
+  //          (fmt == de265_chroma_422 && pixelFormat != YUV_422) ||
+  //          (fmt == de265_chroma_444 && pixelFormat != YUV_444))
+  //        DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
+  //      int bits = de265_get_bits_per_pixel(img, 0);
+  //      if (bits != nrBitsC0)
+  //        DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
+  //      QSize picSize = QSize(de265_get_image_width(img, 0), de265_get_image_height(img, 0));
+  //      if (picSize != frameSize)
+  //        DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
 
-        if (currentOutputBufferFrameIndex == frameIdx)
-        {
-          // This is the frame that we want to decode
-            
-          // Put image data into buffer
-          copyImgToByteArray(img, currentOutputBuffer);
+  //      if (currentOutputBufferFrameIndex == frameIdx)
+  //      {
+  //        // This is the frame that we want to decode
+  //          
+  //        // Put image data into buffer
+  //        copyImgToByteArray(img, currentOutputBuffer);
 
-          if (retrieveStatistics)
-          {
-            // Get the statistics from the image and put them into the statistics cache
-            cacheStatistics(img);
+  //        if (retrieveStatistics)
+  //        {
+  //          // Get the statistics from the image and put them into the statistics cache
+  //          cacheStatistics(img);
 
-            // The cache now contains the statistics for iPOC
-            statsCacheCurPOC = currentOutputBufferFrameIndex;
-          }
+  //          // The cache now contains the statistics for iPOC
+  //          statsCacheCurPOC = currentOutputBufferFrameIndex;
+  //        }
 
-          // Picture decoded
-          DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData decoded the requested frame %d", currentOutputBufferFrameIndex);
-            
-          return currentOutputBuffer;
-        }
-      }
-    }
+  //        // Picture decoded
+  //        DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData decoded the requested frame %d", currentOutputBufferFrameIndex);
+  //          
+  //        return currentOutputBuffer;
+  //      }
+  //    }
+  //  }
 
-    if (err != DE265_OK)
-    {
-      // The encoding loop ended because of an error
-      if (decError != err)
-        decError = err;
+  //  if (err != DE265_OK)
+  //  {
+  //    // The encoding loop ended because of an error
+  //    if (decError != err)
+  //      decError = err;
 
-      DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
-      return QByteArray();
-    }
-    if (more == 0)
-    {
-      // The loop ended because there is nothing more to decode but no error occurred.
-      // We are at the end of the sequence.
+  //    DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
+  //    return QByteArray();
+  //  }
+  //  if (more == 0)
+  //  {
+  //    // The loop ended because there is nothing more to decode but no error occurred.
+  //    // We are at the end of the sequence.
 
-      // This should not happen because before decoding, we check if the frame to decode is in the list of nal units that will be decoded.
-      DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData more == 0");
+  //    // This should not happen because before decoding, we check if the frame to decode is in the list of nal units that will be decoded.
+  //    DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData more == 0");
 
-      return QByteArray();
-    }
-  }
+  //    return QByteArray();
+  //  }
+  //}
   
   return QByteArray();
 }
@@ -808,9 +805,9 @@ bool hevcDecoderLibde265::reloadItemSource()
   statsCacheCurPOC = -1;
   currentOutputBufferFrameIndex = -1;
 
-  // Re-open the input file. This will reload the bitstream as if it was completely unknown.
-  QString fileName = annexBFile->absoluteFilePath();
-  parsingError = annexBFile->openFile(fileName);
+  //// Re-open the input file. This will reload the bitstream as if it was completely unknown.
+  //QString fileName = annexBFile->absoluteFilePath();
+  //parsingError = annexBFile->openFile(fileName);
   return parsingError;
 }
 
