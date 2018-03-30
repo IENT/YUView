@@ -119,7 +119,7 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(quint64 &posInFile)
   retArray += fileBuffer.mid(posInBuffer, nextStartCodePos - posInBuffer);
   posInBuffer = nextStartCodePos + 3; // Skip the start code
   posInFile = bufferStartPosInFile + posInBuffer;
-  return QByteArray();
+  return retArray;
 }
 
 bool fileSourceAnnexBFile::updateBuffer()
@@ -450,89 +450,4 @@ bool fileSourceAnnexBFile::updateBuffer()
 //  numZeroBytes = 0;
 //}
 //
-//QVariant fileSourceAnnexBFile::NALUnitModel::headerData(int section, Qt::Orientation orientation, int role) const
-//{
-//  if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != nullptr)
-//    return rootItem->itemData.value(section, QString());
-//
-//  return QVariant();
-//}
-//
-//QVariant fileSourceAnnexBFile::NALUnitModel::data(const QModelIndex &index, int role) const
-//{
-//  //qDebug() << "ileSourceHEVCAnnexBFile::data " << index;
-//
-//  if (!index.isValid())
-//    return QVariant();
-//
-//  if (role != Qt::DisplayRole && role != Qt::ToolTipRole)
-//    return QVariant();
-//
-//  TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
-//
-//  return QVariant(item->itemData.value(index.column()));
-//}
-//
-//QModelIndex fileSourceAnnexBFile::NALUnitModel::index(int row, int column, const QModelIndex &parent) const
-//{
-//  //qDebug() << "ileSourceHEVCAnnexBFile::index " << row << column << parent;
-//
-//  if (!hasIndex(row, column, parent))
-//    return QModelIndex();
-//
-//  TreeItem *parentItem;
-//
-//  if (!parent.isValid())
-//    parentItem = rootItem.data();
-//  else
-//    parentItem = static_cast<TreeItem*>(parent.internalPointer());
-//
-//  if (parentItem == nullptr)
-//    return QModelIndex();
-//
-//  TreeItem *childItem = parentItem->childItems.value(row, nullptr);
-//  if (childItem)
-//    return createIndex(row, column, childItem);
-//  else
-//    return QModelIndex();
-//}
-//
-//QModelIndex fileSourceAnnexBFile::NALUnitModel::parent(const QModelIndex &index) const
-//{
-//  //qDebug() << "ileSourceHEVCAnnexBFile::parent " << index;
-//
-//  if (!index.isValid())
-//    return QModelIndex();
-//
-//  TreeItem *childItem = static_cast<TreeItem*>(index.internalPointer());
-//  TreeItem *parentItem = childItem->parentItem;
-//
-//  if (parentItem == rootItem.data())
-//    return QModelIndex();
-//
-//  // Get the row of the item in the list of children of the parent item
-//  int row = 0;
-//  if (parentItem)
-//    row = parentItem->parentItem->childItems.indexOf(const_cast<TreeItem*>(parentItem));
-//
-//  return createIndex(row, 0, parentItem);
-//
-//}
-//
-//int fileSourceAnnexBFile::NALUnitModel::rowCount(const QModelIndex &parent) const
-//{
-//  //qDebug() << "ileSourceHEVCAnnexBFile::rowCount " << parent;
-//
-//  TreeItem *parentItem;
-//  if (parent.column() > 0)
-//    return 0;
-//
-//  if (!parent.isValid())
-//    parentItem = rootItem.data();
-//  else
-//    parentItem = static_cast<TreeItem*>(parent.internalPointer());
-//
-//  return (parentItem == nullptr) ? 0 : parentItem->childItems.count();
-//}
-//
-//
+

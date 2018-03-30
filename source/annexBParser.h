@@ -43,6 +43,7 @@ using namespace YUV_Internals;
 */
 class annexBParser
 {
+
 public:
   annexBParser() {};
   ~annexBParser() {};
@@ -57,8 +58,9 @@ public:
   // Finally it should add the unit to the nalUnitList (if it is a parameter set or an RA point).
   virtual void parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos = -1) = 0;
 
-  // Get a pointer to the nal unit model
+  // Get a pointer to the nal unit model. The model is only filled if you call enableModel() first.
   QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
+  void enableModel();
 
   // What it the framerate?
   virtual double getFramerate() const = 0;
@@ -72,7 +74,9 @@ public:
   // When we want to seek to a specific frame number, this function return the parameter sets that you need
   // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
   // also be returned.
-  virtual QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos);
+  virtual QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos) { /* TODO: */  return QList<QByteArray>(); }
+
+  void sortPOCList() { std::sort(POC_List.begin(), POC_List.end()); }
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class

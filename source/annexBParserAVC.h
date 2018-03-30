@@ -50,18 +50,18 @@ public:
   // What it the framerate?
   double getFramerate() const Q_DECL_OVERRIDE;
   // What is the sequence resolution?
-  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
+  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return QSize(-1,-1); }
   // What is the chroma format?
-  YUVSubsamplingType getSequenceSubsampling() const Q_DECL_OVERRIDE;
+  YUVSubsamplingType getSequenceSubsampling() const Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return YUV_NUM_SUBSAMPLINGS; }
   // What is the bit depth of the reconstruction?
-  int getSequenceBitDepth(Component c) const Q_DECL_OVERRIDE;
+  int getSequenceBitDepth(Component c) const Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return -1; }
 
   void parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos = -1) Q_DECL_OVERRIDE;
 
   // When we want to seek to a specific frame number, this function return the parameter sets that you need
   // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
   // also be returned.
-  QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos) Q_DECL_OVERRIDE;
+  QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos) Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return QList<QByteArray>(); }
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class

@@ -139,6 +139,8 @@ protected:
   // Override from playlistItemIndexed. The readerEngine can tell us how many frames there are in the sequence.
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
+  bool isAnnexBFileSource() const { return inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM; }
+
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   typedef enum
@@ -154,8 +156,11 @@ protected:
   QScopedPointer<decoderBase> loadingDecoder;
   QScopedPointer<decoderBase> cachingDecoder;
 
-  //
-  QScopedPointer<fileSourceAnnexBFile> annexBFile;
+  // In order to parse raw annexB files, we need a file reader (that can read NAL units)
+  // and a parser that can understand what the NAL units mean.
+  void parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<annexBParser> &parser);
+  QScopedPointer<fileSourceAnnexBFile> inputFileAnnexB;
+  QScopedPointer<annexBParser> parserAnnexB;
 
   // Which type is the input / what decoder do we use?
   inputFormat inputFormatType;

@@ -32,13 +32,16 @@
 
 #include "playlistItemCompressedVideo.h"
 
+#include "annexBParserAVC.h"
+#include "annexBParserHEVC.h"
+#include "annexBParserJEM.h"
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
 #include "FFmpegDecoder.h"
 #include "hevcNextGenDecoderJEM.h"
 
 #include <QThread>
-
+#include "mainwindow.h"
 
 #define HEVC_DEBUG_OUTPUT 0
 #if HEVC_DEBUG_OUTPUT && !NDEBUG
@@ -79,6 +82,30 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   if (displaySignal < 0)
     displaySignal = 0;
 
+  // Open the input file.
+  inputFormatType = input;
+  if (isAnnexBFileSource())
+  {
+    // Open file
+    inputFileAnnexB.reset(new fileSourceAnnexBFile(compressedFilePath));
+    // inputFormatType a parser
+    if (input == inputAnnexBHEVC)
+      parserAnnexB.reset(new annexBParserHEVC());
+    else if (inputFormatType == inputAnnexBAVC)
+      parserAnnexB.reset(new annexBParserAVC());
+    else if (inputFormatType == inputAnnexBJEM)
+      parserAnnexB.reset(new annexBParserJEM());
+    // Parse the file
+    parseAnnexBFile(inputFileAnnexB, parserAnnexB);
+    parserAnnexB->sortPOCList();
+
+    fileState = onlyParsing;
+  }
+  else
+  {
+    // TODO:
+  }
+
   // Allocate the decoders
   decoderEngineType = decoder;
   if (decoder == decoderLibde265)
@@ -104,17 +131,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     displaySignal = 0;
   yuvVideo->showPixelValuesAsDiff = (displaySignal == 2 || displaySignal == 3);
 
-  // Open the input file.
-  inputFormatType = input;
-  if (input == inputAnnexBHEVC)
-  {
-    annexBFile.reset(new fileSourceAnnexBFile(compressedFilePath));
-  }
-  else
-  {
-    // TODO:
-  }
-
+  
   //if (!loadingDecoder->openFile(hevcFilePath))
   //{
   //  // Something went wrong. Let's find out what.
@@ -141,8 +158,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   //// Fill the list of statistics that we can provide
   //fillStatisticList();
 
-  //// Set the frame number limits
-  //startEndFrame = getStartEndFrameLimits();
+  // Set the frame number limits
+  startEndFrame = getStartEndFrameLimits();
 
   //if (startEndFrame.second == -1)
   //  // No frames to decode
@@ -230,6 +247,7 @@ infoData playlistItemCompressedVideo::getInfo() const
   {
     //info.items.append(infoItem("Num POCs", QString::number(loadingDecoder->getNumberPOCs()), "The number of pictures in the stream."));
     info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
+    info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
   }
   else if (fileState == noError)
   {
@@ -238,7 +256,7 @@ infoData playlistItemCompressedVideo::getInfo() const
     info.items.append(infoItem("Decoder", loadingDecoder->getDecoderName()));
     info.items.append(infoItem("library path", loadingDecoder->getLibraryPath(), "The path to the loaded libde265 library"));
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
-    //info.items.append(infoItem("Num POCs", QString::number(loadingDecoder->getNumberPOCs()), "The number of pictures in the stream."));
+    info.items.append(infoItem("Num POCs", QString::number(startEndFrame.second), "The number of pictures in the stream."));
     info.items.append(infoItem("Internals", loadingDecoder->wrapperInternalsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
     info.items.append(infoItem("Stat Parsing", loadingDecoder->statisticsEnabled() ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
     info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
@@ -251,27 +269,40 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
 {
   Q_UNUSED(buttonID);
 
-  //QScopedPointer<fileSourceAnnexBFile> file;
-  //if (decoderEngineType == decoderLibde265 || decoderEngineType == decoderHM)
-  //  file.reset(new fileSourceHEVCAnnexBFile);
-  //else if (decoderEngineType == decoderJEM)
-  //  file.reset(new fileSourceJEMAnnexBFile);
-
-  //// Parse the annex B file again and save all the values read
-  //if (!file->openFile(plItemNameOrFileName, true))
-  //  // Opening the file failed.
-  //  return;
-
-  //// The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
-  //QDialog newDialog;
-  //QTreeView *view = new QTreeView();
-  //view->setModel(file->getNALUnitModel());
-  //QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
-  //verticalLayout->addWidget(view);
-  //newDialog.resize(QSize(1000, 900));
-  //view->setColumnWidth(0, 400);
-  //view->setColumnWidth(1, 50);
-  //newDialog.exec();
+  // The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
+  QScopedPointer<annexBParser> parser;
+  if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
+  {
+    // Just open and parse the file again
+    QScopedPointer<fileSourceAnnexBFile> annexBFile(new fileSourceAnnexBFile(plItemNameOrFileName));
+    // Create a parser
+    if (inputFormatType == inputAnnexBHEVC)
+      parser.reset(new annexBParserHEVC());
+    else if (inputFormatType == inputAnnexBAVC)
+      parser.reset(new annexBParserAVC());
+    else if (inputFormatType == inputAnnexBJEM)
+      parser.reset(new annexBParserJEM());
+    
+    // Parse the file
+    parser->enableModel();
+    parseAnnexBFile(annexBFile, parser);
+  }
+  else
+  {
+    // Get it from a container
+    // TODO:
+    return;
+  }
+  
+  QDialog newDialog;
+  QTreeView *view = new QTreeView();
+  view->setModel(parser->getNALUnitModel());
+  QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
+  verticalLayout->addWidget(view);
+  newDialog.resize(QSize(1000, 900));
+  view->setColumnWidth(0, 400);
+  view->setColumnWidth(1, 50);
+  newDialog.exec();
 }
 
 itemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool loadRawData)
@@ -399,7 +430,15 @@ void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx
 
 indexRange playlistItemCompressedVideo::getStartEndFrameLimits() const
 {
-  // TODO: Get the range from the source
+  if (fileState != error)
+  {
+    if (isAnnexBFileSource())
+      return indexRange(0, parserAnnexB->getNumberPOCs());
+    else
+      // TODO: 
+      return indexRange(0, 0);
+  }
+  
   return indexRange(0, 0);
 }
 
@@ -552,3 +591,80 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
     emit signalItemChanged(true, RECACHE_CLEAR);
   }
 }
+
+void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<annexBParser> &parser)
+{
+  DEBUG_HEVC("playlistItemCompressedVideo::parseAnnexBFile");
+
+  //Show a modal QProgressDialog while this operation is running.
+  // If the user presses cancel, we will cancel and return false (opening the file failed).
+  // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
+  QWidgetList l = QApplication::topLevelWidgets();
+  QWidget *mainWindow = nullptr;
+  for (QWidget *w : l)
+  {
+    MainWindow *mw = dynamic_cast<MainWindow*>(w);
+    if (mw)
+      mainWindow = mw;
+  }
+  // Create the dialog
+  qint64 maxPos;
+  if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
+    maxPos = inputFileAnnexB->getFileSize();
+  else
+    // TODO: What do we do for ffmpeg files?
+    maxPos = 1000;
+  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
+  int curPercentValue = 0;
+  QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, 100, mainWindow);
+  progress.setMinimumDuration(1000);  // Show after 1s
+  progress.setAutoClose(false);
+  progress.setAutoReset(false);
+  progress.setWindowModality(Qt::WindowModal);
+
+  // Just push all NAL units from the annexBFile into the annexBParser
+  QByteArray nalData;
+  int nalID = 0;
+  quint64 filePos;
+  while (!file->atEnd())
+  {
+    try
+    {
+      nalData = file->getNextNALUnit(filePos);
+
+      parser->parseAndAddNALUnit(nalID, nalData, filePos);
+
+      // Update the progress dialog
+      if (progress.wasCanceled())
+        return;
+
+      qint64 pos;
+      if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
+        pos = inputFileAnnexB->pos();
+      else
+        // TODO: 
+        pos = 55;
+
+      int newPercentValue = pos * 100 / maxPos;
+      if (newPercentValue != curPercentValue)
+      {
+        progress.setValue(newPercentValue);
+        curPercentValue = newPercentValue;
+      }
+    
+      // Next NAL
+      nalID++;
+    }
+    catch (...)
+    {
+      // Reading a NAL unit failed at some point.
+      // This is not too bad. Just don't use this NAL unit and continue with the next one.
+      DEBUG_HEVC("fileSourceHEVCAnnexBFile::scanFileForNalUnits Exception thrown parsing NAL %d", nalID);
+      nalID++;
+    }
+  }
+  
+  // We are done.
+  progress.close();
+}
+

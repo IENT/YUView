@@ -1354,7 +1354,8 @@ void annexBParserHEVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 cu
 {
   // Read two bytes (the nal header)
   QByteArray nalHeaderBytes = data.left(2);
-  QByteArray payload = data.right(2);
+  data.remove(0, 2);
+  QByteArray payload = data;
   
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
