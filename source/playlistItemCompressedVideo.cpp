@@ -32,6 +32,11 @@
 
 #include "playlistItemCompressedVideo.h"
 
+#include "hevcDecoderHM.h"
+#include "hevcDecoderLibde265.h"
+#include "FFmpegDecoder.h"
+#include "hevcNextGenDecoderJEM.h"
+
 #include <QThread>
 
 
@@ -44,13 +49,14 @@
 #endif
 
 // Initialize the static names list of the decoder engines
-QStringList playlistItemCompressedVideo::readerEngineNames = QStringList() << "annexB" << "FFMpeg";
+QStringList playlistItemCompressedVideo::inputFormatNames = QStringList() << "annexBHEVC" << "annexBAVC" << "annexBJEM" << "FFMpeg";
 QStringList playlistItemCompressedVideo::decoderEngineNames = QStringList() << "libDe265" << "HM" << "JEM" << "FFMpeg";
 
-playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &hevcFilePath, int displayComponent, readerEngine r, decoderEngine e)
-  : playlistItemWithVideo(hevcFilePath, playlistItem_Indexed)
+playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compressedFilePath, int displayComponent, inputFormat input, decoderEngine decoder)
+  : playlistItemWithVideo(compressedFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
+  // TODO: should this change with the type of video?
   setIcon(0, convertIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
@@ -73,32 +79,42 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &hevcFile
   if (displaySignal < 0)
     displaySignal = 0;
 
-  //// Allocate the decoders
-  //decoderEngineType = e;
-  //if (e == decoderLibde265)
-  //{
-  //  loadingDecoder.reset(new hevcDecoderLibde265(displaySignal));
-  //  cachingDecoder.reset(new hevcDecoderLibde265(displaySignal, true));
-  //}
-  //else if (e == decoderHM)
-  //{
-  //  loadingDecoder.reset(new hevcDecoderHM(displaySignal));
-  //  cachingDecoder.reset(new hevcDecoderHM(displaySignal, true));
-  //}
-  //else if (e == decoderJEM)
-  //{
-  //  loadingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal));
-  //  cachingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal, true));
-  //}
-  //else
-  //  return;
+  // Allocate the decoders
+  decoderEngineType = decoder;
+  if (decoder == decoderLibde265)
+  {
+    loadingDecoder.reset(new hevcDecoderLibde265(displaySignal));
+    cachingDecoder.reset(new hevcDecoderLibde265(displaySignal, true));
+  }
+  else if (decoder == decoderHM)
+  {
+    loadingDecoder.reset(new hevcDecoderHM(displaySignal));
+    cachingDecoder.reset(new hevcDecoderHM(displaySignal, true));
+  }
+  else if (decoder == decoderJEM)
+  {
+    loadingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal));
+    cachingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal, true));
+  }
+  else
+    return;
 
-  //// Reset display signal if this is not supported by the decoder
-  //if (displaySignal > loadingDecoder->wrapperNrSignalsSupported())
-  //  displaySignal = 0;
-  //yuvVideo->showPixelValuesAsDiff = (displaySignal == 2 || displaySignal == 3);
+  // Reset display signal if this is not supported by the decoder
+  if (displaySignal > loadingDecoder->wrapperNrSignalsSupported())
+    displaySignal = 0;
+  yuvVideo->showPixelValuesAsDiff = (displaySignal == 2 || displaySignal == 3);
 
-  //// Open the input file.
+  // Open the input file.
+  inputFormatType = input;
+  if (input == inputAnnexBHEVC)
+  {
+    annexBFile.reset(new fileSourceAnnexBFile(compressedFilePath));
+  }
+  else
+  {
+    // TODO:
+  }
+
   //if (!loadingDecoder->openFile(hevcFilePath))
   //{
   //  // Something went wrong. Let's find out what.
@@ -160,8 +176,8 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   d.appendProperiteChild("relativePath", relativePath);
   d.appendProperiteChild("displayComponent", QString::number(displaySignal));
 
-  QString readerEngine = readerEngineNames.at(readerEngineType);
-  d.appendProperiteChild("reader", readerEngine);
+  QString readerEngine = inputFormatNames.at(inputFormatType);
+  d.appendProperiteChild("inputFormat", readerEngine);
   QString decoderTypeName = decoderEngineNames.at(decoderEngineType);
   d.appendProperiteChild("decoder", decoderTypeName);
   
@@ -180,20 +196,20 @@ playlistItemCompressedVideo *playlistItemCompressedVideo::newPlaylistItemCompres
   if (filePath.isEmpty())
     return nullptr;
 
-  readerEngine r = readerAnnexB;
-  QString readerName = root.findChildValue("reader");
-  int idx = readerEngineNames.indexOf(readerName);
-  if (idx >= 0 && idx < reader_NUM)
-    r = readerEngine(idx);
+  inputFormat input = inputAnnexBHEVC;
+  QString inputName = root.findChildValue("inputFormat");
+  int idx = inputFormatNames.indexOf(inputName);
+  if (idx >= 0 && idx < input_NUM)
+    input = inputFormat(idx);
 
-  decoderEngine e = decoderLibde265;
+  decoderEngine decoder = decoderLibde265;
   QString decoderName = root.findChildValue("decoder");
   idx = decoderEngineNames.indexOf(decoderName);
   if (idx >= 0 && idx < decoder_NUM)
-    e = decoderEngine(idx);
+    decoder = decoderEngine(idx);
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  playlistItemCompressedVideo *newFile = new playlistItemCompressedVideo(filePath, displaySignal, r, e);
+  playlistItemCompressedVideo *newFile = new playlistItemCompressedVideo(filePath, displaySignal, input, decoder);
 
   // Load the propertied of the playlistItemIndexed
   playlistItem::loadPropertiesFromPlaylist(root, newFile);
@@ -218,7 +234,7 @@ infoData playlistItemCompressedVideo::getInfo() const
   else if (fileState == noError)
   {
     QSize videoSize = video->getFrameSize();
-    info.items.append(infoItem("Reader", readerEngineNames.at(readerEngineType)));
+    info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
     info.items.append(infoItem("Decoder", loadingDecoder->getDecoderName()));
     info.items.append(infoItem("library path", loadingDecoder->getLibraryPath(), "The path to the loaded libde265 library"));
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
@@ -401,9 +417,17 @@ ValuePairListSets playlistItemCompressedVideo::getPixelValues(const QPoint &pixe
 
 void playlistItemCompressedVideo::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
-  allExtensions.append("hevc");
-  allExtensions.append("bin");
-  filters.append("Annex B raw coded video (*.hevc, *.bin)");
+  QStringList ext;
+  ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "cgi" << "ivr" << "lvf"
+      << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" << "mjpeg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" << "mvi" << "mxg" << "v" << "ogg" 
+      << "mjpg" << "viv" << "xmv" << "ts";
+  QString filtersString = "FFMpeg files (";
+  for (QString e : ext)
+    filtersString.append(QString("*.%1").arg(e));
+  filtersString.append(")");
+
+  allExtensions.append(ext);
+  filters.append(filtersString);
 }
 
 void playlistItemCompressedVideo::reloadItemSource()
@@ -480,10 +504,25 @@ void playlistItemCompressedVideo::loadFrame(int frameIdx, bool playing, bool loa
   }
 }
 
-void playlistItemCompressedVideo::determineReaderAndDecoder(QWidget *parent, QString fileName, readerEngine &reader, decoderEngine &dec)
+void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QString fileName, inputFormat &input, decoderEngine &decoder)
 {
   // TODO: Determine the combination of reader / decoder to use.
+  // There should be an intelligent test to determine the type and then if in doubt we should ask the user.
   // Ask the user if multiple different combinations can be used.
+
+  QFileInfo info(fileName);
+  QString ext = info.suffix();
+  if (ext == "hevc" || ext == "h265" || ext == "265")
+  {
+    // Let's try to open it as a raw AnnexBHEVC file
+    input = inputAnnexBHEVC;
+    decoder = decoderLibde265;
+  }
+  else
+  {
+    input = inputInvalid;
+    decoder = decoderInvalid;
+  }
 
   /*bool ok;
   QString label = "<html><head/><body><p>There are multiple decoders that we can use in order to decode the raw coded video bitstream file:</p><p><b>libde265:</b> A very fast and open source HEVC decoder. The internals version even supports display of the prediction and residual signal.</p><p><b>libHM:</b> The library version of the HEVC reference test model software (HM). Slower than libde265.</p><p><b>JEM:</b> The library version of the the HEVC next generation decoder software JEM.</p></body></html>";
@@ -495,8 +534,7 @@ void playlistItemCompressedVideo::determineReaderAndDecoder(QWidget *parent, QSt
       return decoderEngine(idx);
   }*/
   
-  reader = readerInvalid;
-  dec = decoderInvalid;
+  
 }
 
 void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)

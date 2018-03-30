@@ -54,12 +54,14 @@ public:
 
   typedef enum
   {
-    readerInvalid = -1,
-    readerAnnexB,
-    readerFFMpeg,
-    reader_NUM
-  } readerEngine;
-
+    inputInvalid = -1,  // We don't know how to open the input
+    inputAnnexBHEVC,   // This is a raw HEVC annex B file
+    inputAnnexBAVC,    // This is a raw AVC annex B file
+    inputAnnexBJEM,    // This is a raw JEM annex B file
+    inputLibavformat,  // This is a container file which we will read using libavformat
+    input_NUM
+  } inputFormat;
+    
   typedef enum
   {
     decoderInvalid = -1,  // invalid value
@@ -75,7 +77,7 @@ public:
   * addPropertiesWidget to add the custom properties panel.
   * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
   */
-  playlistItemCompressedVideo(const QString &fileName, int displayComponent=0, readerEngine reader = readerInvalid, decoderEngine decoder = decoderInvalid);
+  playlistItemCompressedVideo(const QString &fileName, int displayComponent=0, inputFormat input = inputInvalid, decoderEngine decoder = decoderInvalid);
 
   // Save the compressed file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
@@ -123,7 +125,7 @@ public:
 
   // Analyze the input and determine which reader/decoder to use.
   // Ask the user if various options exist.
-  static void determineReaderAndDecoder(QWidget *parent, QString fileName, readerEngine &reader, decoderEngine &dec);
+  static void determineInputAndDecoder(QWidget *parent, QString fileName, inputFormat &input, decoderEngine &decoder);
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
@@ -152,9 +154,11 @@ protected:
   QScopedPointer<decoderBase> loadingDecoder;
   QScopedPointer<decoderBase> cachingDecoder;
 
-  // Which type of reader do we use?
-  readerEngine readerEngineType;
-  // Which type of decoder do we use?
+  //
+  QScopedPointer<fileSourceAnnexBFile> annexBFile;
+
+  // Which type is the input / what decoder do we use?
+  inputFormat inputFormatType;
   decoderEngine decoderEngineType;
   
   // Is the loadFrame function currently loading?
@@ -175,7 +179,7 @@ protected:
 
   SafeUi<Ui::playlistItemCompressedFile_Widget> ui;
 
-  static QStringList readerEngineNames;
+  static QStringList inputFormatNames;
   static QStringList decoderEngineNames;
 
 private slots:

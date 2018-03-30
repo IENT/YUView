@@ -116,11 +116,11 @@ namespace playlistItems
       if (allExtensions.contains(ext))
       {
         playlistItemCompressedVideo::decoderEngine engine;
-        playlistItemCompressedVideo::readerEngine reader;
-        playlistItemCompressedVideo::determineReaderAndDecoder(parent, fileName, reader, engine);
+        playlistItemCompressedVideo::inputFormat input;
+        playlistItemCompressedVideo::determineInputAndDecoder(parent, fileName, input, engine);
         if (engine == playlistItemCompressedVideo::decoderInvalid)
           return nullptr;
-        playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0, reader, engine);
+        playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0, input, engine);
         return newRawCodedVideo;
       }
     }
@@ -189,11 +189,11 @@ namespace playlistItems
       {
         // Compressed video
         playlistItemCompressedVideo::decoderEngine engine;
-        playlistItemCompressedVideo::readerEngine reader;
-        playlistItemCompressedVideo::determineReaderAndDecoder(parent, fileName, reader, engine);
+        playlistItemCompressedVideo::inputFormat input;
+        playlistItemCompressedVideo::determineInputAndDecoder(parent, fileName, input, engine);
         if (engine == playlistItemCompressedVideo::decoderInvalid)
           return nullptr;
-        playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0, reader, engine);
+        playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0, input, engine);
         return newRawCodedVideo;
       }
       else if (asType == types[4])

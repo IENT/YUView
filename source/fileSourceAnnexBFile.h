@@ -40,10 +40,12 @@
 
 using namespace YUV_Internals;
 
-#define BUFFER_SIZE 40960
+// Internally, we use a buffer which we only update if necessary
+#define BUFFER_SIZE 500000
 
-/* This class can perform basic NAL unit reading from a bitstream.
+/* This class is a normal fileSource for opening of raw AnnexBFiles.
  * Basically it understands that this is a binary file where each unit starts with a start code (0x0000001)
+ * TODO: The reading / parsing could be performed in a background thread in order to increase the performance
 */
 class fileSourceAnnexBFile : public fileSource
 {
@@ -51,80 +53,82 @@ class fileSourceAnnexBFile : public fileSource
 
 public:
   fileSourceAnnexBFile();
+  fileSourceAnnexBFile(const QString &filePath) : fileSourceAnnexBFile() { openFile(filePath); }
   ~fileSourceAnnexBFile();
 
   // Open the given file. If another file is given, 
-  virtual bool openFile(const QString &filePath) Q_DECL_OVERRIDE { return openFile(filePath, false); }
-  virtual bool openFile(const QString &filePath, bool saveAllUnits, fileSourceAnnexBFile *otherFile=nullptr);
-
-  // How many POC's have been found in the file
-  int getNumberPOCs() const { return parser->getNumberPOCs(); }
+  bool openFile(const QString &filePath) Q_DECL_OVERRIDE;
 
   // Is the file at the end?
-  virtual bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize == 0; }
+  bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize < BUFFER_SIZE; }
 
-  // Seek to the first byte of the payload data of the next NAL unit
-  // Return false if not successfull (eg. file ended)
-  bool seekToNextNALUnit();
-
-  // Get the remaining bytes in the NAL unit or maxBytes (if set).
-  // This function might also return less than maxBytes if a NAL header is encountered before reading maxBytes bytes.
-  // Or: do getCurByte(), gotoNextByte until we find a new start code.
-  QByteArray getRemainingNALBytes(int maxBytes=-1);
-
-  // Calculate the closest random access point (RAP) before the given frame number.
-  // Return the frame number of that random access point.
-  int getClosestSeekableFrameNumber(int frameIdx) const;
-
-  // Seek the file to the given frame number. The given frame number has to be a random 
-  // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
-  // Returns the active parameter sets as a byte array. This has to be given to the decoder first.
-  virtual QList<QByteArray> seekToFrameNumber(int iFrameNr);
-  
-  // Move the file to the next byte. Update the buffer if necessary.
-  // Return false if the operation failed.
-  bool gotoNextByte();
-
-  // Get the current byte in the buffer
-  char getCurByte() const { return fileBuffer.at(posInBuffer); }
-
-  // Get if the current position is the one byte of a start code
-  bool curPosAtStartCode() const { return numZeroBytes >= 2 && getCurByte() == (char)1; }
-
-  // The current absolut position in the file (byte precise)
-  quint64 tell() const { return bufferStartPosInFile + posInBuffer; }
-
-  // Read the remaining bytes from the buffer and return them. Then load the next buffer.
-  QByteArray getRemainingBuffer_Update();
-
-  // Get the bytes of the next NAL unit;
-  QByteArray getNextNALUnit();
+  // Get the next NAL unit (everything excluding the start code)
+  // Also return the position of the NAL unit in the file so you can seek to it.
+  QByteArray getNextNALUnit(quint64 &posInFile);
 
 protected:
-  
-  // Buffers to access the binary file
-  QByteArray   fileBuffer;
-  quint64      fileBufferSize;
-  unsigned int posInBuffer;	         ///< The current position in the input buffer in bytes
-  quint64      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
-  int          numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
 
-  // A pointer to the parser. This can be any specific annexB parser (AVC, HEVC, JEM ...)
-  // This file format always has a parser because we need it to determine the POCs and the random access points.
-  QScopedPointer<annexBParser> parser;
+  QByteArray   fileBuffer;
+  quint64      fileBufferSize;       ///< How many of the bytes are used? We don't resize the fileBuffer
+  unsigned int posInBuffer;          ///< The current position in the input buffer in bytes
+  quint64      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
 
   // The start code pattern
   QByteArray startCode;
 
-  // Scan the file. We don't know the specific type of bitstream so we will just look for start-codes
-  // and pass all the actual data to the annexBParser.
-  bool scanFileForNalUnits(bool saveAllUnits);
-
   // load the next buffer
   bool updateBuffer();
 
-  // Seek the file to the given byte position. Update the buffer.
-  bool seekToFilePos(quint64 pos);
+
+  //// Seek to the first byte of the payload data of the next NAL unit (after the start code)
+  //// Return false if not successfull (eg. file ended)
+  //bool seekToNextNALUnit();
+
+  //// Get the remaining bytes in the NAL unit or maxBytes (if set).
+  //// This function might also return less than maxBytes if a NAL header is encountered before reading maxBytes bytes.
+  //// Or: do getCurByte(), gotoNextByte until we find a new start code.
+  //QByteArray getRemainingNALBytes(int maxBytes=-1);
+  //  
+  //// Move the file to the next byte. Update the buffer if necessary.
+  //// Return false if the operation failed.
+  //bool gotoNextByte();
+
+  //// Get the current byte in the buffer
+  //char getCurByte() const { return fileBuffer.at(posInBuffer); }
+
+  //// Get if the current position is the one byte of a start code
+  //bool curPosAtStartCode() const { return numZeroBytes >= 2 && getCurByte() == (char)1; }
+
+  //// The current absolut position in the file (byte precise)
+  //quint64 tell() const { return bufferStartPosInFile + posInBuffer; }
+
+  //// Read the remaining bytes from the buffer and return them. Then load the next buffer.
+  //QByteArray getRemainingBuffer_Update();
+
+  //// Get the bytes of the next NAL unit;
+  //QByteArray getNextNALUnit();
+  //
+  //// Buffers to access the binary file
+  //QByteArray   fileBuffer;
+  //quint64      fileBufferSize;
+  //unsigned int posInBuffer;	         ///< The current position in the input buffer in bytes
+  //quint64      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
+  //int          numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
+
+  //// A pointer to the parser. This can be any specific annexB parser (AVC, HEVC, JEM ...)
+  //// This file format always has a parser because we need it to determine the POCs and the random access points.
+  //QScopedPointer<annexBParser> parser;
+
+  
+
+  //// Scan the file. We don't know the specific type of bitstream so we will just look for start-codes
+  //// and pass all the actual data to the annexBParser.
+  //bool scanFileForNalUnits(bool saveAllUnits);
+
+  
+
+  //// Seek the file to the given byte position. Update the buffer.
+  //bool seekToFilePos(quint64 pos);
 };
 
 #endif //FILESOURCEANNEXBFILE_H
