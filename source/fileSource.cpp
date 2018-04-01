@@ -76,7 +76,6 @@ bool fileSource::openFile(const QString &filePath)
 
   // Install a watcher for the file (if file watching is active)
   updateFileWatchSetting();
-
   fileChanged = false;
 
   return true;

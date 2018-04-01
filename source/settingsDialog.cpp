@@ -37,7 +37,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include "typedef.h"
-#include "FFmpegDecoder.h"
+#include "FFmpegLibraries.h"
 #include "hevcNextGenDecoderJEM.h"
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
@@ -288,7 +288,7 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 
   // Try to open ffmpeg using the four libraries
   QString error;
-  if (!FFmpegDecoder::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error))
+  if (!FFmpegLibraries::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable ffmpeg avFormat library. Error: " + error);
   else
   {

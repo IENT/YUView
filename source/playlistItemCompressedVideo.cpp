@@ -37,7 +37,6 @@
 #include "annexBParserJEM.h"
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
-#include "FFmpegDecoder.h"
 #include "hevcNextGenDecoderJEM.h"
 
 #include <QThread>
@@ -103,7 +102,14 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   }
   else
   {
-    // TODO:
+    // Try ffmpeg to open the file
+    if (!fileFFMpeg.openFile(compressedFilePath))
+    {
+      fileState = error;
+      return;
+    }
+    
+    fileState = onlyParsing;
   }
 
   // Allocate the decoders
@@ -559,8 +565,8 @@ void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QStr
   }
   else
   {
-    input = inputInvalid;
-    decoder = decoderInvalid;
+    input = inputLibavformat;
+    decoder = decoderFFMpeg;
   }
 
   /*bool ok;

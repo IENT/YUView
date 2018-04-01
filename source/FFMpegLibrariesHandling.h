@@ -33,7 +33,7 @@
 #ifndef FFMPEGDECODERLIBHANDLING_H
 #define FFMPEGDECODERLIBHANDLING_H
 
-#include "FFMpegDecoderCommonDefs.h"
+#include "FFMpegLibrariesCommonDefs.h"
 #include "stdint.h"
 #include <assert.h>
 #include <QLibrary>

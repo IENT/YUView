@@ -104,7 +104,7 @@ private:
 
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
-  FFmpegDecoder loadingDecoder;
+  FFmpegDecoder   ;
   FFmpegDecoder cachingDecoder;
 
   // The statistics source

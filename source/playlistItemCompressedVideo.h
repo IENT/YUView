@@ -34,6 +34,7 @@
 #define PLAYLISTITEMCOMPRESSEDVIDEO_H
 
 #include "decoderBase.h"
+#include "fileSourceFFMpegFile.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
 #include "videoHandlerYUV.h"
@@ -165,6 +166,9 @@ protected:
   // Which type is the input / what decoder do we use?
   inputFormat inputFormatType;
   decoderEngine decoderEngineType;
+
+  // FFMpeg 
+  fileSourceFFMpegFile fileFFMpeg;
   
   // Is the loadFrame function currently loading?
   bool isFrameLoading;

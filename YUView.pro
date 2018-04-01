@@ -12,10 +12,12 @@ SOURCES += \
     source/annexBParserHEVC.cpp \
     source/annexBParserJEM.cpp \
     source/decoderBase.cpp \
-    source/FFmpegDecoder.cpp \
-    source/FFMpegDecoderLibHandling.cpp \
+    source/FFmpegLibraries.cpp \
+    source/FFMpegLibrariesHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
+	source/fileSourceAnnexBFile.cpp \
+	source/fileSourceFFMpegFile.cpp \
     source/frameHandler.cpp \
     source/hevcDecoderLibde265.cpp \
     source/hevcDecoderHM.cpp \
@@ -61,11 +63,13 @@ HEADERS += \
     source/annexBParserHEVC.h \
     source/annexBParserJEM.h \
     source/decoderBase.h \
-    source/FFmpegDecoder.h \
-    source/FFMpegDecoderLibHandling.h \
-    source/FFMpegDecoderCommonDefs.h \
+    source/FFmpegLibraries.h \
+    source/FFMpegLibrariesHandling.h \
+    source/FFMpegLibrariesCommonDefs.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
+	source/fileSourceAnnexBFile.h \
+	source/fileSourceFFMpegFile.h \
     source/frameHandler.h \
     source/hevcDecoderHM.h \
     source/hevcDecoderLibde265.h \
@@ -75,7 +79,7 @@ HEADERS += \
     source/mainwindow_performanceTestDialog.h \
     source/playbackController.h \
     source/playlistItem.h \
-    source/playlistItemCompressedVideo.cpp \
+    source/playlistItemCompressedVideo.h \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
     source/playlistItemImageFile.h \

@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "FFMpegDecoderLibHandling.h"
+#include "FFMpegLibrariesHandling.h"
 
 #include <QDir>
 #include "typedef.h"

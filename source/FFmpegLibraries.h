@@ -36,44 +36,47 @@
 #include "fileInfoWidget.h"
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
-#include "FFMpegDecoderLibHandling.h"
+#include "FFMpegLibrariesHandling.h"
 #include <QLibrary>
 #include <QFileSystemWatcher>
 
 using namespace YUV_Internals;
 
 // This class wraps the ffmpeg library in a demand-load fashion.
-class FFmpegDecoder : public QObject
+// As FFMpeg, the library can then be used to read from containers, or to decode videos.
+class FFmpegLibraries : public QObject
 {
   Q_OBJECT
 
 public:
-  FFmpegDecoder();
-  ~FFmpegDecoder();
+  FFmpegLibraries();
+  ~FFmpegLibraries();
 
-  // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
-  // Return false if an error occured (opening the decoder or parsing the bitstream)
-  // If a second decoder is provided, the bistream will not be scanned again (scanBitstream), but
-  // the values will be copied from the given decoder.
-  bool openFile(QString fileName, FFmpegDecoder *otherDec=nullptr);
+  /* ---- Reading from a container -----
+   * Scenraio 1: Read data from a container.
+   * First, open a file ...
+   */
 
-  // Get the pixel format and frame size. This is valid after openFile was called.
+  bool openFile(QString fileName);
+  void closeFile() { /* TODO */ assert(false); };
+
+  // After succesfully opening a container, these should provide some information about the bitstream
+  double getFrameRate() const { return frameRate; }
+  ColorConversion getColorConversionType() const { return colorConversionType; }
   yuvPixelFormat getYUVPixelFormat();
   QSize getFrameSize() const { return frameSize; }
 
-  // Get some infos on the file (like date changed, file size, etc...)
-  QList<infoItem> getFileInfoList() const;
 
-  // How many frames are in the file?
-  int getNumberPOCs() const { return nrFrames; }
-  double getFrameRate() const { return frameRate; }
-  ColorConversion getColorConversionType() const { return colorConversionType; }
+
+
+
+    
 
   // Get the error string (if openFile returend false)
   QString decoderErrorString() const;
-  bool errorInDecoder() const { return decodingError != ffmpeg_noError; }
-  bool errorLoadingLibraries() const { return decodingError == ffmpeg_errorLoadingLibrary; }
-  bool errorOpeningFile() const { return decodingError == ffmpeg_errorOpeningFile; }
+  bool errorInDecoder() const { return decodingError; }
+  bool errorLoadingLibraries() const { return librariesLoadingError; }
+  bool errorOpeningFile() const { return decodingError; }
 
   // Get info about the decoder (path, library versions...)
   QList<infoItem> getDecoderInfo() const;
@@ -81,54 +84,50 @@ public:
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx);
 
-  // Was the file changed by some other application?
-  bool isFileChanged() { bool b = fileChanged; fileChanged = false; return b; }
-  // Check if we are supposed to watch the file for changes. If no, remove the file watcher. If yes, install one.
-  void updateFileWatchSetting();
-  // Reload the input file
-  bool reloadItemSource();
-
   // Get the statistics values for the given frame (decode if necessary)
   statisticsData getStatisticsData(int frameIdx, int typeIdx);
 
   // Check if the given libraries can be used to open ffmpeg
   static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error);
-
-  // Annex B files
-  bool canShowNALInfo() const { return canShowNALUnits; }
-
-private slots:
-  void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
-
+  
 private:
 
   // Try to load the ffmpeg libraries. Different paths wil be tried. 
   // If this fails, decoderError is set and errorString provides a error description.
-  void loadFFmpegLibraries();
+  bool loadFFmpegLibraries();
+  bool librariesLoaded;
+  bool librariesLoadingError;
+
+  // Opening files
+  bool readingFileError;
+  AVFormatContextWrapper fmt_ctx;
+  AVStreamWrapper video_stream;
+
+  // ---- Decoding 
+  bool decodingError;
+
+
+
+
+
+
+
+
   
   // If the libraries were opened successfully, this function will attempt to get all the needed function pointers.
   // If this fails, decoderError will be set.
   void bindFunctionsFromLibraries();
 
-  // Scan the entire stream. Get the number of frames that we can decode and the key frames
-  // that we can seek to.
-  bool scanBitstream();
+  //// Scan the entire stream. Get the number of frames that we can decode and the key frames
+  //// that we can seek to.
+  //bool scanBitstream();
 
   // The decoderLibraries can be accessed through this class independent of the FFmpeg version.
   FFmpegVersionHandler ff;
 
-  // Error handling
-  enum decodingErrorEnum
-  {
-    ffmpeg_noError,
-    ffmpeg_errorOpeningFile,      //< The library is ok, but there was an error loading the file
-    ffmpeg_errorLoadingLibrary,   //< The library could not be loaded
-    ffmpeg_errorDecoding          //< There was an error while decoding
-  };
-  decodingErrorEnum decodingError;
   QString errorString;
-  bool setOpeningError(const QString &reason) { decodingError = ffmpeg_errorOpeningFile; errorString = reason; return false; }
-  void setDecodingError(const QString &reason)  { decodingError = ffmpeg_errorDecoding; errorString = reason; }
+  bool setOpeningError(const QString &reason) { readingFileError = true; errorString = reason; return false; }
+  void setDecodingError(const QString &reason)  { decodingError = true; errorString = reason; }
 
   // The pixel format. This is valid after openFile was called (and succeeded).
   enum AVPixelFormat pixelFormat;
@@ -139,18 +138,12 @@ private:
   bool decodeOneFrame();
 
   // The input file context
-  AVFormatContextWrapper fmt_ctx;
-  AVStreamWrapper video_stream;
   AVCodecWrapper videoCodec;        //< The video decoder codec
   AVCodecContextWrapper decCtx;     //< The decoder context
   AVFrameWrapper frame;             //< The frame that we use for decoding
   AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile;                   //< Are we at the end of file (draining mode)?
-
-  // The information on the file which was opened with openFile
-  QString   fullFilePath;
-  QFileInfo fileInfo;
-
+  
   // Private struct for navigation. We index frames by frame number and FFMpeg uses the pts.
   // This connects both values.
   struct pictureIdx
@@ -160,19 +153,14 @@ private:
     qint64 pts;
   };
 
-  // These are filled after opening a file (after scanBitstream was called)
-  int nrFrames;                               //< How many frames are in the sequence?
-  QList<pictureIdx> keyFrameList;  //< A list of pairs (frameNr, PTS) that we can seek to.
-  pictureIdx getClosestSeekableFrameNumberBefore(int frameIdx);
+  //// These are filled after opening a file (after scanBitstream was called)
+  //QList<pictureIdx> keyFrameList;  //< A list of pairs (frameNr, PTS) that we can seek to.
+  //pictureIdx getClosestSeekableFrameNumberBefore(int frameIdx);
 
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
   // that we are ready to start decoding from this pts.
   bool seekToPTS(qint64 pts);
-
-  // Watch the opened file for modifications
-  QFileSystemWatcher fileWatcher;
-  bool fileChanged;
-
+  
   // The buffer and the index that was requested in the last call to getOneFrame
   int currentOutputBufferFrameIndex;
 #if SSE_CONVERSION
@@ -182,8 +170,6 @@ private:
   QByteArray currentOutputBuffer;
   void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
 #endif
-
-  bool canShowNALUnits;
 
   // Caching
   QHash<int, statisticsData> curFrameStats;  // cache of the statistics for the current POC [statsTypeID]
