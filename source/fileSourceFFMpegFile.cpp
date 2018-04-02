@@ -53,7 +53,32 @@ fileSourceFFMpegFile::fileSourceFFMpegFile()
 
 QByteArray fileSourceFFMpegFile::getNextNALUnit(quint64 & posInFile)
 {
-  return QByteArray();
+  // Is a packet loaded?
+  if (currentPacketData.isEmpty())
+  {
+    if (!ffmpegLib.goToNextVideoPacket())
+    {
+      posInFile = -1;
+      return QByteArray();
+    }
+
+    currentPacketData = QByteArray::fromRawData((const char*)(ffmpegLib.getPacketData()), ffmpegLib.getPacketDataSize());
+    posInData = 0;
+  }
+  
+  // FFMpeg packet use the following encoding:
+  // The first 4 bytes determine the size of the NAL unit followed by the payload
+  QByteArray sizePart = currentPacketData.mid(posInData, 4);
+  unsigned int size = (unsigned char)sizePart.at(3);
+  size += (unsigned char)sizePart.at(2) << 8;
+  size += (unsigned char)sizePart.at(1) << 16;
+  size += (unsigned char)sizePart.at(0) << 24;
+  
+  QByteArray retArray = currentPacketData.mid(posInData + 4, size);
+  posInData += 4 + size;
+  if (posInData >= currentPacketData.size())
+    currentPacketData.clear();
+  return retArray;
 }
 
 fileSourceFFMpegFile::~fileSourceFFMpegFile()
@@ -116,4 +141,14 @@ void fileSourceFFMpegFile::scanBitstream()
 
     nrFrames++;
   }
+}
+
+ffmpeg_codec fileSourceFFMpegFile::getCodec()
+{
+  AVCodecID codec = ffmpegLib.getCodecID();
+  if (codec == AV_CODEC_ID_H264)
+    return FFMPEG_CODEC_AVC;
+  if (codec == AV_CODEC_ID_HEVC)
+    return FFMPEG_CODEC_HEVC;
+  return FFMPEG_CODEC_OTHER;
 }

@@ -292,11 +292,26 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     parser->enableModel();
     parseAnnexBFile(annexBFile, parser);
   }
-  else
+  else // inputLibavformat
   {
-    // Get it from a container
-    // TODO:
-    return;
+    // Just open and parse the file again
+    QScopedPointer<fileSourceFFMpegFile> ffmpegFile(new fileSourceFFMpegFile(plItemNameOrFileName));
+    if (inputFileFFMpeg->getCodec() == FFMPEG_CODEC_OTHER)
+    {
+      // TODO: Maybe some gemeric packet display? 
+      // This could be included into fileSourceFFMpegFile itself!
+    }
+    else
+    {
+      if (inputFileFFMpeg->getCodec() == FFMPEG_CODEC_HEVC)
+        parser.reset(new annexBParserHEVC());
+      else if (inputFileFFMpeg->getCodec() == FFMPEG_CODEC_AVC)
+        parser.reset(new annexBParserAVC());
+      parser->enableModel();
+      parseFFMpegFile(ffmpegFile, parser);
+    }
+    
+    
   }
   
   QDialog newDialog;
@@ -405,8 +420,11 @@ void playlistItemCompressedVideo::createPropertiesWidget()
   ui.verticalLayout->insertLayout(6, statSource.createStatisticsHandlerControls(), 1);
 
   // Set the components that we can display
-  ui.comboBoxDisplaySignal->addItems(loadingDecoder->wrapperGetSignalNames());
-  ui.comboBoxDisplaySignal->setCurrentIndex(displaySignal);
+  if (loadingDecoder)
+  {
+    ui.comboBoxDisplaySignal->addItems(loadingDecoder->wrapperGetSignalNames());
+    ui.comboBoxDisplaySignal->setCurrentIndex(displaySignal);
+  }
 
   // Connect signals/slots
   connect(ui.comboBoxDisplaySignal, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemCompressedVideo::displaySignalComboBoxChanged);
@@ -414,7 +432,7 @@ void playlistItemCompressedVideo::createPropertiesWidget()
 
 void playlistItemCompressedVideo::fillStatisticList()
 {
-  if (!loadingDecoder->wrapperInternalsSupported())
+  if (!loadingDecoder || !loadingDecoder->wrapperInternalsSupported())
     return;
 
   loadingDecoder->fillStatisticList(statSource);
@@ -583,7 +601,7 @@ void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QStr
 
 void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
 {
-  if (displaySignal != idx)
+  if (loadingDecoder && displaySignal != idx)
   {
     displaySignal = idx;
     loadingDecoder->setDecodeSignal(idx);
@@ -664,7 +682,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
     {
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_HEVC("fileSourceHEVCAnnexBFile::scanFileForNalUnits Exception thrown parsing NAL %d", nalID);
+      DEBUG_HEVC(":parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
       nalID++;
     }
   }
@@ -674,7 +692,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   progress.close();
 }
 
-void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file)
+void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<annexBParser> &parser)
 {
   // Seek to the beginning of the stream.
   inputFileFFMpeg->seekToPTS(0);
@@ -701,12 +719,24 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
   progress.setWindowModality(Qt::WindowModal);
   
   QByteArray nalData;
+  int nalID = 0;
   while (!inputFileFFMpeg->atEnd())
   {
     quint64 pts;
     nalData = inputFileFFMpeg->getNextNALUnit(pts);
 
-
+    try
+    {
+      parser->parseAndAddNALUnit(nalID, nalData);
+      nalID++;
+    }
+    catch (...)
+    {
+      // Reading a NAL unit failed at some point.
+      // This is not too bad. Just don't use this NAL unit and continue with the next one.
+      DEBUG_HEVC("parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
+      nalID++;
+    }
   }
     
   // Seek back to the beginning of the stream.

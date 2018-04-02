@@ -1321,6 +1321,8 @@ AVMediaType AVStreamWrapper::getCodecType()
 AVCodecID AVStreamWrapper::getCodecID()
 {
   update();
+  if (str == nullptr)
+    return AV_CODEC_ID_NONE;
   if (libVer.avformat <= 56 || !codecpar)
     return codec.getCodecID();
   return codecpar.getCodecID();

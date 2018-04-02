@@ -36,6 +36,13 @@
 #include "fileSource.h"
 #include "FFmpegLibraries.h"
 
+typedef enum
+{
+  FFMPEG_CODEC_HEVC,
+  FFMPEG_CODEC_AVC,
+  FFMPEG_CODEC_OTHER
+} ffmpeg_codec;
+
 /* This class is a normal fileSource for opening of raw AnnexBFiles.
 * Basically it understands that this is a binary file where each unit starts with a start code (0x0000001)
 * TODO: The reading / parsing could be performed in a background thread in order to increase the performance
@@ -55,7 +62,7 @@ public:
 
   // Is the file at the end?
   // TODO: How do we do this?
-  bool atEnd() const { return false; }
+  bool atEnd() const { return ffmpegLib.atEnd(); }
 
   // Get the next NAL unit (everything excluding the start code)
   QByteArray getNextNALUnit(quint64 &pts);
@@ -68,7 +75,8 @@ public:
   qint64 getMaxPTS() { if (!isFileOpened) return -1; return ffmpegLib.getMaxPTS(); };
 
   int getNumberFrames() const { return nrFrames; }
-
+  ffmpeg_codec getCodec();
+  
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
 
@@ -101,6 +109,11 @@ protected:
   // These are filled after opening a file (after scanBitstream was called)
   QList<pictureIdx> keyFrameList;  //< A list of pairs (frameNr, PTS) that we can seek to.
   //pictureIdx getClosestSeekableFrameNumberBefore(int frameIdx);
+
+  // For parsing NAL units from the compressed data:
+  QByteArray currentPacketData;
+  int posInData;
+
 };
 
 #endif // FILESOURCEFFMPEGFILE_H

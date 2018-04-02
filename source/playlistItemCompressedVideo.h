@@ -167,8 +167,9 @@ protected:
   inputFormat inputFormatType;
   decoderEngine decoderEngineType;
 
-  // For FFMpeg files we don't need a reader to parse them. 
-  void parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file);
+  // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
+  // read the NAL units from the compressed file.
+  void parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<annexBParser> &parser);
   QScopedPointer<fileSourceFFMpegFile> inputFileFFMpeg;
   
   // Is the loadFrame function currently loading?

@@ -124,26 +124,26 @@ bool FFmpegLibraries::openFile(QString fileName)
   if(!videoCodec)
     return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
 
-  // Allocate the decoder context
-  decCtx = ff.alloc_decoder(videoCodec);
-  if(!decCtx)
-    return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
+  //// Allocate the decoder context
+  //decCtx = ff.alloc_decoder(videoCodec);
+  //if(!decCtx)
+  //  return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
 
-  ff.parse_decoder_parameters(decCtx, video_stream);
+  //ff.parse_decoder_parameters(decCtx, video_stream);
 
-  // Ask the decoder to provide motion vectors (if possible)
-  AVDictionaryWrapper opts;
-  if (ff.av_dict_set(opts, "flags2", "+export_mvs", 0))
-    return setOpeningError(QStringLiteral("Could not request motion vector retrieval.").arg(ret));
+  //// Ask the decoder to provide motion vectors (if possible)
+  //AVDictionaryWrapper opts;
+  //if (ff.av_dict_set(opts, "flags2", "+export_mvs", 0))
+  //  return setOpeningError(QStringLiteral("Could not request motion vector retrieval.").arg(ret));
 
-  // Open codec
-  ret = ff.avcodec_open2(decCtx, videoCodec, opts);
-  if (ret < 0)
-    return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
+  //// Open codec
+  //ret = ff.avcodec_open2(decCtx, videoCodec, opts);
+  //if (ret < 0)
+  //  return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
 
-  frame.allocate_frame(ff);
-  if (!frame)
-    return setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
+  //frame.allocate_frame(ff);
+  //if (!frame)
+  //  return setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 
   // Initialize an empty packet
   pkt.allocate_paket(ff);
@@ -657,8 +657,8 @@ bool FFmpegLibraries::seekToPTS(qint64 pts)
     return false;
   }
     
-  // Flush the video decoder buffer
-  ff.flush_buffers(decCtx);
+  //// Flush the video decoder buffer
+  //ff.flush_buffers(decCtx);
 
   // We seeked somewhere, so we are not at the end of the file anymore.
   endOfFile = false;
@@ -769,10 +769,8 @@ bool FFmpegLibraries::goToNextVideoPacket()
       pkt.unref_packet(ff);
 
     ret = fmt_ctx.read_frame(ff, pkt);
-    if (ret < 0)
-      return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
   }
-  while (ret = 0 && pkt.get_stream_index() != video_stream.get_index());
+  while (ret == 0 && pkt.get_stream_index() != video_stream.get_index());
 
   if (ret < 0)
   {

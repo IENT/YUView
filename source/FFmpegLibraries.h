@@ -68,9 +68,11 @@ public:
   qint64 getDuration() { return duration; }
   QPair<qint64, qint64> getTimeBase() { return QPair<qint64,qint64>(timeBase.num, timeBase.den); }
   qint64 getMaxPTS();
+  AVCodecID getCodecID() { return video_stream.getCodecID(); }
 
   // Read the stream packet by packet:
   bool     goToNextVideoPacket();
+  bool     atEnd() const         { return endOfFile; }
   qint64   getPacketPTS()        { return pkt.get_pts(); }
   qint64   getPacketDTS()        { return pkt.get_dts(); }
   qint64   getPacketDuration()   { return pkt.get_duration(); }
