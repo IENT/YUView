@@ -66,6 +66,9 @@ FFmpegLibraries::FFmpegLibraries()
   endOfFile = false;
   frameRate = -1;
   colorConversionType = BT709_LimitedRange;
+  duration = -1;
+  timeBase.num = 0;
+  timeBase.den = 0;
   
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
@@ -152,6 +155,8 @@ bool FFmpegLibraries::openFile(QString fileName)
   else
     frameRate = avgFrameRate.num / double(avgFrameRate.den);
   pixelFormat = decCtx.get_pixel_format();
+  duration = fmt_ctx.get_duration();
+  timeBase = video_stream.get_time_base();
 
   AVColorSpace colSpace = video_stream.get_colorspace();
   int w = video_stream.get_frame_width();
@@ -166,14 +171,15 @@ bool FFmpegLibraries::openFile(QString fileName)
   else
     colorConversionType = BT709_LimitedRange;
 
-  // Get the first video stream packet into the packet buffer.
-  do
-  {
-    ret = fmt_ctx.read_frame(ff, pkt);
-    if (ret < 0)
-      return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
-  }
-  while (pkt.get_stream_index() != video_stream.get_index());
+  // goToNextPacket();
+  //// Get the first video stream packet into the packet buffer.
+  //do
+  //{
+  //  ret = fmt_ctx.read_frame(ff, pkt);
+  //  if (ret < 0)
+  //    return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
+  //}
+  //while (pkt.get_stream_index() != video_stream.get_index());
   
   return true;
 }
@@ -654,15 +660,6 @@ bool FFmpegLibraries::seekToPTS(qint64 pts)
   // Flush the video decoder buffer
   ff.flush_buffers(decCtx);
 
-  // Get the first video stream packet into the packet buffer.
-  do
-  {
-    ret = fmt_ctx.read_frame(ff, pkt);
-    if (ret < 0)
-      return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
-  }
-  while (pkt.get_stream_index() != video_stream.get_index());
-
   // We seeked somewhere, so we are not at the end of the file anymore.
   endOfFile = false;
 
@@ -754,4 +751,33 @@ void FFmpegLibraries::getFormatInfo()
   //  // ...
   //
   //}
+}
+
+qint64 FFmpegLibraries::getMaxPTS()
+{
+  return duration * timeBase.den / timeBase.num / 1000;
+}
+
+bool FFmpegLibraries::goToNextVideoPacket()
+{
+  // Load the next video stream packet into the packet buffer
+  int ret = 0;
+  do
+  {
+    if (pkt)
+      // Unref the packet
+      pkt.unref_packet(ff);
+
+    ret = fmt_ctx.read_frame(ff, pkt);
+    if (ret < 0)
+      return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
+  }
+  while (ret = 0 && pkt.get_stream_index() != video_stream.get_index());
+
+  if (ret < 0)
+  {
+    endOfFile = true;
+    return false;
+  }
+  return true;
 }

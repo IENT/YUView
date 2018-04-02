@@ -58,12 +58,16 @@ public:
   bool atEnd() const { return false; }
 
   // Get the next NAL unit (everything excluding the start code)
-  // Also return the position of the NAL unit in the file so you can seek to it.
-  QByteArray getNextNALUnit(quint64 &posInFile);
+  QByteArray getNextNALUnit(quint64 &pts);
 
   // File watching
   void updateFileWatchSetting();
   bool isFileChanged() { bool b = fileChanged; fileChanged = false; return b; }
+
+  bool seekToPTS(qint64 pts) { if (!isFileOpened) return false; return ffmpegLib.seekToPTS(pts); }
+  qint64 getMaxPTS() { if (!isFileOpened) return -1; return ffmpegLib.getMaxPTS(); };
+
+  int getNumberFrames() const { return nrFrames; }
 
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
@@ -79,6 +83,24 @@ protected:
   QString   fullFilePath;
   QFileInfo fileInfo;
   bool      isFileOpened;
+
+  // In order to translate from frames to PTS, we need to count the frames and keep a list of
+  // the PTS values of keyframes that we can start decoding at.
+  void scanBitstream();
+  int nrFrames;
+
+  // Private struct for navigation. We index frames by frame number and FFMpeg uses the pts.
+  // This connects both values.
+  struct pictureIdx
+  {
+    pictureIdx(qint64 frame, qint64 pts) : frame(frame), pts(pts) {}
+    qint64 frame;
+    qint64 pts;
+  };
+
+  // These are filled after opening a file (after scanBitstream was called)
+  QList<pictureIdx> keyFrameList;  //< A list of pairs (frameNr, PTS) that we can seek to.
+  //pictureIdx getClosestSeekableFrameNumberBefore(int frameIdx);
 };
 
 #endif // FILESOURCEFFMPEGFILE_H

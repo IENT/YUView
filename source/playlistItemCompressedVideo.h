@@ -167,8 +167,9 @@ protected:
   inputFormat inputFormatType;
   decoderEngine decoderEngineType;
 
-  // FFMpeg 
-  fileSourceFFMpegFile fileFFMpeg;
+  // For FFMpeg files we don't need a reader to parse them. 
+  void parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file);
+  QScopedPointer<fileSourceFFMpegFile> inputFileFFMpeg;
   
   // Is the loadFrame function currently loading?
   bool isFrameLoading;

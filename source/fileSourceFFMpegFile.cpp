@@ -34,10 +34,19 @@
 
 #include <QSettings>
 
+#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 1
+#if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_FFMPEG qDebug
+#else
+#define DEBUG_FFMPEG(fmt,...) ((void)0)
+#endif
+
 fileSourceFFMpegFile::fileSourceFFMpegFile()
 {
   fileChanged = false;
   isFileOpened = false;
+  nrFrames = 0;
 
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFMpegFile::fileSystemWatcherFileChanged);
 }
@@ -74,6 +83,8 @@ bool fileSourceFFMpegFile::openFile(const QString &filePath)
   updateFileWatchSetting();
   fileChanged = false;
 
+  scanBitstream();
+
   return true;
 }
 
@@ -87,4 +98,22 @@ void fileSourceFFMpegFile::updateFileWatchSetting()
     fileWatcher.addPath(fullFilePath);
   else
     fileWatcher.removePath(fullFilePath);
+}
+
+void fileSourceFFMpegFile::scanBitstream()
+{
+  nrFrames = 0;
+  while (ffmpegLib.goToNextVideoPacket())
+  {
+    qint64 pts = ffmpegLib.getPacketPTS();
+    qint64 dts = ffmpegLib.getPacketDTS();
+    bool isKeyframe = ffmpegLib.getPacketIsKeyframe();
+
+    DEBUG_FFMPEG("frame %d pts %d dts %d%s", nrFrames, pts, dts, isKeyframe ? " - keyframe" : "");
+
+    if (isKeyframe)
+      keyFrameList.append(pictureIdx(nrFrames, pts));
+
+    nrFrames++;
+  }
 }

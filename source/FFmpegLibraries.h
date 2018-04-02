@@ -65,13 +65,25 @@ public:
   ColorConversion getColorConversionType() const { return colorConversionType; }
   yuvPixelFormat getYUVPixelFormat();
   QSize getFrameSize() const { return frameSize; }
+  qint64 getDuration() { return duration; }
+  QPair<qint64, qint64> getTimeBase() { return QPair<qint64,qint64>(timeBase.num, timeBase.den); }
+  qint64 getMaxPTS();
 
+  // Read the stream packet by packet:
+  bool     goToNextVideoPacket();
+  qint64   getPacketPTS()        { return pkt.get_pts(); }
+  qint64   getPacketDTS()        { return pkt.get_dts(); }
+  qint64   getPacketDuration()   { return pkt.get_duration(); }
+  bool     getPacketIsKeyframe() { return pkt.get_flag_keyframe(); }
+  bool     getPacketIsCorrupt()  { return pkt.get_flag_corrupt(); }
+  bool     getPacketDiscard()    { return pkt.get_flag_discard(); }
+  int      getPacketDataSize()   { return pkt.get_data_size(); }
+  uint8_t *getPacketData()       { return pkt.get_data(); }
 
-
-
-
-    
-
+  // Seek the stream to the given pts value, flush the decoder and load the first packet so
+  // that we are ready to start decoding from this pts.
+  bool seekToPTS(qint64 pts);
+  
   // Get the error string (if openFile returend false)
   QString decoderErrorString() const;
   bool errorInDecoder() const { return decodingError; }
@@ -98,10 +110,18 @@ private:
   bool librariesLoaded;
   bool librariesLoadingError;
 
-  // Opening files
+  // ---- Opening files
   bool readingFileError;
   AVFormatContextWrapper fmt_ctx;
   AVStreamWrapper video_stream;
+
+  // The pixel format. This is valid after openFile was called (and succeeded).
+  enum AVPixelFormat pixelFormat;
+  QSize frameSize;
+  double frameRate;
+  ColorConversion colorConversionType;
+  qint64 duration;
+  AVRational timeBase;
 
   // ---- Decoding 
   bool decodingError;
@@ -129,11 +149,7 @@ private:
   bool setOpeningError(const QString &reason) { readingFileError = true; errorString = reason; return false; }
   void setDecodingError(const QString &reason)  { decodingError = true; errorString = reason; }
 
-  // The pixel format. This is valid after openFile was called (and succeeded).
-  enum AVPixelFormat pixelFormat;
-  QSize frameSize;
-  double frameRate;
-  ColorConversion colorConversionType;
+  
 
   bool decodeOneFrame();
 
@@ -144,22 +160,9 @@ private:
   AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile;                   //< Are we at the end of file (draining mode)?
   
-  // Private struct for navigation. We index frames by frame number and FFMpeg uses the pts.
-  // This connects both values.
-  struct pictureIdx
-  {
-    pictureIdx(qint64 frame, qint64 pts) : frame(frame), pts(pts) {}
-    qint64 frame;
-    qint64 pts;
-  };
 
-  //// These are filled after opening a file (after scanBitstream was called)
-  //QList<pictureIdx> keyFrameList;  //< A list of pairs (frameNr, PTS) that we can seek to.
-  //pictureIdx getClosestSeekableFrameNumberBefore(int frameIdx);
 
-  // Seek the stream to the given pts value, flush the decoder and load the first packet so
-  // that we are ready to start decoding from this pts.
-  bool seekToPTS(qint64 pts);
+  
   
   // The buffer and the index that was requested in the last call to getOneFrame
   int currentOutputBufferFrameIndex;

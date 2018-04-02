@@ -103,7 +103,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   else
   {
     // Try ffmpeg to open the file
-    if (!fileFFMpeg.openFile(compressedFilePath))
+    inputFileFFMpeg.reset(new fileSourceFFMpegFile());
+    if (!inputFileFFMpeg->openFile(compressedFilePath))
     {
       fileState = error;
       return;
@@ -247,8 +248,6 @@ infoData playlistItemCompressedVideo::getInfo() const
   // At first append the file information part (path, date created, file size...)
   // info.items.append(loadingDecoder->getFileInfoList());
 
-  if (fileState != noError)
-    info.items.append(infoItem("Error", loadingDecoder->decoderErrorString()));
   if (fileState == onlyParsing)
   {
     //info.items.append(infoItem("Num POCs", QString::number(loadingDecoder->getNumberPOCs()), "The number of pictures in the stream."));
@@ -671,6 +670,46 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   }
   
   // We are done.
+  file->seek(0);
   progress.close();
 }
 
+void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file)
+{
+  // Seek to the beginning of the stream.
+  inputFileFFMpeg->seekToPTS(0);
+
+  // Show a modal QProgressDialog while this operation is running.
+  // If the user presses cancel, we will cancel and return false (opening the file failed).
+  // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
+  QWidgetList l = QApplication::topLevelWidgets();
+  QWidget *mainWindow = nullptr;
+  for (QWidget *w : l)
+  {
+    MainWindow *mw = dynamic_cast<MainWindow*>(w);
+    if (mw)
+      mainWindow = mw;
+  }
+  // Create the dialog
+  qint64 maxPTS = inputFileFFMpeg->getMaxPTS();
+  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
+  int curPercentValue = 0;
+  QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
+  progress.setMinimumDuration(1000);  // Show after 1s
+  progress.setAutoClose(false);
+  progress.setAutoReset(false);
+  progress.setWindowModality(Qt::WindowModal);
+  
+  QByteArray nalData;
+  while (!inputFileFFMpeg->atEnd())
+  {
+    quint64 pts;
+    nalData = inputFileFFMpeg->getNextNALUnit(pts);
+
+
+  }
+    
+  // Seek back to the beginning of the stream.
+  inputFileFFMpeg->seekToPTS(0);
+  progress.close();
+}

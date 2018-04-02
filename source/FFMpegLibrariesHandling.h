@@ -395,12 +395,17 @@ public:
   void unref_packet(FFmpegVersionHandler &ff);
   void free_packet();
   explicit operator bool() const { return pkt != nullptr; };
-  AVPacket *get_packet() { update(); return pkt; }
-  int get_stream_index() { update(); return stream_index; }
-  int64_t get_pts()      { update(); return pts; }
-  int64_t get_dts()      { update(); return dts; }
-  int     get_flags()    { update(); return flags; }
-  int64_t get_duration() { update(); return duration; }
+  AVPacket *get_packet()       { update(); return pkt; }
+  int      get_stream_index()  { update(); return stream_index; }
+  int64_t  get_pts()           { update(); return pts; }
+  int64_t  get_dts()           { update(); return dts; }
+  int64_t  get_duration()      { update(); return duration; }
+  int      get_flags()         { update(); return flags; }
+  bool     get_flag_keyframe() { update(); return flags & AV_PKT_FLAG_KEY; }
+  bool     get_flag_corrupt()  { update(); return flags & AV_PKT_FLAG_CORRUPT; }
+  bool     get_flag_discard()  { update(); return flags & AV_PKT_FLAG_DISCARD; }
+  uint8_t *get_data()          { update(); return data; }
+  int      get_data_size()     { update(); return size; }
 
 private:
   void update();
