@@ -50,7 +50,7 @@ public:
   ~parserAVFormat() {}
 
   void parseExtradata(QByteArray &extradata);
-  void parseAVPacketData(int packetID, QByteArray &avpacketData);
+  void parseAVPacketData(int packetID, avPacketInfo_t &packetInfo, QByteArray &avpacketData);
 
 private:
   AVCodecID codecID;

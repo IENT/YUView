@@ -66,6 +66,9 @@ public:
   // Return a list containing the raw data of all parameter set NAL units
   QList<QByteArray> getParameterSets();
 
+  // Get detailed AVPacket info for the current packet. 
+  avPacketInfo_t getCurrentPacketInfo();
+
   // File watching
   void updateFileWatchSetting();
   bool isFileChanged() { bool b = fileChanged; fileChanged = false; return b; }

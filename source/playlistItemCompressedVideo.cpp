@@ -716,14 +716,15 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
   parser->parseExtradata(extradata);
 
   // Now iterate over all packets and send them to the parser
-  QByteArray packet;
+  QByteArray packetData;
   while (!inputFileFFMpeg->atEnd())
   {
-    packet = inputFileFFMpeg->getNextPacket();
+    packetData = inputFileFFMpeg->getNextPacket();
+    avPacketInfo_t packetInfo = inputFileFFMpeg->getCurrentPacketInfo();
 
     try
     {
-      parser->parseAVPacketData(packetID, packet);
+      parser->parseAVPacketData(packetID, packetInfo, packetData);
     }
     catch (...)
     {

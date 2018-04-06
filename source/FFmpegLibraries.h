@@ -73,14 +73,7 @@ public:
   // Read the stream packet by packet:
   bool     goToNextVideoPacket();
   bool     atEnd() const         { return endOfFile; }
-  qint64   getPacketPTS()        { return pkt.get_pts(); }
-  qint64   getPacketDTS()        { return pkt.get_dts(); }
-  qint64   getPacketDuration()   { return pkt.get_duration(); }
-  bool     getPacketIsKeyframe() { return pkt.get_flag_keyframe(); }
-  bool     getPacketIsCorrupt()  { return pkt.get_flag_corrupt(); }
-  bool     getPacketDiscard()    { return pkt.get_flag_discard(); }
-  int      getPacketDataSize()   { return pkt.get_data_size(); }
-  uint8_t *getPacketData()       { return pkt.get_data(); }
+  avPacketInfo_t getPacketInfo();
 
   // Reading the video stream extra data
   QByteArray getVideoContextExtradata();

@@ -61,10 +61,17 @@ QByteArray fileSourceFFMpegFile::getNextPacket()
     return QByteArray();
   }
 
-  currentPacketData = QByteArray::fromRawData((const char*)(ffmpegLib.getPacketData()), ffmpegLib.getPacketDataSize());
+  avPacketInfo_t p = ffmpegLib.getPacketInfo();
+  currentPacketData = QByteArray::fromRawData((const char*)(p.data), p.data_size);
   posInData = 0;
 
   return currentPacketData;
+}
+
+avPacketInfo_t fileSourceFFMpegFile::getCurrentPacketInfo()
+{
+  // Get info for the current packet
+  return ffmpegLib.getPacketInfo();
 }
 
 QByteArray fileSourceFFMpegFile::getNextNALUnit(quint64 &posInFile)
@@ -78,7 +85,8 @@ QByteArray fileSourceFFMpegFile::getNextNALUnit(quint64 &posInFile)
       return QByteArray();
     }
 
-    currentPacketData = QByteArray::fromRawData((const char*)(ffmpegLib.getPacketData()), ffmpegLib.getPacketDataSize());
+    avPacketInfo_t p = ffmpegLib.getPacketInfo();
+    currentPacketData = QByteArray::fromRawData((const char*)(p.data), p.data_size);
     posInData = 0;
   }
   
@@ -200,14 +208,11 @@ void fileSourceFFMpegFile::scanBitstream()
   nrFrames = 0;
   while (ffmpegLib.goToNextVideoPacket())
   {
-    qint64 pts = ffmpegLib.getPacketPTS();
-    qint64 dts = ffmpegLib.getPacketDTS();
-    bool isKeyframe = ffmpegLib.getPacketIsKeyframe();
+    avPacketInfo_t p = ffmpegLib.getPacketInfo();
+    DEBUG_FFMPEG("frame %d pts %d dts %d%s", nrFrames, p.pts, p.dts, p.flag_keyframe ? " - keyframe" : "");
 
-    DEBUG_FFMPEG("frame %d pts %d dts %d%s", nrFrames, pts, dts, isKeyframe ? " - keyframe" : "");
-
-    if (isKeyframe)
-      keyFrameList.append(pictureIdx(nrFrames, pts));
+    if (p.flag_keyframe)
+      keyFrameList.append(pictureIdx(nrFrames, p.pts));
 
     nrFrames++;
   }

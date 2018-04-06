@@ -790,3 +790,18 @@ bool FFmpegLibraries::goToNextVideoPacket()
   }
   return true;
 }
+
+avPacketInfo_t FFmpegLibraries::getPacketInfo()
+{
+  avPacketInfo_t info;
+  info.stream_index = pkt.get_stream_index();
+  info.pts = pkt.get_pts();
+  info.dts = pkt.get_dts();
+  info.duration = pkt.get_duration();
+  info.flag_keyframe = pkt.get_flag_keyframe();
+  info.flag_corrupt = pkt.get_flag_corrupt();
+  info.flag_discard = pkt.get_flag_discard();
+  info.data_size = pkt.get_data_size();
+  info.data = pkt.get_data();
+  return info;
+}

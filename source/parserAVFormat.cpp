@@ -41,7 +41,10 @@
 */
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 #define READBITS64(into,numBits) {QString code; into=reader.readBits64(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
+#define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings,itemTree);}
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
+// Log a string and a value
+#define LOGSTRVAL(str,val) {if (itemTree) new TreeItem(str,val,QString("info"),QString(),itemTree);}
 
 parserAVFormat::parserAVFormat(AVCodecID codec)
 { 
@@ -99,13 +102,23 @@ void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
 }
 
 
-void parserAVFormat::parseAVPacketData(int packetID, QByteArray &avpacketData)
+void parserAVFormat::parseAVPacketData(int packetID, avPacketInfo_t &packetInfo, QByteArray &avpacketData)
 {
   int posInData = 0;
 
   if (!nalUnitModel.rootItem.isNull())
   {
-    TreeItem *packetRoot = new TreeItem(QString("AVPacket %1").arg(packetID), nalUnitModel.rootItem.data());
+    TreeItem *itemTree = new TreeItem(QString("AVPacket %1").arg(packetID), nalUnitModel.rootItem.data());
+
+    // Log all the packet info
+    LOGSTRVAL("stream_index", packetInfo.stream_index);
+    LOGSTRVAL("pts", packetInfo.pts);
+    LOGSTRVAL("dts", packetInfo.dts);
+    LOGSTRVAL("duration", packetInfo.duration);
+    LOGSTRVAL("flag_keyframe", packetInfo.flag_keyframe);
+    LOGSTRVAL("flag_corrupt", packetInfo.flag_corrupt);
+    LOGSTRVAL("flag_discard", packetInfo.flag_discard);
+    LOGSTRVAL("data_size", packetInfo.data_size);
 
     int nalID = 0;
     while (posInData + 4 <= avpacketData.length())
@@ -123,7 +136,7 @@ void parserAVFormat::parseAVPacketData(int packetID, QByteArray &avpacketData)
         throw std::logic_error("Not enough data in the input array to read NAL unit.");
 
       QByteArray nalData = avpacketData.mid(posInData, size);
-      annexBParser->parseAndAddNALUnit(nalID++, nalData, packetRoot);
+      annexBParser->parseAndAddNALUnit(nalID++, nalData, itemTree);
       posInData += size;
     }
   }
@@ -153,7 +166,12 @@ void parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *itemTree, 
   READBITS(reserver_6onebits, 6);
   if (reserver_6onebits != 63)
     throw std::logic_error("The reserved 6 one bits should all be one.");
-  READBITS(parallelismType, 2);
+  QStringList parallelismTypeMeaning = QStringList()
+    << "mixed-type parallel decoding"
+    << "slice-based parallel decoding"
+    << "tile-based parallel decoding"
+    << "wavefront-based parallel decoding";
+  READBITS_M(parallelismType, 2, parallelismTypeMeaning);
   READBITS(reserver_6onebits, 6);
   if (reserver_6onebits != 63)
     throw std::logic_error("The reserved 6 one bits should all be one.");
