@@ -90,15 +90,41 @@ void parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 
 void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
 {
-  if (extradata.at(0) != 1)
-    throw std::logic_error("Unsupported extradata format (configurationVersion != 1)");
+  if (nalUnitModel.rootItem.isNull())
+    return;
 
-  if (!nalUnitModel.rootItem.isNull())
+  if (extradata.at(0) == 1)
   {
+    // The extradata is using the hvcC format
     TreeItem *extradataRoot = new TreeItem("Extradata (HEVC hvcC format)", nalUnitModel.rootItem.data());
     hvcC h;
     h.parse_hvcC(extradata, extradataRoot, annexBParser);
   }
+  else if (extradata.at(0) == 0)
+  {
+    // The extradata does just contain the raw HEVC parameter sets (with start codes).
+    QByteArray startCode;
+    startCode.append((char)0);
+    startCode.append((char)0);
+    startCode.append((char)1);
+
+    TreeItem *extradataRoot = new TreeItem("Extradata (Raw HEVC NAL units)", nalUnitModel.rootItem.data());
+
+    int nalID = 0;
+    int nextStartCode = extradata.indexOf(startCode);
+    int posInData = nextStartCode + 3;
+    while (nextStartCode >= 0)
+    {
+      nextStartCode = extradata.indexOf(startCode, posInData);
+      int length = nextStartCode - posInData;
+      QByteArray nalData = extradata.mid(posInData, length);
+      // Let the hevc annexB parser parse this
+      annexBParser->parseAndAddNALUnit(nalID++, nalData, extradataRoot);
+      posInData = nextStartCode + 3;
+    }
+  }
+  else
+    throw std::logic_error("Unsupported extradata format (configurationVersion != 1)");  
 }
 
 
