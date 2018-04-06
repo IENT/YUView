@@ -1350,7 +1350,7 @@ const QStringList parserAnnexBHEVC::nal_unit_type_toString = QStringList()
 "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
 "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
-void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
+void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *nalRoot, quint64 curFilePos)
 {
   // Read two bytes (the nal header)
   QByteArray nalHeaderBytes = data.left(2);
@@ -1360,8 +1360,9 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 cu
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
   QString specificDescription;
-  TreeItem *nalRoot = nullptr;
-  if (!nalUnitModel.rootItem.isNull())
+  
+  // Use the given tree item. If it is not set, use the nalUnitMode (if active).
+  if (nalRoot == nullptr && !nalUnitModel.rootItem.isNull())
     nalRoot = new TreeItem(nalUnitModel.rootItem.data());
 
   // Create a nal_unit and read the header

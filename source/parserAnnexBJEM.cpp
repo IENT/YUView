@@ -35,7 +35,7 @@
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 
-void parserAnnexBJEM::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
+void parserAnnexBJEM::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *nalRoot, quint64 curFilePos)
 {
   // Reset the values before emitting
   nalInfoPoc = -1;
@@ -46,9 +46,8 @@ void parserAnnexBJEM::parseAndAddNALUnit(int nalID, QByteArray data, quint64 cur
   QByteArray nalHeaderBytes = data.left(2);
   QByteArray payload = data.right(2);
 
-  // Create a new TreeItem root for the NAL unit.
-  TreeItem *nalRoot = nullptr;
-  if (!nalUnitModel.rootItem.isNull())
+  // Use the given tree item. If it is not set, use the nalUnitMode (if active). 
+  if (nalRoot == nullptr && !nalUnitModel.rootItem.isNull())
     nalRoot = new TreeItem(nalUnitModel.rootItem.data());
 
   auto nal_jem = QSharedPointer<nal_unit_jem>(new nal_unit_jem(curFilePos, nalID));

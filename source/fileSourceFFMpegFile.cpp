@@ -47,11 +47,27 @@ fileSourceFFMpegFile::fileSourceFFMpegFile()
   fileChanged = false;
   isFileOpened = false;
   nrFrames = 0;
+  posInFile = -1;
 
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFMpegFile::fileSystemWatcherFileChanged);
 }
 
-QByteArray fileSourceFFMpegFile::getNextNALUnit(quint64 & posInFile)
+QByteArray fileSourceFFMpegFile::getNextPacket()
+{
+  // Load the next packet
+  if (!ffmpegLib.goToNextVideoPacket())
+  {
+    posInFile = -1;
+    return QByteArray();
+  }
+
+  currentPacketData = QByteArray::fromRawData((const char*)(ffmpegLib.getPacketData()), ffmpegLib.getPacketDataSize());
+  posInData = 0;
+
+  return currentPacketData;
+}
+
+QByteArray fileSourceFFMpegFile::getNextNALUnit(quint64 &posInFile)
 {
   // Is a packet loaded?
   if (currentPacketData.isEmpty())
@@ -79,6 +95,11 @@ QByteArray fileSourceFFMpegFile::getNextNALUnit(quint64 & posInFile)
   if (posInData >= currentPacketData.size())
     currentPacketData.clear();
   return retArray;
+}
+
+QByteArray fileSourceFFMpegFile::getExtradata()
+{
+  return ffmpegLib.getVideoContextExtradata();
 }
 
 QList<QByteArray> fileSourceFFMpegFile::getParameterSets()
@@ -190,14 +211,4 @@ void fileSourceFFMpegFile::scanBitstream()
 
     nrFrames++;
   }
-}
-
-ffmpeg_codec fileSourceFFMpegFile::getCodec()
-{
-  AVCodecID codec = ffmpegLib.getCodecID();
-  if (codec == AV_CODEC_ID_H264)
-    return FFMPEG_CODEC_AVC;
-  if (codec == AV_CODEC_ID_HEVC)
-    return FFMPEG_CODEC_HEVC;
-  return FFMPEG_CODEC_OTHER;
 }

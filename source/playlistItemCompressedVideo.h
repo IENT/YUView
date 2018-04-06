@@ -35,6 +35,7 @@
 
 #include "decoderBase.h"
 #include "fileSourceFFMpegFile.h"
+#include "parserAVFormat.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
 #include "videoHandlerYUV.h"
@@ -169,7 +170,7 @@ protected:
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
   // read the NAL units from the compressed file.
-  void parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<parserAnnexB> &parser);
+  void parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<parserAVFormat> &parser);
   QScopedPointer<fileSourceFFMpegFile> inputFileFFMpeg;
   
   // Is the loadFrame function currently loading?

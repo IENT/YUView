@@ -59,18 +59,18 @@ double parserAnnexBAVC::getFramerate() const
   return 0.0;
 }
 
-void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
+void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *nalRoot, quint64 curFilePos)
 {
   // Read two bytes (the nal header)
   // Read two bytes (the nal header)
   QByteArray nalHeaderBytes = data.left(2);
   QByteArray payload = data.right(2);
 
-  // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
-  // yet. We want to parse the item and then set a good description.
+  // Use the given tree item. If it is not set, use the nalUnitMode (if active). 
+  // We don't set data (a name) for this item yet. 
+  // We want to parse the item and then set a good description.
   QString specificDescription;
-  TreeItem *nalRoot = nullptr;
-  if (!nalUnitModel.rootItem.isNull())
+  if (nalRoot == nullptr && !nalUnitModel.rootItem.isNull())
     nalRoot = new TreeItem(nalUnitModel.rootItem.data());
 
   // Create a nal_unit and read the header

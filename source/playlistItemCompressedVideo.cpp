@@ -275,48 +275,40 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
   Q_UNUSED(buttonID);
 
   // The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
-  QScopedPointer<parserAnnexB> parser;
+  QScopedPointer<parserAnnexB> parserA;
+  QScopedPointer<parserAVFormat> parserB;
   if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
   {
     // Just open and parse the file again
     QScopedPointer<fileSourceAnnexBFile> annexBFile(new fileSourceAnnexBFile(plItemNameOrFileName));
     // Create a parser
     if (inputFormatType == inputAnnexBHEVC)
-      parser.reset(new parserAnnexBHEVC());
+      parserA.reset(new parserAnnexBHEVC());
     else if (inputFormatType == inputAnnexBAVC)
-      parser.reset(new parserAnnexBAVC());
+      parserA.reset(new parserAnnexBAVC());
     else if (inputFormatType == inputAnnexBJEM)
-      parser.reset(new parserAnnexBJEM());
+      parserA.reset(new parserAnnexBJEM());
     
     // Parse the file
-    parser->enableModel();
-    parseAnnexBFile(annexBFile, parser);
+    parserA->enableModel();
+    parseAnnexBFile(annexBFile, parserA);
   }
   else // inputLibavformat
   {
     // Just open and parse the file again
     QScopedPointer<fileSourceFFMpegFile> ffmpegFile(new fileSourceFFMpegFile(plItemNameOrFileName));
-    if (inputFileFFMpeg->getCodec() == FFMPEG_CODEC_OTHER)
-    {
-      // TODO: Maybe some gemeric packet display? 
-      // This could be included into fileSourceFFMpegFile itself!
-    }
-    else
-    {
-      if (inputFileFFMpeg->getCodec() == FFMPEG_CODEC_HEVC)
-        parser.reset(new parserAnnexBHEVC());
-      else if (inputFileFFMpeg->getCodec() == FFMPEG_CODEC_AVC)
-        parser.reset(new parserAnnexBAVC());
-      parser->enableModel();
-      parseFFMpegFile(ffmpegFile, parser);
-    }
-    
-    
+    AVCodecID codec = inputFileFFMpeg->getCodec();
+    parserB.reset(new parserAVFormat(codec));
+    parserB->enableModel();
+    parseFFMpegFile(ffmpegFile, parserB);
   }
   
   QDialog newDialog;
   QTreeView *view = new QTreeView();
-  view->setModel(parser->getNALUnitModel());
+  if (parserA)
+    view->setModel(parserA->getNALUnitModel());
+  else
+    view->setModel(parserB->getNALUnitModel());
   QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
   verticalLayout->addWidget(view);
   newDialog.resize(QSize(1000, 900));
@@ -655,7 +647,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
     {
       nalData = file->getNextNALUnit(filePos);
 
-      parser->parseAndAddNALUnit(nalID, nalData, filePos);
+      parser->parseAndAddNALUnit(nalID, nalData, nullptr, filePos);
 
       // Update the progress dialog
       if (progress.wasCanceled())
@@ -692,7 +684,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   progress.close();
 }
 
-void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<parserAnnexB> &parser)
+void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<parserAVFormat> &parser)
 {
   // Seek to the beginning of the stream.
   inputFileFFMpeg->seekToPTS(0);
@@ -718,45 +710,28 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
   progress.setAutoReset(false);
   progress.setWindowModality(Qt::WindowModal);
 
-  int nalID = 0;
+  // First get the extradata and push it to the parser
+  int packetID = 0;
+  QByteArray extradata = inputFileFFMpeg->getExtradata();
+  parser->parseExtradata(extradata);
 
-  // First, lets get the parameter sets.
-  // These will not be provided by just calling getNextNALUnit. The getNextNALUnit function
-  // just returns the raw bitstream (slices, SEI messages ...)
-  QList<QByteArray> parameterSets = inputFileFFMpeg->getParameterSets();
-  for (QByteArray p : parameterSets)
-  {
-    try
-    {
-      parser->parseAndAddNALUnit(nalID, p);
-    }
-    catch (...)
-    {
-      // Reading a NAL unit failed at some point.
-      // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_HEVC("parseAndAddNALUnit Exception thrown parsing parameter set NAL %d", nalID);
-    }
-    nalID++;
-  }
-  
-  QByteArray nalData;
-  
+  // Now iterate over all packets and send them to the parser
+  QByteArray packet;
   while (!inputFileFFMpeg->atEnd())
   {
-    quint64 pts;
-    nalData = inputFileFFMpeg->getNextNALUnit(pts);
+    packet = inputFileFFMpeg->getNextPacket();
 
     try
     {
-      parser->parseAndAddNALUnit(nalID, nalData);
+      parser->parseAVPacketData(packetID, packet);
     }
     catch (...)
     {
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_HEVC("parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
+      DEBUG_HEVC("parseAVPacketData Exception thrown parsing NAL %d", packetID);
     }
-    nalID++;
+    packetID++;
   }
     
   // Seek back to the beginning of the stream.

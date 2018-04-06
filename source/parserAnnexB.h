@@ -36,12 +36,13 @@
 #include <QList>
 #include <QAbstractItemModel>
 #include "videoHandlerYUV.h"
+#include "parserBase.h"
 
 using namespace YUV_Internals;
 
 /* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, JEM) that we can parse.
 */
-class parserAnnexB
+class parserAnnexB : public parserBase
 {
 
 public:
@@ -56,11 +57,7 @@ public:
 
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
   // Finally it should add the unit to the nalUnitList (if it is a parameter set or an RA point).
-  virtual void parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos = -1) = 0;
-
-  // Get a pointer to the nal unit model. The model is only filled if you call enableModel() first.
-  QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
-  void enableModel();
+  virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *root=nullptr, quint64 curFilePos = -1) = 0;
 
   // What it the framerate?
   virtual double getFramerate() const = 0;
@@ -79,78 +76,7 @@ public:
   void sortPOCList() { std::sort(POC_List.begin(), POC_List.end()); }
 
 protected:
-  // ----- Some nested classes that are only used in the scope of this file handler class
-
-  // The tree item is used to feed the tree view. Each NAL unit can return a representation using TreeItems
-  struct TreeItem
-  {
-    // Some useful constructors of new Tree items. You must at least specify a parent. The new item is atomatically added as a child 
-    // of the parent.
-    TreeItem(TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); }
-    TreeItem(QList<QString> &data, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData = data; }
-    TreeItem(const QString &name, TreeItem *parent)  { parentItem = parent; if (parent) parent->childItems.append(this); itemData.append(name); }
-    TreeItem(const QString &name, int  val  , const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, bool val  , const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
-    TreeItem(const QString &name, double val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, QString val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; }
-    TreeItem(const QString &name, int val, const QString &coding, const QString &code, QStringList meanings, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; if (val >= meanings.length()) val = meanings.length() - 1; itemData.append(meanings.at(val)); }
-    TreeItem(const QString &name, int val, const QString &coding, const QString &code, QString meaning, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; itemData.append(meaning); }
-    TreeItem(const QString &name, QString val, const QString &coding, const QString &code, QString meaning, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; itemData.append(meaning); }
-
-    ~TreeItem() { qDeleteAll(childItems); }
-
-    QList<TreeItem*> childItems;
-    QList<QString> itemData;
-    TreeItem *parentItem;
-  };
-
-  class NALUnitModel : public QAbstractItemModel
-  {
-  public:
-    NALUnitModel() {}
-
-    // The functions that must be overridden from the QAbstractItemModel
-    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-    virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-    virtual QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 5; }
-
-    // The root of the tree
-    QScopedPointer<TreeItem> rootItem;
-  };
-  NALUnitModel nalUnitModel;
-
-  /* This class provides the ability to read a byte array bit wise. Reading of ue(v) symbols is also supported.
-  */
-  class sub_byte_reader
-  {
-  public:
-    sub_byte_reader(const QByteArray &inArr) : p_byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) {}
-    // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
-    unsigned int readBits(int nrBits, QString *bitsRead=nullptr);
-    // Read an UE(v) code from the array. If given, increase bit_count with every bit read.
-    int readUE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);
-    // Read an SE(v) code from the array
-    int readSE_V(QString *bitsRead=nullptr);
-    // Is there more RBSP data or are we at the end?
-    bool more_rbsp_data();
-    // How many full bytes were read from the reader?
-    int nrBytesRead() { return (posInBuffer_bits == 0) ? posInBuffer_bytes : posInBuffer_bytes + 1; }
-
-  protected:
-    QByteArray p_byteArray;
-
-    // Move to the next byte and look for an emulation prevention 3 byte. Remove it (skip it) if found.
-    // This function is just used by the internal reading functions.
-    bool p_gotoNextByte();
-
-    int posInBuffer_bytes;   // The byte position in the buffer
-    int posInBuffer_bits;    // The sub byte (bit) position in the buffer (0...7)
-    int p_numEmuPrevZeroBytes; // The number of emulation prevention three bytes that were found
-  };
-
+  
   /* The basic NAL unit. Contains the NAL header and the file position of the unit.
   */
   struct nal_unit
