@@ -717,9 +717,30 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
   progress.setAutoClose(false);
   progress.setAutoReset(false);
   progress.setWindowModality(Qt::WindowModal);
+
+  int nalID = 0;
+
+  // First, lets get the parameter sets.
+  // These will not be provided by just calling getNextNALUnit. The getNextNALUnit function
+  // just returns the raw bitstream (slices, SEI messages ...)
+  QList<QByteArray> parameterSets = inputFileFFMpeg->getParameterSets();
+  for (QByteArray p : parameterSets)
+  {
+    try
+    {
+      parser->parseAndAddNALUnit(nalID, p);
+    }
+    catch (...)
+    {
+      // Reading a NAL unit failed at some point.
+      // This is not too bad. Just don't use this NAL unit and continue with the next one.
+      DEBUG_HEVC("parseAndAddNALUnit Exception thrown parsing parameter set NAL %d", nalID);
+    }
+    nalID++;
+  }
   
   QByteArray nalData;
-  int nalID = 0;
+  
   while (!inputFileFFMpeg->atEnd())
   {
     quint64 pts;
@@ -728,15 +749,14 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
     try
     {
       parser->parseAndAddNALUnit(nalID, nalData);
-      nalID++;
     }
     catch (...)
     {
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
       DEBUG_HEVC("parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
-      nalID++;
     }
+    nalID++;
   }
     
   // Seek back to the beginning of the stream.

@@ -192,6 +192,7 @@ public:
   int get_height() { update(); return height; }
   AVColorSpace get_colorspace() { update(); return colorspace; }
   AVRational get_time_base() { update(); return time_base; }
+  QByteArray get_extradata() { update(); return extradata; }
 
   // Set when the context is openend (open_input)
   QString codec_id_string;

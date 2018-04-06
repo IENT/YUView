@@ -67,7 +67,7 @@ QByteArray fileSourceFFMpegFile::getNextNALUnit(quint64 & posInFile)
   }
   
   // FFMpeg packet use the following encoding:
-  // The first 4 bytes determine the size of the NAL unit followed by the payload
+  // The first 4 bytes determine the size of the NAL unit followed by the payload (ISO/IEC 14496-15)
   QByteArray sizePart = currentPacketData.mid(posInData, 4);
   unsigned int size = (unsigned char)sizePart.at(3);
   size += (unsigned char)sizePart.at(2) << 8;
@@ -78,6 +78,55 @@ QByteArray fileSourceFFMpegFile::getNextNALUnit(quint64 & posInFile)
   posInData += 4 + size;
   if (posInData >= currentPacketData.size())
     currentPacketData.clear();
+  return retArray;
+}
+
+QList<QByteArray> fileSourceFFMpegFile::getParameterSets()
+{
+  /* The SPS/PPS are somewhere else in containers:
+   * In mp4-container (mkv also) PPS/SPS are stored separate from frame data in global headers. 
+   * To access them from libav* APIs you need to look for extradata field in AVCodecContext of AVStream 
+   * which relate to needed video stream. Also extradata can have different format from standard H.264 
+   * NALs so look in MP4-container specs for format description. */
+  QByteArray extradata = ffmpegLib.getVideoContextExtradata();
+  QList<QByteArray> retArray;
+
+  if (extradata.at(0) == 1)
+  {
+    // Internally, ffmpeg uses a custom format for the parameter sets (hvcC).
+    // The hvcC parameters come first, and afterwards, the "normal" parameter sets are sent.
+
+    // The first 22 bytes are fixed hvcC parameter set (see hvcc_write in libavformat hevc.c)
+    int numOfArrays = extradata.at(22);
+
+    int pos = 23;
+    for (int i = 0; i < numOfArrays; i++)
+    {
+      // The first byte contains the NAL unit type
+      int byte = (unsigned char)(extradata.at(pos++));
+      bool array_completeness = byte & (1 << 7);
+      int nalUnitType = byte & 0x3f;
+
+      // Two bytes numNalus
+      int numNalus = (unsigned char)(extradata.at(pos++)) << 7;
+      numNalus += (unsigned char)(extradata.at(pos++));
+
+      for (int j = 0; j < numNalus; j++)
+      {
+        // Two bytes nalUnitLength
+        int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
+        nalUnitLength += (unsigned char)(extradata.at(pos++));
+
+        // nalUnitLength bytes payload of the NAL unit
+        // This payload includes the NAL unit header
+        QByteArray rawNAL = extradata.mid(pos, nalUnitLength);
+        retArray.append(rawNAL);
+        pos += nalUnitLength;
+      }
+    }
+
+  }
+
   return retArray;
 }
 

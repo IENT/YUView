@@ -648,6 +648,17 @@ void FFmpegLibraries::copyFrameMotionInformation()
   }
 }
 
+QByteArray FFmpegLibraries::getVideoContextExtradata()
+{
+  // Get the video stream
+  if (!video_stream)
+    return QByteArray();
+  AVCodecContextWrapper codec = video_stream.getCodec();
+  if (!codec)
+    return QByteArray();
+  return codec.get_extradata();
+}
+
 bool FFmpegLibraries::seekToPTS(qint64 pts)
 {
   int ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), pts);

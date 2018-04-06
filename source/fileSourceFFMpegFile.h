@@ -66,6 +66,8 @@ public:
 
   // Get the next NAL unit (everything excluding the start code)
   QByteArray getNextNALUnit(quint64 &pts);
+  // Return a list containing the raw data of all parameter set NAL units
+  QList<QByteArray> getParameterSets();
 
   // File watching
   void updateFileWatchSetting();

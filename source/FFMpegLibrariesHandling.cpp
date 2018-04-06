@@ -1105,8 +1105,7 @@ void AVCodecContextWrapper::update()
     compression_level = src->compression_level;
     flags = src->flags;
     flags2 = src->flags2;
-    for (int i=0; i<src->extradata_size; i++)
-      extradata.append((char)src->extradata[i]);
+    extradata = QByteArray((const char*)src->extradata, src->extradata_size);
     time_base = src->time_base;
     ticks_per_frame = src->ticks_per_frame;
     delay = src->delay;
@@ -1190,8 +1189,7 @@ void AVCodecContextWrapper::update()
     compression_level = src->compression_level;
     flags = src->flags;
     flags2 = src->flags2;
-    for (int i=0; i<src->extradata_size; i++)
-      extradata.append((char)src->extradata[i]);
+    extradata = QByteArray((const char*)src->extradata, src->extradata_size);
     time_base = src->time_base;
     ticks_per_frame = src->ticks_per_frame;
     delay = src->delay;

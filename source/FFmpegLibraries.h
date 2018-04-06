@@ -82,6 +82,9 @@ public:
   int      getPacketDataSize()   { return pkt.get_data_size(); }
   uint8_t *getPacketData()       { return pkt.get_data(); }
 
+  // Reading the video stream extra data
+  QByteArray getVideoContextExtradata();
+
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
   // that we are ready to start decoding from this pts.
   bool seekToPTS(qint64 pts);
