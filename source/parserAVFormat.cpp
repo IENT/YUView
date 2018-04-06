@@ -90,15 +90,43 @@ void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
   if (extradata.at(0) != 1)
     throw std::logic_error("Unsupported extradata format (configurationVersion != 1)");
 
-  TreeItem *extradataRoot = new TreeItem("Extradata (HEVC hvcC format)", nalUnitModel.rootItem.data());
-  hvcC h;
-  h.parse_hvcC(extradata, extradataRoot, annexBParser);
+  if (!nalUnitModel.rootItem.isNull())
+  {
+    TreeItem *extradataRoot = new TreeItem("Extradata (HEVC hvcC format)", nalUnitModel.rootItem.data());
+    hvcC h;
+    h.parse_hvcC(extradata, extradataRoot, annexBParser);
+  }
 }
 
 
 void parserAVFormat::parseAVPacketData(int packetID, QByteArray &avpacketData)
 {
+  int posInData = 0;
 
+  if (!nalUnitModel.rootItem.isNull())
+  {
+    TreeItem *packetRoot = new TreeItem(QString("AVPacket %1").arg(packetID), nalUnitModel.rootItem.data());
+
+    int nalID = 0;
+    while (posInData + 4 <= avpacketData.length())
+    {
+      // AVPacket use the following encoding:
+      // The first 4 bytes determine the size of the NAL unit followed by the payload (ISO/IEC 14496-15)
+      QByteArray sizePart = avpacketData.mid(posInData, 4);
+      unsigned int size = (unsigned char)sizePart.at(3);
+      size += (unsigned char)sizePart.at(2) << 8;
+      size += (unsigned char)sizePart.at(1) << 16;
+      size += (unsigned char)sizePart.at(0) << 24;
+      posInData += 4;
+
+      if (posInData + size > avpacketData.length())
+        throw std::logic_error("Not enough data in the input array to read NAL unit.");
+
+      QByteArray nalData = avpacketData.mid(posInData, size);
+      annexBParser->parseAndAddNALUnit(nalID++, nalData, packetRoot);
+      posInData += size;
+    }
+  }
 }
 
 void parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *itemTree, QScopedPointer<parserAnnexB> &annexBParser)
@@ -188,5 +216,5 @@ void parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, sub_byte_reade
   QByteArray nalData = reader.readBytes(nalUnitLength);
 
   // Let the hevc annexB parser parse this
-  annexBParser->parseAndAddNALUnit(unitID, nalData);
+  annexBParser->parseAndAddNALUnit(unitID, nalData, itemTree);
 }

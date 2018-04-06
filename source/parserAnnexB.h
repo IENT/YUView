@@ -57,7 +57,7 @@ public:
 
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
   // Finally it should add the unit to the nalUnitList (if it is a parameter set or an RA point).
-  virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *root=nullptr, quint64 curFilePos = -1) = 0;
+  virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, quint64 curFilePos = -1) = 0;
 
   // What it the framerate?
   virtual double getFramerate() const = 0;
