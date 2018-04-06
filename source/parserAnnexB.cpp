@@ -30,10 +30,10 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "annexBParser.h"
+#include "parserAnnexB.h"
 #include <assert.h>
 
-unsigned int annexBParser::sub_byte_reader::readBits(int nrBits, QString *bitsRead)
+unsigned int parserAnnexB::sub_byte_reader::readBits(int nrBits, QString *bitsRead)
 {
   int out = 0;
   int nrBitsRead = nrBits;
@@ -98,7 +98,7 @@ unsigned int annexBParser::sub_byte_reader::readBits(int nrBits, QString *bitsRe
   return out;
 }
 
-int annexBParser::sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
+int parserAnnexB::sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
 {
   int readBit = readBits(1, bitsRead);
   if (bit_count)
@@ -125,7 +125,7 @@ int annexBParser::sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
   return val;
 }
 
-int annexBParser::sub_byte_reader::readSE_V(QString *bitsRead)
+int parserAnnexB::sub_byte_reader::readSE_V(QString *bitsRead)
 {
   int val = readUE_V(bitsRead);
   if (val%2 == 0) 
@@ -136,7 +136,7 @@ int annexBParser::sub_byte_reader::readSE_V(QString *bitsRead)
 
 /* Is there more data? There is no more data if the next bit is the terminating bit and all
 * following bits are 0. */
-bool annexBParser::sub_byte_reader::more_rbsp_data()
+bool parserAnnexB::sub_byte_reader::more_rbsp_data()
 {
   int posBytes = posInBuffer_bytes;
   int posBits  = posInBuffer_bits;
@@ -180,7 +180,7 @@ bool annexBParser::sub_byte_reader::more_rbsp_data()
   return false;
 }
 
-bool annexBParser::sub_byte_reader::p_gotoNextByte()
+bool parserAnnexB::sub_byte_reader::p_gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
   if (p_byteArray[posInBuffer_bytes] == (char)0)
@@ -215,7 +215,7 @@ bool annexBParser::sub_byte_reader::p_gotoNextByte()
   return true;
 }
 
-bool annexBParser::addPOCToList(int poc)
+bool parserAnnexB::addPOCToList(int poc)
 {
   if (POC_List.contains(poc))
     return false;
@@ -223,7 +223,7 @@ bool annexBParser::addPOCToList(int poc)
   return true;
 }
 
-QVariant annexBParser::NALUnitModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant parserAnnexB::NALUnitModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
   if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != nullptr)
     return rootItem->itemData.value(section, QString());
@@ -231,7 +231,7 @@ QVariant annexBParser::NALUnitModel::headerData(int section, Qt::Orientation ori
   return QVariant();
 }
 
-QVariant annexBParser::NALUnitModel::data(const QModelIndex &index, int role) const
+QVariant parserAnnexB::NALUnitModel::data(const QModelIndex &index, int role) const
 {
   //qDebug() << "ileSourceHEVCAnnexBFile::data " << index;
 
@@ -246,7 +246,7 @@ QVariant annexBParser::NALUnitModel::data(const QModelIndex &index, int role) co
   return QVariant(item->itemData.value(index.column()));
 }
 
-QModelIndex annexBParser::NALUnitModel::index(int row, int column, const QModelIndex &parent) const
+QModelIndex parserAnnexB::NALUnitModel::index(int row, int column, const QModelIndex &parent) const
 {
   //qDebug() << "ileSourceHEVCAnnexBFile::index " << row << column << parent;
 
@@ -270,7 +270,7 @@ QModelIndex annexBParser::NALUnitModel::index(int row, int column, const QModelI
     return QModelIndex();
 }
 
-QModelIndex annexBParser::NALUnitModel::parent(const QModelIndex &index) const
+QModelIndex parserAnnexB::NALUnitModel::parent(const QModelIndex &index) const
 {
   //qDebug() << "ileSourceHEVCAnnexBFile::parent " << index;
 
@@ -292,7 +292,7 @@ QModelIndex annexBParser::NALUnitModel::parent(const QModelIndex &index) const
 
 }
 
-int annexBParser::NALUnitModel::rowCount(const QModelIndex &parent) const
+int parserAnnexB::NALUnitModel::rowCount(const QModelIndex &parent) const
 {
   //qDebug() << "ileSourceHEVCAnnexBFile::rowCount " << parent;
 
@@ -308,7 +308,7 @@ int annexBParser::NALUnitModel::rowCount(const QModelIndex &parent) const
   return (parentItem == nullptr) ? 0 : parentItem->childItems.count();
 }
 
-void annexBParser::enableModel()
+void parserAnnexB::enableModel()
 {
   if (nalUnitModel.rootItem.isNull())
     nalUnitModel.rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));

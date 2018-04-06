@@ -7,22 +7,22 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
-    source/annexBParser.cpp \
-    source/annexBParserAVC.cpp \
-    source/annexBParserHEVC.cpp \
-    source/annexBParserJEM.cpp \
     source/decoderBase.cpp \
     source/FFmpegLibraries.cpp \
     source/FFMpegLibrariesHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
-	source/fileSourceAnnexBFile.cpp \
-	source/fileSourceFFMpegFile.cpp \
+    source/fileSourceAnnexBFile.cpp \
+    source/fileSourceFFMpegFile.cpp \
     source/frameHandler.cpp \
     source/hevcDecoderLibde265.cpp \
     source/hevcDecoderHM.cpp \
     source/hevcNextGenDecoderJEM.cpp \
     source/mainwindow.cpp \
+    source/parserAnnexB.cpp \
+    source/parserAnnexBAVC.cpp \
+    source/parserAnnexBHEVC.cpp \
+    source/parserAnnexBJEM.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
     source/playlistItemCompressedVideo.cpp \
@@ -58,18 +58,14 @@ SOURCES += \
     source/yuviewapp.cpp
 
 HEADERS += \
-    source/annexBParser.h \
-    source/annexBParserAVC.h \
-    source/annexBParserHEVC.h \
-    source/annexBParserJEM.h \
     source/decoderBase.h \
     source/FFmpegLibraries.h \
     source/FFMpegLibrariesHandling.h \
     source/FFMpegLibrariesCommonDefs.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
-	source/fileSourceAnnexBFile.h \
-	source/fileSourceFFMpegFile.h \
+    source/fileSourceAnnexBFile.h \
+    source/fileSourceFFMpegFile.h \
     source/frameHandler.h \
     source/hevcDecoderHM.h \
     source/hevcDecoderLibde265.h \
@@ -77,6 +73,10 @@ HEADERS += \
     source/labelElided.h \
     source/mainwindow.h \
     source/mainwindow_performanceTestDialog.h \
+    source/parserAnnexB.h \
+    source/parserAnnexBAVC.h \
+    source/parserAnnexBHEVC.h \
+    source/parserAnnexBJEM.h \
     source/playbackController.h \
     source/playlistItem.h \
     source/playlistItemCompressedVideo.h \

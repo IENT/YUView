@@ -30,10 +30,10 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ANNEXBPARSERJEM_H
-#define ANNEXBPARSERJEM_H
+#ifndef PARSERANNEXBJEM_H
+#define PARSERANNEXBJEM_H
 
-#include "annexBParser.h"
+#include "parserAnnexB.h"
 #include "videoHandlerYUV.h"
 
 #include <QSharedPointer>
@@ -41,11 +41,11 @@
 using namespace YUV_Internals;
 
 // This class knows how to parse the bitrstream of HEVC annexB files
-class annexBParserJEM : public annexBParser
+class parserAnnexBJEM : public parserAnnexB
 {
 public:
-  annexBParserJEM() : annexBParser() { firstPOCRandomAccess = INT_MAX; }
-  ~annexBParserJEM() {};
+  parserAnnexBJEM() : parserAnnexB() { firstPOCRandomAccess = INT_MAX; }
+  ~parserAnnexBJEM() {};
 
   // What it the framerate?
   double getFramerate() const Q_DECL_OVERRIDE { /* TODO */ return -1; };
@@ -111,4 +111,4 @@ protected:
   int firstPOCRandomAccess;
 };
 
-#endif // ANNEXBPARSERJEM_H
+#endif // PARSERANNEXBJEM_H

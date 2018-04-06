@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "annexBParserHEVC.h"
+#include "parserAnnexBHEVC.h"
 
 #define HEVCANNEXBFILE_DEBUG_OUTPUT 0
 #if HEVCANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
@@ -71,7 +71,7 @@
 // Read an UEV code and ignore the value. Return false if -1 was returned by the reading function.
 #define IGNOREUEV() {int into = reader.readUE_V();}
 
-void annexBParserHEVC::profile_tier_level::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
+void parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -210,7 +210,7 @@ void annexBParserHEVC::profile_tier_level::parse_profile_tier_level(sub_byte_rea
   }
 }
 
-void annexBParserHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(sub_byte_reader &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, TreeItem *root)
+void parserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(sub_byte_reader &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, TreeItem *root)
 {
   Q_UNUSED(subLayerId);
 
@@ -234,13 +234,13 @@ void annexBParserHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(
   }
 }
 
-annexBParserHEVC::hrd_parameters::hrd_parameters()
+parserAnnexBHEVC::hrd_parameters::hrd_parameters()
 {
   nal_hrd_parameters_present_flag = false;
   vcl_hrd_parameters_present_flag = false;
 }
 
-void annexBParserHEVC::hrd_parameters::parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
+void parserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -299,7 +299,7 @@ void annexBParserHEVC::hrd_parameters::parse_hrd_parameters(sub_byte_reader &rea
   }
 }
 
-void annexBParserHEVC::pred_weight_table::parse_pred_weight_table(sub_byte_reader &reader, sps *actSPS, slice *actSlice, TreeItem *root)
+void parserAnnexBHEVC::pred_weight_table::parse_pred_weight_table(sub_byte_reader &reader, sps *actSPS, slice *actSlice, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -352,15 +352,15 @@ void annexBParserHEVC::pred_weight_table::parse_pred_weight_table(sub_byte_reade
   }
 }
 
-int annexBParserHEVC::st_ref_pic_set::NumNegativePics[65];
-int annexBParserHEVC::st_ref_pic_set::NumPositivePics[65];
-int annexBParserHEVC::st_ref_pic_set::DeltaPocS0[65][16];
-int annexBParserHEVC::st_ref_pic_set::DeltaPocS1[65][16];
-bool annexBParserHEVC::st_ref_pic_set::UsedByCurrPicS0[65][16];
-bool annexBParserHEVC::st_ref_pic_set::UsedByCurrPicS1[65][16];
-int annexBParserHEVC::st_ref_pic_set::NumDeltaPocs[65];
+int parserAnnexBHEVC::st_ref_pic_set::NumNegativePics[65];
+int parserAnnexBHEVC::st_ref_pic_set::NumPositivePics[65];
+int parserAnnexBHEVC::st_ref_pic_set::DeltaPocS0[65][16];
+int parserAnnexBHEVC::st_ref_pic_set::DeltaPocS1[65][16];
+bool parserAnnexBHEVC::st_ref_pic_set::UsedByCurrPicS0[65][16];
+bool parserAnnexBHEVC::st_ref_pic_set::UsedByCurrPicS1[65][16];
+int parserAnnexBHEVC::st_ref_pic_set::NumDeltaPocs[65];
 
-void annexBParserHEVC::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_reader &reader, int stRpsIdx, sps *actSPS, TreeItem *root)
+void parserAnnexBHEVC::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_reader &reader, int stRpsIdx, sps *actSPS, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -497,7 +497,7 @@ void annexBParserHEVC::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_reader &rea
 }
 
 // (7-55)
-int annexBParserHEVC::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *actSlice)
+int parserAnnexBHEVC::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *actSlice)
 {
   int NumPicTotalCurr = 0;
   for(int i = 0; i < NumNegativePics[CurrRpsIdx]; i++)
@@ -512,13 +512,13 @@ int annexBParserHEVC::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *act
   return NumPicTotalCurr;
 }
 
-annexBParserHEVC::vui_parameters::vui_parameters()
+parserAnnexBHEVC::vui_parameters::vui_parameters()
 {
   video_format = 5;
   video_full_range_flag = false;
 }
 
-void annexBParserHEVC::vui_parameters::parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root)
+void parserAnnexBHEVC::vui_parameters::parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -609,7 +609,7 @@ void annexBParserHEVC::vui_parameters::parse_vui_parameters(sub_byte_reader &rea
   }
 }
 
-void annexBParserHEVC::scaling_list_data::parse_scaling_list_data(sub_byte_reader &reader, TreeItem *root)
+void parserAnnexBHEVC::scaling_list_data::parse_scaling_list_data(sub_byte_reader &reader, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -647,7 +647,7 @@ void annexBParserHEVC::scaling_list_data::parse_scaling_list_data(sub_byte_reade
   }
 }
 
-void annexBParserHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeItem *root)
+void parserAnnexBHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
 
@@ -722,7 +722,7 @@ void annexBParserHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeIt
   // ... later
 }
 
-annexBParserHEVC::sps::sps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
+parserAnnexBHEVC::sps::sps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 {
   // Infer some default values (if not present)
   separate_colour_plane_flag = false;
@@ -737,7 +737,7 @@ annexBParserHEVC::sps::sps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
   sps_extension_5bits = 0;
 }
 
-void annexBParserHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
+void parserAnnexBHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
 
@@ -889,7 +889,7 @@ void annexBParserHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIt
   LOGVAL(PicSizeInCtbsY);
 }
 
-annexBParserHEVC::pps::pps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
+parserAnnexBHEVC::pps::pps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 {
   deblocking_filter_override_enabled_flag = false;
   pps_range_extension_flag = false;
@@ -898,7 +898,7 @@ annexBParserHEVC::pps::pps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
   pps_extension_5bits = false;
 }
 
-void annexBParserHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root)
+void parserAnnexBHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
 
@@ -993,12 +993,12 @@ void annexBParserHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIt
   // There is more to parse but we are not interested in this information (for now)
 }
 
-annexBParserHEVC::pps_range_extension::pps_range_extension()
+parserAnnexBHEVC::pps_range_extension::pps_range_extension()
 {
   chroma_qp_offset_list_enabled_flag = false;
 }
 
-void annexBParserHEVC::pps_range_extension::parse_pps_range_extension(sub_byte_reader &reader, pps *actPPS, TreeItem *root)
+void parserAnnexBHEVC::pps_range_extension::parse_pps_range_extension(sub_byte_reader &reader, pps *actPPS, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -1022,7 +1022,7 @@ void annexBParserHEVC::pps_range_extension::parse_pps_range_extension(sub_byte_r
   READUEV(log2_sao_offset_scale_chroma);
 }
 
-void annexBParserHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modification(sub_byte_reader &reader, slice *actSlice, int NumPicTotalCurr, TreeItem *root)
+void parserAnnexBHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modification(sub_byte_reader &reader, slice *actSlice, int NumPicTotalCurr, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -1045,11 +1045,11 @@ void annexBParserHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modificat
 }
 
 // Initialize static member. Only true for the first slice instance
-bool annexBParserHEVC::slice::bFirstAUInDecodingOrder = true;
-int annexBParserHEVC::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
-int annexBParserHEVC::slice::prevTid0Pic_PicOrderCntMsb = 0;
+bool parserAnnexBHEVC::slice::bFirstAUInDecodingOrder = true;
+int parserAnnexBHEVC::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
+int parserAnnexBHEVC::slice::prevTid0Pic_PicOrderCntMsb = 0;
 
-annexBParserHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
+parserAnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 {
   PicOrderCntVal = -1;
   PicOrderCntMsb = -1;
@@ -1072,7 +1072,7 @@ annexBParserHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 }
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
-void annexBParserHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &p_active_SPS_list, const pps_map &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
+void parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &p_active_SPS_list, const pps_map &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1343,14 +1343,14 @@ void annexBParserHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
   }
 }
 
-const QStringList annexBParserHEVC::nal_unit_type_toString = QStringList()
+const QStringList parserAnnexBHEVC::nal_unit_type_toString = QStringList()
 << "TRAIL_N" << "TRAIL_R" << "TSA_N" << "TSA_R" << "STSA_N" << "STSA_R" << "RADL_N" << "RADL_R" << "RASL_N" << "RASL_R" << "RSV_VCL_N10" << "RSV_VCL_N12" << "RSV_VCL_N14" << 
 "RSV_VCL_R11" << "RSV_VCL_R13" << "RSV_VCL_R15" << "BLA_W_LP" << "BLA_W_RADL" << "BLA_N_LP" << "IDR_W_RADL" <<
 "IDR_N_LP" << "CRA_NUT" << "RSV_IRAP_VCL22" << "RSV_IRAP_VCL23" << "RSV_VCL24" << "RSV_VCL25" << "RSV_VCL26" << "RSV_VCL27" << "RSV_VCL28" << "RSV_VCL29" <<
 "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
 "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
-void annexBParserHEVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
+void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
 {
   // Read two bytes (the nal header)
   QByteArray nalHeaderBytes = data.left(2);
@@ -1554,7 +1554,7 @@ void annexBParserHEVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 cu
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
 }
 
-QList<QByteArray> annexBParserHEVC::determineSeekPoint(int iFrameNr, quint64 &filePos)
+QList<QByteArray> parserAnnexBHEVC::determineSeekPoint(int iFrameNr, quint64 &filePos)
 {
   // Get the POC for the frame number
   int iPOC = POC_List[iFrameNr];
@@ -1615,7 +1615,7 @@ QList<QByteArray> annexBParserHEVC::determineSeekPoint(int iFrameNr, quint64 &fi
   return QList<QByteArray>();
 }
 
-QSize annexBParserHEVC::getSequenceSizeSamples() const
+QSize parserAnnexBHEVC::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
   for (auto nal : nalUnitList)
@@ -1633,7 +1633,7 @@ QSize annexBParserHEVC::getSequenceSizeSamples() const
   return QSize(-1,-1);
 }
 
-double annexBParserHEVC::getFramerate() const
+double parserAnnexBHEVC::getFramerate() const
 {
   // First try to get the framerate from the parameter sets themselves
   for (auto nal : nalUnitList)
@@ -1670,7 +1670,7 @@ double annexBParserHEVC::getFramerate() const
   return DEFAULT_FRAMERATE;
 }
 
-YUVSubsamplingType annexBParserHEVC::getSequenceSubsampling() const
+YUVSubsamplingType parserAnnexBHEVC::getSequenceSubsampling() const
 {
   // Get the subsampling from the sps
   for (auto nal : nalUnitList)
@@ -1695,7 +1695,7 @@ YUVSubsamplingType annexBParserHEVC::getSequenceSubsampling() const
   return YUV_NUM_SUBSAMPLINGS;
 }
 
-int annexBParserHEVC::getSequenceBitDepth(Component c) const
+int parserAnnexBHEVC::getSequenceBitDepth(Component c) const
 {
   for (auto nal : nalUnitList)
   {
@@ -1715,14 +1715,14 @@ int annexBParserHEVC::getSequenceBitDepth(Component c) const
   return -1;
 }
 
-QByteArray annexBParserHEVC::nal_unit_hevc::getNALHeader() const
+QByteArray parserAnnexBHEVC::nal_unit_hevc::getNALHeader() const
 { 
   int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
   char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
   return QByteArray(c, 6);
 }
 
-void annexBParserHEVC::nal_unit_hevc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+void parserAnnexBHEVC::nal_unit_hevc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   sub_byte_reader reader(parameterSetData);
@@ -1796,7 +1796,7 @@ void annexBParserHEVC::nal_unit_hevc::parse_nal_unit_header(const QByteArray &pa
   nal_type = (nal_unit_type_id > UNSPECIFIED || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type)nal_unit_type_id;
 }
 
-bool annexBParserHEVC::nal_unit_hevc::isIRAP()
+bool parserAnnexBHEVC::nal_unit_hevc::isIRAP()
 { 
   return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
     nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
@@ -1804,7 +1804,7 @@ bool annexBParserHEVC::nal_unit_hevc::isIRAP()
     nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); 
 }
 
-bool annexBParserHEVC::nal_unit_hevc::isSLNR() 
+bool parserAnnexBHEVC::nal_unit_hevc::isSLNR() 
 { 
   return (nal_type == TRAIL_N     || nal_type == TSA_N       ||
     nal_type == STSA_N      || nal_type == RADL_N      ||
@@ -1812,16 +1812,16 @@ bool annexBParserHEVC::nal_unit_hevc::isSLNR()
     nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); 
 }
 
-bool annexBParserHEVC::nal_unit_hevc::isRADL() { 
+bool parserAnnexBHEVC::nal_unit_hevc::isRADL() { 
   return (nal_type == RADL_N || nal_type == RADL_R); 
 }
 
-bool annexBParserHEVC::nal_unit_hevc::isRASL() 
+bool parserAnnexBHEVC::nal_unit_hevc::isRASL() 
 { 
   return (nal_type == RASL_N || nal_type == RASL_R); 
 }
 
-bool annexBParserHEVC::nal_unit_hevc::isSlice() 
+bool parserAnnexBHEVC::nal_unit_hevc::isSlice() 
 { 
   return (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT  ||
     nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
@@ -1831,7 +1831,7 @@ bool annexBParserHEVC::nal_unit_hevc::isSlice()
     nal_type == RASL_R); 
 }
 
-int annexBParserHEVC::sei::parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root)
+int parserAnnexBHEVC::sei::parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -2023,7 +2023,7 @@ int annexBParserHEVC::sei::parse_sei_message(const QByteArray &sliceHeaderData, 
   return reader.nrBytesRead();
 }
 
-void annexBParserHEVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
+void parserAnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
 {
   if (sliceHeaderData.mid(16, 4) == "x265")
   {
@@ -2070,14 +2070,14 @@ void annexBParserHEVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeade
   }
 }
 
-void annexBParserHEVC::alternative_transfer_characteristics_sei::parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, TreeItem *root)
+void parserAnnexBHEVC::alternative_transfer_characteristics_sei::parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, TreeItem *root)
 {
   TreeItem *const itemTree = root ? new TreeItem("alternative transfer characteristics", root) : nullptr;
   sub_byte_reader reader(sliceHeaderData);
   READBITS_M(preferred_transfer_characteristics, 8, get_transfer_characteristics_meaning());
 }
 
-annexBParserHEVC::sei_parsing_return_t annexBParserHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, TreeItem *root)
+parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, TreeItem *root)
 {
   itemTree = root ? new TreeItem("active parameter sets", root) : nullptr;
   sei_data_storage = sliceHeaderData;
@@ -2086,12 +2086,12 @@ annexBParserHEVC::sei_parsing_return_t annexBParserHEVC::active_parameter_sets_s
   return SEI_PARSING_OK;
 }
 
-void annexBParserHEVC::active_parameter_sets_sei::reparse_active_parameter_sets_sei(const vps_map &p_active_VPS_list)
+void parserAnnexBHEVC::active_parameter_sets_sei::reparse_active_parameter_sets_sei(const vps_map &p_active_VPS_list)
 {
   parse(p_active_VPS_list, true);
 }
 
-bool annexBParserHEVC::active_parameter_sets_sei::parse(const vps_map &p_active_VPS_list, bool reparse)
+bool parserAnnexBHEVC::active_parameter_sets_sei::parse(const vps_map &p_active_VPS_list, bool reparse)
 {
   sub_byte_reader reader(sei_data_storage);
 
@@ -2121,7 +2121,7 @@ bool annexBParserHEVC::active_parameter_sets_sei::parse(const vps_map &p_active_
   return true;
 }
 
-annexBParserHEVC::sei_parsing_return_t annexBParserHEVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, TreeItem *root)
+parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, TreeItem *root)
 {
   itemTree = root ? new TreeItem("picture timing", root) : nullptr;
   sei_data_storage = sliceHeaderData;
@@ -2130,12 +2130,12 @@ annexBParserHEVC::sei_parsing_return_t annexBParserHEVC::pic_timing_sei::parse_p
   return SEI_PARSING_OK;
 }
 
-void annexBParserHEVC::pic_timing_sei::reparse_pic_timing_sei(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list)
+void parserAnnexBHEVC::pic_timing_sei::reparse_pic_timing_sei(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list)
 {
   parse(p_active_VPS_list, p_active_SPS_list, true);
 }
 
-bool annexBParserHEVC::pic_timing_sei::parse(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, bool reparse)
+bool parserAnnexBHEVC::pic_timing_sei::parse(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, bool reparse)
 {
   // TODO: Is this really ID 0? The standard does not really say which one (or I did not find it).
   if (!p_active_SPS_list.contains(0))
@@ -2215,7 +2215,7 @@ bool annexBParserHEVC::pic_timing_sei::parse(const vps_map &p_active_VPS_list, c
 }
 
 
-QStringList annexBParserHEVC::get_colour_primaries_meaning()
+QStringList parserAnnexBHEVC::get_colour_primaries_meaning()
 {
   QStringList colour_primaries_meaning = QStringList() 
     << "Reserved For future use by ITU-T | ISO/IEC"
@@ -2245,7 +2245,7 @@ QStringList annexBParserHEVC::get_colour_primaries_meaning()
   return colour_primaries_meaning;
 }
 
-QStringList annexBParserHEVC::get_transfer_characteristics_meaning()
+QStringList parserAnnexBHEVC::get_transfer_characteristics_meaning()
 {
   QStringList transfer_characteristics_meaning = QStringList()
     << "Reserved For future use by ITU-T | ISO/IEC"
@@ -2271,7 +2271,7 @@ QStringList annexBParserHEVC::get_transfer_characteristics_meaning()
   return transfer_characteristics_meaning;
 }
 
-QStringList annexBParserHEVC::get_matrix_coefficients_meaning()
+QStringList parserAnnexBHEVC::get_matrix_coefficients_meaning()
 {
   QStringList matrix_coefficients_meaning = QStringList()
     << "The identity matrix. RGB IEC 61966-2-1 (sRGB)"

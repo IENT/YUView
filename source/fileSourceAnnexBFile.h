@@ -34,7 +34,7 @@
 #define FILESOURCEANNEXBFILE_H
 
 #include <QAbstractItemModel>
-#include "annexBParser.h"
+#include "parserAnnexB.h"
 #include "fileSource.h"
 #include "videoHandlerYUV.h"
 

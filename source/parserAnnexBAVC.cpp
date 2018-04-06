@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "annexBParserAVC.h"
+#include "parserAnnexBAVC.h"
 
 // Read "numBits" bits into the variable "into". 
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
@@ -54,12 +54,12 @@
 // Log a custom message (add a cutom item in the tree)
 #define LOGPARAM(name, val, coding, code, meaning) {if (itemTree) new TreeItem(name, val, coding, code, meaning, itemTree);}
 
-double annexBParserAVC::getFramerate() const
+double parserAnnexBAVC::getFramerate() const
 {
   return 0.0;
 }
 
-void annexBParserAVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
+void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
 {
   // Read two bytes (the nal header)
   // Read two bytes (the nal header)
@@ -169,14 +169,14 @@ void annexBParserAVC::parseAndAddNALUnit(int nalID, QByteArray data, quint64 cur
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_avc.nal_idx).arg(nal_unit_type_toString.value(nal_avc.nal_unit_type)) + specificDescription);
 }
 
-const QStringList annexBParserAVC::nal_unit_type_toString = QStringList()
+const QStringList parserAnnexBAVC::nal_unit_type_toString = QStringList()
 << "UNSPECIFIED" << "CODED_SLICE_NON_IDR" << "CODED_SLICE_DATA_PARTITION_A" << "CODED_SLICE_DATA_PARTITION_B" << "CODED_SLICE_DATA_PARTITION_C" 
 << "CODED_SLICE_IDR" << "SEI" << "SPS" << "PPS" << "AUD" << "END_OF_SEQUENCE" << "END_OF_STREAM" << "FILLER" << "SPS_EXT" << "PREFIX_NAL" 
 << "SUBSET_SPS" << "DEPTH_PARAMETER_SET" << "RESERVED_17" << "RESERVED_18" << "CODED_SLICE_AUX" << "CODED_SLICE_EXTENSION" << "CODED_SLICE_EXTENSION_DEPTH_MAP" 
 << "RESERVED_22" << "RESERVED_23" << "UNSPCIFIED_24" << "UNSPCIFIED_25" << "UNSPCIFIED_26" << "UNSPCIFIED_27" << "UNSPCIFIED_28" << "UNSPCIFIED_29" 
 << "UNSPCIFIED_30" << "UNSPCIFIED_31";
 
-void annexBParserAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+void parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   sub_byte_reader reader(parameterSetData);
@@ -226,7 +226,7 @@ void annexBParserAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &para
   nal_unit_type = (nal_unit_type_id > UNSPCIFIED_31 || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type_enum)nal_unit_type_id;
 }
 
-annexBParserAVC::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
+parserAnnexBAVC::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
 {
   chroma_format_idc = 1;
   bit_depth_luma_minus8 = 0;
@@ -243,7 +243,7 @@ annexBParserAVC::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
   ExpectedDeltaPerPicOrderCntCycle = 0;
 }
 
-void annexBParserAVC::read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree)
+void parserAnnexBAVC::read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree)
 {
   int lastScale = 8;
   int nextScale = 8;
@@ -261,7 +261,7 @@ void annexBParserAVC::read_scaling_list(sub_byte_reader &reader, int *scalingLis
   }
 }
 
-void annexBParserAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
+void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
   sub_byte_reader reader(parameterSetData);
@@ -386,7 +386,7 @@ void annexBParserAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
     vui_parameters.read(reader, itemTree, BitDepthY, BitDepthC, chroma_format_idc);
 }
 
-annexBParserAVC::sps::vui_parameters_struct::vui_parameters_struct()
+parserAnnexBAVC::sps::vui_parameters_struct::vui_parameters_struct()
 {
   aspect_ratio_idc = 0;
   video_format = 5;
@@ -401,7 +401,7 @@ annexBParserAVC::sps::vui_parameters_struct::vui_parameters_struct()
   vcl_hrd_parameters_present_flag = false;
 }
 
-void annexBParserAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree, int BitDepthY, int BitDepthC, int chroma_format_idc)
+void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree, int BitDepthY, int BitDepthC, int chroma_format_idc)
 {
   READFLAG(aspect_ratio_info_present_flag);
   if (aspect_ratio_info_present_flag) 
@@ -536,13 +536,13 @@ void annexBParserAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, 
   }
 }
 
-annexBParserAVC::sps::vui_parameters_struct::hrd_parameters_struct::hrd_parameters_struct()
+parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::hrd_parameters_struct()
 {
   cpb_removal_delay_length_minus1 = 23;
   time_offset_length = 24;
 }
 
-void annexBParserAVC::sps::vui_parameters_struct::hrd_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree)
+void parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree)
 {
   READUEV(cpb_cnt_minus1);
   if (cpb_cnt_minus1 > 31)
@@ -566,13 +566,13 @@ void annexBParserAVC::sps::vui_parameters_struct::hrd_parameters_struct::read(su
   READBITS(time_offset_length, 5);
 }
 
-annexBParserAVC::pps::pps(const nal_unit_avc &nal) : nal_unit_avc(nal)
+parserAnnexBAVC::pps::pps(const nal_unit_avc &nal) : nal_unit_avc(nal)
 {
   transform_8x8_mode_flag = false;
   pic_scaling_matrix_present_flag = false;
 }
 
-void annexBParserAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list)
+void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list)
 {
   nalPayload = parameterSetData;
   sub_byte_reader reader(parameterSetData);
@@ -675,7 +675,7 @@ void annexBParserAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIte
   // rbsp_trailing_bits( )
 }
 
-annexBParserAVC::slice_header::slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal)
+parserAnnexBAVC::slice_header::slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal)
 {
   field_pic_flag = false;
   bottom_field_flag = false;
@@ -691,7 +691,7 @@ annexBParserAVC::slice_header::slice_header(const nal_unit_avc &nal) : nal_unit_
   globalPOC_highestGlobalPOCLastGOP = -1;
 }
 
-void annexBParserAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
+void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1007,7 +1007,7 @@ void annexBParserAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   }
 }
 
-void annexBParserAVC::slice_header::ref_pic_list_mvc_modification_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type)
+void parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type)
 {
   if (slice_type != SLICE_I && slice_type != SLICE_SI)
   {
@@ -1069,7 +1069,7 @@ void annexBParserAVC::slice_header::ref_pic_list_mvc_modification_struct::read(s
   }
 }
 
-void annexBParserAVC::slice_header::ref_pic_list_modification_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type)
+void parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type)
 {
   if (slice_type != SLICE_I && slice_type != SLICE_SI)
   {
@@ -1119,7 +1119,7 @@ void annexBParserAVC::slice_header::ref_pic_list_modification_struct::read(sub_b
   }
 }
 
-void annexBParserAVC::slice_header::pred_weight_table_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1)
+void parserAnnexBAVC::slice_header::pred_weight_table_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1)
 {
   READUEV(luma_log2_weight_denom);
   if (ChromaArrayType != 0)
@@ -1174,7 +1174,7 @@ void annexBParserAVC::slice_header::pred_weight_table_struct::read(sub_byte_read
 }
 
 
-void annexBParserAVC::slice_header::dec_ref_pic_marking_struct::read(sub_byte_reader & reader, TreeItem * itemTree, bool IdrPicFlag)
+void parserAnnexBAVC::slice_header::dec_ref_pic_marking_struct::read(sub_byte_reader & reader, TreeItem * itemTree, bool IdrPicFlag)
 {
   if (IdrPicFlag)
   {
@@ -1202,7 +1202,7 @@ void annexBParserAVC::slice_header::dec_ref_pic_marking_struct::read(sub_byte_re
   }
 }
 
-QByteArray annexBParserAVC::nal_unit_avc::getNALHeader() const
+QByteArray parserAnnexBAVC::nal_unit_avc::getNALHeader() const
 {
   // TODO: 
   // if ( nal_unit_type = = 14 | | nal_unit_type = = 20 | | nal_unit_type = = 21 ) ...
@@ -1211,7 +1211,7 @@ QByteArray annexBParserAVC::nal_unit_avc::getNALHeader() const
   return QByteArray(c, 5);
 }
 
-int annexBParserAVC::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root)
+int parserAnnexBAVC::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1387,7 +1387,7 @@ int annexBParserAVC::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeIte
   return reader.nrBytesRead();
 }
 
-void annexBParserAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, TreeItem *root)
+void parserAnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1423,7 +1423,7 @@ void annexBParserAVC::buffering_period_sei::parse_buffering_period_sei(QByteArra
   }
 }
 
-void annexBParserAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
+void parserAnnexBAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1532,7 +1532,7 @@ void annexBParserAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHead
   }
 }
 
-void annexBParserAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
+void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
 {
   if (sliceHeaderData.mid(16, 4) == "x264")
   {

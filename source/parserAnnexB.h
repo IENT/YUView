@@ -30,8 +30,8 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ANNEXBPARSER_H
-#define ANNEXBPARSER_H
+#ifndef PARSERANNEXB_H
+#define PARSERANNEXB_H
 
 #include <QList>
 #include <QAbstractItemModel>
@@ -41,12 +41,12 @@ using namespace YUV_Internals;
 
 /* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, JEM) that we can parse.
 */
-class annexBParser
+class parserAnnexB
 {
 
 public:
-  annexBParser() {};
-  ~annexBParser() {};
+  parserAnnexB() {};
+  ~parserAnnexB() {};
 
   // How many POC's have been found in the file
   int getNumberPOCs() const { return POC_List.size(); }
@@ -196,4 +196,4 @@ protected:
 
 };
 
-#endif // ANNEXBPARSER_H
+#endif // PARSERANNEXB_H

@@ -30,12 +30,12 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "annexBParserJEM.h"
+#include "parserAnnexBJEM.h"
 
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 
-void annexBParserJEM::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
+void parserAnnexBJEM::parseAndAddNALUnit(int nalID, QByteArray data, quint64 curFilePos)
 {
   // Reset the values before emitting
   nalInfoPoc = -1;
@@ -81,7 +81,7 @@ void annexBParserJEM::parseAndAddNALUnit(int nalID, QByteArray data, quint64 cur
     nalRoot->itemData.append(QString("NAL %1").arg(nal_jem->nal_idx));
 }
 
-void annexBParserJEM::nal_unit_jem::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+void parserAnnexBJEM::nal_unit_jem::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   sub_byte_reader reader(parameterSetData);
@@ -105,7 +105,7 @@ void annexBParserJEM::nal_unit_jem::parse_nal_unit_header(const QByteArray &para
   nal_type = (nal_unit_type_id > UNSPECIFIED || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type)nal_unit_type_id;
 }
 
-bool annexBParserJEM::nal_unit_jem::isIRAP()
+bool parserAnnexBJEM::nal_unit_jem::isIRAP()
 { 
   return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
     nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
@@ -113,7 +113,7 @@ bool annexBParserJEM::nal_unit_jem::isIRAP()
     nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); 
 }
 
-bool annexBParserJEM::nal_unit_jem::isSLNR() 
+bool parserAnnexBJEM::nal_unit_jem::isSLNR() 
 { 
   return (nal_type == TRAIL_N     || nal_type == TSA_N       ||
     nal_type == STSA_N      || nal_type == RADL_N      ||
@@ -121,16 +121,16 @@ bool annexBParserJEM::nal_unit_jem::isSLNR()
     nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); 
 }
 
-bool annexBParserJEM::nal_unit_jem::isRADL() { 
+bool parserAnnexBJEM::nal_unit_jem::isRADL() { 
   return (nal_type == RADL_N || nal_type == RADL_R); 
 }
 
-bool annexBParserJEM::nal_unit_jem::isRASL() 
+bool parserAnnexBJEM::nal_unit_jem::isRASL() 
 { 
   return (nal_type == RASL_N || nal_type == RASL_R); 
 }
 
-bool annexBParserJEM::nal_unit_jem::isSlice() 
+bool parserAnnexBJEM::nal_unit_jem::isSlice() 
 { 
   return (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT  ||
     nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
@@ -140,7 +140,7 @@ bool annexBParserJEM::nal_unit_jem::isSlice()
     nal_type == RASL_R); 
 }
 
-QByteArray annexBParserJEM::nal_unit_jem::getNALHeader() const
+QByteArray parserAnnexBJEM::nal_unit_jem::getNALHeader() const
 { 
   int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
   char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };

@@ -159,9 +159,9 @@ protected:
 
   // In order to parse raw annexB files, we need a file reader (that can read NAL units)
   // and a parser that can understand what the NAL units mean.
-  void parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<annexBParser> &parser);
+  void parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<parserAnnexB> &parser);
   QScopedPointer<fileSourceAnnexBFile> inputFileAnnexB;
-  QScopedPointer<annexBParser> parserAnnexB;
+  QScopedPointer<parserAnnexB> inputFileAnnexBParser;
 
   // Which type is the input / what decoder do we use?
   inputFormat inputFormatType;
@@ -169,7 +169,7 @@ protected:
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
   // read the NAL units from the compressed file.
-  void parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<annexBParser> &parser);
+  void parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<parserAnnexB> &parser);
   QScopedPointer<fileSourceFFMpegFile> inputFileFFMpeg;
   
   // Is the loadFrame function currently loading?

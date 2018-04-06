@@ -32,9 +32,9 @@
 
 #include "playlistItemCompressedVideo.h"
 
-#include "annexBParserAVC.h"
-#include "annexBParserHEVC.h"
-#include "annexBParserJEM.h"
+#include "parserAnnexBAVC.h"
+#include "parserAnnexBHEVC.h"
+#include "parserAnnexBJEM.h"
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
 #include "hevcNextGenDecoderJEM.h"
@@ -89,14 +89,14 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     inputFileAnnexB.reset(new fileSourceAnnexBFile(compressedFilePath));
     // inputFormatType a parser
     if (input == inputAnnexBHEVC)
-      parserAnnexB.reset(new annexBParserHEVC());
+      inputFileAnnexBParser.reset(new parserAnnexBHEVC());
     else if (inputFormatType == inputAnnexBAVC)
-      parserAnnexB.reset(new annexBParserAVC());
+      inputFileAnnexBParser.reset(new parserAnnexBAVC());
     else if (inputFormatType == inputAnnexBJEM)
-      parserAnnexB.reset(new annexBParserJEM());
+      inputFileAnnexBParser.reset(new parserAnnexBJEM());
     // Parse the file
-    parseAnnexBFile(inputFileAnnexB, parserAnnexB);
-    parserAnnexB->sortPOCList();
+    parseAnnexBFile(inputFileAnnexB, inputFileAnnexBParser);
+    inputFileAnnexBParser->sortPOCList();
 
     fileState = onlyParsing;
   }
@@ -275,18 +275,18 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
   Q_UNUSED(buttonID);
 
   // The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
-  QScopedPointer<annexBParser> parser;
+  QScopedPointer<parserAnnexB> parser;
   if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
   {
     // Just open and parse the file again
     QScopedPointer<fileSourceAnnexBFile> annexBFile(new fileSourceAnnexBFile(plItemNameOrFileName));
     // Create a parser
     if (inputFormatType == inputAnnexBHEVC)
-      parser.reset(new annexBParserHEVC());
+      parser.reset(new parserAnnexBHEVC());
     else if (inputFormatType == inputAnnexBAVC)
-      parser.reset(new annexBParserAVC());
+      parser.reset(new parserAnnexBAVC());
     else if (inputFormatType == inputAnnexBJEM)
-      parser.reset(new annexBParserJEM());
+      parser.reset(new parserAnnexBJEM());
     
     // Parse the file
     parser->enableModel();
@@ -304,9 +304,9 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     else
     {
       if (inputFileFFMpeg->getCodec() == FFMPEG_CODEC_HEVC)
-        parser.reset(new annexBParserHEVC());
+        parser.reset(new parserAnnexBHEVC());
       else if (inputFileFFMpeg->getCodec() == FFMPEG_CODEC_AVC)
-        parser.reset(new annexBParserAVC());
+        parser.reset(new parserAnnexBAVC());
       parser->enableModel();
       parseFFMpegFile(ffmpegFile, parser);
     }
@@ -456,7 +456,7 @@ indexRange playlistItemCompressedVideo::getStartEndFrameLimits() const
   if (fileState != error)
   {
     if (isAnnexBFileSource())
-      return indexRange(0, parserAnnexB->getNumberPOCs());
+      return indexRange(0, inputFileAnnexBParser->getNumberPOCs());
     else
       // TODO: 
       return indexRange(0, 0);
@@ -615,7 +615,7 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
   }
 }
 
-void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<annexBParser> &parser)
+void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<parserAnnexB> &parser)
 {
   DEBUG_HEVC("playlistItemCompressedVideo::parseAnnexBFile");
 
@@ -692,7 +692,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   progress.close();
 }
 
-void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<annexBParser> &parser)
+void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<parserAnnexB> &parser)
 {
   // Seek to the beginning of the stream.
   inputFileFFMpeg->seekToPTS(0);
