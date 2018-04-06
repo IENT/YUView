@@ -716,10 +716,9 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
   parser->parseExtradata(extradata);
 
   // Now iterate over all packets and send them to the parser
-  QByteArray packetData;
+  QByteArray packetData = inputFileFFMpeg->getNextPacket();
   while (!inputFileFFMpeg->atEnd())
   {
-    packetData = inputFileFFMpeg->getNextPacket();
     avPacketInfo_t packetInfo = inputFileFFMpeg->getCurrentPacketInfo();
 
     try
@@ -733,6 +732,7 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
       DEBUG_HEVC("parseAVPacketData Exception thrown parsing NAL %d", packetID);
     }
     packetID++;
+    packetData = inputFileFFMpeg->getNextPacket();
   }
     
   // Seek back to the beginning of the stream.
