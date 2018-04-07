@@ -94,6 +94,10 @@ hevcDecoderLibde265::~hevcDecoderLibde265()
 
 bool hevcDecoderLibde265::openFile(QString fileName, decoderBase *otherDecoder)
 { 
+  // TODO:
+  Q_UNUSED(fileName);
+  Q_UNUSED(otherDecoder);
+
   // Open the file, decode the first frame and return if this was successfull.
   //if (otherDecoder)
   //  parsingError = !annexBFile->openFile(fileName, false, otherDecoder->getFileSource());

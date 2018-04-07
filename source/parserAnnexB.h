@@ -47,7 +47,7 @@ class parserAnnexB : public parserBase
 
 public:
   parserAnnexB() {};
-  ~parserAnnexB() {};
+  virtual ~parserAnnexB() {};
 
   // How many POC's have been found in the file
   int getNumberPOCs() const { return POC_List.size(); }
@@ -71,7 +71,7 @@ public:
   // When we want to seek to a specific frame number, this function return the parameter sets that you need
   // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
   // also be returned.
-  virtual QList<QByteArray> determineSeekPoint(int iFrameNr, uint64_t &filePos) { /* TODO: */  return QList<QByteArray>(); }
+  virtual QList<QByteArray> determineSeekPoint(int iFrameNr, uint64_t &filePos) = 0;
 
   void sortPOCList() { std::sort(POC_List.begin(), POC_List.end()); }
 

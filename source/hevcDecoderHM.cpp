@@ -109,6 +109,9 @@ hevcDecoderHM::~hevcDecoderHM()
 bool hevcDecoderHM::openFile(QString fileName, decoderBase *otherDecoder)
 { 
   // TODO: New interface
+  Q_UNUSED(fileName);
+  Q_UNUSED(otherDecoder);
+
   // Open the file, decode the first frame and return if this was successfull.
   //if (otherDecoder)
   //  parsingError = !annexBFile->openFile(fileName, false, otherDecoder->getFileSource());

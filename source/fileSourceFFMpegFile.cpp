@@ -131,10 +131,11 @@ QList<QByteArray> fileSourceFFMpegFile::getParameterSets()
     int pos = 23;
     for (int i = 0; i < numOfArrays; i++)
     {
-      // The first byte contains the NAL unit type
-      int byte = (unsigned char)(extradata.at(pos++));
-      bool array_completeness = byte & (1 << 7);
-      int nalUnitType = byte & 0x3f;
+      // The first byte contains the NAL unit type (which we don't use here).
+      pos++;
+      //int byte = (unsigned char)(extradata.at(pos++));
+      //bool array_completeness = byte & (1 << 7);
+      //int nalUnitType = byte & 0x3f;
 
       // Two bytes numNalus
       int numNalus = (unsigned char)(extradata.at(pos++)) << 7;

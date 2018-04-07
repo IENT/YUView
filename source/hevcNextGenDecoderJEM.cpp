@@ -103,7 +103,11 @@ hevcNextGenDecoderJEM::~hevcNextGenDecoderJEM()
 
 bool hevcNextGenDecoderJEM::openFile(QString fileName, decoderBase *otherDecoder)
 { 
-  hevcNextGenDecoderJEM *otherJEMDecoder = dynamic_cast<hevcNextGenDecoderJEM*>(otherDecoder);
+  // TODO:
+  Q_UNUSED(fileName);
+  Q_UNUSED(otherDecoder);
+
+  // hevcNextGenDecoderJEM *otherJEMDecoder = dynamic_cast<hevcNextGenDecoderJEM*>(otherDecoder);
   // Open the file, decode the first frame and return if this was successfull.
   // TODO: We need a new interface for this
   //if (otherJEMDecoder)

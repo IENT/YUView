@@ -145,3 +145,11 @@ QByteArray parserAnnexBJEM::nal_unit_jem::getNALHeader() const
   char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
   return QByteArray(c, 6);
 }
+
+QList<QByteArray> parserAnnexBJEM::determineSeekPoint(int iFrameNr, uint64_t &filePos)
+{
+  // TODO:
+  Q_UNUSED(iFrameNr);
+  Q_UNUSED(filePos);
+  return QList<QByteArray>();
+}

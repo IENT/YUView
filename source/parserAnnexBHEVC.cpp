@@ -2197,7 +2197,7 @@ bool parserAnnexBHEVC::pic_timing_sei::parse(const vps_map &p_active_VPS_list, c
     {
       READUEV(num_decoding_units_minus1);
       if (num_decoding_units_minus1 > actSPS->PicSizeInCtbsY - 1)
-        throw("The value of num_decoding_units_minus1 shall be in the range of 0 to PicSizeInCtbsY − 1, inclusive.");
+        throw("The value of num_decoding_units_minus1 shall be in the range of 0 to PicSizeInCtbsY - 1, inclusive.");
       READFLAG(du_common_cpb_removal_delay_flag);
       if (du_common_cpb_removal_delay_flag)
       {

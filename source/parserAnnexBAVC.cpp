@@ -1583,9 +1583,12 @@ void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeader
   }
 }
 
-QList<QByteArray> determineSeekPoint(int iFrameNr, uint64_t &filePos)
+QList<QByteArray> parserAnnexBAVC::determineSeekPoint(int iFrameNr, uint64_t &filePos)
 {
   // TODO ... :)
+  Q_UNUSED(iFrameNr);
+  Q_UNUSED(filePos);
+
   filePos = 0;
   return QList<QByteArray>();
 }

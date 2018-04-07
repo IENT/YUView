@@ -331,21 +331,21 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
 {
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  //if (fileState == noError && frameIdxInternal >= 0 && frameIdxInternal < loadingDecoder->getNumberPOCs())
-  //{
-  //  video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
-  //  statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
-  //}
-  //else if (loadingDecoder->errorInDecoder())
-  //{
-  //  // There was an error in the deocder. 
-  //  infoText = "There was an error when loading the decoder: \n";
-  //  infoText += loadingDecoder->decoderErrorString();
-  //  infoText += "\n";
-  //  infoText += "We do not currently ship the HM and JEM decoder libraries.\n";
-  //  infoText += "You can find download links in Help->Downloads";
-  //  playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
-  //}
+  if (fileState == noError && frameIdxInternal >= startEndFrame.first && frameIdxInternal < startEndFrame.second)
+  {
+    video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
+    statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
+  }
+  else if (loadingDecoder->errorInDecoder())
+  {
+    // There was an error in the deocder. 
+    infoText = "There was an error when loading the decoder: \n";
+    infoText += loadingDecoder->decoderErrorString();
+    infoText += "\n";
+    infoText += "We do not currently ship the HM and JEM decoder libraries.\n";
+    infoText += "You can find download links in Help->Downloads";
+    playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
+  }
 }
 
 void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching)
@@ -578,6 +578,7 @@ void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QStr
     decoder = decoderFFMpeg;
   }
 
+  Q_UNUSED(parent);
   /*bool ok;
   QString label = "<html><head/><body><p>There are multiple decoders that we can use in order to decode the raw coded video bitstream file:</p><p><b>libde265:</b> A very fast and open source HEVC decoder. The internals version even supports display of the prediction and residual signal.</p><p><b>libHM:</b> The library version of the HEVC reference test model software (HM). Slower than libde265.</p><p><b>JEM:</b> The library version of the the HEVC next generation decoder software JEM.</p></body></html>";
   QString item = QInputDialog::getItem(parent, "Select a decoder engine", label, decoderEngineNames, 0, false, &ok);
@@ -687,7 +688,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
 void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<parserAVFormat> &parser)
 {
   // Seek to the beginning of the stream.
-  inputFileFFMpeg->seekToPTS(0);
+  file->seekToPTS(0);
 
   // Show a modal QProgressDialog while this operation is running.
   // If the user presses cancel, we will cancel and return false (opening the file failed).
@@ -701,7 +702,7 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
       mainWindow = mw;
   }
   // Create the dialog
-  int64_t maxPTS = inputFileFFMpeg->getMaxPTS();
+  int64_t maxPTS = file->getMaxPTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
   int curPercentValue = 0;
   QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
@@ -712,14 +713,21 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
 
   // First get the extradata and push it to the parser
   int packetID = 0;
-  QByteArray extradata = inputFileFFMpeg->getExtradata();
+  QByteArray extradata = file->getExtradata();
   parser->parseExtradata(extradata);
 
   // Now iterate over all packets and send them to the parser
-  QByteArray packetData = inputFileFFMpeg->getNextPacket();
-  while (!inputFileFFMpeg->atEnd())
+  QByteArray packetData = file->getNextPacket();
+  while (!file->atEnd())
   {
-    avPacketInfo_t packetInfo = inputFileFFMpeg->getCurrentPacketInfo();
+    avPacketInfo_t packetInfo = file->getCurrentPacketInfo();
+
+    int newPercentValue = packetInfo.pts * 100 / maxPTS;
+    if (newPercentValue != curPercentValue)
+    {
+      progress.setValue(newPercentValue);
+      curPercentValue = newPercentValue;
+    }
 
     try
     {
@@ -732,10 +740,10 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
       DEBUG_HEVC("parseAVPacketData Exception thrown parsing NAL %d", packetID);
     }
     packetID++;
-    packetData = inputFileFFMpeg->getNextPacket();
+    packetData = file->getNextPacket();
   }
     
   // Seek back to the beginning of the stream.
-  inputFileFFMpeg->seekToPTS(0);
+  file->seekToPTS(0);
   progress.close();
 }

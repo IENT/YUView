@@ -509,6 +509,9 @@ QList<infoItem> FFmpegLibraries::getDecoderInfo() const
 
 QByteArray FFmpegLibraries::loadYUVFrameData(int frameIdx)
 {
+  // TODO: Do this
+  Q_UNUSED(frameIdx);
+
   //// At first check if the request is for the frame that has been requested in the
   //// last call to this function.
   //if (frameIdx == currentOutputBufferFrameIndex)

@@ -43,7 +43,7 @@ class parserBase
 {
 public:
   parserBase() {}
-  ~parserBase() {};
+  virtual ~parserBase() {};
 
   // Get a pointer to the nal unit model. The model is only filled if you call enableModel() first.
   QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }

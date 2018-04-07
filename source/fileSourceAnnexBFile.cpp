@@ -76,6 +76,7 @@ bool fileSourceAnnexBFile::openFile(const QString &fileName)
   // Discard all bytes until we find a start code
   uint64_t pos;
   getNextNALUnit(pos);
+  return true;
 }
 
 QByteArray fileSourceAnnexBFile::getNextNALUnit(uint64_t &posInFile)

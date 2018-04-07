@@ -77,7 +77,7 @@ void parserAVFormat::parseExtradata_generic(QByteArray &extradata)
     {
       int val = (unsigned char)extradata.at(i);
       QString code = QString("%1 (0x%2)").arg(val, 8, 2, QChar('0')).arg(val, 2, 16, QChar('0'));
-      TreeItem *byteValue = new TreeItem(QString("Byte %1").arg(i), val, "b(8)", code, extradataRoot);
+      new TreeItem(QString("Byte %1").arg(i), val, "b(8)", code, extradataRoot);
     }
   }
 }
@@ -152,7 +152,7 @@ void parserAVFormat::parseAVPacketData(int packetID, avPacketInfo_t &packetInfo,
       // AVPacket use the following encoding:
       // The first 4 bytes determine the size of the NAL unit followed by the payload (ISO/IEC 14496-15)
       QByteArray sizePart = avpacketData.mid(posInData, 4);
-      unsigned int size = (unsigned char)sizePart.at(3);
+      int size = (unsigned char)sizePart.at(3);
       size += (unsigned char)sizePart.at(2) << 8;
       size += (unsigned char)sizePart.at(1) << 16;
       size += (unsigned char)sizePart.at(0) << 24;
