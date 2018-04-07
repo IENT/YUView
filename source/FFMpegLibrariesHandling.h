@@ -479,7 +479,24 @@ public:
   explicit operator bool() const { return codec != nullptr; };
   AVCodec *getAVCodec() { return codec; }
 
+  QString getName() { update(); return name; }
+  QString getLongName() { update(); return long_name; }
+
 private:
+  void update();
+  
+  QString name;
+  QString long_name;
+  AVMediaType type;
+  AVCodecID id;
+  int capabilities;                        ///< see AV_CODEC_CAP_
+  QList<AVRational> supported_framerates;  ///< terminated by {0,0}
+  QList<AVPixelFormat> pix_fmts;           ///< array is terminated by -1
+  QList<int> supported_samplerates;        ///< array is terminated by 0
+  QList<AVSampleFormat> sample_fmts;       ///< array is terminated by -1
+  QList<uint64_t> channel_layouts;         ///< array is terminated by 0
+  uint8_t max_lowres;                      ///< maximum value for lowres supported by the decoder
+
   AVCodec *codec;
   FFmpegLibraryVersion libVer;
 };
@@ -488,14 +505,13 @@ class AVDictionaryWrapper
 {
 public:
   AVDictionaryWrapper() { dict = nullptr; };
-  AVDictionaryWrapper(AVDictionary *dict, FFmpegLibraryVersion libVer) : dict(dict), libVer(libVer) {};
+  AVDictionaryWrapper(AVDictionary *dict) : dict(dict) {};
   void setDictionary(AVDictionary *d) { dict = d; }
   explicit operator bool() const { return dict != nullptr; };
   AVDictionary *get_dictionary() { return dict; }
 
 private:
   AVDictionary *dict;
-  FFmpegLibraryVersion libVer;
 };
 
 class AVFrameWrapper

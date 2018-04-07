@@ -210,7 +210,9 @@ void fileSourceFFMpegFile::scanBitstream()
   while (ffmpegLib.goToNextVideoPacket())
   {
     avPacketInfo_t p = ffmpegLib.getPacketInfo();
-    DEBUG_FFMPEG("frame %d pts %d dts %d%s", nrFrames, p.pts, p.dts, p.flag_keyframe ? " - keyframe" : "");
+    int pts = (int)p.pts;
+    int dts = (int)p.dts;
+    DEBUG_FFMPEG("frame %d pts %d dts %d%s", nrFrames, pts, dts, p.flag_keyframe ? " - keyframe" : "");
 
     if (p.flag_keyframe)
       keyFrameList.append(pictureIdx(nrFrames, p.pts));

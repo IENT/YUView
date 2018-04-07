@@ -125,6 +125,26 @@ typedef struct AVFormatContext_57
   // Actually, there is more here, but the variables above are the only we need.
 } AVFormatContext_57;
 
+// AVCodec is (of course) part of avcodec
+typedef struct AVCodec_56_57
+{
+  const char *name;
+  const char *long_name;
+  enum AVMediaType type;
+  enum AVCodecID id;
+  int capabilities;
+  const AVRational *supported_framerates; ///< array of supported framerates, or NULL if any, array is terminated by {0,0}
+  const enum AVPixelFormat *pix_fmts;     ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
+  const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
+  const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
+  const uint64_t *channel_layouts;         ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
+  uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
+  const AVClass *priv_class;              ///< AVClass for the private context
+  //const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
+  
+  // Actually, there is more here, but nothing more of the public API
+} AVCodec_56_57;
+
 // AVCodecContext is part of avcodec
 typedef struct AVCodecContext_56 
 {
@@ -1086,6 +1106,77 @@ int AVFormatContextWrapper::read_frame(FFmpegVersionHandler &ff, AVPacketWrapper
   return ff.lib.av_read_frame(ctx, pkt.get_packet());
 }
 
+void AVCodecWrapper::update()
+{
+  if (codec == nullptr)
+    return;
+
+  if (libVer.avcodec == 56 || libVer.avcodec == 57)
+  {
+    AVCodec_56_57 *src = reinterpret_cast<AVCodec_56_57*>(codec);
+    name = QString(src->name);
+    long_name = QString(src->long_name);
+    type = src->type;
+    id = src->id;
+    capabilities = src->capabilities;
+    if (src->supported_framerates)
+    {
+      int i = 0;
+      AVRational r = src->supported_framerates[i++];
+      while (r.den != 0 && r.num != 0)
+      {
+        // Add and get the next one
+        supported_framerates.append(r);
+        r = src->supported_framerates[i++];
+      }
+    }
+    if (src->pix_fmts)
+    {
+      int i = 0;
+      AVPixelFormat f = src->pix_fmts[i++];
+      while (f != -1)
+      {
+        // Add and get the next one
+        pix_fmts.append(f);
+        f = src->pix_fmts[i++];
+      }
+    }
+    if (src->supported_samplerates)
+    {
+      int i = 0;
+      int rate = src->supported_samplerates[i++];
+      while (rate != 0)
+      {
+        supported_samplerates.append(rate);
+        rate = src->supported_samplerates[i++];
+      }
+    }
+    if (src->sample_fmts)
+    {
+      int i = 0;
+      AVSampleFormat f = src->sample_fmts[i++];
+      while (f != -1)
+      {
+        sample_fmts.append(f);
+        f = src->sample_fmts[i++];
+      }
+    }
+    if (src->channel_layouts)
+    {
+      int i = 0;
+      uint64_t l = src->channel_layouts[i++];
+      while (l != 0)
+      {
+        channel_layouts.append(l);
+        l = src->channel_layouts[i++];
+      }
+    }
+    max_lowres = src->max_lowres;
+  }
+  else
+    assert(false);
+}
+
 void AVCodecContextWrapper::update()
 {
   if (codec == nullptr)
@@ -1687,52 +1778,52 @@ void AVFrameWrapper::update()
   if (frame == nullptr)
     return;
 
-    if (libVer.avutil == 54)
+  if (libVer.avutil == 54)
+  {
+    AVFrame_54 *src = reinterpret_cast<AVFrame_54*>(frame);
+    for(int i=0; i<AV_NUM_DATA_POINTERS; i++)
     {
-      AVFrame_54 *src = reinterpret_cast<AVFrame_54*>(frame);
-      for(int i=0; i<AV_NUM_DATA_POINTERS; i++)
-      {
-        data[i] = src->data[i];
-        linesize[i] = src->linesize[i];
-      }
-      width = src->width;
-      height = src->height;
-      nb_samples = src->nb_samples;
-      format = src->format;
-      key_frame = src->key_frame;
-      pict_type = src->pict_type;
-      sample_aspect_ratio = src->sample_aspect_ratio;
-      pts = src->pts;
-      pkt_pts = src->pkt_pts;
-      pkt_dts = src->pkt_dts;
-      coded_picture_number = src->coded_picture_number;
-      display_picture_number = src->display_picture_number;
-      quality = src->quality;
+      data[i] = src->data[i];
+      linesize[i] = src->linesize[i];
     }
-    else if (libVer.avutil == 55)
+    width = src->width;
+    height = src->height;
+    nb_samples = src->nb_samples;
+    format = src->format;
+    key_frame = src->key_frame;
+    pict_type = src->pict_type;
+    sample_aspect_ratio = src->sample_aspect_ratio;
+    pts = src->pts;
+    pkt_pts = src->pkt_pts;
+    pkt_dts = src->pkt_dts;
+    coded_picture_number = src->coded_picture_number;
+    display_picture_number = src->display_picture_number;
+    quality = src->quality;
+  }
+  else if (libVer.avutil == 55)
+  {
+    AVFrame_55 *src = reinterpret_cast<AVFrame_55*>(frame);
+    for(int i=0; i<AV_NUM_DATA_POINTERS; i++)
     {
-      AVFrame_55 *src = reinterpret_cast<AVFrame_55*>(frame);
-      for(int i=0; i<AV_NUM_DATA_POINTERS; i++)
-      {
-        data[i] = src->data[i];
-        linesize[i] = src->linesize[i];
-      }
-      width = src->width;
-      height = src->height;
-      nb_samples = src->nb_samples;
-      format = src->format;
-      key_frame = src->key_frame;
-      pict_type = src->pict_type;
-      sample_aspect_ratio = src->sample_aspect_ratio;
-      pts = src->pts;
-      pkt_pts = src->pkt_pts;
-      pkt_dts = src->pkt_dts;
-      coded_picture_number = src->coded_picture_number;
-      display_picture_number = src->display_picture_number;
-      quality = src->quality;
+      data[i] = src->data[i];
+      linesize[i] = src->linesize[i];
     }
-    else
-      assert(false);
+    width = src->width;
+    height = src->height;
+    nb_samples = src->nb_samples;
+    format = src->format;
+    key_frame = src->key_frame;
+    pict_type = src->pict_type;
+    sample_aspect_ratio = src->sample_aspect_ratio;
+    pts = src->pts;
+    pkt_pts = src->pkt_pts;
+    pkt_dts = src->pkt_dts;
+    coded_picture_number = src->coded_picture_number;
+    display_picture_number = src->display_picture_number;
+    quality = src->quality;
+  }
+  else
+    assert(false);
 }
 
 void AVFrameWrapper::allocate_frame(FFmpegVersionHandler &ff) 

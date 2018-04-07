@@ -1363,7 +1363,7 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
   QString specificDescription;
   
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
-  TreeItem *nalRoot;
+  TreeItem *nalRoot = nullptr;
   if (parent)
     nalRoot = new TreeItem(parent);
   else if (!nalUnitModel.rootItem.isNull())

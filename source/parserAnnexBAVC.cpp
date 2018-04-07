@@ -71,7 +71,7 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
   // We don't set data (a name) for this item yet. 
   // We want to parse the item and then set a good description.
   QString specificDescription;
-  TreeItem *nalRoot;
+  TreeItem *nalRoot = nullptr;
   if (parent)
     nalRoot = new TreeItem(parent);
   else if (!nalUnitModel.rootItem.isNull())
