@@ -31,6 +31,7 @@
 */
 
 #include "parserAnnexBAVC.h"
+#include <cmath>
 
 // Read "numBits" bits into the variable "into". 
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
