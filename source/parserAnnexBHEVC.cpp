@@ -31,6 +31,7 @@
 */
 
 #include "parserAnnexBHEVC.h"
+#include <cmath>
 
 #define HEVCANNEXBFILE_DEBUG_OUTPUT 0
 #if HEVCANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
