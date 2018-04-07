@@ -23,6 +23,8 @@ SOURCES += \
     source/parserAnnexBAVC.cpp \
     source/parserAnnexBHEVC.cpp \
     source/parserAnnexBJEM.cpp \
+    source/parserAVFormat.cpp \
+    source/parserBase.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
     source/playlistItemCompressedVideo.cpp \
@@ -77,6 +79,8 @@ HEADERS += \
     source/parserAnnexBAVC.h \
     source/parserAnnexBHEVC.h \
     source/parserAnnexBJEM.h \
+    source/parserAVFormat.h \
+    source/parserBase.h \
     source/playbackController.h \
     source/playlistItem.h \
     source/playlistItemCompressedVideo.h \
