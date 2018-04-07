@@ -56,12 +56,12 @@ public:
   // What is the bit depth of the reconstruction?
   int getSequenceBitDepth(Component c) const Q_DECL_OVERRIDE;
 
-  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, quint64 curFilePos = -1) Q_DECL_OVERRIDE;
+  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t curFilePos = -1) Q_DECL_OVERRIDE;
 
   // When we want to seek to a specific frame number, this function return the parameter sets that you need
   // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
   // also be returned.
-  QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos) Q_DECL_OVERRIDE;
+  QList<QByteArray> determineSeekPoint(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -81,7 +81,7 @@ protected:
   */
   struct nal_unit_hevc : nal_unit
   {
-    nal_unit_hevc(quint64 filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_type(UNSPECIFIED) {}
+    nal_unit_hevc(uint64_t filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_type(UNSPECIFIED) {}
     nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : nal_unit(nal_src->filePos, nal_src->nal_idx) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
     virtual ~nal_unit_hevc() {}
 

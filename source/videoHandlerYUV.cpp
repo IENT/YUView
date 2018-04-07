@@ -148,7 +148,7 @@ double computeMSE(T ptr, T ptr2, int numPixels)
   if (numPixels <= 0)
     return 0.0;
 
-  quint64 sad = 0;
+  uint64_t sad = 0;
   for(int i=0; i<numPixels; i++)
   {
     int diff = (int)ptr[i] - (int)ptr2[i];
@@ -352,9 +352,9 @@ namespace YUV_Internals
     return name;
   }
 
-  qint64 yuvPixelFormat::bytesPerFrame(const QSize &frameSize) const
+  int64_t yuvPixelFormat::bytesPerFrame(const QSize &frameSize) const
   {
-    qint64 bytes = 0;
+    int64_t bytes = 0;
     if (planar || !bytePacking)
     {
       // Add the bytes of the 3 (or 4) planes.
@@ -951,7 +951,7 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
 void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
 {
   // Store the number bytes per frame of the old pixel format
-  qint64 oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
+  int64_t oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
   // Set the new pixel format. Lock the mutex, so that no background process is running wile the format changes.
   srcPixelFormat = format;
@@ -1014,7 +1014,7 @@ void videoHandlerYUV::slotYUVControlChanged()
   }
   else if (sender == ui.yuvFormatComboBox)
   {
-    qint64 oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
+    int64_t oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
     // Set the new YUV format
     //setSrcPixelFormat(yuvFormatList.getFromName(ui.yuvFormatComboBox->currentText()));
@@ -1303,7 +1303,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   painter->setPen(backupPen);
 }
 
-void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
+void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo)
 {
   // We are going to check two strings (one after the other) for indicators on the YUV format.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -1496,7 +1496,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, q
   * If a file size is given, we test if the candidates frame size is a multiple of the fileSize. If fileSize is -1, this test
   * is skipped.
   */
-void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qint64 fileSize)
+void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int64_t fileSize)
 {
   if(rawYUVData.size() < 1)
     return;
@@ -1552,7 +1552,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
 
     for (testFormatAndSize &testFormat : formatList)
     {
-      qint64 picSize = testFormat.format.bytesPerFrame(testFormat.size);
+      int64_t picSize = testFormat.format.bytesPerFrame(testFormat.size);
 
       if(fileSize >= (picSize*2))       // at least 2 pictures for correlation analysis
       {
@@ -1574,7 +1574,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
   {
     if (testFormat.interesting)
     {
-      qint64 picSize = testFormat.format.bytesPerFrame(testFormat.size);
+      int64_t picSize = testFormat.format.bytesPerFrame(testFormat.size);
       int lumaSamples = testFormat.size.width() * testFormat.size.height();
 
       // Calculate the MSE for 2 frames
@@ -3666,7 +3666,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
 
   // Also calculate the MSE while we're at it (Y,U,V)
   // TODO: Bug: MSE is not scaled correctly in all YUV format cases
-  qint64 mseAdd[3] = {0, 0, 0};
+  int64_t mseAdd[3] = {0, 0, 0};
 
   // Calculate Luma sample difference
   const int stride_in[2] = {bps_in[0] > 8 ? w_in[0]*2 : w_in[0], bps_in[1] > 8 ? w_in[1]*2 : w_in[1]};  // How many bytes to the next y line?

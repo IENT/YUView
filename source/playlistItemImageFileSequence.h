@@ -96,7 +96,7 @@ private:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-  virtual qint64 getNumberFrames() const { return imageFiles.length(); }
+  virtual int64_t getNumberFrames() const { return imageFiles.length(); }
 
   // Set internal values (frame Size, caching, ...). Call this after the imageFiles list has been filled.
   // Get the internal name and set it as text of the playlistItem.

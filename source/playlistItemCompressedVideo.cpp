@@ -623,7 +623,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
       mainWindow = mw;
   }
   // Create the dialog
-  qint64 maxPos;
+  int64_t maxPos;
   if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
     maxPos = inputFileAnnexB->getFileSize();
   else
@@ -640,7 +640,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   // Just push all NAL units from the annexBFile into the annexBParser
   QByteArray nalData;
   int nalID = 0;
-  quint64 filePos;
+  uint64_t filePos;
   while (!file->atEnd())
   {
     try
@@ -653,7 +653,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
       if (progress.wasCanceled())
         return;
 
-      qint64 pos;
+      int64_t pos;
       if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
         pos = inputFileAnnexB->pos();
       else
@@ -701,7 +701,7 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpe
       mainWindow = mw;
   }
   // Create the dialog
-  qint64 maxPTS = inputFileFFMpeg->getMaxPTS();
+  int64_t maxPTS = inputFileFFMpeg->getMaxPTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
   int curPercentValue = 0;
   QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);

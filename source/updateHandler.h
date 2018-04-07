@@ -95,7 +95,7 @@ public slots:
 private slots:
   void replyFinished(QNetworkReply *reply);
   void downloadFinished(QNetworkReply *reply);
-  void updateDownloadProgress(qint64 val, qint64 max);
+  void updateDownloadProgress(int64_t val, int64_t max);
   void sslErrors(QNetworkReply * reply, const QList<QSslError> & errors);
 
 private:

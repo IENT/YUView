@@ -35,7 +35,7 @@
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 
-void parserAnnexBJEM::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *nalRoot, quint64 curFilePos)
+void parserAnnexBJEM::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *nalRoot, uint64_t curFilePos)
 {
   // Reset the values before emitting
   nalInfoPoc = -1;

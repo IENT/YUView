@@ -2054,7 +2054,7 @@ void splitViewWidget::testFinished(bool canceled)
     return;
 
   // Calculate and report the time
-  qint64 msec = testDuration.elapsed();
+  int64_t msec = testDuration.elapsed();
   double rate = 1000.0 * 1000 / msec;
   QMessageBox::information(parentWidget, "Test results", QString("We drew 1000 frames in %1 msec. The draw rate is %2 frames per second.").arg(msec).arg(rate));
 }

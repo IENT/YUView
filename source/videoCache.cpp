@@ -120,7 +120,7 @@ void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned
   QSettings settings;
   settings.beginGroup("VideoCache");
   cacheLevelMaxMB = settings.value("ThresholdValueMB", 49).toUInt();
-  const qint64 cacheLevelMax = cacheLevelMaxMB * 1000 * 1000;
+  const int64_t cacheLevelMax = cacheLevelMaxMB * 1000 * 1000;
   settings.endGroup();
 
   // Clear the old percent values
@@ -128,13 +128,13 @@ void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned
 
   // Let's find out how much space in the cache is used.
   // In combination with cacheLevelMax we also know how much space is free.
-  qint64 cacheLevel = 0;
+  int64_t cacheLevel = 0;
   for (int i = 0; i < allItems.count(); i++)
   {
     playlistItem *item = allItems.at(i);
     int nrFrames = item->getNumberCachedFrames();
-    qint64 frameSize = item->getCachingFrameSize();
-    qint64 itemCacheSize = nrFrames * frameSize;
+    int64_t frameSize = item->getCachingFrameSize();
+    int64_t itemCacheSize = nrFrames * frameSize;
     DEBUG_CACHING_DETAIL("videoCacheStatusWidget::updateStatus Item %d frames %d * size %d = %d", i, nrFrames, frameSize, itemCacheSize);
 
     float endVal = (float)(cacheLevel + itemCacheSize) / cacheLevelMax;
@@ -334,7 +334,7 @@ void videoCache::updateSettings()
   QSettings settings;
   settings.beginGroup("VideoCache");
   cachingEnabled = settings.value("Enabled", true).toBool();
-  cacheLevelMax = (qint64)settings.value("ThresholdValueMB", 49).toUInt() * 1000 * 1000;
+  cacheLevelMax = (int64_t)settings.value("ThresholdValueMB", 49).toUInt() * 1000 * 1000;
 
   // See if the user changed the number of threads
   int targetNrThreads = getOptimalThreadCount();
@@ -562,7 +562,7 @@ void videoCache::updateCacheQueue()
   // In combination with cacheLevelMax we also know how much space is free.
   // While we are iterating through the list, we will delete all cached frames from the cache that will 
   // never be cached (are outside of the items range of frames to show)
-  qint64 cacheLevel = 0;
+  int64_t cacheLevel = 0;
   for (playlistItem *item : allItems)
   {
     indexRange range = item->getFrameIdxRange();
@@ -571,7 +571,7 @@ void videoCache::updateCacheQueue()
       if (i < range.first || i > range.second)
         item->removeFrameFromCache(i);
 
-    qint64 cachingFrameSize = item->getCachingFrameSize();
+    int64_t cachingFrameSize = item->getCachingFrameSize();
     cacheLevel += item->getNumberCachedFrames() * cachingFrameSize;
   }
   if (cacheLevel > cacheLevelMax)
@@ -608,10 +608,10 @@ void videoCache::updateCacheQueue()
 
   // How much space do we need to cache the entire item?
   indexRange range = selection[0]->getFrameIdxRange(); // These are the frames that we want to cache
-  qint64 cachingFrameSize = selection[0]->getCachingFrameSize();
-  qint64 itemSpaceNeeded = (range.second - range.first + 1) * cachingFrameSize;
-  qint64 alreadyCached = selection[0]->getNumberCachedFrames() * cachingFrameSize;
-  qint64 additionalItemSpaceNeeded = itemSpaceNeeded - alreadyCached;
+  int64_t cachingFrameSize = selection[0]->getCachingFrameSize();
+  int64_t itemSpaceNeeded = (range.second - range.first + 1) * cachingFrameSize;
+  int64_t alreadyCached = selection[0]->getNumberCachedFrames() * cachingFrameSize;
+  int64_t additionalItemSpaceNeeded = itemSpaceNeeded - alreadyCached;
 
   if (play)
   {
@@ -619,7 +619,7 @@ void videoCache::updateCacheQueue()
     // Add as much of all items as possible. When the cache is full, mark the remaining frames as "can be
     // deleted"
     int i = itemPos;
-    qint64 newCacheLevel = 0;
+    int64_t newCacheLevel = 0;
 
     // We start in "adding" mode where items are added. If the cache is full, we switch to "deleting" mode where
     // all frames of all items are removed. This is done for all items in the playlist.
@@ -630,7 +630,7 @@ void videoCache::updateCacheQueue()
       {
         // How much space do we need to cache the current item?
         indexRange itemRange = allItems[i]->getFrameIdxRange();
-        qint64 itemCacheSize = (itemRange.second - itemRange.first + 1) * qint64(allItems[i]->getCachingFrameSize());
+        int64_t itemCacheSize = (itemRange.second - itemRange.first + 1) * int64_t(allItems[i]->getCachingFrameSize());
 
         if (adding && allItems[i]->isCachable())
         {
@@ -643,8 +643,8 @@ void videoCache::updateCacheQueue()
           else
           {
             // Not all frames fit. Enqueue the ones that fit and set the ones that don't as "can be deleted".
-            qint64 availableSpace = cacheLevelMax - newCacheLevel;
-            qint64 nrFramesCachable = availableSpace / allItems[i]->getCachingFrameSize() + 1;
+            int64_t availableSpace = cacheLevelMax - newCacheLevel;
+            int64_t nrFramesCachable = availableSpace / allItems[i]->getCachingFrameSize() + 1;
 
             // These frames should be added...
             indexRange addFrames = indexRange(itemRange.first, itemRange.first + nrFramesCachable - 1);
@@ -697,7 +697,7 @@ void videoCache::updateCacheQueue()
       }
 
       // Adjust the range so that only the number of frames are cached that will fit
-      qint64 nrFramesCachable = cacheLevelMax / selection[0]->getCachingFrameSize();
+      int64_t nrFramesCachable = cacheLevelMax / selection[0]->getCachingFrameSize();
       range.second = range.first + nrFramesCachable - 1;
 
       enqueueCacheJob(selection[0], range);
@@ -734,7 +734,7 @@ void videoCache::updateCacheQueue()
       }
 
       // Get the cache level without the current item (frames from the current item do not really occupy space in the cache. We want to cache them anyways)
-      qint64 cacheLevelWithoutCurrent = cacheLevel - selection[0]->getNumberCachedFrames() * qint64(selection[0]->getCachingFrameSize());
+      int64_t cacheLevelWithoutCurrent = cacheLevel - selection[0]->getNumberCachedFrames() * int64_t(selection[0]->getCachingFrameSize());
       while ((itemSpaceNeeded + cacheLevelWithoutCurrent) > cacheLevelMax)
       {
         if (i == itemPos)
@@ -754,12 +754,12 @@ void videoCache::updateCacheQueue()
 
         // Which frames are cached for the item at position i?
         QList<int> cachedFrames = allItems[i]->getCachedFrames();
-        qint64 cachedFramesSize = cachedFrames.count() * qint64(allItems[i]->getCachingFrameSize());
+        int64_t cachedFramesSize = cachedFrames.count() * int64_t(allItems[i]->getCachingFrameSize());
 
         if (additionalItemSpaceNeeded < cachedFramesSize)
         {
           // If we delete all frames from item i, there is more than enough space. So we only delete as many frames as needed.
-          qint64 nrFrames = additionalItemSpaceNeeded / allItems[i]->getCachingFrameSize() + 1;
+          int64_t nrFrames = additionalItemSpaceNeeded / allItems[i]->getCachingFrameSize() + 1;
 
           // Delete nrFrames frames from the back
           for (int f = cachedFrames.count() - 1; f >= 0 && nrFrames > 0 ; f--)
@@ -838,10 +838,10 @@ void videoCache::updateCacheQueue()
         DEBUG_CACHING("videoCache::updateCacheQueue Attempt caching of next item %s.", allItems[i]->getName().toLatin1().data());
         // How much space is there in the cache (excluding what is cached from the current item)?
         // Get the cache level without the current item (frames from the current item do not really occupy space in the cache. We want to cache them anyways)
-        qint64 cacheLevelWithoutCurrent = cacheLevel - allItems[i]->getNumberCachedFrames() * qint64(allItems[i]->getCachingFrameSize());
+        int64_t cacheLevelWithoutCurrent = cacheLevel - allItems[i]->getNumberCachedFrames() * int64_t(allItems[i]->getCachingFrameSize());
         // How much space do we need to cache the entire item?
         range = allItems[i]->getFrameIdxRange();
-        qint64 itemCacheSize = (range.second - range.first + 1) * qint64(allItems[i]->getCachingFrameSize());
+        int64_t itemCacheSize = (range.second - range.first + 1) * int64_t(allItems[i]->getCachingFrameSize());
 
         if ((itemCacheSize + cacheLevelWithoutCurrent) <= cacheLevelMax)
         {
@@ -855,7 +855,7 @@ void videoCache::updateCacheQueue()
           if ((itemCacheSize + cacheLevelWithoutCurrent) > cacheLevelMax)
           {
             // Only a part of the item fits.
-            qint64 nrFramesCachable = (cacheLevelMax - cacheLevelWithoutCurrent) / allItems[i]->getCachingFrameSize();
+            int64_t nrFramesCachable = (cacheLevelMax - cacheLevelWithoutCurrent) / allItems[i]->getCachingFrameSize();
             DEBUG_CACHING("videoCache::updateCacheQueue Only %lld frames of next item %s fit.",nrFramesCachable, allItems[i]->getName().toLatin1().data());
             range.second = range.first + nrFramesCachable - 1;
             enqueueCacheJob(allItems[i], range);
@@ -1502,7 +1502,7 @@ void videoCache::testFinished()
     return;
   
   // Calculate and report the time
-  qint64 msec = testDuration.elapsed();
+  int64_t msec = testDuration.elapsed();
   double rate = 1000.0 * 1000 / msec;
   QMessageBox::information(parentWidget, "Test results", QString("We cached 1000 frames in %1 msec. The conversion rate is %2 frames per second.").arg(msec).arg(rate));
 }

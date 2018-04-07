@@ -64,14 +64,14 @@ public:
 
   // Get the next NAL unit (everything excluding the start code)
   // Also return the position of the NAL unit in the file so you can seek to it.
-  QByteArray getNextNALUnit(quint64 &posInFile);
+  QByteArray getNextNALUnit(uint64_t &posInFile);
 
 protected:
 
   QByteArray   fileBuffer;
-  quint64      fileBufferSize;       ///< How many of the bytes are used? We don't resize the fileBuffer
+  uint64_t      fileBufferSize;       ///< How many of the bytes are used? We don't resize the fileBuffer
   unsigned int posInBuffer;          ///< The current position in the input buffer in bytes
-  quint64      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
+  uint64_t      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
 
   // The start code pattern
   QByteArray startCode;
@@ -100,7 +100,7 @@ protected:
   //bool curPosAtStartCode() const { return numZeroBytes >= 2 && getCurByte() == (char)1; }
 
   //// The current absolut position in the file (byte precise)
-  //quint64 tell() const { return bufferStartPosInFile + posInBuffer; }
+  //uint64_t tell() const { return bufferStartPosInFile + posInBuffer; }
 
   //// Read the remaining bytes from the buffer and return them. Then load the next buffer.
   //QByteArray getRemainingBuffer_Update();
@@ -110,9 +110,9 @@ protected:
   //
   //// Buffers to access the binary file
   //QByteArray   fileBuffer;
-  //quint64      fileBufferSize;
+  //uint64_t      fileBufferSize;
   //unsigned int posInBuffer;	         ///< The current position in the input buffer in bytes
-  //quint64      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
+  //uint64_t      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
   //int          numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
 
   //// A pointer to the parser. This can be any specific annexB parser (AVC, HEVC, JEM ...)
@@ -128,7 +128,7 @@ protected:
   
 
   //// Seek the file to the given byte position. Update the buffer.
-  //bool seekToFilePos(quint64 pos);
+  //bool seekToFilePos(uint64_t pos);
 };
 
 #endif //FILESOURCEANNEXBFILE_H

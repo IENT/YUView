@@ -57,7 +57,7 @@ public:
 
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
   // Finally it should add the unit to the nalUnitList (if it is a parameter set or an RA point).
-  virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, quint64 curFilePos = -1) = 0;
+  virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t curFilePos = -1) = 0;
 
   // What it the framerate?
   virtual double getFramerate() const = 0;
@@ -71,7 +71,7 @@ public:
   // When we want to seek to a specific frame number, this function return the parameter sets that you need
   // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
   // also be returned.
-  virtual QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos) { /* TODO: */  return QList<QByteArray>(); }
+  virtual QList<QByteArray> determineSeekPoint(int iFrameNr, uint64_t &filePos) { /* TODO: */  return QList<QByteArray>(); }
 
   void sortPOCList() { std::sort(POC_List.begin(), POC_List.end()); }
 
@@ -81,14 +81,14 @@ protected:
   */
   struct nal_unit
   {
-    nal_unit(quint64 filePos, int nal_idx) : filePos(filePos), nal_idx(nal_idx), nal_unit_type_id(-1) {}
+    nal_unit(uint64_t filePos, int nal_idx) : filePos(filePos), nal_idx(nal_idx), nal_unit_type_id(-1) {}
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
                            // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
     virtual void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) = 0;
 
     /// Pointer to the first byte of the start code of the NAL unit
-    quint64 filePos;
+    uint64_t filePos;
 
     // The index of the nal within the bitstream
     int nal_idx;

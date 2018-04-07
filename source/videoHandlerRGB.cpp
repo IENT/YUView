@@ -187,12 +187,12 @@ videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 
 /* Get the number of bytes for a frame with this RGB format and the given size
 */
-qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
+int64_t videoHandlerRGB::rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
 {
   if (bitsPerValue == 0 || !frameSize.isValid())
     return 0;
 
-  qint64 numSamples = frameSize.height() * frameSize.width();
+  int64_t numSamples = frameSize.height() * frameSize.width();
 
   int channels = (alphaChannel) ? 4 : 3;
   return numSamples * channels * ((bitsPerValue + 7) / 8);
@@ -366,7 +366,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   int idx = ui.rgbFormatComboBox->currentIndex();
 
   // The old format's number bytes per frame
-  qint64 nrBytesOldFormat = getBytesPerFrame();
+  int64_t nrBytesOldFormat = getBytesPerFrame();
 
   if (idx == rgbPresetList.count())
   {
@@ -827,7 +827,7 @@ void videoHandlerRGB::setFrameSize(const QSize &size)
   videoHandler::setFrameSize(size);
 }
 
-void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
+void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo)
 {
   // Get the file extension
   QString ext = fileInfo.suffix().toLower();
@@ -987,7 +987,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
     return QImage();  // Loading failed
 
   // Also calculate the MSE while we're at it (R,G,B)
-  qint64 mseAdd[3] = {0, 0, 0};
+  int64_t mseAdd[3] = {0, 0, 0};
 
   // Create the output image in the right format
   // In both cases, we will set the alpha channel to 255. The format of the raw buffer is: BGRA (each 8 bit).

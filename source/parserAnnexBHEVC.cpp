@@ -1351,7 +1351,7 @@ const QStringList parserAnnexBHEVC::nal_unit_type_toString = QStringList()
 "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
 "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
-void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, quint64 curFilePos)
+void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, uint64_t curFilePos)
 {
   // Read two bytes (the nal header)
   QByteArray nalHeaderBytes = data.left(2);
@@ -1559,7 +1559,7 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
 }
 
-QList<QByteArray> parserAnnexBHEVC::determineSeekPoint(int iFrameNr, quint64 &filePos)
+QList<QByteArray> parserAnnexBHEVC::determineSeekPoint(int iFrameNr, uint64_t &filePos)
 {
   // Get the POC for the frame number
   int iPOC = POC_List[iFrameNr];

@@ -145,10 +145,10 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     // We perform reading using an input buffer
     QByteArray inputBuffer;
     bool fileAtEnd = false;
-    qint64 bufferStartPos = 0;
+    int64_t bufferStartPos = 0;
 
     QString lineBuffer;
-    qint64  lineBufferStartPos = 0;
+    int64_t  lineBufferStartPos = 0;
     int     lastPOC = INT_INVALID;
     int     lastType = INT_INVALID;
     bool    sortingFixed = false; 
@@ -475,7 +475,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdxInternal, int 
     }
 
 
-    qint64 startPos = pocTypeStartList[frameIdxInternal][typeID];
+    int64_t startPos = pocTypeStartList[frameIdxInternal][typeID];
     if (fileSortedByPOC)
     {
       // If the statistics file is sorted by POC we have to start at the first entry of this POC and parse the
@@ -483,8 +483,8 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdxInternal, int 
       // could be ignored during parsing.
 
       // Get the position of the first line with the given frameIdxInternal
-      startPos = std::numeric_limits<qint64>::max();
-      for (const qint64 &value : pocTypeStartList[frameIdxInternal])
+      startPos = std::numeric_limits<int64_t>::max();
+      for (const int64_t &value : pocTypeStartList[frameIdxInternal])
         if (value < startPos)
           startPos = value;
     }

@@ -189,9 +189,9 @@ unsigned int parserBase::sub_byte_reader::readBits(int nrBits, QString *bitsRead
   return out;
 }
 
-quint64 parserBase::sub_byte_reader::readBits64(int nrBits, QString *bitsRead)
+uint64_t parserBase::sub_byte_reader::readBits64(int nrBits, QString *bitsRead)
 {
-  quint64 val = 0;
+  uint64_t val = 0;
   if (nrBits > 64)
     throw std::logic_error("Trying to read more than 64 bits at once from the bitstream.");
   if (nrBits <= 32)
@@ -201,7 +201,7 @@ quint64 parserBase::sub_byte_reader::readBits64(int nrBits, QString *bitsRead)
   int lowerBits = nrBits - 32;
   int upper = readBits(32, bitsRead);
   int lower = readBits(lowerBits, bitsRead);
-  quint64 ret = (upper << lowerBits) + lower;
+  uint64_t ret = (upper << lowerBits) + lower;
   return ret;
 }
 

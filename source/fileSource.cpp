@@ -83,7 +83,7 @@ bool fileSource::openFile(const QString &filePath)
 
 #if SSE_CONVERSION
 // Resize the target array if necessary and read the given number of bytes to the data array
-void fileSource::readBytes(byteArrayAligned &targetBuffer, qint64 startPos, qint64 nrBytes)
+void fileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
   if(!isOk())
     return;
@@ -97,7 +97,7 @@ void fileSource::readBytes(byteArrayAligned &targetBuffer, qint64 startPos, qint
 #endif
 
 // Resize the target array if necessary and read the given number of bytes to the data array
-qint64 fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrBytes)
+int64_t fileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
   if(!isOk())
     return 0;

@@ -54,12 +54,12 @@ public:
   // What is the bit depth of the reconstruction?
   int getSequenceBitDepth(Component c) const Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return -1; }
 
-  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *root=nullptr, quint64 curFilePos = -1) Q_DECL_OVERRIDE;
+  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *root=nullptr, uint64_t curFilePos = -1) Q_DECL_OVERRIDE;
 
   // When we want to seek to a specific frame number, this function return the parameter sets that you need
   // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
   // also be returned.
-  QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos) Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return QList<QByteArray>(); }
+  QList<QByteArray> determineSeekPoint(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return QList<QByteArray>(); }
 
 protected:
 
@@ -78,7 +78,7 @@ protected:
   */
   struct nal_unit_jem : nal_unit
   {
-    nal_unit_jem(quint64 filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_type(UNSPECIFIED) {}
+    nal_unit_jem(uint64_t filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_type(UNSPECIFIED) {}
     virtual ~nal_unit_jem() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.

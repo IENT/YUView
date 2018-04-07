@@ -82,7 +82,7 @@ private:
     bool general_tier_flag;
     int general_profile_idc;
     int general_profile_compatibility_flags;
-    quint64 general_constraint_indicator_flags;
+    uint64_t general_constraint_indicator_flags;
     int general_level_idc;
     int min_spatial_segmentation_idc;
     int parallelismType;

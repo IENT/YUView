@@ -60,7 +60,7 @@ private:
   QList<float> relativeValsEnd;
   unsigned int cacheLevelMB;
   unsigned int cacheRateInBytesPerMs;
-  qint64 cacheLevelMaxMB;
+  int64_t cacheLevelMaxMB;
 };
 
 class videoCache : public QObject
@@ -146,8 +146,8 @@ private:
   // The queue with a list of frames/items that can be removed from the queue if necessary
   QQueue<plItemFrame> cacheDeQueue;
   // If a frame is removed can be determined by the following cache states:
-  qint64 cacheLevelMax;
-  qint64 cacheLevelCurrent;
+  int64_t cacheLevelMax;
+  int64_t cacheLevelCurrent;
 
   // Enqueue the job in the queue. If all frames within the range are already cached in the item, do nothing.
   void enqueueCacheJob(playlistItem* item, indexRange range);

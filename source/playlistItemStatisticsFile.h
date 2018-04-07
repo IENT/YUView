@@ -122,7 +122,7 @@ private:
   QStringList parseCSVLine(const QString &line, char delimiter) const;
 
   // A list of file positions where each POC/type starts
-  QMap<int, QMap<int, qint64> > pocTypeStartList;
+  QMap<int, QMap<int, int64_t> > pocTypeStartList;
 
   // --------------- background parsing ---------------
 

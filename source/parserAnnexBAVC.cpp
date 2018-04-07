@@ -60,7 +60,7 @@ double parserAnnexBAVC::getFramerate() const
   return 0.0;
 }
 
-void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, quint64 curFilePos)
+void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, uint64_t curFilePos)
 {
   // Read two bytes (the nal header)
   // Read two bytes (the nal header)
@@ -1583,7 +1583,7 @@ void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeader
   }
 }
 
-QList<QByteArray> determineSeekPoint(int iFrameNr, quint64 &filePos)
+QList<QByteArray> determineSeekPoint(int iFrameNr, uint64_t &filePos)
 {
   // TODO ... :)
   filePos = 0;

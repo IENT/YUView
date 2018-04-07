@@ -65,9 +65,9 @@ public:
   ColorConversion getColorConversionType() const { return colorConversionType; }
   yuvPixelFormat getYUVPixelFormat();
   QSize getFrameSize() const { return frameSize; }
-  qint64 getDuration() { return duration; }
-  QPair<qint64, qint64> getTimeBase() { return QPair<qint64,qint64>(timeBase.num, timeBase.den); }
-  qint64 getMaxPTS();
+  int64_t getDuration() { return duration; }
+  QPair<int64_t, int64_t> getTimeBase() { return QPair<int64_t,int64_t>(timeBase.num, timeBase.den); }
+  int64_t getMaxPTS();
   AVCodecID getCodecID() { return video_stream.getCodecID(); }
 
   // Read the stream packet by packet:
@@ -80,7 +80,7 @@ public:
 
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
   // that we are ready to start decoding from this pts.
-  bool seekToPTS(qint64 pts);
+  bool seekToPTS(int64_t pts);
   
   // Get the error string (if openFile returend false)
   QString decoderErrorString() const;
@@ -118,7 +118,7 @@ private:
   QSize frameSize;
   double frameRate;
   ColorConversion colorConversionType;
-  qint64 duration;
+  int64_t duration;
   AVRational timeBase;
 
   // ---- Decoding 

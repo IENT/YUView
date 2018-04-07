@@ -412,7 +412,7 @@ bool FFmpegLibraries::loadFFmpegLibraries()
 //  int64_t duration = fmt_ctx.get_duration();
 //  AVRational timeBase = video_stream.get_time_base();
 //
-//  qint64 maxPTS = duration * timeBase.den / timeBase.num / 1000;
+//  int64_t maxPTS = duration * timeBase.den / timeBase.num / 1000;
 //  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
 //  int curPercentValue = 0;
 //  QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
@@ -424,7 +424,7 @@ bool FFmpegLibraries::loadFFmpegLibraries()
 //  // Initialize an empty packet (data and size set to 0).
 //  AVPacketWrapper p(ff);
 //
-//  qint64 lastKeyFramePTS = 0;
+//  int64_t lastKeyFramePTS = 0;
 //  const int stream_idx = video_stream.get_index();
 //  do
 //  {
@@ -659,7 +659,7 @@ QByteArray FFmpegLibraries::getVideoContextExtradata()
   return codec.get_extradata();
 }
 
-bool FFmpegLibraries::seekToPTS(qint64 pts)
+bool FFmpegLibraries::seekToPTS(int64_t pts)
 {
   int ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), pts);
   if (ret != 0)
@@ -764,7 +764,7 @@ void FFmpegLibraries::getFormatInfo()
   //}
 }
 
-qint64 FFmpegLibraries::getMaxPTS()
+int64_t FFmpegLibraries::getMaxPTS()
 {
   return duration * timeBase.den / timeBase.num / 1000;
 }

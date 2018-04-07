@@ -130,7 +130,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   cachingEnabled = true;
 }
 
-qint64 playlistItemRawFile::getNumberFrames() const
+int64_t playlistItemRawFile::getNumberFrames() const
 {
   if (!dataSource.isOk() || !video->isFormatValid())
   {
@@ -142,7 +142,7 @@ qint64 playlistItemRawFile::getNumberFrames() const
     return y4mFrameIndices.count();
 
   // The file was opened successfully
-  qint64 bpf = getBytesPerFrame();
+  int64_t bpf = getBytesPerFrame();
   return (bpf == 0) ? -1 : dataSource.getFileSize() / bpf;
 }
 
@@ -162,7 +162,7 @@ infoData playlistItemRawFile::getInfo() const
     // without any remainder. If not, then there is probably something wrong with the
     // selected YUV format / width / height ...
 
-    qint64 bpf = getBytesPerFrame();
+    int64_t bpf = getBytesPerFrame();
     if ((dataSource.getFileSize() % bpf) != 0)
     {
       // Add a warning
@@ -186,7 +186,7 @@ bool playlistItemRawFile::parseY4MFile()
 
   // Next, there can be any number of parameters. Each paramter starts with a space.
   // The only requirement is, that width, height and framerate are specified.
-  qint64 offset = 9;
+  int64_t offset = 9;
   int width = -1;
   int height = -1;
   yuvPixelFormat format = yuvPixelFormat(YUV_420, 8, Order_YUV);
@@ -466,12 +466,12 @@ void playlistItemRawFile::loadRawData(int frameIdxInternal)
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d", frameIdx);
 
   // Load the raw data for the given frameIdx from file and set it in the video
-  qint64 fileStartPos;
+  int64_t fileStartPos;
   if (isY4MFile)
     fileStartPos = y4mFrameIndices.at(frameIdxInternal);
   else
     fileStartPos = frameIdxInternal * getBytesPerFrame();
-  qint64 nrBytes = getBytesPerFrame();
+  int64_t nrBytes = getBytesPerFrame();
 
   if (rawFormat == YUV)
   {
@@ -512,7 +512,7 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
   filters.append("YUV4MPEG2 File (*.y4m)");
 }
 
-qint64 playlistItemRawFile::getBytesPerFrame() const
+int64_t playlistItemRawFile::getBytesPerFrame() const
 {
   if (rawFormat == YUV)
       return getYUVVideo()->getBytesPerFrame();

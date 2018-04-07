@@ -74,11 +74,11 @@ bool fileSourceAnnexBFile::openFile(const QString &fileName)
     return false;
 
   // Discard all bytes until we find a start code
-  quint64 pos;
+  uint64_t pos;
   getNextNALUnit(pos);
 }
 
-QByteArray fileSourceAnnexBFile::getNextNALUnit(quint64 &posInFile)
+QByteArray fileSourceAnnexBFile::getNextNALUnit(uint64_t &posInFile)
 {
   QByteArray retArray;
 
@@ -202,7 +202,7 @@ bool fileSourceAnnexBFile::updateBuffer()
 //  }
 //
 //  assert(idx >= 0);
-//  if (quint64(idx + 3) >= fileBufferSize) 
+//  if (uint64_t(idx + 3) >= fileBufferSize) 
 //  {
 //    // The start code is exactly at the end of the current buffer. 
 //    if (!updateBuffer()) 
@@ -265,7 +265,7 @@ bool fileSourceAnnexBFile::updateBuffer()
 //  return retArray;
 //}
 //
-//bool fileSourceAnnexBFile::seekToFilePos(quint64 pos)
+//bool fileSourceAnnexBFile::seekToFilePos(uint64_t pos)
 //{
 //  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::seekToFilePos %d", pos);
 //
@@ -322,7 +322,7 @@ bool fileSourceAnnexBFile::updateBuffer()
 //      mainWindow = mw;
 //  }
 //  // Create the dialog
-//  qint64 maxPos = getFileSize();
+//  int64_t maxPos = getFileSize();
 //  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
 //  int curPercentValue = 0;
 //  QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, 100, mainWindow);

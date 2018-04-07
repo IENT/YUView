@@ -74,7 +74,7 @@ avPacketInfo_t fileSourceFFMpegFile::getCurrentPacketInfo()
   return ffmpegLib.getPacketInfo();
 }
 
-QByteArray fileSourceFFMpegFile::getNextNALUnit(quint64 &posInFile)
+QByteArray fileSourceFFMpegFile::getNextNALUnit(uint64_t &posInFile)
 {
   // Is a packet loaded?
   if (currentPacketData.isEmpty())

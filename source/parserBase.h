@@ -105,7 +105,7 @@ protected:
     sub_byte_reader(const QByteArray &inArr) : p_byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) { skipEmulationPrevention = true; }
     // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
     unsigned int readBits(int nrBits, QString *bitsRead=nullptr);
-    quint64      readBits64(int nrBits, QString *bitsRead=nullptr);
+    uint64_t      readBits64(int nrBits, QString *bitsRead=nullptr);
     QByteArray   readBytes(int nrBytes);
     // Read an UE(v) code from the array. If given, increase bit_count with every bit read.
     int readUE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);

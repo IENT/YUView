@@ -59,7 +59,7 @@ public:
 
   // Get the next NAL unit (everything excluding the start code) or the next packet.
   // Do not mix calls to these two functions when reading a file.
-  QByteArray getNextNALUnit(quint64 &pts);
+  QByteArray getNextNALUnit(uint64_t &pts);
   QByteArray getNextPacket();
   // Return the raw extradata (in avformat format containing the parameter sets)
   QByteArray getExtradata();
@@ -73,8 +73,8 @@ public:
   void updateFileWatchSetting();
   bool isFileChanged() { bool b = fileChanged; fileChanged = false; return b; }
 
-  bool seekToPTS(qint64 pts) { if (!isFileOpened) return false; return ffmpegLib.seekToPTS(pts); }
-  qint64 getMaxPTS() { if (!isFileOpened) return -1; return ffmpegLib.getMaxPTS(); };
+  bool seekToPTS(int64_t pts) { if (!isFileOpened) return false; return ffmpegLib.seekToPTS(pts); }
+  int64_t getMaxPTS() { if (!isFileOpened) return -1; return ffmpegLib.getMaxPTS(); };
 
   int getNumberFrames() const { return nrFrames; }
   AVCodecID getCodec() { return ffmpegLib.getCodecID(); }
@@ -103,9 +103,9 @@ protected:
   // This connects both values.
   struct pictureIdx
   {
-    pictureIdx(qint64 frame, qint64 pts) : frame(frame), pts(pts) {}
-    qint64 frame;
-    qint64 pts;
+    pictureIdx(int64_t frame, int64_t pts) : frame(frame), pts(pts) {}
+    int64_t frame;
+    int64_t pts;
   };
 
   // These are filled after opening a file (after scanBitstream was called)

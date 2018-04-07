@@ -68,11 +68,11 @@ public:
   virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1 = 0) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one RGB frame with the current format
-  virtual qint64 getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual int64_t getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw RGB data.
   // If a file size is given, it is tested if the RGB format and the file size match.
-  virtual void setFormatFromCorrelation(const QByteArray &rawRGBData, qint64 fileSize=-1) Q_DECL_OVERRIDE { /* TODO */ Q_UNUSED(rawRGBData); Q_UNUSED(fileSize); }
+  virtual void setFormatFromCorrelation(const QByteArray &rawRGBData, int64_t fileSize=-1) Q_DECL_OVERRIDE { /* TODO */ Q_UNUSED(rawRGBData); Q_UNUSED(fileSize); }
 
   // Create the RGB controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
@@ -91,7 +91,7 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // The sub format can be one of: "RGB", "GBR" or "BGR"
-  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a RGB source, so we can draw the source RGB values from the source data.
@@ -165,7 +165,7 @@ protected:
     QString getRGBFormatString() const;
     void setRGBFormatFromString(const QString &sFormat);
     // Get the number of bytes for a frame with this rgbPixelFormat and the given size
-    qint64 bytesPerFrame(const QSize &frameSize) const;
+    int64_t bytesPerFrame(const QSize &frameSize) const;
     // The order of each component (E.g. for GBR this is posR=2,posG=0,posB=1)
     int posR, posG, posB;
     int bitsPerValue;

@@ -223,7 +223,7 @@ public:
 Q_DECL_CONSTEXPR inline QPoint centerRoundTL(const QRect & r) Q_DECL_NOTHROW
 {
   // The cast avoids overflow on addition.
-  return QPoint(int((qint64(r.left())+r.right()-1)/2), int((qint64(r.top())+r.bottom()-1)/2));
+  return QPoint(int((int64_t(r.left())+r.right()-1)/2), int((int64_t(r.top())+r.bottom()-1)/2));
 }
 
 // Identical to a QDomElement, but we add some convenience functions (findChildValue and appendProperiteChild)
