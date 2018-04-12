@@ -73,7 +73,8 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
   auto playlistItemIsSupported = [=](playlistItem* aItem) {
     // replace false with dynamic_cast<YOURPLAYLISTITEMTYPE*>(aItem)
     return dynamic_cast<playlistItemStatisticsFile*>(aItem)
-           || false;
+        || dynamic_cast<playlistItemImageFile*>(aItem)
+        || false;
   };
 
   // check if the widget was already created and stored

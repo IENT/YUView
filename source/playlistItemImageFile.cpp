@@ -207,110 +207,105 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData(indexRange
   //predifine data (witch is a map containing 3 branches (r, g, b) and each branch has 255 subbranches (# of pixel values))
   QMap<QString, QList<QList<QVariant>>> data;
 
-  QList<QVariant> zeroList;
-  for (int i = 0; i <= 255; i++)
-  {
-    QString s = QString::number(i);
-    zeroList.append(s);
-  }
-  QList<QList<QVariant>> presetZeroList;
-  presetZeroList.append(zeroList);
+//  QList<QVariant> zeroList;
+//  for (int i = 0; i <= 255; i++)
+//  {
+//    QString s = QString::number(i);
+//    zeroList.append(s);
+//  }
+//  QList<QList<QVariant>> presetZeroList;
+//  presetZeroList.append(zeroList);
 
-  data.insert("R", presetZeroList);
-  data.insert("G", presetZeroList);
-  data.insert("B", presetZeroList);
+//  data.insert("R", presetZeroList);
+//  data.insert("G", presetZeroList);
+//  data.insert("B", presetZeroList);
 
-  QSize imageSize = this->getSize();       //getSize();
+//  QSize imageSize = this->getSize();       //getSize();
 
 
-  if(reset && imageSize.width() != -1)
-  {
-    //qDebug() << this->frame.currentImage.size();
+//  if(reset && imageSize.width() != -1)
+//  {
+//    //qDebug() << this->frame.currentImage.size();
 
-    this->mStatisticData.clear();
+//    this->mStatisticData.clear();
 
-      QList<QList<QVariant>> listR;
-      QList<QList<QVariant>> listG;
-      QList<QList<QVariant>> listB;
+//      QList<QList<QVariant>> listR;
+//      QList<QList<QVariant>> listG;
+//      QList<QList<QVariant>> listB;
 
-      QList<QVariant> listsR;
-      QList<QVariant> listsG;
-      QList<QVariant> listsB;
-
-    for (int frame = range.first; frame <= range.second; frame++)
-    {
-      for (int width = 0; width < imageSize.width(); width++)
-      {
-        for (int height = 0; height < imageSize.height(); height++)
-        {
-          //get the pixel values
-          ValuePairListSets pixelValueSets = this->getPixelValues(QPoint(width, height),  frame);
-          ValuePairList pixelValueList = pixelValueSets.at(0).second;
-          ValuePair pixelValueR = pixelValueList.at(0);
-          ValuePair pixelValueG = pixelValueList.at(1);
-          ValuePair pixelValueB = pixelValueList.at(2);
-
-            listsR.append(pixelValueR.second);
-            listsG.append(pixelValueG.second);
-            listsB.append(pixelValueB.second);
-        }
-      }
-      listR.append(listsR);
-      listG.append(listsG);
-      listB.append(listsB);
-
-      data.insert("R", listR);
-      data.insert("G", listG);
-      data.insert("B", listB);
-    }
-  }
-
+//      QList<QVariant> listsR;
+//      QList<QVariant> listsG;
+//      QList<QVariant> listsB;
 
 //    for (int frame = range.first; frame <= range.second; frame++)
 //    {
-//      QMap<QString, QList<QVariant>> map;
-
-//      for (int width = 0; width < 50; width++)
+//      for (int width = 0; width < imageSize.width(); width++)
 //      {
-//        for (int height = 0; height < 50; height++)
+//        for (int height = 0; height < imageSize.height(); height++)
 //        {
+//          //get the pixel values
 //          ValuePairListSets pixelValueSets = this->getPixelValues(QPoint(width, height),  frame);
-
 //          ValuePairList pixelValueList = pixelValueSets.at(0).second;
+//          ValuePair pixelValueR = pixelValueList.at(0);
+//          ValuePair pixelValueG = pixelValueList.at(1);
+//          ValuePair pixelValueB = pixelValueList.at(2);
 
-//          for (int pos = 0; pos < pixelValueList.count(); pos++)
-//          {
-//            ValuePair pixelValue = pixelValueList.at(pos);
-
-//            // getting the old / new datalist
-//            QList<QVariant> dataList = map.value(pixelValue.first);
-
-//            // appending the new data
-//            dataList.append(QVariant::fromValue(pixelValue.second));
-
-//            // insert new datalist to refresh
-//            map.insert(pixelValue.first, dataList);
-//          }
+//            listsR.append(pixelValueR.second);
+//            listsG.append(pixelValueG.second);
+//            listsB.append(pixelValueB.second);
 //        }
-
-//        foreach (QString key, map.keys())
-//        {
-//          QList<QVariant> dataList = map.value(key);
-//          QList<QList<QVariant>> resultList;
-//          resultList.append(dataList);
-//          data.insert(key, resultList);
-//        }
-
 //      }
+//      listR.append(listsR);
+//      listG.append(listsG);
+//      listB.append(listsB);
+
+//      data.insert("R", listR);
+//      data.insert("G", listG);
+//      data.insert("B", listB);
 //    }
+//  }
+
+  QSize imageSize = this->getSize();
+
+    for (int frame = range.first; frame <= range.second; frame++)
+    {
+      QMap<QString, QList<QVariant>> map;
+
+      for (int width = 0; width < 50; width++)
+      {
+        for (int height = 0; height < 50; height++)
+        {
+          ValuePairListSets pixelValueSets = this->getPixelValues(QPoint(width, height),  frame);
+
+          ValuePairList pixelValueList = pixelValueSets.at(0).second;
+
+          for (int pos = 0; pos < pixelValueList.count(); pos++)
+          {
+            ValuePair pixelValue = pixelValueList.at(pos);
+
+            // getting the old / new datalist
+            QList<QVariant> dataList = map.value(pixelValue.first);
+
+            // appending the new data
+            dataList.append(QVariant::fromValue(pixelValue.second));
+
+            // insert new datalist to refresh
+            map.insert(pixelValue.first, dataList);
+          }
+        }
+
+        foreach (QString key, map.keys())
+        {
+          QList<QVariant> dataList = map.value(key);
+          QList<QList<QVariant>> resultList;
+          resultList.append(dataList);
+          data.insert(key, resultList);
+        }
+
+      }
+    }
 
   this->mStatisticData = data;
-
-  //QList<QList<QVariant>> listen = this->mStatisticData.value("R");
-  //QList<QVariant> liste = listen.at(0);
-  //qDebug() << liste.count();
-
-  //}
 
   return &this->mStatisticData;
 }
