@@ -90,7 +90,7 @@ public:
   virtual bool isLoading() const Q_DECL_OVERRIDE { return imageLoading; }
 
   // ----- function for getting the data to fill the histogramms / charts -----
-  virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
+  QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
 
   /**
    * @brief sortAndCategorizeData
@@ -105,7 +105,7 @@ public:
    * @return
    * a list of sort and categorized data for the viewed frame
    */
-  virtual QList<collectedData>* sortAndCategorizeData(const QString aType, const int aFrameIndex) Q_DECL_OVERRIDE;
+  QList<collectedData>* sortAndCategorizeData(const QString aType, const int aFrameIndex) Q_DECL_OVERRIDE;
 
   /**
    * @brief sortAndCategorizeDataByRange
@@ -118,8 +118,9 @@ public:
    * @return
    * a list of sort and categorized data
    */
-  virtual QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) Q_DECL_OVERRIDE;
+  QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) Q_DECL_OVERRIDE;
 
+  bool isDataAvaible();
 private slots:
   // The image file that we loaded was changed.
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }

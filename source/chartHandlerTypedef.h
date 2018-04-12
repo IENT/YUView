@@ -84,8 +84,8 @@ class playlistItem;
 #define SLIDER_LABEL_BEGIN_FRAME    "Begin frame: "
 #define SLIDER_LABEL_END_FRAME      "End frame: "
 
-#define CBX_LABEL_IMAGE_TYPE   "Images: "           //testweise
-
+#define CBX_LABEL_IMAGE_TYPE        "Images: "
+#define CBX_LABEL_RGB               "RGB"
 
 
 /*-------------------- Struct collectedData --------------------*/

@@ -134,12 +134,14 @@ void frameHandler::setFrameSize(const QSize &newSize)
 bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
 {
   // Load the image and return if loading was successful
+
+  //qDebug() << filePath;
+
   currentImage = QImage(filePath);
   setFrameSize(currentImage.size());
-
   isFileOpened = currentImage.load(filePath);
 
-  return (!currentImage.isNull());
+  return (currentImage.isNull() == 0);
 }
 
 void frameHandler::slotVideoControlChanged()

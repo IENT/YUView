@@ -8,11 +8,18 @@ QWidget* YUVBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem *aIt
   return this->makeStatistic(sortedData, aOrderBy, aItem, aRange);
 }
 
-QWidget* YUVLineChart::createChart(const ChartOrderBy aOrderBy, playlistItem *aItem, indexRange aRange, QString aType)
+QWidget* YUVColorChart::createChart(const ChartOrderBy aOrderBy, playlistItem *aItem, indexRange aRange, QString aType)
 {
   QList<collectedData>* sortedData = aItem->sortAndCategorizeDataByRange(aType, aRange);
+  if (aType == "RGB")
+  {
+    return this->plotRGBColorBarGraph(sortedData, aOrderBy, aItem, aRange);
+  }
+  else
+  {
+    return this->plotOneColorBarGraph(sortedData, aOrderBy, aItem, aRange);
+  }
 
-  return this->plotLineGraph(sortedData, aOrderBy, aItem, aRange);
 }
 
 int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, indexRange aRange)
@@ -32,7 +39,7 @@ int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, index
     return 0;
 }
 
-QWidget* YUVLineChart::plotLineGraph(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange)
+QWidget* YUVColorChart::plotLineGraph(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange)
 {
 
     QLineSeries *series = new QLineSeries();
@@ -60,6 +67,326 @@ QWidget* YUVLineChart::plotLineGraph(QList<collectedData>* aSortedData, const Ch
 
     // final return the created chart
     return chartView;
+
+}
+
+QWidget* YUVColorChart::plotRGBColorBarGraph(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange)
+{
+  // if we have no keys, we cant show any data so return at this point
+  if(!aSortedData->count())
+    return this->mNoDataToShowWidget;
+
+  //QBarSeries* series = new QBarSeries();
+  // define result
+  chartSettingsData settings;
+  //settings.mSeries = series;
+
+  if(!settings.mSettingsIsValid)
+    return this->mNoDataToShowWidget;
+
+  // creating the result
+  QChart* chart = new QChart();
+  QBarSeries *series = new QBarSeries();
+
+  QBarSet *valueSet = new QBarSet("Values from 0 to 256 of Selected Color");
+  QColor blue = (0, 0, 255, 255);
+  valueSet->setColor(blue);
+
+  //qDebug() << aSortedData->at(0).mValueList[0];
+
+//  QVarLengthArray <QList<collectedData>> dataTree(3);
+//  for (int i=0; i<=3; i++)
+//  {
+//    for (int j=0; j<=255; j++)
+//    {
+//      dataTree[i] = aSortedData->at(0).mValueList[j];
+//    }
+//  }
+
+  QList<int*> aSortedDataSet(aSortedData->at(0).mValueList);
+  QList<int*> aSortedDataPart1 (aSortedDataSet.mid(0, 256));
+  QList<int*> aSortedDataPart2 (aSortedDataSet.mid(256, 256));
+  QList<int*> aSortedDataPart3 (aSortedDataSet.mid(512, 256));
+
+  collectedData aSortedDataFinal1;
+  collectedData aSortedDataFinal2;
+  collectedData aSortedDataFinal3;
+  aSortedDataFinal1.mValueList.append(aSortedDataPart1);
+  aSortedDataFinal2.mValueList.append(aSortedDataPart2);
+  aSortedDataFinal3.mValueList.append(aSortedDataPart3);
+
+  QList <collectedData> dataList;
+  dataList.append(aSortedDataFinal1);
+  dataList.append(aSortedDataFinal2);
+  dataList.append(aSortedDataFinal3);
+
+  // we order by the value, so we want to find out how many times the value was count in this frame
+  QHash<int, int*> hashValueCount;
+
+  // we save in the QHash the value first as key and later we use it as label, and we save the total of counts to the value
+  // we save the total as pointer, so we have the advantage, that we dont need to replace the last added count
+  // but we have to observe that this is not so easy it might be
+  // always remember if you want to change the value of an primitive datat ype which you saved as pointer
+  // you have to dereference the pointer and then you can change it!
+
+  //qDebug() << dataList.count();
+
+
+  for (int i = 0; i < dataList.count(); i++)
+  {
+    QList<QRgb> colour;
+    QStringList categories;
+    categories << "Red" << "Green" << "Blue";
+
+    colour.append(qRgba(255, 120, 120, 255));
+    colour.append(qRgba(120, 255, 120, 255));
+    colour.append(qRgba(120, 120, 255, 255));
+
+    // first getting the data
+    collectedData data = dataList.at(i);
+
+    // if we have more than one value
+    foreach (int* chartData, data.mValueList)
+    {
+      int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
+      // check if we have insert the count yet
+      if(hashValueCount.value(chartData[0]))
+        count = hashValueCount.value(chartData[0]); // was inserted
+      else
+      {
+        // at this point we have to get a new int by the system and we save the adress of this int in count
+        // so we have later for each int a new adress! and an new int, which we can save
+        count = new int(0);
+        // inserting the adress to get it later back
+        hashValueCount.insert(chartData[0], count);
+      }
+
+      // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
+      *count += chartData[1];
+    }
+
+    // at this pint we order the keys new from low to high
+    // we cant use QHash at this point, because Qthe items are arbitrarily ordered in QHash, so we have to use QMap at this point
+    QMap<int, int*> mapValueCountSorted;
+    int smallestKey = INT_MAX;
+    int maxElementsNeeded = hashValueCount.keys().count();
+
+    while (mapValueCountSorted.keys().count() < maxElementsNeeded)
+    {
+      foreach (int key, hashValueCount.keys())
+      {
+        if(key < smallestKey)
+          smallestKey = key;
+      }
+
+      mapValueCountSorted.insert(smallestKey, hashValueCount.value(smallestKey));
+      hashValueCount.remove(smallestKey);
+      smallestKey = INT_MAX;
+    }
+
+    QBarSet *valueSet = new QBarSet(categories[i]);
+    valueSet->setBorderColor(colour[i]);
+    valueSet->setColor(colour[i]);
+
+    foreach (int key, mapValueCountSorted.keys())
+    {
+      int *count = mapValueCountSorted.value(key);
+      *valueSet << *count;
+      series->append(valueSet);
+    }
+    chart->addSeries(series);
+  }
+
+
+  //QStringList categories;
+  //categories << "0" << "256";
+  //QBarCategoryAxis *axis = new QBarCategoryAxis();
+  //axis->append(categories);
+  chart->createDefaultAxes();
+  //chart->setAxisX(axis, series);
+
+  // appending the series to the chart
+  //chart->addSeries(series);
+  // setting an animationoption (not necessary but it's nice to see)
+  chart->setAnimationOptions(QChart::SeriesAnimations);
+  // creating default-axes: always have to be called before you add some custom axes
+  chart->createDefaultAxes();
+
+  //chart->addSeries(series);
+
+  //QStringList categories;
+  //categories << "0" << "256";
+  //QBarCategoryAxis *axis = new QBarCategoryAxis();
+  //axis->append(categories);
+  //chart->createDefaultAxes();
+  //chart->setAxisX(axis, series);
+
+  // appending the series to the chart
+  //chart->addSeries(series);
+  // setting an animationoption (not necessary but it's nice to see)
+  chart->setAnimationOptions(QChart::SeriesAnimations);
+  // creating default-axes: always have to be called before you add some custom axes
+  chart->createDefaultAxes();
+
+
+
+  // set the x-axis
+
+  qreal xValueMin = 0;
+  qreal xValueMax = 256;
+  QValueAxis *axis = new QValueAxis();
+  axis->setRange(xValueMin, xValueMax);
+
+  chart->setAxisX(axis, series);
+
+//  QBarCategoryAxis *axisY = new QBarCategoryAxis();
+
+//  chart->setAxisY(axisY, series);
+
+  // setting Options for the chart-legend
+  chart->legend()->setVisible(true);
+  chart->legend()->setAlignment(Qt::AlignBottom);
+
+  // creating result chartview and set the data
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+
+  // final return the created chart
+  return chartView;
+
+
+}
+
+QWidget* YUVColorChart::plotOneColorBarGraph(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange)
+{
+  // if we have no keys, we cant show any data so return at this point
+  if(!aSortedData->count())
+    return this->mNoDataToShowWidget;
+
+  //QBarSeries* series = new QBarSeries();
+  // define result
+  chartSettingsData settings;
+  //settings.mSeries = series;
+
+  // we order by the value, so we want to find out how many times the value was count in this frame
+  QHash<int, int*> hashValueCount;
+
+  // we save in the QHash the value first as key and later we use it as label, and we save the total of counts to the value
+  // we save the total as pointer, so we have the advantage, that we dont need to replace the last added count
+  // but we have to observe that this is not so easy it might be
+  // always remember if you want to change the value of an primitive datat ype which you saved as pointer
+  // you have to dereference the pointer and then you can change it!
+
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    // first getting the data
+    collectedData data = aSortedData->at(i);
+
+    // if we have more than one value
+    foreach (int* chartData, data.mValueList)
+    {
+      int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
+      // check if we have insert the count yet
+      if(hashValueCount.value(chartData[0]))
+        count = hashValueCount.value(chartData[0]); // was inserted
+      else
+      {
+        // at this point we have to get a new int by the system and we save the adress of this int in count
+        // so we have later for each int a new adress! and an new int, which we can save
+        count = new int(0);
+        // inserting the adress to get it later back
+        hashValueCount.insert(chartData[0], count);
+      }
+
+      // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
+      *count += chartData[1];
+    }
+  }
+
+
+  // at this pint we order the keys new from low to high
+  // we cant use QHash at this point, because Qthe items are arbitrarily ordered in QHash, so we have to use QMap at this point
+  QMap<int, int*> mapValueCountSorted;
+  int smallestKey = INT_MAX;
+  int maxElementsNeeded = hashValueCount.keys().count();
+
+  while (mapValueCountSorted.keys().count() < maxElementsNeeded)
+  {
+    foreach (int key, hashValueCount.keys())
+    {
+      if(key < smallestKey)
+        smallestKey = key;
+    }
+
+    mapValueCountSorted.insert(smallestKey, hashValueCount.value(smallestKey));
+    hashValueCount.remove(smallestKey);
+    smallestKey = INT_MAX;
+  }
+
+  if(!settings.mSettingsIsValid)
+    return this->mNoDataToShowWidget;
+
+  // creating the result
+  QChart* chart = new QChart();
+  QBarSeries *series = new QBarSeries();
+
+  QString col = aSortedData->at(0).mLabel;
+  QColor color;
+  QBarSet *valueSet = new QBarSet("Values from 0 to 255 of Selected Color");
+  if (col == "R")
+    color = (qRgba(255, 120, 120, 255));
+  else if (col == "G")
+    color = (qRgba(120, 255, 120, 255));
+  else if (col == "B")
+    color = (qRgba(120, 120, 255, 255));
+  //valueSet->setBrush(color);
+  valueSet->setBorderColor(color);
+  valueSet->setColor(color);
+
+  foreach (int key, mapValueCountSorted.keys())
+  {
+    int *count = mapValueCountSorted.value(key);
+    *valueSet << *count;
+    series->append(valueSet);
+  }
+
+  chart->addSeries(series);
+
+  //QStringList categories;
+  //categories << "0" << "256";
+  //QBarCategoryAxis *axis = new QBarCategoryAxis();
+  //axis->append(categories);
+  //chart->createDefaultAxes();
+  //chart->setAxisX(axis, series);
+
+  // appending the series to the chart
+  //chart->addSeries(series);
+  // setting an animationoption (not necessary but it's nice to see)
+  chart->setAnimationOptions(QChart::SeriesAnimations);
+  // creating default-axes: always have to be called before you add some custom axes
+  chart->createDefaultAxes();
+
+
+
+  // set the x-axis
+
+  qreal xValueMin = 0;
+  qreal xValueMax = 256;
+  QValueAxis *axis = new QValueAxis();
+  axis->setRange(xValueMin, xValueMax);
+
+  chart->setAxisX(axis, series);
+
+  // setting Options for the chart-legend
+  chart->legend()->setVisible(false);
+  chart->legend()->setAlignment(Qt::AlignBottom);
+
+  // creating result chartview and set the data
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+
+  // final return the created chart
+  return chartView;
 
 }
 
