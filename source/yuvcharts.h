@@ -182,6 +182,279 @@ protected:
   QWidget* mDataIsLoadingWidget;
 };
 
+class YUV3DCharts : public YUVCharts
+{
+  Q_OBJECT
+public:
+
+  YUV3DCharts(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget);
+
+  /**
+   * @brief createChart
+   * function which will control hoq the chart is making
+   *
+   * @param aOrderBy
+   * the order type: frame-art, value or blocksize, noralisation or not
+   *
+   * @param aItem
+   * specified item we look at, we get the data and lot more
+   *
+   * @param aRange
+   * range we look at (also for current frame or all frames)
+   *
+   * @param aType
+   * if statistics-item: the selected type is needed
+   *
+   * @param aSortedData
+   * the amount of data if avaible
+   * this parameter is optional
+   * if aSorted is null, we get the data from the item new otherwise we use the parameter
+   *
+   * @return
+   * a complete chartview with the data
+   */
+  QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
+
+  /**
+   * @brief hasOpenGL
+   * creating an YUV3DBarChart-Object, we check that we can init OpenGL
+   *
+   * @return
+   * true, if it is possible to init OpenGl otherwise false
+   */
+  bool hasOpenGL() const;
+
+  /**
+   * @brief set3DCoordinationRange
+   * look at a specific range of the vector
+   *
+   * @param aMinX
+   * minimum x
+   *
+   * @param aMaxX
+   * maximum x
+   *
+   * @param aMinY
+   * minimun y
+   *
+   * @param aMaxY
+   * maximum y
+   */
+  void set3DCoordinationRange(const int aMinX, const int aMaxX, const int aMinY, const int aMaxY);
+
+  /**
+   * @brief set3DCoordinationtoDefault
+   * reset the coordinates
+   */
+  void set3DCoordinationtoDefault();
+
+protected:
+  Modifier* mModifier;
+  // the graph / chart / histogram
+  QWidget* mWidgetGraph;
+  // check if we can init OpenGL
+  bool mHasOpenGL = false;
+  // identifier to use the coordinates
+  bool mUse3DCoordinationLimits = false;
+  // minimum x coordinate
+  int mMinX;
+  // maximum x coordinate
+  int mMaxX;
+  // minimum y coordinate
+  int mMinY;
+  // maximum y coordinate
+  int mMaxY;
+
+  /**
+   * @brief makeStatistic
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @param aOrderBy
+   * option-enum how the sorted Data will display
+   *
+   * @param aItem
+   * from the item we get the actual frame-dimension
+   *
+   * @param aRange
+   * range, we look at
+   *
+   * @return
+   * a chartview, that can be placed
+   */
+  QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange);
+
+  /**
+   * @brief makeStatisticsPerFrameGrpByValNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobPerFrameGrpByValueNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsFrameRangeGrpByValNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobRangeGrpByValueNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsFrameRangeGrpByValNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByValNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobAllFramesGrpByValueNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsPerFrameGrpByValNrm
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobPerFrameGrpByValueNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsPerFrameGrpByValNrm(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsFrameRangeGrpByValNrm
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobPerFrameGrpByValueNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsFrameRangeGrpByValNrm(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByValNrm
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobAllFramesGrpByValueNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsAllFramesGrpByValNrm(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsPerFrameGrpByBlocksizeNrmNone
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
+  QWidget* makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsFrameRangeGrpByBlocksizeNrmNone
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobRangeGrpByBlocksizeNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
+  QWidget* makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByBlocksizeNrmNone
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
+  QWidget* makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+
+  QWidget* makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+  QWidget* makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+  QWidget* makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+
+};
+
+
+class YUV3DSurfaceChart : public YUV3DCharts
+{
+  Q_OBJECT
+
+public:
+  YUV3DSurfaceChart();
+  /**
+   * @brief YUV3DSurfaceChart
+   * default-constructor
+   * in inherited classes it should be reintroduced or reimplemented always
+   *
+   * @param aNoDataToShowWidget
+   * a basic widget if no data is to show
+   *
+   * @param aDataIsLoadingWidget
+   * a basic widget if the data is still loading
+   */
+  YUV3DSurfaceChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget);
+
+  /**
+   * @brief createChart
+   * function which will control hoq the chart is making
+   *
+   * @param aOrderBy
+   * the order type: frame-art, value or blocksize, noralisation or not
+   *
+   * @param aItem
+   * specified item we look at, we get the data and lot more
+   *
+   * @param aRange
+   * range we look at (also for current frame or all frames)
+   *
+   * @param aType
+   * if statistics-item: the selected type is needed
+   *
+   * @param aSortedData
+   * the amount of data if avaible
+   * this parameter is optional
+   * if aSorted is null, we get the data from the item new otherwise we use the parameter
+   *
+   * @return
+   * a complete chartview with the data
+   */
+  //QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
+};
 
 /**
  * @brief The YUVBarChart class
@@ -433,7 +706,7 @@ private:
  * @brief The YUV3DBarChart class
  * the YUV3DBarChart class can display 3D Data
  */
-class YUV3DBarChart : public YUVCharts
+class YUV3DBarChart : public YUV3DCharts
 {
   Q_OBJECT
 public:
@@ -442,204 +715,8 @@ public:
   YUV3DBarChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget);
 
   //documentation see @YUVCharts::createChart
-  QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
-
-  /**
-   * @brief set3DCoordinationRange
-   * look at a specific range of the vector
-   *
-   * @param aMinX
-   * minimum x
-   *
-   * @param aMaxX
-   * maximum x
-   *
-   * @param aMinY
-   * minimun y
-   *
-   * @param aMaxY
-   * maximum y
-   */
-  void set3DCoordinationRange(const int aMinX, const int aMaxX, const int aMinY, const int aMaxY);
-
-  /**
-   * @brief set3DCoordinationtoDefault
-   * reset the coordinates
-   */
-  void set3DCoordinationtoDefault();
-
-  /**
-   * @brief hasOpenGL
-   * creating an YUV3DBarChart-Object, we check that we can init OpenGL
-   *
-   * @return
-   * true, if it is possible to init OpenGl otherwise false
-   */
-  bool hasOpenGL() const;
-
-private:
-  // identifier to use the coordinates
-  bool mUse3DCoordinationLimits = false;
-  // minimum x coordinate
-  int mMinX;
-  // maximum x coordinate
-  int mMaxX;
-  // minimum y coordinate
-  int mMinY;
-  // maximum y coordinate
-  int mMaxY;
-
-  // the graph / chart / histogram
-  QWidget* mWidgetGraph;
-  // modifier to set the new data to the graph
-  GraphModifier3DBars* mModifier;
-  // check if we can init OpenGL
-  bool mHasOpenGL = false;
-
-  /**
-   * @brief makeStatistic
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-   *
-   * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-   *
-   * @param aOrderBy
-   * option-enum how the sorted Data will display
-   *
-   * @param aItem
-   * from the item we get the actual frame-dimension
-   *
-   * @param aRange
-   * range, we look at
-   *
-   * @return
-   * a chartview, that can be placed
-   */
-  QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange);
-
-  /**
-   * @brief makeStatisticsPerFrameGrpByValNrmNone
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-   * provides the ChartOrderBy: cobPerFrameGrpByValueNrmNone
-   *
-   * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-   *
-   * @return
-   * a struct, contains all chart settings and options
-   */
-  chartSettingsData makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData);
-
-  /**
-   * @brief makeStatisticsFrameRangeGrpByValNrmNone
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-   * provides the ChartOrderBy: cobRangeGrpByValueNrmNone
-   *
-   * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-   *
-   * @return
-   * a struct, contains all chart settings and options
-   */
-  chartSettingsData makeStatisticsFrameRangeGrpByValNrmNone(QList<collectedData>* aSortedData);
-
-  /**
-   * @brief makeStatisticsAllFramesGrpByValNrmNone
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-   * provides the ChartOrderBy: cobAllFramesGrpByValueNrmNone
-   *
-   * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-   *
-   * @return
-   * a struct, contains all chart settings and options
-   */
-  chartSettingsData makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData);
-
-  /**
-   * @brief makeStatisticsPerFrameGrpByValNrm
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-   * provides the ChartOrderBy: cobPerFrameGrpByValueNrmByArea
-   *
-   * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-   *
-   * @return
-   * a struct, contains all chart settings and options
-   */
-  chartSettingsData makeStatisticsPerFrameGrpByValNrm(QList<collectedData>* aSortedData);
-
-  /**
-   * @brief makeStatisticsFrameRangeGrpByValNrm
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-   * provides the ChartOrderBy: cobPerFrameGrpByValueNrmByArea
-   *
-   * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-   *
-   * @return
-   * a struct, contains all chart settings and options
-   */
-  chartSettingsData makeStatisticsFrameRangeGrpByValNrm(QList<collectedData>* aSortedData);
-
-  /**
-   * @brief makeStatisticsAllFramesGrpByValNrm
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-   * provides the ChartOrderBy: cobAllFramesGrpByValueNrmByArea
-   *
-   * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-   *
-   * @return
-   * a struct, contains all chart settings and options
-   */
-  chartSettingsData makeStatisticsAllFramesGrpByValNrm(QList<collectedData>* aSortedData);
-
-  /**
-   * @brief makeStatisticsPerFrameGrpByBlocksizeNrmNone
-   * creates the chart based on the sorted data from the item
-   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmNone
-   *
-   * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-   *
-   * @return
-   * the chart to display
-   */
-  QWidget* makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
-
-  /**
-   * @brief makeStatisticsFrameRangeGrpByBlocksizeNrmNone
-   * creates the chart based on the sorted data from the item
-   * provides the ChartOrderBy: cobRangeGrpByBlocksizeNrmNone
-   *
-   * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-   *
-   * @return
-   * the chart to display
-   */
-  QWidget* makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
-
-  /**
-   * @brief makeStatisticsAllFramesGrpByBlocksizeNrmNone
-   * creates the chart based on the sorted data from the item
-   * provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmNone
-   *
-   * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-   *
-   * @return
-   * the chart to display
-   */
-  QWidget* makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
-
-  QWidget* makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
-  QWidget* makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
-  QWidget* makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
-
+  //QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 };
-
 
 /**
  * @brief The YUVChartFactory class
@@ -696,6 +773,8 @@ private:
   // 2D-Barchart
   YUVBarChart   mBarChart;
   // 3D-Barchart
-  YUV3DBarChart mBbarChart3D;
+  YUV3DBarChart mBarChart3D;
+  // 3D-Surface
+  YUV3DSurfaceChart mSurfaceChart3D;
 };
 #endif // YUVCHARTS_H

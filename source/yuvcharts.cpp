@@ -65,7 +65,8 @@ bool YUVCharts::is3DData(QList<collectedData>* aSortedData)
 YUVChartFactory::YUVChartFactory(QWidget *aNoDataToShowWidget, QWidget *aDataIsLoadingWidget) :
   YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget),
   mBarChart(this->mNoDataToShowWidget, this->mDataIsLoadingWidget),
-  mBbarChart3D(this->mNoDataToShowWidget, this->mDataIsLoadingWidget)
+  mBarChart3D(this->mNoDataToShowWidget, this->mDataIsLoadingWidget),
+  mSurfaceChart3D(this->mNoDataToShowWidget, this->mDataIsLoadingWidget)
 {
 
 }
@@ -86,9 +87,13 @@ QWidget* YUVChartFactory::createChart(const ChartOrderBy aOrderBy, playlistItem*
   {
     //check if we have to take care of the 3D-data-range
     if(this->mUse3DCoordinationLimits)
-      this->mBbarChart3D.set3DCoordinationRange(this->mMinX, this->mMaxX, this->mMinY, this->mMaxY);
+    {
+      this->mBarChart3D.set3DCoordinationRange(this->mMinX, this->mMaxX, this->mMinY, this->mMaxY);
+      this->mSurfaceChart3D.set3DCoordinationRange(this->mMinX, this->mMaxX, this->mMinY, this->mMaxY);
+    }
 
-    return this->mBbarChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+    //return this->mBarChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+    return this->mSurfaceChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
   }
 
   return this->mNoDataToShowWidget;
@@ -203,12 +208,32 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const Cha
   // creating default-axes: always have to be called before you add some custom axes
   chart->createDefaultAxes();
 
+
   // if we have set any categories, we can add a custom x-axis
   if(settings.mCategories.count() > 0)
   {
-    QBarCategoryAxis *axis = new QBarCategoryAxis();
+    QBarCategoryAxis* axis = new QBarCategoryAxis();
     axis->setCategories(settings.mCategories);
     chart->setAxisX(axis, settings.mSeries);
+  }
+  else
+  {
+    // check that we can cast to the specifi axis-type
+    if (dynamic_cast<QBarCategoryAxis*> (chart->axisX()))
+    {
+      // get the specific axis-type
+      QBarCategoryAxis* xaxis = dynamic_cast<QBarCategoryAxis*> (chart->axisX());
+      QStringList categorieslist = xaxis->categories(); // get the categories
+
+      // check how much elements we have
+      // the axis was created by the chart itself, so it has a default-value
+      if(categorieslist.count() == 1)
+      {
+        QBarCategoryAxis* axis = new QBarCategoryAxis();
+        axis->setLabelsVisible(false);
+        chart->setAxisX(axis, settings.mSeries);
+      }
+    }
   }
 
   // setting Options for the chart-legend
@@ -512,7 +537,6 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
     }
   }
 
-
   // order the items from low to high
   // we cant use QHash at this point, because the items are arbitrarily ordered in QHash, so we have to use QMap at this point
   QMap<int, int*> mapValueCountSorted;
@@ -556,13 +580,19 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
   settings.mSeries = series;
 
   // just a holder
-  QBarSet *set;
+  QBarSet* set;
+  QHash<int, QBarSet*> coordCategorieSet; // saving the set, to add them later
 
   // calculate total amount of pixel depends on the blocksize
   for (int i = 0; i < aSortedData->count(); i++)
   {
     // first getting the data
     collectedData data = aSortedData->at(i);
+    set = new QBarSet(data.mLabel);
+
+    // ceate an auxiliary var's
+    bool moreThanOneElement = data.mValues.count() > 1;
+
     if(data.mStatDataType == sdtStructStatisticsItem_Value)
     {
       // get the width and the height
@@ -572,32 +602,61 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
       int width = widthStr.toInt();
       int height = heightStr.toInt();
 
-      int amountPixelofValue = 0;
       // if we have more than one value
       foreach (auto chartData, data.mValues)
-        amountPixelofValue += ((width * height) * chartData->second); // chartData->second holds the amount
+      {
+        int chartValue = chartData->first.toInt();
+        int amountPixelofValue = ((width * height) * chartData->second); // chartData->second holds the amount
 
-      // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
-      double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
+        // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
+        double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
 
-      // cause of maybe other pixelvalues it can happen that we calculate more pixel than we have really
-      if(ratio > 100.0)
-        ratio = 100.0;
+        // cause of maybe other pixelvalues it can happen that we calculate more pixel than we have really
+        if(ratio > 100.0)
+          ratio = 100.0;
 
-      // create the set
-      set = new QBarSet(data.mLabel);
-      // fill the set with the data
-      *set << ratio;
-      // appen the set to the series
-      series->append(set);
+        if(moreThanOneElement)
+        {
+          // getting the set, if possible otherwise create a new set and add to the coordCategorieSet
+          if(!coordCategorieSet.contains(chartValue))
+          {
+            set = new QBarSet(QString::number(chartValue));
+            coordCategorieSet.insert(chartValue, set);
+          }
+          else
+            set = coordCategorieSet.value(chartValue); // get the set
+
+          // appending data to the set
+          *set << ratio;
+        }
+        else
+          *set << ratio; // appending data to the set
+      }
     }
-  }
 
+    // check if we have more than one value for the set
+    if(moreThanOneElement)
+    {
+      // append all sets to the series
+      foreach (int key, coordCategorieSet.keys())
+        series->append(coordCategorieSet.value(key));
+    }
+    else
+    {
+      // just had one data for each label
+      set->setLabel(data.mLabel); // setting new label
+      series->append(set);      // appending the set to the series
+    }
+
+    if(moreThanOneElement)
+      //at least appending the label to the categories for the axes if necessary
+       settings.mCategories << data.mLabel;
+  }
   return settings;
 }
 
 YUV3DBarChart::YUV3DBarChart(QWidget *aNoDataToShowWidget, QWidget *aDataIsLoadingWidget) :
-  YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget)
+  YUV3DCharts(aNoDataToShowWidget, aDataIsLoadingWidget)
 {
   // create the graph
   Q3DBars* widgetgraph = new Q3DBars();
@@ -674,14 +733,22 @@ YUV3DBarChart::YUV3DBarChart(QWidget *aNoDataToShowWidget, QWidget *aDataIsLoadi
     this->mModifier = new GraphModifier3DBars(widgetgraph);
 
     // connect modifier to handle the actions
-    connect(rotationSliderX, &QSlider::valueChanged, this->mModifier, &GraphModifier3DBars::rotateX);
-    connect(rotationSliderY, &QSlider::valueChanged, this->mModifier, &GraphModifier3DBars::rotateY);
-    connect(axisLabelRotationSlider, &QSlider::valueChanged, this->mModifier, &GraphModifier3DBars::changeLabelRotation);
-    connect(zoomToSelectedButton, &QPushButton::clicked, this->mModifier, &GraphModifier3DBars::zoomToSelectedBar);
+    GraphModifier3DBars* modifier = dynamic_cast<GraphModifier3DBars*> (this->mModifier);
+
+    connect(rotationSliderX, &QSlider::valueChanged, modifier , &GraphModifier3DBars::rotateX);
+    connect(rotationSliderY, &QSlider::valueChanged, modifier, &GraphModifier3DBars::rotateY);
+    connect(axisLabelRotationSlider, &QSlider::valueChanged, modifier, &GraphModifier3DBars::changeLabelRotation);
+    connect(zoomToSelectedButton, &QPushButton::clicked, modifier, &GraphModifier3DBars::zoomToSelectedBar);
   }
 }
 
-QWidget* YUV3DBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
+YUV3DCharts::YUV3DCharts(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget) :
+  YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget)
+{
+  this->set3DCoordinationtoDefault();
+}
+
+QWidget* YUV3DCharts::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
 {
   // check that we have init OpenGl
   if(!this->hasOpenGL())
@@ -703,7 +770,7 @@ QWidget* YUV3DBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* a
     return this->mNoDataToShowWidget;
 }
 
-void YUV3DBarChart::set3DCoordinationRange(const int aMinX, const int aMaxX, const int aMinY, const int aMaxY)
+void YUV3DCharts::set3DCoordinationRange(const int aMinX, const int aMaxX, const int aMinY, const int aMaxY)
 {
   // mark that we use the 3d limits
   this->mUse3DCoordinationLimits = true;
@@ -715,7 +782,7 @@ void YUV3DBarChart::set3DCoordinationRange(const int aMinX, const int aMaxX, con
   this->mMaxY = aMaxY;
 }
 
-void YUV3DBarChart::set3DCoordinationtoDefault()
+void YUV3DCharts::set3DCoordinationtoDefault()
 {
   // mark taht we dont use the limits
   this->mUse3DCoordinationLimits = false;
@@ -727,12 +794,7 @@ void YUV3DBarChart::set3DCoordinationtoDefault()
   this->mMaxY = INT_MAX;
 }
 
-bool YUV3DBarChart::hasOpenGL() const
-{
-  return mHasOpenGL;
-}
-
-QWidget* YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
+QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
 {
   Q_UNUSED(aItem)
   Q_UNUSED(aRange)
@@ -791,7 +853,7 @@ QWidget* YUV3DBarChart::makeStatistic(QList<collectedData>* aSortedData, const C
   return this->mWidgetGraph;
 }
 
-chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData)
 {
   chartSettingsData settings;
 
@@ -860,22 +922,24 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<col
 
   settings.m3DData = resultValueCount;
 
+  settings.define3DRanges(mMinX, mMaxX, mMinY, mMaxY);
+
   return settings;
 }
 
-chartSettingsData YUV3DBarChart::makeStatisticsFrameRangeGrpByValNrmNone(QList<collectedData>* aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsFrameRangeGrpByValNrmNone(QList<collectedData>* aSortedData)
 {
   // does the same as makeStatisticsPerFrameGrpByValNrmNone just the amount of sortedData is other
   return this->makeStatisticsPerFrameGrpByValNrmNone(aSortedData);
 }
 
-chartSettingsData YUV3DBarChart::makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData)
 {
   // does the same as makeStatisticsPerFrameGrpByValNrmNone just the amount of sortedData is other
   return this->makeStatisticsPerFrameGrpByValNrmNone(aSortedData);
 }
 
-chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrm(QList<collectedData> *aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrm(QList<collectedData> *aSortedData)
 {
   chartSettingsData settings;
 
@@ -962,19 +1026,19 @@ chartSettingsData YUV3DBarChart::makeStatisticsPerFrameGrpByValNrm(QList<collect
   return settings;
 }
 
-chartSettingsData YUV3DBarChart::makeStatisticsFrameRangeGrpByValNrm(QList<collectedData> *aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsFrameRangeGrpByValNrm(QList<collectedData> *aSortedData)
 {
   // does the same as makeStatisticsPerFrameGrpByValNrm, data amount is other
   return this->makeStatisticsPerFrameGrpByValNrm(aSortedData);
 }
 
-chartSettingsData YUV3DBarChart::makeStatisticsAllFramesGrpByValNrm(QList<collectedData> *aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsAllFramesGrpByValNrm(QList<collectedData> *aSortedData)
 {
   // does the same as makeStatisticsPerFrameGrpByValNrm, data amount is other
   return this->makeStatisticsPerFrameGrpByValNrm(aSortedData);
 }
 
-QWidget *YUV3DBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
+QWidget* YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
 {
   QBarSeries* series = new QBarSeries();
   // just a holder
@@ -1025,19 +1089,19 @@ QWidget *YUV3DBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collec
   return chartView;
 }
 
-QWidget *YUV3DBarChart::makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
+QWidget* YUV3DCharts::makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
 {
   // the amount of data is not the same, but the code is the same
   return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
 }
 
-QWidget *YUV3DBarChart::makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
+QWidget* YUV3DCharts::makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
 {
   // the amount of data is not the same, but the code is the same
   return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
 }
 
-QWidget *YUV3DBarChart::makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
+QWidget* YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
 {
   QBarSeries* series = new QBarSeries();
 
@@ -1111,13 +1175,13 @@ QWidget *YUV3DBarChart::makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedD
   return chartView;
 }
 
-QWidget *YUV3DBarChart::makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
+QWidget* YUV3DCharts::makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
 {
   // the amount of data is not the same, but the code is the same
   return this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);
 }
 
-QWidget *YUV3DBarChart::makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
+QWidget* YUV3DCharts::makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
 {
   // the amount of data is not the same, but the code is the same
   return this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);
@@ -1200,4 +1264,114 @@ void CollapsibleWidget::setContentLayout(QLayout& aContentLayout, const bool aDi
   // the widget is always collapsed, at this point it will unfold
   if(aDisplay)
     this->mToggleButton.clicked();
+}
+
+YUV3DSurfaceChart::YUV3DSurfaceChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget) :
+  YUV3DCharts(aNoDataToShowWidget, aDataIsLoadingWidget)
+{
+  // create the graph
+  Q3DSurface* widgetgraph = new Q3DSurface();
+
+  // necessary! get an container and check that we can init OpenGL
+  QWidget* container = QWidget::createWindowContainer(widgetgraph);
+
+  // very important! no OpenGL --> no 3d graph
+  this->mHasOpenGL = widgetgraph->hasContext();
+
+  if(!this->mHasOpenGL) // check for OpenGL
+  {
+    QMessageBox msgBox;
+    msgBox.setText("Couldn't initialize the OpenGL context. Can´t display 3D charts.");
+    msgBox.exec();
+  }
+  else
+  {
+    // get basic widget
+    this->mWidgetGraph = new QWidget;
+
+    // create basic-layout and set to widget
+    //QVBoxLayout* lyBasic = new QVBoxLayout(this->mWidgetGraph);
+
+    QHBoxLayout *hLayout = new QHBoxLayout(this->mWidgetGraph);
+    QVBoxLayout *vLayout = new QVBoxLayout();
+    hLayout->addWidget(container, 1);
+    hLayout->addLayout(vLayout);
+    vLayout->setAlignment(Qt::AlignTop);    // create gridlayout for the controls
+
+    QGroupBox *selectionGroupBox = new QGroupBox(QStringLiteral("Selection Mode"));
+
+    QRadioButton *modeNoneRB = new QRadioButton(this->mWidgetGraph);
+    modeNoneRB->setText(QStringLiteral("No selection"));
+    modeNoneRB->setChecked(false);
+
+    QRadioButton *modeItemRB = new QRadioButton(this->mWidgetGraph);
+    modeItemRB->setText(QStringLiteral("Item"));
+    modeItemRB->setChecked(false);
+
+    QRadioButton *modeSliceRowRB = new QRadioButton(this->mWidgetGraph);
+    modeSliceRowRB->setText(QStringLiteral("Row Slice"));
+    modeSliceRowRB->setChecked(false);
+
+    QRadioButton *modeSliceColumnRB = new QRadioButton(this->mWidgetGraph);
+    modeSliceColumnRB->setText(QStringLiteral("Column Slice"));
+    modeSliceColumnRB->setChecked(false);
+
+    QVBoxLayout *selectionVBox = new QVBoxLayout;
+    selectionVBox->addWidget(modeNoneRB);
+    selectionVBox->addWidget(modeItemRB);
+    selectionVBox->addWidget(modeSliceRowRB);
+    selectionVBox->addWidget(modeSliceColumnRB);
+    selectionGroupBox->setLayout(selectionVBox);
+
+    QSlider *axisMinSliderX = new QSlider(Qt::Horizontal, this->mWidgetGraph);
+    axisMinSliderX->setMinimum(0);
+    axisMinSliderX->setTickInterval(1);
+    axisMinSliderX->setEnabled(true);
+    QSlider *axisMaxSliderX = new QSlider(Qt::Horizontal, this->mWidgetGraph);
+    axisMaxSliderX->setMinimum(1);
+    axisMaxSliderX->setTickInterval(1);
+    axisMaxSliderX->setEnabled(true);
+    QSlider *axisMinSliderZ = new QSlider(Qt::Horizontal, this->mWidgetGraph);
+    axisMinSliderZ->setMinimum(0);
+    axisMinSliderZ->setTickInterval(1);
+    axisMinSliderZ->setEnabled(true);
+    QSlider *axisMaxSliderZ = new QSlider(Qt::Horizontal, this->mWidgetGraph);
+    axisMaxSliderZ->setMinimum(1);
+    axisMaxSliderZ->setTickInterval(1);
+    axisMaxSliderZ->setEnabled(true);
+
+    vLayout->addWidget(selectionGroupBox);
+    vLayout->addWidget(new QLabel(QStringLiteral("Column range")));
+    vLayout->addWidget(axisMinSliderX);
+    vLayout->addWidget(axisMaxSliderX);
+    vLayout->addWidget(new QLabel(QStringLiteral("Row range")));
+    vLayout->addWidget(axisMinSliderZ);
+    vLayout->addWidget(axisMaxSliderZ);
+
+
+    // create modifier to handle the sliders and so on
+    Surface3DGraphModifier* modifier = new Surface3DGraphModifier(widgetgraph);
+    this->mModifier = modifier;
+    modifier->setAxisMinSliderX(axisMinSliderX);
+    modifier->setAxisMaxSliderX(axisMaxSliderX);
+    modifier->setAxisMinSliderZ(axisMinSliderZ);
+    modifier->setAxisMaxSliderZ(axisMaxSliderZ);
+
+    // connect modifier to handle the actions
+    connect(modeNoneRB,         &QRadioButton::toggled, modifier, &Surface3DGraphModifier::toggleModeNone);
+    connect(modeItemRB,         &QRadioButton::toggled, modifier, &Surface3DGraphModifier::toggleModeItem);
+    connect(modeSliceRowRB,     &QRadioButton::toggled, modifier, &Surface3DGraphModifier::toggleModeSliceRow);
+    connect(modeSliceColumnRB,  &QRadioButton::toggled, modifier, &Surface3DGraphModifier::toggleModeSliceColumn);
+    connect(axisMinSliderX,     &QSlider::valueChanged, modifier, &Surface3DGraphModifier::adjustXMin);
+    connect(axisMaxSliderX,     &QSlider::valueChanged, modifier, &Surface3DGraphModifier::adjustXMax);
+    connect(axisMinSliderZ,     &QSlider::valueChanged, modifier, &Surface3DGraphModifier::adjustZMin);
+    connect(axisMaxSliderZ,     &QSlider::valueChanged, modifier, &Surface3DGraphModifier::adjustZMax);
+
+    modeItemRB->setChecked(true);
+  }
+}
+
+bool YUV3DCharts::hasOpenGL() const
+{
+  return this->mHasOpenGL;
 }

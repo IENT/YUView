@@ -128,7 +128,7 @@ void ChartHandler::removeWidgetFromList(playlistItem* aItem)
   // if a item is deleted from the playlist, we have to remove the widget from the list
   itemWidgetCoord tmp;
   tmp.mItem = aItem;
-  if (mListItemWidget.contains(tmp))
+  if (this->mListItemWidget.contains(tmp))
     this->mListItemWidget.removeAll(tmp);
 }
 
@@ -138,8 +138,8 @@ itemWidgetCoord ChartHandler::getItemWidgetCoord(playlistItem *aItem)
   itemWidgetCoord coord;
   coord.mItem = aItem;
 
-  if (mListItemWidget.contains(coord))
-    coord = mListItemWidget.at(mListItemWidget.indexOf(coord));
+  if (this->mListItemWidget.contains(coord))
+    coord = this->mListItemWidget.at(this->mListItemWidget.indexOf(coord));
   else
     coord.mItem   = NULL;
 
@@ -183,7 +183,6 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
   QSpinBox* sbxBeginFrame = new QSpinBox();
   QGridLayout* lyBeginFrame = new QGridLayout();
   QWidget* wdgBeginFrame = new QWidget();
-
 
   QLabel* lblEndFrame = new QLabel(SLIDER_LABEL_END_FRAME);
   QSlider* sldEndFrame = new QSlider(Qt::Horizontal);
@@ -245,7 +244,6 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
 
   wdgBeginFrame->setLayout(lyBeginFrame);
   wdgEndFrame->setLayout(lyEndFrame);
-
 
   // adding the options with the enum ChartOrderBy
   if(aAddOptions)
@@ -325,8 +323,6 @@ QLayout* ChartHandler::generateOrderByLayout(bool aAddOptions)
 
 void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
 {
-
-
   // the object holders
   QSlider* sldBeginFrame  = NULL;
   QSlider* sldEndFrame    = NULL;
@@ -408,7 +404,6 @@ void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
       return;
     }
 
-
     // check and if true, set to an valid value and return at this point
     if(endframe > range.second)
     {
@@ -482,7 +477,6 @@ void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
     sldEndFrame->setValue(endframe);
     sldEndFrame->blockSignals(false);
   }
-
 
   // at least, create the statistics
   // no valid string is possible, because it will get later
@@ -722,7 +716,6 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
           this,
           &ChartHandler::switchOrderEnableStatistics);
 
-
   // getting the list to the order by - components
   QList<QWidget*> listGeneratedWidgets = this->generateOrderWidgetsOnly(cbxTypes->count() > 1);
   bool hasOddAmount = listGeneratedWidgets.count() % 2 == 1;
@@ -948,11 +941,14 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
       }
     );
   }
+
+  //set content to our collapse-widget
   collapseGroup->setContentLayout(*lyGrid3dLimits);
 
   // at least, add to the widget
   topLayout->addRow(collapseGroup);
 
+  // add all to our layout
   basicLayout->addLayout(topLayout);
   basicLayout->addWidget(aCoord.mChart);
 
@@ -970,7 +966,6 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
 
   // get current frame index, we use the playback controller
   int frameIndex = this->mPlayback->getCurrentFrame();
-
 
   QString type("");
   QVariant showVariant(csUnknown);
@@ -994,6 +989,7 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
         normaVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
 
       // all found, so we can leave here
+      //! take care, this is one if-statement
       if((type != "")
          && (showVariant.value<ChartShow>() != csUnknown)
          && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
@@ -1181,7 +1177,6 @@ void ChartHandler::switchOrderEnableStatistics(const QString aString)
   // TODO -oCH:think about getting a better and faster solution
 
   // aString is the selected value from the Type-combobox from the playliststatisticsfilewidget
-
   // get the selected playListItemStatisticFiles-item
   auto items = this->mPlaylist->getSelectedItems();
   bool anyItemsSelected = items[0] != NULL || items[1] != NULL;

@@ -34,6 +34,7 @@
 #define CHARTHANDLERTYPEDEF_H
 
 #include <QtCharts>
+#include "typedef.h"
 
 class playlistItem;
 
@@ -112,7 +113,6 @@ struct collectedData
 
   // the label
   QString mLabel = "";
-
 
   // list of all values
   // QPair can be used to count all possible value-types (int, QString, QPoint, ...)
@@ -318,6 +318,58 @@ struct chartSettingsData
 
   //for 3D data we use
   QMap<int, QMap<int, double>> m3DData;
+
+// use maybe later for caching or something else
+  indexRange mX3DRange = indexRange(0, 0);
+  indexRange mY3DRange = indexRange(0, 0);
+
+  void define3DRanges(int aMinX, int aMaxX, int aMinY, int aMaxY)
+  {
+    // set result-vars
+    int xmin = INT_MAX;
+    int xmax = INT_MIN;
+    int ymin = INT_MAX;
+    int ymax = INT_MIN;
+
+
+    // go thru the elements and save the min and  max
+    foreach (int x, this->m3DData.keys())
+    {
+      if(xmin > x)
+        xmin = x;
+
+      if(xmax < x)
+        xmax = x;
+
+      QMap<int, double> innermap = this->m3DData.value(x);
+
+      foreach (int y, innermap.keys())
+      {
+        if(ymin > y)
+          ymin = y;
+
+        if(ymax < y)
+          ymax = y;
+      }
+    }
+
+    mX3DRange.first   = xmin;
+    mX3DRange.second  = xmax;
+    mY3DRange.first   = ymin;
+    mY3DRange.second  = ymax;
+
+    if((aMinX != INT_MIN) && (aMinX < mX3DRange.first))
+      mX3DRange.first = aMinX;
+
+    if((aMaxX != INT_MAX) && (aMaxX > mX3DRange.second))
+      mX3DRange.second = aMaxX;
+
+    if((aMinY != INT_MIN) && (aMinY < mY3DRange.first))
+      mY3DRange.first = aMinY;
+
+    if((aMaxY != INT_MAX) && (aMaxY > mY3DRange.second))
+      mY3DRange.second = aMaxY;
+  }
 };
 
 

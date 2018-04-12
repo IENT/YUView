@@ -10,6 +10,11 @@
 #include <QtWidgets/QComboBox>
 #include <QtCore/qmath.h>
 
+
+#include <QtDataVisualization/QValue3DAxis>
+#include <QtDataVisualization/Q3DTheme>
+#include <QtGui/QImage>
+
 using namespace QtDataVisualization;
 
 GraphModifier3DBars::GraphModifier3DBars(Q3DBars* aBarGraph)
@@ -97,7 +102,7 @@ GraphModifier3DBars::GraphModifier3DBars(Q3DBars* aBarGraph)
 
 GraphModifier3DBars::~GraphModifier3DBars()
 {
-    delete this->mGraph;
+  delete this->mGraph;
 }
 
 void GraphModifier3DBars::applyDataToGraph(chartSettingsData aSettings)
@@ -115,17 +120,19 @@ void GraphModifier3DBars::applyDataToGraph(chartSettingsData aSettings)
   QBarDataArray* dataSet = new QBarDataArray;
   QBarDataRow* dataRow;
 
-  dataSet->reserve(this->mSettings.m3DData.keys().count());
+  dataSet->reserve(qAbs(this->mSettings.mX3DRange.first) + qAbs(this->mSettings.mX3DRange.second) + 1);
 
-  foreach (int x, this->mSettings.m3DData.keys())
+  for(int x = this->mSettings.mX3DRange.first; x <  this->mSettings.mX3DRange.second; x++)
   {
     this->mCategoriesX << QString::number(x);
 
-    QMap<int, double> row = this->mSettings.m3DData.value(x);
+    // generate the new datarow with the range of y
+    int rowItemAmount = qAbs(this->mSettings.mY3DRange.first) + qAbs(this->mSettings.mY3DRange.second) + 1;
+    dataRow = new QBarDataRow(rowItemAmount);
+    // this is necessary for the position in the row. The value of y is not always the position in the row
+    int posY = 0;
 
-    dataRow = new QBarDataRow(row.keys().count());
-    int posY = 0; // this is necessary for the position in the row. The value of y is not always the position in the row
-    foreach (int y, row.keys())
+    for(int y = this->mSettings.mY3DRange.first; y <=  this->mSettings.mY3DRange.second; y++)
     {
       this->mCategoriesY << QString::number(y);
 
@@ -295,4 +302,175 @@ void GraphModifier3DBars::rotateY(int aRotation)
 {
   this->mRotationY = aRotation;
   this->mGraph->scene()->activeCamera()->setCameraPosition(mRotationX, mRotationY);
+}
+
+Surface3DGraphModifier::Surface3DGraphModifier(Q3DSurface* aSurfaceGraph) :
+  mGraph(aSurfaceGraph)
+{
+  this->mAxisX = new QValue3DAxis;
+  this->mAxisY = new QValue3DAxis;
+  this->mAxisZ = new QValue3DAxis;
+
+  this->mAxisX->setLabelFormat("%.0f");
+  this->mAxisY->setLabelFormat("%.0f");
+  this->mAxisZ->setLabelFormat("%.0f");
+  this->mAxisX->setLabelAutoRotation(30);
+  this->mAxisY->setLabelAutoRotation(90);
+  this->mAxisZ->setLabelAutoRotation(30);
+
+  this->mGraph->setAxisX(this->mAxisX);
+  this->mGraph->setAxisY(this->mAxisY);
+  this->mGraph->setAxisZ(this->mAxisZ);
+
+  this->mPrimarySeriesProxy = new QSurfaceDataProxy();
+  this->mPrimarySeries = new QSurface3DSeries(this->mPrimarySeriesProxy);
+
+  this->mGraph->addSeries(this->mPrimarySeries);
+
+  // create the colorGradient
+  this->mColorGradient.setColorAt(0.0,  Qt::blue);
+  this->mColorGradient.setColorAt(0.25, Qt::cyan);
+  this->mColorGradient.setColorAt(0.5,  Qt::green);
+  this->mColorGradient.setColorAt(0.75, Qt::yellow);
+  this->mColorGradient.setColorAt(1.0,  Qt::red);
+}
+
+void Surface3DGraphModifier::applyDataToGraph(chartSettingsData aSettings)
+{
+  this->mSettings = aSettings;
+
+  //holder for the maximum amount for the amount-axis
+  float maxAmount = -1.0f;
+
+  // Set up data
+  // Create data arrays
+  QSurfaceDataArray* dataSet = new QSurfaceDataArray;
+  QSurfaceDataRow* dataRow;
+
+  int colItemsAmount = qAbs(this->mSettings.mX3DRange.first) + qAbs(this->mSettings.mX3DRange.second) + 1;
+  dataSet->reserve(colItemsAmount);
+
+  for(int x = this->mSettings.mX3DRange.first; x <=  this->mSettings.mX3DRange.second; x++)
+  {
+    // generate the new datarow with the range of y
+    int rowItemsAmount = qAbs(this->mSettings.mY3DRange.first) + qAbs(this->mSettings.mY3DRange.second) + 1;
+    dataRow = new QSurfaceDataRow(rowItemsAmount);
+
+    // this is necessary for the position in the row. The value of y is not always the position in the row
+    int posY = 0;
+
+    for(int y = this->mSettings.mY3DRange.first; y <=  this->mSettings.mY3DRange.second; y++)
+    {
+      // Add data to the row
+      double amount = this->mSettings.m3DData[x][y];
+      (*dataRow)[posY++].setPosition(QVector3D(y, amount, x));
+
+      // getting the maximun amount to resize the axis
+      if(amount > maxAmount)
+          maxAmount = amount;
+    }
+
+    dataSet->append(dataRow);
+  }
+
+  this->mPrimarySeriesProxy->resetArray(dataSet);
+
+  this->mPrimarySeries->setDrawMode(QSurface3DSeries::DrawSurfaceAndWireframe);
+  this->mPrimarySeries->setFlatShadingEnabled(true);
+
+  this->mAxisX->setRange(this->mSettings.mX3DRange.first, this->mSettings.mX3DRange.second);
+  this->mAxisZ->setRange(this->mSettings.mY3DRange.first, this->mSettings.mY3DRange.second);
+  this->mAxisY->setRange(0.0f, maxAmount);
+
+  this->mGraph->removeSeries(this->mPrimarySeries);
+  this->mGraph->addSeries(this->mPrimarySeries);
+  this->mGraph->seriesList().at(0)->setBaseGradient(this->mColorGradient);
+  this->mGraph->seriesList().at(0)->setColorStyle(Q3DTheme::ColorStyleRangeGradient);
+
+  // Reset range sliders
+  this->mAxisMinSliderX->setMinimum(this->mSettings.mX3DRange.first);
+  this->mAxisMinSliderX->setMaximum(this->mSettings.mX3DRange.second);
+
+  this->mAxisMaxSliderX->setMinimum(this->mSettings.mX3DRange.first);
+  this->mAxisMaxSliderX->setMaximum(this->mSettings.mX3DRange.second);
+
+  this->mAxisMinSliderZ->setMinimum(this->mSettings.mY3DRange.first);
+  this->mAxisMinSliderZ->setMaximum(this->mSettings.mY3DRange.second);
+
+  this->mAxisMaxSliderZ->setMinimum(this->mSettings.mY3DRange.first);
+  this->mAxisMaxSliderZ->setMaximum(this->mSettings.mY3DRange.second);
+
+  this->blockSignals(true);
+  this->mAxisMinSliderX->setValue(this->mSettings.mX3DRange.first);
+  this->mAxisMaxSliderX->setValue(this->mSettings.mX3DRange.second);
+  this->mAxisMinSliderZ->setValue(this->mSettings.mY3DRange.first);
+  this->mAxisMaxSliderZ->setValue(this->mSettings.mY3DRange.second);
+  this->blockSignals(false);
+}
+
+Surface3DGraphModifier::~Surface3DGraphModifier()
+{
+  delete this->mGraph;
+}
+
+void Surface3DGraphModifier::adjustXMin(int aMin)
+{
+  int max = this->mAxisMaxSliderX->value();
+  if (aMin >= max)
+  {
+    max = aMin + 1;
+    this->mAxisMaxSliderX->setValue(max);
+    this->setAxisXRange(aMin, max);
+  }
+  else
+    this->setAxisXRange(aMin, this->mSettings.mX3DRange.second);
+}
+
+void Surface3DGraphModifier::adjustXMax(int aMax)
+{
+  int min = this->mAxisMinSliderX->value();
+  if (aMax <= min)
+  {
+    min = aMax - 1;
+    this->mAxisMinSliderX->setValue(min);
+    this->setAxisXRange(this->mSettings.mX3DRange.first, aMax);
+  }
+  else
+    this->setAxisXRange(min, aMax);
+}
+
+void Surface3DGraphModifier::adjustZMin(int aMin)
+{
+  int max = this->mAxisMaxSliderZ->value();
+  if (aMin >= max)
+  {
+    max = aMin + 1;
+    this->mAxisMaxSliderZ->setValue(max);
+    this->setAxisZRange(aMin, max);
+  }
+  else
+    this->setAxisZRange(aMin, this->mSettings.mY3DRange.second);
+}
+
+void Surface3DGraphModifier::adjustZMax(int aMax)
+{
+  int min = this->mAxisMinSliderZ->value();
+  if (aMax <= min)
+  {
+    min = aMax - 1;
+    this->mAxisMinSliderZ->setValue(min);
+    this->setAxisZRange(this->mSettings.mY3DRange.first, aMax);
+  }
+  else
+    this->setAxisZRange(min, aMax);
+}
+
+void Surface3DGraphModifier::setAxisXRange(float aMin, float aMax)
+{
+  this->mAxisX->setRange(aMin, aMax);
+}
+
+void Surface3DGraphModifier::setAxisZRange(float aMin, float aMax)
+{
+  this->mAxisZ->setRange(aMin, aMax);
 }
