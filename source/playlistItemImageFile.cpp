@@ -69,6 +69,7 @@ void playlistItemImageFile::loadFrame(int frameIndex, bool playing, bool loadRaw
   Q_UNUSED(playing);
   Q_UNUSED(loadRawdata);
 
+  imageLoading = true;
   frame.loadCurrentImageFromFile(plItemNameOrFileName);
   imageLoading = false;
   needToLoadImage = false;
@@ -173,15 +174,8 @@ ValuePairListSets playlistItemImageFile::getPixelValues(const QPoint &pixelPos, 
 infoData playlistItemImageFile::getInfo() const
 {
   infoData info("Image Info");
-  if (imageLoading == false)
-  {
-    info.items.append(infoItem("File", plItemNameOrFileName));
 
-    // Append the file information (path, date created, file size...)
-    info.items.append(frame.getFileInfoList());
-  }
-
-  /**
+  info.items.append(infoItem("File", plItemNameOrFileName));
   if (frame.isFormatValid())
   {
     QSize frameSize = frame.getFrameSize();
@@ -192,7 +186,6 @@ infoData playlistItemImageFile::getInfo() const
     info.items.append(infoItem("Status", "Loading...", "The image is being loaded. Please wait."));
   else
     info.items.append(infoItem("Status", "Error", "There was an error loading the image."));
-  **/
 
   return info;
 }
@@ -209,7 +202,7 @@ void playlistItemImageFile::updateSettings()
 }
 
 
-QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData (indexRange range, bool reset)
+QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData(indexRange range, bool reset)
 {
   //predifine data (witch is a map containing 3 branches (r, g, b) and each branch has 255 subbranches (# of pixel values))
   QMap<QString, QList<QList<QVariant>>> data;

@@ -234,8 +234,9 @@ QSize playlistItemText::getSize() const
 }
 
 // Documentation see playlistItem::getData
-QMap<QString, QList<QList<QVariant>>>* playlistItemText::getData (indexRange range, bool reset)
+QMap<QString, QList<QList<QVariant>>>* playlistItemText::getData(indexRange range, bool reset)
 {
+  // TODO implement correctly: playlistItemText::getData
   Q_UNUSED(range);
   if (reset)
   {
@@ -247,6 +248,7 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemText::getData (indexRange ran
 
 QList<collectedData>* playlistItemText::sortAndCategorizeData(const QString aType, const int aFrameIndex)
 {
+  // TODO implement correctly: playlistItemText::sortAndCategorizeData
   Q_UNUSED(aType);
   Q_UNUSED(aFrameIndex);
 
@@ -256,9 +258,16 @@ QList<collectedData>* playlistItemText::sortAndCategorizeData(const QString aTyp
 
 QList<collectedData>* playlistItemText::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
 {
+  // TODO implement correctly: playlistItemText::sortAndCategorizeDataByRange
   Q_UNUSED(aType);
   Q_UNUSED(aRange);
 
   QList<collectedData>* result = new QList<collectedData>();
   return result;
+}
+
+bool playlistItemText::isDataAvaible()
+{
+  // TODO implement correctly: playlistItemText::isDataAvaible
+  return false;
 }

@@ -65,19 +65,6 @@ public:
     playlistItem_Indexed,   // The playlist item is indexed
   } playlistItemType;
 
-  /* defintion to interpreting the data of the statistic
-  *
-  */
-  enum statisticsDataType
-  {
-    sdtInt,                         // value is type of integer
-    sdtRGB,                         // value is type of RGB
-    sdtStructStatisticsItem_Value,  // value is type of struct --> statisticItem_Value
-    sdtStructStatisticsItem_Vector, // value is type of struct --> statisticItem_Vector
-    sdtObjectStatisticsData,        // value is type of object --> statisticData
-    sdtUnknown                      // always the last one if undefined or just dont know
-  };
-
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
@@ -276,7 +263,13 @@ public:
    */
   virtual QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) = 0;
 
-  virtual bool isDataAvaible() {return false;}
+  /**
+   * @brief isDataAvaible
+   * checks if the data of the playlistItem are loaded completly
+   *
+   * @return true if all data are loaded, otherwise false
+   */
+  virtual bool isDataAvaible() = 0;
 
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.

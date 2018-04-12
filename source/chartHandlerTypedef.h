@@ -87,13 +87,32 @@ class playlistItem;
 #define CBX_LABEL_IMAGE_TYPE        "Images: "
 #define CBX_LABEL_RGB               "RGB"
 
+/*-------------------- enum statisticsDataType --------------------*/
+/**
+ * @brief defintion to interpreting the data of the statistic
+ *
+ */
+enum statisticsDataType
+{
+  sdtInt,                         // value is type of integer
+  sdtRGB,                         // value is type of RGB
+  sdtStructStatisticsItem_Value,  // value is type of struct --> statisticItem_Value
+  sdtStructStatisticsItem_Vector, // value is type of struct --> statisticItem_Vector
+  sdtObjectStatisticsData,        // value is type of object --> statisticData
+  sdtUnknown                      // always the last one if undefined or just dont know
+};
+
 
 /*-------------------- Struct collectedData --------------------*/
 /**
  * @brief The collectedData struct
  * small struct to avoid big return-types
  */
-struct collectedData {
+struct collectedData
+{
+  // in case of different types of data
+  statisticsDataType mStatDataType = sdtUnknown;
+
   // the label
   QString mLabel = "";
   // each int* should be an array with two ints
@@ -184,7 +203,8 @@ struct collectedData {
  * we have to implement the <() operator(QMap) or the ==() operator(QHash)
  * a small work around, just implement the ==() based on the struct
  */
-struct itemWidgetCoord {
+struct itemWidgetCoord
+{
   playlistItem* mItem;
   QWidget*      mWidget;
   QStackedWidget*      mChart;
@@ -237,7 +257,8 @@ struct itemWidgetCoord {
  * @brief The chartSettingsData struct
  * will collect all information about the setting to the chart.
  */
-struct chartSettingsData {
+struct chartSettingsData
+{
   bool mSettingsIsValid = true;
   QStringList mCategories;
   QAbstractSeries* mSeries;
@@ -266,7 +287,8 @@ struct chartSettingsData {
  *
  * last one is always cobUnknown
  */
-enum ChartOrderBy {
+enum ChartOrderBy
+{
   cobPerFrameGrpByValueNrmNone,         // order: each frame,   group by value,     no normalize
   cobPerFrameGrpByValueNrmByArea,       // order: each frame,   group by value,     normalize by Area
 
@@ -292,7 +314,8 @@ enum ChartOrderBy {
  * @brief The ChartShow enum
  * which options we have to show the data
  */
-enum ChartShow {
+enum ChartShow
+{
   csPerFrame,     // show for each frame
   csRange,        // show for an range
   csAllFrames,    // show for all frames
@@ -303,7 +326,8 @@ enum ChartShow {
  * @brief The ChartGroupBy enum
  * which options we have to group the data
  */
-enum ChartGroupBy {
+enum ChartGroupBy
+{
   cgbByValue,     // group by value
   cgbByBlocksize, // group by blocksize
   cgbUnknown      // if not definied
@@ -313,11 +337,13 @@ enum ChartGroupBy {
  * @brief The ChartNormalize enum
  * which options we have to normalize the data
  */
-enum ChartNormalize {
+enum ChartNormalize
+{
   cnNone,         // no normalize
   cnByArea,       // will be normalized by the complete area (all pixels of an picture
   cnUnknown       // if not definied
 };
+
 
 /*-------------------- Enum Class functions  --------------------*/
 /**

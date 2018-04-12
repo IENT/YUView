@@ -96,6 +96,14 @@ public:
    */
   virtual QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) Q_DECL_OVERRIDE;
 
+  /**
+   * @brief isDataAvaible
+   * checks if the data of the playlistItem are loaded completly
+   *
+   * @return true if all data are loaded, otherwise false
+   */
+  virtual bool isDataAvaible() Q_DECL_OVERRIDE;
+
 protected:
   // Overload from playlistItem. Create a properties widget custom to the text item
   // and set propertiesWidget to point to it.

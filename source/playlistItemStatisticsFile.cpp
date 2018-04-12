@@ -814,7 +814,7 @@ bool playlistItemStatisticsFile::isRangeInside(indexRange aOriginalRange, indexR
 QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QString aType, const int aFrameIndex)
 {
   //prepare the result
-  QMap<QString, QMap<int, int*>*>* dataMap = new QMap<QString, QMap<int, int*>*>;
+  QMap<QString, QMap<int, int*>*>* dataMapStatisticsItemValue = new QMap<QString, QMap<int, int*>*>;
 
   //check if data was loaded
   if(!(&this->mStatisticData))
@@ -844,7 +844,7 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
       // 3. if it was inside: check if Depth was inside the second map
       // 4. if not in second map create new Depth-data-container, fill with data and add to second map
       // 5. if it was in second map just increment the Depth-Counter
-      if(!dataMap->contains(label))
+      if(!dataMapStatisticsItemValue->contains(label))
       {
         // label was not inside
         QMap<int, int*>* map = new QMap<int, int*>();
@@ -856,12 +856,12 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
         chartDepthCnt[1] = 1;
 
         map->insert(chartDepthCnt[0], chartDepthCnt);
-        dataMap->insert(label, map);
+        dataMapStatisticsItemValue->insert(label, map);
       }
       else
       {
         // label was inside, check if Depth-value is inside
-        QMap<int, int*>* map = dataMap->value(label);
+        QMap<int, int*>* map = dataMapStatisticsItemValue->value(label);
 
         // Depth-Value not inside
         if(!(map->contains(value.value)))
@@ -880,22 +880,31 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
         }
       }
     }
+
+    // in case of statisticsItem_Vector
+    if(item.canConvert<statisticsItem_Vector>())
+    {
+      statisticsItem_Vector vector = item.value<statisticsItem_Vector>();
+      // do something
+
+    }
+
+
   }
 
   // at least we order the data based on the width & height (from low to high) and make the data handling easier
   QList<collectedData>* resultData = new QList<collectedData>;
 
-  // setting data and search optionscbxOptionsGroup
   int smallestFoundNumber = INT_MAX;
   QString numberString = "";
-  int maxElementsToNeed = dataMap->keys().count();
+  int maxElementsToNeed = dataMapStatisticsItemValue->keys().count();
 
   while(resultData->count() < maxElementsToNeed)
   {
     QString key = ""; // just a holder
 
     // getting the smallest number and the label
-    foreach (QString label, dataMap->keys())
+    foreach (QString label, dataMapStatisticsItemValue->keys())
     {
       if(numberString != "") // the if is necessary, otherwise it will crash on windows
         numberString.clear(); // cleaning the String
@@ -922,9 +931,10 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
     }
 
     // getting the data depends on the "smallest" key
-    auto map = dataMap->value(key);
+    auto map = dataMapStatisticsItemValue->value(key);
 
     collectedData data;   // creating the data
+    data.mStatDataType = sdtStructStatisticsItem_Value;
     data.mLabel = key;    // setting the label
 
     // copy each data into the list
@@ -935,22 +945,22 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
     resultData->append(data);
 
     // reset settings to find
-    dataMap->remove(key);
+    dataMapStatisticsItemValue->remove(key);
     smallestFoundNumber = INT_MAX;
     key.clear();
   }
 
   // we can delete the dataMap, cause we dont need anymore
-  foreach (QString key, dataMap->keys())
+  foreach (QString key, dataMapStatisticsItemValue->keys())
   {
-    QMap<int, int*>* valuesmap = dataMap->value(key);
+    QMap<int, int*>* valuesmap = dataMapStatisticsItemValue->value(key);
     foreach (int valuekey, valuesmap->keys())
     {
       delete valuesmap->value(valuekey);
     }
     delete valuesmap;
   }
-  delete dataMap;
+  delete dataMapStatisticsItemValue;
 
 //  // a debug output
 //  for(int i = 0; i< resultData->count(); i++) {

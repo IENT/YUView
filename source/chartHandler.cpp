@@ -45,14 +45,37 @@ ChartHandler::ChartHandler()
 
 
   // creating the default widget if data is loading
-  QFormLayout  dataLoadingLayout(&(this->mDataIsLoadingWidget));
+  QVBoxLayout* basicLayout = new QVBoxLayout;
+
+  QGridLayout*  dataLoadingLayout = new QGridLayout;
   QLabel* lblDataLoadingInformation = new QLabel(WIDGET_DATA_IS_LOADING);
-  dataLoadingLayout.addWidget(lblDataLoadingInformation);
+  lblDataLoadingInformation->setWordWrap(true);
+
+  QLabel* lblImageHolder = new QLabel();
+  QPixmap image(":/img_hourglass.png");
+  lblImageHolder->setPixmap(image);
+
+  dataLoadingLayout->addWidget(lblImageHolder, 0, 0);
+  dataLoadingLayout->addWidget(lblDataLoadingInformation, 0, 1);
+
+  basicLayout->addLayout(dataLoadingLayout);
+  basicLayout->setAlignment(dataLoadingLayout, Qt::AlignTop);
+
+  this->mDataIsLoadingWidget.setLayout(basicLayout);
 }
 
 /*-------------------- public functions --------------------*/
 QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
 {
+  //! a small lambda; the lambda is a workaround for the timer.
+  //! if all items implement the iDataAvaible() correct, the lambda
+  //! can be removed
+  auto playlistItemIsSupported = [=](playlistItem* aItem) {
+    // replace false with dynamic_cast<YOURPLAYLISTITEMTYPE*>(aItem)
+    return dynamic_cast<playlistItemStatisticsFile*>(aItem)
+           || false;
+  };
+
   // check if the widget was already created and stored
   itemWidgetCoord coord;
   coord.mItem = aItem;
@@ -60,7 +83,7 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
   if (mListItemWidget.contains(coord)) // was stored
     return mListItemWidget.at(mListItemWidget.indexOf(coord)).mWidget;
 
-  if((aItem) && (!aItem->isDataAvaible()))
+  if((playlistItemIsSupported(aItem) && (aItem) && (!aItem->isDataAvaible())))
   {
     this->mTimer.start(1000, this);
     return &(this->mDataIsLoadingWidget);
@@ -97,8 +120,6 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
     coord.mWidget = this->mChartWidget->getDefaultWidget();
     coord.mItem = NULL;
   }
-
-
 
   return coord.mWidget;
 }
@@ -718,7 +739,6 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
 }
 
 /*-------------------- playListItemStatisticsFile and the private slots --------------------*/
-
 QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aItem, itemWidgetCoord& aCoord)
 {
   //define a simple layout for the statistic file
@@ -1050,7 +1070,6 @@ void ChartHandler::timerEvent(QTimerEvent *event)
 }
 
 /*--------------------Functions for Image Color Analysis--------------------*/
-
 QWidget* ChartHandler::createImageFileColorAnalysisWidget(playlistItemImageFile *aItem, itemWidgetCoord& aCoord)
 {
 

@@ -120,7 +120,14 @@ public:
    */
   QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) Q_DECL_OVERRIDE;
 
-  bool isDataAvaible();
+  /**
+   * @brief isDataAvaible
+   * checks if the data of the playlistItem are loaded completly
+   *
+   * @return true if all data are loaded, otherwise false
+   */
+  virtual bool isDataAvaible() Q_DECL_OVERRIDE;
+
 private slots:
   // The image file that we loaded was changed.
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }

@@ -107,6 +107,14 @@ public:
    */
   virtual QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) Q_DECL_OVERRIDE;
 
+  /**
+   * @brief isDataAvaible
+   * checks if the data of the playlistItem are loaded completly
+   *
+   * @return true if all data are loaded, otherwise false
+   */
+  virtual bool isDataAvaible() Q_DECL_OVERRIDE;
+
 protected:
   // A pointer to the videHandler. In the derived class, don't foret to set this.
   QScopedPointer<videoHandler> video;
