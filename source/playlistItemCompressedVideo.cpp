@@ -336,6 +336,11 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
     video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
     statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
   }
+  else if (loadingDecoder.isNull())
+  {
+    infoText = "No decoder allocated.\n";
+    playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
+  }
   else if (loadingDecoder->errorInDecoder())
   {
     // There was an error in the deocder. 
