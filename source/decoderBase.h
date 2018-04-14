@@ -33,7 +33,6 @@
 #ifndef DECODERBASE_H
 #define DECODERBASE_H
 
-#include <QLibrary>
 #include "fileSourceAnnexBFile.h"
 #include "statisticHandler.h"
 #include "statisticsExtensions.h"
@@ -41,95 +40,65 @@
 
 using namespace YUV_Internals;
 
-/* This class is the abstract base class for all non FFMpeg decoders that read from a raw source file.
+/* This class is the abstract base class for all decoders. All decoders work like this:
+ * 1. Create an instance and configure it (if required)
+ * 2. Push data to the decoder until it returns that it can not take any more data. When you pushed all of the bitstream into the decoder, call setEOF.
+ * 3. Read frames until no new frames are coming out. Go back to 2.
 */
 class decoderBase
 {
 public:
+  // Create a new decoder. cachingDecoder: Is this a decoder used for caching or interactive decoding?
   decoderBase(bool cachingDecoder=false);
   virtual ~decoderBase() {};
 
-  // Is retrieving of statistics enabled? It is automatically enabled the first time statistics are requested by loadStatisticsData().
-  bool statisticsEnabled() const { return retrieveStatistics; }
+  // Does the loaded library support the extraction of prediction/residual data?
+  virtual int nrSignalsSupported() const { return 1; }
+  virtual QStringList getSignalNames() const { return QStringList() << "Reconstruction"; }
+  void setDecodeSignal(int signalID) { if (signalID < nrSignalsSupported()) decodeSignal = signalID; }
 
-  // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
-  // Return false if an error occured (opening the decoder or parsing the bitstream)
-  // If another decoder is given, don't parse the annex B bitstream again.
-  virtual bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) = 0;
-
-  // Which signal should we read from the decoder? Reconstruction(0, default), Prediction(1) or Residual(2)
-  void setDecodeSignal(int signalID);
-
-  // Load the raw YUV data for the given frame
-  virtual QByteArray loadYUVFrameData(int frameIdx) = 0;
-
-  // Get the statistics values for the given frame (decode if necessary)
-  virtual statisticsData getStatisticsData(int frameIdx, int typeIdx) = 0;
-
-  // Reload the input file
-  virtual bool reloadItemSource() = 0;
-
-  virtual yuvPixelFormat getYUVPixelFormat();
+  // If the current frame nr is valid (not -1), the current frame can be retrieved using getYUVFrameData.
+  virtual bool getCurrentFrameNr() { return currentFrameNumber; }
+  virtual QByteArray getYUVFrameData(int frameIdx) = 0;
+  virtual yuvPixelFormat getYUVPixelFormat() = 0;
   QSize getFrameSize() { return frameSize; }
 
-  // Two types of error can occur. The decoder library can not be loaded (errorInDecoder) or 
-  // an error when parsing the bitstream within YUView can occur (errorParsingBitstream).
+  // Get the statistics values for the current frame. In order to enable statistics retrievel, 
+  // activate it, reset the decoder and decode to the current frame again.
+  virtual bool statisticsSupported() const { return false; }
+  virtual bool statisticsEnabled() const { return retrieveStatistics; }
+  void enableStatisticsRetrieval() { retrieveStatistics = true; }
+  virtual statisticsData getStatisticsData(int frameIdx, int typeIdx) = 0;
+  virtual void fillStatisticList(statisticHandler &statSource) const = 0;
+
+  // Error handling
   bool errorInDecoder() const { return decoderError; }
-  bool errorParsingBitstream() const { return parsingError; }
   QString decoderErrorString() const { return errorString; }
 
-  // does the loaded library support the extraction of internals/statistics?
-  bool wrapperInternalsSupported() const { return internalsSupported; } 
-  // does the loaded library support the extraction of prediction/residual data?
-  int wrapperNrSignalsSupported() const { return nrSignalsSupported; }
-  virtual QStringList wrapperGetSignalNames() const { return QStringList() << "Reconstruction"; }
-
   // Get the full path and filename to the decoder library that is being used
-  QString getLibraryPath() const { return libraryPath; }
-
-  // Add the statistics that this deocder can retrieve
-  virtual void fillStatisticList(statisticHandler &statSource) const = 0;
+  virtual QString getLibraryPath() const = 0;
 
   // Get the deocder name (everyting that is needed to identify the deocder library)
   // If needed, also version information (like HM 16.4)
   virtual QString getDecoderName() const = 0;
   
 protected:
-  void loadDecoderLibrary(QString specificLibrary);
+  
+  int decodeSignal; ///< Which signal should be decoded?
+  bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
 
-  virtual QStringList getLibraryNames() = 0;
-  // Try to resolve all the required function pointers from the library
-  virtual void resolveLibraryFunctionPointers() = 0;
-
-  void setError(const QString &reason);
-
-  // if set to true the decoder will also get statistics from each decoded frame and put them into the local cache
+  int currentFrameNumber;
   bool retrieveStatistics;
-
-  QLibrary library;
-  bool decoderError;
-  bool parsingError;
-  bool internalsSupported;
-  int nrSignalsSupported;
-  QString errorString;
-  bool isCachingDecoder; //< Is this the caching or the interactive decoder?
-
-  int nrBitsC0;
   QSize frameSize;
-  YUVSubsamplingType pixelFormat;
-
-  // Reconstruction(0, default), Prediction(1) or Residual(2)
-  int decodeSignal;
-
+  
+  // Error handling
+  void setError(const QString &reason);
+  bool decoderError;
+  QString errorString;
+  
   // Statistics caching
   QHash<int, statisticsData> curPOCStats;  // cache of the statistics for the current POC [statsTypeID]
   int statsCacheCurPOC;                    // the POC of the statistics that are in the curPOCStats
-
-  // The buffer and the index that was requested in the last call to getOneFrame
-  int currentOutputBufferFrameIndex;
-
-  // This holds the file path to the loaded library
-  QString libraryPath;
 };
 
 #endif // DECODERBASE_H

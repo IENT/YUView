@@ -106,30 +106,6 @@ hevcDecoderHM::~hevcDecoderHM()
     libHMDec_free_decoder(decoder);
 }
 
-bool hevcDecoderHM::openFile(QString fileName, decoderBase *otherDecoder)
-{ 
-  // TODO: New interface
-  Q_UNUSED(fileName);
-  Q_UNUSED(otherDecoder);
-
-  // Open the file, decode the first frame and return if this was successfull.
-  //if (otherDecoder)
-  //  parsingError = !annexBFile->openFile(fileName, false, otherDecoder->getFileSource());
-  //else
-  //  parsingError = !annexBFile->openFile(fileName);
-  //
-  //if (!parsingError)
-  //{
-  //  // Once the annexB file is opened, the frame size and the YUV format is known.
-  //  fileSourceHEVCAnnexBFile *hevcFile = dynamic_cast<fileSourceHEVCAnnexBFile*>(annexBFile.data());
-  //  frameSize = hevcFile->getSequenceSizeSamples();
-  //  nrBitsC0 = hevcFile->getSequenceBitDepth(Luma);
-  //  pixelFormat = hevcFile->getSequenceSubsampling();
-  //}
-
-  return !parsingError && !decoderError;
-}
-
 QStringList hevcDecoderHM::getLibraryNames()
 {
   // If the file name is not set explicitly, QLibrary will try to open

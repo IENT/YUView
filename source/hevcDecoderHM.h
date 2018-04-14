@@ -85,19 +85,11 @@ public:
   hevcDecoderHM(int signalID, bool cachingDecoder=false);
   ~hevcDecoderHM();
 
-  // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
-  // Return false if an error occured (opening the decoder or parsing the bitstream)
-  // If another decoder is given, don't parse the annex B bitstream again.
-  bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) Q_DECL_OVERRIDE;
-
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx) Q_DECL_OVERRIDE;
 
   // Get the statistics values for the given frame (decode if necessary)
   statisticsData getStatisticsData(int frameIdx, int typeIdx) Q_DECL_OVERRIDE;
-
-  // Reload the input file
-  bool reloadItemSource() Q_DECL_OVERRIDE;
 
   // Add the statistics supported by the HM decoder
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
@@ -113,6 +105,7 @@ private:
   hevcDecoderHM();
 
   QStringList getLibraryNames() Q_DECL_OVERRIDE;
+  void loadDecoderLibrary(QString specificLibrary);
 
   // Try to resolve all the required function pointers from the library
   void resolveLibraryFunctionPointers() Q_DECL_OVERRIDE;
@@ -126,7 +119,6 @@ private:
   void allocateNewDecoder();
    
   libHMDec_context* decoder;
-
   libHMDec_error decError;
   
   // We keep a pointer to the last pictures that was output by the decoder. 
@@ -140,6 +132,10 @@ private:
   bool stateReadingFrames;
   // The last pushed NAL unit. We hight have to push this again.
   QByteArray lastNALUnit;
+
+  bool internalsSupported;
+
+  virtual int nrSignalsSupported() Q_DECL_OVERRIDE;
 
   // The buffer and the index that was requested in the last call to getOneFrame
   int currentOutputBufferFrameIndex;

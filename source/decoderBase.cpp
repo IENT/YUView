@@ -50,43 +50,14 @@
 #define DEBUG_HEVCDECODERBASE(fmt,...) ((void)0)
 #endif
 
-decoderBase::decoderBase(bool cachingDecoder) :
-  decoderError(false),
-  parsingError(false),
-  internalsSupported(false),
-  nrSignalsSupported(1)
+decoderBase::decoderBase(bool cachingDecoder)
 {
+  decodeSignal = 0;
+  currentFrameNumber = -1;
   retrieveStatistics = false;
+  decoderError = false;
   statsCacheCurPOC = -1;
   isCachingDecoder = cachingDecoder;
-  decodeSignal = 0;
-
-  nrBitsC0 = -1;
-  pixelFormat = YUV_NUM_SUBSAMPLINGS;
-
-  // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
-  // When using the zoom box the getOneFrame function is called frequently so we
-  // keep this buffer to not decode the same frame over and over again.
-  currentOutputBufferFrameIndex = -1;
-}
-
-void decoderBase::setDecodeSignal(int signalID)
-{
-  if (nrSignalsSupported == 1)
-    return;
-
-  DEBUG_HEVCDECODERBASE("hmDecoder::setDecodeSignal old %d new %d", decodeSignal, signalID);
-
-  if (signalID != decodeSignal)
-  {
-    // A different signal was selected
-    decodeSignal = signalID;
-
-    // We will have to decode the current frame again to get the internals/statistics
-    // This can be done like this:
-    currentOutputBufferFrameIndex = -1;
-    // Now the next call to loadYUVFrameData will load the frame again...
-  }
 }
 
 void decoderBase::setError(const QString &reason)
@@ -95,68 +66,61 @@ void decoderBase::setError(const QString &reason)
   errorString = reason;
 }
 
-void decoderBase::loadDecoderLibrary(QString specificLibrary)
-{
-  // Try to load the libde265 library from the current working directory
-  // Unfortunately relative paths like this do not work: (at least on windows)
-  // library.setFileName(".\\libde265");
-
-  bool libLoaded = false;
-
-  // Try the specific library first
-  library.setFileName(specificLibrary);
-  libraryPath = specificLibrary;
-  libLoaded = library.load();
-
-  if (!libLoaded)
-  {
-    // Try various paths/names next
-    QStringList libNames = getLibraryNames();
-
-    // Get the additional search path from the settings
-    QSettings settings;
-    settings.beginGroup("Decoders");
-    QString searchPath = settings.value("SearchPath", "").toString();
-    if (!searchPath.endsWith("/"))
-      searchPath.append("/");
-    searchPath.append("%1");
-    settings.endGroup();
-
-    QStringList const libPaths = QStringList()
-      << searchPath
-      << QDir::currentPath() + "/%1"
-      << QDir::currentPath() + "/libde265/%1"
-      << QCoreApplication::applicationDirPath() + "/%1"
-      << QCoreApplication::applicationDirPath() + "/libde265/%1"
-      << "%1"; // Try the system directories.
-
-    for (auto &libName : libNames)
-    {
-      for (auto &libPath : libPaths)
-      {
-        library.setFileName(libPath.arg(libName));
-        libraryPath = libPath.arg(libName);
-        libLoaded = library.load();
-        if (libLoaded)
-          break;
-      }
-      if (libLoaded)
-        break;
-    }
-  }
-
-  if (!libLoaded)
-  {
-    libraryPath.clear();
-    return setError(library.errorString());
-  }
-
-  resolveLibraryFunctionPointers();
-}
-
-yuvPixelFormat decoderBase::getYUVPixelFormat()
-{
-  if (pixelFormat >= YUV_444 && pixelFormat <= YUV_400 && nrBitsC0 >= 8 && nrBitsC0 <= 16)
-    return yuvPixelFormat(pixelFormat, nrBitsC0);
-  return yuvPixelFormat();
-}
+//void decoderBase::loadDecoderLibrary(QString specificLibrary)
+//{
+//  // Try to load the libde265 library from the current working directory
+//  // Unfortunately relative paths like this do not work: (at least on windows)
+//  // library.setFileName(".\\libde265");
+//
+//  bool libLoaded = false;
+//
+//  // Try the specific library first
+//  library.setFileName(specificLibrary);
+//  libraryPath = specificLibrary;
+//  libLoaded = library.load();
+//
+//  if (!libLoaded)
+//  {
+//    // Try various paths/names next
+//    QStringList libNames = getLibraryNames();
+//
+//    // Get the additional search path from the settings
+//    QSettings settings;
+//    settings.beginGroup("Decoders");
+//    QString searchPath = settings.value("SearchPath", "").toString();
+//    if (!searchPath.endsWith("/"))
+//      searchPath.append("/");
+//    searchPath.append("%1");
+//    settings.endGroup();
+//
+//    QStringList const libPaths = QStringList()
+//      << searchPath
+//      << QDir::currentPath() + "/%1"
+//      << QDir::currentPath() + "/libde265/%1"
+//      << QCoreApplication::applicationDirPath() + "/%1"
+//      << QCoreApplication::applicationDirPath() + "/libde265/%1"
+//      << "%1"; // Try the system directories.
+//
+//    for (auto &libName : libNames)
+//    {
+//      for (auto &libPath : libPaths)
+//      {
+//        library.setFileName(libPath.arg(libName));
+//        libraryPath = libPath.arg(libName);
+//        libLoaded = library.load();
+//        if (libLoaded)
+//          break;
+//      }
+//      if (libLoaded)
+//        break;
+//    }
+//  }
+//
+//  if (!libLoaded)
+//  {
+//    libraryPath.clear();
+//    return setError(library.errorString());
+//  }
+//
+//  resolveLibraryFunctionPointers();
+//}
