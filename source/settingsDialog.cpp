@@ -239,10 +239,11 @@ void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
   if (newFiles.count() != 1)
     return;
   QString error;
-  if (!hevcDecoderHM::checkLibraryFile(newFiles[0], error))
+  // TODO
+  /*if (!hevcDecoderHM::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libHMDecoder library. Error: " + error);
   else
-    ui.lineEditLibHMFile->setText(newFiles[0]);
+    ui.lineEditLibHMFile->setText(newFiles[0]);*/
 }
 
 void SettingsDialog::on_pushButtonLibJEMSelectFile_clicked()
@@ -251,10 +252,11 @@ void SettingsDialog::on_pushButtonLibJEMSelectFile_clicked()
   if (newFiles.count() != 1)
     return;
   QString error;
-  if (!hevcNextGenDecoderJEM::checkLibraryFile(newFiles[0], error))
+  // TODO
+  /*if (!hevcNextGenDecoderJEM::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libJEMDecoder library. Error: " + error);
   else
-    ui.lineEditLibJEMFile->setText(newFiles[0]);
+    ui.lineEditLibJEMFile->setText(newFiles[0]);*/
 }
 
 void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()

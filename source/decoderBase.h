@@ -38,6 +38,8 @@
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 
+#include <QLibrary>
+
 using namespace YUV_Internals;
 
 /* This class is the abstract base class for all decoders. All decoders work like this:
@@ -57,11 +59,18 @@ public:
   virtual QStringList getSignalNames() const { return QStringList() << "Reconstruction"; }
   void setDecodeSignal(int signalID) { if (signalID < nrSignalsSupported()) decodeSignal = signalID; }
 
+  // -- The decoding interface
   // If the current frame nr is valid (not -1), the current frame can be retrieved using getYUVFrameData.
+  // Call decodeNextFrame to advance to the next frame. Whe you called decodeNextFrame but the frame number is invalid,
+  // the decoder needs more data. Feed more data (untill full) and call decodeNextFrame again.
   virtual bool getCurrentFrameNr() { return currentFrameNumber; }
-  virtual QByteArray getYUVFrameData(int frameIdx) = 0;
+  virtual void decodeNextFrame() = 0;
+  virtual QByteArray getYUVFrameData() = 0;
   virtual yuvPixelFormat getYUVPixelFormat() = 0;
   QSize getFrameSize() { return frameSize; }
+  // Push data to the decoder (until no more data is needed)
+  virtual bool needsMoreData() = 0;
+  virtual void pushData(QByteArray &data) = 0;
 
   // Get the statistics values for the current frame. In order to enable statistics retrievel, 
   // activate it, reset the decoder and decode to the current frame again.

@@ -120,7 +120,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     loadingDecoder.reset(new hevcDecoderLibde265(displaySignal));
     cachingDecoder.reset(new hevcDecoderLibde265(displaySignal, true));
   }
-  else if (decoder == decoderHM)
+  /*else if (decoder == decoderHM)
   {
     loadingDecoder.reset(new hevcDecoderHM(displaySignal));
     cachingDecoder.reset(new hevcDecoderHM(displaySignal, true));
@@ -129,12 +129,12 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     loadingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal));
     cachingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal, true));
-  }
+  }*/
   else
     return;
 
   // Reset display signal if this is not supported by the decoder
-  if (displaySignal > loadingDecoder->wrapperNrSignalsSupported())
+  if (displaySignal > loadingDecoder->statisticsSupported())
     displaySignal = 0;
   yuvVideo->showPixelValuesAsDiff = (displaySignal == 2 || displaySignal == 3);
 
@@ -262,7 +262,7 @@ infoData playlistItemCompressedVideo::getInfo() const
     info.items.append(infoItem("library path", loadingDecoder->getLibraryPath(), "The path to the loaded libde265 library"));
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num POCs", QString::number(startEndFrame.second), "The number of pictures in the stream."));
-    info.items.append(infoItem("Internals", loadingDecoder->wrapperInternalsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
+    info.items.append(infoItem("Statistics", loadingDecoder->statisticsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
     info.items.append(infoItem("Stat Parsing", loadingDecoder->statisticsEnabled() ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
     info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
   }
@@ -358,35 +358,35 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
   if (caching && !cachingEnabled)
     return;
 
-  if (!caching && fileState != noError)
-    // We can not decode images
-    return;
+  //if (!caching && fileState != noError)
+  //  // We can not decode images
+  //  return;
 
-  DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData %d %s", frameIdxInternal, caching ? "caching" : "");
+  //DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData %d %s", frameIdxInternal, caching ? "caching" : "");
 
-  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-  yuvVideo->setFrameSize(loadingDecoder->getFrameSize());
-  yuvVideo->setYUVPixelFormat(loadingDecoder->getYUVPixelFormat());
-  statSource.statFrameSize = loadingDecoder->getFrameSize();
+  //videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+  //yuvVideo->setFrameSize(loadingDecoder->getFrameSize());
+  //yuvVideo->setYUVPixelFormat(loadingDecoder->getYUVPixelFormat());
+  //statSource.statFrameSize = loadingDecoder->getFrameSize();
 
-  if (frameIdxInternal > startEndFrame.second || frameIdxInternal < 0)
-  {
-    DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData Invalid frame index");
-    return;
-  }
+  //if (frameIdxInternal > startEndFrame.second || frameIdxInternal < 0)
+  //{
+  //  DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData Invalid frame index");
+  //  return;
+  //}
 
-  // Just get the frame from the correct decoder
-  QByteArray decByteArray;
-  if (caching)
-    decByteArray = cachingDecoder->loadYUVFrameData(frameIdxInternal);
-  else
-    decByteArray = loadingDecoder->loadYUVFrameData(frameIdxInternal);
+  //// Just get the frame from the correct decoder
+  //QByteArray decByteArray;
+  //if (caching)
+  //  decByteArray = cachingDecoder->loadYUVFrameData(frameIdxInternal);
+  //else
+  //  decByteArray = loadingDecoder->loadYUVFrameData(frameIdxInternal);
 
-  if (!decByteArray.isEmpty())
-  {
-    yuvVideo->rawYUVData = decByteArray;
-    yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
-  }
+  //if (!decByteArray.isEmpty())
+  //{
+  //  yuvVideo->rawYUVData = decByteArray;
+  //  yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
+  //}
 }
 
 void playlistItemCompressedVideo::createPropertiesWidget()
@@ -419,7 +419,7 @@ void playlistItemCompressedVideo::createPropertiesWidget()
   // Set the components that we can display
   if (loadingDecoder)
   {
-    ui.comboBoxDisplaySignal->addItems(loadingDecoder->wrapperGetSignalNames());
+    ui.comboBoxDisplaySignal->addItems(loadingDecoder->getSignalNames());
     ui.comboBoxDisplaySignal->setCurrentIndex(displaySignal);
   }
 
@@ -429,7 +429,7 @@ void playlistItemCompressedVideo::createPropertiesWidget()
 
 void playlistItemCompressedVideo::fillStatisticList()
 {
-  if (!loadingDecoder || !loadingDecoder->wrapperInternalsSupported())
+  if (!loadingDecoder || !loadingDecoder->statisticsSupported())
     return;
 
   loadingDecoder->fillStatisticList(statSource);
@@ -442,7 +442,7 @@ void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx
 
   DEBUG_HEVC("playlistItemCompressedVideo::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdxInternal);
 
-  if (!loadingDecoder->wrapperInternalsSupported())
+  if (!loadingDecoder->statisticsSupported())
     return;
 
   statSource.statsCache[typeIdx] = loadingDecoder->getStatisticsData(frameIdxInternal, typeIdx);
@@ -468,7 +468,7 @@ ValuePairListSets playlistItemCompressedVideo::getPixelValues(const QPoint &pixe
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
   newSet.append("YUV", video->getPixelValues(pixelPos, frameIdxInternal));
-  if (loadingDecoder->wrapperInternalsSupported() && loadingDecoder->statisticsEnabled())
+  if (loadingDecoder->statisticsSupported() && loadingDecoder->statisticsEnabled())
     newSet.append("Stats", statSource.getValuesAt(pixelPos));
 
   return newSet;
@@ -494,7 +494,8 @@ void playlistItemCompressedVideo::reloadItemSource()
   // TODO: The caching decoder must also be reloaded
   //       All items in the cache are also now invalid
 
-  loadingDecoder->reloadItemSource();
+  //loadingDecoder->reloadItemSource();
+  // Reset the decoder somehow
 
   // Set the frame number limits
   startEndFrame = getStartEndFrameLimits();

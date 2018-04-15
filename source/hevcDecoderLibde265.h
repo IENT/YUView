@@ -93,38 +93,39 @@ public:
   hevcDecoderLibde265(int signalID, bool cachingDecoder=false);
   ~hevcDecoderLibde265();
 
-  // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
-  // Return false if an error occured (opening the decoder or parsing the bitstream)
-  // If another decoder is given, don't parse the annex B bitstream again.
-  bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) Q_DECL_OVERRIDE;
+  virtual int nrSignalsSupported() const Q_DECL_OVERRIDE { return nrSignals; }
+  virtual QStringList getSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
 
-  // Load the raw YUV data for the given frame
-  QByteArray loadYUVFrameData(int frameIdx) Q_DECL_OVERRIDE;
-
-  // Get the statistics values for the given frame (decode if necessary)
-  statisticsData getStatisticsData(int frameIdx, int typeIdx) Q_DECL_OVERRIDE;
-
-  // Reload the input file
-  bool reloadItemSource() Q_DECL_OVERRIDE;
+  // Decoding 
+  virtual void decodeNextFrame() Q_DECL_OVERRIDE;
+  virtual QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
+  virtual yuvPixelFormat getYUVPixelFormat() Q_DECL_OVERRIDE;
+  // Data push
+  virtual bool needsMoreData() Q_DECL_OVERRIDE;
+  virtual void pushData(QByteArray &data) Q_DECL_OVERRIDE;
   
-  // Add the statistics supported by the libde265 decoder
+  // Statistics
+  virtual bool statisticsSupported() const Q_DECL_OVERRIDE { return internalsSupported; }
+  statisticsData getStatisticsData(int frameIdx, int typeIdx) Q_DECL_OVERRIDE;
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
-
+  
   QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }
-  QStringList wrapperGetSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
+
+  virtual QString getLibraryPath() const { return libraryPath; }
   
 private:
   // A private constructor that creates an uninitialized decoder library.
   // Used by checkLibraryFile to check if a file can be used as a hevcDecoderLibde265.
   hevcDecoderLibde265();
-
-  QStringList getLibraryNames() Q_DECL_OVERRIDE;
-
+  
   // Try to resolve all the required function pointers from the library
-  void resolveLibraryFunctionPointers() Q_DECL_OVERRIDE;
+  void resolveLibraryFunctionPointers();
+  void loadDecoderLibrary(QString);
+  QLibrary library;
+  QString libraryPath;
 
   // The function template for resolving the functions.
   // This can not go into the base class because then the template
@@ -138,8 +139,11 @@ private:
   de265_error decError;
 
   de265_decoder_context* decoder;
+
+  int nrSignals;
   
   // Statistics caching
+  bool internalsSupported;
   void cacheStatistics(const de265_image *img);
   
   // With the given partitioning mode, the size of the CU and the prediction block index, calculate the

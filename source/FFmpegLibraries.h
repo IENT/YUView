@@ -37,7 +37,6 @@
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 #include "FFMpegLibrariesHandling.h"
-#include <QLibrary>
 #include <QFileSystemWatcher>
 
 using namespace YUV_Internals;
@@ -87,6 +86,10 @@ public:
   bool errorInDecoder() const { return decodingError; }
   bool errorLoadingLibraries() const { return librariesLoadingError; }
   bool errorOpeningFile() const { return decodingError; }
+
+  /* ---- Decoding video ----
+   * Scenario 2: Decoding a video sequence from input data
+   */
 
   // Get info about the decoder (path, library versions...)
   QList<infoItem> getDecoderInfo() const;
