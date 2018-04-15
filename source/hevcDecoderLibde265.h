@@ -93,19 +93,19 @@ public:
   hevcDecoderLibde265(int signalID, bool cachingDecoder=false);
   ~hevcDecoderLibde265();
 
-  virtual int nrSignalsSupported() const Q_DECL_OVERRIDE { return nrSignals; }
-  virtual QStringList getSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
+  void resetDecoder();
 
-  // Decoding 
-  virtual void decodeNextFrame() Q_DECL_OVERRIDE;
-  virtual QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
-  virtual yuvPixelFormat getYUVPixelFormat() Q_DECL_OVERRIDE;
-  // Data push
-  virtual bool needsMoreData() Q_DECL_OVERRIDE;
-  virtual void pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  int nrSignalsSupported() const Q_DECL_OVERRIDE { return nrSignals; }
+  bool isSignalDifference(int signalID) const Q_DECL_OVERRIDE { return signalID == 2 || signalID == 3; }
+  QStringList getSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
+
+  // Decoding / pushing data
+  void decodeNextFrame() Q_DECL_OVERRIDE;
+  QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
+  void pushData(QByteArray &data) Q_DECL_OVERRIDE;
   
   // Statistics
-  virtual bool statisticsSupported() const Q_DECL_OVERRIDE { return internalsSupported; }
+  bool statisticsSupported() const Q_DECL_OVERRIDE { return internalsSupported; }
   statisticsData getStatisticsData(int frameIdx, int typeIdx) Q_DECL_OVERRIDE;
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
   
@@ -114,7 +114,7 @@ public:
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
-  virtual QString getLibraryPath() const { return libraryPath; }
+  QString getLibraryPath() const { return libraryPath; }
   
 private:
   // A private constructor that creates an uninitialized decoder library.
@@ -134,13 +134,16 @@ private:
   template <typename T> T resolveInternals(T &ptr, const char *symbol);
 
   void allocateNewDecoder();
-  
-  // Was there an error? If everything is OK it will be DE265_OK.
-  de265_error decError;
 
   de265_decoder_context* decoder;
 
   int nrSignals;
+  bool flushing;
+
+  const de265_image* curImage;
+
+  // Convert from libde265 types to YUView types
+  YUVSubsamplingType convertFromInternalSubsampling(de265_chroma fmt);
   
   // Statistics caching
   bool internalsSupported;
@@ -151,6 +154,9 @@ private:
   void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const;
   void cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth, bool isIntra, uint8_t *const intraDirY, uint8_t *const intraDirC, int intraDir_infoUnit_size, int widthInIntraDirUnits);
 
+  // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as necessary
+  // without invoking the copy operation from the libde265 buffer to the QByteArray again.
+  int currentOutputBufferFrameIndex;
 #if SSE_CONVERSION
   byteArrayAligned currentOutputBuffer;
   void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);

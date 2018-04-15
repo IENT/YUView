@@ -64,26 +64,20 @@ hevcDecoderLibde265::hevcDecoderLibde265(int signalID, bool cachingDecoder) :
   loadDecoderLibrary(settings.value("libde265File", "").toString());
   settings.endGroup();
 
-  decError = DE265_OK;
   decoder = nullptr;
   internalsSupported = false;
   nrSignals = 1;
+  flushing = false;
+  curImage = nullptr;
+  currentOutputBufferFrameIndex = -1;
 
-  // Set the signal to decode (if supported)
-  if (signalID >= 0 && signalID <= 3)
-    decodeSignal = signalID;
-  else
-    decodeSignal = 0;
-  
-  // Allocate a decoder
-  if (!decoderError)
-    allocateNewDecoder();
+  setDecodeSignal(signalID);
+  allocateNewDecoder();
 }
 
 hevcDecoderLibde265::hevcDecoderLibde265() :
   decoderBase(false)
 {
-  decError = DE265_OK;
   decoder = nullptr;
 }
 
@@ -92,6 +86,19 @@ hevcDecoderLibde265::~hevcDecoderLibde265()
   if (decoder != nullptr)
     // Free the decoder
     de265_free_decoder(decoder);
+}
+
+void hevcDecoderLibde265::resetDecoder()
+{
+  // Delete decoder
+  de265_error err = de265_free_decoder(decoder);
+  if (err != DE265_OK)
+    return setError("Reset: Freeing the decoder failded.");
+  
+  decoder = nullptr;
+  
+  // Create new decoder
+  allocateNewDecoder();
 }
 
 void hevcDecoderLibde265::resolveLibraryFunctionPointers()
@@ -168,6 +175,12 @@ void hevcDecoderLibde265::allocateNewDecoder()
 
   // Create new decoder object
   decoder = de265_new_decoder();
+  if (!decoder)
+  {
+    decoderState = decoderError;
+    setError("Error allocating decoder (de265_new_decoder)");
+    return;
+  }
 
   // Set some decoder parameters
   de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_BOOL_SEI_CHECK_HASH, false);
@@ -191,43 +204,141 @@ void hevcDecoderLibde265::allocateNewDecoder()
   //de265_set_parameter_int(decoder, DE265_DECODER_PARAM_ACCELERATION_CODE, de265_acceleration_SCALAR);
 
   de265_disable_logging();
-
   // Verbosity level (0...3(highest))
   de265_set_verbosity(0);
-
-  // Set the number of decoder threads. Libde265 can use wavefronts to utilize these.
-  decError = de265_start_worker_threads(decoder, 8);
-
   // The highest temporal ID to decode. Set this to very high (all) by default.
   de265_set_limit_TID(decoder, 100);
+
+  // Set the number of decoder threads. Libde265 can use wavefronts to utilize these.
+  // TODO: We should add a setting for this maybe?
+  de265_error err = de265_start_worker_threads(decoder, 8);
+  if (err != DE265_OK)
+    return setError("Error starting libde265 worker threads (de265_start_worker_threads)");
+
+  // The decoder is ready to receive data
+  decoderBase::resetDecoder();
+  currentOutputBufferFrameIndex = -1;
 }
 
 void hevcDecoderLibde265::decodeNextFrame()
 {
-  // TODO
+  if (decoderState != decoderRetrieveFrames)
+    return DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame: Wrong decoder state.");
+  
+  // Decode until we recieve a frame
+  int more = 1;
+  curImage = nullptr;
+  while (more && curImage == nullptr)
+  {
+    more = 0;
+    de265_error err = de265_decode(decoder, &more);
+
+    if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA)
+    {
+      decoderState = decoderNeedsMoreData;
+      return;
+    }
+    else if (err != DE265_OK)
+      return setError("Error decoding (de265_decode)");
+
+    curImage = de265_get_next_picture(decoder);
+  }
+
+  if (curImage != nullptr)
+  {
+    currentFrameNumber++;
+    // Get the resolution / yuv format from the frame
+    QSize s = QSize(de265_get_image_width(curImage, 0), de265_get_image_height(curImage, 0));
+    if (!s.isValid())
+      DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame got invalid frame size");
+    auto subsampling = convertFromInternalSubsampling(de265_get_chroma_format(curImage));
+    if (subsampling == YUV_NUM_SUBSAMPLINGS)
+      DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame got invalid subsampling");
+    int bitDepth = de265_get_bits_per_pixel(curImage, 0);
+    if (bitDepth < 8 || bitDepth > 16)
+      DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame got invalid bit depth");
+
+    if (!frameSize.isValid() && !format.isValid())
+    {
+      // Set the values
+      frameSize = s;
+      format = yuvPixelFormat(subsampling, bitDepth);
+    }
+    else
+    {
+      // Check the values against the previously set values
+      if (frameSize != s)
+        return setError("Recieved a frame of different size");
+      if (format.subsampling != subsampling)
+        return setError("Recieved a frame with different subsampling");
+      if (format.bitsPerSample != bitDepth)
+        return setError("Recieved a frame with different bit depth");
+    }
+    DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame Picture decoded %d", currentFrameNumber);
+  }
+  if (more == 0 && curImage == nullptr)
+    // Decoding ended
+    decoderState = decoderEndOfBitstream;
 }
 
 QByteArray hevcDecoderLibde265::getYUVFrameData()
 {
-  // TODO
-  return QByteArray();
-}
+  if (curImage == nullptr)
+    return QByteArray();
+  if (decoderState != decoderRetrieveFrames)
+  {
+    DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame: Wrong decoder state.");
+    return QByteArray();
+  }
 
-yuvPixelFormat hevcDecoderLibde265::getYUVPixelFormat()
-{
-  // TODO
-  return yuvPixelFormat();
-}
+  if (currentOutputBufferFrameIndex != currentFrameNumber)
+  {
+    // Put image data into buffer
+    copyImgToByteArray(curImage, currentOutputBuffer);
+    currentOutputBufferFrameIndex = currentFrameNumber;
+    DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData copied frame to buffer %d", currentOutputBufferFrameIndex);
+    
+    if (retrieveStatistics)
+    {
+      // Get the statistics from the image and put them into the statistics cache
+      cacheStatistics(curImage);
+    
+      // The cache now contains the statistics for iPOC
+      statsCacheCurPOC = currentOutputBufferFrameIndex;
+    }
+  }
 
-bool hevcDecoderLibde265::needsMoreData()
-{
-  // TODO
-  return false;
+  return currentOutputBuffer;
 }
 
 void hevcDecoderLibde265::pushData(QByteArray &data) 
 {
-  // TODO
+  if (decoderState != decoderNeedsMoreData)
+    return DEBUG_LIBDE265("hevcDecoderLibde265::pushData: Wrong decoder state.");
+  if (flushing)
+    return DEBUG_LIBDE265("hevcDecoderLibde265::pushData: Do not push data when flushing!");
+  
+  // Push the data to the decoder
+  if (data.size() > 0)
+  {
+    de265_error err = de265_push_data(decoder, data.data(), data.size(), 0, nullptr);
+    DEBUG_LIBDE265("hevcDecoderLibde265::pushData push data %d bytes - err %s", data.size(), de265_get_error_text(err));
+    if (err == DE265_OK)
+      // Enough data. Now decode/retrieve frames.
+      decoderState = decoderRetrieveFrames;
+    else if (err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
+      setError("Error pushing data to decoder (de265_push_data): " + QString(de265_get_error_text(err)));
+  }
+  else
+  {
+    // The input file is at the end. Switch to flushing mode.
+    DEBUG_LIBDE265("hevcDecoderLibde265::pushData input ended - flushing");
+    de265_error err = de265_flush_data(decoder);
+    if (err != DE265_OK)
+      return setError("Error switching to flushing mode.");
+    flushing = true;
+    decoderState = decoderRetrieveFrames;
+  }
 }
 
 //QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
@@ -1011,4 +1122,19 @@ void hevcDecoderLibde265::loadDecoderLibrary(QString specificLibrary)
   }
 
   resolveLibraryFunctionPointers();
+}
+
+YUVSubsamplingType hevcDecoderLibde265::convertFromInternalSubsampling(de265_chroma fmt)
+{
+  if (fmt == de265_chroma_mono)
+    return YUV_400;
+  else if (fmt == de265_chroma_420)
+    return YUV_420;
+  else if (fmt == de265_chroma_422)
+    return YUV_422;
+  else if (fmt == de265_chroma_444)
+    return YUV_444;
+  
+  // Invalid
+  return YUV_NUM_SUBSAMPLINGS;
 }

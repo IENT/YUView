@@ -54,22 +54,29 @@ public:
   decoderBase(bool cachingDecoder=false);
   virtual ~decoderBase() {};
 
+  // Reset the decoder. Afterwards, the decoder should behave as if you just created a new one (without
+  // the overhead of reloading the libraries). This must be used in case of errors or when seeking.
+  virtual void resetDecoder();
+
   // Does the loaded library support the extraction of prediction/residual data?
+  // These are the default implementations. Overload if a decoder can support more signals.
   virtual int nrSignalsSupported() const { return 1; }
   virtual QStringList getSignalNames() const { return QStringList() << "Reconstruction"; }
-  void setDecodeSignal(int signalID) { if (signalID < nrSignalsSupported()) decodeSignal = signalID; }
+  virtual bool isSignalDifference(int signalID) const { Q_UNUSED(signalID); return false; }
+  void setDecodeSignal(int signalID) { if (signalID >= 0 && signalID < nrSignalsSupported()) decodeSignal = signalID; }
+  int getDecodeSignal() { return decodeSignal; }
 
   // -- The decoding interface
   // If the current frame nr is valid (not -1), the current frame can be retrieved using getYUVFrameData.
   // Call decodeNextFrame to advance to the next frame. Whe you called decodeNextFrame but the frame number is invalid,
   // the decoder needs more data. Feed more data (untill full) and call decodeNextFrame again.
-  virtual bool getCurrentFrameNr() { return currentFrameNumber; }
+  virtual int getCurrentFrameNr() { if (decoderState == decoderRetrieveFrames) return -1; return currentFrameNumber; }
   virtual void decodeNextFrame() = 0;
   virtual QByteArray getYUVFrameData() = 0;
-  virtual yuvPixelFormat getYUVPixelFormat() = 0;
+  yuvPixelFormat getYUVPixelFormat() { return format; }
   QSize getFrameSize() { return frameSize; }
   // Push data to the decoder (until no more data is needed)
-  virtual bool needsMoreData() = 0;
+  bool needsMoreData() { return decoderState == decoderNeedsMoreData; }
   virtual void pushData(QByteArray &data) = 0;
 
   // Get the statistics values for the current frame. In order to enable statistics retrievel, 
@@ -81,7 +88,7 @@ public:
   virtual void fillStatisticList(statisticHandler &statSource) const = 0;
 
   // Error handling
-  bool errorInDecoder() const { return decoderError; }
+  bool errorInDecoder() const { return decoderState == decoderError; }
   QString decoderErrorString() const { return errorString; }
 
   // Get the full path and filename to the decoder library that is being used
@@ -92,6 +99,17 @@ public:
   virtual QString getDecoderName() const = 0;
   
 protected:
+
+  // Each decoder is in one of two states:
+  // decoderNeedsMoreData:  Push it using pushData. 
+  enum decoderStateType
+  {
+    decoderNeedsMoreData,   ///< The decoder needs more data (pushData). When there is no more data, push an empty QByteArray. 
+    decoderRetrieveFrames,  ///< Retrieve frames from the decoder (decodeNextFrame)
+    decoderEndOfBitstream,  ///< Decoding has ended.
+    decoderError
+  };
+  decoderStateType decoderState;
   
   int decodeSignal; ///< Which signal should be decoded?
   bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
@@ -99,10 +117,10 @@ protected:
   int currentFrameNumber;
   bool retrieveStatistics;
   QSize frameSize;
+  yuvPixelFormat format;
   
   // Error handling
   void setError(const QString &reason);
-  bool decoderError;
   QString errorString;
   
   // Statistics caching

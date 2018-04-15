@@ -53,17 +53,25 @@
 decoderBase::decoderBase(bool cachingDecoder)
 {
   decodeSignal = 0;
-  currentFrameNumber = -1;
   retrieveStatistics = false;
-  decoderError = false;
-  statsCacheCurPOC = -1;
   isCachingDecoder = cachingDecoder;
+
+  resetDecoder();
 }
 
 void decoderBase::setError(const QString &reason)
 {
-  decoderError = true;
+  decoderState = decoderError;
   errorString = reason;
+}
+
+void decoderBase::resetDecoder()
+{
+  currentFrameNumber = -1;
+  decoderState = decoderNeedsMoreData;
+  statsCacheCurPOC = -1;
+  frameSize = QSize();
+  format = yuvPixelFormat();
 }
 
 //void decoderBase::loadDecoderLibrary(QString specificLibrary)

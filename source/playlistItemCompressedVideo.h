@@ -186,9 +186,6 @@ protected:
   // Fill the list of statistic types that we can provide
   void fillStatisticList();
 
-  // Which of the signals is being displayed? Reconstruction(0), Prediction(1) or Residual(2)
-  int displaySignal;
-
   SafeUi<Ui::playlistItemCompressedFile_Widget> ui;
 
   static QStringList inputFormatNames;

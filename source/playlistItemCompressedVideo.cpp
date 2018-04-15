@@ -76,11 +76,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   // An compressed file can be cached if nothing goes wrong
   cachingEnabled = true;
 
-  // Set which signal to show
-  displaySignal = displayComponent;
-  if (displaySignal < 0)
-    displaySignal = 0;
-
   // Open the input file.
   inputFormatType = input;
   if (isAnnexBFileSource())
@@ -117,50 +112,23 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   decoderEngineType = decoder;
   if (decoder == decoderLibde265)
   {
-    loadingDecoder.reset(new hevcDecoderLibde265(displaySignal));
-    cachingDecoder.reset(new hevcDecoderLibde265(displaySignal, true));
+    loadingDecoder.reset(new hevcDecoderLibde265(displayComponent));
+    cachingDecoder.reset(new hevcDecoderLibde265(displayComponent, true));
   }
   /*else if (decoder == decoderHM)
   {
-    loadingDecoder.reset(new hevcDecoderHM(displaySignal));
-    cachingDecoder.reset(new hevcDecoderHM(displaySignal, true));
+    loadingDecoder.reset(new hevcDecoderHM(displayComponent));
+    cachingDecoder.reset(new hevcDecoderHM(displayComponent, true));
   }
   else if (decoder == decoderJEM)
   {
-    loadingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal));
-    cachingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal, true));
+    loadingDecoder.reset(new hevcNextGenDecoderJEM(displayComponent));
+    cachingDecoder.reset(new hevcNextGenDecoderJEM(displayComponent, true));
   }*/
   else
     return;
 
-  // Reset display signal if this is not supported by the decoder
-  if (displaySignal > loadingDecoder->statisticsSupported())
-    displaySignal = 0;
-  yuvVideo->showPixelValuesAsDiff = (displaySignal == 2 || displaySignal == 3);
-
-  
-  //if (!loadingDecoder->openFile(hevcFilePath))
-  //{
-  //  // Something went wrong. Let's find out what.
-  //  if (loadingDecoder->errorInDecoder())
-  //    fileState = onlyParsing;
-  //  if (loadingDecoder->errorParsingBitstream())
-  //    fileState = error;
-
-  //  // In any case, decoding of images is not possible.
-  //  cachingEnabled = false;
-  //  return;
-  //}
-
-  //// The bitstream looks valid and the decoder is operational.
-  //fileState = noError;
-
-  //if (cachingDecoder && !cachingDecoder->openFile(hevcFilePath, loadingDecoder.data()))
-  //{
-  //  // Loading the normal decoder worked, but loading another decoder for caching failed.
-  //  // That is strange.
-  //  cachingEnabled = false;
-  //}
+  yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(loadingDecoder->getDecodeSignal());
 
   //// Fill the list of statistics that we can provide
   //fillStatisticList();
@@ -198,7 +166,7 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   // Append all the properties of the HEVC file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
   d.appendProperiteChild("relativePath", relativePath);
-  d.appendProperiteChild("displayComponent", QString::number(displaySignal));
+  d.appendProperiteChild("displayComponent", QString::number(loadingDecoder->getDecodeSignal()));
 
   QString readerEngine = inputFormatNames.at(inputFormatType);
   d.appendProperiteChild("inputFormat", readerEngine);
@@ -420,7 +388,7 @@ void playlistItemCompressedVideo::createPropertiesWidget()
   if (loadingDecoder)
   {
     ui.comboBoxDisplaySignal->addItems(loadingDecoder->getSignalNames());
-    ui.comboBoxDisplaySignal->setCurrentIndex(displaySignal);
+    ui.comboBoxDisplaySignal->setCurrentIndex(loadingDecoder->getDecodeSignal());
   }
 
   // Connect signals/slots
@@ -600,15 +568,14 @@ void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QStr
 
 void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
 {
-  if (loadingDecoder && displaySignal != idx)
+  if (loadingDecoder && idx != loadingDecoder->getDecodeSignal())
   {
-    displaySignal = idx;
     loadingDecoder->setDecodeSignal(idx);
     cachingDecoder->setDecodeSignal(idx);
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a redraw.
     videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-    yuvVideo->showPixelValuesAsDiff = (idx == 2 || idx == 3);
+    yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();
     emit signalItemChanged(true, RECACHE_CLEAR);
   }
