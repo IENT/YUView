@@ -118,7 +118,7 @@ namespace playlistItems
         playlistItemCompressedVideo::decoderEngine engine;
         playlistItemCompressedVideo::inputFormat input;
         playlistItemCompressedVideo::determineInputAndDecoder(parent, fileName, input, engine);
-        if (engine == playlistItemCompressedVideo::decoderInvalid)
+        if (engine == playlistItemCompressedVideo::decoderEngineInvalid)
           return nullptr;
         playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0, input, engine);
         return newRawCodedVideo;
@@ -191,7 +191,7 @@ namespace playlistItems
         playlistItemCompressedVideo::decoderEngine engine;
         playlistItemCompressedVideo::inputFormat input;
         playlistItemCompressedVideo::determineInputAndDecoder(parent, fileName, input, engine);
-        if (engine == playlistItemCompressedVideo::decoderInvalid)
+        if (engine == playlistItemCompressedVideo::decoderEngineInvalid)
           return nullptr;
         playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0, input, engine);
         return newRawCodedVideo;

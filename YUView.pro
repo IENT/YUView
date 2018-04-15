@@ -8,6 +8,7 @@ CONFIG += c++11
 
 SOURCES += \
     source/decoderBase.cpp \
+    source/decoderLibde265.cpp \
     source/FFmpegLibraries.cpp \
     source/FFMpegLibrariesHandling.cpp \
     source/fileInfoWidget.cpp \
@@ -15,7 +16,6 @@ SOURCES += \
     source/fileSourceAnnexBFile.cpp \
     source/fileSourceFFMpegFile.cpp \
     source/frameHandler.cpp \
-    source/hevcDecoderLibde265.cpp \
     source/hevcDecoderHM.cpp \
     source/hevcNextGenDecoderJEM.cpp \
     source/mainwindow.cpp \
@@ -61,6 +61,7 @@ SOURCES += \
 
 HEADERS += \
     source/decoderBase.h \
+    source/decoderLibde265.h \
     source/FFmpegLibraries.h \
     source/FFMpegLibrariesHandling.h \
     source/FFMpegLibrariesCommonDefs.h \
@@ -70,7 +71,6 @@ HEADERS += \
     source/fileSourceFFMpegFile.h \
     source/frameHandler.h \
     source/hevcDecoderHM.h \
-    source/hevcDecoderLibde265.h \
     source/hevcNextGenDecoderJEM.h \
     source/labelElided.h \
     source/mainwindow.h \

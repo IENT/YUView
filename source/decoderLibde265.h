@@ -43,9 +43,9 @@
 
 using namespace YUV_Internals;
 
-struct hevcDecoderLibde265_Functions
+struct decoderLibde265_Functions
 {
-  hevcDecoderLibde265_Functions();
+  decoderLibde265_Functions();
 
   de265_decoder_context *(*de265_new_decoder)          ();
   void                   (*de265_set_parameter_bool)   (de265_decoder_context*, de265_param, int);
@@ -87,11 +87,11 @@ struct hevcDecoderLibde265_Functions
 // To easily access the functions, one can use protected inheritance:
 // class de265User : ..., protected de265Wrapper
 // This API is similar to the QOpenGLFunctions API family.
-class hevcDecoderLibde265 : public decoderBase, public hevcDecoderLibde265_Functions 
+class decoderLibde265 : public decoderBase, public decoderLibde265_Functions 
 {
 public:
-  hevcDecoderLibde265(int signalID, bool cachingDecoder=false);
-  ~hevcDecoderLibde265();
+  decoderLibde265(int signalID, bool cachingDecoder=false);
+  ~decoderLibde265();
 
   void resetDecoder();
 
@@ -119,7 +119,7 @@ public:
 private:
   // A private constructor that creates an uninitialized decoder library.
   // Used by checkLibraryFile to check if a file can be used as a hevcDecoderLibde265.
-  hevcDecoderLibde265();
+  decoderLibde265();
   
   // Try to resolve all the required function pointers from the library
   void resolveLibraryFunctionPointers();

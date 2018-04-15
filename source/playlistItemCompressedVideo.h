@@ -66,12 +66,12 @@ public:
     
   typedef enum
   {
-    decoderInvalid = -1,  // invalid value
-    decoderLibde265,      // The libde265 decoder
-    decoderHM,            // The HM reference software decoder
-    decoderJEM,           // The JEM reference software decoder
-    decoderFFMpeg,        // The FFMpeg decoder
-    decoder_NUM
+    decoderEngineInvalid = -1,  // invalid value
+    decoderEngineLibde265,      // The libde265 decoder
+    decoderEngineHM,            // The HM reference software decoder
+    decoderEngineJEM,           // The JEM reference software decoder
+    decoderEngineFFMpeg,        // The FFMpeg decoder
+    decoderEngineNum
   } decoderEngine;
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
@@ -79,7 +79,7 @@ public:
   * addPropertiesWidget to add the custom properties panel.
   * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
   */
-  playlistItemCompressedVideo(const QString &fileName, int displayComponent=0, inputFormat input = inputInvalid, decoderEngine decoder = decoderInvalid);
+  playlistItemCompressedVideo(const QString &fileName, int displayComponent=0, inputFormat input = inputInvalid, decoderEngine decoder = decoderEngineInvalid);
 
   // Save the compressed file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;

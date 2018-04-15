@@ -36,7 +36,7 @@
 #include "parserAnnexBHEVC.h"
 #include "parserAnnexBJEM.h"
 #include "hevcDecoderHM.h"
-#include "hevcDecoderLibde265.h"
+#include "decoderLibde265.h"
 #include "hevcNextGenDecoderJEM.h"
 
 #include <QThread>
@@ -110,10 +110,10 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Allocate the decoders
   decoderEngineType = decoder;
-  if (decoder == decoderLibde265)
+  if (decoder == decoderEngineLibde265)
   {
-    loadingDecoder.reset(new hevcDecoderLibde265(displayComponent));
-    cachingDecoder.reset(new hevcDecoderLibde265(displayComponent, true));
+    loadingDecoder.reset(new decoderLibde265(displayComponent));
+    cachingDecoder.reset(new decoderLibde265(displayComponent, true));
   }
   /*else if (decoder == decoderHM)
   {
@@ -194,10 +194,10 @@ playlistItemCompressedVideo *playlistItemCompressedVideo::newPlaylistItemCompres
   if (idx >= 0 && idx < input_NUM)
     input = inputFormat(idx);
 
-  decoderEngine decoder = decoderLibde265;
+  decoderEngine decoder = decoderEngineLibde265;
   QString decoderName = root.findChildValue("decoder");
   idx = decoderEngineNames.indexOf(decoderName);
-  if (idx >= 0 && idx < decoder_NUM)
+  if (idx >= 0 && idx < decoderEngineNum)
     decoder = decoderEngine(idx);
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
@@ -544,12 +544,12 @@ void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QStr
   {
     // Let's try to open it as a raw AnnexBHEVC file
     input = inputAnnexBHEVC;
-    decoder = decoderLibde265;
+    decoder = decoderEngineLibde265;
   }
   else
   {
     input = inputLibavformat;
-    decoder = decoderFFMpeg;
+    decoder = decoderEngineFFMpeg;
   }
 
   Q_UNUSED(parent);

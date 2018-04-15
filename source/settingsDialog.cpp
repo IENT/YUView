@@ -40,7 +40,7 @@
 #include "FFmpegLibraries.h"
 #include "hevcNextGenDecoderJEM.h"
 #include "hevcDecoderHM.h"
-#include "hevcDecoderLibde265.h"
+#include "decoderLibde265.h"
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
 
@@ -227,7 +227,7 @@ void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
   if (newFiles.count() != 1)
     return;
   QString error;
-  if (!hevcDecoderLibde265::checkLibraryFile(newFiles[0], error))
+  if (!decoderLibde265::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libde265 library. Error: " + error);
   else
     ui.lineEditLibde265File->setText(newFiles[0]);

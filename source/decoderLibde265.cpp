@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "hevcDecoderLibde265.h"
+#include "decoderLibde265.h"
 
 #include <cstring>
 #include <QCoreApplication>
@@ -39,23 +39,23 @@
 #include "typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define HEVCDECODERLIBDE265_DEBUG_OUTPUT 0
-#if HEVCDECODERLIBDE265_DEBUG_OUTPUT && !NDEBUG
+#define DECODERLIBD265_DEBUG_OUTPUT 0
+#if DECODERLIBD265_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#if HEVCDECODERLIBDE265_DEBUG_OUTPUT == 1
+#if DECODERLIBD265_DEBUG_OUTPUT == 1
 #define DEBUG_LIBDE265 if(!isCachingDecoder) qDebug
-#elif HEVCDECODERLIBDE265_DEBUG_OUTPUT == 2
+#elif DECODERLIBD265_DEBUG_OUTPUT == 2
 #define DEBUG_LIBDE265 if(isCachingDecoder) qDebug
-#elif HEVCDECODERLIBDE265_DEBUG_OUTPUT == 3
+#elif DECODERLIBD265_DEBUG_OUTPUT == 3
 #define DEBUG_LIBDE265 if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
 #endif
 #else
 #define DEBUG_LIBDE265(fmt,...) ((void)0)
 #endif
 
-hevcDecoderLibde265_Functions::hevcDecoderLibde265_Functions() { memset(this, 0, sizeof(*this)); }
+decoderLibde265_Functions::decoderLibde265_Functions() { memset(this, 0, sizeof(*this)); }
 
-hevcDecoderLibde265::hevcDecoderLibde265(int signalID, bool cachingDecoder) :
+decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
   decoderBase(cachingDecoder)
 {
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
@@ -75,20 +75,20 @@ hevcDecoderLibde265::hevcDecoderLibde265(int signalID, bool cachingDecoder) :
   allocateNewDecoder();
 }
 
-hevcDecoderLibde265::hevcDecoderLibde265() :
+decoderLibde265::decoderLibde265() :
   decoderBase(false)
 {
   decoder = nullptr;
 }
 
-hevcDecoderLibde265::~hevcDecoderLibde265()
+decoderLibde265::~decoderLibde265()
 {
   if (decoder != nullptr)
     // Free the decoder
     de265_free_decoder(decoder);
 }
 
-void hevcDecoderLibde265::resetDecoder()
+void decoderLibde265::resetDecoder()
 {
   // Delete decoder
   de265_error err = de265_free_decoder(decoder);
@@ -101,7 +101,7 @@ void hevcDecoderLibde265::resetDecoder()
   allocateNewDecoder();
 }
 
-void hevcDecoderLibde265::resolveLibraryFunctionPointers()
+void decoderLibde265::resolveLibraryFunctionPointers()
 {
   // Get/check function pointers
   if (!resolve(de265_new_decoder, "de265_new_decoder")) return;
@@ -122,7 +122,7 @@ void hevcDecoderLibde265::resolveLibraryFunctionPointers()
   if (!resolve(de265_flush_data, "de265_flush_data")) return;
   if (!resolve(de265_get_next_picture, "de265_get_next_picture")) return;
   if (!resolve(de265_free_decoder, "de265_free_decoder")) return;
-  DEBUG_LIBDE265("hevcDecoderLibde265::loadDecoderLibrary - decoding functions found");
+  DEBUG_LIBDE265("decoderLibde265::loadDecoderLibrary - decoding functions found");
 
   // Get pointers to the internals/statistics functions (if present)
   // If not, disable the statistics extraction. Normal decoding of the video will still work.
@@ -139,17 +139,17 @@ void hevcDecoderLibde265::resolveLibraryFunctionPointers()
   if (!resolveInternals(de265_internals_get_TUInfo_info, "de265_internals_get_TUInfo_info")) return;
   // All interbals functions were successfully retrieved
   internalsSupported = true;
-  DEBUG_LIBDE265("hevcDecoderLibde265::loadDecoderLibrary - statistics internals found");
+  DEBUG_LIBDE265("decoderLibde265::loadDecoderLibrary - statistics internals found");
   
   // Get pointers to the functions for retrieving prediction/residual signals
   if (!resolveInternals(de265_internals_get_image_plane, "de265_internals_get_image_plane")) return;
   if (!resolveInternals(de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool")) return;
   // The prediction and residual signal can be obtained
   nrSignals = 4;
-  DEBUG_LIBDE265("hevcDecoderLibde265::loadDecoderLibrary - prediction/residual internals found");
+  DEBUG_LIBDE265("decoderLibde265::loadDecoderLibrary - prediction/residual internals found");
 }
 
-template <typename T> T hevcDecoderLibde265::resolve(T &fun, const char *symbol)
+template <typename T> T decoderLibde265::resolve(T &fun, const char *symbol)
 {
   QFunctionPointer ptr = library.resolve(symbol);
   if (!ptr)
@@ -161,17 +161,17 @@ template <typename T> T hevcDecoderLibde265::resolve(T &fun, const char *symbol)
   return fun = reinterpret_cast<T>(ptr);
 }
 
-template <typename T> T hevcDecoderLibde265::resolveInternals(T &fun, const char *symbol)
+template <typename T> T decoderLibde265::resolveInternals(T &fun, const char *symbol)
 {
   return fun = reinterpret_cast<T>(library.resolve(symbol));
 }
 
-void hevcDecoderLibde265::allocateNewDecoder()
+void decoderLibde265::allocateNewDecoder()
 {
   if (decoder != nullptr)
     return;
 
-  DEBUG_LIBDE265("hevcDecoderLibde265::allocateNewDecoder - decodeSignal %d", decodeSignal);
+  DEBUG_LIBDE265("decoderLibde265::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
   // Create new decoder object
   decoder = de265_new_decoder();
@@ -220,10 +220,10 @@ void hevcDecoderLibde265::allocateNewDecoder()
   currentOutputBufferFrameIndex = -1;
 }
 
-void hevcDecoderLibde265::decodeNextFrame()
+void decoderLibde265::decodeNextFrame()
 {
   if (decoderState != decoderRetrieveFrames)
-    return DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame: Wrong decoder state.");
+    return DEBUG_LIBDE265("decoderLibde265::decodeNextFrame: Wrong decoder state.");
   
   // Decode until we recieve a frame
   int more = 1;
@@ -250,13 +250,13 @@ void hevcDecoderLibde265::decodeNextFrame()
     // Get the resolution / yuv format from the frame
     QSize s = QSize(de265_get_image_width(curImage, 0), de265_get_image_height(curImage, 0));
     if (!s.isValid())
-      DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame got invalid frame size");
+      DEBUG_LIBDE265("decoderLibde265::decodeNextFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(de265_get_chroma_format(curImage));
     if (subsampling == YUV_NUM_SUBSAMPLINGS)
-      DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame got invalid subsampling");
+      DEBUG_LIBDE265("decoderLibde265::decodeNextFrame got invalid subsampling");
     int bitDepth = de265_get_bits_per_pixel(curImage, 0);
     if (bitDepth < 8 || bitDepth > 16)
-      DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame got invalid bit depth");
+      DEBUG_LIBDE265("decoderLibde265::decodeNextFrame got invalid bit depth");
 
     if (!frameSize.isValid() && !format.isValid())
     {
@@ -274,20 +274,20 @@ void hevcDecoderLibde265::decodeNextFrame()
       if (format.bitsPerSample != bitDepth)
         return setError("Recieved a frame with different bit depth");
     }
-    DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame Picture decoded %d", currentFrameNumber);
+    DEBUG_LIBDE265("decoderLibde265::decodeNextFrame Picture decoded %d", currentFrameNumber);
   }
   if (more == 0 && curImage == nullptr)
     // Decoding ended
     decoderState = decoderEndOfBitstream;
 }
 
-QByteArray hevcDecoderLibde265::getYUVFrameData()
+QByteArray decoderLibde265::getYUVFrameData()
 {
   if (curImage == nullptr)
     return QByteArray();
   if (decoderState != decoderRetrieveFrames)
   {
-    DEBUG_LIBDE265("hevcDecoderLibde265::decodeNextFrame: Wrong decoder state.");
+    DEBUG_LIBDE265("decoderLibde265::decodeNextFrame: Wrong decoder state.");
     return QByteArray();
   }
 
@@ -296,7 +296,7 @@ QByteArray hevcDecoderLibde265::getYUVFrameData()
     // Put image data into buffer
     copyImgToByteArray(curImage, currentOutputBuffer);
     currentOutputBufferFrameIndex = currentFrameNumber;
-    DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData copied frame to buffer %d", currentOutputBufferFrameIndex);
+    DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData copied frame to buffer %d", currentOutputBufferFrameIndex);
     
     if (retrieveStatistics)
     {
@@ -311,18 +311,18 @@ QByteArray hevcDecoderLibde265::getYUVFrameData()
   return currentOutputBuffer;
 }
 
-void hevcDecoderLibde265::pushData(QByteArray &data) 
+void decoderLibde265::pushData(QByteArray &data) 
 {
   if (decoderState != decoderNeedsMoreData)
-    return DEBUG_LIBDE265("hevcDecoderLibde265::pushData: Wrong decoder state.");
+    return DEBUG_LIBDE265("decoderLibde265::pushData: Wrong decoder state.");
   if (flushing)
-    return DEBUG_LIBDE265("hevcDecoderLibde265::pushData: Do not push data when flushing!");
+    return DEBUG_LIBDE265("decoderLibde265::pushData: Do not push data when flushing!");
   
   // Push the data to the decoder
   if (data.size() > 0)
   {
     de265_error err = de265_push_data(decoder, data.data(), data.size(), 0, nullptr);
-    DEBUG_LIBDE265("hevcDecoderLibde265::pushData push data %d bytes - err %s", data.size(), de265_get_error_text(err));
+    DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes - err %s", data.size(), de265_get_error_text(err));
     if (err == DE265_OK)
       // Enough data. Now decode/retrieve frames.
       decoderState = decoderRetrieveFrames;
@@ -332,7 +332,7 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
   else
   {
     // The input file is at the end. Switch to flushing mode.
-    DEBUG_LIBDE265("hevcDecoderLibde265::pushData input ended - flushing");
+    DEBUG_LIBDE265("decoderLibde265::pushData input ended - flushing");
     de265_error err = de265_flush_data(decoder);
     if (err != DE265_OK)
       return setError("Error switching to flushing mode.");
@@ -341,7 +341,7 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
   }
 }
 
-//QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
+//QByteArray decoderLibde265::loadYUVFrameData(int frameIdx)
 //{
 //  // At first check if the request is for the frame that has been requested in the
 //  // last call to this function.
@@ -351,7 +351,7 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
 //    return currentOutputBuffer;
 //  }
 //
-//  DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Start request %d", frameIdx);
+//  DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData Start request %d", frameIdx);
 //
 //  //// We have to decode the requested frame.
 //  //bool seeked = false;
@@ -361,7 +361,7 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
 //  //  // The requested frame lies before the current one. We will have to rewind and start decoding from there.
 //  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
 //
-//  //  DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
+//  //  DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
 //  //  parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
 //  //  currentOutputBufferFrameIndex = seekFrameIdx - 1;
 //  //  seeked = true;
@@ -374,7 +374,7 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
 //  //  if (seekFrameIdx > currentOutputBufferFrameIndex)
 //  //  {
 //  //    // Yes we can (and should) seek ahead in the file
-//  //    DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
+//  //    DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
 //  //    parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
 //  //    currentOutputBufferFrameIndex = seekFrameIdx - 1;
 //  //    seeked = true;
@@ -429,13 +429,13 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
 //  //      if (chunk.size() > 0)
 //  //      {
 //  //        err = de265_push_data(decoder, chunk.data(), chunk.size(), 0, nullptr);
-//  //        DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData push data %d bytes - err %s", chunk.size(), de265_get_error_text(err));
+//  //        DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData push data %d bytes - err %s", chunk.size(), de265_get_error_text(err));
 //  //        if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
 //  //        {
 //  //          // An error occurred
 //  //          if (decError != err)
 //  //            decError = err;
-//  //          DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
+//  //          DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
 //  //          return QByteArray();
 //  //        }
 //  //      }
@@ -450,13 +450,13 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
 //  //      // The decoder wants more data but there is no more file.
 //  //      // We found the end of the sequence. Get the remaining frames from the decoder until
 //  //      // more is 0.
-//  //      DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Waiting for input bit file at end.");
+//  //      DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData Waiting for input bit file at end.");
 //  //    }
 //  //    else if (err != DE265_OK)
 //  //    {
 //  //      // Something went wrong
 //  //      more = 0;
-//  //      DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
+//  //      DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
 //  //      break;
 //  //    }
 //
@@ -465,7 +465,7 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
 //  //    {
 //  //      // We have received an output image
 //  //      currentOutputBufferFrameIndex++;
-//  //      DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Picture decoded %d", currentOutputBufferFrameIndex);
+//  //      DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData Picture decoded %d", currentOutputBufferFrameIndex);
 //
 //  //      // Check if the chroma format and the frame size matches the already set values (these were read from the annex B file).
 //  //      de265_chroma fmt = de265_get_chroma_format(img);
@@ -498,7 +498,7 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
 //  //        }
 //
 //  //        // Picture decoded
-//  //        DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData decoded the requested frame %d", currentOutputBufferFrameIndex);
+//  //        DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData decoded the requested frame %d", currentOutputBufferFrameIndex);
 //  //          
 //  //        return currentOutputBuffer;
 //  //      }
@@ -511,7 +511,7 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
 //  //    if (decError != err)
 //  //      decError = err;
 //
-//  //    DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
+//  //    DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData Error %s", de265_get_error_text(err));
 //  //    return QByteArray();
 //  //  }
 //  //  if (more == 0)
@@ -520,7 +520,7 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
 //  //    // We are at the end of the sequence.
 //
 //  //    // This should not happen because before decoding, we check if the frame to decode is in the list of nal units that will be decoded.
-//  //    DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData more == 0");
+//  //    DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData more == 0");
 //
 //  //    return QByteArray();
 //  //  }
@@ -530,9 +530,9 @@ void hevcDecoderLibde265::pushData(QByteArray &data)
 //}
 
 #if SSE_CONVERSION
-void hevcDecoderLibde265::copyImgToByteArray(const de265_image *src, byteArrayAligned &dst)
+void decoderLibde265::copyImgToByteArray(const de265_image *src, byteArrayAligned &dst)
 #else
-void hevcDecoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst)
+void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst)
 #endif
 {
   // How many image planes are there?
@@ -551,7 +551,7 @@ void hevcDecoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray 
     nrBytes += width * height * nrBytesPerSample;
   }
 
-  DEBUG_LIBDE265("hevcDecoderLibde265::copyImgToByteArray nrBytes %d", nrBytes);
+  DEBUG_LIBDE265("decoderLibde265::copyImgToByteArray nrBytes %d", nrBytes);
 
   // Is the output big enough?
   if (dst.capacity() < nrBytes)
@@ -588,7 +588,7 @@ void hevcDecoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray 
   }
 }
 
-void hevcDecoderLibde265::cacheStatistics(const de265_image *img)
+void decoderLibde265::cacheStatistics(const de265_image *img)
 {
   if (!internalsSupported)
     return;
@@ -734,7 +734,7 @@ void hevcDecoderLibde265::cacheStatistics(const de265_image *img)
   }
 }
 
-void hevcDecoderLibde265::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const
+void decoderLibde265::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const
 {
   // Get the position/width/height of the PB
   if (partMode == 0) // PART_2Nx2N
@@ -805,7 +805,7 @@ void hevcDecoderLibde265::getPBSubPosition(int partMode, int cbSizePix, int pbId
 * \param trDepth: The current transform tree depth
 * \param isIntra: is the CU using intra prediction?
 */
-void hevcDecoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth, bool isIntra, uint8_t *const intraDirY, uint8_t *const intraDirC, int intraDir_infoUnit_size, int widthInIntraDirUnits)
+void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth, bool isIntra, uint8_t *const intraDirY, uint8_t *const intraDirC, int intraDir_infoUnit_size, int widthInIntraDirUnits)
 {
   // Check if the TU is further split.
   if (tuInfo[tuIdx] & (1 << trDepth))
@@ -881,7 +881,7 @@ void hevcDecoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo
   }
 }
 
-statisticsData hevcDecoderLibde265::getStatisticsData(int frameIdx, int typeIdx)
+statisticsData decoderLibde265::getStatisticsData(int frameIdx, int typeIdx)
 {
   if (!retrieveStatistics)
   {
@@ -899,7 +899,7 @@ statisticsData hevcDecoderLibde265::getStatisticsData(int frameIdx, int typeIdx)
   return curPOCStats[typeIdx];
 }
 
-void hevcDecoderLibde265::fillStatisticList(statisticHandler &statSource) const
+void decoderLibde265::fillStatisticList(statisticHandler &statSource) const
 {
   StatisticsType sliceIdx(0, "Slice Index", 0, QColor(0, 0, 0), 10, QColor(255,0,0));
   sliceIdx.description = "The slice index reported per CTU";
@@ -1040,9 +1040,9 @@ void hevcDecoderLibde265::fillStatisticList(statisticHandler &statSource) const
   statSource.addStatType(transformDepth);
 }
 
-bool hevcDecoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
+bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
 {
-  hevcDecoderLibde265 testDecoder;
+  decoderLibde265 testDecoder;
 
   // Try to load the library file
   testDecoder.library.setFileName(libFilePath);
@@ -1059,7 +1059,7 @@ bool hevcDecoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
   return !testDecoder.decoderError;
 }
 
-void hevcDecoderLibde265::loadDecoderLibrary(QString specificLibrary)
+void decoderLibde265::loadDecoderLibrary(QString specificLibrary)
 {
   // Try to load the libde265 library from the current working directory
   // Unfortunately relative paths like this do not work: (at least on windows)
@@ -1124,7 +1124,7 @@ void hevcDecoderLibde265::loadDecoderLibrary(QString specificLibrary)
   resolveLibraryFunctionPointers();
 }
 
-YUVSubsamplingType hevcDecoderLibde265::convertFromInternalSubsampling(de265_chroma fmt)
+YUVSubsamplingType decoderLibde265::convertFromInternalSubsampling(de265_chroma fmt)
 {
   if (fmt == de265_chroma_mono)
     return YUV_400;
