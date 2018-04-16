@@ -67,7 +67,6 @@ void decoderBase::setError(const QString &reason)
 
 void decoderBase::resetDecoder()
 {
-  currentFrameNumber = -1;
   decoderState = decoderNeedsMoreData;
   statsCacheCurPOC = -1;
   frameSize = QSize();

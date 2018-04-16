@@ -36,9 +36,7 @@
 #include "fileSource.h"
 #include "FFmpegLibraries.h"
 
-/* This class is a normal fileSource for opening of raw AnnexBFiles.
-* Basically it understands that this is a binary file where each unit starts with a start code (0x0000001)
-* TODO: The reading / parsing could be performed in a background thread in order to increase the performance
+/* This class can use the ffmpeg libraries (libavcodec) to read from any packetized file.
 */
 class fileSourceFFMpegFile : public QObject
 {
@@ -57,9 +55,14 @@ public:
   // TODO: How do we do this?
   bool atEnd() const { return ffmpegLib.atEnd(); }
 
+  // Get properties of the bitstream
+  double getFramerate();
+  QSize getSequenceSizeSamples();
+  yuvPixelFormat getPixelFormat();
+
   // Get the next NAL unit (everything excluding the start code) or the next packet.
   // Do not mix calls to these two functions when reading a file.
-  QByteArray getNextNALUnit(uint64_t &pts);
+  QByteArray getNextNALUnit(uint64_t *pts=nullptr);
   QByteArray getNextPacket();
   // Return the raw extradata (in avformat format containing the parameter sets)
   QByteArray getExtradata();
@@ -78,6 +81,10 @@ public:
 
   int getNumberFrames() const { return nrFrames; }
   AVCodecID getCodec() { return ffmpegLib.getCodecID(); }
+
+  // Look through the keyframes and find the closest one before (or equal)
+  // the given frameIdx where we can start decoding
+  int getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const;
   
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
@@ -110,7 +117,7 @@ protected:
 
   // These are filled after opening a file (after scanBitstream was called)
   QList<pictureIdx> keyFrameList;  //< A list of pairs (frameNr, PTS) that we can seek to.
-  //pictureIdx getClosestSeekableFrameNumberBefore(int frameIdx);
+  //pictureIdx getClosestSeekableFrameNumberBeforeBefore(int frameIdx);
 
   // For parsing NAL units from the compressed data:
   QByteArray currentPacketData;

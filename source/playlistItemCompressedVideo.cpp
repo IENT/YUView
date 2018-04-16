@@ -50,6 +50,13 @@
 #define DEBUG_HEVC(fmt,...) ((void)0)
 #endif
 
+// When decoding, it can make sense to seek forward to another random access point.
+// However, for this we have to clear the decoder, seek the file and restart decoding. Internally,
+// the decoder might already have decoded the frame anyways so it makes no sense to seek but to just
+// keep on decoding normally (linearly). If the requested fram number is only is in the future
+// by lower than this threshold, we will not seek.
+#define FORWARD_SEEK_THRESHOLD 5
+
 // Initialize the static names list of the decoder engines
 QStringList playlistItemCompressedVideo::inputFormatNames = QStringList() << "annexBHEVC" << "annexBAVC" << "annexBJEM" << "FFMpeg";
 QStringList playlistItemCompressedVideo::decoderEngineNames = QStringList() << "libDe265" << "HM" << "JEM" << "FFMpeg";
@@ -74,11 +81,19 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   isFrameLoadingDoubleBuffer = false;
 
   // An compressed file can be cached if nothing goes wrong
-  cachingEnabled = true;
+  // TODO: Enable and test
+  cachingEnabled = false;
 
-  // Open the input file.
+  currentFrameIdx[0] = -1;
+  currentFrameIdx[1] = -1;
+
+  // Open the input file and get some properties (size, bit depth, subsampling) from the file
   inputFormatType = input;
-  if (isAnnexBFileSource())
+  isinputFormatTypeAnnexB = (input == inputAnnexBHEVC || input == inputAnnexBAVC || input == inputAnnexBJEM);
+
+  QSize frameSize;
+  yuvPixelFormat format;
+  if (isinputFormatTypeAnnexB)
   {
     // Open file
     inputFileAnnexB.reset(new fileSourceAnnexBFile(compressedFilePath));
@@ -92,8 +107,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     // Parse the file
     parseAnnexBFile(inputFileAnnexB, inputFileAnnexBParser);
     inputFileAnnexBParser->sortPOCList();
-
-    fileState = onlyParsing;
+    // Get the frame size and the pixel format
+    frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
+    format = inputFileAnnexBParser->getPixelFormat();
   }
   else
   {
@@ -104,9 +120,19 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       fileState = error;
       return;
     }
-    
-    fileState = onlyParsing;
+    frameSize = inputFileFFMpeg->getSequenceSizeSamples();
+    format = inputFileFFMpeg->getPixelFormat();
   }
+  // Check/set properties
+  if (!frameSize.isValid() || !format.isValid())
+  {
+    fileState = error;
+    return;
+  }
+  yuvVideo->setFrameSize(frameSize);
+  yuvVideo->setYUVPixelFormat(format);
+  // So far, we can parse the stream
+  fileState = onlyParsing;
 
   // Allocate the decoders
   decoderEngineType = decoder;
@@ -130,25 +156,22 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(loadingDecoder->getDecodeSignal());
 
-  //// Fill the list of statistics that we can provide
-  //fillStatisticList();
+  // Fill the list of statistics that we can provide
+  fillStatisticList();
 
   // Set the frame number limits
   startEndFrame = getStartEndFrameLimits();
+  if (startEndFrame.second == -1)
+    // No frames to decode
+    return;
 
-  //if (startEndFrame.second == -1)
-  //  // No frames to decode
-  //  return;
+  loadYUVData(0, false);
 
-  //// Load frame 0. This will decode the first frame in the sequence and set the
-  //// correct frame size/YUV format.
-  //loadYUVData(0, false);
-
-  //// If the yuvVideHandler requests raw YUV data, we provide it from the file
-  //connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemRawCodedVideo::loadYUVData, Qt::DirectConnection);
-  //connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemRawCodedVideo::slotUpdateFrameLimits);
-  //connect(&statSource, &statisticHandler::updateItem, this, &playlistItemRawCodedVideo::updateStatSource);
-  //connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemRawCodedVideo::loadStatisticToCache, Qt::DirectConnection);
+  // If the yuvVideHandler requests raw YUV data, we provide it from the file
+  connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemCompressedVideo::loadYUVData, Qt::DirectConnection);
+  connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemCompressedVideo::slotUpdateFrameLimits);
+  connect(&statSource, &statisticHandler::updateItem, this, &playlistItemCompressedVideo::updateStatSource);
+  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemCompressedVideo::loadStatisticToCache, Qt::DirectConnection);
 }
 
 void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -158,7 +181,7 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath(plItemNameOrFileName);
 
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemRawCodedVideo");
+  QDomElementYUView d = root.ownerDocument().createElement("playlistItemCompressedVideo");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -325,36 +348,104 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
 {
   if (caching && !cachingEnabled)
     return;
+  if (!caching && loadingDecoder->errorInDecoder())
+    return;
+  if (caching && cachingDecoder->errorInDecoder())
+    return;
+  
+  DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData %d %s", frameIdxInternal, caching ? "caching" : "");
 
-  //if (!caching && fileState != noError)
-  //  // We can not decode images
-  //  return;
+  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+  yuvVideo->setFrameSize(loadingDecoder->getFrameSize());
+  yuvVideo->setYUVPixelFormat(loadingDecoder->getYUVPixelFormat());
+  statSource.statFrameSize = loadingDecoder->getFrameSize();
 
-  //DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData %d %s", frameIdxInternal, caching ? "caching" : "");
+  if (frameIdxInternal > startEndFrame.second || frameIdxInternal < 0)
+  {
+    DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData Invalid frame index");
+    return;
+  }
 
-  //videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-  //yuvVideo->setFrameSize(loadingDecoder->getFrameSize());
-  //yuvVideo->setYUVPixelFormat(loadingDecoder->getYUVPixelFormat());
-  //statSource.statFrameSize = loadingDecoder->getFrameSize();
+  // Get the right decoder
+  decoderBase *dec;
+  int curFrameIdx = caching ? currentFrameIdx[1] : currentFrameIdx[0];
+  if (caching)
+    dec = cachingDecoder.data();
+  else
+    dec = loadingDecoder.data();
 
-  //if (frameIdxInternal > startEndFrame.second || frameIdxInternal < 0)
-  //{
-  //  DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData Invalid frame index");
-  //  return;
-  //}
+  // Should we seek?
+  bool seek = (frameIdxInternal < curFrameIdx);
+  int seekToFrame = -1;
+  int seekToPTS = -1;
+  if (frameIdxInternal < curFrameIdx || frameIdxInternal > curFrameIdx + FORWARD_SEEK_THRESHOLD)
+  {
+    if (isinputFormatTypeAnnexB)
+      seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdxInternal);
+    else
+      seekToPTS = inputFileFFMpeg->getClosestSeekableDTSBefore(frameIdxInternal, seekToFrame);
 
-  //// Just get the frame from the correct decoder
-  //QByteArray decByteArray;
-  //if (caching)
-  //  decByteArray = cachingDecoder->loadYUVFrameData(frameIdxInternal);
-  //else
-  //  decByteArray = loadingDecoder->loadYUVFrameData(frameIdxInternal);
+    if (seekToFrame > curFrameIdx + FORWARD_SEEK_THRESHOLD)
+      // We will seek forward
+      seek = true;
+  }
+  
+  if (seek)
+  {
+    // Do the seek
+    dec->resetDecoder();
+    QByteArrayList parametersets;
+    if (isinputFormatTypeAnnexB)
+    {
+      uint64_t filePos;
+      parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
+      inputFileAnnexB->seek(filePos);
+    }
+    else
+    {
+      parametersets = inputFileFFMpeg->getParameterSets();
+      inputFileFFMpeg->seekToPTS(seekToPTS);
+    }
+    for (QByteArray d : parametersets)
+      dec->pushData(d);
+    if (caching)
+      currentFrameIdx[1] = seekToFrame;
+    else
+      currentFrameIdx[0] = seekToFrame;
+  }
 
-  //if (!decByteArray.isEmpty())
-  //{
-  //  yuvVideo->rawYUVData = decByteArray;
-  //  yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
-  //}
+  // Decode until we get the right frame from the deocder
+  bool rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
+  while (!rightFrame)
+  {
+    while (dec->needsMoreData())
+    {
+      QByteArray data;
+      // Push more data to the decoder
+      if (isinputFormatTypeAnnexB)
+        data = inputFileAnnexB->getNextNALUnit();
+      else
+        data = inputFileFFMpeg->getNextNALUnit();
+      dec->pushData(data);
+    }
+
+    dec->decodeNextFrame();
+    if (dec->isCurrentFrameValid())
+    {
+      if (caching)
+        currentFrameIdx[1]++;
+      else
+        currentFrameIdx[0]++;
+
+      rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
+      if (rightFrame)
+      {
+        videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+        yuvVideo->rawYUVData = dec->getYUVFrameData();
+        yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
+      }
+    }
+  }
 }
 
 void playlistItemCompressedVideo::createPropertiesWidget()
@@ -420,11 +511,11 @@ indexRange playlistItemCompressedVideo::getStartEndFrameLimits() const
 {
   if (fileState != error)
   {
-    if (isAnnexBFileSource())
+    if (isinputFormatTypeAnnexB)
       return indexRange(0, inputFileAnnexBParser->getNumberPOCs());
     else
       // TODO: 
-      return indexRange(0, 0);
+      return indexRange(0, inputFileFFMpeg->getNumberFrames());
   }
   
   return indexRange(0, 0);
@@ -619,7 +710,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   {
     try
     {
-      nalData = file->getNextNALUnit(filePos);
+      nalData = file->getNextNALUnit(&filePos);
 
       parser->parseAndAddNALUnit(nalID, nalData, nullptr, filePos);
 

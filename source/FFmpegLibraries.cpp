@@ -524,7 +524,7 @@ QByteArray FFmpegLibraries::loadYUVFrameData(int frameIdx)
   //if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
   //{
   //  // The requested frame lies before the current one. We will have to rewind and start decoding from there.
-  //  pictureIdx seekFrameIdxAndPTS = getClosestSeekableFrameNumberBefore(frameIdx);
+  //  pictureIdx seekFrameIdxAndPTS = getClosestSeekableFrameNumberBeforeBefore(frameIdx);
 
   //  DEBUG_FFMPEG("FFmpegLibraries::loadYUVData Seek to frame %lld PTS %lld", seekFrameIdxAndPTS.frame, seekFrameIdxAndPTS.pts);
   //  seekToPTS(seekFrameIdxAndPTS.pts);
@@ -534,7 +534,7 @@ QByteArray FFmpegLibraries::loadYUVFrameData(int frameIdx)
   //{
   //  // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
   //  // Check if there is a random access point closer to the requested frame than the position that we are at right now.
-  //  pictureIdx seekFrameIdxAndPTS = getClosestSeekableFrameNumberBefore(frameIdx);
+  //  pictureIdx seekFrameIdxAndPTS = getClosestSeekableFrameNumberBeforeBefore(frameIdx);
   //  if (seekFrameIdxAndPTS.frame > currentOutputBufferFrameIndex)
   //  {
   //    // Yes we can (and should) seek ahead in the file

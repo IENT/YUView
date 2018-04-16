@@ -47,21 +47,15 @@ public:
   parserAnnexBAVC() : parserAnnexB() { firstPOCRandomAccess = INT_MAX; CpbDpbDelaysPresentFlag = false; }
   ~parserAnnexBAVC() {};
 
-  // What it the framerate?
+  // Get properties
   double getFramerate() const Q_DECL_OVERRIDE;
-  // What is the sequence resolution?
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return QSize(-1,-1); }
-  // What is the chroma format?
-  YUVSubsamplingType getSequenceSubsampling() const Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return YUV_NUM_SUBSAMPLINGS; }
-  // What is the bit depth of the reconstruction?
-  int getSequenceBitDepth(Component c) const Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ Q_UNUSED(c); return -1; }
+  yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return yuvPixelFormat(); }
 
   void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t curFilePos = -1) Q_DECL_OVERRIDE;
 
-  // When we want to seek to a specific frame number, this function return the parameter sets that you need
-  // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
-  // also be returned.
-  QList<QByteArray> determineSeekPoint(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
+  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
+  int getClosestSeekableFrameNumberBefore(int frameIdx) const Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class

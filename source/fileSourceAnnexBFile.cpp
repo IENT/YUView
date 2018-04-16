@@ -74,12 +74,11 @@ bool fileSourceAnnexBFile::openFile(const QString &fileName)
     return false;
 
   // Discard all bytes until we find a start code
-  uint64_t pos;
-  getNextNALUnit(pos);
+  getNextNALUnit();
   return true;
 }
 
-QByteArray fileSourceAnnexBFile::getNextNALUnit(uint64_t &posInFile)
+QByteArray fileSourceAnnexBFile::getNextNALUnit(uint64_t *posInFile)
 {
   QByteArray retArray;
 
@@ -96,7 +95,8 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(uint64_t &posInFile)
       if (fileBufferSize < BUFFER_SIZE)
       {
         // We are out of file and could not find a next position
-        posInFile = bufferStartPosInFile + posInBuffer;
+        if (posInFile)
+          *posInFile = bufferStartPosInFile + posInBuffer;
         posInBuffer = BUFFER_SIZE;
         return retArray;
       }
@@ -119,7 +119,8 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(uint64_t &posInFile)
   // Position found
   retArray += fileBuffer.mid(posInBuffer, nextStartCodePos - posInBuffer);
   posInBuffer = nextStartCodePos + 3; // Skip the start code
-  posInFile = bufferStartPosInFile + posInBuffer;
+  if (posInFile)
+    *posInFile = bufferStartPosInFile + posInBuffer;
   return retArray;
 }
 
@@ -382,7 +383,7 @@ bool fileSourceAnnexBFile::updateBuffer()
 //
 //// Look through the random access points and find the closest one before (or equal)
 //// the given frameIdx where we can start decoding
-//int fileSourceAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
+//int fileSourceAnnexBFile::getClosestSeekableFrameNumberBefore(int frameIdx) const
 //{
 //  // Get the POC for the frame number
 //  int iPOC = POC_List[frameIdx];

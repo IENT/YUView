@@ -67,10 +67,10 @@ public:
   int getDecodeSignal() { return decodeSignal; }
 
   // -- The decoding interface
-  // If the current frame nr is valid (not -1), the current frame can be retrieved using getYUVFrameData.
+  // If the current frame is valid, the current frame can be retrieved using getYUVFrameData.
   // Call decodeNextFrame to advance to the next frame. Whe you called decodeNextFrame but the frame number is invalid,
   // the decoder needs more data. Feed more data (untill full) and call decodeNextFrame again.
-  virtual int getCurrentFrameNr() { if (decoderState == decoderRetrieveFrames) return -1; return currentFrameNumber; }
+  virtual bool isCurrentFrameValid() = 0;
   virtual void decodeNextFrame() = 0;
   virtual QByteArray getYUVFrameData() = 0;
   yuvPixelFormat getYUVPixelFormat() { return format; }
@@ -114,7 +114,6 @@ protected:
   int decodeSignal; ///< Which signal should be decoded?
   bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
 
-  int currentFrameNumber;
   bool retrieveStatistics;
   QSize frameSize;
   yuvPixelFormat format;

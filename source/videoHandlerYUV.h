@@ -276,7 +276,7 @@ public:
 signals:
 
   // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
-  // is emitted, the requested data should be in rawData and rawData_frameIdx should be identical to
+  // is emitted, the requested data should be in rawYUVData and rawYUVData_frameIdx should be identical to
   // frameIndex. caching will signal if this call comes from a caching thread or not. If it does come
   // from a caching thread, the result must be ready when the call to this function returns.
   void signalRequestRawData(int frameIndex, bool caching);

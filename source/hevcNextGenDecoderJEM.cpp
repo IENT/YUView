@@ -287,7 +287,7 @@
 //  //if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
 //  //{
 //  //  // The requested frame lies before the current one. We will have to rewind and start decoding from there.
-//  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
+//  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumberBefore(frameIdx);
 //
 //  //  DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData Seek to %d", seekFrameIdx);
 //  //  parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
@@ -298,7 +298,7 @@
 //  //{
 //  //  // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
 //  //  // Check if there is a random access point closer to the requested frame than the position that we are at right now.
-//  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
+//  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumberBefore(frameIdx);
 //  //  if (seekFrameIdx > currentOutputBufferFrameIndex)
 //  //  {
 //  //    // Yes we can (and should) seek ahead in the file

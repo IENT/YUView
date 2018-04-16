@@ -69,7 +69,7 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
   nrSignals = 1;
   flushing = false;
   curImage = nullptr;
-  currentOutputBufferFrameIndex = -1;
+  currentOutputBuffer.clear();
 
   setDecodeSignal(signalID);
   allocateNewDecoder();
@@ -217,7 +217,7 @@ void decoderLibde265::allocateNewDecoder()
 
   // The decoder is ready to receive data
   decoderBase::resetDecoder();
-  currentOutputBufferFrameIndex = -1;
+  currentOutputBuffer.clear();
 }
 
 void decoderLibde265::decodeNextFrame()
@@ -246,7 +246,6 @@ void decoderLibde265::decodeNextFrame()
 
   if (curImage != nullptr)
   {
-    currentFrameNumber++;
     // Get the resolution / yuv format from the frame
     QSize s = QSize(de265_get_image_width(curImage, 0), de265_get_image_height(curImage, 0));
     if (!s.isValid())
@@ -291,20 +290,16 @@ QByteArray decoderLibde265::getYUVFrameData()
     return QByteArray();
   }
 
-  if (currentOutputBufferFrameIndex != currentFrameNumber)
+  if (currentOutputBuffer.isEmpty())
   {
     // Put image data into buffer
     copyImgToByteArray(curImage, currentOutputBuffer);
-    currentOutputBufferFrameIndex = currentFrameNumber;
     DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData copied frame to buffer %d", currentOutputBufferFrameIndex);
     
     if (retrieveStatistics)
     {
       // Get the statistics from the image and put them into the statistics cache
       cacheStatistics(curImage);
-    
-      // The cache now contains the statistics for iPOC
-      statsCacheCurPOC = currentOutputBufferFrameIndex;
     }
   }
 
@@ -359,7 +354,7 @@ void decoderLibde265::pushData(QByteArray &data)
 //  //if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
 //  //{
 //  //  // The requested frame lies before the current one. We will have to rewind and start decoding from there.
-//  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
+//  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumberBefore(frameIdx);
 //
 //  //  DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
 //  //  parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
@@ -370,7 +365,7 @@ void decoderLibde265::pushData(QByteArray &data)
 //  //{
 //  //  // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
 //  //  // Check if there is a random access point closer to the requested frame than the position that we are at right now.
-//  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
+//  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumberBefore(frameIdx);
 //  //  if (seekFrameIdx > currentOutputBufferFrameIndex)
 //  //  {
 //  //    // Yes we can (and should) seek ahead in the file
@@ -615,7 +610,8 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
 
   /// --- CB internals/statistics (part Size, prediction mode, PCM flag, CU trans_quant_bypass_flag)
 
-  const int iPOC = currentFrameNumber;
+  // TODO: How do we get the POC in here? / Should the decoder not be able to tell us the POC?
+  const int iPOC = 0;
 
   // Get CB info array layout from image
   int widthInCB, heightInCB, log2CBInfoUnitSize;
@@ -887,14 +883,8 @@ statisticsData decoderLibde265::getStatisticsData(int frameIdx, int typeIdx)
   {
     retrieveStatistics = true;
   }
-
-  if (frameIdx != statsCacheCurPOC)
-  {
-    if (currentFrameNumber == frameIdx)
-      // We will have to decode the current frame again to get the internals/statistics
-      // This can be done like this:
-      currentFrameNumber++;
-  }
+  // TODO
+  // This will probably not work like this
 
   return curPOCStats[typeIdx];
 }

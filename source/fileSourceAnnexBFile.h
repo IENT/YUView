@@ -64,7 +64,7 @@ public:
 
   // Get the next NAL unit (everything excluding the start code)
   // Also return the position of the NAL unit in the file so you can seek to it.
-  QByteArray getNextNALUnit(uint64_t &posInFile);
+  QByteArray getNextNALUnit(uint64_t *posInFile=nullptr);
 
 protected:
 

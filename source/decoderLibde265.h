@@ -100,6 +100,7 @@ public:
   QStringList getSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
 
   // Decoding / pushing data
+  bool isCurrentFrameValid() Q_DECL_OVERRIDE { return curImage != nullptr; }
   void decodeNextFrame() Q_DECL_OVERRIDE;
   QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
@@ -156,7 +157,6 @@ private:
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as necessary
   // without invoking the copy operation from the libde265 buffer to the QByteArray again.
-  int currentOutputBufferFrameIndex;
 #if SSE_CONVERSION
   byteArrayAligned currentOutputBuffer;
   void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);

@@ -74,7 +74,7 @@ avPacketInfo_t fileSourceFFMpegFile::getCurrentPacketInfo()
   return ffmpegLib.getPacketInfo();
 }
 
-QByteArray fileSourceFFMpegFile::getNextNALUnit(uint64_t &posInFile)
+QByteArray fileSourceFFMpegFile::getNextNALUnit(uint64_t *pts)
 {
   // Is a packet loaded?
   if (currentPacketData.isEmpty())
@@ -97,6 +97,12 @@ QByteArray fileSourceFFMpegFile::getNextNALUnit(uint64_t &posInFile)
   size += (unsigned char)sizePart.at(2) << 8;
   size += (unsigned char)sizePart.at(1) << 16;
   size += (unsigned char)sizePart.at(0) << 24;
+
+  if (pts)
+  {
+    avPacketInfo_t p = ffmpegLib.getPacketInfo();
+    *pts = p.pts;
+  }
   
   QByteArray retArray = currentPacketData.mid(posInData + 4, size);
   posInData += 4 + size;
@@ -192,6 +198,27 @@ bool fileSourceFFMpegFile::openFile(const QString &filePath)
   return true;
 }
 
+double fileSourceFFMpegFile::getFramerate()
+{
+  if (!isFileOpened)
+    return -1;
+  return ffmpegLib.getFrameRate();
+}
+
+QSize fileSourceFFMpegFile::getSequenceSizeSamples()
+{
+  if (!isFileOpened)
+    return QSize();
+  return ffmpegLib.getFrameSize();
+}
+
+yuvPixelFormat fileSourceFFMpegFile::getPixelFormat()
+{
+  if (!isFileOpened)
+    return yuvPixelFormat();
+  return ffmpegLib.getYUVPixelFormat();
+}
+
 // Check if we are supposed to watch the file for changes. If no, remove the file watcher. If yes, install one.
 void fileSourceFFMpegFile::updateFileWatchSetting()
 {
@@ -202,6 +229,30 @@ void fileSourceFFMpegFile::updateFileWatchSetting()
     fileWatcher.addPath(fullFilePath);
   else
     fileWatcher.removePath(fullFilePath);
+}
+
+int fileSourceFFMpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const
+{
+  // We are always be able to seek to the beginning of the file
+  int bestSeekPTS = keyFrameList[0].pts;
+  seekToFrameIdx = keyFrameList[0].frame;
+
+  for (pictureIdx idx : keyFrameList)
+  {
+    if (idx.frame >= 0) 
+    {
+      if (idx.frame <= frameIdx)
+      {
+        // We could seek here
+        bestSeekPTS = idx.pts;
+        seekToFrameIdx = idx.frame;
+      }
+      else
+        break;
+    }
+  }
+
+  return bestSeekPTS;
 }
 
 void fileSourceFFMpegFile::scanBitstream()

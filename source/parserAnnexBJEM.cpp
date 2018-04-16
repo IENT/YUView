@@ -146,10 +146,17 @@ QByteArray parserAnnexBJEM::nal_unit_jem::getNALHeader() const
   return QByteArray(c, 6);
 }
 
-QList<QByteArray> parserAnnexBJEM::determineSeekPoint(int iFrameNr, uint64_t &filePos)
+QList<QByteArray> parserAnnexBJEM::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   // TODO:
   Q_UNUSED(iFrameNr);
   Q_UNUSED(filePos);
   return QList<QByteArray>();
+}
+
+int parserAnnexBJEM::getClosestSeekableFrameNumberBefore(int frameIdx) const
+{
+  // TODO:
+  Q_UNUSED(frameIdx);
+  return -1;
 }

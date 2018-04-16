@@ -59,19 +59,19 @@ public:
   // Finally it should add the unit to the nalUnitList (if it is a parameter set or an RA point).
   virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t curFilePos = -1) = 0;
 
-  // What it the framerate?
+  // Get some format properties
   virtual double getFramerate() const = 0;
-  // What is the sequence resolution?
   virtual QSize getSequenceSizeSamples() const = 0;
-  // What is the chroma format?
-  virtual YUVSubsamplingType getSequenceSubsampling() const = 0;
-  // What is the bit depth of the reconstruction?
-  virtual int getSequenceBitDepth(Component c) const = 0;
+  virtual yuvPixelFormat getPixelFormat() const = 0;
 
   // When we want to seek to a specific frame number, this function return the parameter sets that you need
   // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
   // also be returned.
-  virtual QList<QByteArray> determineSeekPoint(int iFrameNr, uint64_t &filePos) = 0;
+  virtual QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) = 0;
+
+  // Look through the random access points and find the closest one before (or equal)
+  // the given frameIdx where we can start decoding
+  virtual int getClosestSeekableFrameNumberBefore(int frameIdx) const = 0;
 
   void sortPOCList() { std::sort(POC_List.begin(), POC_List.end()); }
 
@@ -119,6 +119,7 @@ protected:
   // Only parameter sets and random access positions go in here.
   // So basically all information we need to seek in the stream and start the decoder at a certain position.
   QList<QSharedPointer<nal_unit>> nalUnitList;
+  QList<int> POC_List_randomAccess;
 
 };
 

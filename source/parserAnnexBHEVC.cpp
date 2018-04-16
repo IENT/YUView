@@ -1459,7 +1459,6 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     if (new_slice->first_slice_segment_in_pic_flag)
       lastFirstSliceSegmentInPic = new_slice;
 
-    // 
     bool isRandomAccessSkip = false;
     if (firstPOCRandomAccess == INT_MAX)
     {
@@ -1493,8 +1492,11 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     if (nal_hevc.isIRAP())
     {
       if (new_slice->first_slice_segment_in_pic_flag)
+      {
         // This is the first slice of a random access point. Add it to the list.
         nalUnitList.append(new_slice);
+        POC_List_randomAccess.append(new_slice->globalPOC);
+      }
     }
   }
   else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
@@ -1559,7 +1561,7 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
 }
 
-QList<QByteArray> parserAnnexBHEVC::determineSeekPoint(int iFrameNr, uint64_t &filePos)
+QList<QByteArray> parserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   // Get the POC for the frame number
   int iPOC = POC_List[iFrameNr];
@@ -1675,9 +1677,12 @@ double parserAnnexBHEVC::getFramerate() const
   return DEFAULT_FRAMERATE;
 }
 
-YUVSubsamplingType parserAnnexBHEVC::getSequenceSubsampling() const
+yuvPixelFormat parserAnnexBHEVC::getPixelFormat() const
 {
-  // Get the subsampling from the sps
+  // Get the subsampling and bit-depth from the sps
+  int bitDepthY = -1;
+  int bitDepthC = -1;
+  YUVSubsamplingType subsampling = YUV_NUM_SUBSAMPLINGS;
   for (auto nal : nalUnitList)
   {
     // This should be an hevc nal
@@ -1687,37 +1692,30 @@ YUVSubsamplingType parserAnnexBHEVC::getSequenceSubsampling() const
     {
       auto s = nal_hevc.dynamicCast<sps>();
       if (s->chroma_format_idc == 0)
-        return YUV_400;
+        subsampling = YUV_400;
       else if (s->chroma_format_idc == 1)
-        return YUV_420;
+        subsampling = YUV_420;
       else if (s->chroma_format_idc == 2)
-        return YUV_422;
+        subsampling = YUV_422;
       else if (s->chroma_format_idc == 3)
-        return YUV_444;
+        subsampling = YUV_444;
+
+      bitDepthY = s->bit_depth_luma_minus8 + 8;
+      bitDepthC = s->bit_depth_chroma_minus8 + 8;
     }
-  }
 
-  return YUV_NUM_SUBSAMPLINGS;
-}
-
-int parserAnnexBHEVC::getSequenceBitDepth(Component c) const
-{
-  for (auto nal : nalUnitList)
-  {
-    // This should be an hevc nal
-    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
-
-    if (nal_hevc->nal_type == SPS_NUT)
+    if (bitDepthY != -1 && bitDepthC != -1 && subsampling != YUV_NUM_SUBSAMPLINGS)
     {
-      auto s = nal_hevc.dynamicCast<sps>();
-      if (c == Luma)
-        return s->bit_depth_luma_minus8 + 8;
-      else if (c == Chroma)
-        return s->bit_depth_chroma_minus8 + 8;
+      if (bitDepthY != bitDepthC)
+      {
+        DEBUG_ANNEXB("Different luma and chroma bit depths currently not supported");
+        return yuvPixelFormat();
+      }
+      return yuvPixelFormat(subsampling, bitDepthY);
     }
   }
 
-  return -1;
+  return yuvPixelFormat();
 }
 
 QByteArray parserAnnexBHEVC::nal_unit_hevc::getNALHeader() const
@@ -2296,4 +2294,28 @@ QStringList parserAnnexBHEVC::get_matrix_coefficients_meaning()
     << "Rec. ITU-R BT.2100-0 ICTCP"
     << "For future use by ITU-T | ISO/IEC";
   return matrix_coefficients_meaning;
+}
+
+int parserAnnexBHEVC::getClosestSeekableFrameNumberBefore(int frameIdx) const
+{
+  // Get the POC for the frame number
+  int iPOC = POC_List[frameIdx];
+
+  // We schould always be able to seek to the beginning of the file
+  int bestSeekPOC = POC_List[0];
+
+  for (auto nal : nalUnitList)
+  {
+    if (!nal->isParameterSet() && nal->getPOC() >= 0) 
+    {
+      if (nal->getPOC() <= iPOC)
+        // We could seek here
+        bestSeekPOC = nal->getPOC();
+      else
+        break;
+    }
+  }
+
+  // Get the frame index for the given POC
+  return POC_List.indexOf(bestSeekPOC);
 }

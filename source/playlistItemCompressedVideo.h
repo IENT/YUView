@@ -141,8 +141,6 @@ protected:
   // Override from playlistItemIndexed. The readerEngine can tell us how many frames there are in the sequence.
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
-  bool isAnnexBFileSource() const { return inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM; }
-
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   typedef enum
@@ -166,6 +164,7 @@ protected:
 
   // Which type is the input / what decoder do we use?
   inputFormat inputFormatType;
+  bool isinputFormatTypeAnnexB;
   decoderEngine decoderEngineType;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
@@ -190,6 +189,9 @@ protected:
 
   static QStringList inputFormatNames;
   static QStringList decoderEngineNames;
+
+  // The current frame index of the decoders (interactive/caching)
+  int currentFrameIdx[2];
 
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
