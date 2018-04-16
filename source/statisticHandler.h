@@ -88,7 +88,9 @@ public:
   // Get the statisticsType with the given typeID from p_statsTypeList
   StatisticsType *getStatisticsType(int typeID);
 
-  QSize statFrameSize;
+  void setFrameSize(QSize frameSize) { statFrameSize = frameSize; }
+  void setFrameSize(int width, int height) { statFrameSize = QSize(width, height); }
+  QSize getFrameSize() const { return statFrameSize; }
 
   // Add new statistics type. Add all types using this function before creating the controls (createStatisticsHandlerControls).
   void addStatType(const StatisticsType &type) { statsTypeList.append(type); }
@@ -112,6 +114,9 @@ signals:
   void requestStatisticsLoading(int frameIdx, int typeIdx);
 
 private:
+
+  // The frame size of the statistics. Needed for drawing the statistics at the right position.
+  QSize statFrameSize;
 
   // Make sure that nothing is read from the stats cache while it is being changed.
   QMutex statsCacheAccessMutex;

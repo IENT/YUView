@@ -85,7 +85,7 @@ public:
   virtual bool statisticsSupported() const { return false; }
   virtual bool statisticsEnabled() const { return retrieveStatistics; }
   void enableStatisticsRetrieval() { retrieveStatistics = true; }
-  virtual statisticsData getStatisticsData(int frameIdx, int typeIdx) = 0;
+  virtual statisticsData getStatisticsData(int typeIdx) = 0;
   virtual void fillStatisticList(statisticHandler &statSource) const = 0;
 
   // Error handling

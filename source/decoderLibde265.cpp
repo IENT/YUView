@@ -58,18 +58,18 @@ decoderLibde265_Functions::decoderLibde265_Functions() { memset(this, 0, sizeof(
 decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
   decoderBase(cachingDecoder)
 {
-  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
-  QSettings settings;
-  settings.beginGroup("Decoders");
-  loadDecoderLibrary(settings.value("libde265File", "").toString());
-  settings.endGroup();
-
   decoder = nullptr;
   internalsSupported = false;
   nrSignals = 1;
   flushing = false;
   curImage = nullptr;
   currentOutputBuffer.clear();
+
+  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
+  QSettings settings;
+  settings.beginGroup("Decoders");
+  loadDecoderLibrary(settings.value("libde265File", "").toString());
+  settings.endGroup();
 
   setDecodeSignal(signalID);
   allocateNewDecoder();
@@ -903,15 +903,11 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, in
   }
 }
 
-statisticsData decoderLibde265::getStatisticsData(int frameIdx, int typeIdx)
+statisticsData decoderLibde265::getStatisticsData(int typeIdx)
 {
   if (!retrieveStatistics)
-  {
-    retrieveStatistics = true;
-  }
-  // TODO
-  // This will probably not work like this
-
+    return statisticsData();
+  
   return curPOCStats[typeIdx];
 }
 

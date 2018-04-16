@@ -52,7 +52,7 @@ public:
 
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
 
-  virtual QSize getSize() const Q_DECL_OVERRIDE { return statSource.statFrameSize; }
+  virtual QSize getSize() const Q_DECL_OVERRIDE { return statSource.getFrameSize(); }
   
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;

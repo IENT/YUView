@@ -435,7 +435,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         int width = rowItemList[4].toInt();
         int height = rowItemList[5].toInt();
         if (width > 0 && height > 0)
-          statSource.statFrameSize = QSize(width, height);
+          statSource.setFrameSize(width, height);
         if (rowItemList[6].toDouble() > 0.0)
           frameRate = rowItemList[6].toDouble();
       }
@@ -539,7 +539,8 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdxInternal, int 
       int height = rowItemList[4].toUInt();
 
       // Check if block is within the image range
-      if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.statFrameSize.width() || posY + height > statSource.statFrameSize.height()))
+      QSize frameSize = statSource.getFrameSize();
+      if (blockOutsideOfFrame_idx == -1 && (posX + width > frameSize.width() || posY + height > frameSize.height()))
         // Block not in image. Warn about this.
         blockOutsideOfFrame_idx = frameIdxInternal;
 

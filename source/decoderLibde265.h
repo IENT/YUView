@@ -108,7 +108,7 @@ public:
   
   // Statistics
   bool statisticsSupported() const Q_DECL_OVERRIDE { return internalsSupported; }
-  statisticsData getStatisticsData(int frameIdx, int typeIdx) Q_DECL_OVERRIDE;
+  statisticsData getStatisticsData(int typeIdx) Q_DECL_OVERRIDE;
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
   
   QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }

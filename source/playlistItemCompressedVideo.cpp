@@ -131,6 +131,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   }
   yuvVideo->setFrameSize(frameSize);
   yuvVideo->setYUVPixelFormat(format);
+  statSource.setFrameSize(frameSize);
   // So far, we can parse the stream
   fileState = onlyParsing;
 
@@ -502,8 +503,22 @@ void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx
 
   if (!loadingDecoder->statisticsSupported())
     return;
+  if (!loadingDecoder->statisticsEnabled())
+  {
+    // We have to enable collecting of statistics in the decoder. By default (for speed reasons) this is off.
+    // Enabeling works like this: Enable collection, reset the decoder and decode the current frame again.
+    // Statisitcs are always retrieved for the loading decoder.
+    loadingDecoder->enableStatisticsRetrieval();
 
-  statSource.statsCache[typeIdx] = loadingDecoder->getStatisticsData(frameIdxInternal, typeIdx);
+    // Reload the current frame (force a seek and decode operation)
+    int frameToLoad = currentFrameIdx[0];
+    currentFrameIdx[0] = INT_MAX;
+    loadYUVData(frameToLoad, false);
+
+    // The statistics should now be loaded
+  }
+
+  statSource.statsCache[typeIdx] = loadingDecoder->getStatisticsData(typeIdx);
 }
 
 indexRange playlistItemCompressedVideo::getStartEndFrameLimits() const

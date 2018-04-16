@@ -129,14 +129,6 @@ public:
   // Ask the user if various options exist.
   static void determineInputAndDecoder(QWidget *parent, QString fileName, inputFormat &input, decoderEngine &decoder);
 
-public slots:
-  // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
-  // requested to be drawn has not been loaded yet.
-  virtual void loadYUVData(int frameIdxInternal, bool forceDecodingNow);
-
-  // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
-  virtual void loadStatisticToCache(int frameIdx, int typeIdx);
-
 protected:
   // Override from playlistItemIndexed. The readerEngine can tell us how many frames there are in the sequence.
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
@@ -197,6 +189,13 @@ protected:
   void seekToPosition(int seekToFrame, int seekToPTS, bool caching);
 
 private slots:
+  // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
+  // requested to be drawn has not been loaded yet.
+  virtual void loadYUVData(int frameIdxInternal, bool forceDecodingNow);
+
+  // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
+  virtual void loadStatisticToCache(int frameIdx, int typeIdx);
+
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
   void displaySignalComboBoxChanged(int idx);
 
