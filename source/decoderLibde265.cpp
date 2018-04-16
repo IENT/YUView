@@ -291,6 +291,7 @@ void decoderLibde265::decodeFrame()
     DEBUG_LIBDE265("decoderLibde265::decodeNextFrame Picture decoded");
 
     decoderState = decoderRetrieveFrames;
+    currentOutputBuffer.clear();
   }
 }
 
