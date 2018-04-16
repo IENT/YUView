@@ -39,7 +39,7 @@
 #include "typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERLIBD265_DEBUG_OUTPUT 0
+#define DECODERLIBD265_DEBUG_OUTPUT 1
 #if DECODERLIBD265_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERLIBD265_DEBUG_OUTPUT == 1
@@ -119,6 +119,7 @@ void decoderLibde265::resolveLibraryFunctionPointers()
   if (!resolve(de265_get_bits_per_pixel,"de265_get_bits_per_pixel")) return;
   if (!resolve(de265_decode, "de265_decode")) return;
   if (!resolve(de265_push_data, "de265_push_data")) return;
+  if (!resolve(de265_push_NAL, "de265_push_NAL")) return;
   if (!resolve(de265_flush_data, "de265_flush_data")) return;
   if (!resolve(de265_get_next_picture, "de265_get_next_picture")) return;
   if (!resolve(de265_free_decoder, "de265_free_decoder")) return;
@@ -223,9 +224,16 @@ void decoderLibde265::allocateNewDecoder()
 void decoderLibde265::decodeNextFrame()
 {
   if (decoderState != decoderRetrieveFrames)
-    return DEBUG_LIBDE265("decoderLibde265::decodeNextFrame: Wrong decoder state.");
+  {
+    DEBUG_LIBDE265("decoderLibde265::decodeNextFrame: Wrong decoder state.");
+    return;
+  }
   
-  // Decode until we recieve a frame
+  decodeFrame();
+}
+
+void decoderLibde265::decodeFrame()
+{
   int more = 1;
   curImage = nullptr;
   while (more && curImage == nullptr)
@@ -242,6 +250,13 @@ void decoderLibde265::decodeNextFrame()
       return setError("Error decoding (de265_decode)");
 
     curImage = de265_get_next_picture(decoder);
+  }
+
+  if (more == 0 && curImage == nullptr)
+  {
+    // Decoding ended
+    decoderState = decoderEndOfBitstream;
+    return;
   }
 
   if (curImage != nullptr)
@@ -273,11 +288,10 @@ void decoderLibde265::decodeNextFrame()
       if (format.bitsPerSample != bitDepth)
         return setError("Recieved a frame with different bit depth");
     }
-    DEBUG_LIBDE265("decoderLibde265::decodeNextFrame Picture decoded %d", currentFrameNumber);
+    DEBUG_LIBDE265("decoderLibde265::decodeNextFrame Picture decoded");
+
+    decoderState = decoderRetrieveFrames;
   }
-  if (more == 0 && curImage == nullptr)
-    // Decoding ended
-    decoderState = decoderEndOfBitstream;
 }
 
 QByteArray decoderLibde265::getYUVFrameData()
@@ -294,7 +308,7 @@ QByteArray decoderLibde265::getYUVFrameData()
   {
     // Put image data into buffer
     copyImgToByteArray(curImage, currentOutputBuffer);
-    DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData copied frame to buffer %d", currentOutputBufferFrameIndex);
+    DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData copied frame to buffer");
     
     if (retrieveStatistics)
     {
@@ -309,20 +323,28 @@ QByteArray decoderLibde265::getYUVFrameData()
 void decoderLibde265::pushData(QByteArray &data) 
 {
   if (decoderState != decoderNeedsMoreData)
-    return DEBUG_LIBDE265("decoderLibde265::pushData: Wrong decoder state.");
+  {
+    DEBUG_LIBDE265("decoderLibde265::pushData: Wrong decoder state.");
+    return;
+  }
   if (flushing)
-    return DEBUG_LIBDE265("decoderLibde265::pushData: Do not push data when flushing!");
+  {
+    DEBUG_LIBDE265("decoderLibde265::pushData: Do not push data when flushing!");
+    return;
+  }
   
   // Push the data to the decoder
   if (data.size() > 0)
   {
-    de265_error err = de265_push_data(decoder, data.data(), data.size(), 0, nullptr);
-    DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes - err %s", data.size(), de265_get_error_text(err));
+    // de265_push_NAL will return either DE265_OK or DE265_ERROR_OUT_OF_MEMORY
+    de265_error err = de265_push_NAL(decoder, data.data(), data.size(), 0, nullptr);
     if (err == DE265_OK)
-      // Enough data. Now decode/retrieve frames.
-      decoderState = decoderRetrieveFrames;
-    else if (err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
-      setError("Error pushing data to decoder (de265_push_data): " + QString(de265_get_error_text(err)));
+      DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes", data.size());
+    else
+    {
+      DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes - err %s", data.size(), de265_get_error_text(err));
+      return setError("Error pushing data to decoder (de265_push_NAL): " + QString(de265_get_error_text(err)));
+    }
   }
   else
   {
@@ -332,8 +354,11 @@ void decoderLibde265::pushData(QByteArray &data)
     if (err != DE265_OK)
       return setError("Error switching to flushing mode.");
     flushing = true;
-    decoderState = decoderRetrieveFrames;
   }
+
+  // After pushing a frame to the decoder, decode until there is a fram coming out (switch to 
+  // decoderRetrieveFrames) or the decoder returns DE265_ERROR_WAITING_FOR_INPUT_DATA.
+  decodeFrame();
 }
 
 //QByteArray decoderLibde265::loadYUVFrameData(int frameIdx)
@@ -1046,7 +1071,7 @@ bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
   // If this works, we can be fairly certain that this is a valid libde265 library.
   testDecoder.resolveLibraryFunctionPointers();
   error = testDecoder.decoderErrorString();
-  return !testDecoder.decoderError;
+  return !testDecoder.errorInDecoder();
 }
 
 void decoderLibde265::loadDecoderLibrary(QString specificLibrary)

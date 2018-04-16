@@ -34,7 +34,7 @@
 
 #include <QSettings>
 
-#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 1
+#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
@@ -194,6 +194,8 @@ bool fileSourceFFMpegFile::openFile(const QString &filePath)
   fileChanged = false;
 
   scanBitstream();
+  // Seek back to the beginning
+  ffmpegLib.seekToPTS(0);
 
   return true;
 }

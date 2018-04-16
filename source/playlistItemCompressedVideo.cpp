@@ -140,6 +140,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     loadingDecoder.reset(new decoderLibde265(displayComponent));
     cachingDecoder.reset(new decoderLibde265(displayComponent, true));
+    fileState = noError;
   }
   /*else if (decoder == decoderHM)
   {
@@ -165,6 +166,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     // No frames to decode
     return;
 
+  // Seek both decoders to the start of the bitstream (this will also push the parameter sets / extradata to the decoder)
+  seekToPosition(0, 0, false);
   loadYUVData(0, false);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
@@ -355,11 +358,6 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
   
   DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData %d %s", frameIdxInternal, caching ? "caching" : "");
 
-  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-  yuvVideo->setFrameSize(loadingDecoder->getFrameSize());
-  yuvVideo->setYUVPixelFormat(loadingDecoder->getYUVPixelFormat());
-  statSource.statFrameSize = loadingDecoder->getFrameSize();
-
   if (frameIdxInternal > startEndFrame.second || frameIdxInternal < 0)
   {
     DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData Invalid frame index");
@@ -367,12 +365,8 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
   }
 
   // Get the right decoder
-  decoderBase *dec;
+  decoderBase *dec = caching ? cachingDecoder.data() : loadingDecoder.data();
   int curFrameIdx = caching ? currentFrameIdx[1] : currentFrameIdx[0];
-  if (caching)
-    dec = cachingDecoder.data();
-  else
-    dec = loadingDecoder.data();
 
   // Should we seek?
   bool seek = (frameIdxInternal < curFrameIdx);
@@ -391,28 +385,7 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
   }
   
   if (seek)
-  {
-    // Do the seek
-    dec->resetDecoder();
-    QByteArrayList parametersets;
-    if (isinputFormatTypeAnnexB)
-    {
-      uint64_t filePos;
-      parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
-      inputFileAnnexB->seek(filePos);
-    }
-    else
-    {
-      parametersets = inputFileFFMpeg->getParameterSets();
-      inputFileFFMpeg->seekToPTS(seekToPTS);
-    }
-    for (QByteArray d : parametersets)
-      dec->pushData(d);
-    if (caching)
-      currentFrameIdx[1] = seekToFrame;
-    else
-      currentFrameIdx[0] = seekToFrame;
-  }
+    seekToPosition(seekToFrame, seekToPTS, caching);
 
   // Decode until we get the right frame from the deocder
   bool rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
@@ -429,7 +402,6 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
       dec->pushData(data);
     }
 
-    dec->decodeNextFrame();
     if (dec->isCurrentFrameValid())
     {
       if (caching)
@@ -444,8 +416,35 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
         yuvVideo->rawYUVData = dec->getYUVFrameData();
         yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
       }
+
+      dec->decodeNextFrame();
     }
   }
+}
+
+void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS, bool caching)
+{
+  // Do the seek
+  decoderBase *dec = caching ? cachingDecoder.data() : loadingDecoder.data();
+  dec->resetDecoder();
+  QByteArrayList parametersets;
+  if (isinputFormatTypeAnnexB)
+  {
+    uint64_t filePos;
+    parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
+    inputFileAnnexB->seek(filePos);
+  }
+  else
+  {
+    parametersets = inputFileFFMpeg->getParameterSets();
+    inputFileFFMpeg->seekToPTS(seekToPTS);
+  }
+  for (QByteArray d : parametersets)
+    dec->pushData(d);
+  if (caching)
+    currentFrameIdx[1] = seekToFrame - 1;
+  else
+    currentFrameIdx[0] = seekToFrame - 1;
 }
 
 void playlistItemCompressedVideo::createPropertiesWidget()
@@ -640,7 +639,7 @@ void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QStr
   else
   {
     input = inputLibavformat;
-    decoder = decoderEngineFFMpeg;
+    decoder = decoderEngineLibde265;
   }
 
   Q_UNUSED(parent);

@@ -193,6 +193,9 @@ protected:
   // The current frame index of the decoders (interactive/caching)
   int currentFrameIdx[2];
 
+  // Seek the input file to the given position, reset the decoder and prepare it to start decoding from the given position.
+  void seekToPosition(int seekToFrame, int seekToPTS, bool caching);
+
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
   void displaySignalComboBoxChanged(int idx);

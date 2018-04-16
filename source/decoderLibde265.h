@@ -62,6 +62,7 @@ struct decoderLibde265_Functions
   int                    (*de265_get_bits_per_pixel)   (const de265_image*, int);
   de265_error            (*de265_decode)               (de265_decoder_context*, int*);
   de265_error            (*de265_push_data)            (de265_decoder_context*, const void*, int, de265_PTS, void*);
+  de265_error            (*de265_push_NAL)             (de265_decoder_context*, const void*, int, de265_PTS, void*);
   de265_error            (*de265_flush_data)           (de265_decoder_context*);
   const de265_image*     (*de265_get_next_picture)     (de265_decoder_context*);
   de265_error            (*de265_free_decoder)         (de265_decoder_context*);
@@ -141,6 +142,8 @@ private:
   int nrSignals;
   bool flushing;
 
+  // Try to decode a frame. If successfull, the frame will be pointed to by curImage.
+  void decodeFrame();
   const de265_image* curImage;
 
   // Convert from libde265 types to YUView types

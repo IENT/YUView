@@ -154,7 +154,7 @@ bool FFmpegLibraries::openFile(QString fileName)
     frameRate = -1;
   else
     frameRate = avgFrameRate.num / double(avgFrameRate.den);
-  pixelFormat = decCtx.get_pixel_format();
+  pixelFormat = video_stream.getCodec().get_pixel_format();
   duration = fmt_ctx.get_duration();
   timeBase = video_stream.get_time_base();
 

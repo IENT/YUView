@@ -77,6 +77,7 @@ public:
   QSize getFrameSize() { return frameSize; }
   // Push data to the decoder (until no more data is needed)
   bool needsMoreData() { return decoderState == decoderNeedsMoreData; }
+  // In order to make the interface generic, the pushData function accepts data only without start codes
   virtual void pushData(QByteArray &data) = 0;
 
   // Get the statistics values for the current frame. In order to enable statistics retrievel, 
