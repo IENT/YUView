@@ -505,6 +505,7 @@ namespace YUV_Internals
     append(yuvPixelFormat(YUV_420, 8, Order_YUV)); // YUV 4:2:0
     append(yuvPixelFormat(YUV_422, 8, Order_YUV)); // YUV 4:2:2
     append(yuvPixelFormat(YUV_444, 8, Order_YUV)); // YUV 4:4:4
+    append(yuvPixelFormat(YUV_420, 10, Order_YUV)); // YUV 4:2:0 10 bit
   }
 
   // Put all the names of the YUVFormatList into a list and return it
@@ -3812,7 +3813,7 @@ void videoHandlerYUV::setYUVPixelFormat(const yuvPixelFormat &newFormat, bool em
   {
     if (ui.created())
     {
-      // Check if the custom format it in the presets list. If not, add it
+      // Check if the custom format is in the presets list. If not, add it.
       int idx = yuvPresetsList.indexOf(newFormat);
       if (idx == -1)
       {
