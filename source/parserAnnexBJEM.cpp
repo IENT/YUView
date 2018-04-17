@@ -142,8 +142,8 @@ bool parserAnnexBJEM::nal_unit_jem::isSlice()
 QByteArray parserAnnexBJEM::nal_unit_jem::getNALHeader() const
 { 
   int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
-  char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
-  return QByteArray(c, 6);
+  char c[2] = { (char)(out >> 8), (char)out };
+  return QByteArray(c, 2);
 }
 
 QList<QByteArray> parserAnnexBJEM::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)

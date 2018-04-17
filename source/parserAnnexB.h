@@ -65,8 +65,8 @@ public:
   virtual yuvPixelFormat getPixelFormat() const = 0;
 
   // When we want to seek to a specific frame number, this function return the parameter sets that you need
-  // to start decoding. If file positions were set for the NAL units, the file position where decoding can begin will 
-  // also be returned.
+  // to start decoding (without start codes). If file positions were set for the NAL units, the file position 
+  // where decoding can begin will also be returned.
   virtual QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) = 0;
 
   // Look through the random access points and find the closest one before (or equal)
@@ -97,7 +97,7 @@ protected:
     virtual QByteArray getNALHeader() const = 0;
     virtual bool isParameterSet() const = 0;
     virtual int  getPOC() const { return -1; }
-    // Get the raw NAL unit (including start code, nal unit header and payload)
+    // Get the raw NAL unit (excluding a start code, including nal unit header and payload)
     // This only works if the payload was saved of course
     QByteArray getRawNALData() const { return getNALHeader() + nalPayload; }
 

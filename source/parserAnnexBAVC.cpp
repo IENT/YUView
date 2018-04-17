@@ -1211,8 +1211,8 @@ QByteArray parserAnnexBAVC::nal_unit_avc::getNALHeader() const
   // TODO: 
   // if ( nal_unit_type = = 14 | | nal_unit_type = = 20 | | nal_unit_type = = 21 ) ...
   char out = ((int)nal_ref_idc << 5) + nal_unit_type;
-  char c[5] = { 0, 0, 0, 1, out };
-  return QByteArray(c, 5);
+  char c[1] = { out };
+  return QByteArray(c, 1);
 }
 
 int parserAnnexBAVC::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root)

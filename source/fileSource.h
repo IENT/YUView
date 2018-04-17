@@ -69,7 +69,7 @@ public:
   // Pass on to srcFile
   virtual bool atEnd() const { return !isFileOpened ? true : srcFile.atEnd(); }
   QByteArray readLine() { return !isFileOpened ? QByteArray() : srcFile.readLine(); }
-  bool seek(int64_t pos) { return !isFileOpened ? false : srcFile.seek(pos); }
+  virtual bool seek(int64_t pos) { return !isFileOpened ? false : srcFile.seek(pos); }
   int64_t pos() { return !isFileOpened ? 0 : srcFile.pos(); }
 
   // Guess the format (width, height, frameTate...) from the file name.

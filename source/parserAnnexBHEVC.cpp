@@ -1564,7 +1564,7 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
 QList<QByteArray> parserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   // Get the POC for the frame number
-  int iPOC = POC_List[iFrameNr];
+  int seekPOC = POC_List[iFrameNr];
 
   // Collect the active parameter sets
   vps_map active_VPS_list;
@@ -1581,7 +1581,7 @@ QList<QByteArray> parserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64
       // We can cast this to a slice.
       auto s = nal_hevc.dynamicCast<slice>();
 
-      if (s->PicOrderCntVal == iPOC) 
+      if (s->globalPOC == seekPOC)
       {
         // Seek here
         filePos = s->filePos;
@@ -1721,8 +1721,8 @@ yuvPixelFormat parserAnnexBHEVC::getPixelFormat() const
 QByteArray parserAnnexBHEVC::nal_unit_hevc::getNALHeader() const
 { 
   int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
-  char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
-  return QByteArray(c, 6);
+  char c[2] = { (char)(out >> 8), (char)out };
+  return QByteArray(c, 2);
 }
 
 void parserAnnexBHEVC::nal_unit_hevc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
@@ -2299,21 +2299,16 @@ QStringList parserAnnexBHEVC::get_matrix_coefficients_meaning()
 int parserAnnexBHEVC::getClosestSeekableFrameNumberBefore(int frameIdx) const
 {
   // Get the POC for the frame number
-  int iPOC = POC_List[frameIdx];
+  int seekPOC = POC_List[frameIdx];
 
-  // We schould always be able to seek to the beginning of the file
-  int bestSeekPOC = POC_List[0];
-
-  for (auto nal : nalUnitList)
+  int bestSeekPOC = POC_List_randomAccess[0];
+  for (int poc : POC_List_randomAccess)
   {
-    if (!nal->isParameterSet() && nal->getPOC() >= 0) 
-    {
-      if (nal->getPOC() <= iPOC)
-        // We could seek here
-        bestSeekPOC = nal->getPOC();
-      else
-        break;
-    }
+    if (poc <= seekPOC)
+      // We could seek here
+      bestSeekPOC = poc;
+    else
+      break;
   }
 
   // Get the frame index for the given POC

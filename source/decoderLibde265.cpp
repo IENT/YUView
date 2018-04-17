@@ -614,6 +614,8 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
   if (!internalsSupported)
     return;
 
+  DEBUG_LIBDE265("decoderLibde265::cacheStatistics");
+
   // Clear the local statistics cache
   curPOCStats.clear();
 

@@ -63,22 +63,24 @@ public:
   bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize < BUFFER_SIZE; }
 
   // Get the next NAL unit (everything excluding the start code)
-  // Also return the position of the NAL unit in the file so you can seek to it.
+  // Also return the start position of the NAL unit in the file so you can seek to it.
   QByteArray getNextNALUnit(uint64_t *posInFile=nullptr);
+
+  // Seek the file to the given byte position. Update the buffer.
+  bool seek(int64_t pos);
 
 protected:
 
   QByteArray   fileBuffer;
-  uint64_t      fileBufferSize;       ///< How many of the bytes are used? We don't resize the fileBuffer
+  uint64_t     fileBufferSize;       ///< How many of the bytes are used? We don't resize the fileBuffer
   unsigned int posInBuffer;          ///< The current position in the input buffer in bytes
-  uint64_t      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
+  uint64_t     bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
 
   // The start code pattern
   QByteArray startCode;
 
   // load the next buffer
   bool updateBuffer();
-
 
   //// Seek to the first byte of the payload data of the next NAL unit (after the start code)
   //// Return false if not successfull (eg. file ended)
