@@ -326,7 +326,7 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
 {
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  if (fileState == noError && frameIdxInternal >= startEndFrame.first && frameIdxInternal < startEndFrame.second)
+  if (fileState == noError && frameIdxInternal >= startEndFrame.first && frameIdxInternal <= startEndFrame.second)
   {
     video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
     statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
@@ -526,10 +526,10 @@ indexRange playlistItemCompressedVideo::getStartEndFrameLimits() const
   if (fileState != error)
   {
     if (isinputFormatTypeAnnexB)
-      return indexRange(0, inputFileAnnexBParser->getNumberPOCs());
+      return indexRange(0, inputFileAnnexBParser->getNumberPOCs() - 1);
     else
       // TODO: 
-      return indexRange(0, inputFileFFMpeg->getNumberFrames());
+      return indexRange(0, inputFileFFMpeg->getNumberFrames() - 1);
   }
   
   return indexRange(0, 0);
