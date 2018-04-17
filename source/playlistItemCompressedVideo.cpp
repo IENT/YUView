@@ -496,8 +496,7 @@ void playlistItemCompressedVideo::fillStatisticList()
 
 void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx)
 {
-  Q_UNUSED(typeIdx);
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+  Q_UNUSED(frameIdx);
 
   DEBUG_HEVC("playlistItemCompressedVideo::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdxInternal);
 

@@ -94,7 +94,7 @@ public:
   decoderLibde265(int signalID, bool cachingDecoder=false);
   ~decoderLibde265();
 
-  void resetDecoder();
+  void resetDecoder() Q_DECL_OVERRIDE;
 
   int nrSignalsSupported() const Q_DECL_OVERRIDE { return nrSignals; }
   bool isSignalDifference(int signalID) const Q_DECL_OVERRIDE { return signalID == 2 || signalID == 3; }
@@ -116,7 +116,7 @@ public:
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
-  QString getLibraryPath() const { return libraryPath; }
+  QString getLibraryPath() const Q_DECL_OVERRIDE { return libraryPath; }
   
 private:
   // A private constructor that creates an uninitialized decoder library.

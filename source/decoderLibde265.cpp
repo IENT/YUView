@@ -339,13 +339,9 @@ void decoderLibde265::pushData(QByteArray &data)
   {
     // de265_push_NAL will return either DE265_OK or DE265_ERROR_OUT_OF_MEMORY
     de265_error err = de265_push_NAL(decoder, data.data(), data.size(), 0, nullptr);
-    if (err == DE265_OK)
-      DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes", data.size());
-    else
-    {
-      DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes - err %s", data.size(), de265_get_error_text(err));
+    DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes%s%s", data.size(), err != DE265_OK ? " - err " : "", err != DE265_OK ? de265_get_error_text(err) : "");
+    if (err != DE265_OK)
       return setError("Error pushing data to decoder (de265_push_NAL): " + QString(de265_get_error_text(err)));
-    }
   }
   else
   {

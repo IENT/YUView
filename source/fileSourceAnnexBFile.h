@@ -67,7 +67,7 @@ public:
   QByteArray getNextNALUnit(uint64_t *posInFile=nullptr);
 
   // Seek the file to the given byte position. Update the buffer.
-  bool seek(int64_t pos);
+  bool seek(int64_t pos) Q_DECL_OVERRIDE;
 
 protected:
 
