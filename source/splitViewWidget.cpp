@@ -1305,7 +1305,8 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
   double newZoom = 1.0;
   if (zoomFactor > 1.0)
   {
-    while (newZoom <= zoomFactor)
+    double inf = std::numeric_limits<double>::infinity();
+    while (newZoom <= zoomFactor && newZoom < inf)
       newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
   }
   else
@@ -1390,7 +1391,7 @@ void splitViewWidget::zoomOut(const QPoint &zoomPoint)
   }
   else
   {
-    while (newZoom >= zoomFactor)
+    while (newZoom >= zoomFactor && newZoom > 0.0)
       newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
   }
   // So what is the zoom factor that we use in this step?
