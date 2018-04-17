@@ -81,56 +81,6 @@ protected:
 
   // load the next buffer
   bool updateBuffer();
-
-  //// Seek to the first byte of the payload data of the next NAL unit (after the start code)
-  //// Return false if not successfull (eg. file ended)
-  //bool seekToNextNALUnit();
-
-  //// Get the remaining bytes in the NAL unit or maxBytes (if set).
-  //// This function might also return less than maxBytes if a NAL header is encountered before reading maxBytes bytes.
-  //// Or: do getCurByte(), gotoNextByte until we find a new start code.
-  //QByteArray getRemainingNALBytes(int maxBytes=-1);
-  //  
-  //// Move the file to the next byte. Update the buffer if necessary.
-  //// Return false if the operation failed.
-  //bool gotoNextByte();
-
-  //// Get the current byte in the buffer
-  //char getCurByte() const { return fileBuffer.at(posInBuffer); }
-
-  //// Get if the current position is the one byte of a start code
-  //bool curPosAtStartCode() const { return numZeroBytes >= 2 && getCurByte() == (char)1; }
-
-  //// The current absolut position in the file (byte precise)
-  //uint64_t tell() const { return bufferStartPosInFile + posInBuffer; }
-
-  //// Read the remaining bytes from the buffer and return them. Then load the next buffer.
-  //QByteArray getRemainingBuffer_Update();
-
-  //// Get the bytes of the next NAL unit;
-  //QByteArray getNextNALUnit();
-  //
-  //// Buffers to access the binary file
-  //QByteArray   fileBuffer;
-  //uint64_t      fileBufferSize;
-  //unsigned int posInBuffer;	         ///< The current position in the input buffer in bytes
-  //uint64_t      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
-  //int          numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
-
-  //// A pointer to the parser. This can be any specific annexB parser (AVC, HEVC, JEM ...)
-  //// This file format always has a parser because we need it to determine the POCs and the random access points.
-  //QScopedPointer<annexBParser> parser;
-
-  
-
-  //// Scan the file. We don't know the specific type of bitstream so we will just look for start-codes
-  //// and pass all the actual data to the annexBParser.
-  //bool scanFileForNalUnits(bool saveAllUnits);
-
-  
-
-  //// Seek the file to the given byte position. Update the buffer.
-  //bool seekToFilePos(uint64_t pos);
 };
 
 #endif //FILESOURCEANNEXBFILE_H
