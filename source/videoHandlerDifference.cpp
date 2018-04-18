@@ -31,9 +31,18 @@
 */
 
 #include "videoHandlerDifference.h"
+#include "videoHandlerYUV.h"
 
 #include <algorithm>
-#include "signalsSlots.h"
+#include <QPainter>
+
+// Activate this if you want to know when which buffer is loaded/converted to image and so on.
+#define VIDEOHANDLERDIFFERENCE_DEBUG_LOADING 0
+#if VIDEOHANDLERDIFFERENCE_DEBUG_LOADING && !NDEBUG
+#define DEBUG_VIDEO qDebug
+#else
+#define DEBUG_VIDEO(fmt,...) ((void)0)
+#endif
 
 videoHandlerDifference::videoHandlerDifference() : videoHandler()
 {
@@ -42,7 +51,53 @@ videoHandlerDifference::videoHandlerDifference() : videoHandler()
   codingOrder = CodingOrder_HEVC;
 }
 
-void videoHandlerDifference::loadFrame(int frameIndex, bool loadToDoubleBuffer)
+void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx, int frameIdxItem0, int frameIdxItem1, double zoomFactor, bool drawRawValues)
+{
+  if (!inputsValid())
+    return;
+
+  // Check if the frameIdx changed and if we have to load a new frame
+  if (frameIdx != currentImageIdx)
+  {
+    // The current buffer is out of date. Update it.
+
+    // Check the double buffer
+    if (frameIdx == doubleBufferImageFrameIdx)
+    {
+      currentImage = doubleBufferImage;
+      currentImageIdx = frameIdx;
+      DEBUG_VIDEO("videoHandler::drawFrame %d loaded from double buffer", frameIdx);
+    }
+    else
+    {
+      QMutexLocker lock(&imageCacheAccess);
+      if (cacheValid && imageCache.contains(frameIdx))
+      {
+        currentImage = imageCache[frameIdx];
+        currentImageIdx = frameIdx;
+        DEBUG_VIDEO("videoHandler::drawFrame %d loaded from cache", frameIdx);
+      }
+    }
+  }
+
+  // Create the video QRect with the size of the sequence and center it.
+  QRect videoRect;
+  videoRect.setSize(frameSize * zoomFactor);
+  videoRect.moveCenter(QPoint(0, 0));
+
+  // Draw the current image (currentImage)
+  currentImageSetMutex.lock();
+  painter->drawImage(videoRect, currentImage);
+  currentImageSetMutex.unlock();
+
+  if (drawRawValues && zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR)
+  {
+    // Draw the pixel values onto the pixels
+    inputVideo[0]->drawPixelValues(painter, frameIdxItem0, videoRect, zoomFactor, inputVideo[1], this->markDifference, frameIdxItem1);
+  }
+}
+
+void videoHandlerDifference::loadFrameDifference(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer)
 {
   // No double buffering for difference items
   Q_UNUSED(loadToDoubleBuffer);
@@ -57,11 +112,11 @@ void videoHandlerDifference::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   // make sure that the right frame is loaded for the video item.
   videoHandler* video0 = dynamic_cast<videoHandler*>(inputVideo[0].data());
   videoHandler* video1 = dynamic_cast<videoHandler*>(inputVideo[1].data());
-  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex)
-    video1->loadFrame(frameIndex);
+  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex1)
+    video1->loadFrame(frameIndex1);
   
-  // Calculate the difference
-  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, amplificationFactor, markDifference);
+  // Calculate the difference  
+  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex0, frameIndex1, differenceInfoList, amplificationFactor, markDifference);
 
   if (!newFrame.isNull())
   {
@@ -108,25 +163,14 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
   }
 }
 
-ValuePairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
 {
   Q_UNUSED(item2);
 
   if (!inputsValid())
     return ValuePairList();
 
-  return inputVideo[0]->getPixelValues(pixelPos, frameIdx, inputVideo[1]);
-}
-
-void videoHandlerDifference::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
-{
-  Q_UNUSED(item2);
-  Q_UNUSED(markDifference);
-
-  if (!inputsValid())
-    return;
-
-  inputVideo[0]->drawPixelValues(painter, frameIdx, videoRect, zoomFactor, inputVideo[1], this->markDifference);
+  return inputVideo[0]->getPixelValues(pixelPos, frameIdx, inputVideo[1], frameIdx1);
 }
 
 QLayout *videoHandlerDifference::createDifferenceHandlerControls()
@@ -144,8 +188,8 @@ QLayout *videoHandlerDifference::createDifferenceHandlerControls()
    
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.markDifferenceCheckBox, &QCheckBox::stateChanged, this, &videoHandlerDifference::slotDifferenceControlChanged);
-  connect(ui.codingOrderComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerDifference::slotDifferenceControlChanged);
-  connect(ui.amplificationFactorSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerDifference::slotDifferenceControlChanged);
+  connect(ui.codingOrderComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerDifference::slotDifferenceControlChanged);
+  connect(ui.amplificationFactorSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerDifference::slotDifferenceControlChanged);
     
   return ui.topVBoxLayout;
 }
@@ -204,14 +248,35 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
       {
         // Now take the tree approach
         int firstX, firstY, partIndex = 0;
-        if (hierarchicalPosition(x*64, y*64, 64, firstX, firstY, partIndex, currentImage))
+
+
+        videoHandlerYUV* video0 = dynamic_cast<videoHandlerYUV*>(inputVideo[0].data());
+        if(video0 != NULL && video0->getIs_YUV_diff())
         {
-          // We found a difference in this block
-          infoList.append(infoItem("First Difference LCU", QString::number(y * widthLCU + x)));
-          infoList.append(infoItem("First Difference X", QString::number(firstX)));
-          infoList.append(infoItem("First Difference Y", QString::number(firstY)));
-          infoList.append(infoItem("First Difference partIndex", QString::number(partIndex)));
-          return;
+
+            // find first difference using YUV instead of QImage. The latter does not work for 10bit videos and very small differences, since it only supports 8bit
+            if (hierarchicalPositionYUV(x*64, y*64, 64, firstX, firstY, partIndex, video0->getDiffYUV(), video0->getDiffYUVFormat()))
+            {
+              // We found a difference in this block
+              infoList.append(infoItem("First Difference LCU", QString::number(y * widthLCU + x)));
+              infoList.append(infoItem("First Difference X", QString::number(firstX)));
+              infoList.append(infoItem("First Difference Y", QString::number(firstY)));
+              infoList.append(infoItem("First Difference partIndex", QString::number(partIndex)));
+              return;
+            }
+
+        }
+        else
+        {
+            if (hierarchicalPosition(x*64, y*64, 64, firstX, firstY, partIndex, currentImage))
+            {
+              // We found a difference in this block
+              infoList.append(infoItem("First Difference LCU", QString::number(y * widthLCU + x)));
+              infoList.append(infoItem("First Difference X", QString::number(firstX)));
+              infoList.append(infoItem("First Difference Y", QString::number(firstY)));
+              infoList.append(infoItem("First Difference partIndex", QString::number(partIndex)));
+              return;
+            }
         }
       }
     }
@@ -281,6 +346,122 @@ bool videoHandlerDifference::hierarchicalPosition(int x, int y, int blockSize, i
     if (hierarchicalPosition(x     , y + b2, b2, firstX, firstY, partIndex, diffImg))
       return true;
     if (hierarchicalPosition(x + b2, y + b2, b2, firstX, firstY, partIndex, diffImg))
+      return true;
+  }
+  return false;
+}
+
+inline int getValueFromSource(const unsigned char * src, const int idx, const int bps, const bool bigEndian)
+{
+  if (bps > 8)
+    // Read two bytes in the right order
+    return (bigEndian) ? src[idx*2] << 8 | src[idx*2+1] : src[idx*2] | src[idx*2+1] << 8;
+  else
+    // Just read one byte
+    return src[idx];
+}
+
+
+bool videoHandlerDifference::hierarchicalPositionYUV(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QByteArray &diffYUV, const YUV_Internals::yuvPixelFormat &diffYUVFormat) const
+{
+  if (x >= frameSize.width() || y >= frameSize.height())
+    // This block is entirely outside of the picture
+    return false;
+
+  // The items can be of different size (we then calculate the difference of the top left aligned part)
+  const int w_in = frameSize.width();
+  const int h_in = frameSize.height();
+
+  // Get subsampling modes (they are identical for both inputs and the output)
+  const int subH = diffYUVFormat.getSubsamplingHor();
+  const int subV = diffYUVFormat.getSubsamplingVer();
+
+  // Get the endianess of the inputs
+  const bool bigEndian = diffYUVFormat.bigEndian;
+
+  // Get/Set the bit depth of the input
+  const int bps_in = diffYUVFormat.bitsPerSample;
+  const int diffZero = 128 << (bps_in-8);
+
+  // Get pointers to the inputs
+  const int componentSizeLuma_In = w_in*h_in;
+  const int componentSizeChroma_In = (w_in/subH)*(h_in/subV);
+  const int nrBytesLumaPlane_In = bps_in > 8 ? 2 * componentSizeLuma_In : componentSizeLuma_In;
+  const int nrBytesChromaPlane_In = bps_in > 8 ? 2 * componentSizeChroma_In : componentSizeChroma_In;
+  // Current item
+
+  // Calculate Luma sample difference
+  const int stride_in = bps_in > 8 ? w_in*2 : w_in;  // How many bytes to the next y line?
+  const int strideC_in = w_in / subH * (bps_in > 8 ? 2 : 1) ;  // How many bytes to the next U/V y line
+
+  if (blockSize == 4)
+  {
+      const unsigned char * srcY1 = (unsigned char*)diffYUV.data();
+      const unsigned char * srcU1 = (diffYUVFormat.planeOrder == YUV_Internals::Order_YUV || diffYUVFormat.planeOrder == YUV_Internals::Order_YUVA) ? srcY1 + nrBytesLumaPlane_In : srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In;
+      const unsigned char * srcV1 = (diffYUVFormat.planeOrder == YUV_Internals::Order_YUV || diffYUVFormat.planeOrder == YUV_Internals::Order_YUVA) ? srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In: srcY1 + nrBytesLumaPlane_In;
+
+    // adjust source pointer according to block position
+    srcY1 += y*stride_in;
+    srcU1 += y/subV*strideC_in;
+    srcV1 += y/subV*strideC_in;
+
+    // Check for a difference
+    for (int subY=y; subY < y+4; subY++)
+    {
+
+      for (int subX=x; subX < x+4; subX++)
+      {
+
+          int val1 = getValueFromSource(srcY1, subX, bps_in, bigEndian);
+          if(val1 != diffZero)
+          {
+              firstX = x;
+              firstY = y;
+              return true;
+          }
+
+          // is this a position at which we have a chroma sample?
+          if(subX % subH == 0 && subY % subV == 0 && subX*subV < w_in)
+          {
+              int valU1 = getValueFromSource(srcU1, subX, bps_in, bigEndian);
+              int valV1 = getValueFromSource(srcV1, subX, bps_in, bigEndian);
+              if(valU1 != diffZero || valV1 != diffZero)
+              {
+                  firstX = x*subV;
+                  firstY = y;
+                  return true;
+              }
+          }
+
+
+      }
+
+      // Goto the next y line
+      srcY1 += stride_in;
+
+      // is this a position at which we have a chroma line?
+      if(subY % subV == 0)
+      {
+          // Goto the next y line
+          srcU1 += strideC_in;
+          srcV1 += strideC_in;
+      }
+    }
+
+    // No difference found in this block. Count the number of 4x4 blocks scanned (that is the partIndex)
+    partIndex++;
+  }
+  else
+  {
+    // Walk further into the hierarchy
+    const int b2 = blockSize/2;
+    if (hierarchicalPositionYUV(x     , y     , b2, firstX, firstY, partIndex, diffYUV, diffYUVFormat))
+      return true;
+    if (hierarchicalPositionYUV(x + b2, y     , b2, firstX, firstY, partIndex, diffYUV, diffYUVFormat))
+      return true;
+    if (hierarchicalPositionYUV(x     , y + b2, b2, firstX, firstY, partIndex, diffYUV, diffYUVFormat))
+      return true;
+    if (hierarchicalPositionYUV(x + b2, y + b2, b2, firstX, firstY, partIndex, diffYUV, diffYUVFormat))
       return true;
   }
   return false;

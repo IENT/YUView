@@ -188,10 +188,12 @@ public:
   virtual void cacheFrame(int idx, bool testMode) { Q_UNUSED(idx); Q_UNUSED(testMode); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const { return QList<int>(); }
+  virtual int getNumberCachedFrames() const { return 0; }
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() const { return 0; }
-  // Remove the frame with the given index from the cache. If the index is -1, remove all frames from the cache.
+  // Remove the frame with the given index from the cache.
   virtual void removeFrameFromCache(int idx) { Q_UNUSED(idx); }
+  virtual void removeAllFramesFromCache() {};
 
   // ----- Detection of source/file change events -----
 
@@ -212,6 +214,10 @@ public:
   signalItemChanged to update the limits.
   */
   virtual indexRange getStartEndFrameLimits() const { return indexRange(-1, -1); }
+
+  // Using the set start frame, get the index within the item.
+  int getFrameIdxInternal(int frameIdx) const { return frameIdx + startEndFrame.first; }
+  int getFrameIdxExternal(int frameIdxInternal) const { return frameIdxInternal - startEndFrame.first; }
   
 
   // ----- function for getting the data to fill the histogramms / charts -----
@@ -285,9 +291,6 @@ signals:
 protected:
 
   void setStartEndFrame(indexRange range, bool emitSignal);
-
-  // Using the set start frame, get the index within the item.
-  int getFrameIdxInternal(int frameIdx) { return frameIdx + startEndFrame.first; }
 
   // Save the given item name or filename that is given when constricting a playlistItem.
   QString plItemNameOrFileName;

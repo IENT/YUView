@@ -33,6 +33,7 @@
 #include "playlistItems.h"
 
 #include <QInputDialog>
+#include <QMessageBox>
 #include <QStringList>
 
 namespace playlistItems
@@ -144,9 +145,22 @@ namespace playlistItems
       if (allExtensions.contains(ext))
       {
         // This is definitely an image file. But could it also be an image file sequence?
+        bool openAsImageSequence = false;
         if (playlistItemImageFileSequence::isImageSequence(fileName))
         {
-          // This is not only one image, but a sequence of images. Open it as a file sequence
+          // This is not only one image, but a sequence of images. Ask the user how to open it.
+          QMessageBox::StandardButton choice = QMessageBox::question(parent, "Open image sequence", "This image can be opened as an image sequence. Do you want to open it as an image sequence (Yes) or as a single static image (No)?\n", QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Yes);
+          if (choice == QMessageBox::Yes)
+            openAsImageSequence = true;
+          else if (choice == QMessageBox::No)
+            openAsImageSequence = false;
+          else
+            return nullptr;
+        }
+
+        if (openAsImageSequence)
+        {
+          // Open it as a file sequence
           playlistItemImageFileSequence *newSequence = new playlistItemImageFileSequence(fileName);
           return newSequence;
         }

@@ -93,13 +93,15 @@ indexRange playlistItemContainer::getStartEndFrameLimits() const
 
 void playlistItemContainer::updateChildList()
 {
-  // Disconnect all signalItemChanged event from the children
+  // Disconnect all signalItemChanged events from the children to the "childChanged" function from this container.
+  // All the original connections from the items to the playlistTreeWidget will be retained. The user can still select 
+  // the child items individually so the individual connections must also be there.
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *item = getChildPlaylistItem(i);
     if (item)
     {
-      disconnect(item, &playlistItem::signalItemChanged, nullptr, nullptr);
+      disconnect(item, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
       if (item->providesStatistics())
         item->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
     }
@@ -159,7 +161,7 @@ void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
     playlistItem *listItem = getChildPlaylistItem(i);
     if (listItem && listItem == item)
     {
-      disconnect(listItem, &playlistItem::signalItemChanged, nullptr, nullptr);
+      disconnect(listItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
       if (listItem->providesStatistics())
         listItem->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
       takeChild(i);

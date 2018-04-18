@@ -120,7 +120,7 @@ private:
   // offsets for each raw YUV frame.
   bool parseY4MFile();
   bool isY4MFile;
-  QList<int> y4mFrameIndices;
+  QList<quint64> y4mFrameIndices;
 };
 
 #endif // PLAYLISTITEMRAWFILE_H

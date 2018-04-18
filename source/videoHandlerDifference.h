@@ -37,6 +37,7 @@
 #include "fileInfoWidget.h"
 #include "ui_videoHandlerDifference.h"
 #include "videoHandler.h"
+#include "videoHandlerYUV.h"
 
 class videoHandlerDifference : public videoHandler
 {
@@ -44,10 +45,13 @@ class videoHandlerDifference : public videoHandler
 
 public:
 
+  // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
+  // if the frame with the current frame index is loaded in the background.
+  void drawDifferenceFrame(QPainter *painter, int frameIdx, int frameIdxItem0, int frameIdxItem1, double zoomFactor, bool drawRawValues);
+
   explicit videoHandlerDifference();
 
-  virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false) Q_DECL_OVERRIDE;
-  virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache) Q_DECL_OVERRIDE { Q_UNUSED(frameIndex); Q_UNUSED(frameToCache); }
+  void loadFrameDifference(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer=false);
   
   // Are both inputs valid and can be used?
   bool inputsValid() const;
@@ -60,12 +64,9 @@ public:
   void setInputVideos(frameHandler *childVideo0, frameHandler *childVideo1);
 
   QList<infoItem> differenceInfoList;
-
-  // Draw the pixel values depending on the children type. E.g. if both children are YUV handlers, draw the YUV differences.
-  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=nullptr, const bool markDifference=false) Q_DECL_OVERRIDE;
-
+  
   // The difference overloads this and returns the difference values (A-B)
-  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr) Q_DECL_OVERRIDE;
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr, const int frameIdx1 = 0) Q_DECL_OVERRIDE;
 
   // Calculate the position of the first difference and add the info to the list
   void reportFirstDifferencePosition(QList<infoItem> &infoList) const;
@@ -86,10 +87,11 @@ private:
   CodingOrder codingOrder;
 
   // The two videos that the difference will be calculated from
-  QPointer<frameHandler> inputVideo[2];
+  QPointer<frameHandler> inputVideo[2];  
 
   // Recursively scan the LCU
   bool hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg) const;
+  bool hierarchicalPositionYUV(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QByteArray &diffYUV, const YUV_Internals::yuvPixelFormat &diffYUVFormat) const;
 
   SafeUi<Ui::videoHandlerDifference> ui;
 

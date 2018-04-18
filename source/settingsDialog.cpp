@@ -81,6 +81,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   QColor gridLineColor = settings.value("OverlayGrid/Color").value<QColor>();
   ui.frameBackgroundColor->setPlainColor(backgroundColor);
   ui.frameGridLineColor->setPlainColor(gridLineColor);
+  ui.checkBoxPlaybackControlFullScreen->setChecked(settings.value("ShowPlaybackControlFullScreen", false).toBool());
   // Updates settings
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
@@ -312,6 +313,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("MouseMode", ui.comboBoxMouseMode->currentText());
   settings.setValue("Background/Color", ui.frameBackgroundColor->getPlainColor());
   settings.setValue("OverlayGrid/Color", ui.frameGridLineColor->getPlainColor());
+  settings.setValue("ShowPlaybackControlFullScreen", ui.checkBoxPlaybackControlFullScreen->isChecked());
   // Update settings
   settings.beginGroup("updates");
   settings.setValue("checkForUpdates", ui.groupBoxUpdates->isChecked());

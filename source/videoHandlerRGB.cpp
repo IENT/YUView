@@ -34,7 +34,6 @@
 
 #include <QPainter>
 #include "fileInfoWidget.h"
-#include "signalsSlots.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0
@@ -230,7 +229,7 @@ videoHandlerRGB::~videoHandlerRGB()
   rgbFormatMutex.lock();
 }
 
-ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
 {
   ValuePairList values;
   
@@ -239,9 +238,9 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
     videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
     if (rgbItem2 == nullptr)
       // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
-      return frameHandler::getPixelValues(pixelPos, frameIdx, item2);
+      return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
-    if (currentFrameRawRGBData_frameIdx != frameIdx || rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx)
+    if (currentFrameRawRGBData_frameIdx != frameIdx || rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx1)
       return ValuePairList();
 
     int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
@@ -326,11 +325,11 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
   ui.BScaleSpinBox->setMaximum(1000);
 
   // Connect all the change signals from the controls
-  connect(ui.rgbFormatComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerRGB::slotRGBFormatControlChanged);
-  connect(ui.colorComponentsComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.RScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.GScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.BScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.rgbFormatComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerRGB::slotRGBFormatControlChanged);
+  connect(ui.colorComponentsComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.RScaleSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.GScaleSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.BScaleSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerRGB::slotDisplayOptionsChanged);
   connect(ui.RInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
   connect(ui.GInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
   connect(ui.BInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
@@ -885,7 +884,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, q
   }
 }
 
-void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
+void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference, const int frameIdxItem1)
 {
   // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
   // of the pixels that are actually visible
@@ -909,7 +908,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   if (item2 != nullptr && rgbItem2 == nullptr)
   {
     // The second item is not a videoHandlerRGB item
-    frameHandler::drawPixelValues(painter, frameIdx, videoRect, zoomFactor, item2, markDifference);
+    frameHandler::drawPixelValues(painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
     return;
   }
 
@@ -917,7 +916,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   // function will return that loading is needed. The caching in the background should then trigger loading of them.
   if (currentFrameRawRGBData_frameIdx != frameIdx)
     return;
-  if (rgbItem2 && rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx)
+  if (rgbItem2 && rgbItem2->currentFrameRawRGBData_frameIdx != frameIdxItem1)
     return;
 
   // The center point of the pixel (0,0).
@@ -964,17 +963,17 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   }
 }
 
-QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
   if (rgbItem2 == nullptr)
     // The given item is not a RGB source. We cannot compare raw RGB values to non raw RGB values.
     // Call the base class comparison function to compare the items using the RGB 888 values.
-    return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
   if (srcPixelFormat.bitsPerValue != rgbItem2->srcPixelFormat.bitsPerValue)
     // The two items have different bit depths. Compare RGB 888 values instead.
-    return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
   const int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
   const int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
@@ -982,9 +981,9 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
   // Load the right raw RGB data (if not already loaded).
   // This will just update the raw RGB data. No conversion to image (RGB) is performed. This is either
   // done on request if the frame is actually shown or has already been done by the caching process.
-  if (!loadRawRGBData(frame))
+  if (!loadRawRGBData(frameIdxItem0))
     return QImage();  // Loading failed
-  if (!rgbItem2->loadRawRGBData(frame))
+  if (!rgbItem2->loadRawRGBData(frameIdxItem1))
     return QImage();  // Loading failed
 
   // Also calculate the MSE while we're at it (R,G,B)

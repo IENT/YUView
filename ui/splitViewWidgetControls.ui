@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>185</width>
-    <height>207</height>
+    <height>233</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -108,13 +108,13 @@
    </item>
    <item>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="0">
-      <widget class="QCheckBox" name="regularGridCheckBox">
+     <item row="1" column="0">
+      <widget class="QCheckBox" name="zoomBoxCheckBox">
        <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Overlay the shown item with a grid. The distance of two lines is given in pixels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate a zoom box in the bottom right of the view. A magnification of the position as well as further information of the pixel position under the cursor is shown (like YUV or statistics values).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="text">
-        <string>Draw Grid</string>
+        <string>Zoom Box</string>
        </property>
       </widget>
      </item>
@@ -134,13 +134,45 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QCheckBox" name="zoomBoxCheckBox">
+     <item row="0" column="0">
+      <widget class="QCheckBox" name="regularGridCheckBox">
        <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate a zoom box in the bottom right of the view. A magnification of the position as well as further information of the pixel position under the cursor is shown (like YUV or statistics values).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Overlay the shown item with a grid. The distance of two lines is given in pixels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="text">
-        <string>Zoom Box</string>
+        <string>Draw Grid</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label">
+       <property name="toolTip">
+        <string>Set a zoom level (in percent) for the view.</string>
+       </property>
+       <property name="whatsThis">
+        <string>Set a zoom level (in percent) for the view.</string>
+       </property>
+       <property name="text">
+        <string>Zoom (%)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QSpinBox" name="zoomFactorSpinBox">
+       <property name="toolTip">
+        <string>Set a zoom level (in percent) for the view.</string>
+       </property>
+       <property name="whatsThis">
+        <string>Set a zoom level (in percent) for the view.</string>
+       </property>
+       <property name="maximum">
+        <number>99999</number>
+       </property>
+       <property name="singleStep">
+        <number>10</number>
+       </property>
+       <property name="value">
+        <number>100</number>
        </property>
       </widget>
      </item>

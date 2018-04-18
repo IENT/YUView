@@ -325,6 +325,8 @@ Surface3DGraphModifier::Surface3DGraphModifier(Q3DSurface* aSurfaceGraph) :
   this->mPrimarySeriesProxy = new QSurfaceDataProxy();
   this->mPrimarySeries = new QSurface3DSeries(this->mPrimarySeriesProxy);
 
+  this->mPrimarySeries->setItemLabelFormat(QStringLiteral("(x:@xLabel/y:@zLabel) - amount:@yLabel"));
+
   this->mGraph->addSeries(this->mPrimarySeries);
 
   // create the colorGradient
@@ -423,7 +425,7 @@ void Surface3DGraphModifier::adjustXMin(int aMin)
     this->setAxisXRange(aMin, max);
   }
   else
-    this->setAxisXRange(aMin, this->mSettings.mX3DRange.second);
+    this->setAxisXRange(aMin, max);
 }
 
 void Surface3DGraphModifier::adjustXMax(int aMax)
@@ -433,7 +435,7 @@ void Surface3DGraphModifier::adjustXMax(int aMax)
   {
     min = aMax - 1;
     this->mAxisMinSliderX->setValue(min);
-    this->setAxisXRange(this->mSettings.mX3DRange.first, aMax);
+    this->setAxisXRange(min, aMax);
   }
   else
     this->setAxisXRange(min, aMax);
@@ -449,7 +451,7 @@ void Surface3DGraphModifier::adjustZMin(int aMin)
     this->setAxisZRange(aMin, max);
   }
   else
-    this->setAxisZRange(aMin, this->mSettings.mY3DRange.second);
+    this->setAxisZRange(aMin, max);
 }
 
 void Surface3DGraphModifier::adjustZMax(int aMax)
@@ -459,7 +461,7 @@ void Surface3DGraphModifier::adjustZMax(int aMax)
   {
     min = aMax - 1;
     this->mAxisMinSliderZ->setValue(min);
-    this->setAxisZRange(this->mSettings.mY3DRange.first, aMax);
+    this->setAxisZRange(min, aMax);
   }
   else
     this->setAxisZRange(min, aMax);

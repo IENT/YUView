@@ -31,7 +31,6 @@
 */
 
 #include "playlistItem.h"
-#include "signalsSlots.h"
 #include <QPainter>
 
 unsigned int playlistItem::idCounter = 0;
@@ -253,11 +252,11 @@ QLayout *playlistItem::createPlaylistItemControls()
   setType(type);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.startSpinBox, QSpinBox_valueChanged_int, this, &playlistItem::slotVideoControlChanged);
-  connect(ui.endSpinBox, QSpinBox_valueChanged_int, this, &playlistItem::slotVideoControlChanged);
-  connect(ui.rateSpinBox, QDoubleSpinBox_valueChanged_double, this, &playlistItem::slotVideoControlChanged);
-  connect(ui.samplingSpinBox, QSpinBox_valueChanged_int, this, &playlistItem::slotVideoControlChanged);
-  connect(ui.durationSpinBox, QDoubleSpinBox_valueChanged_double, this, &playlistItem::slotVideoControlChanged);
+  connect(ui.startSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);
+  connect(ui.endSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);
+  connect(ui.rateSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);
+  connect(ui.samplingSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);
+  connect(ui.durationSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);
 
   return ui.gridLayout;
 }

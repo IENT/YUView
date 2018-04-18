@@ -31,6 +31,7 @@
 */
 
 #ifndef FFMPEGDECODER_FFMPEGDEFS
+#define FFMPEGDECODER_FFMPEGDEFS
 
 #include "stdint.h"
 #include <errno.h>
@@ -45,6 +46,7 @@ namespace FFmpeg
 {
   // Some structs/enums which actual definition does not interest us.
   struct AVFormatContext;
+  struct AVClass;
   struct AVInputFormat;
   struct AVPacket;
   struct AVCodec;
@@ -54,13 +56,12 @@ namespace FFmpeg
   struct AVFrame;
   struct AVBufferRef;
   struct AVPacketSideData;
-  struct AVClass;
   struct AVIOContext;
-  struct AVStream;
   struct AVIndexEntry;
   struct AVStreamInternal;
   struct AVFrameSideData;
   struct AVMotionVector;
+  struct AVStream;
 
   // How to convert the avXXX_getVersion() int to major, minor and micro
   #define AV_VERSION_MAJOR(a) ((a) >> 16)

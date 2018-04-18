@@ -58,6 +58,9 @@
 // The font and the font size of the "loading..." message
 #define SPLITVIEWWIDGET_LOADING_FONT "helvetica"
 #define SPLITVIEWWIDGET_LOADING_FONTSIZE 10
+// The font and the font size when drawing the pixel values
+#define SPLITVIEWWIDGET_PIXEL_VALUES_FONT "helvetica"
+#define SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE 10
 // When zooming in or out, you can only step by factors of x
 #define SPLITVIEWWIDGET_ZOOM_STEP_FACTOR 2
 // Set the zooming behavior. If zooming out, two approaches can be taken:
@@ -172,6 +175,7 @@ private slots:
   void on_separateViewGroupBox_toggled(bool state);
   void on_linkViewsCheckBox_toggled(bool state);
   void on_playbackPrimaryCheckBox_toggled(bool state);
+  void on_zoomFactorSpinBox_valueChanged(int val);
 
 protected:
 
