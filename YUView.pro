@@ -15,7 +15,7 @@ SOURCES += \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceAnnexBFile.cpp \
-    source/fileSourceFFMpegFile.cpp \
+    source/fileSourceFFmpegFile.cpp \
     source/frameHandler.cpp \
     source/hevcDecoderHM.cpp \
     source/hevcNextGenDecoderJEM.cpp \
@@ -70,7 +70,7 @@ HEADERS += \
     source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceAnnexBFile.h \
-    source/fileSourceFFMpegFile.h \
+    source/fileSourceFFmpegFile.h \
     source/frameHandler.h \
     source/hevcDecoderHM.h \
     source/hevcNextGenDecoderJEM.h \

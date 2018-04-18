@@ -38,14 +38,14 @@
 
 /* This class can use the ffmpeg libraries (libavcodec) to read from any packetized file.
 */
-class fileSourceFFMpegFile : public QObject
+class fileSourceFFmpegFile : public QObject
 {
   Q_OBJECT
 
 public:
-  fileSourceFFMpegFile();
-  fileSourceFFMpegFile(const QString &filePath) : fileSourceFFMpegFile() { openFile(filePath); }
-  ~fileSourceFFMpegFile();
+  fileSourceFFmpegFile();
+  fileSourceFFmpegFile(const QString &filePath) : fileSourceFFmpegFile() { openFile(filePath); }
+  ~fileSourceFFmpegFile();
 
   // Load the ffmpeg libraries and try to open the file. The fileSource will install a watcher for the file.
   // Return false if anything goes wrong.

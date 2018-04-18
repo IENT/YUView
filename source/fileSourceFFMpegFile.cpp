@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "fileSourceFFMpegFile.h"
+#include "fileSourceFFmpegFile.h"
 
 #include <QSettings>
 
@@ -42,17 +42,17 @@
 #define DEBUG_FFMPEG(fmt,...) ((void)0)
 #endif
 
-fileSourceFFMpegFile::fileSourceFFMpegFile()
+fileSourceFFmpegFile::fileSourceFFmpegFile()
 {
   fileChanged = false;
   isFileOpened = false;
   nrFrames = 0;
   posInFile = -1;
 
-  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFMpegFile::fileSystemWatcherFileChanged);
+  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFmpegFile::fileSystemWatcherFileChanged);
 }
 
-QByteArray fileSourceFFMpegFile::getNextPacket()
+QByteArray fileSourceFFmpegFile::getNextPacket()
 {
   // Load the next packet
   if (!ffmpegLib.goToNextVideoPacket())
@@ -68,13 +68,13 @@ QByteArray fileSourceFFMpegFile::getNextPacket()
   return currentPacketData;
 }
 
-avPacketInfo_t fileSourceFFMpegFile::getCurrentPacketInfo()
+avPacketInfo_t fileSourceFFmpegFile::getCurrentPacketInfo()
 {
   // Get info for the current packet
   return ffmpegLib.getPacketInfo();
 }
 
-QByteArray fileSourceFFMpegFile::getNextNALUnit(uint64_t *pts)
+QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
 {
   // Is a packet loaded?
   if (currentPacketData.isEmpty())
@@ -111,12 +111,12 @@ QByteArray fileSourceFFMpegFile::getNextNALUnit(uint64_t *pts)
   return retArray;
 }
 
-QByteArray fileSourceFFMpegFile::getExtradata()
+QByteArray fileSourceFFmpegFile::getExtradata()
 {
   return ffmpegLib.getVideoContextExtradata();
 }
 
-QList<QByteArray> fileSourceFFMpegFile::getParameterSets()
+QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
 {
   /* The SPS/PPS are somewhere else in containers:
    * In mp4-container (mkv also) PPS/SPS are stored separate from frame data in global headers. 
@@ -166,11 +166,11 @@ QList<QByteArray> fileSourceFFMpegFile::getParameterSets()
   return retArray;
 }
 
-fileSourceFFMpegFile::~fileSourceFFMpegFile()
+fileSourceFFmpegFile::~fileSourceFFmpegFile()
 {
 }
 
-bool fileSourceFFMpegFile::openFile(const QString &filePath)
+bool fileSourceFFmpegFile::openFile(const QString &filePath)
 {
   // Check if the file exists
   fileInfo.setFile(filePath);
@@ -200,21 +200,21 @@ bool fileSourceFFMpegFile::openFile(const QString &filePath)
   return true;
 }
 
-double fileSourceFFMpegFile::getFramerate()
+double fileSourceFFmpegFile::getFramerate()
 {
   if (!isFileOpened)
     return -1;
   return ffmpegLib.getFrameRate();
 }
 
-QSize fileSourceFFMpegFile::getSequenceSizeSamples()
+QSize fileSourceFFmpegFile::getSequenceSizeSamples()
 {
   if (!isFileOpened)
     return QSize();
   return ffmpegLib.getFrameSize();
 }
 
-yuvPixelFormat fileSourceFFMpegFile::getPixelFormat()
+yuvPixelFormat fileSourceFFmpegFile::getPixelFormat()
 {
   if (!isFileOpened)
     return yuvPixelFormat();
@@ -222,7 +222,7 @@ yuvPixelFormat fileSourceFFMpegFile::getPixelFormat()
 }
 
 // Check if we are supposed to watch the file for changes. If no, remove the file watcher. If yes, install one.
-void fileSourceFFMpegFile::updateFileWatchSetting()
+void fileSourceFFmpegFile::updateFileWatchSetting()
 {
   // Install a file watcher if file watching is active in the settings.
   // The addPath/removePath functions will do nothing if called twice for the same file.
@@ -233,7 +233,7 @@ void fileSourceFFMpegFile::updateFileWatchSetting()
     fileWatcher.removePath(fullFilePath);
 }
 
-int fileSourceFFMpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const
+int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const
 {
   // We are always be able to seek to the beginning of the file
   int bestSeekPTS = keyFrameList[0].pts;
@@ -257,7 +257,7 @@ int fileSourceFFMpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToF
   return bestSeekPTS;
 }
 
-void fileSourceFFMpegFile::scanBitstream()
+void fileSourceFFmpegFile::scanBitstream()
 {
   nrFrames = 0;
   while (ffmpegLib.goToNextVideoPacket())

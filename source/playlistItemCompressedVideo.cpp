@@ -91,6 +91,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   inputFormatType = input;
   isinputFormatTypeAnnexB = (input == inputAnnexBHEVC || input == inputAnnexBAVC || input == inputAnnexBJEM);
 
+  // While opening the file, also determine which decoder we will need.
+  AVCodecID ffmpegCodec = AV_CODEC_ID_NONE;
+
   QSize frameSize;
   yuvPixelFormat format;
   if (isinputFormatTypeAnnexB)
@@ -100,9 +103,15 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     inputFileAnnexBCaching.reset(new fileSourceAnnexBFile(compressedFilePath));
     // inputFormatType a parser
     if (input == inputAnnexBHEVC)
+    {
       inputFileAnnexBParser.reset(new parserAnnexBHEVC());
+      ffmpegCodec = AV_CODEC_ID_HEVC;
+    }
     else if (inputFormatType == inputAnnexBAVC)
+    {
       inputFileAnnexBParser.reset(new parserAnnexBAVC());
+      ffmpegCodec = AV_CODEC_ID_H264;
+    }
     else if (inputFormatType == inputAnnexBJEM)
       inputFileAnnexBParser.reset(new parserAnnexBJEM());
     // Parse the loading file
@@ -115,14 +124,15 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   else
   {
     // Try ffmpeg to open the file
-    inputFileFFMpeg.reset(new fileSourceFFMpegFile());
-    if (!inputFileFFMpeg->openFile(compressedFilePath))
+    inputFileFFmpeg.reset(new fileSourceFFmpegFile());
+    if (!inputFileFFmpeg->openFile(compressedFilePath))
     {
       fileState = error;
       return;
     }
-    frameSize = inputFileFFMpeg->getSequenceSizeSamples();
-    format = inputFileFFMpeg->getPixelFormat();
+    frameSize = inputFileFFmpeg->getSequenceSizeSamples();
+    format = inputFileFFmpeg->getPixelFormat();
+    ffmpegCodec = inputFileFFmpeg->getCodec();
   }
   // Check/set properties
   if (!frameSize.isValid() || !format.isValid())
@@ -156,6 +166,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   }*/
   else if (decoder == decoderEngineFFMpeg)
   {
+    
+    
+
     loadingDecoder.reset(new decoderFFmpeg(AV_CODEC_ID_HEVC));
   }
   else
@@ -298,8 +311,8 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
   else // inputLibavformat
   {
     // Just open and parse the file again
-    QScopedPointer<fileSourceFFMpegFile> ffmpegFile(new fileSourceFFMpegFile(plItemNameOrFileName));
-    AVCodecID codec = inputFileFFMpeg->getCodec();
+    QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(plItemNameOrFileName));
+    AVCodecID codec = inputFileFFmpeg->getCodec();
     parserB.reset(new parserAVFormat(codec));
     parserB->enableModel();
     parseFFMpegFile(ffmpegFile, parserB);
@@ -385,7 +398,7 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
     if (isinputFormatTypeAnnexB)
       seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdxInternal);
     else
-      seekToPTS = inputFileFFMpeg->getClosestSeekableDTSBefore(frameIdxInternal, seekToFrame);
+      seekToPTS = inputFileFFmpeg->getClosestSeekableDTSBefore(frameIdxInternal, seekToFrame);
 
     if (seekToFrame > curFrameIdx + FORWARD_SEEK_THRESHOLD)
       // We will seek forward
@@ -406,7 +419,7 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
       if (isinputFormatTypeAnnexB)
         data = caching ? inputFileAnnexBCaching->getNextNALUnit() : inputFileAnnexBLoading->getNextNALUnit();
       else
-        data = inputFileFFMpeg->getNextNALUnit();
+        data = inputFileFFmpeg->getNextNALUnit();
       dec->pushData(data);
     }
 
@@ -447,8 +460,8 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
   }
   else
   {
-    parametersets = inputFileFFMpeg->getParameterSets();
-    inputFileFFMpeg->seekToPTS(seekToPTS);
+    parametersets = inputFileFFmpeg->getParameterSets();
+    inputFileFFmpeg->seekToPTS(seekToPTS);
   }
   for (QByteArray d : parametersets)
     dec->pushData(d);
@@ -538,7 +551,7 @@ indexRange playlistItemCompressedVideo::getStartEndFrameLimits() const
       return indexRange(0, inputFileAnnexBParser->getNumberPOCs() - 1);
     else
       // TODO: 
-      return indexRange(0, inputFileFFMpeg->getNumberFrames() - 1);
+      return indexRange(0, inputFileFFmpeg->getNumberFrames() - 1);
   }
   
   return indexRange(0, 0);
@@ -772,7 +785,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   progress.close();
 }
 
-void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFMpegFile> &file, QScopedPointer<parserAVFormat> &parser)
+void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file, QScopedPointer<parserAVFormat> &parser)
 {
   // Seek to the beginning of the stream.
   file->seekToPTS(0);
