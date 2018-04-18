@@ -118,8 +118,8 @@ void PlaybackController::on_playPauseButton_clicked()
     fpsLabel->setStyleSheet("");
     splitViewPrimary->freezeView(false);
 
-    splitViewPrimary->update(false, false);
-    splitViewSeparate->update(false, false);
+    splitViewPrimary->update(false, true);
+    splitViewSeparate->update(false, true);
   }
   else
   {
