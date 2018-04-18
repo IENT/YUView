@@ -82,11 +82,11 @@ public:
 
   // Get the statistics values for the current frame. In order to enable statistics retrievel, 
   // activate it, reset the decoder and decode to the current frame again.
-  virtual bool statisticsSupported() const { return false; }
-  virtual bool statisticsEnabled() const { return retrieveStatistics; }
+  bool statisticsSupported() const { return internalsSupported; }
+  bool statisticsEnabled() const { return retrieveStatistics; }
   void enableStatisticsRetrieval() { retrieveStatistics = true; }
-  virtual statisticsData getStatisticsData(int typeIdx) = 0;
-  virtual void fillStatisticList(statisticHandler &statSource) const = 0;
+  virtual statisticsData getStatisticsData(int typeIdx) { Q_UNUSED(typeIdx); return statisticsData(); }
+  virtual void fillStatisticList(statisticHandler &statSource) const { Q_UNUSED(statSource); };
 
   // Error handling
   bool errorInDecoder() const { return decoderState == decoderError; }
@@ -115,7 +115,8 @@ protected:
   int decodeSignal; ///< Which signal should be decoded?
   bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
 
-  bool retrieveStatistics;
+  bool internalsSupported;  ///< Enable in the constructor if you support statistics
+  bool retrieveStatistics;  ///< If enabled, the decoder should also retrive statistics data from the bitstream
   QSize frameSize;
   yuvPixelFormat format;
   

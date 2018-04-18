@@ -30,14 +30,12 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef HEVCDECODERLIBDE265_H
-#define HEVCDECODERLIBDE265_H
+#ifndef DECODERLIBDE265_H
+#define DECODERLIBDE265_H
 
 #include "de265.h"
 #include "de265_internals.h"
 #include "decoderBase.h"
-#include "fileInfoWidget.h"
-#include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 #include <QLibrary>
 
@@ -107,17 +105,15 @@ public:
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
   
   // Statistics
-  bool statisticsSupported() const Q_DECL_OVERRIDE { return internalsSupported; }
   statisticsData getStatisticsData(int typeIdx) Q_DECL_OVERRIDE;
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
-  
-  QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
   QString getLibraryPath() const Q_DECL_OVERRIDE { return libraryPath; }
-  
+  QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }
+
 private:
   // A private constructor that creates an uninitialized decoder library.
   // Used by checkLibraryFile to check if a file can be used as a hevcDecoderLibde265.
@@ -150,7 +146,6 @@ private:
   YUVSubsamplingType convertFromInternalSubsampling(de265_chroma fmt);
   
   // Statistics caching
-  bool internalsSupported;
   void cacheStatistics(const de265_image *img);
   
   // With the given partitioning mode, the size of the CU and the prediction block index, calculate the
@@ -169,4 +164,4 @@ private:
 #endif
 };
 
-#endif // HEVCDECODERLIBDE265_H
+#endif // DECODERLIBDE265_H

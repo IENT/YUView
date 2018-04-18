@@ -90,9 +90,12 @@ public:
   /* ---- Decoding video ----
    * Scenario 2: Decoding a video sequence from input data
    */
+  bool createDecoder(AVCodecID streamCodecID);
 
   // Get info about the decoder (path, library versions...)
   QList<infoItem> getDecoderInfo() const;
+  QString getLibraryPath() const { return ff.getLibPath(); }
+  QString getCodecName(AVCodecID id) const { return ff.getCodecName(id); }
 
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx);
@@ -124,62 +127,36 @@ private:
   int64_t duration;
   AVRational timeBase;
 
+  // ---- Reading
+  AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
+  bool endOfFile;                   //< Are we at the end of file (draining mode)?
+
   // ---- Decoding 
   bool decodingError;
-
-
-
-
-
-
-
-
-  
-  // If the libraries were opened successfully, this function will attempt to get all the needed function pointers.
-  // If this fails, decoderError will be set.
-  void bindFunctionsFromLibraries();
-
-  //// Scan the entire stream. Get the number of frames that we can decode and the key frames
-  //// that we can seek to.
-  //bool scanBitstream();
-
-  // The decoderLibraries can be accessed through this class independent of the FFmpeg version.
-  FFmpegVersionHandler ff;
-
-  QString errorString;
-  bool setOpeningError(const QString &reason) { readingFileError = true; errorString = reason; return false; }
-  void setDecodingError(const QString &reason)  { decodingError = true; errorString = reason; }
-
-  
-
   bool decodeOneFrame();
-
-  // The input file context
   AVCodecWrapper videoCodec;        //< The video decoder codec
   AVCodecContextWrapper decCtx;     //< The decoder context
   AVFrameWrapper frame;             //< The frame that we use for decoding
-  AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
-  bool endOfFile;                   //< Are we at the end of file (draining mode)?
-  
-
-
-  
-  
-  // The buffer and the index that was requested in the last call to getOneFrame
   int currentOutputBufferFrameIndex;
-#if SSE_CONVERSION
-  byteArrayAligned currentOutputBuffer;
-  void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);
-#else
-  QByteArray currentOutputBuffer;
-  void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
-#endif
 
-  // Caching
-  QHash<int, statisticsData> curFrameStats;  // cache of the statistics for the current POC [statsTypeID]
-  int statsCacheCurFrameIdx;                 // the POC of the statistics that are in the curPOCStats
-  // Copy the motion information (if present) from the frame to a loca buffer
-  void copyFrameMotionInformation();
+  // ---- Common handling of decoding
+  FFmpegVersionHandler ff;          //< Access to the libraries independent of their version
+
+  // ---- Error handling
+  QString errorString;
+  bool setOpeningError(const QString &reason) { readingFileError = true; errorString = reason; return false; }
+  void setDecodingError(const QString &reason)  { decodingError = true; errorString = reason; }
+    
+//#if SSE_CONVERSION
+//  byteArrayAligned currentOutputBuffer;
+//  void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);
+//#else
+//  QByteArray currentOutputBuffer;
+//  void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
+//#endif
+
+  //// Copy the motion information (if present) from the frame to a loca buffer
+  //void copyFrameMotionInformation();
 
   // Get information about the current format
   void getFormatInfo();

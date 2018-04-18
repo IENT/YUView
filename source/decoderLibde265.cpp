@@ -59,7 +59,6 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
   decoderBase(cachingDecoder)
 {
   decoder = nullptr;
-  internalsSupported = false;
   nrSignals = 1;
   flushing = false;
   curImage = nullptr;

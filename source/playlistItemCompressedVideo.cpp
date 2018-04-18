@@ -32,11 +32,12 @@
 
 #include "playlistItemCompressedVideo.h"
 
+#include "decoderFFmpeg.h"
+#include "decoderLibde265.h"
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
 #include "parserAnnexBJEM.h"
 #include "hevcDecoderHM.h"
-#include "decoderLibde265.h"
 #include "hevcNextGenDecoderJEM.h"
 
 #include <QThread>
@@ -153,6 +154,10 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     loadingDecoder.reset(new hevcNextGenDecoderJEM(displayComponent));
     cachingDecoder.reset(new hevcNextGenDecoderJEM(displayComponent, true));
   }*/
+  else if (decoder == decoderEngineFFMpeg)
+  {
+    loadingDecoder.reset(new decoderFFmpeg(AV_CODEC_ID_HEVC));
+  }
   else
     return;
 
@@ -658,7 +663,7 @@ void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QStr
   else
   {
     input = inputLibavformat;
-    decoder = decoderEngineLibde265;
+    decoder = decoderEngineFFMpeg;
   }
 
   Q_UNUSED(parent);

@@ -625,6 +625,7 @@ public:
   
   QString getLibPath() const { return lib.getLibPath(); }
   QString getLibVersionString() const;
+  QString getCodecName(AVCodecID id) const { return QString(lib.avcodec_get_name(id)); }
 
   bool parse_decoder_parameters(AVCodecContextWrapper &decCtx, AVStreamWrapper &videoStream);
 

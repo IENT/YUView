@@ -43,8 +43,8 @@
 
 using namespace FFmpeg;
 
-#define FFmpegDecoder_DEBUG_OUTPUT 0
-#if FFmpegDecoder_DEBUG_OUTPUT && !NDEBUG
+#define DECODERFFMPEGLIBRARIES_DEBUG_OUTPUT 0
+#if DECODERFFMPEGLIBRARIES_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
 #else
@@ -69,12 +69,6 @@ FFmpegLibraries::FFmpegLibraries()
   duration = -1;
   timeBase.num = 0;
   timeBase.den = 0;
-  
-  // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
-  // When using the zoom box the getOneFrame function is called frequently so we
-  // keep this buffer to not decode the same frame over and over again.
-  currentOutputBufferFrameIndex = -1;
-  statsCacheCurFrameIdx = -1;
 }
 
 FFmpegLibraries::~FFmpegLibraries()
@@ -117,34 +111,7 @@ bool FFmpegLibraries::openFile(QString fileName)
   }
   if(!video_stream)
     return setOpeningError(QStringLiteral("Could not find a video stream."));
-
-  AVCodecID streamCodecID = video_stream.getCodecID();
-  videoCodec = ff.find_decoder(streamCodecID);
-
-  if(!videoCodec)
-    return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
-
-  //// Allocate the decoder context
-  //decCtx = ff.alloc_decoder(videoCodec);
-  //if(!decCtx)
-  //  return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
-
-  //ff.parse_decoder_parameters(decCtx, video_stream);
-
-  //// Ask the decoder to provide motion vectors (if possible)
-  //AVDictionaryWrapper opts;
-  //if (ff.av_dict_set(opts, "flags2", "+export_mvs", 0))
-  //  return setOpeningError(QStringLiteral("Could not request motion vector retrieval.").arg(ret));
-
-  //// Open codec
-  //ret = ff.avcodec_open2(decCtx, videoCodec, opts);
-  //if (ret < 0)
-  //  return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
-
-  //frame.allocate_frame(ff);
-  //if (!frame)
-  //  return setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
-
+  
   // Initialize an empty packet
   pkt.allocate_paket(ff);
 
@@ -170,18 +137,43 @@ bool FFmpegLibraries::openFile(QString fileName)
     colorConversionType = BT601_LimitedRange;
   else
     colorConversionType = BT709_LimitedRange;
-
-  // goToNextPacket();
-  //// Get the first video stream packet into the packet buffer.
-  //do
-  //{
-  //  ret = fmt_ctx.read_frame(ff, pkt);
-  //  if (ret < 0)
-  //    return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
-  //}
-  //while (pkt.get_stream_index() != video_stream.get_index());
   
   return true;
+}
+
+bool FFmpegLibraries::createDecoder(AVCodecID streamCodecID)
+{
+  // Allocate the decoder context
+  if (videoCodec)
+    return setOpeningError(QStringLiteral("Video codec already allocated."));
+  videoCodec = ff.find_decoder(streamCodecID);
+  if(!videoCodec)
+    return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
+
+  if (decCtx)
+    return setOpeningError(QStringLiteral("Decoder context already allocated."));
+  decCtx = ff.alloc_decoder(videoCodec);
+  if(!decCtx)
+    return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
+
+  // TODO
+  // Configure the decoder!!
+  // ff.parse_decoder_parameters(decCtx, video_stream);
+
+  // Ask the decoder to provide motion vectors (if possible)
+  AVDictionaryWrapper opts;
+  int ret = ff.av_dict_set(opts, "flags2", "+export_mvs", 0);
+  if (ret < 0)
+    return setOpeningError(QStringLiteral("Could not request motion vector retrieval. Return code %1").arg(ret));
+
+  // Open codec
+  ret = ff.avcodec_open2(decCtx, videoCodec, opts);
+  if (ret < 0)
+    return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
+
+  frame.allocate_frame(ff);
+  if (!frame)
+    return setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 }
 
 bool FFmpegLibraries::decodeOneFrame()
@@ -570,86 +562,86 @@ QByteArray FFmpegLibraries::loadYUVFrameData(int frameIdx)
   return QByteArray();
 }
 
-void FFmpegLibraries::copyFrameToOutputBuffer()
-{
-  DEBUG_FFMPEG("FFmpegLibraries::copyFrameToOutputBuffer frame %d", currentOutputBufferFrameIndex);
-
-  // At first get how many bytes we are going to write
-  yuvPixelFormat pixFmt = getYUVPixelFormat();
-  int nrBytesPerSample = pixFmt.bitsPerSample <= 8 ? 1 : 2;
-  int nrBytesY = frameSize.width() * frameSize.height() * nrBytesPerSample;
-  int nrBytesC = frameSize.width() / pixFmt.getSubsamplingHor() * frameSize.height() / pixFmt.getSubsamplingVer() * nrBytesPerSample;
-  int nrBytes = nrBytesY + 2 * nrBytesC;
-
-  // Is the output big enough?
-  if (currentOutputBuffer.capacity() < nrBytes)
-    currentOutputBuffer.resize(nrBytes);
-
-  // Copy line by line. The linesize of the source may be larger than the width of the frame.
-  // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
-  // resolution may be larger than the output frame size.
-  uint8_t *src = frame.get_data(0);
-  int linesize = frame.get_line_size(0);
-  char* dst = currentOutputBuffer.data();
-  int wDst = frameSize.width() * nrBytesPerSample;
-  int hDst = frameSize.height();
-  for (int y = 0; y < hDst; y++)
-  {
-    // Copy one line
-    memcpy(dst, src, wDst);
-    // Goto the next line in input and output (these offsets/strides may differ)
-    dst += wDst;
-    src += linesize;
-  }
-
-  // Chroma
-  wDst = frameSize.width() / pixFmt.getSubsamplingHor() * nrBytesPerSample;
-  hDst = frameSize.height() / pixFmt.getSubsamplingVer();
-  for (int c = 0; c < 2; c++)
-  {
-    uint8_t *src = frame.get_data(1+c);
-    linesize = frame.get_line_size(1+c);
-    dst = currentOutputBuffer.data();
-    dst += (nrBytesY + ((c == 0) ? 0 : nrBytesC));
-    for (int y = 0; y < hDst; y++)
-    {
-      memcpy(dst, src, wDst);
-      // Goto the next line
-      dst += wDst;
-      src += linesize;
-    }
-  }
-}
-
-void FFmpegLibraries::copyFrameMotionInformation()
-{
-  DEBUG_FFMPEG("FFmpegLibraries::copyFrameMotionInformation frame %d", currentOutputBufferFrameIndex);
-  
-  // Clear the local statistics cache
-  curFrameStats.clear();
-
-  // Try to get the motion information
-  AVFrameSideDataWrapper sideData = ff.get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
-  if (sideData)
-  {
-    int nrMVs = sideData.get_number_motion_vectors();
-    for (int i = 0; i < nrMVs; i++)
-    {
-      AVMotionVectorWrapper mv = sideData.get_motion_vector(i);
-      if (mv)
-      {
-        // dst marks the center of the current block so the block position is:
-        int blockX = mv.dst_x - mv.w/2;
-        int blockY = mv.dst_y - mv.h/2;
-        int16_t mvX = mv.dst_x - mv.src_x;
-        int16_t mvY = mv.dst_y - mv.src_y;
-
-        curFrameStats[mv.source < 0 ? 0 : 1].addBlockValue(blockX, blockY, mv.w, mv.h, (int)mv.source);
-        curFrameStats[mv.source < 0 ? 2 : 3].addBlockVector(blockX, blockY, mv.w, mv.h, mvX, mvY);
-      }
-    }
-  }
-}
+//void FFmpegLibraries::copyFrameToOutputBuffer()
+//{
+//  DEBUG_FFMPEG("FFmpegLibraries::copyFrameToOutputBuffer frame %d", currentOutputBufferFrameIndex);
+//
+//  // At first get how many bytes we are going to write
+//  yuvPixelFormat pixFmt = getYUVPixelFormat();
+//  int nrBytesPerSample = pixFmt.bitsPerSample <= 8 ? 1 : 2;
+//  int nrBytesY = frameSize.width() * frameSize.height() * nrBytesPerSample;
+//  int nrBytesC = frameSize.width() / pixFmt.getSubsamplingHor() * frameSize.height() / pixFmt.getSubsamplingVer() * nrBytesPerSample;
+//  int nrBytes = nrBytesY + 2 * nrBytesC;
+//
+//  // Is the output big enough?
+//  if (currentOutputBuffer.capacity() < nrBytes)
+//    currentOutputBuffer.resize(nrBytes);
+//
+//  // Copy line by line. The linesize of the source may be larger than the width of the frame.
+//  // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
+//  // resolution may be larger than the output frame size.
+//  uint8_t *src = frame.get_data(0);
+//  int linesize = frame.get_line_size(0);
+//  char* dst = currentOutputBuffer.data();
+//  int wDst = frameSize.width() * nrBytesPerSample;
+//  int hDst = frameSize.height();
+//  for (int y = 0; y < hDst; y++)
+//  {
+//    // Copy one line
+//    memcpy(dst, src, wDst);
+//    // Goto the next line in input and output (these offsets/strides may differ)
+//    dst += wDst;
+//    src += linesize;
+//  }
+//
+//  // Chroma
+//  wDst = frameSize.width() / pixFmt.getSubsamplingHor() * nrBytesPerSample;
+//  hDst = frameSize.height() / pixFmt.getSubsamplingVer();
+//  for (int c = 0; c < 2; c++)
+//  {
+//    uint8_t *src = frame.get_data(1+c);
+//    linesize = frame.get_line_size(1+c);
+//    dst = currentOutputBuffer.data();
+//    dst += (nrBytesY + ((c == 0) ? 0 : nrBytesC));
+//    for (int y = 0; y < hDst; y++)
+//    {
+//      memcpy(dst, src, wDst);
+//      // Goto the next line
+//      dst += wDst;
+//      src += linesize;
+//    }
+//  }
+//}
+//
+//void FFmpegLibraries::copyFrameMotionInformation()
+//{
+//  DEBUG_FFMPEG("FFmpegLibraries::copyFrameMotionInformation frame %d", currentOutputBufferFrameIndex);
+//  
+//  // Clear the local statistics cache
+//  curFrameStats.clear();
+//
+//  // Try to get the motion information
+//  AVFrameSideDataWrapper sideData = ff.get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+//  if (sideData)
+//  {
+//    int nrMVs = sideData.get_number_motion_vectors();
+//    for (int i = 0; i < nrMVs; i++)
+//    {
+//      AVMotionVectorWrapper mv = sideData.get_motion_vector(i);
+//      if (mv)
+//      {
+//        // dst marks the center of the current block so the block position is:
+//        int blockX = mv.dst_x - mv.w/2;
+//        int blockY = mv.dst_y - mv.h/2;
+//        int16_t mvX = mv.dst_x - mv.src_x;
+//        int16_t mvY = mv.dst_y - mv.src_y;
+//
+//        curFrameStats[mv.source < 0 ? 0 : 1].addBlockValue(blockX, blockY, mv.w, mv.h, (int)mv.source);
+//        curFrameStats[mv.source < 0 ? 2 : 3].addBlockVector(blockX, blockY, mv.w, mv.h, mvX, mvY);
+//      }
+//    }
+//  }
+//}
 
 QByteArray FFmpegLibraries::getVideoContextExtradata()
 {
@@ -670,9 +662,6 @@ bool FFmpegLibraries::seekToPTS(int64_t pts)
     DEBUG_FFMPEG("FFmpegLibraries::seekToPTS Error PTS %ld. Return Code %d", pts, ret);
     return false;
   }
-    
-  //// Flush the video decoder buffer
-  //ff.flush_buffers(decCtx);
 
   // We seeked somewhere, so we are not at the end of the file anymore.
   endOfFile = false;
@@ -681,20 +670,20 @@ bool FFmpegLibraries::seekToPTS(int64_t pts)
   return true;
 }
 
-statisticsData FFmpegLibraries::getStatisticsData(int frameIdx, int typeIdx)
-{
-  if (frameIdx != statsCacheCurFrameIdx)
-  {
-    if (currentOutputBufferFrameIndex == frameIdx)
-      // We will have to decode the current frame again to get the internals/statistics
-      // This can be done like this:
-      currentOutputBufferFrameIndex ++;
-
-    loadYUVFrameData(frameIdx);
-  }
-
-  return curFrameStats[typeIdx];
-}
+//statisticsData FFmpegLibraries::getStatisticsData(int frameIdx, int typeIdx)
+//{
+//  if (frameIdx != statsCacheCurFrameIdx)
+//  {
+//    if (currentOutputBufferFrameIndex == frameIdx)
+//      // We will have to decode the current frame again to get the internals/statistics
+//      // This can be done like this:
+//      currentOutputBufferFrameIndex ++;
+//
+//    loadYUVFrameData(frameIdx);
+//  }
+//
+//  return curFrameStats[typeIdx];
+//}
 
 bool FFmpegLibraries::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString & error)
 {

@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,46 +30,36 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef DECODERFFMPEG_H
+#define DECODERFFMPEG_H
+
 #include "decoderBase.h"
+#include "FFmpegLibraries.h"
 
-#include <QDir>
-#include <QSettings>
-
-// Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERBASE_DEBUG_OUTPUT 0
-#if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#if DECODERBASE_DEBUG_OUTPUT == 1
-#define DEBUG_HEVCDECODERBASE if(!isCachingDecoder) qDebug
-#elif DECODERBASE_DEBUG_OUTPUT == 2
-#define DEBUG_HEVCDECODERBASE if(isCachingDecoder) qDebug
-#elif DECODERBASE_DEBUG_OUTPUT == 3
-#define DEBUG_HEVCDECODERBASE if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
-#endif
-#else
-#define DEBUG_HEVCDECODERBASE(fmt,...) ((void)0)
-#endif
-
-decoderBase::decoderBase(bool cachingDecoder)
+class decoderFFmpeg : public decoderBase
 {
-  decodeSignal = 0;
-  internalsSupported = false;
-  retrieveStatistics = false;
-  isCachingDecoder = cachingDecoder;
+public:
+  decoderFFmpeg(AVCodecID codec, bool cachingDecoder=false);
+  ~decoderFFmpeg();
 
-  resetDecoder();
-}
+  void resetDecoder() Q_DECL_OVERRIDE;
 
-void decoderBase::setError(const QString &reason)
-{
-  decoderState = decoderError;
-  errorString = reason;
-}
+  // Decoding / pushing data
+  bool isCurrentFrameValid() Q_DECL_OVERRIDE { return false; };
+  void decodeNextFrame() Q_DECL_OVERRIDE;
+  QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
+  void pushData(QByteArray &data) Q_DECL_OVERRIDE;
 
-void decoderBase::resetDecoder()
-{
-  decoderState = decoderNeedsMoreData;
-  statsCacheCurPOC = -1;
-  frameSize = QSize();
-  format = yuvPixelFormat();
-}
+  // Statistics
+  statisticsData getStatisticsData(int typeIdx) Q_DECL_OVERRIDE;
+  void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
+
+  QString getLibraryPath() const Q_DECL_OVERRIDE { return ffmpegLib.getLibraryPath(); }
+  QString getDecoderName() const Q_DECL_OVERRIDE { return "FFmpeg"; }
+
+protected:
+
+  FFmpegLibraries ffmpegLib;
+};
+
+#endif // DECODERFFMPEG_H

@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -30,46 +30,59 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "decoderBase.h"
+#include "decoderFFmpeg.h"
 
-#include <QDir>
-#include <QSettings>
-
-// Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERBASE_DEBUG_OUTPUT 0
-#if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
+#define DECODERFFMPEG_DEBUG_OUTPUT 0
+#if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#if DECODERBASE_DEBUG_OUTPUT == 1
-#define DEBUG_HEVCDECODERBASE if(!isCachingDecoder) qDebug
-#elif DECODERBASE_DEBUG_OUTPUT == 2
-#define DEBUG_HEVCDECODERBASE if(isCachingDecoder) qDebug
-#elif DECODERBASE_DEBUG_OUTPUT == 3
-#define DEBUG_HEVCDECODERBASE if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
-#endif
+#define DEBUG_FFMPEG qDebug
 #else
-#define DEBUG_HEVCDECODERBASE(fmt,...) ((void)0)
+#define DEBUG_FFMPEG(fmt,...) ((void)0)
 #endif
 
-decoderBase::decoderBase(bool cachingDecoder)
+decoderFFmpeg::decoderFFmpeg(AVCodecID codec, bool cachingDecoder) : 
+  decoderBase(cachingDecoder)
 {
-  decodeSignal = 0;
-  internalsSupported = false;
-  retrieveStatistics = false;
-  isCachingDecoder = cachingDecoder;
+  QString codecName = ffmpegLib.getCodecName(codec);
+  DEBUG_FFMPEG("Create new FFMpeg decoder - codec %s%s", codecName, cachingDecoder ? " - caching" : "");
+  
+  if (!ffmpegLib.createDecoder(codec))
+  {
+    setError("Error creating the needed decoder.");
+    return ;
+  }
+  
 
-  resetDecoder();
+
 }
 
-void decoderBase::setError(const QString &reason)
+decoderFFmpeg::~decoderFFmpeg()
 {
-  decoderState = decoderError;
-  errorString = reason;
 }
 
-void decoderBase::resetDecoder()
+void decoderFFmpeg::resetDecoder()
 {
-  decoderState = decoderNeedsMoreData;
-  statsCacheCurPOC = -1;
-  frameSize = QSize();
-  format = yuvPixelFormat();
 }
+
+void decoderFFmpeg::decodeNextFrame()
+{
+}
+
+QByteArray decoderFFmpeg::getYUVFrameData()
+{
+  return QByteArray();
+}
+
+void decoderFFmpeg::pushData(QByteArray &data)
+{
+}
+
+statisticsData decoderFFmpeg::getStatisticsData(int typeIdx)
+{
+  return statisticsData();
+}
+
+void decoderFFmpeg::fillStatisticList(statisticHandler &statSource) const
+{
+}
+
