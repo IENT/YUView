@@ -81,8 +81,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   isFrameLoadingDoubleBuffer = false;
 
   // An compressed file can be cached if nothing goes wrong
-  // TODO: Enable and test
-  cachingEnabled = false;
+  cachingEnabled = true;
 
   currentFrameIdx[0] = -1;
   currentFrameIdx[1] = -1;
@@ -96,7 +95,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   if (isinputFormatTypeAnnexB)
   {
     // Open file
-    inputFileAnnexB.reset(new fileSourceAnnexBFile(compressedFilePath));
+    inputFileAnnexBLoading.reset(new fileSourceAnnexBFile(compressedFilePath));
+    inputFileAnnexBCaching.reset(new fileSourceAnnexBFile(compressedFilePath));
     // inputFormatType a parser
     if (input == inputAnnexBHEVC)
       inputFileAnnexBParser.reset(new parserAnnexBHEVC());
@@ -104,8 +104,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       inputFileAnnexBParser.reset(new parserAnnexBAVC());
     else if (inputFormatType == inputAnnexBJEM)
       inputFileAnnexBParser.reset(new parserAnnexBJEM());
-    // Parse the file
-    parseAnnexBFile(inputFileAnnexB, inputFileAnnexBParser);
+    // Parse the loading file
+    parseAnnexBFile(inputFileAnnexBLoading, inputFileAnnexBParser);
     inputFileAnnexBParser->sortPOCList();
     // Get the frame size and the pixel format
     frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
@@ -169,7 +169,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Seek both decoders to the start of the bitstream (this will also push the parameter sets / extradata to the decoder)
   seekToPosition(0, 0, false);
+  seekToPosition(0, 0, true);
   loadYUVData(0, false);
+  loadYUVData(0, true);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemCompressedVideo::loadYUVData, Qt::DirectConnection);
@@ -397,7 +399,7 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
       QByteArray data;
       // Push more data to the decoder
       if (isinputFormatTypeAnnexB)
-        data = inputFileAnnexB->getNextNALUnit();
+        data = caching ? inputFileAnnexBCaching->getNextNALUnit() : inputFileAnnexBLoading->getNextNALUnit();
       else
         data = inputFileFFMpeg->getNextNALUnit();
       dec->pushData(data);
@@ -433,7 +435,10 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
   {
     uint64_t filePos;
     parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
-    inputFileAnnexB->seek(filePos);
+    if (caching)
+      inputFileAnnexBCaching->seek(filePos);
+    else
+      inputFileAnnexBLoading->seek(filePos);
   }
   else
   {
@@ -703,7 +708,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   // Create the dialog
   int64_t maxPos;
   if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
-    maxPos = inputFileAnnexB->getFileSize();
+    maxPos = file->getFileSize();
   else
     // TODO: What do we do for ffmpeg files?
     maxPos = 1000;
@@ -733,7 +738,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
 
       int64_t pos;
       if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
-        pos = inputFileAnnexB->pos();
+        pos = file->pos();
       else
         // TODO: 
         pos = 55;

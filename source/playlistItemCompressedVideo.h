@@ -149,11 +149,13 @@ protected:
   QScopedPointer<decoderBase> cachingDecoder;
 
   // In order to parse raw annexB files, we need a file reader (that can read NAL units)
-  // and a parser that can understand what the NAL units mean.
+  // and a parser that can understand what the NAL units mean. We open the file source twice (once for interactive loading,
+  // once for the background caching). The parser is only needed once and can be used for both loading and caching tasks.
   void parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<parserAnnexB> &parser);
-  QScopedPointer<fileSourceAnnexBFile> inputFileAnnexB;
+  QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBLoading;
+  QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBCaching;
   QScopedPointer<parserAnnexB> inputFileAnnexBParser;
-
+  
   // Which type is the input / what decoder do we use?
   inputFormat inputFormatType;
   bool isinputFormatTypeAnnexB;
