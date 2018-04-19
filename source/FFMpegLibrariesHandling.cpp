@@ -32,7 +32,9 @@
 
 #include "FFMpegLibrariesHandling.h"
 
+#include <QCoreApplication>
 #include <QDir>
+#include <QSettings>
 #include "typedef.h"
 
 #define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
@@ -42,6 +44,8 @@
 #else
 #define DEBUG_LIB(fmt,...) ((void)0)
 #endif
+
+using namespace YUV_Internals;
 
 // ------------- Internal classes to parse the ffmpeg version specific pointers -----------------
 
@@ -862,23 +866,66 @@ FFmpegVersionHandler::FFmpegVersionHandler()
   libVersion.avformat = -1;
   libVersion.avutil = -1;
   libVersion.swresample = -1;
+
+  librariesLoaded = false;
 }
 
-int FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
+bool FFmpegVersionHandler::loadFFmpegLibraries()
+{
+  if (librariesLoaded)
+    return true;
+
+  // Try to load the ffmpeg libraries from the current working directory and several other directories.
+  // Unfortunately relative paths like "./" do not work: (at least on windows)
+
+  // First try the specific FFMpeg libraries (if set)
+  QSettings settings;
+  settings.beginGroup("Decoders");
+  QString avFormatLib = settings.value("FFMpeg.avformat", "").toString();
+  QString avCodecLib = settings.value("FFMpeg.avcodec", "").toString();
+  QString avUtilLib = settings.value("FFMpeg.avutil", "").toString();
+  QString swResampleLib = settings.value("FFMpeg.swresample", "").toString();
+  librariesLoaded = loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
+  if (librariesLoaded)
+    return true;
+
+  // Next, we will try some other paths / options
+  QStringList possibilites;
+  QString decoderSearchPath = settings.value("SearchPath", "").toString();
+  if (!decoderSearchPath.isEmpty())
+    possibilites.append(decoderSearchPath);                                   // Try the specific search path (if one is set)
+  possibilites.append(QDir::currentPath() + "/");                             // Try the current working directory
+  possibilites.append(QDir::currentPath() + "/ffmpeg/");
+  possibilites.append(QCoreApplication::applicationDirPath() + "/");          // Try the path of the YUView.exe
+  possibilites.append(QCoreApplication::applicationDirPath() + "/ffmpeg/");
+  possibilites.append("");                                                    // Just try to call QLibrary::load so that the system folder will be searched.
+
+  for (QString path : possibilites)
+  {
+    librariesLoaded = loadFFmpegLibraryInPath(path);
+    if (librariesLoaded)
+      return true;
+  }
+
+  // Loading the libraries failed
+  return false;
+}
+
+bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
 {
   AVFormatContext *f_ctx = nullptr;
   int ret = lib.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
   if (ret < 0)
-    return ret;
+    return setError(QStringLiteral("Error opening file (avformat_open_input). Ret code %1").arg(ret));
   if (f_ctx == nullptr)
-    return -1;
+    return setError(QStringLiteral("Error opening file (avformat_open_input). No format context returned."));
   
   // The wrapper will take ownership of this pointer
   fmt = AVFormatContextWrapper(f_ctx, libVersion);
   
   ret = lib.avformat_find_stream_info(fmt.get_format_ctx(), nullptr);
   if (ret < 0)
-    return ret;
+    return setError(QStringLiteral("Error opening file (avformat_find_stream_info). Ret code %1").arg(ret));
   
   // Get the codec id string using avcodec_get_name for each stream
   for(unsigned int idx=0; idx < fmt.get_nb_streams(); idx++)
@@ -888,7 +935,7 @@ int FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
     stream.getCodec().codec_id_string = QString(name);
   }
 
-  return ret;
+  return true;
 }
 
 AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecID codec_id)
@@ -1050,6 +1097,84 @@ bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avForma
     return false;
   }
   return true;
+}
+
+// Convert from the AVPixelFormat to the internal yuvPixelFormat
+yuvPixelFormat FFmpegVersionHandler::convertAVPixelFormat(AVPixelFormat pixelFormat)
+{
+  // YUV 4:2:0 formats
+  if (pixelFormat == AV_PIX_FMT_YUV420P)
+    return yuvPixelFormat(YUV_420, 8);
+  if (pixelFormat == AV_PIX_FMT_YUV420P16LE)
+    return yuvPixelFormat(YUV_420, 16);
+  if (pixelFormat == AV_PIX_FMT_YUV420P16BE)
+    return yuvPixelFormat(YUV_420, 16, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV420P9BE)
+    return yuvPixelFormat(YUV_420, 9, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV420P9LE)
+    return yuvPixelFormat(YUV_420, 9);
+  if (pixelFormat == AV_PIX_FMT_YUV420P10BE)
+    return yuvPixelFormat(YUV_420, 10, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV420P10LE)
+    return yuvPixelFormat(YUV_420, 10);
+  if (pixelFormat == AV_PIX_FMT_YUV420P12BE)
+    return yuvPixelFormat(YUV_420, 12, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV420P12LE)
+    return yuvPixelFormat(YUV_420, 12);
+  if (pixelFormat == AV_PIX_FMT_YUV420P14BE)
+    return yuvPixelFormat(YUV_420, 14, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV420P14LE)
+    return yuvPixelFormat(YUV_420, 14);
+
+  // YUV 4:2:2 formats
+  if (pixelFormat == AV_PIX_FMT_YUV422P)
+    return yuvPixelFormat(YUV_422, 8);
+  if (pixelFormat == AV_PIX_FMT_YUV422P16LE)
+    return yuvPixelFormat(YUV_422, 16);
+  if (pixelFormat == AV_PIX_FMT_YUV422P16BE)
+    return yuvPixelFormat(YUV_422, 16, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV422P10BE)
+    return yuvPixelFormat(YUV_422, 10, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV422P10LE)
+    return yuvPixelFormat(YUV_422, 10);
+  if (pixelFormat == AV_PIX_FMT_YUV422P9BE)
+    return yuvPixelFormat(YUV_422, 9, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV422P9LE)
+    return yuvPixelFormat(YUV_422, 9);
+  if (pixelFormat == AV_PIX_FMT_YUV422P12BE)
+    return yuvPixelFormat(YUV_422, 12, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV422P12LE)
+    return yuvPixelFormat(YUV_422, 12);
+  if (pixelFormat == AV_PIX_FMT_YUV422P14BE)
+    return yuvPixelFormat(YUV_422, 14, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV422P14LE)
+    return yuvPixelFormat(YUV_422, 14);
+
+  // YUV 4:4:4 formats
+  if (pixelFormat == AV_PIX_FMT_YUV444P)
+    return yuvPixelFormat(YUV_444, 8);
+  if (pixelFormat == AV_PIX_FMT_YUV444P16LE)
+    return yuvPixelFormat(YUV_444, 16);
+  if (pixelFormat == AV_PIX_FMT_YUV444P16BE)
+    return yuvPixelFormat(YUV_444, 16, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV444P9BE)
+    return yuvPixelFormat(YUV_444, 9, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV444P9LE)
+    return yuvPixelFormat(YUV_444, 9);
+  if (pixelFormat == AV_PIX_FMT_YUV444P10BE)
+    return yuvPixelFormat(YUV_444, 10, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV444P10LE)
+    return yuvPixelFormat(YUV_444, 10);
+  if (pixelFormat == AV_PIX_FMT_YUV444P12BE)
+    return yuvPixelFormat(YUV_444, 12, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV444P12LE)
+    return yuvPixelFormat(YUV_444, 12);
+  if (pixelFormat == AV_PIX_FMT_YUV444P14BE)
+    return yuvPixelFormat(YUV_444, 14, Order_YUV, true);
+  if (pixelFormat == AV_PIX_FMT_YUV444P14LE)
+    return yuvPixelFormat(YUV_444, 14);
+
+  return yuvPixelFormat();
 }
 
 void AVFormatContextWrapper::update()
@@ -1671,12 +1796,12 @@ QString FFmpegVersionHandler::getLibVersionString() const
   return s;
 }
 
-bool FFmpegVersionHandler::parse_decoder_parameters(AVCodecContextWrapper & decCtx, AVStreamWrapper &videoStream)
+bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCodecParametersWrapper &codecpar)
 {
   if (lib.newParametersAPIAvailable)
   {
     // Use the new avcodec_parameters_to_context function.
-    AVCodecParameters *origin_par = videoStream.get_codecpar().getCodecParameters();
+    AVCodecParameters *origin_par = codecpar.getCodecParameters();
     if (!origin_par)
       return false;
     int ret = lib.avcodec_parameters_to_context(decCtx.get_codec(), origin_par);

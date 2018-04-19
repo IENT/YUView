@@ -289,9 +289,9 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
   }
 
   // Try to open ffmpeg using the four libraries
-  QString error;
-  if (!FFmpegLibraries::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable ffmpeg avFormat library. Error: " + error);
+  QStringList error;
+  if (!FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable ffmpeg avFormat library. Error: " + error.join(" "));
   else
   {
     ui.lineEditAVCodec->setText(avCodecLib);

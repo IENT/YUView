@@ -34,7 +34,8 @@
 #define FILESOURCEFFMPEGFILE_H
 
 #include "fileSource.h"
-#include "FFmpegLibraries.h"
+#include "FFMpegLibrariesHandling.h"
+#include "videoHandlerYUV.h"
 
 /* This class can use the ffmpeg libraries (libavcodec) to read from any packetized file.
 */
@@ -53,34 +54,32 @@ public:
 
   // Is the file at the end?
   // TODO: How do we do this?
-  bool atEnd() const { return ffmpegLib.atEnd(); }
+  bool atEnd() const { return endOfFile; }
 
   // Get properties of the bitstream
-  double getFramerate();
-  QSize getSequenceSizeSamples();
-  yuvPixelFormat getPixelFormat();
+  double getFramerate() { return frameRate; }
+  QSize getSequenceSizeSamples() { return frameSize; }
+  YUV_Internals::yuvPixelFormat getPixelFormat() { return pixelFormat; }
 
   // Get the next NAL unit (everything excluding the start code) or the next packet.
   // Do not mix calls to these two functions when reading a file.
   QByteArray getNextNALUnit(uint64_t *pts=nullptr);
-  QByteArray getNextPacket();
+  AVPacketWrapper getNextPacket();
   // Return the raw extradata (in avformat format containing the parameter sets)
   QByteArray getExtradata();
   // Return a list containing the raw data of all parameter set NAL units
   QList<QByteArray> getParameterSets();
 
-  // Get detailed AVPacket info for the current packet. 
-  avPacketInfo_t getCurrentPacketInfo();
-
   // File watching
   void updateFileWatchSetting();
   bool isFileChanged() { bool b = fileChanged; fileChanged = false; return b; }
 
-  bool seekToPTS(int64_t pts) { if (!isFileOpened) return false; return ffmpegLib.seekToPTS(pts); }
-  int64_t getMaxPTS() { if (!isFileOpened) return -1; return ffmpegLib.getMaxPTS(); };
+  bool seekToPTS(int64_t pts);
+  int64_t getMaxPTS();
 
   int getNumberFrames() const { return nrFrames; }
-  AVCodecID getCodec() { return ffmpegLib.getCodecID(); }
+  AVCodecID getCodec() { return video_stream.getCodecID(); }
+  AVCodecParametersWrapper getVideoCodecPar() { return video_stream.get_codecpar(); }
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
@@ -91,7 +90,21 @@ private slots:
 
 protected:
 
-  FFmpegLibraries ffmpegLib;
+  FFmpegVersionHandler ff;          //< Access to the libraries independent of their version
+  AVFormatContextWrapper fmt_ctx;
+  void openFileAndFindVideoStream(QString fileName);
+  bool goToNextVideoPacket();
+  AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
+  bool endOfFile;                   //< Are we at the end of file (draining mode)?
+  // Seek the stream to the given pts value, flush the decoder and load the first packet so
+  // that we are ready to start decoding from this pts.
+  int64_t duration;
+  AVRational timeBase;
+  AVStreamWrapper video_stream;
+  double frameRate;
+  QSize frameSize;
+  YUV_Internals::yuvPixelFormat pixelFormat;
+  YUV_Internals::ColorConversion colorConversionType;
 
   // Watch the opened file for modifications
   QFileSystemWatcher fileWatcher;

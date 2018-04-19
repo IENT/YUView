@@ -128,23 +128,23 @@ void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
 }
 
 
-void parserAVFormat::parseAVPacketData(int packetID, avPacketInfo_t &packetInfo, QByteArray &avpacketData)
+void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 {
-  int posInData = 0;
-
   if (!nalUnitModel.rootItem.isNull())
   {
+    int posInData = 0;
+    QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.get_data()), packet.get_data_size());
     TreeItem *itemTree = new TreeItem(QString("AVPacket %1").arg(packetID), nalUnitModel.rootItem.data());
 
     // Log all the packet info
-    LOGSTRVAL("stream_index", packetInfo.stream_index);
-    LOGSTRVAL("pts", packetInfo.pts);
-    LOGSTRVAL("dts", packetInfo.dts);
-    LOGSTRVAL("duration", packetInfo.duration);
-    LOGSTRVAL("flag_keyframe", packetInfo.flag_keyframe);
-    LOGSTRVAL("flag_corrupt", packetInfo.flag_corrupt);
-    LOGSTRVAL("flag_discard", packetInfo.flag_discard);
-    LOGSTRVAL("data_size", packetInfo.data_size);
+    LOGSTRVAL("stream_index", packet.get_stream_index());
+    LOGSTRVAL("pts", packet.get_pts());
+    LOGSTRVAL("dts", packet.get_dts());
+    LOGSTRVAL("duration", packet.get_duration());
+    LOGSTRVAL("flag_keyframe", packet.get_flag_keyframe());
+    LOGSTRVAL("flag_corrupt", packet.get_flag_corrupt());
+    LOGSTRVAL("flag_discard", packet.get_flag_discard());
+    LOGSTRVAL("data_size", packet.get_data_size());
 
     int nalID = 0;
     while (posInData + 4 <= avpacketData.length())

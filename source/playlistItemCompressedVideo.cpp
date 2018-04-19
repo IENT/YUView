@@ -148,28 +148,32 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Allocate the decoders
   decoderEngineType = decoder;
-  if (decoder == decoderEngineLibde265)
+  if (decoderEngineType == decoderEngineLibde265)
   {
     loadingDecoder.reset(new decoderLibde265(displayComponent));
     cachingDecoder.reset(new decoderLibde265(displayComponent, true));
     fileState = noError;
   }
-  /*else if (decoder == decoderHM)
+  /*else if (decoderEngineType == decoderHM)
   {
     loadingDecoder.reset(new hevcDecoderHM(displayComponent));
     cachingDecoder.reset(new hevcDecoderHM(displayComponent, true));
   }
-  else if (decoder == decoderJEM)
+  else if (decoderEngineType == decoderJEM)
   {
     loadingDecoder.reset(new hevcNextGenDecoderJEM(displayComponent));
     cachingDecoder.reset(new hevcNextGenDecoderJEM(displayComponent, true));
   }*/
-  else if (decoder == decoderEngineFFMpeg)
+  else if (decoderEngineType == decoderEngineFFMpeg)
   {
-    
-    
-
-    loadingDecoder.reset(new decoderFFmpeg(AV_CODEC_ID_HEVC));
+    if (isinputFormatTypeAnnexB)
+    {
+      loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec));
+    }
+    else
+    {
+      loadingDecoder.reset(new decoderFFmpeg(inputFileFFmpeg->getVideoCodecPar()));
+    }
   }
   else
     return;
@@ -414,13 +418,30 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
   {
     while (dec->needsMoreData())
     {
-      QByteArray data;
-      // Push more data to the decoder
-      if (isinputFormatTypeAnnexB)
-        data = caching ? inputFileAnnexBCaching->getNextNALUnit() : inputFileAnnexBLoading->getNextNALUnit();
+      if (!isinputFormatTypeAnnexB && decoderEngineType == decoderEngineFFMpeg)
+      {
+        // We are using FFmpeg to read the file and decode. In this scenario, we can read AVPackets
+        // from the FFmpeg file and pass them to the FFmpeg decoder directly.
+        AVPacketWrapper pkt = inputFileFFmpeg->getNextPacket();
+        decoderFFmpeg *ffmpegDec;
+        if (caching)
+          ffmpegDec = dynamic_cast<decoderFFmpeg*>(cachingDecoder.data());
+        else
+          ffmpegDec = dynamic_cast<decoderFFmpeg*>(loadingDecoder.data());
+        ffmpegDec->pushAVPacket(pkt);
+      }
       else
-        data = inputFileFFmpeg->getNextNALUnit();
-      dec->pushData(data);
+      {
+        // The 
+        QByteArray data;
+        // Push more data to the decoder
+      
+        if (isinputFormatTypeAnnexB)
+          data = caching ? inputFileAnnexBCaching->getNextNALUnit() : inputFileAnnexBLoading->getNextNALUnit();
+        else
+          data = inputFileFFmpeg->getNextNALUnit();
+        dec->pushData(data);
+      }
     }
 
     if (dec->isCurrentFrameValid())
@@ -817,12 +838,11 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpe
   parser->parseExtradata(extradata);
 
   // Now iterate over all packets and send them to the parser
-  QByteArray packetData = file->getNextPacket();
+  AVPacketWrapper packet = file->getNextPacket();
+  
   while (!file->atEnd())
   {
-    avPacketInfo_t packetInfo = file->getCurrentPacketInfo();
-
-    int newPercentValue = packetInfo.pts * 100 / maxPTS;
+    int newPercentValue = packet.get_pts() * 100 / maxPTS;
     if (newPercentValue != curPercentValue)
     {
       progress.setValue(newPercentValue);
@@ -831,16 +851,16 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpe
 
     try
     {
-      parser->parseAVPacketData(packetID, packetInfo, packetData);
+      parser->parseAVPacket(packetID, packet);
     }
     catch (...)
     {
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_HEVC("parseAVPacketData Exception thrown parsing NAL %d", packetID);
+      DEBUG_HEVC("parseAVPacket Exception thrown parsing NAL %d", packetID);
     }
     packetID++;
-    packetData = file->getNextPacket();
+    packet = file->getNextPacket();
   }
     
   // Seek back to the beginning of the stream.

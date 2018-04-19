@@ -32,7 +32,7 @@
 
 #include "decoderFFmpeg.h"
 
-#define DECODERFFMPEG_DEBUG_OUTPUT 0
+#define DECODERFFMPEG_DEBUG_OUTPUT 1
 #if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
@@ -43,17 +43,26 @@
 decoderFFmpeg::decoderFFmpeg(AVCodecID codec, bool cachingDecoder) : 
   decoderBase(cachingDecoder)
 {
-  QString codecName = ffmpegLib.getCodecName(codec);
-  DEBUG_FFMPEG("Create new FFMpeg decoder - codec %s%s", codecName, cachingDecoder ? " - caching" : "");
-  
-  if (!ffmpegLib.createDecoder(codec))
+  if (!createDecoder(codec))
   {
     setError("Error creating the needed decoder.");
     return ;
   }
-  
 
+  DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
+}
 
+decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder) :
+  decoderBase(cachingDecoder)
+{
+  AVCodecID codec = codecpar.getCodecID();
+  if (!createDecoder(codec, codecpar))
+  {
+    setError("Error creating the needed decoder.");
+    return ;
+  }
+
+  DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
 
 decoderFFmpeg::~decoderFFmpeg()
@@ -77,6 +86,17 @@ void decoderFFmpeg::pushData(QByteArray &data)
 {
 }
 
+void decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
+{
+  if (decoderState != decoderRetrieveFrames)
+  {
+    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Wrong decoder state.");
+    return;
+  }
+
+
+}
+
 statisticsData decoderFFmpeg::getStatisticsData(int typeIdx)
 {
   return statisticsData();
@@ -86,3 +106,44 @@ void decoderFFmpeg::fillStatisticList(statisticHandler &statSource) const
 {
 }
 
+bool decoderFFmpeg::createDecoder(AVCodecID streamCodecID, AVCodecParametersWrapper codecpar)
+{
+  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
+  // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading the libraries.
+  if (!ff.loadFFmpegLibraries())
+    return false;
+
+  // Allocate the decoder context
+  if (videoCodec)
+    return setErrorB(QStringLiteral("Video codec already allocated."));
+  videoCodec = ff.find_decoder(streamCodecID);
+  if(!videoCodec)
+    return setErrorB(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
+
+  if (decCtx)
+    return setErrorB(QStringLiteral("Decoder context already allocated."));
+  decCtx = ff.alloc_decoder(videoCodec);
+  if(!decCtx)
+    return setErrorB(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
+
+  if (codecpar)
+    if (!ff.configureDecoder(decCtx, codecpar))
+      return setErrorB(QStringLiteral("Unable to configure decoder from codecpar"));
+
+  // Ask the decoder to provide motion vectors (if possible)
+  AVDictionaryWrapper opts;
+  int ret = ff.av_dict_set(opts, "flags2", "+export_mvs", 0);
+  if (ret < 0)
+    return setErrorB(QStringLiteral("Could not request motion vector retrieval. Return code %1").arg(ret));
+
+  // Open codec
+  ret = ff.avcodec_open2(decCtx, videoCodec, opts);
+  if (ret < 0)
+    return setErrorB(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
+
+  frame.allocate_frame(ff);
+  if (!frame)
+    return setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
+
+  return true;
+}

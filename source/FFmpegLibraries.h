@@ -43,123 +43,121 @@ using namespace YUV_Internals;
 
 // This class wraps the ffmpeg library in a demand-load fashion.
 // As FFMpeg, the library can then be used to read from containers, or to decode videos.
-class FFmpegLibraries : public QObject
-{
-  Q_OBJECT
+//class FFmpegLibraries : public QObject
+//{
+//  Q_OBJECT
+//
+//public:
+//  FFmpegLibraries();
+//  ~FFmpegLibraries();
+//
+//  /* ---- Reading from a container -----
+//   * Scenraio 1: Read data from a container.
+//   * First, open a file ...
+//   */
+//
+//  bool openFile(QString fileName);
+//  void closeFile() { /* TODO */ assert(false); };
+//
+//  // After succesfully opening a container, these should provide some information about the bitstream
+//  double getFrameRate() const { return frameRate; }
+//  ColorConversion getColorConversionType() const { return colorConversionType; }
+//  yuvPixelFormat getYUVPixelFormat();
+//  QSize getFrameSize() const { return frameSize; }
+//  int64_t getDuration() { return duration; }
+//  QPair<int64_t, int64_t> getTimeBase() { return QPair<int64_t,int64_t>(timeBase.num, timeBase.den); }
+//  
+//  AVCodecID getCodecID() { return video_stream.getCodecID(); }
+//  AVCodecParametersWrapper getVideoCodecPar() { return video_stream.get_codecpar(); }
+//
+//  // Read the stream packet by packet:
+//  bool            goToNextVideoPacket();
+//  AVPacketWrapper getCurrentPacket()     { return pkt; }
+//  bool            atEnd() const          { return endOfFile; }
+//
+//  // Reading the video stream extra data
+//  QByteArray getVideoContextExtradata();
+//
 
-public:
-  FFmpegLibraries();
-  ~FFmpegLibraries();
-
-  /* ---- Reading from a container -----
-   * Scenraio 1: Read data from a container.
-   * First, open a file ...
-   */
-
-  bool openFile(QString fileName);
-  void closeFile() { /* TODO */ assert(false); };
-
-  // After succesfully opening a container, these should provide some information about the bitstream
-  double getFrameRate() const { return frameRate; }
-  ColorConversion getColorConversionType() const { return colorConversionType; }
-  yuvPixelFormat getYUVPixelFormat();
-  QSize getFrameSize() const { return frameSize; }
-  int64_t getDuration() { return duration; }
-  QPair<int64_t, int64_t> getTimeBase() { return QPair<int64_t,int64_t>(timeBase.num, timeBase.den); }
-  int64_t getMaxPTS();
-  AVCodecID getCodecID() { return video_stream.getCodecID(); }
-
-  // Read the stream packet by packet:
-  bool     goToNextVideoPacket();
-  bool     atEnd() const         { return endOfFile; }
-  avPacketInfo_t getPacketInfo();
-
-  // Reading the video stream extra data
-  QByteArray getVideoContextExtradata();
-
-  // Seek the stream to the given pts value, flush the decoder and load the first packet so
-  // that we are ready to start decoding from this pts.
-  bool seekToPTS(int64_t pts);
-  
-  // Get the error string (if openFile returend false)
-  QString decoderErrorString() const;
-  bool errorInDecoder() const { return decodingError; }
-  bool errorLoadingLibraries() const { return librariesLoadingError; }
-  bool errorOpeningFile() const { return decodingError; }
-
-  /* ---- Decoding video ----
-   * Scenario 2: Decoding a video sequence from input data
-   */
-  bool createDecoder(AVCodecID streamCodecID);
-
-  // Get info about the decoder (path, library versions...)
-  QList<infoItem> getDecoderInfo() const;
-  QString getLibraryPath() const { return ff.getLibPath(); }
-  QString getCodecName(AVCodecID id) const { return ff.getCodecName(id); }
-
-  // Load the raw YUV data for the given frame
-  QByteArray loadYUVFrameData(int frameIdx);
-
-  // Get the statistics values for the given frame (decode if necessary)
-  statisticsData getStatisticsData(int frameIdx, int typeIdx);
-
-  // Check if the given libraries can be used to open ffmpeg
-  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error);
-  
-private:
-
-  // Try to load the ffmpeg libraries. Different paths wil be tried. 
-  // If this fails, decoderError is set and errorString provides a error description.
-  bool loadFFmpegLibraries();
-  bool librariesLoaded;
-  bool librariesLoadingError;
-
-  // ---- Opening files
-  bool readingFileError;
-  AVFormatContextWrapper fmt_ctx;
-  AVStreamWrapper video_stream;
-
-  // The pixel format. This is valid after openFile was called (and succeeded).
-  enum AVPixelFormat pixelFormat;
-  QSize frameSize;
-  double frameRate;
-  ColorConversion colorConversionType;
-  int64_t duration;
-  AVRational timeBase;
-
-  // ---- Reading
-  AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
-  bool endOfFile;                   //< Are we at the end of file (draining mode)?
-
-  // ---- Decoding 
-  bool decodingError;
-  bool decodeOneFrame();
-  AVCodecWrapper videoCodec;        //< The video decoder codec
-  AVCodecContextWrapper decCtx;     //< The decoder context
-  AVFrameWrapper frame;             //< The frame that we use for decoding
-  int currentOutputBufferFrameIndex;
-
-  // ---- Common handling of decoding
-  FFmpegVersionHandler ff;          //< Access to the libraries independent of their version
-
-  // ---- Error handling
-  QString errorString;
-  bool setOpeningError(const QString &reason) { readingFileError = true; errorString = reason; return false; }
-  void setDecodingError(const QString &reason)  { decodingError = true; errorString = reason; }
-    
-//#if SSE_CONVERSION
-//  byteArrayAligned currentOutputBuffer;
-//  void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);
-//#else
-//  QByteArray currentOutputBuffer;
-//  void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
-//#endif
-
-  //// Copy the motion information (if present) from the frame to a loca buffer
-  //void copyFrameMotionInformation();
-
-  // Get information about the current format
-  void getFormatInfo();
-};
+//  
+//  // Get the error string (if openFile returend false)
+//  bool errorLoadingLibraries() const { return librariesLoadingError; }
+//
+//  /* ---- Decoding video ----
+//   * Scenario 2: Decoding a video sequence from input data
+//   */
+//  // Create a new video decoder using the given codec. If codecpar is given, the decoder will be configured with it.
+//  bool createDecoder(AVCodecID streamCodecID, AVCodecParametersWrapper codecpar=AVCodecParametersWrapper()); 
+//
+//  // Get info about the decoder (path, library versions...)
+//  QList<infoItem> getDecoderInfo() const;
+//  QString getLibraryPath() const { return ff.getLibPath(); }
+//  QString getCodecName(AVCodecID id) const { return ff.getCodecName(id); }
+//
+//  // Push a packet to the decoder
+//  void pushPacket(AVPacketWrapper &packet);
+//
+//
+//  // Load the raw YUV data for the given frame
+//  QByteArray loadYUVFrameData(int frameIdx);
+//
+//  // Get the statistics values for the given frame (decode if necessary)
+//  statisticsData getStatisticsData(int frameIdx, int typeIdx);
+//
+//  // Check if the given libraries can be used to open ffmpeg
+//  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error);
+//  
+//private:
+//
+//  // Try to load the ffmpeg libraries. Different paths wil be tried. 
+//  // If this fails, decoderError is set and errorString provides a error description.
+//  bool loadFFmpegLibraries();
+//  bool librariesLoaded;
+//  bool librariesLoadingError;
+//
+//  // ---- Opening files
+//  bool readingFileError;
+//  AVFormatContextWrapper fmt_ctx;
+//  AVStreamWrapper video_stream;
+//
+//  // The pixel format. This is valid after openFile was called (and succeeded).
+//  enum AVPixelFormat pixelFormat;
+//  QSize frameSize;
+//  double frameRate;
+//  ColorConversion colorConversionType;
+//  int64_t duration;
+//  AVRational timeBase;
+//
+//  // ---- Reading
+//  AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
+//  bool endOfFile;                   //< Are we at the end of file (draining mode)?
+//
+//  // ---- Decoding 
+//  AVCodecWrapper videoCodec;        //< The video decoder codec
+//  AVCodecContextWrapper decCtx;     //< The decoder context
+//  AVFrameWrapper frame;             //< The frame that we use for decoding
+//  int currentOutputBufferFrameIndex;
+//
+//  // ---- Common handling of decoding
+//  FFmpegVersionHandler ff;          //< Access to the libraries independent of their version
+//
+//  // ---- Error handling
+//  QString errorString;
+//  bool setOpeningError(const QString &reason) { readingFileError = true; errorString = reason; return false; }
+//    
+////#if SSE_CONVERSION
+////  byteArrayAligned currentOutputBuffer;
+////  void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);
+////#else
+////  QByteArray currentOutputBuffer;
+////  void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
+////#endif
+//
+//  //// Copy the motion information (if present) from the frame to a loca buffer
+//  //void copyFrameMotionInformation();
+//
+//  // Get information about the current format
+//  void getFormatInfo();
+//};
 
 #endif // FFMPEGDECODER_H

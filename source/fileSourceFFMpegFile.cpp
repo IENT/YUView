@@ -42,36 +42,34 @@
 #define DEBUG_FFMPEG(fmt,...) ((void)0)
 #endif
 
+using namespace YUV_Internals;
+
 fileSourceFFmpegFile::fileSourceFFmpegFile()
 {
   fileChanged = false;
   isFileOpened = false;
   nrFrames = 0;
   posInFile = -1;
+  endOfFile = false;
+  duration = -1;
+  timeBase.num = 0;
+  timeBase.den = 0;
+  frameRate = -1;
+  colorConversionType = BT709_LimitedRange;
 
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFmpegFile::fileSystemWatcherFileChanged);
 }
 
-QByteArray fileSourceFFmpegFile::getNextPacket()
+AVPacketWrapper fileSourceFFmpegFile::getNextPacket()
 {
   // Load the next packet
-  if (!ffmpegLib.goToNextVideoPacket())
+  if (!goToNextVideoPacket())
   {
     posInFile = -1;
-    return QByteArray();
+    return AVPacketWrapper();
   }
 
-  avPacketInfo_t p = ffmpegLib.getPacketInfo();
-  currentPacketData = QByteArray::fromRawData((const char*)(p.data), p.data_size);
-  posInData = 0;
-
-  return currentPacketData;
-}
-
-avPacketInfo_t fileSourceFFmpegFile::getCurrentPacketInfo()
-{
-  // Get info for the current packet
-  return ffmpegLib.getPacketInfo();
+  return pkt;
 }
 
 QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
@@ -79,14 +77,13 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
   // Is a packet loaded?
   if (currentPacketData.isEmpty())
   {
-    if (!ffmpegLib.goToNextVideoPacket())
+    if (!goToNextVideoPacket())
     {
       posInFile = -1;
       return QByteArray();
     }
 
-    avPacketInfo_t p = ffmpegLib.getPacketInfo();
-    currentPacketData = QByteArray::fromRawData((const char*)(p.data), p.data_size);
+    currentPacketData = QByteArray::fromRawData((const char*)(pkt.get_data()), pkt.get_data_size());
     posInData = 0;
   }
   
@@ -99,10 +96,7 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
   size += (unsigned char)sizePart.at(0) << 24;
 
   if (pts)
-  {
-    avPacketInfo_t p = ffmpegLib.getPacketInfo();
-    *pts = p.pts;
-  }
+    *pts = pkt.get_pts();
   
   QByteArray retArray = currentPacketData.mid(posInData + 4, size);
   posInData += 4 + size;
@@ -113,7 +107,13 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
 
 QByteArray fileSourceFFmpegFile::getExtradata()
 {
-  return ffmpegLib.getVideoContextExtradata();
+  // Get the video stream
+  if (!video_stream)
+    return QByteArray();
+  AVCodecContextWrapper codec = video_stream.getCodec();
+  if (!codec)
+    return QByteArray();
+  return codec.get_extradata();
 }
 
 QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
@@ -123,7 +123,7 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
    * To access them from libav* APIs you need to look for extradata field in AVCodecContext of AVStream 
    * which relate to needed video stream. Also extradata can have different format from standard H.264 
    * NALs so look in MP4-container specs for format description. */
-  QByteArray extradata = ffmpegLib.getVideoContextExtradata();
+  QByteArray extradata = getExtradata();
   QList<QByteArray> retArray;
 
   if (extradata.at(0) == 1)
@@ -179,10 +179,11 @@ bool fileSourceFFmpegFile::openFile(const QString &filePath)
 
   if (isFileOpened)
   {
-    ffmpegLib.closeFile();
+    // Close the file?
+    // TODO
   }
 
-  isFileOpened = ffmpegLib.openFile(filePath);
+  openFileAndFindVideoStream(filePath);
   if (!isFileOpened)
     return false;
 
@@ -195,30 +196,9 @@ bool fileSourceFFmpegFile::openFile(const QString &filePath)
 
   scanBitstream();
   // Seek back to the beginning
-  ffmpegLib.seekToPTS(0);
+  seekToPTS(0);
 
   return true;
-}
-
-double fileSourceFFmpegFile::getFramerate()
-{
-  if (!isFileOpened)
-    return -1;
-  return ffmpegLib.getFrameRate();
-}
-
-QSize fileSourceFFmpegFile::getSequenceSizeSamples()
-{
-  if (!isFileOpened)
-    return QSize();
-  return ffmpegLib.getFrameSize();
-}
-
-yuvPixelFormat fileSourceFFmpegFile::getPixelFormat()
-{
-  if (!isFileOpened)
-    return yuvPixelFormat();
-  return ffmpegLib.getYUVPixelFormat();
 }
 
 // Check if we are supposed to watch the file for changes. If no, remove the file watcher. If yes, install one.
@@ -260,14 +240,119 @@ int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToF
 void fileSourceFFmpegFile::scanBitstream()
 {
   nrFrames = 0;
-  while (ffmpegLib.goToNextVideoPacket())
+  while (goToNextVideoPacket())
   {
-    avPacketInfo_t p = ffmpegLib.getPacketInfo();
-    DEBUG_FFMPEG("frame %d pts %d dts %d%s", nrFrames, (int)p.pts, (int)p.dts, p.flag_keyframe ? " - keyframe" : "");
+    DEBUG_FFMPEG("frame %d pts %d dts %d%s", nrFrames, (int)pkt.get_pts(), (int)pkt.get_dts(), p.flag_keyframe ? " - keyframe" : "");
 
-    if (p.flag_keyframe)
-      keyFrameList.append(pictureIdx(nrFrames, p.pts));
+    if (pkt.get_flag_keyframe())
+      keyFrameList.append(pictureIdx(nrFrames, pkt.get_pts()));
 
     nrFrames++;
   }
+}
+
+void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
+{
+  isFileOpened = false;
+
+  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
+  // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading the libraries.
+  if (!ff.loadFFmpegLibraries())
+    return;
+
+  // Open the input file
+  if (!ff.open_input(fmt_ctx, fileName))
+    return;
+  
+  // What is the input format?
+  AVInputFormatWrapper inp_format = fmt_ctx.get_input_format();
+
+  // Get the first video stream
+  for(unsigned int idx=0; idx < fmt_ctx.get_nb_streams(); idx++)
+  {
+    AVStreamWrapper stream = fmt_ctx.get_stream(idx);
+    AVMediaType streamType =  stream.getCodecType();
+    if(streamType == AVMEDIA_TYPE_VIDEO)
+    {
+      video_stream = stream;
+      break;
+    }
+  }
+  if(!video_stream)
+    return;
+
+  // Initialize an empty packet
+  pkt.allocate_paket(ff);
+
+  // Get the frame rate, picture size and color conversion mode
+  AVRational avgFrameRate = video_stream.get_avg_frame_rate();
+  if (avgFrameRate.den == 0)
+    frameRate = -1;
+  else
+    frameRate = avgFrameRate.num / double(avgFrameRate.den);
+  pixelFormat = FFmpegVersionHandler::convertAVPixelFormat(video_stream.getCodec().get_pixel_format());
+  duration = fmt_ctx.get_duration();
+  timeBase = video_stream.get_time_base();
+
+  AVColorSpace colSpace = video_stream.get_colorspace();
+  int w = video_stream.get_frame_width();
+  int h = video_stream.get_frame_height();
+  frameSize.setWidth(w);
+  frameSize.setHeight(h);
+
+  if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
+    colorConversionType = BT2020_LimitedRange;
+  else if (colSpace == AVCOL_SPC_BT470BG || colSpace == AVCOL_SPC_SMPTE170M)
+    colorConversionType = BT601_LimitedRange;
+  else
+    colorConversionType = BT709_LimitedRange;
+}
+
+bool fileSourceFFmpegFile::goToNextVideoPacket()
+{
+  //Load the next video stream packet into the packet buffer
+  int ret = 0;
+  do
+  {
+    if (pkt)
+      // Unref the packet
+      pkt.unref_packet(ff);
+  
+    ret = fmt_ctx.read_frame(ff, pkt);
+  }
+  while (ret == 0 && pkt.get_stream_index() != video_stream.get_index());
+  
+  if (ret < 0)
+  {
+    endOfFile = true;
+    return false;
+  }
+  return true;
+}
+
+bool fileSourceFFmpegFile::seekToPTS(int64_t pts)
+{
+  if (!isFileOpened)
+    return false;
+
+  int ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), pts);
+  if (ret != 0)
+  {
+    DEBUG_FFMPEG("FFmpegLibraries::seekToPTS Error PTS %ld. Return Code %d", pts, ret);
+    return false;
+  }
+
+  // We seeked somewhere, so we are not at the end of the file anymore.
+  endOfFile = false;
+
+  DEBUG_FFMPEG("FFmpegLibraries::seekToPTS Successfully seeked to PTS %d", pts);
+  return true;
+}
+
+int64_t fileSourceFFmpegFile::getMaxPTS() 
+{ 
+  if (!isFileOpened)
+    return -1; 
+  
+  return duration * timeBase.den / timeBase.num / 1000;
 }

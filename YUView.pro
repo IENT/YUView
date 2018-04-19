@@ -10,7 +10,6 @@ SOURCES += \
     source/decoderBase.cpp \
     source/decoderFFmpeg.cpp \
     source/decoderLibde265.cpp \
-    source/FFmpegLibraries.cpp \
     source/FFMpegLibrariesHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
@@ -64,7 +63,6 @@ HEADERS += \
     source/decoderBase.h \
     source/decoderFFmpeg.h \
     source/decoderLibde265.h \
-    source/FFmpegLibraries.h \
     source/FFMpegLibrariesHandling.h \
     source/FFMpegLibrariesCommonDefs.h \
     source/fileInfoWidget.h \

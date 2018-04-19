@@ -121,7 +121,8 @@ protected:
   yuvPixelFormat format;
   
   // Error handling
-  void setError(const QString &reason);
+  void setError(const QString &reason) { decoderState = decoderError; errorString = reason; }
+  bool setErrorB(const QString &reason) { setError(reason); return false; }
   QString errorString;
   
   // Statistics caching

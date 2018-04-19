@@ -35,6 +35,7 @@
 
 #include "FFMpegLibrariesCommonDefs.h"
 #include "stdint.h"
+#include "videoHandlerYUV.h"
 #include <assert.h>
 #include <QLibrary>
 
@@ -614,20 +615,14 @@ public:
 
   QStringList getErrors() const { return error_list + lib.getErrors(); }
 
-  // Try to load the FFmpeg libraries from the given path.
-  // Try the system paths if no path is provided. This function can be called multiple times.
-  bool loadFFmpegLibraryInPath(QString path);
-  // Try to load the four specific library files
-  bool loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib);
-
-  // Check if the given four files can be used to open FFmpeg.
-  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error);
+  // Try to load the ffmpeg libraries and get all the function pointers.
+  bool loadFFmpegLibraries();
   
   QString getLibPath() const { return lib.getLibPath(); }
   QString getLibVersionString() const;
   QString getCodecName(AVCodecID id) const { return QString(lib.avcodec_get_name(id)); }
 
-  bool parse_decoder_parameters(AVCodecContextWrapper &decCtx, AVStreamWrapper &videoStream);
+  bool configureDecoder(AVCodecContextWrapper &decCtx, AVCodecParametersWrapper &codecpar);
 
   // endOfFile: Are we at the end of the file? In this case we will decode frames (if possible) but feed no new data to the decoder.
   bool decode_frame(AVCodecContextWrapper &decCtx, AVFormatContextWrapper &fmt_ctx, AVFrameWrapper &frame, AVPacketWrapper &pkt, bool &endOfFile, int videoStreamIdx);
@@ -647,7 +642,7 @@ public:
   };
 
   // Open the input file. This will call avformat_open_input and avformat_find_stream_info.
-  int open_input(AVFormatContextWrapper &fmt, QString url);
+  bool open_input(AVFormatContextWrapper &fmt, QString url);
   // Try to find a decoder for the given codecID (avcodec_find_decoder)
   AVCodecWrapper find_decoder(AVCodecID codec_id);
   // Allocate the decoder (avcodec_alloc_context3)
@@ -665,7 +660,18 @@ public:
   // All the function pointers of the ffmpeg library
   FFmpegLibraryFunctions lib;
 
+  static YUV_Internals::yuvPixelFormat convertAVPixelFormat(AVPixelFormat pixelFormat);
+  // Check if the given four files can be used to open FFmpeg.
+  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error);
+
 private:
+
+  // Try to load the FFmpeg libraries from the given path.
+  // Try the system paths if no path is provided. This function can be called multiple times.
+  bool loadFFmpegLibraryInPath(QString path);
+  // Try to load the four specific library files
+  bool loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib);
+  bool librariesLoaded;
 
   // Check the version of the opened libraries
   bool checkLibraryVersions();

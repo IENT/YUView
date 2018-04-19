@@ -35,7 +35,7 @@
 
 #include "parserBase.h"
 #include "parserAnnexB.h"
-#include "FFMpegLibrariesCommonDefs.h"
+#include "FFMpegLibrariesHandling.h"
 
 using namespace FFmpeg;
 
@@ -50,7 +50,7 @@ public:
   ~parserAVFormat() {}
 
   void parseExtradata(QByteArray &extradata);
-  void parseAVPacketData(int packetID, avPacketInfo_t &packetInfo, QByteArray &avpacketData);
+  void parseAVPacket(int packetID, AVPacketWrapper &packet);
 
 private:
   AVCodecID codecID;

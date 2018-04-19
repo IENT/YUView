@@ -36,19 +36,6 @@
 #include "stdint.h"
 #include <errno.h>
 
-struct avPacketInfo_t
-{
-  int stream_index;
-  int64_t pts;
-  int64_t dts;
-  int64_t duration;
-  bool flag_keyframe;
-  bool flag_corrupt;
-  bool flag_discard;
-  int data_size;
-  uint8_t *data;
-};
-
 /* This file defines all FFmpeg specific defines like structs, enums and some common things like Rational.
  * These things do not change when a new major version of the libraries is released. (If they do, they will
  * have to be moved to the FFmpegVersionHandler).

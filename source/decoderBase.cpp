@@ -60,12 +60,6 @@ decoderBase::decoderBase(bool cachingDecoder)
   resetDecoder();
 }
 
-void decoderBase::setError(const QString &reason)
-{
-  decoderState = decoderError;
-  errorString = reason;
-}
-
 void decoderBase::resetDecoder()
 {
   decoderState = decoderNeedsMoreData;

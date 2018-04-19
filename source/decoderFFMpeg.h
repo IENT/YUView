@@ -34,12 +34,13 @@
 #define DECODERFFMPEG_H
 
 #include "decoderBase.h"
-#include "FFmpegLibraries.h"
+#include "FFMpegLibrariesHandling.h"
 
 class decoderFFmpeg : public decoderBase
 {
 public:
   decoderFFmpeg(AVCodecID codec, bool cachingDecoder=false);
+  decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder=false);
   ~decoderFFmpeg();
 
   void resetDecoder() Q_DECL_OVERRIDE;
@@ -49,17 +50,24 @@ public:
   void decodeNextFrame() Q_DECL_OVERRIDE;
   QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  void pushAVPacket(AVPacketWrapper &pkt);
 
   // Statistics
   statisticsData getStatisticsData(int typeIdx) Q_DECL_OVERRIDE;
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
 
-  QString getLibraryPath() const Q_DECL_OVERRIDE { return ffmpegLib.getLibraryPath(); }
+  QString getLibraryPath() const Q_DECL_OVERRIDE { return ff.getLibPath(); }
   QString getDecoderName() const Q_DECL_OVERRIDE { return "FFmpeg"; }
 
 protected:
 
-  FFmpegLibraries ffmpegLib;
+  FFmpegVersionHandler ff;
+
+  bool createDecoder(AVCodecID streamCodecID, AVCodecParametersWrapper codecpar=AVCodecParametersWrapper());
+
+  AVCodecWrapper videoCodec;        //< The video decoder codec
+  AVCodecContextWrapper decCtx;     //< The decoder context
+  AVFrameWrapper frame;             //< The frame that we use for decoding
 };
 
 #endif // DECODERFFMPEG_H
