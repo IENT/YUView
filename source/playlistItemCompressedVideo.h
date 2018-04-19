@@ -164,7 +164,8 @@ protected:
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
   // read the NAL units from the compressed file.
   void parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file, QScopedPointer<parserAVFormat> &parser);
-  QScopedPointer<fileSourceFFmpegFile> inputFileFFmpeg;
+  QScopedPointer<fileSourceFFmpegFile> inputFileFFmpegLoading;
+  QScopedPointer<fileSourceFFmpegFile> inputFileFFmpegCaching;
   
   // Is the loadFrame function currently loading?
   bool isFrameLoading;

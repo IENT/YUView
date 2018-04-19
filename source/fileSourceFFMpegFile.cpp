@@ -170,7 +170,7 @@ fileSourceFFmpegFile::~fileSourceFFmpegFile()
 {
 }
 
-bool fileSourceFFmpegFile::openFile(const QString &filePath)
+bool fileSourceFFmpegFile::openFile(const QString &filePath, fileSourceFFmpegFile *other)
 {
   // Check if the file exists
   fileInfo.setFile(filePath);
@@ -194,7 +194,15 @@ bool fileSourceFFmpegFile::openFile(const QString &filePath)
   updateFileWatchSetting();
   fileChanged = false;
 
-  scanBitstream();
+  // If another (already opened) bitstream is given, copy bitstream info from there; Otherwise scan the bitstream.
+  if (other && other->isFileOpened)
+  {
+    nrFrames = other->nrFrames;
+    keyFrameList = other->keyFrameList;
+  }
+  else
+    scanBitstream();
+
   // Seek back to the beginning
   seekToPTS(0);
 
@@ -306,6 +314,8 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
     colorConversionType = BT601_LimitedRange;
   else
     colorConversionType = BT709_LimitedRange;
+
+  isFileOpened = true;
 }
 
 bool fileSourceFFmpegFile::goToNextVideoPacket()
