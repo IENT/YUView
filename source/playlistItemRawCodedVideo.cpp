@@ -39,7 +39,6 @@
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
 #include "hevcNextGenDecoderJEM.h"
-#include "signalsSlots.h"
 
 #define HEVC_DEBUG_OUTPUT 0
 #if HEVC_DEBUG_OUTPUT && !NDEBUG
@@ -234,8 +233,8 @@ void playlistItemRawCodedVideo::infoListButtonPressed(int buttonID)
   QScopedPointer<fileSourceAnnexBFile> file;
   if (decoderEngineType == decoderLibde265 || decoderEngineType == decoderHM)
     file.reset(new fileSourceHEVCAnnexBFile);
-  else
-    file.reset(new fileSourceAnnexBFile);
+  else if (decoderEngineType == decoderJEM)
+    file.reset(new fileSourceJEMAnnexBFile);
 
   // Parse the annex B file again and save all the values read
   if (!file->openFile(plItemNameOrFileName, true))
@@ -248,7 +247,7 @@ void playlistItemRawCodedVideo::infoListButtonPressed(int buttonID)
   view->setModel(file->getNALUnitModel());
   QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
   verticalLayout->addWidget(view);
-  newDialog.resize(QSize(700, 700));
+  newDialog.resize(QSize(1000, 900));
   view->setColumnWidth(0, 400);
   view->setColumnWidth(1, 50);
   newDialog.exec();
@@ -353,7 +352,7 @@ void playlistItemRawCodedVideo::createPropertiesWidget()
   ui.comboBoxDisplaySignal->setCurrentIndex(displaySignal);
 
   // Connect signals/slots
-  connect(ui.comboBoxDisplaySignal, QComboBox_currentIndexChanged_int, this, &playlistItemRawCodedVideo::displaySignalComboBoxChanged);
+  connect(ui.comboBoxDisplaySignal, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemRawCodedVideo::displaySignalComboBoxChanged);
 }
 
 void playlistItemRawCodedVideo::fillStatisticList()
@@ -414,14 +413,14 @@ void playlistItemRawCodedVideo::reloadItemSource()
   loadYUVData(0, false);
 }
 
-void playlistItemRawCodedVideo::cacheFrame(int idx, bool testMode)
+void playlistItemRawCodedVideo::cacheFrame(int frameIdx, bool testMode)
 {
   if (!cachingEnabled)
     return;
 
   // Cache a certain frame. This is always called in a separate thread.
   cachingMutex.lock();
-  video->cacheFrame(idx, testMode);
+  video->cacheFrame(getFrameIdxInternal(frameIdx), testMode);
   cachingMutex.unlock();
 }
 

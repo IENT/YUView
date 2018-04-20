@@ -1,4 +1,4 @@
-QT += gui opengl xml concurrent network charts
+QT += gui opengl xml concurrent network charts datavisualization
 
 TARGET = YUView
 TEMPLATE = app
@@ -16,7 +16,9 @@ SOURCES += \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceAnnexBFile.cpp \
+    source/fileSourceAVCAnnexBFile.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
+    source/fileSourceJEMAnnexBFile.cpp \
     source/frameHandler.cpp \
     source/hevcDecoderLibde265.cpp \
     source/hevcDecoderHM.cpp \
@@ -57,7 +59,8 @@ SOURCES += \
     source/videoHandlerYUV.cpp \
     source/viewStateHandler.cpp \
     source/yuviewapp.cpp \
-    source/yuvcharts.cpp
+    source/yuvcharts.cpp \
+    source/graphmodifier.cpp
 
 
 HEADERS += \
@@ -71,7 +74,9 @@ HEADERS += \
     source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceAnnexBFile.h \
+    source/fileSourceAVCAnnexBFile.h \
     source/fileSourceHEVCAnnexBFile.h \
+    source/fileSourceJEMAnnexBFile.h \
     source/frameHandler.h \
     source/hevcDecoderHM.h \
     source/hevcDecoderLibde265.h \
@@ -99,7 +104,6 @@ HEADERS += \
     source/separateWindow.h \
     source/settingsDialog.h \
     source/showColorFrame.h \
-    source/signalsSlots.h \
     source/splitViewWidget.h \
     source/singleInstanceHandler.h \
     source/statisticHandler.h \
@@ -115,7 +119,8 @@ HEADERS += \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
     source/yuviewapp.h \
-    source/yuvcharts.h
+    source/yuvcharts.h \
+    source/graphmodifier.h
 
 
 FORMS += \

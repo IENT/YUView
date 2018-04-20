@@ -813,8 +813,42 @@ bool playlistItemStatisticsFile::isRangeInside(indexRange aOriginalRange, indexR
 
 QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QString aType, const int aFrameIndex)
 {
+  auto getSmallestKey = [] (QList<QString> aMapKeys) -> QString {
+    int smallestFoundNumber = INT_MAX;
+    QString numberString = "";
+    QString resultKey = ""; // just a holder
+
+    // getting the smallest number and the label
+    foreach (QString label, aMapKeys)
+    {
+      if(numberString != "") // the if is necessary, otherwise it will crash on windows
+        numberString.clear(); // cleaning the String
+
+      for (int run = 0; run < label.length(); run++)
+      {
+        if(label[run] != 'x') // finding the number befor the 'x'
+         numberString.append(label[run]); // creating the number from the chars
+        else // we have found the 'x' so the number is finished
+          break;
+      }
+
+      int number = numberString.toInt(); // convert to int
+
+      // check if we have found the smallest number
+      if(number < smallestFoundNumber)
+      {
+        // found a smaller number so hold it
+        smallestFoundNumber = number;
+        // we hold the label, so we dont need to "create / build" the key again
+        resultKey = label;
+      }
+    }
+    return resultKey;
+  };
+
   //prepare the result
   QMap<QString, QMap<int, int*>*>* dataMapStatisticsItemValue = new QMap<QString, QMap<int, int*>*>;
+  QMap<QString, QHash<QPoint, int*>*>* dataMapStatisticsItemVector = new QMap<QString, QHash<QPoint, int*>*>;
 
   //check if data was loaded
   if(!(&this->mStatisticData))
@@ -833,7 +867,7 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
     if(item.canConvert<statisticsItem_Value>())
     {
       statisticsItem_Value value = item.value<statisticsItem_Value>();
-      // creating the label: height x width
+      // creating the label: widht x height
       QString label = QString::number(value.size[0]) + "x" + QString::number(value.size[1]);
 
       int* chartDepthCnt;
@@ -881,86 +915,142 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
       }
     }
 
+    // same procedure as statisticsItem_Value but at some points it is different
     // in case of statisticsItem_Vector
     if(item.canConvert<statisticsItem_Vector>())
     {
       statisticsItem_Vector vector = item.value<statisticsItem_Vector>();
-      // do something
+      QPoint value = vector.point[0];
+      short width = vector.size[0];
+      short height = vector.size[1];
 
+      QString label = QString::number(width) + "x" + QString::number(height);
+      int* chartValueCnt;
+
+      if(!dataMapStatisticsItemVector->contains(label))
+      {
+        // label was not inside
+        QHash<QPoint, int*>* map = new QHash<QPoint, int*>();
+
+        // create Data, set to 0 and increment (or set count to the value 1, same as set to 0 and increment) and add to second map
+        chartValueCnt = new int[1];
+
+        chartValueCnt[0] = 1;
+
+        map->insert(value, chartValueCnt);
+        dataMapStatisticsItemVector->insert(label, map);
+      }
+      else
+      {
+        // label was inside, check if Point-value is inside
+        QHash<QPoint, int*>* map = dataMapStatisticsItemVector->value(label);
+
+        // Depth-Value not inside
+        if(!(map->contains(value)))
+        {
+          chartValueCnt = new int[1];                   // creating new result
+          chartValueCnt[0] = 0;                         // initialise counter to 0
+          chartValueCnt[0]++;                           // increment the counter
+          map->insert(value, chartValueCnt); // at least add to list
+        }
+        else  // Point-Value was inside
+        {
+          // finding the result, every item "value" is just one time in the list
+          int* counter = map->value(value);
+          counter[0]++; // increment the counter
+        }
+      }
     }
-
-
   }
-
   // at least we order the data based on the width & height (from low to high) and make the data handling easier
   QList<collectedData>* resultData = new QList<collectedData>;
 
-  int smallestFoundNumber = INT_MAX;
-  QString numberString = "";
+  // first init maxElemtents with the amount of data in dataMapStatisticsItemValue
   int maxElementsToNeed = dataMapStatisticsItemValue->keys().count();
 
-  while(resultData->count() < maxElementsToNeed)
+  // if we have the type statisticsItem_Value   -- no if, the brackets should improve reading the code
   {
-    QString key = ""; // just a holder
-
-    // getting the smallest number and the label
-    foreach (QString label, dataMapStatisticsItemValue->keys())
+    while(resultData->count() < maxElementsToNeed)
     {
-      if(numberString != "") // the if is necessary, otherwise it will crash on windows
-        numberString.clear(); // cleaning the String
+      QString key = getSmallestKey(dataMapStatisticsItemValue->keys());
 
-      for (int run = 0; run < label.length(); run++)
+      // getting the data depends on the "smallest" key
+      QMap<int, int*>* map = dataMapStatisticsItemValue->value(key);
+
+      collectedData data;   // creating the data
+      data.mStatDataType = sdtStructStatisticsItem_Value;
+      data.mLabel = key;    // setting the label
+
+      // copy each data into the list
+      foreach (int value, map->keys())
       {
-        if(label[run] != 'x') // finding the number befor the 'x'
-         numberString.append(label[run]); // creating the number from the chars
-        else // we have found the 'x' so the number is finished
-          break;
+        int* valueAmount = map->value(value);
+        data.addValue(QVariant::fromValue(valueAmount[0]), valueAmount[1]);
       }
 
-      int number = numberString.toInt(); // convert to int
+      // appending the collectedData to the result
+      resultData->append(data);
 
-      // check if we have found the smallest number
-      if(number < smallestFoundNumber)
-      {
-        // found a smaller number so hold it
-        smallestFoundNumber = number;
-        // we hold the label, so we dont need to "create / build" the key again
-        key = label;
-      }
-
+      // reset settings to find
+      dataMapStatisticsItemValue->remove(key);
+      key.clear();
     }
 
-    // getting the data depends on the "smallest" key
-    auto map = dataMapStatisticsItemValue->value(key);
-
-    collectedData data;   // creating the data
-    data.mStatDataType = sdtStructStatisticsItem_Value;
-    data.mLabel = key;    // setting the label
-
-    // copy each data into the list
-    foreach (int value, map->keys())
-      data.mValueList.append(map->value(value));
-
-    // appending the collectedData to the result
-    resultData->append(data);
-
-    // reset settings to find
-    dataMapStatisticsItemValue->remove(key);
-    smallestFoundNumber = INT_MAX;
-    key.clear();
-  }
-
-  // we can delete the dataMap, cause we dont need anymore
-  foreach (QString key, dataMapStatisticsItemValue->keys())
-  {
-    QMap<int, int*>* valuesmap = dataMapStatisticsItemValue->value(key);
-    foreach (int valuekey, valuesmap->keys())
+    // we can delete the dataMap, cause we dont need anymore
+    foreach (QString key, dataMapStatisticsItemValue->keys())
     {
-      delete valuesmap->value(valuekey);
+      QMap<int, int*>* valuesmap = dataMapStatisticsItemValue->value(key);
+      foreach (int valuekey, valuesmap->keys())
+      {
+        delete valuesmap->value(valuekey);
+      }
+      delete valuesmap;
     }
-    delete valuesmap;
+    delete dataMapStatisticsItemValue;
   }
-  delete dataMapStatisticsItemValue;
+
+  // if we have the type statisticsItem_Value
+  maxElementsToNeed += dataMapStatisticsItemVector->keys().count(); // calculate the maximum new, because we add the second map
+
+  { // same as above, the brackets should improve reading the code
+    // do ordering and  convert to the struct
+    while(resultData->count() < maxElementsToNeed)
+    {
+      QString key = getSmallestKey(dataMapStatisticsItemVector->keys());
+
+      // getting the data dataMapStatisticsItemVector on the "smallest" key
+      auto map = dataMapStatisticsItemVector->value(key);
+
+      collectedData data;   // creating the data
+      data.mStatDataType = sdtStructStatisticsItem_Vector;
+      data.mLabel = key;    // setting the label
+
+      // copy each data into the list
+      foreach (QPoint value, map->keys())
+        data.addValue(value, *(map->value(value)));
+
+      // appending the collectedData to the result
+      resultData->append(data);
+
+      // reset settings to find
+      dataMapStatisticsItemVector->remove(key);
+      key.clear();
+    }
+
+    // we can delete the dataMap, cause we dont need anymore
+    foreach (auto key, dataMapStatisticsItemVector->keys())
+    {
+      auto valuesmap = dataMapStatisticsItemVector->value(key);
+      foreach (auto valuekey, valuesmap->keys())
+      {
+        delete valuesmap->value(valuekey);
+      }
+      delete valuesmap;
+    }
+    delete dataMapStatisticsItemVector;
+
+  }
+
 
 //  // a debug output
 //  for(int i = 0; i< resultData->count(); i++) {
@@ -985,7 +1075,7 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
   QList<collectedData*>* preResult = new QList<collectedData*>();
 
   // next step get the data for each frame
-  for (int frame = aRange.first; frame < aRange.second; frame++)
+  for (int frame = aRange.first; frame <= aRange.second; frame++)
   {
     // get the data for the actual frame
     QList<collectedData>* collectedDataByFrameList = this->sortAndCategorizeData(aType, frame);
@@ -1004,7 +1094,7 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
 
         if(*resultCollectedData == frameData)
         {
-          resultCollectedData->mValueList.append(frameData.mValueList);
+          resultCollectedData->addValues(frameData);
           wasnotinside = false;
           break;
         }
@@ -1015,7 +1105,8 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
       {
         collectedData* resultCollectedData = new collectedData;
         resultCollectedData->mLabel = frameData.mLabel;
-        resultCollectedData->mValueList.append(frameData.mValueList);
+        resultCollectedData->mStatDataType =frameData.mStatDataType;
+        resultCollectedData->addValues(frameData);
         preResult->append(resultCollectedData);
       }
     }
@@ -1031,31 +1122,31 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
   for (int i = 0; i < preResult->count(); i++)
   {
     // creating a list for all Data
-    QList<int*> tmpDataList;
+    QList<QPair<QVariant, int>*>* tmpDataList = new QList<QPair<QVariant, int>*>();
 
     //get the data from preResult at an index
     collectedData* preData = preResult->at(i);
 
     // now we go thru all possible data-elements
-    for (int j = 0; j < preData->mValueList.count(); j++)
+    for (int j = 0; j < preData->mValues.count(); j++)
     {
       // getting the real-data (value and amount)
-      int* depthCount = preData->mValueList.at(j);
+      QPair<QVariant, int>* preDataValuePair = preData->mValues.at(j);
 
       //define a auxillary-variable
       bool wasnotinside = true;
 
       // run thru all data, we have already in our list
-      for (int k = 0; k < tmpDataList.count(); k++)
+      for (int k = 0; k < tmpDataList->count(); k++)
       {
         // getting data from our list
-        int* resultData = tmpDataList.at(k);
+        QPair<QVariant, int>* resultData = tmpDataList->at(k);
 
         // and compare each value for the result with the given value
-        if(resultData[0] == depthCount[0])
+        if(resultData->first == preDataValuePair->first)
         {
           // if we found an equal pair of value, we have to sum up the amount
-          resultData[1] += depthCount[1];
+          resultData->second += preDataValuePair->second;
           wasnotinside = false;   // take care, that we change our bool
           break; // we can leave the loop, because every value is just one time in our list
         }
@@ -1065,17 +1156,18 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
       if(wasnotinside)
       {
         // we create a copy and insert it to the list
-        int* dptcnt = new int[2];
-        dptcnt[0] = depthCount[0];
-        dptcnt[1] = depthCount[1];
-        tmpDataList.append(dptcnt);
+        QPair<QVariant, int>* dptcnt = new QPair<QVariant, int>();
+        dptcnt->first = preDataValuePair->first;
+        dptcnt->second = preDataValuePair->second;
+        tmpDataList->append(dptcnt);
       }
     }
 
     //define the new data for the result
     collectedData data;
     data.mLabel = preData->mLabel;
-    data.mValueList = tmpDataList;
+    data.mStatDataType  = preData->mStatDataType;
+    data.addValueList(tmpDataList);
 
     // at least append the new collected Data to our result-list
     result->append(data);

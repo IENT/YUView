@@ -34,7 +34,6 @@
 
 #include <QPainter>
 #include "playlistItem.h"
-#include "signalsSlots.h"
 
 // ------ Initialize the static list of frame size presets ----------
 
@@ -114,9 +113,9 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
   ui.frameSizeComboBox->setEnabled(!isSizeFixed);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.widthSpinBox, QSpinBox_valueChanged_int, this, &frameHandler::slotVideoControlChanged);
-  connect(ui.heightSpinBox, QSpinBox_valueChanged_int, this, &frameHandler::slotVideoControlChanged);
-  connect(ui.frameSizeComboBox, QComboBox_currentIndexChanged_int, this, &frameHandler::slotVideoControlChanged);
+  connect(ui.widthSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &frameHandler::slotVideoControlChanged);
+  connect(ui.heightSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &frameHandler::slotVideoControlChanged);
+  connect(ui.frameSizeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &frameHandler::slotVideoControlChanged);
 
   return ui.frameHandlerLayout;
 }
@@ -206,10 +205,11 @@ void frameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawV
   }
 }
 
-void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
+void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference, const int frameIdxItem1)
 {
   // Draw the pixel values onto the pixels
   Q_UNUSED(frameIdx);
+  Q_UNUSED(frameIdxItem1);
 
   // TODO: Does this also work for sequences with width/height non divisible by 2? Not sure about that.
     
@@ -281,9 +281,10 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
   }
 }
 
-QImage frameHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+QImage frameHandler::calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
-  Q_UNUSED(frame);
+  Q_UNUSED(frameIdxItem0);
+  Q_UNUSED(frameIdxItem1);
 
   int width  = qMin(frameSize.width(), item2->frameSize.width());
   int height = qMin(frameSize.height(), item2->frameSize.height());
@@ -354,9 +355,10 @@ bool frameHandler::isPixelDark(const QPoint &pixelPos)
   return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
 }
 
-ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
 {
   Q_UNUSED(frameIdx);
+  Q_UNUSED(frameIdx1); 
 
   int width = (item2) ? qMin(frameSize.width(), item2->frameSize.width()) : frameSize.width();
   int height = (item2) ? qMin(frameSize.height(), item2->frameSize.height()) : frameSize.height();

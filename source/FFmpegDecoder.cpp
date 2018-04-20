@@ -55,20 +55,15 @@ FFmpegDecoder::FFmpegDecoder()
 {
   // No error (yet)
   decodingError = ffmpeg_noError;
-
+  
   // Set default values
   pixelFormat = AV_PIX_FMT_NONE;
-  fmt_ctx = nullptr;
-  videoStreamIdx = -1;
-  videoCodec = nullptr;
-  decCtx = nullptr;
-  frame = nullptr;
+  
   nrFrames = -1;
   endOfFile = false;
   frameRate = -1;
-  colorConversionType = BT709;
-  pkt = nullptr;
-  streamCodecID = AV_CODEC_ID_NONE;
+  colorConversionType = BT709_LimitedRange;
+  canShowNALUnits = false;
 
   // Initialize the file watcher and install it (if enabled)
   fileChanged = false;
@@ -86,16 +81,12 @@ FFmpegDecoder::~FFmpegDecoder()
 {
   // Free all the allocated data structures
   if (pkt)
-  {
-    ff.deletePacket(pkt);
-    pkt = nullptr;
-  }
-  if (decCtx)
-    ff.avcodec_free_context(&decCtx);
+    pkt.free_packet();
+  /*if (decCtx)
+    ff.avcodec_free_context(&decCtx);*/
   if (frame)
-    ff.av_frame_free(&frame);
-  if (fmt_ctx)
-    ff.avformat_close_input(&fmt_ctx);
+    frame.free_frame(ff);
+  fmt_ctx.avformat_close_input(ff);
 }
 
 bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
@@ -111,143 +102,114 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   if (decodingError != ffmpeg_noError)
     return false;
 
-  // Initialize libavformat and register all the muxers, demuxers and protocols.
-  ff.av_register_all();
-
-  // Open the input file
-  int ret = ff.avformat_open_input(&fmt_ctx, fileName.toStdString().c_str(), nullptr, nullptr);
-  if (ret < 0)
-    return setOpeningError(QStringLiteral("Could not open the input file (avformat_open_input). Return code %1.").arg(ret));
-
-  // Find the stream info
-  ret = ff.avformat_find_stream_info(fmt_ctx, NULL);
-  if (ret < 0)
-    return setOpeningError(QStringLiteral("Could not find stream information (avformat_find_stream_info). Return code %1.").arg(ret));
-
-  // Get the first video stream
-  videoStreamIdx = -1;
-  unsigned int nb_streams = ff.AVFormatContextGetNBStreams(fmt_ctx);
-  for(unsigned int i=0; i < nb_streams; i++)
+  QString ext = fileInfo.suffix().toLower();
+  if (ext == "h264" || ext == "264")
   {
-    AVMediaType streamType;
-    if (ff.newParametersAPIAvailable)
-      streamType = ff.AVFormatContextGetCodecTypeFromCodecpar(fmt_ctx, i);
+    bool parsingError;
+    if (otherDec)
+      parsingError = !annexBFile.openFile(fileName, false, &otherDec->annexBFile);
     else
-      streamType = ff.AVFormatContextGetCodecTypeFromCodec(fmt_ctx, i);
+      parsingError = !annexBFile.openFile(fileName);
+    if (!parsingError)
+      canShowNALUnits = true;
+  }
+  else
+  {
+    // Open the input file
+    int ret = ff.open_input(fmt_ctx, fileName);
+    if (ret < 0)
+      return setOpeningError(QStringLiteral("Could not open the input file (open_input). Return code %1.").arg(ret));
 
-    if(streamType == AVMEDIA_TYPE_VIDEO)
+    // What is the input format?
+    AVInputFormatWrapper inp_format = fmt_ctx.get_input_format();
+        
+    // Get the first video stream
+    for(unsigned int idx=0; idx < fmt_ctx.get_nb_streams(); idx++)
     {
-      videoStreamIdx = i;
-      break;
+      AVStreamWrapper stream = fmt_ctx.get_stream(idx);
+      AVMediaType streamType =  stream.getCodecType();
+      if(streamType == AVMEDIA_TYPE_VIDEO)
+      {
+        video_stream = stream;
+        break;
+      }
     }
-  }
-  if(videoStreamIdx==-1)
-    return setOpeningError(QStringLiteral("Could not find a video stream."));
+    if(!video_stream)
+      return setOpeningError(QStringLiteral("Could not find a video stream."));
 
-  if (ff.newParametersAPIAvailable)
-    streamCodecID = ff.AVFormatContextGetCodecIDFromCodecpar(fmt_ctx, videoStreamIdx);
-  else
-    streamCodecID = ff.AVFormatContextGetCodecIDFromCodec(fmt_ctx, videoStreamIdx);
+    AVCodecID streamCodecID = video_stream.getCodecID();
+    videoCodec = ff.find_decoder(streamCodecID);
 
-  videoCodec = ff.avcodec_find_decoder(streamCodecID);
-  if(!videoCodec)
-    return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
+    if(!videoCodec)
+      return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
 
-  // Allocate the decoder context
-  decCtx = ff.avcodec_alloc_context3(videoCodec);
-  if(!decCtx)
-    return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
+    // Allocate the decoder context
+    decCtx = ff.alloc_decoder(videoCodec);
+    if(!decCtx)
+      return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
 
-  AVCodecParameters *origin_par = nullptr;
-  if (ff.newParametersAPIAvailable)
-  {
-    // Use the new avcodec_parameters_to_context function.
-    AVStream *str = ff.AVFormatContextGetStream(fmt_ctx, videoStreamIdx);
-    origin_par = ff.AVStreamGetCodecpar(str);
+    ff.parse_decoder_parameters(decCtx, video_stream);
 
-    ret = ff.avcodec_parameters_to_context(decCtx, origin_par);
+    // Ask the decoder to provide motion vectors (if possible)
+    AVDictionaryWrapper opts;
+    if (ff.av_dict_set(opts, "flags2", "+export_mvs", 0))
+      return setOpeningError(QStringLiteral("Could not request motion vector retrieval.").arg(ret));
+
+    // Open codec
+    ret = ff.avcodec_open2(decCtx, videoCodec, opts);
     if (ret < 0)
-      return setOpeningError(QStringLiteral("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+      return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
+
+    frame.allocate_frame(ff);
+    if (!frame)
+      return setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
+
+    if (otherDec)
+    {
+      // Copy the key picture list and nrFrames from the other decoder
+      keyFrameList = otherDec->keyFrameList;
+      nrFrames = otherDec->nrFrames;
+    }
+    else
+      if (!scanBitstream())
+        return setOpeningError(QStringLiteral("Error scanning bitstream for key pictures."));
+
+    // Initialize an empty packet
+    pkt.allocate_paket(ff);
+
+    // Get the frame rate, picture size and color conversion mode
+    AVRational avgFrameRate = video_stream.get_avg_frame_rate();
+    if (avgFrameRate.den == 0)
+      frameRate = -1;
+    else
+      frameRate = avgFrameRate.num / double(avgFrameRate.den);
+    pixelFormat = decCtx.get_pixel_format();
+
+    AVColorSpace colSpace = video_stream.get_colorspace();
+    int w = video_stream.get_frame_width();
+    int h = video_stream.get_frame_height();
+    frameSize.setWidth(w);
+    frameSize.setHeight(h);
+
+    if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
+      colorConversionType = BT2020_LimitedRange;
+    else if (colSpace == AVCOL_SPC_BT470BG || colSpace == AVCOL_SPC_SMPTE170M)
+      colorConversionType = BT601_LimitedRange;
+    else
+      colorConversionType = BT709_LimitedRange;
+
+    // Get the first video stream packet into the packet buffer.
+    do
+    {
+      ret = fmt_ctx.read_frame(ff, pkt);
+      if (ret < 0)
+        return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
+    }
+    while (pkt.get_stream_index() != video_stream.get_index());
+
+    // Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
+    loadYUVFrameData(0);
   }
-  else
-  {
-    // The new parameters API is not available. Perform what the function would do.
-    // This is equal to the implementation of avcodec_parameters_to_context.
-    AVStream *str = ff.AVFormatContextGetStream(fmt_ctx, videoStreamIdx);
-    AVCodecContext *ctxSrc = ff.AVStreamGetCodec(str);
-    if (!ff.AVCodecContextCopyParameters(ctxSrc, decCtx))
-      return setOpeningError(QStringLiteral("Could not copy decoder parameters from stream decoder."));
-  }
-
-  // Ask the decoder to provide motion vectors (if possible)
-  AVDictionary *opts = nullptr;
-  ff.av_dict_set(&opts, "flags2", "+export_mvs", 0);
-
-  // Open codec
-  ret = ff.avcodec_open2(decCtx, videoCodec, &opts);
-  if (ret < 0)
-    return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
-
-  // Allocate the frame
-  frame = ff.av_frame_alloc();
-  if (!frame)
-    return setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
-
-  if (otherDec)
-  {
-    // Copy the key picture list and nrFrames from the other decoder
-    keyFrameList = otherDec->keyFrameList;
-    nrFrames = otherDec->nrFrames;
-  }
-  else
-    if (!scanBitstream())
-      return setOpeningError(QStringLiteral("Error scanning bitstream for key pictures."));
-
-  // Initialize an empty packet
-  assert(pkt == nullptr);
-  pkt = ff.getNewPacket();
-  ff.av_init_packet(pkt);
-
-  // Get the frame rate, picture size and color conversion mode
-  AVRational avgFrameRate = ff.AVFormatContextGetAvgFrameRate(fmt_ctx, videoStreamIdx);
-  frameRate = avgFrameRate.num / double(avgFrameRate.den);
-  pixelFormat = ff.AVCodecContextGetPixelFormat(decCtx);
-
-  int w,h;
-  AVColorSpace colSpace;
-  if (ff.newParametersAPIAvailable)
-  {
-    // Get values from the AVCodecParameters API
-    w = ff.AVCodecParametersGetWidth(origin_par);
-    h = ff.AVCodecParametersGetHeight(origin_par);
-    colSpace = ff.AVCodecParametersGetColorSpace(origin_par);
-  }
-  else
-  {
-    // Get values from the old *codec
-    w = ff.AVCodecContexGetWidth(decCtx);
-    h = ff.AVCodecContextGetHeight(decCtx);
-    colSpace = ff.AVCodecContextGetColorSpace(decCtx);
-  }
-  frameSize.setWidth(w);
-  frameSize.setHeight(h);
-
-  if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
-    colorConversionType = BT2020;
-  else
-    colorConversionType = BT709;
-
-  // Get the first video stream packet into the packet buffer.
-  do
-  {
-    ret = ff.av_read_frame(fmt_ctx, pkt);
-    if (ret < 0)
-      return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
-  }
-  while (ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
-
-  // Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
-  loadYUVFrameData(0);
 
   return true;
 }
@@ -257,155 +219,84 @@ bool FFmpegDecoder::decodeOneFrame()
   if (decodingError != ffmpeg_noError)
     return false;
 
-  if (!ff.newParametersAPIAvailable)
+  return ff.decode_frame(decCtx, fmt_ctx, frame, pkt, endOfFile, video_stream.get_index());
+  
+  //if (!ff.newParametersAPIAvailable)
   {
-    // Old API using avcodec_decode_video2
-    int got_frame;
-    do
-    {
-      int ret = ff.avcodec_decode_video2(decCtx, frame, &got_frame, pkt);
-      if (ret < 0)
-      {
-        setDecodingError(QStringLiteral("Error decoding frame (avcodec_decode_video2). Return code %1").arg(ret));
-        return false;
-      }
-      DEBUG_FFMPEG("Called avcodec_decode_video2 for packet PTS %ld duration %ld flags %d got_frame %d",
-        ff.AVPacketGetPTS(pkt),
-        ff.AVPacketGetDuration(pkt),
-        ff.AVPacketGetFlags(pkt),
-        got_frame);
+  //  // Old API using avcodec_decode_video2
+  //  int got_frame;
+  //  do
+  //  {
+  //    int ret = ff.avcodec_decode_video2(decCtx, frame, &got_frame, pkt);
+  //    if (ret < 0)
+  //    {
+  //      setDecodingError(QStringLiteral("Error decoding frame (avcodec_decode_video2). Return code %1").arg(ret));
+  //      return false;
+  //    }
+  //    DEBUG_FFMPEG("Called avcodec_decode_video2 for packet PTS %ld duration %ld flags %d got_frame %d",
+  //      ff.AVPacketGetPTS(pkt),
+  //      ff.AVPacketGetDuration(pkt),
+  //      ff.AVPacketGetFlags(pkt),
+  //      got_frame);
 
-      if (endOfFile)
-      {
-        // There are no more frames to get from the bitstream.
-        // We just keep on calling avcodec_decode_video2(...) with an unallocated packet until it returns no more frames.
-        return (got_frame != 0);
-      }
+  //    if (endOfFile)
+  //    {
+  //      // There are no more frames to get from the bitstream.
+  //      // We just keep on calling avcodec_decode_video2(...) with an unallocated packet until it returns no more frames.
+  //      return (got_frame != 0);
+  //    }
 
-      // Read the next packet for the next call to avcodec_decode_video2.
-      do
-      {
-        // Unref the old packet
-        ff.av_packet_unref(pkt);
-        // Get the next one
-        int ret = ff.av_read_frame(fmt_ctx, pkt);
-        if (ret == AVERROR_EOF)
-        {
-          // No more packets. End of file. Enter draining mode.
-          DEBUG_FFMPEG("No more packets. End of file.");
-          ff.av_packet_unref(pkt);
-          endOfFile = true;
-        }
-        else if (ret < 0)
-        {
-          setDecodingError(QStringLiteral("Error reading packet (av_read_frame). Return code %1").arg(ret));
-          return false;
-        }
-      } while (!endOfFile && ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
-    } while (!got_frame);
+  //    // Read the next packet for the next call to avcodec_decode_video2.
+  //    do
+  //    {
+  //      // Unref the old packet
+  //      ff.av_packet_unref(pkt);
+  //      // Get the next one
+  //      int ret = ff.av_read_frame(fmt_ctx, pkt);
+  //      if (ret == AVERROR_EOF)
+  //      {
+  //        // No more packets. End of file. Enter draining mode.
+  //        DEBUG_FFMPEG("No more packets. End of file.");
+  //        ff.av_packet_unref(pkt);
+  //        endOfFile = true;
+  //      }
+  //      else if (ret < 0)
+  //      {
+  //        setDecodingError(QStringLiteral("Error reading packet (av_read_frame). Return code %1").arg(ret));
+  //        return false;
+  //      }
+  //    } while (!endOfFile && ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
+  //  } while (!got_frame);
 
-    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
-      ff.AVFrameGetWidth(frame),
-      ff.AVFrameGetHeight(frame),
-      ff.AVFrameGetPTS(frame),
-      ff.AVFrameGetPictureType(frame),
-      ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
-    return true;
+  //  DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
+  //    ff.AVFrameGetWidth(frame),
+  //    ff.AVFrameGetHeight(frame),
+  //    ff.AVFrameGetPTS(frame),
+  //    ff.AVFrameGetPictureType(frame),
+  //    ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
+  //  return true;
   }
 
-  // First, try if there is a frame waiting in the decoder
-  int retRecieve = ff.avcodec_receive_frame(decCtx, frame);
-  if (retRecieve == 0)
-  {
-    // We recieved a frame.
-    // Recieved a frame
-    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
-      ff.AVFrameGetWidth(frame),
-      ff.AVFrameGetHeight(frame),
-      ff.AVFrameGetPTS(frame),
-      ff.AVFrameGetPictureType(frame),
-      ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
-    return true;
-  }
-  if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
-  {
-    // An error occured
-    setDecodingError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
-    return false;
-  }
-
-  // There was no frame waiting in the decoder. Feed data to the decoder until it returns AVERROR(EAGAIN)
-  int retPush;
-  do
-  {
-    // Push the video packet to the decoder
-    if (endOfFile)
-      retPush = ff.avcodec_send_packet(decCtx, nullptr);
-    else
-      retPush = ff.avcodec_send_packet(decCtx, pkt);
-
-    if (retPush < 0 && retPush != AVERROR(EAGAIN))
-    {
-      setDecodingError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
-      return false;
-    }
-    if (retPush != AVERROR(EAGAIN))
-      DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d",
-        ff.AVPacketGetPTS(pkt),
-        ff.AVPacketGetDuration(pkt),
-        ff.AVPacketGetFlags(pkt));
-
-    if (!endOfFile && retPush == 0)
-    {
-      // Pushing was successfull, read the next video packet ...
-      do
-      {
-        // Unref the old packet
-        ff.av_packet_unref(pkt);
-        // Get the next one
-        int ret = ff.av_read_frame(fmt_ctx, pkt);
-        if (ret == AVERROR_EOF)
-        {
-          // No more packets. End of file. Enter draining mode.
-          DEBUG_FFMPEG("No more packets. End of file.");
-          endOfFile = true;
-        }
-        else if (ret < 0)
-        {
-          setDecodingError(QStringLiteral("Error reading packet (av_read_frame). Return code %1").arg(ret));
-          return false;
-        }
-      } while (!endOfFile && ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
-    }
-  } while (retPush == 0);
-
-  // Now retry to get a frame
-  retRecieve = ff.avcodec_receive_frame(decCtx, frame);
-  if (retRecieve == 0)
-  {
-    // We recieved a frame.
-    // Recieved a frame
-    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
-      ff.AVFrameGetWidth(frame),
-      ff.AVFrameGetHeight(frame),
-      ff.AVFrameGetPTS(frame),
-      ff.AVFrameGetPictureType(frame),
-      ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
-    return true;
-  }
-  if (endOfFile && retRecieve == AVERROR_EOF)
-  {
-    // There are no more frames. If we want more frames, we have to seek to the start of the sequence and restart decoding.
-
-  }
-  if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
-  {
-    // An error occured
-    setDecodingError(QStringLiteral("Error recieving  frame (avcodec_receive_frame). Return code %1").arg(retRecieve));
-    return false;
-  }
-
-  return false;
+  //// First, try if there is a frame waiting in the decoder
+  //int retRecieve = ff.avcodec_receive_frame(decCtx, frame);
+  //if (retRecieve == 0)
+  //{
+  //  // We recieved a frame.
+  //  // Recieved a frame
+  //  DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
+  //    ff.AVFrameGetWidth(frame),
+  //    ff.AVFrameGetHeight(frame),
+  //    ff.AVFrameGetPTS(frame),
+  //    ff.AVFrameGetPictureType(frame),
+  //    ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
+  //  return true;
+  //}
+  //if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
+  //{
+  //  // An error occured
+  //  setDecodingError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
+  //  return false;
+  //}
 }
 
 yuvPixelFormat FFmpegDecoder::getYUVPixelFormat()
@@ -533,14 +424,13 @@ void FFmpegDecoder::loadFFmpegLibraries()
 
   // Loading the libraries failed
   decodingError = ffmpeg_errorLoadingLibrary;
-  errorString = ff.libErrorString();
 }
 
 bool FFmpegDecoder::scanBitstream()
 {
   // Seek to the beginning of the stream.
   // The stream should be at the beginning when calling this function, but it does not hurt.
-  int ret = ff.av_seek_frame(fmt_ctx, videoStreamIdx, 0, AVSEEK_FLAG_BACKWARD);
+  int ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), 0);
   if (ret != 0)
     // Seeking failed. Maybe the stream is not opened correctly?
     return false;
@@ -557,10 +447,10 @@ bool FFmpegDecoder::scanBitstream()
       mainWindow = mw;
   }
   // Create the dialog
-  int64_t duration = ff.AVFormatContextGetDuration(fmt_ctx);
-  AVRational timeBase = ff.AVFormatContextGetTimeBase(fmt_ctx, videoStreamIdx);
+  int64_t duration = fmt_ctx.get_duration();
+  AVRational timeBase = video_stream.get_time_base();
 
-  qint64 maxPTS = duration * timeBase.den / timeBase.num / AV_TIME_BASE;
+  qint64 maxPTS = duration * timeBase.den / timeBase.num / 1000;
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
   int curPercentValue = 0;
   QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
@@ -570,21 +460,21 @@ bool FFmpegDecoder::scanBitstream()
   progress.setWindowModality(Qt::WindowModal);
 
   // Initialize an empty packet (data and size set to 0).
-  AVPacket *p = ff.getNewPacket();
-  ff.av_init_packet(p);
+  AVPacketWrapper p(ff);
 
   qint64 lastKeyFramePTS = 0;
+  const int stream_idx = video_stream.get_index();
   do
   {
     // Get one packet
-    ret = ff.av_read_frame(fmt_ctx, p);
+    ret = fmt_ctx.read_frame(ff, p);
 
-    if (ret == 0 && ff.AVPacketGetStreamIndex(p) == videoStreamIdx)
+    if (ret == 0 && p.get_stream_index() == stream_idx)
     {
-      int64_t pts = ff.AVPacketGetPTS(p);
+      int64_t pts = p.get_pts();
 
       // Next video frame found
-      if (ff.AVPacketGetFlags(p) & AV_PKT_FLAG_KEY)
+      if (p.get_flags() & AV_PKT_FLAG_KEY)
       {
         if (nrFrames == -1)
           nrFrames = 0;
@@ -598,8 +488,7 @@ bool FFmpegDecoder::scanBitstream()
         keyFrameList.clear();
         nrFrames = -1;
         // Free the packet (this will automatically unref the packet as weel)
-        ff.av_packet_unref(p);
-        ff.deletePacket(p);
+        p.unref_packet(ff);
         return false;
       }
       nrFrames++;
@@ -610,8 +499,7 @@ bool FFmpegDecoder::scanBitstream()
         keyFrameList.clear();
         nrFrames = -1;
         // Free the packet (this will automatically unref the packet as weel)
-        ff.av_packet_unref(p);
-        ff.deletePacket(p);
+        p.unref_packet(ff);
         return false;
       }
       int newPercentValue = pts * 100 / maxPTS;
@@ -623,16 +511,13 @@ bool FFmpegDecoder::scanBitstream()
     }
 
     // Unref the packet
-    ff.av_packet_unref(p);
+    p.unref_packet(ff);
   } while (ret == 0);
-
-  // Delete the packet again
-  ff.deletePacket(p);
 
   progress.close();
 
   // Seek back to the beginning of the stream.
-  ret = ff.av_seek_frame(fmt_ctx, videoStreamIdx, 0, AVSEEK_FLAG_BACKWARD);
+  ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), 0);
   if (ret != 0)
     // Seeking failed.
     return false;
@@ -665,13 +550,22 @@ QList<infoItem> FFmpegDecoder::getFileInfoList() const
   return infoList;
 }
 
+QString FFmpegDecoder::decoderErrorString() const
+{
+  QString retError = errorString;
+  for (QString e : ff.getErrors())
+    retError += e + "\n";
+  return retError;
+}
+
 QList<infoItem> FFmpegDecoder::getDecoderInfo() const
 {
   QList<infoItem> retList;
 
   retList.append(infoItem("Lib Path", ff.getLibPath(), "The library was loaded from this path."));
   retList.append(infoItem("Lib Version", ff.getLibVersionString(), "The version of the loaded libraries"));
-  retList.append(infoItem("Codec", QString(ff.avcodec_get_name(streamCodecID)), "The codec of the stream that was opened"));
+  if (decCtx)
+    retList.append(infoItem("Codec", decCtx.codec_id_string, "The codec of the stream that was opened"));
 
   return retList;
 }
@@ -725,6 +619,7 @@ QByteArray FFmpegDecoder::loadYUVFrameData(int frameIdx)
       copyFrameToOutputBuffer();
 
       // Get the motion vectors from the image as well...
+      // TODO: Only perform this if the statistics are shown. 
       copyFrameMotionInformation();
       statsCacheCurFrameIdx = currentOutputBufferFrameIndex;
 
@@ -753,10 +648,10 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
   // Copy line by line. The linesize of the source may be larger than the width of the frame.
   // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
   // resolution may be larger than the output frame size.
-  uint8_t *src = ff.AVFrameGetData(frame, 0);
-  int linesize = ff.AVFrameGetLinesize(frame, 0);
+  uint8_t *src = frame.get_data(0);
+  int linesize = frame.get_line_size(0);
   char* dst = currentOutputBuffer.data();
-  int wDst = frameSize.width();
+  int wDst = frameSize.width() * nrBytesPerSample;
   int hDst = frameSize.height();
   for (int y = 0; y < hDst; y++)
   {
@@ -768,12 +663,12 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
   }
 
   // Chroma
-  wDst = frameSize.width() / pixFmt.getSubsamplingHor();
+  wDst = frameSize.width() / pixFmt.getSubsamplingHor() * nrBytesPerSample;
   hDst = frameSize.height() / pixFmt.getSubsamplingVer();
   for (int c = 0; c < 2; c++)
   {
-    uint8_t *src = ff.AVFrameGetData(frame, 1+c);
-    linesize = ff.AVFrameGetLinesize(frame, 1+c);
+    uint8_t *src = frame.get_data(1+c);
+    linesize = frame.get_line_size(1+c);
     dst = currentOutputBuffer.data();
     dst += (nrBytesY + ((c == 0) ? 0 : nrBytesC));
     for (int y = 0; y < hDst; y++)
@@ -794,26 +689,24 @@ void FFmpegDecoder::copyFrameMotionInformation()
   curFrameStats.clear();
 
   // Try to get the motion information
-  AVFrameSideData *sd = ff.av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
-  if (sd)
+  AVFrameSideDataWrapper sideData = ff.get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+  if (sideData)
   {
-    AVMotionVector *mvs = (AVMotionVector*)ff.getSideDataData(sd);
-    int nrMVs = ff.getSideDataNrMotionVectors(sd);
+    int nrMVs = sideData.get_number_motion_vectors();
     for (int i = 0; i < nrMVs; i++)
     {
-      int32_t source;
-      uint8_t w,h;
-      int16_t src_x, src_y, dst_x, dst_y;
-      ff.getMotionVectorValues(mvs, i, source, w, h, src_x, src_y, dst_x, dst_y);
+      AVMotionVectorWrapper mv = sideData.get_motion_vector(i);
+      if (mv)
+      {
+        // dst marks the center of the current block so the block position is:
+        int blockX = mv.dst_x - mv.w/2;
+        int blockY = mv.dst_y - mv.h/2;
+        int16_t mvX = mv.dst_x - mv.src_x;
+        int16_t mvY = mv.dst_y - mv.src_y;
 
-      // dst marks the center of the current block so the block position is:
-      int blockX = dst_x - w/2;
-      int blockY = dst_y - h/2;
-      int16_t mvX = dst_x - src_x;
-      int16_t mvY = dst_y - src_y;
-
-      curFrameStats[source < 0 ? 0 : 1].addBlockValue(blockX, blockY, w, h, (int)source);
-      curFrameStats[source < 0 ? 2 : 3].addBlockVector(blockX, blockY, w, h, mvX, mvY);
+        curFrameStats[mv.source < 0 ? 0 : 1].addBlockValue(blockX, blockY, mv.w, mv.h, (int)mv.source);
+        curFrameStats[mv.source < 0 ? 2 : 3].addBlockVector(blockX, blockY, mv.w, mv.h, mvX, mvY);
+      }
     }
   }
 }
@@ -854,24 +747,24 @@ FFmpegDecoder::pictureIdx FFmpegDecoder::getClosestSeekableFrameNumberBefore(int
 
 bool FFmpegDecoder::seekToPTS(qint64 pts)
 {
-  int ret = ff.av_seek_frame(fmt_ctx, videoStreamIdx, pts, AVSEEK_FLAG_BACKWARD);
+  int ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), pts);
   if (ret != 0)
   {
     DEBUG_FFMPEG("FFmpegDecoder::seekToPTS Error PTS %ld. Return Code %d", pts, ret);
     return false;
   }
-
+    
   // Flush the video decoder buffer
-  ff.avcodec_flush_buffers(decCtx);
+  ff.flush_buffers(decCtx);
 
   // Get the first video stream packet into the packet buffer.
   do
   {
-    // Unref the packet that we hold right now
-    if (!endOfFile)
-      ff.av_packet_unref((AVPacket*)pkt);
-    ret = ff.av_read_frame(fmt_ctx, (AVPacket*)pkt);
-  } while (ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
+    ret = fmt_ctx.read_frame(ff, pkt);
+    if (ret < 0)
+      return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
+  }
+  while (pkt.get_stream_index() != video_stream.get_index());
 
   // We seeked somewhere, so we are not at the end of the file anymore.
   endOfFile = false;
@@ -893,6 +786,15 @@ statisticsData FFmpegDecoder::getStatisticsData(int frameIdx, int typeIdx)
   }
 
   return curFrameStats[typeIdx];
+}
+
+bool FFmpegDecoder::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString & error)
+{
+  QStringList errors;
+  bool result = FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, errors);
+  for (QString e : errors)
+    error += e + "\n";
+  return result;
 }
 
 void FFmpegDecoder::getFormatInfo()

@@ -34,6 +34,7 @@
 #define CHARTHANDLERTYPEDEF_H
 
 #include <QtCharts>
+#include "typedef.h"
 
 class playlistItem;
 
@@ -115,10 +116,11 @@ struct collectedData
 
   // the label
   QString mLabel = "";
-  // each int* should be an array with two ints
-  // first: value
-  // second: count, how often the value was found in the frame
-  QList<int*> mValueList;
+
+  // list of all values
+  // QPair can be used to count all possible value-types (int, QString, QPoint, ...)
+  // the QPair is always a specifc type and the total amount of the type
+  QList<QPair<QVariant, int>*> mValues;
 
   /**
    * @brief collectedData
@@ -136,13 +138,56 @@ struct collectedData
   collectedData(const collectedData* aData)
   {
     this->mLabel = aData->mLabel;
-    this->mValueList = aData->mValueList;
+    this->mValues   = aData->mValues;
   }
 
-  // destructor
-  ~collectedData()
+  /**
+   * @brief addValue
+   * adding a specific combination of QVariant and amount to the valuelist
+   *
+   * @param aTypeValue
+   * qvariant of type
+   *
+   * @param aAmount
+   * how often does the qvariant exist
+   */
+  void addValue(QVariant aTypeValue, int aAmount)
   {
-    this->mValueList.clear();
+    QPair<QVariant, int>* pair = new QPair<QVariant, int>(aTypeValue, aAmount);
+
+    this->mValues.append(pair);
+  }
+
+  /**
+   * @brief addValues
+   * adding all values from an existing collectedData
+   *
+   * @param aData
+   * existing collectedData to append
+   */
+  void addValues(collectedData aData)
+  {
+    for (int i = 0; i < aData.mValues.count(); i++)
+    {
+      auto valuePair = aData.mValues.at(i);
+      this->addValue(valuePair->first, valuePair->second);
+    }
+  }
+
+  /**
+   * @brief addValueList
+   * adding a list of QPair-pointers to the collectedData
+   *
+   * @param aList
+   * list to append
+   */
+  void addValueList(QList<QPair<QVariant, int>*>* aList)
+  {
+    for (int i = 0; i < aList->count(); i++)
+    {
+      auto valuePair = aList->at(i);
+      this->addValue(valuePair->first, valuePair->second);
+    }
   }
 
   /**
@@ -191,6 +236,11 @@ struct collectedData
   bool operator==(const collectedData aData)
   {
     return (this->mLabel == aData.mLabel);
+  }
+
+  bool is3DData()
+  {
+    return this->mStatDataType == sdtStructStatisticsItem_Vector;
   }
 
 };
@@ -259,10 +309,70 @@ struct itemWidgetCoord
  */
 struct chartSettingsData
 {
+  // bool to check if our data is valid
   bool mSettingsIsValid = true;
+
+  // list of categories
   QStringList mCategories;
+
+  // for 2D data we use the QAbstractSeries
+  // the abstract series can be placed  to QChart
   QAbstractSeries* mSeries;
-  QHash<QString, QBarSet*> mTmpCoordCategorieSet;
+
+  //for 3D data we use
+  QMap<int, QMap<int, double>> m3DData;
+
+// use maybe later for caching or something else
+  indexRange mX3DRange = indexRange(0, 0);
+  indexRange mY3DRange = indexRange(0, 0);
+
+  void define3DRanges(int aMinX, int aMaxX, int aMinY, int aMaxY)
+  {
+    // set result-vars
+    int xmin = INT_MAX;
+    int xmax = INT_MIN;
+    int ymin = INT_MAX;
+    int ymax = INT_MIN;
+
+
+    // go thru the elements and save the min and  max
+    foreach (int x, this->m3DData.keys())
+    {
+      if(xmin > x)
+        xmin = x;
+
+      if(xmax < x)
+        xmax = x;
+
+      QMap<int, double> innermap = this->m3DData.value(x);
+
+      foreach (int y, innermap.keys())
+      {
+        if(ymin > y)
+          ymin = y;
+
+        if(ymax < y)
+          ymax = y;
+      }
+    }
+
+    mX3DRange.first   = xmin;
+    mX3DRange.second  = xmax;
+    mY3DRange.first   = ymin;
+    mY3DRange.second  = ymax;
+
+    if((aMinX != INT_MIN) && (aMinX < mX3DRange.first))
+      mX3DRange.first = aMinX;
+
+    if((aMaxX != INT_MAX) && (aMaxX > mX3DRange.second))
+      mX3DRange.second = aMaxX;
+
+    if((aMinY != INT_MIN) && (aMinY < mY3DRange.first))
+      mY3DRange.first = aMinY;
+
+    if((aMaxY != INT_MAX) && (aMaxY > mY3DRange.second))
+      mY3DRange.second = aMaxY;
+  }
 };
 
 
@@ -473,6 +583,24 @@ class EnumAuxiliary : private QObject {
    */
   static ChartOrderBy makeChartOrderBy(ChartShow aShow, ChartGroupBy aGroup, ChartNormalize aNormalize);
 };
+
+// other necessary implementations
+
+/**
+ * @brief qHash
+ * creates an hash to an QPoint, necessary in using QHash as container
+ *
+ * @param key
+ * QPoint to get an hash
+ *
+ * @return
+ * hash-value
+ */
+inline uint qHash (const QPoint & key)
+{
+  return qHash (QPair<int,int>(key.x(), key.y()) );
+}
+
 
 // Metatype-Information
 // necessary that QVariant can handle the enums

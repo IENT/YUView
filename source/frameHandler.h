@@ -69,7 +69,7 @@ public:
   virtual void setFrameSize(const QSize &size);
 
   // Return the RGB values of the given pixel. If a second item is provided, return the difference values to that item.
-  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr);
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr, const int frameIdx1=0);
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
   virtual bool isPixelDark(const QPoint &pixelPos);
 
@@ -81,7 +81,7 @@ public:
   // Calculate the difference of this frameHandler to another frameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
   // overloads this and calculates the difference directly on the YUV values (if possible).
-  virtual QImage calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference);
+  virtual QImage calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference);
   
   // Create the frame controls and return a pointer to the layout. This can be used by
   // inherited classes to create a properties widget.
@@ -94,8 +94,9 @@ public:
   // Only draw values for the given range of pixels and frame index.
   // The playlistItemVideo implementation of this function will draw the RGB vales. However, if a derived class knows other
   // source values to show it can overload this function (like the playlistItemYUVSource).
-  // If a second frameHandler item is provided, the difference values will be drawn (set markDifference if only the difference is marked).
-  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=nullptr, const bool markDifference=false);
+  // If a second frameHandler item is provided, the difference values will be drawn. For the second item, a second
+  // frame index must be provided (set markDifference if you want only differing values to be marked).
+  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=nullptr, const bool markDifference = false, const int frameIdxItem1=0);
   
   QImage getCurrentFrameAsImage() const { return currentImage; }
 

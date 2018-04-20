@@ -91,7 +91,7 @@ hevcNextGenDecoderJEM::hevcNextGenDecoderJEM(int signalID, bool cachingDecoder) 
     allocateNewDecoder();
 
   // Create a new fileSource
-  annexBFile.reset(new fileSourceAnnexBFile);
+  annexBFile.reset(new fileSourceJEMAnnexBFile);
 }
 
 hevcNextGenDecoderJEM::hevcNextGenDecoderJEM() : decoderBase(false)
@@ -113,7 +113,8 @@ bool hevcNextGenDecoderJEM::openFile(QString fileName, decoderBase *otherDecoder
   else
   {
     // Connect the signal from the file source "signalGetNALUnitInfo", parse the bitstream and disconnect the signal again.
-    QMetaObject::Connection c = connect(annexBFile.data(), &fileSourceAnnexBFile::signalGetNALUnitInfo, this, &hevcNextGenDecoderJEM::slotGetNALUnitInfo);
+    fileSourceJEMAnnexBFile *jemFile = dynamic_cast<fileSourceJEMAnnexBFile*>(annexBFile.data());
+    QMetaObject::Connection c = connect(jemFile, &fileSourceJEMAnnexBFile::signalGetNALUnitInfo, this, &hevcNextGenDecoderJEM::slotGetNALUnitInfo);
     parsingError = !annexBFile->openFile(fileName);
     disconnect(c);
   }
@@ -262,7 +263,8 @@ void hevcNextGenDecoderJEM::slotGetNALUnitInfo(QByteArray nalBytes)
   if (nrBitsC0 == -1 && bitDepthLuma >= 0)
     nrBitsC0 = bitDepthLuma;
 
-  annexBFile->setNALUnitInfo(poc, isRAP, isParameterSet);
+  fileSourceJEMAnnexBFile *jemFile = dynamic_cast<fileSourceJEMAnnexBFile*>(annexBFile.data());
+  jemFile->setNALUnitInfo(poc, isRAP, isParameterSet);
 }
 
 QByteArray hevcNextGenDecoderJEM::loadYUVFrameData(int frameIdx)

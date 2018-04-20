@@ -30,8 +30,8 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILESOURCEHEVCANNEXBFILE_H
-#define FILESOURCEHEVCANNEXBFILE_H
+#ifndef FILESOURCEAVCANNEXBFILE_H
+#define FILESOURCEAVCANNEXBFILE_H
 
 #include <QAbstractItemModel>
 #include <QMap>
@@ -40,14 +40,12 @@
 
 using namespace YUV_Internals;
 
-#define BUFFER_SIZE 40960
-
 class fileSourceHEVCAnnexBFile : public fileSourceAnnexBFile
 {
   Q_OBJECT
 
 public:
-  fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; lastFirstSliceSegmentInPic = nullptr; }
+  fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; pocCounterOffset = 0; }
   ~fileSourceHEVCAnnexBFile() {}
 
   // What it the framerate?
@@ -85,9 +83,11 @@ protected:
   struct nal_unit_hevc : nal_unit
   {
     nal_unit_hevc(quint64 filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_type(UNSPECIFIED) {}
-    nal_unit_hevc(const nal_unit_hevc &nal) : nal_unit(nal) { nal_type = nal.nal_type; }
-    nal_unit_hevc(const nal_unit &nal) : nal_unit(nal) { nal_type = (nal.nal_unit_type_id > UNSPECIFIED || nal.nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type)nal.nal_unit_type_id; }
-    virtual ~nal_unit_hevc() {} // This class is meant to be derived from.
+    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : nal_unit(nal_src->filePos, nal_src->nal_idx) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+    virtual ~nal_unit_hevc() {}
+
+    virtual QByteArray getNALHeader() const override;
+    virtual bool isParameterSet() const override { return nal_type == VPS_NUT || nal_type == SPS_NUT || nal_type == PPS_NUT; }
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
     void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
@@ -98,8 +98,10 @@ protected:
     bool isRASL();
     bool isSlice();
     
-    /// The information of the NAL unit header
+    // The information of the NAL unit header
     nal_unit_type nal_type;
+    int nuh_layer_id;
+    int nuh_temporal_id_plus1;
   };
 
   // The profile tier level syntax elements. 7.3.3
@@ -173,6 +175,7 @@ protected:
   // E.2.2 HRD parameters syntax
   struct hrd_parameters
   {
+    hrd_parameters();
     void parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root);
 
     bool nal_hrd_parameters_present_flag;
@@ -267,6 +270,7 @@ protected:
 
   struct vui_parameters
   {
+    vui_parameters();
     void parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root);
 
     bool aspect_ratio_info_present_flag;
@@ -462,6 +466,10 @@ protected:
     int log2_sao_offset_scale_chroma;
   };
 
+  typedef QMap<int, QSharedPointer<vps>> vps_map;
+  typedef QMap<int, QSharedPointer<sps>> sps_map;
+  typedef QMap<int, QSharedPointer<pps>> pps_map;
+
   // The picture parameter set.
   struct pps : nal_unit_hevc
   {
@@ -520,7 +528,8 @@ protected:
   struct slice : nal_unit_hevc
   {
     slice(const nal_unit_hevc &nal);
-    void parse_slice(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice *firstSliceInSegment, TreeItem *root);
+    void parse_slice(const QByteArray &sliceHeaderData, const sps_map &p_active_SPS_list, const pps_map &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
+    virtual int getPOC() const override { return PicOrderCntVal; }
     
     bool first_slice_segment_in_pic_flag;
     bool no_output_of_prior_pics_flag;
@@ -578,6 +587,9 @@ protected:
     int PicOrderCntVal; // The slice POC
     int PicOrderCntMsb;
     QList<int> UsedByCurrPicLt;
+    bool NoRaslOutputFlag;
+
+    int globalPOC;
 
     // Static variables for keeping track of the decoding order
     static bool bFirstAUInDecodingOrder;
@@ -586,22 +598,109 @@ protected:
 
   private:
     // We will keep a pointer to the active SPS and PPS
-    pps *actPPS;
-    sps *actSPS;
+    QSharedPointer<pps> actPPS;
+    QSharedPointer<sps> actSPS;
   };
+
+  // The PicOrderCntMsb may be reset to zero for IDR frames. In order to count the global POC, we store the maximum POC.
+  int maxPOCCount;
+  int pocCounterOffset;
 
   struct sei : nal_unit_hevc
   {
     sei(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
-    void parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
+    sei(QSharedPointer<sei> sei_src) : nal_unit_hevc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; payloadTypeName = sei_src->payloadTypeName; }
+    // Parse the SEI and return how many bytes were read
+    int parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
 
     int payloadType;
     int last_payload_type_byte;
     int payloadSize;
     int last_payload_size_byte;
+    QString payloadTypeName;
   };
 
-  void parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot) Q_DECL_OVERRIDE;
+  enum sei_parsing_return_t
+  {
+    SEI_PARSING_OK,                      // Parsing is done
+    SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
+  };
+
+  struct user_data_sei : sei
+  {
+    user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    void parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root);
+
+    QString user_data_UUID;
+    QString user_data_message;
+  };
+
+  class active_parameter_sets_sei : public sei
+  {
+  public:
+    active_parameter_sets_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    // Parsing might return SEI_PARSING_WAIT_FOR_VPS if the referenced VPS was not found (yet).
+    // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
+    sei_parsing_return_t parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, TreeItem *root);
+    void reparse_active_parameter_sets_sei(const vps_map &p_active_VPS_list);
+
+    int active_video_parameter_set_id;
+    bool self_contained_cvs_flag;
+    bool no_parameter_set_update_flag;
+    int num_sps_ids_minus1;
+    QList<int> active_seq_parameter_set_id;
+    QList<int> layer_sps_idx;
+
+  private:
+    // These are used internally when parsing of the SEI must be prosponed until the VPS is received.
+    bool parse(const vps_map &p_active_VPS_list, bool reparse);
+    TreeItem *itemTree;
+    QByteArray sei_data_storage;
+  };
+
+  class pic_timing_sei : public sei
+  {
+  public:
+    pic_timing_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    // Parsing might return SEI_PARSING_WAIT_FOR_VPS if the referenced VPS was not found (yet).
+    // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
+    sei_parsing_return_t parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, TreeItem *root);
+    void reparse_pic_timing_sei(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list);
+
+    int pic_struct;
+    int source_scan_type;
+    bool duplicate_flag;
+
+    int au_cpb_removal_delay_minus1;
+    int pic_dpb_output_delay;
+    int pic_dpb_output_du_delay;
+    int num_decoding_units_minus1;
+    bool du_common_cpb_removal_delay_flag;
+    int du_common_cpb_removal_delay_increment_minus1;
+    QList<int> num_nalus_in_du_minus1;
+    QList<int> du_cpb_removal_delay_increment_minus1;
+
+  private:
+    // These are used internally when parsing of the SEI must be prosponed until the VPS is received.
+    bool parse(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, bool reparse);
+    TreeItem *itemTree;
+    QByteArray sei_data_storage;
+  };
+
+  struct alternative_transfer_characteristics_sei : sei
+  {
+    alternative_transfer_characteristics_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    void parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, TreeItem *root);
+
+    int preferred_transfer_characteristics;
+  };
+
+  // Get the meaning/interpretation mapping of some values
+  static QStringList get_colour_primaries_meaning();
+  static QStringList get_transfer_characteristics_meaning();
+  static QStringList get_matrix_coefficients_meaning();
+
+  void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;
 
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.
@@ -609,11 +708,14 @@ protected:
 
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
-  QMap<int, sps*> active_SPS_list;
-  QMap<int, pps*> active_PPS_list;
+  vps_map active_VPS_list;
+  sps_map active_SPS_list;
+  pps_map active_PPS_list;
   // We keept a pointer to the last slice with first_slice_segment_in_pic_flag set. 
   // All following slices with dependent_slice_segment_flag set need this slice to infer some values.
-  slice *lastFirstSliceSegmentInPic;
+  QSharedPointer<slice> lastFirstSliceSegmentInPic;
+  // A list of seis that need to be parsed after the parameter sets were recieved.
+  QList<QSharedPointer<sei>> reparse_sei;
 };
 
-#endif //FILESOURCEHEVCANNEXBFILE_H
+#endif //FILESOURCEAVCANNEXBFILE_H

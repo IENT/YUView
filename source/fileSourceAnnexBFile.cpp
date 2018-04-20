@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -109,9 +109,11 @@ unsigned int fileSourceAnnexBFile::sub_byte_reader::readBits(int nrBits, QString
   return out;
 }
 
-int fileSourceAnnexBFile::sub_byte_reader::readUE_V(QString *bitsRead)
+int fileSourceAnnexBFile::sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
 {
   int readBit = readBits(1, bitsRead);
+  if (bit_count)
+    bit_count++;
   if (readBit == 1)
     return 0;
   
@@ -122,11 +124,14 @@ int fileSourceAnnexBFile::sub_byte_reader::readUE_V(QString *bitsRead)
     readBit = readBits(1, bitsRead);
     golLength++;
   }
-
+  
   // Read "golLength" bits
   int val = readBits(golLength, bitsRead);
   // Add the exponentional part
   val += (1 << golLength)-1;
+
+  if (bit_count)
+    bit_count += 2 * golLength;
   
   return val;
 }
@@ -138,6 +143,52 @@ int fileSourceAnnexBFile::sub_byte_reader::readSE_V(QString *bitsRead)
     return -(val+1)/2;
   else
     return (val+1)/2;
+}
+
+/* Is there more data? There is no more data if the next bit is the terminating bit and all
+ * following bits are 0. */
+bool fileSourceAnnexBFile::sub_byte_reader::more_rbsp_data()
+{
+  int posBytes = posInBuffer_bytes;
+  int posBits  = posInBuffer_bits;
+  bool terminatingBitFound = false;
+  if (posBits == 8)
+  {
+    posBytes++;
+    posBits = 0;
+  }
+  else
+  {
+    // Check the remainder of the current byte
+    unsigned char c = p_byteArray[posBytes];
+    if (c & (1 << (7-posBits)))
+      terminatingBitFound = true;
+    else
+      return true;
+    posBits++;
+    while (posBits != 8)
+    {
+      if (c & (1 << (7-posBits)))
+        // Only zeroes should follow
+        return true;
+      posBits++;
+    }
+    posBytes++;
+  }
+  while(posBytes < p_byteArray.size())
+  {
+    unsigned char c = p_byteArray[posBytes];
+    if (terminatingBitFound && c != 0)
+      return true;
+    else if (!terminatingBitFound && (c & 128))
+      terminatingBitFound = true;
+    else
+      return true;
+    posBytes++;
+  }
+  if (!terminatingBitFound)
+    return true;
+  return false;
 }
 
 bool fileSourceAnnexBFile::sub_byte_reader::p_gotoNextByte()
@@ -401,45 +452,6 @@ bool fileSourceAnnexBFile::addPOCToList(int poc)
   return true;
 }
 
-void fileSourceAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot)
-{
-  // If we knew more about the NAL units, we might be able to add information to this root.
-  Q_UNUSED(nalRoot);
-
-  // Reset the values before emitting
-  nalInfoPoc = -1;
-  nalInfoIsRAP = false;
-  nalInfoIsParameterSet = false;
-
-  // Get the NAL as raw bytes and emit the signal to get some information on the NAL.
-  nal.nalPayload = getRemainingNALBytes();
-  emit signalGetNALUnitInfo(nal.getRawNALData());
-
-  // If this NAL will generate an output POC, save the POC number.
-  if (nalInfoPoc >= 0)
-    addPOCToList(nalInfoPoc);
-
-  // We do not know much about NAL units. Save all parameter sets and random access points.
-  if (nalInfoIsParameterSet || nalInfoIsRAP)
-  {
-    nal_unit *newNAL = new nal_unit(nal);
-    newNAL->isParameterSet = nalInfoIsParameterSet;
-    if (nalInfoIsRAP)
-    {
-      Q_ASSERT_X(!newNAL->isParameterSet, "fileSourceAnnexBFile::parseAndAddNALUnit", "NAL can not be RAP and parameter set at the same time.");
-      newNAL->poc = nalInfoPoc;
-      // For a random access point (a slice) we don't need to save the raw payload.
-      newNAL->nalPayload.clear();
-    }
-
-    nalUnitList.append(newNAL);
-  }
-
-  if (nalRoot)
-    // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1").arg(nal.nal_idx));
-}
-
 bool fileSourceAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
 {
   DEBUG_ANNEXB("fileSourceAnnexBFile::scanFileForNalUnits %s", saveAllUnits ? "saveAllUnits" : "");
@@ -470,36 +482,14 @@ bool fileSourceAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
 
   if (saveAllUnits && nalUnitModel.rootItem.isNull())
     // Create a new root for the nal unit tree of the QAbstractItemModel
-    nalUnitModel.rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code", nullptr));
+    nalUnitModel.rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
 
   while (seekToNextNALUnit()) 
   {
     try
     {
       // Seek successfull. The file is now pointing to the first byte after the start code.
-
-      // Save the position of the first byte of the start code
-      quint64 curFilePos = tell() - 3;
-
-      // Read two bytes (the nal header)
-      QByteArray nalHeaderBytes;
-      nalHeaderBytes.append(getCurByte());
-      gotoNextByte();
-      nalHeaderBytes.append(getCurByte());
-      gotoNextByte();
-
-      // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
-      // yet. We want to parse the item and then set a good description.
-      QString specificDescription;
-      TreeItem *nalRoot = nullptr;
-      if (!nalUnitModel.rootItem.isNull())
-        nalRoot = new TreeItem(nalUnitModel.rootItem.data());
-
-      // Create a nal_unit and read the header
-      nal_unit nal(curFilePos, nalID);
-      nal.parse_nal_unit_header(nalHeaderBytes, nalRoot);
-
-      parseAndAddNALUnit(nal, nalRoot);
+      parseAndAddNALUnit(nalID);
       
       // Update the progress dialog
       if (progress.wasCanceled())
@@ -545,13 +535,13 @@ int fileSourceAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
   // We schould always be able to seek to the beginning of the file
   int bestSeekPOC = POC_List[0];
 
-  for (nal_unit *nal : nalUnitList)
+  for (auto nal : nalUnitList)
   {
-    if (!nal->isParameterSet && nal->poc >= 0) 
+    if (!nal->isParameterSet() && nal->getPOC() >= 0) 
     {
-      if (nal->poc <= iPOC) 
+      if (nal->getPOC() <= iPOC)
         // We could seek here
-        bestSeekPOC = nal->poc;
+        bestSeekPOC = nal->getPOC();
       else
         break;
     }
@@ -569,16 +559,16 @@ QList<QByteArray> fileSourceAnnexBFile::seekToFrameNumber(int iFrameNr)
   // A list of all parameter sets up to the random access point with the given frame number.
   QList<QByteArray> paramSets;
   
-  for (nal_unit *nal : nalUnitList)
+  for (auto nal : nalUnitList)
   {
-    if (nal->isParameterSet)
+    if (nal->isParameterSet())
     {
       // Append the raw parameter set to the return array
       paramSets.append(nal->getRawNALData());
     }
-    else if (nal->poc >= 0)
+    else if (nal->getPOC() >= 0)
     {
-      if (nal->poc == iPOC) 
+      if (nal->getPOC() == iPOC) 
       {
         // Seek here
         seekToFilePos(nal->filePos);
@@ -594,9 +584,6 @@ QList<QByteArray> fileSourceAnnexBFile::seekToFrameNumber(int iFrameNr)
 
 void fileSourceAnnexBFile::clearData()
 {
-  if (!nalUnitListCopied)
-    // We created all the instances in the nalUnitList. Delete them all again.
-    qDeleteAll(nalUnitList);
   nalUnitList.clear();
   POC_List.clear();
 
@@ -607,34 +594,6 @@ void fileSourceAnnexBFile::clearData()
   posInBuffer = 0;
   bufferStartPosInFile = 0;
   numZeroBytes = 0;
-}
-
-void fileSourceAnnexBFile::nal_unit::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
-{
-  // Create a sub byte parser to access the bits
-  sub_byte_reader reader(parameterSetData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("nal_unit_header()", root) : nullptr;
-
-  // Read forbidden_zeor_bit
-  int forbidden_zero_bit;
-  READFLAG(forbidden_zero_bit);
-  if (forbidden_zero_bit != 0)
-    throw std::logic_error("The nal unit header forbidden zero bit was not zero.");
-
-  // Read nal unit type
-  READBITS(nal_unit_type_id, 6);
-  READBITS(nuh_layer_id, 6);
-  READBITS(nuh_temporal_id_plus1, 3);
-}
-
-QByteArray fileSourceAnnexBFile::nal_unit::getNALHeader() const
-{ 
-  int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
-  char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
-  return QByteArray(c, 6);
 }
 
 QVariant fileSourceAnnexBFile::NALUnitModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -652,7 +611,7 @@ QVariant fileSourceAnnexBFile::NALUnitModel::data(const QModelIndex &index, int 
   if (!index.isValid())
     return QVariant();
 
-  if (role != Qt::DisplayRole)
+  if (role != Qt::DisplayRole && role != Qt::ToolTipRole)
     return QVariant();
 
   TreeItem *item = static_cast<TreeItem*>(index.internalPointer());

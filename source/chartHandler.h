@@ -33,11 +33,11 @@
 #ifndef CHARTHANDLER_H
 #define CHARTHANDLER_H
 
-
 #include <QVector>
 #include "chartWidget.h"
 #include "chartHandlerTypedef.h"
 #include "playbackController.h"
+#include "yuvcharts.h"
 
 
 #define OPTION_NAME_CBX_CHART_TYPES     "cbxTypes"
@@ -50,6 +50,10 @@
 #define SLIDER_FRAME_RANGE_END          "sldEndFrameRange"
 #define SPINBOX_FRAME_RANGE_BEGIN       "sbxBeginFrameRange"
 #define SPINBOX_FRAME_RANGE_END         "sbxEndFrameRange"
+#define EDIT_NAME_LIMIT_NEGX            "edXLimNegative"
+#define EDIT_NAME_LIMIT_POSX            "edXLimPositive"
+#define EDIT_NAME_LIMIT_NEGY            "edYLimNegative"
+#define EDIT_NAME_LIMIT_POSY            "edYLimPositive"
 
 /**
  * @brief The ChartHandler class
@@ -222,6 +226,7 @@ private slots:
 
 private:
 // variables
+  YUVChartFactory mYUVChartFactory;
   // holds the ChartWidget for showing the charts
   ChartWidget* mChartWidget;
   // an empty default-charview
@@ -408,9 +413,9 @@ private:
 /**
  * NEXT FEATURES / KNOWN BUGS
  *
- * () -  no chart should be selectable, if file is not completly loaded (thread)
- *    -- if thread is ready send a message to the charthandler
- *    -- or still wait in a loop (seems to be the bad way :D)
+ * (done) -  no chart should be selectable, if file is not completly loaded (thread)
+ *        -- if thread is ready send a message to the charthandler
+ *        -- or still wait in a loop (seems to be the bad way :D)
  *
  * (done) -  order-by-dropdown change to 3 dropdwon (show: per frame / all frames; group by: value / blocksize; normalize : none / by area (dimension of frame)
  * (done) --   Show: per frame / all frames
@@ -423,14 +428,14 @@ private:
  * (done) --   change enum functions
  * (done) --   maybe place enum in typedef.h or create new File ChartHandlerDefinition.h
  *
- * () -  widget mNoDatatoShowWiget and mDataIsLoadingWidget make better look and feel (LAF)
+ * (done) -  widget mNoDatatoShowWiget and mDataIsLoadingWidget make better look and feel (LAF)
  * (done) -- label with the information should be dynamicly changeable (linebreaks ...)
  *
  * (done) -  implement new widget for order-group-settings
  *
  * (done) -  implement all possible settings
  *
- * () -  implement for value is vector-type
+ * (done) -  implement for value is vector-type
  *
  * () -  implement same function for the other playlistitems
  *
@@ -442,7 +447,7 @@ private:
  *    -- save / load settings
  *
  * () - implement different chart-types (bar, pie, ...)
- * () -- implement Interface, that  the base is for diffrent types of charts
+ * (done) -- implement Interface, that  the base is for diffrent types of charts
  * () -- getting better labels for the axes
  *
  * () - implement calculating and creating the chart in an seperate thread, not in main-thread

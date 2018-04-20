@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ singleInstanceHandler::~singleInstanceHandler()
 void singleInstanceHandler::newConnection()
 {
   socket = server.nextPendingConnection();
-  connect(socket, &QLocalSocket::readyRead, this, &singleInstanceHandler::readyRead);
+  connect(socket.data(), &QLocalSocket::readyRead, this, &singleInstanceHandler::readyRead);
 }
 
 void singleInstanceHandler::readyRead()

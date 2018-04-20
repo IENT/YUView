@@ -37,6 +37,7 @@
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 #include "FFMpegDecoderLibHandling.h"
+#include "fileSourceAVCAnnexBFile.h"
 #include <QLibrary>
 #include <QFileSystemWatcher>
 
@@ -70,7 +71,7 @@ public:
   ColorConversion getColorConversionType() const { return colorConversionType; }
 
   // Get the error string (if openFile returend false)
-  QString decoderErrorString() const { return errorString; }
+  QString decoderErrorString() const;
   bool errorInDecoder() const { return decodingError != ffmpeg_noError; }
   bool errorLoadingLibraries() const { return decodingError == ffmpeg_errorLoadingLibrary; }
   bool errorOpeningFile() const { return decodingError == ffmpeg_errorOpeningFile; }
@@ -92,7 +93,10 @@ public:
   statisticsData getStatisticsData(int frameIdx, int typeIdx);
 
   // Check if the given libraries can be used to open ffmpeg
-  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error) { return FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error); }
+  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error);
+
+  // Annex B files
+  bool canShowNALInfo() const { return canShowNALUnits; }
 
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
@@ -136,14 +140,13 @@ private:
   bool decodeOneFrame();
 
   // The input file context
-  AVFormatContext *fmt_ctx;
-  int videoStreamIdx;         //< The stream index of the video stream that we will decode
-  AVCodec *videoCodec;        //< The video decoder codec
-  AVCodecContext *decCtx;     //< The decoder context
-  AVFrame *frame;             //< The frame that we use for decoding
-  AVPacket *pkt;              //< A place for the curren (frame) input buffer
-  bool endOfFile;             //< Are we at the end of file (draining mode)?
-  AVCodecID streamCodecID;    //< The codec ID of the stream
+  AVFormatContextWrapper fmt_ctx;
+  AVStreamWrapper video_stream;
+  AVCodecWrapper videoCodec;        //< The video decoder codec
+  AVCodecContextWrapper decCtx;     //< The decoder context
+  AVFrameWrapper frame;             //< The frame that we use for decoding
+  AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
+  bool endOfFile;                   //< Are we at the end of file (draining mode)?
 
   // The information on the file which was opened with openFile
   QString   fullFilePath;
@@ -180,6 +183,9 @@ private:
   QByteArray currentOutputBuffer;
   void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
 #endif
+
+  fileSourceAVCAnnexBFile annexBFile;
+  bool canShowNALUnits;
 
   // Caching
   QHash<int, statisticsData> curFrameStats;  // cache of the statistics for the current POC [statsTypeID]

@@ -35,7 +35,7 @@
 
 #include "decoderBase.h"
 #include "fileInfoWidget.h"
-#include "fileSourceHEVCAnnexBFile.h"
+#include "fileSourceJEMAnnexBFile.h"
 #include "libJEMDecoder.h"
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
@@ -95,18 +95,18 @@ public:
   bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) Q_DECL_OVERRIDE;
 
   // Load the raw YUV data for the given frame
-  QByteArray loadYUVFrameData(int frameIdx);
+  QByteArray loadYUVFrameData(int frameIdx) Q_DECL_OVERRIDE;
 
   // Get the statistics values for the given frame (decode if necessary)
-  statisticsData getStatisticsData(int frameIdx, int typeIdx);
+  statisticsData getStatisticsData(int frameIdx, int typeIdx) Q_DECL_OVERRIDE;
 
   // Reload the input file
-  bool reloadItemSource();
+  bool reloadItemSource() Q_DECL_OVERRIDE;
 
   // Add the statistics supported by the HM decoder
-  void fillStatisticList(statisticHandler &statSource) const;
+  void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
 
-  QString getDecoderName() const;
+  QString getDecoderName() const Q_DECL_OVERRIDE;
   
   // Check if the given library file is an existing HM decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);

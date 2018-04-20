@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -101,15 +101,6 @@ public:
   // Get a pointer to the nal unit model
   QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
 
-  // When the signal signalGetNALUnitInfo is emitted, this function can be used to return information.
-  void setNALUnitInfo(int poc, bool isRAP, bool isParameterSet) { nalInfoPoc = poc; nalInfoIsRAP = isRAP; nalInfoIsParameterSet = isParameterSet; }
-
-signals:
-  // This class does not know how to interprete any data from within a NAL unit (except for the NAL unit header).
-  // So if we want to know more about a NAL unit, we emit this signal and hope that this will result in a call to
-  // setNALUnitInfo so that we get some info on the NAL unit.
-  void signalGetNALUnitInfo(QByteArray nalData);
-
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
 
@@ -124,6 +115,10 @@ protected:
     TreeItem(const QString &name, int  val  , const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
     TreeItem(const QString &name, bool val  , const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
     TreeItem(const QString &name, double val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
+    TreeItem(const QString &name, QString val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; }
+    TreeItem(const QString &name, int val, const QString &coding, const QString &code, QStringList meanings, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; if (val >= meanings.length()) val = meanings.length() - 1; itemData.append(meanings.at(val)); }
+    TreeItem(const QString &name, int val, const QString &coding, const QString &code, QString meaning, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; itemData.append(meaning); }
+    TreeItem(const QString &name, QString val, const QString &coding, const QString &code, QString meaning, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; itemData.append(meaning); }
 
     ~TreeItem() { qDeleteAll(childItems); }
 
@@ -143,7 +138,7 @@ protected:
     virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     virtual QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 4; }
+    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 5; }
 
     // The root of the tree
     QScopedPointer<TreeItem> rootItem;
@@ -158,11 +153,15 @@ protected:
     sub_byte_reader(const QByteArray &inArr) : p_byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) {}
     // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
     unsigned int readBits(int nrBits, QString *bitsRead=nullptr);
-    // Read an UE(v) code from the array
-    int readUE_V(QString *bitsRead=nullptr);
+    // Read an UE(v) code from the array. If given, increase bit_count with every bit read.
+    int readUE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);
     // Read an SE(v) code from the array
     int readSE_V(QString *bitsRead=nullptr);
-
+    // Is there more RBSP data or are we at the end?
+    bool more_rbsp_data();
+    // How many full bytes were read from the reader?
+    int nrBytesRead() { return (posInBuffer_bits == 0) ? posInBuffer_bytes : posInBuffer_bytes + 1; }
+    
   protected:
     QByteArray p_byteArray;
 
@@ -179,12 +178,11 @@ protected:
   */
   struct nal_unit
   {
-    nal_unit(quint64 filePos, int nal_idx) : filePos(filePos), nal_idx(nal_idx), isParameterSet(false), poc(-1), nal_unit_type_id(-1), nuh_layer_id(-1), nuh_temporal_id_plus1(-1) {}
-    nal_unit(const nal_unit &nal) { filePos = nal.filePos; nal_idx = nal.nal_idx; isParameterSet = nal.isParameterSet; poc = nal.poc; nal_unit_type_id = nal.nal_unit_type_id; nuh_layer_id = nal.nuh_layer_id; nuh_temporal_id_plus1 = nal.nuh_temporal_id_plus1; nalPayload = nal.nalPayload; }
+    nal_unit(quint64 filePos, int nal_idx) : filePos(filePos), nal_idx(nal_idx), nal_unit_type_id(-1) {}
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    virtual void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root);
+    virtual void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) = 0;
 
     /// Pointer to the first byte of the start code of the NAL unit
     quint64 filePos;
@@ -192,21 +190,17 @@ protected:
     // The index of the nal within the bitstream
     int nal_idx;
 
-    // Is this NAL unit a parameter set or, if not, is it the random access point of a certain POC?
-    bool isParameterSet;
-    int poc;
-
     // Get the NAL header including the start code
-    QByteArray getNALHeader() const;
+    virtual QByteArray getNALHeader() const = 0;
+    virtual bool isParameterSet() const = 0;
+    virtual int  getPOC() const { return -1; }
     // Get the raw NAL unit (including start code, nal unit header and payload)
     // This only works if the payload was saved of course
     QByteArray getRawNALData() const { return getNALHeader() + nalPayload; }
 
-    /// The information of the NAL unit header
+    // Each nal unit (in all known standards) has a type id
     int nal_unit_type_id;
-    int nuh_layer_id;
-    int nuh_temporal_id_plus1;
-
+    
     // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
     QByteArray nalPayload;
   };
@@ -217,11 +211,6 @@ protected:
   unsigned int posInBuffer;	         ///< The current position in the input buffer in bytes
   quint64      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
   int          numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
-
-  // When the signal signalGetNALUnitInfo is emitted, this function can be used to return information.
-  int nalInfoPoc;
-  bool nalInfoIsRAP;
-  bool nalInfoIsParameterSet;
 
   // A list of all POCs in the sequence (in coding order). POC's don't have to be consecutive, so the only
   // way to know how many pictures are in a sequences is to keep a list of all POCs.
@@ -235,7 +224,7 @@ protected:
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.
   // So basically all information we need to seek in the stream and start the decoder at a certain position.
-  QList<nal_unit*> nalUnitList;
+  QList<QSharedPointer<nal_unit>> nalUnitList;
   bool nalUnitListCopied;       //< If this list was copied (another file was porovided when opening the file) we don't own the pointers in this list.
 
   // Scan the file NAL by NAL. Keep track of all possible random access points and parameter sets in
@@ -243,10 +232,9 @@ protected:
   // If saving is activated, all NAL data is saved to be used by the QAbstractItemModel.
   bool scanFileForNalUnits(bool saveAllUnits);
 
-  // Parse the given NAL unit. The basic annex B file reade can not extract much information from the NAL unit
-  // except for the NAL unit header. A more sophisticaed reader like the fileSourceHEVCAnnexBFile overrides 
-  // this and can read parameters sets, slice headers and much more.
-  virtual void parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot);
+  // The bitstream is at the start of a nal unit. This function should be overloaded and parse the NAL unit header
+  // and whatever the NAL unit may contain. Finally it should add the unit to the nalUnitList (if it is a parameter set or an RA point).
+  virtual void parseAndAddNALUnit(int nalID) = 0;
 
   // Clear all knowledge about the bitstream.
   void clearData();

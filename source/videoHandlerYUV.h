@@ -50,9 +50,12 @@ namespace YUV_Internals
 
   typedef enum
   {
-    BT709,
-    BT601,
-    BT2020,
+    BT709_LimitedRange,
+    BT709_FullRange,
+    BT601_LimitedRange,
+    BT601_FullRange,
+    BT2020_LimitedRange,
+    BT2020_FullRange,
   } ColorConversion;
 
   // How to perform up-sampling (chroma subsampling)
@@ -119,7 +122,7 @@ namespace YUV_Internals
   {
   public:
     // The default constructor (will create an "Unknown Pixel Format")
-    yuvPixelFormat() { bitsPerSample = -1; subsampling = YUV_444; setDefaultChromaOffset(); uvInterleaved = false; }  // invalid format
+    yuvPixelFormat();
     yuvPixelFormat(const QString &name);  // Set the pixel format by name. The name should have the format that is returned by getName().
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder=Order_YUV, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true), planeOrder(planeOrder), uvInterleaved(false) { setDefaultChromaOffset(); }
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false), uvInterleaved(false), packingOrder(packingOrder), bytePacking(bytePacking) { setDefaultChromaOffset(); }
@@ -200,13 +203,13 @@ public:
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position. If th second item
   // cannot be cast to a videoHandlerYUV, we call the frameHandler::getPixelValues function.
-  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr) Q_DECL_OVERRIDE;
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr, const int frameIdx1 = 0) Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
   // we will use the playlistItemVideo::calculateDifference function to calculate the difference
   // using the RGB values.
-  virtual QImage calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
+  virtual QImage calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one YUV frame with the current format
   virtual qint64 getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }
@@ -238,7 +241,7 @@ public:
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
-  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=nullptr, const bool markDifference=false) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2 = nullptr, const bool markDifference = false, const int frameIdxItem1 = 0) Q_DECL_OVERRIDE;
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(const QSize &size) Q_DECL_OVERRIDE ;
@@ -263,6 +266,12 @@ public:
   // If this is set, the pixel values drawn in the drawPixels function will be scaled according to the bit depth.
   // E.g: The bit depth is 8 and the pixel value is 127, then the value shown will be -1.
   bool showPixelValuesAsDiff;
+
+  QByteArray getDiffYUV() const;
+
+  YUV_Internals::yuvPixelFormat getDiffYUVFormat() const;
+
+  bool getIs_YUV_diff() const;
 
 signals:
 
@@ -350,6 +359,10 @@ private:
 #endif
 
   SafeUi<Ui::videoHandlerYUV> ui;
+
+  bool is_YUV_diff;
+  QByteArray diffYUV;
+  YUV_Internals::yuvPixelFormat diffYUVFormat;
 
 private slots:
 

@@ -34,7 +34,6 @@
 
 #include <limits>
 #include <QPainter>
-#include "signalsSlots.h"
 
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG
@@ -302,9 +301,9 @@ void playlistItemOverlay::createPropertiesWidget()
   ui.verticalLayout->insertLayout(3,createContainerItemControls());
 
   // Connect signals/slots
-  connect(ui.alignmentMode, QComboBox_currentIndexChanged_int, this, &playlistItemOverlay::controlChanged);
-  connect(ui.alignmentHozizontal, QSpinBox_valueChanged_int, this, &playlistItemOverlay::controlChanged);
-  connect(ui.alignmentVertical, QSpinBox_valueChanged_int, this, &playlistItemOverlay::controlChanged);
+  connect(ui.alignmentMode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::controlChanged);
+  connect(ui.alignmentHozizontal, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::controlChanged);
+  connect(ui.alignmentVertical, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::controlChanged);
 }
 
 void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir) const

@@ -30,6 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "chartHandlerTypedef.h"
 #include "playlistItemImageFile.h"
 
 #include <QImageReader>
@@ -332,6 +333,7 @@ QList<collectedData>* playlistItemImageFile::sortAndCategorizeData(const QString
     this->getData(this->getFrameIdxRange(), true);
 
   collectedData data;
+  data.mStatDataType = sdtStructStatisticsItem_Value;
   QString key = aType;
   data.mLabel = key;
   QList<collectedData>* result = new QList<collectedData>();
@@ -365,10 +367,7 @@ QList<collectedData>* playlistItemImageFile::sortAndCategorizeData(const QString
 
     foreach (int key, map.keys())
     {
-      int* arr = new int[2];
-      arr[0] = key;
-      arr[1] = map.value(key);
-      data.mValueList.append(arr);
+      data.addValue(QVariant::fromValue(key), map.value(key));
     }
 
   }
@@ -395,10 +394,7 @@ QList<collectedData>* playlistItemImageFile::sortAndCategorizeData(const QString
 
     foreach (int key, map.keys())
     {
-      int* arr = new int[2];
-      arr[0] = key;
-      arr[1] = map.value(key);
-      data.mValueList.append(arr);
+      data.addValue(QVariant::fromValue(key), map.value(key));
     }
     QList<collectedData>* result = new QList<collectedData>();
     result->append(data);
