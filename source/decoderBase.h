@@ -68,17 +68,18 @@ public:
 
   // -- The decoding interface
   // If the current frame is valid, the current frame can be retrieved using getYUVFrameData.
-  // Call decodeNextFrame to advance to the next frame. Whe you called decodeNextFrame but the frame number is invalid,
-  // the decoder needs more data. Feed more data (untill full) and call decodeNextFrame again.
-  virtual bool isCurrentFrameValid() = 0;
+  // Call decodeNextFrame to advance to the next frame. When the returned array is empty, feed more data (untill full) and call decodeNextFrame again.
   virtual void decodeNextFrame() = 0;
   virtual QByteArray getYUVFrameData() = 0;
   yuvPixelFormat getYUVPixelFormat() { return format; }
   QSize getFrameSize() { return frameSize; }
   // Push data to the decoder (until no more data is needed)
-  bool needsMoreData() { return decoderState == decoderNeedsMoreData; }
   // In order to make the interface generic, the pushData function accepts data only without start codes
   virtual void pushData(QByteArray &data) = 0;
+
+  // The state of the decoder
+  bool decodeFrames() const { return decoderState == decoderRetrieveFrames; }
+  bool needsMoreData() const { return decoderState == decoderNeedsMoreData; }
 
   // Get the statistics values for the current frame. In order to enable statistics retrievel, 
   // activate it, reset the decoder and decode to the current frame again.

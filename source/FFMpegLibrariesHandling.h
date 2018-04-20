@@ -475,9 +475,9 @@ private:
 class AVCodecWrapper
 {
 public:
-  AVCodecWrapper() { codec = nullptr; };
-  AVCodecWrapper(AVCodec *codec, FFmpegLibraryVersion libVer) : codec(codec), libVer(libVer) {};
-  explicit operator bool() const { return codec != nullptr; };
+  AVCodecWrapper() { codec = nullptr; }
+  AVCodecWrapper(AVCodec *codec, FFmpegLibraryVersion libVer) : codec(codec), libVer(libVer) {}
+  explicit operator bool() const { return codec != nullptr; }
   AVCodec *getAVCodec() { return codec; }
 
   QString getName() { update(); return name; }
@@ -505,10 +505,10 @@ private:
 class AVDictionaryWrapper
 {
 public:
-  AVDictionaryWrapper() { dict = nullptr; };
-  AVDictionaryWrapper(AVDictionary *dict) : dict(dict) {};
+  AVDictionaryWrapper() { dict = nullptr; }
+  AVDictionaryWrapper(AVDictionary *dict) : dict(dict) {}
   void setDictionary(AVDictionary *d) { dict = d; }
-  explicit operator bool() const { return dict != nullptr; };
+  explicit operator bool() const { return dict != nullptr; }
   AVDictionary *get_dictionary() { return dict; }
 
 private:
@@ -518,7 +518,7 @@ private:
 class AVFrameWrapper
 {
 public:
-  AVFrameWrapper() { frame = nullptr; };
+  AVFrameWrapper() { frame = nullptr; }
   ~AVFrameWrapper() { assert(frame == nullptr); }
   void allocate_frame(FFmpegVersionHandler &ff);
   void free_frame(FFmpegVersionHandler &ff);
@@ -527,11 +527,13 @@ public:
   AVFrame *get_frame() { return frame; }
   int get_width() { update(); return width; }
   int get_height() { update(); return height; }
+  QSize get_size() { update(); return QSize(width, height); }
   int get_pts() { update(); return pts; }
   AVPictureType get_pict_type() { update(); return pict_type; }
   int get_key_frame() { update(); return key_frame; }
     
-  explicit operator bool() const { return frame != nullptr; };
+  explicit operator bool() const { return frame != nullptr; }
+  bool is_valid() const { return frame != nullptr;  }
 
 private:
   void update();
@@ -560,7 +562,7 @@ class AVMotionVectorWrapper
 {
 public:
   AVMotionVectorWrapper() { vec = nullptr; }
-  AVMotionVectorWrapper(AVMotionVector *vec, FFmpegLibraryVersion libVer) : vec(vec), libVer(libVer) { update(); };
+  AVMotionVectorWrapper(AVMotionVector *vec, FFmpegLibraryVersion libVer) : vec(vec), libVer(libVer) { update(); }
 
   // For performance reasons, these are public here. Since update is called at construction, these should be valid.
   int32_t source;
@@ -585,11 +587,11 @@ class AVFrameSideDataWrapper
 {
 public:
   AVFrameSideDataWrapper() { data = nullptr; }
-  AVFrameSideDataWrapper(AVFrameSideData *sideData, FFmpegLibraryVersion libVer) : sideData(sideData), libVer(libVer) { update(); };
+  AVFrameSideDataWrapper(AVFrameSideData *sideData, FFmpegLibraryVersion libVer) : sideData(sideData), libVer(libVer) { update(); }
   int get_number_motion_vectors();
   AVMotionVectorWrapper get_motion_vector(int idx);
 
-  explicit operator bool() const { return sideData != nullptr; };
+  explicit operator bool() const { return sideData != nullptr; }
 
 private:
   void update();
@@ -624,8 +626,10 @@ public:
 
   bool configureDecoder(AVCodecContextWrapper &decCtx, AVCodecParametersWrapper &codecpar);
 
-  // endOfFile: Are we at the end of the file? In this case we will decode frames (if possible) but feed no new data to the decoder.
-  bool decode_frame(AVCodecContextWrapper &decCtx, AVFormatContextWrapper &fmt_ctx, AVFrameWrapper &frame, AVPacketWrapper &pkt, bool &endOfFile, int videoStreamIdx);
+  // Push a packet to the given decoder using avcodec_send_packet
+  int pushPacketToDecoder(AVCodecContextWrapper & decCtx, AVPacketWrapper &pkt);
+  // Retrive a frame using avcodec_receive_frame
+  int getFrameFromDecoder(AVCodecContextWrapper & decCtx, AVFrameWrapper &frame);
 
   void flush_buffers(AVCodecContextWrapper &decCtx) { lib.avcodec_flush_buffers(decCtx.get_codec()); }
 

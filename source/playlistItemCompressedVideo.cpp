@@ -82,7 +82,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   isFrameLoadingDoubleBuffer = false;
 
   // An compressed file can be cached if nothing goes wrong
-  cachingEnabled = true;
+  cachingEnabled = false;
 
   currentFrameIdx[0] = -1;
   currentFrameIdx[1] = -1;
@@ -180,13 +180,10 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   else if (decoderEngineType == decoderEngineFFMpeg)
   {
     if (isinputFormatTypeAnnexB)
-    {
-      loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec));
-    }
+      loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, format));
     else
-    {
-      loadingDecoder.reset(new decoderFFmpeg(inputFileFFmpegLoading->getVideoCodecPar()));
-    }
+      loadingDecoder.reset(new decoderFFmpeg(inputFileFFmpegLoading->getVideoCodecPar(), format));
+    fileState = noError;
   }
   else
     return;
@@ -204,9 +201,12 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Seek both decoders to the start of the bitstream (this will also push the parameter sets / extradata to the decoder)
   seekToPosition(0, 0, false);
-  seekToPosition(0, 0, true);
   loadYUVData(0, false);
-  loadYUVData(0, true);
+  if (cachingEnabled)
+  {
+    seekToPosition(0, 0, true);
+    loadYUVData(0, true);
+  }
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemCompressedVideo::loadYUVData, Qt::DirectConnection);
@@ -379,8 +379,11 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
     infoText = "There was an error when loading the decoder: \n";
     infoText += loadingDecoder->decoderErrorString();
     infoText += "\n";
-    infoText += "We do not currently ship the HM and JEM decoder libraries.\n";
-    infoText += "You can find download links in Help->Downloads";
+    if (decoderEngineType == decoderEngineHM || decoderEngineType == decoderEngineJEM)
+    {
+      infoText += "We do not currently ship the HM and JEM decoder libraries.\n";
+      infoText += "You can find download links in Help->Downloads";
+    }
     playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
 }
@@ -462,7 +465,7 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
       }
     }
 
-    if (dec->isCurrentFrameValid())
+    if (dec->decodeFrames())
     {
       if (caching)
         currentFrameIdx[1]++;
@@ -487,26 +490,34 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
   // Do the seek
   decoderBase *dec = caching ? cachingDecoder.data() : loadingDecoder.data();
   dec->resetDecoder();
-  QByteArrayList parametersets;
-  if (isinputFormatTypeAnnexB)
+  if (!isinputFormatTypeAnnexB && decoderEngineType == decoderEngineFFMpeg)
   {
-    uint64_t filePos;
-    parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
-    if (caching)
-      inputFileAnnexBCaching->seek(filePos);
-    else
-      inputFileAnnexBLoading->seek(filePos);
+    // In case of using ffmpeg for reading and decoding, we don't need to push the parameter sets (the
+    // extradata) to the decoder explicitly when seeking.
   }
   else
   {
-    parametersets = caching ? inputFileFFmpegCaching->getParameterSets() : inputFileFFmpegLoading->getParameterSets();
-    if (caching)
-      inputFileFFmpegCaching->seekToPTS(seekToPTS);
+    QByteArrayList parametersets;
+    if (isinputFormatTypeAnnexB)
+    {
+      uint64_t filePos;
+      parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
+      if (caching)
+        inputFileAnnexBCaching->seek(filePos);
+      else
+        inputFileAnnexBLoading->seek(filePos);
+    }
     else
-      inputFileFFmpegLoading->seekToPTS(seekToPTS);
+    {
+      parametersets = caching ? inputFileFFmpegCaching->getParameterSets() : inputFileFFmpegLoading->getParameterSets();
+      if (caching)
+        inputFileFFmpegCaching->seekToPTS(seekToPTS);
+      else
+        inputFileFFmpegLoading->seekToPTS(seekToPTS);
+    }
+    for (QByteArray d : parametersets)
+      dec->pushData(d);
   }
-  for (QByteArray d : parametersets)
-    dec->pushData(d);
   if (caching)
     currentFrameIdx[1] = seekToFrame - 1;
   else
@@ -718,7 +729,7 @@ void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QStr
   else
   {
     input = inputLibavformat;
-    decoder = decoderEngineLibde265;
+    decoder = decoderEngineFFMpeg;
   }
 
   Q_UNUSED(parent);

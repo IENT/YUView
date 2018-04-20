@@ -1807,7 +1807,6 @@ bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCod
     int ret = lib.avcodec_parameters_to_context(decCtx.get_codec(), origin_par);
     if (ret < 0)
       return setError(QString("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
-    return ret;
   }
   else
   {
@@ -1822,81 +1821,94 @@ bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCod
   return true;
 }
 
-bool FFmpegVersionHandler::decode_frame(AVCodecContextWrapper & decCtx, AVFormatContextWrapper &fmt_ctx, AVFrameWrapper & frame, AVPacketWrapper & pkt, bool &endOfFile, int videoStreamIdx)
+int FFmpegVersionHandler::pushPacketToDecoder(AVCodecContextWrapper & decCtx, AVPacketWrapper & pkt)
 {
-  if (!lib.newParametersAPIAvailable)
-  {
-  }
+  if (!pkt)
+    return lib.avcodec_send_packet(decCtx.get_codec(), nullptr);
   else
-  {
-    // Use the new API using the send_packet / recieve frame interface
-    // First, try if there is a frame waiting in the decoder
-    int retRecieve = lib.avcodec_receive_frame(decCtx.get_codec(), frame.get_frame());
-    if (retRecieve == 0)
-    {
-      // We recieved a frame.
-      // Recieved a frame
-      DEBUG_LIB("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame.get_width(), frame.get_height(); frame.get_pts(), frame.get_pict_type(), frame.get_key_frame());
-      return true;
-    }
-    if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
-      return setError("Error recieving frame (avcodec_receive_frame)");
-
-    // There was no frame waiting in the decoder. Feed data to the decoder until it returns AVERROR(EAGAIN)
-    int retPush;
-    do
-    {
-      // Push the video packet to the decoder
-      if (endOfFile)
-        retPush = lib.avcodec_send_packet(decCtx.get_codec(), nullptr);
-      else
-        retPush = lib.avcodec_send_packet(decCtx.get_codec(), pkt.get_packet());
-
-      if (retPush < 0 && retPush != AVERROR(EAGAIN))
-        return setError("Error sending packet (avcodec_send_packet)");
-      if (retPush != AVERROR(EAGAIN))
-        DEBUG_LIB("Send packet PTS %ld duration %ld flags %d", pkt.get_pts(), pkt.get_duration(), pkt.get_flags());
-
-      if (!endOfFile && retPush == 0)
-      {
-        // Pushing was successfull, read the next video packet ...
-        do
-        {
-          // Unref the old packet
-          lib.av_packet_unref(pkt.get_packet());
-          // Get the next one
-          int ret = lib.av_read_frame(fmt_ctx.get_format_ctx(), pkt.get_packet());
-          if (ret == AVERROR_EOF)
-          {
-            // No more packets. End of file. Enter draining mode.
-            DEBUG_LIB("No more packets. End of file.");
-            endOfFile = true;
-          }
-          else if (ret < 0)
-            return setError(QString("Error reading packet (av_read_frame). Return code %1").arg(ret));
-        } while (!endOfFile && pkt.get_stream_index() != videoStreamIdx);
-      }
-    } while (retPush == 0);
-
-    // Now retry to get a frame
-    retRecieve = lib.avcodec_receive_frame(decCtx.get_codec(), frame.get_frame());
-    if (retRecieve == 0)
-    {
-      // We recieved a frame.
-      // Recieved a frame
-      DEBUG_LIB("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame.get_width(), frame.get_height(); frame.get_pts(), frame.get_pict_type(), frame.get_key_frame());
-      return true;
-    }
-    if (endOfFile && retRecieve == AVERROR_EOF)
-    {
-      // There are no more frames. If we want more frames, we have to seek to the start of the sequence and restart decoding.
-    }
-    if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
-      return setError(QString("Error recieving  frame (avcodec_receive_frame). Return code %1").arg(retRecieve));
-  }
-
-  return false;
+    return lib.avcodec_send_packet(decCtx.get_codec(), pkt.get_packet());
 }
+
+int FFmpegVersionHandler::getFrameFromDecoder(AVCodecContextWrapper & decCtx, AVFrameWrapper &frame)
+{
+  return lib.avcodec_receive_frame(decCtx.get_codec(), frame.get_frame());
+}
+
+//bool FFmpegVersionHandler::decode_frame(AVCodecContextWrapper & decCtx, AVFormatContextWrapper &fmt_ctx, AVFrameWrapper & frame, AVPacketWrapper & pkt, bool &endOfFile, int videoStreamIdx)
+//{
+//  if (!lib.newParametersAPIAvailable)
+//  {
+//  }
+//  else
+//  {
+//    // Use the new API using the send_packet / recieve frame interface
+//    // First, try if there is a frame waiting in the decoder
+//    int retRecieve = lib.avcodec_receive_frame(decCtx.get_codec(), frame.get_frame());
+//    if (retRecieve == 0)
+//    {
+//      // We recieved a frame.
+//      // Recieved a frame
+//      DEBUG_LIB("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame.get_width(), frame.get_height(); frame.get_pts(), frame.get_pict_type(), frame.get_key_frame());
+//      return true;
+//    }
+//    if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
+//      return setError("Error recieving frame (avcodec_receive_frame)");
+//
+//    // There was no frame waiting in the decoder. Feed data to the decoder until it returns AVERROR(EAGAIN)
+//    int retPush;
+//    do
+//    {
+//      // Push the video packet to the decoder
+//      if (endOfFile)
+//        retPush = lib.avcodec_send_packet(decCtx.get_codec(), nullptr);
+//      else
+//        retPush = lib.avcodec_send_packet(decCtx.get_codec(), pkt.get_packet());
+//
+//      if (retPush < 0 && retPush != AVERROR(EAGAIN))
+//        return setError("Error sending packet (avcodec_send_packet)");
+//      if (retPush != AVERROR(EAGAIN))
+//        DEBUG_LIB("Send packet PTS %ld duration %ld flags %d", pkt.get_pts(), pkt.get_duration(), pkt.get_flags());
+//
+//      if (!endOfFile && retPush == 0)
+//      {
+//        // Pushing was successfull, read the next video packet ...
+//        do
+//        {
+//          // Unref the old packet
+//          lib.av_packet_unref(pkt.get_packet());
+//          // Get the next one
+//          int ret = lib.av_read_frame(fmt_ctx.get_format_ctx(), pkt.get_packet());
+//          if (ret == AVERROR_EOF)
+//          {
+//            // No more packets. End of file. Enter draining mode.
+//            DEBUG_LIB("No more packets. End of file.");
+//            endOfFile = true;
+//          }
+//          else if (ret < 0)
+//            return setError(QString("Error reading packet (av_read_frame). Return code %1").arg(ret));
+//        } while (!endOfFile && pkt.get_stream_index() != videoStreamIdx);
+//      }
+//    } while (retPush == 0);
+//
+//    // Now retry to get a frame
+//    retRecieve = lib.avcodec_receive_frame(decCtx.get_codec(), frame.get_frame());
+//    if (retRecieve == 0)
+//    {
+//      // We recieved a frame.
+//      // Recieved a frame
+//      DEBUG_LIB("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame.get_width(), frame.get_height(); frame.get_pts(), frame.get_pict_type(), frame.get_key_frame());
+//      return true;
+//    }
+//    if (endOfFile && retRecieve == AVERROR_EOF)
+//    {
+//      // There are no more frames. If we want more frames, we have to seek to the start of the sequence and restart decoding.
+//    }
+//    if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
+//      return setError(QString("Error recieving  frame (avcodec_receive_frame). Return code %1").arg(retRecieve));
+//  }
+//
+//  return false;
+//}
 
 void AVFrameWrapper::update()
 {
@@ -1966,8 +1978,6 @@ void AVFrameWrapper::free_frame(FFmpegVersionHandler &ff)
 
 AVPacketWrapper::~AVPacketWrapper()
 {
-  if (pkt != nullptr)
-    free_packet();
 }
 
 void AVPacketWrapper::allocate_paket(FFmpegVersionHandler &ff)

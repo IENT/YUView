@@ -40,7 +40,7 @@
 #define DEBUG_FFMPEG(fmt,...) ((void)0)
 #endif
 
-decoderFFmpeg::decoderFFmpeg(AVCodecID codec, bool cachingDecoder) : 
+decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, yuvPixelFormat fmt, bool cachingDecoder) : 
   decoderBase(cachingDecoder)
 {
   if (!createDecoder(codec))
@@ -49,10 +49,13 @@ decoderFFmpeg::decoderFFmpeg(AVCodecID codec, bool cachingDecoder) :
     return ;
   }
 
+  format = fmt;
+  frameSize = size;
+
   DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
 
-decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder) :
+decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, yuvPixelFormat fmt, bool cachingDecoder) :
   decoderBase(cachingDecoder)
 {
   AVCodecID codec = codecpar.getCodecID();
@@ -62,11 +65,15 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
     return ;
   }
 
+  format = fmt;
+
   DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
 
 decoderFFmpeg::~decoderFFmpeg()
 {
+  if (frame)
+    frame.free_frame(ff);
 }
 
 void decoderFFmpeg::resetDecoder()
@@ -75,26 +82,244 @@ void decoderFFmpeg::resetDecoder()
 
 void decoderFFmpeg::decodeNextFrame()
 {
+  if (decoderState != decoderRetrieveFrames)
+  {
+    DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame: Wrong decoder state.");
+    return;
+  }
+
+  DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame");
+
+  if (frame)
+    // If the frame is valid, copy it to the output buffer
+    copyCurImageToBuffer();
+
+  // Decode the next frame into "frame". If no next frame could be decoded, we switch to "needsMoreData".
+  decodeFrame();
 }
 
 QByteArray decoderFFmpeg::getYUVFrameData()
 {
-  return QByteArray();
+  if (decoderState != decoderRetrieveFrames)
+  {
+    DEBUG_FFMPEG("decoderFFmpeg::getYUVFrameData: Wrong decoder state.");
+    return QByteArray();
+  }
+
+  DEBUG_FFMPEG("decoderFFmpeg::getYUVFrameData Copy frame");
+
+  if (currentOutputBuffer.isEmpty())
+    DEBUG_FFMPEG("decoderFFmpeg::loadYUVFrameData empty buffer");
+
+  return currentOutputBuffer;
+}
+
+void decoderFFmpeg::copyCurImageToBuffer()
+{
+  if (!frame)
+    return;
+
+  // At first get how many bytes we are going to write
+  const yuvPixelFormat pixFmt = getYUVPixelFormat();
+  const int nrBytesPerSample = pixFmt.bitsPerSample <= 8 ? 1 : 2;
+  const int nrBytesY = frameSize.width() * frameSize.height() * nrBytesPerSample;
+  const int nrBytesC = frameSize.width() / pixFmt.getSubsamplingHor() * frameSize.height() / pixFmt.getSubsamplingVer() * nrBytesPerSample;
+  const int nrBytes = nrBytesY + 2 * nrBytesC;
+
+  // Is the output big enough?
+  if (currentOutputBuffer.capacity() < nrBytes)
+    currentOutputBuffer.resize(nrBytes);
+
+  // Copy line by line. The linesize of the source may be larger than the width of the frame.
+  // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
+  // resolution may be larger than the output frame size.
+  uint8_t *src = frame.get_data(0);
+  int linesize = frame.get_line_size(0);
+  char* dst = currentOutputBuffer.data();
+  int wDst = frameSize.width() * nrBytesPerSample;
+  int hDst = frameSize.height();
+  for (int y = 0; y < hDst; y++)
+  {
+    // Copy one line
+    memcpy(dst, src, wDst);
+    // Goto the next line in input and output (these offsets/strides may differ)
+    dst += wDst;
+    src += linesize;
+  }
+
+  // Chroma
+  wDst = frameSize.width() / pixFmt.getSubsamplingHor() * nrBytesPerSample;
+  hDst = frameSize.height() / pixFmt.getSubsamplingVer();
+  for (int c = 0; c < 2; c++)
+  {
+    uint8_t *src = frame.get_data(c+1);
+    linesize = frame.get_line_size(c+1);
+    dst = currentOutputBuffer.data();
+    dst += (nrBytesY + ((c == 0) ? 0 : nrBytesC));
+    for (int y = 0; y < hDst; y++)
+    {
+      memcpy(dst, src, wDst);
+      // Goto the next line
+      dst += wDst;
+      src += linesize;
+    }
+  }
+}
+
+void decoderFFmpeg::cacheCurStatistics()
+{
 }
 
 void decoderFFmpeg::pushData(QByteArray &data)
 {
+  assert(false);
 }
 
 void decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
 {
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != decoderNeedsMoreData)
   {
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Wrong decoder state.");
     return;
   }
 
+  // We feed data to the decoder until it returns AVERROR(EAGAIN)
+  int retPush = ff.pushPacketToDecoder(decCtx, pkt);
 
+  if (retPush < 0 && retPush != AVERROR(EAGAIN))
+  {
+    setError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
+    return;
+  }
+  if (retPush != AVERROR(EAGAIN))
+    DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d", pkt.get_pts(), pkt.get_duration(), pkt.get_flags());
+  if (retPush == AVERROR(EAGAIN))
+  {
+    // Enough data pushed. Decode and retrieve frames now.
+    decoderState = decoderRetrieveFrames;
+    decodeFrame();
+    copyCurImageToBuffer();
+  }
+
+
+  //// First, try if there is a frame waiting in the decoder
+  //int retRecieve = ff.avcodec_receive_frame(decCtx, frame);
+  //if (retRecieve == 0)
+  //{
+  //  // We recieved a frame.
+  //  // Recieved a frame
+  //  DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
+  //    ff.AVFrameGetWidth(frame),
+  //    ff.AVFrameGetHeight(frame),
+  //    ff.AVFrameGetPTS(frame),
+  //    ff.AVFrameGetPictureType(frame),
+  //    ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
+  //  return true;
+  //}
+  //if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
+  //{
+  //  // An error occured
+  //  setDecodingError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
+  //  return false;
+  //}
+
+  //// There was no frame waiting in the decoder. 
+  //int retPush;
+  //do
+  //{
+  //  // Push the video packet to the decoder
+  //  if (endOfFile)
+  //    retPush = ff.avcodec_send_packet(decCtx, nullptr);
+  //  else
+  //    retPush = ff.avcodec_send_packet(decCtx, pkt);
+
+  //  if (retPush < 0 && retPush != AVERROR(EAGAIN))
+  //  {
+  //    setDecodingError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
+  //    return false;
+  //  }
+  //  if (retPush != AVERROR(EAGAIN))
+  //    DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d",
+  //      ff.AVPacketGetPTS(pkt),
+  //      ff.AVPacketGetDuration(pkt),
+  //      ff.AVPacketGetFlags(pkt));
+
+  //  if (!endOfFile && retPush == 0)
+  //  {
+  //    // Pushing was successfull, read the next video packet ...
+  //    do
+  //    {
+  //      // Unref the old packet
+  //      ff.av_packet_unref(pkt);
+  //      // Get the next one
+  //      int ret = ff.av_read_frame(fmt_ctx, pkt);
+  //      if (ret == AVERROR_EOF)
+  //      {
+  //        // No more packets. End of file. Enter draining mode.
+  //        DEBUG_FFMPEG("No more packets. End of file.");
+  //        endOfFile = true;
+  //      }
+  //      else if (ret < 0)
+  //      {
+  //        setDecodingError(QStringLiteral("Error reading packet (av_read_frame). Return code %1").arg(ret));
+  //        return false;
+  //      }
+  //    } while (!endOfFile && ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
+  //  }
+  //} while (retPush == 0);
+
+  //// Now retry to get a frame
+  //retRecieve = ff.avcodec_receive_frame(decCtx, frame);
+  //if (retRecieve == 0)
+  //{
+  //  // We recieved a frame.
+  //  // Recieved a frame
+  //  DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
+  //    ff.AVFrameGetWidth(frame),
+  //    ff.AVFrameGetHeight(frame),
+  //    ff.AVFrameGetPTS(frame),
+  //    ff.AVFrameGetPictureType(frame),
+  //    ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
+  //  return true;
+  //}
+  //if (endOfFile && retRecieve == AVERROR_EOF)
+  //{
+  //  // There are no more frames. If we want more frames, we have to seek to the start of the sequence and restart decoding.
+
+  //}
+  //if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
+  //{
+  //  // An error occured
+  //  setDecodingError(QStringLiteral("Error recieving  frame (avcodec_receive_frame). Return code %1").arg(retRecieve));
+  //  return false;
+  //}
+
+  //return false;
+}
+
+void decoderFFmpeg::decodeFrame()
+{
+  // Try to retrive a next frame from the decoder (don't copy it yet).
+  int retRecieve = ff.getFrameFromDecoder(decCtx, frame);
+  if (retRecieve == 0)
+  {
+    // We recieved a frame.
+    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame.get_width(), frame.get_height(), frame.get_pts(), frame.get_pict_type(), frame.get_key_frame() ? "key frame" : "");
+    // Checkt the size of the retrieved image
+    if (frameSize != frame.get_size())
+      return setError("Recieved a frame of different size");
+  }
+  else if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
+  {
+    // An error occured
+    setError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
+    DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Error reading frame.");
+  }
+  else if (retRecieve == AVERROR(EAGAIN))
+  {
+    decoderState = decoderNeedsMoreData;
+    DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Need more data.");
+  }
 }
 
 statisticsData decoderFFmpeg::getStatisticsData(int typeIdx)
@@ -127,8 +352,14 @@ bool decoderFFmpeg::createDecoder(AVCodecID streamCodecID, AVCodecParametersWrap
     return setErrorB(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
 
   if (codecpar)
+  {
     if (!ff.configureDecoder(decCtx, codecpar))
       return setErrorB(QStringLiteral("Unable to configure decoder from codecpar"));
+
+    // Get some parameters from the codec parameters
+    //format = codecpar.get
+    frameSize = QSize(codecpar.get_width(), codecpar.get_height());
+  }
 
   // Ask the decoder to provide motion vectors (if possible)
   AVDictionaryWrapper opts;

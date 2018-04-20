@@ -168,6 +168,8 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
 
 fileSourceFFmpegFile::~fileSourceFFmpegFile()
 {
+  if (pkt)
+    pkt.free_packet();
 }
 
 bool fileSourceFFmpegFile::openFile(const QString &filePath, fileSourceFFmpegFile *other)

@@ -39,14 +39,13 @@
 class decoderFFmpeg : public decoderBase
 {
 public:
-  decoderFFmpeg(AVCodecID codec, bool cachingDecoder=false);
-  decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder=false);
+  decoderFFmpeg(AVCodecID codec, QSize frameSize, yuvPixelFormat format, bool cachingDecoder=false);
+  decoderFFmpeg(AVCodecParametersWrapper codecpar, yuvPixelFormat format, bool cachingDecoder=false);
   ~decoderFFmpeg();
 
   void resetDecoder() Q_DECL_OVERRIDE;
 
   // Decoding / pushing data
-  bool isCurrentFrameValid() Q_DECL_OVERRIDE { return false; };
   void decodeNextFrame() Q_DECL_OVERRIDE;
   QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
@@ -68,6 +67,15 @@ protected:
   AVCodecWrapper videoCodec;        //< The video decoder codec
   AVCodecContextWrapper decCtx;     //< The decoder context
   AVFrameWrapper frame;             //< The frame that we use for decoding
+
+  // Try to decode a frame. If successfull, the frame will be in "frame".
+  void decodeFrame();
+
+  // Statistics caching
+  void cacheCurStatistics();
+
+  QByteArray currentOutputBuffer;
+  void copyCurImageToBuffer();   // Copy the raw data from the de265_image source *src to the byte array
 };
 
 #endif // DECODERFFMPEG_H

@@ -99,7 +99,6 @@ public:
   QStringList getSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
 
   // Decoding / pushing data
-  bool isCurrentFrameValid() Q_DECL_OVERRIDE { return curImage != nullptr; }
   void decodeNextFrame() Q_DECL_OVERRIDE;
   QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
