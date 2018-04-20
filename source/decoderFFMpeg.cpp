@@ -175,12 +175,12 @@ void decoderFFmpeg::pushData(QByteArray &data)
   assert(false);
 }
 
-void decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
+bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
 {
   if (decoderState != decoderNeedsMoreData)
   {
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Wrong decoder state.");
-    return;
+    return false;
   }
 
   // We feed data to the decoder until it returns AVERROR(EAGAIN)
@@ -189,112 +189,21 @@ void decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
   if (retPush < 0 && retPush != AVERROR(EAGAIN))
   {
     setError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
-    return;
+    return false;
   }
-  if (retPush != AVERROR(EAGAIN))
+  else
     DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d", pkt.get_pts(), pkt.get_duration(), pkt.get_flags());
+  
   if (retPush == AVERROR(EAGAIN))
   {
     // Enough data pushed. Decode and retrieve frames now.
     decoderState = decoderRetrieveFrames;
     decodeFrame();
     copyCurImageToBuffer();
+    return false;
   }
 
-
-  //// First, try if there is a frame waiting in the decoder
-  //int retRecieve = ff.avcodec_receive_frame(decCtx, frame);
-  //if (retRecieve == 0)
-  //{
-  //  // We recieved a frame.
-  //  // Recieved a frame
-  //  DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
-  //    ff.AVFrameGetWidth(frame),
-  //    ff.AVFrameGetHeight(frame),
-  //    ff.AVFrameGetPTS(frame),
-  //    ff.AVFrameGetPictureType(frame),
-  //    ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
-  //  return true;
-  //}
-  //if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
-  //{
-  //  // An error occured
-  //  setDecodingError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
-  //  return false;
-  //}
-
-  //// There was no frame waiting in the decoder. 
-  //int retPush;
-  //do
-  //{
-  //  // Push the video packet to the decoder
-  //  if (endOfFile)
-  //    retPush = ff.avcodec_send_packet(decCtx, nullptr);
-  //  else
-  //    retPush = ff.avcodec_send_packet(decCtx, pkt);
-
-  //  if (retPush < 0 && retPush != AVERROR(EAGAIN))
-  //  {
-  //    setDecodingError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
-  //    return false;
-  //  }
-  //  if (retPush != AVERROR(EAGAIN))
-  //    DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d",
-  //      ff.AVPacketGetPTS(pkt),
-  //      ff.AVPacketGetDuration(pkt),
-  //      ff.AVPacketGetFlags(pkt));
-
-  //  if (!endOfFile && retPush == 0)
-  //  {
-  //    // Pushing was successfull, read the next video packet ...
-  //    do
-  //    {
-  //      // Unref the old packet
-  //      ff.av_packet_unref(pkt);
-  //      // Get the next one
-  //      int ret = ff.av_read_frame(fmt_ctx, pkt);
-  //      if (ret == AVERROR_EOF)
-  //      {
-  //        // No more packets. End of file. Enter draining mode.
-  //        DEBUG_FFMPEG("No more packets. End of file.");
-  //        endOfFile = true;
-  //      }
-  //      else if (ret < 0)
-  //      {
-  //        setDecodingError(QStringLiteral("Error reading packet (av_read_frame). Return code %1").arg(ret));
-  //        return false;
-  //      }
-  //    } while (!endOfFile && ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
-  //  }
-  //} while (retPush == 0);
-
-  //// Now retry to get a frame
-  //retRecieve = ff.avcodec_receive_frame(decCtx, frame);
-  //if (retRecieve == 0)
-  //{
-  //  // We recieved a frame.
-  //  // Recieved a frame
-  //  DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
-  //    ff.AVFrameGetWidth(frame),
-  //    ff.AVFrameGetHeight(frame),
-  //    ff.AVFrameGetPTS(frame),
-  //    ff.AVFrameGetPictureType(frame),
-  //    ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
-  //  return true;
-  //}
-  //if (endOfFile && retRecieve == AVERROR_EOF)
-  //{
-  //  // There are no more frames. If we want more frames, we have to seek to the start of the sequence and restart decoding.
-
-  //}
-  //if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
-  //{
-  //  // An error occured
-  //  setDecodingError(QStringLiteral("Error recieving  frame (avcodec_receive_frame). Return code %1").arg(retRecieve));
-  //  return false;
-  //}
-
-  //return false;
+  return true;
 }
 
 void decoderFFmpeg::decodeFrame()

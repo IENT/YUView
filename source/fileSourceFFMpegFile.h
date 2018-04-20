@@ -64,8 +64,8 @@ public:
   // Get the next NAL unit (everything excluding the start code) or the next packet.
   // Do not mix calls to these two functions when reading a file.
   QByteArray getNextNALUnit(uint64_t *pts=nullptr);
-  // Return a reference to the packet. This class has the packet and handels it.
-  AVPacketWrapper getNextPacket();
+  // Return the next packet (unless getLastPackage is set in which case we return the current packet)
+  AVPacketWrapper getNextPacket(bool getLastPackage=false);
   // Return the raw extradata (in avformat format containing the parameter sets)
   QByteArray getExtradata();
   // Return a list containing the raw data of all parameter set NAL units

@@ -191,6 +191,10 @@ protected:
   // Seek the input file to the given position, reset the decoder and prepare it to start decoding from the given position.
   void seekToPosition(int seekToFrame, int seekToPTS, bool caching);
 
+  // If we are using FFmpeg for decoding, pushing data may fail and the decoder switches to decoding mode.
+  // In this case, we must (after decoding frames) re-push the packet for which pushing failed.
+  bool repushDataFFmpeg;
+
 private slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.

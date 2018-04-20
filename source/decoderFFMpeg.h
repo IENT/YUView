@@ -49,7 +49,9 @@ public:
   void decodeNextFrame() Q_DECL_OVERRIDE;
   QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
-  void pushAVPacket(AVPacketWrapper &pkt);
+  // Push an AVPacket. When this returns false, pushing the given packet failed. Probably the 
+  // decoder switched to decoderRetrieveFrames. Don't forget to push the given packet again later.
+  bool pushAVPacket(AVPacketWrapper &pkt);
 
   // Statistics
   statisticsData getStatisticsData(int typeIdx) Q_DECL_OVERRIDE;

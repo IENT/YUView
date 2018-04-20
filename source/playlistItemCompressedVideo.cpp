@@ -86,6 +86,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   currentFrameIdx[0] = -1;
   currentFrameIdx[1] = -1;
+  repushDataFFmpeg = false;
 
   // Open the input file and get some properties (size, bit depth, subsampling) from the file
   inputFormatType = input;
@@ -443,13 +444,20 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
       {
         // We are using FFmpeg to read the file and decode. In this scenario, we can read AVPackets
         // from the FFmpeg file and pass them to the FFmpeg decoder directly.
-        AVPacketWrapper pkt = caching ? inputFileFFmpegCaching->getNextPacket() : inputFileFFmpegLoading->getNextPacket();
+        AVPacketWrapper pkt = caching ? inputFileFFmpegCaching->getNextPacket(repushDataFFmpeg) : inputFileFFmpegLoading->getNextPacket(repushDataFFmpeg);
+        repushDataFFmpeg = false;
         decoderFFmpeg *ffmpegDec;
         if (caching)
           ffmpegDec = dynamic_cast<decoderFFmpeg*>(cachingDecoder.data());
         else
           ffmpegDec = dynamic_cast<decoderFFmpeg*>(loadingDecoder.data());
-        ffmpegDec->pushAVPacket(pkt);
+        if (!ffmpegDec->pushAVPacket(pkt))
+        {
+          if (!ffmpegDec->decodeFrames())
+            // The decoder did not switch to decoding frame mode. Error.
+            return;
+          repushDataFFmpeg = true;
+        }
       }
       else
       {

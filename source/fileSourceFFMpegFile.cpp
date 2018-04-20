@@ -34,7 +34,7 @@
 
 #include <QSettings>
 
-#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
+#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 1
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
@@ -60,8 +60,11 @@ fileSourceFFmpegFile::fileSourceFFmpegFile()
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFmpegFile::fileSystemWatcherFileChanged);
 }
 
-AVPacketWrapper fileSourceFFmpegFile::getNextPacket()
+AVPacketWrapper fileSourceFFmpegFile::getNextPacket(bool getLastPackage)
 {
+  if (getLastPackage)
+    return pkt;
+
   // Load the next packet
   if (!goToNextVideoPacket())
   {
@@ -252,7 +255,7 @@ void fileSourceFFmpegFile::scanBitstream()
   nrFrames = 0;
   while (goToNextVideoPacket())
   {
-    DEBUG_FFMPEG("frame %d pts %d dts %d%s", nrFrames, (int)pkt.get_pts(), (int)pkt.get_dts(), p.flag_keyframe ? " - keyframe" : "");
+    DEBUG_FFMPEG("fileSourceFFmpegFile::scanBitstream: frame %d pts %d dts %d%s", nrFrames, (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
 
     if (pkt.get_flag_keyframe())
       keyFrameList.append(pictureIdx(nrFrames, pkt.get_pts()));
@@ -331,6 +334,7 @@ bool fileSourceFFmpegFile::goToNextVideoPacket()
       pkt.unref_packet(ff);
   
     ret = fmt_ctx.read_frame(ff, pkt);
+    DEBUG_FFMPEG("fileSourceFFmpegFile::goToNextVideoPacket: pts %d dts %d%s", (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
   }
   while (ret == 0 && pkt.get_stream_index() != video_stream.get_index());
   
