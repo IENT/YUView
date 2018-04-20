@@ -80,22 +80,21 @@ void decoderFFmpeg::resetDecoder()
 {
 }
 
-void decoderFFmpeg::decodeNextFrame()
+bool decoderFFmpeg::decodeNextFrame()
 {
   if (decoderState != decoderRetrieveFrames)
   {
     DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame: Wrong decoder state.");
-    return;
+    return false;
   }
 
   DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame");
 
-  if (frame)
-    // If the frame is valid, copy it to the output buffer
-    copyCurImageToBuffer();
+  if (!decodeFrame())
+    return false;
 
-  // Decode the next frame into "frame". If no next frame could be decoded, we switch to "needsMoreData".
-  decodeFrame();
+  copyCurImageToBuffer();
+  return true;
 }
 
 QByteArray decoderFFmpeg::getYUVFrameData()
@@ -198,15 +197,13 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
   {
     // Enough data pushed. Decode and retrieve frames now.
     decoderState = decoderRetrieveFrames;
-    decodeFrame();
-    copyCurImageToBuffer();
     return false;
   }
 
   return true;
 }
 
-void decoderFFmpeg::decodeFrame()
+bool decoderFFmpeg::decodeFrame()
 {
   // Try to retrive a next frame from the decoder (don't copy it yet).
   int retRecieve = ff.getFrameFromDecoder(decCtx, frame);
@@ -216,19 +213,21 @@ void decoderFFmpeg::decodeFrame()
     DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame.get_width(), frame.get_height(), frame.get_pts(), frame.get_pict_type(), frame.get_key_frame() ? "key frame" : "");
     // Checkt the size of the retrieved image
     if (frameSize != frame.get_size())
-      return setError("Recieved a frame of different size");
+      return setErrorB("Recieved a frame of different size");
+    return true;
   }
   else if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
   {
     // An error occured
-    setError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
     DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Error reading frame.");
+    return setErrorB(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
   }
   else if (retRecieve == AVERROR(EAGAIN))
   {
     decoderState = decoderNeedsMoreData;
     DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Need more data.");
   }
+  return false;
 }
 
 statisticsData decoderFFmpeg::getStatisticsData(int typeIdx)

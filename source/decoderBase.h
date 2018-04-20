@@ -68,8 +68,8 @@ public:
 
   // -- The decoding interface
   // If the current frame is valid, the current frame can be retrieved using getYUVFrameData.
-  // Call decodeNextFrame to advance to the next frame. When the returned array is empty, feed more data (untill full) and call decodeNextFrame again.
-  virtual void decodeNextFrame() = 0;
+  // Call decodeNextFrame to advance to the next frame. When the function returns false, more data is probably needed.
+  virtual bool decodeNextFrame() = 0;
   virtual QByteArray getYUVFrameData() = 0;
   yuvPixelFormat getYUVPixelFormat() { return format; }
   QSize getFrameSize() { return frameSize; }

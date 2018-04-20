@@ -99,7 +99,7 @@ public:
   QStringList getSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
 
   // Decoding / pushing data
-  void decodeNextFrame() Q_DECL_OVERRIDE;
+  bool decodeNextFrame() Q_DECL_OVERRIDE;
   QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
   
@@ -138,7 +138,7 @@ private:
   bool flushing;
 
   // Try to decode a frame. If successfull, the frame will be pointed to by curImage.
-  void decodeFrame();
+  bool decodeFrame();
   const de265_image* curImage;
 
   // Convert from libde265 types to YUView types

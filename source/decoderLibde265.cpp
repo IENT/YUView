@@ -220,18 +220,18 @@ void decoderLibde265::allocateNewDecoder()
   currentOutputBuffer.clear();
 }
 
-void decoderLibde265::decodeNextFrame()
+bool decoderLibde265::decodeNextFrame()
 {
   if (decoderState != decoderRetrieveFrames)
   {
     DEBUG_LIBDE265("decoderLibde265::decodeNextFrame: Wrong decoder state.");
-    return;
+    return false;
   }
   
-  decodeFrame();
+  return decodeFrame();
 }
 
-void decoderLibde265::decodeFrame()
+bool decoderLibde265::decodeFrame()
 {
   int more = 1;
   curImage = nullptr;
@@ -243,10 +243,10 @@ void decoderLibde265::decodeFrame()
     if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA)
     {
       decoderState = decoderNeedsMoreData;
-      return;
+      return false;
     }
     else if (err != DE265_OK)
-      return setError("Error decoding (de265_decode)");
+      return setErrorB("Error decoding (de265_decode)");
 
     curImage = de265_get_next_picture(decoder);
   }
@@ -255,7 +255,7 @@ void decoderLibde265::decodeFrame()
   {
     // Decoding ended
     decoderState = decoderEndOfBitstream;
-    return;
+    return false;
   }
 
   if (curImage != nullptr)
@@ -281,17 +281,19 @@ void decoderLibde265::decodeFrame()
     {
       // Check the values against the previously set values
       if (frameSize != s)
-        return setError("Recieved a frame of different size");
+        return setErrorB("Recieved a frame of different size");
       if (format.subsampling != subsampling)
-        return setError("Recieved a frame with different subsampling");
+        return setErrorB("Recieved a frame with different subsampling");
       if (format.bitsPerSample != bitDepth)
-        return setError("Recieved a frame with different bit depth");
+        return setErrorB("Recieved a frame with different bit depth");
     }
     DEBUG_LIBDE265("decoderLibde265::decodeNextFrame Picture decoded");
 
     decoderState = decoderRetrieveFrames;
     currentOutputBuffer.clear();
+    return true;
   }
+  return false;
 }
 
 QByteArray decoderLibde265::getYUVFrameData()

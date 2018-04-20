@@ -46,7 +46,7 @@ public:
   void resetDecoder() Q_DECL_OVERRIDE;
 
   // Decoding / pushing data
-  void decodeNextFrame() Q_DECL_OVERRIDE;
+  bool decodeNextFrame() Q_DECL_OVERRIDE;
   QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
   // Push an AVPacket. When this returns false, pushing the given packet failed. Probably the 
@@ -70,8 +70,8 @@ protected:
   AVCodecContextWrapper decCtx;     //< The decoder context
   AVFrameWrapper frame;             //< The frame that we use for decoding
 
-  // Try to decode a frame. If successfull, the frame will be in "frame".
-  void decodeFrame();
+  // Try to decode a frame. If successfull, the frame will be in "frame" and return true.
+  bool decodeFrame();
 
   // Statistics caching
   void cacheCurStatistics();

@@ -475,20 +475,21 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
 
     if (dec->decodeFrames())
     {
-      if (caching)
-        currentFrameIdx[1]++;
-      else
-        currentFrameIdx[0]++;
-
-      rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
-      if (rightFrame)
+      if (dec->decodeNextFrame())
       {
-        videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-        yuvVideo->rawYUVData = dec->getYUVFrameData();
-        yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
-      }
+        if (caching)
+          currentFrameIdx[1]++;
+        else
+          currentFrameIdx[0]++;
 
-      dec->decodeNextFrame();
+        rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
+        if (rightFrame)
+        {
+          videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+          yuvVideo->rawYUVData = dec->getYUVFrameData();
+          yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
+        }
+      }
     }
   }
 }
