@@ -137,6 +137,10 @@ private:
   int nrSignals;
   bool flushing;
 
+  // When pushing frames, the decoder will try to decode a frame to check if this is possible.
+  // If this is true, a frame is waiting from that step and decodeNextFrame will not actually decode a new frame.
+  bool decodedFrameWaiting;
+
   // Try to decode a frame. If successfull, the frame will be pointed to by curImage.
   bool decodeFrame();
   const de265_image* curImage;

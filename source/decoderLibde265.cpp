@@ -63,6 +63,7 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
   flushing = false;
   curImage = nullptr;
   currentOutputBuffer.clear();
+  decodedFrameWaiting = false;
 
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
@@ -95,6 +96,7 @@ void decoderLibde265::resetDecoder()
     return setError("Reset: Freeing the decoder failded.");
   
   decoder = nullptr;
+  decodedFrameWaiting = false;
   
   // Create new decoder
   allocateNewDecoder();
@@ -218,6 +220,7 @@ void decoderLibde265::allocateNewDecoder()
   // The decoder is ready to receive data
   decoderBase::resetDecoder();
   currentOutputBuffer.clear();
+  decodedFrameWaiting = false;
 }
 
 bool decoderLibde265::decodeNextFrame()
@@ -226,6 +229,11 @@ bool decoderLibde265::decodeNextFrame()
   {
     DEBUG_LIBDE265("decoderLibde265::decodeNextFrame: Wrong decoder state.");
     return false;
+  }
+  if (decodedFrameWaiting)
+  {
+    decodedFrameWaiting = false;
+    return true;
   }
   
   return decodeFrame();
@@ -354,9 +362,9 @@ void decoderLibde265::pushData(QByteArray &data)
     flushing = true;
   }
 
-  // After pushing a frame to the decoder, decode until there is a fram coming out (switch to 
-  // decoderRetrieveFrames) or the decoder returns DE265_ERROR_WAITING_FOR_INPUT_DATA.
-  decodeFrame();
+  // Check for an available frame
+  if (decodeFrame())
+    decodedFrameWaiting = true;
 }
 
 #if SSE_CONVERSION

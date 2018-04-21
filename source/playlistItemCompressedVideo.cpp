@@ -772,7 +772,7 @@ void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QStr
   else
   {
     input = inputLibavformat;
-    decoder = decoderEngineFFMpeg;
+    decoder = decoderEngineLibde265;
   }
 
   Q_UNUSED(parent);
