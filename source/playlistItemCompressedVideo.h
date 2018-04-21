@@ -195,6 +195,10 @@ protected:
   // In this case, we must (after decoding frames) re-push the packet for which pushing failed.
   bool repushDataFFmpeg;
 
+  // If the bitstream is invalid (for example it was cut at a position that it should not be cut at), we
+  // might be unable to decode some of the frames at the end of the sequence.
+  bool decodingOfFrameNotPossible;
+
 private slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.

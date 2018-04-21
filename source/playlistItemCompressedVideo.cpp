@@ -43,7 +43,7 @@
 #include <QThread>
 #include "mainwindow.h"
 
-#define HEVC_DEBUG_OUTPUT 0
+#define HEVC_DEBUG_OUTPUT 1
 #if HEVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_HEVC qDebug
@@ -87,6 +87,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   currentFrameIdx[0] = -1;
   currentFrameIdx[1] = -1;
   repushDataFFmpeg = false;
+  decodingOfFrameNotPossible = false;
 
   // Open the input file and get some properties (size, bit depth, subsampling) from the file
   inputFormatType = input;
@@ -364,16 +365,18 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
 {
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  if (fileState == noError && frameIdxInternal >= startEndFrame.first && frameIdxInternal <= startEndFrame.second)
+  if (decodingOfFrameNotPossible)
   {
-    video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
-    statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
+    infoText = "Decoding of the frame not possible:\n";
+    infoText += "The frame could not be decoded. Possibly, the bitstream is corrupt or was cut at an invalid position.";
+    playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
   else if (loadingDecoder.isNull())
   {
     infoText = "No decoder allocated.\n";
     playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
+
   else if (loadingDecoder->errorInDecoder())
   {
     // There was an error in the deocder. 
@@ -386,6 +389,11 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
       infoText += "You can find download links in Help->Downloads";
     }
     playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
+  }
+  else if (fileState == noError && frameIdxInternal >= startEndFrame.first && frameIdxInternal <= startEndFrame.second)
+  {
+    video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
+    statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
   }
 }
 
@@ -432,7 +440,10 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
   }
   
   if (seek)
+  {
+    DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData seeking to frame %d PTS %d", seekToFrame, seekToPTS);
     seekToPosition(seekToFrame, seekToPTS, caching);
+  }
 
   // Decode until we get the right frame from the deocder
   bool rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
@@ -440,12 +451,17 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
   {
     while (dec->needsMoreData())
     {
+      DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData decoder needs more data");
       if (!isinputFormatTypeAnnexB && decoderEngineType == decoderEngineFFMpeg)
       {
         // We are using FFmpeg to read the file and decode. In this scenario, we can read AVPackets
         // from the FFmpeg file and pass them to the FFmpeg decoder directly.
         AVPacketWrapper pkt = caching ? inputFileFFmpegCaching->getNextPacket(repushDataFFmpeg) : inputFileFFmpegLoading->getNextPacket(repushDataFFmpeg);
         repushDataFFmpeg = false;
+        if (pkt)
+          DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived packet PTS %d", pkt.get_pts());
+        else
+          DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived empty packet");
         decoderFFmpeg *ffmpegDec;
         if (caching)
           ffmpegDec = dynamic_cast<decoderFFmpeg*>(cachingDecoder.data());
@@ -469,6 +485,7 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
           data = caching ? inputFileAnnexBCaching->getNextNALUnit() : inputFileAnnexBLoading->getNextNALUnit();
         else
           data = caching ? inputFileFFmpegCaching->getNextNALUnit() : inputFileFFmpegLoading->getNextNALUnit();
+        DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived nal unit from file - size %d", data.size());
         dec->pushData(data);
       }
     }
@@ -482,6 +499,7 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
         else
           currentFrameIdx[0]++;
 
+        DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData decoded frame %d", caching ? currentFrameIdx[1] : currentFrameIdx[0]);
         rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
         if (rightFrame)
         {
@@ -491,6 +509,22 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
         }
       }
     }
+
+    if (!dec->needsMoreData() && !dec->decodeFrames())
+    {
+      // The specified frame (which is thoretically in the bitstream) can not be decoded.
+      // Maybe the bitstream was cut at a position that it was not supposed to be cut at.
+      decodingOfFrameNotPossible = true;
+      if (caching)
+        currentFrameIdx[1] = frameIdxInternal;
+      else
+        currentFrameIdx[0] = frameIdxInternal;
+      // Just set the frame number of the buffer to the current frame so that it will trigger a
+      // reload when the frame number changes.
+      videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+      yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
+      return;
+    }
   }
 }
 
@@ -499,34 +533,35 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
   // Do the seek
   decoderBase *dec = caching ? cachingDecoder.data() : loadingDecoder.data();
   dec->resetDecoder();
-  if (!isinputFormatTypeAnnexB && decoderEngineType == decoderEngineFFMpeg)
+  repushDataFFmpeg = false;
+  decodingOfFrameNotPossible = false;
+  
+  QByteArrayList parametersets;
+  if (isinputFormatTypeAnnexB)
   {
-    // In case of using ffmpeg for reading and decoding, we don't need to push the parameter sets (the
-    // extradata) to the decoder explicitly when seeking.
+    uint64_t filePos;
+    parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
+    if (caching)
+      inputFileAnnexBCaching->seek(filePos);
+    else
+      inputFileAnnexBLoading->seek(filePos);
   }
   else
   {
-    QByteArrayList parametersets;
-    if (isinputFormatTypeAnnexB)
-    {
-      uint64_t filePos;
-      parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
-      if (caching)
-        inputFileAnnexBCaching->seek(filePos);
-      else
-        inputFileAnnexBLoading->seek(filePos);
-    }
+    parametersets = caching ? inputFileFFmpegCaching->getParameterSets() : inputFileFFmpegLoading->getParameterSets();
+    if (caching)
+      inputFileFFmpegCaching->seekToPTS(seekToPTS);
     else
-    {
-      parametersets = caching ? inputFileFFmpegCaching->getParameterSets() : inputFileFFmpegLoading->getParameterSets();
-      if (caching)
-        inputFileFFmpegCaching->seekToPTS(seekToPTS);
-      else
-        inputFileFFmpegLoading->seekToPTS(seekToPTS);
-    }
+      inputFileFFmpegLoading->seekToPTS(seekToPTS);
+  }
+
+  // In case of using ffmpeg for reading and decoding, we don't need to push the parameter sets (the
+  // extradata) to the decoder explicitly when seeking.
+  const bool bothFFmpeg = (!isinputFormatTypeAnnexB && decoderEngineType == decoderEngineFFMpeg);
+  if (!bothFFmpeg)
+    // Push the parameter sets to the decoder
     for (QByteArray d : parametersets)
       dec->pushData(d);
-  }
   if (caching)
     currentFrameIdx[1] = seekToFrame - 1;
   else
@@ -582,8 +617,7 @@ void playlistItemCompressedVideo::fillStatisticList()
 void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx)
 {
   Q_UNUSED(frameIdx);
-
-  DEBUG_HEVC("playlistItemCompressedVideo::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdxInternal);
+  DEBUG_HEVC("playlistItemCompressedVideo::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdx);
 
   if (!loadingDecoder->statisticsSupported())
     return;

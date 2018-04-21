@@ -32,7 +32,7 @@
 
 #include "decoderFFmpeg.h"
 
-#define DECODERFFMPEG_DEBUG_OUTPUT 1
+#define DECODERFFMPEG_DEBUG_OUTPUT 0
 #if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
@@ -51,6 +51,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, yuvPixelFormat fmt, bo
 
   format = fmt;
   frameSize = size;
+  flushing = false;
 
   DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
@@ -66,6 +67,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, yuvPixelFormat f
   }
 
   format = fmt;
+  flushing = false;
 
   DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
@@ -78,6 +80,10 @@ decoderFFmpeg::~decoderFFmpeg()
 
 void decoderFFmpeg::resetDecoder()
 {
+  DEBUG_FFMPEG("decoderFFmpeg::resetDecoder");
+  ff.flush_buffers(decCtx);
+  decoderState = decoderNeedsMoreData;
+  flushing = false;
 }
 
 bool decoderFFmpeg::decodeNextFrame()
@@ -181,6 +187,18 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Wrong decoder state.");
     return false;
   }
+  if (!pkt)
+  {
+    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Recieved empty packet. Swithing to flushing.");
+    flushing = true;
+    decoderState = decoderRetrieveFrames;
+    return false;
+  }
+  if (flushing)
+  {
+    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Error no new packets should be pushed in flushing mode.");
+    return false;
+  }
 
   // We feed data to the decoder until it returns AVERROR(EAGAIN)
   int retPush = ff.pushPacketToDecoder(decCtx, pkt);
@@ -224,8 +242,17 @@ bool decoderFFmpeg::decodeFrame()
   }
   else if (retRecieve == AVERROR(EAGAIN))
   {
-    decoderState = decoderNeedsMoreData;
-    DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Need more data.");
+    if (flushing)
+    {
+      // There is no more data
+      decoderState = decoderEndOfBitstream;
+      DEBUG_FFMPEG("decoderFFmpeg::decodeFrame End of bitstream.");
+    }
+    else
+    {
+      decoderState = decoderNeedsMoreData;
+      DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Need more data.");
+    }    
   }
   return false;
 }

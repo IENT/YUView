@@ -78,6 +78,10 @@ protected:
 
   QByteArray currentOutputBuffer;
   void copyCurImageToBuffer();   // Copy the raw data from the de265_image source *src to the byte array
+
+  // At the end of the file, when no more data is available, we will swith to flushing. After all
+  // remaining frames were decoding, we will not request more data but switch to decoderEndOfBitstream.
+  bool flushing;
 };
 
 #endif // DECODERFFMPEG_H
