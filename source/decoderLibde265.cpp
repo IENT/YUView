@@ -221,6 +221,7 @@ void decoderLibde265::allocateNewDecoder()
   decoderBase::resetDecoder();
   currentOutputBuffer.clear();
   decodedFrameWaiting = false;
+  flushing = false;
 }
 
 bool decoderLibde265::decodeNextFrame()
