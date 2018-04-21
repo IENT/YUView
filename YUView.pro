@@ -9,6 +9,7 @@ CONFIG += c++11
 SOURCES += \
     source/decoderBase.cpp \
     source/decoderFFmpeg.cpp \
+    source/decoderHM.cpp \
     source/decoderLibde265.cpp \
     source/FFMpegLibrariesHandling.cpp \
     source/fileInfoWidget.cpp \
@@ -16,8 +17,6 @@ SOURCES += \
     source/fileSourceAnnexBFile.cpp \
     source/fileSourceFFmpegFile.cpp \
     source/frameHandler.cpp \
-    source/hevcDecoderHM.cpp \
-    source/hevcNextGenDecoderJEM.cpp \
     source/mainwindow.cpp \
     source/parserAnnexB.cpp \
     source/parserAnnexBAVC.cpp \
@@ -62,6 +61,7 @@ SOURCES += \
 HEADERS += \
     source/decoderBase.h \
     source/decoderFFmpeg.h \
+    source/decoderHM.h \
     source/decoderLibde265.h \
     source/FFMpegLibrariesHandling.h \
     source/FFMpegLibrariesCommonDefs.h \
@@ -70,8 +70,6 @@ HEADERS += \
     source/fileSourceAnnexBFile.h \
     source/fileSourceFFmpegFile.h \
     source/frameHandler.h \
-    source/hevcDecoderHM.h \
-    source/hevcNextGenDecoderJEM.h \
     source/labelElided.h \
     source/mainwindow.h \
     source/mainwindow_performanceTestDialog.h \

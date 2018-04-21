@@ -39,7 +39,7 @@
 #include "typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERLIBD265_DEBUG_OUTPUT 1
+#define DECODERLIBD265_DEBUG_OUTPUT 0
 #if DECODERLIBD265_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERLIBD265_DEBUG_OUTPUT == 1

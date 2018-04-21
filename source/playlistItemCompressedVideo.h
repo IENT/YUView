@@ -69,7 +69,6 @@ public:
     decoderEngineInvalid = -1,  // invalid value
     decoderEngineLibde265,      // The libde265 decoder
     decoderEngineHM,            // The HM reference software decoder
-    decoderEngineJEM,           // The JEM reference software decoder
     decoderEngineFFMpeg,        // The FFMpeg decoder
     decoderEngineNum
   } decoderEngine;

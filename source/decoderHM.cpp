@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "hevcNextGenDecoderJEM.h"
+#include "decoderHM.h"
 
 #include <cstring>
 #include <QCoreApplication>
@@ -39,18 +39,18 @@
 #include "typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define HEVCNEXTGENDECODERJEM_DEBUG_OUTPUT 0
-#if HEVCNEXTGENDECODERJEM_DEBUG_OUTPUT && !NDEBUG
+#define DECODERHM_DEBUG_OUTPUT 0
+#if DECODERHM_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#if HEVCNEXTGENDECODERJEM_DEBUG_OUTPUT == 1
-#define DEBUG_DECJEM if(!isCachingDecoder) qDebug
-#elif HEVCNEXTGENDECODERJEM_DEBUG_OUTPUT == 2
-#define DEBUG_DECJEM if(isCachingDecoder) qDebug
-#elif HEVCNEXTGENDECODERJEM_DEBUG_OUTPUT == 3
-#define DEBUG_DECJEM if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
+#if DECODERHM_DEBUG_OUTPUT == 1
+#define DEBUG_DECHM if(!isCachingDecoder) qDebug
+#elif DECODERHM_DEBUG_OUTPUT == 2
+#define DEBUG_DECHM if(isCachingDecoder) qDebug
+#elif DECODERHM_DEBUG_OUTPUT == 3
+#define DEBUG_DECHM if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
 #endif
 #else
-#define DEBUG_DECJEM(fmt,...) ((void)0)
+#define DEBUG_DECHM(fmt,...) ((void)0)
 #endif
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of the pointer will only be accessed through that pointer (and pointers copied from it).
@@ -68,17 +68,18 @@
 #    endif
 #endif
 
-//hevcNextGenDecoderJEM_Functions::hevcNextGenDecoderJEM_Functions() { memset(this, 0, sizeof(*this)); }
+//hevcDecoderHM_Functions::hevcDecoderHM_Functions() { memset(this, 0, sizeof(*this)); }
 //
-//hevcNextGenDecoderJEM::hevcNextGenDecoderJEM(int signalID, bool cachingDecoder) : decoderBase(cachingDecoder)
+//hevcDecoderHM::hevcDecoderHM(int signalID, bool cachingDecoder) :
+//  decoderBase(cachingDecoder)
 //{
-//  // We don't support other signals than the reconstruction (yet?)
+//  // For now we don't support different signals (like prediction, residual)
 //  Q_UNUSED(signalID);
 //
 //  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
 //  QSettings settings;
 //  settings.beginGroup("Decoders");
-//  loadDecoderLibrary(settings.value("libJEMFile", "").toString());
+//  loadDecoderLibrary(settings.value("libHMFile", "").toString());
 //  settings.endGroup();
 //
 //  decoder = nullptr;
@@ -86,52 +87,26 @@
 //  stateReadingFrames = false;
 //  currentOutputBufferFrameIndex = -1;
 //
+//  // Set the signal to decode (if supported)
+//  decodeSignal = 0;
+//
 //  // Allocate a decoder
 //  if (!decoderError)
 //    allocateNewDecoder();
 //}
 //
-//hevcNextGenDecoderJEM::hevcNextGenDecoderJEM() : decoderBase(false)
+//hevcDecoderHM::hevcDecoderHM() : decoderBase(false)
 //{
 //  decoder = nullptr;
 //}
 //
-//hevcNextGenDecoderJEM::~hevcNextGenDecoderJEM()
+//hevcDecoderHM::~hevcDecoderHM()
 //{
-//  freeDecoder();
+//  if (decoder != nullptr)
+//    libHMDec_free_decoder(decoder);
 //}
 //
-//bool hevcNextGenDecoderJEM::openFile(QString fileName, decoderBase *otherDecoder)
-//{ 
-//  // TODO:
-//  Q_UNUSED(fileName);
-//  Q_UNUSED(otherDecoder);
-//
-//  // hevcNextGenDecoderJEM *otherJEMDecoder = dynamic_cast<hevcNextGenDecoderJEM*>(otherDecoder);
-//  // Open the file, decode the first frame and return if this was successfull.
-//  // TODO: We need a new interface for this
-//  //if (otherJEMDecoder)
-//  //  parsingError = !annexBFile->openFile(fileName, false, otherJEMDecoder->getFileSource());
-//  //else
-//  //{
-//  //  // Connect the signal from the file source "signalGetNALUnitInfo", parse the bitstream and disconnect the signal again.
-//  //  /*fileSourceJEMAnnexBFile *jemFile = dynamic_cast<fileSourceJEMAnnexBFile*>(annexBFile.data());
-//  //  QMetaObject::Connection c = connect(jemFile, &fileSourceJEMAnnexBFile::signalGetNALUnitInfo, this, &hevcNextGenDecoderJEM::slotGetNALUnitInfo);
-//  //  parsingError = !annexBFile->openFile(fileName);
-//  //  disconnect(c);*/
-//  //}
-//
-//  // After parsing the bitstream using the callback function "slotGetNALUnitInfo" and before actually decoding,
-//  // we must destroy the existing decoder and create a new one.
-//  // Delete decoder
-//  freeDecoder();
-//  // Create new decoder
-//  allocateNewDecoder();
-//  
-//  return !parsingError && !decoderError;
-//}
-//
-//QStringList hevcNextGenDecoderJEM::getLibraryNames()
+//QStringList hevcDecoderHM::getLibraryNames()
 //{
 //  // If the file name is not set explicitly, QLibrary will try to open
 //  // the libde265.so file first. Since this has been compiled for linux
@@ -139,40 +114,39 @@
 //  // On windows and linux ommitting the extension works
 //  QStringList names = 
 //    is_Q_OS_MAC ?
-//    QStringList() << "libJEMDecoder.dylib" :
-//    QStringList() << "libJEMDecoder";
+//    QStringList() << "libHMDecoder.dylib" :
+//    QStringList() << "libHMDecoder";
 //
 //  return names;
 //}
 //
-//void hevcNextGenDecoderJEM::resolveLibraryFunctionPointers()
+//void hevcDecoderHM::resolveLibraryFunctionPointers()
 //{
 //  // Get/check function pointers
-//  if (!resolve(libJEMDec_get_version, "libJEMDec_get_version")) return;
-//  if (!resolve(libJEMDec_new_decoder, "libJEMDec_new_decoder")) return;
-//  if (!resolve(libJEMDec_free_decoder, "libJEMDec_free_decoder")) return;
-//  if (!resolve(libJEMDec_set_SEI_Check, "libJEMDec_set_SEI_Check")) return;
-//  if (!resolve(libJEMDec_set_max_temporal_layer, "libJEMDec_set_max_temporal_layer")) return;
-//  if (!resolve(libJEMDec_push_nal_unit, "libJEMDec_push_nal_unit")) return;
-//  if (!resolve(libJEMDec_get_nal_unit_info, "libJEMDec_get_nal_unit_info")) return;
+//  if (!resolve(libHMDec_get_version, "libHMDec_get_version")) return;
+//  if (!resolve(libHMDec_new_decoder, "libHMDec_new_decoder")) return;
+//  if (!resolve(libHMDec_free_decoder, "libHMDec_free_decoder")) return;
+//  if (!resolve(libHMDec_set_SEI_Check, "libHMDec_set_SEI_Check")) return;
+//  if (!resolve(libHMDec_set_max_temporal_layer, "libHMDec_set_max_temporal_layer")) return;
+//  if (!resolve(libHMDec_push_nal_unit, "libHMDec_push_nal_unit")) return;
 //
-//  if (!resolve(libJEMDec_get_picture, "libJEMDec_get_picture")) return;
-//  if (!resolve(libJEMDEC_get_POC, "libJEMDEC_get_POC")) return;
-//  if (!resolve(libJEMDEC_get_picture_width, "libJEMDEC_get_picture_width")) return;
-//  if (!resolve(libJEMDEC_get_picture_height, "libJEMDEC_get_picture_height")) return;
-//  if (!resolve(libJEMDEC_get_picture_stride, "libJEMDEC_get_picture_stride")) return;
-//  if (!resolve(libJEMDEC_get_image_plane, "libJEMDEC_get_image_plane")) return;
-//  if (!resolve(libJEMDEC_get_chroma_format, "libJEMDEC_get_chroma_format")) return;
-//  if (!resolve(libJEMDEC_get_internal_bit_depth, "libJEMDEC_get_internal_bit_depth")) return;
+//  if (!resolve(libHMDec_get_picture, "libHMDec_get_picture")) return;
+//  if (!resolve(libHMDEC_get_POC, "libHMDEC_get_POC")) return;
+//  if (!resolve(libHMDEC_get_picture_width, "libHMDEC_get_picture_width")) return;
+//  if (!resolve(libHMDEC_get_picture_height, "libHMDEC_get_picture_height")) return;
+//  if (!resolve(libHMDEC_get_picture_stride, "libHMDEC_get_picture_stride")) return;
+//  if (!resolve(libHMDEC_get_image_plane, "libHMDEC_get_image_plane")) return;
+//  if (!resolve(libHMDEC_get_chroma_format, "libHMDEC_get_chroma_format")) return;
+//  if (!resolve(libHMDEC_get_internal_bit_depth, "libHMDEC_get_internal_bit_depth")) return;
 //  
-//  if (!resolve(libJEMDEC_get_internal_type_number, "libJEMDEC_get_internal_type_number")) return;
-//  if (!resolve(libJEMDEC_get_internal_type_name, "libJEMDEC_get_internal_type_name")) return;
-//  if (!resolve(libJEMDEC_get_internal_type, "libJEMDEC_get_internal_type")) return;
-//  if (!resolve(libJEMDEC_get_internal_type_max, "libJEMDEC_get_internal_type_max")) return;
-//  if (!resolve(libJEMDEC_get_internal_type_vector_scaling, "libJEMDEC_get_internal_type_vector_scaling")) return;
-//  if (!resolve(libJEMDEC_get_internal_type_description, "libJEMDEC_get_internal_type_description")) return;
-//  if (!resolve(libJEMDEC_get_internal_info, "libJEMDEC_get_internal_info")) return;
-//  if (!resolve(libJEMDEC_clear_internal_info, "libJEMDEC_clear_internal_info")) return;
+//  if (!resolve(libHMDEC_get_internal_type_number, "libHMDEC_get_internal_type_number")) return;
+//  if (!resolve(libHMDEC_get_internal_type_name, "libHMDEC_get_internal_type_name")) return;
+//  if (!resolve(libHMDEC_get_internal_type, "libHMDEC_get_internal_type")) return;
+//  if (!resolve(libHMDEC_get_internal_type_max, "libHMDEC_get_internal_type_max")) return;
+//  if (!resolve(libHMDEC_get_internal_type_vector_scaling, "libHMDEC_get_internal_type_vector_scaling")) return;
+//  if (!resolve(libHMDEC_get_internal_type_description, "libHMDEC_get_internal_type_description")) return;
+//  if (!resolve(libHMDEC_get_internal_info, "libHMDEC_get_internal_info")) return;
+//  if (!resolve(libHMDEC_clear_internal_info, "libHMDEC_clear_internal_info")) return;
 //  
 //  // All interbals functions were successfully retrieved
 //  internalsSupported = true;
@@ -181,95 +155,42 @@
 //  
 //  // TODO: could we somehow get the prediction/residual signal?
 //  // I don't think this is possible without changes to the reference decoder.
-//  DEBUG_DECJEM("hevcNextGenDecoderJEM::loadDecoderLibrary - prediction/residual internals found");
+//  DEBUG_DECHM("hevcDecoderHM::loadDecoderLibrary - prediction/residual internals found");
 //}
 //
-//template <typename T> T hevcNextGenDecoderJEM::resolve(T &fun, const char *symbol)
+//template <typename T> T hevcDecoderHM::resolve(T &fun, const char *symbol)
 //{
 //  QFunctionPointer ptr = library.resolve(symbol);
 //  if (!ptr)
 //  {
-//    setError(QStringLiteral("Error loading the JEM library: Can't find function %1.").arg(symbol));
+//    setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
 //    return nullptr;
 //  }
 //
 //  return fun = reinterpret_cast<T>(ptr);
 //}
 //
-//template <typename T> T hevcNextGenDecoderJEM::resolveInternals(T &fun, const char *symbol)
+//template <typename T> T hevcDecoderHM::resolveInternals(T &fun, const char *symbol)
 //{
 //  return fun = reinterpret_cast<T>(library.resolve(symbol));
 //}
 //
-//void hevcNextGenDecoderJEM::allocateNewDecoder()
+//void hevcDecoderHM::allocateNewDecoder()
 //{
 //  if (decoder != nullptr)
 //    return;
 //
-//  DEBUG_DECJEM("hevcNextGenDecoderJEM::allocateNewDecoder - decodeSignal %d", decodeSignal);
+//  DEBUG_DECHM("hevcDecoderHM::allocateNewDecoder - decodeSignal %d", decodeSignal);
 //
 //  // Set some decoder parameters
-//  libJEMDec_set_SEI_Check(decoder, true);
-//  libJEMDec_set_max_temporal_layer(decoder, -1);
+//  libHMDec_set_SEI_Check(decoder, true);
+//  libHMDec_set_max_temporal_layer(decoder, -1);
 //
 //  // Create new decoder object
-//  decoder = libJEMDec_new_decoder();
+//  decoder = libHMDec_new_decoder();
 //}
 //
-//void hevcNextGenDecoderJEM::freeDecoder()
-//{
-//  if (decoder == nullptr)
-//    // Nothing to free
-//    return;
-//
-//  DEBUG_DECJEM("hevcNextGenDecoderJEM::freeDecoder");
-//
-//  // Delete decoder
-//  libJEMDec_error err = libJEMDec_free_decoder(decoder);
-//  if (err != LIBJEMDEC_OK)
-//    // Freeing the decoder failed.
-//    decError = err;
-//
-//  decoder = nullptr;
-//  currentHMPic = nullptr;
-//  stateReadingFrames = false;
-//  currentOutputBufferFrameIndex = -1;
-//  lastNALUnit.clear();
-//}
-//
-//void hevcNextGenDecoderJEM::slotGetNALUnitInfo(QByteArray nalBytes)
-//{
-//  if (!decoder)
-//    return;
-//
-//  //    err = libJEMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
-//  int poc, picWidth, picHeight, bitDepthLuma, bitDepthChroma;
-//  bool isRAP, isParameterSet;
-//  libJEMDec_ChromaFormat chromaFormat;
-//  libJEMDec_get_nal_unit_info(decoder, (uint8_t*)nalBytes.data(), nalBytes.size(), false, poc, isRAP, isParameterSet, picWidth, picHeight, bitDepthLuma, bitDepthChroma, chromaFormat);
-//
-//  // 
-//  if (!frameSize.isValid() && picWidth >= 0 && picHeight >= 0)
-//    frameSize = QSize(picWidth, picHeight);
-//  if (pixelFormat == YUV_NUM_SUBSAMPLINGS && chromaFormat != LIBJEMDEC_CHROMA_UNKNOWN)
-//  {
-//    if (chromaFormat == LIBJEMDEC_CHROMA_400)
-//      pixelFormat = YUV_400;
-//    else if (chromaFormat == LIBJEMDEC_CHROMA_420)
-//      pixelFormat = YUV_420;
-//    else if (chromaFormat == LIBJEMDEC_CHROMA_422)
-//      pixelFormat = YUV_422;
-//    else if (chromaFormat == LIBJEMDEC_CHROMA_444)
-//      pixelFormat = YUV_444;
-//  }
-//  if (nrBitsC0 == -1 && bitDepthLuma >= 0)
-//    nrBitsC0 = bitDepthLuma;
-//
-//  /*fileSourceJEMAnnexBFile *jemFile = dynamic_cast<fileSourceJEMAnnexBFile*>(annexBFile.data());
-//  jemFile->setNALUnitInfo(poc, isRAP, isParameterSet);*/
-//}
-//
-//QByteArray hevcNextGenDecoderJEM::loadYUVFrameData(int frameIdx)
+//QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
 //{
 //  // At first check if the request is for the frame that has been requested in the
 //  // last call to this function.
@@ -279,7 +200,7 @@
 //    return currentOutputBuffer;
 //  }
 //
-//  DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData Start request %d", frameIdx);
+//  DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData Start request %d", frameIdx);
 //
 //  //// We have to decode the requested frame.
 //  //bool seeked = false;
@@ -289,7 +210,7 @@
 //  //  // The requested frame lies before the current one. We will have to rewind and start decoding from there.
 //  //  int seekFrameIdx = annexBFile->getClosestSeekableFrameNumberBefore(frameIdx);
 //
-//  //  DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData Seek to %d", seekFrameIdx);
+//  //  DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData Seek to %d", seekFrameIdx);
 //  //  parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
 //  //  currentOutputBufferFrameIndex = seekFrameIdx - 1;
 //  //  seeked = true;
@@ -302,7 +223,7 @@
 //  //  if (seekFrameIdx > currentOutputBufferFrameIndex)
 //  //  {
 //  //    // Yes we can (and should) seek ahead in the file
-//  //    DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData Seek to %d", seekFrameIdx);
+//  //    DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData Seek to %d", seekFrameIdx);
 //  //    parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
 //  //    currentOutputBufferFrameIndex = seekFrameIdx - 1;
 //  //    seeked = true;
@@ -317,8 +238,19 @@
 //  //  if (parameterSets.size() == 0)
 //  //    return QByteArray();
 //
-//  //  // Delete decoder and re-create
-//  //  freeDecoder();
+//  //  // Delete decoder
+//  //  libHMDec_error err = libHMDec_free_decoder(decoder);
+//  //  if (err != LIBHMDEC_OK)
+//  //  {
+//  //    // Freeing the decoder failed.
+//  //    if (decError != err)
+//  //      decError = err;
+//  //    return QByteArray();
+//  //  }
+//
+//  //  decoder = nullptr;
+//
+//  //  // Create new decoder
 //  //  allocateNewDecoder();
 //
 //  //  // Feed the parameter sets to the decoder
@@ -326,10 +258,8 @@
 //  //  bool checkOutputPictures;
 //  //  for (QByteArray ps : parameterSets)
 //  //  {
-//  //    libJEMDec_error err = libJEMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
-//  //    DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed parameter NAL length %d%s%s - err %d", ps.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "", err);
-//  //    // If debugging is off, err is not used.
-//  //    Q_UNUSED(err);
+//  //    err = libHMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
+//  //    DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData pushed parameter NAL length %d%s%s", ps.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
 //  //  }
 //  //}
 //
@@ -351,8 +281,8 @@
 //
 //  //    if (!lastNALUnit.isEmpty())
 //  //    {
-//  //      libJEMDec_push_nal_unit(decoder, lastNALUnit, lastNALUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
-//  //      DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed last NAL length %d%s%s", lastNALUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+//  //      libHMDec_push_nal_unit(decoder, lastNALUnit, lastNALUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
+//  //      DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData pushed last NAL length %d%s%s", lastNALUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
 //  //      // bNewPicture should now be false
 //  //      assert(!bNewPicture);
 //  //      lastNALUnit.clear();
@@ -364,8 +294,8 @@
 //  //      assert(nalUnit.length() > 0);
 //  //      endOfFile = annexBFile->atEnd();
 //  //      bool endOfFile = annexBFile->atEnd();
-//  //      libJEMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
-//  //      DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+//  //      libHMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
+//  //      DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
 //  //      
 //  //      if (bNewPicture)
 //  //        // Save the NAL unit
@@ -379,7 +309,7 @@
 //  //  if (stateReadingFrames)
 //  //  {
 //  //    // Try to read pictures
-//  //    libJEMDec_picture *pic = libJEMDec_get_picture(decoder);
+//  //    libHMDec_picture *pic = libHMDec_get_picture(decoder);
 //  //    while (pic != nullptr)
 //  //    {
 //  //      // We recieved a picture
@@ -387,18 +317,18 @@
 //  //      currentHMPic = pic;
 //
 //  //      // Check if the chroma format and the frame size matches the already set values (these were read from the annex B file).
-//  //      libJEMDec_ChromaFormat fmt = libJEMDEC_get_chroma_format(pic);
-//  //      if ((fmt == LIBJEMDEC_CHROMA_400 && pixelFormat != YUV_400) ||
-//  //          (fmt == LIBJEMDEC_CHROMA_420 && pixelFormat != YUV_420) ||
-//  //          (fmt == LIBJEMDEC_CHROMA_422 && pixelFormat != YUV_422) ||
-//  //          (fmt == LIBJEMDEC_CHROMA_444 && pixelFormat != YUV_444))
-//  //        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
-//  //      int bits = libJEMDEC_get_internal_bit_depth(pic, LIBJEMDEC_LUMA);
+//  //      libHMDec_ChromaFormat fmt = libHMDEC_get_chroma_format(pic);
+//  //      if ((fmt == LIBHMDEC_CHROMA_400 && pixelFormat != YUV_400) ||
+//  //          (fmt == LIBHMDEC_CHROMA_420 && pixelFormat != YUV_420) ||
+//  //          (fmt == LIBHMDEC_CHROMA_422 && pixelFormat != YUV_422) ||
+//  //          (fmt == LIBHMDEC_CHROMA_444 && pixelFormat != YUV_444))
+//  //        DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
+//  //      int bits = libHMDEC_get_internal_bit_depth(pic, LIBHMDEC_LUMA);
 //  //      if (bits != nrBitsC0)
-//  //        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
-//  //      QSize picSize = QSize(libJEMDEC_get_picture_width(pic, LIBJEMDEC_LUMA), libJEMDEC_get_picture_height(pic, LIBJEMDEC_LUMA));
+//  //        DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
+//  //      QSize picSize = QSize(libHMDEC_get_picture_width(pic, LIBHMDEC_LUMA), libHMDEC_get_picture_height(pic, LIBHMDEC_LUMA));
 //  //      if (picSize != frameSize)
-//  //        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
+//  //        DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
 //  //      
 //  //      if (currentOutputBufferFrameIndex == frameIdx)
 //  //      {
@@ -417,17 +347,17 @@
 //  //        }
 //
 //  //        // Picture decoded
-//  //        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData decoded the requested frame %d - POC %d", currentOutputBufferFrameIndex, libJEMDEC_get_POC(pic));
+//  //        DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData decoded the requested frame %d - POC %d", currentOutputBufferFrameIndex, libHMDEC_get_POC(pic));
 //
 //  //        return currentOutputBuffer;
 //  //      }
 //  //      else
 //  //      {
-//  //        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData decoded the unrequested frame %d - POC %d", currentOutputBufferFrameIndex, libJEMDEC_get_POC(pic));
+//  //        DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData decoded the unrequested frame %d - POC %d", currentOutputBufferFrameIndex, libHMDEC_get_POC(pic));
 //  //      }
 //
 //  //      // Try to get another picture
-//  //      pic = libJEMDec_get_picture(decoder);
+//  //      pic = libHMDec_get_picture(decoder);
 //  //    }
 //  //  }
 //  //  
@@ -441,9 +371,9 @@
 //}
 //
 //#if SSE_CONVERSION
-//void hevcNextGenDecoderJEM::copyImgToByteArray(libJEMDec_picture *src, byteArrayAligned &dst)
+//void hevcDecoderHM::copyImgToByteArray(libHMDec_picture *src, byteArrayAligned &dst)
 //#else
-//void hevcNextGenDecoderJEM::copyImgToByteArray(libJEMDec_picture *src, QByteArray &dst)
+//void hevcDecoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
 //#endif
 //{
 //  // How many image planes are there?
@@ -453,18 +383,18 @@
 //  bool outputTwoByte = false;
 //  for (int c = 0; c < nrPlanes; c++)
 //  {
-//    libJEMDec_ColorComponent component = (c == 0) ? LIBJEMDEC_LUMA : (c == 1) ? LIBJEMDEC_CHROMA_U : LIBJEMDEC_CHROMA_V;
-//    if (libJEMDEC_get_internal_bit_depth(src, component) > 8)
+//    libHMDec_ColorComponent component = (c == 0) ? LIBHMDEC_LUMA : (c == 1) ? LIBHMDEC_CHROMA_U : LIBHMDEC_CHROMA_V;
+//    if (libHMDEC_get_internal_bit_depth(src, component) > 8)
 //      outputTwoByte = true;
 //  }
 //
 //  // How many samples are in each component?
-//  int outSizeY = libJEMDEC_get_picture_width(src, LIBJEMDEC_LUMA) * libJEMDEC_get_picture_height(src, LIBJEMDEC_LUMA);
-//  int outSizeCb = (nrPlanes == 1) ? 0 : (libJEMDEC_get_picture_width(src, LIBJEMDEC_CHROMA_U) * libJEMDEC_get_picture_height(src, LIBJEMDEC_CHROMA_U));
-//  int outSizeCr = (nrPlanes == 1) ? 0 : (libJEMDEC_get_picture_width(src, LIBJEMDEC_CHROMA_V) * libJEMDEC_get_picture_height(src, LIBJEMDEC_CHROMA_V));
+//  int outSizeY = libHMDEC_get_picture_width(src, LIBHMDEC_LUMA) * libHMDEC_get_picture_height(src, LIBHMDEC_LUMA);
+//  int outSizeCb = (nrPlanes == 1) ? 0 : (libHMDEC_get_picture_width(src, LIBHMDEC_CHROMA_U) * libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_U));
+//  int outSizeCr = (nrPlanes == 1) ? 0 : (libHMDEC_get_picture_width(src, LIBHMDEC_CHROMA_V) * libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_V));
 //  // How many bytes do we need in the output buffer?
 //  int nrBytesOutput = (outSizeY + outSizeCb + outSizeCr) * (outputTwoByte ? 2 : 1);
-//  DEBUG_DECJEM("hevcNextGenDecoderJEM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
+//  DEBUG_DECHM("hevcDecoderHM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
 //
 //  // Is the output big enough?
 //  if (dst.capacity() < nrBytesOutput)
@@ -474,16 +404,16 @@
 //  // we have to cast it right.
 //  for (int c = 0; c < nrPlanes; c++)
 //  {
-//    libJEMDec_ColorComponent component = (c == 0) ? LIBJEMDEC_LUMA : (c == 1) ? LIBJEMDEC_CHROMA_U : LIBJEMDEC_CHROMA_V;
+//    libHMDec_ColorComponent component = (c == 0) ? LIBHMDEC_LUMA : (c == 1) ? LIBHMDEC_CHROMA_U : LIBHMDEC_CHROMA_V;
 //
-//    const short* img_c = libJEMDEC_get_image_plane(src, component);
-//    int stride = libJEMDEC_get_picture_stride(src, component);
+//    const short* img_c = libHMDEC_get_image_plane(src, component);
+//    int stride = libHMDEC_get_picture_stride(src, component);
 //    
 //    if (img_c == nullptr)
 //      return;
 //
-//    int width = libJEMDEC_get_picture_width(src, component);
-//    int height = libJEMDEC_get_picture_height(src, component);
+//    int width = libHMDEC_get_picture_width(src, component);
+//    int height = libHMDEC_get_picture_height(src, component);
 //
 //    if (outputTwoByte)
 //    {
@@ -524,19 +454,35 @@
 //  }
 //}
 //
-//void hevcNextGenDecoderJEM::cacheStatistics(libJEMDec_picture *img)
+//void hevcDecoderHM::cacheStatistics(libHMDec_picture *img)
 //{
 //  if (!wrapperInternalsSupported())
 //    return;
 //
-//  DEBUG_DECJEM("hevcNextGenDecoderJEM::cacheStatistics POC %d", libJEMDEC_get_POC(img));
+//  DEBUG_DECHM("hevcDecoderHM::cacheStatistics POC %d", libHMDEC_get_POC(img));
 //
 //  // Clear the local statistics cache
 //  curPOCStats.clear();
 //
+//  // Conversion from intra prediction mode to vector.
+//  // Coordinates are in x,y with the axes going right and down.
+//  static const int vectorTable[35][2] = 
+//  {
+//    {0,0}, {0,0},
+//    {32, -32},
+//    {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
+//    {32,   0},
+//    {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
+//    {32,  32},
+//    {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
+//    {0,   32},
+//    {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
+//    {-32, 32} 
+//  };
+//
 //  // Get all the statistics
 //  // TODO: Could we only retrieve the statistics that are active/displayed?
-//  unsigned int nrTypes = libJEMDEC_get_internal_type_number();
+//  unsigned int nrTypes = libHMDEC_get_internal_type_number();
 //  for (unsigned int t = 0; t <= nrTypes; t++)
 //  {
 //    bool callAgain;
@@ -544,29 +490,28 @@
 //    {
 //      // Get a pointer to the data values and how many values in this array are valid.
 //      unsigned int nrValues;
-//      libJEMDec_BlockValue *stats = libJEMDEC_get_internal_info(decoder, img, t, nrValues, callAgain);
+//      libHMDec_BlockValue *stats = libHMDEC_get_internal_info(decoder, img, t, nrValues, callAgain);
 //
-//      libJEMDec_InternalsType statType = libJEMDEC_get_internal_type(t);
+//      libHMDec_InternalsType statType = libHMDEC_get_internal_type(t);
 //      if (stats != nullptr && nrValues > 0)
 //      {
 //        for (unsigned int i = 0; i < nrValues; i++)
 //        {
-//          libJEMDec_BlockValue b = stats[i];
+//          libHMDec_BlockValue b = stats[i];
 //
-//          if (statType == LIBJEMDEC_TYPE_VECTOR)
+//          if (statType == LIBHMDEC_TYPE_VECTOR)
 //            curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, b.value, b.value2);
 //          else
 //            curPOCStats[t].addBlockValue(b.x, b.y, b.w, b.h, b.value);
-//          if (statType == LIBJEMDEC_TYPE_INTRA_DIR)
+//          if (statType == LIBHMDEC_TYPE_INTRA_DIR)
 //          {
 //            // Also add the vecotr to draw
-//            // TODO: There are more intra modes now. 
-//            /*if (b.value >= 0 && b.value < 35)
+//            if (b.value >= 0 && b.value < 35)
 //            {
 //              int vecX = (float)vectorTable[b.value][0] * b.w / 4;
 //              int vecY = (float)vectorTable[b.value][1] * b.w / 4;
 //              curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, vecX, vecY);
-//            }*/
+//            }
 //          }
 //        }
 //      }
@@ -574,9 +519,9 @@
 //  }
 //}
 //
-//statisticsData hevcNextGenDecoderJEM::getStatisticsData(int frameIdx, int typeIdx)
+//statisticsData hevcDecoderHM::getStatisticsData(int frameIdx, int typeIdx)
 //{
-//  DEBUG_DECJEM("hevcNextGenDecoderJEM::getStatisticsData %s", retrieveStatistics ? "" : "staistics retrievel avtivated");
+//  DEBUG_DECHM("hevcDecoderHM::getStatisticsData %s", retrieveStatistics ? "" : "staistics retrievel avtivated");
 //  if (!retrieveStatistics)
 //    retrieveStatistics = true;
 //
@@ -602,88 +547,124 @@
 //  return curPOCStats[typeIdx];
 //}
 //
-//bool hevcNextGenDecoderJEM::reloadItemSource()
+//bool hevcDecoderHM::reloadItemSource()
 //{
 //  if (decoderError)
 //    // Nothing is working, so there is nothing to reset.
 //    return false;
 //
-//  // Reset the hevcNextGenDecoderJEM variables/buffers.
-//  decError = LIBJEMDEC_OK;
+//  // Reset the hevcDecoderHM variables/buffers.
+//  decError = LIBHMDEC_OK;
 //  statsCacheCurPOC = -1;
 //  currentOutputBufferFrameIndex = -1;
 //
-//  // Re-open the input file. This will reload the bitstream as if it was completely unknown.
-//  /*QString fileName = annexBFile->absoluteFilePath();
-//  parsingError = annexBFile->openFile(fileName);*/
-//  return parsingError;
+//  //// Re-open the input file. This will reload the bitstream as if it was completely unknown.
+//  //QString fileName = annexBFile->absoluteFilePath();
+//  //parsingError = annexBFile->openFile(fileName);
+//  //return parsingError;
+//
+//  return false;
 //}
 //
-//void hevcNextGenDecoderJEM::fillStatisticList(statisticHandler &statSource) const
+//void hevcDecoderHM::fillStatisticList(statisticHandler &statSource) const
 //{
 //  // Ask the decoder how many internals types there are
-//  unsigned int nrTypes = libJEMDEC_get_internal_type_number();
+//  unsigned int nrTypes = libHMDEC_get_internal_type_number();
 //
 //  for (unsigned int i = 0; i < nrTypes; i++)
 //  {
-//    QString name = libJEMDEC_get_internal_type_name(i);
-//    QString description = libJEMDEC_get_internal_type_description(i);
-//    libJEMDec_InternalsType statType = libJEMDEC_get_internal_type(i);
+//    QString name = libHMDEC_get_internal_type_name(i);
+//    QString description = libHMDEC_get_internal_type_description(i);
+//    libHMDec_InternalsType statType = libHMDEC_get_internal_type(i);
 //    int max = 0;
-//    if (statType == LIBJEMDEC_TYPE_RANGE || statType == LIBJEMDEC_TYPE_RANGE_ZEROCENTER || statType == LIBJEMDEC_TYPE_INTRA_DIR)
+//    if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
 //    {
-//      unsigned int uMax = libJEMDEC_get_internal_type_max(i);
+//      unsigned int uMax = libHMDEC_get_internal_type_max(i);
 //      max = (uMax > INT_MAX) ? INT_MAX : uMax;
 //    }
 //
-//    if (statType == LIBJEMDEC_TYPE_FLAG)
+//    if (statType == LIBHMDEC_TYPE_FLAG)
 //    {
 //      StatisticsType flag(i, name, "jet", 0, 1);
 //      flag.description = description;
 //      statSource.addStatType(flag);
 //    }
-//    else if (statType == LIBJEMDEC_TYPE_RANGE)
+//    else if (statType == LIBHMDEC_TYPE_RANGE)
 //    {
 //      StatisticsType range(i, name, "jet", 0, max);
 //      range.description = description;
 //      statSource.addStatType(range);
 //    }
-//    else if (statType == LIBJEMDEC_TYPE_RANGE_ZEROCENTER)
+//    else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
 //    {
 //      StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
 //      rangeZero.description = description;
 //      statSource.addStatType(rangeZero);
 //    }
-//    else if (statType == LIBJEMDEC_TYPE_VECTOR)
+//    else if (statType == LIBHMDEC_TYPE_VECTOR)
 //    {
-//      unsigned int scale = libJEMDEC_get_internal_type_vector_scaling(i);
+//      unsigned int scale = libHMDEC_get_internal_type_vector_scaling(i);
 //      StatisticsType vec(i, name, scale);
 //      vec.description = description;
 //      statSource.addStatType(vec);
 //    }
-//    else if (statType == LIBJEMDEC_TYPE_INTRA_DIR)
+//    else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
 //    {
-//      
-//      StatisticsType intraDir(i, name, "jet", 0, max);
+//      StatisticsType intraDir(i, name, "jet", 0, 34);
 //      intraDir.description = description;
 //      intraDir.hasVectorData = true;
 //      intraDir.renderVectorData = true;
 //      intraDir.vectorScale = 32;
 //      // Don't draw the vector values for the intra dir. They don't have actual meaning.
 //      intraDir.renderVectorDataValues = false;
+//      intraDir.valMap.insert(0, "INTRA_PLANAR");
+//      intraDir.valMap.insert(1, "INTRA_DC");
+//      intraDir.valMap.insert(2, "INTRA_ANGULAR_2");
+//      intraDir.valMap.insert(3, "INTRA_ANGULAR_3");
+//      intraDir.valMap.insert(4, "INTRA_ANGULAR_4");
+//      intraDir.valMap.insert(5, "INTRA_ANGULAR_5");
+//      intraDir.valMap.insert(6, "INTRA_ANGULAR_6");
+//      intraDir.valMap.insert(7, "INTRA_ANGULAR_7");
+//      intraDir.valMap.insert(8, "INTRA_ANGULAR_8");
+//      intraDir.valMap.insert(9, "INTRA_ANGULAR_9");
+//      intraDir.valMap.insert(10, "INTRA_ANGULAR_10");
+//      intraDir.valMap.insert(11, "INTRA_ANGULAR_11");
+//      intraDir.valMap.insert(12, "INTRA_ANGULAR_12");
+//      intraDir.valMap.insert(13, "INTRA_ANGULAR_13");
+//      intraDir.valMap.insert(14, "INTRA_ANGULAR_14");
+//      intraDir.valMap.insert(15, "INTRA_ANGULAR_15");
+//      intraDir.valMap.insert(16, "INTRA_ANGULAR_16");
+//      intraDir.valMap.insert(17, "INTRA_ANGULAR_17");
+//      intraDir.valMap.insert(18, "INTRA_ANGULAR_18");
+//      intraDir.valMap.insert(19, "INTRA_ANGULAR_19");
+//      intraDir.valMap.insert(20, "INTRA_ANGULAR_20");
+//      intraDir.valMap.insert(21, "INTRA_ANGULAR_21");
+//      intraDir.valMap.insert(22, "INTRA_ANGULAR_22");
+//      intraDir.valMap.insert(23, "INTRA_ANGULAR_23");
+//      intraDir.valMap.insert(24, "INTRA_ANGULAR_24");
+//      intraDir.valMap.insert(25, "INTRA_ANGULAR_25");
+//      intraDir.valMap.insert(26, "INTRA_ANGULAR_26");
+//      intraDir.valMap.insert(27, "INTRA_ANGULAR_27");
+//      intraDir.valMap.insert(28, "INTRA_ANGULAR_28");
+//      intraDir.valMap.insert(29, "INTRA_ANGULAR_29");
+//      intraDir.valMap.insert(30, "INTRA_ANGULAR_30");
+//      intraDir.valMap.insert(31, "INTRA_ANGULAR_31");
+//      intraDir.valMap.insert(32, "INTRA_ANGULAR_32");
+//      intraDir.valMap.insert(33, "INTRA_ANGULAR_33");
+//      intraDir.valMap.insert(34, "INTRA_ANGULAR_34");
 //      statSource.addStatType(intraDir);
 //    }
 //  }
 //}
 //
-//QString hevcNextGenDecoderJEM::getDecoderName() const
+//QString hevcDecoderHM::getDecoderName() const
 //{
-//  return (decoderError) ? "JEM" : libJEMDec_get_version();
+//  return (decoderError) ? "HM" : libHMDec_get_version();
 //}
 //
-//bool hevcNextGenDecoderJEM::checkLibraryFile(QString libFilePath, QString &error)
+//bool hevcDecoderHM::checkLibraryFile(QString libFilePath, QString &error)
 //{
-//  hevcNextGenDecoderJEM testDecoder;
+//  hevcDecoderHM testDecoder;
 //
 //  // Try to load the library file
 //  testDecoder.library.setFileName(libFilePath);

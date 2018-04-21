@@ -33,17 +33,16 @@
 #include "playlistItemCompressedVideo.h"
 
 #include "decoderFFmpeg.h"
+#include "decoderHM.h"
 #include "decoderLibde265.h"
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
 #include "parserAnnexBJEM.h"
-#include "hevcDecoderHM.h"
-#include "hevcNextGenDecoderJEM.h"
 
 #include <QThread>
 #include "mainwindow.h"
 
-#define HEVC_DEBUG_OUTPUT 1
+#define HEVC_DEBUG_OUTPUT 0
 #if HEVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_HEVC qDebug
@@ -82,7 +81,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   isFrameLoadingDoubleBuffer = false;
 
   // An compressed file can be cached if nothing goes wrong
-  cachingEnabled = false;
+  cachingEnabled = true;
 
   currentFrameIdx[0] = -1;
   currentFrameIdx[1] = -1;
@@ -169,16 +168,12 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     cachingDecoder.reset(new decoderLibde265(displayComponent, true));
     fileState = noError;
   }
-  /*else if (decoderEngineType == decoderHM)
+  else if (decoderEngineType == decoderEngineHM)
   {
-    loadingDecoder.reset(new hevcDecoderHM(displayComponent));
-    cachingDecoder.reset(new hevcDecoderHM(displayComponent, true));
+    // TODO:
+    /*loadingDecoder.reset(new hevcDecoderHM(displayComponent));
+    cachingDecoder.reset(new hevcDecoderHM(displayComponent, true));*/
   }
-  else if (decoderEngineType == decoderJEM)
-  {
-    loadingDecoder.reset(new hevcNextGenDecoderJEM(displayComponent));
-    cachingDecoder.reset(new hevcNextGenDecoderJEM(displayComponent, true));
-  }*/
   else if (decoderEngineType == decoderEngineFFMpeg)
   {
     if (isinputFormatTypeAnnexB)
@@ -383,9 +378,9 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
     infoText = "There was an error when loading the decoder: \n";
     infoText += loadingDecoder->decoderErrorString();
     infoText += "\n";
-    if (decoderEngineType == decoderEngineHM || decoderEngineType == decoderEngineJEM)
+    if (decoderEngineType == decoderEngineHM)
     {
-      infoText += "We do not currently ship the HM and JEM decoder libraries.\n";
+      infoText += "We do not currently ship the HM decoder libraries.\n";
       infoText += "You can find download links in Help->Downloads";
     }
     playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);

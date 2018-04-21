@@ -52,6 +52,7 @@
 
 decoderBase::decoderBase(bool cachingDecoder)
 {
+  DECODERBASE_DEBUG_OUTPUT("decoderBase::decoderBase create base%s", cachingDecoder ? " - caching" : "");
   decodeSignal = 0;
   internalsSupported = false;
   retrieveStatistics = false;
@@ -62,6 +63,7 @@ decoderBase::decoderBase(bool cachingDecoder)
 
 void decoderBase::resetDecoder()
 {
+  DECODERBASE_DEBUG_OUTPUT("decoderBase::resetDecoder");
   decoderState = decoderNeedsMoreData;
   statsCacheCurPOC = -1;
   frameSize = QSize();
