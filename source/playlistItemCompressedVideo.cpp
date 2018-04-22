@@ -611,8 +611,8 @@ void playlistItemCompressedVideo::fillStatisticList()
 
 void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx)
 {
-  Q_UNUSED(frameIdx);
   DEBUG_HEVC("playlistItemCompressedVideo::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdx);
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
   if (!loadingDecoder->statisticsSupported())
     return;
@@ -630,6 +630,10 @@ void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx
 
     // The statistics should now be loaded
   }
+  else if (frameIdxInternal != currentFrameIdx[0])
+    // If the requested frame is not currently decoded, decode it.
+    // This can happen if the picture was gotten from the cache.
+    loadYUVData(frameIdxInternal, false);
 
   statSource.statsCache[typeIdx] = loadingDecoder->getStatisticsData(typeIdx);
 }
