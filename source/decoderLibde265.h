@@ -104,7 +104,6 @@ public:
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
   
   // Statistics
-  statisticsData getStatisticsData(int typeIdx) Q_DECL_OVERRIDE;
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
 
   // Check if the given library file is an existing libde265 decoder that we can use.

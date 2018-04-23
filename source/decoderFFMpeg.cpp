@@ -52,6 +52,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, yuvPixelFormat fmt, bo
   format = fmt;
   frameSize = size;
   flushing = false;
+  internalsSupported = true;
 
   DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
@@ -68,6 +69,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, yuvPixelFormat f
 
   format = fmt;
   flushing = false;
+  internalsSupported = true;
 
   DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
@@ -100,6 +102,11 @@ bool decoderFFmpeg::decodeNextFrame()
     return false;
 
   copyCurImageToBuffer();
+  
+  if (retrieveStatistics)
+    // Get the statistics from the image and put them into the statistics cache
+    cacheCurStatistics();
+
   return true;
 }
 
@@ -173,10 +180,37 @@ void decoderFFmpeg::copyCurImageToBuffer()
 
 void decoderFFmpeg::cacheCurStatistics()
 {
+  // Copy the statistics of the current frame to the buffer
+  DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
+
+  // Clear the local statistics cache
+  curPOCStats.clear();
+
+  // Try to get the motion information
+  AVFrameSideDataWrapper sd = ff.get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+  if (sd)
+  { 
+    const int nrMVs = sd.get_number_motion_vectors();
+    for (int i = 0; i < nrMVs; i++)
+    {
+      AVMotionVectorWrapper mvs = sd.get_motion_vector(i);
+
+      // dst marks the center of the current block so the block position is:
+      const int blockX = mvs.dst_x - mvs.w/2;
+      const int blockY = mvs.dst_y - mvs.h/2;
+      const int16_t mvX = mvs.dst_x - mvs.src_x;
+      const int16_t mvY = mvs.dst_y - mvs.src_y;
+
+      curPOCStats[mvs.source < 0 ? 0 : 1].addBlockValue(blockX, blockY, mvs.w, mvs.h, (int)mvs.source);
+      curPOCStats[mvs.source < 0 ? 2 : 3].addBlockVector(blockX, blockY, mvs.w, mvs.h, mvX, mvY);
+    }
+  }
 }
 
 void decoderFFmpeg::pushData(QByteArray &data)
 {
+  // TODO
+  Q_UNUSED(data);
   assert(false);
 }
 
@@ -257,13 +291,19 @@ bool decoderFFmpeg::decodeFrame()
   return false;
 }
 
-statisticsData decoderFFmpeg::getStatisticsData(int typeIdx)
-{
-  return statisticsData();
-}
-
 void decoderFFmpeg::fillStatisticList(statisticHandler &statSource) const
 {
+  StatisticsType refIdx0(0, "Source -", "col3_bblg", -2, 2);
+  statSource.addStatType(refIdx0);
+
+  StatisticsType refIdx1(1, "Source +", "col3_bblg", -2, 2);
+  statSource.addStatType(refIdx1);
+
+  StatisticsType motionVec0(2, "Motion Vector -", 4);
+  statSource.addStatType(motionVec0);
+
+  StatisticsType motionVec1(3, "Motion Vector +", 4);
+  statSource.addStatType(motionVec1);
 }
 
 bool decoderFFmpeg::createDecoder(AVCodecID streamCodecID, AVCodecParametersWrapper codecpar)

@@ -69,3 +69,11 @@ void decoderBase::resetDecoder()
   frameSize = QSize();
   format = yuvPixelFormat();
 }
+
+statisticsData decoderBase::getStatisticsData(int typeIdx)
+{
+  if (!retrieveStatistics)
+    return statisticsData();
+
+  return curPOCStats[typeIdx];
+}

@@ -37,10 +37,9 @@
 #include <QMessageBox>
 #include <QSettings>
 #include "typedef.h"
-#include "FFmpegLibraries.h"
-#include "hevcNextGenDecoderJEM.h"
-#include "hevcDecoderHM.h"
+#include "decoderHM.h"
 #include "decoderLibde265.h"
+#include "FFMpegLibrariesHandling.h"
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
 

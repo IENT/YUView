@@ -86,7 +86,7 @@ public:
   bool statisticsSupported() const { return internalsSupported; }
   bool statisticsEnabled() const { return retrieveStatistics; }
   void enableStatisticsRetrieval() { retrieveStatistics = true; }
-  virtual statisticsData getStatisticsData(int typeIdx) { Q_UNUSED(typeIdx); return statisticsData(); }
+  statisticsData getStatisticsData(int typeIdx);
   virtual void fillStatisticList(statisticHandler &statSource) const { Q_UNUSED(statSource); };
 
   // Error handling

@@ -146,7 +146,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 QWidget *MainWindow::getMainWindow()
 {
   QWidgetList l = QApplication::topLevelWidgets();
-  QWidget *mainWindow = nullptr;
   for (QWidget *w : l)
   {
     MainWindow *mw = dynamic_cast<MainWindow*>(w);

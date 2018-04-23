@@ -322,10 +322,8 @@ QByteArray decoderLibde265::getYUVFrameData()
     DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData copied frame to buffer");
     
     if (retrieveStatistics)
-    {
       // Get the statistics from the image and put them into the statistics cache
       cacheStatistics(curImage);
-    }
   }
 
   return currentOutputBuffer;
@@ -721,14 +719,6 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, in
       }
     }
   }
-}
-
-statisticsData decoderLibde265::getStatisticsData(int typeIdx)
-{
-  if (!retrieveStatistics)
-    return statisticsData();
-  
-  return curPOCStats[typeIdx];
 }
 
 void decoderLibde265::fillStatisticList(statisticHandler &statSource) const
