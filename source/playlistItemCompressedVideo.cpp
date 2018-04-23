@@ -37,9 +37,9 @@
 #include "decoderLibde265.h"
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
-#include "parserAnnexBJEM.h"
 
 #include <QThread>
+#include <QInputDialog>
 #include "mainwindow.h"
 
 #define HEVC_DEBUG_OUTPUT 0
@@ -58,8 +58,8 @@
 #define FORWARD_SEEK_THRESHOLD 5
 
 // Initialize the static names list of the decoder engines
-QStringList playlistItemCompressedVideo::inputFormatNames = QStringList() << "annexBHEVC" << "annexBAVC" << "annexBJEM" << "FFMpeg";
-QStringList playlistItemCompressedVideo::decoderEngineNames = QStringList() << "libDe265" << "HM" << "JEM" << "FFMpeg";
+QStringList playlistItemCompressedVideo::inputFormatNames = QStringList() << "annexBHEVC" << "annexBAVC" << "FFMpeg";
+QStringList playlistItemCompressedVideo::decoderEngineNames = QStringList() << "libDe265" << "HM" << "FFMpeg";
 
 playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compressedFilePath, int displayComponent, inputFormat input, decoderEngine decoder)
   : playlistItemWithVideo(compressedFilePath, playlistItem_Indexed)
@@ -89,11 +89,23 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   decodingOfFrameNotPossible = false;
 
   // Open the input file and get some properties (size, bit depth, subsampling) from the file
-  inputFormatType = input;
-  isinputFormatTypeAnnexB = (input == inputAnnexBHEVC || input == inputAnnexBAVC || input == inputAnnexBJEM);
+  if (input == inputInvalid)
+  {
+    QString ext = QFileInfo(compressedFilePath).suffix();
+    if (ext == "hevc" || ext == "h265" || ext == "265")
+      // We will try to open this as a raw annexB file
+      inputFormatType = inputAnnexBHEVC;
+    else if (ext == "avc" || ext == "h264" || ext == "264")
+      inputFormatType = inputAnnexBAVC;
+  }
+  else
+    inputFormatType = input;
 
-  // While opening the file, also determine which decoder we will need.
+  isinputFormatTypeAnnexB = (input == inputAnnexBHEVC || input == inputAnnexBAVC);
+
+  // While opening the file, also determine which decoders we can use
   AVCodecID ffmpegCodec = AV_CODEC_ID_NONE;
+  QList<decoderEngine> possibleDecoders;
 
   QSize frameSize;
   yuvPixelFormat format;
@@ -108,14 +120,16 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     {
       inputFileAnnexBParser.reset(new parserAnnexBHEVC());
       ffmpegCodec = AV_CODEC_ID_HEVC;
+      possibleDecoders.append(decoderEngineLibde265);
+      possibleDecoders.append(decoderEngineHM);
+      possibleDecoders.append(decoderEngineFFMpeg);
     }
     else if (inputFormatType == inputAnnexBAVC)
     {
       inputFileAnnexBParser.reset(new parserAnnexBAVC());
       ffmpegCodec = AV_CODEC_ID_H264;
+      possibleDecoders.append(decoderEngineFFMpeg);
     }
-    else if (inputFormatType == inputAnnexBJEM)
-      inputFileAnnexBParser.reset(new parserAnnexBJEM());
     // Parse the loading file
     parseAnnexBFile(inputFileAnnexBLoading, inputFileAnnexBParser);
     inputFileAnnexBParser->sortPOCList();
@@ -135,6 +149,12 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     frameSize = inputFileFFmpegLoading->getSequenceSizeSamples();
     format = inputFileFFmpegLoading->getPixelFormat();
     ffmpegCodec = inputFileFFmpegLoading->getCodec();
+    possibleDecoders.append(decoderEngineFFMpeg);
+    if (ffmpegCodec == AV_CODEC_ID_HEVC)
+    {
+      possibleDecoders.append(decoderEngineLibde265);
+      possibleDecoders.append(decoderEngineHM);
+    }
 
     if (cachingEnabled)
     {
@@ -146,7 +166,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
         return;
       }
     }
-
   }
   // Check/set properties
   if (!frameSize.isValid() || !format.isValid())
@@ -160,8 +179,39 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   // So far, we can parse the stream
   fileState = onlyParsing;
 
+  if (decoder == decoderEngineInvalid)
+  {
+    if (possibleDecoders.length() > 1)
+    {
+      // There is more than one decoder we may use. Ask the user which one to use.
+      bool ok;
+      QString label = "<html><head/><body><p>There are multiple decoders that we can use in order to decode the bitstream file:</p>";
+      if (possibleDecoders.contains(decoderEngineLibde265))
+        label += "<p><b>libde265:</b> A very fast and open source HEVC decoder. The internals version even supports display of the prediction and residual signal.</p>";
+      if (possibleDecoders.contains(decoderEngineHM))
+        label += "<p><b>libHM:</b> The library version of the HEVC reference test model software (HM). Slower than libde265.</p>";
+      if (possibleDecoders.contains(decoderEngineFFMpeg))
+        label += "<p><b>FFmpeg:</b> The ffmpeg libraries offer fast decoding of almost any format. Please note that we do not ship the FFmpeg libraries.</p>";
+      label += "</body></html>";
+      QWidget *mainWindow = MainWindow::getMainWindow();
+      QStringList possibleDecoderNames;
+      for (decoderEngine e : possibleDecoders)
+        possibleDecoderNames.append(decoderEngineNames[e]);
+      QString item = QInputDialog::getItem(mainWindow, "Select a decoder engine", label, possibleDecoderNames, 0, false, &ok);
+      if (ok && !item.isEmpty())
+      {
+        int idx = possibleDecoderNames.indexOf(item);
+        if (idx >= 0 && idx < decoderEngineNum)
+          decoderEngineType = (decoderEngine)idx;
+      }
+    }
+    else
+      decoderEngineType = possibleDecoders[0];
+  }
+  else
+    decoderEngineType = decoder;
+
   // Allocate the decoders
-  decoderEngineType = decoder;
   if (decoderEngineType == decoderEngineLibde265)
   {
     loadingDecoder.reset(new decoderLibde265(displayComponent));
@@ -306,7 +356,7 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
   // The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
   QScopedPointer<parserAnnexB> parserA;
   QScopedPointer<parserAVFormat> parserB;
-  if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
+  if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC)
   {
     // Just open and parse the file again
     QScopedPointer<fileSourceAnnexBFile> annexBFile(new fileSourceAnnexBFile(plItemNameOrFileName));
@@ -315,8 +365,6 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
       parserA.reset(new parserAnnexBHEVC());
     else if (inputFormatType == inputAnnexBAVC)
       parserA.reset(new parserAnnexBAVC());
-    else if (inputFormatType == inputAnnexBJEM)
-      parserA.reset(new parserAnnexBJEM());
     
     // Parse the file
     parserA->enableModel();
@@ -754,40 +802,6 @@ void playlistItemCompressedVideo::loadFrame(int frameIdx, bool playing, bool loa
   }
 }
 
-void playlistItemCompressedVideo::determineInputAndDecoder(QWidget *parent, QString fileName, inputFormat &input, decoderEngine &decoder)
-{
-  // TODO: Determine the combination of reader / decoder to use.
-  // There should be an intelligent test to determine the type and then if in doubt we should ask the user.
-  // Ask the user if multiple different combinations can be used.
-
-  QFileInfo info(fileName);
-  QString ext = info.suffix();
-  if (ext == "hevc" || ext == "h265" || ext == "265")
-  {
-    // Let's try to open it as a raw AnnexBHEVC file
-    input = inputAnnexBHEVC;
-    decoder = decoderEngineLibde265;
-  }
-  else
-  {
-    input = inputLibavformat;
-    decoder = decoderEngineLibde265;
-  }
-
-  Q_UNUSED(parent);
-  /*bool ok;
-  QString label = "<html><head/><body><p>There are multiple decoders that we can use in order to decode the raw coded video bitstream file:</p><p><b>libde265:</b> A very fast and open source HEVC decoder. The internals version even supports display of the prediction and residual signal.</p><p><b>libHM:</b> The library version of the HEVC reference test model software (HM). Slower than libde265.</p><p><b>JEM:</b> The library version of the the HEVC next generation decoder software JEM.</p></body></html>";
-  QString item = QInputDialog::getItem(parent, "Select a decoder engine", label, decoderEngineNames, 0, false, &ok);
-  if (ok && !item.isEmpty())
-  {
-    int idx = decoderEngineNames.indexOf(item);
-    if (idx >= 0 && idx < decoder_NUM)
-      return decoderEngine(idx);
-  }*/
-  
-  
-}
-
 void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
 {
   if (loadingDecoder && idx != loadingDecoder->getDecodeSignal())
@@ -810,17 +824,10 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   //Show a modal QProgressDialog while this operation is running.
   // If the user presses cancel, we will cancel and return false (opening the file failed).
   // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
-  QWidgetList l = QApplication::topLevelWidgets();
-  QWidget *mainWindow = nullptr;
-  for (QWidget *w : l)
-  {
-    MainWindow *mw = dynamic_cast<MainWindow*>(w);
-    if (mw)
-      mainWindow = mw;
-  }
+  QWidget *mainWindow = MainWindow::getMainWindow();
   // Create the dialog
   int64_t maxPos;
-  if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
+  if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC)
     maxPos = file->getFileSize();
   else
     // TODO: What do we do for ffmpeg files?
@@ -850,7 +857,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
         return;
 
       int64_t pos;
-      if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC || inputFormatType == inputAnnexBJEM)
+      if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC)
         pos = file->pos();
       else
         // TODO: 
@@ -888,14 +895,7 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpe
   // Show a modal QProgressDialog while this operation is running.
   // If the user presses cancel, we will cancel and return false (opening the file failed).
   // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
-  QWidgetList l = QApplication::topLevelWidgets();
-  QWidget *mainWindow = nullptr;
-  for (QWidget *w : l)
-  {
-    MainWindow *mw = dynamic_cast<MainWindow*>(w);
-    if (mw)
-      mainWindow = mw;
-  }
+  QWidget *mainWindow = MainWindow::getMainWindow();
   // Create the dialog
   int64_t maxPTS = file->getMaxPTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.

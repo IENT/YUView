@@ -59,7 +59,6 @@ public:
     inputInvalid = -1,  // We don't know how to open the input
     inputAnnexBHEVC,   // This is a raw HEVC annex B file
     inputAnnexBAVC,    // This is a raw AVC annex B file
-    inputAnnexBJEM,    // This is a raw JEM annex B file
     inputLibavformat,  // This is a container file which we will read using libavformat
     input_NUM
   } inputFormat;
@@ -123,10 +122,6 @@ public:
   // We only have one caching decoder so it is better if only one thread caches frames from this item.
   // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.
   virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
-
-  // Analyze the input and determine which reader/decoder to use.
-  // Ask the user if various options exist.
-  static void determineInputAndDecoder(QWidget *parent, QString fileName, inputFormat &input, decoderEngine &decoder);
 
 protected:
   // Override from playlistItemIndexed. The readerEngine can tell us how many frames there are in the sequence.

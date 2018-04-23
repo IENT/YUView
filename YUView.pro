@@ -21,7 +21,6 @@ SOURCES += \
     source/parserAnnexB.cpp \
     source/parserAnnexBAVC.cpp \
     source/parserAnnexBHEVC.cpp \
-    source/parserAnnexBJEM.cpp \
     source/parserAVFormat.cpp \
     source/parserBase.cpp \
     source/playbackController.cpp \
@@ -76,7 +75,6 @@ HEADERS += \
     source/parserAnnexB.h \
     source/parserAnnexBAVC.h \
     source/parserAnnexBHEVC.h \
-    source/parserAnnexBJEM.h \
     source/parserAVFormat.h \
     source/parserBase.h \
     source/playbackController.h \

@@ -143,6 +143,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   updateSettings();
 }
 
+QWidget *MainWindow::getMainWindow()
+{
+  QWidgetList l = QApplication::topLevelWidgets();
+  QWidget *mainWindow = nullptr;
+  for (QWidget *w : l)
+  {
+    MainWindow *mw = dynamic_cast<MainWindow*>(w);
+    if (mw)
+      return mw;
+  }
+  return nullptr;
+}
+
 void MainWindow::createMenusAndActions()
 {
   // Create the menu actions and connect them. Qt>=5.6 allows to conveniontly use delta functions and function pointers

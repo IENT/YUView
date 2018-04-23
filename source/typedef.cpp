@@ -40,6 +40,7 @@
 #elif defined(Q_OS_WIN32)
 #include <windows.h>
 #endif
+#include <QApplication>
 #include <QColor>
 #include <QIcon>
 #include <QLayout>
