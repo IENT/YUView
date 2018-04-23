@@ -97,6 +97,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       inputFormatType = inputAnnexBHEVC;
     else if (ext == "avc" || ext == "h264" || ext == "264")
       inputFormatType = inputAnnexBAVC;
+    else inputFormatType = inputLibavformat;
   }
   else
     inputFormatType = input;
@@ -200,7 +201,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       QString item = QInputDialog::getItem(mainWindow, "Select a decoder engine", label, possibleDecoderNames, 0, false, &ok);
       if (ok && !item.isEmpty())
       {
-        int idx = possibleDecoderNames.indexOf(item);
+        int idx = decoderEngineNames.indexOf(item);
         if (idx >= 0 && idx < decoderEngineNum)
           decoderEngineType = (decoderEngine)idx;
       }
@@ -227,9 +228,17 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   else if (decoderEngineType == decoderEngineFFMpeg)
   {
     if (isinputFormatTypeAnnexB)
+    {
       loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, format));
+      if (cachingEnabled)
+        cachingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, format));
+    }
     else
+    {
       loadingDecoder.reset(new decoderFFmpeg(inputFileFFmpegLoading->getVideoCodecPar(), format));
+      if (cachingEnabled)
+        cachingDecoder.reset(new decoderFFmpeg(inputFileFFmpegCaching->getVideoCodecPar(), format));
+    }
     fileState = noError;
   }
   else
