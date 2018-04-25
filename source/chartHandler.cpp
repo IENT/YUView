@@ -655,7 +655,7 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
           }
         }
       }
-      ChartShow showart = showVariant.value<ChartShow>();
+      chartShow showart = showVariant.value<chartShow>();
 
       if(showart != csPerFrame)
         return;
@@ -802,6 +802,12 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   lyGrid3dLimits->addWidget(lblYLimPositive, 1, 2);
   lyGrid3dLimits->addWidget(edYLimPositive,  1, 3);
 
+  QCheckBox* cbLimit64 = new QCheckBox("set limits from -64 to 64 for x and y");
+  QCheckBox* cbLimit128 = new QCheckBox("set limits from -128 to 128 for x and y");
+
+  lyGrid3dLimits->addWidget(cbLimit64, 2, 0);
+  lyGrid3dLimits->addWidget(cbLimit128,  2, 2);
+
   // connects to react if text changed
   { // mostly same code for all connects, but we cant implement in one method, because of the signal-slot-machenism we need a method with only one parameter. To check everything we need about 3 or 4 parameters
     connect(edXLimNegative, &QLineEdit::textChanged, this, [edXLimNegative, edXLimPositive, this](QString aString) {
@@ -940,6 +946,58 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
         playbackControllerFrameChanged(42);
       }
     );
+
+    connect(cbLimit64, &QCheckBox::clicked, this, [cbLimit64, cbLimit128, edXLimNegative, edXLimPositive, edYLimNegative, edYLimPositive, this] (bool aClicked) {
+        Q_UNUSED(aClicked)
+        edXLimNegative->blockSignals(true);
+        edXLimNegative->setText(QString::number(-64));
+        edXLimNegative->blockSignals(false);
+
+        edXLimPositive->blockSignals(true);
+        edXLimPositive->setText(QString::number(64));
+        edXLimPositive->blockSignals(false);
+
+        edYLimNegative->blockSignals(true);
+        edYLimNegative->setText(QString::number(-64));
+        edYLimNegative->blockSignals(false);
+
+        edYLimPositive->blockSignals(true);
+        edYLimPositive->setText(QString::number(64));
+        edYLimPositive->blockSignals(false);
+
+        cbLimit128->blockSignals(true);
+        cbLimit128->setChecked(false);
+        cbLimit128->blockSignals(false);
+
+        playbackControllerFrameChanged(42);
+      }
+    );
+
+    connect(cbLimit128, &QCheckBox::clicked, this, [cbLimit64, cbLimit128, edXLimNegative, edXLimPositive, edYLimNegative, edYLimPositive, this] (bool aClicked) {
+        Q_UNUSED(aClicked)
+        edXLimNegative->blockSignals(true);
+        edXLimNegative->setText(QString::number(-128));
+        edXLimNegative->blockSignals(false);
+
+        edXLimPositive->blockSignals(true);
+        edXLimPositive->setText(QString::number(128));
+        edXLimPositive->blockSignals(false);
+
+        edYLimNegative->blockSignals(true);
+        edYLimNegative->setText(QString::number(-128));
+        edYLimNegative->blockSignals(false);
+
+        edYLimPositive->blockSignals(true);
+        edYLimPositive->setText(QString::number(128));
+        edYLimPositive->blockSignals(false);
+
+        cbLimit64->blockSignals(true);
+        cbLimit64->setChecked(false);
+        cbLimit64->blockSignals(false);
+
+        playbackControllerFrameChanged(42);
+      }
+    );
   }
 
   //set content to our collapse-widget
@@ -991,9 +1049,9 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
       // all found, so we can leave here
       //! take care, this is one if-statement
       if((type != "")
-         && (showVariant.value<ChartShow>() != csUnknown)
-         && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
-         && (normaVariant.value<ChartNormalize>() != cnUnknown))
+         && (showVariant.value<chartShow>() != csUnknown)
+         && (groupVariant.value<chartGroupBy>() != cgbUnknown)
+         && (normaVariant.value<chartNormalize>() != cnUnknown))
         break;
     }
   }
@@ -1032,9 +1090,9 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   // call the lambda not only define it
   findAndSetNumberStrings3D(children);
 
-  ChartOrderBy order = cobUnknown; // set an default
+  chartOrderBy order = cobUnknown; // set an default
   // we dont have found the sort-order so set it
-  ChartShow showart = showVariant.value<ChartShow>();
+  chartShow showart = showVariant.value<chartShow>();
 
   if(showart == csPerFrame)
   {
@@ -1049,10 +1107,10 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   }
 
   if((showart != csUnknown)
-     && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
-     && (normaVariant.value<ChartNormalize>() != cnUnknown))
+     && (groupVariant.value<chartGroupBy>() != cgbUnknown)
+     && (normaVariant.value<chartNormalize>() != cnUnknown))
     // get selected one
-    order = EnumAuxiliary::makeChartOrderBy(showVariant.value<ChartShow>(), groupVariant.value<ChartGroupBy>(), normaVariant.value<ChartNormalize>());
+    order = EnumAuxiliary::makeChartOrderBy(showVariant.value<chartShow>(), groupVariant.value<chartGroupBy>(), normaVariant.value<chartNormalize>());
 
   if(showart == csAllFrames && order == this->mLastChartOrderBy && type == this->mLastStatisticsType)
     return this->mLastStatisticsWidget;
@@ -1201,7 +1259,7 @@ void ChartHandler::switchOrderEnableStatistics(const QString aString)
         if(objectname == OPTION_NAME_CBX_CHART_FRAMESHOW)
         {
           // getting the showkind
-          ChartShow selectedShow = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex()).value<ChartShow>();
+          chartShow selectedShow = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex()).value<chartShow>();
           if(selectedShow == csRange) // the frame range is selected
             switchEnableStatus(true, children); // enable the sliders / spinboxes etc
           else // was not selected

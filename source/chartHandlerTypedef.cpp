@@ -34,7 +34,7 @@
 
 
 /*-------------------- Enum ChartOrderBy functions  --------------------*/
-QString EnumAuxiliary::asString(ChartOrderBy aEnum)
+QString EnumAuxiliary::asString(chartOrderBy aEnum)
 {
   // check which enum we have and return correct information
   switch (aEnum) {
@@ -79,7 +79,7 @@ QString EnumAuxiliary::asString(ChartOrderBy aEnum)
   }
 }
 
-QString EnumAuxiliary::asTooltip(ChartOrderBy aEnum)
+QString EnumAuxiliary::asTooltip(chartOrderBy aEnum)
 {
   // check which enum we have and return correct information
   switch (aEnum) {
@@ -125,7 +125,7 @@ QString EnumAuxiliary::asTooltip(ChartOrderBy aEnum)
 }
 
 /*-------------------- Enum ChartShow functions  --------------------*/
-QString EnumAuxiliary::asString(ChartShow aEnum)
+QString EnumAuxiliary::asString(chartShow aEnum)
 {
   // check which enum we have and return correct information
   switch (aEnum) {
@@ -143,7 +143,7 @@ QString EnumAuxiliary::asString(ChartShow aEnum)
   }
 }
 
-QString EnumAuxiliary::asTooltip(ChartShow aEnum)
+QString EnumAuxiliary::asTooltip(chartShow aEnum)
 {
   // check which enum we have and return correct information
   switch (aEnum) {
@@ -162,7 +162,7 @@ QString EnumAuxiliary::asTooltip(ChartShow aEnum)
 }
 
 /*-------------------- Enum ChartGroupBy functions  --------------------*/
-QString EnumAuxiliary::asString(ChartGroupBy aEnum)
+QString EnumAuxiliary::asString(chartGroupBy aEnum)
 {
   // check which enum we have and return correct information
   switch (aEnum) {
@@ -177,7 +177,7 @@ QString EnumAuxiliary::asString(ChartGroupBy aEnum)
   }
 }
 
-QString EnumAuxiliary::asTooltip(ChartGroupBy aEnum)
+QString EnumAuxiliary::asTooltip(chartGroupBy aEnum)
 {
   // check which enum we have and return correct information
   switch (aEnum) {
@@ -193,7 +193,7 @@ QString EnumAuxiliary::asTooltip(ChartGroupBy aEnum)
 }
 
 /*-------------------- Enum ChartNormalize functions  --------------------*/
-QString EnumAuxiliary::asString(ChartNormalize aEnum)
+QString EnumAuxiliary::asString(chartNormalize aEnum)
 {
   // check which enum we have and return correct information
   switch (aEnum) {
@@ -208,7 +208,7 @@ QString EnumAuxiliary::asString(ChartNormalize aEnum)
   }
 }
 
-QString EnumAuxiliary::asTooltip(ChartNormalize aEnum)
+QString EnumAuxiliary::asTooltip(chartNormalize aEnum)
 {
   // check which enum we have and return correct information
   switch (aEnum) {
@@ -223,7 +223,7 @@ QString EnumAuxiliary::asTooltip(ChartNormalize aEnum)
   }
 }
 
-ChartOrderBy EnumAuxiliary::makeChartOrderBy(ChartShow aShow, ChartGroupBy aGroup, ChartNormalize aNormalize)
+chartOrderBy EnumAuxiliary::makeChartOrderBy(chartShow aShow, chartGroupBy aGroup, chartNormalize aNormalize)
 { // TODO -oCH: check if better solution as the big if-else-cascade (switch case is not better :D )
   // check if one of the parameter is unknown
   if(aShow == csUnknown || aGroup == cgbUnknown || aNormalize == cnUnknown)

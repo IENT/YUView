@@ -100,8 +100,21 @@ enum statisticsDataType
   sdtUnknown                      // always the last one if undefined or just dont know
 };
 
+/*-------------------- enum chartType --------------------*/
+enum chartType2D
+{
+  ct2DBarChart,           // draw a bar chart
+  ct2DUnknown             // undefined
+};
 
-/*-------------------- Struct collectedData --------------------*/
+enum chartType3D
+{
+  ct3DBarChart,           // draw a 3D bar chart
+  ct3dSurfaceChart,       // draw a 3D surface chart
+  ct3DUnknown             // undefined
+};
+
+/*-------------------- struct collectedData --------------------*/
 /**
  * @brief The collectedData struct
  * small struct to avoid big return-types
@@ -242,8 +255,7 @@ struct collectedData
 
 };
 
-
-/*-------------------- Struct itemWidgetCoord --------------------*/
+/*-------------------- struct itemWidgetCoord --------------------*/
 /**
  * @brief The itemWidgetCoord struct
  * necesseray, because if we want to use QMap or QHash,
@@ -298,8 +310,7 @@ struct itemWidgetCoord
   }
 };
 
-
-/*-------------------- Struct chartSettingsData --------------------*/
+/*-------------------- struct chartSettingsData --------------------*/
 /**
  * @brief The chartSettingsData struct
  * will collect all information about the setting to the chart.
@@ -398,10 +409,9 @@ struct chartSettingsData
   }
 };
 
-
 /*-------------------- Enum ChartOrderBy --------------------*/
 /**
- * @brief The ChartOrderBy enum
+ * @brief The chartOrderBy enum
  * options how the data can be displayed
  *
  * if change the enum, change the enum-methods to it too
@@ -420,7 +430,7 @@ struct chartSettingsData
  *
  * last one is always cobUnknown
  */
-enum ChartOrderBy
+enum chartOrderBy
 {
   cobPerFrameGrpByValueNrmNone,         // order: each frame,   group by value,     no normalize
   cobPerFrameGrpByValueNrmByArea,       // order: each frame,   group by value,     normalize by Area
@@ -444,10 +454,10 @@ enum ChartOrderBy
 };
 
 /**
- * @brief The ChartShow enum
+ * @brief The chartShow enum
  * which options we have to show the data
  */
-enum ChartShow
+enum chartShow
 {
   csPerFrame,     // show for each frame
   csRange,        // show for an range
@@ -456,10 +466,10 @@ enum ChartShow
 };
 
 /**
- * @brief The ChartGroupBy enum
+ * @brief The chartGroupBy enum
  * which options we have to group the data
  */
-enum ChartGroupBy
+enum chartGroupBy
 {
   cgbByValue,     // group by value
   cgbByBlocksize, // group by blocksize
@@ -467,14 +477,45 @@ enum ChartGroupBy
 };
 
 /**
- * @brief The ChartNormalize enum
+ * @brief The chartNormalize enum
  * which options we have to normalize the data
  */
-enum ChartNormalize
+enum chartNormalize
 {
   cnNone,         // no normalize
   cnByArea,       // will be normalized by the complete area (all pixels of an picture
   cnUnknown       // if not definied
+};
+
+
+/*-------------------- struct chartCachingInformation --------------------*/
+struct chartCachingInformation
+{
+  playlistItem* mItem;
+  indexRange    mRange = indexRange(0, 0);
+  chartOrderBy  mChartOrderBy = cobUnknown;
+  QString       mType;
+
+  /**
+   * @brief operator ==
+   * check that enum is equal to an other one
+   *
+   * @param aData
+   * chartCachingInformation to check
+   *
+   * @return
+   * true, if  equal
+   * otherwise false
+   */
+  bool operator==(const chartCachingInformation& aData) const
+  {
+    bool item       = this->mItem == aData.mItem;
+    bool range      = this->mRange == aData.mRange;
+    bool chartOrder = this->mChartOrderBy == aData.mChartOrderBy;
+    bool type       = this->mType == aData.mType;
+
+    return (item && range && chartOrder && type);
+  }
 };
 
 
@@ -484,11 +525,12 @@ enum ChartNormalize
  * Every enum-function should be inserted as a static function, not as globalfuntion.
  * there is no difference, but it's easier to read int the code later
  */
-class EnumAuxiliary : private QObject {
+class EnumAuxiliary : private QObject
+{
   Q_OBJECT
 
   public:
-/*-------------------- ChartOrderBy --------------------*/
+/*-------------------- chartOrderBy --------------------*/
   /**
    * @brief asString
    * converts the given enum to an readable string
@@ -499,7 +541,7 @@ class EnumAuxiliary : private QObject {
    * @return
    * readable string
    */
-  static QString asString(ChartOrderBy aEnum);
+  static QString asString(chartOrderBy aEnum);
 
   /**
    * @brief asTooltip
@@ -511,9 +553,9 @@ class EnumAuxiliary : private QObject {
    * @return
    * readable string
    */
-  static QString asTooltip(ChartOrderBy aEnum);
+  static QString asTooltip(chartOrderBy aEnum);
 
-/*-------------------- ChartShow --------------------*/
+/*-------------------- chartShow --------------------*/
   /**
    * @brief asString
    * converts the given enum to an readable string
@@ -524,7 +566,7 @@ class EnumAuxiliary : private QObject {
    * @return
    * readable string
    */
-  static QString asString(ChartShow aEnum);
+  static QString asString(chartShow aEnum);
 
   /**
    * @brief asTooltip
@@ -536,9 +578,9 @@ class EnumAuxiliary : private QObject {
    * @return
    * readable string
    */
-  static QString asTooltip(ChartShow aEnum);
+  static QString asTooltip(chartShow aEnum);
 
-/*-------------------- ChartGroupBy --------------------*/
+/*-------------------- chartGroupBy --------------------*/
   /**
    * @brief asString
    * converts the given enum to an readable string
@@ -549,7 +591,7 @@ class EnumAuxiliary : private QObject {
    * @return
    * readable string
    */
-  static QString asString(ChartGroupBy aEnum);
+  static QString asString(chartGroupBy aEnum);
 
   /**
    * @brief asTooltip
@@ -561,9 +603,9 @@ class EnumAuxiliary : private QObject {
    * @return
    * readable string
    */
-  static QString asTooltip(ChartGroupBy aEnum);
+  static QString asTooltip(chartGroupBy aEnum);
 
-/*-------------------- ChartNormalize --------------------*/
+/*-------------------- chartNormalize --------------------*/
   /**
    * @brief asString
    * converts the given enum to an readable string
@@ -574,7 +616,7 @@ class EnumAuxiliary : private QObject {
    * @return
    * readable string
    */
-  static QString asString(ChartNormalize aEnum);
+  static QString asString(chartNormalize aEnum);
 
   /**
    * @brief asTooltip
@@ -586,7 +628,7 @@ class EnumAuxiliary : private QObject {
    * @return
    * readable string
    */
-  static QString asTooltip(ChartNormalize aEnum);
+  static QString asTooltip(chartNormalize aEnum);
 
   /**
    * @brief makeChartOrderBy
@@ -604,7 +646,7 @@ class EnumAuxiliary : private QObject {
    * @return
    * a created enum, combines the parameters
    */
-  static ChartOrderBy makeChartOrderBy(ChartShow aShow, ChartGroupBy aGroup, ChartNormalize aNormalize);
+  static chartOrderBy makeChartOrderBy(chartShow aShow, chartGroupBy aGroup, chartNormalize aNormalize);
 };
 
 // other necessary implementations
@@ -627,9 +669,11 @@ inline uint qHash (const QPoint & key)
 
 // Metatype-Information
 // necessary that QVariant can handle the enums
-Q_DECLARE_METATYPE(ChartOrderBy)
-Q_DECLARE_METATYPE(ChartShow)
-Q_DECLARE_METATYPE(ChartGroupBy)
-Q_DECLARE_METATYPE(ChartNormalize)
+Q_DECLARE_METATYPE(chartOrderBy)
+Q_DECLARE_METATYPE(chartShow)
+Q_DECLARE_METATYPE(chartGroupBy)
+Q_DECLARE_METATYPE(chartNormalize)
+Q_DECLARE_METATYPE(chartType2D)
+Q_DECLARE_METATYPE(chartType3D)
 
 #endif // CHARTHANDLERTYPEDEF_H

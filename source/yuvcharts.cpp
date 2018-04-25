@@ -11,7 +11,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QMessageBox>
 
-int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, const ChartShow aShow, const indexRange aRange)
+int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, const chartShow aShow, const indexRange aRange)
 {
   // first calculate total amount of pixel
   QSize size = aItem->getSize();
@@ -71,7 +71,7 @@ YUVChartFactory::YUVChartFactory(QWidget *aNoDataToShowWidget, QWidget *aDataIsL
 
 }
 
-QWidget* YUVChartFactory::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
+QWidget* YUVChartFactory::createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
 {
   Q_UNUSED(aSortedData)
 
@@ -80,7 +80,15 @@ QWidget* YUVChartFactory::createChart(const ChartOrderBy aOrderBy, playlistItem*
   // our bar chart can not display 3D, so we check if in one collectedData has 3D-Data
   bool is2DData = this->is2DData(sortedData);
   if(is2DData)
-    return this->mBarChart.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+  {
+    switch (this->m2DType)
+    {
+      case ct2DBarChart:
+        return this->mBarChart.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+      default:
+      return this->mNoDataToShowWidget;
+    }
+  }
 
   bool is3DData = this->is3DData(sortedData);
   if(is3DData)
@@ -92,8 +100,15 @@ QWidget* YUVChartFactory::createChart(const ChartOrderBy aOrderBy, playlistItem*
       this->mSurfaceChart3D.set3DCoordinationRange(this->mMinX, this->mMaxX, this->mMinY, this->mMaxY);
     }
 
-    //return this->mBarChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
-    return this->mSurfaceChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+    switch (this->m3DType)
+    {
+      case ct3DBarChart:
+        return this->mBarChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+      case ct3dSurfaceChart:
+        return this->mSurfaceChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+      default:
+        return this->mNoDataToShowWidget;
+    }
   }
 
   return this->mNoDataToShowWidget;
@@ -121,7 +136,7 @@ void YUVChartFactory::set3DCoordinationtoDefault()
   this->mMaxY = INT_MAX;
 }
 
-QWidget* YUVBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
+QWidget* YUVBarChart::createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
 {
   // just a holder
   QList<collectedData>* sortedData = NULL;
@@ -139,7 +154,7 @@ QWidget* YUVBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem* aIt
     return this->mNoDataToShowWidget;
 }
 
-QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
+QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
 {
   // if we have no keys, we cant show any data so return at this point
   if(!aSortedData->count())
@@ -816,7 +831,7 @@ YUV3DCharts::YUV3DCharts(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWi
   this->set3DCoordinationtoDefault();
 }
 
-QWidget* YUV3DCharts::createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
+QWidget* YUV3DCharts::createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
 {
   // check that we have init OpenGl
   if(!this->hasOpenGL())
@@ -862,7 +877,7 @@ void YUV3DCharts::set3DCoordinationtoDefault()
   this->mMaxY = INT_MAX;
 }
 
-QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
+QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
 {
   Q_UNUSED(aItem)
   Q_UNUSED(aRange)
@@ -1118,6 +1133,7 @@ chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrm(QList<collected
 
   settings.m3DData = resultValue;
   settings.mStatDataType = dataType;
+  settings.define3DRanges(mMinX, mMaxX, mMinY, mMaxY);
 
   return settings;
 }

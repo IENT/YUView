@@ -236,7 +236,7 @@ private:
   // save the last created statisticsWidget
   QWidget* mLastStatisticsWidget;
   // save the last ChartOrderBy-Enum
-  ChartOrderBy mLastChartOrderBy = cobUnknown;
+  chartOrderBy mLastChartOrderBy = cobUnknown;
   // save the last selected statistics-type
   QString mLastStatisticsType = "";
 
