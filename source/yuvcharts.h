@@ -182,6 +182,10 @@ protected:
   QWidget* mDataIsLoadingWidget;
 };
 
+/**
+ * @brief The YUV3DCharts class
+ * default-implementation for all 3D-charts
+ */
 class YUV3DCharts : public YUVCharts
 {
   Q_OBJECT
@@ -403,13 +407,52 @@ protected:
    */
   QWidget* makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
 
+  /**
+   * @brief makeStatisticsPerFrameGrpByBlocksizeNrm
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
   QWidget* makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsFrameRangeGrpByBlocksizeNrm
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobRangeGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
   QWidget* makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByBlocksizeNrm
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
   QWidget* makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
 
 };
 
-
+/**
+ * @brief The YUV3DSurfaceChart class
+ * specific class for 3D
+ * Surface-Chart
+ */
 class YUV3DSurfaceChart : public YUV3DCharts
 {
   Q_OBJECT

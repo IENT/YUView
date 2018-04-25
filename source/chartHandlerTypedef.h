@@ -309,6 +309,15 @@ struct chartSettingsData
   // bool to check if our data is valid
   bool mSettingsIsValid = true;
 
+  // check what we have for an type, so we can decide to build the chart a bit other
+  statisticsDataType mStatDataType = sdtUnknown;
+
+  // we can check to set custom axes, the custom axes will depend on the statisticsDataType
+  bool mSetCustomAxes = false;
+
+  // check if we have to show the legend of the chart
+  bool mShowLegend = false;
+
   // list of categories
   QStringList mCategories;
 
@@ -319,18 +328,35 @@ struct chartSettingsData
   //for 3D data we use
   QMap<int, QMap<int, double>> m3DData;
 
-// use maybe later for caching or something else
+  // use maybe later for caching or something else
   indexRange mX3DRange = indexRange(0, 0);
   indexRange mY3DRange = indexRange(0, 0);
 
+  /**
+   * @brief define3DRanges
+   * for use in 3d data. it determines the ranges of x and y components
+   * the given parameter are maximum / minimum.
+   * the function checks, that the values are possible
+   *
+   * @param aMinX
+   * minimum of x
+   *
+   * @param aMaxX
+   * maximum of x
+   *
+   * @param aMinY
+   * minimum of y
+   *
+   * @param aMaxY
+   * maximum of y
+   */
   void define3DRanges(int aMinX, int aMaxX, int aMinY, int aMaxY)
   {
-    // set result-vars
+    // set result-vars to default
     int xmin = INT_MAX;
     int xmax = INT_MIN;
     int ymin = INT_MAX;
     int ymax = INT_MIN;
-
 
     // go thru the elements and save the min and  max
     foreach (int x, this->m3DData.keys())

@@ -208,6 +208,8 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const Cha
   // creating default-axes: always have to be called before you add some custom axes
   chart->createDefaultAxes();
 
+  // we check if we have to create custom axes,
+  // but first we implement an default
 
   // if we have set any categories, we can add a custom x-axis
   if(settings.mCategories.count() > 0)
@@ -236,8 +238,27 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const Cha
     }
   }
 
+  // in this case we check that we have to set custom axes
+  if(settings.mSetCustomAxes)
+  {
+    switch (settings.mStatDataType)
+    {
+      case sdtStructStatisticsItem_Value:
+        // first no custom axes
+        break;
+      case sdtStructStatisticsItem_Vector:
+        // first no custom axes
+        break;
+      case sdtRGB:
+        break;
+      default:
+        // was set before
+        break;
+    }
+  }
+
   // setting Options for the chart-legend
-  chart->legend()->setVisible(true);
+  chart->legend()->setVisible(settings.mShowLegend);
   chart->legend()->setAlignment(Qt::AlignBottom);
 
   // creating result chartview and set the data
@@ -255,6 +276,9 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
   // define result
   chartSettingsData settings;
   settings.mSeries = series;
+
+  statisticsDataType dataType = sdtUnknown;
+  statisticsDataType lastDataType = sdtUnknown;
 
   // just a holder
   QBarSet *set;
@@ -320,7 +344,16 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
       if(moreThanOneElement)
         //at least appending the label to the categories for the axes if necessary
          settings.mCategories << data.mLabel;
+
+      // check the type
+      if((data.mStatDataType != dataType) && (dataType == lastDataType))
+        dataType = data.mStatDataType;
+
+      lastDataType  = data.mStatDataType;
     }
+
+  // set the datatype
+  settings.mStatDataType = dataType;
   }
   return settings;
 }
@@ -349,6 +382,9 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
   // define result
   chartSettingsData settings;
   settings.mSeries = series;
+
+  statisticsDataType dataType = sdtUnknown;
+  statisticsDataType lastDataType = sdtUnknown;
 
   // we order by the value, so we want to find out how many times the value was count in this frame
   QHash<int, int*> hashValueCount;
@@ -389,7 +425,16 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
         *count += amount;
       }
     }
+
+    // check the type
+    if((data.mStatDataType != dataType) && (dataType == lastDataType))
+      dataType = data.mStatDataType;
+
+    lastDataType  = data.mStatDataType;
   }
+
+  // set the datatype
+  settings.mStatDataType = dataType;
 
   // at this point we order the keys new from low to high
   // we cant use QHash at this point, because the items are arbitrarily ordered in QHash, so we have to use QMap at this point
@@ -490,6 +535,9 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
   chartSettingsData settings;
   settings.mSeries = series;
 
+  statisticsDataType dataType = sdtUnknown;
+  statisticsDataType lastDataType = sdtUnknown;
+
   // we order by the value, so we want to find out how many times the value was count in this frame
   QHash<int, int*> hashValueCount;
 
@@ -534,7 +582,14 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
         // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
         *count += (width * height) * amount;
       }
+      // check the type
+      if((data.mStatDataType != dataType) && (dataType == lastDataType))
+        dataType = data.mStatDataType;
+
+      lastDataType  = data.mStatDataType;
     }
+    // set the datatype
+    settings.mStatDataType = dataType;
   }
 
   // order the items from low to high
@@ -578,6 +633,9 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
   // define result
   chartSettingsData settings;
   settings.mSeries = series;
+
+  statisticsDataType dataType = sdtUnknown;
+  statisticsDataType lastDataType = sdtUnknown;
 
   // just a holder
   QBarSet* set;
@@ -634,6 +692,12 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
       }
     }
 
+    // check the type
+    if((data.mStatDataType != dataType) && (dataType == lastDataType))
+      dataType = data.mStatDataType;
+
+    lastDataType  = data.mStatDataType;
+
     // check if we have more than one value for the set
     if(moreThanOneElement)
     {
@@ -652,6 +716,10 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
       //at least appending the label to the categories for the axes if necessary
        settings.mCategories << data.mLabel;
   }
+
+  // set the datatype
+  settings.mStatDataType = dataType;
+
   return settings;
 }
 
@@ -813,9 +881,9 @@ QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const Cha
       settings = this->makeStatisticsPerFrameGrpByValNrm(aSortedData);
       break;
     case cobPerFrameGrpByBlocksizeNrmNone:
-      return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);    // take care, we leave here! We create a 2D graph, bo 3D graph possible
+      return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);    // take care, we leave here! We create a 2D graph, 3D graph possible
     case cobPerFrameGrpByBlocksizeNrmByArea:
-      return this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);        // take care, we leave here! We create a 2D graph, bo 3D graph possible
+      return this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);        // take care, we leave here! We create a 2D graph, 3D graph possible
 
     case cobRangeGrpByValueNrmNone:
       settings = this->makeStatisticsFrameRangeGrpByValNrmNone(aSortedData);
@@ -824,9 +892,9 @@ QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const Cha
       settings = this->makeStatisticsFrameRangeGrpByValNrm(aSortedData);
       break;
     case cobRangeGrpByBlocksizeNrmNone:
-      return this->makeStatisticsFrameRangeGrpByBlocksizeNrmNone(aSortedData);  // take care, we leave here! We create a 2D graph, bo 3D graph possible
+      return this->makeStatisticsFrameRangeGrpByBlocksizeNrmNone(aSortedData);  // take care, we leave here! We create a 2D graph, 3D graph possible
     case cobRangeGrpByBlocksizeNrmByArea:
-      return this->makeStatisticsFrameRangeGrpByBlocksizeNrm(aSortedData);      // take care, we leave here! We create a 2D graph, bo 3D graph possible
+      return this->makeStatisticsFrameRangeGrpByBlocksizeNrm(aSortedData);      // take care, we leave here! We create a 2D graph, 3D graph possible
 
     case cobAllFramesGrpByValueNrmNone:
       settings = this->makeStatisticsAllFramesGrpByValNrmNone(aSortedData);
@@ -835,9 +903,9 @@ QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const Cha
       settings = this->makeStatisticsAllFramesGrpByValNrm(aSortedData);
       break;
     case cobAllFramesGrpByBlocksizeNrmNone:
-      return this->makeStatisticsAllFramesGrpByBlocksizeNrmNone(aSortedData);   // take care, we leave here! We create a 2D graph, bo 3D graph possible
+      return this->makeStatisticsAllFramesGrpByBlocksizeNrmNone(aSortedData);   // take care, we leave here! We create a 2D graph, 3D graph possible
     case cobAllFramesGrpByBlocksizeNrmByArea:
-      return this->makeStatisticsAllFramesGrpByBlocksizeNrm(aSortedData);       // take care, we leave here! We create a 2D graph, bo 3D graph possible
+      return this->makeStatisticsAllFramesGrpByBlocksizeNrm(aSortedData);       // take care, we leave here! We create a 2D graph, 3D graph possible
 
     default:
       return this->mNoDataToShowWidget;
@@ -856,6 +924,9 @@ QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const Cha
 chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData)
 {
   chartSettingsData settings;
+
+  statisticsDataType dataType = sdtUnknown;
+  statisticsDataType lastDataType = sdtUnknown;
 
   // the result-value is a 2D-Array
   // we realize the array with an 2 dimensiol qmap, so we don´t have to search for the maximum x-value and y-value
@@ -893,6 +964,11 @@ chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
             resultValueCount[x][y] += amount;
         }
       }
+      // check the type
+      if((data.mStatDataType != dataType) && (dataType == lastDataType))
+        dataType = data.mStatDataType;
+
+      lastDataType  = data.mStatDataType;
     }
   }
   // we look at all items we have
@@ -917,10 +993,16 @@ chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
           resultValueCount[point.x()][point.y()] += amount;
         }
       }
+      // check the type
+      if((data.mStatDataType != dataType) && (dataType == lastDataType))
+        dataType = data.mStatDataType;
+
+      lastDataType  = data.mStatDataType;
     }
   }
 
   settings.m3DData = resultValueCount;
+  settings.mStatDataType = dataType;
 
   settings.define3DRanges(mMinX, mMaxX, mMinY, mMaxY);
 
@@ -942,6 +1024,8 @@ chartSettingsData YUV3DCharts::makeStatisticsAllFramesGrpByValNrmNone(QList<coll
 chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrm(QList<collectedData> *aSortedData)
 {
   chartSettingsData settings;
+  statisticsDataType dataType = sdtUnknown;
+  statisticsDataType lastDataType = sdtUnknown;
 
   int maxAmountVector = 0;
 
@@ -984,6 +1068,12 @@ chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrm(QList<collected
           }
         }
       }
+
+      // check the type
+      if((data.mStatDataType != dataType) && (dataType == lastDataType))
+        dataType = data.mStatDataType;
+
+      lastDataType  = data.mStatDataType;
     }
   }
   // we look a all items we have
@@ -1009,6 +1099,11 @@ chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrm(QList<collected
           maxAmountVector += amount;
         }
       }
+      // check the type
+      if((data.mStatDataType != dataType) && (dataType == lastDataType))
+        dataType = data.mStatDataType;
+
+      lastDataType  = data.mStatDataType;
     }
   }
 
@@ -1022,6 +1117,7 @@ chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrm(QList<collected
   }
 
   settings.m3DData = resultValue;
+  settings.mStatDataType = dataType;
 
   return settings;
 }
@@ -1040,6 +1136,9 @@ chartSettingsData YUV3DCharts::makeStatisticsAllFramesGrpByValNrm(QList<collecte
 
 QWidget* YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
 {
+  statisticsDataType dataType = sdtUnknown;
+  statisticsDataType lastDataType = sdtUnknown;
+
   QBarSeries* series = new QBarSeries();
   // just a holder
   QBarSet *set;
@@ -1065,7 +1164,16 @@ QWidget* YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collecte
       *set << totalAmount;
       series->append(set);
     }
+
+
+    // check the type
+    if((data.mStatDataType != dataType) && (dataType == lastDataType))
+      dataType = data.mStatDataType;
+
+    lastDataType  = data.mStatDataType;
   }
+
+  // ToDo -oCH: implement possible settings for the datatype
 
   // creating the result
   QChart* chart = new QChart();
@@ -1103,6 +1211,9 @@ QWidget* YUV3DCharts::makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collect
 
 QWidget* YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
 {
+  statisticsDataType dataType = sdtUnknown;
+  statisticsDataType lastDataType = sdtUnknown;
+
   QBarSeries* series = new QBarSeries();
 
   // just a holder
@@ -1150,8 +1261,16 @@ QWidget* YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedDat
       // append data
       *set << ratio;
       series->append(set);
+      // check the type
     }
+
+    if((data.mStatDataType != dataType) && (dataType == lastDataType))
+      dataType = data.mStatDataType;
+
+    lastDataType  = data.mStatDataType;
   }
+
+  // ToDo -oCH: implement possible settings for the datatype
 
   // creating the result to display the data
   QChart* chart = new QChart();
