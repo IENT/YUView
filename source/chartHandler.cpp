@@ -103,13 +103,11 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
     // in case of getting the widget a second time, we just have to load it from the list
     this->mListItemWidget << coord;
   }
-  // in case of playlistItemImageFile
-  else if (dynamic_cast<playlistItemImageFile*>(aItem))
+  // in case of playlistItemImageFile or playlistItemRawFile
+  else if (dynamic_cast<playlistItemImageFile*>(aItem) || dynamic_cast<playlistItemRawFile*>(aItem))
   {
-    // cast item to right type
-    playlistItemImageFile* pltsf = dynamic_cast<playlistItemImageFile*>(aItem);
     // get the widget and save it
-    coord.mWidget = this->createImageFileColorAnalysisWidget(pltsf, coord);
+    coord.mWidget = this->createColorSpaceWidget(aItem, coord);
     // we save an item-widget combination in a list
     // in case of getting the widget a second time, we just have to load it from the list
     this->mListItemWidget << coord;
@@ -681,8 +679,8 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
     // check what form of playlistitem was selected
     if(dynamic_cast<playlistItemStatisticsFile*> (items[0]))
       chart = this->createStatisticsChart(coord);
-    else if(dynamic_cast<playlistItemImageFile*> (items[0]))
-      chart = this->createImageColorAnalysisChart(coord);
+    else if(dynamic_cast<playlistItemImageFile*> (items[0]) || dynamic_cast<playlistItemRawFile*> (items[0]))
+      chart = this->createColorSpaceChart(coord);
     else
       // the selected item is not defined at this point, so show a default
       chart = &(this->mNoDataToShowWidget);
@@ -1255,8 +1253,8 @@ void ChartHandler::timerEvent(QTimerEvent *event)
   this->currentSelectedItemsChanged(items[0], items[0]);
 }
 
-/*--------------------Functions for Image Color Analysis--------------------*/
-QWidget* ChartHandler::createImageFileColorAnalysisWidget(playlistItemImageFile *aItem, itemWidgetCoord& aCoord)
+/*--------------------Functions for Color Analysis--------------------*/
+QWidget* ChartHandler::createColorSpaceWidget(playlistItem *aItem, itemWidgetCoord& aCoord)
 {
 
   //define a simple layout for the Image file Widget
@@ -1283,9 +1281,6 @@ QWidget* ChartHandler::createImageFileColorAnalysisWidget(playlistItemImageFile 
     //map has items, so add them
     cbxTypes->addItem(CBX_OPTION_SELECT);
 
-    //add the possibility to choose "RGB"
-    cbxTypes->addItem(CBX_LABEL_RGB);
-
     foreach (QString type, aCoord.mData->keys())
       cbxTypes->addItem(type); // fill with data
   }
@@ -1298,7 +1293,7 @@ QWidget* ChartHandler::createImageFileColorAnalysisWidget(playlistItemImageFile 
   connect(cbxTypes,
           static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
           this,
-          &ChartHandler::onBasicColorChange);
+          &ChartHandler::onColorSpaceChange);
 
   // getting the list to the order by - components
   QList<QWidget*> listGeneratedWidgets = this->generateOrderWidgetsOnly(cbxTypes->count() > 1);
@@ -1318,7 +1313,7 @@ QWidget* ChartHandler::createImageFileColorAnalysisWidget(playlistItemImageFile 
   return basicWidget;
 }
 
-void ChartHandler::onBasicColorChange(const QString aString)
+void ChartHandler::onColorSpaceChange(const QString aString)
 {
   // get the selected playListItemStatisticFiles-item
   auto items = this->mPlaylist->getSelectedItems();
@@ -1332,7 +1327,7 @@ void ChartHandler::onBasicColorChange(const QString aString)
 
     QWidget* chart;
     if(aString != CBX_OPTION_SELECT) // new type was selected in the combobox
-      chart = this->createImageColorAnalysisChart(coord); // so we generate the statistic
+      chart = this->createColorSpaceChart(coord); // so we generate the statistic
     else // "Select..." was selected so
     {
       // we set a default-widget
@@ -1351,7 +1346,7 @@ void ChartHandler::onBasicColorChange(const QString aString)
   }
 }
 
-QWidget* ChartHandler::createImageColorAnalysisChart(itemWidgetCoord& aCoord)
+QWidget* ChartHandler::createColorSpaceChart(itemWidgetCoord& aCoord)
 {
   ChartOrderBy order = cobPerFrameGrpByValueNrmNone;
 
@@ -1379,14 +1374,7 @@ QWidget* ChartHandler::createImageColorAnalysisChart(itemWidgetCoord& aCoord)
     }
   }
 
-
-  //qDebug() << type;
-
-  //YUVBarChart barchart(&this->mNoDataToShowWidget, &this->mDataIsLoadingWidget);
-  //this->mLastStatisticsWidget = barchart.createChart(order, aCoord.mItem, range, type);
-
-  YUVBarChart barchart(&this->mNoDataToShowWidget, &this->mDataIsLoadingWidget);
-  this->mLastStatisticsWidget = barchart.createChart(order, aCoord.mItem, range, type);
+  this->mLastStatisticsWidget = this->mYUVChartFactory.createChart(order, aCoord.mItem, range, type);
 
   return this->mLastStatisticsWidget;
 }

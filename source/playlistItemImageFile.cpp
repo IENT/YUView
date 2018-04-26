@@ -271,6 +271,7 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData(indexRange
     for (int frame = range.first; frame <= range.second; frame++)
     {
       QMap<QString, QList<QVariant>> map;
+      QStringList completeTypes;
 
       for (int width = 0; width < 50; width++)
       {
@@ -278,9 +279,14 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData(indexRange
         {
           ValuePairListSets pixelValueSets = this->getPixelValues(QPoint(width, height),  frame);
 
+          if(!completeTypes.contains(pixelValueSets.at(0).first))
+            completeTypes << pixelValueSets.at(0).first;
+
           ValuePairList pixelValueList = pixelValueSets.at(0).second;
 
-          for (int pos = 0; pos < pixelValueList.count(); pos++)
+          //map.insert(pixelValueSets.at(0).first, pixelValueList);
+
+          for(int pos = 0; pos < pixelValueList.count(); pos++)
           {
             ValuePair pixelValue = pixelValueList.at(pos);
 
@@ -295,7 +301,17 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData(indexRange
           }
         }
 
-        foreach (QString key, map.keys())
+        for (int i = 0; i < completeTypes.length(); i++)
+        {
+          QList<QVariant> dataList;
+          foreach (QString key, completeTypes.at(i))
+          {
+            dataList.append(map.value(key));
+          }
+          map.insertMulti(completeTypes.at(i), dataList);
+        }
+
+        foreach(QString key, map.keys())
         {
           QList<QVariant> dataList = map.value(key);
           QList<QList<QVariant>> resultList;

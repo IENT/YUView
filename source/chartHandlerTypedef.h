@@ -86,7 +86,9 @@ class playlistItem;
 #define SLIDER_LABEL_END_FRAME      "End frame: "
 
 #define CBX_LABEL_IMAGE_TYPE        "Images: "
+#define CBX_LABEL_RAW_TYPE          "Raw File:"
 #define CBX_LABEL_RGB               "RGB"
+#define CBX_LABEL_YUV               "YUV"
 
 /*-------------------- enum statisticsDataType --------------------*/
 /**

@@ -132,10 +132,12 @@ protected:
   bool unresolvableError;
   bool setError(QString error) { unresolvableError = true; infoText = error; return false; }
 private:
+
   // --------------- data statistics---------------
 
   // List of statistic values
   QMap<QString, QList<QList<QVariant>>> mStatisticData;
+
 };
 
 #endif

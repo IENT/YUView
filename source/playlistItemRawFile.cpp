@@ -534,3 +534,154 @@ void playlistItemRawFile::reloadItemSource()
   // Emit that the item needs redrawing and the cache changed.
   emit signalItemChanged(true, RECACHE_NONE);
 }
+
+QMap<QString, QList<QList<QVariant>>>* playlistItemRawFile::getData(indexRange range, bool reset)
+{
+  //predifine data (witch is a map containing 3 branches (r, g, b) and each branch has 255 subbranches (# of pixel values))
+  QMap<QString, QList<QList<QVariant>>> data;
+
+  QSize imageSize = this->getSize();
+
+    for (int frame = range.first; frame <= range.second; frame++)
+    {
+      QMap<QString, QList<QVariant>> map;
+
+      for (int width = 0; width < 50; width++)
+      {
+        for (int height = 0; height < 50; height++)
+        {
+          ValuePairListSets pixelValueSets = this->getPixelValues(QPoint(width, height),  frame);
+
+          ValuePairList pixelValueList = pixelValueSets.at(0).second;
+
+          for (int pos = 0; pos < pixelValueList.count(); pos++)
+          {
+            ValuePair pixelValue = pixelValueList.at(pos);
+
+            // getting the old / new datalist
+            QList<QVariant> dataList = map.value(pixelValue.first);
+
+            // appending the new data
+            dataList.append(QVariant::fromValue(pixelValue.second));
+
+            // insert new datalist to refresh
+            map.insert(pixelValue.first, dataList);
+          }
+        }
+
+        foreach (QString key, map.keys())
+        {
+          QList<QVariant> dataList = map.value(key);
+          QList<QList<QVariant>> resultList;
+          resultList.append(dataList);
+          data.insert(key, resultList);
+        }
+
+      }
+    }
+
+  this->mStatisticData = data;
+
+  return &this->mStatisticData;
+}
+
+QList<collectedData>* playlistItemRawFile::sortAndCategorizeData(const QString aType, const int aFrameIndex)
+{
+  Q_UNUSED(aFrameIndex)
+
+  QList<QPair<QVariant, int>*> mValue;
+
+  //prepare the result
+  QMap<QString, QMap<int, int*>*>* dataMap = new QMap<QString, QMap<int, int*>*>;
+
+  // getting allData from the type
+  QList<QList<QVariant>> allData = this->mStatisticData.value(aType);
+
+  // getting the data depends on the actual selected frameIndex / POC
+  //QList<QVariant> data = allData.at(aFrameIndex);
+
+  QList<collectedData>* resultData = new QList<collectedData>;
+
+  //check if data was loaded
+  if(!(&this->mStatisticData))
+    this->getData(this->getFrameIdxRange(), true);
+
+  collectedData data;
+  data.mStatDataType = sdtStructStatisticsItem_Value;
+  QString key = aType;
+  data.mLabel = key;
+  QList<collectedData>* result = new QList<collectedData>();
+
+  //ask if selected Type is "RGB"
+  if (key == "RGB")
+  {
+  QLinkedList<QString> stringContainer;
+  stringContainer << "R" << "G" << "B";
+  QString controlString;
+
+  foreach (controlString, stringContainer)
+  {
+    key = controlString;
+
+    QList<QList<QVariant>> resultLists = this->mStatisticData.value(key);
+    QMap<int, int> map;
+
+    for (int i = 0; i < resultLists.count(); i++)
+    {
+      QList<QVariant> dataList = resultLists.at(i);
+      for (int j = 0; j < dataList.count(); j++)
+      {
+        QVariant variant = dataList.at(j);
+        int colorValue = variant.toInt();
+        int value = map.value(colorValue);
+        value++;
+        map.insert(colorValue, value);
+      }
+    }
+
+    foreach (int key, map.keys())
+    {
+      data.addValue(QVariant::fromValue(key), map.value(key));
+    }
+
+  }
+  result->append(data);
+  return result;
+  }
+  else
+  {
+    QList<QList<QVariant>> resultLists = this->mStatisticData.value(key);
+    QMap<int, int> map;
+
+    for (int i = 0; i < resultLists.count(); i++)
+    {
+      QList<QVariant> dataList = resultLists.at(i);
+      for (int j = 0; j < dataList.count(); j++)
+      {
+        QVariant variant = dataList.at(j);
+        int colorValue = variant.toInt();
+        int value = map.value(colorValue);
+        value++;
+        map.insert(colorValue, value);
+      }
+    }
+
+    foreach (int key, map.keys())
+    {
+      data.addValue(QVariant::fromValue(key), map.value(key));
+    }
+    QList<collectedData>* result = new QList<collectedData>();
+    result->append(data);
+    return result;
+  }
+}
+
+QList<collectedData>* playlistItemRawFile::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
+{
+  //if we have the same frame --> just one frame we look at
+  if(aRange.first == aRange.second) // same frame --> just one frame same as current frame
+    return this->sortAndCategorizeData(aType, aRange.first);
+
+  QList<collectedData>* result = new QList<collectedData>();
+  return result;
+}

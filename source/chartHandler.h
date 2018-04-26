@@ -185,7 +185,7 @@ protected:
 
 
 private slots:
-/*----------playListItemStatisticsFile----------*/
+/*----------playlistItemStatisticsFile----------*/
   /**
    * @brief onStatisticsChange
    * if the selected statistic-type changed, the chart has to be updated
@@ -195,7 +195,15 @@ private slots:
    */
   void onStatisticsChange(const QString aString);
 
-  void onBasicColorChange(const QString aString);
+ /*----------playlistItemImageFile and playlistItemRawFile----------*/
+  /**
+   * @brief onColorSpaceChange
+   * if the selected color-type changed, the chart has to be updated
+   *
+   * @param aString
+   * color-Type, which was selected
+   */
+  void onColorSpaceChange(const QString aString);
 
   /**
    * @brief switchOrderEnableStatistics
@@ -378,24 +386,24 @@ private:
    */
   QWidget* createStatisticsChart(itemWidgetCoord& aCoord);
 
-/*----------testtesttest----------*/
+/*----------Functions for Color Space Analysis----------*/
   /**
-   * @brief createStatisticFileWidget
-   * creates Widget based on a "playListItemStatisticsFile"
+   * @brief createColorSpaceWidget
+   * creates Widget based on a "playListItemImageFile"
    *
    * @param aItem
-   * a explicit playlistItemStatisticsFile
+   * a playlistItem
    *
    * @param aCoord
    * a itemWidgetCoord where data can be saved in
    *
    * @return
-   * a option-widget for the playlistItemStatisticsFile
+   * a option-widget for the playlistItemImageFile and playlistItemRawFile
    */
-  QWidget* createImageFileColorAnalysisWidget(playlistItemImageFile* aItem, itemWidgetCoord& aCoord);
+  QWidget* createColorSpaceWidget(playlistItem* aItem, itemWidgetCoord& aCoord);
 
   /**
-   * @brief createStatisticsChart
+   * @brief createImageColorAnalysisChart
    * creating the Chart depending on the data
    *
    * @param aCoord
@@ -404,9 +412,7 @@ private:
    * @return
    * a chartview, that can be placed
    */
-  QWidget* createImageColorAnalysisChart(itemWidgetCoord& aCoord);
-
-
+  QWidget* createColorSpaceChart(itemWidgetCoord& aCoord);
 };
 
 
