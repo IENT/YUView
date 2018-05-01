@@ -39,8 +39,6 @@
 #include "videoHandlerYUV.h"
 #include <QLibrary>
 
-using namespace YUV_Internals;
-
 struct decoderLibde265_Functions
 {
   decoderLibde265_Functions();
@@ -100,7 +98,7 @@ public:
 
   // Decoding / pushing data
   bool decodeNextFrame() Q_DECL_OVERRIDE;
-  QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
+  QByteArray getRawFrameData() Q_DECL_OVERRIDE;
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
   
   // Statistics
@@ -111,6 +109,7 @@ public:
 
   QString getLibraryPath() const Q_DECL_OVERRIDE { return libraryPath; }
   QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }
+  QString getCodecName()         Q_DECL_OVERRIDE { return "hevc"; }
 
 private:
   // A private constructor that creates an uninitialized decoder library.

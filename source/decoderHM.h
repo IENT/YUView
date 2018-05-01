@@ -40,8 +40,6 @@
 #include "videoHandlerYUV.h"
 #include <QLibrary>
 
-using namespace YUV_Internals;
-
 //struct hevcDecoderHM_Functions
 //{
 //  hevcDecoderHM_Functions();

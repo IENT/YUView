@@ -43,6 +43,13 @@
 #include <QRect>
 #include <QString>
 
+typedef enum
+{
+  raw_Invalid,
+  raw_YUV,
+  raw_RGB
+} RawFormat;
+
 // Maximum possible value for int
 #ifndef INT_MAX
 #define INT_MAX 2147483647

@@ -40,7 +40,10 @@
 #define DEBUG_FFMPEG(fmt,...) ((void)0)
 #endif
 
-decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, yuvPixelFormat fmt, bool cachingDecoder) : 
+using namespace YUV_Internals;
+using namespace RGB_Internals;
+
+decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, bool cachingDecoder) : 
   decoderBase(cachingDecoder)
 {
   if (!createDecoder(codec))
@@ -49,7 +52,6 @@ decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, yuvPixelFormat fmt, bo
     return ;
   }
 
-  format = fmt;
   frameSize = size;
   flushing = false;
   internalsSupported = true;
@@ -57,7 +59,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, yuvPixelFormat fmt, bo
   DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
 
-decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, yuvPixelFormat fmt, bool cachingDecoder) :
+decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder) :
   decoderBase(cachingDecoder)
 {
   AVCodecID codec = codecpar.getCodecID();
@@ -67,7 +69,6 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, yuvPixelFormat f
     return ;
   }
 
-  format = fmt;
   flushing = false;
   internalsSupported = true;
 
@@ -110,7 +111,7 @@ bool decoderFFmpeg::decodeNextFrame()
   return true;
 }
 
-QByteArray decoderFFmpeg::getYUVFrameData()
+QByteArray decoderFFmpeg::getRawFrameData()
 {
   if (decoderState != decoderRetrieveFrames)
   {
@@ -131,49 +132,99 @@ void decoderFFmpeg::copyCurImageToBuffer()
   if (!frame)
     return;
 
-  // At first get how many bytes we are going to write
-  const yuvPixelFormat pixFmt = getYUVPixelFormat();
-  const int nrBytesPerSample = pixFmt.bitsPerSample <= 8 ? 1 : 2;
-  const int nrBytesY = frameSize.width() * frameSize.height() * nrBytesPerSample;
-  const int nrBytesC = frameSize.width() / pixFmt.getSubsamplingHor() * frameSize.height() / pixFmt.getSubsamplingVer() * nrBytesPerSample;
-  const int nrBytes = nrBytesY + 2 * nrBytesC;
-
-  // Is the output big enough?
-  if (currentOutputBuffer.capacity() < nrBytes)
-    currentOutputBuffer.resize(nrBytes);
-
-  // Copy line by line. The linesize of the source may be larger than the width of the frame.
-  // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
-  // resolution may be larger than the output frame size.
-  uint8_t *src = frame.get_data(0);
-  int linesize = frame.get_line_size(0);
-  char* dst = currentOutputBuffer.data();
-  int wDst = frameSize.width() * nrBytesPerSample;
-  int hDst = frameSize.height();
-  for (int y = 0; y < hDst; y++)
+  if (rawFormat == raw_YUV)
   {
-    // Copy one line
-    memcpy(dst, src, wDst);
-    // Goto the next line in input and output (these offsets/strides may differ)
-    dst += wDst;
-    src += linesize;
-  }
+    // At first get how many bytes we are going to write
+    const yuvPixelFormat pixFmt = getYUVPixelFormat();
+    const int nrBytesPerSample = pixFmt.bitsPerSample <= 8 ? 1 : 2;
+    const int nrBytesY = frameSize.width() * frameSize.height() * nrBytesPerSample;
+    const int nrBytesC = frameSize.width() / pixFmt.getSubsamplingHor() * frameSize.height() / pixFmt.getSubsamplingVer() * nrBytesPerSample;
+    const int nrBytes = nrBytesY + 2 * nrBytesC;
 
-  // Chroma
-  wDst = frameSize.width() / pixFmt.getSubsamplingHor() * nrBytesPerSample;
-  hDst = frameSize.height() / pixFmt.getSubsamplingVer();
-  for (int c = 0; c < 2; c++)
-  {
-    uint8_t *src = frame.get_data(c+1);
-    linesize = frame.get_line_size(c+1);
-    dst = currentOutputBuffer.data();
-    dst += (nrBytesY + ((c == 0) ? 0 : nrBytesC));
+    // Is the output big enough?
+    if (currentOutputBuffer.capacity() < nrBytes)
+      currentOutputBuffer.resize(nrBytes);
+
+    // Copy line by line. The linesize of the source may be larger than the width of the frame.
+    // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
+    // resolution may be larger than the output frame size.
+    uint8_t *src = frame.get_data(0);
+    int linesize = frame.get_line_size(0);
+    char* dst = currentOutputBuffer.data();
+    int wDst = frameSize.width() * nrBytesPerSample;
+    int hDst = frameSize.height();
     for (int y = 0; y < hDst; y++)
     {
+      // Copy one line
       memcpy(dst, src, wDst);
-      // Goto the next line
+      // Goto the next line in input and output (these offsets/strides may differ)
       dst += wDst;
       src += linesize;
+    }
+
+    // Chroma
+    wDst = frameSize.width() / pixFmt.getSubsamplingHor() * nrBytesPerSample;
+    hDst = frameSize.height() / pixFmt.getSubsamplingVer();
+    for (int c = 0; c < 2; c++)
+    {
+      uint8_t *src = frame.get_data(c+1);
+      linesize = frame.get_line_size(c+1);
+      dst = currentOutputBuffer.data();
+      dst += (nrBytesY + ((c == 0) ? 0 : nrBytesC));
+      for (int y = 0; y < hDst; y++)
+      {
+        memcpy(dst, src, wDst);
+        // Goto the next line
+        dst += wDst;
+        src += linesize;
+      }
+    }
+  }
+  else if (rawFormat == raw_RGB)
+  {
+    const rgbPixelFormat pixFmt = getRGBPixelFormat();
+    const int nrBytesPerSample = pixFmt.bitsPerValue <= 8 ? 1 : 2;
+    const int nrBytesPerComponent = frameSize.width() * frameSize.height() * nrBytesPerSample;
+    const int nrBytes = 3 * nrBytesPerComponent;
+
+    // Is the output big enough?
+    if (currentOutputBuffer.capacity() < nrBytes)
+      currentOutputBuffer.resize(nrBytes);
+
+    char* dst = currentOutputBuffer.data();
+    int hDst = frameSize.height();
+    if (pixFmt.planar)
+    {
+      // Copy line by line. The linesize of the source may be larger than the width of the frame.
+      // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
+      // resolution may be larger than the output frame size.
+      const int wDst = frameSize.width() * nrBytesPerSample;
+      for (int i = 0; i < 3; i++)
+      {
+        uint8_t *src = frame.get_data(i);
+        int linesize = frame.get_line_size(i);
+        for (int y = 0; y < hDst; y++)
+        {
+          memcpy(dst, src, wDst);
+          // Goto the next line
+          dst += wDst;
+          src += linesize;
+        }
+      }
+    }
+    else
+    {
+      // We only need to iterate over the image once and copy all values per line at once (RGB(A))
+      const int wDst = frameSize.width() * nrBytesPerSample * (pixFmt.alphaChannel ? 4 : 3);
+      for (int y = 0; y < hDst; y++)
+      {
+        uint8_t *src = frame.get_data(0);
+        int linesize = frame.get_line_size(0);
+        memcpy(dst, src, wDst);
+        // Goto the next line
+        dst += wDst;
+        src += linesize;
+      }
     }
   }
 }
@@ -330,12 +381,16 @@ bool decoderFFmpeg::createDecoder(AVCodecID streamCodecID, AVCodecParametersWrap
   {
     if (!ff.configureDecoder(decCtx, codecpar))
       return setErrorB(QStringLiteral("Unable to configure decoder from codecpar"));
-
-    // Get some parameters from the codec parameters
-    //format = codecpar.get
-    frameSize = QSize(codecpar.get_width(), codecpar.get_height());
   }
 
+  // Get some parameters from the decoder context
+  frameSize = QSize(decCtx.get_width(), decCtx.get_height());
+  rawFormat = FFmpegVersionHandler::getRawFormat(decCtx.get_pixel_format());
+  if (rawFormat == raw_YUV)
+    formatYUV = FFmpegVersionHandler::convertAVPixelFormatYUV(decCtx.get_pixel_format());
+  else if (rawFormat == raw_RGB)
+    formatRGB = FFmpegVersionHandler::convertAVPixelFormatRGB(decCtx.get_pixel_format());
+  
   // Ask the decoder to provide motion vectors (if possible)
   AVDictionaryWrapper opts;
   int ret = ff.av_dict_set(opts, "flags2", "+export_mvs", 0);
@@ -352,4 +407,13 @@ bool decoderFFmpeg::createDecoder(AVCodecID streamCodecID, AVCodecParametersWrap
     return setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 
   return true;
+}
+
+QString decoderFFmpeg::getCodecName()
+{
+  if (!decCtx)
+    return "";
+
+  AVCodecID codec = decCtx.getCodecID();
+  return ff.getCodecName(codec);
 }

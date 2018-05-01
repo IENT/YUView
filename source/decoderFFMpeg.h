@@ -39,15 +39,15 @@
 class decoderFFmpeg : public decoderBase
 {
 public:
-  decoderFFmpeg(AVCodecID codec, QSize frameSize, yuvPixelFormat format, bool cachingDecoder=false);
-  decoderFFmpeg(AVCodecParametersWrapper codecpar, yuvPixelFormat format, bool cachingDecoder=false);
+  decoderFFmpeg(AVCodecID codec, QSize frameSize, bool cachingDecoder=false);
+  decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder=false);
   ~decoderFFmpeg();
 
   void resetDecoder() Q_DECL_OVERRIDE;
 
   // Decoding / pushing data
   bool decodeNextFrame() Q_DECL_OVERRIDE;
-  QByteArray getYUVFrameData() Q_DECL_OVERRIDE;
+  QByteArray getRawFrameData() Q_DECL_OVERRIDE;
   void pushData(QByteArray &data) Q_DECL_OVERRIDE;
   // Push an AVPacket. When this returns false, pushing the given packet failed. Probably the 
   // decoder switched to decoderRetrieveFrames. Don't forget to push the given packet again later.
@@ -58,6 +58,7 @@ public:
 
   QString getLibraryPath() const Q_DECL_OVERRIDE { return ff.getLibPath(); }
   QString getDecoderName() const Q_DECL_OVERRIDE { return "FFmpeg"; }
+  QString getCodecName()         Q_DECL_OVERRIDE;
 
 protected:
 

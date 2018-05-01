@@ -212,7 +212,7 @@ public:
   virtual QImage calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one YUV frame with the current format
-  virtual int64_t getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual int64_t getBytesPerFrame() const Q_DECL_OVERRIDE { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
@@ -226,7 +226,7 @@ public:
   // Create the YUV controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
-  virtual QLayout *createYUVVideoHandlerControls(bool isSizeFixed=false);
+  virtual QLayout *createVideoHandlerControls(bool isSizeFixed=false) Q_DECL_OVERRIDE;
 
   // Get the name of the currently selected YUV pixel format
   virtual QString getRawYUVPixelFormatName() const { return srcPixelFormat.getName(); }
@@ -243,22 +243,6 @@ public:
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
   virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2 = nullptr, const bool markDifference = false, const int frameIdxItem1 = 0) Q_DECL_OVERRIDE;
 
-  // The Frame size is about to change. If this happens, our local buffers all need updating.
-  virtual void setFrameSize(const QSize &size) Q_DECL_OVERRIDE ;
-
-  // The buffer of the raw YUV data of the current frame (and its frame index)
-  // Before using the currentFrameRawYUVData, you have to check if the currentFrameRawYUVData_frameIdx is correct. If not,
-  // you have to call loadFrame() to load the frame and set it correctly.
-  QByteArray currentFrameRawYUVData;
-  int        currentFrameRawYUVData_frameIdx;
-
-  // A buffer with the raw YUV data (this is filled if signalRequesRawData() is emitted)
-  QByteArray rawYUVData;
-  int        rawYUVData_frameIdx;
-
-  // Invalidate all YUV related buffers. Then call the videoHandler::invalidateAllBuffers() function
-  virtual void invalidateAllBuffers() Q_DECL_OVERRIDE;
-
   // Load the given frame and convert it to image. After this, currentFrameRawYUVData and currentFrame will
   // contain the frame with the given frame index.
   virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false) Q_DECL_OVERRIDE;
@@ -273,19 +257,8 @@ public:
 
   bool getIs_YUV_diff() const;
 
-signals:
-
-  // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
-  // is emitted, the requested data should be in rawYUVData and rawYUVData_frameIdx should be identical to
-  // frameIndex. caching will signal if this call comes from a caching thread or not. If it does come
-  // from a caching thread, the result must be ready when the call to this function returns.
-  void signalRequestRawData(int frameIndex, bool caching);
-
 protected:
-
-  // Check if the current buffer for the raw YUV data (currentFrameRawYUVData) is up to date for the given frame index
-  virtual itemLoadingState needsLoadingRawValues(int frameIdx) Q_DECL_OVERRIDE { return (currentFrameRawYUVData_frameIdx == frameIdx) ? LoadingNotNeeded : LoadingNeeded; }
-
+  
   // How do we perform interpolation for the subsampled YUV formats?
   YUV_Internals::InterpolationMode interpolationMode;
 

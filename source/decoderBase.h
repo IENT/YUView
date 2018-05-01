@@ -37,10 +37,9 @@
 #include "statisticHandler.h"
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
+#include "videoHandlerRGB.h"
 
 #include <QLibrary>
-
-using namespace YUV_Internals;
 
 /* This class is the abstract base class for all decoders. All decoders work like this:
  * 1. Create an instance and configure it (if required)
@@ -67,11 +66,13 @@ public:
   int getDecodeSignal() { return decodeSignal; }
 
   // -- The decoding interface
-  // If the current frame is valid, the current frame can be retrieved using getYUVFrameData.
+  // If the current frame is valid, the current frame can be retrieved using getRawFrameData.
   // Call decodeNextFrame to advance to the next frame. When the function returns false, more data is probably needed.
   virtual bool decodeNextFrame() = 0;
-  virtual QByteArray getYUVFrameData() = 0;
-  yuvPixelFormat getYUVPixelFormat() { return format; }
+  virtual QByteArray getRawFrameData() = 0;
+  RawFormat getRawFormat() const { return rawFormat; }
+  YUV_Internals::yuvPixelFormat getYUVPixelFormat() const { return formatYUV; }
+  RGB_Internals::rgbPixelFormat getRGBPixelFormat() const { return formatRGB; }
   QSize getFrameSize() { return frameSize; }
   // Push data to the decoder (until no more data is needed)
   // In order to make the interface generic, the pushData function accepts data only without start codes
@@ -96,9 +97,10 @@ public:
   // Get the full path and filename to the decoder library that is being used
   virtual QString getLibraryPath() const = 0;
 
-  // Get the deocder name (everyting that is needed to identify the deocder library)
+  // Get the deocder name (everyting that is needed to identify the deocder library) and the codec that is being decoded.
   // If needed, also version information (like HM 16.4)
   virtual QString getDecoderName() const = 0;
+  virtual QString getCodecName() = 0;
   
 protected:
 
@@ -119,7 +121,11 @@ protected:
   bool internalsSupported;  ///< Enable in the constructor if you support statistics
   bool retrieveStatistics;  ///< If enabled, the decoder should also retrive statistics data from the bitstream
   QSize frameSize;
-  yuvPixelFormat format;
+
+  // Some decoders are able to handel both YUV and RGB output
+  RawFormat rawFormat;
+  YUV_Internals::yuvPixelFormat formatYUV;
+  RGB_Internals::rgbPixelFormat formatRGB;
   
   // Error handling
   void setError(const QString &reason) { decoderState = decoderError; errorString = reason; }

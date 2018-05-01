@@ -36,6 +36,7 @@
 #include "FFMpegLibrariesCommonDefs.h"
 #include "stdint.h"
 #include "videoHandlerYUV.h"
+#include "videoHandlerRGB.h"
 #include <assert.h>
 #include <QLibrary>
 
@@ -664,7 +665,9 @@ public:
   // All the function pointers of the ffmpeg library
   FFmpegLibraryFunctions lib;
 
-  static YUV_Internals::yuvPixelFormat convertAVPixelFormat(AVPixelFormat pixelFormat);
+  static RawFormat getRawFormat(AVPixelFormat pixelFormat);
+  static YUV_Internals::yuvPixelFormat convertAVPixelFormatYUV(AVPixelFormat pixelFormat);
+  static RGB_Internals::rgbPixelFormat FFmpegVersionHandler::convertAVPixelFormatRGB(AVPixelFormat pixelFormat);
   // Check if the given four files can be used to open FFmpeg.
   static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error);
 

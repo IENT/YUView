@@ -38,7 +38,6 @@
 #include "parserAVFormat.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
-#include "videoHandlerYUV.h"
 #include "ui_playlistItemCompressedFile.h"
 
 class videoHandler;
@@ -154,6 +153,7 @@ protected:
   inputFormat inputFormatType;
   bool isinputFormatTypeAnnexB;
   decoderEngine decoderEngineType;
+  AVCodecID ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
   // read the NAL units from the compressed file.
@@ -194,9 +194,9 @@ protected:
   bool decodingOfFrameNotPossible;
 
 private slots:
-  // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
+  // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadYUVData(int frameIdxInternal, bool forceDecodingNow);
+  virtual void loadRawData(int frameIdxInternal, bool forceDecodingNow);
 
   // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
   virtual void loadStatisticToCache(int frameIdx, int typeIdx);

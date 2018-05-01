@@ -55,6 +55,7 @@ fileSourceFFmpegFile::fileSourceFFmpegFile()
   timeBase.num = 0;
   timeBase.den = 0;
   frameRate = -1;
+  rawFormat = raw_Invalid;
   colorConversionType = BT709_LimitedRange;
 
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFmpegFile::fileSystemWatcherFileChanged);
@@ -129,41 +130,74 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
   QByteArray extradata = getExtradata();
   QList<QByteArray> retArray;
 
-  if (extradata.at(0) == 1)
+  // Since the FFmpeg developers don't want to make it too easy, the extradata is organized differently depending on the codec.
+  AVCodecID codec = video_stream.getCodecID();
+  if (codec == AV_CODEC_ID_HEVC)
   {
-    // Internally, ffmpeg uses a custom format for the parameter sets (hvcC).
-    // The hvcC parameters come first, and afterwards, the "normal" parameter sets are sent.
-
-    // The first 22 bytes are fixed hvcC parameter set (see hvcc_write in libavformat hevc.c)
-    int numOfArrays = extradata.at(22);
-
-    int pos = 23;
-    for (int i = 0; i < numOfArrays; i++)
+    if (extradata.at(0) == 1)
     {
-      // The first byte contains the NAL unit type (which we don't use here).
-      pos++;
-      //int byte = (unsigned char)(extradata.at(pos++));
-      //bool array_completeness = byte & (1 << 7);
-      //int nalUnitType = byte & 0x3f;
+      // Internally, ffmpeg uses a custom format for the parameter sets (hvcC).
+      // The hvcC parameters come first, and afterwards, the "normal" parameter sets are sent.
 
-      // Two bytes numNalus
-      int numNalus = (unsigned char)(extradata.at(pos++)) << 7;
-      numNalus += (unsigned char)(extradata.at(pos++));
+      // The first 22 bytes are fixed hvcC parameter set (see hvcc_write in libavformat hevc.c)
+      int numOfArrays = extradata.at(22);
 
-      for (int j = 0; j < numNalus; j++)
+      int pos = 23;
+      for (int i = 0; i < numOfArrays; i++)
       {
-        // Two bytes nalUnitLength
+        // The first byte contains the NAL unit type (which we don't use here).
+        pos++;
+        //int byte = (unsigned char)(extradata.at(pos++));
+        //bool array_completeness = byte & (1 << 7);
+        //int nalUnitType = byte & 0x3f;
+
+        // Two bytes numNalus
+        int numNalus = (unsigned char)(extradata.at(pos++)) << 7;
+        numNalus += (unsigned char)(extradata.at(pos++));
+
+        for (int j = 0; j < numNalus; j++)
+        {
+          // Two bytes nalUnitLength
+          int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
+          nalUnitLength += (unsigned char)(extradata.at(pos++));
+
+          // nalUnitLength bytes payload of the NAL unit
+          // This payload includes the NAL unit header
+          QByteArray rawNAL = extradata.mid(pos, nalUnitLength);
+          retArray.append(rawNAL);
+          pos += nalUnitLength;
+        }
+      }
+    }
+  }
+  else if (codec == AV_CODEC_ID_H264)
+  {
+    // First byte is 1, length must be at least 7 bytes
+    if (extradata.at(0) == 1 && extradata.length() >= 7)
+    {
+      int nrSPS = extradata.at(5) & 0x1f;
+      int pos = 6;
+      for (int i = 0; i < nrSPS; i++)
+      {
         int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
         nalUnitLength += (unsigned char)(extradata.at(pos++));
 
-        // nalUnitLength bytes payload of the NAL unit
-        // This payload includes the NAL unit header
+        QByteArray rawNAL = extradata.mid(pos, nalUnitLength);
+        retArray.append(rawNAL);
+        pos += nalUnitLength;
+      }
+
+      int nrPPS = extradata.at(pos++);
+      for (int i = 0; i < nrPPS; i++)
+      {
+        int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
+        nalUnitLength += (unsigned char)(extradata.at(pos++));
+
         QByteArray rawNAL = extradata.mid(pos, nalUnitLength);
         retArray.append(rawNAL);
         pos += nalUnitLength;
       }
     }
-
   }
 
   return retArray;
@@ -303,7 +337,11 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
     frameRate = -1;
   else
     frameRate = avgFrameRate.num / double(avgFrameRate.den);
-  pixelFormat = FFmpegVersionHandler::convertAVPixelFormat(video_stream.getCodec().get_pixel_format());
+  rawFormat = FFmpegVersionHandler::getRawFormat(video_stream.getCodec().get_pixel_format());
+  if (rawFormat == raw_YUV)
+    pixelFormat_yuv = FFmpegVersionHandler::convertAVPixelFormatYUV(video_stream.getCodec().get_pixel_format());
+  else if (rawFormat == raw_RGB)
+    pixelFormat_rgb = FFmpegVersionHandler::convertAVPixelFormatRGB(video_stream.getCodec().get_pixel_format());
   duration = fmt_ctx.get_duration();
   timeBase = video_stream.get_time_base();
 

@@ -41,12 +41,14 @@
 #endif
 
 playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName, playlistItemType type)
- : playlistItem(itemNameOrFileName, type), video(nullptr) 
+ : playlistItem(itemNameOrFileName, type)
 {
   // Nothing is currently being loaded
   isFrameLoading = false;
   isFrameLoadingDoubleBuffer = false;
   unresolvableError = false;
+  // No videoHandler is allocated yet. Don't forget to do this in derived classes.
+  rawFormat = raw_Invalid;
 };
 
 void playlistItemWithVideo::connectVideo()

@@ -640,8 +640,6 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   // If we know nothing about the YUV format, assume YUV 4:2:0 8 bit planar by default.
   srcPixelFormat = yuvPixelFormat(YUV_420, 8, Order_YUV);
 
-  currentFrameRawYUVData_frameIdx = -1;
-  rawYUVData_frameIdx = -1;
   showPixelValuesAsDiff = false;
 }
 
@@ -823,7 +821,7 @@ void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp, qui
 }
 #endif
 
-QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
+QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!
   assert(!ui.created());
@@ -971,7 +969,7 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
 
     if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
       // The number of bytes per frame changed. The raw YUV data buffer is also out of date
-      currentFrameRawYUVData_frameIdx = -1;
+      currentFrameRawData_frameIdx = -1;
 
     // The number of frames in the sequence might have changed as well
     emit signalUpdateFrameLimits();
@@ -1028,7 +1026,7 @@ void videoHandlerYUV::slotYUVControlChanged()
     currentImage_frameIndex = -1;
     if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
       // The number of bytes per frame changed. The raw YUV data buffer also has to be updated.
-      currentFrameRawYUVData_frameIdx = -1;
+      currentFrameRawData_frameIdx = -1;
     setCacheInvalid();
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
@@ -1055,7 +1053,7 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
       return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
     // Do not get the pixel values if the buffer for the raw YUV values is out of date.
-    if (currentFrameRawYUVData_frameIdx != frameIdx || yuvItem2->currentFrameRawYUVData_frameIdx != frameIdx1)
+    if (currentFrameRawData_frameIdx != frameIdx || yuvItem2->currentFrameRawData_frameIdx != frameIdx1)
       return ValuePairList();
 
     int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
@@ -1082,7 +1080,7 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
     int height = frameSize.height();
 
     // Do not get the pixel values if the buffer for the raw YUV values is out of date.
-    if (currentFrameRawYUVData_frameIdx != frameIdx)
+    if (currentFrameRawData_frameIdx != frameIdx)
       return ValuePairList();
 
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
@@ -1141,9 +1139,9 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
 
   // Check if the raw YUV values are up to date. If not, do not draw them. Do not trigger loading of data here. The needsLoadingRawValues 
   // function will return that loading is needed. The caching in the background should then trigger loading of them.
-  if (currentFrameRawYUVData_frameIdx != frameIdx)
+  if (currentFrameRawData_frameIdx != frameIdx)
     return;
-  if (yuvItem2 && yuvItem2->currentFrameRawYUVData_frameIdx != frameIdxItem1)
+  if (yuvItem2 && yuvItem2->currentFrameRawData_frameIdx != frameIdxItem1)
     return;
 
   // For difference items, we support difference bit depths for the two items.
@@ -1624,24 +1622,24 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
     // We cannot load a frame if the format is not known
     return;
 
-  // Does the data in currentFrameRawYUVData need to be updated?
+  // Does the data in currentFrameRawData need to be updated?
   if (!loadRawYUVData(frameIndex))
     // Loading failed or it is still being performed in the background
     return;
 
-  // The data in currentFrameRawYUVData is now up to date. If necessary
+  // The data in currentFrameRawData is now up to date. If necessary
   // convert the data to RGB.
   if (loadToDoubleBuffer)
   {
     QImage newImage;
-    convertYUVToImage(currentFrameRawYUVData, newImage, srcPixelFormat, frameSize);
+    convertYUVToImage(currentFrameRawData, newImage, srcPixelFormat, frameSize);
     doubleBufferImage = newImage;
     doubleBufferImageFrameIdx = frameIndex;
   }
   else if (currentImageIdx != frameIndex)
   {
     QImage newImage;
-    convertYUVToImage(currentFrameRawYUVData, newImage, srcPixelFormat, frameSize);
+    convertYUVToImage(currentFrameRawData, newImage, srcPixelFormat, frameSize);
     QMutexLocker setLock(&currentImageSetMutex);    
     currentImage = newImage;
     currentImageIdx = frameIndex;
@@ -1658,10 +1656,10 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, true);
-  QByteArray tmpBufferRawYUVDataCaching = rawYUVData;
+  QByteArray tmpBufferRawYUVDataCaching = rawData;
   requestDataMutex.unlock();
 
-  if (frameIndex != rawYUVData_frameIdx)
+  if (frameIndex != rawData_frameIdx)
   {
     // Loading failed
     DEBUG_YUV("videoHandlerYUV::loadFrameForCaching Loading failed");
@@ -1672,10 +1670,10 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   convertYUVToImage(tmpBufferRawYUVDataCaching, frameToCache, yuvFormat, curFrameSize);
 }
 
-// Load the raw YUV data for the given frame index into currentFrameRawYUVData.
+// Load the raw YUV data for the given frame index into currentFrameRawData.
 bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 {
-  if (currentFrameRawYUVData_frameIdx == frameIndex)
+  if (currentFrameRawData_frameIdx == frameIndex)
     // Buffer already up to date
     return true;
 
@@ -1686,7 +1684,7 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, false);
 
-  if (frameIndex != rawYUVData_frameIdx)
+  if (frameIndex != rawData_frameIdx)
   {
     // Loading failed
     DEBUG_YUV("videoHandlerYUV::loadRawYUVData Loading failed");
@@ -1694,8 +1692,8 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
     return false;
   }
 
-  currentFrameRawYUVData = rawYUVData;
-  currentFrameRawYUVData_frameIdx = frameIndex;
+  currentFrameRawData = rawData;
+  currentFrameRawData_frameIdx = frameIndex;
   requestDataMutex.unlock();
   
   DEBUG_YUV("videoHandlerYUV::loadRawYUVData %d Done", frameIndex);
@@ -3201,11 +3199,11 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
     const int nrBytesLumaPlane = (format.bitsPerSample > 8) ? componentSizeLuma * 2 : componentSizeLuma;
     const int nrBytesChromaPlane = (format.bitsPerSample > 8) ? componentSizeChroma * 2 : componentSizeChroma;
 
-    const unsigned char * restrict srcY = (unsigned char*)currentFrameRawYUVData.data();
+    const unsigned char * restrict srcY = (unsigned char*)currentFrameRawData.data();
     const unsigned char * restrict srcU = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA) ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
     const unsigned char * restrict srcV = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA) ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
 
-    // Get the YUV data from the currentFrameRawYUVData
+    // Get the YUV data from the currentFrameRawData
     const unsigned int offsetCoordinateY  = w * pixelPos.y() + pixelPos.x();
     const unsigned int offsetCoordinateUV = (w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) + pixelPos.x() / format.getSubsamplingHor();
 
@@ -3226,7 +3224,7 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
 
       // The offset of the pixel in bytes
       const unsigned int offsetCoordinate4Block = (w * 2 * pixelPos.y() + (pixelPos.x() / 2 * 4)) * (format.bitsPerSample > 8 ? 2 : 1);
-      const unsigned char * restrict src = (unsigned char*)currentFrameRawYUVData.data() + offsetCoordinate4Block;
+      const unsigned char * restrict src = (unsigned char*)currentFrameRawData.data() + offsetCoordinate4Block;
 
       Y = getValueFromSource(src, (pixelPos.x() % 2 == 0) ? oY : oY + 2,  format.bitsPerSample, format.bigEndian);
       U = getValueFromSource(src, oU, format.bitsPerSample, format.bigEndian);
@@ -3243,7 +3241,7 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
       // How many bytes to the next sample?
       const int offsetNext = (packing == Packing_YUV || packing == Packing_YVU ? 3 : 4) * (format.bitsPerSample > 8 ? 2 : 1);
       const int offsetSrc = (w * pixelPos.y() + pixelPos.x()) * offsetNext;
-      const unsigned char * restrict src = (unsigned char*)currentFrameRawYUVData.data() + offsetSrc;
+      const unsigned char * restrict src = (unsigned char*)currentFrameRawData.data() + offsetSrc;
 
       Y = getValueFromSource(src, oY, format.bitsPerSample, format.bigEndian);
       U = getValueFromSource(src, oU, format.bitsPerSample, format.bigEndian);
@@ -3647,11 +3645,11 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
   const int nrBytesLumaPlane_In[2] = {bps_in[0] > 8 ? 2 * componentSizeLuma_In[0] : componentSizeLuma_In[0], bps_in[1] > 8 ? 2 * componentSizeLuma_In[1] : componentSizeLuma_In[1]};
   const int nrBytesChromaPlane_In[2] = {bps_in[0] > 8 ? 2 * componentSizeChroma_In[0] : componentSizeChroma_In[0], bps_in[1] > 8 ? 2 * componentSizeChroma_In[1] : componentSizeChroma_In[1]};
   // Current item
-  const unsigned char * restrict srcY1 = (unsigned char*)currentFrameRawYUVData.data();
+  const unsigned char * restrict srcY1 = (unsigned char*)currentFrameRawData.data();
   const unsigned char * restrict srcU1 = (srcPixelFormat.planeOrder == Order_YUV || srcPixelFormat.planeOrder == Order_YUVA) ? srcY1 + nrBytesLumaPlane_In[0] : srcY1 + nrBytesLumaPlane_In[0] + nrBytesChromaPlane_In[0];
   const unsigned char * restrict srcV1 = (srcPixelFormat.planeOrder == Order_YUV || srcPixelFormat.planeOrder == Order_YUVA) ? srcY1 + nrBytesLumaPlane_In[0] + nrBytesChromaPlane_In[0]: srcY1 + nrBytesLumaPlane_In[0];
   // The other item
-  const unsigned char * restrict srcY2 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data();
+  const unsigned char * restrict srcY2 = (unsigned char*)yuvItem2->currentFrameRawData.data();
   const unsigned char * restrict srcU2 = (yuvItem2->srcPixelFormat.planeOrder == Order_YUV || yuvItem2->srcPixelFormat.planeOrder == Order_YUVA) ? srcY2 + nrBytesLumaPlane_In[1] : srcY2 + nrBytesLumaPlane_In[1] + nrBytesChromaPlane_In[1];
   const unsigned char * restrict srcV2 = (yuvItem2->srcPixelFormat.planeOrder == Order_YUV || yuvItem2->srcPixelFormat.planeOrder == Order_YUVA) ? srcY2 + nrBytesLumaPlane_In[1] + nrBytesChromaPlane_In[1]: srcY2 + nrBytesLumaPlane_In[1];
 
@@ -3852,24 +3850,6 @@ void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
     if (ui.created())
       ui.colorConversionComboBox->setCurrentIndex(int(yuvColorConversionType));
   }
-}
-
-void videoHandlerYUV::setFrameSize(const QSize &size)
-{
-  if (size != frameSize)
-  {
-    currentFrameRawYUVData_frameIdx = -1;
-    currentImageIdx = -1;
-  }
-
-  videoHandler::setFrameSize(size);
-}
-
-void videoHandlerYUV::invalidateAllBuffers()
-{
-  currentFrameRawYUVData_frameIdx = -1;
-  rawYUVData_frameIdx = -1;
-  videoHandler::invalidateAllBuffers();
 }
 
 bool videoHandlerYUV::canConvertToRGB(yuvPixelFormat format, QSize imageSize, QString *whyNot) const

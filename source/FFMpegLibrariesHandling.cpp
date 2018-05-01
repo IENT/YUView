@@ -46,6 +46,7 @@
 #endif
 
 using namespace YUV_Internals;
+using namespace RGB_Internals;
 
 // ------------- Internal classes to parse the ffmpeg version specific pointers -----------------
 
@@ -1099,8 +1100,17 @@ bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avForma
   return true;
 }
 
+RawFormat FFmpegVersionHandler::getRawFormat(AVPixelFormat pixelFormat)
+{
+  if (convertAVPixelFormatYUV(pixelFormat).isValid())
+    return raw_YUV;
+  if (convertAVPixelFormatRGB(pixelFormat).isValid())
+    return raw_RGB;
+  return raw_Invalid;
+}
+
 // Convert from the AVPixelFormat to the internal yuvPixelFormat
-yuvPixelFormat FFmpegVersionHandler::convertAVPixelFormat(AVPixelFormat pixelFormat)
+yuvPixelFormat FFmpegVersionHandler::convertAVPixelFormatYUV(AVPixelFormat pixelFormat)
 {
   // YUV 4:2:0 formats
   if (pixelFormat == AV_PIX_FMT_YUV420P)
@@ -1175,6 +1185,24 @@ yuvPixelFormat FFmpegVersionHandler::convertAVPixelFormat(AVPixelFormat pixelFor
     return yuvPixelFormat(YUV_444, 14);
 
   return yuvPixelFormat();
+}
+
+rgbPixelFormat FFmpegVersionHandler::convertAVPixelFormatRGB(AVPixelFormat pixelFormat)
+{
+  if (pixelFormat == AV_PIX_FMT_RGB24)
+    return rgbPixelFormat(8, false, false);
+  if (pixelFormat == AV_PIX_FMT_BGR24)
+    return rgbPixelFormat(8, false, false, 2, 1, 0);
+  if (pixelFormat == AV_PIX_FMT_ARGB)
+    return rgbPixelFormat(8, false, true);
+  if (pixelFormat == AV_PIX_FMT_ABGR)
+    return rgbPixelFormat(8, false, true, 2, 1, 0);
+  if (pixelFormat == AV_PIX_FMT_RGB48LE)
+    return rgbPixelFormat(16, false, false);
+  
+  // Other formats are not yet supported
+  // Adding them should be straightforward (but also not trivial)
+  return rgbPixelFormat();
 }
 
 void AVFormatContextWrapper::update()

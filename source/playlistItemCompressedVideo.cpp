@@ -32,14 +32,16 @@
 
 #include "playlistItemCompressedVideo.h"
 
+#include <QThread>
+#include <QInputDialog>
+
 #include "decoderFFmpeg.h"
 #include "decoderHM.h"
 #include "decoderLibde265.h"
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
-
-#include <QThread>
-#include <QInputDialog>
+#include "videoHandlerYUV.h"
+#include "videoHandlerRGB.h"
 #include "mainwindow.h"
 
 #define HEVC_DEBUG_OUTPUT 0
@@ -69,13 +71,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   setIcon(0, convertIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  // Set the video pointer correctly
-  video.reset(new videoHandlerYUV());
-  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-
-  // Connect the basic signals from the video
-  playlistItemWithVideo::connectVideo();
-
   // Nothing is currently being loaded
   isFrameLoading = false;
   isFrameLoadingDoubleBuffer = false;
@@ -97,7 +92,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       inputFormatType = inputAnnexBHEVC;
     else if (ext == "avc" || ext == "h264" || ext == "264")
       inputFormatType = inputAnnexBAVC;
-    else inputFormatType = inputLibavformat;
+    else
+      inputFormatType = inputLibavformat;
   }
   else
     inputFormatType = input;
@@ -105,11 +101,12 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   isinputFormatTypeAnnexB = (input == inputAnnexBHEVC || input == inputAnnexBAVC);
 
   // While opening the file, also determine which decoders we can use
-  AVCodecID ffmpegCodec = AV_CODEC_ID_NONE;
+  ffmpegCodec = AV_CODEC_ID_NONE;
   QList<decoderEngine> possibleDecoders;
 
   QSize frameSize;
-  yuvPixelFormat format;
+  YUV_Internals::yuvPixelFormat format_yuv;
+  RGB_Internals::rgbPixelFormat format_rgb;
   if (isinputFormatTypeAnnexB)
   {
     // Open file
@@ -136,7 +133,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     inputFileAnnexBParser->sortPOCList();
     // Get the frame size and the pixel format
     frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
-    format = inputFileAnnexBParser->getPixelFormat();
+    // Raw annexB files will always provide YUV data
+    format_yuv = inputFileAnnexBParser->getPixelFormat();
+    rawFormat = raw_YUV;
   }
   else
   {
@@ -147,8 +146,13 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       fileState = error;
       return;
     }
+    // Is this file RGB or YUV?
+    rawFormat = inputFileFFmpegLoading->getRawFormat();
+    if (rawFormat == raw_YUV)
+      format_yuv = inputFileFFmpegLoading->getPixelFormatYUV();
+    else if (rawFormat == raw_RGB)
+      format_rgb = inputFileFFmpegLoading->getPixelFormatRGB();
     frameSize = inputFileFFmpegLoading->getSequenceSizeSamples();
-    format = inputFileFFmpegLoading->getPixelFormat();
     ffmpegCodec = inputFileFFmpegLoading->getCodec();
     possibleDecoders.append(decoderEngineFFMpeg);
     if (ffmpegCodec == AV_CODEC_ID_HEVC)
@@ -168,14 +172,32 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       }
     }
   }
+
   // Check/set properties
-  if (!frameSize.isValid() || !format.isValid())
+  if (!frameSize.isValid() || rawFormat == raw_Invalid || (rawFormat == raw_YUV && !format_yuv.isValid()) || (rawFormat == raw_RGB && !format_rgb.isValid()))
   {
     fileState = error;
     return;
   }
-  yuvVideo->setFrameSize(frameSize);
-  yuvVideo->setYUVPixelFormat(format);
+
+  // Allocate the videoHander (RGB or YUV)
+  if (rawFormat == raw_YUV)
+  {
+    video.reset(new videoHandlerYUV());
+    videoHandlerYUV *yuvVideo = getYUVVideo();
+    yuvVideo->setFrameSize(frameSize);
+    yuvVideo->setYUVPixelFormat(format_yuv);
+  }
+  else
+  {
+    video.reset(new videoHandlerRGB());
+    videoHandlerRGB *rgbVideo = getRGBVideo();
+    rgbVideo->setFrameSize(frameSize);
+    rgbVideo->setRGBPixelFormat(format_rgb);
+  }
+
+  // Connect the basic signals from the video
+  playlistItemWithVideo::connectVideo();
   statSource.setFrameSize(frameSize);
   // So far, we can parse the stream
   fileState = onlyParsing;
@@ -229,22 +251,26 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     if (isinputFormatTypeAnnexB)
     {
-      loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, format));
+      loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize));
       if (cachingEnabled)
-        cachingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, format));
+        cachingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize));
     }
     else
     {
-      loadingDecoder.reset(new decoderFFmpeg(inputFileFFmpegLoading->getVideoCodecPar(), format));
+      loadingDecoder.reset(new decoderFFmpeg(inputFileFFmpegLoading->getVideoCodecPar()));
       if (cachingEnabled)
-        cachingDecoder.reset(new decoderFFmpeg(inputFileFFmpegCaching->getVideoCodecPar(), format));
+        cachingDecoder.reset(new decoderFFmpeg(inputFileFFmpegCaching->getVideoCodecPar()));
     }
     fileState = noError;
   }
   else
     return;
 
-  yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(loadingDecoder->getDecodeSignal());
+  if (rawFormat == raw_YUV)
+  {
+    videoHandlerYUV *yuvVideo = getYUVVideo();
+    yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(loadingDecoder->getDecodeSignal());
+  }
 
   // Fill the list of statistics that we can provide
   fillStatisticList();
@@ -257,16 +283,16 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Seek both decoders to the start of the bitstream (this will also push the parameter sets / extradata to the decoder)
   seekToPosition(0, 0, false);
-  loadYUVData(0, false);
+  loadRawData(0, false);
   if (cachingEnabled)
   {
     seekToPosition(0, 0, true);
-    loadYUVData(0, true);
+    loadRawData(0, true);
   }
 
-  // If the yuvVideHandler requests raw YUV data, we provide it from the file
-  connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemCompressedVideo::loadYUVData, Qt::DirectConnection);
-  connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemCompressedVideo::slotUpdateFrameLimits);
+  // Connect signals for requesting data and statistics
+  connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemCompressedVideo::loadRawData, Qt::DirectConnection);
+  connect(video.data(), &videoHandler::signalUpdateFrameLimits, this, &playlistItemCompressedVideo::slotUpdateFrameLimits);
   connect(&statSource, &statisticHandler::updateItem, this, &playlistItemCompressedVideo::updateStatSource);
   connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemCompressedVideo::loadStatisticToCache, Qt::DirectConnection);
 }
@@ -347,6 +373,7 @@ infoData playlistItemCompressedVideo::getInfo() const
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
     info.items.append(infoItem("Decoder", loadingDecoder->getDecoderName()));
+    info.items.append(infoItem("Decoder", loadingDecoder->getCodecName()));
     info.items.append(infoItem("library path", loadingDecoder->getLibraryPath(), "The path to the loaded libde265 library"));
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num POCs", QString::number(startEndFrame.second), "The number of pictures in the stream."));
@@ -449,7 +476,7 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
   }
 }
 
-void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching)
+void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching)
 {
   if (caching && !cachingEnabled)
     return;
@@ -555,9 +582,8 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
         rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
         if (rightFrame)
         {
-          videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-          yuvVideo->rawYUVData = dec->getYUVFrameData();
-          yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
+          video->rawData = dec->getRawFrameData();
+          video->rawData_frameIdx = frameIdxInternal;
         }
       }
     }
@@ -573,8 +599,7 @@ void playlistItemCompressedVideo::loadYUVData(int frameIdxInternal, bool caching
         currentFrameIdx[0] = frameIdxInternal;
       // Just set the frame number of the buffer to the current frame so that it will trigger a
       // reload when the frame number changes.
-      videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-      yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
+      video->rawData_frameIdx = frameIdxInternal;
       return;
     }
   }
@@ -587,12 +612,16 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
   dec->resetDecoder();
   repushDataFFmpeg = false;
   decodingOfFrameNotPossible = false;
+
+  // Retrieval of the raw metadata is only required if the the reader or the decoder is not ffmpeg
+  const bool bothFFmpeg = (!isinputFormatTypeAnnexB && decoderEngineType == decoderEngineFFMpeg);
   
   QByteArrayList parametersets;
   if (isinputFormatTypeAnnexB)
   {
     uint64_t filePos;
-    parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
+    if (!bothFFmpeg)
+      parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
     if (caching)
       inputFileAnnexBCaching->seek(filePos);
     else
@@ -600,7 +629,8 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
   }
   else
   {
-    parametersets = caching ? inputFileFFmpegCaching->getParameterSets() : inputFileFFmpegLoading->getParameterSets();
+    if (!bothFFmpeg)
+      parametersets = caching ? inputFileFFmpegCaching->getParameterSets() : inputFileFFmpegLoading->getParameterSets();
     if (caching)
       inputFileFFmpegCaching->seekToPTS(seekToPTS);
     else
@@ -609,7 +639,6 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
 
   // In case of using ffmpeg for reading and decoding, we don't need to push the parameter sets (the
   // extradata) to the decoder explicitly when seeking.
-  const bool bothFFmpeg = (!isinputFormatTypeAnnexB && decoderEngineType == decoderEngineFFMpeg);
   if (!bothFFmpeg)
     // Push the parameter sets to the decoder
     for (QByteArray d : parametersets)
@@ -640,10 +669,9 @@ void playlistItemCompressedVideo::createPropertiesWidget()
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
-  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
   ui.verticalLayout->insertLayout(0, createPlaylistItemControls());
   ui.verticalLayout->insertWidget(1, lineOne);
-  ui.verticalLayout->insertLayout(2, yuvVideo->createYUVVideoHandlerControls(true));
+  ui.verticalLayout->insertLayout(2, video->createVideoHandlerControls(true));
   ui.verticalLayout->insertWidget(5, lineTwo);
   ui.verticalLayout->insertLayout(6, statSource.createStatisticsHandlerControls(), 1);
 
@@ -683,14 +711,14 @@ void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx
     // Reload the current frame (force a seek and decode operation)
     int frameToLoad = currentFrameIdx[0];
     currentFrameIdx[0] = INT_MAX;
-    loadYUVData(frameToLoad, false);
+    loadRawData(frameToLoad, false);
 
     // The statistics should now be loaded
   }
   else if (frameIdxInternal != currentFrameIdx[0])
     // If the requested frame is not currently decoded, decode it.
     // This can happen if the picture was gotten from the cache.
-    loadYUVData(frameIdxInternal, false);
+    loadRawData(frameIdxInternal, false);
 
   statSource.statsCache[typeIdx] = loadingDecoder->getStatisticsData(typeIdx);
 }
@@ -726,7 +754,7 @@ void playlistItemCompressedVideo::getSupportedFileExtensions(QStringList &allExt
   QStringList ext;
   ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "cgi" << "ivr" << "lvf"
       << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" << "mjpeg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" << "mvi" << "mxg" << "v" << "ogg" 
-      << "mjpg" << "viv" << "xmv" << "ts";
+      << "mjpg" << "viv" << "xmv" << "ts" << "mxf";
   QString filtersString = "FFMpeg files (";
   for (QString e : ext)
     filtersString.append(QString("*.%1").arg(e));
@@ -752,7 +780,7 @@ void playlistItemCompressedVideo::reloadItemSource()
 
   // Load frame 0. This will decode the first frame in the sequence and set the
   // correct frame size/YUV format.
-  loadYUVData(0, false);
+  loadRawData(0, false);
 }
 
 void playlistItemCompressedVideo::cacheFrame(int frameIdx, bool testMode)

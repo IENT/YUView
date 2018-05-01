@@ -65,6 +65,9 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
   currentOutputBuffer.clear();
   decodedFrameWaiting = false;
 
+  // Libde265 can only decoder HEVC in YUV format
+  rawFormat = raw_YUV;
+
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");
@@ -280,20 +283,20 @@ bool decoderLibde265::decodeFrame()
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_LIBDE265("decoderLibde265::decodeNextFrame got invalid bit depth");
 
-    if (!frameSize.isValid() && !format.isValid())
+    if (!frameSize.isValid() && !formatYUV.isValid())
     {
       // Set the values
       frameSize = s;
-      format = yuvPixelFormat(subsampling, bitDepth);
+      formatYUV = yuvPixelFormat(subsampling, bitDepth);
     }
     else
     {
       // Check the values against the previously set values
       if (frameSize != s)
         return setErrorB("Recieved a frame of different size");
-      if (format.subsampling != subsampling)
+      if (formatYUV.subsampling != subsampling)
         return setErrorB("Recieved a frame with different subsampling");
-      if (format.bitsPerSample != bitDepth)
+      if (formatYUV.bitsPerSample != bitDepth)
         return setErrorB("Recieved a frame with different bit depth");
     }
     DEBUG_LIBDE265("decoderLibde265::decodeNextFrame Picture decoded");
@@ -305,7 +308,7 @@ bool decoderLibde265::decodeFrame()
   return false;
 }
 
-QByteArray decoderLibde265::getYUVFrameData()
+QByteArray decoderLibde265::getRawFrameData()
 {
   if (curImage == nullptr)
     return QByteArray();

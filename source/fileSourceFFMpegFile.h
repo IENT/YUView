@@ -57,9 +57,11 @@ public:
   bool atEnd() const { return endOfFile; }
 
   // Get properties of the bitstream
-  double getFramerate() { return frameRate; }
-  QSize getSequenceSizeSamples() { return frameSize; }
-  YUV_Internals::yuvPixelFormat getPixelFormat() { return pixelFormat; }
+  double getFramerate() const { return frameRate; }
+  QSize getSequenceSizeSamples() const { return frameSize; }
+  RawFormat getRawFormat() const { return rawFormat; }
+  YUV_Internals::yuvPixelFormat getPixelFormatYUV() const { return pixelFormat_yuv; }
+  RGB_Internals::rgbPixelFormat getPixelFormatRGB() const { return pixelFormat_rgb; }
 
   // Get the next NAL unit (everything excluding the start code) or the next packet.
   // Do not mix calls to these two functions when reading a file.
@@ -104,7 +106,10 @@ protected:
   AVStreamWrapper video_stream;
   double frameRate;
   QSize frameSize;
-  YUV_Internals::yuvPixelFormat pixelFormat;
+  
+  RawFormat rawFormat;
+  YUV_Internals::yuvPixelFormat pixelFormat_yuv;
+  RGB_Internals::rgbPixelFormat pixelFormat_rgb;
   YUV_Internals::ColorConversion colorConversionType;
 
   // Watch the opened file for modifications

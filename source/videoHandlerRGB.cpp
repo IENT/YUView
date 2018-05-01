@@ -35,6 +35,8 @@
 #include <QPainter>
 #include "fileInfoWidget.h"
 
+using namespace RGB_Internals;
+
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0
 #if VIDEOHANDLERRGB_DEBUG_LOADING && !NDEBUG
@@ -82,7 +84,7 @@ videoHandlerRGB_CustomFormatDialog::videoHandlerRGB_CustomFormatDialog(const QSt
   alphaChannelCheckBox->setChecked(alpha);
 }
 
-QString videoHandlerRGB::rgbPixelFormat::getName() const
+QString rgbPixelFormat::getName() const
 {
   if (bitsPerValue == 0)
     return "Unknown Pixel Format";
@@ -97,7 +99,7 @@ QString videoHandlerRGB::rgbPixelFormat::getName() const
   return name;
 }
 
-void videoHandlerRGB::rgbPixelFormat::setFromName(const QString &name)
+void rgbPixelFormat::setFromName(const QString &name)
 {
   if (name == "Unknown Pixel Format")
   {
@@ -118,7 +120,7 @@ void videoHandlerRGB::rgbPixelFormat::setFromName(const QString &name)
   }
 }
 
-QString videoHandlerRGB::rgbPixelFormat::getRGBFormatString() const
+QString rgbPixelFormat::getRGBFormatString() const
 {
   QString name;
   for (int i = 0; i < 3; i++)
@@ -133,7 +135,7 @@ QString videoHandlerRGB::rgbPixelFormat::getRGBFormatString() const
   return name;
 }
 
-void videoHandlerRGB::rgbPixelFormat::setRGBFormatFromString(const QString &format)
+void rgbPixelFormat::setRGBFormatFromString(const QString &format)
 {
   for (int i = 0; i < 3; i++)
   {
@@ -171,7 +173,7 @@ QStringList videoHandlerRGB::RGBFormatList::getFormattedNames() const
   return l;
 }
 
-videoHandlerRGB::rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const QString &name) const
+rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const QString &name) const
 {
   for (int i = 0; i < count(); i++)
   {
@@ -187,7 +189,7 @@ videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 
 /* Get the number of bytes for a frame with this RGB format and the given size
 */
-int64_t videoHandlerRGB::rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
+int64_t rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
 {
   if (bitsPerValue == 0 || !frameSize.isValid())
     return 0;
@@ -214,9 +216,6 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler()
   componentInvert[1] = false;
   componentInvert[2] = false;
 
-  currentFrameRawRGBData_frameIdx = -1;
-  rawRGBData_frameIdx = -1;
-
   // Set the order of the RGB formats in the combo box
   orderRGBList << "RGB" << "RBG" << "GRB" << "GBR" << "BRG" << "BGR";
   bitDepthList << "8" << "10" << "12" << "16";
@@ -240,7 +239,7 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
       // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
       return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
-    if (currentFrameRawRGBData_frameIdx != frameIdx || rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx1)
+    if (currentFrameRawData_frameIdx != frameIdx || rgbItem2->currentFrameRawData_frameIdx != frameIdx1)
       return ValuePairList();
 
     int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
@@ -262,7 +261,7 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
     int width = frameSize.width();
     int height = frameSize.height();
 
-    if (currentFrameRawRGBData_frameIdx != frameIdx)
+    if (currentFrameRawData_frameIdx != frameIdx)
       return ValuePairList();
 
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
@@ -279,7 +278,7 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
   return values;
 }
 
-QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
+QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!
   assert(!ui.created());
@@ -414,7 +413,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     // The number of bytes per frame changed -> the number of frames in the sequence changed.
     emit signalUpdateFrameLimits();
     // The raw RGB data buffer also needs to be reloaded
-    currentFrameRawRGBData_frameIdx = -1;
+    currentFrameRawData_frameIdx = -1;
   }
   setCacheInvalid();
   emit signalHandlerChanged(true, RECACHE_CLEAR);
@@ -428,24 +427,24 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
     // We cannot load a frame if the format is not known
     return;
 
-  // Does the data in currentFrameRawRGBData need to be updated?
+  // Does the data in currentFrameRawData need to be updated?
   if (!loadRawRGBData(frameIndex))
     // Loading failed or it is still being performed in the background
     return;
 
-  // The data in currentFrameRawRGBData is now up to date. If necessary
+  // The data in currentFrameRawData is now up to date. If necessary
   // convert the data to RGB.
   if (loadToDoubleBuffer)
   {
     QImage newImage;
-    convertRGBToImage(currentFrameRawRGBData, newImage);
+    convertRGBToImage(currentFrameRawData, newImage);
     doubleBufferImage = newImage;
     doubleBufferImageFrameIdx = frameIndex;
   }
   else if (currentImageIdx != frameIndex)
   {
     QImage newImage;
-    convertRGBToImage(currentFrameRawRGBData, newImage);
+    convertRGBToImage(currentFrameRawData, newImage);
     QMutexLocker writeLock(&currentImageSetMutex);    
     currentImage = newImage;
     currentImageIdx = frameIndex;
@@ -462,10 +461,10 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, true);
-  tmpBufferRawRGBDataCaching = rawRGBData;
+  tmpBufferRawRGBDataCaching = rawData;
   requestDataMutex.unlock();
 
-  if (frameIndex != rawRGBData_frameIdx)
+  if (frameIndex != rawData_frameIdx)
   {
     // Loading failed
     currentImageIdx = -1;
@@ -479,20 +478,20 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   rgbFormatMutex.unlock();
 }
 
-// Load the raw RGB data for the given frame index into currentFrameRawRGBData.
+// Load the raw RGB data for the given frame index into currentFrameRawData.
 bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 {
-  if (currentFrameRawRGBData_frameIdx == frameIndex)
+  if (currentFrameRawData_frameIdx == frameIndex)
     // Buffer already up to date
     return true;
 
-  if (frameIndex == rawRGBData_frameIdx)
+  if (frameIndex == rawData_frameIdx)
   {
     // The raw data was loaded in the background. Now we just have to move it to the current
     // buffer. No actual loading is needed.
     requestDataMutex.lock();
-    currentFrameRawRGBData = rawRGBData;
-    currentFrameRawRGBData_frameIdx = frameIndex;
+    currentFrameRawData = rawData;
+    currentFrameRawData_frameIdx = frameIndex;
     requestDataMutex.unlock();
     return true;
   }
@@ -503,15 +502,15 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
   // However, only one thread can use this at a time.
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, false);
-  if (frameIndex == rawRGBData_frameIdx)
+  if (frameIndex == rawData_frameIdx)
   {
-    currentFrameRawRGBData = rawRGBData;
-    currentFrameRawRGBData_frameIdx = frameIndex;
+    currentFrameRawData = rawData;
+    currentFrameRawData_frameIdx = frameIndex;
   }
   requestDataMutex.unlock();
 
   DEBUG_RGB("videoHandlerRGB::loadRawRGBData %d %s", frameIndex, (frameIndex == rawRGBData_frameIdx) ? "NewDataSet" : "Waiting...");
-  return (currentFrameRawRGBData_frameIdx == frameIndex);
+  return (currentFrameRawData_frameIdx == frameIndex);
 }
 
 // Convert the given raw RGB data in sourceBuffer (using srcPixelFormat) to image (RGB-888), using the
@@ -776,15 +775,15 @@ void videoHandlerRGB::getPixelValue(const QPoint &pixelPos, unsigned int &R, uns
     unsigned short *srcR, *srcG, *srcB;
     if (srcPixelFormat.planar)
     {
-      srcR = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
-      srcG = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
-      srcB = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+      srcR = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+      srcG = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+      srcB = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
     }
     else
     {
-      srcR = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posR;
-      srcG = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posG;
-      srcB = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posB;
+      srcR = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posR;
+      srcG = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posG;
+      srcB = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posB;
     }
 
     R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
@@ -797,15 +796,15 @@ void videoHandlerRGB::getPixelValue(const QPoint &pixelPos, unsigned int &R, uns
     unsigned char *srcR, *srcG, *srcB;
     if (srcPixelFormat.planar)
     {
-      srcR = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
-      srcG = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
-      srcB = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+      srcR = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+      srcG = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+      srcB = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
     }
     else
     {
-      srcR = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posR;
-      srcG = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posG;
-      srcB = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posB;
+      srcR = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posR;
+      srcG = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posG;
+      srcB = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posB;
     }
 
     R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
@@ -814,17 +813,6 @@ void videoHandlerRGB::getPixelValue(const QPoint &pixelPos, unsigned int &R, uns
   }
   else
     Q_ASSERT_X(false, "videoHandlerRGB::getPixelValue", "No RGB format with less than 8 or more than 16 bits supported yet.");
-}
-
-void videoHandlerRGB::setFrameSize(const QSize &size)
-{
-  if (size != frameSize)
-  {
-    currentFrameRawRGBData_frameIdx = -1;
-    currentImageIdx = -1;
-  }
-
-  videoHandler::setFrameSize(size);
 }
 
 void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo)
@@ -914,9 +902,9 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
 
   // Check if the raw RGB values are up to date. If not, do not draw them. Do not trigger loading of data here. The needsLoadingRawValues 
   // function will return that loading is needed. The caching in the background should then trigger loading of them.
-  if (currentFrameRawRGBData_frameIdx != frameIdx)
+  if (currentFrameRawData_frameIdx != frameIdx)
     return;
-  if (rgbItem2 && rgbItem2->currentFrameRawRGBData_frameIdx != frameIdxItem1)
+  if (rgbItem2 && rgbItem2->currentFrameRawData_frameIdx != frameIdxItem1)
     return;
 
   // The center point of the pixel (0,0).
@@ -1026,30 +1014,30 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
       unsigned short *srcR0, *srcG0, *srcB0;
       if (srcPixelFormat.planar)
       {
-        srcR0 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
-        srcG0 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
-        srcB0 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+        srcR0 = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+        srcG0 = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+        srcB0 = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
       }
       else
       {
-        srcR0 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posR;
-        srcG0 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posG;
-        srcB0 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posB;
+        srcR0 = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posR;
+        srcG0 = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posG;
+        srcB0 = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posB;
       }
 
       // First get the pointer to the first value of each channel. (the other item)
       unsigned short *srcR1, *srcG1, *srcB1;
       if (srcPixelFormat.planar)
       {
-        srcR1 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
-        srcG1 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
-        srcB1 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+        srcR1 = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+        srcG1 = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+        srcB1 = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
       }
       else
       {
-        srcR1 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posR;
-        srcG1 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posG;
-        srcB1 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posB;
+        srcR1 = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posR;
+        srcG1 = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posG;
+        srcB1 = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posB;
       }
 
       for (int y = 0; y < height; y++)
@@ -1099,30 +1087,30 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
       unsigned char *srcR0, *srcG0, *srcB0;
       if (srcPixelFormat.planar)
       {
-        srcR0 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
-        srcG0 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
-        srcB0 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+        srcR0 = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+        srcG0 = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+        srcB0 = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
       }
       else
       {
-        srcR0 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posR;
-        srcG0 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posG;
-        srcB0 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posB;
+        srcR0 = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posR;
+        srcG0 = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posG;
+        srcB0 = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posB;
       }
 
       // First get the pointer to the first value of each channel. (other item)
       unsigned char *srcR1, *srcG1, *srcB1;
       if (srcPixelFormat.planar)
       {
-        srcR1 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
-        srcG1 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
-        srcB1 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+        srcR1 = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+        srcG1 = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+        srcB1 = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
       }
       else
       {
-        srcR1 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posR;
-        srcG1 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posG;
-        srcB1 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posB;
+        srcR1 = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posR;
+        srcG1 = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posG;
+        srcB1 = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posB;
       }
 
       for (int y = 0; y < height; y++)
@@ -1193,8 +1181,3 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
   return outputImage;
 }
 
-void videoHandlerRGB::invalidateAllBuffers()
-{
-  currentFrameRawRGBData_frameIdx = -1;
-  videoHandler::invalidateAllBuffers();
-}

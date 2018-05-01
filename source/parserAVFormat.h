@@ -37,8 +37,6 @@
 #include "parserAnnexB.h"
 #include "FFMpegLibrariesHandling.h"
 
-using namespace FFmpeg;
-
 /* This parser is able to parse the AVPackets and the extradata from containers read with libavformat.
  * If the bitstream within the container is a supported annexB bitstream, this parser can use that parser
  * to even parser deeper.

@@ -146,24 +146,27 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
     LOGSTRVAL("flag_discard", packet.get_flag_discard());
     LOGSTRVAL("data_size", packet.get_data_size());
 
-    int nalID = 0;
-    while (posInData + 4 <= avpacketData.length())
+    if (annexBParser)
     {
-      // AVPacket use the following encoding:
-      // The first 4 bytes determine the size of the NAL unit followed by the payload (ISO/IEC 14496-15)
-      QByteArray sizePart = avpacketData.mid(posInData, 4);
-      int size = (unsigned char)sizePart.at(3);
-      size += (unsigned char)sizePart.at(2) << 8;
-      size += (unsigned char)sizePart.at(1) << 16;
-      size += (unsigned char)sizePart.at(0) << 24;
-      posInData += 4;
+      int nalID = 0;
+      while (posInData + 4 <= avpacketData.length())
+      {
+        // AVPacket use the following encoding:
+        // The first 4 bytes determine the size of the NAL unit followed by the payload (ISO/IEC 14496-15)
+        QByteArray sizePart = avpacketData.mid(posInData, 4);
+        int size = (unsigned char)sizePart.at(3);
+        size += (unsigned char)sizePart.at(2) << 8;
+        size += (unsigned char)sizePart.at(1) << 16;
+        size += (unsigned char)sizePart.at(0) << 24;
+        posInData += 4;
 
-      if (posInData + size > avpacketData.length())
-        throw std::logic_error("Not enough data in the input array to read NAL unit.");
+        if (posInData + size > avpacketData.length())
+          throw std::logic_error("Not enough data in the input array to read NAL unit.");
 
-      QByteArray nalData = avpacketData.mid(posInData, size);
-      annexBParser->parseAndAddNALUnit(nalID++, nalData, itemTree);
-      posInData += size;
+        QByteArray nalData = avpacketData.mid(posInData, size);
+        annexBParser->parseAndAddNALUnit(nalID++, nalData, itemTree);
+        posInData += size;
+      }
     }
   }
 }

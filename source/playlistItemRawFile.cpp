@@ -76,12 +76,12 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   if (ext == "yuv" || ext == "nv21" || fmt.toLower() == "yuv" || ext == "y4m")
   {
     video.reset(new videoHandlerYUV);
-    rawFormat = YUV;
+    rawFormat = raw_YUV;
   }
   else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg" || fmt.toLower() == "rgb")
   {
     video.reset(new videoHandlerRGB);
-    rawFormat = RGB;
+    rawFormat = raw_RGB;
   }
   else
     Q_ASSERT_X(false, "playlistItemRawFile()", "No video handler for the raw file format found.");
@@ -110,9 +110,9 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   {
     // Just set the given values
     video->setFrameSize(frameSize);
-    if (rawFormat == YUV)
+    if (rawFormat == raw_YUV)
       getYUVVideo()->setYUVPixelFormatByName(sourcePixelFormat);
-    else if (rawFormat == RGB)
+    else if (rawFormat == raw_RGB)
       getRGBVideo()->setRGBPixelFormatByName(sourcePixelFormat);
   }
 
@@ -120,7 +120,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
     startEndFrame = getStartEndFrameLimits();
 
   // If the videHandler requests raw data, we provide it from the file
-  connect(video.data(), SIGNAL(signalRequestRawData(int, bool)), this, SLOT(loadRawData(int)), Qt::DirectConnection);
+  connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemRawFile::loadRawData, Qt::DirectConnection);
   connect(video.data(), &videoHandler::signalUpdateFrameLimits, this,  &playlistItemRawFile::slotUpdateFrameLimits);
 
   // Connect the basic signals from the video
@@ -148,7 +148,7 @@ int64_t playlistItemRawFile::getNumberFrames() const
 
 infoData playlistItemRawFile::getInfo() const
 {
-  infoData info((rawFormat == YUV) ? "YUV File Info" : "RGB File Info");
+  infoData info((rawFormat == raw_YUV) ? "YUV File Info" : "RGB File Info");
 
   // At first append the file information part (path, date created, file size...)
   info.items.append(dataSource.getFileInfoList());
@@ -390,10 +390,7 @@ void playlistItemRawFile::createPropertiesWidget()
   // First add the parents controls (first video controls (width/height...) then videoHandler controls (format,...)
   vAllLaout->addLayout(createPlaylistItemControls());
   vAllLaout->addWidget(line);
-  if (rawFormat == YUV)
-    vAllLaout->addLayout(getYUVVideo()->createYUVVideoHandlerControls());
-  else if (rawFormat == RGB)
-    vAllLaout->addLayout(getRGBVideo()->createRGBVideoHandlerControls());
+  vAllLaout->addLayout(video->createVideoHandlerControls());
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
@@ -415,16 +412,16 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
   // Append all the properties of the raw file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
   d.appendProperiteChild("relativePath", relativePath);
-  d.appendProperiteChild("type", (rawFormat == YUV) ? "YUV" : "RGB");
+  d.appendProperiteChild("type", (rawFormat == raw_YUV) ? "YUV" : "RGB");
 
   // Append the video handler properties
   d.appendProperiteChild("width", QString::number(video->getFrameSize().width()));
   d.appendProperiteChild("height", QString::number(video->getFrameSize().height()));
 
   // Append the videoHandler properties
-  if (rawFormat == YUV)
+  if (rawFormat == raw_YUV)
     d.appendProperiteChild("pixelFormat", getYUVVideo()->getRawYUVPixelFormatName());
-  else if (rawFormat == RGB)
+  else if (rawFormat == raw_RGB)
     d.appendProperiteChild("pixelFormat", getRGBVideo()->getRawRGBPixelFormatName());
 
   root.appendChild(d);
@@ -473,18 +470,9 @@ void playlistItemRawFile::loadRawData(int frameIdxInternal)
     fileStartPos = frameIdxInternal * getBytesPerFrame();
   int64_t nrBytes = getBytesPerFrame();
 
-  if (rawFormat == YUV)
-  {
-    if (dataSource.readBytes(getYUVVideo()->rawYUVData, fileStartPos, nrBytes) < nrBytes)
-      return; // Error
-    getYUVVideo()->rawYUVData_frameIdx = frameIdxInternal;
-  }
-  else if (rawFormat == RGB)
-  {
-    if (dataSource.readBytes(getRGBVideo()->rawRGBData, fileStartPos, nrBytes) < nrBytes)
-      return; // Error
-    getRGBVideo()->rawRGBData_frameIdx = frameIdxInternal;
-  }
+  if (dataSource.readBytes(video->rawData, fileStartPos, nrBytes) < nrBytes)
+    return; // Error
+  video->rawData_frameIdx = frameIdxInternal;
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d Done", frameIdxInternal);
 }
@@ -492,7 +480,7 @@ void playlistItemRawFile::loadRawData(int frameIdxInternal)
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
-  return ValuePairListSets((rawFormat == YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdxInternal));
+  return ValuePairListSets((rawFormat == raw_YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdxInternal));
 }
 
 void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
@@ -510,15 +498,6 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
   filters.append("Raw YUV File (*.yuv *.nv21)");
   filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
   filters.append("YUV4MPEG2 File (*.y4m)");
-}
-
-int64_t playlistItemRawFile::getBytesPerFrame() const
-{
-  if (rawFormat == YUV)
-      return getYUVVideo()->getBytesPerFrame();
-    else if (rawFormat == RGB)
-      return getRGBVideo()->getBytesPerFrame();
-  return -1;
 }
 
 void playlistItemRawFile::reloadItemSource()

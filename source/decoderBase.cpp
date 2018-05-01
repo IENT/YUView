@@ -47,12 +47,12 @@
 #define DEBUG_HEVCDECODERBASE if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
 #endif
 #else
-#define DEBUG_HEVCDECODERBASE(fmt,...) ((void)0)
+#define DEBUG_DECODERBASE(fmt,...) ((void)0)
 #endif
 
 decoderBase::decoderBase(bool cachingDecoder)
 {
-  DECODERBASE_DEBUG_OUTPUT("decoderBase::decoderBase create base%s", cachingDecoder ? " - caching" : "");
+  DEBUG_DECODERBASE("decoderBase::decoderBase create base%s", cachingDecoder ? " - caching" : "");
   decodeSignal = 0;
   internalsSupported = false;
   retrieveStatistics = false;
@@ -63,11 +63,12 @@ decoderBase::decoderBase(bool cachingDecoder)
 
 void decoderBase::resetDecoder()
 {
-  DECODERBASE_DEBUG_OUTPUT("decoderBase::resetDecoder");
+  DEBUG_DECODERBASE("decoderBase::resetDecoder");
   decoderState = decoderNeedsMoreData;
   statsCacheCurPOC = -1;
   frameSize = QSize();
-  format = yuvPixelFormat();
+  
+  rawFormat = raw_Invalid;
 }
 
 statisticsData decoderBase::getStatisticsData(int typeIdx)

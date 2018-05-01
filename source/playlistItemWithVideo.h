@@ -34,7 +34,8 @@
 #define PLAYLISTITEMWITHVIDEO_H
 
 #include "playlistItem.h"
-#include "videoHandler.h"
+#include "videoHandlerRGB.h"
+#include "videoHandlerYUV.h"
 
 /* This class is a helper class that you can inherit from if your playlistItem uses a videoHandler. 
  * Here, we already define a lot of the forwards to the video handler. If you have multiple videos
@@ -81,6 +82,14 @@ public:
 protected:
   // A pointer to the videHandler. In the derived class, don't foret to set this.
   QScopedPointer<videoHandler> video;
+
+  // The videoHandler can be a videoHandlerRGB or a videoHandlerYUV
+  RawFormat rawFormat;
+  // Get a raw pointer to either version of the videoHandler
+  videoHandlerYUV *getYUVVideo() { assert(rawFormat == raw_YUV); return dynamic_cast<videoHandlerYUV*>(video.data()); }
+  videoHandlerRGB *getRGBVideo() { assert(rawFormat == raw_RGB); return dynamic_cast<videoHandlerRGB*>(video.data()); }
+  const videoHandlerYUV *getYUVVideo() const { assert(rawFormat == raw_YUV); return dynamic_cast<const videoHandlerYUV*>(video.data()); }
+  const videoHandlerRGB *getRGBVideo() const { assert(rawFormat == raw_RGB); return dynamic_cast<const videoHandlerRGB*>(video.data()); }
 
   // Connect the basic signals from the video
   void connectVideo();
