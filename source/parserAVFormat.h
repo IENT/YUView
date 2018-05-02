@@ -48,6 +48,7 @@ public:
   ~parserAVFormat() {}
 
   void parseExtradata(QByteArray &extradata);
+  void parseMetadata(QStringPairList &metadata);
   void parseAVPacket(int packetID, AVPacketWrapper &packet);
 
 private:

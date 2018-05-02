@@ -105,6 +105,20 @@ typedef struct AVFormatContext_56
   unsigned int packet_size;
   int max_delay;
   int flags;
+  unsigned int probesize;
+  int max_analyze_duration;
+  const uint8_t *key;
+  int keylen;
+  unsigned int nb_programs;
+  AVProgram **programs;
+  enum AVCodecID video_codec_id;
+  enum AVCodecID audio_codec_id;
+  enum AVCodecID subtitle_codec_id;
+  unsigned int max_index_size;
+  unsigned int max_picture_buffer;
+  unsigned int nb_chapters;
+  AVChapter **chapters;
+  AVDictionary *metadata;
 
   // Actually, there is more here, but the variables above are the only we need.
 } AVFormatContext_56;
@@ -126,7 +140,21 @@ typedef struct AVFormatContext_57
   unsigned int packet_size;
   int max_delay;
   int flags;
-
+  unsigned int probesize;
+  int max_analyze_duration;
+  const uint8_t *key;
+  int keylen;
+  unsigned int nb_programs;
+  AVProgram **programs;
+  enum AVCodecID video_codec_id;
+  enum AVCodecID audio_codec_id;
+  enum AVCodecID subtitle_codec_id;
+  unsigned int max_index_size;
+  unsigned int max_picture_buffer;
+  unsigned int nb_chapters;
+  AVChapter **chapters;
+  AVDictionary *metadata;
+  
   // Actually, there is more here, but the variables above are the only we need.
 } AVFormatContext_57;
 
@@ -657,6 +685,7 @@ bool FFmpegLibraryFunctions::bindFunctionsFromAVUtilLib()
   if (!resolveAvUtil(av_mallocz, "av_mallocz")) return false;
   if (!resolveAvUtil(avutil_version, "avutil_version")) return false;
   if (!resolveAvUtil(av_dict_set, "av_dict_set")) return false;
+  if (!resolveAvUtil(av_dict_get, "av_dict_get")) return false;
   if (!resolveAvUtil(av_frame_get_side_data, "av_frame_get_side_data")) return false;
   return true;
 }
@@ -957,6 +986,20 @@ int FFmpegVersionHandler::av_dict_set(AVDictionaryWrapper &dict, const char *key
   return ret;
 }
 
+QStringPairList FFmpegVersionHandler::get_dictionary_entries(AVDictionaryWrapper d, QString key, int flags)
+{
+  QStringPairList ret;
+  AVDictionaryEntry *tag = NULL;
+  while ((tag = lib.av_dict_get(d.get_dictionary(), key.toLatin1().data(), tag, flags)))
+  {
+    QStringPair pair;
+    pair.first = QString(tag->key);
+    pair.second = QString(tag->value);
+    ret.append(pair);
+  }
+  return ret;
+}
+
 int FFmpegVersionHandler::avcodec_open2(AVCodecContextWrapper &decCtx, AVCodecWrapper &codec, AVDictionaryWrapper &dict)
 {
   AVDictionary *d = dict.get_dictionary();
@@ -1227,6 +1270,17 @@ void AVFormatContextWrapper::update()
     packet_size = src->packet_size;
     max_delay = src->max_delay;
     flags = src->flags;
+    probesize = src->probesize;
+    max_analyze_duration = src->max_analyze_duration;
+    key = QString::fromLatin1((const char*)src->key, src->keylen);
+    nb_programs = src->nb_programs;
+    video_codec_id = src->video_codec_id;
+    audio_codec_id = src->audio_codec_id;
+    subtitle_codec_id = src->subtitle_codec_id;
+    max_index_size = src->max_index_size;
+    max_picture_buffer = src->max_picture_buffer;
+    nb_chapters = src->nb_chapters;
+    metadata = AVDictionaryWrapper(src->metadata);
 
     iformat = AVInputFormatWrapper(src->iformat, libVer);
   }
@@ -1244,6 +1298,17 @@ void AVFormatContextWrapper::update()
     packet_size = src->packet_size;
     max_delay = src->max_delay;
     flags = src->flags;
+    probesize = src->probesize;
+    max_analyze_duration = src->max_analyze_duration;
+    key = QString::fromLatin1((const char*)src->key, src->keylen);
+    nb_programs = src->nb_programs;
+    video_codec_id = src->video_codec_id;
+    audio_codec_id = src->audio_codec_id;
+    subtitle_codec_id = src->subtitle_codec_id;
+    max_index_size = src->max_index_size;
+    max_picture_buffer = src->max_picture_buffer;
+    nb_chapters = src->nb_chapters;
+    metadata = AVDictionaryWrapper(src->metadata);
 
     iformat = AVInputFormatWrapper(src->iformat, libVer);
   }

@@ -944,13 +944,17 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpe
   progress.setWindowModality(Qt::WindowModal);
 
   // First get the extradata and push it to the parser
-  int packetID = 0;
   QByteArray extradata = file->getExtradata();
   parser->parseExtradata(extradata);
+
+  // Parse the metadata
+  QStringPairList metadata = file->getMetadata();
+  parser->parseMetadata(metadata);
 
   // Now iterate over all packets and send them to the parser
   AVPacketWrapper packet = file->getNextPacket();
   
+  int packetID = 0;
   while (!file->atEnd())
   {
     int newPercentValue = packet.get_pts() * 100 / maxPTS;

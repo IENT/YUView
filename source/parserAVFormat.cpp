@@ -57,12 +57,34 @@ parserAVFormat::parserAVFormat(AVCodecID codec)
 
 void parserAVFormat::parseExtradata(QByteArray &extradata)
 {
+  if (extradata.isEmpty())
+    return;
+
   if (codecID == AV_CODEC_ID_H264)
     parseExtradata_AVC(extradata);
   else if (codecID == AV_CODEC_ID_HEVC)
     parseExtradata_hevc(extradata);
   else
     parseExtradata_generic(extradata);
+}
+
+void parserAVFormat::parseMetadata(QStringPairList &metadata)
+{
+  if (metadata.isEmpty())
+    return;
+
+  TreeItem *metadataRoot = nullptr;
+  if (!nalUnitModel.rootItem.isNull())
+  {
+    metadataRoot = new TreeItem("Metadata", nalUnitModel.rootItem.data());
+
+    // Log all entries in the metadata list
+    for (int i = 0; i < metadata.length(); i++)
+    {
+      QStringPair p = metadata.at(i);
+      new TreeItem(p.first, p.second, "", "", metadataRoot);
+    }
+  }
 }
 
 void parserAVFormat::parseExtradata_generic(QByteArray &extradata)

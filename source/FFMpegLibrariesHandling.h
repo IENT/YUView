@@ -94,12 +94,13 @@ public:
   int             (*avcodec_decode_video2) (AVCodecContext *avctx, AVFrame *picture, int *got_picture_ptr, const AVPacket *avpkt);
 
   // From avutil
-  AVFrame         *(*av_frame_alloc)  (void);
-  void             (*av_frame_free)   (AVFrame **frame);
-  void            *(*av_mallocz)      (size_t size);
-  unsigned         (*avutil_version)  (void);
-  int              (*av_dict_set)     (AVDictionary **pm, const char *key, const char *value, int flags);
-  AVFrameSideData *(*av_frame_get_side_data) (const AVFrame *frame, AVFrameSideDataType type);
+  AVFrame           *(*av_frame_alloc)  (void);
+  void               (*av_frame_free)   (AVFrame **frame);
+  void              *(*av_mallocz)      (size_t size);
+  unsigned           (*avutil_version)  (void);
+  int                (*av_dict_set)     (AVDictionary **pm, const char *key, const char *value, int flags);
+  AVDictionaryEntry *(*av_dict_get)     (AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
+  AVFrameSideData   *(*av_frame_get_side_data) (const AVFrame *frame, AVFrameSideDataType type);
 
   // From swresample
   unsigned  (*swresample_version) (void);
@@ -431,6 +432,19 @@ private:
   FFmpegLibraryVersion libVer;
 };
 
+class AVDictionaryWrapper
+{
+public:
+  AVDictionaryWrapper() { dict = nullptr; }
+  AVDictionaryWrapper(AVDictionary *dict) : dict(dict) {}
+  void setDictionary(AVDictionary *d) { dict = d; }
+  explicit operator bool() const { return dict != nullptr; }
+  AVDictionary *get_dictionary() { return dict; }
+  
+private:
+  AVDictionary *dict;
+};
+
 // This is a version independent wrapper for the version dependent ffmpeg AVFormatContext
 // It is our own and can be created on the stack and is nicer to debug.
 class AVFormatContextWrapper
@@ -447,6 +461,7 @@ public:
   AVInputFormatWrapper get_input_format() { update(); return iformat; }
   int64_t get_duration() { update(); return duration; }
   AVFormatContext *get_format_ctx() { return ctx; }
+  AVDictionaryWrapper get_metadata() { update(); return metadata; }
 
   // Read a frame into the given pacetk (av_read_frame)
   int read_frame(FFmpegVersionHandler &ff, AVPacketWrapper &pkt);
@@ -468,6 +483,18 @@ private:
   unsigned int packet_size;
   int max_delay;
   int flags;
+
+  unsigned int probesize;
+  int max_analyze_duration;
+  QString key;
+  unsigned int nb_programs;
+  AVCodecID video_codec_id;
+  AVCodecID audio_codec_id;
+  AVCodecID subtitle_codec_id;
+  unsigned int max_index_size;
+  unsigned int max_picture_buffer;
+  unsigned int nb_chapters;
+  AVDictionaryWrapper metadata;
 
   AVFormatContext *ctx;
   FFmpegLibraryVersion libVer;
@@ -501,19 +528,6 @@ private:
 
   AVCodec *codec;
   FFmpegLibraryVersion libVer;
-};
-
-class AVDictionaryWrapper
-{
-public:
-  AVDictionaryWrapper() { dict = nullptr; }
-  AVDictionaryWrapper(AVDictionary *dict) : dict(dict) {}
-  void setDictionary(AVDictionary *d) { dict = d; }
-  explicit operator bool() const { return dict != nullptr; }
-  AVDictionary *get_dictionary() { return dict; }
-
-private:
-  AVDictionary *dict;
 };
 
 class AVFrameWrapper
@@ -652,8 +666,11 @@ public:
   AVCodecWrapper find_decoder(AVCodecID codec_id);
   // Allocate the decoder (avcodec_alloc_context3)
   AVCodecContextWrapper alloc_decoder(AVCodecWrapper &codec);
-  // Set a flag in the dictionary
+  // Set info in the dictionary
   int av_dict_set(AVDictionaryWrapper &dict, const char *key, const char *value, int flags);
+  // Get all entries with the given key (leave empty for all)
+  QStringPairList get_dictionary_entries(AVDictionaryWrapper d, QString key, int flags);
+
   // Open the codec
   int avcodec_open2(AVCodecContextWrapper &decCtx, AVCodecWrapper &codec, AVDictionaryWrapper &dict);
   // Get side data

@@ -120,6 +120,13 @@ QByteArray fileSourceFFmpegFile::getExtradata()
   return codec.get_extradata();
 }
 
+QStringPairList fileSourceFFmpegFile::getMetadata()
+{
+  if (!fmt_ctx)
+    return QStringPairList();
+  return ff.get_dictionary_entries(fmt_ctx.get_metadata(), "", 0);
+}
+
 QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
 {
   /* The SPS/PPS are somewhere else in containers:

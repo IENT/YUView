@@ -62,6 +62,8 @@ namespace FFmpeg
   struct AVFrameSideData;
   struct AVMotionVector;
   struct AVStream;
+  struct AVProgram;
+  struct AVChapter;
 
   // How to convert the avXXX_getVersion() int to major, minor and micro
   #define AV_VERSION_MAJOR(a) ((a) >> 16)
@@ -118,6 +120,12 @@ namespace FFmpeg
   {
     int64_t val, num, den;
   } AVFrac;
+
+  typedef struct 
+  {
+   char *key;
+   char *value;
+  } AVDictionaryEntry;
 
   enum AVPictureType {
     AV_PICTURE_TYPE_NONE = 0, ///< Undefined

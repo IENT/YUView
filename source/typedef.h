@@ -200,6 +200,12 @@ private:
 
 template <typename T> inline T clip(const T n, const T lower, const T upper) { return (n < lower) ? lower : (n > upper) ? upper : n; }
 
+/// ---- Custom types
+
+typedef QPair<QString, QString> QStringPair;
+typedef QList<QStringPair> QStringPairList;
+// A index range is just a QPair of integers (minimum and maximum)
+typedef QPair<int,int> indexRange;
 // A pair of two strings
 typedef QPair<QString, QString> ValuePair;
 // A list of valuePairs (pairs of two strings)
@@ -270,9 +276,6 @@ public:
     appendChild(newChild);
   }
 };
-
-// A index range is just a QPair of integers (minimum and maximum)
-typedef QPair<int,int> indexRange;
 
 class QWidget;
 class QLayout;
