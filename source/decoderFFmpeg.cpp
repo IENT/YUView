@@ -132,6 +132,10 @@ void decoderFFmpeg::copyCurImageToBuffer()
   if (!frame)
     return;
 
+  //// get metadata
+  //AVDictionaryWrapper dict = ff.get_metadata(frame);
+  //QStringPairList values = ff.get_dictionary_entries(dict, "", 0);
+
   if (rawFormat == raw_YUV)
   {
     // At first get how many bytes we are going to write

@@ -101,6 +101,7 @@ public:
   int                (*av_dict_set)     (AVDictionary **pm, const char *key, const char *value, int flags);
   AVDictionaryEntry *(*av_dict_get)     (AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
   AVFrameSideData   *(*av_frame_get_side_data) (const AVFrame *frame, AVFrameSideDataType type);
+  AVDictionary      *(*av_frame_get_metadata)  (const AVFrame *frame);
 
   // From swresample
   unsigned  (*swresample_version) (void);
@@ -673,8 +674,9 @@ public:
 
   // Open the codec
   int avcodec_open2(AVCodecContextWrapper &decCtx, AVCodecWrapper &codec, AVDictionaryWrapper &dict);
-  // Get side data
+  // Get side/meta data
   AVFrameSideDataWrapper get_side_data(AVFrameWrapper &frame, AVFrameSideDataType type);
+  AVDictionaryWrapper    get_metadata(AVFrameWrapper &frame);
 
   // Seek to a specific frame
   int seek_frame(AVFormatContextWrapper &fmt, int stream_idx, int pts);

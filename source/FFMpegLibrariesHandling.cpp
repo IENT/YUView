@@ -687,6 +687,7 @@ bool FFmpegLibraryFunctions::bindFunctionsFromAVUtilLib()
   if (!resolveAvUtil(av_dict_set, "av_dict_set")) return false;
   if (!resolveAvUtil(av_dict_get, "av_dict_get")) return false;
   if (!resolveAvUtil(av_frame_get_side_data, "av_frame_get_side_data")) return false;
+  if (!resolveAvUtil(av_frame_get_metadata, "av_frame_get_metadata")) return false;
   return true;
 }
 
@@ -1012,6 +1013,12 @@ AVFrameSideDataWrapper FFmpegVersionHandler::get_side_data(AVFrameWrapper &frame
 {
   AVFrameSideData *sd = lib.av_frame_get_side_data(frame.get_frame(), type);
   return AVFrameSideDataWrapper(sd, libVersion);
+}
+
+AVDictionaryWrapper FFmpegVersionHandler::get_metadata(AVFrameWrapper &frame)
+{
+  AVDictionary *dict = lib.av_frame_get_metadata(frame.get_frame());
+  return AVDictionaryWrapper(dict);
 }
 
 int FFmpegVersionHandler::seek_frame(AVFormatContextWrapper & fmt, int stream_idx, int pts)
