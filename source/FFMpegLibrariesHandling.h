@@ -684,7 +684,7 @@ public:
 
   static RawFormat getRawFormat(AVPixelFormat pixelFormat);
   static YUV_Internals::yuvPixelFormat convertAVPixelFormatYUV(AVPixelFormat pixelFormat);
-  static RGB_Internals::rgbPixelFormat FFmpegVersionHandler::convertAVPixelFormatRGB(AVPixelFormat pixelFormat);
+  static RGB_Internals::rgbPixelFormat convertAVPixelFormatRGB(AVPixelFormat pixelFormat);
   // Check if the given four files can be used to open FFmpeg.
   static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error);
 
