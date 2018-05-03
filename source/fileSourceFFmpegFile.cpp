@@ -179,6 +179,9 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
   }
   else if (codec == AV_CODEC_ID_H264)
   {
+    // Note: Actually we would only need this if we would feed the AVC bitstream to a different decoder then ffmpeg.
+    //       So this function is so far not called.
+
     // First byte is 1, length must be at least 7 bytes
     if (extradata.at(0) == 1 && extradata.length() >= 7)
     {

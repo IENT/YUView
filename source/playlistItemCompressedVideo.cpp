@@ -98,7 +98,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   else
     inputFormatType = input;
 
-  isinputFormatTypeAnnexB = (input == inputAnnexBHEVC || input == inputAnnexBAVC);
+  isinputFormatTypeAnnexB = (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC);
 
   // While opening the file, also determine which decoders we can use
   ffmpegCodec = AV_CODEC_ID_NONE;
@@ -389,7 +389,8 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
 {
   Q_UNUSED(buttonID);
 
-  // The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
+  // The button "Show NAL units" was pressed.
+  // Parse the file using the apropriate parser ...
   QScopedPointer<parserAnnexB> parserA;
   QScopedPointer<parserAVFormat> parserB;
   if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC)
@@ -416,6 +417,7 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     parseFFMpegFile(ffmpegFile, parserB);
   }
   
+  // ... then, create a dialog with a QTreeView and show the NAL unit list.
   QDialog newDialog;
   QTreeView *view = new QTreeView();
   if (parserA)
@@ -858,7 +860,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
 {
   DEBUG_HEVC("playlistItemCompressedVideo::parseAnnexBFile");
 
-  //Show a modal QProgressDialog while this operation is running.
+  // Show a modal QProgressDialog while this operation is running.
   // If the user presses cancel, we will cancel and return false (opening the file failed).
   // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
   QWidget *mainWindow = MainWindow::getMainWindow();

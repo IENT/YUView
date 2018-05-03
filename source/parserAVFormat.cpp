@@ -35,6 +35,14 @@
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
 
+#define PARSERAVCFORMAT_DEBUG_OUTPUT 0
+#if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_AVC qDebug
+#else
+#define DEBUG_AVC(fmt,...) ((void)0)
+#endif
+
 /* Some macros that we use to read syntax elements from the bitstream.
 * The advantage of these macros is, that they can directly also create the tree structure for the QAbstractItemModel that is 
 * used to show the NAL units and their content. The tree will only be added if the pointer to the given tree itemTree is valid.
@@ -45,6 +53,9 @@
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
 // Log a string and a value
 #define LOGSTRVAL(str,val) {if (itemTree) new TreeItem(str,val,QString("info"),QString(),itemTree);}
+#define LOG(str,val,coding,code) {if (itemTree) new TreeItem(str,val,coding,code,itemTree);}
+#define LOG_VAR(var,length) {QString code=QString::number(var,2); while (code.size() < length) code.prepend("0"); if (itemTree) new TreeItem(#var,var,QString("u(%1)").arg(length),code,itemTree);}
+#define LOG_VAR_SUB(var,length) {QString code=QString::number(var,2); while (code.size() < length) code.prepend("0"); if (subTree) new TreeItem(#var,var,QString("u(%1)").arg(length),code,subTree);}
 
 parserAVFormat::parserAVFormat(AVCodecID codec)
 { 
@@ -106,8 +117,79 @@ void parserAVFormat::parseExtradata_generic(QByteArray &extradata)
 
 void parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 {
-  // TODO:
-  parseExtradata_generic(extradata);
+  if (nalUnitModel.rootItem.isNull())
+    return;
+
+  if (extradata.at(0) == 1 && extradata.length() >= 7)
+  {
+    TreeItem *itemTree = new TreeItem("Extradata (Raw AVC NAL units)", nalUnitModel.rootItem.data());
+
+    // The extradata uses the avcc format (see avc.c in libavformat)
+    int profile = (unsigned char)extradata.at(1);
+    int profile_compat = (unsigned char)extradata.at(2);
+    int level = (unsigned char)extradata.at(3);
+    int reserved_6_one_bits = (unsigned char)((extradata.at(4) & 0xFC) >> 2);  // 6 one bits
+    int nal_size_length_minus1 = (unsigned char)(extradata.at(4) & 0x03);  // 2 bits
+    int reserved_3_one_bits = (unsigned char)((extradata.at(5) & 0xE0) >> 5);  // 3 one bits
+    int number_of_sps = (unsigned char)(extradata.at(5) & 0x1f); // 5 bits
+
+    LOG_VAR(profile, 8);
+    LOG_VAR(profile_compat, 8);
+    LOG_VAR(level, 8);
+    LOG_VAR(reserved_6_one_bits, 6);
+    LOG_VAR(nal_size_length_minus1, 2);
+    LOG_VAR(reserved_3_one_bits, 3);
+    LOG_VAR(number_of_sps, 5);
+
+    int pos = 6;
+    int nalID = 0;
+    for (int i = 0; i < number_of_sps; i++)
+    {
+      TreeItem *subTree = new TreeItem(QString("SPS %1").arg(i), itemTree);
+
+      int sps_size = (unsigned char)(extradata.at(pos++)) << 7;
+      sps_size += (unsigned char)(extradata.at(pos++));
+      LOG_VAR_SUB(sps_size, 16);
+
+      QByteArray rawNAL = extradata.mid(pos, sps_size);
+      try
+      {
+        annexBParser->parseAndAddNALUnit(nalID, rawNAL, subTree);
+      }
+      catch (...)
+      {
+        // Reading a NAL unit failed at some point.
+        // This is not too bad. Just don't use this NAL unit and continue with the next one.
+        DEBUG_AVC("parseExtradata_AVC Exception thrown parsing NAL %d", nalID);
+      }
+      nalID++;
+      pos += sps_size;
+    }
+
+    int nrPPS = extradata.at(pos++);
+    for (int i = 0; i < nrPPS; i++)
+    {
+      TreeItem *subTree = new TreeItem(QString("PPS %1").arg(i), itemTree);
+
+      int pps_size = (unsigned char)(extradata.at(pos++)) << 7;
+      pps_size += (unsigned char)(extradata.at(pos++));
+      LOG_VAR_SUB(pps_size, 16);
+
+      QByteArray rawNAL = extradata.mid(pos, pps_size);
+      try
+      {
+        annexBParser->parseAndAddNALUnit(nalID, rawNAL, subTree);
+      }
+      catch (...)
+      {
+        // Reading a NAL unit failed at some point.
+        // This is not too bad. Just don't use this NAL unit and continue with the next one.
+        DEBUG_AVC("parseExtradata_AVC Exception thrown parsing NAL %d", nalID);
+      }
+      nalID++;
+      pos += pps_size;
+    }
+  }
 }
 
 void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
@@ -141,7 +223,17 @@ void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
       int length = nextStartCode - posInData;
       QByteArray nalData = extradata.mid(posInData, length);
       // Let the hevc annexB parser parse this
-      annexBParser->parseAndAddNALUnit(nalID++, nalData, extradataRoot);
+      try
+      {
+        annexBParser->parseAndAddNALUnit(nalID, nalData, extradataRoot);
+      }
+      catch (...)
+      {
+        // Reading a NAL unit failed at some point.
+        // This is not too bad. Just don't use this NAL unit and continue with the next one.
+        DEBUG_AVC("parseExtradata_hevc Exception thrown parsing NAL %d", nalID);
+      }
+      nalID++;
       posInData = nextStartCode + 3;
     }
   }
@@ -186,7 +278,17 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
           throw std::logic_error("Not enough data in the input array to read NAL unit.");
 
         QByteArray nalData = avpacketData.mid(posInData, size);
-        annexBParser->parseAndAddNALUnit(nalID++, nalData, itemTree);
+        try
+        {
+          annexBParser->parseAndAddNALUnit(nalID, nalData, itemTree);
+        }
+        catch (...)
+        {
+          // Reading a NAL unit failed at some point.
+          // This is not too bad. Just don't use this NAL unit and continue with the next one.
+          DEBUG_AVC("parseAVPacket Exception thrown parsing NAL %d", nalID);
+        }
+        nalID++;
         posInData += size;
       }
     }
@@ -285,5 +387,14 @@ void parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, sub_byte_reade
   QByteArray nalData = reader.readBytes(nalUnitLength);
 
   // Let the hevc annexB parser parse this
-  annexBParser->parseAndAddNALUnit(unitID, nalData, itemTree);
+  try
+  {
+    annexBParser->parseAndAddNALUnit(unitID, nalData, itemTree);
+  }
+  catch (...)
+  {
+    // Reading a NAL unit failed at some point.
+    // This is not too bad. Just don't use this NAL unit and continue with the next one.
+    DEBUG_AVC("parseAVPacket Exception thrown parsing NAL %d", nalID);
+  }
 }

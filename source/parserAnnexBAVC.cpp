@@ -65,7 +65,7 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
   // Read two bytes (the nal header)
   // Read two bytes (the nal header)
   QByteArray nalHeaderBytes = data.left(2);
-  QByteArray payload = data.right(2);
+  QByteArray payload = data.mid(2);
 
   // Use the given tree item. If it is not set, use the nalUnitMode (if active). 
   // We don't set data (a name) for this item yet. 
