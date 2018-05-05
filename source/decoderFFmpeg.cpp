@@ -43,16 +43,31 @@
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 
-decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, bool cachingDecoder) : 
+decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder) : 
   decoderBase(cachingDecoder)
 {
-  if (!createDecoder(codec))
+  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
+  // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading the libraries.
+  if (!ff.loadFFmpegLibraries())
+    return;
+
+  // Create the cofiguration parameters
+  AVCodecParametersWrapper codecpar = ff.alloc_code_parameters();
+  codecpar.setAVMediaType(AVMEDIA_TYPE_VIDEO);
+  codecpar.setAVCodecID(codec);
+  codecpar.setSize(size.width(), size.height());
+  codecpar.setExtradata(extradata);
+  AVPixelFormat f = FFmpegVersionHandler::convertYUVAVPixelFormat(fmt);
+  codecpar.setAVPixelFormat(f);
+  codecpar.setProfileLevel(profileLevel.first, profileLevel.second);
+  codecpar.setSampleAspectRatio(sampleAspectRatio.first, sampleAspectRatio.second);
+
+  if (!createDecoder(codec, codecpar))
   {
     setError("Error creating the needed decoder.");
     return ;
   }
 
-  frameSize = size;
   flushing = false;
   internalsSupported = true;
 
@@ -62,6 +77,11 @@ decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, bool cachingDecoder) :
 decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder) :
   decoderBase(cachingDecoder)
 {
+  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
+  // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading the libraries.
+  if (!ff.loadFFmpegLibraries())
+    return;
+
   AVCodecID codec = codecpar.getCodecID();
   if (!createDecoder(codec, codecpar))
   {
@@ -79,6 +99,8 @@ decoderFFmpeg::~decoderFFmpeg()
 {
   if (frame)
     frame.free_frame(ff);
+  if (raw_pkt)
+    raw_pkt.free_packet();
 }
 
 void decoderFFmpeg::resetDecoder()
@@ -262,11 +284,15 @@ void decoderFFmpeg::cacheCurStatistics()
   }
 }
 
-void decoderFFmpeg::pushData(QByteArray &data)
+bool decoderFFmpeg::pushData(QByteArray &data)
 {
-  // TODO
-  Q_UNUSED(data);
-  assert(false);
+  if (!raw_pkt)
+    raw_pkt.allocate_paket(ff);
+  raw_pkt.set_data(data);
+  raw_pkt.set_dts(AV_NOPTS_VALUE);
+  raw_pkt.set_pts(AV_NOPTS_VALUE);
+
+  return pushAVPacket(raw_pkt);
 }
 
 bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
@@ -363,11 +389,6 @@ void decoderFFmpeg::fillStatisticList(statisticHandler &statSource) const
 
 bool decoderFFmpeg::createDecoder(AVCodecID streamCodecID, AVCodecParametersWrapper codecpar)
 {
-  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
-  // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading the libraries.
-  if (!ff.loadFFmpegLibraries())
-    return false;
-
   // Allocate the decoder context
   if (videoCodec)
     return setErrorB(QStringLiteral("Video codec already allocated."));

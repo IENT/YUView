@@ -73,15 +73,16 @@ public:
   unsigned (*avformat_version)          (void);
 
   // From avcodec
-  AVCodec        *(*avcodec_find_decoder)   (AVCodecID id);
-  AVCodecContext *(*avcodec_alloc_context3) (const AVCodec *codec);
-  int             (*avcodec_open2)          (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
-  void            (*avcodec_free_context)   (AVCodecContext **avctx);
-  void            (*av_init_packet)         (AVPacket *pkt);
-  void            (*av_packet_unref)        (AVPacket *pkt);
-  void            (*avcodec_flush_buffers)  (AVCodecContext *avctx);
-  unsigned        (*avcodec_version)        (void);
-  const char     *(*avcodec_get_name)       (AVCodecID id);
+  AVCodec           *(*avcodec_find_decoder)   (AVCodecID id);
+  AVCodecContext    *(*avcodec_alloc_context3) (const AVCodec *codec);
+  int                (*avcodec_open2)          (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
+  void               (*avcodec_free_context)   (AVCodecContext **avctx);
+  void               (*av_init_packet)         (AVPacket *pkt);
+  void               (*av_packet_unref)        (AVPacket *pkt);
+  void               (*avcodec_flush_buffers)  (AVCodecContext *avctx);
+  unsigned           (*avcodec_version)        (void);
+  const char        *(*avcodec_get_name)       (AVCodecID id);
+  AVCodecParameters *(*avcodec_parameters_alloc) (void);
 
   // The following functions are part of the new API.
   // The following function is quite new. We will check if it is available.
@@ -308,6 +309,17 @@ public:
   int get_height()           { update(); return height; }
   AVColorSpace get_colorspace() { update(); return color_space; }
 
+  // Set a default set of (unknown) values
+  void setClearValues();
+
+  void setAVMediaType(AVMediaType type);
+  void setAVCodecID(AVCodecID id);
+  void setExtradata(QByteArray extradata);
+  void setSize(int width, int height);
+  void setAVPixelFormat(AVPixelFormat f);
+  void setProfileLevel(int profile, int level);
+  void setSampleAspectRatio(int num, int den);
+  
   AVCodecParameters *getCodecParameters() { return param; }
 
 private:
@@ -336,6 +348,9 @@ private:
   AVColorSpace                  color_space;
   AVChromaLocation              chroma_location;
   int video_delay;
+
+  // When setting custom metadata, we keep a reference to it here.
+  QByteArray set_extradata;
 
   AVCodecParameters *param;
   FFmpegLibraryVersion libVer;
@@ -399,6 +414,9 @@ public:
   void allocate_paket(FFmpegVersionHandler &ff);
   void unref_packet(FFmpegVersionHandler &ff);
   void free_packet();
+  void set_data(QByteArray &set_data);
+  void set_pts(int64_t pts);
+  void set_dts(int64_t pts);
   explicit operator bool() const { return pkt != nullptr; };
   AVPacket *get_packet()       { update(); return pkt; }
   int      get_stream_index()  { update(); return stream_index; }
@@ -671,6 +689,8 @@ public:
   int av_dict_set(AVDictionaryWrapper &dict, const char *key, const char *value, int flags);
   // Get all entries with the given key (leave empty for all)
   QStringPairList get_dictionary_entries(AVDictionaryWrapper d, QString key, int flags);
+  // Allocate a new set of codec parameters 
+  AVCodecParametersWrapper alloc_code_parameters();
 
   // Open the codec
   int avcodec_open2(AVCodecContextWrapper &decCtx, AVCodecWrapper &codec, AVDictionaryWrapper &dict);
@@ -687,6 +707,7 @@ public:
   static RawFormat getRawFormat(AVPixelFormat pixelFormat);
   static YUV_Internals::yuvPixelFormat convertAVPixelFormatYUV(AVPixelFormat pixelFormat);
   static RGB_Internals::rgbPixelFormat convertAVPixelFormatRGB(AVPixelFormat pixelFormat);
+  static AVPixelFormat convertYUVAVPixelFormat(YUV_Internals::yuvPixelFormat fmt);
   // Check if the given four files can be used to open FFmpeg.
   static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error);
 

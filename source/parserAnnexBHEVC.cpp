@@ -2301,3 +2301,26 @@ int parserAnnexBHEVC::getClosestSeekableFrameNumberBefore(int frameIdx) const
   // Get the frame index for the given POC
   return POC_List.indexOf(bestSeekPOC);
 }
+
+QByteArray parserAnnexBHEVC::getExtradata()
+{
+  // Convert the VPS, SPS and PPS that we found in the bitstream to the libavformat hvcc format (see hevc.c)
+
+  // TODO
+  assert(false);
+  return QByteArray();
+}
+
+QPair<int,int> parserAnnexBHEVC::getProfileLevel()
+{
+  // TODO
+  assert(false);
+  return QPair<int,int>(-1, -1);
+}
+
+QPair<int,int> parserAnnexBHEVC::getSampleAspectRatio()
+{
+  // TODO
+  assert(false);
+  return QPair<int,int>(-1, -1);
+}

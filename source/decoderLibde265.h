@@ -99,7 +99,7 @@ public:
   // Decoding / pushing data
   bool decodeNextFrame() Q_DECL_OVERRIDE;
   QByteArray getRawFrameData() Q_DECL_OVERRIDE;
-  void pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
   
   // Statistics
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;

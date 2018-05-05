@@ -73,6 +73,12 @@ public:
   // the given frameIdx where we can start decoding
   virtual int getClosestSeekableFrameNumberBefore(int frameIdx) const = 0;
 
+  // Get the parameters sets as extradata. The format of this depends on the underlying codec.
+  virtual QByteArray getExtradata() = 0;
+  // Get some other properties of the bitstream in order to configure the FFMpegDecoder
+  virtual QPair<int,int> getProfileLevel() = 0;
+  virtual QPair<int,int> getSampleAspectRatio() = 0;
+
   void sortPOCList() { std::sort(POC_List.begin(), POC_List.end()); }
 
 protected:

@@ -625,6 +625,8 @@ FFmpegLibraryFunctions::FFmpegLibraryFunctions()
   av_packet_unref = nullptr;
   avcodec_flush_buffers = nullptr;
   avcodec_version = nullptr;
+  avcodec_get_name = nullptr;
+  avcodec_parameters_alloc = nullptr;
 
   avcodec_send_packet = nullptr;
   avcodec_receive_frame = nullptr;
@@ -663,6 +665,7 @@ bool FFmpegLibraryFunctions::bindFunctionsFromAVCodecLib()
   if (!resolveAvCodec(avcodec_flush_buffers, "avcodec_flush_buffers")) return false;
   if (!resolveAvCodec(avcodec_version, "avcodec_version")) return false;
   if (!resolveAvCodec(avcodec_get_name, "avcodec_get_name")) return false;
+  if (!resolveAvCodec(avcodec_parameters_alloc, "avcodec_parameters_alloc")) return false;
 
   // The following functions are part of the new API. If they are not available, we use the old API.
   // If available, we should however use it.
@@ -969,6 +972,11 @@ bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
   return true;
 }
 
+AVCodecParametersWrapper FFmpegVersionHandler::alloc_code_parameters()
+{
+  return AVCodecParametersWrapper(lib.avcodec_parameters_alloc(), libVersion);
+}
+
 AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecID codec_id)
 {
   return AVCodecWrapper(lib.avcodec_find_decoder(codec_id), libVersion);
@@ -1253,6 +1261,88 @@ rgbPixelFormat FFmpegVersionHandler::convertAVPixelFormatRGB(AVPixelFormat pixel
   // Other formats are not yet supported
   // Adding them should be straightforward (but also not trivial)
   return rgbPixelFormat();
+}
+
+// Convert from yuvPixelFormat to AVPixelFormat
+AVPixelFormat FFmpegVersionHandler::convertYUVAVPixelFormat(yuvPixelFormat fmt)
+{
+  if (fmt.subsampling == YUV_420)
+  {
+    if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P;
+    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P16LE;
+    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P16BE;
+    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P9BE;
+    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P9LE;
+    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P10BE;
+    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P10LE;
+    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P12BE;
+    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P12LE;
+    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P14BE;
+    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV420P14LE;
+  }
+  if (fmt.subsampling == YUV_422)
+  {
+    if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P;
+    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P16LE;
+    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P16BE;
+    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P10BE;
+    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P10LE;
+    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P9BE;
+    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P9LE;
+    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P12BE;
+    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P12LE;
+    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P14BE;
+    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV422P14LE;
+  }
+  if (fmt.subsampling == YUV_444)
+  {
+    if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P;
+    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P16LE;
+    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P16BE;
+    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P9BE;
+    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P9LE;
+    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P10BE;
+    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P10LE;
+    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P12BE;
+    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P12LE;
+    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P14BE;
+    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+      return AV_PIX_FMT_YUV444P14LE;
+  }
+
+  return AV_PIX_FMT_NONE;
 }
 
 void AVFormatContextWrapper::update()
@@ -1675,6 +1765,119 @@ AVColorSpace AVStreamWrapper::get_colorspace()
   return codecpar.get_colorspace();
 }
 
+void AVCodecParametersWrapper::setClearValues()
+{
+  if (libVer.avformat == 57)
+  {
+    AVCodecParameters_57 *src = reinterpret_cast<AVCodecParameters_57*>(param);
+    src->codec_type = AVMEDIA_TYPE_UNKNOWN;
+    src->codec_id = AV_CODEC_ID_NONE;
+    src->codec_tag = 0;
+    src->extradata = nullptr;
+    src->extradata_size = 0;
+    src->format = 0;
+    src->bit_rate = 0;
+    src->bits_per_coded_sample = 0;
+    src->bits_per_raw_sample = 0;
+    src->profile = 0;
+    src->level = 0;
+    src->width = 0;
+    src->height = 0;
+    AVRational ratio;
+    ratio.num = 1;
+    ratio.den = 1;
+    src->sample_aspect_ratio = ratio;
+    src->field_order = AV_FIELD_UNKNOWN;
+    src->color_range = AVCOL_RANGE_UNSPECIFIED;
+    src->color_primaries = AVCOL_PRI_UNSPECIFIED;
+    src->color_trc = AVCOL_TRC_UNSPECIFIED;
+    src->color_space = AVCOL_SPC_UNSPECIFIED;
+    src->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+    src->video_delay = 0;
+  }
+  update();
+}
+
+void AVCodecParametersWrapper::setAVMediaType(AVMediaType type)
+{
+  if (libVer.avformat == 57)
+  {
+    AVCodecParameters_57 *src = reinterpret_cast<AVCodecParameters_57*>(param);
+    src->codec_type = type;
+    codec_type = type;
+  }
+}
+
+void AVCodecParametersWrapper::setAVCodecID(AVCodecID id)
+{
+  if (libVer.avformat == 57)
+  {
+    AVCodecParameters_57 *src = reinterpret_cast<AVCodecParameters_57*>(param);
+    src->codec_id = id;
+    codec_id = id;
+  }
+}
+
+void AVCodecParametersWrapper::setExtradata(QByteArray data)
+{
+  if (libVer.avformat == 57)
+  {
+    set_extradata = data;
+    AVCodecParameters_57 *src = reinterpret_cast<AVCodecParameters_57*>(param);
+    src->extradata = (uint8_t*)set_extradata.data();
+    src->extradata_size = set_extradata.length();
+    extradata = (uint8_t*)set_extradata.data();
+    extradata_size = set_extradata.length();
+  }
+}
+
+void AVCodecParametersWrapper::setSize(int w, int h)
+{
+  if (libVer.avformat == 57)
+  {
+    AVCodecParameters_57 *src = reinterpret_cast<AVCodecParameters_57*>(param);
+    src->width = w;
+    src->height = h;
+    width = w;
+    height = h;
+  }
+}
+
+void AVCodecParametersWrapper::setAVPixelFormat(AVPixelFormat f)
+{
+  if (libVer.avformat == 57)
+  {
+    AVCodecParameters_57 *src = reinterpret_cast<AVCodecParameters_57*>(param);
+    src->format = f;
+    format = f;
+  }
+}
+
+void AVCodecParametersWrapper::setProfileLevel(int p, int l)
+{
+  if (libVer.avformat == 57)
+  {
+    AVCodecParameters_57 *src = reinterpret_cast<AVCodecParameters_57*>(param);
+    src->profile = p;
+    src->level = l;
+    profile = p;
+    level = l;
+  }
+}
+
+void AVCodecParametersWrapper::setSampleAspectRatio(int num, int den)
+{
+  if (libVer.avformat == 57)
+  {
+    AVCodecParameters_57 *src = reinterpret_cast<AVCodecParameters_57*>(param);
+    AVRational ratio;
+    ratio.num = num;
+    ratio.den = den;
+    src->sample_aspect_ratio = ratio;
+    sample_aspect_ratio = ratio;
+  }
+}
+
 void AVCodecParametersWrapper::update()
 {
   if (param == nullptr)
@@ -2051,6 +2254,64 @@ void AVPacketWrapper::free_packet()
     assert(false);
   
   pkt = nullptr;
+}
+
+void AVPacketWrapper::set_data(QByteArray &set_data)
+{
+  if (libVer.avcodec == 56)
+  {
+    AVPacket_56 *src = reinterpret_cast<AVPacket_56*>(pkt);
+    src->data = (uint8_t*)set_data.data();
+    src->size = set_data.size();
+    data = src->data;
+    size = src->size;
+  }
+  else if (libVer.avcodec == 57)
+  {
+    AVPacket_57 *src = reinterpret_cast<AVPacket_57*>(pkt);
+    src->data = (uint8_t*)set_data.data();
+    src->size = set_data.size();
+    data = src->data;
+    size = src->size;
+  }
+  else
+    assert(false);
+}
+
+void AVPacketWrapper::set_pts(int64_t p)
+{
+  if (libVer.avcodec == 56)
+  {
+    AVPacket_56 *src = reinterpret_cast<AVPacket_56*>(pkt);
+    src->pts = p;
+    pts = p;
+  }
+  else if (libVer.avcodec == 57)
+  {
+    AVPacket_57 *src = reinterpret_cast<AVPacket_57*>(pkt);
+    src->pts = p;
+    pts = p;
+  }
+  else
+    assert(false);
+}
+
+void AVPacketWrapper::set_dts(int64_t d)
+{
+  if (libVer.avcodec == 56)
+  {
+    AVPacket_56 *src = reinterpret_cast<AVPacket_56*>(pkt);
+    src->dts = d;
+    dts = d;
+  }
+  else if (libVer.avcodec == 57)
+  {
+    AVPacket_57 *src = reinterpret_cast<AVPacket_57*>(pkt);
+    src->dts = d;
+    dts = d;
+  }
+  else
+    assert(false);
 }
 
 void AVPacketWrapper::update()

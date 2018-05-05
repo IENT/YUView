@@ -109,6 +109,8 @@ namespace FFmpeg
   #define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non-keyframes
   #define AVSEEK_FLAG_FRAME    8 ///< seeking based on frame number
 
+  #define AV_NOPTS_VALUE ((int64_t)UINT64_C(0x8000000000000000))
+
   typedef struct AVRational
   {
     int num; ///< Numerator

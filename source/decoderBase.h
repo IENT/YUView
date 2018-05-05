@@ -76,7 +76,7 @@ public:
   QSize getFrameSize() { return frameSize; }
   // Push data to the decoder (until no more data is needed)
   // In order to make the interface generic, the pushData function accepts data only without start codes
-  virtual void pushData(QByteArray &data) = 0;
+  virtual bool pushData(QByteArray &data) = 0;
 
   // The state of the decoder
   bool decodeFrames() const { return decoderState == decoderRetrieveFrames; }

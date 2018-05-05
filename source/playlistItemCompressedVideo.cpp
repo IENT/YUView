@@ -251,9 +251,14 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     if (isinputFormatTypeAnnexB)
     {
-      loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize));
+      QByteArray extradata = inputFileAnnexBParser->getExtradata();
+      yuvPixelFormat fmt = inputFileAnnexBParser->getPixelFormat();
+      auto profileLevel = inputFileAnnexBParser->getProfileLevel();
+      auto ratio = inputFileAnnexBParser->getSampleAspectRatio();
+
+      loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio));
       if (cachingEnabled)
-        cachingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize));
+        cachingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio, true));
     }
     else
     {
@@ -563,7 +568,10 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
         // Push more data to the decoder
       
         if (isinputFormatTypeAnnexB)
-          data = caching ? inputFileAnnexBCaching->getNextNALUnit() : inputFileAnnexBLoading->getNextNALUnit();
+        {
+          const bool startCode = (decoderEngineType == decoderEngineFFMpeg);
+          data = caching ? inputFileAnnexBCaching->getNextNALUnit(startCode) : inputFileAnnexBLoading->getNextNALUnit(startCode);
+        }
         else
           data = caching ? inputFileFFmpegCaching->getNextNALUnit() : inputFileFFmpegLoading->getNextNALUnit();
         DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived nal unit from file - size %d", data.size());
@@ -887,7 +895,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   {
     try
     {
-      nalData = file->getNextNALUnit(&filePos);
+      nalData = file->getNextNALUnit(false, &filePos);
 
       parser->parseAndAddNALUnit(nalID, nalData, nullptr, filePos);
 

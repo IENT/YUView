@@ -1754,3 +1754,120 @@ int parserAnnexBAVC::getClosestSeekableFrameNumberBefore(int frameIdx) const
   Q_UNUSED(frameIdx);
   return -1;
 }
+
+QByteArray parserAnnexBAVC::getExtradata()
+{
+  // Convert the SPS and PPS that we found in the bitstream to the libavformat avcc format (see avc.c)
+  QByteArray e;
+  e += 1; /* version */
+
+  // Get the first SPS and PPS
+  QSharedPointer<sps> s;
+  QSharedPointer<pps> p;
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_avc = nal.dynamicCast<nal_unit_avc>();
+
+    if (nal_avc->nal_unit_type == SPS)
+      s = nal.dynamicCast<sps>();
+    if (nal_avc->nal_unit_type == PPS)
+      p = nal.dynamicCast<pps>();
+
+    if (s && p)
+      break;
+  }
+
+  if (!s || !p)
+    // SPS or PPS not found
+    return QByteArray();
+
+  // Add profile, compatibility and level
+  int profile_compat = 0;
+  if (s->constraint_set0_flag)
+    profile_compat += 128;
+  if (s->constraint_set1_flag)
+    profile_compat += 64;
+  if (s->constraint_set2_flag)
+    profile_compat += 32;
+  if (s->constraint_set3_flag)
+    profile_compat += 16;
+  if (s->constraint_set4_flag)
+    profile_compat += 8;
+  if (s->constraint_set5_flag)
+    profile_compat += 4;
+
+  e += s->profile_idc;   /* profile */
+  e += profile_compat;   /* profile compat */
+  e += s->level_idc;     /* level */
+
+  e += (unsigned char)255; /* 6 bits reserved (111111) + 2 bits nal size length - 1 (11) */
+  e += (unsigned char)225; /* 3 bits reserved (111) + 5 bits number of sps (00001) */
+
+  // Write SPS
+  QByteArray sps_payload = s->nalPayload;
+  while (sps_payload.at(sps_payload.length()-1) == 0)
+    sps_payload.chop(1);
+  e += (sps_payload.length() + 1) >> 8;
+  e += (sps_payload.length() + 1) & 0xff;
+  e += s->getNALHeader();
+  e += sps_payload;
+
+  // Write PPS
+  e += 0x01; /* number of pps */
+  QByteArray pps_payload = p->nalPayload;
+  while (pps_payload.at(pps_payload.length()-1) == 0)
+    pps_payload.chop(1);
+  e += (pps_payload.length() + 1) >> 8;
+  e += (pps_payload.length() + 1) & 0xff;
+  e += p->getNALHeader();
+  e += pps_payload;
+
+  return e;
+}
+
+QPair<int,int> parserAnnexBAVC::getProfileLevel()
+{
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_avc = nal.dynamicCast<nal_unit_avc>();
+
+    if (nal_avc->nal_unit_type == SPS)
+    {
+      auto s = nal.dynamicCast<sps>();
+      return QPair<int,int>(s->profile_idc, s->level_idc);
+    }
+  }
+  return QPair<int,int>(0,0);
+}
+
+QPair<int,int> parserAnnexBAVC::getSampleAspectRatio()
+{
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_avc = nal.dynamicCast<nal_unit_avc>();
+
+    if (nal_avc->nal_unit_type == SPS)
+    {
+      auto s = nal.dynamicCast<sps>();
+      if (s->vui_parameters_present_flag && s->vui_parameters.aspect_ratio_info_present_flag)
+      {
+        int aspect_ratio_idc = s->vui_parameters.aspect_ratio_idc;
+        if (aspect_ratio_idc > 0 && aspect_ratio_idc <= 16)
+        {
+          int widths[] = {1, 12, 10, 16, 40, 24, 20, 32, 80, 18, 15, 64, 160, 4, 3, 2};
+          int heights[] = {1, 11, 11, 11, 33, 11, 11, 11, 33, 11, 11, 33, 99, 3, 2, 1};
+
+          const int i = aspect_ratio_idc - 1;
+          return QPair<int,int>(widths[i], heights[i]);
+        }
+        if (aspect_ratio_idc == 255)
+          return QPair<int,int>(s->vui_parameters.sar_width, s->vui_parameters.sar_height);
+        return QPair<int,int>(0,0);
+      }
+    }
+  }
+  return QPair<int,int>(0,0);
+}

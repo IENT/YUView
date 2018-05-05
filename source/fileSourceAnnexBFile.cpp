@@ -78,9 +78,11 @@ bool fileSourceAnnexBFile::openFile(const QString &fileName)
   return true;
 }
 
-QByteArray fileSourceAnnexBFile::getNextNALUnit(uint64_t *posInFile)
+QByteArray fileSourceAnnexBFile::getNextNALUnit(bool addStartCode, uint64_t *posInFile)
 {
   QByteArray retArray;
+  if (addStartCode)
+    retArray += startCode;
 
   if (posInFile)
     *posInFile = bufferStartPosInFile + posInBuffer;
@@ -151,6 +153,10 @@ bool fileSourceAnnexBFile::seek(int64_t pos)
     return false;
   bufferStartPosInFile = pos;
   posInBuffer = 0;
+
+  if (pos == 0)
+    // When seeking to the beginning, discard all bytes until we find a start code
+    getNextNALUnit();
 
   return false;
 }
