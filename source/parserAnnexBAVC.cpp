@@ -228,8 +228,11 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     if (nal_avc.isRandomAccess())
     {
       if (new_slice->first_mb_in_slice == 0)
+      {
         // This is the first slice of a random access pont. Add it to the list.
         nalUnitList.append(new_slice);
+        POC_List_randomAccess.append(new_slice->globalPOC);
+      }
     }
   }
   else if (nal_avc.nal_unit_type == SEI)
