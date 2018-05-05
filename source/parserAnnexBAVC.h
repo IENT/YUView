@@ -241,12 +241,13 @@ protected:
     int ExpectedDeltaPerPicOrderCntCycle;
     int MaxFrameNum;
   };
+  typedef QMap<int, QSharedPointer<sps>> sps_map;
 
   // The picture parameter set.
   struct pps : nal_unit_avc
   {
     pps(const nal_unit_avc &nal);
-    void parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list);
+    void parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list);
 
     int pic_parameter_set_id;
     int seq_parameter_set_id;
@@ -285,12 +286,13 @@ protected:
     // The following values are not read from the bitstream but are calculated from the read values.
     int SliceGroupChangeRate;
   };
+  typedef QMap<int, QSharedPointer<pps>> pps_map;
 
   // A slice NAL unit.
   struct slice_header : nal_unit_avc
   {
     slice_header(const nal_unit_avc &nal);
-    void parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root);
+    void parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root);
 
     enum slice_type_enum
     {
@@ -433,20 +435,34 @@ protected:
     QString payloadTypeName;
   };
 
-  struct buffering_period_sei : sei
+  class buffering_period_sei : public sei
   {
+  public:
     buffering_period_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    void parse_buffering_period_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, TreeItem *root);
+    // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced SPS was not found (yet).
+    // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
+    sei_parsing_return_t parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root);
+    void reparse_buffering_period_sei(const sps_map &active_SPS_list) { parse(active_SPS_list, true); }
 
     int seq_parameter_set_id;
     QList<int> initial_cpb_removal_delay;
     QList<int> initial_cpb_removal_delay_offset;
+
+  private:
+    // These are used internally when parsing of the SEI must be prosponed until the SPS is received.
+    bool parse(const sps_map &active_SPS_list, bool reparse);
+    TreeItem *itemTree;
+    QByteArray sei_data_storage;
   };
 
-  struct pic_timing_sei : sei
+  class pic_timing_sei : public sei
   {
+  public:
     pic_timing_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    void parse_pic_timing_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root);
+    // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced SPS was not found (yet).
+    // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
+    sei_parsing_return_t parse_pic_timing_sei(QByteArray &data, const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root);
+    void reparse_pic_timing_sei(const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag) { parse(active_SPS_list, CpbDpbDelaysPresentFlag, true); }
 
     int cpb_removal_delay;
     int dpb_output_delay;
@@ -467,6 +483,12 @@ protected:
     bool minutes_flag[3];
     bool hours_flag[3];
     int time_offset[3];
+
+  private:
+    // These are used internally when parsing of the SEI must be prosponed until the SPS is received.
+    bool parse(const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, bool reparse);
+    TreeItem *itemTree;
+    QByteArray sei_data_storage;
   };
 
   struct user_data_sei : sei
@@ -488,9 +510,11 @@ protected:
   // the parameter sets.
   QMap<int, QSharedPointer<sps>> active_SPS_list;
   QMap<int, QSharedPointer<pps>> active_PPS_list;
-
   // In order to calculate POCs we need the first slice of the last reference picture
   QSharedPointer<slice_header> last_picture_first_slice;
+  // It is allowed that units (like SEI messages) sent before the parameter sets but still refer to the 
+  // parameter sets. Here we keep a list of seis that need to be parsed after the parameter sets were recieved.
+  QList<QSharedPointer<sei>> reparse_sei;
 
   bool CpbDpbDelaysPresentFlag;
 };

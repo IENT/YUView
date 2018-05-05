@@ -1073,7 +1073,7 @@ parserAnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 }
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
-void parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &p_active_SPS_list, const pps_map &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
+void parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1092,14 +1092,14 @@ void parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
     throw std::out_of_range("The variable slice_pic_parameter_set_id is out of range.");
 
   // Get the active PPS
-  if (!p_active_PPS_list.contains(slice_pic_parameter_set_id))
+  if (!active_PPS_list.contains(slice_pic_parameter_set_id))
     throw std::logic_error("The signaled PPS was not found in the bitstream.");
-  actPPS = p_active_PPS_list.value(slice_pic_parameter_set_id);
+  actPPS = active_PPS_list.value(slice_pic_parameter_set_id);
 
   // Get the active SPS
-  if (!p_active_SPS_list.contains(actPPS->pps_seq_parameter_set_id))
+  if (!active_SPS_list.contains(actPPS->pps_seq_parameter_set_id))
     throw std::logic_error("The signaled SPS was not found in the bitstream.");
-  actSPS = p_active_SPS_list.value(actPPS->pps_seq_parameter_set_id);
+  actSPS = active_SPS_list.value(actPPS->pps_seq_parameter_set_id);
 
   if (!first_slice_segment_in_pic_flag)
   {
@@ -1375,7 +1375,7 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
 
   if (nal_hevc.isSlice())
   {
-    // Reparse the SEI messages that we could not parse so far
+    // Reparse the SEI messages that we could not parse so far. This is a slice so all parameter sets should be available now.
     while (!reparse_sei.empty())
     {
       auto sei = reparse_sei.front();
@@ -2073,33 +2073,28 @@ void parserAnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeade
   }
 }
 
-void parserAnnexBHEVC::alternative_transfer_characteristics_sei::parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, TreeItem *root)
+void parserAnnexBHEVC::alternative_transfer_characteristics_sei::parse_alternative_transfer_characteristics_sei(QByteArray &data, TreeItem *root)
 {
   TreeItem *const itemTree = root ? new TreeItem("alternative transfer characteristics", root) : nullptr;
-  sub_byte_reader reader(sliceHeaderData);
+  sub_byte_reader reader(data);
   READBITS_M(preferred_transfer_characteristics, 8, get_transfer_characteristics_meaning());
 }
 
-parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, TreeItem *root)
+parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &data, const vps_map &active_VPS_list, TreeItem *root)
 {
   itemTree = root ? new TreeItem("active parameter sets", root) : nullptr;
-  sei_data_storage = sliceHeaderData;
-  if (!parse(p_active_VPS_list, false))
+  sei_data_storage = data;
+  if (!parse(active_VPS_list, false))
     return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
   return SEI_PARSING_OK;
 }
 
-void parserAnnexBHEVC::active_parameter_sets_sei::reparse_active_parameter_sets_sei(const vps_map &p_active_VPS_list)
-{
-  parse(p_active_VPS_list, true);
-}
-
-bool parserAnnexBHEVC::active_parameter_sets_sei::parse(const vps_map &p_active_VPS_list, bool reparse)
+bool parserAnnexBHEVC::active_parameter_sets_sei::parse(const vps_map &active_VPS_list, bool reparse)
 {
   sub_byte_reader reader(sei_data_storage);
 
   READBITS(active_video_parameter_set_id, 4);
-  if (!p_active_VPS_list.contains(active_video_parameter_set_id))
+  if (!active_VPS_list.contains(active_video_parameter_set_id))
   {
     if (reparse)
       // When reparsing after the VPS, this must not happen
@@ -2107,7 +2102,7 @@ bool parserAnnexBHEVC::active_parameter_sets_sei::parse(const vps_map &p_active_
     else
       return false;
   }
-  QSharedPointer<vps> actVPS = p_active_VPS_list.value(active_video_parameter_set_id);
+  QSharedPointer<vps> actVPS = active_VPS_list.value(active_video_parameter_set_id);
 
   READFLAG(self_contained_cvs_flag);
   READFLAG(no_parameter_set_update_flag);
@@ -2124,24 +2119,24 @@ bool parserAnnexBHEVC::active_parameter_sets_sei::parse(const vps_map &p_active_
   return true;
 }
 
-parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, TreeItem *root)
+parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &active_VPS_list, const sps_map &active_SPS_list, TreeItem *root)
 {
   itemTree = root ? new TreeItem("picture timing", root) : nullptr;
   sei_data_storage = sliceHeaderData;
-  if (!parse(p_active_VPS_list, p_active_SPS_list, false))
+  if (!parse(active_VPS_list, active_SPS_list, false))
     return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
   return SEI_PARSING_OK;
 }
 
-void parserAnnexBHEVC::pic_timing_sei::reparse_pic_timing_sei(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list)
+void parserAnnexBHEVC::pic_timing_sei::reparse_pic_timing_sei(const vps_map &active_VPS_list, const sps_map &active_SPS_list)
 {
-  parse(p_active_VPS_list, p_active_SPS_list, true);
+  parse(active_VPS_list, active_SPS_list, true);
 }
 
-bool parserAnnexBHEVC::pic_timing_sei::parse(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, bool reparse)
+bool parserAnnexBHEVC::pic_timing_sei::parse(const vps_map &active_VPS_list, const sps_map &active_SPS_list, bool reparse)
 {
   // TODO: Is this really ID 0? The standard does not really say which one (or I did not find it).
-  if (!p_active_SPS_list.contains(0))
+  if (!active_SPS_list.contains(0))
   {
     if (reparse)
       // When reparsing after the VPS, this must not happen
@@ -2149,9 +2144,9 @@ bool parserAnnexBHEVC::pic_timing_sei::parse(const vps_map &p_active_VPS_list, c
     else
       return false;
   }
-  QSharedPointer<sps> actSPS = p_active_SPS_list.value(0);
+  QSharedPointer<sps> actSPS = active_SPS_list.value(0);
 
-  if (!p_active_VPS_list.contains(0))
+  if (!active_VPS_list.contains(0))
   {
     if (reparse)
       // When reparsing after the VPS, this must not happen
@@ -2159,7 +2154,7 @@ bool parserAnnexBHEVC::pic_timing_sei::parse(const vps_map &p_active_VPS_list, c
     else
       return false;
   }
-  QSharedPointer<vps> actVPS = p_active_VPS_list.value(0);
+  QSharedPointer<vps> actVPS = active_VPS_list.value(0);
 
   sub_byte_reader reader(sei_data_storage);
   if (actSPS->sps_vui_parameters.frame_field_info_present_flag)

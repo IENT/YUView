@@ -521,7 +521,7 @@ protected:
   struct slice : nal_unit_hevc
   {
     slice(const nal_unit_hevc &nal);
-    void parse_slice(const QByteArray &sliceHeaderData, const sps_map &p_active_SPS_list, const pps_map &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
+    void parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
     virtual int getPOC() const override { return PicOrderCntVal; }
 
     bool first_slice_segment_in_pic_flag;
@@ -613,12 +613,6 @@ protected:
     QString payloadTypeName;
   };
 
-  enum sei_parsing_return_t
-  {
-    SEI_PARSING_OK,                      // Parsing is done
-    SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
-  };
-
   struct user_data_sei : sei
   {
     user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
@@ -632,10 +626,10 @@ protected:
   {
   public:
     active_parameter_sets_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    // Parsing might return SEI_PARSING_WAIT_FOR_VPS if the referenced VPS was not found (yet).
+    // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced VPS was not found (yet).
     // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
-    sei_parsing_return_t parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, TreeItem *root);
-    void reparse_active_parameter_sets_sei(const vps_map &p_active_VPS_list);
+    sei_parsing_return_t parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &active_VPS_list, TreeItem *root);
+    void reparse_active_parameter_sets_sei(const vps_map &active_VPS_list) { parse(active_VPS_list, true); }
 
     int active_video_parameter_set_id;
     bool self_contained_cvs_flag;
@@ -646,7 +640,7 @@ protected:
 
   private:
     // These are used internally when parsing of the SEI must be prosponed until the VPS is received.
-    bool parse(const vps_map &p_active_VPS_list, bool reparse);
+    bool parse(const vps_map &active_VPS_list, bool reparse);
     TreeItem *itemTree;
     QByteArray sei_data_storage;
   };
@@ -655,10 +649,10 @@ protected:
   {
   public:
     pic_timing_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    // Parsing might return SEI_PARSING_WAIT_FOR_VPS if the referenced VPS was not found (yet).
+    // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced VPS was not found (yet).
     // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
-    sei_parsing_return_t parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, TreeItem *root);
-    void reparse_pic_timing_sei(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list);
+    sei_parsing_return_t parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &active_VPS_list, const sps_map &active_SPS_list, TreeItem *root);
+    void reparse_pic_timing_sei(const vps_map &active_VPS_list, const sps_map &active_SPS_list);
 
     int pic_struct;
     int source_scan_type;
@@ -675,7 +669,7 @@ protected:
 
   private:
     // These are used internally when parsing of the SEI must be prosponed until the VPS is received.
-    bool parse(const vps_map &p_active_VPS_list, const sps_map &p_active_SPS_list, bool reparse);
+    bool parse(const vps_map &active_VPS_list, const sps_map &active_SPS_list, bool reparse);
     TreeItem *itemTree;
     QByteArray sei_data_storage;
   };
@@ -705,7 +699,8 @@ protected:
   // We keept a pointer to the last slice with first_slice_segment_in_pic_flag set. 
   // All following slices with dependent_slice_segment_flag set need this slice to infer some values.
   QSharedPointer<slice> lastFirstSliceSegmentInPic;
-  // A list of seis that need to be parsed after the parameter sets were recieved.
+  // It is allowed that units (like SEI messages) sent before the parameter sets but still refer to the 
+  // parameter sets. Here we keep a list of seis that need to be parsed after the parameter sets were recieved.
   QList<QSharedPointer<sei>> reparse_sei;
 };
 

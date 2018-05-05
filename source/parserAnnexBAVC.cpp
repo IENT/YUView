@@ -81,6 +81,26 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
   nal_unit_avc nal_avc(curFilePos, nalID);
   nal_avc.parse_nal_unit_header(nalHeaderBytes, nalRoot);
 
+  if (nal_avc.isSlice())
+  {
+    // Reparse the SEI messages that we could not parse so far. This is a slice so all parameter sets should be available now.
+    while (!reparse_sei.empty())
+    {
+      auto sei = reparse_sei.front();
+      reparse_sei.pop_front();
+      if (sei->payloadType == 0)
+      {
+        auto buffering_period = sei.dynamicCast<buffering_period_sei>();
+        buffering_period->reparse_buffering_period_sei(active_SPS_list);
+      }
+      if (sei->payloadType == 1)
+      {
+        auto pic_timing = sei.dynamicCast<pic_timing_sei>();
+        pic_timing->reparse_pic_timing_sei(active_SPS_list, CpbDpbDelaysPresentFlag);
+      }
+    }
+  }
+
   if (nal_avc.nal_unit_type == SPS)
   {
     // A sequence parameter set
@@ -154,12 +174,14 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     if (new_sei->payloadType == 0)
     {
       auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
-      new_buffering_period_sei->parse_buffering_period_sei(sei_data, active_SPS_list, nalRoot);
+      if (new_buffering_period_sei->parse_buffering_period_sei(sei_data, active_SPS_list, nalRoot) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
+        reparse_sei.append(new_buffering_period_sei);
     }
     else if (new_sei->payloadType == 1)
     {
       auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
-      new_pic_timing_sei->parse_pic_timing_sei(sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, nalRoot);
+      if (new_pic_timing_sei->parse_pic_timing_sei(sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, nalRoot) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
+        reparse_sei.append(new_pic_timing_sei);
     }
     else if (new_sei->payloadType == 5)
     {
@@ -576,7 +598,7 @@ parserAnnexBAVC::pps::pps(const nal_unit_avc &nal) : nal_unit_avc(nal)
   pic_scaling_matrix_present_flag = false;
 }
 
-void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list)
+void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list)
 {
   nalPayload = parameterSetData;
   sub_byte_reader reader(parameterSetData);
@@ -593,9 +615,9 @@ void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIte
     throw std::logic_error("The value of seq_parameter_set_id shall be in the range of 0 to 31, inclusive.");
 
   // Get the referenced sps
-  if (!p_active_SPS_list.contains(seq_parameter_set_id))
+  if (!active_SPS_list.contains(seq_parameter_set_id))
     throw std::logic_error("The signaled SPS was not found in the bitstream.");
-  auto refSPS = p_active_SPS_list.value(seq_parameter_set_id);
+  auto refSPS = active_SPS_list.value(seq_parameter_set_id);
 
   QStringList entropy_coding_mode_flag_meaning = QStringList() << "CAVLC" << "CABAC";
   READFLAG_M(entropy_coding_mode_flag, entropy_coding_mode_flag_meaning);
@@ -695,7 +717,7 @@ parserAnnexBAVC::slice_header::slice_header(const nal_unit_avc &nal) : nal_unit_
   globalPOC_highestGlobalPOCLastGOP = -1;
 }
 
-void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
+void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -713,12 +735,12 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
 
   READUEV(pic_parameter_set_id);
   // Get the referenced SPS and PPS
-  if (!p_active_PPS_list.contains(pic_parameter_set_id))
+  if (!active_PPS_list.contains(pic_parameter_set_id))
     throw std::logic_error("The signaled PPS was not found in the bitstream.");
-  auto refPPS = p_active_PPS_list.value(pic_parameter_set_id);
-  if (!p_active_SPS_list.contains(refPPS->seq_parameter_set_id))
+  auto refPPS = active_PPS_list.value(pic_parameter_set_id);
+  if (!active_SPS_list.contains(refPPS->seq_parameter_set_id))
     throw std::logic_error("The signaled SPS was not found in the bitstream.");
-  auto refSPS = p_active_SPS_list.value(refPPS->seq_parameter_set_id);
+  auto refSPS = active_SPS_list.value(refPPS->seq_parameter_set_id);
 
   if (refSPS->separate_colour_plane_flag)
   {
@@ -1391,18 +1413,30 @@ int parserAnnexBAVC::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeIte
   return reader.nrBytesRead();
 }
 
-void parserAnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, TreeItem *root)
+parserAnnexB::sei_parsing_return_t parserAnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
 {
-  sub_byte_reader reader(sliceHeaderData);
-
   // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("buffering_period()", root) : nullptr;
+  itemTree = root ? new TreeItem("buffering_period()", root) : nullptr;
+  sei_data_storage = data;
+  if (!parse(active_SPS_list, false))
+    return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
+  return SEI_PARSING_OK;
+}
+
+bool parserAnnexBAVC::buffering_period_sei::parse(const sps_map &active_SPS_list, bool reparse)
+{
+  sub_byte_reader reader(sei_data_storage);
 
   READUEV(seq_parameter_set_id);
-  if (!p_active_SPS_list.contains(seq_parameter_set_id))
-    throw std::logic_error("The signaled SPS was not found in the bitstream.");
-  auto refSPS = p_active_SPS_list.value(seq_parameter_set_id);
+  if (!active_SPS_list.contains(seq_parameter_set_id))
+  {
+    if (reparse)
+      // When reparsing after the VPS, this must not happen
+      throw std::logic_error("The signaled SPS was not found in the bitstream.");
+    else
+      return false;
+  }
+  auto refSPS = active_SPS_list.value(seq_parameter_set_id);
 
   bool NalHrdBpPresentFlag = refSPS->vui_parameters.nal_hrd_parameters_present_flag;
   if(NalHrdBpPresentFlag)
@@ -1425,18 +1459,34 @@ void parserAnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArra
       READBITS_A(initial_cpb_removal_delay_offset, 5, SchedSelIdx);
     }
   }
+  return true;
 }
 
-void parserAnnexBAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
+parserAnnexB::sei_parsing_return_t parserAnnexBAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &data, const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
 {
-  sub_byte_reader reader(sliceHeaderData);
-
   // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("pic_timing()", root) : nullptr;
+  itemTree = root ? new TreeItem("pic_timing()", root) : nullptr;
+  sei_data_storage = data;
+  if (!parse(active_SPS_list, CpbDpbDelaysPresentFlag, false))
+    return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
+  return SEI_PARSING_OK;
+}
 
+bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, bool reparse)
+{
+  sub_byte_reader reader(sei_data_storage);
+  
   // TODO: Is this really the correct sps? I did not really understand everything.
-  auto refSPS = p_active_SPS_list[0];
+  const int seq_parameter_set_id = 0;
+  if (!active_SPS_list.contains(seq_parameter_set_id))
+  {
+    if (reparse)
+      // When reparsing after the VPS, this must not happen
+      throw std::logic_error("The signaled SPS was not found in the bitstream.");
+    else
+      return false;
+  }
+  auto refSPS = active_SPS_list.value(seq_parameter_set_id);
 
   if (CpbDpbDelaysPresentFlag)
   {
@@ -1534,6 +1584,7 @@ void parserAnnexBAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHead
       }
     }
   }
+  return true;
 }
 
 void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)

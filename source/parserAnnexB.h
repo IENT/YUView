@@ -108,6 +108,14 @@ protected:
     QByteArray nalPayload;
   };
 
+  // Parsing of an SEI message may fail when the required parameter sets are not yet available and parsing has to be performed
+  // once the required parameter sets are recieved.
+  enum sei_parsing_return_t
+  {
+    SEI_PARSING_OK,                      // Parsing is done
+    SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
+  };
+
   // A list of all POCs in the sequence (in coding order). POC's don't have to be consecutive, so the only
   // way to know how many pictures are in a sequences is to keep a list of all POCs.
   QList<int> POC_List;
