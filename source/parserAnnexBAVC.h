@@ -49,8 +49,8 @@ public:
 
   // Get properties
   double getFramerate() const Q_DECL_OVERRIDE;
-  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return QSize(-1,-1); }
-  yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE { /* TODO: Get this from the bitstream */ return yuvPixelFormat(); }
+  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
+  yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
   void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t curFilePos = -1) Q_DECL_OVERRIDE;
 
@@ -99,7 +99,7 @@ protected:
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
+    void parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root) Q_DECL_OVERRIDE;
 
     bool isRandomAccess() { return nal_unit_type == CODED_SLICE_IDR; }
     bool isSlice()        { return nal_unit_type >= CODED_SLICE_NON_IDR && nal_unit_type <= CODED_SLICE_IDR; }
@@ -221,6 +221,9 @@ protected:
       int log2_max_mv_length_vertical;
       int max_num_reorder_frames;
       int max_dec_frame_buffering;
+
+      // The following values are not read from the bitstream but are calculated from the read values.
+      double frameRate;
     };
     vui_parameters_struct vui_parameters;
 
@@ -235,6 +238,14 @@ protected:
     int PicHeightInMapUnits;
     int PicSizeInMbs;
     int PicSizeInMapUnits;
+    int SubWidthC;
+    int SubHeightC;
+    int MbHeightC;
+    int MbWidthC;
+    int PicHeightInSamplesL;
+    int PicHeightInSamplesC;
+    int PicWidthInSamplesL;
+    int PicWidthInSamplesC;
     int ChromaArrayType;
     bool MbaffFrameFlag;
     int MaxPicOrderCntLsb;

@@ -57,15 +57,88 @@
 
 double parserAnnexBAVC::getFramerate() const
 {
+  // Find the first SPS and return the framerate (if signaled)
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_avc = nal.dynamicCast<nal_unit_avc>();
+
+    if (nal_avc->nal_unit_type == SPS)
+    {
+      auto s = nal.dynamicCast<sps>();
+      if (s->vui_parameters_present_flag && s->vui_parameters.timing_info_present_flag)
+      return s->vui_parameters.frameRate;
+    }
+  }
+
   return 0.0;
+}
+
+QSize parserAnnexBAVC::getSequenceSizeSamples() const
+{
+  // Find the first SPS and return the size
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_avc = nal.dynamicCast<nal_unit_avc>();
+
+    if (nal_avc->nal_unit_type == SPS)
+    {
+      auto s = nal.dynamicCast<sps>();
+      return QSize(s->PicWidthInSamplesL, s->PicHeightInSamplesL);
+    }
+  }
+
+  return QSize(-1,-1);
+}
+
+yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
+{
+  // Get the subsampling and bit-depth from the sps
+  int bitDepthY = -1;
+  int bitDepthC = -1;
+  YUVSubsamplingType subsampling = YUV_NUM_SUBSAMPLINGS;
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_avc = nal.dynamicCast<nal_unit_avc>();
+
+    if (nal_avc->nal_unit_type == SPS)
+    {
+      auto s = nal_avc.dynamicCast<sps>();
+      if (s->chroma_format_idc == 0)
+        subsampling = YUV_400;
+      else if (s->chroma_format_idc == 1)
+        subsampling = YUV_420;
+      else if (s->chroma_format_idc == 2)
+        subsampling = YUV_422;
+      else if (s->chroma_format_idc == 3)
+        subsampling = YUV_444;
+
+      bitDepthY = s->bit_depth_luma_minus8 + 8;
+      bitDepthC = s->bit_depth_chroma_minus8 + 8;
+    }
+
+    if (bitDepthY != -1 && bitDepthC != -1 && subsampling != YUV_NUM_SUBSAMPLINGS)
+    {
+      if (bitDepthY != bitDepthC)
+      {
+        // Different luma and chroma bit depths currently not supported
+        return yuvPixelFormat();
+      }
+      return yuvPixelFormat(subsampling, bitDepthY);
+    }
+  }
+
+  return yuvPixelFormat();
 }
 
 void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, uint64_t curFilePos)
 {
   // Read two bytes (the nal header)
   // Read two bytes (the nal header)
-  QByteArray nalHeaderBytes = data.left(2);
-  QByteArray payload = data.mid(2);
+  QByteArray nalHeaderBytes = data.left(1);
+  QByteArray payload = data.mid(1);
 
   // Use the given tree item. If it is not set, use the nalUnitMode (if active). 
   // We don't set data (a name) for this item yet. 
@@ -202,10 +275,13 @@ const QStringList parserAnnexBAVC::nal_unit_type_toString = QStringList()
 << "RESERVED_22" << "RESERVED_23" << "UNSPCIFIED_24" << "UNSPCIFIED_25" << "UNSPCIFIED_26" << "UNSPCIFIED_27" << "UNSPCIFIED_28" << "UNSPCIFIED_29" 
 << "UNSPCIFIED_30" << "UNSPCIFIED_31";
 
-void parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+void parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
 {
+  if (header_byte.length() != 1)
+    throw std::logic_error("The AVC header has only one byte.");
+
   // Create a sub byte parser to access the bits
-  sub_byte_reader reader(parameterSetData);
+  sub_byte_reader reader(header_byte);
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -386,8 +462,30 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   PicWidthInMbs = pic_width_in_mbs_minus1 + 1;
   PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
   FrameHeightInMbs = frame_mbs_only_flag ? PicHeightInMapUnits : PicHeightInMapUnits * 2;
+  // PicHeightInMbs is actually calculated per frame from the field_pic_flag (it can switch for interlaced content).
+  // For the whole sequence, we will calculate the frame size (field_pic_flag = 0).
+  // Real calculation per frame: PicHeightInMbs = FrameHeightInMbs / (1 + field_pic_flag);
   PicHeightInMbs = FrameHeightInMbs;
   PicSizeInMbs = PicWidthInMbs * PicHeightInMbs;
+  SubWidthC = (chroma_format_idc == 3) ? 1 : 2;
+  SubHeightC = (chroma_format_idc == 1) ? 2 : 1;
+  if (chroma_format_idc == 0)
+  {
+    // Monochrome
+    MbHeightC = 0;
+    MbWidthC = 0;
+  }
+  else
+  {
+    MbWidthC = 16 / SubWidthC;
+    MbHeightC = 16 / SubHeightC;
+  }
+
+  // The picture size in samples
+  PicHeightInSamplesL = PicHeightInMbs * 16;
+  PicHeightInSamplesC = PicHeightInMbs * MbHeightC;
+  PicWidthInSamplesL = PicWidthInMbs * 16;
+  PicWidthInSamplesC = PicWidthInMbs * MbWidthC;
 
   PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;
   if (!separate_colour_plane_flag)
@@ -525,6 +623,9 @@ void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, 
     if (time_scale == 0)
       throw std::logic_error("time_scale shall be greater than 0.");
     READFLAG(fixed_frame_rate_flag);
+
+    frameRate = (double)time_scale / (double)num_units_in_tick;
+    LOGVAL(frameRate);
   }
 
   READFLAG(nal_hrd_parameters_present_flag);

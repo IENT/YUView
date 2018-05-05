@@ -33,14 +33,6 @@
 #include "parserAnnexBHEVC.h"
 #include <cmath>
 
-#define HEVCANNEXBFILE_DEBUG_OUTPUT 0
-#if HEVCANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_ANNEXB qDebug
-#else
-#define DEBUG_ANNEXB(fmt,...) ((void)0)
-#endif
-
 /* Some macros that we use to read syntax elements from the bitstream.
 * The advantage of these macros is, that they can directly also create the tree structure for the QAbstractItemModel that is 
 * used to show the NAL units and their content. The tree will only be added if the pointer to the given tree itemTree is valid.
@@ -1708,7 +1700,7 @@ yuvPixelFormat parserAnnexBHEVC::getPixelFormat() const
     {
       if (bitDepthY != bitDepthC)
       {
-        DEBUG_ANNEXB("Different luma and chroma bit depths currently not supported");
+        // Different luma and chroma bit depths currently not supported
         return yuvPixelFormat();
       }
       return yuvPixelFormat(subsampling, bitDepthY);
