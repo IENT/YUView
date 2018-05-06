@@ -288,6 +288,11 @@ bool decoderFFmpeg::pushData(QByteArray &data)
 {
   if (!raw_pkt)
     raw_pkt.allocate_paket(ff);
+  
+  // Add some padding
+  // TODO: could this be improved somehow?
+  data.append(AV_INPUT_BUFFER_PADDING_SIZE, 0);
+
   raw_pkt.set_data(data);
   raw_pkt.set_dts(AV_NOPTS_VALUE);
   raw_pkt.set_pts(AV_NOPTS_VALUE);

@@ -82,7 +82,12 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(bool addStartCode, uint64_t *pos
 {
   QByteArray retArray;
   if (addStartCode)
-    retArray += startCode;
+  {
+    retArray += (char)0;
+    retArray += (char)0;
+    retArray += (char)0;
+    retArray += (char)1;
+  }
 
   if (posInFile)
     *posInFile = bufferStartPosInFile + posInBuffer;
