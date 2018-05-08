@@ -1056,6 +1056,7 @@ parserAnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
   num_long_term_pics = 0;
   deblocking_filter_override_flag = false;
   slice_temporal_mvp_enabled_flag = false;
+  slice_pic_order_cnt_lsb = 0;
   collocated_from_l0_flag = true;
   slice_sao_luma_flag = false;
   slice_sao_chroma_flag = false;

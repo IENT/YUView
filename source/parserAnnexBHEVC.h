@@ -44,7 +44,7 @@ using namespace YUV_Internals;
 class parserAnnexBHEVC : public parserAnnexB
 {
 public:
-  parserAnnexBHEVC() : parserAnnexB() { firstPOCRandomAccess = INT_MAX; pocCounterOffset = 0; }
+  parserAnnexBHEVC() : parserAnnexB() { firstPOCRandomAccess = INT_MAX; pocCounterOffset = 0; maxPOCCount = -1; }
   ~parserAnnexBHEVC() {};
 
   // Get some properties
