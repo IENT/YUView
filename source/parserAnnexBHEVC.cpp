@@ -2284,25 +2284,6 @@ QStringList parserAnnexBHEVC::get_matrix_coefficients_meaning()
   return matrix_coefficients_meaning;
 }
 
-int parserAnnexBHEVC::getClosestSeekableFrameNumberBefore(int frameIdx) const
-{
-  // Get the POC for the frame number
-  int seekPOC = POC_List[frameIdx];
-
-  int bestSeekPOC = POC_List_randomAccess[0];
-  for (int poc : POC_List_randomAccess)
-  {
-    if (poc <= seekPOC)
-      // We could seek here
-      bestSeekPOC = poc;
-    else
-      break;
-  }
-
-  // Get the frame index for the given POC
-  return POC_List.indexOf(bestSeekPOC);
-}
-
 QByteArray parserAnnexBHEVC::getExtradata()
 {
   // Convert the VPS, SPS and PPS that we found in the bitstream to the libavformat hvcc format (see hevc.c)

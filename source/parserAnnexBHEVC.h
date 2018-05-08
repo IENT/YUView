@@ -55,7 +55,6 @@ public:
   void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t curFilePos = -1) Q_DECL_OVERRIDE;
 
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
-  int getClosestSeekableFrameNumberBefore(int frameIdx) const Q_DECL_OVERRIDE;
   QByteArray getExtradata() Q_DECL_OVERRIDE;
   QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE;
   QPair<int,int> getSampleAspectRatio() Q_DECL_OVERRIDE;

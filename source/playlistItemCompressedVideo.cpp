@@ -508,7 +508,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
   bool seek = (frameIdxInternal < curFrameIdx);
   int seekToFrame = -1;
   int seekToPTS = -1;
-  if (frameIdxInternal < curFrameIdx || frameIdxInternal > curFrameIdx + FORWARD_SEEK_THRESHOLD)
+  if (curFrameIdx == -1 || frameIdxInternal < curFrameIdx || frameIdxInternal > curFrameIdx + FORWARD_SEEK_THRESHOLD)
   {
     if (isinputFormatTypeAnnexB)
       seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdxInternal);
@@ -520,7 +520,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
         seekToPTS = inputFileFFmpegLoading->getClosestSeekableDTSBefore(frameIdxInternal, seekToFrame);
     }
 
-    if (seekToFrame > curFrameIdx + FORWARD_SEEK_THRESHOLD)
+    if (curFrameIdx == -1 || seekToFrame > curFrameIdx + FORWARD_SEEK_THRESHOLD)
       // We will seek forward
       seek = true;
   }
@@ -625,6 +625,7 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
 
   // Retrieval of the raw metadata is only required if the the reader or the decoder is not ffmpeg
   const bool bothFFmpeg = (!isinputFormatTypeAnnexB && decoderEngineType == decoderEngineFFMpeg);
+  const bool decFFmpeg = (decoderEngineType == decoderEngineFFMpeg);
   
   QByteArrayList parametersets;
   if (isinputFormatTypeAnnexB)
@@ -647,9 +648,9 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
       inputFileFFmpegLoading->seekToPTS(seekToPTS);
   }
 
-  // In case of using ffmpeg for reading and decoding, we don't need to push the parameter sets (the
+  // In case of using ffmpeg for decoding, we don't need to push the parameter sets (the
   // extradata) to the decoder explicitly when seeking.
-  if (!bothFFmpeg)
+  if (!decFFmpeg)
     // Push the parameter sets to the decoder
     for (QByteArray d : parametersets)
       dec->pushData(d);

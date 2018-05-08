@@ -41,3 +41,21 @@ bool parserAnnexB::addPOCToList(int poc)
   return true;
 }
 
+int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx) const
+{
+  // Get the POC for the frame number
+  int seekPOC = POC_List[frameIdx];
+
+  int bestSeekPOC = POC_List_randomAccess[0];
+  for (int poc : POC_List_randomAccess)
+  {
+    if (poc <= seekPOC)
+      // We could seek here
+      bestSeekPOC = poc;
+    else
+      break;
+  }
+
+  // Get the frame index for the given POC
+  return POC_List.indexOf(bestSeekPOC);
+}

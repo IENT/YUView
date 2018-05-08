@@ -65,7 +65,7 @@ public:
   // Get the next NAL unit (everything excluding the start code)
   // Also return the start position of the NAL unit in the file so you can seek to it.
   QByteArray getNextNALUnit(bool startCode=false, uint64_t *posInFile=nullptr);
-
+  
   // Seek the file to the given byte position. Update the buffer.
   bool seek(int64_t pos) Q_DECL_OVERRIDE;
 

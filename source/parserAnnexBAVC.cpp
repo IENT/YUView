@@ -1740,19 +1740,54 @@ void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeader
 
 QList<QByteArray> parserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
-  // TODO ... :)
-  Q_UNUSED(iFrameNr);
-  Q_UNUSED(filePos);
+  // Get the POC for the frame number
+  int seekPOC = POC_List[iFrameNr];
 
-  filePos = 0;
+  // Collect the active parameter sets
+  sps_map active_SPS_list;
+  pps_map active_PPS_list;
+
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_avc = nal.dynamicCast<nal_unit_avc>();
+
+    if (nal_avc->isSlice()) 
+    {
+      // We can cast this to a slice.
+      auto s = nal_avc.dynamicCast<slice_header>();
+
+      if (s->globalPOC == seekPOC)
+      {
+        // Seek here
+        filePos = s->filePos;
+
+        // Get the bitstream of all active parameter sets
+        QList<QByteArray> paramSets;
+
+        for (auto s : active_SPS_list)
+          paramSets.append(s->getRawNALData());
+        for (auto p : active_PPS_list)
+          paramSets.append(p->getRawNALData());
+
+        return paramSets;
+      }
+    }
+    else if (nal_avc->nal_unit_type == SPS) 
+    {
+      // Add sps (replace old one if existed)
+      auto s = nal_avc.dynamicCast<sps>();
+      active_SPS_list.insert(s->seq_parameter_set_id, s);
+    }
+    else if (nal_avc->nal_unit_type == PPS)
+    {
+      // Add pps (replace old one if existed)
+      auto p = nal_avc.dynamicCast<pps>();
+      active_PPS_list.insert(p->pic_parameter_set_id, p);
+    }
+  }
+
   return QList<QByteArray>();
-}
-
-int parserAnnexBAVC::getClosestSeekableFrameNumberBefore(int frameIdx) const
-{
-  // TODO:
-  Q_UNUSED(frameIdx);
-  return -1;
 }
 
 QByteArray parserAnnexBAVC::getExtradata()

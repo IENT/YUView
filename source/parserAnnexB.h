@@ -71,7 +71,7 @@ public:
 
   // Look through the random access points and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
-  virtual int getClosestSeekableFrameNumberBefore(int frameIdx) const = 0;
+  int getClosestSeekableFrameNumberBefore(int frameIdx) const;
 
   // Get the parameters sets as extradata. The format of this depends on the underlying codec.
   virtual QByteArray getExtradata() = 0;
