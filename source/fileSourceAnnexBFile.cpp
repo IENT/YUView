@@ -78,7 +78,7 @@ bool fileSourceAnnexBFile::openFile(const QString &fileName)
   return true;
 }
 
-QByteArray fileSourceAnnexBFile::getNextNALUnit(bool addStartCode, uint64_t *posInFile)
+QByteArray fileSourceAnnexBFile::getNextNALUnit(bool addStartCode, uint64_t *posInFile, uint64_t *endPosInFile)
 {
   QByteArray retArray;
   if (addStartCode)
@@ -126,10 +126,17 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(bool addStartCode, uint64_t *pos
   }
 
   // Position found
+  if (endPosInFile)
+    *endPosInFile = bufferStartPosInFile + nextStartCodePos;
   retArray += fileBuffer.mid(posInBuffer, nextStartCodePos - posInBuffer);
   DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getNextNALUnit start code found - ret size %d", retArray.size());
   posInBuffer = nextStartCodePos + 3; // Skip the start code
   return retArray;
+}
+
+QByteArray fileSourceAnnexBFile::getNextFrameNALUnits()
+{
+  return QByteArray();
 }
 
 bool fileSourceAnnexBFile::updateBuffer()

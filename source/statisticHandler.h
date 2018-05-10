@@ -53,7 +53,7 @@ public:
   statisticHandler();
 
   // Get the statistics values under the cursor position (if they are visible)
-  ValuePairList getValuesAt(const QPoint &pos);
+  QStringPairList getValuesAt(const QPoint &pos);
 
   // Get the list of all statistics that this source can provide
   StatisticsTypeList getStatisticsTypeList() const { return statsTypeList; }

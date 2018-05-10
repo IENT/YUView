@@ -467,9 +467,9 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
 
 // return raw(!) value of front-most, active statistic item at given position
 // Info is always read from the current buffer. So these values are only valid if a draw event occurred first.
-ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
+QStringPairList statisticHandler::getValuesAt(const QPoint &pos)
 {
-  ValuePairList valueList;
+  QStringPairList valueList;
 
   for (int i = 0; i<statsTypeList.count(); i++)
   {
@@ -492,7 +492,7 @@ ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
           QString valTxt  = statsTypeList[i].getValueTxt(value);
           if (!statsTypeList[i].valMap.contains(value) && statsTypeList[i].scaleValueToBlockSize)
             valTxt = QString("%1").arg(float(value) / (valueItem.size[0] * valueItem.size[1]));
-          valueList.append(ValuePair(aType->typeName, valTxt));
+          valueList.append(QStringPair(aType->typeName, valTxt));
           foundStats = true;
         }
       }
@@ -513,14 +513,14 @@ ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
             vectorValue1 = (float)vectorItem.point[0].x() / statsTypeList[i].vectorScale;
             vectorValue2 = (float)vectorItem.point[0].y() / statsTypeList[i].vectorScale;
           }
-          valueList.append(ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(vectorValue1)));
-          valueList.append(ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(vectorValue2)));
+          valueList.append(QStringPair(QString("%1[x]").arg(aType->typeName), QString::number(vectorValue1)));
+          valueList.append(QStringPair(QString("%1[y]").arg(aType->typeName), QString::number(vectorValue2)));
           foundStats = true;
         }
       }
 
       if (!foundStats)
-        valueList.append(ValuePair(aType->typeName, "-"));
+        valueList.append(QStringPair(aType->typeName, "-"));
     }
   }
 

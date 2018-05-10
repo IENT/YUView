@@ -33,29 +33,48 @@
 #include "parserAnnexB.h"
 #include <assert.h>
 
-bool parserAnnexB::addPOCToList(int poc)
+parserAnnexB::parserAnnexB()
 {
-  if (POC_List.contains(poc))
-    return false;
-  POC_List.append(poc);
-  return true;
+  curFrameFileStartEndPos = QUint64Pair(-1, -1);
+  curFramePOC = -1;
+  curFrameIsRandomAccess = false;
+}
+
+void parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool randomAccessPoint)
+{
+  annexBFrame newFrame;
+  newFrame.poc = poc;
+  newFrame.fileStartEndPos = fileStartEndPos;
+  newFrame.randomAccessPoint = randomAccessPoint;
+  frameList.append(newFrame);
+
+  assert(!POCList.contains(poc));
+  POCList.append(poc);
 }
 
 int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx) const
 {
   // Get the POC for the frame number
-  int seekPOC = POC_List[frameIdx];
+  int seekPOC = POCList[frameIdx];
 
-  int bestSeekPOC = POC_List_randomAccess[0];
-  for (int poc : POC_List_randomAccess)
+  int bestSeekPOC = -1;
+  for (annexBFrame f : frameList)
   {
-    if (poc <= seekPOC)
-      // We could seek here
-      bestSeekPOC = poc;
-    else
-      break;
+    if (f.randomAccessPoint)
+    {
+      if (bestSeekPOC == -1)
+        bestSeekPOC = f.poc;
+      else
+      {
+        if (f.poc <= seekPOC)
+          // We could seek here
+          bestSeekPOC = f.poc;
+        else
+          break;
+      }
+    }
   }
 
   // Get the frame index for the given POC
-  return POC_List.indexOf(bestSeekPOC);
+  return POCList.indexOf(bestSeekPOC);
 }

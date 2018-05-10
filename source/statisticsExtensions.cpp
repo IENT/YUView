@@ -238,7 +238,7 @@ void StatisticsType::savePlaylist(QDomElementYUView &root) const
 
 void StatisticsType::loadPlaylist(const QDomElementYUView &root)
 {
-  ValuePairList attributes;
+  QStringPairList attributes;
   QString statItemName = root.findChildValue(QString("statType%1").arg(typeID), attributes);
 
   if (statItemName != typeName)

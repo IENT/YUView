@@ -62,9 +62,16 @@ public:
   // Is the file at the end?
   bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize < BUFFER_SIZE; }
 
+  // --- Retrieving of data from the file ---
+  // You can either read a file NAL by NAL or frame by frame. Do not mix the two interfaces.
+  // TODO: We could always use the second option, right? Also for the libde265 and HM decoder this should work.
+
   // Get the next NAL unit (everything excluding the start code)
-  // Also return the start position of the NAL unit in the file so you can seek to it.
-  QByteArray getNextNALUnit(bool startCode=false, uint64_t *posInFile=nullptr);
+  // Also return the start and end position of the NAL unit in the file so you can seek to it.
+  QByteArray getNextNALUnit(bool startCode=false, uint64_t *posInFile=nullptr, uint64_t *endPosInFile=nullptr);
+
+  // Get all bytes (NAL units including header bytes) that are needed to decode the next frame (all NAL units).
+  QByteArray getNextFrameNALUnits();
   
   // Seek the file to the given byte position. Update the buffer.
   bool seek(int64_t pos) Q_DECL_OVERRIDE;

@@ -33,6 +33,14 @@
 #include "parserAnnexBAVC.h"
 #include <cmath>
 
+#define PARSER_AVC_DEBUG_OUTPUT 1
+#if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_AVC qDebug
+#else
+#define DEBUG_AVC(fmt,...) ((void)0)
+#endif
+
 // Read "numBits" bits into the variable "into". 
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 #define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings,itemTree);}
@@ -54,6 +62,12 @@
 #define LOGVAL_M(val,meaning) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),meaning,itemTree);}
 // Log a custom message (add a cutom item in the tree)
 #define LOGPARAM(name, val, coding, code, meaning) {if (itemTree) new TreeItem(name, val, coding, code, meaning, itemTree);}
+
+parserAnnexBAVC::parserAnnexBAVC() : parserAnnexB()
+{ 
+  firstPOCRandomAccess = INT_MAX; 
+  CpbDpbDelaysPresentFlag = false; 
+}
 
 double parserAnnexBAVC::getFramerate() const
 {
@@ -133,8 +147,21 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, uint64_t curFilePos)
+void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, uint64_t filePosStart, uint64_t filePosEnd)
 {
+  if (nalID == -1 && data.isEmpty())
+  {
+    if (curFramePOC != -1)
+    {
+      // Save the info of the last frame
+      addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
+      DEBUG_AVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+    }
+    // The file ended
+    std::sort(POCList.begin(), POCList.end());
+    return;
+  }
+
   // Read two bytes (the nal header)
   // Read two bytes (the nal header)
   QByteArray nalHeaderBytes = data.left(1);
@@ -151,7 +178,7 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     nalRoot = new TreeItem(nalUnitModel.rootItem.data());
 
   // Create a nal_unit and read the header
-  nal_unit_avc nal_avc(curFilePos, nalID);
+  nal_unit_avc nal_avc(filePosStart, nalID);
   nal_avc.parse_nal_unit_header(nalHeaderBytes, nalRoot);
 
   if (nal_avc.isSlice())
@@ -221,17 +248,31 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     // Add the POC of the slice
     specificDescription = QString(" POC %1").arg(new_slice->globalPOC);
 
-    // Get the poc and add it to the POC list
-    if (new_slice->globalPOC >= 0)
-      addPOCToList(new_slice->globalPOC);
+    if (new_slice->first_mb_in_slice == 0)
+    {
+      // This slice NAL is the start of a new frame
+      if (curFramePOC != -1)
+      {
+        // Save the info of the last frame
+        addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
+        DEBUG_AVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+      }
+      curFrameFileStartEndPos.first = filePosStart;
+      curFrameFileStartEndPos.second = filePosEnd;
+      curFramePOC = new_slice->globalPOC;
+      curFrameIsRandomAccess = new_slice->isRandomAccess();
+    }
+    else
+      // Another slice NAL which belongs to the last frame
+      // Update the end position
+      curFrameFileStartEndPos.second = filePosEnd;
 
     if (nal_avc.isRandomAccess())
     {
       if (new_slice->first_mb_in_slice == 0)
       {
-        // This is the first slice of a random access pont. Add it to the list.
+        // This is the first slice of a random access point. Add it to the list.
         nalUnitList.append(new_slice);
-        POC_List_randomAccess.append(new_slice->globalPOC);
       }
     }
   }
@@ -1112,6 +1153,7 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     globalPOC = 0;
     globalPOC_lastIDR = 0;
     globalPOC_highestGlobalPOCLastGOP = 0;
+    DEBUG_AVC("POC - First pic - global POC %d", globalPOC);
   }
   else
   {
@@ -1120,19 +1162,23 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
       globalPOC = prev_pic->globalPOC;
       globalPOC_lastIDR = prev_pic->globalPOC_lastIDR;
       globalPOC_highestGlobalPOCLastGOP = prev_pic->globalPOC_highestGlobalPOCLastGOP;
+      DEBUG_AVC("POC - additional slice - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
     }
     else if (IdrPicFlag)
     {
       globalPOC = prev_pic->globalPOC_highestGlobalPOCLastGOP + 2;
       globalPOC_lastIDR = globalPOC;
       globalPOC_highestGlobalPOCLastGOP = globalPOC;
+      DEBUG_AVC("POC - IDR - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
     }
     else
     {
       globalPOC = prev_pic->globalPOC_lastIDR + TopFieldOrderCnt;
+      globalPOC_highestGlobalPOCLastGOP = prev_pic->globalPOC_highestGlobalPOCLastGOP;
       if (globalPOC > globalPOC_highestGlobalPOCLastGOP)
         globalPOC_highestGlobalPOCLastGOP = globalPOC;
       globalPOC_lastIDR = prev_pic->globalPOC_lastIDR;
+      DEBUG_AVC("POC - first slice - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
     }
   }
 }
@@ -1741,7 +1787,7 @@ void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeader
 QList<QByteArray> parserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   // Get the POC for the frame number
-  int seekPOC = POC_List[iFrameNr];
+  int seekPOC = POCList[iFrameNr];
 
   // Collect the active parameter sets
   sps_map active_SPS_list;

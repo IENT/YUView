@@ -664,7 +664,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
         for (int i = 0; i < pixelListSets.count(); i++)
         {
           QString title = pixelListSets[i].first;
-          ValuePairList pixelValues = pixelListSets[i].second;
+          QStringPairList pixelValues = pixelListSets[i].second;
           pixelInfoString.append(QString("<h4>%1</h4><table width=\"100%\">").arg(title));
           for (int j = 0; j < pixelValues.size(); ++j)
             pixelInfoString.append(QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>").arg(pixelValues[j].first).arg(pixelValues[j].second));

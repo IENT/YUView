@@ -130,7 +130,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     }
     // Parse the loading file
     parseAnnexBFile(inputFileAnnexBLoading, inputFileAnnexBParser);
-    inputFileAnnexBParser->sortPOCList();
     // Get the frame size and the pixel format
     frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
     // Raw annexB files will always provide YUV data
@@ -570,6 +569,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
         if (isinputFormatTypeAnnexB)
         {
           const bool startCode = (decoderEngineType == decoderEngineFFMpeg);
+          // TODO: Get data per frame
+          // ...
           data = caching ? inputFileAnnexBCaching->getNextNALUnit(startCode) : inputFileAnnexBLoading->getNextNALUnit(startCode);
         }
         else
@@ -891,14 +892,14 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   // Just push all NAL units from the annexBFile into the annexBParser
   QByteArray nalData;
   int nalID = 0;
-  uint64_t filePos;
+  uint64_t nalStartPos, nalEndPos;
   while (!file->atEnd())
   {
     try
     {
-      nalData = file->getNextNALUnit(false, &filePos);
+      nalData = file->getNextNALUnit(false, &nalStartPos, &nalEndPos);
 
-      parser->parseAndAddNALUnit(nalID, nalData, nullptr, filePos);
+      parser->parseAndAddNALUnit(nalID, nalData, nullptr, nalStartPos, nalEndPos);
 
       // Update the progress dialog
       if (progress.wasCanceled())
@@ -931,7 +932,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   }
   
   // We are done.
-  file->seek(0);
+  parser->parseAndAddNALUnit(-1, QByteArray());
   progress.close();
 }
 

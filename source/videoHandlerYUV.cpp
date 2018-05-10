@@ -1035,9 +1035,9 @@ void videoHandlerYUV::slotYUVControlChanged()
 /* Get the pixels values so we can show them in the info part of the zoom box.
  * If a second frame handler is provided, the difference values from that item will be returned.
  */
-ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
+QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
 {
-  ValuePairList values;
+  QStringPairList values;
 
   if (item2 != nullptr)
   {
@@ -1054,24 +1054,24 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
 
     // Do not get the pixel values if the buffer for the raw YUV values is out of date.
     if (currentFrameRawData_frameIdx != frameIdx || yuvItem2->currentFrameRawData_frameIdx != frameIdx1)
-      return ValuePairList();
+      return QStringPairList();
 
     int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
     int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
 
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-      return ValuePairList();
+      return QStringPairList();
 
     unsigned int Y0, U0, V0, Y1, U1, V1;
     getPixelValue(pixelPos, Y0, U0, V0);
     yuvItem2->getPixelValue(pixelPos, Y1, U1, V1);
 
     // Append the values to the list
-    values.append(ValuePair("Y", QString::number((int)Y0-(int)Y1)));
+    values.append(QStringPair("Y", QString::number((int)Y0-(int)Y1)));
     if (srcPixelFormat.subsampling != YUV_400)
     {
-      values.append(ValuePair("U", QString::number((int)U0-(int)U1)));
-      values.append(ValuePair("V", QString::number((int)V0-(int)V1)));
+      values.append(QStringPair("U", QString::number((int)U0-(int)U1)));
+      values.append(QStringPair("V", QString::number((int)V0-(int)V1)));
     }
   }
   else
@@ -1081,10 +1081,10 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
 
     // Do not get the pixel values if the buffer for the raw YUV values is out of date.
     if (currentFrameRawData_frameIdx != frameIdx)
-      return ValuePairList();
+      return QStringPairList();
 
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-      return ValuePairList();
+      return QStringPairList();
 
     unsigned int Y,U,V;
     getPixelValue(pixelPos, Y, U, V);
@@ -1095,21 +1095,21 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
       const int differenceZeroValue = 1 << (srcPixelFormat.bitsPerSample - 1);
 
       // Append the values to the list
-      values.append(ValuePair("Y", QString::number(int(Y)-differenceZeroValue)));
+      values.append(QStringPair("Y", QString::number(int(Y)-differenceZeroValue)));
       if (srcPixelFormat.subsampling != YUV_400)
       {
-        values.append(ValuePair("U", QString::number(int(U)-differenceZeroValue)));
-        values.append(ValuePair("V", QString::number(int(V)-differenceZeroValue)));
+        values.append(QStringPair("U", QString::number(int(U)-differenceZeroValue)));
+        values.append(QStringPair("V", QString::number(int(V)-differenceZeroValue)));
       }
     }
     else
     {
       // Append the values to the list
-      values.append(ValuePair("Y", QString::number(Y)));
+      values.append(QStringPair("Y", QString::number(Y)));
       if (srcPixelFormat.subsampling != YUV_400)
       {
-        values.append(ValuePair("U", QString::number(U)));
-        values.append(ValuePair("V", QString::number(V)));
+        values.append(QStringPair("U", QString::number(U)));
+        values.append(QStringPair("V", QString::number(V)));
       }
     }
   }

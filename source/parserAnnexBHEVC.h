@@ -52,7 +52,7 @@ public:
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
-  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t curFilePos = -1) Q_DECL_OVERRIDE;
+  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t filePosStart = -1, uint64_t filePosEnd = -1) Q_DECL_OVERRIDE;
 
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
   QByteArray getExtradata() Q_DECL_OVERRIDE;

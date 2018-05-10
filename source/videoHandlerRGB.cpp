@@ -228,9 +228,9 @@ videoHandlerRGB::~videoHandlerRGB()
   rgbFormatMutex.lock();
 }
 
-ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
+QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
 {
-  ValuePairList values;
+  QStringPairList values;
   
   if (item2 != nullptr)
   {
@@ -240,21 +240,21 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
       return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
     if (currentFrameRawData_frameIdx != frameIdx || rgbItem2->currentFrameRawData_frameIdx != frameIdx1)
-      return ValuePairList();
+      return QStringPairList();
 
     int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
     int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
 
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-      return ValuePairList();
+      return QStringPairList();
 
     unsigned int R0,G0,B0, R1, G1, B1;
     getPixelValue(pixelPos, R0, G0, B0);
     rgbItem2->getPixelValue(pixelPos, R1, G1, B1);
 
-    values.append(ValuePair("R", QString::number((int)R0-(int)R1)));
-    values.append(ValuePair("G", QString::number((int)G0-(int)G1)));
-    values.append(ValuePair("B", QString::number((int)B0-(int)B1)));
+    values.append(QStringPair("R", QString::number((int)R0-(int)R1)));
+    values.append(QStringPair("G", QString::number((int)G0-(int)G1)));
+    values.append(QStringPair("B", QString::number((int)B0-(int)B1)));
   }
   else
   {
@@ -262,17 +262,17 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
     int height = frameSize.height();
 
     if (currentFrameRawData_frameIdx != frameIdx)
-      return ValuePairList();
+      return QStringPairList();
 
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-      return ValuePairList();
+      return QStringPairList();
 
     unsigned int R,G,B;
     getPixelValue(pixelPos, R, G, B);
 
-    values.append(ValuePair("R", QString::number(R)));
-    values.append(ValuePair("G", QString::number(G)));
-    values.append(ValuePair("B", QString::number(B)));
+    values.append(QStringPair("R", QString::number(R)));
+    values.append(QStringPair("G", QString::number(G)));
+    values.append(QStringPair("B", QString::number(B)));
   }
 
   return values;

@@ -46,18 +46,19 @@ class parserAnnexB : public parserBase
 {
 
 public:
-  parserAnnexB() {};
+  parserAnnexB();
   virtual ~parserAnnexB() {};
 
   // How many POC's have been found in the file
-  int getNumberPOCs() const { return POC_List.size(); }
+  int getNumberPOCs() const { return frameList.size(); }
 
   // Clear all knowledge about the bitstream.
   void clearData();
 
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
-  // Finally it should add the unit to the nalUnitList (if it is a parameter set or an RA point).
-  virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t curFilePos = -1) = 0;
+  // It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).
+  // When there are no more NAL units in the file (the file ends), call this function one last time with empty data and a nalID of -1.
+  virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t filePosStart = -1, uint64_t filePosEnd = -1) = 0;
 
   // Get some format properties
   virtual double getFramerate() const = 0;
@@ -78,8 +79,6 @@ public:
   // Get some other properties of the bitstream in order to configure the FFMpegDecoder
   virtual QPair<int,int> getProfileLevel() = 0;
   virtual QPair<int,int> getSampleAspectRatio() = 0;
-
-  void sortPOCList() { std::sort(POC_List.begin(), POC_List.end()); }
 
 protected:
   
@@ -121,20 +120,34 @@ protected:
     SEI_PARSING_OK,                      // Parsing is done
     SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
   };
+  
+  struct annexBFrame
+  {
+    int poc;                     //< The poc of this frame
+    QUint64Pair fileStartEndPos; //< The start and end position of all slice NAL units
+    bool randomAccessPoint;      //< Can we start decoding here?
+  };
 
-  // A list of all POCs in the sequence (in coding order). POC's don't have to be consecutive, so the only
-  // way to know how many pictures are in a sequences is to keep a list of all POCs.
-  QList<int> POC_List;
+  // A list of all frames in the sequence (in coding order) with POC and the file positions of all slice NAL units associated with a frame.
+  // POC's don't have to be consecutive, so the only way to know how many pictures are in a sequences is to keep a list of all POCs.
+  QList<annexBFrame> frameList;
+
+  // We also keep a sorted list of POC values in order to map from frame indices to POC
+  QList<int> POCList;
 
   // Returns false if the POC was already present int the list
-  bool addPOCToList(int poc);
+  void addFrameToList(int poc, QUint64Pair fileStartEndPos, bool randomAccessPoint);
 
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.
-  // So basically all information we need to seek in the stream and start the decoder at a certain position.
+  // So basically all information we need to seek in the stream and get the active parameter sets to start the decoder at a certain position.
   QList<QSharedPointer<nal_unit>> nalUnitList;
-  QList<int> POC_List_randomAccess;
 
+  // For every frame, we save the file position where the NAL unit of the first slice starts and where the NAL of the last slice ends.
+  // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
+  QUint64Pair curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+  int curFramePOC;
+  bool curFrameIsRandomAccess;
 };
 
 #endif // PARSERANNEXB_H

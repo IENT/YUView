@@ -203,7 +203,7 @@ public:
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position. If th second item
   // cannot be cast to a videoHandlerYUV, we call the frameHandler::getPixelValues function.
-  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr, const int frameIdx1 = 0) Q_DECL_OVERRIDE;
+  virtual QStringPairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr, const int frameIdx1 = 0) Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,

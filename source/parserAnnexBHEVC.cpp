@@ -33,6 +33,14 @@
 #include "parserAnnexBHEVC.h"
 #include <cmath>
 
+#define PARSER_HEVC_DEBUG_OUTPUT 1
+#if PARSER_HEVC_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_HEVC qDebug
+#else
+#define DEBUG_HEVC(fmt,...) ((void)0)
+#endif
+
 /* Some macros that we use to read syntax elements from the bitstream.
 * The advantage of these macros is, that they can directly also create the tree structure for the QAbstractItemModel that is 
 * used to show the NAL units and their content. The tree will only be added if the pointer to the given tree itemTree is valid.
@@ -1344,8 +1352,21 @@ const QStringList parserAnnexBHEVC::nal_unit_type_toString = QStringList()
 "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
 "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
-void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, uint64_t curFilePos)
+void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, uint64_t filePosStart, uint64_t filePosEnd)
 {
+  if (nalID == -1 && data.isEmpty())
+  {
+    if (curFramePOC != -1)
+    {
+      // Save the info of the last frame
+      addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
+      DEBUG_HEVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+    }
+    // The file ended
+    std::sort(POCList.begin(), POCList.end());
+    return;
+  }
+
   // Read two bytes (the nal header)
   QByteArray nalHeaderBytes = data.left(2);
   data.remove(0, 2);
@@ -1363,7 +1384,7 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     nalRoot = new TreeItem(nalUnitModel.rootItem.data());
 
   // Create a nal_unit and read the header
-  nal_unit_hevc nal_hevc(curFilePos, nalID);
+  nal_unit_hevc nal_hevc(filePosStart, nalID);
   nal_hevc.parse_nal_unit_header(nalHeaderBytes, nalRoot);
 
   if (nal_hevc.isSlice())
@@ -1478,9 +1499,24 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
       isRandomAccessSkip = true;
     }
 
-    // Get the poc and add it to the POC list
-    if (new_slice->globalPOC >= 0 && new_slice->pic_output_flag && !isRandomAccessSkip)
-      addPOCToList(new_slice->globalPOC);
+    if (new_slice->first_slice_segment_in_pic_flag)
+    {
+      // This slice NAL is the start of a new frame
+      if (curFramePOC != -1)
+      {
+        // Save the info of the last frame
+        addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
+        DEBUG_HEVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+      }
+      curFrameFileStartEndPos.first = filePosStart;
+      curFrameFileStartEndPos.second = filePosEnd;
+      curFramePOC = new_slice->globalPOC;
+      curFrameIsRandomAccess = new_slice->isIRAP();
+    }
+    else
+      // Another slice NAL which belongs to the last frame
+      // Update the end position
+      curFrameFileStartEndPos.second = filePosEnd;
 
     if (nal_hevc.isIRAP())
     {
@@ -1488,7 +1524,6 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
       {
         // This is the first slice of a random access point. Add it to the list.
         nalUnitList.append(new_slice);
-        POC_List_randomAccess.append(new_slice->globalPOC);
       }
     }
   }
@@ -1557,7 +1592,7 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
 QList<QByteArray> parserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   // Get the POC for the frame number
-  int seekPOC = POC_List[iFrameNr];
+  int seekPOC = POCList[iFrameNr];
 
   // Collect the active parameter sets
   vps_map active_VPS_list;

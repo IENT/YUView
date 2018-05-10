@@ -201,30 +201,26 @@ private:
 template <typename T> inline T clip(const T n, const T lower, const T upper) { return (n < lower) ? lower : (n > upper) ? upper : n; }
 
 /// ---- Custom types
-
+typedef QPair<uint64_t, uint64_t> QUint64Pair;
 typedef QPair<QString, QString> QStringPair;
 typedef QList<QStringPair> QStringPairList;
 // A index range is just a QPair of integers (minimum and maximum)
 typedef QPair<int,int> indexRange;
-// A pair of two strings
-typedef QPair<QString, QString> ValuePair;
-// A list of valuePairs (pairs of two strings)
-typedef QList<ValuePair> ValuePairList;
 // A list of value pair lists, where every list has a string (title)
-class ValuePairListSets : public QList<QPair<QString, ValuePairList> >
+class ValuePairListSets : public QList<QPair<QString, QStringPairList> >
 {
 public:
   // Create an empty list
   ValuePairListSets() {}
   // Create a ValuePairListSets from one list of values with a title.
-  ValuePairListSets(const QString &title, const ValuePairList &valueList)
+  ValuePairListSets(const QString &title, const QStringPairList &valueList)
   {
     append(title, valueList);
   }
   // Append a pair of QString and ValuePairList
-  void append(const QString &title, const ValuePairList &valueList)
+  void append(const QString &title, const QStringPairList &valueList)
   {
-    QList::append(QPair<QString, ValuePairList>(title, valueList));
+    QList::append(QPair<QString, QStringPairList>(title, valueList));
   }
   // Append a list to this list
   void append(const ValuePairListSets &list)
@@ -248,8 +244,8 @@ public:
   QDomElementYUView(const QDomElement &a) : QDomElement(a) {}
   // Look through all the child items. If one child element exists with the given tagName, return it's text node.
   // All attributes of the child (if found) are appended to attributes.
-  QString findChildValue(const QString &tagName) const { ValuePairList b; return findChildValue(tagName, b); }
-  QString findChildValue(const QString &tagName, ValuePairList &attributeList) const
+  QString findChildValue(const QString &tagName) const { QStringPairList b; return findChildValue(tagName, b); }
+  QString findChildValue(const QString &tagName, QStringPairList &attributeList) const
   {
     for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
       if (n.isElement() && n.toElement().tagName() == tagName)
@@ -259,7 +255,7 @@ public:
         {
           QString name = attributes.item(i).nodeName();
           QString val  = attributes.item(i).nodeValue();
-          attributeList.append(ValuePair(name, val));
+          attributeList.append(QStringPair(name, val));
         }
         return n.toElement().text();
       }
@@ -267,7 +263,7 @@ public:
   }
   // Append a new child to this element with the given type, and name (as text node).
   // All QString pairs in ValuePairList are appended as attributes.
-  void appendProperiteChild(const QString &type, const QString &name, const ValuePairList &attributes=ValuePairList())
+  void appendProperiteChild(const QString &type, const QString &name, const QStringPairList &attributes=QStringPairList())
   {
     QDomElement newChild = ownerDocument().createElement(type);
     newChild.appendChild(ownerDocument().createTextNode(name));
