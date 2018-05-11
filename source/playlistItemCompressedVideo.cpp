@@ -82,6 +82,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   currentFrameIdx[1] = -1;
   repushDataFFmpeg = false;
   decodingOfFrameNotPossible = false;
+  readAnnexBFrameCounterCodingOrder = -1;
 
   // Open the input file and get some properties (size, bit depth, subsampling) from the file
   if (input == inputInvalid)
@@ -510,7 +511,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
   if (curFrameIdx == -1 || frameIdxInternal < curFrameIdx || frameIdxInternal > curFrameIdx + FORWARD_SEEK_THRESHOLD)
   {
     if (isinputFormatTypeAnnexB)
-      seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdxInternal);
+      seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdxInternal, readAnnexBFrameCounterCodingOrder);
     else
     {
       if (caching)
@@ -547,11 +548,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
           DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived packet PTS %d", pkt.get_pts());
         else
           DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived empty packet");
-        decoderFFmpeg *ffmpegDec;
-        if (caching)
-          ffmpegDec = dynamic_cast<decoderFFmpeg*>(cachingDecoder.data());
-        else
-          ffmpegDec = dynamic_cast<decoderFFmpeg*>(loadingDecoder.data());
+        decoderFFmpeg *ffmpegDec = (caching ? dynamic_cast<decoderFFmpeg*>(cachingDecoder.data()) : dynamic_cast<decoderFFmpeg*>(loadingDecoder.data()));
         if (!ffmpegDec->pushAVPacket(pkt))
         {
           if (!ffmpegDec->decodeFrames())
@@ -560,21 +557,28 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
           repushDataFFmpeg = true;
         }
       }
-      else
+      else if (isinputFormatTypeAnnexB && decoderEngineType == decoderEngineFFMpeg)
       {
-        // The 
-        QByteArray data;
-        // Push more data to the decoder
-      
-        if (isinputFormatTypeAnnexB)
+        // Get the data of the next frame (which might be multiple NAL units)
+        QUint64Pair frameStartEndFilePos = inputFileAnnexBParser->getFrameStartEndPos(readAnnexBFrameCounterCodingOrder);
+        QByteArray data = caching ? inputFileAnnexBCaching->getFrameData(frameStartEndFilePos) : inputFileAnnexBLoading->getFrameData(frameStartEndFilePos);
+        DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived frame data from file - startEnd %d-%d - size %d", frameStartEndFilePos.first, frameStartEndFilePos.second, data.size());
+        if (!dec->pushData(data))
         {
-          const bool startCode = (decoderEngineType == decoderEngineFFMpeg);
-          // TODO: Get data per frame
-          // ...
-          data = caching ? inputFileAnnexBCaching->getNextNALUnit(startCode) : inputFileAnnexBLoading->getNextNALUnit(startCode);
+          decoderFFmpeg *ffmpegDec = (caching ? dynamic_cast<decoderFFmpeg*>(cachingDecoder.data()) : dynamic_cast<decoderFFmpeg*>(loadingDecoder.data()));
+          if (!ffmpegDec->decodeFrames())
+            // The decoder did not switch to decoding frame mode. Error.
+            return;
+          // Pushing the data failed because the ffmpeg decoder wants us to read frames first.
+          // Don't increase readAnnexBFrameCounterCodingOrder so that we will push the data of that frame again.
         }
         else
-          data = caching ? inputFileFFmpegCaching->getNextNALUnit() : inputFileFFmpegLoading->getNextNALUnit();
+          readAnnexBFrameCounterCodingOrder++;
+      }
+      else
+      {
+        // Get the next NAL unit and push it to the decoder
+        QByteArray data = caching ? inputFileFFmpegCaching->getNextNALUnit() : inputFileFFmpegLoading->getNextNALUnit();
         DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived nal unit from file - size %d", data.size());
         dec->pushData(data);
       }
@@ -892,14 +896,14 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   // Just push all NAL units from the annexBFile into the annexBParser
   QByteArray nalData;
   int nalID = 0;
-  uint64_t nalStartPos, nalEndPos;
+  QUint64Pair nalStartEndPosFile;
   while (!file->atEnd())
   {
     try
     {
-      nalData = file->getNextNALUnit(false, &nalStartPos, &nalEndPos);
+      nalData = file->getNextNALUnit(&nalStartEndPosFile);
 
-      parser->parseAndAddNALUnit(nalID, nalData, nullptr, nalStartPos, nalEndPos);
+      parser->parseAndAddNALUnit(nalID, nalData, nullptr, nalStartEndPosFile);
 
       // Update the progress dialog
       if (progress.wasCanceled())

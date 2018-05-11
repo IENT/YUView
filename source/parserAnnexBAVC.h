@@ -52,7 +52,7 @@ public:
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
-  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t filePosStart = -1, uint64_t filePosEnd = -1) Q_DECL_OVERRIDE;
+  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1)) Q_DECL_OVERRIDE;
 
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
   QByteArray getExtradata() Q_DECL_OVERRIDE;
@@ -96,8 +96,8 @@ protected:
   */
   struct nal_unit_avc : nal_unit
   {
-    nal_unit_avc(uint64_t filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_unit_type(UNSPECIFIED) {}
-    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : nal_unit(nal_src->filePos, nal_src->nal_idx) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
+    nal_unit_avc(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx), nal_unit_type(UNSPECIFIED) {}
+    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.

@@ -52,23 +52,30 @@ void parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool ran
   POCList.append(poc);
 }
 
-int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx) const
+int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const
 {
   // Get the POC for the frame number
   int seekPOC = POCList[frameIdx];
 
   int bestSeekPOC = -1;
-  for (annexBFrame f : frameList)
+  for (int i=0; i<frameList.length(); i++)
   {
+    annexBFrame f = frameList[i];
     if (f.randomAccessPoint)
     {
       if (bestSeekPOC == -1)
+      {
         bestSeekPOC = f.poc;
+        codingOrderFrameIdx = i;
+      }
       else
       {
         if (f.poc <= seekPOC)
+        {
           // We could seek here
           bestSeekPOC = f.poc;
+          codingOrderFrameIdx = i;
+        }
         else
           break;
       }
@@ -77,4 +84,11 @@ int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx) const
 
   // Get the frame index for the given POC
   return POCList.indexOf(bestSeekPOC);
+}
+
+QUint64Pair parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
+{
+  if (codingOrderFrameIdx > frameList.length())
+    return QUint64Pair(-1, -1);
+  return frameList[codingOrderFrameIdx].fileStartEndPos;
 }

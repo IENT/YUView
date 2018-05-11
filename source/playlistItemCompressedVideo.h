@@ -148,6 +148,8 @@ protected:
   QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBLoading;
   QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBCaching;
   QScopedPointer<parserAnnexB> inputFileAnnexBParser;
+  // When reading annex B data using the fileSourceAnnexBFile::getFrameData function, we need to count how many frames we already read.
+  int readAnnexBFrameCounterCodingOrder;
   
   // Which type is the input / what decoder do we use?
   inputFormat inputFormatType;

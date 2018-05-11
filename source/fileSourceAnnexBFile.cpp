@@ -78,25 +78,19 @@ bool fileSourceAnnexBFile::openFile(const QString &fileName)
   return true;
 }
 
-QByteArray fileSourceAnnexBFile::getNextNALUnit(bool addStartCode, uint64_t *posInFile, uint64_t *endPosInFile)
+QByteArray fileSourceAnnexBFile::getNextNALUnit(QUint64Pair *startEndPosInFile)
 {
   QByteArray retArray;
-  if (addStartCode)
-  {
-    retArray += (char)0;
-    retArray += (char)0;
-    retArray += (char)0;
-    retArray += (char)1;
-  }
-
-  if (posInFile)
-    *posInFile = bufferStartPosInFile + posInBuffer;
+  
+  if (startEndPosInFile)
+    startEndPosInFile->first = bufferStartPosInFile + posInBuffer;
 
   int nextStartCodePos = -1;
-  while (nextStartCodePos == -1)
+  bool startCodeFound = false;
+  while (!startCodeFound)
   {
-    nextStartCodePos = fileBuffer.indexOf(startCode, posInBuffer);
-
+    nextStartCodePos = fileBuffer.indexOf(startCode, posInBuffer + 3);
+        
     if (nextStartCodePos == -1)
     {
       // No start code found ... append all data in the current buffer.
@@ -111,32 +105,107 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(bool addStartCode, uint64_t *pos
       }
 
       // Before we load the next bytes: The start code might be located at the boundary to the next buffer
-      bool lastByteMatch = fileBuffer.endsWith( startCode.left(1) );
-      bool lastTwoByteMatch = fileBuffer.endsWith( startCode.left(2) );
+      const bool lastByteZero0 = fileBuffer.at(fileBufferSize - 3) == (char)0;
+      const bool lastByteZero1 = fileBuffer.at(fileBufferSize - 2) == (char)0;
+      const bool lastByteZero2 = fileBuffer.at(fileBufferSize - 1) == (char)0;
 
-      // We have to continue searching
+      // We have to continue searching - get the next buffer
       updateBuffer();
-
-      // Now look for the special boundary case:
-      if (lastByteMatch && fileBufferSize > 2 && fileBuffer.startsWith( startCode.right(2) ))
-        nextStartCodePos = 2;
-      if (lastTwoByteMatch && fileBufferSize > 2 && fileBuffer.startsWith( startCode.right(1) ))
-        nextStartCodePos = 1;
+      
+      if (fileBufferSize > 2)
+      {
+        // Now look for the special boundary case:
+        if (fileBuffer.at(0) == (char)1 && lastByteZero2 && lastByteZero1)
+        {
+          // Found a start code - the 1 byte is here and the two (or three) 0 bytes were in the last buffer
+          startCodeFound = true;
+          nextStartCodePos = lastByteZero0 ? -3 : -2;
+        }
+        else if (fileBuffer.at(0) == (char)0 && fileBuffer.at(1) == (char)1 && lastByteZero2)
+        {
+          // Found a start code - the 01 bytes are here and the one (or two) 0 bytes were in the last buffer
+          startCodeFound = true;
+          nextStartCodePos = lastByteZero1 ? -2 : -1;
+        }
+        else if (fileBuffer.at(0) == (char)0 && fileBuffer.at(1) == (char)0 && fileBuffer.at(2) == (char)1)
+        {
+          // Found a start code - the 001 bytes are here. Check the last byte of the last buffer
+          startCodeFound = true;
+          nextStartCodePos = lastByteZero2 ? -1 : 0;
+        }
+      }
+    }
+    else
+    {
+      // Start code found. Check if the start code is 0x000001 or 0x00000001
+      startCodeFound = true;
+      if (fileBuffer.at(nextStartCodePos - 1) == (char)0)
+        nextStartCodePos--;
     }
   }
 
   // Position found
-  if (endPosInFile)
-    *endPosInFile = bufferStartPosInFile + nextStartCodePos;
+  if (startEndPosInFile)
+    startEndPosInFile->second = bufferStartPosInFile + nextStartCodePos;
   retArray += fileBuffer.mid(posInBuffer, nextStartCodePos - posInBuffer);
   DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getNextNALUnit start code found - ret size %d", retArray.size());
-  posInBuffer = nextStartCodePos + 3; // Skip the start code
+  posInBuffer = nextStartCodePos;
   return retArray;
 }
 
-QByteArray fileSourceAnnexBFile::getNextFrameNALUnits()
+QByteArray fileSourceAnnexBFile::getFrameData(QUint64Pair startEndFilePos)
 {
-  return QByteArray();
+  QByteArray retArray;
+
+  uint64_t start = startEndFilePos.first;
+  uint64_t end = startEndFilePos.second;
+
+  if (start < bufferStartPosInFile || start > bufferStartPosInFile + fileBufferSize)
+  {
+    // The start position is not in the current buffer. Re-load the buffer to start with the requested position
+    bufferStartPosInFile = start;
+
+    srcFile.seek(start);
+    fileBufferSize = srcFile.read(fileBuffer.data(), BUFFER_SIZE);
+    posInBuffer = 0;
+
+    DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getFrameData Load - fileBufferSize %d", fileBufferSize);
+  }
+  
+  // The start of the requested data is in our current buffer
+  assert(start >= bufferStartPosInFile && start < bufferStartPosInFile + fileBufferSize);
+    
+  const uint64_t startInBuffer = start - bufferStartPosInFile;
+  if (end > bufferStartPosInFile + fileBufferSize)
+  {
+    // The end of the requested data is not in this buffer
+    if (fileBuffer.at(startInBuffer) == (char)0 && fileBuffer.at(startInBuffer + 1) == (char)0 && fileBuffer.at(startInBuffer + 2) == (char)1)
+      retArray += (char)0;  // The first NAL in an access unit should start with a 0x00000001
+    retArray += fileBuffer.mid(startInBuffer);
+
+    // Load the next buffer
+    updateBuffer();
+
+    while(end > bufferStartPosInFile + fileBufferSize)
+    {
+      // Add entire buffers until the end position is in this buffer
+      retArray += fileBuffer;
+    }
+
+    // Add the remaining part
+    const uint64_t endInBuffer = end - bufferStartPosInFile;
+    retArray += fileBuffer.mid(0, endInBuffer);
+  }
+  else
+  {
+    // All the requested data is in the current buffer
+    const uint64_t reqLength = end - start;
+    if (fileBuffer.at(startInBuffer) == (char)0 && fileBuffer.at(startInBuffer + 1) == (char)0 && fileBuffer.at(startInBuffer + 2) == (char)1)
+      retArray += (char)0;  // The first NAL in an access unit should start with a 0x00000001
+    retArray += fileBuffer.mid(startInBuffer, reqLength);
+  }
+
+  return retArray;
 }
 
 bool fileSourceAnnexBFile::updateBuffer()
@@ -169,6 +238,17 @@ bool fileSourceAnnexBFile::seek(int64_t pos)
   if (pos == 0)
     // When seeking to the beginning, discard all bytes until we find a start code
     getNextNALUnit();
+  else
+  {
+    // The position should have pointed to the first byte of a start code
+    if (fileBuffer.mid(0, 3) != startCode)
+    {
+      DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::seek could not find start code at seek position");
+      return false;
+    }
+    // Skip the start code
+    posInBuffer = 3;
+  }
 
-  return false;
+  return true;
 }

@@ -147,7 +147,7 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, uint64_t filePosStart, uint64_t filePosEnd)
+void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile)
 {
   if (nalID == -1 && data.isEmpty())
   {
@@ -162,10 +162,21 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     return;
   }
 
-  // Read two bytes (the nal header)
-  // Read two bytes (the nal header)
-  QByteArray nalHeaderBytes = data.left(1);
-  QByteArray payload = data.mid(1);
+  // Skip the NAL unit header
+  int skip = 0;
+  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
+    skip = 3;
+  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 && data.at(3) == (char)1)
+    skip = 4;
+  else
+  {
+    DEBUG_AVC("Error - no NAL header found");
+    return;
+  }
+
+  // Read ony byte (the NAL header)
+  QByteArray nalHeaderBytes = data.mid(skip, 1);
+  QByteArray payload = data.mid(skip + 1);
 
   // Use the given tree item. If it is not set, use the nalUnitMode (if active). 
   // We don't set data (a name) for this item yet. 
@@ -178,7 +189,7 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     nalRoot = new TreeItem(nalUnitModel.rootItem.data());
 
   // Create a nal_unit and read the header
-  nal_unit_avc nal_avc(filePosStart, nalID);
+  nal_unit_avc nal_avc(nalStartEndPosFile, nalID);
   nal_avc.parse_nal_unit_header(nalHeaderBytes, nalRoot);
 
   if (nal_avc.isSlice())
@@ -257,15 +268,14 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
         addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
         DEBUG_AVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
       }
-      curFrameFileStartEndPos.first = filePosStart;
-      curFrameFileStartEndPos.second = filePosEnd;
+      curFrameFileStartEndPos = nalStartEndPosFile;
       curFramePOC = new_slice->globalPOC;
       curFrameIsRandomAccess = new_slice->isRandomAccess();
     }
     else
       // Another slice NAL which belongs to the last frame
       // Update the end position
-      curFrameFileStartEndPos.second = filePosEnd;
+      curFrameFileStartEndPos.second = nalStartEndPosFile.second;
 
     if (nal_avc.isRandomAccess())
     {
@@ -1806,7 +1816,7 @@ QList<QByteArray> parserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_
       if (s->globalPOC == seekPOC)
       {
         // Seek here
-        filePos = s->filePos;
+        filePos = s->filePosStartEnd.first;
 
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;

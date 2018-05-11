@@ -58,7 +58,7 @@ public:
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
   // It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).
   // When there are no more NAL units in the file (the file ends), call this function one last time with empty data and a nalID of -1.
-  virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, uint64_t filePosStart = -1, uint64_t filePosEnd = -1) = 0;
+  virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1)) = 0;
 
   // Get some format properties
   virtual double getFramerate() const = 0;
@@ -72,7 +72,9 @@ public:
 
   // Look through the random access points and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
-  int getClosestSeekableFrameNumberBefore(int frameIdx) const;
+  // frameIdx: The frame index in display order that we want to seek to
+  // codingOrderFrameIdx: The index of the frame in coding order (for use with getFrameStartEndPos).
+  int getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const;
 
   // Get the parameters sets as extradata. The format of this depends on the underlying codec.
   virtual QByteArray getExtradata() = 0;
@@ -80,20 +82,22 @@ public:
   virtual QPair<int,int> getProfileLevel() = 0;
   virtual QPair<int,int> getSampleAspectRatio() = 0;
 
+  QUint64Pair getFrameStartEndPos(int codingOrderFrameIdx);
+
 protected:
   
   /* The basic NAL unit. Contains the NAL header and the file position of the unit.
   */
   struct nal_unit
   {
-    nal_unit(uint64_t filePos, int nal_idx) : filePos(filePos), nal_idx(nal_idx), nal_unit_type_id(-1) {}
+    nal_unit(QUint64Pair filePosStartEnd, int nal_idx) : filePosStartEnd(filePosStartEnd), nal_idx(nal_idx), nal_unit_type_id(-1) {}
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
                            // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
     virtual void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) = 0;
 
     /// Pointer to the first byte of the start code of the NAL unit
-    uint64_t filePos;
+    QUint64Pair filePosStartEnd;
 
     // The index of the nal within the bitstream
     int nal_idx;

@@ -1352,7 +1352,7 @@ const QStringList parserAnnexBHEVC::nal_unit_type_toString = QStringList()
 "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
 "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
-void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, uint64_t filePosStart, uint64_t filePosEnd)
+void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile)
 {
   if (nalID == -1 && data.isEmpty())
   {
@@ -1367,10 +1367,21 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     return;
   }
 
+  // Skip the NAL unit header
+  int skip = 0;
+  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
+    skip = 3;
+  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 && data.at(3) == (char)1)
+    skip = 4;
+  else
+  {
+    DEBUG_HEVC("Error - no NAL header found");
+    return;
+  }
+
   // Read two bytes (the nal header)
-  QByteArray nalHeaderBytes = data.left(2);
-  data.remove(0, 2);
-  QByteArray payload = data;
+  QByteArray nalHeaderBytes = data.mid(skip, 2);
+  QByteArray payload = data.mid(skip + 2);
   
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
@@ -1384,7 +1395,7 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     nalRoot = new TreeItem(nalUnitModel.rootItem.data());
 
   // Create a nal_unit and read the header
-  nal_unit_hevc nal_hevc(filePosStart, nalID);
+  nal_unit_hevc nal_hevc(nalStartEndPosFile, nalID);
   nal_hevc.parse_nal_unit_header(nalHeaderBytes, nalRoot);
 
   if (nal_hevc.isSlice())
@@ -1508,15 +1519,14 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
         addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
         DEBUG_HEVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
       }
-      curFrameFileStartEndPos.first = filePosStart;
-      curFrameFileStartEndPos.second = filePosEnd;
+      curFrameFileStartEndPos = nalStartEndPosFile;
       curFramePOC = new_slice->globalPOC;
       curFrameIsRandomAccess = new_slice->isIRAP();
     }
     else
       // Another slice NAL which belongs to the last frame
       // Update the end position
-      curFrameFileStartEndPos.second = filePosEnd;
+      curFrameFileStartEndPos.second = nalStartEndPosFile.second;
 
     if (nal_hevc.isIRAP())
     {
@@ -1612,7 +1622,7 @@ QList<QByteArray> parserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64
       if (s->globalPOC == seekPOC)
       {
         // Seek here
-        filePos = s->filePos;
+        filePos = s->filePosStartEnd.first;
 
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
