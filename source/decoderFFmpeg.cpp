@@ -288,6 +288,12 @@ bool decoderFFmpeg::pushData(QByteArray &data)
 {
   if (!raw_pkt)
     raw_pkt.allocate_paket(ff);
+  if (data.length() == 0)
+  {
+    // Push an empty packet to indicate that the file has ended
+    AVPacketWrapper emptyPacket;
+    return pushAVPacket(emptyPacket);
+  }
 
   // Add some padding
   // TODO: could this be improved somehow?

@@ -88,7 +88,7 @@ int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingO
 
 QUint64Pair parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
 {
-  if (codingOrderFrameIdx > frameList.length())
+  if (codingOrderFrameIdx >= frameList.length())
     return QUint64Pair(-1, -1);
   return frameList[codingOrderFrameIdx].fileStartEndPos;
 }

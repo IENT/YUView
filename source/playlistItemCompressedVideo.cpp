@@ -561,7 +561,9 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
       {
         // Get the data of the next frame (which might be multiple NAL units)
         QUint64Pair frameStartEndFilePos = inputFileAnnexBParser->getFrameStartEndPos(readAnnexBFrameCounterCodingOrder);
-        QByteArray data = caching ? inputFileAnnexBCaching->getFrameData(frameStartEndFilePos) : inputFileAnnexBLoading->getFrameData(frameStartEndFilePos);
+        QByteArray data;
+        if (frameStartEndFilePos != QUint64Pair(-1, -1))
+          data = caching ? inputFileAnnexBCaching->getFrameData(frameStartEndFilePos) : inputFileAnnexBLoading->getFrameData(frameStartEndFilePos);
         DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived frame data from file - startEnd %d-%d - size %d", frameStartEndFilePos.first, frameStartEndFilePos.second, data.size());
         if (!dec->pushData(data))
         {
