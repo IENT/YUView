@@ -67,7 +67,7 @@ void decoderBase::resetDecoder()
   decoderState = decoderNeedsMoreData;
   statsCacheCurPOC = -1;
   frameSize = QSize();
-  
+  formatYUV = yuvPixelFormat();
   rawFormat = raw_Invalid;
 }
 

@@ -33,7 +33,7 @@
 #include "parserAnnexBHEVC.h"
 #include <cmath>
 
-#define PARSER_HEVC_DEBUG_OUTPUT 1
+#define PARSER_HEVC_DEBUG_OUTPUT 0
 #if PARSER_HEVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_HEVC qDebug

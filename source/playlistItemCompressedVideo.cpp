@@ -44,7 +44,7 @@
 #include "videoHandlerRGB.h"
 #include "mainwindow.h"
 
-#define HEVC_DEBUG_OUTPUT 0
+#define HEVC_DEBUG_OUTPUT 1
 #if HEVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_HEVC qDebug
@@ -115,7 +115,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     if (cachingEnabled)
       inputFileAnnexBCaching.reset(new fileSourceAnnexBFile(compressedFilePath));
     // inputFormatType a parser
-    if (input == inputAnnexBHEVC)
+    if (inputFormatType == inputAnnexBHEVC)
     {
       inputFileAnnexBParser.reset(new parserAnnexBHEVC());
       ffmpegCodec = AV_CODEC_ID_HEVC;
@@ -577,6 +577,13 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
         else
           readAnnexBFrameCounterCodingOrder++;
       }
+      else if (isinputFormatTypeAnnexB)
+      {
+        // The 
+        QByteArray data = caching ? inputFileAnnexBCaching->getNextNALUnit() : inputFileAnnexBLoading->getNextNALUnit();
+        DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived nal unit from file - size %d", data.size());
+        dec->pushData(data);
+      }
       else
       {
         // Get the next NAL unit and push it to the decoder
@@ -640,6 +647,7 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
     uint64_t filePos;
     if (!bothFFmpeg)
       parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
+    DEBUG_HEVC("playlistItemCompressedVideo::seekToPosition seeking annexB file to filePos %d", filePos);
     if (caching)
       inputFileAnnexBCaching->seek(filePos);
     else
@@ -649,6 +657,7 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
   {
     if (!bothFFmpeg)
       parametersets = caching ? inputFileFFmpegCaching->getParameterSets() : inputFileFFmpegLoading->getParameterSets();
+    DEBUG_HEVC("playlistItemCompressedVideo::seekToPosition seeking ffmpeg file to pts %d", seekToPTS);
     if (caching)
       inputFileFFmpegCaching->seekToPTS(seekToPTS);
     else
@@ -658,9 +667,12 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
   // In case of using ffmpeg for decoding, we don't need to push the parameter sets (the
   // extradata) to the decoder explicitly when seeking.
   if (!decFFmpeg)
+  {
     // Push the parameter sets to the decoder
+    DEBUG_HEVC("playlistItemCompressedVideo::seekToPosition pushing parameter sets to decoder (nr %d)", parametersets.length());
     for (QByteArray d : parametersets)
       dec->pushData(d);
+  }
   if (caching)
     currentFrameIdx[1] = seekToFrame - 1;
   else
