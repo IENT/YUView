@@ -102,10 +102,10 @@ protected:
   class sub_byte_reader
   {
   public:
-    sub_byte_reader(const QByteArray &inArr) : p_byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) { skipEmulationPrevention = true; }
+    sub_byte_reader(const QByteArray &inArr) : byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) { skipEmulationPrevention = true; }
     // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
     unsigned int readBits(int nrBits, QString *bitsRead=nullptr);
-    uint64_t      readBits64(int nrBits, QString *bitsRead=nullptr);
+    uint64_t     readBits64(int nrBits, QString *bitsRead=nullptr);
     QByteArray   readBytes(int nrBytes);
     // Read an UE(v) code from the array. If given, increase bit_count with every bit read.
     int readUE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);
@@ -119,7 +119,7 @@ protected:
     void disableEmulationPrevention() { skipEmulationPrevention = false; }
 
   protected:
-    QByteArray p_byteArray;
+    QByteArray byteArray;
 
     bool skipEmulationPrevention;
 
@@ -130,6 +130,23 @@ protected:
     int posInBuffer_bytes;   // The byte position in the buffer
     int posInBuffer_bits;    // The sub byte (bit) position in the buffer (0...7)
     int p_numEmuPrevZeroBytes; // The number of emulation prevention three bytes that were found
+  };
+
+  /* This class provides the ability to write to a QByteArray on a bit basis. 
+  */
+  class sub_byte_writer
+  {
+  public:
+    sub_byte_writer() { currentByte = 0; posInByte = 7; };
+    // Write the bits to the output. Bits are written MSB first.
+    void writeBits(int val, int nrBits);
+    void writeBool(bool flag);
+    void writeData(QByteArray data);
+    QByteArray getByteArray();
+  protected:
+    QByteArray byteArray;
+    char currentByte;     // The current (unfinished) byte
+    int posInByte;        // The bit position in the current byte
   };
 
 };

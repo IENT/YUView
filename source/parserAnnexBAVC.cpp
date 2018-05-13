@@ -1960,5 +1960,5 @@ QPair<int,int> parserAnnexBAVC::getSampleAspectRatio()
       }
     }
   }
-  return QPair<int,int>(0,0);
+  return QPair<int,int>(1,1);
 }

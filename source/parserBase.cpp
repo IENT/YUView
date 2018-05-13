@@ -165,7 +165,7 @@ unsigned int parserBase::sub_byte_reader::readBits(int nrBits, QString *bitsRead
     // Shift output value so that the new bits fit
     out = out << readBits;
 
-    char c = p_byteArray[posInBuffer_bytes];
+    char c = byteArray[posInBuffer_bytes];
     c = c >> offset;
     int mask = ((1<<readBits) - 1);
 
@@ -219,10 +219,10 @@ QByteArray parserBase::sub_byte_reader::readBytes(int nrBytes)
   QByteArray retArray;
   for (int i = 0; i < nrBytes; i++)
   {
-    if (posInBuffer_bytes >= p_byteArray.size())
+    if (posInBuffer_bytes >= byteArray.size())
       throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
 
-    retArray.append(p_byteArray[posInBuffer_bytes]);
+    retArray.append(byteArray[posInBuffer_bytes]);
     posInBuffer_bytes++;
   }
 
@@ -280,7 +280,7 @@ bool parserBase::sub_byte_reader::more_rbsp_data()
   else
   {
     // Check the remainder of the current byte
-    unsigned char c = p_byteArray[posBytes];
+    unsigned char c = byteArray[posBytes];
     if (c & (1 << (7-posBits)))
       terminatingBitFound = true;
     else
@@ -295,9 +295,9 @@ bool parserBase::sub_byte_reader::more_rbsp_data()
     }
     posBytes++;
   }
-  while(posBytes < p_byteArray.size())
+  while(posBytes < byteArray.size())
   {
-    unsigned char c = p_byteArray[posBytes];
+    unsigned char c = byteArray[posBytes];
     if (terminatingBitFound && c != 0)
       return true;
     else if (!terminatingBitFound && (c & 128))
@@ -314,7 +314,7 @@ bool parserBase::sub_byte_reader::more_rbsp_data()
 bool parserBase::sub_byte_reader::p_gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
-  if (p_byteArray[posInBuffer_bytes] == (char)0)
+  if (byteArray[posInBuffer_bytes] == (char)0)
     p_numEmuPrevZeroBytes++;
 
   // Skip the remaining sub-byte-bits
@@ -322,18 +322,18 @@ bool parserBase::sub_byte_reader::p_gotoNextByte()
   // Advance pointer
   posInBuffer_bytes++;
 
-  if (posInBuffer_bytes >= p_byteArray.size()) 
+  if (posInBuffer_bytes >= byteArray.size()) 
     // The next byte is outside of the current buffer. Error.
     return false;    
 
   if (skipEmulationPrevention)
   {
-    if (p_numEmuPrevZeroBytes == 2 && p_byteArray[posInBuffer_bytes] == (char)3) 
+    if (p_numEmuPrevZeroBytes == 2 && byteArray[posInBuffer_bytes] == (char)3) 
     {
       // The current byte is an emulation prevention 3 byte. Skip it.
       posInBuffer_bytes++; // Skip byte
 
-      if (posInBuffer_bytes >= p_byteArray.size()) {
+      if (posInBuffer_bytes >= byteArray.size()) {
         // The next byte is outside of the current buffer. Error
         return false;
       }
@@ -341,10 +341,74 @@ bool parserBase::sub_byte_reader::p_gotoNextByte()
       // Reset counter
       p_numEmuPrevZeroBytes = 0;
     }
-    else if (p_byteArray[posInBuffer_bytes] != (char)0)
+    else if (byteArray[posInBuffer_bytes] != (char)0)
       // No zero byte. No emulation prevention 3 byte
       p_numEmuPrevZeroBytes = 0;
   }
 
   return true;
 }
+
+void parserBase::sub_byte_writer::writeBits(int val, int nrBits)
+{
+  while(nrBits > 0)
+  {
+    if (posInByte == 7 && nrBits >= 8)
+    {
+      // We can write an entire byte at once
+      const int shift = (nrBits - 8);
+      char byte = (val >> shift) & 0xff;
+      byteArray += byte;
+      nrBits -= 8;
+    }
+    else
+    {
+      // Write bit by bit
+      bool bit = val & (1 << (nrBits-1));
+      if (bit)
+        currentByte += (1 << posInByte);
+      posInByte--;
+      nrBits--;
+      if (posInByte == -1)
+      {
+        // Write the byte out
+        byteArray += currentByte;
+        currentByte = 0;
+        posInByte = 7;
+      }
+    }
+  }
+}
+
+void parserBase::sub_byte_writer::writeBool(bool flag)
+{
+  if (flag)
+    currentByte += (1 << posInByte);
+  posInByte--;
+  if (posInByte == -1)
+  {
+    // Write the byte out
+    byteArray += currentByte;
+    currentByte = 0;
+    posInByte = 7;
+  }
+}
+
+void parserBase::sub_byte_writer::writeData(QByteArray data)
+{
+  assert(posInByte == 7);
+  byteArray += data;
+}
+
+QByteArray parserBase::sub_byte_writer::getByteArray()
+{
+  if (posInByte != 7)
+  {
+    // Write out the remaining bits
+    byteArray += currentByte;
+    currentByte = 0;
+    posInByte = 7;
+  }
+  return byteArray;
+}
+

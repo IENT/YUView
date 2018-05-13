@@ -157,52 +157,35 @@ QByteArray fileSourceAnnexBFile::getFrameData(QUint64Pair startEndFilePos)
 {
   QByteArray retArray;
 
+  // We have to retrieve all data from start to end. We also have replace all startcodes by the ISO 4 byte size signaling
   uint64_t start = startEndFilePos.first;
   uint64_t end = startEndFilePos.second;
 
-  if (start < bufferStartPosInFile || start > bufferStartPosInFile + fileBufferSize)
+  // Seek the source file to the start position
+  seek(start);
+
+  // Retrieve NAL units (and repackage them) until we reached out end position
+  while (end > bufferStartPosInFile + posInBuffer)
   {
-    // The start position is not in the current buffer. Re-load the buffer to start with the requested position
-    bufferStartPosInFile = start;
+    QByteArray nalData = getNextNALUnit();
 
-    srcFile.seek(start);
-    fileBufferSize = srcFile.read(fileBuffer.data(), BUFFER_SIZE);
-    posInBuffer = 0;
-
-    DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getFrameData Load - fileBufferSize %d", fileBufferSize);
-  }
-  
-  // The start of the requested data is in our current buffer
-  assert(start >= bufferStartPosInFile && start < bufferStartPosInFile + fileBufferSize);
-    
-  const uint64_t startInBuffer = start - bufferStartPosInFile;
-  if (end > bufferStartPosInFile + fileBufferSize)
-  {
-    // The end of the requested data is not in this buffer
-    if (fileBuffer.at(startInBuffer) == (char)0 && fileBuffer.at(startInBuffer + 1) == (char)0 && fileBuffer.at(startInBuffer + 2) == (char)1)
-      retArray += (char)0;  // The first NAL in an access unit should start with a 0x00000001
-    retArray += fileBuffer.mid(startInBuffer);
-
-    // Load the next buffer
-    updateBuffer();
-
-    while(end > bufferStartPosInFile + fileBufferSize)
+    int headerOffset = 0;
+    if (nalData.at(0) == (char)0 && nalData.at(1) == (char)0)
     {
-      // Add entire buffers until the end position is in this buffer
-      retArray += fileBuffer;
+      if (nalData.at(2) == (char)0 && nalData.at(3) == (char)1)
+        headerOffset = 4;
+      else if (nalData.at(2) == (char)1)
+        headerOffset = 3;
     }
 
-    // Add the remaining part
-    const uint64_t endInBuffer = end - bufferStartPosInFile;
-    retArray += fileBuffer.mid(0, endInBuffer);
-  }
-  else
-  {
-    // All the requested data is in the current buffer
-    const uint64_t reqLength = end - start;
-    if (fileBuffer.at(startInBuffer) == (char)0 && fileBuffer.at(startInBuffer + 1) == (char)0 && fileBuffer.at(startInBuffer + 2) == (char)1)
-      retArray += (char)0;  // The first NAL in an access unit should start with a 0x00000001
-    retArray += fileBuffer.mid(startInBuffer, reqLength);
+    const uint64_t nalSize = nalData.length() - headerOffset;
+    DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getFrameData Load NAL - size %d", nalSize);
+
+    retArray += (char)((nalSize >> 24) & 0xff);
+    retArray += (char)((nalSize >> 16) & 0xff);
+    retArray += (char)((nalSize >> 8 ) & 0xff);
+    retArray += (char)((nalSize      ) & 0xff);
+    retArray += nalData.mid(headerOffset);
   }
 
   return retArray;

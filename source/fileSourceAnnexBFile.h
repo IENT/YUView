@@ -72,6 +72,7 @@ public:
   QByteArray getNextNALUnit(QUint64Pair *startEndPosInFile = nullptr);
 
   // Get all bytes that are needed to decode the next frame (from the given start to the given end position)
+  // The data will be returned in the ISO/IEC 14496-15 format (4 bytes size followed by the payload).
   QByteArray getFrameData(QUint64Pair startEndFilePos);
   
   // Seek the file to the given byte position. Update the buffer.

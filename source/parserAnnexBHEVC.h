@@ -102,6 +102,7 @@ protected:
   // The profile tier level syntax elements. 7.3.3
   struct profile_tier_level
   {
+    profile_tier_level();
     void parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1, TreeItem *root);
 
     int general_profile_space;
@@ -517,6 +518,16 @@ protected:
     int pps_extension_5bits;
 
     pps_range_extension range_extension;
+
+    // Calculated values
+    enum parallelism_t
+    {
+      MIXED_TYPE,
+      SLICE,
+      TILE,
+      WAVEFRONT,
+    };
+    parallelism_t parallelism;
   };
 
   // A slice NAL unit.

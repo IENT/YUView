@@ -31,6 +31,7 @@
 */
 
 #include "parserAnnexBHEVC.h"
+#include <algorithm>
 #include <cmath>
 
 #define PARSER_HEVC_DEBUG_OUTPUT 0
@@ -72,13 +73,68 @@
 // Read an UEV code and ignore the value. Return false if -1 was returned by the reading function.
 #define IGNOREUEV() {int into = reader.readUE_V();}
 
+parserAnnexBHEVC::profile_tier_level::profile_tier_level()
+{
+  general_profile_space = 0;
+  general_tier_flag = false;
+  general_profile_idc = 0;
+  for (int i = 0; i < 32; i++)
+    general_profile_compatibility_flag[i] = false;
+  general_progressive_source_flag = false;
+  general_interlaced_source_flag = false;
+  general_non_packed_constraint_flag = false;
+  general_frame_only_constraint_flag = false;
+  general_max_12bit_constraint_flag = false;
+  general_max_10bit_constraint_flag = false;
+  general_max_8bit_constraint_flag = false;
+  general_max_422chroma_constraint_flag = false;
+  general_max_420chroma_constraint_flag = false;
+  general_max_monochrome_constraint_flag = false;
+  general_intra_constraint_flag = false;
+  general_one_picture_only_constraint_flag = false;
+  general_lower_bit_rate_constraint_flag = false;
+  general_reserved_zero_bits = 0;
+  general_inbld_flag = false;
+  general_reserved_zero_bit = 0;
+  general_level_idc = 0;
+
+  for (int i = 0; i < 8; i++)
+  {
+  sub_layer_profile_present_flag[i] = false;
+  sub_layer_level_present_flag[i] = false;
+  reserved_zero_2bits[i] = 0;
+  sub_layer_profile_space[i] = 0;
+  sub_layer_tier_flag[i] = false;
+  sub_layer_profile_idc[i] = 0;
+  for (int j = 0; j < 32; j++)
+    sub_layer_profile_compatibility_flag[i][j] = false;
+  sub_layer_progressive_source_flag[i] = false;
+  sub_layer_interlaced_source_flag[i] = false;
+  sub_layer_non_packed_constraint_flag[i] = false;
+  sub_layer_frame_only_constraint_flag[i] = false;
+  sub_layer_max_12bit_constraint_flag[i] = false;
+  sub_layer_max_10bit_constraint_flag[i] = false;
+  sub_layer_max_8bit_constraint_flag[i] = false;
+  sub_layer_max_422chroma_constraint_flag[i] = false;
+  sub_layer_max_420chroma_constraint_flag[i] = false;
+  sub_layer_max_monochrome_constraint_flag[i] = false;
+  sub_layer_intra_constraint_flag[i] = false;
+  sub_layer_one_picture_only_constraint_flag[i] = false;
+  sub_layer_lower_bit_rate_constraint_flag[i] = false;
+  sub_layer_reserved_zero_bits[i] = 0;
+  sub_layer_inbld_flag[i] = false;
+  sub_layer_reserved_zero_bit[i] = false;
+  sub_layer_level_idc[i] = 0;
+  }
+}
+
 void parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
   TreeItem *const itemTree = root ? new TreeItem("profile_tier_level()", root) : nullptr;
 
-  /// Profile tier level
+  // Profile tier level
   if (profilePresentFlag) 
   {
     READBITS(general_profile_space, 2);
@@ -717,6 +773,7 @@ void parserAnnexBHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeIt
     if (itemTree)
       new TreeItem("vps_extension() - not implemented yet...", itemTree);
 
+  // TODO:
   // Here comes the VPS extension.
   // This is specified in the annex F, multilayer and stuff.
   // This could be added and is definitely interesting.
@@ -992,6 +1049,15 @@ void parserAnnexBHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIt
       new TreeItem("pps_extension_data_flag - not implemented yet...", itemTree);
 
   // There is more to parse but we are not interested in this information (for now)
+
+  if (entropy_coding_sync_enabled_flag && tiles_enabled_flag)
+    parallelism = MIXED_TYPE;
+  else if (entropy_coding_sync_enabled_flag)
+    parallelism = WAVEFRONT;
+  else if (tiles_enabled_flag)
+    parallelism = TILE;
+  else
+    parallelism = SLICE;
 }
 
 parserAnnexBHEVC::pps_range_extension::pps_range_extension()
@@ -2332,22 +2398,281 @@ QStringList parserAnnexBHEVC::get_matrix_coefficients_meaning()
 QByteArray parserAnnexBHEVC::getExtradata()
 {
   // Convert the VPS, SPS and PPS that we found in the bitstream to the libavformat hvcc format (see hevc.c)
+    
+  // The hvcc structure contains some values which can be obtained from the parameter sets
+  struct hvcc_t
+  {
+    int general_profile_space;
+    int general_level_idc;
+    bool general_tier_flag;
+    int general_profile_idc;
+    bool general_profile_compatibility_flags[32];
+    
+    // the general_constraint_indicator_flags;
+    bool general_progressive_source_flag;
+    bool general_interlaced_source_flag;
+    bool general_non_packed_constraint_flag;
+    bool general_frame_only_constraint_flag;
+    bool general_max_12bit_constraint_flag;
+    bool general_max_10bit_constraint_flag;
+    bool general_max_8bit_constraint_flag;
+    bool general_max_422chroma_constraint_flag;
+    bool general_max_420chroma_constraint_flag;
+    bool general_max_monochrome_constraint_flag;
+    bool general_intra_constraint_flag;
+    bool general_one_picture_only_constraint_flag;
+    bool general_lower_bit_rate_constraint_flag;
+    bool general_inbld_flag;
 
-  // TODO
-  assert(false);
-  return QByteArray();
+    int min_spatial_segmentation_idc;
+    int parallelism;
+    int chromaFormat;
+    int bitDepthLumaMinus8;
+    int bitDepthChromaMinus8;
+    int numTemporalLayers;
+    bool temporalIdNested;
+  };
+  hvcc_t hvcc;
+  memset(&hvcc, 0, sizeof(hvcc_t));
+
+  // Go through all NAL units and update the hvcc parameters for every PTL that we find.
+  QList<QSharedPointer<nal_unit_hevc>> vps_list;
+  QList<QSharedPointer<nal_unit_hevc>> sps_list;
+  QList<QSharedPointer<nal_unit_hevc>> pps_list;
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
+
+    profile_tier_level *ptl = nullptr;
+    if (nal_hevc->nal_type == VPS_NUT) 
+    {
+      auto v = nal.dynamicCast<vps>();
+      ptl = &v->ptl;
+      vps_list.append(v);
+      if (v->vps_max_sub_layers_minus1 + 1 > hvcc.numTemporalLayers)
+        hvcc.numTemporalLayers = v->vps_max_sub_layers_minus1 + 1;
+    }
+    if (nal_hevc->nal_type == SPS_NUT) 
+    {
+      auto s = nal.dynamicCast<sps>();
+      ptl = &s->ptl;
+      sps_list.append(s);
+      if (s->vui_parameters_present_flag && s->sps_vui_parameters.bitstream_restriction_flag)
+        hvcc.min_spatial_segmentation_idc = s->sps_vui_parameters.min_spatial_segmentation_idc;
+      hvcc.chromaFormat = s->chroma_format_idc;
+      hvcc.bitDepthLumaMinus8 = s->bit_depth_luma_minus8;
+      hvcc.bitDepthChromaMinus8 = s->bit_depth_chroma_minus8;
+      if (s->sps_max_sub_layers_minus1 + 1 > hvcc.numTemporalLayers)
+        hvcc.numTemporalLayers = s->sps_max_sub_layers_minus1 + 1;
+      hvcc.temporalIdNested = s->sps_temporal_id_nesting_flag;
+    }
+    if (nal_hevc->nal_type == PPS_NUT)
+    {
+      auto p = nal.dynamicCast<pps>();
+      hvcc.parallelism = p->parallelism;
+      pps_list.append(p);
+    }
+
+    if (ptl)
+    {
+      // The value of general_profile_space in all the parameter sets must be identical.
+      hvcc.general_profile_space = ptl->general_profile_space;
+      // The level indication general_level_idc must indicate a level of capability equal to or greater than the highest level indicated for the highest tier in all the parameter sets.
+      if (hvcc.general_tier_flag < ptl->general_tier_flag)
+        hvcc.general_level_idc = ptl->general_level_idc;
+      else
+        hvcc.general_level_idc = std::max(hvcc.general_level_idc, ptl->general_level_idc);
+      // The tier indication general_tier_flag must indicate a tier equal to or greater than the highest tier indicated in all the parameter sets.
+      hvcc.general_tier_flag |= ptl->general_tier_flag;
+      /*
+      * The profile indication general_profile_idc must indicate a profile to
+      * which the stream associated with this configuration record conforms.
+      *
+      * If the sequence parameter sets are marked with different profiles, then
+      * the stream may need examination to determine which profile, if any, the
+      * entire stream conforms to. If the entire stream is not examined, or the
+      * examination reveals that there is no profile to which the entire stream
+      * conforms, then the entire stream must be split into two or more
+      * sub-streams with separate configuration records in which these rules can
+      * be met.
+      *
+      * Note: set the profile to the highest value for the sake of simplicity.
+      */
+      hvcc.general_profile_idc = std::max(hvcc.general_profile_idc, ptl->general_profile_idc);
+      // Each bit in general_profile_compatibility_flags may only be set if all the parameter sets set that bit.
+      for (int i=0; i<32; i++)
+        hvcc.general_profile_compatibility_flags[i] |= ptl->general_profile_compatibility_flag[i];
+      // Each bit in general_constraint_indicator_flags may only be set if all the parameter sets set that bit.
+      hvcc.general_progressive_source_flag |= ptl->general_progressive_source_flag;
+      hvcc.general_interlaced_source_flag |= ptl->general_interlaced_source_flag;
+      hvcc.general_non_packed_constraint_flag |= ptl->general_non_packed_constraint_flag;
+      hvcc.general_frame_only_constraint_flag |= ptl->general_frame_only_constraint_flag;
+      hvcc.general_max_12bit_constraint_flag |= ptl->general_max_12bit_constraint_flag;
+      hvcc.general_max_10bit_constraint_flag |= ptl->general_max_10bit_constraint_flag;
+      hvcc.general_max_8bit_constraint_flag |= ptl->general_max_8bit_constraint_flag;
+      hvcc.general_max_422chroma_constraint_flag |= ptl->general_max_422chroma_constraint_flag;
+      hvcc.general_max_420chroma_constraint_flag |= ptl->general_max_420chroma_constraint_flag;
+      hvcc.general_max_monochrome_constraint_flag |= ptl->general_max_monochrome_constraint_flag;
+      hvcc.general_intra_constraint_flag |= ptl->general_intra_constraint_flag;
+      hvcc.general_one_picture_only_constraint_flag |= ptl->general_one_picture_only_constraint_flag;
+      hvcc.general_lower_bit_rate_constraint_flag |= ptl->general_lower_bit_rate_constraint_flag;
+      hvcc.general_inbld_flag |= ptl->general_inbld_flag;
+    }
+  }
+
+  // We need at least one of each
+  if (vps_list.empty() || sps_list.empty() || pps_list.empty())
+  {
+    DEBUG_HEVC("Error in extradata - A parameter set is missing");
+    return QByteArray();
+  }
+
+  // Now we write the headers in the hvcc format to the byte array
+  sub_byte_writer writer;
+  writer.writeBits(1, 8); /* configurationVersion = 1 */
+
+  /*
+  * unsigned int(2) general_profile_space;
+  * unsigned int(1) general_tier_flag;
+  * unsigned int(5) general_profile_idc;
+  */
+  writer.writeBits(hvcc.general_profile_space, 2);
+  writer.writeBool(hvcc.general_tier_flag);
+  writer.writeBits(hvcc.general_profile_idc, 5);
+  /* unsigned int(32) general_profile_compatibility_flags; */
+  for (int i=0; i<32; i++)
+    writer.writeBool(hvcc.general_profile_compatibility_flags[i]);
+  /* unsigned int(48) general_constraint_indicator_flags; */
+  writer.writeBool(hvcc.general_progressive_source_flag);
+  writer.writeBool(hvcc.general_interlaced_source_flag);
+  writer.writeBool(hvcc.general_non_packed_constraint_flag);
+  writer.writeBool(hvcc.general_frame_only_constraint_flag);
+  writer.writeBool(hvcc.general_max_12bit_constraint_flag);
+  writer.writeBool(hvcc.general_max_10bit_constraint_flag);
+  writer.writeBool(hvcc.general_max_8bit_constraint_flag);
+  writer.writeBool(hvcc.general_max_422chroma_constraint_flag);
+  writer.writeBool(hvcc.general_max_420chroma_constraint_flag);
+  writer.writeBool(hvcc.general_max_monochrome_constraint_flag);
+  writer.writeBool(hvcc.general_intra_constraint_flag);
+  writer.writeBool(hvcc.general_one_picture_only_constraint_flag);
+  writer.writeBool(hvcc.general_lower_bit_rate_constraint_flag);
+  writer.writeBits(0, 34); // general_reserved_zero_bits, 34
+  writer.writeBool(hvcc.general_inbld_flag);
+  // unsigned int(8) general_level_idc;
+  writer.writeBits(hvcc.general_level_idc, 8);
+  // bit(4) reserved = ‘1111’b;
+  // unsigned int(12) min_spatial_segmentation_idc;
+  writer.writeBits(0x0f, 4);
+  writer.writeBits(hvcc.min_spatial_segmentation_idc, 12);
+  // bit(6) reserved = ‘111111’b;
+  // unsigned int(2) parallelismType;
+  writer.writeBits(0xff, 6);
+  writer.writeBits(hvcc.parallelism, 2);
+  // bit(6) reserved = ‘111111’b;
+  // unsigned int(2) chromaFormat;
+  writer.writeBits(0xff, 6);
+  writer.writeBits(hvcc.chromaFormat, 2);
+  // bit(5) reserved = ‘11111’b;
+  // unsigned int(3) bitDepthLumaMinus8;
+  writer.writeBits(0xff, 5);
+  writer.writeBits(hvcc.bitDepthLumaMinus8, 3);
+  // bit(5) reserved = ‘11111’b;
+  // unsigned int(3) bitDepthChromaMinus8;
+  writer.writeBits(0xff, 5);
+  writer.writeBits(hvcc.bitDepthChromaMinus8, 3);
+  // bit(16) avgFrameRate;
+  writer.writeBits(0, 16);      // In the ffmpeg source it says that it is unclear how to calculate this :D
+  // bit(2) constantFrameRate;
+  // bit(3) numTemporalLayers;
+  // bit(1) temporalIdNested;
+  // unsigned int(2) lengthSizeMinusOne;
+  writer.writeBits(0, 2);     // In the ffmpeg source it says that it is unclear how to calculate this :D
+  writer.writeBits(hvcc.numTemporalLayers, 3);
+  writer.writeBool(hvcc.temporalIdNested);
+  writer.writeBits(3, 2);
+  /* unsigned int(8) numOfArrays; */
+  // I think this should be 3 for HEVC. In ffmpeg also "declarative" SEI messages are put in here, but I don't thik this is necessary
+  const int numOfArrays = 3;
+  writer.writeBits(numOfArrays, 8);
+
+  for (int i = 0; i < numOfArrays; i++) 
+  {
+    // bit(1) array_completeness;
+    // unsigned int(1) reserved = 0;
+    // unsigned int(6) NAL_unit_type;
+    writer.writeBool(true);   // TODO: When is array_completeness set?
+    writer.writeBool(false);
+    writer.writeBits(i==0 ? VPS_NUT : i==1 ? SPS_NUT : PPS_NUT, 6);
+
+    QList<QSharedPointer<nal_unit_hevc>> nal_list = (i==0 ? vps_list : i==1 ? sps_list : pps_list);
+
+    // DEBUG: Just add one of VPS/SPS/PPS
+    // unsigned int(16) numNalus;
+    //writer.writeBits(nal_list.length(), 16);
+    writer.writeBits(1, 16);
+
+    QByteArray nalRaw = nal_list[0]->getRawNALData();
+    /* unsigned int(16) nalUnitLength; */
+    writer.writeBits(nalRaw.length(), 16);
+    /* bit(8*nalUnitLength) nalUnit; */
+    writer.writeData(nalRaw);
+
+    //for (auto n : nal_list)
+    //{
+    //  QByteArray nalRaw = n->getRawNALData();
+    //  /* unsigned int(16) nalUnitLength; */
+    //  writer.writeBits(nalRaw.length(), 16);
+    //  /* bit(8*nalUnitLength) nalUnit; */
+    //  writer.writeData(nalRaw);
+    //}
+  }
+
+  return writer.getByteArray();
 }
 
 QPair<int,int> parserAnnexBHEVC::getProfileLevel()
 {
-  // TODO
-  assert(false);
-  return QPair<int,int>(-1, -1);
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
+
+    if (nal_hevc->nal_type == SPS_NUT)
+    {
+      auto s = nal.dynamicCast<sps>();
+      return QPair<int,int>(s->ptl.general_profile_idc, s->ptl.general_level_idc);
+    }
+  }
+  return QPair<int,int>(0,0);
 }
 
 QPair<int,int> parserAnnexBHEVC::getSampleAspectRatio()
 {
-  // TODO
-  assert(false);
-  return QPair<int,int>(-1, -1);
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
+
+    if (nal_hevc->nal_type == SPS_NUT)
+    {
+      auto s = nal.dynamicCast<sps>();
+      if (s->vui_parameters_present_flag && s->sps_vui_parameters.aspect_ratio_info_present_flag)
+      {
+        int aspect_ratio_idc = s->sps_vui_parameters.aspect_ratio_idc;
+        if (aspect_ratio_idc > 0 && aspect_ratio_idc <= 16)
+        {
+          int widths[] = {1, 12, 10, 16, 40, 24, 20, 32, 80, 18, 15, 64, 160, 4, 3, 2};
+          int heights[] = {1, 11, 11, 11, 33, 11, 11, 11, 33, 11, 11, 33, 99, 3, 2, 1};
+
+          const int i = aspect_ratio_idc - 1;
+          return QPair<int,int>(widths[i], heights[i]);
+        }
+        if (aspect_ratio_idc == 255)
+          return QPair<int,int>(s->sps_vui_parameters.sar_width, s->sps_vui_parameters.sar_height);
+        return QPair<int,int>(0,0);
+      }
+    }
+  }
+  return QPair<int,int>(1,1);
 }
