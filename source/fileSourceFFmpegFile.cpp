@@ -455,8 +455,8 @@ bool fileSourceFFmpegFile::goToNextVideoPacket()
     if (pkt.get_data_size() >= 4)
     {
       packetDataFormat = packetFormatMP4;
-      QByteArray pktData = QByteArray::fromRawData((const char*)(pkt.get_data()), 4);
-      if (pktData.at(0) == (char)0 && pktData.at(1) == (char)0 && pktData.at(2) == (char)0 && pktData.at(3) == (char)1)
+      QByteArray firstBytes = QByteArray::fromRawData((const char*)(pkt.get_data()), 4);
+      if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
         // A package length of 1 is not possible so this must be the raw NAL format.
         packetDataFormat = packetFormatRawNAL;
       // What about the start code 0x000001 (3 bytes)?

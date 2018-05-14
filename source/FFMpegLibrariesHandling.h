@@ -451,6 +451,16 @@ private:
   FFmpegLibraryVersion libVer;
 };
 
+// AVPacket data can be in one of two formats:
+// 1: The raw annexB format with start codes (0x00000001 or 0x000001)
+// 2: ISO/IEC 14496-15 mp4 format: The first 4 bytes determine the size of the NAL unit followed by the payload
+enum packetDataFormat_t
+{
+  packetFormatUnknown,
+  packetFormatRawNAL,
+  packetFormatMP4
+};
+
 class AVDictionaryWrapper
 {
 public:

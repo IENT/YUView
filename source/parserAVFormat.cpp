@@ -64,6 +64,11 @@ parserAVFormat::parserAVFormat(AVCodecID codec)
     annexBParser.reset(new parserAnnexBAVC());
   else if (codecID == AV_CODEC_ID_HEVC)
     annexBParser.reset(new parserAnnexBHEVC());
+
+  // Set the start code to look for (0x00 0x00 0x01)
+  startCode.append((char)0);
+  startCode.append((char)0);
+  startCode.append((char)1);
 }
 
 void parserAVFormat::parseExtradata(QByteArray &extradata)
@@ -241,7 +246,6 @@ void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
     throw std::logic_error("Unsupported extradata format (configurationVersion != 1)");  
 }
 
-
 void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 {
   if (!nalUnitModel.rootItem.isNull())
@@ -260,28 +264,65 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
     LOGSTRVAL("flag_discard", packet.get_flag_discard());
     LOGSTRVAL("data_size", packet.get_data_size());
 
-    // TODO: Better error handling!!
     if (annexBParser)
     {
       int nalID = 0;
+
+      packetDataFormat_t packetFormat = packetFormatMP4;
+      QByteArray firstBytes = avpacketData.mid(0, 4);
+      if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
+        // A package length of 1 is not possible so this must be the raw NAL format.
+        packetFormat = packetFormatRawNAL;
+
       while (posInData + 4 <= avpacketData.length())
       {
-        // AVPacket use the following encoding:
-        // The first 4 bytes determine the size of the NAL unit followed by the payload (ISO/IEC 14496-15)
-        QByteArray sizePart = avpacketData.mid(posInData, 4);
-        int size = (unsigned char)sizePart.at(3);
-        size += (unsigned char)sizePart.at(2) << 8;
-        size += (unsigned char)sizePart.at(1) << 16;
-        size += (unsigned char)sizePart.at(0) << 24;
-        posInData += 4;
+        QByteArray firstBytes = avpacketData.mid(posInData, 4);
 
-        if (size < 0)
-          // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
-          throw std::logic_error("Invalid size indicator in packet.");
-        if (posInData + size > avpacketData.length())
-          throw std::logic_error("Not enough data in the input array to read NAL unit.");
+        QByteArray nalData;
+        if (packetFormat == packetFormatRawNAL)
+        {
+          int offset;
+          if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
+            offset = 4;
+          else if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)1)
+            offset = 3;
+          else
+            throw std::logic_error("Start code could not be found.");
 
-        QByteArray nalData = avpacketData.mid(posInData, size);
+          // Look for the next start code (or the end of the file)
+          int nextStartCodePos = avpacketData.indexOf(startCode, posInData + 3);
+
+          if (nextStartCodePos == -1)
+          {
+            nalData = avpacketData.mid(posInData + offset);
+            posInData = avpacketData.length() + 1;
+          }
+          else
+          {
+            const int size = nextStartCodePos - posInData - offset;
+            nalData = avpacketData.mid(posInData + offset, size);
+            posInData += 3 + size;
+          }
+        }
+        else
+        {
+          int size = (unsigned char)firstBytes.at(3);
+          size += (unsigned char)firstBytes.at(2) << 8;
+          size += (unsigned char)firstBytes.at(1) << 16;
+          size += (unsigned char)firstBytes.at(0) << 24;
+          posInData += 4;
+
+          if (size < 0)
+            // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
+            throw std::logic_error("Invalid size indicator in packet.");
+          if (posInData + size > avpacketData.length())
+            throw std::logic_error("Not enough data in the input array to read NAL unit.");
+
+          nalData = avpacketData.mid(posInData, size);
+          posInData += size;
+        }
+
+        // Parse the NAL data
         try
         {
           annexBParser->parseAndAddNALUnit(nalID, nalData, itemTree);
@@ -293,7 +334,6 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
           DEBUG_AVC("parseAVPacket Exception thrown parsing NAL %d", nalID);
         }
         nalID++;
-        posInData += size;
       }
     }
   }

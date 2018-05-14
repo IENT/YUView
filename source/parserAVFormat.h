@@ -104,6 +104,9 @@ private:
   void parseExtradata_generic(QByteArray &extradata);
   void parseExtradata_AVC(QByteArray &extradata);
   void parseExtradata_hevc(QByteArray &extradata);
+
+  // The start code pattern to look for in case of a raw format
+  QByteArray startCode;
 };
 
 #endif // PARSERAVFORMAT_H
