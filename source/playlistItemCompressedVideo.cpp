@@ -83,6 +83,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   repushDataFFmpeg = false;
   decodingOfFrameNotPossible = false;
   readAnnexBFrameCounterCodingOrder = -1;
+  decodingEnabled = false;
 
   // Open the input file and get some properties (size, bit depth, subsampling) from the file
   if (input == inputInvalid)
@@ -143,7 +144,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     inputFileFFmpegLoading.reset(new fileSourceFFmpegFile());
     if (!inputFileFFmpegLoading->openFile(compressedFilePath))
     {
-      fileState = error;
+      setError("Error opening file using libavcodec.");
       return;
     }
     // Is this file RGB or YUV?
@@ -167,19 +168,24 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       inputFileFFmpegCaching.reset(new fileSourceFFmpegFile());
       if (!inputFileFFmpegCaching->openFile(compressedFilePath, inputFileFFmpegLoading.data()))
       {
-        fileState = error;
+        setError("Error opening file a second time using libavcodec for caching.");
         return;
       }
     }
   }
 
   // Check/set properties
-  if (!frameSize.isValid() || rawFormat == raw_Invalid || (rawFormat == raw_YUV && !format_yuv.isValid()) || (rawFormat == raw_RGB && !format_rgb.isValid()))
+  if (!frameSize.isValid())
   {
-    fileState = error;
+    setError("Error opening file: Unable to obtain frame size from file.");
     return;
   }
-
+  if (rawFormat == raw_Invalid || (rawFormat == raw_YUV && !format_yuv.isValid()) || (rawFormat == raw_RGB && !format_rgb.isValid()))
+  {
+    setError("Error opening file: Unable to obtain a valid pixel format from file.");
+    return;
+  }
+  
   // Allocate the videoHander (RGB or YUV)
   if (rawFormat == raw_YUV)
   {
@@ -199,8 +205,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
   statSource.setFrameSize(frameSize);
-  // So far, we can parse the stream
-  fileState = onlyParsing;
 
   if (decoder == decoderEngineInvalid)
   {
@@ -239,7 +243,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     loadingDecoder.reset(new decoderLibde265(displayComponent));
     cachingDecoder.reset(new decoderLibde265(displayComponent, true));
-    fileState = noError;
+    decodingEnabled = true;
   }
   else if (decoderEngineType == decoderEngineHM)
   {
@@ -266,10 +270,13 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       if (cachingEnabled)
         cachingDecoder.reset(new decoderFFmpeg(inputFileFFmpegCaching->getVideoCodecPar()));
     }
-    fileState = noError;
+    decodingEnabled = true;
   }
   else
+  {
+    infoText = "No valid decoder could be selected.";
     return;
+  }
 
   if (rawFormat == raw_YUV)
   {
@@ -367,23 +374,25 @@ infoData playlistItemCompressedVideo::getInfo() const
   // At first append the file information part (path, date created, file size...)
   // info.items.append(loadingDecoder->getFileInfoList());
 
-  if (fileState == onlyParsing)
+  if (unresolvableError)
   {
-    //info.items.append(infoItem("Num POCs", QString::number(loadingDecoder->getNumberPOCs()), "The number of pictures in the stream."));
-    info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
     info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
   }
-  else if (fileState == noError)
+  else
   {
-    QSize videoSize = video->getFrameSize();
-    info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
-    info.items.append(infoItem("Decoder", loadingDecoder->getDecoderName()));
-    info.items.append(infoItem("Decoder", loadingDecoder->getCodecName()));
+    
     info.items.append(infoItem("library path", loadingDecoder->getLibraryPath(), "The path to the loaded libde265 library"));
+    info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
+    QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num POCs", QString::number(startEndFrame.second), "The number of pictures in the stream."));
-    info.items.append(infoItem("Statistics", loadingDecoder->statisticsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
-    info.items.append(infoItem("Stat Parsing", loadingDecoder->statisticsEnabled() ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
+    if (decodingEnabled)
+    {
+      info.items.append(infoItem("Decoder", loadingDecoder->getDecoderName()));
+      info.items.append(infoItem("Decoder", loadingDecoder->getCodecName()));
+      info.items.append(infoItem("Statistics", loadingDecoder->statisticsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
+      info.items.append(infoItem("Stat Parsing", loadingDecoder->statisticsEnabled() ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
+    }    
     info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
   }
 
@@ -439,7 +448,7 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
 
 itemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool loadRawData)
 {
-  if (fileState == error)
+  if (unresolvableError || !decodingEnabled)
     return LoadingNotNeeded;
 
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
@@ -453,36 +462,21 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
 {
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  // TODO: Improve the error handling / signaling in this class. The error states should be kept at one position.
-  // Use the variable unresolvableError from the playlistItemWithVideo class.
-
   if (decodingOfFrameNotPossible)
   {
     infoText = "Decoding of the frame not possible:\n";
     infoText += "The frame could not be decoded. Possibly, the bitstream is corrupt or was cut at an invalid position.";
     playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
+  else if (unresolvableError || !decodingEnabled)
+  {
+    playlistItemWithVideo::drawItem(painter, frameIdx, zoomFactor, drawRawData);
+    return;
+  }
+  
   else if (loadingDecoder.isNull())
   {
     infoText = "No decoder allocated.\n";
-    playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
-  }
-  else if (loadingDecoder->errorInDecoder())
-  {
-    // There was an error in the deocder. 
-    infoText = "There was an error when loading the decoder: \n";
-    infoText += loadingDecoder->decoderErrorString();
-    infoText += "\n";
-    if (decoderEngineType == decoderEngineHM)
-    {
-      infoText += "We do not currently ship the HM decoder libraries.\n";
-      infoText += "You can find download links in Help->Downloads";
-    }
-    playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
-  }
-  else if (fileState != noError)
-  {
-    infoText = "Could not open the raw input file.\n";
     playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
   else if (frameIdxInternal >= startEndFrame.first && frameIdxInternal <= startEndFrame.second)
@@ -633,8 +627,23 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
       // Just set the frame number of the buffer to the current frame so that it will trigger a
       // reload when the frame number changes.
       video->rawData_frameIdx = frameIdxInternal;
-      return;
+      break;
     }
+  }
+
+  // Was there an error?
+  if (loadingDecoder->errorInDecoder())
+  {
+    // There was an error in the deocder. 
+    infoText = "There was an error when loading the decoder: \n";
+    infoText += loadingDecoder->decoderErrorString();
+    infoText += "\n";
+    if (decoderEngineType == decoderEngineHM)
+    {
+      infoText += "We do not currently ship the HM decoder libraries.\n";
+      infoText += "You can find download links in Help->Downloads";
+    }
+    decodingEnabled = false;
   }
 }
 
@@ -680,7 +689,11 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
     // Push the parameter sets to the decoder
     DEBUG_HEVC("playlistItemCompressedVideo::seekToPosition pushing parameter sets to decoder (nr %d)", parametersets.length());
     for (QByteArray d : parametersets)
-      dec->pushData(d);
+      if (!dec->pushData(d))
+      {
+        setDecodingError("Error when seeking in file.");
+        return;
+      }
   }
   if (caching)
     currentFrameIdx[1] = seekToFrame - 1;
@@ -770,16 +783,15 @@ void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx
 
 indexRange playlistItemCompressedVideo::getStartEndFrameLimits() const
 {
-  if (fileState != error)
+  if (unresolvableError)
+    return indexRange(0, 0);
+  else
   {
     if (isinputFormatTypeAnnexB)
       return indexRange(0, inputFileAnnexBParser->getNumberPOCs() - 1);
     else
-      // TODO: 
       return indexRange(0, inputFileFFmpegLoading->getNumberFrames() - 1);
-  }
-  
-  return indexRange(0, 0);
+  }  
 }
 
 ValuePairListSets playlistItemCompressedVideo::getPixelValues(const QPoint &pixelPos, int frameIdx)
@@ -908,12 +920,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
   QWidget *mainWindow = MainWindow::getMainWindow();
   // Create the dialog
-  int64_t maxPos;
-  if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC)
-    maxPos = file->getFileSize();
-  else
-    // TODO: What do we do for ffmpeg files?
-    maxPos = 1000;
+  int64_t maxPos = file->getFileSize();;
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
   int curPercentValue = 0;
   QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, 100, mainWindow);
@@ -938,13 +945,7 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
       if (progress.wasCanceled())
         return;
 
-      int64_t pos;
-      if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC)
-        pos = file->pos();
-      else
-        // TODO: 
-        pos = 55;
-
+      int64_t pos = file->pos();
       int newPercentValue = pos * 100 / maxPos;
       if (newPercentValue != curPercentValue)
       {

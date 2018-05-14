@@ -128,14 +128,6 @@ protected:
 
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-  typedef enum
-  {
-    noError,     // There was no error. Parsing the bitstream worked and frames can be decoded.
-    onlyParsing, // Loading of the decoder failed. We can only parse the bitstream.
-    error        // The bitstream looks invalid. Error.
-  } compressedFileState;
-  compressedFileState fileState;
-
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
   QScopedPointer<decoderBase> loadingDecoder;
@@ -190,6 +182,10 @@ protected:
   // If we are using FFmpeg for decoding, pushing data may fail and the decoder switches to decoding mode.
   // In this case, we must (after decoding frames) re-push the packet for which pushing failed.
   bool repushDataFFmpeg;
+
+  // Besides the normal stats (error / no error) this item might be able to parse the file but not to decode it.
+  void setDecodingError(QString err) { infoText = err; decodingEnabled = false; }
+  bool decodingEnabled;
 
   // If the bitstream is invalid (for example it was cut at a position that it should not be cut at), we
   // might be unable to decode some of the frames at the end of the sequence.
