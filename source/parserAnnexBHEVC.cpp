@@ -2263,8 +2263,23 @@ bool parserAnnexBHEVC::pic_timing_sei::parse(const vps_map &active_VPS_list, con
   sub_byte_reader reader(sei_data_storage);
   if (actSPS->sps_vui_parameters.frame_field_info_present_flag)
   {
-    READBITS(pic_struct, 4);
-    READBITS(source_scan_type, 2);
+    QStringList pic_struct_meaning = QStringList() 
+      << "(progressive) Frame"
+      << "Top field"
+      << "Bottom field"
+      << "Top field, bottom field, in that order"
+      << "Bottom field, top field, in that order"
+      << "Top field, bottom field, top field repeated, in that order"
+      << "Bottom field, top field, bottom field repeated, in that order"
+      << "Frame doubling"
+      << "Frame tripling"
+      << "Top field paired with previous bottom field in output order"
+      << "Bottom field paired with previous top field in output order"
+      << "Top field paired with next bottom field in output order"
+      << "Bottom field paired with next top field in output order";
+    READBITS_M(pic_struct, 4, pic_struct_meaning);
+    QStringList source_scan_type_meaning = QStringList()  << "interlaced" << "progressive" << "unknown or unspecified" << "reserved for future use by ITU-T | ISO/IEC";
+    READBITS_M(source_scan_type, 2, source_scan_type_meaning);
     READFLAG(duplicate_flag);
   }
 
