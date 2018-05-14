@@ -275,6 +275,9 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
         size += (unsigned char)sizePart.at(0) << 24;
         posInData += 4;
 
+        if (size < 0)
+          // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
+          throw std::logic_error("Invalid size indicator in packet.");
         if (posInData + size > avpacketData.length())
           throw std::logic_error("Not enough data in the input array to read NAL unit.");
 

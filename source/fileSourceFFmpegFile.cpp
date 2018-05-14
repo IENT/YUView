@@ -99,6 +99,19 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
   size += (unsigned char)sizePart.at(1) << 16;
   size += (unsigned char)sizePart.at(0) << 24;
 
+  if (size < 0)
+  {
+    // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
+    currentPacketData.clear();
+    return QByteArray();
+  }
+  if (size > currentPacketData.length() - posInData)
+  {
+    // The indicated size is bigger than the buffer
+    currentPacketData.clear();
+    return QByteArray();
+  }
+  
   if (pts)
     *pts = pkt.get_pts();
   
