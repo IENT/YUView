@@ -57,6 +57,12 @@ fileSourceFFmpegFile::fileSourceFFmpegFile()
   frameRate = -1;
   rawFormat = raw_Invalid;
   colorConversionType = BT709_LimitedRange;
+  packetDataFormat = packetFormatUnknown;
+
+  // Set the start code to look for (0x00 0x00 0x01)
+  startCode.append((char)0);
+  startCode.append((char)0);
+  startCode.append((char)1);
 
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFmpegFile::fileSystemWatcherFileChanged);
 }
@@ -91,34 +97,71 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
     posInData = 0;
   }
   
-  // FFMpeg packet use the following encoding:
-  // The first 4 bytes determine the size of the NAL unit followed by the payload (ISO/IEC 14496-15)
-  QByteArray sizePart = currentPacketData.mid(posInData, 4);
-  unsigned int size = (unsigned char)sizePart.at(3);
-  size += (unsigned char)sizePart.at(2) << 8;
-  size += (unsigned char)sizePart.at(1) << 16;
-  size += (unsigned char)sizePart.at(0) << 24;
+  // AVPacket data can be in one of two formats:
+  // 1: The raw annexB format with start codes (0x00000001 or 0x000001)
+  // 2: ISO/IEC 14496-15 mp4 format: The first 4 bytes determine the size of the NAL unit followed by the payload
+  QByteArray retArray;
+  if (packetDataFormat == packetFormatRawNAL)
+  {
+    QByteArray firstBytes = currentPacketData.mid(posInData, 4);
+    int offset;
+    if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
+      offset = 4;
+    else if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)1)
+      offset = 3;
+    else
+    {
+      // The start code could not be found ...
+      currentPacketData.clear();
+      return QByteArray();
+    }
+    
+    // Look for the next start code (or the end of the file)
+    int nextStartCodePos = currentPacketData.indexOf(startCode, posInData + 3);
 
-  if (size < 0)
-  {
-    // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
-    currentPacketData.clear();
-    return QByteArray();
+    if (nextStartCodePos == -1)
+    {
+      // Return the remainder of the buffer and clear it so that the next packet is loaded on the next call
+      retArray = currentPacketData.mid(posInData + offset);
+      currentPacketData.clear();
+    }
+    else
+    {
+      int size = nextStartCodePos - posInData - offset;
+      retArray = currentPacketData.mid(posInData + offset, size);
+      posInData += 3 + size;
+    }
   }
-  if (size > currentPacketData.length() - posInData)
+  else if (packetDataFormat == packetFormatMP4)
   {
-    // The indicated size is bigger than the buffer
-    currentPacketData.clear();
-    return QByteArray();
+    QByteArray sizePart = currentPacketData.mid(posInData, 4);
+    unsigned int size = (unsigned char)sizePart.at(3);
+    size += (unsigned char)sizePart.at(2) << 8;
+    size += (unsigned char)sizePart.at(1) << 16;
+    size += (unsigned char)sizePart.at(0) << 24;
+
+    if (size < 0)
+    {
+      // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
+      currentPacketData.clear();
+      return QByteArray();
+    }
+    if (size > currentPacketData.length() - posInData)
+    {
+      // The indicated size is bigger than the buffer
+      currentPacketData.clear();
+      return QByteArray();
+    }
+    
+    retArray = currentPacketData.mid(posInData + 4, size);
+    posInData += 4 + size;
+    if (posInData >= currentPacketData.size())
+      currentPacketData.clear();
   }
-  
+
   if (pts)
     *pts = pkt.get_pts();
-  
-  QByteArray retArray = currentPacketData.mid(posInData + 4, size);
-  posInData += 4 + size;
-  if (posInData >= currentPacketData.size())
-    currentPacketData.clear();
+
   return retArray;
 }
 
@@ -404,6 +447,23 @@ bool fileSourceFFmpegFile::goToNextVideoPacket()
     endOfFile = true;
     return false;
   }
+
+  if (packetDataFormat == packetFormatUnknown)
+  {
+    // This is the first video package that we find and we don't know what the format of the packet data is.
+    // Determine the format from the first four bytes:
+    if (pkt.get_data_size() >= 4)
+    {
+      packetDataFormat = packetFormatMP4;
+      QByteArray pktData = QByteArray::fromRawData((const char*)(pkt.get_data()), 4);
+      if (pktData.at(0) == (char)0 && pktData.at(1) == (char)0 && pktData.at(2) == (char)0 && pktData.at(3) == (char)1)
+        // A package length of 1 is not possible so this must be the raw NAL format.
+        packetDataFormat = packetFormatRawNAL;
+      // What about the start code 0x000001 (3 bytes)?
+      // If this can occur, how can be distinguish this from the other format?
+    }
+  }
+
   return true;
 }
 

@@ -136,6 +136,20 @@ protected:
     int64_t pts;
   };
 
+  // AVPacket data can be in one of two formats:
+  // 1: The raw annexB format with start codes (0x00000001 or 0x000001)
+  // 2: ISO/IEC 14496-15 mp4 format: The first 4 bytes determine the size of the NAL unit followed by the payload
+  enum packetDataFormat_t
+  {
+    packetFormatUnknown,
+    packetFormatRawNAL,
+    packetFormatMP4
+  };
+  packetDataFormat_t packetDataFormat;
+
+  // The start code pattern to look for in case of a raw format
+  QByteArray startCode;
+
   // These are filled after opening a file (after scanBitstream was called)
   QList<pictureIdx> keyFrameList;  //< A list of pairs (frameNr, PTS) that we can seek to.
   //pictureIdx getClosestSeekableFrameNumberBeforeBefore(int frameIdx);
