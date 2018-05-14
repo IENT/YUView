@@ -260,6 +260,7 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
     LOGSTRVAL("flag_discard", packet.get_flag_discard());
     LOGSTRVAL("data_size", packet.get_data_size());
 
+    // TODO: Better error handling!!
     if (annexBParser)
     {
       int nalID = 0;

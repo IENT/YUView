@@ -439,8 +439,10 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
 
 itemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool loadRawData)
 {
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+  if (fileState == error)
+    return LoadingNotNeeded;
 
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
   auto videoState = video->needsLoading(frameIdxInternal, loadRawData);
   if (videoState == LoadingNeeded || statSource.needsLoading(frameIdxInternal) == LoadingNeeded)
     return LoadingNeeded;
@@ -450,6 +452,9 @@ itemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool lo
 void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+
+  // TODO: Improve the error handling / signaling in this class. The error states should be kept at one position.
+  // Use the variable unresolvableError from the playlistItemWithVideo class.
 
   if (decodingOfFrameNotPossible)
   {
@@ -462,7 +467,6 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
     infoText = "No decoder allocated.\n";
     playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
-
   else if (loadingDecoder->errorInDecoder())
   {
     // There was an error in the deocder. 
@@ -476,7 +480,12 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
     }
     playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
-  else if (fileState == noError && frameIdxInternal >= startEndFrame.first && frameIdxInternal <= startEndFrame.second)
+  else if (fileState != noError)
+  {
+    infoText = "Could not open the raw input file.\n";
+    playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
+  }
+  else if (frameIdxInternal >= startEndFrame.first && frameIdxInternal <= startEndFrame.second)
   {
     video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
     statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
@@ -683,6 +692,12 @@ void playlistItemCompressedVideo::createPropertiesWidget()
 {
   // Absolutely always only call this once
   Q_ASSERT_X(!propertiesWidget, "playlistItemCompressedVideo::createPropertiesWidget", "Always create the properties only once!");
+
+  if (!video)
+  {
+    playlistItem::createPropertiesWidget();
+    return;
+  }
 
   // Create a new widget and populate it with controls
   propertiesWidget.reset(new QWidget);
