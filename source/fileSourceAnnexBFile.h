@@ -60,7 +60,7 @@ public:
   bool openFile(const QString &filePath) Q_DECL_OVERRIDE;
 
   // Is the file at the end?
-  bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize < BUFFER_SIZE; }
+  bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize < BUFFER_SIZE && posInBuffer >= fileBufferSize; }
 
   // --- Retrieving of data from the file ---
   // You can either read a file NAL by NAL or frame by frame. Do not mix the two interfaces.
