@@ -92,3 +92,15 @@ QUint64Pair parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
     return QUint64Pair(-1, -1);
   return frameList[codingOrderFrameIdx].fileStartEndPos;
 }
+
+void parserAnnexB::parseAndAddNALUnitNoThrow(int nalID, QByteArray data, TreeItem * parent, QUint64Pair nalStartEndPosFile)
+{
+  try
+  {
+    parseAndAddNALUnit(nalID, data, parent, nalStartEndPosFile);
+  }
+  catch (...)
+  {
+    // Catch exceptions and just return
+  }
+}

@@ -35,7 +35,7 @@
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
 
-#define PARSERAVCFORMAT_DEBUG_OUTPUT 1
+#define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_AVC qDebug
@@ -157,16 +157,7 @@ void parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
       LOG_VAR_SUB(sps_size, 16);
 
       QByteArray rawNAL = extradata.mid(pos, sps_size);
-      try
-      {
-        annexBParser->parseAndAddNALUnit(nalID, rawNAL, subTree);
-      }
-      catch (...)
-      {
-        // Reading a NAL unit failed at some point.
-        // This is not too bad. Just don't use this NAL unit and continue with the next one.
-        DEBUG_AVC("parseExtradata_AVC Exception thrown parsing NAL %d", nalID);
-      }
+      annexBParser->parseAndAddNALUnitNoThrow(nalID, rawNAL, subTree);
       nalID++;
       pos += sps_size;
     }
@@ -181,16 +172,7 @@ void parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
       LOG_VAR_SUB(pps_size, 16);
 
       QByteArray rawNAL = extradata.mid(pos, pps_size);
-      try
-      {
-        annexBParser->parseAndAddNALUnit(nalID, rawNAL, subTree);
-      }
-      catch (...)
-      {
-        // Reading a NAL unit failed at some point.
-        // This is not too bad. Just don't use this NAL unit and continue with the next one.
-        DEBUG_AVC("parseExtradata_AVC Exception thrown parsing NAL %d", nalID);
-      }
+      annexBParser->parseAndAddNALUnitNoThrow(nalID, rawNAL, subTree);
       nalID++;
       pos += pps_size;
     }
@@ -228,16 +210,7 @@ void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
       int length = nextStartCode - posInData;
       QByteArray nalData = extradata.mid(posInData, length);
       // Let the hevc annexB parser parse this
-      try
-      {
-        annexBParser->parseAndAddNALUnit(nalID, nalData, extradataRoot);
-      }
-      catch (...)
-      {
-        // Reading a NAL unit failed at some point.
-        // This is not too bad. Just don't use this NAL unit and continue with the next one.
-        DEBUG_AVC("parseExtradata_hevc Exception thrown parsing NAL %d", nalID);
-      }
+      annexBParser->parseAndAddNALUnitNoThrow(nalID, nalData, extradataRoot);
       nalID++;
       posInData = nextStartCode + 3;
     }
@@ -317,16 +290,7 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
         }
 
         // Parse the NAL data
-        try
-        {
-          annexBParser->parseAndAddNALUnit(nalID, nalData, itemTree);
-        }
-        catch (...)
-        {
-          // Reading a NAL unit failed at some point.
-          // This is not too bad. Just don't use this NAL unit and continue with the next one.
-          DEBUG_AVC("parseAVPacket Exception thrown parsing NAL %d", nalID);
-        }
+        annexBParser->parseAndAddNALUnitNoThrow(nalID, nalData, itemTree);
         nalID++;
       }
     }
@@ -425,14 +389,5 @@ void parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, sub_byte_reade
   QByteArray nalData = reader.readBytes(nalUnitLength);
 
   // Let the hevc annexB parser parse this
-  try
-  {
-    annexBParser->parseAndAddNALUnit(unitID, nalData, itemTree);
-  }
-  catch (...)
-  {
-    // Reading a NAL unit failed at some point.
-    // This is not too bad. Just don't use this NAL unit and continue with the next one.
-    DEBUG_AVC("parseAVPacket Exception thrown parsing NAL");
-  }
+  annexBParser->parseAndAddNALUnitNoThrow(unitID, nalData, itemTree);
 }
