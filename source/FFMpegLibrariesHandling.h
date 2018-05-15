@@ -402,6 +402,16 @@ private:
   FFmpegLibraryVersion libVer;
 };
 
+// AVPacket data can be in one of two formats:
+// 1: The raw annexB format with start codes (0x00000001 or 0x000001)
+// 2: ISO/IEC 14496-15 mp4 format: The first 4 bytes determine the size of the NAL unit followed by the payload
+enum packetDataFormat_t
+{
+  packetFormatUnknown,
+  packetFormatRawNAL,
+  packetFormatMP4
+};
+
 // A wrapper around the different versions of the AVPacket versions.
 // It also adds some functions like automatic deletion when it goes out of scope.
 class AVPacketWrapper
@@ -429,6 +439,8 @@ public:
   bool     get_flag_discard()  { update(); return flags & AV_PKT_FLAG_DISCARD; }
   uint8_t *get_data()          { update(); return data; }
   int      get_data_size()     { update(); return size; }
+  
+  packetDataFormat_t guessDataFormatFromData();
 
 private:
   void update();
@@ -449,16 +461,6 @@ private:
 
   AVPacket *pkt;
   FFmpegLibraryVersion libVer;
-};
-
-// AVPacket data can be in one of two formats:
-// 1: The raw annexB format with start codes (0x00000001 or 0x000001)
-// 2: ISO/IEC 14496-15 mp4 format: The first 4 bytes determine the size of the NAL unit followed by the payload
-enum packetDataFormat_t
-{
-  packetFormatUnknown,
-  packetFormatRawNAL,
-  packetFormatMP4
 };
 
 class AVDictionaryWrapper

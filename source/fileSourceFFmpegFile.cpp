@@ -135,7 +135,7 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
   else if (packetDataFormat == packetFormatMP4)
   {
     QByteArray sizePart = currentPacketData.mid(posInData, 4);
-    unsigned int size = (unsigned char)sizePart.at(3);
+    int size = (unsigned char)sizePart.at(3);
     size += (unsigned char)sizePart.at(2) << 8;
     size += (unsigned char)sizePart.at(1) << 16;
     size += (unsigned char)sizePart.at(0) << 24;
@@ -449,20 +449,10 @@ bool fileSourceFFmpegFile::goToNextVideoPacket()
   }
 
   if (packetDataFormat == packetFormatUnknown)
-  {
     // This is the first video package that we find and we don't know what the format of the packet data is.
-    // Determine the format from the first four bytes:
-    if (pkt.get_data_size() >= 4)
-    {
-      packetDataFormat = packetFormatMP4;
-      QByteArray firstBytes = QByteArray::fromRawData((const char*)(pkt.get_data()), 4);
-      if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
-        // A package length of 1 is not possible so this must be the raw NAL format.
-        packetDataFormat = packetFormatRawNAL;
-      // What about the start code 0x000001 (3 bytes)?
-      // If this can occur, how can be distinguish this from the other format?
-    }
-  }
+    // Guess the format from the data in the first package
+    // This format should not change from packet to packet
+    packetDataFormat = pkt.guessDataFormatFromData();
 
   return true;
 }

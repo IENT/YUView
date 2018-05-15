@@ -1440,10 +1440,8 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
   else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 && data.at(3) == (char)1)
     skip = 4;
   else
-  {
-    DEBUG_HEVC("Error - no NAL header found");
-    return;
-  }
+    // No NAL header found
+    skip = 0;
 
   // Read two bytes (the nal header)
   QByteArray nalHeaderBytes = data.mid(skip, 2);

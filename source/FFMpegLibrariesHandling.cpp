@@ -2314,6 +2314,53 @@ void AVPacketWrapper::set_dts(int64_t d)
     assert(false);
 }
 
+packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
+{
+  // AVPacket data can be in one of two formats:
+  // 1: The raw annexB format with start codes (0x00000001 or 0x000001)
+  // 2: ISO/IEC 14496-15 mp4 format: The first 4 bytes determine the size of the NAL unit followed by the payload
+  // We will try to guess the format of the data from the data in this AVPacket.
+  // This should always work unless a format is used which we did not encounter so far (which is not listed above)
+  // Also I think this should be identical for all packets in a bitstream.
+  QByteArray avpacketData = QByteArray::fromRawData((const char*)(get_data()), get_data_size());
+  if (avpacketData.at(0) == (char)0 && avpacketData.at(1) == (char)0 && avpacketData.at(2) == (char)0 && avpacketData.at(3) == (char)1)
+    // A package length of 1 is not possible so this must be the raw NAL format.
+    return packetFormatRawNAL;
+  // Check the ISO mp4 format: Parse the whole data and check if the size bytes per Unit are correct.
+  int posInData = 0;
+  bool isMP4Format = true;
+  while (posInData + 4 <= avpacketData.length())
+  {
+    QByteArray firstBytes = avpacketData.mid(posInData, 4);
+
+    int size = (unsigned char)firstBytes.at(3);
+    size += (unsigned char)firstBytes.at(2) << 8;
+    size += (unsigned char)firstBytes.at(1) << 16;
+    size += (unsigned char)firstBytes.at(0) << 24;
+    posInData += 4;
+
+    if (size < 0)
+    {
+      // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
+      isMP4Format = false;
+      break;
+    }
+    if (posInData + size > avpacketData.length())
+    {
+      // Not enough data in the input array to read NAL unit.
+      isMP4Format = false;
+      break;
+    }
+    posInData += size;
+  }
+  if (isMP4Format)
+    return packetFormatMP4;
+  if (avpacketData.at(0) == (char)0 && avpacketData.at(1) == (char)0 && avpacketData.at(2) == (char)1)
+    // There is a 3 byte start code and this is not a mp4 formatted file. Looks like a raw NAL stream
+    return packetFormatRawNAL;
+  return packetFormatUnknown;
+}
+
 void AVPacketWrapper::update()
 {
   if (libVer.avcodec == 56)

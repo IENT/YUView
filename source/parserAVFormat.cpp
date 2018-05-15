@@ -35,7 +35,7 @@
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
 
-#define PARSERAVCFORMAT_DEBUG_OUTPUT 0
+#define PARSERAVCFORMAT_DEBUG_OUTPUT 1
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_AVC qDebug
@@ -267,13 +267,7 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
     if (annexBParser)
     {
       int nalID = 0;
-
-      packetDataFormat_t packetFormat = packetFormatMP4;
-      QByteArray firstBytes = avpacketData.mid(0, 4);
-      if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
-        // A package length of 1 is not possible so this must be the raw NAL format.
-        packetFormat = packetFormatRawNAL;
-
+      packetDataFormat_t packetFormat = packet.guessDataFormatFromData();
       while (posInData + 4 <= avpacketData.length())
       {
         QByteArray firstBytes = avpacketData.mid(posInData, 4);
@@ -439,6 +433,6 @@ void parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, sub_byte_reade
   {
     // Reading a NAL unit failed at some point.
     // This is not too bad. Just don't use this NAL unit and continue with the next one.
-    DEBUG_AVC("parseAVPacket Exception thrown parsing NAL %d", nalID);
+    DEBUG_AVC("parseAVPacket Exception thrown parsing NAL");
   }
 }
