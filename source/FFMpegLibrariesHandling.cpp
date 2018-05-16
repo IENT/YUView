@@ -855,6 +855,9 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
   libAvcodec.unload();
   libAvformat.unload();
 
+  // Get the path of the avFormat lib. Actually all libraries might be in different dirs thoug...
+  libPath = QFileInfo(avFormatLib).absolutePath();
+
   // We will load the libraries (in this order):
   // avutil, swresample, avcodec, avformat.
   bool success = true;
