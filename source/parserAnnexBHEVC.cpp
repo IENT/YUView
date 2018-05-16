@@ -2130,12 +2130,12 @@ int parserAnnexBHEVC::sei::parse_sei_message(const QByteArray &sliceHeaderData, 
 
 void parserAnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
 {
+  user_data_UUID = sliceHeaderData.mid(0, 16).toHex();
+  user_data_message = sliceHeaderData.mid(16);
+
   if (sliceHeaderData.mid(16, 4) == "x265")
   {
     // This seems to be x264 user data. These contain the encoder settings which might be useful
-    user_data_UUID = sliceHeaderData.mid(0, 16).toHex();
-    user_data_message = sliceHeaderData.mid(16);
-
     // Create a new TreeItem root for the item
     // The macros will use this variable to add all the parsed variables
     TreeItem *const itemTree = root ? new TreeItem("x265 user data", root) : nullptr;
@@ -2172,6 +2172,13 @@ void parserAnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeade
           aggregate_string += " " + val;
       }
     }
+  }
+  else
+  {
+    // Just log the data as a string
+    TreeItem *const itemTree = root ? new TreeItem("custom user data", root) : nullptr;
+    LOGPARAM("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578");
+    LOGPARAM("User Data", QString(user_data_message), "", "", "");
   }
 }
 
