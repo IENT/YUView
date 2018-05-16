@@ -392,9 +392,9 @@ infoData playlistItemCompressedVideo::getInfo() const
       info.items.append(infoItem("Decoder", loadingDecoder->getCodecName()));
       info.items.append(infoItem("Statistics", loadingDecoder->statisticsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
       info.items.append(infoItem("Stat Parsing", loadingDecoder->statisticsEnabled() ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
-    }    
-    info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
+    }
   }
+  info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
 
   return info;
 }

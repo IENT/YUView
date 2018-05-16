@@ -169,10 +169,8 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
   else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 && data.at(3) == (char)1)
     skip = 4;
   else
-  {
-    DEBUG_AVC("Error - no NAL header found");
-    return;
-  }
+    // No NAL header found
+    skip = 0;
 
   // Read ony byte (the NAL header)
   QByteArray nalHeaderBytes = data.mid(skip, 1);
@@ -426,7 +424,18 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   // The macros will use this variable to add all the parsed variables
   TreeItem *const itemTree = root ? new TreeItem("seq_parameter_set_rbsp()", root) : nullptr;
 
-  READBITS(profile_idc, 8);
+  QMap<int, QString> meaningMap;
+  meaningMap.insert(44, "CAVLC 4:4:4 Intra Profile");
+  meaningMap.insert(66, "Baseline/Constrained Baseline Profile");
+  meaningMap.insert(77, "Main Profile");
+  meaningMap.insert(83, "Scalable Baseline/Scalable Constrained Baseline Profile");
+  meaningMap.insert(88, "Extended Profile");
+  meaningMap.insert(100, "High/Progressive High/Constrained High Profile");
+  meaningMap.insert(110, "High 10/High 10 Intra Profile");
+  meaningMap.insert(122, "High 4:2:2/High 4:2:2 Intra Profile");
+  meaningMap.insert(244, "High 4:4:4 Profile");
+  READBITS_M(profile_idc, 8, meaningMap);
+
   READFLAG(constraint_set0_flag);
   READFLAG(constraint_set1_flag);
   READFLAG(constraint_set2_flag);

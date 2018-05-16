@@ -60,17 +60,17 @@ public:
 
   // -- Caching
   // Cache the given frame
-  virtual void cacheFrame(int frameIdx, bool testMode) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video->cacheFrame(getFrameIdxInternal(frameIdx), testMode); }
+  virtual void cacheFrame(int frameIdx, bool testMode) Q_DECL_OVERRIDE { if (!cachingEnabled || unresolvableError) return; video->cacheFrame(getFrameIdxInternal(frameIdx), testMode); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE;
-  virtual int getNumberCachedFrames() const Q_DECL_OVERRIDE { return video->getNumberCachedFrames(); }
+  virtual int getNumberCachedFrames() const Q_DECL_OVERRIDE { return unresolvableError ? 0 : video->getNumberCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
-  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return video->getCachingFrameSize(); }
+  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return unresolvableError ? 0 : video->getCachingFrameSize(); }
   // Remove the given frame from the cache
-  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { video->removeFrameFromCache(getFrameIdxInternal(idx)); }
-  virtual void removeAllFramesFromCache() Q_DECL_OVERRIDE { video->removeAllFrameFromCache(); }
+  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { if (video) video->removeFrameFromCache(getFrameIdxInternal(idx)); }
+  virtual void removeAllFramesFromCache() Q_DECL_OVERRIDE { if (video) video->removeAllFrameFromCache(); }
   // This item is cachable, if caching is enabled and if the raw format is valid (can be cached).
-  virtual bool isCachable() const Q_DECL_OVERRIDE { return playlistItem::isCachable() && video->isFormatValid(); }
+  virtual bool isCachable() const Q_DECL_OVERRIDE { return !unresolvableError && playlistItem::isCachable() && video->isFormatValid(); }
 
   // Load the frame in the video item. Emit signalItemChanged(true) when done.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
