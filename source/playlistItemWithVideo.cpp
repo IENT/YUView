@@ -126,11 +126,12 @@ QList<int> playlistItemWithVideo::getCachedFrames() const
 }
 
 // Documentation see playlistItem::getData
-QMap<QString, QList<QList<QVariant>>>* playlistItemWithVideo::getData(indexRange range, bool reset)
+QMap<QString, QList<QList<QVariant>>>* playlistItemWithVideo::getData(indexRange aRange, bool aReset, QString aType)
 {
   // TODO implement correctly playlistItemWithVideo::getData
-  Q_UNUSED(range);
-  if (reset)
+  Q_UNUSED(aRange);
+  Q_UNUSED(aType);
+  if (aReset)
   {
     this->mStatisticData.clear();
   }

@@ -269,10 +269,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
       bufferStartPos += bufferSize;
     }
 
-
-    setStartEndFrame( indexRange(0, maxPOC), false );
-
-    this->getData(indexRange(0, maxPOC), true);
+    setStartEndFrame( indexRange(0, maxPOC), false);
 
     // Parsing complete
     backgroundParserProgress = 100.0;
@@ -734,67 +731,66 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loa
   }
 }
 
-QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData (indexRange range, bool reset)
+QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData(indexRange aRange, bool aReset, QString aType)
 {
-  if (isLoading() || isLoadingDoubleBuffer())
-  {
-      return &mStatisticData;
-      // we need to wait
-  }
   // getting the max range
   indexRange realRange = this->getFrameIdxRange();
 
-  int rangeSize = range.second - range.first;
+  int rangeSize = aRange.second - aRange.first;
   int frameSize = realRange.second - realRange.first;
-  if(reset || (rangeSize != frameSize))
+  if(aReset || (rangeSize != frameSize))
   {
     this->mStatisticData.clear();
 
     // running through the statisticsList
     foreach (StatisticsType statType, this->statSource.getStatisticsTypeList())
     {
-      // creating the resultList, where we save all the datalists
-      QList<QList<QVariant>> resultList;
-      // getting the key
-      QString key  = statType.typeName;
-      // creating the data list
-      QList<QVariant> dataList;
-
-      // getting all the statistic-data by the typeId
-      int typeIdx = statType.typeID;
-
-      if (this->isRangeInside(realRange, range))
+      if(aType == "" || aType == statType.typeName)
       {
-        for(int i = range.first; i <= range.second; i++)
+        // creating the resultList, where we save all the datalists
+        QList<QList<QVariant>> resultList;
+        // getting the key
+        QString key  = statType.typeName;
+        // creating the data list
+        QList<QVariant> dataList;
+
+        // getting all the statistic-data by the typeId
+        int typeIdx = statType.typeID;
+
+        if (this->isRangeInside(realRange, aRange))
         {
-          dataList.clear();
-          // first we have to load the statistic
-          this->loadStatisticToCache(i, typeIdx);
-          statisticsData statDataByType = this->statSource.statsCache[typeIdx];
-          // the data can be a value or a vector, converting the data into an QVariant and append it to the dataList
-          if(statType.hasValueData)
+          for(int frame = aRange.first; frame <= aRange.second; frame++)
           {
-            foreach (statisticsItem_Value val, statDataByType.valueData)
+            dataList.clear();
+            // first we have to load the statistic
+            this->loadStatisticToCache(frame, typeIdx);
+
+            statisticsData statDataByType = this->statSource.statsCache[typeIdx];
+            // the data can be a value or a vector, converting the data into an QVariant and append it to the dataList
+            if(statType.hasValueData)
             {
-              QVariant variant = QVariant::fromValue(val);
-              dataList.append(variant);
+              foreach (statisticsItem_Value val, statDataByType.valueData)
+              {
+                QVariant variant = QVariant::fromValue(val);
+                dataList.append(variant);
+              }
             }
-          }
-          else if(statType.hasVectorData)
-          {
-            foreach (statisticsItem_Vector val, statDataByType.vectorData)
+            else if(statType.hasVectorData)
             {
-              QVariant variant = QVariant::fromValue(val);
-              dataList.append(variant);
+              foreach (statisticsItem_Vector val, statDataByType.vectorData)
+              {
+                QVariant variant = QVariant::fromValue(val);
+                dataList.append(variant);
+              }
             }
+            // appending the data to the resultList
+            resultList.append(dataList);
           }
-          // appending the data to the resultList
-          resultList.append(dataList);
-          // necessary, beacause we dont want to add the data more than one time
-          this->statSource.statsCache.remove(typeIdx);
+          // adding each key with the resultList, inside of the resultList
+          this->mStatisticData.insert(key, resultList);
         }
-        // adding each key with the resultList, inside of the resultList
-        this->mStatisticData.insert(key, resultList);
+        if(aType != "")
+          break;
       }
     }
   }
@@ -850,15 +846,14 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
   QMap<QString, QMap<int, int*>*>* dataMapStatisticsItemValue = new QMap<QString, QMap<int, int*>*>;
   QMap<QString, QHash<QPoint, int*>*>* dataMapStatisticsItemVector = new QMap<QString, QHash<QPoint, int*>*>;
 
-  //check if data was loaded
-  if(!(&this->mStatisticData))
-    this->getData(this->getFrameIdxRange(), true);
+  indexRange range(aFrameIndex, aFrameIndex);
+  this->getData(range, true, aType);
 
   // getting allData from the type
   QList<QList<QVariant>> allData = this->mStatisticData.value(aType);
 
   // getting the data depends on the actual selected frameIndex / POC
-  QList<QVariant> data = allData.at(aFrameIndex);
+  QList<QVariant> data = allData.at(0);
 
   // now we go thru all elements of the frame
   foreach (QVariant item, data)

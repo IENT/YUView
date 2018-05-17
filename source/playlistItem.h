@@ -238,8 +238,8 @@ public:
    * QList2: U -> data
    * QList3: V -> data
   */
-  // has to be overloaded
-  virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) = 0;
+  // has to be override
+  virtual QMap<QString, QList<QList<QVariant>>>* getData(indexRange aRange, bool aReset = false, QString aType = "") = 0;
 
   /**
    * @brief sortAndCategorizeData

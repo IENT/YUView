@@ -96,7 +96,7 @@ public:
   virtual void updateSettings()   Q_DECL_OVERRIDE { file.updateFileWatchSetting(); statSource.updateSettings(); }
 
   // ----- function for getting the data to fill the histogramms / charts -----
-  virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
+  virtual QMap<QString, QList<QList<QVariant>>>* getData(indexRange aRange, bool aReset=false, QString aType = "") Q_DECL_OVERRIDE;
 
   /**
    * @brief sortAndCategorizeData

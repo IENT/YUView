@@ -307,6 +307,8 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
     collectedData data = aSortedData->at(i);
     if(data.mStatDataType == sdtStructStatisticsItem_Value)
     {
+      settings.mShowLegend = true;
+
       // ceate an auxiliary var's
       bool moreThanOneElement = data.mValues.count() > 1;
 
@@ -367,9 +369,10 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
       lastDataType  = data.mStatDataType;
     }
 
-  // set the datatype
-  settings.mStatDataType = dataType;
+    // set the datatype
+    settings.mStatDataType = dataType;
   }
+
   return settings;
 }
 
@@ -416,6 +419,8 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
     collectedData data = aSortedData->at(i);
     if(data.mStatDataType == sdtStructStatisticsItem_Value)
     {
+      settings.mShowLegend = true;
+
       // if we have more than one value
       foreach (auto chartData, data.mValues)
       {
@@ -568,6 +573,8 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
     collectedData data = aSortedData->at(i);
     if(data.mStatDataType == sdtStructStatisticsItem_Value)
     {
+      settings.mShowLegend = true;
+
       // get the width and the heigth
       QStringList numberStrings = data.mLabel.split("x");
       QString widthStr  = numberStrings.at(0);
@@ -668,6 +675,8 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
 
     if(data.mStatDataType == sdtStructStatisticsItem_Value)
     {
+      settings.mShowLegend = true;
+
       // get the width and the height
       QStringList numberStrings = data.mLabel.split("x");
       QString widthStr  = numberStrings.at(0);

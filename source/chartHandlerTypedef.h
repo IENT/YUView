@@ -267,14 +267,13 @@ struct itemWidgetCoord
   playlistItem* mItem;
   QWidget*      mWidget;
   QStackedWidget*      mChart;
-  QMap<QString, QList<QList<QVariant>>>* mData;
 
   /**
    * @brief itemWidgetCoord
    * default-constructor
    */
   itemWidgetCoord()
-    : mItem(NULL), mWidget(NULL),mChart(new QStackedWidget), mData(NULL) // initialise member
+    : mItem(NULL), mWidget(NULL),mChart(new QStackedWidget)// initialise member
   {}
 
   /**

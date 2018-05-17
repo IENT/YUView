@@ -42,7 +42,6 @@ ChartHandler::ChartHandler() : mYUVChartFactory(&this->mNoDataToShowWidget, &thi
   lblNoDataInformation->setWordWrap(true);
   noDataLayout.addWidget(lblNoDataInformation);
 
-
   // creating the default widget if data is loading
   QVBoxLayout* basicLayout = new QVBoxLayout;
 
@@ -61,6 +60,17 @@ ChartHandler::ChartHandler() : mYUVChartFactory(&this->mNoDataToShowWidget, &thi
   basicLayout->setAlignment(dataLoadingLayout, Qt::AlignTop);
 
   this->mDataIsLoadingWidget.setLayout(basicLayout);
+
+  // set defaults to the draw-chart-checkbox
+  this->mCbDrawChart = new QCheckBox("");
+  this->mCbDrawChart->setChecked(true);
+  this->mCbDrawChart->setObjectName(CHECKBOX_DRAW_CHART);
+
+  // implement basic behaviour to the checkbox
+  connect(this->mCbDrawChart, &QCheckBox::clicked, this, [this](bool aClicked) {
+    if(aClicked)
+      this->playbackControllerFrameChanged(-1);
+  });
 }
 
 /*-------------------- public functions --------------------*/
@@ -79,8 +89,8 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
   itemWidgetCoord coord;
   coord.mItem = aItem;
 
-  if (mListItemWidget.contains(coord)) // was stored
-    return mListItemWidget.at(mListItemWidget.indexOf(coord)).mWidget;
+  if (this->mListItemWidget.contains(coord)) // was stored
+    return this->mListItemWidget.at(this->mListItemWidget.indexOf(coord)).mWidget;
 
   if((playlistItemIsSupported(aItem) && (aItem) && (!aItem->isDataAvaible())))
   {
@@ -628,6 +638,9 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
 {
   Q_UNUSED(aNewFrameIndex)
 
+  if(!this->mCbDrawChart->isChecked())
+    return;
+
   // get the selected playListItemStatisticFiles-item
   auto items = this->mPlaylist->getSelectedItems();
   bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
@@ -686,19 +699,16 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   //setting name for the combobox, to find it later dynamicly
   cbxTypes->setObjectName(OPTION_NAME_CBX_CHART_TYPES);
 
-  // getting the range
-  auto range = aItem->getFrameIdxRange();
-  // save the data, that we dont have to load it later again
-  aCoord.mData = aItem->getData(range, true);
+  StatisticsTypeList statTypeList = aItem->getStatisticsHandler()->getStatisticsTypeList();
 
   //check if map contains items
-  if(aCoord.mData->keys().count() > 0)
+  if(statTypeList.count() > 0)
   {
     //map has items, so add them
     cbxTypes->addItem(CBX_OPTION_SELECT);
 
-    foreach (QString type, aCoord.mData->keys())
-      cbxTypes->addItem(type); // fill with data
+    foreach (StatisticsType statType , statTypeList)
+      cbxTypes->addItem(statType.typeName); // fill with data
   }
   else
     // no items, add a info
@@ -1005,6 +1015,7 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
 
   // at least, add to the widget
   topLayout->addRow(collapseGroup);
+  topLayout->addRow(new QLabel("draw chart"), this->mCbDrawChart);
 
   // add all to our layout
   basicLayout->addLayout(topLayout);
@@ -1160,6 +1171,9 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
 
 void ChartHandler::onStatisticsChange(const QString aString)
 {
+  if(!this->mCbDrawChart->isChecked())
+    return;
+
   // get the selected playListItemStatisticFiles-item
   auto items = this->mPlaylist->getSelectedItems();
   bool anyItemsSelected = items[0] != NULL || items[1] != NULL;

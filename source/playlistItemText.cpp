@@ -234,11 +234,12 @@ QSize playlistItemText::getSize() const
 }
 
 // Documentation see playlistItem::getData
-QMap<QString, QList<QList<QVariant>>>* playlistItemText::getData(indexRange range, bool reset)
+QMap<QString, QList<QList<QVariant>>>* playlistItemText::getData(indexRange aRange, bool aReset, QString aType)
 {
   // TODO implement correctly: playlistItemText::getData
-  Q_UNUSED(range);
-  if (reset)
+  Q_UNUSED(aRange);
+  Q_UNUSED(aType);
+  if (aReset)
   {
     this->mStatisticData.clear();
   }

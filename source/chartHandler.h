@@ -39,7 +39,7 @@
 #include "playbackController.h"
 #include "yuvcharts.h"
 
-
+#define CHECKBOX_DRAW_CHART             "cbDrawChart"
 #define OPTION_NAME_CBX_CHART_TYPES     "cbxTypes"
 #define OPTION_NAME_CBX_CHART_FRAMESHOW "cbxOptionsShow"
 #define OPTION_NAME_CBX_CHART_GROUPBY   "cbxOptionsGroup"
@@ -239,6 +239,9 @@ private:
   chartOrderBy mLastChartOrderBy = cobUnknown;
   // save the last selected statistics-type
   QString mLastStatisticsType = "";
+
+  QCheckBox* mCbDrawChart;
+
 
   //list of all created Widgets and items
   QVector<itemWidgetCoord> mListItemWidget;

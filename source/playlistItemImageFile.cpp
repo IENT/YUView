@@ -202,11 +202,12 @@ void playlistItemImageFile::updateSettings()
 }
 
 
-QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData(indexRange range, bool reset)
+QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData(indexRange aRange, bool aReset, QString aType)
 {
   // TODO implement correctly playlistItemImageFile::getData
-  Q_UNUSED(range);
-  if(reset)
+  Q_UNUSED(aRange);
+  Q_UNUSED(aType);
+  if(aReset)
   {
     this->mStatisticData.clear();
   }

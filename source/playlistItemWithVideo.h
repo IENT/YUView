@@ -79,7 +79,7 @@ public:
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
 
   // ----- function for getting the data to fill the histogramms / charts -----
-  virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
+  virtual QMap<QString, QList<QList<QVariant>>>* getData(indexRange aRange, bool aReset = false, QString aType = "") Q_DECL_OVERRIDE;
 
   /**
    * @brief sortAndCategorizeData
