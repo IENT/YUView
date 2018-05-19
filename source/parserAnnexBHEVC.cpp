@@ -2417,6 +2417,52 @@ QStringList parserAnnexBHEVC::get_matrix_coefficients_meaning()
 
 QByteArray parserAnnexBHEVC::getExtradata()
 {
+  // Just return the VPS, SPS and PPS in NAL unit format. From the format in the extradata, ffmpeg will detect that
+  // the input file is in raw NAL unit format and accept AVPacets in NAL unit format.
+  QByteArray ret;
+  QByteArray startCode;
+  startCode.append((char)0);
+  startCode.append((char)0);
+  startCode.append((char)0);
+  startCode.append((char)1);
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
+    if (nal_hevc->nal_type == VPS_NUT)
+    {
+      auto v = nal.dynamicCast<vps>();
+      ret.append(startCode);
+      ret.append(v->getRawNALData());
+      break;
+    }
+  }
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
+    if (nal_hevc->nal_type == SPS_NUT)
+    {
+      auto s = nal.dynamicCast<sps>();
+      ret.append(startCode);
+      ret.append(s->getRawNALData());
+      break;
+    }
+  }
+  for (auto nal : nalUnitList)
+  {
+    // This should be an hevc nal
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
+    if (nal_hevc->nal_type == SPS_NUT)
+    {
+      auto p = nal.dynamicCast<sps>();
+      ret.append(startCode);
+      ret.append(p->getRawNALData());
+      break;
+    }
+  }
+  return ret;
+
   // Convert the VPS, SPS and PPS that we found in the bitstream to the libavformat hvcc format (see hevc.c)
     
   // The hvcc structure contains some values which can be obtained from the parameter sets
@@ -2509,7 +2555,7 @@ QByteArray parserAnnexBHEVC::getExtradata()
       * The profile indication general_profile_idc must indicate a profile to
       * which the stream associated with this configuration record conforms.
       *
-      * If the sequence parameter sets are marked with different profiles, then
+      * If the sequence parameter sets are nalmarked with different profiles, then
       * the stream may need examination to determine which profile, if any, the
       * entire stream conforms to. If the entire stream is not examined, or the
       * examination reveals that there is no profile to which the entire stream
