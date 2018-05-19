@@ -155,9 +155,11 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(QUint64Pair *startEndPosInFile)
 
 QByteArray fileSourceAnnexBFile::getFrameData(QUint64Pair startEndFilePos)
 {
+  // Get all data for the frame (all NAL units in the raw format with start codes).
+  // We don't need to convert the format to the mp4 ISO format. The ffmpeg decoder can also accept raw NAL units.
+  // When the extradata is set as raw NAL units, the AVPackets must also be raw NAL units.
   QByteArray retArray;
-
-  // We have to retrieve all data from start to end. We also have replace all startcodes by the ISO 4 byte size signaling
+  
   uint64_t start = startEndFilePos.first;
   uint64_t end = startEndFilePos.second;
 
@@ -177,15 +179,10 @@ QByteArray fileSourceAnnexBFile::getFrameData(QUint64Pair startEndFilePos)
       else if (nalData.at(2) == (char)1)
         headerOffset = 3;
     }
+    assert(headerOffset > 0);
 
-    const uint64_t nalSize = nalData.length() - headerOffset;
-    DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getFrameData Load NAL - size %d", nalSize);
-
-    retArray += (char)((nalSize >> 24) & 0xff);
-    retArray += (char)((nalSize >> 16) & 0xff);
-    retArray += (char)((nalSize >> 8 ) & 0xff);
-    retArray += (char)((nalSize      ) & 0xff);
-    retArray += nalData.mid(headerOffset);
+    DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getFrameData Load NAL - size %d", nalData.length());
+    retArray += nalData;
   }
 
   return retArray;
