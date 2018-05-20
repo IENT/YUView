@@ -95,14 +95,16 @@ public:
   int             (*avcodec_decode_video2) (AVCodecContext *avctx, AVFrame *picture, int *got_picture_ptr, const AVPacket *avpkt);
 
   // From avutil
-  AVFrame           *(*av_frame_alloc)  (void);
-  void               (*av_frame_free)   (AVFrame **frame);
-  void              *(*av_mallocz)      (size_t size);
-  unsigned           (*avutil_version)  (void);
-  int                (*av_dict_set)     (AVDictionary **pm, const char *key, const char *value, int flags);
-  AVDictionaryEntry *(*av_dict_get)     (AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
+  AVFrame           *(*av_frame_alloc)         (void);
+  void               (*av_frame_free)          (AVFrame **frame);
+  void              *(*av_mallocz)             (size_t size);
+  unsigned           (*avutil_version)         (void);
+  int                (*av_dict_set)            (AVDictionary **pm, const char *key, const char *value, int flags);
+  AVDictionaryEntry *(*av_dict_get)            (AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
   AVFrameSideData   *(*av_frame_get_side_data) (const AVFrame *frame, AVFrameSideDataType type);
   AVDictionary      *(*av_frame_get_metadata)  (const AVFrame *frame);
+  void 	             (*av_log_set_callback)    (void(*callback)(void *, int, const char *, va_list));
+  void 	             (*av_log_set_level)       (int level);
 
   // From swresample
   unsigned  (*swresample_version) (void);
@@ -723,6 +725,10 @@ public:
   // Check if the given four files can be used to open FFmpeg.
   static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error);
 
+  // Logging. By default we set the logging level of ffmpeg to AV_LOG_ERROR (Log errors and everything worse)
+  static QStringList getLogMessages() { return logMessages; }
+  void enableLoggingWarning();
+
 private:
 
   // Try to load the FFmpeg libraries from the given path.
@@ -744,6 +750,10 @@ private:
   // Error handling
   bool setError(const QString &reason) { error_list.append(reason); return false; }
   QStringList error_list;
+
+  // Logging (FFmpeg only has a C interface and does not support void* determination)
+  static QStringList logMessages;
+  static void avLogCallback(void *ptr, int level, const char *fmt, va_list vargs);
 };
 
 #endif // FFMPEGDECODERLIBHANDLING_H

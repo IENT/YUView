@@ -33,6 +33,7 @@
 #include "FFMpegLibrariesHandling.h"
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDir>
 #include <QSettings>
 #include "typedef.h"
@@ -691,6 +692,8 @@ bool FFmpegLibraryFunctions::bindFunctionsFromAVUtilLib()
   if (!resolveAvUtil(av_dict_get, "av_dict_get")) return false;
   if (!resolveAvUtil(av_frame_get_side_data, "av_frame_get_side_data")) return false;
   if (!resolveAvUtil(av_frame_get_metadata, "av_frame_get_metadata")) return false;
+  if (!resolveAvUtil(av_log_set_callback, "av_log_set_callback")) return false;
+  if (!resolveAvUtil(av_log_set_level, "av_log_set_level")) return false;
   return true;
 }
 
@@ -897,6 +900,8 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
 
 // ----------------- FFmpegVersionHandler -------------------------------------------
 
+QStringList FFmpegVersionHandler::logMessages;
+
 FFmpegVersionHandler::FFmpegVersionHandler()
 {
   libVersion.avcodec = -1;
@@ -905,6 +910,15 @@ FFmpegVersionHandler::FFmpegVersionHandler()
   libVersion.swresample = -1;
 
   librariesLoaded = false;
+}
+
+void FFmpegVersionHandler::avLogCallback(void *ptr, int level, const char *fmt, va_list vargs)
+{
+  Q_UNUSED(ptr);
+  QString msg;
+  msg.vsprintf(fmt, vargs);
+  QDateTime now = QDateTime::currentDateTime();
+  FFmpegVersionHandler::logMessages.append(now.toString("hh:mm:ss.zzz") + QString(" - L%1 - ").arg(level) + msg);
 }
 
 bool FFmpegVersionHandler::loadFFmpegLibraries()
@@ -924,7 +938,10 @@ bool FFmpegVersionHandler::loadFFmpegLibraries()
   QString swResampleLib = settings.value("FFMpeg.swresample", "").toString();
   librariesLoaded = loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
   if (librariesLoaded)
+  {
+    lib.av_log_set_callback(&FFmpegVersionHandler::avLogCallback);
     return true;
+  }
 
   // Next, we will try some other paths / options
   QStringList possibilites;
@@ -941,7 +958,10 @@ bool FFmpegVersionHandler::loadFFmpegLibraries()
   {
     librariesLoaded = loadFFmpegLibraryInPath(path);
     if (librariesLoaded)
+    {
+      lib.av_log_set_callback(FFmpegVersionHandler::avLogCallback);
       return true;
+    }
   }
 
   // Loading the libraries failed
@@ -1159,6 +1179,11 @@ bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avForma
     return false;
   }
   return true;
+}
+
+void FFmpegVersionHandler::enableLoggingWarning()
+{
+  lib.av_log_set_level(AV_LOG_WARNING);
 }
 
 RawFormat FFmpegVersionHandler::getRawFormat(AVPixelFormat pixelFormat)

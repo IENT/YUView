@@ -34,6 +34,9 @@
 
 #include <QThread>
 #include <QInputDialog>
+#include <QPlainTextEdit>
+
+#include <inttypes.h>
 
 #include "decoderFFmpeg.h"
 #include "decoderHM.h"
@@ -380,7 +383,6 @@ infoData playlistItemCompressedVideo::getInfo() const
   }
   else
   {
-    
     info.items.append(infoItem("library path", loadingDecoder->getLibraryPath(), "The path to the loaded libde265 library"));
     info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
     QSize videoSize = video->getFrameSize();
@@ -395,55 +397,73 @@ infoData playlistItemCompressedVideo::getInfo() const
     }
   }
   info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
+  if (decoderEngineType == decoderEngineFFMpeg)
+    info.items.append(infoItem("FFMpeg Log", "Show FFmpeg Log", "Show the log messages from FFmpeg.", true));
 
   return info;
 }
 
 void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
 {
-  Q_UNUSED(buttonID);
-
-  // The button "Show NAL units" was pressed.
-  // Parse the file using the apropriate parser ...
-  QScopedPointer<parserAnnexB> parserA;
-  QScopedPointer<parserAVFormat> parserB;
-  if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC)
+  // The button ID corresponds to the row that the button what added at
+  if (buttonID == 8)
   {
-    // Just open and parse the file again
-    QScopedPointer<fileSourceAnnexBFile> annexBFile(new fileSourceAnnexBFile(plItemNameOrFileName));
-    // Create a parser
-    if (inputFormatType == inputAnnexBHEVC)
-      parserA.reset(new parserAnnexBHEVC());
-    else if (inputFormatType == inputAnnexBAVC)
-      parserA.reset(new parserAnnexBAVC());
+    // The button "Show NAL units" was pressed.
+    // Parse the file using the apropriate parser ...
+    QScopedPointer<parserAnnexB> parserA;
+    QScopedPointer<parserAVFormat> parserB;
+    if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC)
+    {
+      // Just open and parse the file again
+      QScopedPointer<fileSourceAnnexBFile> annexBFile(new fileSourceAnnexBFile(plItemNameOrFileName));
+      // Create a parser
+      if (inputFormatType == inputAnnexBHEVC)
+        parserA.reset(new parserAnnexBHEVC());
+      else if (inputFormatType == inputAnnexBAVC)
+        parserA.reset(new parserAnnexBAVC());
+      
+      // Parse the file
+      parserA->enableModel();
+      parseAnnexBFile(annexBFile, parserA);
+    }
+    else // inputLibavformat
+    {
+      // Just open and parse the file again
+      QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(plItemNameOrFileName));
+      AVCodecID codec = inputFileFFmpegLoading->getCodec();
+      parserB.reset(new parserAVFormat(codec));
+      parserB->enableModel();
+      parseFFMpegFile(ffmpegFile, parserB);
+    }
     
-    // Parse the file
-    parserA->enableModel();
-    parseAnnexBFile(annexBFile, parserA);
+    // ... then, create a dialog with a QTreeView and show the NAL unit list.
+    QDialog newDialog;
+    QTreeView *view = new QTreeView();
+    if (parserA)
+      view->setModel(parserA->getNALUnitModel());
+    else
+      view->setModel(parserB->getNALUnitModel());
+    QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
+    verticalLayout->addWidget(view);
+    newDialog.resize(QSize(1000, 900));
+    view->setColumnWidth(0, 400);
+    view->setColumnWidth(1, 50);
+    newDialog.exec();
   }
-  else // inputLibavformat
+  else if (buttonID == 9)
   {
-    // Just open and parse the file again
-    QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(plItemNameOrFileName));
-    AVCodecID codec = inputFileFFmpegLoading->getCodec();
-    parserB.reset(new parserAVFormat(codec));
-    parserB->enableModel();
-    parseFFMpegFile(ffmpegFile, parserB);
+    QStringList log = decoderFFmpeg::getLogMessages();
+    QString msg;
+    for (QString l : log)
+      msg.append(l);
+    QDialog newDialog;
+    QPlainTextEdit *edit = new QPlainTextEdit();
+    edit->setPlainText(msg);
+    QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
+    verticalLayout->addWidget(edit);
+    newDialog.resize(QSize(1000, 900));
+    newDialog.exec();
   }
-  
-  // ... then, create a dialog with a QTreeView and show the NAL unit list.
-  QDialog newDialog;
-  QTreeView *view = new QTreeView();
-  if (parserA)
-    view->setModel(parserA->getNALUnitModel());
-  else
-    view->setModel(parserB->getNALUnitModel());
-  QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
-  verticalLayout->addWidget(view);
-  newDialog.resize(QSize(1000, 900));
-  view->setColumnWidth(0, 400);
-  view->setColumnWidth(1, 50);
-  newDialog.exec();
 }
 
 itemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool loadRawData)
@@ -548,7 +568,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
         AVPacketWrapper pkt = caching ? inputFileFFmpegCaching->getNextPacket(repushDataFFmpeg) : inputFileFFmpegLoading->getNextPacket(repushDataFFmpeg);
         repushDataFFmpeg = false;
         if (pkt)
-          DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived packet PTS %d", pkt.get_pts());
+          DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived packet PTS %" PRId64 "", pkt.get_pts());
         else
           DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived empty packet");
         decoderFFmpeg *ffmpegDec = (caching ? dynamic_cast<decoderFFmpeg*>(cachingDecoder.data()) : dynamic_cast<decoderFFmpeg*>(loadingDecoder.data()));
@@ -567,7 +587,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
         QByteArray data;
         if (frameStartEndFilePos != QUint64Pair(-1, -1))
           data = caching ? inputFileAnnexBCaching->getFrameData(frameStartEndFilePos) : inputFileAnnexBLoading->getFrameData(frameStartEndFilePos);
-        DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived frame data from file - startEnd %d-%d - size %d", frameStartEndFilePos.first, frameStartEndFilePos.second, data.size());
+        DEBUG_HEVC("playlistItemCompressedVideo::loadYUVData retrived frame data from file - startEnd %lu-%lu - size %d", frameStartEndFilePos.first, frameStartEndFilePos.second, data.size());
         if (!dec->pushData(data))
         {
           decoderFFmpeg *ffmpegDec = (caching ? dynamic_cast<decoderFFmpeg*>(cachingDecoder.data()) : dynamic_cast<decoderFFmpeg*>(loadingDecoder.data()));
@@ -665,7 +685,7 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
     uint64_t filePos;
     if (!bothFFmpeg)
       parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
-    DEBUG_HEVC("playlistItemCompressedVideo::seekToPosition seeking annexB file to filePos %d", filePos);
+    DEBUG_HEVC("playlistItemCompressedVideo::seekToPosition seeking annexB file to filePos %" PRIu64 "", filePos);
     if (caching)
       inputFileAnnexBCaching->seek(filePos);
     else

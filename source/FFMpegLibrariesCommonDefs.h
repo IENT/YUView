@@ -65,6 +65,8 @@ namespace FFmpeg
   struct AVProgram;
   struct AVChapter;
 
+  #define AV_LOG_WARNING 24
+
   // How to convert the avXXX_getVersion() int to major, minor and micro
   #define AV_VERSION_MAJOR(a) ((a) >> 16)
   #define AV_VERSION_MINOR(a) (((a) & 0x00FF00) >> 8)
