@@ -46,7 +46,7 @@
 // playlist item is called.
 struct infoItem
 {
-  infoItem(const QString &name, const QString &text, const QString &toolTip=QString(), bool button=false, int buttonID=-1) : name(name), text(text), button(button), toolTip(toolTip), buttonID(buttonID) {}
+  infoItem(const QString &name, const QString &text, const QString &toolTip=QString(), bool button=false, int buttonID=-1) : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip) {}
   QString name;
   QString text;
   bool button;
