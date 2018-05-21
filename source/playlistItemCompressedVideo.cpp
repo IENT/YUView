@@ -472,6 +472,9 @@ itemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool lo
 
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
   auto videoState = video->needsLoading(frameIdxInternal, loadRawData);
+  if (videoState == LoadingNeeded && decodingOfFrameNotPossible && frameIdxInternal >= currentFrameIdx[0])
+    // The decoder can not decode this frame. 
+    return LoadingNotNeeded;
   if (videoState == LoadingNeeded || statSource.needsLoading(frameIdxInternal) == LoadingNeeded)
     return LoadingNeeded;
   return videoState;
@@ -510,7 +513,14 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
   if (caching && !cachingEnabled)
     return;
   if (!caching && loadingDecoder->errorInDecoder())
-    return;
+  {
+    if (frameIdxInternal < currentFrameIdx[0])
+    {
+      // There was an error in the loading decoder but we will seek backwards so maybe this will work again
+    }
+    else
+      return;
+  }
   if (caching && cachingDecoder->errorInDecoder())
     return;
   
@@ -662,12 +672,10 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     // reload when the frame number changes.
     video->rawData_frameIdx = frameIdxInternal;
   }
-
-  // Was there an error?
-  if (loadingDecoder->errorInDecoder())
+  else if (loadingDecoder->errorInDecoder())
   {
     // There was an error in the deocder. 
-    infoText = "There was an error when loading the decoder: \n";
+    infoText = "There was an error in the decoder: \n";
     infoText += loadingDecoder->decoderErrorString();
     infoText += "\n";
     if (decoderEngineType == decoderEngineHM)
