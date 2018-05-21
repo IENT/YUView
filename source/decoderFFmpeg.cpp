@@ -334,7 +334,7 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
 
   if (retPush < 0 && retPush != AVERROR(EAGAIN))
   {
-    if (DECODERFFMPEG_DEBUG_OUTPUT)
+#if DECODERFFMPEG_DEBUG_OUTPUT
     {
       QString meaning = QString("decoderFFmpeg::pushAVPacket: Error sending packet - err %1").arg(retPush);
       if (retPush == 1094995529)
@@ -351,6 +351,7 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
       meaning += ")";
       qDebug() << meaning;
     }
+#endif
     setError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
     return false;
   }
