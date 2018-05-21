@@ -96,7 +96,6 @@ template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column
 
 int FileInfoWidget::addInfo(const infoData &data, int row, int infoIndex)
 {
-  int const firstRow = row;
   for (auto &info : data.items)
   {
     auto name = widgetAt<QLabel>(&grid, row, 0);
