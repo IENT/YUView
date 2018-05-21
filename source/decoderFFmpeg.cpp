@@ -32,7 +32,7 @@
 
 #include "decoderFFmpeg.h"
 
-#define DECODERFFMPEG_DEBUG_OUTPUT 0
+#define DECODERFFMPEG_DEBUG_OUTPUT 1
 #if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
@@ -291,9 +291,12 @@ bool decoderFFmpeg::pushData(QByteArray &data)
   if (data.length() == 0)
   {
     // Push an empty packet to indicate that the file has ended
+    DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing an empty packet");
     AVPacketWrapper emptyPacket;
     return pushAVPacket(emptyPacket);
   }
+  else
+    DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing data length %d", data.length());
 
   // Add some padding
   // TODO: could this be improved somehow?
@@ -331,15 +334,33 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
 
   if (retPush < 0 && retPush != AVERROR(EAGAIN))
   {
+    if (DECODERFFMPEG_DEBUG_OUTPUT)
+    {
+      QString meaning = QString("decoderFFmpeg::pushAVPacket: Error sending packet - err %1").arg(retPush);
+      if (retPush == 1094995529)
+        meaning += " INDA";
+      // Log the first bytes
+      meaning += " B(";
+      int nrBytes = std::min(pkt.get_data_size(), 5);
+      uint8_t *data = pkt.get_data();
+      for (int i = 0; i < nrBytes; i++)
+      {
+        uint8_t b = data[i];
+        meaning += QString(" %1").arg(b, 2, 16);
+      }
+      meaning += ")";
+      qDebug() << meaning;
+    }
     setError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
     return false;
   }
   else
-    DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d", pkt.get_pts(), pkt.get_duration(), pkt.get_flags());
+    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Send packet PTS %ld duration %ld flags %d", pkt.get_pts(), pkt.get_duration(), pkt.get_flags());
   
   if (retPush == AVERROR(EAGAIN))
   {
     // Enough data pushed. Decode and retrieve frames now.
+    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Enough data pushed. Decode and retrieve frames now.");
     decoderState = decoderRetrieveFrames;
     return false;
   }

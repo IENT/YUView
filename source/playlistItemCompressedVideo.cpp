@@ -527,13 +527,15 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
   int curFrameIdx = caching ? currentFrameIdx[1] : currentFrameIdx[0];
 
   // Should we seek?
-  bool seek = (frameIdxInternal < curFrameIdx);
-  int seekToFrame = -1;
-  int seekToPTS = -1;
   if (curFrameIdx == -1 || frameIdxInternal < curFrameIdx || frameIdxInternal > curFrameIdx + FORWARD_SEEK_THRESHOLD)
   {
+    // Definitely seek when we have to go backwards
+    bool seek = (frameIdxInternal < curFrameIdx);
+
+    // Get the closest possible seek position
+    int seekToFrame, seekToAnnexBFrameCount, seekToPTS;
     if (isinputFormatTypeAnnexB)
-      seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdxInternal, readAnnexBFrameCounterCodingOrder);
+      seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdxInternal, seekToAnnexBFrameCount);
     else
     {
       if (caching)
@@ -543,16 +545,20 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     }
 
     if (curFrameIdx == -1 || seekToFrame > curFrameIdx + FORWARD_SEEK_THRESHOLD)
-      // We will seek forward
+    {
+      // A seek forward makes sense
       seek = true;
+    }
+
+    if (seek)
+    {
+      // Seek and update the frame counters. The seekToPosition function will update the currentFrameIdx[] indices
+      readAnnexBFrameCounterCodingOrder = seekToAnnexBFrameCount;
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData seeking to frame %d PTS %d AnnexBCnt %d", seekToFrame, seekToPTS, readAnnexBFrameCounterCodingOrder);
+      seekToPosition(seekToFrame, seekToPTS, caching);
+    }
   }
   
-  if (seek)
-  {
-    DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData seeking to frame %d PTS %d", seekToFrame, seekToPTS);
-    seekToPosition(seekToFrame, seekToPTS, caching);
-  }
-
   // Decode until we get the right frame from the deocder
   bool rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
   while (!rightFrame)
@@ -586,13 +592,12 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
         QByteArray data;
         if (frameStartEndFilePos != QUint64Pair(-1, -1))
           data = caching ? inputFileAnnexBCaching->getFrameData(frameStartEndFilePos) : inputFileAnnexBLoading->getFrameData(frameStartEndFilePos);
-        DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData retrived frame data from file - startEnd %lu-%lu - size %d", frameStartEndFilePos.first, frameStartEndFilePos.second, data.size());
+        DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData retrived frame data from file - AnnexBCnt %d startEnd %lu-%lu - size %d", readAnnexBFrameCounterCodingOrder, frameStartEndFilePos.first, frameStartEndFilePos.second, data.size());
         if (!dec->pushData(data))
         {
-          decoderFFmpeg *ffmpegDec = (caching ? dynamic_cast<decoderFFmpeg*>(cachingDecoder.data()) : dynamic_cast<decoderFFmpeg*>(loadingDecoder.data()));
-          if (!ffmpegDec->decodeFrames())
+          if (!dec->decodeFrames())
           {
-            // The decoder did not switch to decoding frame mode. Error.
+            DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData The decoder did not switch to decoding frame mode. Error.");
             decodingOfFrameNotPossible = true;
             break;
           }
@@ -639,6 +644,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
 
     if (!dec->needsMoreData() && !dec->decodeFrames())
     {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData decoder neither needs more data nor can decode frames");
       decodingOfFrameNotPossible = true;
       break;
     }
