@@ -46,11 +46,11 @@
 // playlist item is called.
 struct infoItem
 {
-  // TODO: We need some constant button ID. The current scheme with the ID being the rwo that the button was added at is just not elegant.
-  infoItem(const QString &name, const QString &text, const QString &toolTip=QString(), bool button=false) : name(name), text(text), button(button), toolTip(toolTip) {}
+  infoItem(const QString &name, const QString &text, const QString &toolTip=QString(), bool button=false, int buttonID=-1) : name(name), text(text), button(button), toolTip(toolTip), buttonID(buttonID) {}
   QString name;
   QString text;
   bool button;
+  int buttonID;
   QString toolTip;
 };
 

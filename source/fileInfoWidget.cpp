@@ -38,7 +38,7 @@
 #include "labelElided.h"
 
 static const char kInfoIndex[] = "fi_infoIndex";
-static const char kInfoRow[] = "fi_infoRow";
+static const char kInfoButtonID[] = "fi_buttonID";
 
 /* The file info group box can display information on a file (or any other display object).
  * If you provide a list of QString tuples, this class will fill a grid layout with the
@@ -117,7 +117,7 @@ int FileInfoWidget::addInfo(const infoData &data, int row, int infoIndex)
       button->setText(info.text);
       button->setToolTip(info.toolTip);
       button->setProperty(kInfoIndex, infoIndex);
-      button->setProperty(kInfoRow, row - firstRow);
+      button->setProperty(kInfoButtonID, info.buttonID);
       connect(button, &QPushButton::clicked, this, &FileInfoWidget::infoButtonClickedSlot, Qt::UniqueConnection);
     }
     grid.setRowStretch(row, 0);
@@ -163,5 +163,5 @@ void FileInfoWidget::infoButtonClickedSlot()
   auto button = qobject_cast<QPushButton*>(QObject::sender());
   if (button)
     emit infoButtonClicked(button->property(kInfoIndex).toInt(),
-                           button->property(kInfoRow).toInt());
+                           button->property(kInfoButtonID).toInt());
 }
