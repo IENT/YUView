@@ -250,7 +250,7 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     new_slice->parse_slice_header(payload, active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
 
     if (!new_slice->bottom_field_flag && 
-      (last_picture_first_slice.isNull() || new_slice->TopFieldOrderCnt != last_picture_first_slice->TopFieldOrderCnt) &&
+      (last_picture_first_slice.isNull() || new_slice->TopFieldOrderCnt != last_picture_first_slice->TopFieldOrderCnt || new_slice->isRandomAccess()) &&
       new_slice->first_mb_in_slice == 0)
       last_picture_first_slice = new_slice;
 
