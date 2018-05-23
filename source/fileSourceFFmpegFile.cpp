@@ -481,5 +481,7 @@ int64_t fileSourceFFmpegFile::getMaxPTS()
   if (!isFileOpened)
     return -1; 
   
-  return duration * timeBase.den / timeBase.num / 1000;
+  // duration / AV_TIME_BASE is the duration in seconds
+  // pts * timeBase is also in seconds
+  return duration / AV_TIME_BASE * timeBase.den / timeBase.num;
 }

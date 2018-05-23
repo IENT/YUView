@@ -153,6 +153,7 @@ protected:
   // For every frame, we save the file position where the NAL unit of the first slice starts and where the NAL of the last slice ends.
   // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
   QUint64Pair curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+  // The POC of the current frame. We save this we encounter a NAL from the next POC; then we add it.
   int curFramePOC;
   bool curFrameIsRandomAccess;
 };

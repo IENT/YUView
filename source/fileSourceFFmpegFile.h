@@ -103,7 +103,7 @@ protected:
   bool endOfFile;                   //< Are we at the end of file (draining mode)?
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
   // that we are ready to start decoding from this pts.
-  int64_t duration;
+  int64_t duration;   //< duration / AV_TIME_BASE is the duration in seconds
   AVRational timeBase;
   AVStreamWrapper video_stream;
   double frameRate;
