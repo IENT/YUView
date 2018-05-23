@@ -225,7 +225,7 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
   {
     int posInData = 0;
     QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.get_data()), packet.get_data_size());
-    TreeItem *itemTree = new TreeItem(QString("AVPacket %1").arg(packetID), nalUnitModel.rootItem.data());
+    TreeItem *itemTree = new TreeItem(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": ""), nalUnitModel.rootItem.data());
 
     // Log all the packet info
     LOGSTRVAL("stream_index", packet.get_stream_index());
@@ -249,7 +249,7 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
         if (packetFormat == packetFormatRawNAL)
         {
           int offset;
-          if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
+          if (firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
             offset = 4;
           else if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)1)
             offset = 3;
@@ -263,12 +263,14 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
           {
             nalData = avpacketData.mid(posInData + offset);
             posInData = avpacketData.length() + 1;
+            DEBUG_AVC("parserAVFormat::parseAVPacket start code -1 - NAL from %d to %d", posInData + offset, avpacketData.length());
           }
           else
           {
             const int size = nextStartCodePos - posInData - offset;
             nalData = avpacketData.mid(posInData + offset, size);
             posInData += 3 + size;
+            DEBUG_AVC("parserAVFormat::parseAVPacket start code %d - NAL from %d to %d", nextStartCodePos, posInData + offset, nextStartCodePos);
           }
         }
         else
@@ -287,6 +289,7 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 
           nalData = avpacketData.mid(posInData, size);
           posInData += size;
+          DEBUG_AVC("parserAVFormat::parseAVPacket NAL from %d to %d", posInData, posInData + size);
         }
 
         // Parse the NAL data
