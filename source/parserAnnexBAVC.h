@@ -249,6 +249,8 @@ protected:
     int PicWidthInSamplesL;
     int PicWidthInSamplesC;
     int ChromaArrayType;
+    int CropUnitX;
+    int CropUnitY;
     bool MbaffFrameFlag;
     int MaxPicOrderCntLsb;
     int ExpectedDeltaPerPicOrderCntCycle;

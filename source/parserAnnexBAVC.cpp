@@ -99,7 +99,16 @@ QSize parserAnnexBAVC::getSequenceSizeSamples() const
     if (nal_avc->nal_unit_type == SPS)
     {
       auto s = nal.dynamicCast<sps>();
-      return QSize(s->PicWidthInSamplesL, s->PicHeightInSamplesL);
+      // We need the decoder picture size and the frame_crop parameters
+      int w = s->PicWidthInSamplesL;
+      int h = s->PicHeightInSamplesL;
+      if (s->frame_cropping_flag)
+      {
+        w -= (s->CropUnitX * s->frame_crop_right_offset) + (s->CropUnitX * s->frame_crop_left_offset);
+        h -= (s->CropUnitY * s->frame_crop_bottom_offset) + (s->CropUnitY * s->frame_crop_top_offset);
+      }
+
+      return QSize(w, h);
     }
   }
 
@@ -556,6 +565,18 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   else
     ChromaArrayType = 0;
 
+  // There may be cropping for output
+  if (ChromaArrayType == 0)
+  {
+    CropUnitX = 1;
+    CropUnitY = 2 - frame_mbs_only_flag;
+  }
+  else
+  {
+    CropUnitX = SubWidthC;
+    CropUnitY = SubHeightC * (2 - frame_mbs_only_flag);
+  }
+
   bool field_pic_flag = false;  // For now, assume field_pic_flag false
   MbaffFrameFlag = (mb_adaptive_frame_field_flag && !field_pic_flag);
   if (pic_order_cnt_type == 1)
@@ -571,6 +592,31 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   READFLAG(vui_parameters_present_flag);
   if (vui_parameters_present_flag)
     vui_parameters.read(reader, itemTree, BitDepthY, BitDepthC, chroma_format_idc);
+
+  // Log all the calculated values
+  LOGVAL(BitDepthY);
+  LOGVAL(QpBdOffsetY);
+  LOGVAL(BitDepthC);
+  LOGVAL(QpBdOffsetC);
+  LOGVAL(PicWidthInMbs);
+  LOGVAL(PicHeightInMapUnits);
+  LOGVAL(FrameHeightInMbs);
+  LOGVAL(PicHeightInMbs);
+  LOGVAL(PicSizeInMbs);
+  LOGVAL(SubWidthC);
+  LOGVAL(SubHeightC);
+  LOGVAL(MbHeightC);
+  LOGVAL(MbWidthC);
+  LOGVAL(PicHeightInSamplesL);
+  LOGVAL(PicHeightInSamplesC);
+  LOGVAL(PicWidthInSamplesL);
+  LOGVAL(PicWidthInSamplesC);
+  LOGVAL(PicSizeInMapUnits);
+  LOGVAL(ChromaArrayType);
+  LOGVAL(CropUnitX);
+  LOGVAL(CropUnitY);
+  LOGVAL(MbaffFrameFlag);
+  LOGVAL(MaxFrameNum);
 }
 
 parserAnnexBAVC::sps::vui_parameters_struct::vui_parameters_struct()
