@@ -423,7 +423,8 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
       
       // Parse the file
       parserA->enableModel();
-      parseAnnexBFile(annexBFile, parserA);
+      if (!parseAnnexBFile(annexBFile, parserA))
+        return;
     }
     else // inputLibavformat
     {
@@ -432,7 +433,8 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
       AVCodecID codec = inputFileFFmpegLoading->getCodec();
       parserB.reset(new parserAVFormat(codec));
       parserB->enableModel();
-      parseFFMpegFile(ffmpegFile, parserB);
+      if (!parseFFMpegFile(ffmpegFile, parserB))
+        return;
     }
     
     // ... then, create a dialog with a QTreeView and show the NAL unit list.
@@ -951,7 +953,7 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
   }
 }
 
-void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<parserAnnexB> &parser)
+bool playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<parserAnnexB> &parser)
 {
   DEBUG_COMPRESSED("playlistItemCompressedVideo::parseAnnexBFile");
 
@@ -975,42 +977,38 @@ void playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   QUint64Pair nalStartEndPosFile;
   while (!file->atEnd())
   {
+    // Update the progress dialog
+    if (progress.wasCanceled())
+      return false;
+    int64_t pos = file->pos();
+    int newPercentValue = pos * 100 / maxPos;
+    if (newPercentValue != curPercentValue)
+    {
+      progress.setValue(newPercentValue);
+      curPercentValue = newPercentValue;
+    }
+
     try
     {
       nalData = file->getNextNALUnit(&nalStartEndPosFile);
-
       parser->parseAndAddNALUnit(nalID, nalData, nullptr, nalStartEndPosFile);
-
-      // Update the progress dialog
-      if (progress.wasCanceled())
-        return;
-
-      int64_t pos = file->pos();
-      int newPercentValue = pos * 100 / maxPos;
-      if (newPercentValue != curPercentValue)
-      {
-        progress.setValue(newPercentValue);
-        curPercentValue = newPercentValue;
-      }
-    
-      // Next NAL
-      nalID++;
     }
     catch (...)
     {
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
       DEBUG_COMPRESSED(":parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
-      nalID++;
     }
+
+    nalID++;
   }
   
   // We are done.
   parser->parseAndAddNALUnit(-1, QByteArray());
-  progress.close();
+  return progress.wasCanceled();
 }
 
-void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file, QScopedPointer<parserAVFormat> &parser)
+bool playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file, QScopedPointer<parserAVFormat> &parser)
 {
   // Seek to the beginning of the stream.
   file->seekToPTS(0);
@@ -1043,6 +1041,8 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpe
   int packetID = 0;
   while (!file->atEnd())
   {
+    if (progress.wasCanceled())
+      return false;
     int newPercentValue = packet.get_pts() * 100 / maxPTS;
     if (newPercentValue != curPercentValue)
     {
@@ -1066,5 +1066,5 @@ void playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpe
     
   // Seek back to the beginning of the stream.
   file->seekToPTS(0);
-  progress.close();
+  return progress.wasCanceled();
 }

@@ -136,7 +136,7 @@ protected:
   // In order to parse raw annexB files, we need a file reader (that can read NAL units)
   // and a parser that can understand what the NAL units mean. We open the file source twice (once for interactive loading,
   // once for the background caching). The parser is only needed once and can be used for both loading and caching tasks.
-  void parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<parserAnnexB> &parser);
+  bool parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<parserAnnexB> &parser);
   QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBLoading;
   QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBCaching;
   QScopedPointer<parserAnnexB> inputFileAnnexBParser;
@@ -151,7 +151,7 @@ protected:
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
   // read the NAL units from the compressed file.
-  void parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file, QScopedPointer<parserAVFormat> &parser);
+  bool parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file, QScopedPointer<parserAVFormat> &parser);
   QScopedPointer<fileSourceFFmpegFile> inputFileFFmpegLoading;
   QScopedPointer<fileSourceFFmpegFile> inputFileFFmpegCaching;
   
