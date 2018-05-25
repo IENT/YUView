@@ -107,7 +107,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // While opening the file, also determine which decoders we can use
   ffmpegCodec = AV_CODEC_ID_NONE;
-  QList<decoderEngine> possibleDecoders;
 
   QSize frameSize;
   YUV_Internals::yuvPixelFormat format_yuv;
@@ -209,77 +208,31 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   playlistItemWithVideo::connectVideo();
   statSource.setFrameSize(frameSize);
 
-  if (decoder == decoderEngineInvalid)
+  decoderEngineType = decoderEngineInvalid;
+  if (decoder != decoderEngineInvalid)
   {
-    if (possibleDecoders.length() > 1)
-    {
-      // There is more than one decoder we may use. Ask the user which one to use.
-      bool ok;
-      QString label = "<html><head/><body><p>There are multiple decoders that we can use in order to decode the bitstream file:</p>";
-      if (possibleDecoders.contains(decoderEngineLibde265))
-        label += "<p><b>libde265:</b> A very fast and open source HEVC decoder. The internals version even supports display of the prediction and residual signal.</p>";
-      if (possibleDecoders.contains(decoderEngineHM))
-        label += "<p><b>libHM:</b> The library version of the HEVC reference test model software (HM). Slower than libde265.</p>";
-      if (possibleDecoders.contains(decoderEngineFFMpeg))
-        label += "<p><b>FFmpeg:</b> The ffmpeg libraries offer fast decoding of almost any format. Please note that we do not ship the FFmpeg libraries.</p>";
-      label += "</body></html>";
-      QWidget *mainWindow = MainWindow::getMainWindow();
-      QStringList possibleDecoderNames;
-      for (decoderEngine e : possibleDecoders)
-        possibleDecoderNames.append(decoderEngineNames[e]);
-      QString item = QInputDialog::getItem(mainWindow, "Select a decoder engine", label, possibleDecoderNames, 0, false, &ok);
-      if (ok && !item.isEmpty())
-      {
-        int idx = decoderEngineNames.indexOf(item);
-        if (idx >= 0 && idx < decoderEngineNum)
-          decoderEngineType = (decoderEngine)idx;
-      }
-    }
-    else
-      decoderEngineType = possibleDecoders[0];
+    if (possibleDecoders.contains(decoder))
+      decoderEngineType = decoder;
   }
   else
-    decoderEngineType = decoder;
+  {
+    if (possibleDecoders.length() == 1)
+      decoderEngineType = possibleDecoders[0];
+    else if (possibleDecoders.length() > 1)
+    {
+      // Prefer libde265 over FFmpeg over others
+      if (possibleDecoders.contains(decoderEngineLibde265))
+        decoderEngineType = decoderEngineLibde265;
+      else if (possibleDecoders.contains(decoderEngineFFMpeg))
+        decoderEngineType = decoderEngineFFMpeg;
+      else
+        decoderEngineType = possibleDecoders[0];
+    }
+  }
 
   // Allocate the decoders
-  if (decoderEngineType == decoderEngineLibde265)
-  {
-    loadingDecoder.reset(new decoderLibde265(displayComponent));
-    cachingDecoder.reset(new decoderLibde265(displayComponent, true));
-    decodingEnabled = true;
-  }
-  else if (decoderEngineType == decoderEngineHM)
-  {
-    // TODO:
-    /*loadingDecoder.reset(new hevcDecoderHM(displayComponent));
-    cachingDecoder.reset(new hevcDecoderHM(displayComponent, true));*/
-  }
-  else if (decoderEngineType == decoderEngineFFMpeg)
-  {
-    if (isinputFormatTypeAnnexB)
-    {
-      QByteArray extradata = inputFileAnnexBParser->getExtradata();
-      yuvPixelFormat fmt = inputFileAnnexBParser->getPixelFormat();
-      auto profileLevel = inputFileAnnexBParser->getProfileLevel();
-      auto ratio = inputFileAnnexBParser->getSampleAspectRatio();
-
-      loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio));
-      if (cachingEnabled)
-        cachingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio, true));
-    }
-    else
-    {
-      loadingDecoder.reset(new decoderFFmpeg(inputFileFFmpegLoading->getVideoCodecPar()));
-      if (cachingEnabled)
-        cachingDecoder.reset(new decoderFFmpeg(inputFileFFmpegCaching->getVideoCodecPar()));
-    }
-    decodingEnabled = true;
-  }
-  else
-  {
-    infoText = "No valid decoder could be selected.";
+  if (!allocateDecoder(displayComponent))
     return;
-  }
 
   if (rawFormat == raw_YUV)
   {
@@ -298,12 +251,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Seek both decoders to the start of the bitstream (this will also push the parameter sets / extradata to the decoder)
   seekToPosition(0, 0, false);
-  loadRawData(0, false);
   if (cachingEnabled)
-  {
     seekToPosition(0, 0, true);
-    loadRawData(0, true);
-  }
 
   // Connect signals for requesting data and statistics
   connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemCompressedVideo::loadRawData, Qt::DirectConnection);
@@ -781,9 +730,71 @@ void playlistItemCompressedVideo::createPropertiesWidget()
     ui.comboBoxDisplaySignal->addItems(loadingDecoder->getSignalNames());
     ui.comboBoxDisplaySignal->setCurrentIndex(loadingDecoder->getDecodeSignal());
   }
+  // Add decoders we can use
+  for (decoderEngine e : possibleDecoders)
+  {
+    QString decoderTypeName = decoderEngineNames.at(e);
+    ui.comboBoxDecoder->addItem(decoderTypeName);
+  }
+  ui.comboBoxDecoder->setCurrentIndex(possibleDecoders.indexOf(decoderEngineType));
 
   // Connect signals/slots
   connect(ui.comboBoxDisplaySignal, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemCompressedVideo::displaySignalComboBoxChanged);
+  connect(ui.comboBoxDecoder, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemCompressedVideo::decoderComboxBoxChanged);
+}
+
+bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
+{
+  if (decoderEngineType == decoderEngineLibde265)
+  {
+    loadingDecoder.reset(new decoderLibde265(displayComponent));
+    if (cachingEnabled)
+      cachingDecoder.reset(new decoderLibde265(displayComponent, true));
+    decodingEnabled = true;
+  }
+  else if (decoderEngineType == decoderEngineHM)
+  {
+    // TODO:
+    /*loadingDecoder.reset(new hevcDecoderHM(displayComponent));
+    cachingDecoder.reset(new hevcDecoderHM(displayComponent, true));*/
+    loadingDecoder.reset();
+    cachingDecoder.reset();
+
+    infoText = "No valid decoder could be selected.";
+    return false;
+  }
+  else if (decoderEngineType == decoderEngineFFMpeg)
+  {
+    if (isinputFormatTypeAnnexB)
+    {
+      QSize frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
+      QByteArray extradata = inputFileAnnexBParser->getExtradata();
+      yuvPixelFormat fmt = inputFileAnnexBParser->getPixelFormat();
+      auto profileLevel = inputFileAnnexBParser->getProfileLevel();
+      auto ratio = inputFileAnnexBParser->getSampleAspectRatio();
+
+      loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio));
+      if (cachingEnabled)
+        cachingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio, true));
+    }
+    else
+    {
+      loadingDecoder.reset(new decoderFFmpeg(inputFileFFmpegLoading->getVideoCodecPar()));
+      if (cachingEnabled)
+        cachingDecoder.reset(new decoderFFmpeg(inputFileFFmpegCaching->getVideoCodecPar()));
+    }
+    decodingEnabled = true;
+  }
+  else
+  {
+    // Reset (existing) decoders
+    loadingDecoder.reset();
+    cachingDecoder.reset();
+    infoText = "No valid decoder could be selected.";
+    return false;
+  }
+
+  return true;
 }
 
 void playlistItemCompressedVideo::fillStatisticList()
@@ -949,6 +960,40 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
     videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
     yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();
+
+    emit signalItemChanged(true, RECACHE_CLEAR);
+  }
+}
+
+void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
+{
+  decoderEngine e = possibleDecoders.at(idx);
+  if (e != decoderEngineType)
+  {
+    // Allocate a new decoder of the new type
+    decoderEngineType = e;
+    allocateDecoder();
+
+    // A different display signal was chosen. Invalidate the cache and signal that we will need a redraw.
+    videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+    yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
+    yuvVideo->invalidateAllBuffers();
+
+    // Reset the decoded frame indices so that decoding of the current frame is triggered
+    currentFrameIdx[0] = -1;
+    currentFrameIdx[1] = -1;
+
+    // Update the list of display signals
+    if (loadingDecoder)
+    {
+      QSignalBlocker block(ui.comboBoxDisplaySignal);
+      ui.comboBoxDisplaySignal->clear();
+      ui.comboBoxDisplaySignal->addItems(loadingDecoder->getSignalNames());
+      ui.comboBoxDisplaySignal->setCurrentIndex(loadingDecoder->getDecodeSignal());
+    }
+
+    // TODO: Also the statistics list must be updated
+
     emit signalItemChanged(true, RECACHE_CLEAR);
   }
 }
@@ -1005,7 +1050,7 @@ bool playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnex
   
   // We are done.
   parser->parseAndAddNALUnit(-1, QByteArray());
-  return progress.wasCanceled();
+  return !progress.wasCanceled();
 }
 
 bool playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file, QScopedPointer<parserAVFormat> &parser)
@@ -1066,5 +1111,5 @@ bool playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpe
     
   // Seek back to the beginning of the stream.
   file->seekToPTS(0);
-  return progress.wasCanceled();
+  return !progress.wasCanceled();
 }

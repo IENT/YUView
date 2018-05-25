@@ -133,6 +133,13 @@ protected:
   QScopedPointer<decoderBase> loadingDecoder;
   QScopedPointer<decoderBase> cachingDecoder;
 
+  // When opening the file, we will fill this list with the possible decoders
+  QList<decoderEngine> possibleDecoders;
+  // The actual type of the decoder
+  decoderEngine decoderEngineType;
+  // Delete existing decoders and allocate decoders for the type "decoderEngineType"
+  bool allocateDecoder(int displayComponent = 0);
+
   // In order to parse raw annexB files, we need a file reader (that can read NAL units)
   // and a parser that can understand what the NAL units mean. We open the file source twice (once for interactive loading,
   // once for the background caching). The parser is only needed once and can be used for both loading and caching tasks.
@@ -143,10 +150,9 @@ protected:
   // When reading annex B data using the fileSourceAnnexBFile::getFrameData function, we need to count how many frames we already read.
   int readAnnexBFrameCounterCodingOrder;
   
-  // Which type is the input / what decoder do we use?
+  // Which type is the input?
   inputFormat inputFormatType;
   bool isinputFormatTypeAnnexB;
-  decoderEngine decoderEngineType;
   AVCodecID ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
@@ -201,7 +207,7 @@ private slots:
 
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
   void displaySignalComboBoxChanged(int idx);
-
+  void decoderComboxBoxChanged(int idx);
 };
 
 #endif // PLAYLISTITEMCOMPRESSEDVIDEO_H
