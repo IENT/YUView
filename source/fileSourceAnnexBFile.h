@@ -82,14 +82,20 @@ protected:
 
   QByteArray   fileBuffer;
   uint64_t     fileBufferSize;       ///< How many of the bytes are used? We don't resize the fileBuffer
-  unsigned int posInBuffer;          ///< The current position in the input buffer in bytes
   uint64_t     bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
+
+  // The current position in the input buffer in bytes. This always points to the first byte of a start code.
+  // So if the start code is 0001 it will point to the first byte (the first 0). If the start code is 001, it will point to the first 0 here.
+  unsigned int posInBuffer;
 
   // The start code pattern
   QByteArray startCode;
 
   // load the next buffer
   bool updateBuffer();
+
+  // Seek to the first NAL header in the bitstream
+  void seekToFirstNAL();
 };
 
 #endif //FILESOURCEANNEXBFILE_H

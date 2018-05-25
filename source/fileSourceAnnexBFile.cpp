@@ -74,8 +74,24 @@ bool fileSourceAnnexBFile::openFile(const QString &fileName)
     return false;
 
   // Discard all bytes until we find a start code
-  getNextNALUnit();
+  seekToFirstNAL();
   return true;
+}
+
+void fileSourceAnnexBFile::seekToFirstNAL()
+{
+  int nextStartCodePos = fileBuffer.indexOf(startCode, posInBuffer);
+  if (nextStartCodePos == -1)
+    // The first buffer does not contain a start code. This is very unusual. Use the normal getNextNALUnit to seek
+    getNextNALUnit();
+  else
+  {
+    // For 0001 or 001 point to the first 0 byte
+    if (nextStartCodePos > 0 && fileBuffer.at(nextStartCodePos-1) ==(char)0)
+      posInBuffer = nextStartCodePos - 1;
+    else
+      posInBuffer = nextStartCodePos;
+  }
 }
 
 QByteArray fileSourceAnnexBFile::getNextNALUnit(QUint64Pair *startEndPosInFile)
@@ -90,7 +106,7 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(QUint64Pair *startEndPosInFile)
   while (!startCodeFound)
   {
     nextStartCodePos = fileBuffer.indexOf(startCode, posInBuffer + 3);
-        
+
     if (nextStartCodePos == -1)
     {
       // No start code found ... append all data in the current buffer.
@@ -137,7 +153,7 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(QUint64Pair *startEndPosInFile)
     }
     else
     {
-      // Start code found. Check if the start code is 0x000001 or 0x00000001
+      // Start code found. Check if the start code is 001 or 0001
       startCodeFound = true;
       if (fileBuffer.at(nextStartCodePos - 1) == (char)0)
         nextStartCodePos--;
@@ -180,6 +196,8 @@ QByteArray fileSourceAnnexBFile::getFrameData(QUint64Pair startEndFilePos)
         headerOffset = 3;
     }
     assert(headerOffset > 0);
+    if (headerOffset == 3)
+      retArray.append((char)0);
 
     DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getFrameData Load NAL - size %d", nalData.length());
     retArray += nalData;
@@ -220,14 +238,14 @@ bool fileSourceAnnexBFile::seek(int64_t pos)
     getNextNALUnit();
   else
   {
-    // The position should have pointed to the first byte of a start code
-    if (fileBuffer.mid(0, 3) != startCode)
-    {
-      DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::seek could not find start code at seek position");
-      return false;
-    }
-    // Skip the start code
-    posInBuffer = 3;
+    // Check if we are at a start code position (001 or 0001)
+    if (fileBuffer.at(0) == (char)0 && fileBuffer.at(1) == (char)0 && fileBuffer.at(2) == (char)0 && fileBuffer.at(3) == (char)1)
+      return true;
+    if (fileBuffer.at(0) == (char)0 && fileBuffer.at(1) == (char)0 && fileBuffer.at(2) == (char)1)
+      return true;
+
+    DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::seek could not find start code at seek position");
+    return false;
   }
 
   return true;
