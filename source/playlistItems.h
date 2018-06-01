@@ -37,6 +37,7 @@
 #include "playlistItemRawCodedVideo.h"
 #include "playlistItemFFmpegFile.h"
 #include "playlistItemStatisticsFile.h"
+#include "playlistItemVTMBMSStatisticsFile.h"
 #include "playlistItemImageFile.h"
 #include "playlistItemImageFileSequence.h"
 #include "playlistItemOverlay.h"

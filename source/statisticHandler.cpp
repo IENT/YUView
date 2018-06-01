@@ -879,6 +879,33 @@ void statisticHandler::updateStatisticsHandlerControls()
   }
 }
 
+void statisticHandler::addStatType(const StatisticsType &type)
+{
+  if (type.typeID == -1) // stat source does not have type ids. need to auto assign an id for this type
+  {
+     // check if type not already in list
+    bool isInList = false;
+    for ( StatisticsType typeIninList : statsTypeList)
+    {
+      if (typeIninList.typeName == type.typeName)
+      {
+        isInList = true;
+        break;
+      }
+    }
+    if (!isInList)
+    {
+      StatisticsType newType = type;
+      newType.typeID = statsTypeList.length();
+      statsTypeList.append(type);
+    }
+  }
+  else
+  {
+    statsTypeList.append(type);
+  }
+}
+
 void statisticHandler::clearStatTypes()
 {
   // Create a backup of the types list. This backup is used if updateStatisticsHandlerControls is called

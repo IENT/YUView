@@ -91,7 +91,9 @@ public:
   QSize statFrameSize;
 
   // Add new statistics type. Add all types using this function before creating the controls (createStatisticsHandlerControls).
-  void addStatType(const StatisticsType &type) { statsTypeList.append(type); }
+//  void addStatType(const StatisticsType &type) { statsTypeList.append(type); }
+  void addStatType(const StatisticsType &type);
+
   // Clear the statistics type list.
   void clearStatTypes();
 
