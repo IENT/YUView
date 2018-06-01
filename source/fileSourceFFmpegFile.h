@@ -56,6 +56,8 @@ public:
   // TODO: How do we do this?
   bool atEnd() const { return endOfFile; }
 
+  QString getLibraryPath() const { return ff.getLibPath(); }
+
   // Get properties of the bitstream
   double getFramerate() const { return frameRate; }
   QSize getSequenceSizeSamples() const { return frameSize; }

@@ -332,13 +332,15 @@ infoData playlistItemCompressedVideo::getInfo() const
   }
   else
   {
-    info.items.append(infoItem("library path", loadingDecoder->getLibraryPath(), "The path to the loaded libde265 library"));
     info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
+    if (inputFileFFmpegLoading)
+      info.items.append(infoItem("reader lib", inputFileFFmpegLoading->getLibraryPath(), "The path to the loaded reader library"));
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num POCs", QString::number(startEndFrame.second), "The number of pictures in the stream."));
     if (decodingEnabled)
     {
+      info.items.append(infoItem("decoder lib", loadingDecoder->getLibraryPath(), "The path to the loaded decoder library"));
       info.items.append(infoItem("Decoder", loadingDecoder->getDecoderName()));
       info.items.append(infoItem("Decoder", loadingDecoder->getCodecName()));
       info.items.append(infoItem("Statistics", loadingDecoder->statisticsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
@@ -761,6 +763,7 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
     cachingDecoder.reset();
 
     infoText = "No valid decoder could be selected.";
+    decodingEnabled = false;
     return false;
   }
   else if (decoderEngineType == decoderEngineFFMpeg)
@@ -791,6 +794,7 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
     loadingDecoder.reset();
     cachingDecoder.reset();
     infoText = "No valid decoder could be selected.";
+    decodingEnabled = false;
     return false;
   }
 
@@ -976,7 +980,8 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a redraw.
     videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-    yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
+    if (loadingDecoder)
+      yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();
 
     // Reset the decoded frame indices so that decoding of the current frame is triggered
@@ -992,7 +997,10 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
       ui.comboBoxDisplaySignal->setCurrentIndex(loadingDecoder->getDecodeSignal());
     }
 
-    // TODO: Also the statistics list must be updated
+    // Update the statistics list with what the new decoder can provide
+    statSource.clearStatTypes();
+    fillStatisticList();
+    statSource.updateStatisticsHandlerControls();
 
     emit signalItemChanged(true, RECACHE_CLEAR);
   }
