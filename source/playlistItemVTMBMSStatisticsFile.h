@@ -121,7 +121,6 @@ private:
   void readHeaderFromFile();
   
   QRegularExpression pocAndTypeRegex;
-  int getPocAndType(const QString &line) const;
 
   // A list of file positions where each POC starts
   QMap<int, qint64> pocStartList;

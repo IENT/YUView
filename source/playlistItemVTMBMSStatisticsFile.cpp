@@ -237,6 +237,7 @@ void playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile()
 ////              auto hashed = hasher(str); //returns std::size_t
 //              int id_from_name = hasher(aType.typeName.toStdString());
 //              aType.typeID = id_from_name;
+              // with -1, an id will be automatically assigned
               aType.typeID = -1;
 
               // check if scalar or vector
@@ -252,10 +253,10 @@ void playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile()
                 aType.renderValueData = true;
               }
 
-              // have fixed colors for now. todo: change
-              aType.colMapper = colorMapper("jet", 0, 5);
-              aType.vectorPen.setColor(QColor(100, 0, 0));
-              aType.gridPen.setColor(QColor(0, 0, 100));
+//              // have fixed colors for now. todo: change
+//              aType.colMapper = colorMapper("jet", 0, 5);
+//              aType.vectorPen.setColor(QColor(100, 0, 0));
+//              aType.gridPen.setColor(QColor(0, 0, 100));
 
 
 
@@ -595,21 +596,6 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
   }
 
   return;
-}
-
-int playlistItemVTMBMSStatisticsFile::getPocAndType(const QString &srcLine) const
-{
-  // get poc and type using regular expression
-  // need to match this:
-  // BlockStat: POC 1 @( 120,  80) [ 8x 8] MVL0={ -24,  -2}
-  // BlockStat: POC 1 @( 112,  88) [ 8x 8] PredMode=0
-  QRegularExpressionMatch match = pocAndTypeRegex.match(srcLine);
-  if (match.hasMatch())
-  {
-      return match.captured(1).toInt();
-  }
-
-  return -1;
 }
 
 // This timer event is called regularly when the background loading process is running.

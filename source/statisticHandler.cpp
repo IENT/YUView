@@ -897,7 +897,7 @@ void statisticHandler::addStatType(const StatisticsType &type)
     {
       StatisticsType newType = type;
       newType.typeID = statsTypeList.length();
-      statsTypeList.append(type);
+      statsTypeList.append(newType);
     }
   }
   else
