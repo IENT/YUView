@@ -33,6 +33,7 @@ SOURCES += \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
     source/playlistItemStatisticsFile.cpp \
+    source/playlistItemVTMBMSStatisticsFile.cpp \
     source/playlistItemText.cpp \
     source/playlistItemWithVideo.cpp \
     source/playlistTreeWidget.cpp \
@@ -86,6 +87,7 @@ HEADERS += \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
     source/playlistItemStatisticsFile.h \
+    source/playlistItemVTMBMSStatisticsFile.h \
     source/playlistItemText.h \
     source/playlistItemWithVideo.h \
     source/playlistTreeWidget.h \
