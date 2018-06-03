@@ -120,8 +120,6 @@ private:
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();
   
-  QRegularExpression pocAndTypeRegex;
-
   // A list of file positions where each POC starts
   QMap<int, qint64> pocStartList;
 

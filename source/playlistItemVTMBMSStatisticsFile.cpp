@@ -34,8 +34,6 @@
 
 #include <cassert>
 #include <iostream>
-#include <functional> //for std::hash
-#include <string>
 #include <QDebug>
 #include <QtConcurrent>
 #include <QTime>
@@ -57,15 +55,6 @@ playlistItemVTMBMSStatisticsFile::playlistItemVTMBMSStatisticsFile(const QString
   maxPOC = 0;
   isStatisticsLoading = false;
 
-  // todo: change. this is a hack for testing
-  statSource.statFrameSize = QSize(832, 480);
-
-  // get poc and type using regular expression
-  // need to match this:
-  // BlockStat: POC 1 @( 120,  80) [ 8x 8] MVL0={ -24,  -2}
-  // BlockStat: POC 1 @( 112,  88) [ 8x 8] PredMode=0
-  pocAndTypeRegex.setPattern("POC ([0-9]+).*\] (\\w+)=(.*)");
-
   // Set statistics icon
   setIcon(0, convertIcon(":img_stats.png"));
 
@@ -74,13 +63,12 @@ playlistItemVTMBMSStatisticsFile::playlistItemVTMBMSStatisticsFile(const QString
     return;
 
   // Read the statistics file header
-//  readHeaderFromFile();
+  readHeaderFromFile();
 
-  readFramePositionsFromFile();
   // Run the parsing of the file in the background
   cancelBackgroundParser = false;
-//  timer.start(1000, this);
-//  backgroundParserFuture = QtConcurrent::run(this, &playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile);
+  timer.start(1000, this);
+  backgroundParserFuture = QtConcurrent::run(this, &playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile);
 
   connect(&statSource, &statisticHandler::updateItem, [this](bool redraw){ emit signalItemChanged(redraw, RECACHE_NONE); });
   connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemVTMBMSStatisticsFile::loadStatisticToCache, Qt::DirectConnection);
@@ -137,7 +125,7 @@ void playlistItemVTMBMSStatisticsFile::drawItem(QPainter *painter, int frameIdx,
 }
 
 /** The background task that parses the file and extracts the exact file positions
-* where a new frame or a new type starts. If the user then later requests this type/POC
+* where a new frame starts. If the user then later requests this POC
 * we can directly jump there and parse the actual information. This way we don't have to
 * scan the whole file which can get very slow for large files.
 *
@@ -162,7 +150,6 @@ void playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile()
     QString lineBuffer;
     qint64  lineBufferStartPos = 0;
     int     lastPOC = INT_INVALID;
-    int     lastType = INT_INVALID;
     bool    sortingFixed = false; 
     
     while (!fileAtEnd && !cancelBackgroundParser)
@@ -184,7 +171,13 @@ void playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile()
           {
             // Parse the previous line
             // get components of this line
-            QRegularExpressionMatch match = pocAndTypeRegex.match(lineBuffer);
+            // get poc using regular expression
+            // need to match this:
+            // BlockStat: POC 1 @( 120,  80) [ 8x 8] MVL0={ -24,  -2}
+            // BlockStat: POC 1 @( 112,  88) [ 8x 8] PredMode=0
+            QRegularExpression pocRegex("BlockStat: POC ([0-9]+)");
+
+            QRegularExpressionMatch match = pocRegex.match(lineBuffer);
             // ignore not matching lines
             if (match.hasMatch())
             {
@@ -223,48 +216,6 @@ void playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile()
                 // Update percent of file parsed
                 backgroundParserProgress = ((double)lineBufferStartPos * 100 / (double)inputFile.getFileSize());
               }
-
-              StatisticsType aType;
-              // Last type is complete. Store this initial state.
-              aType.setInitialState();
-
-              // set name
-              aType.typeName = match.captured(2);
-
-//              // set id
-//              std::string str = "Hello World";
-//              std::hash<std::string> hasher;
-////              auto hashed = hasher(str); //returns std::size_t
-//              int id_from_name = hasher(aType.typeName.toStdString());
-//              aType.typeID = id_from_name;
-              // with -1, an id will be automatically assigned
-              aType.typeID = -1;
-
-              // check if scalar or vector
-              QString statVal = match.captured(3);
-              if (statVal.contains(','))
-              { // is a vector
-                aType.hasVectorData = true;
-                aType.renderVectorData = true;
-              }
-              else
-              { // is a scalar
-                aType.hasValueData = true;
-                aType.renderValueData = true;
-              }
-
-//              // have fixed colors for now. todo: change
-//              aType.colMapper = colorMapper("jet", 0, 5);
-//              aType.vectorPen.setColor(QColor(100, 0, 0));
-//              aType.gridPen.setColor(QColor(0, 0, 100));
-
-
-
-              // add the new type if it is not already in the list
-//              if (!statSource.getStatisticsTypeList().contains(aType))
-//              {
-              statSource.addStatType(aType); // check if in list is done by addStatsType
-//              }
             }
           }
 
@@ -283,8 +234,7 @@ void playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile()
     backgroundParserProgress = 100.0;
 
     setStartEndFrame(indexRange(0, maxPOC), false);
-//    emit signalItemChanged(false, RECACHE_NONE);
-    emit signalItemChanged(true, RECACHE_NONE); // todo. remove hack
+    emit signalItemChanged(false, RECACHE_NONE);
 
   } // try
   catch (const char *str)
@@ -305,170 +255,96 @@ void playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile()
   return;
 }
 
-//void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
-//{
-//  try
-//  {
-//    if (!file.isOk())
-//      return;
+void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
+{
+  try
+  {
+    if (!file.isOk())
+      return;
 
-//    // Cleanup old types
-//    statSource.clearStatTypes();
+    // Cleanup old types
+    statSource.clearStatTypes();
 
-//    // scan header lines first
-//    // also count the lines per Frame for more efficient memory allocation
-//    // if an ID is used twice, the data of the first gets overwritten
-//    bool typeParsingActive = false;
-//    StatisticsType aType;
+    while (!file.atEnd())
+    {
+      // read one line
+      QByteArray aLineByteArray = file.readLine();
+      QString aLine(aLineByteArray);
 
-//    while (!file.atEnd())
-//    {
-//      // read one line
-//      QByteArray aLineByteArray = file.readLine();
-//      QString aLine(aLineByteArray);
+      // if we found a non-header line, stop here
+      if (aLine[0] != '#')
+      {
+        return;
+      }
 
-//      // get components of this line
-//      QStringList rowItemList = parseCSVLine(aLine, ';');
+      // extract statistics information from header lines
+      // match:
+      //# Sequence size: [832x 480]
+      QRegularExpression sequenceSizeRegex("# Sequence size: \\[([0-9]+)x *([0-9]+)\\]");
 
-//      if (rowItemList[0].isEmpty())
-//        continue;
+      // match:
+      //# Block Statistic Type: MergeFlag; Flag
+      QRegularExpression availableStatisticsRegex("# Block Statistic Type: *([0-9a-zA-Z]+); *([0-9a-zA-Z]+)");
 
-//      // either a new type or a line which is not header finishes the last type
-//      if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
-//      {
-//        // Last type is complete. Store this initial state.
-//        aType.setInitialState();
-//        statSource.addStatType(aType);
+      // get sequence size
+      QRegularExpressionMatch sequenceSizeMatch = sequenceSizeRegex.match(aLine);
+      if (sequenceSizeMatch.hasMatch())
+      {
+        statSource.statFrameSize = QSize(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt());
+      }
 
-//        // start from scratch for next item
-//        aType = StatisticsType();
-//        typeParsingActive = false;
+      // get available statistics
+      QRegularExpressionMatch availableStatisticsMatch = availableStatisticsRegex.match(aLine);
+      if (availableStatisticsMatch.hasMatch())
+      {
+        StatisticsType aType;
+        // Store initial state.
+        aType.setInitialState();
 
-//        // if we found a non-header line, stop here
-//        if (rowItemList[0][0] != '%')
-//          return;
-//      }
+        // set name
+        aType.typeName = availableStatisticsMatch.captured(1);
 
-//      if (rowItemList[1] == "type")   // new type
-//      {
-//        aType.typeID = rowItemList[2].toInt();
-//        aType.typeName = rowItemList[3];
+        // with -1, an id will be automatically assigned
+        aType.typeID = -1;
 
-//        // The next entry (4) is "map", "range", or "vector"
-//        if(rowItemList.count() >= 5)
-//        {
-//          if (rowItemList[4] == "map" || rowItemList[4] == "range")
-//          {
-//            aType.hasValueData = true;
-//            aType.renderValueData = true;
-//          }
-//          else if (rowItemList[4] == "vector" || rowItemList[4] == "line")
-//          {
-//            aType.hasVectorData = true;
-//            aType.renderVectorData = true;
-//            if (rowItemList[4] == "line")
-//              aType.arrowHead=StatisticsType::arrowHead_t::none;
-//          }
-//        }
+        // check if scalar or vector
+        QString statType = availableStatisticsMatch.captured(2);
+        if (statType ==  "Vector")
+        {
+          aType.hasVectorData = true;
+          aType.renderVectorData = true;
+        }
+        else if (statType == "Flag")
+        {
+          aType.hasValueData = true;
+          aType.renderValueData = true;
+        }
+        else if (statType == "Integer")  // for now do the same as for Flags, TODO: use ranges automatically
+        {
+          aType.hasValueData = true;
+          aType.renderValueData = true;
+        }
 
-//        typeParsingActive = true;
-//      }
-//      else if (rowItemList[1] == "mapColor")
-//      {
-//        int id = rowItemList[2].toInt();
+        // add the new type if it is not already in the list
+        statSource.addStatType(aType); // check if in list is done by addStatsType
+      }
+    }
+  } // try
+  catch (const char *str)
+  {
+    std::cerr << "Error while parsing meta data: " << str << '\n';
+    parsingError = QString("Error while parsing meta data: ") + QString(str);
+    return;
+  }
+  catch (...)
+  {
+    std::cerr << "Error while parsing meta data.";
+    parsingError = QString("Error while parsing meta data.");
+    return;
+  }
 
-//        // assign color
-//        unsigned char r = (unsigned char)rowItemList[3].toInt();
-//        unsigned char g = (unsigned char)rowItemList[4].toInt();
-//        unsigned char b = (unsigned char)rowItemList[5].toInt();
-//        unsigned char a = (unsigned char)rowItemList[6].toInt();
-
-//        aType.colMapper.type = colorMapper::mappingType::map;
-//        aType.colMapper.colorMap.insert(id, QColor(r, g, b, a));
-//      }
-//      else if (rowItemList[1] == "range")
-//      {
-//        // This is a range with min/max
-//        int min = rowItemList[2].toInt();
-//        unsigned char r = (unsigned char)rowItemList[4].toInt();
-//        unsigned char g = (unsigned char)rowItemList[6].toInt();
-//        unsigned char b = (unsigned char)rowItemList[8].toInt();
-//        unsigned char a = (unsigned char)rowItemList[10].toInt();
-//        QColor minColor = QColor(r, g, b, a);
-
-//        int max = rowItemList[3].toInt();
-//        r = rowItemList[5].toInt();
-//        g = rowItemList[7].toInt();
-//        b = rowItemList[9].toInt();
-//        a = rowItemList[11].toInt();
-//        QColor maxColor = QColor(r, g, b, a);
-
-//        aType.colMapper = colorMapper(min, minColor, max, maxColor);
-//      }
-//      else if (rowItemList[1] == "defaultRange")
-//      {
-//        // This is a color gradient function
-//        int min = rowItemList[2].toInt();
-//        int max = rowItemList[3].toInt();
-//        QString rangeName = rowItemList[4];
-
-//        aType.colMapper = colorMapper(rangeName, min, max);
-//      }
-//      else if (rowItemList[1] == "vectorColor")
-//      {
-//        unsigned char r = (unsigned char)rowItemList[2].toInt();
-//        unsigned char g = (unsigned char)rowItemList[3].toInt();
-//        unsigned char b = (unsigned char)rowItemList[4].toInt();
-//        unsigned char a = (unsigned char)rowItemList[5].toInt();
-//        aType.vectorPen.setColor(QColor(r, g, b, a));
-//      }
-//      else if (rowItemList[1] == "gridColor")
-//      {
-//        unsigned char r = (unsigned char)rowItemList[2].toInt();
-//        unsigned char g = (unsigned char)rowItemList[3].toInt();
-//        unsigned char b = (unsigned char)rowItemList[4].toInt();
-//        unsigned char a = 255;
-//        aType.gridPen.setColor(QColor(r, g, b, a));
-//      }
-//      else if (rowItemList[1] == "scaleFactor")
-//      {
-//        aType.vectorScale = rowItemList[2].toInt();
-//      }
-//      else if (rowItemList[1] == "scaleToBlockSize")
-//      {
-//        aType.scaleValueToBlockSize = (rowItemList[2] == "1");
-//      }
-//      else if (rowItemList[1] == "seq-specs")
-//      {
-//        QString seqName = rowItemList[2];
-//        QString layerId = rowItemList[3];
-//        // For now do nothing with this information.
-//        // Show the file name for this item instead.
-//        int width = rowItemList[4].toInt();
-//        int height = rowItemList[5].toInt();
-//        if (width > 0 && height > 0)
-//          statSource.statFrameSize = QSize(width, height);
-//        if (rowItemList[6].toDouble() > 0.0)
-//          frameRate = rowItemList[6].toDouble();
-//      }
-//    }
-
-//  } // try
-//  catch (const char *str)
-//  {
-//    std::cerr << "Error while parsing meta data: " << str << '\n';
-//    parsingError = QString("Error while parsing meta data: ") + QString(str);
-//    return;
-//  }
-//  catch (...)
-//  {
-//    std::cerr << "Error while parsing meta data.";
-//    parsingError = QString("Error while parsing meta data.");
-//    return;
-//  }
-
-//  return;
-//}
+  return;
+}
 
 void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal, int typeID)
 {
@@ -488,18 +364,6 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
 
 
     qint64 startPos = pocStartList[frameIdxInternal];
-//    if (fileSortedByPOC)
-//    {
-//      // If the statistics file is sorted by POC we have to start at the first entry of this POC and parse the
-//      // file until another POC is encountered. If this is not done, some information from a different typeID
-//      // could be ignored during parsing.
-
-//      // Get the position of the first line with the given frameIdxInternal
-//      startPos = std::numeric_limits<qint64>::max();
-//      for (const qint64 &value : pocTypeStartList[frameIdxInternal])
-//        if (value < startPos)
-//          startPos = value;
-//    }
 
     // fast forward
     in.seek(startPos);
@@ -720,14 +584,14 @@ void playlistItemVTMBMSStatisticsFile::reloadItemSource()
     return;
 
   // Read the new statistics file header
-//  readHeaderFromFile();
-  readFramePositionsFromFile();
+  readHeaderFromFile();
+
   statSource.updateStatisticsHandlerControls();
 
   // Run the parsing of the file in the background
   cancelBackgroundParser = false;
-//  timer.start(1000, this);
-//  backgroundParserFuture = QtConcurrent::run(this, &playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile);
+  timer.start(1000, this);
+  backgroundParserFuture = QtConcurrent::run(this, &playlistItemVTMBMSStatisticsFile::readFramePositionsFromFile);
 }
 
 void playlistItemVTMBMSStatisticsFile::loadFrame(int frameIdx, bool playback, bool loadRawdata, bool emitSignals)
