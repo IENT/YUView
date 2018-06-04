@@ -53,6 +53,7 @@ StatisticsType::StatisticsType()
   // Set one of these to true if you want to render something.
   hasValueData = false;
   hasVectorData = false;
+  hasAffineTFData = false;
 
   // Default values for drawing value data
   renderValueData = false;
@@ -333,6 +334,20 @@ void statisticsData::addBlockVector(unsigned short x, unsigned short y, unsigned
   vec.isLine = false;
   vectorData.append(vec);
 }
+
+void statisticsData::addBlockAffineTF(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int vecX0, int vecY0, int vecX1, int vecY1, int vecX2, int vecY2)
+{
+  statisticsItem_AffineTF affineTF;
+  affineTF.pos[0] = x;
+  affineTF.pos[1] = y;
+  affineTF.size[0] = w;
+  affineTF.size[1] = h;
+  affineTF.point[0] = QPoint(vecX0,vecY0);
+  affineTF.point[1] = QPoint(vecX1,vecY1);
+  affineTF.point[2] = QPoint(vecX2,vecY2);
+  affineTFData.append(affineTF);
+}
+
 
 void statisticsData::addLine(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int x1, int y1, int x2, int y2)
 {

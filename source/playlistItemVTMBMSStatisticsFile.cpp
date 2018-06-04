@@ -327,6 +327,12 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
           aType.renderValueData = true;
           aType.colMapper = colorMapper("jet", 0, 100); // TODO: should this be automatic or in statistics header?
         }
+        else if (statType == "AffineTFVectors")  // for now do the same as for Flags, TODO: use ranges automatically
+        {
+          aType.hasAffineTFData = true;
+          aType.renderVectorData = true;
+          aType.vectorPen.setColor(QColor(255,0, 0));  // TODO: should this be automatic or in statistics header?
+        }
 
         // add the new type if it is not already in the list
         statSource.addStatType(aType); // check if in list is done by addStatsType
@@ -382,6 +388,9 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
     // for extracting vector value statistics, need to match:
     // BlockStat: POC 1 @( 120,  80) [ 8x 8] MVL0={ -24,  -2}
     QRegularExpression vectorRegex("POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+)}");
+    // for extracting affine transform value statistics, need to match:
+    // BlockStat: POC 2 @( 192,  96) [64x32] AffineMVL0={-324,-116,-276,-116,-324, -92}
+    QRegularExpression affineTFRegex("POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
 
     while (!in.atEnd())
     {
@@ -392,7 +401,6 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
       QRegularExpressionMatch typeMatch = typeRegex.match(aLine);
       if (typeMatch.hasMatch())
       {
-
         int poc, posX, posY, width, height, scalar, vecX, vecY;
 
         QRegularExpressionMatch statisitcMatch;
@@ -404,6 +412,10 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
         else if (aType->hasVectorData)
         {
           statisitcMatch = vectorRegex.match(aLine);
+        }
+        else if (aType->hasAffineTFData)
+        {
+          statisitcMatch = affineTFRegex.match(aLine);
         }
 
         if (!statisitcMatch.hasMatch())
@@ -436,6 +448,16 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
           vecX = statisitcMatch.captured(6).toInt();
           vecY = statisitcMatch.captured(7).toInt();
           statSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
+        }
+        else if (aType->hasAffineTFData)
+        {
+          int vecX0 = statisitcMatch.captured(6).toInt();
+          int vecY0 = statisitcMatch.captured(7).toInt();
+          int vecX1 = statisitcMatch.captured(8).toInt();
+          int vecY1 = statisitcMatch.captured(9).toInt();
+          int vecX2 = statisitcMatch.captured(10).toInt();
+          int vecY2 = statisitcMatch.captured(11).toInt();
+          statSource.statsCache[typeID].addBlockAffineTF(posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
         }
 //        else if (lineData && statsType->hasVectorData)
 //          statSource.statsCache[type].addLine(posX, posY, width, height, values[0], values[1], values[2], values[3]);

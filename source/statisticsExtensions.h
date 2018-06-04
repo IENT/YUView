@@ -129,6 +129,7 @@ public:
 
   // Vector data (a vector that is set for a block)
   bool hasVectorData;       // Does this type have any vector data?
+  bool hasAffineTFData;
   bool renderVectorData;    // Do we draw the vector data?
   bool renderVectorDataValues; // Do we draw the values of the vector next to the vector (by default true).
   bool scaleVectorToZoom;
@@ -197,6 +198,17 @@ struct statisticsItem_Vector
   QPoint point[2];
 };
 
+struct statisticsItem_AffineTF
+{
+  // The position and size of the item. (max 65535)
+  unsigned short pos[2];
+  unsigned short size[2];
+
+  // the vector is specified by two points
+  // The actual vector value
+  QPoint point[3];
+};
+
 // A collection of statistics data (value and vector) for a certain context (for example for a certain type and a certain POC).
 class statisticsData
 {
@@ -204,9 +216,11 @@ public:
   statisticsData() { maxBlockSize = 0; }
   void addBlockValue(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int val);
   void addBlockVector(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int vecX, int vecY);
+  void addBlockAffineTF(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int vecX0, int vecY0, int vecX1, int vecY1, int vecX2, int vecY2);
   void addLine(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int x1, int y1, int x2, int y2);
   QList<statisticsItem_Value> valueData;
   QList<statisticsItem_Vector> vectorData;
+  QList<statisticsItem_AffineTF> affineTFData;
 
   // What is the size (area) of the biggest block)? This is needed for scaling the blocks according to their size.
   unsigned int maxBlockSize;
