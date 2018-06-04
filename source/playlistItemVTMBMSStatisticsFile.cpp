@@ -313,16 +313,19 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
         {
           aType.hasVectorData = true;
           aType.renderVectorData = true;
+          aType.vectorPen.setColor(QColor(255,0, 0));  // TODO: should this be automatic or in statistics header?
         }
         else if (statType == "Flag")
         {
           aType.hasValueData = true;
           aType.renderValueData = true;
+          aType.colMapper = colorMapper("jet", 0, 1);
         }
         else if (statType == "Integer")  // for now do the same as for Flags, TODO: use ranges automatically
         {
           aType.hasValueData = true;
           aType.renderValueData = true;
+          aType.colMapper = colorMapper("jet", 0, 100); // TODO: should this be automatic or in statistics header?
         }
 
         // add the new type if it is not already in the list
