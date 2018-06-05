@@ -284,7 +284,7 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
 
       // match:
       //# Block Statistic Type: MergeFlag; Flag
-      QRegularExpression availableStatisticsRegex("# Block Statistic Type: *([0-9a-zA-Z]+); *([0-9a-zA-Z]+)");
+      QRegularExpression availableStatisticsRegex("# Block Statistic Type: *([0-9a-zA-Z]+); *([0-9a-zA-Z]+); *(.*)");
 
       // get sequence size
       QRegularExpressionMatch sequenceSizeMatch = sequenceSizeRegex.match(aLine);
@@ -310,9 +310,23 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
         // check if scalar or vector
         QString statType = availableStatisticsMatch.captured(2);
         if (statType ==  "Vector")
-        {
+        {          
+          QString scaleInfo = availableStatisticsMatch.captured(3);
+          QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
+          QRegularExpressionMatch scaleInfoMatch = scaleInfoRegex.match(scaleInfo);
+          int scale;
+          if (scaleInfoMatch.hasMatch())
+          {
+            scale = scaleInfoMatch.captured(1).toInt();
+          }
+          else
+          {
+            scale = 1;
+          }
+
           aType.hasVectorData = true;
           aType.renderVectorData = true;
+          aType.vectorScale = scale;
           aType.vectorPen.setColor(QColor(255,0, 0));  // TODO: should this be automatic or in statistics header?
         }
         else if (statType == "Flag")
@@ -323,14 +337,44 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
         }
         else if (statType == "Integer")  // for now do the same as for Flags, TODO: use ranges automatically
         {
+          QString rangeInfo = availableStatisticsMatch.captured(3);
+          QRegularExpression rangeInfoRegex("\\[([0-9\\-]+), *([0-9\\-]+)\\]");
+          QRegularExpressionMatch rangeInfoMatch = rangeInfoRegex.match(rangeInfo);
+          int minVal;
+          int maxVal;
+          if (rangeInfoMatch.hasMatch())
+          {
+            minVal = rangeInfoMatch.captured(1).toInt();
+            maxVal = rangeInfoMatch.captured(2).toInt();
+          }
+          else
+          {
+            minVal = 0;
+            maxVal = 100;
+          }
+
           aType.hasValueData = true;
           aType.renderValueData = true;
-          aType.colMapper = colorMapper("jet", 0, 100); // TODO: should this be automatic or in statistics header?
+          aType.colMapper = colorMapper("jet", minVal, maxVal); // TODO: should this be automatic or in statistics header?
         }
         else if (statType == "AffineTFVectors")  // for now do the same as for Flags, TODO: use ranges automatically
         {
+          QString scaleInfo = availableStatisticsMatch.captured(3);
+          QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
+          QRegularExpressionMatch scaleInfoMatch = scaleInfoRegex.match(scaleInfo);
+          int scale;
+          if (scaleInfoMatch.hasMatch())
+          {
+            scale = scaleInfoMatch.captured(1).toInt();
+          }
+          else
+          {
+            scale = 1;
+          }
+
           aType.hasAffineTFData = true;
           aType.renderVectorData = true;
+          aType.vectorScale = scale;
           aType.vectorPen.setColor(QColor(255,0, 0));  // TODO: should this be automatic or in statistics header?
         }
 
