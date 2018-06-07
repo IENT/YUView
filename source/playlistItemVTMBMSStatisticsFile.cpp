@@ -309,8 +309,8 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
 
         // check if scalar or vector
         QString statType = availableStatisticsMatch.captured(2);
-        if (statType ==  "Vector")
-        {          
+        if (statType.contains("Vector"))
+        {
           QString scaleInfo = availableStatisticsMatch.captured(3);
           QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
           QRegularExpressionMatch scaleInfoMatch = scaleInfoRegex.match(scaleInfo);
@@ -327,15 +327,15 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
           aType.hasVectorData = true;
           aType.renderVectorData = true;
           aType.vectorScale = scale;
-          aType.vectorPen.setColor(QColor(255,0, 0));  // TODO: should this be automatic or in statistics header?
+          aType.vectorPen.setColor(QColor(255,0, 0));
         }
-        else if (statType == "Flag")
+        else if (statType.contains("Flag"))
         {
           aType.hasValueData = true;
           aType.renderValueData = true;
           aType.colMapper = colorMapper("jet", 0, 1);
         }
-        else if (statType == "Integer")  // for now do the same as for Flags, TODO: use ranges automatically
+        else if (statType == "Integer")  // for now do the same as for Flags
         {
           QString rangeInfo = availableStatisticsMatch.captured(3);
           QRegularExpression rangeInfoRegex("\\[([0-9\\-]+), *([0-9\\-]+)\\]");
@@ -355,9 +355,9 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
 
           aType.hasValueData = true;
           aType.renderValueData = true;
-          aType.colMapper = colorMapper("jet", minVal, maxVal); // TODO: should this be automatic or in statistics header?
+          aType.colMapper = colorMapper("jet", minVal, maxVal);
         }
-        else if (statType == "AffineTFVectors")  // for now do the same as for Flags, TODO: use ranges automatically
+        else if (statType.contains("AffineTFVectors"))
         {
           QString scaleInfo = availableStatisticsMatch.captured(3);
           QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
@@ -375,7 +375,13 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
           aType.hasAffineTFData = true;
           aType.renderVectorData = true;
           aType.vectorScale = scale;
-          aType.vectorPen.setColor(QColor(255,0, 0));  // TODO: should this be automatic or in statistics header?
+          aType.vectorPen.setColor(QColor(255,0, 0));
+        }
+
+        // check whether is was a geometric partitioning statistic with polygon shape
+        if (statType.contains("Triangle"))
+        {
+          aType.isPolygon = true;
         }
 
         // add the new type if it is not already in the list
@@ -435,6 +441,15 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
     // for extracting affine transform value statistics, need to match:
     // BlockStat: POC 2 @( 192,  96) [64x32] AffineMVL0={-324,-116,-276,-116,-324, -92}
     QRegularExpression affineTFRegex("POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
+    // for extracting scalar polygon  statistics, need to match:
+    // BlockStat: POC 2 @[(505, 384)--(511, 384)--(511, 415)--] GeoPUInterIntraFlag=0
+    // BlockStat: POC 2 @[(416, 448)--(447, 448)--(447, 478)--(416, 463)--] GeoPUInterIntraFlag=0
+    // will capture 3-5 points. other polygons are not supported
+    QRegularExpression scalarTriangleRegex("POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+=([0-9\\-]+)");
+    // for extracting vector polygon statistics, need to match:
+    // BlockStat: POC 1 @( 120,  80) [ 8x 8] MVL0={ -24,  -2}
+//    QRegularExpression vectorRegex("POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+)}");
+
 
     while (!in.atEnd())
     {
@@ -449,66 +464,120 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
 
         QRegularExpressionMatch statisitcMatch;
         // extract statistics info
-        if (aType->hasValueData)
+        // try block types
+        if (aType->isPolygon == false)
         {
-          statisitcMatch = scalarRegex.match(aLine);
+          if (aType->hasValueData)
+          {
+            statisitcMatch = scalarRegex.match(aLine);
+          }
+          else if (aType->hasVectorData)
+          {
+            statisitcMatch = vectorRegex.match(aLine);
+          }
+          else if (aType->hasAffineTFData)
+          {
+            statisitcMatch = affineTFRegex.match(aLine);
+          }
         }
-        else if (aType->hasVectorData)
+        else
+        // try polygons
         {
-          statisitcMatch = vectorRegex.match(aLine);
+          if (aType->hasValueData)
+          {
+            statisitcMatch = scalarTriangleRegex.match(aLine);
+          }
+//          else if (aType->hasVectorData)
+//          {
+//            statisitcMatch = vectorRegex.match(aLine);
+//          }
         }
-        else if (aType->hasAffineTFData)
-        {
-          statisitcMatch = affineTFRegex.match(aLine);
-        }
-
         if (!statisitcMatch.hasMatch())
         {
           parsingError = QString("Error while parsing statistic: ") + QString(aLine);
           continue;
         }
 
-        poc = statisitcMatch.captured(1).toInt();
-        posX = statisitcMatch.captured(2).toInt();
-        posY = statisitcMatch.captured(3).toInt();
-        width = statisitcMatch.captured(4).toInt();
-        height = statisitcMatch.captured(5).toInt();
+        // useful for debugging:
+//        QStringList all_captured = statisitcMatch.capturedTexts();
 
+
+        poc = statisitcMatch.captured(1).toInt();
         // if there is a new POC, we are done here!
         if (poc != frameIdxInternal)
           break;
 
-
-        // Check if block is within the image range
-        if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.statFrameSize.width() || posY + height > statSource.statFrameSize.height()))
-          // Block not in image. Warn about this.
-          blockOutsideOfFrame_idx = frameIdxInternal;
-
-//        const StatisticsType *statsType = statSource.getStatisticsType(type);
-//        Q_ASSERT_X(statsType != nullptr, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
-
-        if (aType->hasVectorData)
+        // process block statistics
+        if (aType->isPolygon == false)
         {
-          vecX = statisitcMatch.captured(6).toInt();
-          vecY = statisitcMatch.captured(7).toInt();
-          statSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
+          posX = statisitcMatch.captured(2).toInt();
+          posY = statisitcMatch.captured(3).toInt();
+          width = statisitcMatch.captured(4).toInt();
+          height = statisitcMatch.captured(5).toInt();
+
+          // Check if block is within the image range
+          if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.statFrameSize.width() || posY + height > statSource.statFrameSize.height()))
+            // Block not in image. Warn about this.
+            blockOutsideOfFrame_idx = frameIdxInternal;
+
+          if (aType->hasVectorData)
+          {
+            vecX = statisitcMatch.captured(6).toInt();
+            vecY = statisitcMatch.captured(7).toInt();
+            statSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
+          }
+          else if (aType->hasAffineTFData)
+          {
+            int vecX0 = statisitcMatch.captured(6).toInt();
+            int vecY0 = statisitcMatch.captured(7).toInt();
+            int vecX1 = statisitcMatch.captured(8).toInt();
+            int vecY1 = statisitcMatch.captured(9).toInt();
+            int vecX2 = statisitcMatch.captured(10).toInt();
+            int vecY2 = statisitcMatch.captured(11).toInt();
+            statSource.statsCache[typeID].addBlockAffineTF(posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
+          }
+          else
+          {
+            scalar = statisitcMatch.captured(6).toInt();
+            statSource.statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
+          }
         }
-        else if (aType->hasAffineTFData)
-        {
-          int vecX0 = statisitcMatch.captured(6).toInt();
-          int vecY0 = statisitcMatch.captured(7).toInt();
-          int vecX1 = statisitcMatch.captured(8).toInt();
-          int vecY1 = statisitcMatch.captured(9).toInt();
-          int vecX2 = statisitcMatch.captured(10).toInt();
-          int vecY2 = statisitcMatch.captured(11).toInt();
-          statSource.statsCache[typeID].addBlockAffineTF(posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
-        }
-//        else if (lineData && statsType->hasVectorData)
-//          statSource.statsCache[type].addLine(posX, posY, width, height, values[0], values[1], values[2], values[3]);
         else
+        // process polygon statistics
         {
-          scalar = statisitcMatch.captured(6).toInt();
-          statSource.statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
+          QString corners = statisitcMatch.captured(2);
+          QStringList cornerList = corners.split("--");
+          QRegularExpression cornerRegex("\\( *([0-9]+), *([0-9]+)\\)");
+          QVector<QPoint> points;
+          for (const auto &corner : cornerList)
+          {
+            QRegularExpressionMatch cornerMatch = cornerRegex.match(corner);
+            if( cornerMatch.hasMatch())
+            {
+              int x = cornerMatch.captured(1).toInt();
+              int y = cornerMatch.captured(2).toInt();
+              points << QPoint(x,y);
+
+              // Check if polygon is within the image range
+              if (blockOutsideOfFrame_idx == -1 && (x + width > statSource.statFrameSize.width() || y + height > statSource.statFrameSize.height()))
+                // Block not in image. Warn about this.
+                blockOutsideOfFrame_idx = frameIdxInternal;
+            }
+
+          }
+
+          if (aType->hasVectorData)
+          {
+            vecX = statisitcMatch.captured(3).toInt();
+            vecY = statisitcMatch.captured(4).toInt();
+            statSource.statsCache[typeID].addPolygonVector(points, vecX, vecY);
+          }
+          else if(aType->hasValueData)
+          {
+            scalar = statisitcMatch.captured(3).toInt();
+            statSource.statsCache[typeID].addPolygonValue(points, scalar);
+          }
+
         }
 
       }

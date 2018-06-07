@@ -255,7 +255,99 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
     }
   }
 
-  // Step four: Draw all the arrows
+
+  // Draw all the polygon value types. Also, if the zoom factor is larger than STATISTICS_DRAW_VALUES_ZOOM,
+  // also save a list of all the values of the blocks and their position in order to draw the values in the next step.
+//  QList<QPoint> drawStatPoints;       // The positions of each value
+//  QList<QStringList> drawStatTexts;   // For each point: The values to draw
+//  double maxLineWidth = 0.0;          // Also get the maximum width of the lines that is drawn. This will be used as an offset.
+  for (int i = statsTypeList.count() - 1; i >= 0; i--)
+  {
+    int typeIdx = statsTypeList[i].typeID;
+    if (!statsTypeList[i].render || !statsCache.contains(typeIdx))
+      // This statistics type is not rendered or could not be loaded.
+      continue;
+
+    // Go through all the value data
+    for (const statisticsItemPolygon_Value &valueItem : statsCache[typeIdx].polygonValueData)
+    {
+      // Calculate the size and position of the rectangle to draw (zoomed in)
+      QRect boundingRect = valueItem.corners.boundingRect();
+      QTransform trans;
+      trans=trans.scale(zoomFactor, zoomFactor);
+      QPolygon displayPolygon = trans.map(valueItem.corners);
+      QRect displayBoundingRect = displayPolygon.boundingRect();
+      // Draw polygon
+//      painter.drawPolygon(poly);
+//      path.addPolygon(qpf2);
+
+      // Check if the rectangle of the statistics item is even visible
+      bool isVisible = (!(displayBoundingRect.left() > xMax || displayBoundingRect.right() < xMin || displayBoundingRect.top() > yMax || displayBoundingRect.bottom() < yMin));
+
+      if (isVisible)
+      {
+        int value = valueItem.value; // This value determines the color for this item
+        if (statsTypeList[i].renderValueData)
+        {
+          // Get the right color for the item and draw it.
+          QColor color;
+          if (statsTypeList[i].scaleValueToBlockSize)
+            color = statsTypeList[i].colMapper.getColor(float(value) / (boundingRect.size().width() * boundingRect.size().height()));
+          else
+            color = statsTypeList[i].colMapper.getColor(value);
+          color.setAlpha(color.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+          painter->setBrush(color);
+
+          // Fill polygon
+          QPainterPath path;
+          path.addPolygon(displayPolygon);
+          painter->fillPath(path, color);
+        }
+
+        // optionally, draw a grid around the region
+        if (statsTypeList[i].renderGrid)
+        {
+          // Set the grid color (no fill)
+          QPen gridPen = statsTypeList[i].gridPen;
+          if (statsTypeList[i].scaleGridToZoom)
+            gridPen.setWidthF(gridPen.widthF() * zoomFactor);
+          painter->setPen(gridPen);
+          painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
+
+          // Save the line width (if thicker)
+          if (gridPen.widthF() > maxLineWidth)
+            maxLineWidth = gridPen.widthF();
+
+          painter->drawPolygon(displayPolygon);
+        }
+
+        // todo: draw text for polygon statistics
+//        // Save the position/text in order to draw the values later
+//        if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
+//        {
+//          QString valTxt  = statsTypeList[i].getValueTxt(value);
+//          if (!statsTypeList[i].valMap.contains(value) && statsTypeList[i].scaleValueToBlockSize)
+//            valTxt = QString("%1").arg(float(value) / (boundingRect.size[0] * boundingRect.size[1]));
+
+//          QString typeTxt = statsTypeList[i].typeName;
+//          QString statTxt = moreThanOneBlockStatRendered ? typeTxt + ":" + valTxt : valTxt;
+
+//          int i = drawStatPoints.indexOf(displayBoundingRect.topLeft());
+//          if (i == -1)
+//          {
+//            // No value for this point yet. Append it and start a new QStringList
+//            drawStatPoints.append(displayBoundingRect.topLeft());
+//            drawStatTexts.append(QStringList(statTxt));
+//          }
+//          else
+//            // There is already a value for this point. Just append the text.
+//            drawStatTexts[i].append(statTxt);
+//        }
+      }
+    }
+  }
+
+  // Draw all the arrows
   for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
     int typeIdx = statsTypeList[i].typeID;

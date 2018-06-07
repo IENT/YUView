@@ -148,6 +148,9 @@ public:
   QPen gridPen;
   bool scaleGridToZoom;
 
+  // is statistic drawn as a block or as a polygon?
+  bool isPolygon;
+
 private:
   // We keep a backup of the last used color map so that the map is not lost if the user tries out
   // different color maps.
@@ -209,6 +212,25 @@ struct statisticsItem_AffineTF
   QPoint point[3];
 };
 
+struct statisticsItemPolygon_Value
+{
+  // The position and size of the item.
+  QPolygon corners;
+
+  // The actual value
+  int value;
+};
+
+struct statisticsItemPolygon_Vector
+{
+  // The position and size of the item.
+  QPolygon corners;
+
+  // The actual vector value
+  QPoint point[2];
+};
+
+
 // A collection of statistics data (value and vector) for a certain context (for example for a certain type and a certain POC).
 class statisticsData
 {
@@ -218,9 +240,14 @@ public:
   void addBlockVector(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int vecX, int vecY);
   void addBlockAffineTF(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int vecX0, int vecY0, int vecX1, int vecY1, int vecX2, int vecY2);
   void addLine(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int x1, int y1, int x2, int y2);
+  void addPolygonVector(const QVector<QPoint> &points, int vecX, int vecY);
+  void addPolygonValue(const QVector<QPoint> &points, int val);
+
   QList<statisticsItem_Value> valueData;
   QList<statisticsItem_Vector> vectorData;
   QList<statisticsItem_AffineTF> affineTFData;
+  QList<statisticsItemPolygon_Value> polygonValueData;
+  QList<statisticsItemPolygon_Vector> polygonVectorData;
 
   // What is the size (area) of the biggest block)? This is needed for scaling the blocks according to their size.
   unsigned int maxBlockSize;

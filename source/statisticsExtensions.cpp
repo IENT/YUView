@@ -72,6 +72,9 @@ StatisticsType::StatisticsType()
   renderGrid = true;
   scaleGridToZoom = false;
   gridPen = QPen(QBrush(QColor(Qt::black)),0.25,Qt::SolidLine);
+
+  // Default: no polygon shape, use Rect
+  isPolygon = false;
 }
 
 StatisticsType::StatisticsType(int tID, const QString &sName, int vectorScaling) : StatisticsType()
@@ -361,6 +364,30 @@ void statisticsData::addLine(unsigned short x, unsigned short y, unsigned short 
   vec.isLine = true;
   vectorData.append(vec);
 }
+
+void statisticsData::addPolygonValue(const QVector<QPoint> &points, int val)
+{
+  statisticsItemPolygon_Value value;
+  value.corners = QPolygon(points);
+  value.value = val;
+
+// todo: how to do this nicely?
+//  // Always keep the biggest block size updated.
+//  unsigned int wh = w*h;
+//  if (wh > maxBlockSize)
+//    maxBlockSize = wh;
+
+  polygonValueData.append(value);
+}
+
+void statisticsData::addPolygonVector(const QVector<QPoint> &points, int vecX, int vecY)
+{
+  statisticsItemPolygon_Vector vec;
+  vec.corners = QPolygon(points);
+  vec.point[0] = QPoint(vecX,vecY);
+  polygonVectorData.append(vec);
+}
+
 // Setup an invalid (uninitialized color mapper)
 colorMapper::colorMapper()
 {
