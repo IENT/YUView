@@ -445,10 +445,9 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
     // BlockStat: POC 2 @[(505, 384)--(511, 384)--(511, 415)--] GeoPUInterIntraFlag=0
     // BlockStat: POC 2 @[(416, 448)--(447, 448)--(447, 478)--(416, 463)--] GeoPUInterIntraFlag=0
     // will capture 3-5 points. other polygons are not supported
-    QRegularExpression scalarTriangleRegex("POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+=([0-9\\-]+)");
-    // for extracting vector polygon statistics, need to match:
-    // BlockStat: POC 1 @( 120,  80) [ 8x 8] MVL0={ -24,  -2}
-//    QRegularExpression vectorRegex("POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+)}");
+    QRegularExpression scalarPolygonRegex("POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+=([0-9\\-]+)");
+    // for extracting vector polygon statistics:
+    QRegularExpression vectorPolygonRegex("POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+)}");
 
 
     while (!in.atEnd())
@@ -485,12 +484,12 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
         {
           if (aType->hasValueData)
           {
-            statisitcMatch = scalarTriangleRegex.match(aLine);
+            statisitcMatch = scalarPolygonRegex.match(aLine);
           }
-//          else if (aType->hasVectorData)
-//          {
-//            statisitcMatch = vectorRegex.match(aLine);
-//          }
+          else if (aType->hasVectorData)
+          {
+            statisitcMatch = vectorPolygonRegex.match(aLine);
+          }
         }
         if (!statisitcMatch.hasMatch())
         {

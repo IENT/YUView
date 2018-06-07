@@ -277,9 +277,6 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       trans=trans.scale(zoomFactor, zoomFactor);
       QPolygon displayPolygon = trans.map(valueItem.corners);
       QRect displayBoundingRect = displayPolygon.boundingRect();
-      // Draw polygon
-//      painter.drawPolygon(poly);
-//      path.addPolygon(qpf2);
 
       // Check if the rectangle of the statistics item is even visible
       bool isVisible = (!(displayBoundingRect.left() > xMax || displayBoundingRect.right() < xMin || displayBoundingRect.top() > yMax || displayBoundingRect.bottom() < yMin));
@@ -606,6 +603,158 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
     }
   }
   
+
+  // Draw all polygon vector data
+  for (int i = statsTypeList.count() - 1; i >= 0; i--)
+  {
+    int typeIdx = statsTypeList[i].typeID;
+    if (!statsTypeList[i].render || !statsCache.contains(typeIdx))
+      // This statistics type is not rendered or could not be loaded.
+      continue;
+
+    // Go through all the vector data
+    for (const statisticsItemPolygon_Vector &vectorItem : statsCache[typeIdx].polygonVectorData)
+    {
+      // Calculate the size and position of the rectangle to draw (zoomed in)
+      QTransform trans;
+      trans=trans.scale(zoomFactor, zoomFactor);
+      QPolygon displayPolygon = trans.map(vectorItem.corners);
+      QRect displayBoundingRect = displayPolygon.boundingRect();
+
+      // Check if the rectangle of the statistics item is even visible
+      bool isVisible = (!(displayBoundingRect.left() > xMax || displayBoundingRect.right() < xMin || displayBoundingRect.top() > yMax || displayBoundingRect.bottom() < yMin));
+
+      if (isVisible)
+      {
+        if (statsTypeList[i].renderVectorData)
+        {
+          // start vector at center of the block
+          int center_x,center_y,head_x,head_y;
+          float vx, vy;
+
+          for( const QPoint &point : displayPolygon)
+          {
+            center_x += point.x();
+            center_y += point.y();
+          }
+          center_x /= displayPolygon.size();
+          center_y /= displayPolygon.size();
+
+          // The length of the vector
+          vx = (float)vectorItem.point[0].x() / statsTypeList[i].vectorScale;
+          vy = (float)vectorItem.point[0].y() / statsTypeList[i].vectorScale;
+
+          // The end point of the vector
+          head_x = center_x + zoomFactor * vx;
+          head_y = center_y + zoomFactor * vy;
+
+          // Is the arrow (possibly) visible?
+          if (!(center_x < xMin && head_x < xMin) && !(center_x > xMax && head_x > xMax) && !(center_y < yMin && head_y < yMin) && !(center_y > yMax && head_y > yMax))
+          {
+            // Set the pen for drawing
+            QPen vectorPen = statsTypeList[i].vectorPen;
+            QColor arrowColor = vectorPen.color();
+            if (statsTypeList[i].mapVectorToColor)
+              arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
+            arrowColor.setAlpha(arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+            vectorPen.setColor(arrowColor);
+            if (statsTypeList[i].scaleVectorToZoom)
+              vectorPen.setWidthF(vectorPen.widthF() * zoomFactor / 8);
+            painter->setPen(vectorPen);
+            painter->setBrush(arrowColor);
+
+            // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or smaller.
+            if (zoomFactor > 1)
+            {
+              // At which angle do we draw the triangle?
+              // A vector to the right (1,  0) -> 0°
+              // A vector to the top   (0, -1) -> 90°
+              const qreal angle = qAtan2(vy, vx);
+
+              // Draw the vector head if the vector is not 0,0
+              if ((vx != 0 || vy != 0))
+              {
+                // The size of the arrow head
+                const int headSize = (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && !statsTypeList[i].scaleVectorToZoom) ? 8 : zoomFactor/2;
+
+                if (statsTypeList[i].arrowHead != StatisticsType::arrowHead_t::none)
+                {
+                  // We draw an arrow head. This means that we will have to draw a shortened line
+                  const int shorten = (statsTypeList[i].arrowHead == StatisticsType::arrowHead_t::arrow) ? headSize * 2 : headSize * 0.5;
+
+                  if (sqrt(vx*vx*zoomFactor*zoomFactor + vy*vy*zoomFactor*zoomFactor) > shorten)
+                  {
+                    // Shorten the line and draw it
+                    QLineF vectorLine = QLineF(center_x, center_y, double(head_x) - cos(angle) * shorten, double(head_y) - sin(angle) * shorten);
+                    painter->drawLine(vectorLine);
+                  }
+                }
+                else
+                  // Draw the not shortened line
+                  painter->drawLine(center_x, center_y, head_x, head_y);
+
+                if (statsTypeList[i].arrowHead == StatisticsType::arrowHead_t::arrow)
+                {
+                  // Save the painter state, translate to the arrow tip, rotate the painter and draw the normal triangle.
+                  painter->save();
+
+                  // Draw the arrow tip with fixed size
+                  painter->translate(QPoint(head_x, head_y));
+                  painter->rotate(qRadiansToDegrees(angle));
+                  const QPoint points[3] = {QPoint(0,0), QPoint(-headSize*2, -headSize), QPoint(-headSize*2, headSize)};
+                  painter->drawPolygon(points, 3);
+
+                  // Restore. Revert translation/rotation of the painter.
+                  painter->restore();
+                }
+                else if (statsTypeList[i].arrowHead == StatisticsType::arrowHead_t::circle)
+                  painter->drawEllipse(head_x-headSize/2, head_y-headSize/2, headSize, headSize);
+              }
+
+// todo
+//              if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && statsTypeList[i].renderVectorDataValues)
+//              {
+//                // Also draw the vector value next to the arrow head
+//                  QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
+//                  QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+//                  textRect.moveCenter(QPoint(head_x,head_y));
+//                  int a = qRadiansToDegrees(angle);
+//                  if (a < 45 && a > -45)
+//                    textRect.moveLeft(head_x);
+//                  else if (a <= -45 && a > -135)
+//                    textRect.moveBottom(head_y);
+//                  else if (a >= 45 && a < 135)
+//                    textRect.moveTop(head_y);
+//                  else
+//                    textRect.moveRight(head_x);
+//                  painter->drawText(textRect, Qt::AlignLeft, txt);
+
+//              }
+            }
+            else
+            {
+              // No arrow head is drawn. Only draw a line.
+              painter->drawLine(center_x, center_y, head_x, head_y);
+            }
+          }
+        }
+
+        // optionally, draw the polygon outline
+        if (statsTypeList[i].renderGrid && isVisible)
+        {
+          QPen gridPen = statsTypeList[i].gridPen;
+          if (statsTypeList[i].scaleGridToZoom)
+            gridPen.setWidthF(gridPen.widthF() * zoomFactor);
+
+          painter->setPen(gridPen);
+          painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
+
+          painter->drawPolygon(displayPolygon);
+
+        }
+      }
+    }
+  }
   // Restore the state the state of the painter from before this function was called.
   // This will reset the set pens and the translation.
   painter->restore();
