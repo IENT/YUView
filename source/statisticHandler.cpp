@@ -632,6 +632,8 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           int center_x,center_y,head_x,head_y;
           float vx, vy;
 
+          center_x = 0;
+          center_y = 0;
           for( const QPoint &point : displayPolygon)
           {
             center_x += point.x();
