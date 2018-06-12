@@ -138,7 +138,7 @@ unsigned int parserBase::sub_byte_reader::readBits(int nrBits, QString *bitsRead
     if (posInBuffer_bits == 8 && nrBits != 0) 
     {
       // We read all bits we could from the current byte but we need more. Go to the next byte.
-      if (!p_gotoNextByte())
+      if (!gotoNextByte())
         // We are at the end of the buffer but we need to read more. Error.
         throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
     }
@@ -212,7 +212,7 @@ QByteArray parserBase::sub_byte_reader::readBytes(int nrBytes)
     throw std::logic_error("When reading bytes from the bitstream, it should be byte alligned.");
 
   if (posInBuffer_bits == 8)
-    if (!p_gotoNextByte())
+    if (!gotoNextByte())
       // We are at the end of the buffer but we need to read more. Error.
       throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
 
@@ -311,11 +311,20 @@ bool parserBase::sub_byte_reader::more_rbsp_data()
   return false;
 }
 
-bool parserBase::sub_byte_reader::p_gotoNextByte()
+bool parserBase::sub_byte_reader::testReadingBits(int nrBits)
+{
+  const int curBitsLeft = 8 - posInBuffer_bits;
+  const int entireBytesLeft = byteArray.size() - posInBuffer_bytes;
+  const int nrBitsLeftToRead = curBitsLeft + entireBytesLeft * 8;
+    
+  return nrBitsLeftToRead <= nrBits;
+}
+
+bool parserBase::sub_byte_reader::gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
   if (byteArray[posInBuffer_bytes] == (char)0)
-    p_numEmuPrevZeroBytes++;
+    numEmuPrevZeroBytes++;
 
   // Skip the remaining sub-byte-bits
   posInBuffer_bits = 0;
@@ -328,7 +337,7 @@ bool parserBase::sub_byte_reader::p_gotoNextByte()
 
   if (skipEmulationPrevention)
   {
-    if (p_numEmuPrevZeroBytes == 2 && byteArray[posInBuffer_bytes] == (char)3) 
+    if (numEmuPrevZeroBytes == 2 && byteArray[posInBuffer_bytes] == (char)3) 
     {
       // The current byte is an emulation prevention 3 byte. Skip it.
       posInBuffer_bytes++; // Skip byte
@@ -339,11 +348,11 @@ bool parserBase::sub_byte_reader::p_gotoNextByte()
       }
 
       // Reset counter
-      p_numEmuPrevZeroBytes = 0;
+      numEmuPrevZeroBytes = 0;
     }
     else if (byteArray[posInBuffer_bytes] != (char)0)
       // No zero byte. No emulation prevention 3 byte
-      p_numEmuPrevZeroBytes = 0;
+      numEmuPrevZeroBytes = 0;
   }
 
   return true;

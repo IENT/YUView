@@ -48,7 +48,8 @@ void parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool ran
   newFrame.randomAccessPoint = randomAccessPoint;
   frameList.append(newFrame);
 
-  assert(!POCList.contains(poc));
+  if (POCList.contains(poc))
+    throw std::logic_error("Error adding Frame - POC already present."); 
   POCList.append(poc);
 }
 

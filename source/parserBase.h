@@ -60,16 +60,17 @@ protected:
     TreeItem(TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); }
     TreeItem(QList<QString> &data, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData = data; }
     TreeItem(const QString &name, TreeItem *parent)  { parentItem = parent; if (parent) parent->childItems.append(this); itemData.append(name); }
-    TreeItem(const QString &name, int  val  , const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, uint64_t val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, int64_t val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, bool val  , const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
-    TreeItem(const QString &name, double val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, QString val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; }
-    TreeItem(const QString &name, int val, const QString &coding, const QString &code, QStringList meanings, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; if (val >= meanings.length()) val = meanings.length() - 1; itemData.append(meanings.at(val)); }
-    TreeItem(const QString &name, int val, const QString &coding, const QString &code, QMap<int, QString> meanings, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; itemData.append(meanings.value(val)); }
-    TreeItem(const QString &name, int val, const QString &coding, const QString &code, QString meaning, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; itemData.append(meaning); }
-    TreeItem(const QString &name, QString val, const QString &coding, const QString &code, QString meaning, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; itemData.append(meaning); }
+    TreeItem(const QString &name, int          val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
+    TreeItem(const QString &name, unsigned int val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
+    TreeItem(const QString &name, uint64_t     val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
+    TreeItem(const QString &name, int64_t      val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
+    TreeItem(const QString &name, bool         val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
+    TreeItem(const QString &name, double       val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
+    TreeItem(const QString &name, QString      val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; }
+    TreeItem(const QString &name, int          val, const QString &coding, const QString &code, QStringList meanings, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; if (val >= meanings.length()) val = meanings.length() - 1; itemData.append(meanings.at(val)); }
+    TreeItem(const QString &name, int          val, const QString &coding, const QString &code, QMap<int, QString> meanings, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; if (meanings.contains(val)) itemData.append(meanings.value(val)); else if (meanings.contains(-1)) itemData.append(meanings.value(-1)); }
+    TreeItem(const QString &name, int          val, const QString &coding, const QString &code, QString meaning, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; itemData.append(meaning); }
+    TreeItem(const QString &name, QString      val, const QString &coding, const QString &code, QString meaning, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; itemData.append(meaning); }
 
     ~TreeItem() { qDeleteAll(childItems); }
 
@@ -103,7 +104,7 @@ protected:
   class sub_byte_reader
   {
   public:
-    sub_byte_reader(const QByteArray &inArr) : byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) { skipEmulationPrevention = true; }
+    sub_byte_reader(const QByteArray &inArr) : byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), numEmuPrevZeroBytes(0) { skipEmulationPrevention = true; }
     // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
     unsigned int readBits(int nrBits, QString *bitsRead=nullptr);
     uint64_t     readBits64(int nrBits, QString *bitsRead=nullptr);
@@ -114,6 +115,8 @@ protected:
     int readSE_V(QString *bitsRead=nullptr);
     // Is there more RBSP data or are we at the end?
     bool more_rbsp_data();
+    // Will reading of the given number of bits succeed?
+    bool testReadingBits(int nrBits);
     // How many full bytes were read from the reader?
     int nrBytesRead() { return (posInBuffer_bits == 0) ? posInBuffer_bytes : posInBuffer_bytes + 1; }
 
@@ -126,11 +129,11 @@ protected:
 
     // Move to the next byte and look for an emulation prevention 3 byte. Remove it (skip it) if found.
     // This function is just used by the internal reading functions.
-    bool p_gotoNextByte();
+    bool gotoNextByte();
 
     int posInBuffer_bytes;   // The byte position in the buffer
     int posInBuffer_bits;    // The sub byte (bit) position in the buffer (0...7)
-    int p_numEmuPrevZeroBytes; // The number of emulation prevention three bytes that were found
+    int numEmuPrevZeroBytes; // The number of emulation prevention three bytes that were found
   };
 
   /* This class provides the ability to write to a QByteArray on a bit basis. 

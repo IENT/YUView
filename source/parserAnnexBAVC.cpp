@@ -317,6 +317,11 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
       if (new_pic_timing_sei->parse_pic_timing_sei(sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, nalRoot) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
         reparse_sei.append(new_pic_timing_sei);
     }
+    else if (new_sei->payloadType == 4)
+    {
+      auto new_user_data_registered_itu_t_t35_sei = QSharedPointer<user_data_registered_itu_t_t35_sei>(new user_data_registered_itu_t_t35_sei(new_sei));
+      new_user_data_registered_itu_t_t35_sei->parse_user_data_registered_itu_t_t35(sei_data, nalRoot);
+    }
     else if (new_sei->payloadType == 5)
     {
       auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
@@ -1212,7 +1217,7 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
         TopFieldOrderCnt = tempPicOrderCnt;
     }
   }
-
+  
   if (prev_pic.isNull())
   {
     globalPOC = 0;
@@ -1238,7 +1243,11 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     }
     else
     {
-      globalPOC = prev_pic->globalPOC_lastIDR + TopFieldOrderCnt;
+      if (field_pic_flag && bottom_field_flag)
+        globalPOC = prev_pic->globalPOC_lastIDR + BottomFieldOrderCnt;
+      else
+        globalPOC = prev_pic->globalPOC_lastIDR + TopFieldOrderCnt;
+
       globalPOC_highestGlobalPOCLastGOP = prev_pic->globalPOC_highestGlobalPOCLastGOP;
       if (globalPOC > globalPOC_highestGlobalPOCLastGOP)
         globalPOC_highestGlobalPOCLastGOP = globalPOC;
@@ -1800,6 +1809,107 @@ bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool
     }
   }
   return true;
+}
+
+void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_user_data_registered_itu_t_t35(QByteArray &data, TreeItem * root)
+{
+  if (data.length() < 2)
+    throw std::logic_error("Invalid length of user_data_registered_itu_t_t35 SEI.");
+
+  sub_byte_reader reader(data);
+
+  TreeItem *itemTree = root ? new TreeItem("user_data_registered_itu_t_t35()", root) : nullptr;
+  QStringList itu_t_t35_country_code_meaning = QStringList() << "Japan" << "Albania" << "Algeria" << "American Samoa" << "Germany (Federal Republic of)" << "Anguilla" << "Antigua and Barbuda" << "Argentina" << "Ascension (see S. Helena)" << "Australia" << "Austria" << "Bahamas" << "Bahrain" << "Bangladesh" << "Barbados" << "Belgium" << "Belize" << "Benin (Republic of)" << "Bermudas" << "Bhutan (Kingdom of)" << "Bolivia" << "Botswana" << "Brazil" << "British Antarctic Territory" << "British Indian Ocean Territory" << "British Virgin Islands" << "Brunei Darussalam" << "Bulgaria" << "Myanmar (Union of)" << "Burundi" << "Byelorussia" << "Cameroon" << "Canada" << "Cape Verde" << "Cayman Islands" << "Central African Republic" << "Chad" << "Chile" << "China" << "Colombia" << "Comoros" << "Congo" << "Cook Islands" << "Costa Rica" << "Cuba" << "Cyprus" << "Czech and Slovak Federal Republic" << "Cambodia" << "Democratic People's Republic of Korea" << "Denmark" << "Djibouti" << "Dominican Republic" << "Dominica" << "Ecuador" << "Egypt" << "El Salvador" << "Equatorial Guinea" << "Ethiopia" << "Falkland Islands" << "Fiji" << "Finland" << "France" << "French Polynesia" << "French Southern and Antarctic Lands" << "Gabon" << "Gambia" << "Germany (Federal Republic of)" << "Angola" << "Ghana" << "Gibraltar" << "Greece" << "Grenada" << "Guam" << "Guatemala" << "Guernsey" << "Guinea" << "Guinea-Bissau" << "Guayana" << "Haiti" << "Honduras" << "Hongkong" << "Hungary (Republic of)" << "Iceland" << "India" << "Indonesia" << "Iran (Islamic Republic of)" << "Iraq" << "Ireland" << "Israel" << "Italy" << "Côte d'Ivoire" << "Jamaica" << "Afghanistan" << "Jersey" << "Jordan" << "Kenya" << "Kiribati" << "Korea (Republic of)" << "Kuwait" << "Lao (People's Democratic Republic)" << "Lebanon" << "Lesotho" << "Liberia" << "Libya" << "Liechtenstein" << "Luxembourg" << "Macau" << "Madagascar" << "Malaysia" << "Malawi" << "Maldives" << "Mali" << "Malta" << "Mauritania" << "Mauritius" << "Mexico" << "Monaco" << "Mongolia" << "Montserrat" << "Morocco" << "Mozambique" << "Nauru" << "Nepal" << "Netherlands" << "Netherlands Antilles" << "New Caledonia" << "New Zealand" << "Nicaragua" << "Niger" << "Nigeria" << "Norway" << "Oman" << "Pakistan" << "Panama" << "Papua New Guinea" << "Paraguay" << "Peru" << "Philippines" << "Poland (Republic of)" << "Portugal" << "Puerto Rico" << "Qatar" << "Romania" << "Rwanda" << "Saint Kitts and Nevis" << "Saint Croix" << "Saint Helena and Ascension" << "Saint Lucia" << "San Marino" << "Saint Thomas" << "Sao Tomé and Principe" << "Saint Vincent and the Grenadines" << "Saudi Arabia" << "Senegal" << "Seychelles" << "Sierra Leone" << "Singapore" << "Solomon Islands" << "Somalia" << "South Africa" << "Spain" << "Sri Lanka" << "Sudan" << "Suriname" << "Swaziland" << "Sweden" << "Switzerland" << "Syria" << "Tanzania" << "Thailand" << "Togo" << "Tonga" << "Trinidad and Tobago" << "Tunisia" << "Turkey" << "Turks and Caicos Islands" << "Tuvalu" << "Uganda" << "Ukraine" << "United Arab Emirates" << "United Kingdom" << "United States (ANSI-SCTE 128-1)" << "Burkina Faso" << "Uruguay" << "U.S.S.R." << "Vanuatu" << "Vatican City State" << "Venezuela" << "Viet Nam" << "Wallis and Futuna" << "Western Samoa" << "Yemen (Republic of)" << "Yemen (Republic of)" << "Yugoslavia" << "Zaire" << "Zambia" << "Zimbabwe" << "Unspecified";
+  READBITS_M(itu_t_t35_country_code, 8, itu_t_t35_country_code_meaning);
+  int i = 1;
+  if (itu_t_t35_country_code == 0xff)
+  {
+   READBITS(itu_t_t35_country_code_extension_byte, 8);
+   i = 2;
+  }
+  if (itu_t_t35_country_code == 0xB5)
+  {
+    // This is possibly an ANSI payload (see ANSI-SCTE 128-1 2013)
+    QMap<int, QString> itu_t_t35_provider_code_meaning;
+    itu_t_t35_provider_code_meaning.insert(49, "ANSI-SCTE 128-1 2013");
+    READBITS_M(itu_t_t35_provider_code, 16, itu_t_t35_provider_code_meaning);  // A fixed 16-bit field registered by the ATSC. The value shall be 0x0031 (49).
+    i += 2;
+
+    QMap<int, QString> user_identifier_meaning;
+    user_identifier_meaning.insert(1195456820, "ATSC1_data()"); // 0x47413934 ("GA94")
+    user_identifier_meaning.insert(1146373937, "afd_data()");   // 0x44544731 ("DTG1")
+    user_identifier_meaning.insert(-1, "SCTE/ATSC Reserved");
+    READBITS_M(user_identifier, 32, user_identifier_meaning);
+    i += 4;
+
+    if (user_identifier == 1195456820)
+    {
+      // ATSC1_data
+      parse_ATSC1_data(reader, itemTree);
+    }
+    else
+    {
+      // Display the raw bytes of the payload
+      int idx = 0;
+      while (i < data.length())
+      {
+        READBITS_A(itu_t_t35_payload_byte_array, 8, idx);
+        i++;
+      }
+    }
+  }
+  else
+  {
+    // Just display the raw bytes of the payload
+    int idx = 0;
+    while (i < data.length())
+    {
+      READBITS_A(itu_t_t35_payload_byte_array, 8, idx);
+      i++;
+    }
+  }
+}
+
+void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(sub_byte_reader &reader, TreeItem * root)
+{
+  TreeItem *itemTree = root ? new TreeItem("ATSC1_data", root) : nullptr;
+  
+  QMap<int, QString> user_data_type_code_meaning;
+  user_data_type_code_meaning.insert(3, "cc_data() / DTV CC");
+  user_data_type_code_meaning.insert(6, "bar_data()");
+  user_data_type_code_meaning.insert(-1, "SCTE/ATSC Reserved");
+  READBITS_M(user_data_type_code, 8, user_data_type_code_meaning);
+
+  if (user_data_type_code == 0x03)
+  {
+    // cc_data() - CEA-708
+    READFLAG(process_em_data_flag);
+    READFLAG(process_cc_data_flag);
+    READFLAG(additional_data_flag);
+    READBITS(cc_count, 5);
+    READBITS(em_data, 8);
+    if (em_data != 255)
+      throw std::logic_error("The ATSC em_data indicator should be 255");
+
+    // Now should follow (cc_count * 24 bits of cc_data_pkts)
+    // Just display the raw bytes of the payload
+    for (int i = 0; i < cc_count; i++)
+    {
+      READBITS_A(cc_packet_data, 24, i);
+    }
+
+    READBITS(marker_bits, 8);
+    if (marker_bits != 255)
+      throw std::logic_error("The ATSC marker_bits indicator should be 255");
+    
+    // ATSC_reserved_user_data
+    int idx = 0;
+    while (reader.testReadingBits(8))
+    {
+      READBITS_A(ATSC_reserved_user_data, 8, idx);
+      idx++;
+    }
+  }
 }
 
 void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
