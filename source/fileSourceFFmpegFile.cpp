@@ -67,13 +67,13 @@ fileSourceFFmpegFile::fileSourceFFmpegFile()
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFmpegFile::fileSystemWatcherFileChanged);
 }
 
-AVPacketWrapper fileSourceFFmpegFile::getNextPacket(bool getLastPackage)
+AVPacketWrapper fileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool videoPacketsOnly)
 {
   if (getLastPackage)
     return pkt;
 
   // Load the next packet
-  if (!goToNextVideoPacket())
+  if (!goToNextVideoPacket(videoPacketsOnly))
   {
     posInFile = -1;
     return AVPacketWrapper();
@@ -427,7 +427,7 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   isFileOpened = true;
 }
 
-bool fileSourceFFmpegFile::goToNextVideoPacket()
+bool fileSourceFFmpegFile::goToNextVideoPacket(bool videoPacketsOnly)
 {
   //Load the next video stream packet into the packet buffer
   int ret = 0;
@@ -440,7 +440,7 @@ bool fileSourceFFmpegFile::goToNextVideoPacket()
     ret = fmt_ctx.read_frame(ff, pkt);
     DEBUG_FFMPEG("fileSourceFFmpegFile::goToNextVideoPacket: pts %d dts %d%s", (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
   }
-  while (ret == 0 && pkt.get_stream_index() != video_stream.get_index());
+  while (ret == 0 && (!videoPacketsOnly || pkt.get_stream_index() != video_stream.get_index()));
   
   if (ret < 0)
   {

@@ -69,7 +69,7 @@ public:
   // Do not mix calls to these two functions when reading a file.
   QByteArray getNextNALUnit(uint64_t *pts=nullptr);
   // Return the next packet (unless getLastPackage is set in which case we return the current packet)
-  AVPacketWrapper getNextPacket(bool getLastPackage=false);
+  AVPacketWrapper getNextPacket(bool getLastPackage=false, bool videoPacketsOnly=true);
   // Return the raw extradata (in avformat format containing the parameter sets)
   QByteArray getExtradata();
   //
@@ -100,7 +100,7 @@ protected:
   FFmpegVersionHandler ff;          //< Access to the libraries independent of their version
   AVFormatContextWrapper fmt_ctx;
   void openFileAndFindVideoStream(QString fileName);
-  bool goToNextVideoPacket();
+  bool goToNextVideoPacket(bool videoPacketsOnly=true);
   AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile;                   //< Are we at the end of file (draining mode)?
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
