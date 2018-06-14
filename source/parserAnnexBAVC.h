@@ -531,6 +531,8 @@ protected:
 
   private:
     void parse_ATSC1_data(sub_byte_reader &reader, TreeItem *root);
+    QString getCCDataPacketMeaning(int cc_packet_data);
+    bool checkByteParity(int val);
   };
 
   struct user_data_sei : sei

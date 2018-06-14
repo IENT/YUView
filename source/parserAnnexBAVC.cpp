@@ -62,6 +62,7 @@
 #define LOGVAL_M(val,meaning) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),meaning,itemTree);}
 // Log a custom message (add a cutom item in the tree)
 #define LOGPARAM(name, val, coding, code, meaning) {if (itemTree) new TreeItem(name, val, coding, code, meaning, itemTree);}
+#define LOGINFO(info) {if (itemTree) new TreeItem("Info", info, "", "", itemTree);}
 
 parserAnnexBAVC::parserAnnexBAVC() : parserAnnexB()
 { 
@@ -295,38 +296,63 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
   }
   else if (nal_avc.nal_unit_type == SEI)
   {
-    // Create a new SEI
+    // An SEI. Each sei_rbsp may contain multiple sei_message
     auto new_sei = QSharedPointer<sei>(new sei(nal_avc));
     QByteArray sei_data = payload;
-    int nrBytes = new_sei->parse_sei_message(sei_data, nalRoot);
-    sei_data.remove(0, nrBytes);
 
-    specificDescription = QString(" payloadType %1").arg(new_sei->payloadType);
-    if (!new_sei->payloadTypeName.isEmpty())
-      specificDescription += " - " + new_sei->payloadTypeName;
+    int sei_count = 0;
+    while(!sei_data.isEmpty())
+    {
+      TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
+      
+      // Parse the SEI header and remove it from the data array
+      int nrBytes = new_sei->parse_sei_message(sei_data, message_tree);
+      sei_data.remove(0, nrBytes);
 
-    if (new_sei->payloadType == 0)
-    {
-      auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
-      if (new_buffering_period_sei->parse_buffering_period_sei(sei_data, active_SPS_list, nalRoot) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
-        reparse_sei.append(new_buffering_period_sei);
+      if (message_tree)
+        message_tree->itemData[0] = QString("sei_message %1 - %2").arg(sei_count).arg(new_sei->payloadTypeName);
+
+      QByteArray sub_sei_data = sei_data.mid(0, new_sei->payloadSize);
+
+      if (new_sei->payloadType == 0)
+      {
+        auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
+        if (new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, active_SPS_list, message_tree) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
+          reparse_sei.append(new_buffering_period_sei);
+      }
+      else if (new_sei->payloadType == 1)
+      {
+        auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
+        if (new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, message_tree) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
+          reparse_sei.append(new_pic_timing_sei);
+      }
+      else if (new_sei->payloadType == 4)
+      {
+        if (payload.length() != 74)
+        {
+          int debugStop = 22;
+        }
+        auto new_user_data_registered_itu_t_t35_sei = QSharedPointer<user_data_registered_itu_t_t35_sei>(new user_data_registered_itu_t_t35_sei(new_sei));
+        new_user_data_registered_itu_t_t35_sei->parse_user_data_registered_itu_t_t35(sub_sei_data, message_tree);
+      }
+      else if (new_sei->payloadType == 5)
+      {
+        auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
+        new_user_data_sei->parse_user_data_sei(sub_sei_data, message_tree);
+      }
+      
+      // Remove the sei payload bytes from the data
+      sei_data.remove(0, new_sei->payloadSize);
+      if (sei_data.length() == 1)
+      {
+        // This should be the rspb trailing bits (10000000)
+        sei_data.remove(0, 1);
+      }
+
+      sei_count++;
     }
-    else if (new_sei->payloadType == 1)
-    {
-      auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
-      if (new_pic_timing_sei->parse_pic_timing_sei(sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, nalRoot) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
-        reparse_sei.append(new_pic_timing_sei);
-    }
-    else if (new_sei->payloadType == 4)
-    {
-      auto new_user_data_registered_itu_t_t35_sei = QSharedPointer<user_data_registered_itu_t_t35_sei>(new user_data_registered_itu_t_t35_sei(new_sei));
-      new_user_data_registered_itu_t_t35_sei->parse_user_data_registered_itu_t_t35(sei_data, nalRoot);
-    }
-    else if (new_sei->payloadType == 5)
-    {
-      auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
-      new_user_data_sei->parse_user_data_sei(sei_data, nalRoot);
-    }
+
+    specificDescription = QString(" Number Messages: %1").arg(sei_count);
   }
 
   if (nalRoot)
@@ -1888,19 +1914,21 @@ void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(sub_b
     READFLAG(additional_data_flag);
     READBITS(cc_count, 5);
     READBITS(em_data, 8);
-    if (em_data != 255)
-      throw std::logic_error("The ATSC em_data indicator should be 255");
-
+    
     // Now should follow (cc_count * 24 bits of cc_data_pkts)
     // Just display the raw bytes of the payload
     for (int i = 0; i < cc_count; i++)
     {
-      READBITS_A(cc_packet_data, 24, i);
+      QString code; 
+      int v = reader.readBits(24,&code); 
+      QString meaning = getCCDataPacketMeaning(v);
+      cc_packet_data.append(v);
+      if (itemTree) 
+        new TreeItem(QString("cc_packet_data[%1]").arg(i), v, QString("u(v) -> u(%1)").arg(24),code, meaning, itemTree);
     }
 
     READBITS(marker_bits, 8);
-    if (marker_bits != 255)
-      throw std::logic_error("The ATSC marker_bits indicator should be 255");
+    // The ATSC marker_bits indicator should be 255
     
     // ATSC_reserved_user_data
     int idx = 0;
@@ -1910,6 +1938,162 @@ void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(sub_b
       idx++;
     }
   }
+}
+
+QString parserAnnexBAVC::user_data_registered_itu_t_t35_sei::getCCDataPacketMeaning(int cc_packet_data)
+{
+  // Parse the 3 bytes as 608
+  int byte0 = (cc_packet_data >> 16) & 0xff;
+  int byte1 = (cc_packet_data >> 8) & 0xff;
+  int byte2 = cc_packet_data & 0xff;
+    
+  // Ignore if this flag is not set
+  bool cc_valid = ((byte0 & 4) > 0);
+  if (!cc_valid)
+    return "";
+
+  /* cc_type: 
+   * 0 ntsc_cc_field_1
+   * 1 ntsc_cc_field_2
+   * 2 dtvcc_packet_data
+   * dtvcc_packet_start
+   */
+  int cc_type = byte0 & 0x03;
+  if (cc_type == 1)
+    // For now, we ignore field 2 tags although we could also parse them ...
+    return "";
+  if (cc_type == 3 || cc_type == 2)
+    return "";
+    
+  // Check the parity
+  if (!checkByteParity(byte2))
+    return "";
+  if (!checkByteParity(byte1))
+    byte1 = 0x7f;
+  
+  if ((byte0 == 0xfa || byte0 == 0xfc || byte0 == 0xfd) && ((byte1 & 0x7f) == 0 && (byte2 & 0x7f) == 0))
+    return "";
+
+  // Remove the parity bits
+  byte1 &= 0x7f;
+  byte2 &= 0x7f;
+
+  if (cc_type == 0)
+  {
+    if ((byte1 == 0x10 && (byte2 >= 0x40 && byte2 <= 0x5f)) || ((byte1 >= 0x11 && byte1 <= 0x17) && (byte2 >= 0x40 && byte2 <= 0x7f) ))
+    {
+      return "PAC";
+      //handle_pac(ctx, byte1, byte2);
+    } 
+    else if ((byte1 == 0x11 && byte2 >= 0x20 && byte2 <= 0x2f ) || (byte1 == 0x17 && byte2 >= 0x2e && byte2 <= 0x2f))
+    {
+      return "textattr";
+      //handle_textattr(ctx, byte1, byte2);
+    } 
+    else if (byte1 == 0x14 || byte1 == 0x15 || byte1 == 0x1c) 
+    {
+      switch (byte2) {
+      case 0x20:
+        /* resume caption loading */
+        //ctx->mode = CCMODE_POPON;
+        return "CCMODE_POPON";
+        break;
+      case 0x24:
+        return "handle_delete_end_of_row";
+        //handle_delete_end_of_row(ctx, byte1, byte2);
+        break;
+      case 0x25:
+      case 0x26:
+      case 0x27:
+        return "CCMODE_ROLLUP";
+        //ctx->rollup = byte2 - 0x23;
+        //ctx->mode = CCMODE_ROLLUP;
+        break;
+      case 0x29:
+        /* resume direct captioning */
+        //ctx->mode = CCMODE_PAINTON;
+        return "CCMODE_PAINTON";
+        break;
+      case 0x2b:
+        /* resume text display */
+        //ctx->mode = CCMODE_TEXT;
+        return "CCMODE_TEXT";
+        break;
+      case 0x2c:
+        /* erase display memory */
+        //handle_edm(ctx, pts);
+        return "handle_edm";
+        break;
+      case 0x2d:
+        /* carriage return */
+        return "carriage return";
+        /*ff_dlog(ctx, "carriage return\n");
+        if (!ctx->real_time)
+          reap_screen(ctx, pts);
+        roll_up(ctx);
+        ctx->cursor_column = 0;*/
+        break;
+      case 0x2e:
+        /* erase buffered (non displayed) memory */
+        // Only in realtime mode. In buffered mode, we re-use the inactive screen
+        // for our own buffering.
+        return "erase buffered (non displayed) memory";
+        /*if (ctx->real_time) {
+          struct Screen *screen = ctx->screen + !ctx->active_screen;
+          screen->row_used = 0;
+        }*/
+        break;
+      case 0x2f:
+        /* end of caption */
+        return "end of caption";
+        /*ff_dlog(ctx, "handle_eoc\n");
+        handle_eoc(ctx, pts);*/
+        break;
+      default:
+        //ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", byte1, byte2);
+        return "Unknown command";
+        break;
+      }
+    } else if (byte1 >= 0x11 && byte1 <= 0x13) 
+    {
+      /* Special characters */
+      return "Special characters";
+      //handle_char(ctx, byte1, byte2, pts);
+    } else if (byte1 >= 0x20) 
+    {
+      /* Standard characters (always in pairs) */
+      QString msg = QString("Standard characters '%1' '%2'").arg(char(byte1)).arg(char(byte2));
+      return msg;
+      /*handle_char(ctx, byte1, byte2, pts);
+      ctx->prev_cmd[0] = ctx->prev_cmd[1] = 0;*/
+    } else if (byte1 == 0x17 && byte2 >= 0x21 && byte2 <= 0x23) 
+    {
+      int i;
+      return "Tab offsets (spacing)";
+      /* Tab offsets (spacing) */
+      /*for (i = 0; i < byte2 - 0x20; i++) {
+        handle_char(ctx, ' ', 0, pts);
+      }*/
+    } else 
+    {
+      /* Ignoring all other non data code */
+      return "Ignoring all other non data code";
+      //ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", byte1, byte2);
+    }
+  }
+  return "";
+}
+
+bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::checkByteParity(int val)
+{
+  int nrOneBits = 0;
+  for (int i = 0; i < 8; i++)
+  {
+    if (val & (1<<i))
+      nrOneBits++;
+  }
+  // Parity even?
+  return nrOneBits % 2 == 1;
 }
 
 void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
