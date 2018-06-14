@@ -157,7 +157,7 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile)
+void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   if (nalID == -1 && data.isEmpty())
   {
@@ -234,6 +234,8 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
 
     // Add the SPS ID
     specificDescription = QString(" SPS_NUT ID %1").arg(new_sps->seq_parameter_set_id);
+    if (nalTypeName)
+      *nalTypeName = QString("SPS(%1)").arg(new_sps->seq_parameter_set_id);
 
     if (new_sps->vui_parameters.nal_hrd_parameters_present_flag || new_sps->vui_parameters.vcl_hrd_parameters_present_flag)
       CpbDpbDelaysPresentFlag = true;
@@ -252,6 +254,8 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
 
     // Add the PPS ID
     specificDescription = QString(" PPS_NUT ID %1").arg(new_pps->pic_parameter_set_id);
+    if (nalTypeName)
+      *nalTypeName = QString("PPS(%1)").arg(new_pps->seq_parameter_set_id);
   }
   else if (nal_avc.isSlice())
   {
@@ -266,6 +270,8 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
 
     // Add the POC of the slice
     specificDescription = QString(" POC %1").arg(new_slice->globalPOC);
+    if (nalTypeName)
+      *nalTypeName = QString("Slice(POC-%1)").arg(new_slice->globalPOC);
 
     if (new_slice->first_mb_in_slice == 0)
     {
@@ -328,10 +334,6 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
       }
       else if (new_sei->payloadType == 4)
       {
-        if (payload.length() != 74)
-        {
-          int debugStop = 22;
-        }
         auto new_user_data_registered_itu_t_t35_sei = QSharedPointer<user_data_registered_itu_t_t35_sei>(new user_data_registered_itu_t_t35_sei(new_sei));
         new_user_data_registered_itu_t_t35_sei->parse_user_data_registered_itu_t_t35(sub_sei_data, message_tree);
       }
@@ -353,6 +355,8 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     }
 
     specificDescription = QString(" Number Messages: %1").arg(sei_count);
+    if (nalTypeName)
+      *nalTypeName = QString("SEI(#%1)").arg(sei_count);
   }
 
   if (nalRoot)
@@ -1914,6 +1918,13 @@ void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(sub_b
     READFLAG(additional_data_flag);
     READBITS(cc_count, 5);
     READBITS(em_data, 8);
+
+    if (reader.nrBytesLeft() > cc_count * 3 + 1)
+    {
+      // Possibly, the count is wrong.
+      if ((reader.nrBytesLeft() - 1) % 3 == 0)
+        cc_count = (reader.nrBytesLeft() - 1) / 3;
+    }
     
     // Now should follow (cc_count * 24 bits of cc_data_pkts)
     // Just display the raw bytes of the payload
@@ -2068,10 +2079,9 @@ QString parserAnnexBAVC::user_data_registered_itu_t_t35_sei::getCCDataPacketMean
       ctx->prev_cmd[0] = ctx->prev_cmd[1] = 0;*/
     } else if (byte1 == 0x17 && byte2 >= 0x21 && byte2 <= 0x23) 
     {
-      int i;
       return "Tab offsets (spacing)";
       /* Tab offsets (spacing) */
-      /*for (i = 0; i < byte2 - 0x20; i++) {
+      /*for (int i = 0; i < byte2 - 0x20; i++) {
         handle_char(ctx, ' ', 0, pts);
       }*/
     } else 

@@ -117,8 +117,9 @@ protected:
     bool more_rbsp_data();
     // Will reading of the given number of bits succeed?
     bool testReadingBits(int nrBits);
-    // How many full bytes were read from the reader?
+    // How many full bytes were read/are left from the reader?
     int nrBytesRead() { return (posInBuffer_bits == 0) ? posInBuffer_bytes : posInBuffer_bytes + 1; }
+    int nrBytesLeft() { return byteArray.size() - posInBuffer_bytes - 1; }
 
     void disableEmulationPrevention() { skipEmulationPrevention = false; }
 

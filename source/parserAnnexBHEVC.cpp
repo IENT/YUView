@@ -1418,7 +1418,7 @@ const QStringList parserAnnexBHEVC::nal_unit_type_toString = QStringList()
 "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
 "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
-void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile)
+void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   if (nalID == -1 && data.isEmpty())
   {
@@ -1447,11 +1447,10 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
   QByteArray nalHeaderBytes = data.mid(skip, 2);
   QByteArray payload = data.mid(skip + 2);
   
+  // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
   QString specificDescription;
-  
-  // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   TreeItem *nalRoot = nullptr;
   if (parent)
     nalRoot = new TreeItem(parent);
@@ -1496,6 +1495,8 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
 
     // Add the VPS ID
     specificDescription = QString(" VPS_NUT ID %1").arg(new_vps->vps_video_parameter_set_id);
+    if (nalTypeName)
+      *nalTypeName = QString("VPS(%1)").arg(new_vps->vps_video_parameter_set_id);
   }
   else if (nal_hevc.nal_type == SPS_NUT) 
   {
@@ -1511,6 +1512,8 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
 
     // Add the SPS ID
     specificDescription = QString(" SPS_NUT ID %1").arg(new_sps->sps_seq_parameter_set_id);
+    if (nalTypeName)
+      *nalTypeName = QString("SPS(%1)").arg(new_sps->sps_seq_parameter_set_id);
   }
   else if (nal_hevc.nal_type == PPS_NUT) 
   {
@@ -1526,6 +1529,8 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
 
     // Add the PPS ID
     specificDescription = QString(" PPS_NUT ID %1").arg(new_pps->pps_pic_parameter_set_id);
+    if (nalTypeName)
+      *nalTypeName = QString("PPS(%1)").arg(new_pps->pps_pic_parameter_set_id);
   }
   else if (nal_hevc.isSlice())
   {
@@ -1542,8 +1547,11 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     int POC = pocCounterOffset + new_slice->PicOrderCntVal;
     if (POC > maxPOCCount && !new_slice->isIRAP())
       maxPOCCount = POC;
-    specificDescription = QString(" POC %1").arg(POC);
     new_slice->globalPOC = POC;
+
+    specificDescription = QString(" POC %1").arg(POC);
+    if (nalTypeName)
+      *nalTypeName = QString("Slice(POC-%1)").arg(POC);
 
     if (new_slice->first_slice_segment_in_pic_flag)
       lastFirstSliceSegmentInPic = new_slice;
@@ -1657,6 +1665,8 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     }
 
     specificDescription = QString(" Number Messages: %1").arg(sei_count);
+    if (nalTypeName)
+      *nalTypeName = QString("SEI(#%1)").arg(sei_count);
   }
 
   if (nalRoot)

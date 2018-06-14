@@ -223,10 +223,20 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 {
   if (!nalUnitModel.rootItem.isNull())
   {
+    // Use the given tree item. If it is not set, use the nalUnitMode (if active).
+    // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
+    // yet. We want to parse the item and then set a good description.
+    QString specificDescription;
+    TreeItem *parent = nalUnitModel.rootItem.data();
+    TreeItem *itemTree = nullptr;
+    if (parent)
+      itemTree = new TreeItem(parent);
+    else if (!nalUnitModel.rootItem.isNull())
+      itemTree = new TreeItem(nalUnitModel.rootItem.data());
+
     int posInData = 0;
     QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.get_data()), packet.get_data_size());
-    TreeItem *itemTree = new TreeItem(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": ""), nalUnitModel.rootItem.data());
-
+    
     // Log all the packet info
     LOGSTRVAL("stream_index", packet.get_stream_index());
     LOGSTRVAL("pts", packet.get_pts());
@@ -239,6 +249,9 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 
     if (annexBParser)
     {
+      // Colloect the types of NALs to create a good name later
+      QStringList nalNames;
+
       int nalID = 0;
       packetDataFormat_t packetFormat = packet.guessDataFormatFromData();
       while (posInData + 4 <= avpacketData.length())
@@ -293,10 +306,22 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
         }
 
         // Parse the NAL data
-        annexBParser->parseAndAddNALUnitNoThrow(nalID, nalData, itemTree);
+        QString nalTypeName;
+        QUint64Pair nalStartEndPosFile; // Not used
+        annexBParser->parseAndAddNALUnitNoThrow(nalID, nalData, itemTree, nalStartEndPosFile, &nalTypeName);
+        nalNames.append(nalTypeName);
         nalID++;
       }
+
+      // Create a good detailed and compact description of the AVpacket
+      specificDescription = " - NALS:";
+      for (QString n : nalNames)
+        specificDescription += (" " + n);
     }
+
+    if (itemTree)
+      // Set a useful name of the TreeItem (the root for this NAL)
+      itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": "") + specificDescription);
   }
 }
 
