@@ -314,10 +314,10 @@ bool parserBase::sub_byte_reader::more_rbsp_data()
 bool parserBase::sub_byte_reader::testReadingBits(int nrBits)
 {
   const int curBitsLeft = 8 - posInBuffer_bits;
-  const int entireBytesLeft = byteArray.size() - posInBuffer_bytes;
+  const int entireBytesLeft = byteArray.size() - posInBuffer_bytes - 1;
   const int nrBitsLeftToRead = curBitsLeft + entireBytesLeft * 8;
     
-  return nrBitsLeftToRead <= nrBits;
+  return nrBits <= nrBitsLeftToRead;
 }
 
 bool parserBase::sub_byte_reader::gotoNextByte()

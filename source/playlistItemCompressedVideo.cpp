@@ -1089,7 +1089,8 @@ bool playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpe
   parser->parseMetadata(metadata);
 
   // Now iterate over all packets and send them to the parser
-  AVPacketWrapper packet = file->getNextPacket();
+  const bool getVideoPacketsOnly = true;
+  AVPacketWrapper packet = file->getNextPacket(false, getVideoPacketsOnly);
   
   int packetID = 0;
   while (!file->atEnd())
@@ -1114,7 +1115,7 @@ bool playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpe
       DEBUG_COMPRESSED("parseAVPacket Exception thrown parsing NAL %d", packetID);
     }
     packetID++;
-    packet = file->getNextPacket();
+    packet = file->getNextPacket(false, getVideoPacketsOnly);
   }
     
   // Seek back to the beginning of the stream.
