@@ -1612,6 +1612,7 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     {
       TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
 
+      // Parse the SEI header and remove it from the data array
       int nrBytes = new_sei->parse_sei_message(sei_data, message_tree);
       sei_data.remove(0, nrBytes);
 
