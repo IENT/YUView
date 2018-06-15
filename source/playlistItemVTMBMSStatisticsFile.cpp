@@ -309,7 +309,27 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
 
         // check if scalar or vector
         QString statType = availableStatisticsMatch.captured(2);
-        if (statType.contains("Vector"))
+        if (statType.contains("AffineTFVectors"))  // "Vector" is contained in this, need to check it first
+        {
+          QString scaleInfo = availableStatisticsMatch.captured(3);
+          QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
+          QRegularExpressionMatch scaleInfoMatch = scaleInfoRegex.match(scaleInfo);
+          int scale;
+          if (scaleInfoMatch.hasMatch())
+          {
+            scale = scaleInfoMatch.captured(1).toInt();
+          }
+          else
+          {
+            scale = 1;
+          }
+
+          aType.hasAffineTFData = true;
+          aType.renderVectorData = true;
+          aType.vectorScale = scale;
+          aType.vectorPen.setColor(QColor(255,0, 0));
+        }
+        else if (statType.contains("Vector"))
         {
           QString scaleInfo = availableStatisticsMatch.captured(3);
           QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
@@ -357,29 +377,10 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
           aType.renderValueData = true;
           aType.colMapper = colorMapper("jet", minVal, maxVal);
         }
-        else if (statType.contains("AffineTFVectors"))
-        {
-          QString scaleInfo = availableStatisticsMatch.captured(3);
-          QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
-          QRegularExpressionMatch scaleInfoMatch = scaleInfoRegex.match(scaleInfo);
-          int scale;
-          if (scaleInfoMatch.hasMatch())
-          {
-            scale = scaleInfoMatch.captured(1).toInt();
-          }
-          else
-          {
-            scale = 1;
-          }
 
-          aType.hasAffineTFData = true;
-          aType.renderVectorData = true;
-          aType.vectorScale = scale;
-          aType.vectorPen.setColor(QColor(255,0, 0));
-        }
 
         // check whether is was a geometric partitioning statistic with polygon shape
-        if (statType.contains("Triangle"))
+        if (statType.contains("Polygon"))
         {
           aType.isPolygon = true;
         }
@@ -580,6 +581,13 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
         }
 
       }
+    }
+
+    if(!statSource.statsCache.contains(typeID))
+    {
+      // There are no statistics in the file for the given frame and index.
+      statSource.statsCache.insert(typeID, statisticsData());
+      return;
     }
 
   } // try
