@@ -284,7 +284,7 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
 
       // match:
       //# Block Statistic Type: MergeFlag; Flag
-      QRegularExpression availableStatisticsRegex("# Block Statistic Type: *([0-9a-zA-Z]+); *([0-9a-zA-Z]+); *(.*)");
+      QRegularExpression availableStatisticsRegex("# Block Statistic Type: *([0-9a-zA-Z_]+); *([0-9a-zA-Z]+); *(.*)");
 
       // get sequence size
       QRegularExpressionMatch sequenceSizeMatch = sequenceSizeRegex.match(aLine);
