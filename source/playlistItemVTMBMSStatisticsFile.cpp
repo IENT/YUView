@@ -431,7 +431,7 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
     // prepare regex
     StatisticsType *aType = statSource.getStatisticsType(typeID);
     Q_ASSERT_X(aType != nullptr, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
-    QRegularExpression typeRegex(aType->typeName); // for catching lines of the type
+    QRegularExpression typeRegex(" " + aType->typeName + "="); // for catching lines of the type
 
     // for extracting scalar value statistics, need to match:
     // BlockStat: POC 1 @( 112,  88) [ 8x 8] PredMode=0
