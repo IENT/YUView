@@ -496,7 +496,9 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     bool seek = (frameIdxInternal < curFrameIdx);
 
     // Get the closest possible seek position
-    int seekToFrame, seekToAnnexBFrameCount, seekToPTS;
+    int seekToFrame = -1;
+    int seekToAnnexBFrameCount = -1;
+    int seekToPTS = -1;
     if (isinputFormatTypeAnnexB)
       seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdxInternal, seekToAnnexBFrameCount);
     else

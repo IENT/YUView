@@ -700,6 +700,9 @@ protected:
   static QStringList get_transfer_characteristics_meaning();
   static QStringList get_matrix_coefficients_meaning();
 
+  // Is this NAL skipped because it is RASL (can not be decoded because of slicing/merging of the bitstream)
+  bool isRandomAccessSkip;
+
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.
   int firstPOCRandomAccess;

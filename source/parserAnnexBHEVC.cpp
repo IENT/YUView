@@ -1556,7 +1556,7 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     if (new_slice->first_slice_segment_in_pic_flag)
       lastFirstSliceSegmentInPic = new_slice;
 
-    bool isRandomAccessSkip = false;
+    isRandomAccessSkip = false;
     if (firstPOCRandomAccess == INT_MAX)
     {
       if (nal_hevc.nal_type == CRA_NUT
