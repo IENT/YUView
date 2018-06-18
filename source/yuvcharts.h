@@ -135,7 +135,7 @@ class YUVCharts : public QObject
    * @return
    * a complete chartview with the data
    */
-  virtual QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) = 0;
+  virtual QWidget* createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) = 0;
 
   /**
    * @brief getTotalAmountOfPixel
@@ -150,7 +150,7 @@ class YUVCharts : public QObject
    * @return
    * total amount of pixel in the viewed range (one frame or all frames)
    */
-  int getTotalAmountOfPixel(playlistItem* aItem, const ChartShow aShow, const indexRange aRange);
+  int getTotalAmountOfPixel(playlistItem* aItem, const chartShow aShow, const indexRange aRange);
 
   /**
    * @brief is2DData
@@ -182,6 +182,10 @@ protected:
   QWidget* mDataIsLoadingWidget;
 };
 
+/**
+ * @brief The YUV3DCharts class
+ * default-implementation for all 3D-charts
+ */
 class YUV3DCharts : public YUVCharts
 {
   Q_OBJECT
@@ -213,7 +217,7 @@ public:
    * @return
    * a complete chartview with the data
    */
-  QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
+  QWidget* createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
   /**
    * @brief hasOpenGL
@@ -284,7 +288,7 @@ protected:
    * @return
    * a chartview, that can be placed
    */
-  QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange);
+  QWidget* makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange);
 
   /**
    * @brief makeStatisticsPerFrameGrpByValNrmNone
@@ -403,13 +407,52 @@ protected:
    */
   QWidget* makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
 
+  /**
+   * @brief makeStatisticsPerFrameGrpByBlocksizeNrm
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
   QWidget* makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsFrameRangeGrpByBlocksizeNrm
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobRangeGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
   QWidget* makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByBlocksizeNrm
+   * creates the chart based on the sorted data from the item
+   * provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * the chart to display
+   */
   QWidget* makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
 
 };
 
-
+/**
+ * @brief The YUV3DSurfaceChart class
+ * specific class for 3D
+ * Surface-Chart
+ */
 class YUV3DSurfaceChart : public YUV3DCharts
 {
   Q_OBJECT
@@ -470,7 +513,7 @@ public:
   YUVBarChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget) : YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget){}
 
   //documentation see @YUVCharts::createChart
-  QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
+  QWidget* createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
 private:
   /**
@@ -492,7 +535,7 @@ private:
    * @return
    * a chartview, that can be placed
    */
-  QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange);
+  QWidget* makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange);
 
   /**
    * @brief makeStatisticsPerFrameGrpByValNrmNone
@@ -732,7 +775,7 @@ public:
 
   //documentation see @YUVCharts::createChart
   //! aSortedData is not used in this function
-  QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
+  QWidget* createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
   /**
    * @brief set3DCoordinationRange
@@ -758,7 +801,30 @@ public:
    */
   void set3DCoordinationtoDefault();
 
+  /**
+   * @brief set2DChartType
+   * set the new valid type for a 2D chart
+   *
+   * @param aType
+   * new 2D type
+   */
+  void set2DChartType(chartType2D aType) {this->m2DType = aType;}
+
+  /**
+   * @brief set3DChartType
+   * set a new valid type for a 3D chart
+   *
+   * @param aType
+   * new 3D type
+   */
+  void set3DChartType(chartType3D aType) {this->m3DType = aType;}
 private:
+  // holder for the 2D chart
+  chartType2D m2DType = ct2DBarChart;
+
+  // holder for the 3D chart
+  chartType3D m3DType = ct3dSurfaceChart;
+
   // identifier to use the coordinates
   bool mUse3DCoordinationLimits = false;
   // minimum x coordinate
@@ -777,82 +843,4 @@ private:
   // 3D-Surface
   YUV3DSurfaceChart mSurfaceChart3D;
 };
-
-//class YUVColorChart : public YUVCharts
-//{
-//    Q_OBJECT
-
-//    public:
-//    //reintroduce the constructor
-//    YUVColorChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget) : YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget){}
-
-//    //documentation see @YUVCharts::createChart
-//    QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType) Q_DECL_OVERRIDE;
-
-//private:
-//  /**
-//   * @brief plotLineGraph
-//   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-//   *
-//   * @param aSortedData
-//   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-//   *
-//   * @param aOrderBy
-//   * option-enum how the sorted Data will display
-//   *
-//   * @param aItem
-//   * from the item we get the actual frame-dimension
-//   *
-//   * @param aRange
-//   * range, we look at
-//   *
-//   * @return
-//   * a chartview, that can be placed
-//   */
-//  QWidget* plotLineGraph(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange);
-
-//  /**
-//   * @brief plotBarGraph
-//   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-//   *
-//   * @param aSortedData
-//   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-//   *
-//   * @param aOrderBy
-//   * option-enum how the sorted Data will display
-//   *
-//   * @param aItem
-//   * from the item we get the actual frame-dimension
-//   *
-//   * @param aRange
-//   * range, we look at
-//   *
-//   * @return
-//   * a chartview, that can be placed
-//   */
-//  QWidget* plotOneColorBarGraph(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange);
-
-//  /**
-//   * @brief plotBarGraph
-//   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
-//   *
-//   * @param aSortedData
-//   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
-//   *
-//   * @param aOrderBy
-//   * option-enum how the sorted Data will display
-//   *
-//   * @param aItem
-//   * from the item we get the actual frame-dimension
-//   *
-//   * @param aRange
-//   * range, we look at
-//   *
-//   * @return
-//   * a chartview, that can be placed
-//   */
-//  QWidget* plotRGBColorBarGraph(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange);
-
-//};
-
 #endif // YUVCHARTS_H

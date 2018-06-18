@@ -73,6 +73,7 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
     // add dynamic_cast<YOURPLAYLISTITEMTYPE*>(aItem) with OR-check to support your playlistitem
     return dynamic_cast<playlistItemStatisticsFile*>(aItem)
         || dynamic_cast<playlistItemImageFile*>(aItem)
+        || dynamic_cast<playlistItemRawFile*>(aItem)
         || false;
   };
 
@@ -669,7 +670,7 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
           }
         }
       }
-      ChartShow showart = showVariant.value<ChartShow>();
+      chartShow showart = showVariant.value<chartShow>();
 
       if(showart != csPerFrame)
         return;
@@ -1007,9 +1008,9 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
       // all found, so we can leave here
       //! take care, this is one if-statement
       if((type != "")
-         && (showVariant.value<ChartShow>() != csUnknown)
-         && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
-         && (normaVariant.value<ChartNormalize>() != cnUnknown))
+         && (showVariant.value<chartShow>() != csUnknown)
+         && (groupVariant.value<chartGroupBy>() != cgbUnknown)
+         && (normaVariant.value<chartNormalize>() != cnUnknown))
         break;
     }
   }
@@ -1048,9 +1049,9 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   // call the lambda not only define it
   findAndSetNumberStrings3D(children);
 
-  ChartOrderBy order = cobUnknown; // set an default
+  chartOrderBy order = cobUnknown; // set an default
   // we dont have found the sort-order so set it
-  ChartShow showart = showVariant.value<ChartShow>();
+  chartShow showart = showVariant.value<chartShow>();
 
   if(showart == csPerFrame)
   {
@@ -1065,10 +1066,10 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   }
 
   if((showart != csUnknown)
-     && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
-     && (normaVariant.value<ChartNormalize>() != cnUnknown))
+     && (groupVariant.value<chartGroupBy>() != cgbUnknown)
+     && (normaVariant.value<chartNormalize>() != cnUnknown))
     // get selected one
-    order = EnumAuxiliary::makeChartOrderBy(showVariant.value<ChartShow>(), groupVariant.value<ChartGroupBy>(), normaVariant.value<ChartNormalize>());
+    order = EnumAuxiliary::makeChartOrderBy(showVariant.value<chartShow>(), groupVariant.value<chartGroupBy>(), normaVariant.value<chartNormalize>());
 
   if(showart == csAllFrames && order == this->mLastChartOrderBy && type == this->mLastStatisticsType)
     return this->mLastStatisticsWidget;
@@ -1217,7 +1218,7 @@ void ChartHandler::switchOrderEnableStatistics(const QString aString)
         if(objectname == OPTION_NAME_CBX_CHART_FRAMESHOW)
         {
           // getting the showkind
-          ChartShow selectedShow = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex()).value<ChartShow>();
+          chartShow selectedShow = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex()).value<chartShow>();
           if(selectedShow == csRange) // the frame range is selected
             switchEnableStatus(true, children); // enable the sliders / spinboxes etc
           else // was not selected
@@ -1256,7 +1257,6 @@ void ChartHandler::timerEvent(QTimerEvent *event)
 /*--------------------Functions for Color Analysis--------------------*/
 QWidget* ChartHandler::createColorSpaceWidget(playlistItem *aItem, itemWidgetCoord& aCoord)
 {
-
   //define a simple layout for the Image file Widget
   QWidget *basicWidget      = new QWidget;
   QVBoxLayout *basicLayout  = new QVBoxLayout(basicWidget);
@@ -1271,6 +1271,9 @@ QWidget* ChartHandler::createColorSpaceWidget(playlistItem *aItem, itemWidgetCoo
 
   // getting the range
   auto range = aItem->getFrameIdxRange();
+
+  range.first = 0;
+  range.second = 0;
 
   // save the data, that we dont have to load it later again
   aCoord.mData = aItem->getData(range, true);
@@ -1348,7 +1351,7 @@ void ChartHandler::onColorSpaceChange(const QString aString)
 
 QWidget* ChartHandler::createColorSpaceChart(itemWidgetCoord& aCoord)
 {
-  ChartOrderBy order = cobPerFrameGrpByValueNrmNone;
+  chartOrderBy order = cobPerFrameGrpByValueNrmNone;
 
   // if aCoord.mWidget is null, can happen if loading a new file and the playbackcontroller will be set to 0
   // return that we cant show data
@@ -1356,8 +1359,8 @@ QWidget* ChartHandler::createColorSpaceChart(itemWidgetCoord& aCoord)
     return &(this->mNoDataToShowWidget);
 
   indexRange range;
-  range.first = -1;
-  range.second = -1;
+//  range.first = 0;
+//  range.second = 0;
 
   QString type("");
 

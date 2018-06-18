@@ -109,6 +109,14 @@ public:
    */
   QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) Q_DECL_OVERRIDE;
 
+  /**
+   * @brief isDataAvaible
+   * checks if the data of the playlistItem are loaded completly
+   *
+   * @return true if all data are loaded, otherwise false
+   */
+  virtual bool isDataAvaible() Q_DECL_OVERRIDE;
+
 public slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
@@ -123,7 +131,6 @@ protected:
   void setFormatFromFileName();
   
 private:
-
   typedef enum
   {
     YUV,
@@ -139,6 +146,8 @@ private:
   
   fileSource dataSource;
   
+
+
   videoHandlerYUV *getYUVVideo() { return dynamic_cast<videoHandlerYUV*>(video.data()); }
   videoHandlerRGB *getRGBVideo() { return dynamic_cast<videoHandlerRGB*>(video.data()); }
   const videoHandlerYUV *getYUVVideo() const { return dynamic_cast<const videoHandlerYUV*>(video.data()); }
