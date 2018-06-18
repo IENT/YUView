@@ -1989,107 +1989,86 @@ QString parserAnnexBAVC::user_data_registered_itu_t_t35_sei::getCCDataPacketMean
   byte1 &= 0x7f;
   byte2 &= 0x7f;
 
+  auto colorFromIndex = [](int i) 
+  {
+    const QStringList c = QStringList() << "Green" << "Blue" << "Cyan" << "Red" << "Yellow" << "Magenta";
+    int idx = i/2 - 1;
+    if (idx >= 0 && idx <= 5)
+      return c[idx];
+    return QString("White");
+  };
+  auto styleFromIndex = [](int i)
+  {
+    if (i == 14)
+      return "Italic";
+    if (i == 15)
+      return "Italic Underlined";
+    if (i % 2 == 1)
+      return "Underlined";
+    return "";
+  };
+  auto indentFromIndex = [](int i)
+  {
+    if (i >= 16)
+      return (i - 16) * 2;
+    return 0;
+  };
+  
   if (cc_type == 0)
   {
-    if ((byte1 == 0x10 && (byte2 >= 0x40 && byte2 <= 0x5f)) || ((byte1 >= 0x11 && byte1 <= 0x17) && (byte2 >= 0x40 && byte2 <= 0x7f) ))
+    if ((byte1 == 0x10 && (byte2 >= 0x40 && byte2 <= 0x5f)) || ((byte1 >= 0x11 && byte1 <= 0x17) && (byte2 >= 0x40 && byte2 <= 0x7f)))
     {
-      return "PAC";
-      //handle_pac(ctx, byte1, byte2);
+      const int pacIdx = ((byte1<<1) & 0x0e) | ((byte2>>5) & 0x01);
+      
+      const int row_map[] = {11, -1, 1, 2, 3, 4, 12, 13, 14, 15, 5, 6, 7, 8, 9, 10};
+      const int row = row_map[pacIdx] - 1;
+      if (row < 0)
+        return "PAC - Invalid index";
+      
+      byte2 &= 0x1f;
+
+      QString color = colorFromIndex(byte2);
+      QString style = styleFromIndex(byte2);
+      int indent = indentFromIndex(byte2);
+
+      return QString("PAC (Font and color) Idx %1 - Row %2 Color %3 Indent %4 %5").arg(pacIdx).arg(row).arg(color).arg(indent).arg(style);
     } 
     else if ((byte1 == 0x11 && byte2 >= 0x20 && byte2 <= 0x2f ) || (byte1 == 0x17 && byte2 >= 0x2e && byte2 <= 0x2f))
     {
-      return "textattr";
-      //handle_textattr(ctx, byte1, byte2);
+      const int idx = byte2 - 0x20;
+      if (idx >= 32)
+        return "Textattribut - invalid index";
+
+      QString color = colorFromIndex(idx);
+      QString style = styleFromIndex(idx);
+
+      return QString("Textattribut (Font and color) Idx %1 - Color %2 ").arg(idx).arg(color).arg(style);
     } 
     else if (byte1 == 0x14 || byte1 == 0x15 || byte1 == 0x1c) 
     {
-      switch (byte2) {
-      case 0x20:
-        /* resume caption loading */
-        //ctx->mode = CCMODE_POPON;
-        return "CCMODE_POPON";
-        break;
-      case 0x24:
-        return "handle_delete_end_of_row";
-        //handle_delete_end_of_row(ctx, byte1, byte2);
-        break;
-      case 0x25:
-      case 0x26:
-      case 0x27:
-        return "CCMODE_ROLLUP";
-        //ctx->rollup = byte2 - 0x23;
-        //ctx->mode = CCMODE_ROLLUP;
-        break;
-      case 0x29:
-        /* resume direct captioning */
-        //ctx->mode = CCMODE_PAINTON;
-        return "CCMODE_PAINTON";
-        break;
-      case 0x2b:
-        /* resume text display */
-        //ctx->mode = CCMODE_TEXT;
-        return "CCMODE_TEXT";
-        break;
-      case 0x2c:
-        /* erase display memory */
-        //handle_edm(ctx, pts);
-        return "handle_edm";
-        break;
-      case 0x2d:
-        /* carriage return */
-        return "carriage return";
-        /*ff_dlog(ctx, "carriage return\n");
-        if (!ctx->real_time)
-          reap_screen(ctx, pts);
-        roll_up(ctx);
-        ctx->cursor_column = 0;*/
-        break;
-      case 0x2e:
-        /* erase buffered (non displayed) memory */
-        // Only in realtime mode. In buffered mode, we re-use the inactive screen
-        // for our own buffering.
-        return "erase buffered (non displayed) memory";
-        /*if (ctx->real_time) {
-          struct Screen *screen = ctx->screen + !ctx->active_screen;
-          screen->row_used = 0;
-        }*/
-        break;
-      case 0x2f:
-        /* end of caption */
-        return "end of caption";
-        /*ff_dlog(ctx, "handle_eoc\n");
-        handle_eoc(ctx, pts);*/
-        break;
-      default:
-        //ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", byte1, byte2);
-        return "Unknown command";
-        break;
-      }
-    } else if (byte1 >= 0x11 && byte1 <= 0x13) 
+      const QStringList m = QStringList() << "resume caption loading" << "backspace (overwrite last char)" << "alarm off (unused)" << "alarm on (unused)" << "delete to end of row (clear line)" << "roll up 2 (scroll size)" << "roll up 3 (scroll size)" << "roll up 4 (scroll size)" << "flashes captions on (0.25 seconds once per second)" << "resume direct captioning (start caption text)" << "text restart (start non-caption text)" << "resume text display (resume non-caption text)" << "erase display memory (clear screen)" << "carriage return (scroll lines up)" << "erase non displayed memory (clear buffer)" << "end of caption (display buffer)";
+      if (byte2 >= 32 && byte2 <= 47)
+        return m.at(byte2 - 32);
+      return "Unknown command";
+    } 
+    else if (byte1 >= 0x11 && byte1 <= 0x13) 
     {
-      /* Special characters */
-      return "Special characters";
-      //handle_char(ctx, byte1, byte2, pts);
-    } else if (byte1 >= 0x20) 
+      if (byte1 == 0x11)
+        return "Special North American chracter";
+      if (byte2 == 0x12)
+        return "Special Spanish/French or miscellaneous character";
+      if (byte2 == 0x13)
+        return "Special Portuguese/German/Danish character";
+    } 
+    else if (byte1 >= 0x20) 
+      return QString("Standard characters '%1%2'").arg(char(byte1)).arg(char(byte2));
+    else if (byte1 == 0x17 && byte2 >= 0x21 && byte2 <= 0x23) 
     {
-      /* Standard characters (always in pairs) */
-      QString msg = QString("Standard characters '%1' '%2'").arg(char(byte1)).arg(char(byte2));
-      return msg;
-      /*handle_char(ctx, byte1, byte2, pts);
-      ctx->prev_cmd[0] = ctx->prev_cmd[1] = 0;*/
-    } else if (byte1 == 0x17 && byte2 >= 0x21 && byte2 <= 0x23) 
-    {
-      return "Tab offsets (spacing)";
-      /* Tab offsets (spacing) */
-      /*for (int i = 0; i < byte2 - 0x20; i++) {
-        handle_char(ctx, ' ', 0, pts);
-      }*/
-    } else 
-    {
-      /* Ignoring all other non data code */
-      return "Ignoring all other non data code";
-      //ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", byte1, byte2);
-    }
+      int nrSpaces = byte2 - 0x20;
+      return QString("Tab offsets (spacing) - %1 spaces").arg(nrSpaces);
+    } 
+    else 
+      return "Non data code";
   }
   return "";
 }
