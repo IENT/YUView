@@ -34,6 +34,7 @@
 
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
+#include "parserAnnexBMpeg2.h"
 
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
@@ -64,6 +65,8 @@ parserAVFormat::parserAVFormat(AVCodecID codec)
     annexBParser.reset(new parserAnnexBAVC());
   else if (codecID == AV_CODEC_ID_HEVC)
     annexBParser.reset(new parserAnnexBHEVC());
+  else if (codecID == AV_CODEC_ID_MPEG2VIDEO)
+    annexBParser.reset(new parserAnnexBMpeg2());
 
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);

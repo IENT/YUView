@@ -374,7 +374,7 @@ const QStringList parserAnnexBAVC::nal_unit_type_toString = QStringList()
 void parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
 {
   if (header_byte.length() != 1)
-    throw std::logic_error("The AVC header has only one byte.");
+    throw std::logic_error("The AVC header must have only one byte.");
 
   // Create a sub byte parser to access the bits
   sub_byte_reader reader(header_byte);
