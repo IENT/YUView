@@ -503,9 +503,9 @@ namespace YUV_Internals
   YUVFormatList::YUVFormatList()
   {
     append(yuvPixelFormat(YUV_420, 8, Order_YUV)); // YUV 4:2:0
-    append(yuvPixelFormat(YUV_422, 8, Order_YUV)); // YUV 4:2:2
-    append(yuvPixelFormat(YUV_444, 8, Order_YUV)); // YUV 4:4:4
     append(yuvPixelFormat(YUV_420, 10, Order_YUV)); // YUV 4:2:0 10 bit
+    append(yuvPixelFormat(YUV_422, 8, Order_YUV)); // YUV 4:2:2
+    append(yuvPixelFormat(YUV_444, 8, Order_YUV)); // YUV 4:4:4    
   }
 
   // Put all the names of the YUVFormatList into a list and return it
