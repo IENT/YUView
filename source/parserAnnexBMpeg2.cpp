@@ -40,6 +40,8 @@
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
 #define READFLAG_M(into,meanings) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",meanings,itemTree);}
 #define READFLAG_A(into,i) {bool b=(reader.readBits(1)!=0); into.append(b); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),b,QString("u(1)"),b?"1":"0",itemTree);}
+// Read "numBits" bits and ignore them.
+#define IGNOREBITS(numBits) {int val = reader.readBits(numBits);}
 
 const QStringList parserAnnexBMpeg2::nal_unit_type_toString = QStringList()
   << "UNSPECIFIED" << "PICTURE" << "SLICE" << "USER_DATA" << "SEQUENCE_HEADER" << "SEQUENCE_ERROR" << "EXTENSION_START" << "SEQUENCE_END"
@@ -59,7 +61,7 @@ void parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("nal_unit_header()", root) : nullptr;
+  TreeItem *const itemTree = root ? new TreeItem("header_code()", root) : nullptr;
 
   // Parse the start code
   QString code;
@@ -174,14 +176,47 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
     if (nalTypeName)
       *nalTypeName = QString(" SeqHeader");
   }
+  else if (nal_mpeg2.nal_unit_type == PICTURE)
+  {
+    auto new_picture_header = QSharedPointer<picture_header>(new picture_header(nal_mpeg2));
+    new_picture_header->parse_picture_header(payload, nalRoot);
+    specificDescription = QString(" Picture Header");
+    if (nalTypeName)
+      *nalTypeName = QString(" PicHeader");
+  }
   else if (nal_mpeg2.nal_unit_type == EXTENSION_START)
   {
+    TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
+
     // A sequence_extension
-    auto new_sequence_extension = QSharedPointer<sequence_extension>(new sequence_extension(nal_mpeg2));
-    new_sequence_extension->parse_sequence_extension(payload, nalRoot);
-    specificDescription = QString(" Sequence Extension");
-    if (nalTypeName)
-      *nalTypeName = QString(" SeqExt");
+    auto new_extension = QSharedPointer<nal_extension>(new nal_extension(nal_mpeg2));
+    new_extension->parse_extension_start_code(payload, message_tree);
+
+    if (message_tree)
+      message_tree->itemData[0] = QString("extension %1").arg(new_extension->extension_name);
+
+    if (new_extension->extension_type == EXT_SEQUENCE)
+    {
+      auto new_sequence_extension = QSharedPointer<sequence_extension>(new sequence_extension(new_extension));
+      new_sequence_extension->parse_sequence_extension(payload, message_tree);
+      if (nalTypeName)
+        *nalTypeName = QString(" SeqExt");
+      specificDescription = QString(" Sequence Extension");
+    }
+    else if (new_extension->extension_type == EXT_PICTURE_CODING)
+    {
+      auto new_picture_coding_extension = QSharedPointer<picture_coding_extension>(new picture_coding_extension(new_extension));
+      new_picture_coding_extension->parse_picture_coding_extension(payload, message_tree);
+      if (nalTypeName)
+        *nalTypeName = QString(" PicCodExt");
+      specificDescription = QString(" Picture Coding Extension");
+    }
+    else
+    {
+      if (nalTypeName)
+        *nalTypeName = QString(" Ext");
+      specificDescription = QString(" Extension");
+    }
   }
 
   if (nalRoot)
@@ -244,18 +279,58 @@ void parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray 
   }
 }
 
-parserAnnexBMpeg2::sequence_extension::sequence_extension(const nal_unit_mpeg2 & nal) : nal_unit_mpeg2(nal)
+parserAnnexBMpeg2::picture_header::picture_header(const nal_unit_mpeg2 & nal) : nal_unit_mpeg2(nal)
 {
 }
 
-void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem * root)
+void parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
   sub_byte_reader reader(parameterSetData);
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("sequence_extension()", root) : nullptr;
+  TreeItem *const itemTree = root ? new TreeItem("picture_header()", root) : nullptr;
+
+  READBITS(temporal_reference, 10);
+  QStringList picture_coding_type_meaning = QStringList()
+    << "Forbidden" << "intra-coded (I)" << "predictive-coded (P)" << "bidirectionally-predictive-coded (B)" << "dc intra-coded (D)" << "Reserved";
+  READBITS_M(picture_coding_type, 3, picture_coding_type_meaning);
+  READBITS(vbv_delay, 16);
+  if (picture_coding_type == 2 || picture_coding_type == 3)
+  {
+    READFLAG(full_pel_forward_vector);
+    READBITS(forward_f_code, 3);
+  }
+  if (picture_coding_type == 3)
+  {
+    READFLAG(full_pel_backward_vector);
+    READBITS(backward_f_code, 3);
+  }
+
+  bool abort = false;
+  while (reader.testReadingBits(9)) 
+  {
+    bool extra_bit_picture;
+    READFLAG(extra_bit_picture);
+    if (!extra_bit_picture)
+      abort = false;
+    
+    if (!abort)
+    {
+      int extra_information_picture;
+      READBITS(extra_information_picture, 8);
+    }
+  }
+}
+
+void parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & extension_payload, TreeItem * root)
+{
+  sub_byte_reader reader(extension_payload);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("nal_extension()", root) : nullptr;
 
   QStringList extension_start_code_identifier_meaning = QStringList()
     << "Reserved"
@@ -271,6 +346,48 @@ void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByte
     << "Picture Temporal Scalable Extension ID"
     << "Reserved";
   READBITS_M(extension_start_code_identifier, 4, extension_start_code_identifier_meaning);
+
+  if (extension_start_code_identifier == 1)
+    extension_type = EXT_SEQUENCE;
+  else if (extension_start_code_identifier == 2)
+    extension_type = EXT_SEQUENCE_DISPLAY;
+  else if (extension_start_code_identifier == 3)
+    extension_type = EXT_QUANT_MATRIX;
+  else if (extension_start_code_identifier == 4)
+    extension_type = EXT_COPYRIGHT;
+  else if (extension_start_code_identifier == 5)
+    extension_type = EXT_SEQUENCE_SCALABLE;
+  else if (extension_start_code_identifier == 7)
+    extension_type = EXT_PICTURE_DISPLAY;
+  else if (extension_start_code_identifier == 8)
+    extension_type = EXT_PICTURE_CODING;
+  else if (extension_start_code_identifier == 9)
+    extension_type = EXT_PICTURE_SPATICAL_SCALABLE;
+  else if (extension_start_code_identifier == 10)
+    extension_type = EXT_PICTURE_TEMPORAL_SCALABLE;
+  else
+    extension_type = EXT_RESERVED;
+
+  if (extension_start_code_identifier_meaning.length() > extension_start_code_identifier)
+    extension_name = extension_start_code_identifier_meaning[extension_start_code_identifier];
+  else
+    extension_name = "Reserved";
+}
+
+parserAnnexBMpeg2::sequence_extension::sequence_extension(const nal_extension & nal) : nal_extension(nal)
+{
+}
+
+void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem * root)
+{
+  nalPayload = parameterSetData;
+  sub_byte_reader reader(parameterSetData);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("sequence_extension()", root) : nullptr;
+  
+  IGNOREBITS(4);  // The extension_start_code_identifier was already read
   READBITS(profile_and_level_indication, 8);
   QStringList progressive_sequence_meaning = QStringList()
     << "the coded video sequence may contain both frame-pictures and field-pictures, and frame-picture may be progressive or interlaced frames."
@@ -293,3 +410,50 @@ void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByte
   READBITS(frame_rate_extension_n, 2);
   READBITS(frame_rate_extension_d, 5);
 }
+
+parserAnnexBMpeg2::picture_coding_extension::picture_coding_extension(const nal_extension & nal) : nal_extension(nal)
+{
+}
+
+void parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, TreeItem * root)
+{
+  nalPayload = parameterSetData;
+  sub_byte_reader reader(parameterSetData);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("picture_coding_extension()", root) : nullptr;
+
+  IGNOREBITS(4);  // The extension_start_code_identifier was already read
+  READBITS(f_code[0][0], 4); // forward horizontal
+  READBITS(f_code[0][1], 4); // forward vertical
+  READBITS(f_code[1][0], 4); // backward horizontal
+  READBITS(f_code[1][1], 4); // backward vertical
+
+  QStringList intra_dc_precision_meaning = QStringList() << "Precision 8 bit" << "Precision 9 bit" << "Precision 10 bit" << "Precision 11 bit";
+  READBITS_M(intra_dc_precision, 2, intra_dc_precision_meaning);
+  QStringList picture_structure_meaning = QStringList() << "Reserved" << "Top Field" << "Bottom Field" << "Frame picture";
+  READBITS_M(picture_structure, 2, picture_structure_meaning);
+
+  READFLAG(top_field_first);
+  READFLAG(frame_pred_frame_dct);
+  READFLAG(concealment_motion_vectors);
+  READFLAG(q_scale_type);
+  READFLAG(intra_vlc_format);
+  READFLAG(alternate_scan);
+  READFLAG(repeat_first_field);
+  READFLAG(chroma_420_type);
+  READFLAG(progressive_frame);
+  READFLAG(composite_display_flag);
+  if (composite_display_flag)
+  {
+    READFLAG(v_axis);
+    READBITS(field_sequence, 3);
+    READFLAG(sub_carrier);
+    READBITS(burst_amplitude, 7);
+    READBITS(sub_carrier_phase, 8);
+  }
+
+}
+
+

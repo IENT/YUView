@@ -68,7 +68,7 @@
 // Log a custom message (add a cutom item in the tree)
 #define LOGPARAM(name, val, coding, code, meaning) {if (itemTree) new TreeItem(name, val, coding, code, meaning, itemTree);}
 
-// Read "numBits" bits and ignore them. Return false if -1 was returned by the reading function.
+// Read "numBits" bits and ignore them.
 #define IGNOREBITS(numBits) {int val = reader.readBits(numBits);}
 // Read an UEV code and ignore the value. Return false if -1 was returned by the reading function.
 #define IGNOREUEV() {int into = reader.readUE_V();}

@@ -115,12 +115,53 @@ private:
     int non_intra_quantiser_matrix[64];
   };
 
-  struct sequence_extension : nal_unit_mpeg2
+  struct picture_header : nal_unit_mpeg2
   {
-    sequence_extension(const nal_unit_mpeg2 &nal);
-    void parse_sequence_extension(const QByteArray &parameterSetData, TreeItem *root);
+    picture_header(const nal_unit_mpeg2 &nal);
+    void parse_picture_header(const QByteArray &parameterSetData, TreeItem *root);
+
+    int temporal_reference;
+    int picture_coding_type;
+    int vbv_delay;
+    bool full_pel_forward_vector;
+    int forward_f_code;
+    bool full_pel_backward_vector;
+    int backward_f_code;
+    QList<int> extra_information_picture_list;
+  };
+
+  enum nal_extension_type
+  {
+    EXT_SEQUENCE,
+    EXT_SEQUENCE_DISPLAY,
+    EXT_QUANT_MATRIX,
+    EXT_COPYRIGHT,
+    EXT_SEQUENCE_SCALABLE,
+    EXT_PICTURE_DISPLAY,
+    EXT_PICTURE_CODING,
+    EXT_PICTURE_SPATICAL_SCALABLE,
+    EXT_PICTURE_TEMPORAL_SCALABLE,
+    EXT_RESERVED
+  };
+
+  struct nal_extension : nal_unit_mpeg2
+  {
+    nal_extension(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
+    nal_extension(QSharedPointer<nal_extension> src) : nal_unit_mpeg2(src) { extension_start_code_identifier = src->extension_start_code_identifier; extension_type = src->extension_type; }
+    // Peek the extension start code identifier (4 bits) in the payload
+    void parse_extension_start_code(QByteArray &extension_payload, TreeItem *root);
 
     int extension_start_code_identifier;
+    nal_extension_type extension_type;
+    QString extension_name;
+  };
+
+  struct sequence_extension : nal_extension
+  {
+    sequence_extension(const nal_extension &nal);
+    void parse_sequence_extension(const QByteArray &parameterSetData, TreeItem *root);
+
+    
     int profile_and_level_indication;
     bool progressive_sequence;
     int chroma_format;
@@ -132,6 +173,31 @@ private:
     bool low_delay;
     int frame_rate_extension_n;
     int frame_rate_extension_d;
+  };
+
+  struct picture_coding_extension : nal_extension
+  {
+    picture_coding_extension(const nal_extension &nal);
+    void parse_picture_coding_extension(const QByteArray &parameterSetData, TreeItem *root);
+
+    int f_code[2][2];
+    int intra_dc_precision;
+    int picture_structure;
+    bool top_field_first;
+    bool frame_pred_frame_dct;
+    bool concealment_motion_vectors;
+    bool q_scale_type;
+    bool intra_vlc_format;
+    bool alternate_scan;
+    bool repeat_first_field;
+    bool chroma_420_type;
+    bool progressive_frame;
+    bool composite_display_flag;
+    bool v_axis;
+    int field_sequence;
+    bool sub_carrier;
+    int burst_amplitude;
+    int sub_carrier_phase;
   };
 
 };
