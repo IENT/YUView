@@ -70,6 +70,7 @@ private:
     SYSTEM_START_CODE,
     RESERVED
   };
+  static const QStringList nal_unit_type_toString;
 
   /* The basic Mpeg2 NAL unit. Technically, there is no concept of NAL units in mpeg2 (h262) but there are start codes for some units
    * and there is a start code so we internally use the NAL concept.
@@ -98,6 +99,39 @@ private:
   {
     sequence_header(const nal_unit_mpeg2 &nal);
     void parse_sequence_header(const QByteArray &parameterSetData, TreeItem *root);
+
+    int sequence_header_code;
+    int horizontal_size_value;
+    int vertical_size_value;
+    int aspect_ratio_information;
+    int frame_rate_code;
+    int bit_rate_value;
+    bool marker_bit;
+    int vbv_buffer_size_value;
+    bool constrained_parameters_flag;
+    bool load_intra_quantiser_matrix;
+    int intra_quantiser_matrix[64];
+    bool load_non_intra_quantiser_matrix;
+    int non_intra_quantiser_matrix[64];
+  };
+
+  struct sequence_extension : nal_unit_mpeg2
+  {
+    sequence_extension(const nal_unit_mpeg2 &nal);
+    void parse_sequence_extension(const QByteArray &parameterSetData, TreeItem *root);
+
+    int extension_start_code_identifier;
+    int profile_and_level_indication;
+    bool progressive_sequence;
+    int chroma_format;
+    int horizontal_size_extension;
+    int vertical_size_extension;
+    int bit_rate_extension;
+    bool marker_bit;
+    int vbv_buffer_size_extension;
+    bool low_delay;
+    int frame_rate_extension_n;
+    int frame_rate_extension_d;
   };
 
 };

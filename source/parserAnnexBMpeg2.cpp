@@ -35,6 +35,15 @@
 // Read "numBits" bits into the variable "into". 
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 #define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings,itemTree);}
+#define READBITS_A(into,numBits,i) {QString code; int v=reader.readBits(numBits,&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
+// Read a flag (1 bit) into the variable "into".
+#define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
+#define READFLAG_M(into,meanings) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",meanings,itemTree);}
+#define READFLAG_A(into,i) {bool b=(reader.readBits(1)!=0); into.append(b); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),b,QString("u(1)"),b?"1":"0",itemTree);}
+
+const QStringList parserAnnexBMpeg2::nal_unit_type_toString = QStringList()
+  << "UNSPECIFIED" << "PICTURE" << "SLICE" << "USER_DATA" << "SEQUENCE_HEADER" << "SEQUENCE_ERROR" << "EXTENSION_START" << "SEQUENCE_END"
+  << "GROUP_START" << "SYSTEM_START_CODE" << "RESERVED";
 
 parserAnnexBMpeg2::parserAnnexBMpeg2()
 {
@@ -161,14 +170,126 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
     // A sequence header
     auto new_sequence_header = QSharedPointer<sequence_header>(new sequence_header(nal_mpeg2));
     new_sequence_header->parse_sequence_header(payload, nalRoot);
+    specificDescription = QString(" Sequence Header");
+    if (nalTypeName)
+      *nalTypeName = QString(" SeqHeader");
   }
+  else if (nal_mpeg2.nal_unit_type == EXTENSION_START)
+  {
+    // A sequence_extension
+    auto new_sequence_extension = QSharedPointer<sequence_extension>(new sequence_extension(nal_mpeg2));
+    new_sequence_extension->parse_sequence_extension(payload, nalRoot);
+    specificDescription = QString(" Sequence Extension");
+    if (nalTypeName)
+      *nalTypeName = QString(" SeqExt");
+  }
+
+  if (nalRoot)
+    // Set a useful name of the TreeItem (the root for this NAL)
+    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_mpeg2.nal_idx).arg(nal_unit_type_toString.value(nal_mpeg2.nal_unit_type)) + specificDescription);
 }
 
 parserAnnexBMpeg2::sequence_header::sequence_header(const nal_unit_mpeg2 & nal) : nal_unit_mpeg2(nal)
 {
-  // TODO...
 }
 
 void parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray & parameterSetData, TreeItem * root)
 {
+  nalPayload = parameterSetData;
+  sub_byte_reader reader(parameterSetData);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("sequence_header()", root) : nullptr;
+
+  READBITS(horizontal_size_value, 12);
+  READBITS(vertical_size_value, 12);
+  QStringList aspect_ratio_information_meaning = QStringList()
+    << "Forbidden"
+    << "SAR 1.0 (Square Sample)"
+    << "DAR 3:4"
+    << "DAR 9:16"
+    << "DAR 1:2.21"
+    << "Reserved";
+  READBITS_M(aspect_ratio_information, 4, aspect_ratio_information_meaning);
+  QStringList frame_rate_code_meaning = QStringList()
+    << "Forbidden"
+    << "24000:1001 (23.976...)"
+    << "24"
+    << "25"
+    << "30000:1001 (29.97...)"
+    << "30"
+    << "50"
+    << "60000:1001 (59.94)"
+    << "60"
+    << "Reserved";
+  READBITS_M(frame_rate_code, 4, frame_rate_code_meaning);
+  READBITS_M(bit_rate_value, 18, "The lower 18 bits of bit_rate.");
+  READFLAG(marker_bit);
+  if (!marker_bit)
+    throw std::logic_error("The marker_bit shall be set to 1 to prevent emulation of start codes.");
+  READBITS_M(vbv_buffer_size_value, 10, "the lower 10 bits of vbv_buffer_size");
+  READFLAG(constrained_parameters_flag);
+  READFLAG(load_intra_quantiser_matrix);
+  if (load_intra_quantiser_matrix)
+  {
+    for (int i=0; i<64; i++)
+      READBITS(intra_quantiser_matrix[i], 8);
+  }
+  READFLAG(load_non_intra_quantiser_matrix);
+  if (load_non_intra_quantiser_matrix)
+  {
+    for (int i=0; i<64; i++)
+      READBITS(non_intra_quantiser_matrix[i], 8);
+  }
+}
+
+parserAnnexBMpeg2::sequence_extension::sequence_extension(const nal_unit_mpeg2 & nal) : nal_unit_mpeg2(nal)
+{
+}
+
+void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem * root)
+{
+  nalPayload = parameterSetData;
+  sub_byte_reader reader(parameterSetData);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("sequence_extension()", root) : nullptr;
+
+  QStringList extension_start_code_identifier_meaning = QStringList()
+    << "Reserved"
+    << "Sequence Extension ID"
+    << "Sequence Display Extension ID"
+    << "Quant Matrix Extension ID"
+    << "Copyright Extension ID"
+    << "Sequence Scalable Extension ID"
+    << "Reserved"
+    << "Picture Display Extension ID"
+    << "Picture Coding Extension ID"
+    << "Picture Spatial Scalable Extension ID"
+    << "Picture Temporal Scalable Extension ID"
+    << "Reserved";
+  READBITS_M(extension_start_code_identifier, 4, extension_start_code_identifier_meaning);
+  READBITS(profile_and_level_indication, 8);
+  QStringList progressive_sequence_meaning = QStringList()
+    << "the coded video sequence may contain both frame-pictures and field-pictures, and frame-picture may be progressive or interlaced frames."
+    << "the coded video sequence contains only progressive frame-pictures";
+  READFLAG_M(progressive_sequence, progressive_sequence_meaning);
+  QStringList chroma_format_meaning = QStringList()
+    << "Reserved" << "4:2:0" << "4:2:2" << "4:4:4";
+  READBITS_M(chroma_format, 2, chroma_format_meaning);
+  READBITS_M(horizontal_size_extension, 2, "most significant bits from horizontal_size");
+  READBITS_M(vertical_size_extension, 2, "most significant bits from vertical_size");
+  READBITS_M(bit_rate_extension, 12, "12 most significant bits from bit_rate");
+  READFLAG(marker_bit);
+  if (!marker_bit)
+    throw std::logic_error("The marker_bit shall be set to 1 to prevent emulation of start codes.");
+  READBITS_M(vbv_buffer_size_extension, 8, "most significant bits from vbv_buffer_size");
+  QStringList low_delay_meaning = QStringList()
+    << "sequence may contain B-pictures, the frame re-ordering delay is present in the VBV description and the bitstream shall not contain big pictures"
+    << "sequence does not contain any B-pictures, the frame e-ordering delay is not present in the VBV description and the bitstream may contain 'big pictures'";
+  READFLAG_M(low_delay, low_delay_meaning)
+  READBITS(frame_rate_extension_n, 2);
+  READBITS(frame_rate_extension_d, 5);
 }
