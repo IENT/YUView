@@ -153,7 +153,7 @@ private:
 
     int extension_start_code_identifier;
     nal_extension_type extension_type;
-    QString extension_name;
+    QString get_extension_function_name();
   };
 
   struct sequence_extension : nal_extension

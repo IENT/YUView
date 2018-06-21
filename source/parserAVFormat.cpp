@@ -312,12 +312,16 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
         QString nalTypeName;
         QUint64Pair nalStartEndPosFile; // Not used
         annexBParser->parseAndAddNALUnitNoThrow(nalID, nalData, itemTree, nalStartEndPosFile, &nalTypeName);
-        nalNames.append(nalTypeName);
+        if (!nalTypeName.isEmpty())
+          nalNames.append(nalTypeName);
         nalID++;
       }
 
       // Create a good detailed and compact description of the AVpacket
-      specificDescription = " - NALS:";
+      if (codecID == AV_CODEC_ID_MPEG2VIDEO)
+        specificDescription = " - ";    // In mpeg2 there is no concept of NAL units
+      else
+        specificDescription = " - NALS:";
       for (QString n : nalNames)
         specificDescription += (" " + n);
     }

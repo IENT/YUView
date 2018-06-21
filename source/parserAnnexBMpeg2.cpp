@@ -193,7 +193,7 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
     new_extension->parse_extension_start_code(payload, message_tree);
 
     if (message_tree)
-      message_tree->itemData[0] = QString("extension %1").arg(new_extension->extension_name);
+      message_tree->itemData[0] = new_extension->get_extension_function_name();
 
     if (new_extension->extension_type == EXT_SEQUENCE)
     {
@@ -324,13 +324,9 @@ void parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & 
   }
 }
 
-void parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & extension_payload, TreeItem * root)
+void parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & extension_payload, TreeItem * itemTree)
 {
   sub_byte_reader reader(extension_payload);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("nal_extension()", root) : nullptr;
 
   QStringList extension_start_code_identifier_meaning = QStringList()
     << "Reserved"
@@ -367,25 +363,43 @@ void parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & e
     extension_type = EXT_PICTURE_TEMPORAL_SCALABLE;
   else
     extension_type = EXT_RESERVED;
+}
 
-  if (extension_start_code_identifier_meaning.length() > extension_start_code_identifier)
-    extension_name = extension_start_code_identifier_meaning[extension_start_code_identifier];
-  else
-    extension_name = "Reserved";
+QString parserAnnexBMpeg2::nal_extension::get_extension_function_name()
+{
+  switch (extension_type)
+  {
+  case parserAnnexBMpeg2::EXT_SEQUENCE:
+    return "sequence_extension()";
+  case parserAnnexBMpeg2::EXT_SEQUENCE_DISPLAY:
+    return "sequence_display_extension()";
+  case parserAnnexBMpeg2::EXT_QUANT_MATRIX:
+    return "quant_matrix_extension()";
+  case parserAnnexBMpeg2::EXT_COPYRIGHT:
+    return "copyright_extension()";
+  case parserAnnexBMpeg2::EXT_SEQUENCE_SCALABLE:
+    return "sequence_scalable_extension()";
+  case parserAnnexBMpeg2::EXT_PICTURE_DISPLAY:
+    return "picture_display_extension()";
+  case parserAnnexBMpeg2::EXT_PICTURE_CODING:
+    return "picture_coding_extension()";
+  case parserAnnexBMpeg2::EXT_PICTURE_SPATICAL_SCALABLE:
+    return "picture_spatial_scalable_extension()";
+  case parserAnnexBMpeg2::EXT_PICTURE_TEMPORAL_SCALABLE:
+    return "picture_temporal_scalable_extension()";
+  default:
+    return "";
+  }
 }
 
 parserAnnexBMpeg2::sequence_extension::sequence_extension(const nal_extension & nal) : nal_extension(nal)
 {
 }
 
-void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem * root)
+void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem * itemTree)
 {
   nalPayload = parameterSetData;
   sub_byte_reader reader(parameterSetData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("sequence_extension()", root) : nullptr;
   
   IGNOREBITS(4);  // The extension_start_code_identifier was already read
   READBITS(profile_and_level_indication, 8);
@@ -415,14 +429,10 @@ parserAnnexBMpeg2::picture_coding_extension::picture_coding_extension(const nal_
 {
 }
 
-void parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, TreeItem * root)
+void parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, TreeItem * itemTree)
 {
   nalPayload = parameterSetData;
   sub_byte_reader reader(parameterSetData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("picture_coding_extension()", root) : nullptr;
 
   IGNOREBITS(4);  // The extension_start_code_identifier was already read
   READBITS(f_code[0][0], 4); // forward horizontal
