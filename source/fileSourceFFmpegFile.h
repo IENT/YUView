@@ -50,7 +50,7 @@ public:
 
   // Load the ffmpeg libraries and try to open the file. The fileSource will install a watcher for the file.
   // Return false if anything goes wrong.
-  bool openFile(const QString &filePath, fileSourceFFmpegFile *other=nullptr);
+  bool openFile(const QString &filePath, QWidget *mainWindow=nullptr, fileSourceFFmpegFile *other=nullptr);
   
   // Is the file at the end?
   // TODO: How do we do this?
@@ -126,7 +126,8 @@ protected:
 
   // In order to translate from frames to PTS, we need to count the frames and keep a list of
   // the PTS values of keyframes that we can start decoding at.
-  void scanBitstream();
+  // If a mainWindow pointer is given, open a progress dialog. Return true on success. False if the process was canceled.
+  bool scanBitstream(QWidget *mainWindow);
   int nrFrames;
 
   // Private struct for navigation. We index frames by frame number and FFMpeg uses the pts.

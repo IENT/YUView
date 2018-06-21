@@ -144,7 +144,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     // Try ffmpeg to open the file
     inputFileFFmpegLoading.reset(new fileSourceFFmpegFile());
-    if (!inputFileFFmpegLoading->openFile(compressedFilePath))
+    QWidget *mainWindow = MainWindow::getMainWindow();
+    if (!inputFileFFmpegLoading->openFile(compressedFilePath, mainWindow))
     {
       setError("Error opening file using libavcodec.");
       return;
@@ -168,7 +169,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     {
       // Open the file again for caching
       inputFileFFmpegCaching.reset(new fileSourceFFmpegFile());
-      if (!inputFileFFmpegCaching->openFile(compressedFilePath, inputFileFFmpegLoading.data()))
+      if (!inputFileFFmpegCaching->openFile(compressedFilePath, mainWindow, inputFileFFmpegLoading.data()))
       {
         setError("Error opening file a second time using libavcodec for caching.");
         return;

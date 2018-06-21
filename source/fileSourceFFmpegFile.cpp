@@ -33,6 +33,7 @@
 #include "fileSourceFFmpegFile.h"
 
 #include <QSettings>
+#include <QProgressDialog>
 
 #define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
@@ -275,7 +276,7 @@ fileSourceFFmpegFile::~fileSourceFFmpegFile()
     pkt.free_packet();
 }
 
-bool fileSourceFFmpegFile::openFile(const QString &filePath, fileSourceFFmpegFile *other)
+bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow, fileSourceFFmpegFile *other)
 {
   // Check if the file exists
   fileInfo.setFile(filePath);
@@ -305,8 +306,8 @@ bool fileSourceFFmpegFile::openFile(const QString &filePath, fileSourceFFmpegFil
     nrFrames = other->nrFrames;
     keyFrameList = other->keyFrameList;
   }
-  else
-    scanBitstream();
+  else if (!scanBitstream(mainWindow))
+    return false;
 
   // Seek back to the beginning
   seekToPTS(0);
@@ -350,8 +351,18 @@ int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToF
   return bestSeekPTS;
 }
 
-void fileSourceFFmpegFile::scanBitstream()
+bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
 {
+  // Create the dialog
+  int64_t maxPTS = getMaxPTS();
+  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
+  int curPercentValue = 0;
+  QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
+  progress.setMinimumDuration(1000);  // Show after 1s
+  progress.setAutoClose(false);
+  progress.setAutoReset(false);
+  progress.setWindowModality(Qt::WindowModal);
+
   nrFrames = 0;
   while (goToNextVideoPacket())
   {
@@ -360,8 +371,20 @@ void fileSourceFFmpegFile::scanBitstream()
     if (pkt.get_flag_keyframe())
       keyFrameList.append(pictureIdx(nrFrames, pkt.get_pts()));
 
+    if (progress.wasCanceled())
+      return false;
+
+    int newPercentValue = pkt.get_pts() * 100 / maxPTS;
+    if (newPercentValue != curPercentValue)
+    {
+      progress.setValue(newPercentValue);
+      curPercentValue = newPercentValue;
+    }
+
     nrFrames++;
   }
+
+  return !progress.wasCanceled();
 }
 
 void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
