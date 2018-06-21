@@ -83,6 +83,8 @@ void parserAVFormat::parseExtradata(QByteArray &extradata)
     parseExtradata_AVC(extradata);
   else if (codecID == AV_CODEC_ID_HEVC)
     parseExtradata_hevc(extradata);
+  else if (codecID == AV_CODEC_ID_MPEG2VIDEO)
+    parseExtradata_mpeg2(extradata);
   else
     parseExtradata_generic(extradata);
 }
@@ -211,7 +213,40 @@ void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
     {
       nextStartCode = extradata.indexOf(startCode, posInData);
       int length = nextStartCode - posInData;
-      QByteArray nalData = extradata.mid(posInData, length);
+      QByteArray nalData = (nextStartCode >= 0) ? extradata.mid(posInData, length) : extradata.mid(posInData);
+      // Let the hevc annexB parser parse this
+      annexBParser->parseAndAddNALUnitNoThrow(nalID, nalData, extradataRoot);
+      nalID++;
+      posInData = nextStartCode + 3;
+    }
+  }
+  else
+    throw std::logic_error("Unsupported extradata format (configurationVersion != 1)");  
+}
+
+void parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
+{
+  if (nalUnitModel.rootItem.isNull())
+    return;
+
+  if (extradata.at(0) == 0)
+  {
+    // The extradata does just contain the raw MPEG2 information
+    QByteArray startCode;
+    startCode.append((char)0);
+    startCode.append((char)0);
+    startCode.append((char)1);
+
+    TreeItem *extradataRoot = new TreeItem("Extradata (Raw Mpeg2 units)", nalUnitModel.rootItem.data());
+
+    int nalID = 0;
+    int nextStartCode = extradata.indexOf(startCode);
+    int posInData = nextStartCode + 3;
+    while (nextStartCode >= 0)
+    {
+      nextStartCode = extradata.indexOf(startCode, posInData);
+      int length = nextStartCode - posInData;
+      QByteArray nalData = (nextStartCode >= 0) ? extradata.mid(posInData, length) : extradata.mid(posInData);
       // Let the hevc annexB parser parse this
       annexBParser->parseAndAddNALUnitNoThrow(nalID, nalData, extradataRoot);
       nalID++;

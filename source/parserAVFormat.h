@@ -104,6 +104,7 @@ private:
   void parseExtradata_generic(QByteArray &extradata);
   void parseExtradata_AVC(QByteArray &extradata);
   void parseExtradata_hevc(QByteArray &extradata);
+  void parseExtradata_mpeg2(QByteArray &extradata);
 
   // The start code pattern to look for in case of a raw format
   QByteArray startCode;

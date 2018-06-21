@@ -130,6 +130,22 @@ private:
     QList<int> extra_information_picture_list;
   };
 
+  struct group_of_pictures_header : nal_unit_mpeg2
+  {
+    group_of_pictures_header(const nal_unit_mpeg2 &nal);
+    void parse_group_of_pictures_header(const QByteArray &parameterSetData, TreeItem *root);
+
+    int time_code;
+    bool closed_gop;
+    bool broken_link;
+  };
+
+  struct user_data : nal_unit_mpeg2
+  {
+    user_data(const nal_unit_mpeg2 &nal);
+    void parse_user_data(const QByteArray &parameterSetData, TreeItem *root);
+  };
+
   enum nal_extension_type
   {
     EXT_SEQUENCE,
