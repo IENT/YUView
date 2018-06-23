@@ -1684,7 +1684,7 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, false);
 
-  if (frameIndex != rawData_frameIdx || currentFrameRawData.isEmpty())
+  if (frameIndex != rawData_frameIdx || rawData.isEmpty())
   {
     // Loading failed
     DEBUG_YUV("videoHandlerYUV::loadRawYUVData Loading failed");
