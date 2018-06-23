@@ -68,128 +68,181 @@
 #    endif
 #endif
 
-//hevcDecoderHM_Functions::hevcDecoderHM_Functions() { memset(this, 0, sizeof(*this)); }
-//
-//hevcDecoderHM::hevcDecoderHM(int signalID, bool cachingDecoder) :
-//  decoderBase(cachingDecoder)
-//{
-//  // For now we don't support different signals (like prediction, residual)
-//  Q_UNUSED(signalID);
-//
-//  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
-//  QSettings settings;
-//  settings.beginGroup("Decoders");
-//  loadDecoderLibrary(settings.value("libHMFile", "").toString());
-//  settings.endGroup();
-//
-//  decoder = nullptr;
-//  currentHMPic = nullptr;
-//  stateReadingFrames = false;
-//  currentOutputBufferFrameIndex = -1;
-//
-//  // Set the signal to decode (if supported)
-//  decodeSignal = 0;
-//
-//  // Allocate a decoder
-//  if (!decoderError)
-//    allocateNewDecoder();
-//}
-//
-//hevcDecoderHM::hevcDecoderHM() : decoderBase(false)
-//{
-//  decoder = nullptr;
-//}
-//
-//hevcDecoderHM::~hevcDecoderHM()
-//{
-//  if (decoder != nullptr)
-//    libHMDec_free_decoder(decoder);
-//}
-//
-//QStringList hevcDecoderHM::getLibraryNames()
-//{
-//  // If the file name is not set explicitly, QLibrary will try to open
-//  // the libde265.so file first. Since this has been compiled for linux
-//  // it will fail and not even try to open the libde265.dylib.
-//  // On windows and linux ommitting the extension works
-//  QStringList names = 
-//    is_Q_OS_MAC ?
-//    QStringList() << "libHMDecoder.dylib" :
-//    QStringList() << "libHMDecoder";
-//
-//  return names;
-//}
-//
-//void hevcDecoderHM::resolveLibraryFunctionPointers()
-//{
-//  // Get/check function pointers
-//  if (!resolve(libHMDec_get_version, "libHMDec_get_version")) return;
-//  if (!resolve(libHMDec_new_decoder, "libHMDec_new_decoder")) return;
-//  if (!resolve(libHMDec_free_decoder, "libHMDec_free_decoder")) return;
-//  if (!resolve(libHMDec_set_SEI_Check, "libHMDec_set_SEI_Check")) return;
-//  if (!resolve(libHMDec_set_max_temporal_layer, "libHMDec_set_max_temporal_layer")) return;
-//  if (!resolve(libHMDec_push_nal_unit, "libHMDec_push_nal_unit")) return;
-//
-//  if (!resolve(libHMDec_get_picture, "libHMDec_get_picture")) return;
-//  if (!resolve(libHMDEC_get_POC, "libHMDEC_get_POC")) return;
-//  if (!resolve(libHMDEC_get_picture_width, "libHMDEC_get_picture_width")) return;
-//  if (!resolve(libHMDEC_get_picture_height, "libHMDEC_get_picture_height")) return;
-//  if (!resolve(libHMDEC_get_picture_stride, "libHMDEC_get_picture_stride")) return;
-//  if (!resolve(libHMDEC_get_image_plane, "libHMDEC_get_image_plane")) return;
-//  if (!resolve(libHMDEC_get_chroma_format, "libHMDEC_get_chroma_format")) return;
-//  if (!resolve(libHMDEC_get_internal_bit_depth, "libHMDEC_get_internal_bit_depth")) return;
-//  
-//  if (!resolve(libHMDEC_get_internal_type_number, "libHMDEC_get_internal_type_number")) return;
-//  if (!resolve(libHMDEC_get_internal_type_name, "libHMDEC_get_internal_type_name")) return;
-//  if (!resolve(libHMDEC_get_internal_type, "libHMDEC_get_internal_type")) return;
-//  if (!resolve(libHMDEC_get_internal_type_max, "libHMDEC_get_internal_type_max")) return;
-//  if (!resolve(libHMDEC_get_internal_type_vector_scaling, "libHMDEC_get_internal_type_vector_scaling")) return;
-//  if (!resolve(libHMDEC_get_internal_type_description, "libHMDEC_get_internal_type_description")) return;
-//  if (!resolve(libHMDEC_get_internal_info, "libHMDEC_get_internal_info")) return;
-//  if (!resolve(libHMDEC_clear_internal_info, "libHMDEC_clear_internal_info")) return;
-//  
-//  // All interbals functions were successfully retrieved
-//  internalsSupported = true;
-//
-//  return;
-//  
-//  // TODO: could we somehow get the prediction/residual signal?
-//  // I don't think this is possible without changes to the reference decoder.
-//  DEBUG_DECHM("hevcDecoderHM::loadDecoderLibrary - prediction/residual internals found");
-//}
-//
-//template <typename T> T hevcDecoderHM::resolve(T &fun, const char *symbol)
-//{
-//  QFunctionPointer ptr = library.resolve(symbol);
-//  if (!ptr)
-//  {
-//    setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
-//    return nullptr;
-//  }
-//
-//  return fun = reinterpret_cast<T>(ptr);
-//}
-//
-//template <typename T> T hevcDecoderHM::resolveInternals(T &fun, const char *symbol)
-//{
-//  return fun = reinterpret_cast<T>(library.resolve(symbol));
-//}
-//
-//void hevcDecoderHM::allocateNewDecoder()
-//{
-//  if (decoder != nullptr)
-//    return;
-//
-//  DEBUG_DECHM("hevcDecoderHM::allocateNewDecoder - decodeSignal %d", decodeSignal);
-//
-//  // Set some decoder parameters
-//  libHMDec_set_SEI_Check(decoder, true);
-//  libHMDec_set_max_temporal_layer(decoder, -1);
-//
-//  // Create new decoder object
-//  decoder = libHMDec_new_decoder();
-//}
-//
+decoderHM_Functions::decoderHM_Functions() 
+{ 
+  memset(this, 0, sizeof(*this)); 
+}
+
+decoderHM::decoderHM(int signalID, bool cachingDecoder) :
+  decoderBaseSingleLib(cachingDecoder)
+{
+  // For now we don't support different signals (like prediction, residual)
+  Q_UNUSED(signalID);
+
+  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
+  QSettings settings;
+  settings.beginGroup("Decoders");
+  loadDecoderLibrary(settings.value("libHMFile", "").toString());
+  settings.endGroup();
+
+  // Set the signal to decode (if supported)
+  setDecodeSignal(signalID);
+
+  // Allocate a decoder
+  if (!decoderError)
+    allocateNewDecoder();
+}
+
+
+decoderHM::~decoderHM()
+{
+  if (decoder != nullptr)
+    libHMDec_free_decoder(decoder);
+}
+
+QStringList decoderHM::getLibraryNames()
+{
+  // If the file name is not set explicitly, QLibrary will try to open
+  // the libde265.so file first. Since this has been compiled for linux
+  // it will fail and not even try to open the libde265.dylib.
+  // On windows and linux ommitting the extension works
+  QStringList names = 
+    is_Q_OS_MAC ?
+    QStringList() << "libHMDecoder.dylib" :
+    QStringList() << "libHMDecoder";
+
+  return names;
+}
+
+void decoderHM::resolveLibraryFunctionPointers()
+{
+  // Get/check function pointers
+  if (!resolve(libHMDec_get_version, "libHMDec_get_version")) return;
+  if (!resolve(libHMDec_new_decoder, "libHMDec_new_decoder")) return;
+  if (!resolve(libHMDec_free_decoder, "libHMDec_free_decoder")) return;
+  if (!resolve(libHMDec_set_SEI_Check, "libHMDec_set_SEI_Check")) return;
+  if (!resolve(libHMDec_set_max_temporal_layer, "libHMDec_set_max_temporal_layer")) return;
+  if (!resolve(libHMDec_push_nal_unit, "libHMDec_push_nal_unit")) return;
+
+  if (!resolve(libHMDec_get_picture, "libHMDec_get_picture")) return;
+  if (!resolve(libHMDEC_get_POC, "libHMDEC_get_POC")) return;
+  if (!resolve(libHMDEC_get_picture_width, "libHMDEC_get_picture_width")) return;
+  if (!resolve(libHMDEC_get_picture_height, "libHMDEC_get_picture_height")) return;
+  if (!resolve(libHMDEC_get_picture_stride, "libHMDEC_get_picture_stride")) return;
+  if (!resolve(libHMDEC_get_image_plane, "libHMDEC_get_image_plane")) return;
+  if (!resolve(libHMDEC_get_chroma_format, "libHMDEC_get_chroma_format")) return;
+  if (!resolve(libHMDEC_get_internal_bit_depth, "libHMDEC_get_internal_bit_depth")) return;
+  
+  if (!resolve(libHMDEC_get_internal_type_number, "libHMDEC_get_internal_type_number")) return;
+  if (!resolve(libHMDEC_get_internal_type_name, "libHMDEC_get_internal_type_name")) return;
+  if (!resolve(libHMDEC_get_internal_type, "libHMDEC_get_internal_type")) return;
+  if (!resolve(libHMDEC_get_internal_type_max, "libHMDEC_get_internal_type_max")) return;
+  if (!resolve(libHMDEC_get_internal_type_vector_scaling, "libHMDEC_get_internal_type_vector_scaling")) return;
+  if (!resolve(libHMDEC_get_internal_type_description, "libHMDEC_get_internal_type_description")) return;
+  if (!resolve(libHMDEC_get_internal_info, "libHMDEC_get_internal_info")) return;
+  if (!resolve(libHMDEC_clear_internal_info, "libHMDEC_clear_internal_info")) return;
+  
+  // All interbals functions were successfully retrieved
+  internalsSupported = true;
+
+  return;
+  
+  // TODO: could we somehow get the prediction/residual signal?
+  // I don't think this is possible without changes to the reference decoder.
+  DEBUG_DECHM("decoderHM::loadDecoderLibrary - prediction/residual internals found");
+}
+
+template <typename T> T decoderHM::resolve(T &fun, const char *symbol)
+{
+  QFunctionPointer ptr = library.resolve(symbol);
+  if (!ptr)
+  {
+    setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
+    return nullptr;
+  }
+
+  return fun = reinterpret_cast<T>(ptr);
+}
+
+template <typename T> T decoderHM::resolveInternals(T &fun, const char *symbol)
+{
+  return fun = reinterpret_cast<T>(library.resolve(symbol));
+}
+
+void decoderHM::resetDecoder()
+{
+  // Delete decoder
+  if (decoder != nullptr)
+    if (libHMDec_free_decoder(decoder) != LIBHMDEC_OK)
+      return setError("Reset: Freeing the decoder failded.");
+
+  // Create new decoder
+  allocateNewDecoder();
+}
+
+void decoderHM::allocateNewDecoder()
+{
+  if (decoder != nullptr)
+    return;
+
+  DEBUG_DECHM("hevcDecoderHM::allocateNewDecoder - decodeSignal %d", decodeSignal);
+
+  // Set some decoder parameters
+  libHMDec_set_SEI_Check(decoder, true);
+  libHMDec_set_max_temporal_layer(decoder, -1);
+
+  // Create new decoder object
+  decoder = libHMDec_new_decoder();
+}
+
+bool decoderHM::decodeNextFrame()
+{
+  if (decoderState != decoderRetrieveFrames)
+  {
+    DEBUG_DECHM("decoderHM::decodeNextFrame: Wrong decoder state.");
+    return false;
+  }
+
+  // TODO... decode
+  return false;
+}
+
+bool decoderHM::pushData(QByteArray &data) 
+{
+  if (decoderState != decoderNeedsMoreData)
+  {
+    DEBUG_DECHM("decoderLibde265::pushData: Wrong decoder state.");
+    return false;
+  }
+
+  // TODO ... push data
+  return false;
+}
+
+QByteArray decoderHM::getRawFrameData()
+{
+  if (currentHMPic == nullptr)
+    return QByteArray();
+  if (decoderState != decoderRetrieveFrames)
+  {
+    DEBUG_DECHM("decoderHM::getRawFrameData: Wrong decoder state.");
+    return QByteArray();
+  }
+
+  if (currentOutputBuffer.isEmpty())
+  {
+    // Put image data into buffer
+    copyImgToByteArray(currentHMPic, currentOutputBuffer);
+    DEBUG_DECHM("decoderHM::getRawFrameData copied frame to buffer");
+
+    if (retrieveStatistics)
+      // Get the statistics from the image and put them into the statistics cache
+      cacheStatistics(currentHMPic);
+  }
+
+  return currentOutputBuffer;
+}
+
 //QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
 //{
 //  // At first check if the request is for the frame that has been requested in the
@@ -369,156 +422,156 @@
 //  
 //  return QByteArray();
 //}
-//
-//#if SSE_CONVERSION
-//void hevcDecoderHM::copyImgToByteArray(libHMDec_picture *src, byteArrayAligned &dst)
-//#else
-//void hevcDecoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
-//#endif
-//{
-//  // How many image planes are there?
-//  int nrPlanes = (pixelFormat == YUV_400) ? 1 : 3;
-//
-//  // Is the output going to be 8 or 16 bit?
-//  bool outputTwoByte = false;
-//  for (int c = 0; c < nrPlanes; c++)
-//  {
-//    libHMDec_ColorComponent component = (c == 0) ? LIBHMDEC_LUMA : (c == 1) ? LIBHMDEC_CHROMA_U : LIBHMDEC_CHROMA_V;
-//    if (libHMDEC_get_internal_bit_depth(src, component) > 8)
-//      outputTwoByte = true;
-//  }
-//
-//  // How many samples are in each component?
-//  int outSizeY = libHMDEC_get_picture_width(src, LIBHMDEC_LUMA) * libHMDEC_get_picture_height(src, LIBHMDEC_LUMA);
-//  int outSizeCb = (nrPlanes == 1) ? 0 : (libHMDEC_get_picture_width(src, LIBHMDEC_CHROMA_U) * libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_U));
-//  int outSizeCr = (nrPlanes == 1) ? 0 : (libHMDEC_get_picture_width(src, LIBHMDEC_CHROMA_V) * libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_V));
-//  // How many bytes do we need in the output buffer?
-//  int nrBytesOutput = (outSizeY + outSizeCb + outSizeCr) * (outputTwoByte ? 2 : 1);
-//  DEBUG_DECHM("hevcDecoderHM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
-//
-//  // Is the output big enough?
-//  if (dst.capacity() < nrBytesOutput)
-//    dst.resize(nrBytesOutput);
-//
-//  // The source (from HM) is always short (16bit). The destination is a QByteArray so
-//  // we have to cast it right.
-//  for (int c = 0; c < nrPlanes; c++)
-//  {
-//    libHMDec_ColorComponent component = (c == 0) ? LIBHMDEC_LUMA : (c == 1) ? LIBHMDEC_CHROMA_U : LIBHMDEC_CHROMA_V;
-//
-//    const short* img_c = libHMDEC_get_image_plane(src, component);
-//    int stride = libHMDEC_get_picture_stride(src, component);
-//    
-//    if (img_c == nullptr)
-//      return;
-//
-//    int width = libHMDEC_get_picture_width(src, component);
-//    int height = libHMDEC_get_picture_height(src, component);
-//
-//    if (outputTwoByte)
-//    {
-//      unsigned short * restrict d = (unsigned short*)dst.data();
-//      if (c > 0)
-//        d += outSizeY;
-//      if (c == 2)
-//        d += outSizeCb;
-//
-//      for (int y = 0; y < height; y++)
-//      {
-//        for (int x = 0; x < width; x++)
-//        {
-//          d[x] = (unsigned short)img_c[x];
-//        }
-//        img_c += stride;
-//        d += width;
-//      }
-//    }
-//    else
-//    {
-//      unsigned char * restrict d = (unsigned char*)dst.data();
-//      if (c > 0)
-//        d += outSizeY;
-//      if (c == 2)
-//        d += outSizeCb;
-//
-//      for (int y = 0; y < height; y++)
-//      {
-//        for (int x = 0; x < width; x++)
-//        {
-//          d[x] = (char)img_c[x];
-//        }
-//        img_c += stride;
-//        d += width;
-//      }
-//    }
-//  }
-//}
-//
-//void hevcDecoderHM::cacheStatistics(libHMDec_picture *img)
-//{
-//  if (!wrapperInternalsSupported())
-//    return;
-//
-//  DEBUG_DECHM("hevcDecoderHM::cacheStatistics POC %d", libHMDEC_get_POC(img));
-//
-//  // Clear the local statistics cache
-//  curPOCStats.clear();
-//
-//  // Conversion from intra prediction mode to vector.
-//  // Coordinates are in x,y with the axes going right and down.
-//  static const int vectorTable[35][2] = 
-//  {
-//    {0,0}, {0,0},
-//    {32, -32},
-//    {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
-//    {32,   0},
-//    {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
-//    {32,  32},
-//    {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
-//    {0,   32},
-//    {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
-//    {-32, 32} 
-//  };
-//
-//  // Get all the statistics
-//  // TODO: Could we only retrieve the statistics that are active/displayed?
-//  unsigned int nrTypes = libHMDEC_get_internal_type_number();
-//  for (unsigned int t = 0; t <= nrTypes; t++)
-//  {
-//    bool callAgain;
-//    do
-//    {
-//      // Get a pointer to the data values and how many values in this array are valid.
-//      unsigned int nrValues;
-//      libHMDec_BlockValue *stats = libHMDEC_get_internal_info(decoder, img, t, nrValues, callAgain);
-//
-//      libHMDec_InternalsType statType = libHMDEC_get_internal_type(t);
-//      if (stats != nullptr && nrValues > 0)
-//      {
-//        for (unsigned int i = 0; i < nrValues; i++)
-//        {
-//          libHMDec_BlockValue b = stats[i];
-//
-//          if (statType == LIBHMDEC_TYPE_VECTOR)
-//            curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, b.value, b.value2);
-//          else
-//            curPOCStats[t].addBlockValue(b.x, b.y, b.w, b.h, b.value);
-//          if (statType == LIBHMDEC_TYPE_INTRA_DIR)
-//          {
-//            // Also add the vecotr to draw
-//            if (b.value >= 0 && b.value < 35)
-//            {
-//              int vecX = (float)vectorTable[b.value][0] * b.w / 4;
-//              int vecY = (float)vectorTable[b.value][1] * b.w / 4;
-//              curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, vecX, vecY);
-//            }
-//          }
-//        }
-//      }
-//    } while (callAgain); // Continue until the 
-//  }
-//}
-//
+
+#if SSE_CONVERSION
+void decoderHM::copyImgToByteArray(libHMDec_picture *src, byteArrayAligned &dst)
+#else
+void decoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
+#endif
+{
+  // How many image planes are there?
+  int nrPlanes = (fmt == LIBHMDEC_CHROMA_400) ? 1 : 3;
+
+  // Is the output going to be 8 or 16 bit?
+  bool outputTwoByte = false;
+  for (int c = 0; c < nrPlanes; c++)
+  {
+    libHMDec_ColorComponent component = (c == 0) ? LIBHMDEC_LUMA : (c == 1) ? LIBHMDEC_CHROMA_U : LIBHMDEC_CHROMA_V;
+    if (libHMDEC_get_internal_bit_depth(src, component) > 8)
+      outputTwoByte = true;
+  }
+
+  // How many samples are in each component?
+  int outSizeY = libHMDEC_get_picture_width(src, LIBHMDEC_LUMA) * libHMDEC_get_picture_height(src, LIBHMDEC_LUMA);
+  int outSizeCb = (nrPlanes == 1) ? 0 : (libHMDEC_get_picture_width(src, LIBHMDEC_CHROMA_U) * libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_U));
+  int outSizeCr = (nrPlanes == 1) ? 0 : (libHMDEC_get_picture_width(src, LIBHMDEC_CHROMA_V) * libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_V));
+  // How many bytes do we need in the output buffer?
+  int nrBytesOutput = (outSizeY + outSizeCb + outSizeCr) * (outputTwoByte ? 2 : 1);
+  DEBUG_DECHM("decoderHM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
+
+  // Is the output big enough?
+  if (dst.capacity() < nrBytesOutput)
+    dst.resize(nrBytesOutput);
+
+  // The source (from HM) is always short (16bit). The destination is a QByteArray so
+  // we have to cast it right.
+  for (int c = 0; c < nrPlanes; c++)
+  {
+    libHMDec_ColorComponent component = (c == 0) ? LIBHMDEC_LUMA : (c == 1) ? LIBHMDEC_CHROMA_U : LIBHMDEC_CHROMA_V;
+
+    const short* img_c = libHMDEC_get_image_plane(src, component);
+    int stride = libHMDEC_get_picture_stride(src, component);
+    
+    if (img_c == nullptr)
+      return;
+
+    int width = libHMDEC_get_picture_width(src, component);
+    int height = libHMDEC_get_picture_height(src, component);
+
+    if (outputTwoByte)
+    {
+      unsigned short * restrict d = (unsigned short*)dst.data();
+      if (c > 0)
+        d += outSizeY;
+      if (c == 2)
+        d += outSizeCb;
+
+      for (int y = 0; y < height; y++)
+      {
+        for (int x = 0; x < width; x++)
+        {
+          d[x] = (unsigned short)img_c[x];
+        }
+        img_c += stride;
+        d += width;
+      }
+    }
+    else
+    {
+      unsigned char * restrict d = (unsigned char*)dst.data();
+      if (c > 0)
+        d += outSizeY;
+      if (c == 2)
+        d += outSizeCb;
+
+      for (int y = 0; y < height; y++)
+      {
+        for (int x = 0; x < width; x++)
+        {
+          d[x] = (char)img_c[x];
+        }
+        img_c += stride;
+        d += width;
+      }
+    }
+  }
+}
+
+void decoderHM::cacheStatistics(libHMDec_picture *img)
+{
+  if (!internalsSupported)
+    return;
+
+  DEBUG_DECHM("decoderHM::cacheStatistics POC %d", libHMDEC_get_POC(img));
+
+  // Clear the local statistics cache
+  curPOCStats.clear();
+
+  // Conversion from intra prediction mode to vector.
+  // Coordinates are in x,y with the axes going right and down.
+  static const int vectorTable[35][2] = 
+  {
+    {0,0}, {0,0},
+    {32, -32},
+    {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
+    {32,   0},
+    {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
+    {32,  32},
+    {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
+    {0,   32},
+    {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
+    {-32, 32} 
+  };
+
+  // Get all the statistics
+  // TODO: Could we only retrieve the statistics that are active/displayed?
+  unsigned int nrTypes = libHMDEC_get_internal_type_number();
+  for (unsigned int t = 0; t <= nrTypes; t++)
+  {
+    bool callAgain;
+    do
+    {
+      // Get a pointer to the data values and how many values in this array are valid.
+      unsigned int nrValues;
+      libHMDec_BlockValue *stats = libHMDEC_get_internal_info(decoder, img, t, nrValues, callAgain);
+
+      libHMDec_InternalsType statType = libHMDEC_get_internal_type(t);
+      if (stats != nullptr && nrValues > 0)
+      {
+        for (unsigned int i = 0; i < nrValues; i++)
+        {
+          libHMDec_BlockValue b = stats[i];
+
+          if (statType == LIBHMDEC_TYPE_VECTOR)
+            curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, b.value, b.value2);
+          else
+            curPOCStats[t].addBlockValue(b.x, b.y, b.w, b.h, b.value);
+          if (statType == LIBHMDEC_TYPE_INTRA_DIR)
+          {
+            // Also add the vecotr to draw
+            if (b.value >= 0 && b.value < 35)
+            {
+              int vecX = (float)vectorTable[b.value][0] * b.w / 4;
+              int vecY = (float)vectorTable[b.value][1] * b.w / 4;
+              curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, vecX, vecY);
+            }
+          }
+        }
+      }
+    } while (callAgain); // Continue until the library returns that there is no more to retrive
+  }
+}
+
 //statisticsData hevcDecoderHM::getStatisticsData(int frameIdx, int typeIdx)
 //{
 //  DEBUG_DECHM("hevcDecoderHM::getStatisticsData %s", retrieveStatistics ? "" : "staistics retrievel avtivated");
@@ -565,118 +618,118 @@
 //
 //  return false;
 //}
-//
-//void hevcDecoderHM::fillStatisticList(statisticHandler &statSource) const
-//{
-//  // Ask the decoder how many internals types there are
-//  unsigned int nrTypes = libHMDEC_get_internal_type_number();
-//
-//  for (unsigned int i = 0; i < nrTypes; i++)
-//  {
-//    QString name = libHMDEC_get_internal_type_name(i);
-//    QString description = libHMDEC_get_internal_type_description(i);
-//    libHMDec_InternalsType statType = libHMDEC_get_internal_type(i);
-//    int max = 0;
-//    if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
-//    {
-//      unsigned int uMax = libHMDEC_get_internal_type_max(i);
-//      max = (uMax > INT_MAX) ? INT_MAX : uMax;
-//    }
-//
-//    if (statType == LIBHMDEC_TYPE_FLAG)
-//    {
-//      StatisticsType flag(i, name, "jet", 0, 1);
-//      flag.description = description;
-//      statSource.addStatType(flag);
-//    }
-//    else if (statType == LIBHMDEC_TYPE_RANGE)
-//    {
-//      StatisticsType range(i, name, "jet", 0, max);
-//      range.description = description;
-//      statSource.addStatType(range);
-//    }
-//    else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
-//    {
-//      StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
-//      rangeZero.description = description;
-//      statSource.addStatType(rangeZero);
-//    }
-//    else if (statType == LIBHMDEC_TYPE_VECTOR)
-//    {
-//      unsigned int scale = libHMDEC_get_internal_type_vector_scaling(i);
-//      StatisticsType vec(i, name, scale);
-//      vec.description = description;
-//      statSource.addStatType(vec);
-//    }
-//    else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
-//    {
-//      StatisticsType intraDir(i, name, "jet", 0, 34);
-//      intraDir.description = description;
-//      intraDir.hasVectorData = true;
-//      intraDir.renderVectorData = true;
-//      intraDir.vectorScale = 32;
-//      // Don't draw the vector values for the intra dir. They don't have actual meaning.
-//      intraDir.renderVectorDataValues = false;
-//      intraDir.valMap.insert(0, "INTRA_PLANAR");
-//      intraDir.valMap.insert(1, "INTRA_DC");
-//      intraDir.valMap.insert(2, "INTRA_ANGULAR_2");
-//      intraDir.valMap.insert(3, "INTRA_ANGULAR_3");
-//      intraDir.valMap.insert(4, "INTRA_ANGULAR_4");
-//      intraDir.valMap.insert(5, "INTRA_ANGULAR_5");
-//      intraDir.valMap.insert(6, "INTRA_ANGULAR_6");
-//      intraDir.valMap.insert(7, "INTRA_ANGULAR_7");
-//      intraDir.valMap.insert(8, "INTRA_ANGULAR_8");
-//      intraDir.valMap.insert(9, "INTRA_ANGULAR_9");
-//      intraDir.valMap.insert(10, "INTRA_ANGULAR_10");
-//      intraDir.valMap.insert(11, "INTRA_ANGULAR_11");
-//      intraDir.valMap.insert(12, "INTRA_ANGULAR_12");
-//      intraDir.valMap.insert(13, "INTRA_ANGULAR_13");
-//      intraDir.valMap.insert(14, "INTRA_ANGULAR_14");
-//      intraDir.valMap.insert(15, "INTRA_ANGULAR_15");
-//      intraDir.valMap.insert(16, "INTRA_ANGULAR_16");
-//      intraDir.valMap.insert(17, "INTRA_ANGULAR_17");
-//      intraDir.valMap.insert(18, "INTRA_ANGULAR_18");
-//      intraDir.valMap.insert(19, "INTRA_ANGULAR_19");
-//      intraDir.valMap.insert(20, "INTRA_ANGULAR_20");
-//      intraDir.valMap.insert(21, "INTRA_ANGULAR_21");
-//      intraDir.valMap.insert(22, "INTRA_ANGULAR_22");
-//      intraDir.valMap.insert(23, "INTRA_ANGULAR_23");
-//      intraDir.valMap.insert(24, "INTRA_ANGULAR_24");
-//      intraDir.valMap.insert(25, "INTRA_ANGULAR_25");
-//      intraDir.valMap.insert(26, "INTRA_ANGULAR_26");
-//      intraDir.valMap.insert(27, "INTRA_ANGULAR_27");
-//      intraDir.valMap.insert(28, "INTRA_ANGULAR_28");
-//      intraDir.valMap.insert(29, "INTRA_ANGULAR_29");
-//      intraDir.valMap.insert(30, "INTRA_ANGULAR_30");
-//      intraDir.valMap.insert(31, "INTRA_ANGULAR_31");
-//      intraDir.valMap.insert(32, "INTRA_ANGULAR_32");
-//      intraDir.valMap.insert(33, "INTRA_ANGULAR_33");
-//      intraDir.valMap.insert(34, "INTRA_ANGULAR_34");
-//      statSource.addStatType(intraDir);
-//    }
-//  }
-//}
-//
-//QString hevcDecoderHM::getDecoderName() const
-//{
-//  return (decoderError) ? "HM" : libHMDec_get_version();
-//}
-//
-//bool hevcDecoderHM::checkLibraryFile(QString libFilePath, QString &error)
-//{
-//  hevcDecoderHM testDecoder;
-//
-//  // Try to load the library file
-//  testDecoder.library.setFileName(libFilePath);
-//  if (!testDecoder.library.load())
-//  {
-//    error = "Error opening QLibrary.";
-//    return false;
-//  }
-//
-//  // Now let's see if we can retrive all the function pointers that we will need.
-//  // If this works, we can be fairly certain that this is a valid libde265 library.
-//  testDecoder.resolveLibraryFunctionPointers();
-//  error = testDecoder.decoderErrorString();
-//  return !testDecoder.decoderError;
-//}
+
+void decoderHM::fillStatisticList(statisticHandler &statSource) const
+{
+  // Ask the decoder how many internals types there are
+  unsigned int nrTypes = libHMDEC_get_internal_type_number();
+
+  for (unsigned int i = 0; i < nrTypes; i++)
+  {
+    QString name = libHMDEC_get_internal_type_name(i);
+    QString description = libHMDEC_get_internal_type_description(i);
+    libHMDec_InternalsType statType = libHMDEC_get_internal_type(i);
+    int max = 0;
+    if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
+    {
+      unsigned int uMax = libHMDEC_get_internal_type_max(i);
+      max = (uMax > INT_MAX) ? INT_MAX : uMax;
+    }
+
+    if (statType == LIBHMDEC_TYPE_FLAG)
+    {
+      StatisticsType flag(i, name, "jet", 0, 1);
+      flag.description = description;
+      statSource.addStatType(flag);
+    }
+    else if (statType == LIBHMDEC_TYPE_RANGE)
+    {
+      StatisticsType range(i, name, "jet", 0, max);
+      range.description = description;
+      statSource.addStatType(range);
+    }
+    else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
+    {
+      StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
+      rangeZero.description = description;
+      statSource.addStatType(rangeZero);
+    }
+    else if (statType == LIBHMDEC_TYPE_VECTOR)
+    {
+      unsigned int scale = libHMDEC_get_internal_type_vector_scaling(i);
+      StatisticsType vec(i, name, scale);
+      vec.description = description;
+      statSource.addStatType(vec);
+    }
+    else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
+    {
+      StatisticsType intraDir(i, name, "jet", 0, 34);
+      intraDir.description = description;
+      intraDir.hasVectorData = true;
+      intraDir.renderVectorData = true;
+      intraDir.vectorScale = 32;
+      // Don't draw the vector values for the intra dir. They don't have actual meaning.
+      intraDir.renderVectorDataValues = false;
+      intraDir.valMap.insert(0, "INTRA_PLANAR");
+      intraDir.valMap.insert(1, "INTRA_DC");
+      intraDir.valMap.insert(2, "INTRA_ANGULAR_2");
+      intraDir.valMap.insert(3, "INTRA_ANGULAR_3");
+      intraDir.valMap.insert(4, "INTRA_ANGULAR_4");
+      intraDir.valMap.insert(5, "INTRA_ANGULAR_5");
+      intraDir.valMap.insert(6, "INTRA_ANGULAR_6");
+      intraDir.valMap.insert(7, "INTRA_ANGULAR_7");
+      intraDir.valMap.insert(8, "INTRA_ANGULAR_8");
+      intraDir.valMap.insert(9, "INTRA_ANGULAR_9");
+      intraDir.valMap.insert(10, "INTRA_ANGULAR_10");
+      intraDir.valMap.insert(11, "INTRA_ANGULAR_11");
+      intraDir.valMap.insert(12, "INTRA_ANGULAR_12");
+      intraDir.valMap.insert(13, "INTRA_ANGULAR_13");
+      intraDir.valMap.insert(14, "INTRA_ANGULAR_14");
+      intraDir.valMap.insert(15, "INTRA_ANGULAR_15");
+      intraDir.valMap.insert(16, "INTRA_ANGULAR_16");
+      intraDir.valMap.insert(17, "INTRA_ANGULAR_17");
+      intraDir.valMap.insert(18, "INTRA_ANGULAR_18");
+      intraDir.valMap.insert(19, "INTRA_ANGULAR_19");
+      intraDir.valMap.insert(20, "INTRA_ANGULAR_20");
+      intraDir.valMap.insert(21, "INTRA_ANGULAR_21");
+      intraDir.valMap.insert(22, "INTRA_ANGULAR_22");
+      intraDir.valMap.insert(23, "INTRA_ANGULAR_23");
+      intraDir.valMap.insert(24, "INTRA_ANGULAR_24");
+      intraDir.valMap.insert(25, "INTRA_ANGULAR_25");
+      intraDir.valMap.insert(26, "INTRA_ANGULAR_26");
+      intraDir.valMap.insert(27, "INTRA_ANGULAR_27");
+      intraDir.valMap.insert(28, "INTRA_ANGULAR_28");
+      intraDir.valMap.insert(29, "INTRA_ANGULAR_29");
+      intraDir.valMap.insert(30, "INTRA_ANGULAR_30");
+      intraDir.valMap.insert(31, "INTRA_ANGULAR_31");
+      intraDir.valMap.insert(32, "INTRA_ANGULAR_32");
+      intraDir.valMap.insert(33, "INTRA_ANGULAR_33");
+      intraDir.valMap.insert(34, "INTRA_ANGULAR_34");
+      statSource.addStatType(intraDir);
+    }
+  }
+}
+
+QString decoderHM::getDecoderName() const
+{
+  return (decoderError) ? "HM" : libHMDec_get_version();
+}
+
+bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)
+{
+  decoderHM testDecoder;
+
+  // Try to load the library file
+  testDecoder.library.setFileName(libFilePath);
+  if (!testDecoder.library.load())
+  {
+    error = "Error opening QLibrary.";
+    return false;
+  }
+
+  // Now let's see if we can retrive all the function pointers that we will need.
+  // If this works, we can be fairly certain that this is a valid libde265 library.
+  testDecoder.resolveLibraryFunctionPointers();
+  error = testDecoder.decoderErrorString();
+  return !testDecoder.decoderError;
+}

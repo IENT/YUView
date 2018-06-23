@@ -449,7 +449,6 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
     playlistItemWithVideo::drawItem(painter, frameIdx, zoomFactor, drawRawData);
     return;
   }
-  
   else if (loadingDecoder.isNull())
   {
     infoText = "No decoder allocated.\n";

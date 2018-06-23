@@ -84,7 +84,7 @@ struct decoderLibde265_Functions
 // To easily access the functions, one can use protected inheritance:
 // class de265User : ..., protected de265Wrapper
 // This API is similar to the QOpenGLFunctions API family.
-class decoderLibde265 : public decoderBase, public decoderLibde265_Functions 
+class decoderLibde265 : public decoderBaseSingleLib, public decoderLibde265_Functions 
 {
 public:
   decoderLibde265(int signalID, bool cachingDecoder=false);
@@ -117,10 +117,10 @@ private:
   decoderLibde265();
   
   // Try to resolve all the required function pointers from the library
-  void resolveLibraryFunctionPointers();
-  void loadDecoderLibrary(QString);
-  QLibrary library;
-  QString libraryPath;
+  void resolveLibraryFunctionPointers() Q_DECL_OVERRIDE;
+
+  // Return the possible names of the libde265 library
+  QStringList getLibraryNames() Q_DECL_OVERRIDE;
 
   // The function template for resolving the functions.
   // This can not go into the base class because then the template

@@ -53,10 +53,13 @@
 #define DEBUG_LIBDE265(fmt,...) ((void)0)
 #endif
 
-decoderLibde265_Functions::decoderLibde265_Functions() { memset(this, 0, sizeof(*this)); }
+decoderLibde265_Functions::decoderLibde265_Functions() 
+{ 
+  memset(this, 0, sizeof(*this)); 
+}
 
 decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
-  decoderBase(cachingDecoder)
+  decoderBaseSingleLib(cachingDecoder)
 {
   decoder = nullptr;
   nrSignals = 1;
@@ -79,7 +82,7 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
 }
 
 decoderLibde265::decoderLibde265() :
-  decoderBase(false)
+  decoderBaseSingleLib(false)
 {
   decoder = nullptr;
 }
@@ -275,13 +278,13 @@ bool decoderLibde265::decodeFrame()
     // Get the resolution / yuv format from the frame
     QSize s = QSize(de265_get_image_width(curImage, 0), de265_get_image_height(curImage, 0));
     if (!s.isValid())
-      DEBUG_LIBDE265("decoderLibde265::decodeNextFrame got invalid frame size");
+      DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(de265_get_chroma_format(curImage));
     if (subsampling == YUV_NUM_SUBSAMPLINGS)
-      DEBUG_LIBDE265("decoderLibde265::decodeNextFrame got invalid subsampling");
+      DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid subsampling");
     int bitDepth = de265_get_bits_per_pixel(curImage, 0);
     if (bitDepth < 8 || bitDepth > 16)
-      DEBUG_LIBDE265("decoderLibde265::decodeNextFrame got invalid bit depth");
+      DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid bit depth");
 
     if (!frameSize.isValid() && !formatYUV.isValid())
     {
@@ -299,7 +302,7 @@ bool decoderLibde265::decodeFrame()
       if (formatYUV.bitsPerSample != bitDepth)
         return setErrorB("Recieved a frame with different bit depth");
     }
-    DEBUG_LIBDE265("decoderLibde265::decodeNextFrame Picture decoded");
+    DEBUG_LIBDE265("decoderLibde265::decodeFrame Picture decoded");
 
     decoderState = decoderRetrieveFrames;
     currentOutputBuffer.clear();
@@ -314,7 +317,7 @@ QByteArray decoderLibde265::getRawFrameData()
     return QByteArray();
   if (decoderState != decoderRetrieveFrames)
   {
-    DEBUG_LIBDE265("decoderLibde265::decodeNextFrame: Wrong decoder state.");
+    DEBUG_LIBDE265("decoderLibde265::getRawFrameData: Wrong decoder state.");
     return QByteArray();
   }
 
@@ -322,7 +325,7 @@ QByteArray decoderLibde265::getRawFrameData()
   {
     // Put image data into buffer
     copyImgToByteArray(curImage, currentOutputBuffer);
-    DEBUG_LIBDE265("decoderLibde265::loadYUVFrameData copied frame to buffer");
+    DEBUG_LIBDE265("decoderLibde265::getRawFrameData copied frame to buffer");
     
     if (retrieveStatistics)
       // Get the statistics from the image and put them into the statistics cache
@@ -895,69 +898,17 @@ bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
   return !testDecoder.errorInDecoder();
 }
 
-void decoderLibde265::loadDecoderLibrary(QString specificLibrary)
+QStringList decoderLibde265::getLibraryNames()
 {
-  // Try to load the libde265 library from the current working directory
-  // Unfortunately relative paths like this do not work: (at least on windows)
-  // library.setFileName(".\\libde265");
+  // If the file name is not set explicitly, QLibrary will try to open
+  // the libde265.so file first. Since this has been compiled for linux
+  // it will fail and not even try to open the libde265.dylib.
+  // On windows and linux ommitting the extension works
+  QStringList libNames = is_Q_OS_MAC ?
+    QStringList() << "libde265-internals.dylib" << "libde265.dylib" :
+    QStringList() << "libde265-internals" << "libde265";
 
-  bool libLoaded = false;
-
-  // Try the specific library first
-  library.setFileName(specificLibrary);
-  libraryPath = specificLibrary;
-  libLoaded = library.load();
-
-  if (!libLoaded)
-  {
-    // Try various paths/names next
-    // If the file name is not set explicitly, QLibrary will try to open
-    // the libde265.so file first. Since this has been compiled for linux
-    // it will fail and not even try to open the libde265.dylib.
-    // On windows and linux ommitting the extension works
-    QStringList libNames = is_Q_OS_MAC ?
-      QStringList() << "libde265-internals.dylib" << "libde265.dylib" :
-      QStringList() << "libde265-internals" << "libde265";
-
-    // Get the additional search path from the settings
-    QSettings settings;
-    settings.beginGroup("Decoders");
-    QString searchPath = settings.value("SearchPath", "").toString();
-    if (!searchPath.endsWith("/"))
-      searchPath.append("/");
-    searchPath.append("%1");
-    settings.endGroup();
-
-    QStringList const libPaths = QStringList()
-      << searchPath
-      << QDir::currentPath() + "/%1"
-      << QDir::currentPath() + "/libde265/%1"
-      << QCoreApplication::applicationDirPath() + "/%1"
-      << QCoreApplication::applicationDirPath() + "/libde265/%1"
-      << "%1"; // Try the system directories.
-
-    for (auto &libName : libNames)
-    {
-      for (auto &libPath : libPaths)
-      {
-        library.setFileName(libPath.arg(libName));
-        libraryPath = libPath.arg(libName);
-        libLoaded = library.load();
-        if (libLoaded)
-          break;
-      }
-      if (libLoaded)
-        break;
-    }
-  }
-
-  if (!libLoaded)
-  {
-    libraryPath.clear();
-    return setError(library.errorString());
-  }
-
-  resolveLibraryFunctionPointers();
+  return libNames;
 }
 
 YUVSubsamplingType decoderLibde265::convertFromInternalSubsampling(de265_chroma fmt)

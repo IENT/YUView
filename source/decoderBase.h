@@ -115,11 +115,11 @@ protected:
   };
   decoderStateType decoderState;
   
-  int decodeSignal; ///< Which signal should be decoded?
+  int decodeSignal { 0 }; ///< Which signal should be decoded?
   bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
 
-  bool internalsSupported;  ///< Enable in the constructor if you support statistics
-  bool retrieveStatistics;  ///< If enabled, the decoder should also retrive statistics data from the bitstream
+  bool internalsSupported { false };  ///< Enable in the constructor if you support statistics
+  bool retrieveStatistics { false };  ///< If enabled, the decoder should also retrive statistics data from the bitstream
   QSize frameSize;
 
   // Some decoders are able to handel both YUV and RGB output
@@ -135,6 +135,24 @@ protected:
   // Statistics caching
   QHash<int, statisticsData> curPOCStats;  // cache of the statistics for the current POC [statsTypeID]
   int statsCacheCurPOC;                    // the POC of the statistics that are in the curPOCStats
+};
+
+
+class decoderBaseSingleLib : public decoderBase
+{
+public:
+  decoderBaseSingleLib(bool cachingDecoder=false) : decoderBase(cachingDecoder) {};
+  virtual ~decoderBaseSingleLib() {};
+
+protected:
+  virtual void resolveLibraryFunctionPointers() = 0;
+  void loadDecoderLibrary(QString specificLibrary);
+
+  // Get all possible names of the library that we will load
+  virtual QStringList getLibraryNames() = 0;
+
+  QLibrary library;
+  QString libraryPath;
 };
 
 #endif // DECODERBASE_H
