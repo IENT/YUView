@@ -39,7 +39,7 @@
 #include "typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERHM_DEBUG_OUTPUT 0
+#define DECODERHM_DEBUG_OUTPUT 1
 #if DECODERHM_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERHM_DEBUG_OUTPUT == 1
@@ -88,8 +88,7 @@ decoderHM::decoderHM(int signalID, bool cachingDecoder) :
   // Set the signal to decode (if supported)
   setDecodeSignal(signalID);
 
-  // Allocate a decoder
-  if (!decoderError)
+  if (decoderState != decoderError)
     allocateNewDecoder();
 }
 
@@ -176,6 +175,9 @@ void decoderHM::resetDecoder()
     if (libHMDec_free_decoder(decoder) != LIBHMDEC_OK)
       return setError("Reset: Freeing the decoder failded.");
 
+  decoder = nullptr;
+  decodedFrameWaiting = false;
+
   // Create new decoder
   allocateNewDecoder();
 }
@@ -187,12 +189,12 @@ void decoderHM::allocateNewDecoder()
 
   DEBUG_DECHM("hevcDecoderHM::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
+  // Create new decoder object
+  decoder = libHMDec_new_decoder();
+
   // Set some decoder parameters
   libHMDec_set_SEI_Check(decoder, true);
   libHMDec_set_max_temporal_layer(decoder, -1);
-
-  // Create new decoder object
-  decoder = libHMDec_new_decoder();
 }
 
 bool decoderHM::decodeNextFrame()
@@ -203,20 +205,94 @@ bool decoderHM::decodeNextFrame()
     return false;
   }
 
-  // TODO... decode
-  return false;
+  if (currentHMPic == nullptr)
+  {
+    DEBUG_DECHM("decoderHM::decodeNextFrame: No frame available.");
+    return false;
+  }
+
+  if (decodedFrameWaiting)
+  {
+    decodedFrameWaiting = false;
+    return true;
+  }
+
+  return getNextFrameFromDecoder();
+}
+
+bool decoderHM::getNextFrameFromDecoder()
+{
+  DEBUG_DECHM("decoderHM::getNextFrameFromDecoder");
+
+  currentHMPic = libHMDec_get_picture(decoder);
+  if (currentHMPic == nullptr)
+    return false;
+
+  // Check the validity of the picture
+  QSize picSize = QSize(libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA), libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
+  if (!picSize.isValid())
+    DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid size");
+  auto subsampling = convertFromInternalSubsampling(libHMDEC_get_chroma_format(currentHMPic));
+  if (subsampling == YUV_NUM_SUBSAMPLINGS)
+    DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
+  int bitDepth = libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA);
+  if (bitDepth < 8 || bitDepth > 16)
+    DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid bit depth");
+
+  if (!frameSize.isValid() && !formatYUV.isValid())
+  {
+    // Set the values
+    frameSize = picSize;
+    formatYUV = yuvPixelFormat(subsampling, bitDepth);
+  }
+  else
+  {
+    // Check the values against the previously set values
+    if (frameSize != picSize)
+      return setErrorB("Recieved a frame of different size");
+    if (formatYUV.subsampling != subsampling)
+      return setErrorB("Recieved a frame with different subsampling");
+    if (formatYUV.bitsPerSample != bitDepth)
+      return setErrorB("Recieved a frame with different bit depth");
+  }
+  
+  DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got a valid frame");
+  return true;
 }
 
 bool decoderHM::pushData(QByteArray &data) 
 {
   if (decoderState != decoderNeedsMoreData)
   {
-    DEBUG_DECHM("decoderLibde265::pushData: Wrong decoder state.");
+    DEBUG_DECHM("decoderHM::pushData: Wrong decoder state.");
     return false;
   }
 
-  // TODO ... push data
-  return false;
+  bool endOfFile = (data.length() == 0);
+  if (endOfFile)
+    DEBUG_DECHM("decoderFFmpeg::pushData: Recieved empty packet. Setting EOF.");
+
+  bool bNewPicture;
+  bool checkOutputPictures;
+  libHMDec_push_nal_unit(decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
+  DEBUG_DECHM("decoderHM::pushData pushed NAL length %d%s%s", data.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+
+  if (checkOutputPictures && getNextFrameFromDecoder())
+  {
+    decodedFrameWaiting = true;
+    decoderState = decoderRetrieveFrames;
+    currentOutputBuffer.clear();
+  }
+
+  if (bNewPicture)
+  {
+    // The decoder noticed that a new picture starts with this NAL unit and decoded what it already has.
+    // It expects us to re-push the data again.
+    return false;
+  }
+
+  // The data was successfully pushed to the decoder
+  return true;
 }
 
 QByteArray decoderHM::getRawFrameData()
@@ -430,6 +506,7 @@ void decoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
 #endif
 {
   // How many image planes are there?
+  libHMDec_ChromaFormat fmt = libHMDEC_get_chroma_format(src);
   int nrPlanes = (fmt == LIBHMDEC_CHROMA_400) ? 1 : 3;
 
   // Is the output going to be 8 or 16 bit?
@@ -732,4 +809,17 @@ bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)
   testDecoder.resolveLibraryFunctionPointers();
   error = testDecoder.decoderErrorString();
   return !testDecoder.decoderError;
+}
+
+YUVSubsamplingType convertFromInternalSubsampling(libHMDec_ChromaFormat fmt)
+{
+  if (fmt == LIBHMDEC_CHROMA_400)
+    return YUV_400;
+  if (fmt == LIBHMDEC_CHROMA_420)
+    return YUV_420;
+  if (fmt == LIBHMDEC_CHROMA_422)
+    return YUV_422;
+
+  // Invalid
+  return YUV_NUM_SUBSAMPLINGS;
 }

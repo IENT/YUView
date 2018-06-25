@@ -114,7 +114,7 @@ public:
 private:
   // A private constructor that creates an uninitialized decoder library.
   // Used by checkLibraryFile to check if a file can be used as a hevcDecoderLibde265.
-  decoderLibde265();
+  decoderLibde265() : decoderBaseSingleLib() {};
   
   // Try to resolve all the required function pointers from the library
   void resolveLibraryFunctionPointers() Q_DECL_OVERRIDE;
@@ -130,18 +130,18 @@ private:
 
   void allocateNewDecoder();
 
-  de265_decoder_context* decoder;
+  de265_decoder_context* decoder {nullptr};
 
-  int nrSignals;
-  bool flushing;
+  int nrSignals {1};
+  bool flushing {false};
 
   // When pushing frames, the decoder will try to decode a frame to check if this is possible.
   // If this is true, a frame is waiting from that step and decodeNextFrame will not actually decode a new frame.
-  bool decodedFrameWaiting;
+  bool decodedFrameWaiting {false};
 
   // Try to decode a frame. If successfull, the frame will be pointed to by curImage.
   bool decodeFrame();
-  const de265_image* curImage;
+  const de265_image* curImage {nullptr};
 
   // Convert from libde265 types to YUView types
   YUVSubsamplingType convertFromInternalSubsampling(de265_chroma fmt);

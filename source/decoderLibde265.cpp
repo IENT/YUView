@@ -61,12 +61,7 @@ decoderLibde265_Functions::decoderLibde265_Functions()
 decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
   decoderBaseSingleLib(cachingDecoder)
 {
-  decoder = nullptr;
-  nrSignals = 1;
-  flushing = false;
-  curImage = nullptr;
   currentOutputBuffer.clear();
-  decodedFrameWaiting = false;
 
   // Libde265 can only decoder HEVC in YUV format
   rawFormat = raw_YUV;
@@ -79,12 +74,6 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
 
   setDecodeSignal(signalID);
   allocateNewDecoder();
-}
-
-decoderLibde265::decoderLibde265() :
-  decoderBaseSingleLib(false)
-{
-  decoder = nullptr;
 }
 
 decoderLibde265::~decoderLibde265()

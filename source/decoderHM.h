@@ -118,22 +118,28 @@ private:
 
   void allocateNewDecoder();
 
-  libHMDec_context* decoder { nullptr };
+  libHMDec_context* decoder {nullptr};
   libHMDec_error decError;
 
-  // We keep a pointer to the last pictures that was output by the decoder. 
-  // This is valid until we push more NAL units to the decoder.
-  libHMDec_picture *currentHMPic { nullptr };
+  // Try to get the next picture from the decoder and save it in currentHMPic
+  bool getNextFrameFromDecoder();
+  libHMDec_picture *currentHMPic {nullptr};
+
+  // When pushing data, we will try to retrive a frame to check if this is possible.
+  // If this is true, a frame is waiting from that step and decodeNextFrame will not actually retrive a new frame.
+  bool decodedFrameWaiting {false};
 
   // Statistics caching
   void cacheStatistics(libHMDec_picture *pic);
 
   // Are we currently reading from the decoder or are we pushing more NAL units?
-  bool stateReadingFrames { false };
+  bool stateReadingFrames {false};
 
-  bool internalsSupported { false };
+  bool internalsSupported {false};
   int nrSignals { 0 };
-  libHMDec_ChromaFormat fmt { LIBHMDEC_CHROMA_UNKNOWN };
+
+  // Convert from libde265 types to YUView types
+  YUVSubsamplingType convertFromInternalSubsampling(libHMDec_ChromaFormat fmt);
 
   // Add the statistics supported by the HM decoder
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
@@ -146,37 +152,7 @@ private:
 #else
   QByteArray currentOutputBuffer;
   void copyImgToByteArray(libHMDec_picture *src, QByteArray &dst);   // Copy the raw data from the de265_image source *src to the byte array
-#endif
-
-//  // Load the raw YUV data for the given frame
-//  QByteArray loadYUVFrameData(int frameIdx) Q_DECL_OVERRIDE;
-//
-  
-//
-//  QString getDecoderName() const Q_DECL_OVERRIDE;
-//  
-//  // Check if the given library file is an existing HM decoder that we can use.
-//  static bool checkLibraryFile(QString libFilePath, QString &error);
-//
-//private:
-//  
-//
-//  QStringList getLibraryNames() Q_DECL_OVERRIDE;
-//  
-//
-//  
-//
-  
-//  
-
-//  
-  
-//  // The last pushed NAL unit. We hight have to push this again.
-//  QByteArray lastNALUnit;
-//
-  
-//
-  
+#endif  
 };
 
 #endif // DECODERHM_H

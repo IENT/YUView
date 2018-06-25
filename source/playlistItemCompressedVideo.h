@@ -148,7 +148,7 @@ protected:
   QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBCaching;
   QScopedPointer<parserAnnexB> inputFileAnnexBParser;
   // When reading annex B data using the fileSourceAnnexBFile::getFrameData function, we need to count how many frames we already read.
-  int readAnnexBFrameCounterCodingOrder;
+  int readAnnexBFrameCounterCodingOrder { -1 };
   
   // Which type is the input?
   inputFormat inputFormatType;
@@ -162,8 +162,8 @@ protected:
   QScopedPointer<fileSourceFFmpegFile> inputFileFFmpegCaching;
   
   // Is the loadFrame function currently loading?
-  bool isFrameLoading;
-  bool isFrameLoadingDoubleBuffer;
+  bool isFrameLoading { false };
+  bool isFrameLoadingDoubleBuffer { false };
 
   // Only cache one frame at a time. Caching should also always be done in display order of the frames.
   // TODO: Could we somehow make shure that caching is always performed in display order?
@@ -180,22 +180,22 @@ protected:
   static QStringList decoderEngineNames;
 
   // The current frame index of the decoders (interactive/caching)
-  int currentFrameIdx[2];
+  int currentFrameIdx[2] {-1, -1};
 
   // Seek the input file to the given position, reset the decoder and prepare it to start decoding from the given position.
   void seekToPosition(int seekToFrame, int seekToPTS, bool caching);
 
   // If we are using FFmpeg for decoding, pushing data may fail and the decoder switches to decoding mode.
   // In this case, we must (after decoding frames) re-push the packet for which pushing failed.
-  bool repushDataFFmpeg;
+  bool repushDataFFmpeg {false};
 
   // Besides the normal stats (error / no error) this item might be able to parse the file but not to decode it.
   void setDecodingError(QString err) { infoText = err; decodingEnabled = false; }
-  bool decodingEnabled;
+  bool decodingEnabled {false};
 
   // If the bitstream is invalid (for example it was cut at a position that it should not be cut at), we
   // might be unable to decode some of the frames at the end of the sequence.
-  bool decodingOfFrameNotPossible;
+  bool decodingOfFrameNotPossible {false};
 
 private slots:
   // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the videoHandler if the frame that is

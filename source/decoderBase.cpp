@@ -133,7 +133,21 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
   if (!libLoaded)
   {
     libraryPath.clear();
-    return setError(library.errorString());
+    QString error = "Error loading library: " + library.errorString() + "\n";
+    error += "We could not load one of the supported decoder library (";
+    QStringList libNames = getLibraryNames();
+    for (int i = 0; i < libNames.count(); i++)
+    {
+      if (i == 0)
+        error += libNames[0];
+      else
+        error += ", " + libNames[i];
+    }
+    error += ").\n";
+    error += "\n";
+    error += "We do not ship all of the decoder libraries.\n";
+    error += "You can find download links in Help->Downloads.";
+    return setError(error);
   }
 
   resolveLibraryFunctionPointers();

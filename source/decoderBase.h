@@ -43,7 +43,8 @@
 
 /* This class is the abstract base class for all decoders. All decoders work like this:
  * 1. Create an instance and configure it (if required)
- * 2. Push data to the decoder until it returns that it can not take any more data. When you pushed all of the bitstream into the decoder, call setEOF.
+ * 2. Push data to the decoder until it returns that it can not take any more data. 
+ *    When you pushed all of the bitstream into the decoder, push an empty QByteArray to indicate the EOF.
  * 3. Read frames until no new frames are coming out. Go back to 2.
 */
 class decoderBase

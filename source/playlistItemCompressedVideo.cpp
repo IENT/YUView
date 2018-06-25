@@ -74,19 +74,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   setIcon(0, convertIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  // Nothing is currently being loaded
-  isFrameLoading = false;
-  isFrameLoadingDoubleBuffer = false;
-
   // An compressed file can be cached if nothing goes wrong
   cachingEnabled = true;
-
-  currentFrameIdx[0] = -1;
-  currentFrameIdx[1] = -1;
-  repushDataFFmpeg = false;
-  decodingOfFrameNotPossible = false;
-  readAnnexBFrameCounterCodingOrder = -1;
-  decodingEnabled = false;
 
   // Open the input file and get some properties (size, bit depth, subsampling) from the file
   if (input == inputInvalid)
@@ -446,8 +435,7 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
   }
   else if (unresolvableError || !decodingEnabled)
   {
-    playlistItemWithVideo::drawItem(painter, frameIdx, zoomFactor, drawRawData);
-    return;
+    playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
   else if (loadingDecoder.isNull())
   {
@@ -633,11 +621,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     infoText = "There was an error in the decoder: \n";
     infoText += loadingDecoder->decoderErrorString();
     infoText += "\n";
-    if (decoderEngineType == decoderEngineHM)
-    {
-      infoText += "We do not currently ship the HM decoder libraries.\n";
-      infoText += "You can find download links in Help->Downloads";
-    }
+    
     decodingEnabled = false;
   }
 }
@@ -749,24 +733,21 @@ void playlistItemCompressedVideo::createPropertiesWidget()
 
 bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
 {
+  // Reset (existing) decoders
+  loadingDecoder.reset();
+  cachingDecoder.reset();
+
   if (decoderEngineType == decoderEngineLibde265)
   {
     loadingDecoder.reset(new decoderLibde265(displayComponent));
     if (cachingEnabled)
       cachingDecoder.reset(new decoderLibde265(displayComponent, true));
-    decodingEnabled = true;
   }
   else if (decoderEngineType == decoderEngineHM)
   {
-    // TODO:
-    /*loadingDecoder.reset(new hevcDecoderHM(displayComponent));
-    cachingDecoder.reset(new hevcDecoderHM(displayComponent, true));*/
-    loadingDecoder.reset();
-    cachingDecoder.reset();
-
-    infoText = "No valid decoder could be selected.";
-    decodingEnabled = false;
-    return false;
+    loadingDecoder.reset(new decoderHM(displayComponent));
+    if (cachingEnabled)
+      cachingDecoder.reset(new decoderHM(displayComponent, true));
   }
   else if (decoderEngineType == decoderEngineFFMpeg)
   {
@@ -788,18 +769,21 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
       if (cachingEnabled)
         cachingDecoder.reset(new decoderFFmpeg(inputFileFFmpegCaching->getVideoCodecPar()));
     }
-    decodingEnabled = true;
   }
   else
   {
-    // Reset (existing) decoders
-    loadingDecoder.reset();
-    cachingDecoder.reset();
-    infoText = "No valid decoder could be selected.";
+    infoText = "No valid decoder was selected.";
     decodingEnabled = false;
     return false;
   }
 
+  decodingEnabled = !loadingDecoder->errorInDecoder();
+  if (!decodingEnabled)
+  {
+    infoText = "There was an error allocating the new decoder: \n";
+    infoText += loadingDecoder->decoderErrorString();
+    infoText += "\n";
+  }
   return true;
 }
 

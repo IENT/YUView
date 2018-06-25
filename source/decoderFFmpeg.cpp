@@ -329,7 +329,7 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
     return false;
   }
 
-  // We feed data to the decoder until it returns AVERROR(EAGAIN)
+  // Push the packet to the decoder
   int retPush = ff.pushPacketToDecoder(decCtx, pkt);
 
   if (retPush < 0 && retPush != AVERROR(EAGAIN))
