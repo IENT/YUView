@@ -40,6 +40,8 @@
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
 #define READFLAG_M(into,meanings) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",meanings,itemTree);}
 #define READFLAG_A(into,i) {bool b=(reader.readBits(1)!=0); into.append(b); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),b,QString("u(1)"),b?"1":"0",itemTree);}
+// Do not actually read anything but also put the value into the tree as a calculated value
+#define LOGVAL_M(val,meaning) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),meaning,itemTree);}
 // Read "numBits" bits and ignore them.
 #define IGNOREBITS(numBits) {reader.readBits(numBits);}
 
@@ -171,6 +173,8 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
     specificDescription = QString(" Sequence Header");
     if (nalTypeName)
       *nalTypeName = QString(" SeqHeader");
+    if (!first_sequence_header)
+      first_sequence_header = new_sequence_header;
   }
   else if (nal_mpeg2.nal_unit_type == PICTURE)
   {
@@ -200,7 +204,7 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
   {
     TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
 
-    // A sequence_extension
+    // An extension
     auto new_extension = QSharedPointer<nal_extension>(new nal_extension(nal_mpeg2));
     new_extension->parse_extension_start_code(payload, message_tree);
 
@@ -214,6 +218,8 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
       if (nalTypeName)
         *nalTypeName = QString(" SeqExt");
       specificDescription = QString(" Sequence Extension");
+      if (!first_sequence_extension)
+        first_sequence_extension = new_sequence_extension;
     }
     else if (new_extension->extension_type == EXT_PICTURE_CODING)
     {
@@ -439,6 +445,19 @@ void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByte
   
   IGNOREBITS(4);  // The extension_start_code_identifier was already read
   READBITS(profile_and_level_indication, 8);
+
+  profile_identification = (profile_and_level_indication >> 4) & 0x07;
+  QStringList profile_identification_meaning = QStringList()
+    << "Reserved" << "High" << "Spatially Scalable" << "SNR Scalable" << "Main" << "Simple" << "Reserved";
+  LOGVAL_M(profile_identification, profile_identification_meaning);
+  level_identification = profile_and_level_indication & 0x03;
+  QMap<int, QString> level_identification_meaning;
+  level_identification_meaning.insert(0b0100, "High");
+  level_identification_meaning.insert(0b0110, "High 1440");
+  level_identification_meaning.insert(0b1000, "Main");
+  level_identification_meaning.insert(0b1010, "Low");
+  LOGVAL_M(level_identification, level_identification_meaning);
+
   QStringList progressive_sequence_meaning = QStringList()
     << "the coded video sequence may contain both frame-pictures and field-pictures, and frame-picture may be progressive or interlaced frames."
     << "the coded video sequence contains only progressive frame-pictures";
@@ -495,6 +514,77 @@ void parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension
     READBITS(burst_amplitude, 7);
     READBITS(sub_carrier_phase, 8);
   }
-
 }
 
+QPair<int,int> parserAnnexBMpeg2::getProfileLevel()
+{
+  if (first_sequence_extension)
+    return QPair<int,int>(first_sequence_extension->profile_identification, first_sequence_extension->level_identification);
+  return QPair<int,int>(0,0);
+}
+
+double parserAnnexBMpeg2::getFramerate() const
+{
+  double frame_rate = 0.0;
+  if (first_sequence_header && first_sequence_header->frame_rate_code > 0 && first_sequence_header->frame_rate_code <= 8)
+  {
+    QList<double> frame_rates = QList<double>() << 0.0 << 24000/1001 << 24 << 25 << 30000/1001 << 30 << 50 << 60000/1001 << 60;
+    frame_rate = frame_rates[first_sequence_header->frame_rate_code];
+
+    if (first_sequence_extension)
+    {
+      frame_rate *= (first_sequence_extension->frame_rate_extension_n + 1) / (first_sequence_extension->frame_rate_extension_d + 1);
+    }
+  }
+
+  return frame_rate;
+}
+
+QSize parserAnnexBMpeg2::getSequenceSizeSamples() const
+{
+  int w = 0, h = 0;
+  if (first_sequence_header)
+  {
+    w = first_sequence_header->horizontal_size_value;
+    h = first_sequence_header->vertical_size_value;
+
+    if (first_sequence_extension)
+    {
+      w += first_sequence_extension->horizontal_size_extension << 12;
+      h += first_sequence_extension->vertical_size_extension << 12;
+    }
+  }
+  return QSize(w, h);
+}
+
+yuvPixelFormat parserAnnexBMpeg2::getPixelFormat() const
+{
+  if (first_sequence_extension)
+  {
+    int c = first_sequence_extension->chroma_format;
+    if (c == 1)
+      return yuvPixelFormat(YUV_420, 8);
+    if (c == 2)
+      return yuvPixelFormat(YUV_422, 8);
+    if (c == 3)
+      return yuvPixelFormat(YUV_444, 8);
+  }
+  return yuvPixelFormat();
+}
+
+QPair<int,int> parserAnnexBMpeg2::getSampleAspectRatio()
+{
+  if (first_sequence_header)
+  {
+    const int ratio = first_sequence_header->aspect_ratio_information;
+    if (ratio == 2)
+      return QPair<int,int>(3, 4);
+    if (ratio == 3)
+      return QPair<int,int>(9, 16);
+    if (ratio == 4)
+      return QPair<int,int>(100, 221);
+    if (ratio == 2)
+      return QPair<int,int>(3, 4);
+  }
+  return QPair<int,int>(1, 1);
+}

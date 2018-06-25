@@ -42,16 +42,17 @@ public:
   ~parserAnnexBMpeg2() {};
 
   // Get properties
-  double getFramerate() const Q_DECL_OVERRIDE { return -1; }
-  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE { return QSize(); }
-  yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE { return yuvPixelFormat(); }
+  double getFramerate() const Q_DECL_OVERRIDE;
+  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
+  yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
   void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE { return QList<QByteArray>(); }
+  // TODO: Reading from raw mpeg2 streams not supported (yet? Is this even defined / possible?)
+  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE { Q_UNUSED(iFrameNr); Q_UNUSED(filePos); return QList<QByteArray>(); }
   QByteArray getExtradata() Q_DECL_OVERRIDE { return QByteArray(); }
-  QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE { return QPair<int,int>(); }
-  QPair<int,int> getSampleAspectRatio() Q_DECL_OVERRIDE { return QPair<int,int>(); }
+  QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE;
+  QPair<int,int> getSampleAspectRatio() Q_DECL_OVERRIDE;
 
 private:
 
@@ -132,7 +133,7 @@ private:
 
   struct group_of_pictures_header : nal_unit_mpeg2
   {
-    group_of_pictures_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal);
+    group_of_pictures_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {};
     void parse_group_of_pictures_header(const QByteArray &parameterSetData, TreeItem *root);
 
     int time_code;
@@ -177,7 +178,6 @@ private:
     sequence_extension(const nal_extension &nal) : nal_extension(nal) {}
     void parse_sequence_extension(const QByteArray &parameterSetData, TreeItem *root);
 
-    
     int profile_and_level_indication;
     bool progressive_sequence;
     int chroma_format;
@@ -187,8 +187,11 @@ private:
     bool marker_bit;
     int vbv_buffer_size_extension;
     bool low_delay;
-    int frame_rate_extension_n;
-    int frame_rate_extension_d;
+    int frame_rate_extension_n {0};
+    int frame_rate_extension_d {0};
+
+    int profile_identification;
+    int level_identification;
   };
 
   struct picture_coding_extension : nal_extension
@@ -215,6 +218,10 @@ private:
     int burst_amplitude;
     int sub_carrier_phase;
   };
+
+  // We will keep a pointer to the first sequence extension to be able to retrive some data
+  QSharedPointer<sequence_extension> first_sequence_extension;
+  QSharedPointer<sequence_header> first_sequence_header;
 };
 
 #endif // PARSERANNEXBMPEG2_H
