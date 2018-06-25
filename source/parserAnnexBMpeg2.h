@@ -38,7 +38,7 @@
 class parserAnnexBMpeg2 : public parserAnnexB
 {
 public:
-  parserAnnexBMpeg2();
+  parserAnnexBMpeg2() {};
   ~parserAnnexBMpeg2() {};
 
   // Get properties
@@ -77,7 +77,7 @@ private:
    */
   struct nal_unit_mpeg2 : nal_unit
   {
-    nal_unit_mpeg2(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx), nal_unit_type(UNSPECIFIED), slice_id(-1), system_start_codes(-1), start_code_value(-1) {}
+    nal_unit_mpeg2(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx) {}
     nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src) : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx) { interprete_start_code(nal_src->nal_unit_type); }
     virtual ~nal_unit_mpeg2() {}
 
@@ -89,15 +89,15 @@ private:
 
     QString interprete_start_code(int start_code);
 
-    nal_unit_type_enum nal_unit_type;
-    int slice_id;   // in case of SLICE
-    int system_start_codes; // in case of SYSTEM_START_CODE
-    int start_code_value; 
+    nal_unit_type_enum nal_unit_type {UNSPECIFIED};
+    int slice_id {-1};   // in case of SLICE
+    int system_start_codes {-1}; // in case of SYSTEM_START_CODE
+    int start_code_value {-1}; 
   };
 
   struct sequence_header : nal_unit_mpeg2
   {
-    sequence_header(const nal_unit_mpeg2 &nal);
+    sequence_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
     void parse_sequence_header(const QByteArray &parameterSetData, TreeItem *root);
 
     int sequence_header_code;
@@ -117,7 +117,7 @@ private:
 
   struct picture_header : nal_unit_mpeg2
   {
-    picture_header(const nal_unit_mpeg2 &nal);
+    picture_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
     void parse_picture_header(const QByteArray &parameterSetData, TreeItem *root);
 
     int temporal_reference;
@@ -132,7 +132,7 @@ private:
 
   struct group_of_pictures_header : nal_unit_mpeg2
   {
-    group_of_pictures_header(const nal_unit_mpeg2 &nal);
+    group_of_pictures_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal);
     void parse_group_of_pictures_header(const QByteArray &parameterSetData, TreeItem *root);
 
     int time_code;
@@ -142,7 +142,7 @@ private:
 
   struct user_data : nal_unit_mpeg2
   {
-    user_data(const nal_unit_mpeg2 &nal);
+    user_data(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
     void parse_user_data(const QByteArray &parameterSetData, TreeItem *root);
   };
 
@@ -174,7 +174,7 @@ private:
 
   struct sequence_extension : nal_extension
   {
-    sequence_extension(const nal_extension &nal);
+    sequence_extension(const nal_extension &nal) : nal_extension(nal) {}
     void parse_sequence_extension(const QByteArray &parameterSetData, TreeItem *root);
 
     
@@ -193,7 +193,7 @@ private:
 
   struct picture_coding_extension : nal_extension
   {
-    picture_coding_extension(const nal_extension &nal);
+    picture_coding_extension(const nal_extension &nal) : nal_extension(nal) {}
     void parse_picture_coding_extension(const QByteArray &parameterSetData, TreeItem *root);
 
     int f_code[2][2];
@@ -215,7 +215,6 @@ private:
     int burst_amplitude;
     int sub_carrier_phase;
   };
-
 };
 
 #endif // PARSERANNEXBMPEG2_H

@@ -811,7 +811,7 @@ bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)
   return !testDecoder.decoderError;
 }
 
-YUVSubsamplingType convertFromInternalSubsampling(libHMDec_ChromaFormat fmt)
+YUVSubsamplingType decoderHM::convertFromInternalSubsampling(libHMDec_ChromaFormat fmt)
 {
   if (fmt == LIBHMDEC_CHROMA_400)
     return YUV_400;

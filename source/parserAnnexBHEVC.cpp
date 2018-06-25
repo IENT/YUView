@@ -73,61 +73,6 @@
 // Read an UEV code and ignore the value. Return false if -1 was returned by the reading function.
 #define IGNOREUEV() {int into = reader.readUE_V();}
 
-parserAnnexBHEVC::profile_tier_level::profile_tier_level()
-{
-  general_profile_space = 0;
-  general_tier_flag = false;
-  general_profile_idc = 0;
-  for (int i = 0; i < 32; i++)
-    general_profile_compatibility_flag[i] = false;
-  general_progressive_source_flag = false;
-  general_interlaced_source_flag = false;
-  general_non_packed_constraint_flag = false;
-  general_frame_only_constraint_flag = false;
-  general_max_12bit_constraint_flag = false;
-  general_max_10bit_constraint_flag = false;
-  general_max_8bit_constraint_flag = false;
-  general_max_422chroma_constraint_flag = false;
-  general_max_420chroma_constraint_flag = false;
-  general_max_monochrome_constraint_flag = false;
-  general_intra_constraint_flag = false;
-  general_one_picture_only_constraint_flag = false;
-  general_lower_bit_rate_constraint_flag = false;
-  general_reserved_zero_bits = 0;
-  general_inbld_flag = false;
-  general_reserved_zero_bit = 0;
-  general_level_idc = 0;
-
-  for (int i = 0; i < 8; i++)
-  {
-  sub_layer_profile_present_flag[i] = false;
-  sub_layer_level_present_flag[i] = false;
-  reserved_zero_2bits[i] = 0;
-  sub_layer_profile_space[i] = 0;
-  sub_layer_tier_flag[i] = false;
-  sub_layer_profile_idc[i] = 0;
-  for (int j = 0; j < 32; j++)
-    sub_layer_profile_compatibility_flag[i][j] = false;
-  sub_layer_progressive_source_flag[i] = false;
-  sub_layer_interlaced_source_flag[i] = false;
-  sub_layer_non_packed_constraint_flag[i] = false;
-  sub_layer_frame_only_constraint_flag[i] = false;
-  sub_layer_max_12bit_constraint_flag[i] = false;
-  sub_layer_max_10bit_constraint_flag[i] = false;
-  sub_layer_max_8bit_constraint_flag[i] = false;
-  sub_layer_max_422chroma_constraint_flag[i] = false;
-  sub_layer_max_420chroma_constraint_flag[i] = false;
-  sub_layer_max_monochrome_constraint_flag[i] = false;
-  sub_layer_intra_constraint_flag[i] = false;
-  sub_layer_one_picture_only_constraint_flag[i] = false;
-  sub_layer_lower_bit_rate_constraint_flag[i] = false;
-  sub_layer_reserved_zero_bits[i] = 0;
-  sub_layer_inbld_flag[i] = false;
-  sub_layer_reserved_zero_bit[i] = false;
-  sub_layer_level_idc[i] = 0;
-  }
-}
-
 void parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
 {
   // Create a new TreeItem root for the item
@@ -289,12 +234,6 @@ void parserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(
     }
     READFLAG_A(cbr_flag, i);
   }
-}
-
-parserAnnexBHEVC::hrd_parameters::hrd_parameters()
-{
-  nal_hrd_parameters_present_flag = false;
-  vcl_hrd_parameters_present_flag = false;
 }
 
 void parserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
@@ -569,12 +508,6 @@ int parserAnnexBHEVC::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *act
   return NumPicTotalCurr;
 }
 
-parserAnnexBHEVC::vui_parameters::vui_parameters()
-{
-  video_format = 5;
-  video_full_range_flag = false;
-}
-
 void parserAnnexBHEVC::vui_parameters::parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root)
 {
   // Create a new TreeItem root for the item
@@ -780,21 +713,6 @@ void parserAnnexBHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeIt
   // ... later
 }
 
-parserAnnexBHEVC::sps::sps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
-{
-  // Infer some default values (if not present)
-  separate_colour_plane_flag = false;
-  conf_win_left_offset = 0;
-  conf_win_right_offset = 0;
-  conf_win_top_offset = 0;
-  conf_win_bottom_offset = 0;
-  num_long_term_ref_pics_sps = 0;
-  sps_range_extension_flag = false;
-  sps_multilayer_extension_flag = false;
-  sps_3d_extension_flag = false;
-  sps_extension_5bits = 0;
-}
-
 void parserAnnexBHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
@@ -947,15 +865,6 @@ void parserAnnexBHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIt
   LOGVAL(PicSizeInCtbsY);
 }
 
-parserAnnexBHEVC::pps::pps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
-{
-  deblocking_filter_override_enabled_flag = false;
-  pps_range_extension_flag = false;
-  pps_multilayer_extension_flag = false;
-  pps_3d_extension_flag = false;
-  pps_extension_5bits = false;
-}
-
 void parserAnnexBHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
@@ -1060,11 +969,6 @@ void parserAnnexBHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIt
     parallelism = SLICE;
 }
 
-parserAnnexBHEVC::pps_range_extension::pps_range_extension()
-{
-  chroma_qp_offset_list_enabled_flag = false;
-}
-
 void parserAnnexBHEVC::pps_range_extension::parse_pps_range_extension(sub_byte_reader &reader, pps *actPPS, TreeItem *root)
 {
   // Create a new TreeItem root for the item
@@ -1115,29 +1019,6 @@ void parserAnnexBHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modificat
 bool parserAnnexBHEVC::slice::bFirstAUInDecodingOrder = true;
 int parserAnnexBHEVC::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
 int parserAnnexBHEVC::slice::prevTid0Pic_PicOrderCntMsb = 0;
-
-parserAnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
-{
-  PicOrderCntVal = -1;
-  PicOrderCntMsb = -1;
-
-  // When not present, the value of dependent_slice_segment_flag is inferred to be equal to 0.
-  dependent_slice_segment_flag = false;
-  pic_output_flag = true;
-  short_term_ref_pic_set_sps_flag = false;
-  short_term_ref_pic_set_idx = 0;
-  num_long_term_sps = 0;
-  num_long_term_pics = 0;
-  deblocking_filter_override_flag = false;
-  slice_temporal_mvp_enabled_flag = false;
-  slice_pic_order_cnt_lsb = 0;
-  collocated_from_l0_flag = true;
-  slice_sao_luma_flag = false;
-  slice_sao_chroma_flag = false;
-  num_entry_point_offsets = 0;
-
-  globalPOC = -1;
-}
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
 void parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)

@@ -47,10 +47,6 @@ const QStringList parserAnnexBMpeg2::nal_unit_type_toString = QStringList()
   << "UNSPECIFIED" << "PICTURE" << "SLICE" << "USER_DATA" << "SEQUENCE_HEADER" << "SEQUENCE_ERROR" << "EXTENSION_START" << "SEQUENCE_END"
   << "GROUP_START" << "SYSTEM_START_CODE" << "RESERVED";
 
-parserAnnexBMpeg2::parserAnnexBMpeg2()
-{
-}
-
 void parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
 {
   if (header_byte.length() != 1)
@@ -240,10 +236,6 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_mpeg2.nal_idx).arg(nal_unit_type_toString.value(nal_mpeg2.nal_unit_type)) + specificDescription);
 }
 
-parserAnnexBMpeg2::sequence_header::sequence_header(const nal_unit_mpeg2 & nal) : nal_unit_mpeg2(nal)
-{
-}
-
 void parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
@@ -295,10 +287,6 @@ void parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray 
   }
 }
 
-parserAnnexBMpeg2::picture_header::picture_header(const nal_unit_mpeg2 & nal) : nal_unit_mpeg2(nal)
-{
-}
-
 void parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
@@ -340,10 +328,6 @@ void parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & 
   }
 }
 
-parserAnnexBMpeg2::group_of_pictures_header::group_of_pictures_header(const nal_unit_mpeg2 & nal) : nal_unit_mpeg2(nal)
-{
-}
-
 void parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
@@ -356,10 +340,6 @@ void parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header
   READBITS(time_code, 25);
   READFLAG(closed_gop);
   READFLAG(broken_link);
-}
-
-parserAnnexBMpeg2::user_data::user_data(const nal_unit_mpeg2 & nal) : nal_unit_mpeg2(nal)
-{
 }
 
 void parserAnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterSetData, TreeItem * root)
@@ -452,10 +432,6 @@ QString parserAnnexBMpeg2::nal_extension::get_extension_function_name()
   }
 }
 
-parserAnnexBMpeg2::sequence_extension::sequence_extension(const nal_extension & nal) : nal_extension(nal)
-{
-}
-
 void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem * itemTree)
 {
   nalPayload = parameterSetData;
@@ -483,10 +459,6 @@ void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByte
   READFLAG_M(low_delay, low_delay_meaning)
   READBITS(frame_rate_extension_n, 2);
   READBITS(frame_rate_extension_d, 5);
-}
-
-parserAnnexBMpeg2::picture_coding_extension::picture_coding_extension(const nal_extension & nal) : nal_extension(nal)
-{
 }
 
 void parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, TreeItem * itemTree)

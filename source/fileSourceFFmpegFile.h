@@ -102,33 +102,33 @@ protected:
   void openFileAndFindVideoStream(QString fileName);
   bool goToNextVideoPacket(bool videoPacketsOnly=true);
   AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
-  bool endOfFile;                   //< Are we at the end of file (draining mode)?
+  bool endOfFile {false};           //< Are we at the end of file (draining mode)?
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
   // that we are ready to start decoding from this pts.
-  int64_t duration;   //< duration / AV_TIME_BASE is the duration in seconds
-  AVRational timeBase;
+  int64_t duration {-1};   //< duration / AV_TIME_BASE is the duration in seconds
+  AVRational timeBase {0, 0};
   AVStreamWrapper video_stream;
-  double frameRate;
+  double frameRate {-1};
   QSize frameSize;
   
-  RawFormat rawFormat;
+  RawFormat rawFormat {raw_Invalid};
   YUV_Internals::yuvPixelFormat pixelFormat_yuv;
   RGB_Internals::rgbPixelFormat pixelFormat_rgb;
-  YUV_Internals::ColorConversion colorConversionType;
+  YUV_Internals::ColorConversion colorConversionType {YUV_Internals::ColorConversion::BT709_LimitedRange};
 
   // Watch the opened file for modifications
   QFileSystemWatcher fileWatcher;
-  bool fileChanged;
+  bool fileChanged {false};
 
   QString   fullFilePath;
   QFileInfo fileInfo;
-  bool      isFileOpened;
+  bool      isFileOpened {false};
 
   // In order to translate from frames to PTS, we need to count the frames and keep a list of
   // the PTS values of keyframes that we can start decoding at.
   // If a mainWindow pointer is given, open a progress dialog. Return true on success. False if the process was canceled.
   bool scanBitstream(QWidget *mainWindow);
-  int nrFrames;
+  int nrFrames {0};
 
   // Private struct for navigation. We index frames by frame number and FFMpeg uses the pts.
   // This connects both values.
@@ -139,7 +139,7 @@ protected:
     int64_t pts;
   };
 
-  packetDataFormat_t packetDataFormat;
+  packetDataFormat_t packetDataFormat {packetFormatUnknown};
 
   // The start code pattern to look for in case of a raw format
   QByteArray startCode;
@@ -150,7 +150,7 @@ protected:
 
   // For parsing NAL units from the compressed data:
   QByteArray currentPacketData;
-  int posInFile;
+  int posInFile {-1};
   bool loadNextPacket;
   int posInData;
 };

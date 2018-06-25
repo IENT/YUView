@@ -64,12 +64,6 @@
 #define LOGPARAM(name, val, coding, code, meaning) {if (itemTree) new TreeItem(name, val, coding, code, meaning, itemTree);}
 #define LOGINFO(info) {if (itemTree) new TreeItem("Info", info, "", "", itemTree);}
 
-parserAnnexBAVC::parserAnnexBAVC() : parserAnnexB()
-{ 
-  firstPOCRandomAccess = INT_MAX; 
-  CpbDpbDelaysPresentFlag = false; 
-}
-
 double parserAnnexBAVC::getFramerate() const
 {
   // Find the first SPS and return the framerate (if signaled)
@@ -424,23 +418,6 @@ void parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &head
   nal_unit_type = (nal_unit_type_id > UNSPCIFIED_31 || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type_enum)nal_unit_type_id;
 }
 
-parserAnnexBAVC::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
-{
-  chroma_format_idc = 1;
-  bit_depth_luma_minus8 = 0;
-  bit_depth_chroma_minus8 = 0;
-  qpprime_y_zero_transform_bypass_flag = false;
-  seq_scaling_matrix_present_flag = false;
-  mb_adaptive_frame_field_flag = false;
-  frame_crop_left_offset = 0;
-  frame_crop_right_offset = 0;
-  frame_crop_top_offset = 0;
-  frame_crop_bottom_offset = 0;
-  separate_colour_plane_flag = false;
-  MaxPicOrderCntLsb = 0;
-  ExpectedDeltaPerPicOrderCntCycle = 0;
-}
-
 void parserAnnexBAVC::read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree)
 {
   int lastScale = 8;
@@ -654,21 +631,6 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   LOGVAL(MaxFrameNum);
 }
 
-parserAnnexBAVC::sps::vui_parameters_struct::vui_parameters_struct()
-{
-  aspect_ratio_idc = 0;
-  video_format = 5;
-  video_full_range_flag = false;
-  colour_primaries = 2;
-  transfer_characteristics = 2;
-  matrix_coefficients = 2;
-  chroma_sample_loc_type_top_field = 0;
-  chroma_sample_loc_type_bottom_field = 0;
-  fixed_frame_rate_flag = false;
-  nal_hrd_parameters_present_flag = false;
-  vcl_hrd_parameters_present_flag = false;
-}
-
 void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree, int BitDepthY, int BitDepthC, int chroma_format_idc)
 {
   READFLAG(aspect_ratio_info_present_flag);
@@ -807,12 +769,6 @@ void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, 
   }
 }
 
-parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::hrd_parameters_struct()
-{
-  cpb_removal_delay_length_minus1 = 23;
-  time_offset_length = 24;
-}
-
 void parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree)
 {
   READUEV(cpb_cnt_minus1);
@@ -835,12 +791,6 @@ void parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::read(su
   READBITS(cpb_removal_delay_length_minus1, 5);
   READBITS(dpb_output_delay_length_minus1, 5);
   READBITS(time_offset_length, 5);
-}
-
-parserAnnexBAVC::pps::pps(const nal_unit_avc &nal) : nal_unit_avc(nal)
-{
-  transform_8x8_mode_flag = false;
-  pic_scaling_matrix_present_flag = false;
 }
 
 void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list)
@@ -944,22 +894,6 @@ void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIte
   }
 
   // rbsp_trailing_bits( )
-}
-
-parserAnnexBAVC::slice_header::slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal)
-{
-  field_pic_flag = false;
-  bottom_field_flag = false;
-  delta_pic_order_cnt_bottom = 0;
-  redundant_pic_cnt = 0;
-
-  prevPicOrderCntMsb = -1;
-  prevPicOrderCntLsb = -1;
-  PicOrderCntMsb = -1;
-  TopFieldOrderCnt = -1;
-  BottomFieldOrderCnt = -1;
-  FrameNumOffset = -1;
-  globalPOC_highestGlobalPOCLastGOP = -1;
 }
 
 void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)

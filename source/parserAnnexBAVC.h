@@ -44,7 +44,7 @@ using namespace YUV_Internals;
 class parserAnnexBAVC : public parserAnnexB
 {
 public:
-  parserAnnexBAVC();
+  parserAnnexBAVC() {};
   ~parserAnnexBAVC() {};
 
   // Get properties
@@ -96,7 +96,7 @@ protected:
   */
   struct nal_unit_avc : nal_unit
   {
-    nal_unit_avc(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx), nal_unit_type(UNSPECIFIED) {}
+    nal_unit_avc(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx) {}
     nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
     virtual ~nal_unit_avc() {}
 
@@ -109,14 +109,14 @@ protected:
     virtual bool isParameterSet() const override { return nal_unit_type == SPS || nal_unit_type == PPS; }
 
     /// The information of the NAL unit header
-    int nal_ref_idc;
-    nal_unit_type_enum nal_unit_type;
+    int nal_ref_idc {-1};
+    nal_unit_type_enum nal_unit_type {UNSPECIFIED};
   };
 
   // The sequence parameter set.
   struct sps : nal_unit_avc
   {
-    sps(const nal_unit_avc &nal);
+    sps(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
     void parse_sps(const QByteArray &parameterSetData, TreeItem *root);
 
     int profile_idc;
@@ -129,12 +129,12 @@ protected:
     int reserved_zero_2bits;
     int level_idc;
     int seq_parameter_set_id;
-    int chroma_format_idc;
-    bool separate_colour_plane_flag;
-    int bit_depth_luma_minus8;
-    int bit_depth_chroma_minus8;
-    bool qpprime_y_zero_transform_bypass_flag;
-    bool seq_scaling_matrix_present_flag;
+    int chroma_format_idc {1};
+    bool separate_colour_plane_flag {false};
+    int bit_depth_luma_minus8 {0};
+    int bit_depth_chroma_minus8 {0};
+    bool qpprime_y_zero_transform_bypass_flag {false};
+    bool seq_scaling_matrix_present_flag {false};
     bool seq_scaling_list_present_flag[8];
     int ScalingList4x4[6][16];
     bool UseDefaultScalingMatrix4x4Flag[6];
@@ -153,22 +153,21 @@ protected:
     int pic_width_in_mbs_minus1;
     int pic_height_in_map_units_minus1;
     bool frame_mbs_only_flag;
-    bool mb_adaptive_frame_field_flag;
+    bool mb_adaptive_frame_field_flag {false};
     bool direct_8x8_inference_flag;
     bool frame_cropping_flag;
-    int frame_crop_left_offset;
-    int frame_crop_right_offset;
-    int frame_crop_top_offset;
-    int frame_crop_bottom_offset;
+    int frame_crop_left_offset {0};
+    int frame_crop_right_offset {0};
+    int frame_crop_top_offset {0};
+    int frame_crop_bottom_offset {0};
     bool vui_parameters_present_flag;
 
     struct vui_parameters_struct
     {
-      vui_parameters_struct();
       void read(sub_byte_reader &reader, TreeItem *root, int BitDeptYC, int BitDepthC, int chroma_format_idc);
 
       bool aspect_ratio_info_present_flag;
-      int aspect_ratio_idc;
+      int aspect_ratio_idc {0};
       int sar_width;
       int sar_height;
 
@@ -176,25 +175,24 @@ protected:
       bool overscan_appropriate_flag;
 
       bool video_signal_type_present_flag;
-      int video_format;
-      bool video_full_range_flag;
+      int video_format {5};
+      bool video_full_range_flag {false};
       bool colour_description_present_flag;
-      int colour_primaries;
-      int transfer_characteristics;
-      int matrix_coefficients;
+      int colour_primaries {2};
+      int transfer_characteristics {2};
+      int matrix_coefficients {2};
 
       bool chroma_loc_info_present_flag;
-      int chroma_sample_loc_type_top_field;
-      int chroma_sample_loc_type_bottom_field;
+      int chroma_sample_loc_type_top_field {0};
+      int chroma_sample_loc_type_bottom_field {0};
 
       bool timing_info_present_flag;
       int num_units_in_tick;
       int time_scale;
-      bool fixed_frame_rate_flag;
+      bool fixed_frame_rate_flag {false};
 
       struct hrd_parameters_struct
       {
-        hrd_parameters_struct();
         void read(sub_byte_reader &reader, TreeItem *root);
 
         int cpb_cnt_minus1;
@@ -203,16 +201,16 @@ protected:
         QList<quint32> bit_rate_value_minus1;
         QList<quint32> cpb_size_value_minus1;
         QList<bool> cbr_flag;
-        int initial_cpb_removal_delay_length_minus1;
+        int initial_cpb_removal_delay_length_minus1 {23};
         int cpb_removal_delay_length_minus1;
         int dpb_output_delay_length_minus1;
-        int time_offset_length;
+        int time_offset_length {24};
       };
       hrd_parameters_struct nal_hrd;
       hrd_parameters_struct vcl_hrd;
 
-      bool nal_hrd_parameters_present_flag;
-      bool vcl_hrd_parameters_present_flag;
+      bool nal_hrd_parameters_present_flag {false};
+      bool vcl_hrd_parameters_present_flag {false};
       bool low_delay_hrd_flag;
       bool pic_struct_present_flag;
       bool bitstream_restriction_flag;
@@ -252,8 +250,8 @@ protected:
     int CropUnitX;
     int CropUnitY;
     bool MbaffFrameFlag;
-    int MaxPicOrderCntLsb;
-    int ExpectedDeltaPerPicOrderCntCycle;
+    int MaxPicOrderCntLsb {0};
+    int ExpectedDeltaPerPicOrderCntCycle {0};
     int MaxFrameNum;
   };
   typedef QMap<int, QSharedPointer<sps>> sps_map;
@@ -261,7 +259,7 @@ protected:
   // The picture parameter set.
   struct pps : nal_unit_avc
   {
-    pps(const nal_unit_avc &nal);
+    pps(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
     void parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list);
 
     int pic_parameter_set_id;
@@ -288,8 +286,8 @@ protected:
     bool constrained_intra_pred_flag;
     bool redundant_pic_cnt_present_flag;
 
-    bool transform_8x8_mode_flag;
-    bool pic_scaling_matrix_present_flag;
+    bool transform_8x8_mode_flag {false};
+    bool pic_scaling_matrix_present_flag {false};
     int second_chroma_qp_index_offset;
     bool pic_scaling_list_present_flag[12];
 
@@ -306,7 +304,7 @@ protected:
   // A slice NAL unit.
   struct slice_header : nal_unit_avc
   {
-    slice_header(const nal_unit_avc &nal);
+    slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
     void parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root);
 
     enum slice_type_enum
@@ -323,13 +321,13 @@ protected:
     int pic_parameter_set_id;
     int colour_plane_id;
     int frame_num;
-    bool field_pic_flag;
-    bool bottom_field_flag;
+    bool field_pic_flag {false};
+    bool bottom_field_flag {false};
     int idr_pic_id;
     int pic_order_cnt_lsb;
-    int delta_pic_order_cnt_bottom;
+    int delta_pic_order_cnt_bottom {0};
     int delta_pic_order_cnt[2];
-    int redundant_pic_cnt;
+    int redundant_pic_cnt {0};
     bool direct_spatial_mv_pred_flag;
     bool num_ref_idx_active_override_flag;
     int num_ref_idx_l0_active_minus1;
@@ -420,19 +418,19 @@ protected:
     slice_type_enum slice_type;
     bool slice_type_fixed;  // slice_type_id is > 4
                             // For pic_order_cnt_type == 0
-    int prevPicOrderCntMsb;
-    int prevPicOrderCntLsb;
-    int PicOrderCntMsb;
+    int prevPicOrderCntMsb {-1};
+    int prevPicOrderCntLsb {-1};
+    int PicOrderCntMsb {-1};
     // For pic_order_cnt_type == 1
-    int FrameNumOffset;
+    int FrameNumOffset {-1};
 
-    int TopFieldOrderCnt;
-    int BottomFieldOrderCnt;
+    int TopFieldOrderCnt {-1};
+    int BottomFieldOrderCnt {-1};
 
     // This value is not defined in the standard. We just keep on counting the 
     // POC up from where we started parsing the bitstream to get a "global" POC.
     int globalPOC;
-    int globalPOC_highestGlobalPOCLastGOP;
+    int globalPOC_highestGlobalPOCLastGOP {-1};
     int globalPOC_lastIDR;
   };
 
@@ -548,7 +546,7 @@ protected:
 
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.
-  int firstPOCRandomAccess;
+  int firstPOCRandomAccess {INT_MAX};
 
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
@@ -560,7 +558,7 @@ protected:
   // parameter sets. Here we keep a list of seis that need to be parsed after the parameter sets were recieved.
   QList<QSharedPointer<sei>> reparse_sei;
 
-  bool CpbDpbDelaysPresentFlag;
+  bool CpbDpbDelaysPresentFlag {false};
 };
 
 #endif // PARSERANNEXBAVC_H

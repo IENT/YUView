@@ -44,19 +44,11 @@
 fileSourceAnnexBFile::fileSourceAnnexBFile()
 {
   fileBuffer.resize(BUFFER_SIZE);
-  posInBuffer = 0;
-  bufferStartPosInFile = 0;
-  fileBufferSize = 0;
-  //numZeroBytes = 0;
   
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
   startCode.append((char)0);
   startCode.append((char)1);
-}
-
-fileSourceAnnexBFile::~fileSourceAnnexBFile()
-{
 }
 
 // Open the file and fill the read buffer. 

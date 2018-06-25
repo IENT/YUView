@@ -47,19 +47,6 @@ using namespace YUV_Internals;
 
 fileSourceFFmpegFile::fileSourceFFmpegFile()
 {
-  fileChanged = false;
-  isFileOpened = false;
-  nrFrames = 0;
-  posInFile = -1;
-  endOfFile = false;
-  duration = -1;
-  timeBase.num = 0;
-  timeBase.den = 0;
-  frameRate = -1;
-  rawFormat = raw_Invalid;
-  colorConversionType = BT709_LimitedRange;
-  packetDataFormat = packetFormatUnknown;
-
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
   startCode.append((char)0);

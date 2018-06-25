@@ -153,7 +153,6 @@ protected:
     char currentByte;     // The current (unfinished) byte
     int posInByte;        // The bit position in the current byte
   };
-
 };
 
 #endif // PARSERCOMMON_H

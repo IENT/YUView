@@ -54,7 +54,7 @@ class fileSourceAnnexBFile : public fileSource
 public:
   fileSourceAnnexBFile();
   fileSourceAnnexBFile(const QString &filePath) : fileSourceAnnexBFile() { openFile(filePath); }
-  ~fileSourceAnnexBFile();
+  ~fileSourceAnnexBFile() {};
 
   // Open the given file. If another file is given, 
   bool openFile(const QString &filePath) Q_DECL_OVERRIDE;
@@ -81,12 +81,12 @@ public:
 protected:
 
   QByteArray   fileBuffer;
-  uint64_t     fileBufferSize;       ///< How many of the bytes are used? We don't resize the fileBuffer
-  uint64_t     bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
+  uint64_t     fileBufferSize {0};       ///< How many of the bytes are used? We don't resize the fileBuffer
+  uint64_t     bufferStartPosInFile {0}; ///< The byte position in the file of the start of the currently loaded buffer
 
   // The current position in the input buffer in bytes. This always points to the first byte of a start code.
   // So if the start code is 0001 it will point to the first byte (the first 0). If the start code is 001, it will point to the first 0 here.
-  unsigned int posInBuffer;
+  unsigned int posInBuffer {0};
 
   // The start code pattern
   QByteArray startCode;
