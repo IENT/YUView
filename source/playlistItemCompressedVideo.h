@@ -152,7 +152,8 @@ protected:
   
   // Which type is the input?
   inputFormat inputFormatType;
-  bool isinputFormatTypeAnnexB;
+  bool isInputFormatTypeAnnexB() const { return inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC; }
+  bool isInputFormatTypeFFmpeg() const { return inputFormatType == inputLibavformat; }
   AVCodecID ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
@@ -185,9 +186,9 @@ protected:
   // Seek the input file to the given position, reset the decoder and prepare it to start decoding from the given position.
   void seekToPosition(int seekToFrame, int seekToPTS, bool caching);
 
-  // If we are using FFmpeg for decoding, pushing data may fail and the decoder switches to decoding mode.
-  // In this case, we must (after decoding frames) re-push the packet for which pushing failed.
-  bool repushDataFFmpeg {false};
+  // For certain decoders (FFmpeg or HM), pushing data may fail. The decoder may or may not switch to retrieveing mode.
+  // In this case, we must re-push the packet for which pushing failed.
+  bool repushData {false};
 
   // Besides the normal stats (error / no error) this item might be able to parse the file but not to decode it.
   void setDecodingError(QString err) { infoText = err; decodingEnabled = false; }

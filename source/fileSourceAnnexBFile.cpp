@@ -86,10 +86,13 @@ void fileSourceAnnexBFile::seekToFirstNAL()
   }
 }
 
-QByteArray fileSourceAnnexBFile::getNextNALUnit(QUint64Pair *startEndPosInFile)
+QByteArray fileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, QUint64Pair *startEndPosInFile)
 {
-  QByteArray retArray;
-  
+  if (getLastDataAgain)
+    return lastReturnArray;
+
+  lastReturnArray.clear();
+
   if (startEndPosInFile)
     startEndPosInFile->first = bufferStartPosInFile + posInBuffer;
 
@@ -102,14 +105,14 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(QUint64Pair *startEndPosInFile)
     if (nextStartCodePos == -1)
     {
       // No start code found ... append all data in the current buffer.
-      retArray += fileBuffer.mid(posInBuffer);
+      lastReturnArray += fileBuffer.mid(posInBuffer);
       DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getNextNALUnit no start code found - ret size %d", retArray.size());
 
       if (fileBufferSize < BUFFER_SIZE)
       {
         // We are out of file and could not find a next position
         posInBuffer = BUFFER_SIZE;
-        return retArray;
+        return lastReturnArray;
       }
 
       // Before we load the next bytes: The start code might be located at the boundary to the next buffer
@@ -155,10 +158,10 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(QUint64Pair *startEndPosInFile)
   // Position found
   if (startEndPosInFile)
     startEndPosInFile->second = bufferStartPosInFile + nextStartCodePos;
-  retArray += fileBuffer.mid(posInBuffer, nextStartCodePos - posInBuffer);
-  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getNextNALUnit start code found - ret size %d", retArray.size());
+  lastReturnArray += fileBuffer.mid(posInBuffer, nextStartCodePos - posInBuffer);
+  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getNextNALUnit start code found - ret size %d", lastReturnArray.size());
   posInBuffer = nextStartCodePos;
-  return retArray;
+  return lastReturnArray;
 }
 
 QByteArray fileSourceAnnexBFile::getFrameData(QUint64Pair startEndFilePos)

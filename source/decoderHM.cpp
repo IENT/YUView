@@ -39,7 +39,7 @@
 #include "typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERHM_DEBUG_OUTPUT 1
+#define DECODERHM_DEBUG_OUTPUT 0
 #if DECODERHM_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERHM_DEBUG_OUTPUT == 1
@@ -226,7 +226,10 @@ bool decoderHM::getNextFrameFromDecoder()
 
   currentHMPic = libHMDec_get_picture(decoder);
   if (currentHMPic == nullptr)
+  {
+    decoderState = decoderNeedsMoreData;
     return false;
+  }
 
   // Check the validity of the picture
   QSize picSize = QSize(libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA), libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
@@ -272,9 +275,12 @@ bool decoderHM::pushData(QByteArray &data)
   if (endOfFile)
     DEBUG_DECHM("decoderFFmpeg::pushData: Recieved empty packet. Setting EOF.");
 
-  bool bNewPicture;
-  bool checkOutputPictures;
-  libHMDec_push_nal_unit(decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
+  // Push the data of the NAL unit. The function libHMDec_push_nal_unit can handle data 
+  // with a start code and without.
+  bool checkOutputPictures, bNewPicture;
+  libHMDec_error err = libHMDec_push_nal_unit(decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
+  if (err != LIBHMDEC_OK)
+    return setErrorB("Error pushing data to decoder (libHMDec_push_nal_unit) length " + data.length());
   DEBUG_DECHM("decoderHM::pushData pushed NAL length %d%s%s", data.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
 
   if (checkOutputPictures && getNextFrameFromDecoder())
@@ -284,15 +290,10 @@ bool decoderHM::pushData(QByteArray &data)
     currentOutputBuffer.clear();
   }
 
-  if (bNewPicture)
-  {
-    // The decoder noticed that a new picture starts with this NAL unit and decoded what it already has.
-    // It expects us to re-push the data again.
-    return false;
-  }
-
-  // The data was successfully pushed to the decoder
-  return true;
+  // If bNewPicture is true, the decoder noticed that a new picture starts with this 
+  // NAL unit and decoded what it already has (in the original decoder, the bitstream will
+  // be rewound). The decoder expects us to push the data again.
+  return !bNewPicture;
 }
 
 QByteArray decoderHM::getRawFrameData()
@@ -808,7 +809,7 @@ bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)
   // If this works, we can be fairly certain that this is a valid libde265 library.
   testDecoder.resolveLibraryFunctionPointers();
   error = testDecoder.decoderErrorString();
-  return !testDecoder.decoderError;
+  return !testDecoder.errorInDecoder();
 }
 
 YUVSubsamplingType decoderHM::convertFromInternalSubsampling(libHMDec_ChromaFormat fmt)

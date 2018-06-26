@@ -67,7 +67,7 @@ public:
 
   // Get the next NAL unit (everything excluding the start code) or the next packet.
   // Do not mix calls to these two functions when reading a file.
-  QByteArray getNextNALUnit(uint64_t *pts=nullptr);
+  QByteArray getNextNALUnit(bool getLastDataAgain=false, uint64_t *pts=nullptr);
   // Return the next packet (unless getLastPackage is set in which case we return the current packet)
   AVPacketWrapper getNextPacket(bool getLastPackage=false, bool videoPacketsOnly=true);
   // Return the raw extradata (in avformat format containing the parameter sets)
@@ -153,6 +153,8 @@ protected:
   int posInFile {-1};
   bool loadNextPacket;
   int posInData;
+  // We will keep the last buffer in case the reader wants to get it again
+  QByteArray lastReturnArray;
 };
 
 #endif // FILESOURCEFFMPEGFILE_H

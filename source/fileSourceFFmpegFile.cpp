@@ -70,8 +70,11 @@ AVPacketWrapper fileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool vi
   return pkt;
 }
 
-QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
+QByteArray fileSourceFFmpegFile::getNextNALUnit(bool getLastDataAgain, uint64_t *pts)
 {
+  if (getLastDataAgain)
+    return lastReturnArray;
+
   // Is a packet loaded?
   if (currentPacketData.isEmpty())
   {
@@ -88,7 +91,6 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
   // AVPacket data can be in one of two formats:
   // 1: The raw annexB format with start codes (0x00000001 or 0x000001)
   // 2: ISO/IEC 14496-15 mp4 format: The first 4 bytes determine the size of the NAL unit followed by the payload
-  QByteArray retArray;
   if (packetDataFormat == packetFormatRawNAL)
   {
     QByteArray firstBytes = currentPacketData.mid(posInData, 4);
@@ -110,13 +112,13 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
     if (nextStartCodePos == -1)
     {
       // Return the remainder of the buffer and clear it so that the next packet is loaded on the next call
-      retArray = currentPacketData.mid(posInData + offset);
+      lastReturnArray = currentPacketData.mid(posInData + offset);
       currentPacketData.clear();
     }
     else
     {
       int size = nextStartCodePos - posInData - offset;
-      retArray = currentPacketData.mid(posInData + offset, size);
+      lastReturnArray = currentPacketData.mid(posInData + offset, size);
       posInData += 3 + size;
     }
   }
@@ -141,7 +143,7 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
       return QByteArray();
     }
     
-    retArray = currentPacketData.mid(posInData + 4, size);
+    lastReturnArray = currentPacketData.mid(posInData + 4, size);
     posInData += 4 + size;
     if (posInData >= currentPacketData.size())
       currentPacketData.clear();
@@ -150,7 +152,7 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(uint64_t *pts)
   if (pts)
     *pts = pkt.get_pts();
 
-  return retArray;
+  return lastReturnArray;
 }
 
 QByteArray fileSourceFFmpegFile::getExtradata()
