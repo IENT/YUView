@@ -403,6 +403,8 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
             vectorPen.setColor(arrowColor);
             if (statsTypeList[i].scaleVectorToZoom)
               vectorPen.setWidthF(vectorPen.widthF() * zoomFactor / 8);
+            if (vectorItem.isLine)
+                vectorPen.setCapStyle(Qt::RoundCap);
             painter->setPen(vectorPen);
             painter->setBrush(arrowColor);
 
