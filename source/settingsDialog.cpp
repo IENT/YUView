@@ -238,11 +238,10 @@ void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
   if (newFiles.count() != 1)
     return;
   QString error;
-  // TODO
-  /*if (!hevcDecoderHM::checkLibraryFile(newFiles[0], error))
+  if (!decoderHM::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libHMDecoder library. Error: " + error);
   else
-    ui.lineEditLibHMFile->setText(newFiles[0]);*/
+    ui.lineEditLibHMFile->setText(newFiles[0]);
 }
 
 void SettingsDialog::on_pushButtonLibJEMSelectFile_clicked()
