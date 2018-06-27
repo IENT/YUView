@@ -41,6 +41,7 @@
 #include <QPainter>
 #include <QScopedValueRollback>
 #include <QSettings>
+#include <QHeaderView>
 #include "playlistItems.h"
 
 class bufferStatusWidget : public QWidget
