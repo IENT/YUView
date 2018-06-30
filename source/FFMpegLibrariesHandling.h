@@ -688,6 +688,7 @@ public:
   // The versions are sorted from newest to oldest, so that we try to open the newest ones first.
   enum FFmpegVersions
   {
+    FFMpegVersion_56_58_58_3,
     FFMpegVersion_55_57_57_2,
     FFMpegVersion_54_56_56_1,
     FFMpegVersion_Num
