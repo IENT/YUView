@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@ public:
   int64_t getMaxPTS();
 
   int getNumberFrames() const { return nrFrames; }
-  AVCodecID getCodec() { return video_stream.getCodecID(); }
+  AVCodecID getCodecID() { return video_stream.getCodecID(); }
   AVCodecParametersWrapper getVideoCodecPar() { return video_stream.get_codecpar(); }
 
   // Look through the keyframes and find the closest one before (or equal)

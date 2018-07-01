@@ -1334,6 +1334,31 @@ void FFmpegVersionHandler::enableLoggingWarning()
   lib.av_log_set_level(AV_LOG_WARNING);
 }
 
+bool FFmpegVersionHandler::isCodecIDHEVC(AVCodecID id) const
+{
+  if (libVersion.avcodec == 56 || libVersion.avcodec == 57)
+    return id == 173;
+  if (libVersion.avcodec == 58)
+    return id == 172;
+  return false;
+}
+
+bool FFmpegVersionHandler::isCodecIDAVC(AVCodecID id) const
+{
+  if (libVersion.avcodec == 56 || libVersion.avcodec == 57)
+    return id == 27;
+  if (libVersion.avcodec == 58)
+    return id == 26;
+  return false;
+}
+
+bool FFmpegVersionHandler::isCodecIDMPEG2(AVCodecID id) const
+{
+  if (libVersion.avcodec == 56 || libVersion.avcodec == 57 || libVersion.avcodec == 58)
+    return id == 2;
+  return false;
+}
+
 RawFormat FFmpegVersionHandler::getRawFormat(AVPixelFormat pixelFormat)
 {
   if (convertAVPixelFormatYUV(pixelFormat).isValid())
@@ -2029,14 +2054,25 @@ AVMediaType AVStreamWrapper::getCodecType()
   return codecpar.getCodecType();
 }
 
-AVCodecID AVStreamWrapper::getCodecID()
+AVCodecSpecfier AVStreamWrapper::getCodecID()
 {
   update();
   if (str == nullptr)
-    return AV_CODEC_ID_NONE;
+    return AVCodecSpecfier();
+  
+  AVCodecSpecfier c;
   if (libVer.avformat <= 56 || !codecpar)
-    return codec.getCodecID();
-  return codecpar.getCodecID();
+    c.id = codec.getCodecID();
+  else
+    c.id = codecpar.getCodecID();
+  
+  // Update the other fields of the specifier
+  if (ff.isCodecIDHEVC(c.id))
+    c.isHEVC = true;
+  if (ff.isCodecIDAVC(c.id))
+    c.isAVC = true;
+  if (ff.isCodecIDMPEG2(c.id))
+    c.isMpeg2 = true;
 }
 
 AVRational AVStreamWrapper::get_time_base()

@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -185,7 +185,7 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
 
   // Since the FFmpeg developers don't want to make it too easy, the extradata is organized differently depending on the codec.
   AVCodecID codec = video_stream.getCodecID();
-  if (codec == AV_CODEC_ID_HEVC)
+  if (ff.isCodecIDHEVC(codec))
   {
     if (extradata.at(0) == 1)
     {
@@ -223,7 +223,7 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
       }
     }
   }
-  else if (codec == AV_CODEC_ID_H264)
+  else if (ff.isCodecIDAVC(codec))
   {
     // Note: Actually we would only need this if we would feed the AVC bitstream to a different decoder then ffmpeg.
     //       So this function is so far not called (and not tested).

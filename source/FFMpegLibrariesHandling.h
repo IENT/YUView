@@ -730,6 +730,11 @@ public:
   static QStringList getLogMessages() { return logMessages; }
   void enableLoggingWarning();
 
+  // For AVCodecID, the meaning of the enum depends on the ffmpeg version
+  bool isCodecIDHEVC(AVCodecID id) const;
+  bool isCodecIDAVC(AVCodecID id) const;
+  bool isCodecIDMPEG2(AVCodecID id) const;
+
 private:
 
   // Try to load the FFmpeg libraries from the given path.

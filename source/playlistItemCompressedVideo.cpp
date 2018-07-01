@@ -93,7 +93,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     inputFormatType = input;
 
   // While opening the file, also determine which decoders we can use
-  ffmpegCodec = AV_CODEC_ID_NONE;
+  ffmpegCodecType = codecInvalid;
 
   QSize frameSize;
   YUV_Internals::yuvPixelFormat format_yuv;

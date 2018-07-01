@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -135,7 +135,7 @@ protected:
     int  sub_layer_profile_space[8] {0};
     bool sub_layer_tier_flag[8] {false};
     int  sub_layer_profile_idc[8] {0};
-    bool sub_layer_profile_compatibility_flag[8][32] {false};
+    bool sub_layer_profile_compatibility_flag[8][32] {{false}};
     bool sub_layer_progressive_source_flag[8] {false};
     bool sub_layer_interlaced_source_flag[8] {false};
     bool sub_layer_non_packed_constraint_flag[8] {false};

@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -70,6 +70,14 @@ public:
     decoderEngineFFMpeg,        // The FFMpeg decoder
     decoderEngineNum
   } decoderEngine;
+
+  typedef enum
+  {
+    codecInvalid = -1,
+    codecHEVC,
+    codecAVC,
+    codecMPEG2
+  } codecType;
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
   * provide a pointer to the widget stack for the properties panels. The constructor will then call
@@ -154,7 +162,7 @@ protected:
   inputFormat inputFormatType;
   bool isInputFormatTypeAnnexB() const { return inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC; }
   bool isInputFormatTypeFFmpeg() const { return inputFormatType == inputLibavformat; }
-  AVCodecID ffmpegCodec;
+  codecType ffmpegCodecType;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
   // read the NAL units from the compressed file.
