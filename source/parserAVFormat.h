@@ -44,7 +44,7 @@
 class parserAVFormat : public parserBase
 {
 public:
-  parserAVFormat(AVCodecID codec);
+  parserAVFormat(AVCodecSpecfier codec);
   ~parserAVFormat() {}
 
   void parseExtradata(QByteArray &extradata);
@@ -52,7 +52,7 @@ public:
   void parseAVPacket(int packetID, AVPacketWrapper &packet);
 
 private:
-  AVCodecID codecID;
+  AVCodecSpecfier codecID;
 
   struct hvcC_nalUnit
   {

@@ -39,7 +39,7 @@
 class decoderFFmpeg : public decoderBase
 {
 public:
-  decoderFFmpeg(AVCodecID codec, QSize frameSize, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder=false);
+  decoderFFmpeg(AVCodecSpecfier codec, QSize frameSize, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder=false);
   decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder=false);
   ~decoderFFmpeg();
 
@@ -67,7 +67,7 @@ protected:
 
   FFmpegVersionHandler ff;
 
-  bool createDecoder(AVCodecID streamCodecID, AVCodecParametersWrapper codecpar=AVCodecParametersWrapper());
+  bool createDecoder(AVCodecSpecfier streamCodecID, AVCodecParametersWrapper codecpar=AVCodecParametersWrapper());
 
   AVCodecWrapper videoCodec;        //< The video decoder codec
   AVCodecContextWrapper decCtx;     //< The decoder context

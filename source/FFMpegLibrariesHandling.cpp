@@ -1136,7 +1136,7 @@ bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
   for(unsigned int idx=0; idx < fmt.get_nb_streams(); idx++)
   {
     AVStreamWrapper stream = fmt.get_stream(idx);
-    const char *name = lib.avcodec_get_name(stream.getCodecID());
+    const char *name = lib.avcodec_get_name(stream.getCodecSpecifier().getCodecID(libVersion.avcodec));
     stream.getCodec().codec_id_string = QString(name);
   }
 
@@ -1148,9 +1148,10 @@ AVCodecParametersWrapper FFmpegVersionHandler::alloc_code_parameters()
   return AVCodecParametersWrapper(lib.avcodec_parameters_alloc(), libVersion);
 }
 
-AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecID codec_id)
+AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecSpecfier codec_id)
 {
-  return AVCodecWrapper(lib.avcodec_find_decoder(codec_id), libVersion);
+  AVCodecID id = codec_id.getCodecID(libVersion.avcodec);
+  return AVCodecWrapper(lib.avcodec_find_decoder(id), libVersion);
 }
 
 AVCodecContextWrapper FFmpegVersionHandler::alloc_decoder(AVCodecWrapper &codec)
@@ -1332,31 +1333,6 @@ bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avForma
 void FFmpegVersionHandler::enableLoggingWarning()
 {
   lib.av_log_set_level(AV_LOG_WARNING);
-}
-
-bool FFmpegVersionHandler::isCodecIDHEVC(AVCodecID id) const
-{
-  if (libVersion.avcodec == 56 || libVersion.avcodec == 57)
-    return id == 173;
-  if (libVersion.avcodec == 58)
-    return id == 172;
-  return false;
-}
-
-bool FFmpegVersionHandler::isCodecIDAVC(AVCodecID id) const
-{
-  if (libVersion.avcodec == 56 || libVersion.avcodec == 57)
-    return id == 27;
-  if (libVersion.avcodec == 58)
-    return id == 26;
-  return false;
-}
-
-bool FFmpegVersionHandler::isCodecIDMPEG2(AVCodecID id) const
-{
-  if (libVersion.avcodec == 56 || libVersion.avcodec == 57 || libVersion.avcodec == 58)
-    return id == 2;
-  return false;
 }
 
 RawFormat FFmpegVersionHandler::getRawFormat(AVPixelFormat pixelFormat)
@@ -1572,9 +1548,9 @@ void AVFormatContextWrapper::update()
     max_analyze_duration = src->max_analyze_duration;
     key = QString::fromLatin1((const char*)src->key, src->keylen);
     nb_programs = src->nb_programs;
-    video_codec_id = src->video_codec_id;
-    audio_codec_id = src->audio_codec_id;
-    subtitle_codec_id = src->subtitle_codec_id;
+    video_codec_id = AVCodecSpecfier(libVer.avcodec, src->video_codec_id);
+    audio_codec_id = AVCodecSpecfier(libVer.avcodec, src->audio_codec_id);
+    subtitle_codec_id = AVCodecSpecfier(libVer.avcodec, src->subtitle_codec_id);
     max_index_size = src->max_index_size;
     max_picture_buffer = src->max_picture_buffer;
     nb_chapters = src->nb_chapters;
@@ -1600,9 +1576,9 @@ void AVFormatContextWrapper::update()
     max_analyze_duration = src->max_analyze_duration;
     key = QString::fromLatin1((const char*)src->key, src->keylen);
     nb_programs = src->nb_programs;
-    video_codec_id = src->video_codec_id;
-    audio_codec_id = src->audio_codec_id;
-    subtitle_codec_id = src->subtitle_codec_id;
+    video_codec_id = AVCodecSpecfier(libVer.avcodec, src->video_codec_id);
+    audio_codec_id = AVCodecSpecfier(libVer.avcodec, src->audio_codec_id);
+    subtitle_codec_id = AVCodecSpecfier(libVer.avcodec, src->subtitle_codec_id);
     max_index_size = src->max_index_size;
     max_picture_buffer = src->max_picture_buffer;
     nb_chapters = src->nb_chapters;
@@ -1629,9 +1605,9 @@ void AVFormatContextWrapper::update()
     max_analyze_duration = src->max_analyze_duration;
     key = QString::fromLatin1((const char*)src->key, src->keylen);
     nb_programs = src->nb_programs;
-    video_codec_id = src->video_codec_id;
-    audio_codec_id = src->audio_codec_id;
-    subtitle_codec_id = src->subtitle_codec_id;
+    video_codec_id = AVCodecSpecfier(libVer.avcodec, src->video_codec_id);
+    audio_codec_id = AVCodecSpecfier(libVer.avcodec, src->audio_codec_id);
+    subtitle_codec_id = AVCodecSpecfier(libVer.avcodec, src->subtitle_codec_id);
     max_index_size = src->max_index_size;
     max_picture_buffer = src->max_picture_buffer;
     nb_chapters = src->nb_chapters;
@@ -1662,7 +1638,7 @@ void AVCodecWrapper::update()
     name = QString(src->name);
     long_name = QString(src->long_name);
     type = src->type;
-    id = src->id;
+    id = AVCodecSpecfier(libVer.avcodec, src->id);
     capabilities = src->capabilities;
     if (src->supported_framerates)
     {
@@ -1732,7 +1708,7 @@ void AVCodecContextWrapper::update()
     AVCodecContext_56 *src = reinterpret_cast<AVCodecContext_56*>(codec);
     codec_type = src->codec_type;
     codec_name = QString(src->codec_name);
-    codec_id = src->codec_id;
+    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
     codec_tag = src->codec_tag;
     stream_codec_tag = src->stream_codec_tag;
     bit_rate = src->bit_rate;
@@ -1816,7 +1792,7 @@ void AVCodecContextWrapper::update()
     AVCodecContext_57 *src = reinterpret_cast<AVCodecContext_57*>(codec);
     codec_type = src->codec_type;
     codec_name = QString(src->codec_name);
-    codec_id = src->codec_id;
+    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
     codec_tag = src->codec_tag;
     stream_codec_tag = src->stream_codec_tag;
     bit_rate = src->bit_rate;
@@ -1900,7 +1876,7 @@ void AVCodecContextWrapper::update()
     AVCodecContext_58 *src = reinterpret_cast<AVCodecContext_58*>(codec);
     codec_type = src->codec_type;
     codec_name = QString("Not supported in AVCodec >= 58");
-    codec_id = src->codec_id;
+    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
     codec_tag = src->codec_tag;
     stream_codec_tag = -1;
     bit_rate = src->bit_rate;
@@ -2054,25 +2030,16 @@ AVMediaType AVStreamWrapper::getCodecType()
   return codecpar.getCodecType();
 }
 
-AVCodecSpecfier AVStreamWrapper::getCodecID()
+AVCodecSpecfier AVStreamWrapper::getCodecSpecifier()
 {
   update();
   if (str == nullptr)
     return AVCodecSpecfier();
   
-  AVCodecSpecfier c;
   if (libVer.avformat <= 56 || !codecpar)
-    c.id = codec.getCodecID();
+    return codec.getCodecSpecifier();
   else
-    c.id = codecpar.getCodecID();
-  
-  // Update the other fields of the specifier
-  if (ff.isCodecIDHEVC(c.id))
-    c.isHEVC = true;
-  if (ff.isCodecIDAVC(c.id))
-    c.isAVC = true;
-  if (ff.isCodecIDMPEG2(c.id))
-    c.isMpeg2 = true;
+    return codecpar.getCodecSpecifier();
 }
 
 AVRational AVStreamWrapper::get_time_base()
@@ -2151,12 +2118,12 @@ void AVCodecParametersWrapper::setAVMediaType(AVMediaType type)
   }
 }
 
-void AVCodecParametersWrapper::setAVCodecID(AVCodecID id)
+void AVCodecParametersWrapper::setAVCodecSpecifier(AVCodecSpecfier id)
 {
   if (libVer.avformat == 57 || libVer.avformat == 58)
   {
     AVCodecParameters_57_58 *src = reinterpret_cast<AVCodecParameters_57_58*>(param);
-    src->codec_id = id;
+    src->codec_id = id.getCodecID(libVer.avcodec);
     codec_id = id;
   }
 }
@@ -2236,7 +2203,7 @@ void AVCodecParametersWrapper::update()
     AVCodecParameters_57_58 *src = reinterpret_cast<AVCodecParameters_57_58*>(param);
     
     codec_type = src->codec_type;
-    codec_id = src->codec_id;
+    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
     codec_tag = src->codec_tag;
     extradata = src->extradata;
     extradata_size = src->extradata_size;

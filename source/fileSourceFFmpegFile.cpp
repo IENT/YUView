@@ -184,8 +184,8 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
   QList<QByteArray> retArray;
 
   // Since the FFmpeg developers don't want to make it too easy, the extradata is organized differently depending on the codec.
-  AVCodecID codec = video_stream.getCodecID();
-  if (ff.isCodecIDHEVC(codec))
+  AVCodecSpecfier codec = video_stream.getCodecSpecifier();
+  if (codec.isHEVC())
   {
     if (extradata.at(0) == 1)
     {
@@ -223,7 +223,7 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
       }
     }
   }
-  else if (ff.isCodecIDAVC(codec))
+  else if (codec.isAVC())
   {
     // Note: Actually we would only need this if we would feed the AVC bitstream to a different decoder then ffmpeg.
     //       So this function is so far not called (and not tested).

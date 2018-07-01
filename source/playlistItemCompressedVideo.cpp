@@ -93,8 +93,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     inputFormatType = input;
 
   // While opening the file, also determine which decoders we can use
-  ffmpegCodecType = codecInvalid;
-
   QSize frameSize;
   YUV_Internals::yuvPixelFormat format_yuv;
   RGB_Internals::rgbPixelFormat format_rgb;
@@ -108,7 +106,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     if (inputFormatType == inputAnnexBHEVC)
     {
       inputFileAnnexBParser.reset(new parserAnnexBHEVC());
-      ffmpegCodec = AV_CODEC_ID_HEVC;
+      ffmpegCodec.setTypeHEVC();
       possibleDecoders.append(decoderEngineLibde265);
       possibleDecoders.append(decoderEngineHM);
       possibleDecoders.append(decoderEngineFFMpeg);
@@ -116,7 +114,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     else if (inputFormatType == inputAnnexBAVC)
     {
       inputFileAnnexBParser.reset(new parserAnnexBAVC());
-      ffmpegCodec = AV_CODEC_ID_H264;
+      ffmpegCodec.setTypeAVC();
       possibleDecoders.append(decoderEngineFFMpeg);
     }
     // Parse the loading file
@@ -144,9 +142,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     else if (rawFormat == raw_RGB)
       format_rgb = inputFileFFmpegLoading->getPixelFormatRGB();
     frameSize = inputFileFFmpegLoading->getSequenceSizeSamples();
-    ffmpegCodec = inputFileFFmpegLoading->getCodec();
+    ffmpegCodec = inputFileFFmpegLoading->getCodecSpecifier();
     possibleDecoders.append(decoderEngineFFMpeg);
-    if (ffmpegCodec == AV_CODEC_ID_HEVC)
+    if (ffmpegCodec.isHEVC())
     {
       possibleDecoders.append(decoderEngineLibde265);
       possibleDecoders.append(decoderEngineHM);
@@ -369,7 +367,7 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     {
       // Just open and parse the file again
       QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(plItemNameOrFileName));
-      AVCodecID codec = inputFileFFmpegLoading->getCodec();
+      AVCodecSpecfier codec = inputFileFFmpegLoading->getCodecSpecifier();
       parserB.reset(new parserAVFormat(codec));
       parserB->enableModel();
       if (!parseFFMpegFile(ffmpegFile, parserB))

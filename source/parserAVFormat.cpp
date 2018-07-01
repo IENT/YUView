@@ -58,14 +58,14 @@
 #define LOG_VAR(var,length) {QString code=QString::number(var,2); while (code.size() < length) code.prepend("0"); if (itemTree) new TreeItem(#var,var,QString("u(%1)").arg(length),code,itemTree);}
 #define LOG_VAR_SUB(var,length) {QString code=QString::number(var,2); while (code.size() < length) code.prepend("0"); if (subTree) new TreeItem(#var,var,QString("u(%1)").arg(length),code,subTree);}
 
-parserAVFormat::parserAVFormat(AVCodecID codec)
+parserAVFormat::parserAVFormat(AVCodecSpecfier codec)
 { 
   codecID = codec; 
-  if (codecID == AV_CODEC_ID_H264)
+  if (codecID.isAVC())
     annexBParser.reset(new parserAnnexBAVC());
-  else if (codecID == AV_CODEC_ID_HEVC)
+  else if (codecID.isHEVC())
     annexBParser.reset(new parserAnnexBHEVC());
-  else if (codecID == AV_CODEC_ID_MPEG2VIDEO)
+  else if (codecID.isMpeg2())
     annexBParser.reset(new parserAnnexBMpeg2());
 
   // Set the start code to look for (0x00 0x00 0x01)
@@ -79,11 +79,11 @@ void parserAVFormat::parseExtradata(QByteArray &extradata)
   if (extradata.isEmpty())
     return;
 
-  if (codecID == AV_CODEC_ID_H264)
+  if (codecID.isAVC())
     parseExtradata_AVC(extradata);
-  else if (codecID == AV_CODEC_ID_HEVC)
+  else if (codecID.isHEVC())
     parseExtradata_hevc(extradata);
-  else if (codecID == AV_CODEC_ID_MPEG2VIDEO)
+  else if (codecID.isMpeg2())
     parseExtradata_mpeg2(extradata);
   else
     parseExtradata_generic(extradata);
@@ -353,7 +353,7 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
       }
 
       // Create a good detailed and compact description of the AVpacket
-      if (codecID == AV_CODEC_ID_MPEG2VIDEO)
+      if (codecID.isMpeg2())
         specificDescription = " - ";    // In mpeg2 there is no concept of NAL units
       else
         specificDescription = " - NALS:";

@@ -443,16 +443,53 @@ namespace FFmpeg
   // The order / numbering of the values in this enum changes depending on the libavcodec version number
   enum AVCodecID
   {
+    AV_CODEC_ID_NONE = -1
   };
 
   // Since the AVCodecID can not easily parsed by us, this struct defines a codec for opening decoders and reading files
   class AVCodecSpecfier
   {
-    AVCodecID id {-1};
-    bool isHEVC {false};
-    bool isAVC {false};
-    bool isMpeg2 {false};
-  }
+  public:
+    AVCodecSpecfier() {}
+    AVCodecSpecfier(int avCodecVersion, AVCodecID id) : id(id)
+    {
+      if (avCodecVersion == 56 || avCodecVersion == 57)
+      {
+        isTypeHEVC = id == 173;
+        isTypeAVC = id == 27;
+      }
+      else if (avCodecVersion == 58)
+      {
+        isTypeHEVC = id == 172;
+        isTypeAVC = id == 26;
+      }
+      isTypeMpeg2 = id == 2;
+    }
+    AVCodecID getCodecID(int avCodecVersion)
+    {
+      if (id != -1)
+        return id;
+      if (isMpeg2())
+        id = (AVCodecID)2;
+      else if (isHEVC())
+        id = (avCodecVersion == 56 || avCodecVersion == 57) ? (AVCodecID)174 : (AVCodecID)173;
+      else if (isAVC())
+        id = (avCodecVersion == 56 || avCodecVersion == 57) ? (AVCodecID)28 : (AVCodecID)27;
+      return id;
+    }
+    bool isHEVC()  { return isTypeHEVC; }
+    bool isAVC()   { return isTypeAVC;  }
+    bool isMpeg2() { return isTypeMpeg2; }
+    void setTypeHEVC()  { if (id == AV_CODEC_ID_NONE && !isTypeAVC && !isTypeMpeg2) isTypeHEVC = true; }
+    void setTypeAVC()   { if (id == AV_CODEC_ID_NONE && !isTypeHEVC && !isTypeMpeg2) isTypeAVC = true; }
+    void setTypeMpeg2() { if (id == AV_CODEC_ID_NONE && !isTypeHEVC && !isTypeAVC) isTypeMpeg2 = true; }
+  private:
+    AVCodecID id {AV_CODEC_ID_NONE};
+    
+    bool isTypeHEVC  {false};
+    bool isTypeAVC   {false};
+    bool isTypeMpeg2 {false};
+  };
 
   enum AVColorPrimaries 
   {

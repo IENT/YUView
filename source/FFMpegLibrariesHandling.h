@@ -192,7 +192,7 @@ public:
   explicit operator bool() const { return codec != nullptr; };
 
   AVMediaType getCodecType()  { update(); return codec_type; }
-  AVCodecID getCodecID()      { update(); return codec_id; }
+  AVCodecSpecfier getCodecSpecifier(){ update(); return codec_id; }
   AVCodecContext *get_codec() { return codec; }
   AVPixelFormat get_pixel_format() { update(); return pix_fmt; }
   int get_width() { update(); return width; }
@@ -211,7 +211,7 @@ private:
   // These are private. Use "update" to update them from the AVCodecContext
   AVMediaType codec_type;
   QString codec_name;
-  AVCodecID codec_id;
+  AVCodecSpecfier codec_id;
   unsigned int codec_tag;
   unsigned int stream_codec_tag;
   int bit_rate;
@@ -305,17 +305,17 @@ public:
   AVCodecParametersWrapper(AVCodecParameters *p, FFmpegLibraryVersion v) { param = p; libVer = v; update(); }
   explicit operator bool() const { return param != nullptr; };
 
-  AVMediaType getCodecType() { update(); return codec_type; }
-  AVCodecID   getCodecID()   { update(); return codec_id; }
-  int get_width()            { update(); return width; }
-  int get_height()           { update(); return height; }
-  AVColorSpace get_colorspace() { update(); return color_space; }
+  AVMediaType getCodecType()          { update(); return codec_type; }
+  AVCodecSpecfier getCodecSpecifier() { update(); return codec_id; }
+  int get_width()                     { update(); return width; }
+  int get_height()                    { update(); return height; }
+  AVColorSpace get_colorspace()       { update(); return color_space; }
 
   // Set a default set of (unknown) values
   void setClearValues();
 
   void setAVMediaType(AVMediaType type);
-  void setAVCodecID(AVCodecID id);
+  void setAVCodecSpecifier(AVCodecSpecfier id);
   void setExtradata(QByteArray extradata);
   void setSize(int width, int height);
   void setAVPixelFormat(AVPixelFormat f);
@@ -330,7 +330,7 @@ private:
 
   // These are private. Use "update" to update them from the AVCodecParameters
   AVMediaType codec_type;
-  AVCodecID   codec_id;
+  AVCodecSpecfier codec_id;
   uint32_t    codec_tag;
   uint8_t *extradata;
   int extradata_size;
@@ -368,7 +368,7 @@ public:
   explicit operator bool() const { return str != nullptr; };
 
   AVMediaType getCodecType();
-  AVCodecID getCodecID();
+  AVCodecSpecfier getCodecSpecifier();
   AVCodecContextWrapper &getCodec() { update(); return codec; };
   AVRational get_avg_frame_rate()   { update(); return avg_frame_rate; }
   AVRational get_time_base();
@@ -521,9 +521,9 @@ private:
   int max_analyze_duration;
   QString key;
   unsigned int nb_programs;
-  AVCodecID video_codec_id;
-  AVCodecID audio_codec_id;
-  AVCodecID subtitle_codec_id;
+  AVCodecSpecfier video_codec_id;
+  AVCodecSpecfier audio_codec_id;
+  AVCodecSpecfier subtitle_codec_id;
   unsigned int max_index_size;
   unsigned int max_picture_buffer;
   unsigned int nb_chapters;
@@ -550,7 +550,7 @@ private:
   QString name;
   QString long_name;
   AVMediaType type;
-  AVCodecID id;
+  AVCodecSpecfier id;
   int capabilities;                        ///< see AV_CODEC_CAP_
   QList<AVRational> supported_framerates;  ///< terminated by {0,0}
   QList<AVPixelFormat> pix_fmts;           ///< array is terminated by -1
@@ -670,7 +670,7 @@ public:
   
   QString getLibPath() const { return lib.getLibPath(); }
   QString getLibVersionString() const;
-  QString getCodecName(AVCodecID id) const { return QString(lib.avcodec_get_name(id)); }
+  QString getCodecName(AVCodecSpecfier id) const { return QString(lib.avcodec_get_name(id.getCodecID(libVersion.avcodec))); }
 
   bool configureDecoder(AVCodecContextWrapper &decCtx, AVCodecParametersWrapper &codecpar);
 
@@ -697,7 +697,7 @@ public:
   // Open the input file. This will call avformat_open_input and avformat_find_stream_info.
   bool open_input(AVFormatContextWrapper &fmt, QString url);
   // Try to find a decoder for the given codecID (avcodec_find_decoder)
-  AVCodecWrapper find_decoder(AVCodecID codec_id);
+  AVCodecWrapper find_decoder(AVCodecSpecfier codec_id);
   // Allocate the decoder (avcodec_alloc_context3)
   AVCodecContextWrapper alloc_decoder(AVCodecWrapper &codec);
   // Set info in the dictionary
@@ -729,11 +729,6 @@ public:
   // Logging. By default we set the logging level of ffmpeg to AV_LOG_ERROR (Log errors and everything worse)
   static QStringList getLogMessages() { return logMessages; }
   void enableLoggingWarning();
-
-  // For AVCodecID, the meaning of the enum depends on the ffmpeg version
-  bool isCodecIDHEVC(AVCodecID id) const;
-  bool isCodecIDAVC(AVCodecID id) const;
-  bool isCodecIDMPEG2(AVCodecID id) const;
 
 private:
 

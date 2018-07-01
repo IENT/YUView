@@ -43,7 +43,7 @@
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 
-decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder) : 
+decoderFFmpeg::decoderFFmpeg(AVCodecSpecfier codec, QSize size, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder) : 
   decoderBase(cachingDecoder)
 {
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
@@ -54,7 +54,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecID codec, QSize size, QByteArray extradata, 
   // Create the cofiguration parameters
   AVCodecParametersWrapper codecpar = ff.alloc_code_parameters();
   codecpar.setAVMediaType(AVMEDIA_TYPE_VIDEO);
-  codecpar.setAVCodecID(codec);
+  codecpar.setAVCodecSpecifier(codec);
   codecpar.setSize(size.width(), size.height());
   codecpar.setExtradata(extradata);
   AVPixelFormat f = FFmpegVersionHandler::convertYUVAVPixelFormat(fmt);
@@ -82,7 +82,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
   if (!ff.loadFFmpegLibraries())
     return;
 
-  AVCodecID codec = codecpar.getCodecID();
+  AVCodecSpecfier codec = codecpar.getCodecSpecifier();
   if (!createDecoder(codec, codecpar))
   {
     setError("Error creating the needed decoder.");
@@ -420,7 +420,7 @@ void decoderFFmpeg::fillStatisticList(statisticHandler &statSource) const
   statSource.addStatType(motionVec1);
 }
 
-bool decoderFFmpeg::createDecoder(AVCodecID streamCodecID, AVCodecParametersWrapper codecpar)
+bool decoderFFmpeg::createDecoder(AVCodecSpecfier streamCodecID, AVCodecParametersWrapper codecpar)
 {
   // Allocate the decoder context
   if (videoCodec)
@@ -472,6 +472,6 @@ QString decoderFFmpeg::getCodecName()
   if (!decCtx)
     return "";
 
-  AVCodecID codec = decCtx.getCodecID();
+  AVCodecSpecfier codec = decCtx.getCodecSpecifier();
   return ff.getCodecName(codec);
 }

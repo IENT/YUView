@@ -85,7 +85,7 @@ public:
   int64_t getMaxPTS();
 
   int getNumberFrames() const { return nrFrames; }
-  AVCodecID getCodecID() { return video_stream.getCodecID(); }
+  AVCodecSpecfier getCodecSpecifier() { return video_stream.getCodecSpecifier(); }
   AVCodecParametersWrapper getVideoCodecPar() { return video_stream.get_codecpar(); }
 
   // Look through the keyframes and find the closest one before (or equal)
