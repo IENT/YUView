@@ -455,15 +455,15 @@ namespace FFmpeg
     {
       if (avCodecVersion == 56 || avCodecVersion == 57)
       {
-        isTypeHEVC = id == 173;
-        isTypeAVC = id == 27;
+        isTypeHEVC = (id == (AVCodecID)173);
+        isTypeAVC = (id == (AVCodecID)27);
       }
       else if (avCodecVersion == 58)
       {
-        isTypeHEVC = id == 172;
-        isTypeAVC = id == 26;
+        isTypeHEVC = (id == (AVCodecID)172);
+        isTypeAVC = (id == (AVCodecID)26);
       }
-      isTypeMpeg2 = id == 2;
+      isTypeMpeg2 = (id == (AVCodecID)2);
     }
     AVCodecID getCodecID(int avCodecVersion)
     {

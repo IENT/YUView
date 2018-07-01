@@ -119,7 +119,6 @@ private:
   void allocateNewDecoder();
 
   libHMDec_context* decoder {nullptr};
-  libHMDec_error decError;
 
   // Try to get the next picture from the decoder and save it in currentHMPic
   bool getNextFrameFromDecoder();
@@ -131,9 +130,6 @@ private:
 
   // Statistics caching
   void cacheStatistics(libHMDec_picture *pic);
-
-  // Are we currently reading from the decoder or are we pushing more NAL units?
-  bool stateReadingFrames {false};
 
   bool internalsSupported {false};
   int nrSignals { 0 };

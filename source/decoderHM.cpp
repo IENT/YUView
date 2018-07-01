@@ -280,7 +280,7 @@ bool decoderHM::pushData(QByteArray &data)
   bool checkOutputPictures, bNewPicture;
   libHMDec_error err = libHMDec_push_nal_unit(decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
   if (err != LIBHMDEC_OK)
-    return setErrorB("Error pushing data to decoder (libHMDec_push_nal_unit) length " + data.length());
+    return setErrorB(QString("Error pushing data to decoder (libHMDec_push_nal_unit) length %1").arg(data.length()));
   DEBUG_DECHM("decoderHM::pushData pushed NAL length %d%s%s", data.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
 
   if (checkOutputPictures && getNextFrameFromDecoder())
