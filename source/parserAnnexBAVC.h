@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -164,7 +164,7 @@ protected:
 
     struct vui_parameters_struct
     {
-      void read(sub_byte_reader &reader, TreeItem *root, int BitDeptYC, int BitDepthC, int chroma_format_idc);
+      void read(sub_byte_reader &reader, TreeItem *root, int BitDeptYC, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag);
 
       bool aspect_ratio_info_present_flag;
       int aspect_ratio_idc {0};
@@ -249,6 +249,10 @@ protected:
     int ChromaArrayType;
     int CropUnitX;
     int CropUnitY;
+    int PicCropLeftOffset;
+    int PicCropWidth;
+    int PicCropTopOffset;
+    int PicCropHeight;
     bool MbaffFrameFlag;
     int MaxPicOrderCntLsb {0};
     int ExpectedDeltaPerPicOrderCntCycle {0};
