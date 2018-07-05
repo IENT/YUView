@@ -133,9 +133,9 @@ void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned
   {
     playlistItem *item = allItems.at(i);
     int nrFrames = item->getNumberCachedFrames();
-    int64_t frameSize = item->getCachingFrameSize();
+    unsigned int frameSize = item->getCachingFrameSize();
     int64_t itemCacheSize = nrFrames * frameSize;
-    DEBUG_CACHING_DETAIL("videoCacheStatusWidget::updateStatus Item %d frames %d * size %d = %d", i, nrFrames, frameSize, itemCacheSize);
+    DEBUG_CACHING_DETAIL("videoCacheStatusWidget::updateStatus Item %d frames %d * size %d = %d", i, nrFrames, frameSize, (int)itemCacheSize);
 
     float endVal = (float)(cacheLevel + itemCacheSize) / cacheLevelMax;
     relativeValsEnd.append(endVal);
@@ -156,6 +156,7 @@ class loadingWorker : public QObject
 public:
   loadingWorker(QObject *parent) : QObject(parent) { currentCacheItem = nullptr; working = false; id = id_counter++; }
   playlistItem *getCacheItem() { return currentCacheItem; }
+  int getCacheFrame() { return currentFrame; }
   void setJob(playlistItem *item, int frame, bool test=false) { currentCacheItem = item; currentFrame = frame; testMode = test; }
   void setWorking(bool state) { working = state; }
   bool isWorking() { return working; }
@@ -368,7 +369,7 @@ void videoCache::updateSettings()
         t->exit();
         t->deleteLater();
 
-        DEBUG_CACHING("videoCache::updateSettings Deleting thread %p with worker %p", t, i);
+        DEBUG_CACHING("videoCache::updateSettings Deleting thread %p with worker %d", t, i);
         nrThreadsToRemove --;
       }
     }
@@ -397,10 +398,14 @@ void videoCache::loadFrame(playlistItem * item, int frameIndex, int loadingSlot)
   assert(loadingSlot == 0 || loadingSlot == 1);
   if (interactiveThread[loadingSlot]->worker()->isWorking())
   {
-    // The interactive worker is currently busy. Schedule this load request as the next one.
-    DEBUG_CACHING_DETAIL("videoCache::loadFrame %d queued for later - slot %d", frameIndex, loadingSlot);
-    interactiveItemQueued[loadingSlot] = item;
-    interactiveItemQueued_Idx[loadingSlot] = frameIndex;
+    // The interactive worker is currently busy ...
+    if (interactiveThread[loadingSlot]->worker()->getCacheItem() != item || interactiveThread[loadingSlot]->worker()->getCacheFrame() != frameIndex)
+    {
+      // ... and it is not working on the requested frame. Schedule this load request as the next one.
+      DEBUG_CACHING_DETAIL("videoCache::loadFrame %d queued for later - slot %d", frameIndex, loadingSlot);
+      interactiveItemQueued[loadingSlot] = item;
+      interactiveItemQueued_Idx[loadingSlot] = frameIndex;
+    }
   }
   else
   {
@@ -1017,7 +1022,7 @@ void videoCache::threadCachingFinished()
     else if (workerState == workerRunning)
     {
       // The caching performance test is running. Just push another test job.
-      DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished Test mode - start next job", t);
+      DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished Test mode - start next job");
       for (loadingThread *t : cachingThreadList)
         if (t->worker() == worker)
           jobsRunning |= pushNextJobToThread(t);
