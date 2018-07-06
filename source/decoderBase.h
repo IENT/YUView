@@ -138,7 +138,8 @@ protected:
   int statsCacheCurPOC;                    // the POC of the statistics that are in the curPOCStats
 };
 
-
+// This abstract base class extends the decoderBase class by the ability to load one single library
+// using QLibrary. For decoding, the decoderBase interface is not changed.
 class decoderBaseSingleLib : public decoderBase
 {
 public:

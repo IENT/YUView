@@ -81,9 +81,6 @@ struct decoderLibde265_Functions
 };
 
 // This class wraps the libde265 library in a demand-load fashion.
-// To easily access the functions, one can use protected inheritance:
-// class de265User : ..., protected de265Wrapper
-// This API is similar to the QOpenGLFunctions API family.
 class decoderLibde265 : public decoderBaseSingleLib, public decoderLibde265_Functions 
 {
 public:
