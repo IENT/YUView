@@ -377,7 +377,15 @@ void playlistItemVTMBMSStatisticsFile::readHeaderFromFile()
           aType.renderValueData = true;
           aType.colMapper = colorMapper("jet", minVal, maxVal);
         }
-
+        else if (statType.contains("Line"))
+        {
+          aType.hasVectorData=true;
+          aType.renderVectorData = true;
+          aType.vectorScale = 1;
+          aType.arrowHead=StatisticsType::arrowHead_t::none;
+          aType.gridPen.setColor(QColor(255,255,255));
+          aType.vectorPen.setColor(QColor(255,255,255));
+        }
 
         // check whether is was a geometric partitioning statistic with polygon shape
         if (statType.contains("Polygon"))
@@ -451,7 +459,9 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
     QRegularExpression scalarPolygonRegex("POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+=([0-9\\-]+)");
     // for extracting vector polygon statistics:
     QRegularExpression vectorPolygonRegex("POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+)}");
-
+    // for extracting the partitioning line, we extract
+    // BlockStat: POC 2 @( 192,  96) [64x32] Line={0,0,31,31}
+    QRegularExpression lineRegex("POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
 
     while (!in.atEnd())
     {
@@ -487,6 +497,10 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
             else if (aType->hasVectorData)
             {
               statisitcMatch = vectorRegex.match(aLine);
+              if (!statisitcMatch.hasMatch())
+              {
+                statisitcMatch = lineRegex.match(aLine);
+              }
             }
             else if (aType->hasAffineTFData)
             {
@@ -537,7 +551,16 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
             {
               vecX = statisitcMatch.captured(6).toInt();
               vecY = statisitcMatch.captured(7).toInt();
-              statSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
+              if (statisitcMatch.lastCapturedIndex()>7)
+              {
+                int vecX1 = statisitcMatch.captured(8).toInt();
+                int vecY1 = statisitcMatch.captured(9).toInt();
+                statSource.statsCache[typeID].addLine(posX, posY, width, height, vecX, vecY,vecX1,vecY1);
+              }
+              else
+              {
+                statSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
+              }
             }
             else if (aType->hasAffineTFData)
             {
