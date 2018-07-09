@@ -459,9 +459,7 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
     QRegularExpression scalarPolygonRegex("POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+=([0-9\\-]+)");
     // for extracting vector polygon statistics:
     QRegularExpression vectorPolygonRegex("POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+)}");
-    // for extracting the partitioning line, we extract
-    // BlockStat: POC 2 @( 192,  96) [64x32] Line={0,0,31,31}
-    QRegularExpression lineRegex("POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
+
 
     while (!in.atEnd())
     {
@@ -547,36 +545,21 @@ void playlistItemVTMBMSStatisticsFile::loadStatisticToCache(int frameIdxInternal
               // Block not in image. Warn about this.
               blockOutsideOfFrame_idx = frameIdxInternal;
 
-            if (aType->hasVectorData)
-            {
-              vecX = statisitcMatch.captured(6).toInt();
-              vecY = statisitcMatch.captured(7).toInt();
-              if (statisitcMatch.lastCapturedIndex()>7)
-              {
-                int vecX1 = statisitcMatch.captured(8).toInt();
-                int vecY1 = statisitcMatch.captured(9).toInt();
-                statSource.statsCache[typeID].addLine(posX, posY, width, height, vecX, vecY,vecX1,vecY1);
-              }
-              else
-              {
-                statSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
-              }
-            }
-            else if (aType->hasAffineTFData)
-            {
-              int vecX0 = statisitcMatch.captured(6).toInt();
-              int vecY0 = statisitcMatch.captured(7).toInt();
-              int vecX1 = statisitcMatch.captured(8).toInt();
-              int vecY1 = statisitcMatch.captured(9).toInt();
-              int vecX2 = statisitcMatch.captured(10).toInt();
-              int vecY2 = statisitcMatch.captured(11).toInt();
-              statSource.statsCache[typeID].addBlockAffineTF(posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
-            }
-            else
-            {
-              scalar = statisitcMatch.captured(6).toInt();
-              statSource.statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
-            }
+          if (aType->hasVectorData)
+          {
+            vecX = statisitcMatch.captured(6).toInt();
+            vecY = statisitcMatch.captured(7).toInt();
+            statSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
+          }
+          else if (aType->hasAffineTFData)
+          {
+            int vecX0 = statisitcMatch.captured(6).toInt();
+            int vecY0 = statisitcMatch.captured(7).toInt();
+            int vecX1 = statisitcMatch.captured(8).toInt();
+            int vecY1 = statisitcMatch.captured(9).toInt();
+            int vecX2 = statisitcMatch.captured(10).toInt();
+            int vecY2 = statisitcMatch.captured(11).toInt();
+            statSource.statsCache[typeID].addBlockAffineTF(posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
           }
           else
           // process polygon statistics
