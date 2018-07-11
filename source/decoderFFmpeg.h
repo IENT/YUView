@@ -88,6 +88,9 @@ protected:
 
   // When pushing raw data to the decoder, we need to package it into AVPackets
   AVPacketWrapper raw_pkt;
+
+  // An array of AV_INPUT_BUFFER_PADDING_SIZE zeros to be added as padding in pushData
+  QByteArray avPacketPaddingData;
 };
 
 #endif // DECODERFFMPEG_H
