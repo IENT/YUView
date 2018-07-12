@@ -270,29 +270,42 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const cha
 //        qreal rangeMin = aSortedData->at(0).mValues.first()->first.toReal();
 //        qreal rangeMax = aSortedData->at(0).mValues.last()->first.toReal();
 
-////        QStringList categories;
+//        QStringList categories;
 
-////        for (int i = rangeMin; i <= rangeMax; i = i+50)
-////          categories << QString::number(i);
+//        for (int i = rangeMin; i <= rangeMax; i = i+40)
+//          categories << QString::number(i);
 
 //        QBarCategoryAxis *axis = new QBarCategoryAxis();
 
-//          axis->append(settings.mCategories);
+//        //axis->setRange(rangeMin, rangeMax);
+
+//        axis->append(categories);
 
 //        chart->setAxisX(axis, settings.mSeries);
 
         //Second Option: Define numerical range for the values
 
-//        qreal rangeMin = aSortedData->at(0).mValues.first()->first.toReal();
-//        qreal rangeMax = aSortedData->at(0).mValues.last()->first.toReal();
+        //qreal Minn = settings.mCategories.first();
 
-//        QValueAxis* axisX = new QValueAxis;
+        qreal rangeMin = aSortedData->at(0).mValues.first()->first.toReal();
+        qreal rangeMax = aSortedData->at(0).mValues.last()->first.toReal();
 
-//        axisX->setRange(rangeMin, rangeMax);
+        QValueAxis* axisX = new QValueAxis;
 
-//        axisX->setTickCount(((rangeMax-rangeMin)/30));
-//        //axisX->setLabelFormat("%.2f");
-//        chart->setAxisX(axisX, settings.mSeries);
+        int x = rangeMax/rangeMin;
+        //qreal tickSteps = (qRound(range/rangeMax));
+
+
+
+
+
+        //axisX->setTickCount(tickSteps);
+        axisX->setRange(0,  rangeMax-rangeMin);
+
+
+        //axisX->applyNiceNumbers();
+        chart->setAxisX(axisX, settings.mSeries);
+
         break;
       }
       default:
@@ -551,15 +564,16 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
     foreach (int key, mapValueCountSorted.keys())
     {
       // creating the set with an label from the given Value
-      //set->append(number(key));
+      //*set->append(QString::number(key));
       settings.mCategories << QString::number(key);
       // adding the count to the set, which we want to display
       int *count = mapValueCountSorted.value(key); // getting the adress of the total
       *set << *count; // remenber to dereference the count to get the real value of count
       // at least add the set to the series in the settings-struct
+      series->append(set);
 
     }
-    series->append(set);
+
     set->setColor(selectedColor.at(col));
 
   return settings;

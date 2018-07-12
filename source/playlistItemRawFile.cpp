@@ -543,17 +543,21 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemRawFile::getData(indexRange r
   QSize imageSize = this->getSize();
 
   ValuePairList pixelValueList;
+  ValuePairListSets pixelValueListSets;
 
   for(int frame = range.first; frame <= range.second; frame++)
   {
-    for(int width = 0; width < imageSize.width(); width++)
+    for(int width = 0; width < 100; width++)
     {
-      for(int height = 0; height < imageSize.height(); height++)
+      for(int height = 0; height < 100; height++)
       {
-        if(rawFormat == RGB)
-          pixelValueList = this->getRGBVideo()->getPixelValues(QPoint(width, height), frame, nullptr, getFrameIdxInternal(frame));
-        else if(rawFormat == YUV)
-          pixelValueList = this->getYUVVideo()->getPixelValues(QPoint(width, height), frame, nullptr, getFrameIdxInternal(frame));
+//        if(rawFormat == RGB)
+//          pixelValueList = this->getRGBVideo()->getPixelValues(QPoint(width, height), frame, nullptr, getFrameIdxInternal(frame));
+//        else if(rawFormat == YUV)
+//          pixelValueList = this->getYUVVideo()->getPixelValues(QPoint(width, height), frame, nullptr, getFrameIdxInternal(frame));
+
+        pixelValueListSets = this->getPixelValues(QPoint(width, height),  frame);
+        pixelValueList = pixelValueListSets.first().second;
 
         foreach(ValuePair pair, pixelValueList)
         {

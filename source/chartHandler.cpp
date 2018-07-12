@@ -1272,8 +1272,9 @@ QWidget* ChartHandler::createColorSpaceWidget(playlistItem *aItem, itemWidgetCoo
   // getting the range
   auto range = aItem->getFrameIdxRange();
 
-  range.first = 0;
-  range.second = 0;
+  int frameIndex = this->mPlayback->getCurrentFrame();
+  range.first = frameIndex;
+  range.second = frameIndex;
 
   // save the data, that we dont have to load it later again
   aCoord.mData = aItem->getData(range, true);
@@ -1318,7 +1319,7 @@ QWidget* ChartHandler::createColorSpaceWidget(playlistItem *aItem, itemWidgetCoo
 
 void ChartHandler::onColorSpaceChange(const QString aString)
 {
-  // get the selected playListItemStatisticFiles-item
+  // get the selected playListItemImage/RawFile-item
   auto items = this->mPlaylist->getSelectedItems();
   bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
   if(anyItemsSelected) // check that really something is selected
@@ -1359,8 +1360,9 @@ QWidget* ChartHandler::createColorSpaceChart(itemWidgetCoord& aCoord)
     return &(this->mNoDataToShowWidget);
 
   indexRange range;
-//  range.first = 0;
-//  range.second = 0;
+  int frameIndex = this->mPlayback->getCurrentFrame();
+  range.first = frameIndex;
+  range.second = frameIndex;
 
   QString type("");
 

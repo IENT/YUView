@@ -214,9 +214,9 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData(indexRange
 
   for(int frame = range.first; frame <= range.second; frame++)
   {
-    for(int width = 0; width < imageSize.width(); width++)
+    for(int width = 0; width < 100; width++)
     {
-      for(int height = 0; height < imageSize.height(); height++)
+      for(int height = 0; height < 100; height++)
       {
         pixelValueListSets = this->getPixelValues(QPoint(width, height),  frame);
         pixelValueList = pixelValueListSets.first().second;
