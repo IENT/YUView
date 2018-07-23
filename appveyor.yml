@@ -19,6 +19,7 @@ install:
   - cd
 
 build_script:
+  - C:\cygwin\bin\bash -e -l -c "sed -i -- 's/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g' source/typedef.h"
   - qmake
   - where nmake
   - nmake
