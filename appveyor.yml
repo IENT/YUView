@@ -19,3 +19,14 @@ build_script:
   - qmake
   - where nmake
   - nmake
+  
+  after_build:
+  # Create a directory where we collect everything
+  - cd
+  - mkdir deploy
+  - cd deploy
+  - windeployqt --release ../build/release/YUView.exe
+  - dir
+  - dir C:\OpenSSL-Win64\bin
+  - mkdir libde265
+  - copy ..\libde265\libde265-internals.dll libde265
