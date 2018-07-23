@@ -23,7 +23,7 @@ build_script:
 after_build:
   - cd
   - mkdir deploy
-  - windeployqt --release --dir C:\projects\YUView\deploy  ../build/release/YUView.exe
+  - windeployqt --release --dir C:\projects\YUView\deploy  build\release\YUView.exe
   - copy C:\OpenSSL-Win64\bin\*.dll deploy\.
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
