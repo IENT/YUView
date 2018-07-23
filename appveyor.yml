@@ -20,8 +20,7 @@ build_script:
   - where nmake
   - nmake
   
-  after_build:
-  # Create a directory where we collect everything
+after_build:
   - cd
   - mkdir deploy
   - cd deploy
