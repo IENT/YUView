@@ -37,7 +37,7 @@ after_build:
   - cd C:\projects\YUView
   - python deployment\versioning.py -d deploy -o deploy\versioninfo.txt
   - 7z a YUView.zip deploy
-  - makensis deployment\deploy.nsi
+# - makensis deployment\deploy.nsi
   
 artifacts:
   - path: YUView.zip
