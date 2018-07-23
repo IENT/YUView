@@ -24,7 +24,7 @@ after_build:
   - cd
   - mkdir deploy
   - cd deploy
-  - windeployqt --release ../build/release/YUView.exe
+  - windeployqt --release --dir C:\projects\YUView\deploy  ../build/release/YUView.exe
   - dir
   - dir C:\OpenSSL-Win64\bin
   - mkdir libde265
