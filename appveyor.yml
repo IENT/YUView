@@ -3,6 +3,9 @@ configuration: Release
 platform:
   - x64
 clone_folder: C:\projects\YUView
+environment:
+  access_token:
+    secure: OrnQm0bZgvYKk66eRxDm/83jxiWBWrCoXigQd9u3v2lrRPXFR5x+oaFQVlc05Ize
 
 branches:
   only:
@@ -22,16 +25,18 @@ build_script:
   
 after_build:
   - cd
-  - mkdir release
-  - cd release
-  - windeployqt --release --dir C:\projects\YUView\release  ..\build\release\YUView.exe
+  - mkdir deploy
+  - cd deploy
+  - windeployqt --release --dir C:\projects\YUView\deploy  ..\build\release\YUView.exe
   - copy ..\build\release\YUView.exe .
   - copy C:\OpenSSL-Win64\bin\ssleay32.dll .
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
+  - copy ..\libde265\LICENCE.TXT libde265
+  - copy ..\LICENSE.GPL3 deploy
   - cd C:\projects\YUView
-  - python deployment\versioning.py -d release -o release\versioninfo.txt
-  - 7z a YUView.zip release
+  - python deployment\versioning.py -d deploy -o deploy\versioninfo.txt
+  - 7z a YUView.zip deploy
   - makensis deployment\deploy.nsi
   
 artifacts:
