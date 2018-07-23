@@ -50,6 +50,24 @@ typedef enum
   raw_RGB
 } RawFormat;
 
+typedef enum
+{
+  inputInvalid = -1,  // We don't know how to open the input
+  inputAnnexBHEVC,    // This is a raw HEVC annex B file
+  inputAnnexBAVC,     // This is a raw AVC annex B file
+  inputLibavformat,   // This is a container file which we will read using libavformat
+  input_NUM
+} inputFormat;
+
+typedef enum
+{
+  decoderEngineInvalid = -1,  // invalid value
+  decoderEngineLibde265,      // The libde265 decoder
+  decoderEngineHM,            // The HM reference software decoder
+  decoderEngineFFMpeg,        // The FFMpeg decoder
+  decoderEngineNum
+} decoderEngine;
+
 // Maximum possible value for int
 #ifndef INT_MAX
 #define INT_MAX 2147483647

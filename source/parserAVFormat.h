@@ -36,6 +36,7 @@
 #include "parserBase.h"
 #include "parserAnnexB.h"
 #include "FFMpegLibrariesHandling.h"
+#include "fileSourceFFmpegFile.h"
 
 /* This parser is able to parse the AVPackets and the extradata from containers read with libavformat.
  * If the bitstream within the container is a supported annexB bitstream, this parser can use that parser
@@ -50,6 +51,8 @@ public:
   void parseExtradata(QByteArray &extradata);
   void parseMetadata(QStringPairList &metadata);
   void parseAVPacket(int packetID, AVPacketWrapper &packet);
+
+  bool parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file);
 
 private:
   AVCodecSpecfier codecID;

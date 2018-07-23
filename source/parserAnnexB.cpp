@@ -32,6 +32,16 @@
 
 #include "parserAnnexB.h"
 #include <assert.h>
+#include "mainwindow.h"
+#include <QProgressdialog>
+
+#define PARSERANNEXB_DEBUG_OUTPUT 0
+#if PARSERANNEXB_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_ANNEXB qDebug
+#else
+#define DEBUG_ANNEXB(fmt,...) ((void)0)
+#endif
 
 parserAnnexB::parserAnnexB()
 {
@@ -104,4 +114,59 @@ void parserAnnexB::parseAndAddNALUnitNoThrow(int nalID, QByteArray data, TreeIte
   {
     // Catch exceptions and just return
   }
+}
+
+bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
+{
+  DEBUG_ANNEXB("playlistItemCompressedVideo::parseAnnexBFile");
+
+  // Show a modal QProgressDialog while this operation is running.
+  // If the user presses cancel, we will cancel and return false (opening the file failed).
+  // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
+  QWidget *mainWindow = MainWindow::getMainWindow();
+  // Create the dialog
+  int64_t maxPos = file->getFileSize();;
+  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
+  int curPercentValue = 0;
+  QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, 100, mainWindow);
+  progress.setMinimumDuration(1000);  // Show after 1s
+  progress.setAutoClose(false);
+  progress.setAutoReset(false);
+  progress.setWindowModality(Qt::WindowModal);
+
+  // Just push all NAL units from the annexBFile into the annexBParser
+  QByteArray nalData;
+  int nalID = 0;
+  QUint64Pair nalStartEndPosFile;
+  while (!file->atEnd())
+  {
+    // Update the progress dialog
+    if (progress.wasCanceled())
+      return false;
+    int64_t pos = file->pos();
+    int newPercentValue = pos * 100 / maxPos;
+    if (newPercentValue != curPercentValue)
+    {
+      progress.setValue(newPercentValue);
+      curPercentValue = newPercentValue;
+    }
+
+    try
+    {
+      nalData = file->getNextNALUnit(false, &nalStartEndPosFile);
+      parseAndAddNALUnit(nalID, nalData, nullptr, nalStartEndPosFile);
+    }
+    catch (...)
+    {
+      // Reading a NAL unit failed at some point.
+      // This is not too bad. Just don't use this NAL unit and continue with the next one.
+      DEBUG_ANNEXB("parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
+    }
+
+    nalID++;
+  }
+
+  // We are done.
+  parseAndAddNALUnit(-1, QByteArray());
+  return !progress.wasCanceled();
 }

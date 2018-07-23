@@ -37,6 +37,7 @@
 #include <QAbstractItemModel>
 #include "videoHandlerYUV.h"
 #include "parserBase.h"
+#include "fileSourceAnnexBFile.h"
 
 using namespace YUV_Internals;
 
@@ -86,6 +87,8 @@ public:
   virtual QPair<int,int> getSampleAspectRatio() = 0;
 
   QUint64Pair getFrameStartEndPos(int codingOrderFrameIdx);
+
+  bool parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file);
 
 protected:
   

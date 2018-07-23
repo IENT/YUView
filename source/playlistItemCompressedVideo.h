@@ -38,6 +38,7 @@
 #include "parserAVFormat.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
+#include "bitstreamAnalysisDialog.h"
 #include "ui_playlistItemCompressedFile.h"
 
 class videoHandler;
@@ -52,24 +53,6 @@ class playlistItemCompressedVideo : public playlistItemWithVideo
   Q_OBJECT
 
 public:
-
-  typedef enum
-  {
-    inputInvalid = -1,  // We don't know how to open the input
-    inputAnnexBHEVC,   // This is a raw HEVC annex B file
-    inputAnnexBAVC,    // This is a raw AVC annex B file
-    inputLibavformat,  // This is a container file which we will read using libavformat
-    input_NUM
-  } inputFormat;
-    
-  typedef enum
-  {
-    decoderEngineInvalid = -1,  // invalid value
-    decoderEngineLibde265,      // The libde265 decoder
-    decoderEngineHM,            // The HM reference software decoder
-    decoderEngineFFMpeg,        // The FFMpeg decoder
-    decoderEngineNum
-  } decoderEngine;
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
   * provide a pointer to the widget stack for the properties panels. The constructor will then call
@@ -143,7 +126,6 @@ protected:
   // In order to parse raw annexB files, we need a file reader (that can read NAL units)
   // and a parser that can understand what the NAL units mean. We open the file source twice (once for interactive loading,
   // once for the background caching). The parser is only needed once and can be used for both loading and caching tasks.
-  bool parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<parserAnnexB> &parser);
   QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBLoading;
   QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBCaching;
   QScopedPointer<parserAnnexB> inputFileAnnexBParser;
@@ -158,7 +140,6 @@ protected:
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
   // read the NAL units from the compressed file.
-  bool parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file, QScopedPointer<parserAVFormat> &parser);
   QScopedPointer<fileSourceFFmpegFile> inputFileFFmpegLoading;
   QScopedPointer<fileSourceFFmpegFile> inputFileFFmpegCaching;
   
@@ -197,6 +178,8 @@ protected:
   // If the bitstream is invalid (for example it was cut at a position that it should not be cut at), we
   // might be unable to decode some of the frames at the end of the sequence.
   bool decodingOfFrameNotPossible {false};
+
+  QScopedPointer<bitstreamAnalysisDialog> analyzer;
 
 private slots:
   // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the videoHandler if the frame that is

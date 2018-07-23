@@ -7,6 +7,7 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
+    source/bitstreamAnalysisDialog.cpp \
     source/decoderBase.cpp \
     source/decoderFFmpeg.cpp \
     source/decoderHM.cpp \
@@ -59,6 +60,7 @@ SOURCES += \
     source/yuviewapp.cpp
 
 HEADERS += \
+    source/bitstreamAnalysisDialog.h \
     source/decoderBase.h \
     source/decoderFFmpeg.h \
     source/decoderHM.h \
@@ -114,6 +116,7 @@ HEADERS += \
     source/yuviewapp.h
 
 FORMS += \
+    ui/bitstreamAnalysisDialog.ui \
     ui/frameHandler.ui \
     ui/mainwindow.ui \
     ui/mainwindow_performanceTestDialog.ui \
