@@ -23,13 +23,13 @@ build_script:
 after_build:
   - cd
   - mkdir deploy
-  - windeployqt --release --dir C:\projects\YUView\deploy  build\release\YUView.exe
-  - copy C:\OpenSSL-Win64\bin\*.dll deploy\.
+  - cd deploy
+  - windeployqt --release --dir C:\projects\YUView\deploy  ..\build\release\YUView.exe
+  - copy C:\OpenSSL-Win64\bin\*.dll .
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
-  - 7z a YUView-VS-MT.zip deploy
   - cd C:\projects\YUView
-  - cd
+  - 7z a YUView-VS-MT.zip deploy
   
 artifacts:
   - path: YUView-VS-MT.zip
