@@ -22,15 +22,18 @@ build_script:
   
 after_build:
   - cd
-  - mkdir deploy
-  - cd deploy
-  - windeployqt --release --dir C:\projects\YUView\deploy  ..\build\release\YUView.exe
-  - copy C:\OpenSSL-Win64\bin\*.dll .
+  - mkdir release
+  - cd release
+  - windeployqt --release --dir C:\projects\YUView\release  ..\build\release\YUView.exe
+  - copy ..\build\release\YUView.exe .
+  - copy C:\OpenSSL-Win64\bin\ssleay32.dll .
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
   - cd C:\projects\YUView
-  - 7z a YUView-VS-MT.zip deploy
+  - python deployment\versioning.py -d release -o release\versioninfo.txt
+  - 7z a YUView.zip release
+  - makensis deployment\deploy.nsi
   
 artifacts:
-  - path: YUView-VS-MT.zip
+  - path: YUView.zip
     name: YUView
