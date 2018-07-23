@@ -19,7 +19,7 @@ install:
   - cd
 
 build_script:
-  - C:\msys64\usr\bin\sed.exe -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g' source/typedef.h"
+  - C:\msys64\usr\bin\sed.exe -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" source/typedef.h
   - qmake
   - where nmake
   - nmake
