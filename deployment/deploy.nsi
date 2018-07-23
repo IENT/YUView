@@ -21,7 +21,7 @@
 ; Welcome page
 !insertmacro MUI_PAGE_WELCOME
 ; License page
-!insertmacro MUI_PAGE_LICENSE "LICENSE.GPL3"
+!insertmacro MUI_PAGE_LICENSE "..\deploy\LICENSE.GPL3"
 ; Directory page
 !insertmacro MUI_PAGE_DIRECTORY
 ; Start menu page
@@ -47,7 +47,7 @@ var ICONS_GROUP
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "SetupYUView.exe"
+OutFile "..\SetupYUView.exe"
 InstallDir "$PROGRAMFILES64\YUView"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -55,15 +55,117 @@ ShowUnInstDetails show
 
 XPStyle on
 
+Function VersionCompare
+	!define VersionCompare `!insertmacro VersionCompareCall`
+ 
+	!macro VersionCompareCall _VER1 _VER2 _RESULT
+		Push `${_VER1}`
+		Push `${_VER2}`
+		Call VersionCompare
+		Pop ${_RESULT}
+	!macroend
+ 
+	Exch $1
+	Exch
+	Exch $0
+	Exch
+	Push $2
+	Push $3
+	Push $4
+	Push $5
+	Push $6
+	Push $7
+ 
+	begin:
+	StrCpy $2 -1
+	IntOp $2 $2 + 1
+	StrCpy $3 $0 1 $2
+	StrCmp $3 '' +2
+	StrCmp $3 '.' 0 -3
+	StrCpy $4 $0 $2
+	IntOp $2 $2 + 1
+	StrCpy $0 $0 '' $2
+ 
+	StrCpy $2 -1
+	IntOp $2 $2 + 1
+	StrCpy $3 $1 1 $2
+	StrCmp $3 '' +2
+	StrCmp $3 '.' 0 -3
+	StrCpy $5 $1 $2
+	IntOp $2 $2 + 1
+	StrCpy $1 $1 '' $2
+ 
+	StrCmp $4$5 '' equal
+ 
+	StrCpy $6 -1
+	IntOp $6 $6 + 1
+	StrCpy $3 $4 1 $6
+	StrCmp $3 '0' -2
+	StrCmp $3 '' 0 +2
+	StrCpy $4 0
+ 
+	StrCpy $7 -1
+	IntOp $7 $7 + 1
+	StrCpy $3 $5 1 $7
+	StrCmp $3 '0' -2
+	StrCmp $3 '' 0 +2
+	StrCpy $5 0
+ 
+	StrCmp $4 0 0 +2
+	StrCmp $5 0 begin newer2
+	StrCmp $5 0 newer1
+	IntCmp $6 $7 0 newer1 newer2
+ 
+	StrCpy $4 '1$4'
+	StrCpy $5 '1$5'
+	IntCmp $4 $5 begin newer2 newer1
+ 
+	equal:
+	StrCpy $0 0
+	goto end
+	newer1:
+	StrCpy $0 1
+	goto end
+	newer2:
+	StrCpy $0 2
+ 
+	end:
+	Pop $7
+	Pop $6
+	Pop $5
+	Pop $4
+	Pop $3
+	Pop $2
+	Pop $1
+	Exch $0
+FunctionEnd
+
 Function .onInit
         # the plugins dir is automatically deleted when the installer exits
         InitPluginsDir
-        File /oname=$PLUGINSDIR\splash.bmp "images\yuview_installsplash.bmp"
+        File /oname=$PLUGINSDIR\splash.bmp "..\images\yuview_installsplash.bmp"
         advsplash::show 1000 600 400 -1 $PLUGINSDIR\splash
 
         Pop $0          ; $0 has '1' if the user closed the splash screen early,
                         ; '0' if everything closed normally, and '-1' if some error occurred.
         Delete $PLUGINSDIR\splash.bmp
+          ;Check earlier installation
+        ClearErrors
+        ReadRegStr $0 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion"
+        IfErrors init.uninst ; older versions might not have "DisplayVersion" string set
+        ${VersionCompare} $0 ${PRODUCT_VERSION} $1
+        IntCmp $1 2 init.uninst
+            MessageBox MB_YESNO|MB_ICONQUESTION "${PRODUCT_NAME} version $0 seems to be already installed on your system. We recommend to deinstall it before.$\nWould you like to proceed with the deinstallation of version ${PRODUCT_VERSION}?" \
+                IDYES init.uninst
+            Quit
+            
+init.uninst:
+  ClearErrors
+  ReadRegStr $0 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString"
+  IfErrors init.done
+  ExecWait '"$0" _?=$INSTDIR'
+  
+init.done: 
 FunctionEnd
 
 Section
@@ -71,42 +173,67 @@ SectionEnd
 
 Section "MainSection" SEC01
   SetOutPath "$INSTDIR\bearer"
-  SetOverwrite try
-  File "deploy\bearer\qgenericbearer.dll"
-  File "deploy\bearer\qnativewifibearer.dll"
+  File "..\deploy\bearer\qgenericbearer.dll"
+  SetOutPath "$INSTDIR"
+  File "..\deploy\d3dcompiler_47.dll"
+  SetOutPath "$INSTDIR\iconengines"
+  File "..\deploy\iconengines\qsvgicon.dll"
   SetOutPath "$INSTDIR\imageformats"
-  File "deploy\imageformats\qgif.dll"
-  File "deploy\imageformats\qicns.dll"
-  File "deploy\imageformats\qico.dll"
-  File "deploy\imageformats\qjpeg.dll"
-  File "deploy\imageformats\qtga.dll"
-  File "deploy\imageformats\qtiff.dll"
-  File "deploy\imageformats\qwbmp.dll"
-  File "deploy\imageformats\qwebp.dll"
-  SetOutPath "$INSTDIR"
-  File "deploy\libgcc_s_seh-1.dll"
-  File "deploy\libgomp-1.dll"
-  File "deploy\libstdc++-6.dll"
-  File "deploy\libwinpthread-1.dll"
-  File "deploy\zlib1.dll"
-  File "deploy\libeay32.dll"
-  File "deploy\ssleay32.dll"
-  SetOutPath "$INSTDIR\platforms"
-  File "deploy\platforms\qwindows.dll"
+  File "..\deploy\imageformats\qgif.dll"
+  File "..\deploy\imageformats\qicns.dll"
+  File "..\deploy\imageformats\qico.dll"
+  File "..\deploy\imageformats\qjpeg.dll"
+  File "..\deploy\imageformats\qsvg.dll"
+  File "..\deploy\imageformats\qtga.dll"
+  File "..\deploy\imageformats\qtiff.dll"
+  File "..\deploy\imageformats\qwbmp.dll"
+  File "..\deploy\imageformats\qwebp.dll"
   SetOutPath "$INSTDIR\libde265"
-  File "libde265\libde265-internals.dll"
-  File "libde265\LICENCE.txt"
-  File "libde265\README.txt"
+  File "..\deploy\libde265\libde265-internals.dll"
+  File "..\deploy\libde265\LICENCE.TXT"
   SetOutPath "$INSTDIR"
-  File "deploy\Qt5Core.dll"
-  File "deploy\Qt5Gui.dll"
-  File "deploy\Qt5Network.dll"
-  File "deploy\Qt5Widgets.dll"
-  File "deploy\Qt5Xml.dll"
-  File "deploy\versioninfo.txt"
-  File "deploy\YUView.exe"
-  File "deploy\LICENSE.GPL3"
-
+  File "..\deploy\libEGL.dll"
+  File "..\deploy\libGLESV2.dll"
+  File "..\deploy\LICENSE.GPL3"
+  File "..\deploy\opengl32sw.dll"
+  SetOutPath "$INSTDIR\platforms"
+  File "..\deploy\platforms\qwindows.dll"
+  SetOutPath "$INSTDIR"
+  File "..\deploy\Qt5Core.dll"
+  File "..\deploy\Qt5Gui.dll"
+  File "..\deploy\Qt5Network.dll"
+  File "..\deploy\Qt5Svg.dll"
+  File "..\deploy\Qt5Widgets.dll"
+  File "..\deploy\Qt5Xml.dll"
+  File "..\deploy\ssleay32.dll"
+  SetOutPath "$INSTDIR\styles"
+  File "..\deploy\styles\qwindowsvistastyle.dll"
+  SetOutPath "$INSTDIR\translations"
+  File "..\deploy\translations\qt_ar.qm"
+  File "..\deploy\translations\qt_bg.qm"
+  File "..\deploy\translations\qt_ca.qm"
+  File "..\deploy\translations\qt_cs.qm"
+  File "..\deploy\translations\qt_da.qm"
+  File "..\deploy\translations\qt_de.qm"
+  File "..\deploy\translations\qt_en.qm"
+  File "..\deploy\translations\qt_es.qm"
+  File "..\deploy\translations\qt_fi.qm"
+  File "..\deploy\translations\qt_fr.qm"
+  File "..\deploy\translations\qt_gd.qm"
+  File "..\deploy\translations\qt_he.qm"
+  File "..\deploy\translations\qt_hu.qm"
+  File "..\deploy\translations\qt_it.qm"
+  File "..\deploy\translations\qt_ja.qm"
+  File "..\deploy\translations\qt_ko.qm"
+  File "..\deploy\translations\qt_lv.qm"
+  File "..\deploy\translations\qt_pl.qm"
+  File "..\deploy\translations\qt_ru.qm"
+  File "..\deploy\translations\qt_sk.qm"
+  File "..\deploy\translations\qt_uk.qm"
+  SetOutPath "$INSTDIR"
+  File "..\deploy\vcredist_x64.exe"
+  File "..\deploy\versioninfo.txt"
+  File "..\deploy\YUView.exe"
 
 ; Shortcuts
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
@@ -163,6 +290,27 @@ Section Uninstall
   Delete "$INSTDIR\zlib1.dll"
   Delete "$INSTDIR\libeay32.dll"
   Delete "$INSTDIR\ssleay32.dll"
+  Delete "$INSTDIR\translations\qt_uk.qm"
+  Delete "$INSTDIR\translations\qt_sk.qm"
+  Delete "$INSTDIR\translations\qt_ru.qm"
+  Delete "$INSTDIR\translations\qt_pl.qm"
+  Delete "$INSTDIR\translations\qt_lv.qm"
+  Delete "$INSTDIR\translations\qt_ko.qm"
+  Delete "$INSTDIR\translations\qt_ja.qm"
+  Delete "$INSTDIR\translations\qt_it.qm"
+  Delete "$INSTDIR\translations\qt_hu.qm"
+  Delete "$INSTDIR\translations\qt_he.qm"
+  Delete "$INSTDIR\translations\qt_gd.qm"
+  Delete "$INSTDIR\translations\qt_fr.qm"
+  Delete "$INSTDIR\translations\qt_fi.qm"
+  Delete "$INSTDIR\translations\qt_es.qm"
+  Delete "$INSTDIR\translations\qt_en.qm"
+  Delete "$INSTDIR\translations\qt_de.qm"
+  Delete "$INSTDIR\translations\qt_da.qm"
+  Delete "$INSTDIR\translations\qt_cs.qm"
+  Delete "$INSTDIR\translations\qt_ca.qm"
+  Delete "$INSTDIR\translations\qt_bg.qm"
+  Delete "$INSTDIR\translations\qt_ar.qm"
   Delete "$INSTDIR\imageformats\qwebp.dll"
   Delete "$INSTDIR\imageformats\qwbmp.dll"
   Delete "$INSTDIR\imageformats\qtiff.dll"
@@ -171,17 +319,77 @@ Section Uninstall
   Delete "$INSTDIR\imageformats\qico.dll"
   Delete "$INSTDIR\imageformats\qicns.dll"
   Delete "$INSTDIR\imageformats\qgif.dll"
-  Delete "$INSTDIR\bearer\qnativewifibearer.dll"
   Delete "$INSTDIR\bearer\qgenericbearer.dll"
   Delete "$INSTDIR\libde265\libde265-internals.dll"
   Delete "$INSTDIR\libde265\LICENCE.txt"
   Delete "$INSTDIR\libde265\README.txt"
-
+  Delete "$INSTDIR\${PRODUCT_NAME}.url"
+  Delete "$INSTDIR\uninst.exe"
+  Delete "$INSTDIR\YUView.exe"
+  Delete "$INSTDIR\versioninfo.txt"
+  Delete "$INSTDIR\vcredist_x64.exe"
+  Delete "$INSTDIR\translations\qt_uk.qm"
+  Delete "$INSTDIR\translations\qt_sk.qm"
+  Delete "$INSTDIR\translations\qt_ru.qm"
+  Delete "$INSTDIR\translations\qt_pl.qm"
+  Delete "$INSTDIR\translations\qt_lv.qm"
+  Delete "$INSTDIR\translations\qt_ko.qm"
+  Delete "$INSTDIR\translations\qt_ja.qm"
+  Delete "$INSTDIR\translations\qt_it.qm"
+  Delete "$INSTDIR\translations\qt_hu.qm"
+  Delete "$INSTDIR\translations\qt_he.qm"
+  Delete "$INSTDIR\translations\qt_gd.qm"
+  Delete "$INSTDIR\translations\qt_fr.qm"
+  Delete "$INSTDIR\translations\qt_fi.qm"
+  Delete "$INSTDIR\translations\qt_es.qm"
+  Delete "$INSTDIR\translations\qt_en.qm"
+  Delete "$INSTDIR\translations\qt_de.qm"
+  Delete "$INSTDIR\translations\qt_da.qm"
+  Delete "$INSTDIR\translations\qt_cs.qm"
+  Delete "$INSTDIR\translations\qt_ca.qm"
+  Delete "$INSTDIR\translations\qt_bg.qm"
+  Delete "$INSTDIR\translations\qt_ar.qm"
+  Delete "$INSTDIR\styles\qwindowsvistastyle.dll"
+  Delete "$INSTDIR\ssleay32.dll"
+  Delete "$INSTDIR\Qt5Xml.dll"
+  Delete "$INSTDIR\Qt5Widgets.dll"
+  Delete "$INSTDIR\Qt5Svg.dll"
+  Delete "$INSTDIR\Qt5Network.dll"
+  Delete "$INSTDIR\Qt5Gui.dll"
+  Delete "$INSTDIR\Qt5Core.dll"
+  Delete "$INSTDIR\platforms\qwindows.dll"
+  Delete "$INSTDIR\opengl32sw.dll"
+  Delete "$INSTDIR\LICENSE.GPL3"
+  Delete "$INSTDIR\libGLESV2.dll"
+  Delete "$INSTDIR\libEGL.dll"
+  Delete "$INSTDIR\libde265\LICENCE.TXT"
+  Delete "$INSTDIR\libde265\libde265-internals.dll"
+  Delete "$INSTDIR\imageformats\qwebp.dll"
+  Delete "$INSTDIR\imageformats\qwbmp.dll"
+  Delete "$INSTDIR\imageformats\qtiff.dll"
+  Delete "$INSTDIR\imageformats\qtga.dll"
+  Delete "$INSTDIR\imageformats\qsvg.dll"
+  Delete "$INSTDIR\imageformats\qjpeg.dll"
+  Delete "$INSTDIR\imageformats\qico.dll"
+  Delete "$INSTDIR\imageformats\qicns.dll"
+  Delete "$INSTDIR\imageformats\qgif.dll"
+  Delete "$INSTDIR\iconengines\qsvgicon.dll"
+  Delete "$INSTDIR\d3dcompiler_47.dll"
+  Delete "$INSTDIR\bearer\qgenericbearer.dll"
+  
   Delete "$SMPROGRAMS\$ICONS_GROUP\Uninstall.lnk"
   Delete "$DESKTOP\YUView.lnk"
   Delete "$SMPROGRAMS\$ICONS_GROUP\YUView.lnk"
-
   RMDir "$SMPROGRAMS\$ICONS_GROUP"
+
+  RMDir "$INSTDIR\translations"
+  RMDir "$INSTDIR\styles"
+  RMDir "$INSTDIR\platforms"
+  RMDir "$INSTDIR\libde265"
+  RMDir "$INSTDIR\imageformats"
+  RMDir "$INSTDIR\iconengines"
+  RMDir "$INSTDIR\bearer"
+  RMDir "$INSTDIR"
   RMDir "$INSTDIR\platforms"
   RMDir "$INSTDIR\imageformats"
   RMDir "$INSTDIR\bearer"

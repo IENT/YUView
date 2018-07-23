@@ -33,12 +33,16 @@ after_build:
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
   - copy ..\libde265\LICENCE.TXT libde265
-  - copy ..\LICENSE.GPL3 deploy
+  - copy ..\LICENSE.GPL3 .
   - cd C:\projects\YUView
   - python deployment\versioning.py -d deploy -o deploy\versioninfo.txt
   - 7z a YUView.zip deploy
-# - makensis deployment\deploy.nsi
+  - makensis deployment\deploy.nsi
   
 artifacts:
   - path: YUView.zip
-    name: YUView
+    name: YUView Zip Folder
+    type: zip
+    
+  - path: SetupYUView.exe
+    name: YUView Installer
