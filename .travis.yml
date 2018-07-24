@@ -2,15 +2,15 @@ language: cpp
 
 os:
   - osx
-  
+
 # safelist
 branches:
   only:
     - deployment
-    
+
 before_install:
   - brew update
-  
+
 install:
   - brew install qt5
   - brew link --force qt5
@@ -34,12 +34,12 @@ script:
   - git rm --cached YUView-MacOs.zip
   - cp ../YUView-MacOs.zip .
   - git add . *.zip
-  - git commit --message "Travis build: $TRAVIS_BUILD_NUMBER, $TRAVIS_BUILD_ID based on $TRAVIS_COMMIT"
-  - git push --quiet
-  
+  - git commit --message "Travis build ${TRAVIS_BUILD_NUMBER}, ${TRAVIS_BUILD_ID} based on ${TRAVIS_COMMIT}"
+  - git push
+
 after_success:
   # empty
-  
+
 before_deploy:
   # empty
 deploy:
