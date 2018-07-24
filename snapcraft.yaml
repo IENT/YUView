@@ -3,10 +3,10 @@ version: git
 summary: YUView
 description: YUView - The free cross platform YUV viewer and video analysis tool
 
-grade: devel
-confinement: devmode
+grade: stable
+confinement: strict
 type: app
-icon: images/IENT-YUView-1024.png
+icon: images/IENT-YUView-64.png
 
 apps:
   YUView:
