@@ -48,8 +48,8 @@ after_build:
   - git rm --cached YUView-Win.zip SetupYUView.exe
   - git add . *.zip
   - git add . *.exe
-  - copy ../YUView-Win.zip .
-  - copy ../SetupYUView.exe .
+  - copy ..\YUView-Win.zip .
+  - copy ..\SetupYUView.exe .
   - git commit --message "Appveyor build: $env:APPVEYOR_BUILD_NUMBER, $env:APPVEYOR_BUILD_VERSION based on $env:APPVEYOR_REPO_COMMIT"
   - git push
   
