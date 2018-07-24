@@ -45,6 +45,7 @@ after_build:
   - git config --global user.name "Appveyor"
   - git clone -b deploy_win --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
   - cd YUViewReleases
+  - git rm --cached YUView-Win.zip SetupYUView.exe
   - cp ../YUView-Win.zip .
   - cp ../SetupYUView.exe .
   - git add . *.zip
