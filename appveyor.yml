@@ -43,14 +43,14 @@ after_build:
   - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
   - git config --global user.email "blaeser@ient.rwth-aachen.de"
   - git config --global user.name "Appveyor"
-  - git clone -b deploy_win --single-branch https://${GH_TOKEN}@github.com/IENT/YUViewReleases.git --depth 1
+  - git clone -b deploy_win --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
   - cd YUViewReleases
   - cp ../YUView-Win.zip .
   - cp ../SetupYUView.exe .
   - git add . *.zip
   - git add . *.exe
   - git commit --message "Apveyor build"
-  - git push --quiet 
+  - git push --quiet
   
 artifacts:
   - path: YUView-Win.zip
