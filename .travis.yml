@@ -31,10 +31,11 @@ script:
   - git config --global user.name "Travis CI"
   - git clone -b deploy_mac --single-branch https://${GH_TOKEN}@github.com/IENT/YUViewReleases.git --depth 1
   - cd YUViewReleases
+  - git rm --cached YUView-MacOs.zip
   - cp ../YUView-MacOs.zip .
   - git add . *.zip
   - git commit --message "Travis build: ${TRAVIS_BUILD_NUMBER}, ${TRAVIS_BUILD_ID} based on ${TRAVIS_COMMIT}"
-  - git push --quiet p
+  - git push --quiet
   
 after_success:
   # empty
