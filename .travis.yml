@@ -11,8 +11,8 @@ compiler:
   
 # safelist
 branches:
-  except:
-    - gh-pages
+  only:
+    - deployment
     
 before_install:
   # Setup the repository. Qt 5.7 on linux. The latest qt5 version on mac.
@@ -33,11 +33,11 @@ install:
 
 script:
   # Run qmake and make
-  - qmake
+  - qmake -config release
   - make
 
 before_deploy:
-  # Here we could package something, create zips and so on.
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then macdeployqt build/release/YUView.app; fi
 
 deploy:
   # We need the compiled files
