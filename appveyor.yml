@@ -49,7 +49,7 @@ after_build:
   - cp ../SetupYUView.exe .
   - git add . *.zip
   - git add . *.exe
-  - git commit --message "Apveyor build"
+  - git commit --message "Appveyor build: %APPVEYOR_BUILD_NUMBER%, %APPVEYOR_BUILD_VERSION% based on %APPVEYOR_REPO_COMMIT%"
   - git push --quiet
   
 artifacts:
