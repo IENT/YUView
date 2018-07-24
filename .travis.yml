@@ -44,10 +44,12 @@ script:
   - if [[ ${TRAVIS_OS_NAME} == osx ]]; then cp libde265/libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.;fi
   - if [[ ${TRAVIS_OS_NAME} == osx ]]; then zip -r YUView-MacOs.zip build/release/YUView.app; fi
   
+after_success:
+  - if [[ ${TRAVIS_OS_NAME} == osx ]]; then deployment/update_mac.sh; fi
+  
 before_deploy:
   # empty
 deploy:
-- deployment/update_mac.sh
   # We need the compiled files
   # skip_cleanup: true
   # Here we can deploy. Or it could be done in the before_deploy or after_success steps.
