@@ -39,6 +39,7 @@ script:
   - ls -alh build
   - ls -alh build/release
   - if [[ ${TRAVIS_OS_NAME} == osx ]]; then /usr/local/opt/qt5/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2;fi
+  - if [[ ${TRAVIS_OS_NAME} == osx ]]; then otool -L build/release/YUView.app/Contents/MacOs/YUView; fi
   
 before_deploy:
   # empty
