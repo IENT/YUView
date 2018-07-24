@@ -35,10 +35,13 @@ script:
   # Run qmake and make
   - qmake -config release
   - make
-
+  - ls -alh
+  - ls -alh build
+  - ls -alh build/release
+  - if [[ ${TRAVIS_OS_NAME} == osx ]]; then /usr/local/opt/qt5/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2;fi
+  
 before_deploy:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then macdeployqt build/release/YUView.app; fi
-
+  # empty
 deploy:
   # We need the compiled files
   # skip_cleanup: true
