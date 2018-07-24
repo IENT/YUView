@@ -37,11 +37,23 @@ after_build:
   - copy ..\LICENSE.GPL3 .
   - cd C:\projects\YUView
   - python deployment\versioning.py -d deploy -o deploy\versioninfo.txt
-  - 7z a YUView.zip deploy
+  - 7z a YUView-Win.zip deploy
   - makensis deployment\deploy.nsi
+  - git config --global credential.helper store
+  - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+  - git config --global user.email "blaeser@ient.rwth-aachen.de"
+  - git config --global user.name "Appveyor"
+  - git clone -b deploy_win --single-branch https://${GH_TOKEN}@github.com/IENT/YUViewReleases.git --depth 1
+  - cd YUViewReleases
+  - cp ../YUView-Win.zip .
+  - cp ../SetupYUView.exe .
+  - git add . *.zip
+  - git add . *.exe
+  - git commit --message "Apveyor build"
+  - git push --quiet 
   
 artifacts:
-  - path: YUView.zip
+  - path: YUView-Win.zip
     name: YUView Zip Folder
     type: zip
     
