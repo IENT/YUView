@@ -53,20 +53,20 @@ after_build:
   - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
   - git config --global user.email "blaeser@ient.rwth-aachen.de"
   - git config --global user.name "Appveyor"
-  - git clone -b deploy_win --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
+  - git clone -b dev --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
   - cd YUViewReleases
   # delete old files from git cache just in case
-  - git rm --ignore-unmatch --cached YUView-Win.zip SetupYUView.exe
+  - git rm --ignore-unmatch win\autoupdate\*
+  - git rm --ignore-unmatch win\installers\*
   # copy the deployment packages
-  - copy ..\YUView-Win.zip .
-  - copy ..\SetupYUView.exe .
-  - git add . *.zip
-  - git add . *.exe
+  - xcopy /E ..\deploy\* win\autoupdate\. /I/Y
+  - xcopy ..\SetupYUView.exe win\installers\ /Y
+  - xcopy ..\YUView-Win.zip win\installers\ /Y
+  - git add win\autoupdate\*
+  - git add win\installers\*
   - git status
-  # now comes and Appveyor bug: the following line is simply ignored. Why? Is it the environment variables?
-  - git commit -a --allow-empty -m "Appveyor build: $($env:APPVEYOR_BUILD_NUMBER), $($env:APPVEYOR_BUILD_VERSION) based on $($env:APPVEYOR_REPO_COMMIT)"
-  # this here actually works, but it lacks the important info, where the build is coming from
-  - git commit -a --allow-empty -m "Appveyor build"
+  # committing
+  - 'git commit -a --allow-empty -m "Appveyor commit: %APPVEYOR_BUILD_NUMBER%, %APPVEYOR_BUILD_VERSION% based on %APPVEYOR_REPO_COMMIT%"'  
   # push the finished stuff
   - git push
 
