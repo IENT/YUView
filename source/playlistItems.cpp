@@ -47,6 +47,7 @@ namespace playlistItems
     playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemVTMBMSStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
 
     // Append the filter for playlist files
     allExtensions.append("yuvplaylist");
@@ -78,6 +79,7 @@ namespace playlistItems
     playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemVTMBMSStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
 
     // Append the filter for playlist files
       allExtensions.append("yuvplaylist");
@@ -184,8 +186,20 @@ namespace playlistItems
       }
     }
 
+    // Check playlistItemVTMBMSStatisticsFile
+    {
+      QStringList allExtensions, filtersList;
+      playlistItemVTMBMSStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+
+      if (allExtensions.contains(ext))
+      {
+        playlistItemVTMBMSStatisticsFile *newStatFile = new playlistItemVTMBMSStatisticsFile(fileName);
+        return newStatFile;
+      }
+    }
+
     // Unknown file type extension. Ask the user as what file type he wants to open this file.
-    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File (Raw Annex-B)" << "FFmpeg file" << "Statistics File";
+    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File (Raw Annex-B)" << "FFmpeg file" << "Statistics File" << "VTM/BMS Statistics File";
     bool ok;
     QString asType = QInputDialog::getItem(parent, "Select file type", "The file type could not be determined from the file extension. Please select the type of the file.", types, 0, false, &ok);
     if (ok && !asType.isEmpty())
@@ -216,6 +230,12 @@ namespace playlistItems
       {
         // Statistics File
         playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
+        return newStatFile;
+      }
+      else if (asType == types[5])
+      {
+        // Statistics File
+        playlistItemVTMBMSStatisticsFile *newStatFile = new playlistItemVTMBMSStatisticsFile(fileName);
         return newStatFile;
       }
     }
@@ -251,6 +271,11 @@ namespace playlistItems
     {
       // Load the playlistItemStatisticsFile
       newItem = playlistItemStatisticsFile::newplaylistItemStatisticsFile(elem, filePath);
+    }
+    else if (elem.tagName() == "playlistItemVTMBMSStatisticsFile")
+    {
+      // Load the playlistItemVTMBMSStatisticsFile
+      newItem = playlistItemVTMBMSStatisticsFile::newplaylistItemVTMBMSStatisticsFile(elem, filePath);
     }
     else if (elem.tagName() == "playlistItemText")
     {
