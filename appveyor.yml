@@ -27,7 +27,12 @@ build_script:
   - nmake
   
 after_build:
+  - git config --global credential.helper store
+  - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+  - git config --global user.email "blaeser@ient.rwth-aachen.de"
+  - git config --global user.name "Appveyor"
   - cd
+  - git clone https://github.com/aachenmax/YUViewAddons.git --depth 1
   # create temporary folder for preparing the deployment package
   - mkdir deploy
   - cd deploy
@@ -36,7 +41,7 @@ after_build:
   # the deployment tool however does not copy the actual binary itself...strange behavior :)
   - copy ..\build\release\YUView.exe .
   # copy the OpenSSL library
-  - copy C:\OpenSSL-Win64\bin\ssleay32.dll .
+  - copy ..\YUViewAddons\libs\openssl-1.0.2j-64bit-release-DLL-VS2015\*.dll .
   # copy the modified libde265 library + license
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
@@ -49,10 +54,6 @@ after_build:
   - 7z a YUView-Win.zip deploy
   - makensis deployment\deploy.nsi
   # prepare the auto-update using YUViewReleases
-  - git config --global credential.helper store
-  - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
-  - git config --global user.email "blaeser@ient.rwth-aachen.de"
-  - git config --global user.name "Appveyor"
   - git clone -b dev --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
   - cd YUViewReleases
   # delete old files from git cache just in case
