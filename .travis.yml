@@ -3,7 +3,6 @@ language: cpp
 os:
   - osx
 
-# safelist
 branches:
   only:
     - deployment
@@ -24,25 +23,31 @@ script:
   - ls -alh build/release
   # mac specific deployment
   - /usr/local/opt/qt5/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2
+  # check what YUView is linking against
   - otool -L build/release/YUView.app/Contents/MacOs/YUView
+  # copy the libde265 library
   - cp libde265/libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.
+  # prepare zip package
   - zip -r YUView-MacOs.zip build/release/YUView.app
+  # deploy the zip file to the YUViewReleases repo
   - git config --global user.email "blaeser@ient.rwth-aachen.de"
   - git config --global user.name "Travis CI"
   - git clone -b deploy_mac --single-branch https://${GH_TOKEN}@github.com/IENT/YUViewReleases.git --depth 1
   - cd YUViewReleases
+  # delete old file from cache just in case
   - git rm --ignore-unmatch --cached YUView-MacOs.zip
+  # copy the new file
   - cp ../YUView-MacOs.zip .
   - git add . *.zip
+  # unlike Appveyor, TravisCI has no problems with environment variables..
   - git commit --allow-empty --message "Travis build ${TRAVIS_BUILD_NUMBER}, ${TRAVIS_BUILD_ID} based on ${TRAVIS_COMMIT}"
   - git push
 
 after_success:
-  # empty
+  # not needed?
 
 before_deploy:
-  # empty
+  # not needed?
 deploy:
-  # We need the compiled files
-  # skip_cleanup: true
-  # Here we can deploy. Or it could be done in the before_deploy or after_success steps.
+  # we could also put the package somewhere else
+

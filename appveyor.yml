@@ -19,42 +19,58 @@ install:
   - cd
 
 build_script:
+  # activate the automatic update feature
   - C:\msys64\usr\bin\sed.exe -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" source/typedef.h
+  # start compiling
   - qmake
   - where nmake
   - nmake
   
 after_build:
   - cd
+  # create temporary folder for preparing the deployment package
   - mkdir deploy
   - cd deploy
+  # use Qt deployment tools to copy the essential libraries
   - windeployqt --release --dir C:\projects\YUView\deploy  ..\build\release\YUView.exe
+  # the deployment tool however does not copy the actual binary itself...strange behavior :)
   - copy ..\build\release\YUView.exe .
+  # copy the OpenSSL library
   - copy C:\OpenSSL-Win64\bin\ssleay32.dll .
+  # copy the modified libde265 library + license
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
   - copy ..\libde265\LICENCE.TXT libde265
   - copy ..\LICENSE.GPL3 .
   - cd C:\projects\YUView
+  # run our versioning tool
   - python deployment\versioning.py -d deploy -o deploy\versioninfo.txt
+  # everything is ready for packaging the zip file and the installer
   - 7z a YUView-Win.zip deploy
   - makensis deployment\deploy.nsi
+  # prepare the auto-update using YUViewReleases
   - git config --global credential.helper store
   - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
   - git config --global user.email "blaeser@ient.rwth-aachen.de"
   - git config --global user.name "Appveyor"
   - git clone -b deploy_win --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
   - cd YUViewReleases
+  # delete old files from git cache just in case
   - git rm --ignore-unmatch --cached YUView-Win.zip SetupYUView.exe
+  # copy the deployment packages
   - copy ..\YUView-Win.zip .
   - copy ..\SetupYUView.exe .
   - git add . *.zip
   - git add . *.exe
   - git status
+  # now comes and Appveyor bug: the following line is simply ignored. Why? Is it the environment variables?
   - git commit -a --allow-empty -m "Appveyor build: $($env:APPVEYOR_BUILD_NUMBER), $($env:APPVEYOR_BUILD_VERSION) based on $($env:APPVEYOR_REPO_COMMIT)"
+  # this here actually works, but it lacks the important info, where the build is coming from
   - git commit -a --allow-empty -m "Appveyor build"
+  # push the finished stuff
   - git push
 
+  # also collect the artifacts here
 artifacts:
   - path: YUView-Win.zip
     name: YUView Zip Folder
