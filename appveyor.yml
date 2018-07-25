@@ -45,11 +45,11 @@ after_build:
   - git config --global user.name "Appveyor"
   - git clone -b deploy_win --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
   - cd YUViewReleases
-  - git rm --cached YUView-Win.zip SetupYUView.exe
-  - git add . *.zip
-  - git add . *.exe
+  - git rm --ignore-unmatch --cached YUView-Win.zip SetupYUView.exe
   - copy ..\YUView-Win.zip .
   - copy ..\SetupYUView.exe .
+  - git add . *.zip
+  - git add . *.exe
   - git commit --allow-empty --message "Appveyor build: $env:APPVEYOR_BUILD_NUMBER, $env:APPVEYOR_BUILD_VERSION based on $env:APPVEYOR_REPO_COMMIT"
   - git push
   
