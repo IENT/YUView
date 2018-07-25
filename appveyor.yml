@@ -50,9 +50,11 @@ after_build:
   - copy ..\SetupYUView.exe .
   - git add . *.zip
   - git add . *.exe
-  - git commit --allow-empty --message "Appveyor build: $($env:APPVEYOR_BUILD_NUMBER), $($env:APPVEYOR_BUILD_VERSION) based on $($env:APPVEYOR_REPO_COMMIT)"
+  - git status
+  - git commit -a --allow-empty -m "Appveyor build: $($env:APPVEYOR_BUILD_NUMBER), $($env:APPVEYOR_BUILD_VERSION) based on $($env:APPVEYOR_REPO_COMMIT)"
+  - git commit -a --allow-empty -m "Appveyor build"
   - git push
-  
+
 artifacts:
   - path: YUView-Win.zip
     name: YUView Zip Folder
