@@ -25,6 +25,7 @@ parts:
       - qtbase5-dev
       - libqt5gui5
       - libqt5opengl5
+      - libqt5opengl5-dev
       - libqt5xml5
       - libqt5concurrent5
       - libqt5network5
