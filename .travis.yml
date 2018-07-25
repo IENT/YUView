@@ -37,6 +37,7 @@ script:
   # delete old file from cache just in case
   - git rm --ignore-unmatch mac/*
   # copy the new file
+  - mkdir -p mac
   - cp -f ../YUView-MacOs.zip mac/.
   - git add mac/*
   # unlike Appveyor, TravisCI has no problems with environment variables..
