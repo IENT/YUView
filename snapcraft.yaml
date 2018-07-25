@@ -13,7 +13,7 @@ apps:
   YUView:
     command: desktop-launch ${SNAP}/usr/bin/YUView
     desktop: usr/share/applications/YUView.desktop 
-    plugs: [unity7, unity8, home, network, x11, wayland, desktop, desktop-legacy, opengl]
+    plugs: [home, network, x11, wayland, desktop, desktop-legacy, opengl]
 
 
 parts:
