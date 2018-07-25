@@ -34,7 +34,7 @@ script:
   - git rm --cached YUView-MacOs.zip
   - git add . *.zip
   - cp ../YUView-MacOs.zip .
-  - git commit --message "Travis build ${TRAVIS_BUILD_NUMBER}, ${TRAVIS_BUILD_ID} based on ${TRAVIS_COMMIT}"
+  - git commit --allow-empty --message "Travis build ${TRAVIS_BUILD_NUMBER}, ${TRAVIS_BUILD_ID} based on ${TRAVIS_COMMIT}"
   - git push
 
 after_success:
