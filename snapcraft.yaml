@@ -1,0 +1,38 @@
+name: yuview
+version: git
+summary: YUView
+description: YUView - The free cross platform YUV viewer and video analysis tool
+
+grade: stable
+confinement: strict
+type: app
+icon: images/IENT-YUView-64.png
+
+apps:
+  YUView:
+    command: desktop-launch ${SNAP}/usr/bin/YUView
+    desktop: usr/share/applications/YUView.desktop 
+    plugs: [unity7, unity8, home, network, x11, wayland, desktop, desktop-legacy, opengl]
+
+
+parts:
+  yuview:
+    plugin: qmake
+    source: ./
+    project-files: [YUView.pro]
+    qt-version: qt5
+    build-packages:
+      - qtbase5-dev
+      - libqt5gui5
+      - libqt5opengl5
+      - libqt5xml5
+      - libqt5concurrent5
+      - libqt5network5
+      - libqt5core5a
+    stage-packages:
+      # Here for the plugins-- they're not linked in automatically.
+      - qtbase5-dev
+      - libqt5opengl5
+      - libqt5widgets5
+    after: [desktop-qt5, indicator-qt5]
+    

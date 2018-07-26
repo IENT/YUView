@@ -503,9 +503,9 @@ namespace YUV_Internals
   YUVFormatList::YUVFormatList()
   {
     append(yuvPixelFormat(YUV_420, 8, Order_YUV)); // YUV 4:2:0
-    append(yuvPixelFormat(YUV_422, 8, Order_YUV)); // YUV 4:2:2
-    append(yuvPixelFormat(YUV_444, 8, Order_YUV)); // YUV 4:4:4
     append(yuvPixelFormat(YUV_420, 10, Order_YUV)); // YUV 4:2:0 10 bit
+    append(yuvPixelFormat(YUV_422, 8, Order_YUV)); // YUV 4:2:2
+    append(yuvPixelFormat(YUV_444, 8, Order_YUV)); // YUV 4:4:4    
   }
 
   // Put all the names of the YUVFormatList into a list and return it
@@ -3202,17 +3202,40 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
     const int nrBytesLumaPlane = (format.bitsPerSample > 8) ? componentSizeLuma * 2 : componentSizeLuma;
     const int nrBytesChromaPlane = (format.bitsPerSample > 8) ? componentSizeChroma * 2 : componentSizeChroma;
 
+    // Luma first
     const unsigned char * restrict srcY = (unsigned char*)currentFrameRawYUVData.data();
-    const unsigned char * restrict srcU = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA) ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
-    const unsigned char * restrict srcV = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA) ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
-
-    // Get the YUV data from the currentFrameRawYUVData
     const unsigned int offsetCoordinateY  = w * pixelPos.y() + pixelPos.x();
-    const unsigned int offsetCoordinateUV = (w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) + pixelPos.x() / format.getSubsamplingHor();
-
     Y = getValueFromSource(srcY, offsetCoordinateY,  format.bitsPerSample, format.bigEndian);
-    U = (format.subsampling == YUV_400) ? 0 : getValueFromSource(srcU, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
-    V = (format.subsampling == YUV_400) ? 0 : getValueFromSource(srcV, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
+
+    U = 0;
+    V = 0;
+    if (format.subsampling != YUV_400)
+    {
+      // Now Chroma
+      const bool uFirst = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA);
+      const bool hasAlpha = (format.planeOrder == Order_YUVA || format.planeOrder == Order_YVUA);
+      if (format.uvInterleaved)
+      {
+        // U, V (and alpha) are interleaved
+        const unsigned char * restrict srcUVA = srcY + nrBytesLumaPlane;
+        const unsigned int mult = hasAlpha ? 3 : 2;
+        const unsigned int offsetCoordinateUV = ((w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) + pixelPos.x() / format.getSubsamplingHor()) * mult;
+
+        U = getValueFromSource(srcUVA, offsetCoordinateUV + (uFirst ? 0 : 1), format.bitsPerSample, format.bigEndian);
+        V = getValueFromSource(srcUVA, offsetCoordinateUV + (uFirst ? 1 : 0), format.bitsPerSample, format.bigEndian);
+      }
+      else
+      {
+        const unsigned char * restrict srcU = uFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
+        const unsigned char * restrict srcV = uFirst ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
+
+        // Get the YUV data from the currentFrameRawYUVData
+        const unsigned int offsetCoordinateUV = (w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) + pixelPos.x() / format.getSubsamplingHor();
+        
+        U = getValueFromSource(srcU, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
+        V = getValueFromSource(srcV, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
+      }
+    }
   }
   else
   {
