@@ -34,6 +34,7 @@
 
 #include <QBuffer>
 #include <QFileDialog>
+#include <QHeaderView>
 #include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
