@@ -90,19 +90,35 @@ int main(int argc, char *argv[])
     settings.setValue("checkForUpdates", false);
     settings.endGroup();
   }
+  
+  bool alternativeUpdateSource = false;
+  if (is_Q_OS_WIN && args.size() == 2 && args.last() == "-debugUpdateFromTestDeploy")
+  {
+    // Do an update from the alternative URL. This way we can test upcoming updates from 
+    // an alternative source before deploying it to everybody.
+    alternativeUpdateSource = true;
+  }
 
   // If another application is opened, we will just add the given file to the playlist.
   if (WIN_LINUX_SINGLE_INSTANCE && (is_Q_OS_WIN || is_Q_OS_LINUX))
     w.connect(instance.data(), &singleInstanceHandler::newAppStarted, &w, &MainWindow::loadFiles);
 
-  if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && args.size() == 2 && args.last() == "updateElevated")
+  if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && args.size() == 2)
   {
+    if (args.last() == "updateElevated")
+    {
+      w.forceUpdateElevated(false);
+      args.removeLast();
+    }
+    else if (args.last() == "updateElevatedAltSource")
+    {
+      w.forceUpdateElevated(true);
+      args.removeLast();
+    }
     // The process should now be elevated and we will force an update
-    w.forceUpdateElevated();
-    args.removeLast();
   }
   else
-    w.autoUpdateCheck();
+    w.autoUpdateCheck(alternativeUpdateSource);
 
   QStringList fileList = args.mid(1);
   if (!fileList.empty())
