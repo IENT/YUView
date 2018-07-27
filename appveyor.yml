@@ -67,7 +67,7 @@ after_build:
   - git add win\installers\*
   - git status
   # committing
-  - 'git commit -a --allow-empty -m "Appveyor commit: %APPVEYOR_BUILD_NUMBER%, %APPVEYOR_BUILD_VERSION% based on %APPVEYOR_REPO_COMMIT%"'  
+  - 'git commit -a --allow-empty -m "Appveyor build %APPVEYOR_BUILD_NUMBER%, %APPVEYOR_BUILD_VERSION% based on %APPVEYOR_REPO_COMMIT%"'  
   # push the finished stuff
   - git push
 
