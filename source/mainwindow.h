@@ -59,10 +59,10 @@ private:
   
 public:
   // Check for a new update (if we do this automatically)
-  void autoUpdateCheck() { updater->startCheckForNewVersion(false); }
+  void autoUpdateCheck(bool alternativeSource) { updater->startCheckForNewVersion(false, false, alternativeSource); }
   // The application was restarted with elevated rights. Force an update now.
   // This is a NO-OP on platforms other than windows.
-  void forceUpdateElevated() { updater->forceUpdateElevated(); }
+  void forceUpdateElevated(bool alternativeSource) { updater->forceUpdateElevated(alternativeSource); }
   
 public slots:
   void loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles(files); }

@@ -87,10 +87,10 @@ public:
 
 public slots:
   // Send the request to check for a new version of YUView
-  void startCheckForNewVersion(bool userRequest=true, bool force=false);
+  void startCheckForNewVersion(bool userRequest=true, bool force=false, bool alternativeSource=false);
 
   // The windows process should have elevated rights now and we can do the update
-  void forceUpdateElevated();
+  void forceUpdateElevated(bool alternativeSource);
 
 private slots:
   void replyFinished(QNetworkReply *reply);
@@ -117,11 +117,12 @@ private:
     updaterChecking,            // The updater is currently checking for an update. Don't start another check.
     updaterDownloading          // The updater is currently donwloading/installing updates. Do not start another check for updates.
   };
-  updaterStatusEnum updaterStatus;
+  updaterStatusEnum updaterStatus { updaterIdle };
 
-  bool userCheckRequest;  //< The request has been issued by the user.
-  bool elevatedRights;    // On windows this can indicate if the process should have elevated rights
-  bool forceUpdate;       // If an update is availabe and this is set, we will just install the update no matter what
+  bool userCheckRequest      { false }; //< The request has been issued by the user.
+  bool elevatedRights        { false }; // On windows this can indicate if the process should have elevated rights
+  bool forceUpdate           { false }; // If an update is availabe and this is set, we will just install the update no matter what
+  bool useAlternativeSources { false }; // Use the alternative (test) source to get the update files
 
   // The list or remote files we are downloading. For each file, we keep the path and name and it's size in bytes.
   QList<QPair<QString, int>> downloadFiles;

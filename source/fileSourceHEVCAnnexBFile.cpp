@@ -1062,6 +1062,7 @@ fileSourceHEVCAnnexBFile::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc
   // When not present, the value of dependent_slice_segment_flag is inferred to be equal to 0.
   dependent_slice_segment_flag = false;
   pic_output_flag = true;
+  slice_pic_order_cnt_lsb = 0;
   short_term_ref_pic_set_sps_flag = false;
   short_term_ref_pic_set_idx = 0;
   num_long_term_sps = 0;
@@ -1179,10 +1180,6 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
       }
       if(actSPS->sps_temporal_mvp_enabled_flag)
         READFLAG(slice_temporal_mvp_enabled_flag)
-    }
-    else 
-    {
-      slice_pic_order_cnt_lsb = 0;
     }
 
     if(actSPS->sample_adaptive_offset_enabled_flag)
