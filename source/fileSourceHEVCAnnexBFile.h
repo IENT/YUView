@@ -45,7 +45,7 @@ class fileSourceHEVCAnnexBFile : public fileSourceAnnexBFile
   Q_OBJECT
 
 public:
-  fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; pocCounterOffset = 0; }
+  fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; pocCounterOffset = 0; maxPOCCount = -1; }
   ~fileSourceHEVCAnnexBFile() {}
 
   // What it the framerate?
