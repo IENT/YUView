@@ -7,14 +7,17 @@ grade: stable
 confinement: strict
 type: app
 icon: images/IENT-YUView-64.png
-architectures: [amd64, i386]
+architectures: 
+  - build-on: amd64
+    run-on: amd64
 
 apps:
   YUView:
     command: desktop-launch ${SNAP}/usr/bin/YUView
     desktop: usr/share/applications/YUView.desktop 
     plugs: [home, network, x11, wayland, desktop, desktop-legacy, opengl]
-
+    environment: 
+        QT_NO_FT_CACHE: 1
 
 parts:
   yuview:
@@ -37,4 +40,9 @@ parts:
       - libqt5opengl5
       - libqt5widgets5
     after: [desktop-qt5, indicator-qt5]
-    
+  libde265:
+    source-type:    git
+    source-branch: internal
+    plugin:         cmake
+    configflags: ["-DONLY_LIB=ON"]
+    source: https://github.com/nolyn/libde265.git
