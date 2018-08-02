@@ -28,7 +28,9 @@ script:
   # copy the libde265 library
   - cp libde265/libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.
   # prepare zip package
-  - zip -r YUView-MacOs.zip build/release/YUView.app
+  - cd build/release
+  - zip -r ../../YUView-MacOs.zip YUView.app
+  - cd ../..
   # deploy the zip file to the YUViewReleases repo
   - git config --global user.email "blaeser@ient.rwth-aachen.de"
   - git config --global user.name "Travis CI"
