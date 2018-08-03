@@ -13,7 +13,9 @@ branches:
   
 install:
   - '"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64'
-  - set QTDIR=C:\Qt\5.11.1\msvc2015_64
+  - cd C:\projects
+  - git clone https://github.com/aachenmax/Qt-5.11.1.git
+  - set QTDIR=C:\projects\Qt-5.11.1
   - set PATH=%PATH%;%QTDIR%\bin
   - cd C:\projects\YUView
   - cd
