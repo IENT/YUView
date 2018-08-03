@@ -59,6 +59,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   // "Generals" tab
   ui.checkBoxWatchFiles->setChecked(settings.value("WatchFiles", true).toBool());
   ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection", false).toBool());
+  ui.checkBoxAskToSave->setChecked(settings.value("AskToSaveOnExit", true).toBool());
   // UI
   QString theme = settings.value("Theme", "Default").toString();
   int themeIdx = getThemeNameList().indexOf(theme);
