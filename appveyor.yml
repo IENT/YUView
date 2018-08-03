@@ -39,7 +39,7 @@ after_build:
   - mkdir deploy
   - cd deploy
   # use Qt deployment tools to copy the essential libraries
-  - windeployqt --release --dir C:\projects\YUView\deploy  ..\build\release\YUView.exe
+  - windeployqt --dir C:\projects\YUView\deploy  ..\build\release\YUView.exe
   # the deployment tool however does not copy the actual binary itself...strange behavior :)
   - copy ..\build\release\YUView.exe .
   # copy the OpenSSL library
