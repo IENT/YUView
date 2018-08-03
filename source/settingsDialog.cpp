@@ -308,6 +308,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // "General" tab
   settings.setValue("WatchFiles", ui.checkBoxWatchFiles->isChecked());
   settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
+  settings.setValue("AskToSaveOnExit", ui.checkBoxAskToSave->isChecked());
   // UI
   settings.setValue("Theme", ui.comboBoxTheme->currentText());
   settings.setValue("SplitViewLineStyle", ui.comboBoxSplitLineStyle->currentText());
