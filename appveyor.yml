@@ -24,7 +24,7 @@ build_script:
   # activate the automatic update feature
   - C:\msys64\usr\bin\sed.exe -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" source/typedef.h
   # start compiling
-  - qmake
+  - C:\projects\Qt-5.11.1\bin\qmake.exe
   - where nmake
   - nmake
   
