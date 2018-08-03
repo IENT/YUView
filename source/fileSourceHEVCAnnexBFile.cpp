@@ -281,14 +281,20 @@ void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_rea
   if (maxNumSubLayersMinus1 >= 8)
     throw std::logic_error("The value of maxNumSubLayersMinus1 must be in the range of 0 to 7");
 
-  for(int i = 0; i <= maxNumSubLayersMinus1; i++) 
+  for(int i = 0; i <= maxNumSubLayersMinus1; i++)
   {
     READFLAG(fixed_pic_rate_general_flag[i]);
     if (!fixed_pic_rate_general_flag[i])
+    {
       READFLAG(fixed_pic_rate_within_cvs_flag[i]);
+    }
+    else
+    {
+      fixed_pic_rate_within_cvs_flag[i] = 1;
+    }
     if (fixed_pic_rate_within_cvs_flag[i])
     {
-      READFLAG(elemental_duration_in_tc_minus1[i]);
+      READUEV(elemental_duration_in_tc_minus1[i]);
       low_delay_hrd_flag[i] = false;
     }
     else
