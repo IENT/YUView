@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>408</width>
-    <height>470</height>
+    <width>525</width>
+    <height>492</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -50,6 +50,16 @@
          </property>
          <property name="text">
           <string>Continue playback when a new sequence is selected</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBoxAskToSave">
+         <property name="text">
+          <string>Ask to save playlist on exit</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
