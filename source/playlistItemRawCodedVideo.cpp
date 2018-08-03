@@ -391,8 +391,9 @@ ValuePairListSets playlistItemRawCodedVideo::getPixelValues(const QPoint &pixelP
 void playlistItemRawCodedVideo::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
   allExtensions.append("hevc");
+  allExtensions.append("265");
   allExtensions.append("bin");
-  filters.append("Annex B raw coded video (*.hevc, *.bin)");
+  filters.append("Annex B raw coded video (*.hevc, *.265, *.bin)");
 }
 
 void playlistItemRawCodedVideo::reloadItemSource()

@@ -269,7 +269,8 @@ void MainWindow::updateRecentFileActions()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-  if (!ui.playlistTreeWidget->getIsSaved())
+  QSettings settings;
+  if (!ui.playlistTreeWidget->getIsSaved() && settings.value("AskToSaveOnExit", true).toBool())
   {
     QMessageBox::StandardButton resBtn = QMessageBox::question(this, "Quit YUView",
       tr("You have not saved the current playlist, are you sure?\n"),
