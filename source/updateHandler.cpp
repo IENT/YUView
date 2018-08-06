@@ -556,9 +556,9 @@ void updateHandler::downloadNextFile()
   DEBUG_UPDATE("updateHandler::downloadNextFile %s", currentDownloadFile);
   QString fullURL;
   if (useAlternativeSources)
-    fullURL = UPDATEFILEHANDLER_URL + currentDownloadFile.first;
-  else
     fullURL = UPDATEFILEHANDLER_TESTDEPLOY_URL + currentDownloadFile.first;
+  else
+    fullURL = UPDATEFILEHANDLER_URL + currentDownloadFile.first;
   QNetworkReply *reply = networkManager.get(QNetworkRequest(QUrl(fullURL)));
   connect(reply, &QNetworkReply::downloadProgress, this, &updateHandler::updateDownloadProgress);
 }
