@@ -13,9 +13,10 @@ branches:
   
 install:
   - '"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64'
-  - cd C:\projects
-  - git clone https://github.com/aachenmax/Qt-5.11.1.git
-  - set QTDIR=C:\projects\Qt-5.11.1
+#  - cd C:\projects
+#  - git clone https://github.com/aachenmax/Qt-5.11.1.git
+#  - set QTDIR=C:\projects\Qt-5.11.1
+  - set QTDIR=C:\Qt\5.11.1\msvc2015_64
   - set PATH=%PATH%;%QTDIR%\bin
   - cd C:\projects\YUView
   - cd
@@ -38,19 +39,20 @@ after_build:
   # create temporary folder for preparing the deployment package
   - mkdir deploy
   - cd deploy
+  - windeployqt --release --dir C:\projects\YUView\deploy  ..\build\release\YUView.exe
   # deploy the needed dlls
-  - mkdir bearer imageformats platforms styles
-  - copy /Y %QTDIR%\bin\Qt5Core.dll .
-  - copy /Y %QTDIR%\bin\Qt5Gui.dll .
-  - copy /Y %QTDIR%\bin\Qt5Network.dll .
-  - copy /Y %QTDIR%\bin\Qt5Widgets.dll .
-  - copy /Y %QTDIR%\bin\Qt5OpenGL.dll .
-  - copy /Y %QTDIR%\bin\Qt5Xml.dll .
-  - copy /Y %QTDIR%\bin\Qt5Concurrent.dll .
-  - copy /Y %QTDIR%\plugins\bearer\qgenericbearer.dll bearer\.
-  - copy /Y %QTDIR%\plugins\imageformats\*.dll imageformats\.
-  - copy /Y %QTDIR%\plugins\platforms\qwindows.dll platforms\.
-  - copy /Y %QTDIR%\plugins\styles\qwindowsvistastyle.dll styles\.
+  #- mkdir bearer imageformats platforms styles
+  #- copy /Y %QTDIR%\bin\Qt5Core.dll .
+  #- copy /Y %QTDIR%\bin\Qt5Gui.dll .
+  #- copy /Y %QTDIR%\bin\Qt5Network.dll .
+  #- copy /Y %QTDIR%\bin\Qt5Widgets.dll .
+  #- copy /Y %QTDIR%\bin\Qt5OpenGL.dll .
+  #- copy /Y %QTDIR%\bin\Qt5Xml.dll .
+  #- copy /Y %QTDIR%\bin\Qt5Concurrent.dll .
+  #- copy /Y %QTDIR%\plugins\bearer\qgenericbearer.dll bearer\.
+  #- copy /Y %QTDIR%\plugins\imageformats\*.dll imageformats\.
+  #- copy /Y %QTDIR%\plugins\platforms\qwindows.dll platforms\.
+  #- copy /Y %QTDIR%\plugins\styles\qwindowsvistastyle.dll styles\.
   # copy the actual binary itself...
   - copy ..\build\release\YUView.exe .
   # copy the OpenSSL library
