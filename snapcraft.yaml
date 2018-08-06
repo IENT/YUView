@@ -15,7 +15,6 @@ apps:
   YUView:
     command: desktop-launch ${SNAP}/usr/bin/YUView
     desktop: usr/share/applications/YUView.desktop 
-    plugs: [home, network, x11, wayland, desktop, desktop-legacy, opengl]
     environment: 
         QT_NO_FT_CACHE: 1
 
