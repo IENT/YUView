@@ -4,7 +4,7 @@ summary: YUView
 description: YUView - The free cross platform YUV viewer and video analysis tool
 
 grade: stable
-confinement: strict
+confinement: classic
 type: app
 icon: images/IENT-YUView-64.png
 architectures: 
