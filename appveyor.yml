@@ -47,7 +47,7 @@ after_build:
   - copy /Y %QTDIR%\bin\Qt5OpenGL.dll .
   - copy /Y %QTDIR%\bin\Qt5Xml.dll .
   - copy /Y %QTDIR%\bin\Qt5Concurrent.dll .
-  - copy /Y %QTDIR%\plugins\bearer\qgenericbearer.dll plugins\.
+  - copy /Y %QTDIR%\plugins\bearer\qgenericbearer.dll bearer\.
   - copy /Y %QTDIR%\plugins\imageformats\*.dll imageformats\.
   - copy /Y %QTDIR%\plugins\platforms\qwindows.dll platforms\.
   - copy /Y %QTDIR%\plugins\styles\qwindowsvistastyle.dll styles\.
