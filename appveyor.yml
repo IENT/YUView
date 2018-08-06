@@ -38,9 +38,20 @@ after_build:
   # create temporary folder for preparing the deployment package
   - mkdir deploy
   - cd deploy
-  # use Qt deployment tools to copy the essential libraries
-  - windeployqt --dir C:\projects\YUView\deploy  ..\build\release\YUView.exe
-  # the deployment tool however does not copy the actual binary itself...strange behavior :)
+  # deploy the needed dlls
+  - mkdir bearer imageformats platforms styles
+  - copy /Y %QTDIR%\bin\Qt5Core.dll .
+  - copy /Y %QTDIR%\bin\Qt5Gui.dll .
+  - copy /Y %QTDIR%\bin\Qt5Network.dll .
+  - copy /Y %QTDIR%\bin\Qt5Widgets.dll .
+  - copy /Y %QTDIR%\bin\Qt5OpenGL.dll .
+  - copy /Y %QTDIR%\bin\Qt5Xml.dll .
+  - copy /Y %QTDIR%\bin\Qt5Concurrent.dll .
+  - copy /Y %QTDIR%\plugins\bearer\qgenericbearer.dll plugins\.
+  - copy /Y %QTDIR%\plugins\imageformats\*.dll imageformats\.
+  - copy /Y %QTDIR%\plugins\platforms\qwindows.dll platforms\.
+  - copy /Y %QTDIR%\plugins\styles\qwindowsvistastyle.dll styles\.
+  # copy the actual binary itself...
   - copy ..\build\release\YUView.exe .
   # copy the OpenSSL library
   - copy ..\YUViewAddons\libs\openssl-1.0.2j-64bit-release-DLL-VS2015\*.dll .
