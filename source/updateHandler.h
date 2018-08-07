@@ -83,14 +83,14 @@ class updateHandler : public QObject
 
 public:
   // Construct a new update handler. The mainWindows pointer is used if a dialog is shown.
-  updateHandler(QWidget *mainWindow);
+  updateHandler(QWidget *mainWindow, bool useAlternativeSources);
 
 public slots:
   // Send the request to check for a new version of YUView
-  void startCheckForNewVersion(bool userRequest=true, bool force=false, bool alternativeSource=false);
+  void startCheckForNewVersion(bool userRequest=true, bool force=false);
 
   // The windows process should have elevated rights now and we can do the update
-  void forceUpdateElevated(bool alternativeSource);
+  void forceUpdateElevated();
 
 private slots:
   void replyFinished(QNetworkReply *reply);

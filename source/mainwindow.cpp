@@ -43,7 +43,7 @@
 #include "playlistItems.h"
 #include "settingsDialog.h"
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindow(parent)
 {
   QSettings settings;
   qRegisterMetaType<indexRange>("indexRange");
@@ -57,7 +57,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   ui.setupUi(this);
 
   // Create the update handler
-  updater.reset(new updateHandler(this));
+  updater.reset(new updateHandler(this, useAlternativeSources));
 
   setFocusPolicy(Qt::StrongFocus);
 

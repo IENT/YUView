@@ -50,7 +50,7 @@ class MainWindow : public QMainWindow
   Q_OBJECT
 
 public:
-  explicit MainWindow(QWidget *parent = 0);
+  explicit MainWindow(bool useAlternativeSources, QWidget *parent = 0);
 
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   
@@ -59,10 +59,10 @@ private:
   
 public:
   // Check for a new update (if we do this automatically)
-  void autoUpdateCheck(bool alternativeSource) { updater->startCheckForNewVersion(false, false, alternativeSource); }
+  void autoUpdateCheck() { updater->startCheckForNewVersion(false, false); }
   // The application was restarted with elevated rights. Force an update now.
   // This is a NO-OP on platforms other than windows.
-  void forceUpdateElevated(bool alternativeSource) { updater->forceUpdateElevated(alternativeSource); }
+  void forceUpdateElevated() { updater->forceUpdateElevated(); }
   
 public slots:
   void loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles(files); }
