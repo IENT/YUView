@@ -63,12 +63,14 @@ after_build:
   - copy ..\libde265\libde265-internals.dll libde265
   - copy ..\libde265\LICENCE.TXT libde265
   - copy ..\LICENSE.GPL3 .
+  # delete junk that is not needed
+  - del /F /Q vcredist*
   - cd C:\projects\YUView
   # run our versioning tool
   - python deployment\versioning.py -d deploy -o deploy\versioninfo.txt
   - dir /s /b deploy
   # everything is ready for packaging the zip file and the installer
-  - 7z a YUView-Win.zip deploy
+  - 7z a YUView-Win.zip .\deploy\*
   - makensis deployment\deploy.nsi
   # prepare the auto-update using YUViewReleases
   - git clone -b dev --single-branch https://github.com/IENT/YUViewReleases.git --depth 1

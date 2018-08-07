@@ -205,7 +205,6 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR\styles"
   File "..\deploy\styles\qwindowsvistastyle.dll"
   SetOutPath "$INSTDIR"
-  File "..\deploy\vcredist_x64.exe"
   File "..\deploy\versioninfo.txt"
   File "..\deploy\YUView.exe"
 
