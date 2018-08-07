@@ -203,13 +203,14 @@ private:
 
 // ------------------ updateHandler -----------------
 
-updateHandler::updateHandler(QWidget *mainWindow) :
+updateHandler::updateHandler(QWidget *mainWindow, bool useAltSources) :
   mainWidget(mainWindow)
 {
   // We always perform the update in the path that the current executable is located in
   // and not in the current working directory.
   QFileInfo info(QCoreApplication::applicationFilePath());
   updatePath = info.absolutePath() + "/";
+  useAlternativeSources = useAltSources;
 
   connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::replyFinished);
   connect(&networkManager, &QNetworkAccessManager::sslErrors, this, &updateHandler::sslErrors);
@@ -250,13 +251,12 @@ void updateHandler::sslErrors(QNetworkReply *reply, const QList<QSslError> &erro
 }
 
 // Start the asynchronous checking for an update.
-void updateHandler::startCheckForNewVersion(bool userRequest, bool force, bool alternativeSource)
+void updateHandler::startCheckForNewVersion(bool userRequest, bool force)
 {
   QSettings settings;
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
   forceUpdate = force;
-  useAlternativeSources = alternativeSource;
   settings.endGroup();
   if (!userRequest && !checkForUpdates && !forceUpdate)
     // The user did not request this, we are not automatocally checking for updates and it is not a forced check. Abort.
@@ -661,7 +661,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
   }
 }
 
-void updateHandler::forceUpdateElevated(bool alternativeSource)
+void updateHandler::forceUpdateElevated()
 {
   //// Wait. Use this code to attach a debugger to the new YUView instance with elevated rights.
   //bool wait = true;
@@ -669,8 +669,6 @@ void updateHandler::forceUpdateElevated(bool alternativeSource)
   //{
   //  QThread::sleep(1);
   //}
-
-  useAlternativeSources = alternativeSource;
 
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN)
   {
