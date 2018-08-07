@@ -66,6 +66,7 @@ after_build:
   - cd C:\projects\YUView
   # run our versioning tool
   - python deployment\versioning.py -d deploy -o deploy\versioninfo.txt
+  - dir /s /b deploy
   # everything is ready for packaging the zip file and the installer
   - 7z a YUView-Win.zip deploy
   - makensis deployment\deploy.nsi
