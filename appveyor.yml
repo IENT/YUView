@@ -13,10 +13,10 @@ branches:
   
 install:
   - '"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64'
-#  - cd C:\projects
-#  - git clone https://github.com/aachenmax/Qt-5.11.1.git
-#  - set QTDIR=C:\projects\Qt-5.11.1
-  - set QTDIR=C:\Qt\5.11.1\msvc2015_64
+  - cd C:\projects
+  - git clone https://github.com/ChristianFeldmann/Qt5-YUView-MT Qt --depth 1
+  - set QTDIR=C:\projects\Qt\5.11-release
+  # - set QTDIR=C:\Qt\5.11.1\msvc2015_64
   - set PATH=%PATH%;%QTDIR%\bin
   - cd C:\projects\YUView
   - cd
@@ -35,7 +35,7 @@ after_build:
   - git config --global user.email "blaeser@ient.rwth-aachen.de"
   - git config --global user.name "Appveyor"
   - cd
-  - git clone https://github.com/aachenmax/YUViewAddons.git --depth 1
+# - git clone https://github.com/aachenmax/YUViewAddons.git --depth 1
   # create temporary folder for preparing the deployment package
   - mkdir deploy
   - cd deploy
@@ -56,7 +56,8 @@ after_build:
   # copy the actual binary itself...
   - copy ..\build\release\YUView.exe .
   # copy the OpenSSL library
-  - copy ..\YUViewAddons\libs\openssl-1.0.2j-64bit-release-DLL-VS2015\*.dll .
+ # - copy ..\YUViewAddons\libs\openssl-1.0.2j-64bit-release-DLL-VS2015\*.dll .
+  - copy C:\projects\Qt\openSSL\*.dll .
   # copy the modified libde265 library + license
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
