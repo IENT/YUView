@@ -12,7 +12,7 @@ architectures:
     run-on: amd64
 
 apps:
-  YUView:
+  yuview:
     command: desktop-launch ${SNAP}/usr/bin/YUView
     desktop: usr/share/applications/YUView.desktop 
     plugs: [home, network, x11, wayland, desktop, desktop-legacy, opengl, gsettings, removable-media]
