@@ -146,15 +146,28 @@ OTHER_FILES += \
     docs/about.html \
     docs/help.html
 
-target.path = /usr/bin/
+unix {
+	isEmpty(PREFIX) {
+		PREFIX = /usr/local
+	}
+	isEmpty(BINDIR) {
+		BINDIR = bin
+	}
 
-desktop.path = /usr/share/applications
-desktop.files = YUView.desktop
+	target.path = $$PREFIX/$$BINDIR/
 
-icon64.path = /usr/share/pixmaps
-icon64.files += images/IENT-YUView-64.png
+	data.files = ../data/*
+	data.path = $$PREFIX/share/tanglet/data/
 
-INSTALLS += target desktop icon64
+        icon.files += images/IENT-YUView-64.png
+	icon.path = $$PREFIX/share/icons/hicolor/
+
+        desktop.files = YUView.desktop
+        desktop.path = $$PREFIX/share/applications/
+
+	INSTALLS += target icon desktop
+}
+
 
 contains(QT_ARCH, x86_32|i386) {
     warning("You are building for a 32 bit system. This is untested!")
