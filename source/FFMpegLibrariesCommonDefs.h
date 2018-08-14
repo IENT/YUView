@@ -462,6 +462,7 @@ namespace FFmpeg
       {
         isTypeHEVC = (id == (AVCodecID)173);
         isTypeAVC = (id == (AVCodecID)27);
+        isTypeAV1 = (id == (AVCodecID)32797);
       }
       isTypeMpeg2 = (id == (AVCodecID)2);
     }
@@ -475,20 +476,25 @@ namespace FFmpeg
         id = (avCodecVersion == 56 || avCodecVersion == 57) ? (AVCodecID)174 : (AVCodecID)173;
       else if (isAVC())
         id = (avCodecVersion == 56 || avCodecVersion == 57) ? (AVCodecID)28 : (AVCodecID)27;
+      else if (isAV1())
+        id = (avCodecVersion == 58) ? (AVCodecID)32797 : (AVCodecID)-1;
       return id;
     }
     bool isHEVC()  { return isTypeHEVC; }
     bool isAVC()   { return isTypeAVC;  }
     bool isMpeg2() { return isTypeMpeg2; }
-    void setTypeHEVC()  { if (id == AV_CODEC_ID_NONE && !isTypeAVC && !isTypeMpeg2) isTypeHEVC = true; }
-    void setTypeAVC()   { if (id == AV_CODEC_ID_NONE && !isTypeHEVC && !isTypeMpeg2) isTypeAVC = true; }
-    void setTypeMpeg2() { if (id == AV_CODEC_ID_NONE && !isTypeHEVC && !isTypeAVC) isTypeMpeg2 = true; }
+    bool isAV1()   { return isTypeAV1; }
+    void setTypeHEVC()  { if (id == AV_CODEC_ID_NONE && !isTypeAVC && !isTypeMpeg2 && !isTypeAV1) isTypeHEVC = true; }
+    void setTypeAVC()   { if (id == AV_CODEC_ID_NONE && !isTypeHEVC && !isTypeMpeg2 && !isTypeAV1) isTypeAVC = true; }
+    void setTypeMpeg2() { if (id == AV_CODEC_ID_NONE && !isTypeHEVC && !isTypeAVC && !isTypeAV1) isTypeMpeg2 = true; }
+    void setTypeAV1()   { if (id == AV_CODEC_ID_NONE && !isTypeHEVC && !isTypeAVC && !isTypeMpeg2) isTypeAV1 = true; }
   private:
     AVCodecID id {AV_CODEC_ID_NONE};
     
     bool isTypeHEVC  {false};
     bool isTypeAVC   {false};
     bool isTypeMpeg2 {false};
+    bool isTypeAV1   {false};
   };
 
   enum AVColorPrimaries 
