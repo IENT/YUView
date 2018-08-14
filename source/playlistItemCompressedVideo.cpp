@@ -47,8 +47,8 @@
 #include "videoHandlerRGB.h"
 #include "mainwindow.h"
 
-#define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
-#if COMPRESSED_VIDEO_DEBUG_OUTPUT && !NDEBUG
+#define COMPRESSED_VIDEO_DEBUG_OUTPUT 1
+#if COMPRESSED_VIDEO_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_COMPRESSED qDebug
 #else
@@ -312,21 +312,29 @@ infoData playlistItemCompressedVideo::getInfo() const
   // At first append the file information part (path, date created, file size...)
   // info.items.append(loadingDecoder->getFileInfoList());
 
-  if (unresolvableError)
+  info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
+  if (inputFileFFmpegLoading)
   {
-    info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
+    QStringList l = inputFileFFmpegLoading->getLibraryPaths();
+    if (l.length() % 3 == 0)
+    {
+      for (int i=0; i<l.length()/3; i++)
+        info.items.append(infoItem(l[i*3], l[i*3+1], l[i*3+2]));
+    }
   }
-  else
+  if (!unresolvableError)
   {
-    info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
-    if (inputFileFFmpegLoading)
-      info.items.append(infoItem("reader lib", inputFileFFmpegLoading->getLibraryPath(), "The path to the loaded reader library"));
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num POCs", QString::number(startEndFrame.second), "The number of pictures in the stream."));
     if (decodingEnabled)
     {
-      info.items.append(infoItem("decoder lib", loadingDecoder->getLibraryPath(), "The path to the loaded decoder library"));
+      QStringList l = loadingDecoder->getLibraryPaths();
+      if (l.length() % 3 == 0)
+      {
+        for (int i=0; i<l.length()/3; i++)
+          info.items.append(infoItem(l[i*3], l[i*3+1], l[i*3+2]));
+      }
       info.items.append(infoItem("Decoder", loadingDecoder->getDecoderName()));
       info.items.append(infoItem("Decoder", loadingDecoder->getCodecName()));
       info.items.append(infoItem("Statistics", loadingDecoder->statisticsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
@@ -852,7 +860,7 @@ void playlistItemCompressedVideo::getSupportedFileExtensions(QStringList &allExt
   QStringList ext;
   ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "cgi" << "ivr" << "lvf"
       << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" << "mjpeg" << "mpg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" << "mvi" << "mxg" << "v" << "ogg" 
-      << "mjpg" << "viv" << "xmv" << "ts" << "mxf";
+      << "mjpg" << "viv" << "webm" << "xmv" << "ts" << "mxf";
   QString filtersString = "FFMpeg files (";
   for (QString e : ext)
     filtersString.append(QString("*.%1").arg(e));

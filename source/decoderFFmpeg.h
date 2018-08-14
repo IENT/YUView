@@ -57,9 +57,9 @@ public:
   // What statistics do we support?
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
 
-  QString getLibraryPath() const Q_DECL_OVERRIDE { return ff.getLibPath(); }
-  QString getDecoderName() const Q_DECL_OVERRIDE { return "FFmpeg"; }
-  QString getCodecName()         Q_DECL_OVERRIDE;
+  QStringList getLibraryPaths() const Q_DECL_OVERRIDE { return ff.getLibPaths(); }
+  QString     getDecoderName()  const Q_DECL_OVERRIDE { return "FFmpeg"; }
+  QString     getCodecName()          Q_DECL_OVERRIDE;
 
   static QStringList getLogMessages() { return FFmpegVersionHandler::getLogMessages(); }
 

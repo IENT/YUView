@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -32,6 +32,10 @@
 
 #include "parserBase.h"
 #include <assert.h>
+
+parserBase::~parserBase()
+{
+}
 
 QVariant parserBase::NALUnitModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
