@@ -383,7 +383,6 @@ void parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &head
   if (forbidden_zero_bit != 0)
     throw std::logic_error("The nal unit header forbidden zero bit was not zero.");
 
-  // Read nal unit type
   READBITS(nal_ref_idc, 2);
 
   QStringList nal_unit_type_id_meaning = QStringList()

@@ -269,6 +269,72 @@ int parserBase::sub_byte_reader::readSE_V(QString *bitsRead)
     return (val+1)/2;
 }
 
+uint64_t parserBase::sub_byte_reader::readLeb128(QString *bitsRead, int *bit_count)
+{
+  // We will read full bytes (up to 8)
+  // The highest bit indicates if we need to read another bit. The rest of the bits is added to the counter (shifted accordingly)
+  // See the AV1 reading specification
+  uint64_t value = 0;
+  if (bit_count)
+    *bit_count = 0;
+  for (int i = 0; i < 8; i++)
+  {
+    int leb128_byte = readBits(8, bitsRead);
+    if (bit_count)
+      *bit_count += 8;
+    value |= ((leb128_byte & 0x7f) << (i*7));
+    if (!(leb128_byte & 0x80))
+      break;
+  }
+  return value;
+}
+
+uint64_t parserBase::sub_byte_reader::readUVLC(QString *bitsRead, int *bit_count)
+{
+  int leadingZeros = 0;
+  while (1)
+  {
+    int done = readBits(1, bitsRead);
+    if (bit_count)
+      *bit_count += 1;
+    if (done)
+      break;
+    leadingZeros++;
+  }
+  if (leadingZeros >= 32)
+    return (1 << 32) - 1;
+  uint64_t value = readBits(leadingZeros, bitsRead);
+  return value + (1 << leadingZeros) - 1;
+}
+
+int parserBase::sub_byte_reader::readNS(int nrBits, QString *bitsRead, int *bit_count)
+{
+  // FloorLog2
+  int floorVal;
+  {
+    int x = nrBits;
+    int s = 0;
+    while (x != 0)
+    {
+      x = x >> 1;
+      s++;
+    }
+    floorVal = s - 1;
+  }
+  
+  int w = floorVal + 1;
+  int m = (1 << w) - nrBits;
+  int v = readBits(w-1, bitsRead);
+  if (bit_count)
+    *bit_count += w-1;
+  if (v < m)
+    return v;
+  int extra_bit = readBits(1, bitsRead);
+  if (bit_count)
+    *bit_count += 1;
+  return (v << 1) - m + extra_bit;
+}
+
 /* Is there more data? There is no more data if the next bit is the terminating bit and all
 * following bits are 0. */
 bool parserBase::sub_byte_reader::more_rbsp_data()

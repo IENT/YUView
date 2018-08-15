@@ -113,6 +113,13 @@ protected:
     int readUE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);
     // Read an SE(v) code from the array
     int readSE_V(QString *bitsRead=nullptr);
+    // Read an leb128 code from the array (as defined in AV1)
+    uint64_t readLeb128(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    // REad an uvlc code from the array (as defined in AV1)
+    uint64_t readUVLC(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    // Read a NS code from the array (as defined in AV1)
+    int readNS(int nrBits, QString *bitsRead=nullptr, int *bit_count=nullptr);
+
     // Is there more RBSP data or are we at the end?
     bool more_rbsp_data();
     // Will reading of the given number of bits succeed?
