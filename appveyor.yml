@@ -35,20 +35,20 @@ after_build:
   # Copy the openSSL files
   - copy C:\projects\Qt\openSSL\*.dll .
   # Copy all the Qt dependencies (this is what windeployqt should do - does not work)
-  - copy C:\projects\Qt\5.8-release\qtbase\lib\Qt5Core.dll .
-  - copy C:\projects\Qt\5.8-release\qtbase\lib\Qt5Gui.dll .
-  - copy C:\projects\Qt\5.8-release\qtbase\lib\Qt5Network.dll .
-  - copy C:\projects\Qt\5.8-release\qtbase\lib\Qt5Widgets.dll .
-  - copy C:\projects\Qt\5.8-release\qtbase\lib\Qt5Xml.dll .
+  - copy C:\projects\Qt\5.8-release\lib\Qt5Core.dll .
+  - copy C:\projects\Qt\5.8-release\lib\Qt5Gui.dll .
+  - copy C:\projects\Qt\5.8-release\lib\Qt5Network.dll .
+  - copy C:\projects\Qt\5.8-release\lib\Qt5Widgets.dll .
+  - copy C:\projects\Qt\5.8-release\lib\Qt5Xml.dll .
   # And subdirs
   - mkdir bearer
-  - copy C:\projects\Qt\5.8-release\qtbase\plugins\bearer\*.dll bearer
+  - copy C:\projects\Qt\5.8-release\plugins\bearer\*.dll bearer
   - mkdir imageformats
-  - copy C:\projects\Qt\5.8-release\qtbase\plugins\imageformats\*.dll imageformats
+  - copy C:\projects\Qt\5.8-release\plugins\imageformats\*.dll imageformats
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
   - mkdir platforms
-  - copy C:\projects\Qt\5.8-release\qtbase\plugins\platforms\qwindows.dll platforms
+  - copy C:\projects\Qt\5.8-release\plugins\platforms\qwindows.dll platforms
   # Done. Now pack everything into a zip file
   - 7z a ..\YUView-VS-MT.zip .
   - cd C:\projects\YUView
