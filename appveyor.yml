@@ -14,8 +14,8 @@ install:
   - cd C:\projects
   - mkdir Qt
   - cd Qt
-  - git clone https://github.com/ChristianFeldmann/Qt5.8VS-MT.git .
-  - set QTDIR=C:\projects\Qt\5.8-release\qtbase
+  - git clone https://github.com/ChristianFeldmann/Qt5-YUView-MT.git .
+  - set QTDIR=C:\projects\Qt\5.11-release
   - set PATH=%PATH%;%QTDIR%\bin
   - cd C:\projects\YUView
   - cd
