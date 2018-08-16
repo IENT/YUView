@@ -35,11 +35,11 @@ after_build:
   # Copy the openSSL files
   - copy C:\projects\Qt\openSSL\*.dll .
   # Copy all the Qt dependencies (this is what windeployqt should do - does not work)
-  - copy C:\projects\Qt\5.11-release\lib\Qt5Core.dll .
-  - copy C:\projects\Qt\5.11-release\lib\Qt5Gui.dll .
-  - copy C:\projects\Qt\5.11-release\lib\Qt5Network.dll .
-  - copy C:\projects\Qt\5.11-release\lib\Qt5Widgets.dll .
-  - copy C:\projects\Qt\5.11-release\lib\Qt5Xml.dll .
+  - copy C:\projects\Qt\5.11-release\bin\Qt5Core.dll .
+  - copy C:\projects\Qt\5.11-release\bin\Qt5Gui.dll .
+  - copy C:\projects\Qt\5.11-release\bin\Qt5Network.dll .
+  - copy C:\projects\Qt\5.11-release\bin\Qt5Widgets.dll .
+  - copy C:\projects\Qt\5.11-release\bin\Qt5Xml.dll .
   # And subdirs
   - mkdir bearer
   - copy C:\projects\Qt\5.11-release\plugins\bearer\*.dll bearer
