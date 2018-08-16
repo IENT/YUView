@@ -40,6 +40,7 @@
 #define READLEB128(into) {QString code; int bit_count; into=reader.readLeb128(&code, &bit_count); if (itemTree) new TreeItem(#into,into,QString("leb128(%1)").arg(bit_count),code, itemTree);}
 #define READUVLC(into) {QString code; int bit_count; into=reader.readUVLC(&code, &bit_count); if (itemTree) new TreeItem(#into,into,QString("uvlc(%1)").arg(bit_count),code, itemTree);}
 #define READNS(into,numBits) {QString code; int bit_count; into=reader.readNS(numBits, &code, &bit_count); if (itemTree) new TreeItem(#into,into,QString("ns(%1)").arg(bit_count),code, itemTree);}
+#define READSU(into,numBits) {QString code; into=reader.readSU(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("ns(%1)").arg(numBits),code, itemTree);}
 #define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings,itemTree);}
 #define READBITS_M_E(into,numBits,meanings,enumCast) {QString code; into=(enumCast)reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings,itemTree);}
 
@@ -53,6 +54,12 @@
 #define NUM_REF_FRAMES 8
 #define REFS_PER_FRAME 7
 #define PRIMARY_REF_NONE 7
+#define MAX_SEGMENTS 8
+#define SEG_LVL_MAX 8
+#define SEG_LVL_REF_FRAME 5
+#define MAX_LOOP_FILTER 63
+#define SEG_LVL_ALT_Q 0
+#define TOTAL_REFS_PER_FRAME 8
 
 #define SUPERRES_DENOM_BITS 3
 #define SUPERRES_DENOM_MIN 9
@@ -876,6 +883,53 @@ void parserAV1OBU::frame_header::uncompressed_header(sub_byte_reader &reader, Tr
     LOGINFO("motion_field_estimation()");
   
   tile_info.parse(MiCols, MiRows, reader, itemTree, seq_header);
+
+  quantization_params.parse(reader, itemTree, seq_header);
+  segmentation_params.parse(primary_ref_frame, reader, itemTree);
+  delta_q_params.parse(quantization_params.base_q_idx, reader, itemTree);
+  delta_lf_params.parse(delta_q_params.delta_q_present, allow_intrabc, reader, itemTree);
+  // if (primary_ref_frame == PRIMARY_REF_NONE)
+  //   init_coeff_cdfs()
+  // else
+  //   load_previous_segment_ids();
+  CodedLossless = true;
+  for (int segmentId = 0; segmentId < MAX_SEGMENTS; segmentId++)
+  {
+    int qindex = get_qindex(true, segmentId);
+    LosslessArray[segmentId] = (qindex == 0 && quantization_params.DeltaQYDc == 0 && quantization_params.DeltaQUAc == 0 && quantization_params.DeltaQUDc == 0 && quantization_params.DeltaQVAc == 0 && quantization_params.DeltaQVDc == 0);
+    if (!LosslessArray[segmentId])
+      CodedLossless = false;
+    if (quantization_params.using_qmatrix)
+    {
+      if (LosslessArray[segmentId]) 
+      {
+        SegQMLevel[0][segmentId] = 15;
+        SegQMLevel[1][segmentId] = 15;
+        SegQMLevel[2][segmentId] = 15;
+      }
+      else
+      {
+        SegQMLevel[0][segmentId] = quantization_params.qm_y;
+        SegQMLevel[1][segmentId] = quantization_params.qm_u;
+        SegQMLevel[2][segmentId] = quantization_params.qm_v;
+      } 
+    }
+  }
+  AllLossless = CodedLossless && (FrameWidth == UpscaledWidth);
+  loop_filter_params.parse(CodedLossless, allow_intrabc, reader, itemTree, seq_header);
+  cdef_params.parse(CodedLossless, allow_intrabc, reader, itemTree, seq_header);
+  // lr_params
+  // read_tx_mode
+  // frame_reference_mode
+  // skip_mode_params
+
+  if (FrameIsIntra || error_resilient_mode || !seq_header->enable_warped_motion)
+    allow_warped_motion = false;
+  else
+    READFLAG(allow_warped_motion);
+  READFLAG(reduced_tx_set);
+  //global_motion_params( )
+  //film_grain_params( )
 }
 
 void parserAV1OBU::frame_header::mark_ref_frames(int idLen, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
@@ -1233,12 +1287,348 @@ void parserAV1OBU::frame_header::tile_info_struct::parse(int MiCols, int MiRows,
   else
   {
     widestTileSb = 0;
-    startSb = 0;
-    for (int i = 0; startSb < sbCols; i++)
+    TileCols = 0;
+    for (int startSb = 0; startSb < sbCols;)
     {
       MiColStarts.append(startSb << sbShift);
       int maxWidth = std::min(sbCols - startSb, maxTileWidthSb);
       READNS(width_in_sbs_minus_1, maxWidth);
+      int sizeSb = width_in_sbs_minus_1 + 1;
+      widestTileSb = std::max(sizeSb, widestTileSb);
+      startSb += sizeSb;
+      TileCols++;
+    }
+    MiColStarts.append(MiCols);
+    TileColsLog2 = tile_log2(1, TileCols);
+
+    if (minLog2Tiles > 0)
+      maxTileAreaSb = (sbRows * sbCols) >> (minLog2Tiles + 1);
+    else
+      maxTileAreaSb = sbRows * sbCols;
+    maxTileHeightSb = std::max(maxTileAreaSb / widestTileSb, 1);
+
+    TileRows = 0;
+    for (int startSb = 0; startSb < sbRows;)
+    {
+      MiRowStarts.append(startSb << sbShift);
+      int maxHeight = std::min(sbRows - startSb, maxTileHeightSb);
+      READNS(height_in_sbs_minus_1, maxHeight);
+      int sizeSb = height_in_sbs_minus_1 + 1;
+      startSb += sizeSb;
+      TileRows++;
+    }
+    MiRowStarts.append(MiRows);
+    TileRowsLog2 = tile_log2(1, TileRows);
+  }
+  if (TileColsLog2 > 0 || TileRowsLog2 > 0)
+  {
+    READBITS(context_update_tile_id, TileRowsLog2 + TileColsLog2);
+    READBITS(tile_size_bytes_minus_1, 2);
+    TileSizeBytes = tile_size_bytes_minus_1 + 1;
+  }
+  else
+    context_update_tile_id = 0;
+}
+
+void parserAV1OBU::frame_header::quantization_params_struct::parse(sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("quantization_params()", root) : nullptr;
+
+  READBITS(base_q_idx, 8);
+  DeltaQYDc = read_delta_q("DeltaQYDc", reader, itemTree);
+  if (seq_header->color_config.NumPlanes > 1)
+  {
+    if (seq_header->color_config.separate_uv_delta_q)
+      READFLAG(diff_uv_delta)
+    else
+      diff_uv_delta = false;
+    DeltaQUDc = read_delta_q("DeltaQUDc", reader, itemTree);
+    DeltaQUAc = read_delta_q("DeltaQUAc", reader, itemTree);
+    if (diff_uv_delta)
+    {
+      DeltaQVDc = read_delta_q("DeltaQVDc", reader, itemTree);
+      DeltaQVAc = read_delta_q("DeltaQVAc", reader, itemTree);
+    }
+    else
+    {
+      DeltaQVDc = DeltaQUDc;
+      DeltaQVAc = DeltaQUAc;
+    }
+  }
+  else
+  {
+    DeltaQUDc = 0;
+    DeltaQUAc = 0;
+    DeltaQVDc = 0;
+    DeltaQVAc = 0;
+  }
+  READFLAG(using_qmatrix);
+  if (using_qmatrix)
+  {
+    READBITS(qm_y, 4);
+    READBITS(qm_u, 4);
+    if (!seq_header->color_config.separate_uv_delta_q)
+      qm_v = qm_u;
+    else
+      READBITS(qm_v, 4);
+  }
+}
+
+int parserAV1OBU::frame_header::quantization_params_struct::read_delta_q(QString deltaValName, sub_byte_reader &reader, TreeItem *root)
+{
+  // Use a new reeItem root for the item. Don't set a text yet.
+  TreeItem *itemTree = nullptr;
+  if (root)
+    itemTree = new TreeItem(root);
+
+  bool delta_coded;
+  int delta_q;
+
+  READFLAG(delta_coded);
+  if (delta_coded)
+  {
+    READSU(delta_q, 1+6);
+  }
+  else
+    delta_q = 0;
+  
+  if (itemTree)
+  {
+      // Set a useful name of the TreeItem (the root for this NAL)
+      itemTree->itemData.append(deltaValName);
+      itemTree->itemData.append(QString("%1").arg(delta_q));
+  }
+
+  return delta_q;
+}
+
+void parserAV1OBU::frame_header::segmentation_params_struct::parse(int primary_ref_frame, sub_byte_reader &reader, TreeItem *root)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("segmentation_params()", root) : nullptr;
+
+  int Segmentation_Feature_Bits[SEG_LVL_MAX] = { 8, 6, 6, 6, 6, 3, 0, 0 };
+  int Segmentation_Feature_Signed[SEG_LVL_MAX] = { 1, 1, 1, 1, 1, 0, 0, 0 };
+  int Segmentation_Feature_Max[SEG_LVL_MAX] = { 255, MAX_LOOP_FILTER, MAX_LOOP_FILTER, MAX_LOOP_FILTER, MAX_LOOP_FILTER, 7, 0, 0 };
+
+  READFLAG(segmentation_enabled);
+  if (segmentation_enabled)
+  {
+    if (primary_ref_frame == PRIMARY_REF_NONE)
+    {
+      segmentation_update_map = 1;
+      segmentation_temporal_update = 0;
+      segmentation_update_data = 1;
+    }
+    else
+    {
+      READFLAG(segmentation_update_map);
+      if (segmentation_update_map)
+        READFLAG(segmentation_temporal_update);
+      READFLAG(segmentation_update_data);
+    }
+    if (segmentation_update_data)
+    {
+      for (int i = 0; i < MAX_SEGMENTS; i++)
+      {
+        for (int j = 0; j < SEG_LVL_MAX; j++)
+        {
+          int feature_value = 0;
+          bool feature_enabled;
+          READFLAG(feature_enabled);
+          FeatureEnabled[i][j] = feature_enabled;
+          int clippedValue = 0;
+          if (feature_enabled)
+          {
+            int bitsToRead = Segmentation_Feature_Bits[j];
+            int limit = Segmentation_Feature_Max[j];
+            if (Segmentation_Feature_Signed[j])
+            {
+              READSU(feature_value, 1+bitsToRead);
+              clippedValue = clip(feature_value, -limit, limit);
+            }
+            else
+            {
+              READBITS(feature_value, bitsToRead);
+              clippedValue = clip(feature_value, 0, limit);
+            }
+          }
+          FeatureData[i][j] = clippedValue;
+        }
+      }
+    }
+  }
+  else
+  {
+    for (int i = 0; i < MAX_SEGMENTS; i++)
+    {
+      for (int j = 0; j < SEG_LVL_MAX; j++)
+      {
+        FeatureEnabled[i][j] = 0;
+        FeatureData[i][j] = 0;
+      }
+    }
+  }
+  SegIdPreSkip = false;
+  LastActiveSegId = 0;
+  for (int i = 0; i < MAX_SEGMENTS; i++)
+  {
+    for (int j = 0; j < SEG_LVL_MAX; j++)
+    {
+      if (FeatureEnabled[i][j])
+      {
+        LastActiveSegId = i;
+        if (j >= SEG_LVL_REF_FRAME)
+          SegIdPreSkip = true;
+      }
+    }
+  }
+}
+
+void parserAV1OBU::frame_header::delta_q_params_struct::parse(int base_q_idx, sub_byte_reader &reader, TreeItem *root)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("delta_q_params()", root) : nullptr;
+
+  delta_q_res = 0;
+  delta_q_present = false;
+  if (base_q_idx > 0)
+    READFLAG(delta_q_present)
+  if (delta_q_present)
+    READBITS(delta_q_res, 2);
+}
+
+void parserAV1OBU::frame_header::delta_lf_params_struct::parse(bool delta_q_present, bool allow_intrabc, sub_byte_reader &reader, TreeItem *root)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("delta_lf_params()", root) : nullptr;
+
+  delta_lf_present = false;
+  delta_lf_res = 0;
+  delta_lf_multi = false;
+  if (delta_q_present)
+  {
+    if (!allow_intrabc)
+      READFLAG(delta_lf_present);
+    if (delta_lf_present)
+    {
+      READBITS(delta_lf_res, 2);
+      READFLAG(delta_lf_multi);
+    }
+  }
+}
+
+int parserAV1OBU::frame_header::get_qindex(bool ignoreDeltaQ, int segmentId) const
+{
+  // TODO: This must be set somewhere!
+  int CurrentQIndex = 0;
+
+  if (seg_feature_active_idx(segmentId, SEG_LVL_ALT_Q))
+  {
+    int data = segmentation_params.FeatureData[segmentId][SEG_LVL_ALT_Q];
+    int qindex = quantization_params.base_q_idx + data;
+    if (!ignoreDeltaQ && delta_q_params.delta_q_present)
+      qindex = CurrentQIndex + data;
+    return clip(qindex, 0, 255);
+  }
+  else if (!ignoreDeltaQ && delta_q_params.delta_q_present)
+    return CurrentQIndex;
+  return quantization_params.base_q_idx;
+}
+
+void parserAV1OBU::frame_header::loop_filter_params_struct::parse(bool CodedLossless, bool allow_intrabc, sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("loop_filter_params()", root) : nullptr;
+
+  if (CodedLossless || allow_intrabc)
+  {
+    loop_filter_level[0] = 0;
+    loop_filter_level[1] = 0;
+    loop_filter_ref_deltas[INTRA_FRAME] = 1;
+    loop_filter_ref_deltas[LAST_FRAME] = 0;
+    loop_filter_ref_deltas[LAST2_FRAME] = 0;
+    loop_filter_ref_deltas[LAST3_FRAME] = 0;
+    loop_filter_ref_deltas[BWDREF_FRAME] = 0;
+    loop_filter_ref_deltas[GOLDEN_FRAME] = -1;
+    loop_filter_ref_deltas[ALTREF_FRAME] = -1;
+    loop_filter_ref_deltas[ALTREF2_FRAME] = -1;
+    for (int i = 0; i < 2; i++)
+      loop_filter_mode_deltas[i] = 0;
+    return;
+  }
+  READBITS(loop_filter_level[0], 6);
+  READBITS(loop_filter_level[1], 6);
+  if (seq_header->color_config.NumPlanes > 1)
+  {
+    if (loop_filter_level[0] || loop_filter_level[1])
+    {
+      READBITS(loop_filter_level[2], 6);
+      READBITS(loop_filter_level[3], 6);
+    }
+  }
+  READBITS(loop_filter_sharpness, 3);
+  READFLAG(loop_filter_delta_enabled);
+  if (loop_filter_delta_enabled)
+  {
+    READFLAG(loop_filter_delta_update);
+    if (loop_filter_delta_update)
+    {
+      for (int i = 0; i < TOTAL_REFS_PER_FRAME; i++)
+      {
+        bool update_ref_delta;
+        READFLAG(update_ref_delta);
+        if (update_ref_delta)
+          READSU(loop_filter_ref_deltas[i], 1+6)
+      }
+      for (int i = 0; i < 2; i++)
+      {
+        bool update_mode_delta;
+        READFLAG(update_mode_delta);
+        if (update_mode_delta)
+          READSU(loop_filter_mode_deltas[i], 1+6)
+      }
+    }
+  }
+}
+
+void parserAV1OBU::frame_header::cdef_params_struct::parse(bool CodedLossless, bool allow_intrabc, sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("cdef_params()", root) : nullptr;
+
+  if (CodedLossless || allow_intrabc || !seq_header->enable_cdef)
+  {
+    cdef_bits = 0;
+    cdef_y_pri_strength[0] = 0;
+    cdef_y_sec_strength[0] = 0;
+    cdef_uv_pri_strength[0] = 0;
+    cdef_uv_sec_strength[0] = 0;
+    CdefDamping = 3;
+    return;
+  }
+  READBITS(cdef_damping_minus_3, 2);
+  CdefDamping = cdef_damping_minus_3 + 3;
+  READBITS(cdef_bits, 2);
+  for (int i = 0; i < (1 << cdef_bits); i++)
+  {
+    READBITS(cdef_y_pri_strength[i], 4);
+    READBITS(cdef_y_sec_strength[i], 2);
+    if (cdef_y_sec_strength[i] == 3)
+      cdef_y_sec_strength[i]++;
+    if (seq_header->color_config.NumPlanes > 1)
+    {
+      READBITS(cdef_uv_pri_strength[i], 4);
+      READBITS(cdef_uv_sec_strength[i], 4);
+      if (cdef_uv_sec_strength[i] == 3)
+        cdef_uv_sec_strength[i]++;
     }
   }
 }

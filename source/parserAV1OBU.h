@@ -442,13 +442,110 @@ protected:
 
       int widestTileSb;
       int startSb;
-      int width_in_sbs_minus_1;
-      
+      int width_in_sbs_minus_1, height_in_sbs_minus_1;
+      int maxTileHeightSb;
+      int tile_size_bytes_minus_1;
+      int context_update_tile_id;
+      int TileSizeBytes;
     };
     tile_info_struct tile_info;
 
+    struct quantization_params_struct
+    {
+      void parse(sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header);
+      int read_delta_q(QString deltaValName, sub_byte_reader &reader, TreeItem *root);
 
-  };
+      int base_q_idx;
+      bool diff_uv_delta;
+
+      int DeltaQYDc;
+      int DeltaQUDc;
+      int DeltaQUAc;
+      int DeltaQVDc;
+      int DeltaQVAc;
+
+      bool using_qmatrix;
+      int qm_y, qm_u, qm_v;
+    };
+    quantization_params_struct quantization_params;
+
+    struct segmentation_params_struct
+    {
+      void parse(int primary_ref_frame, sub_byte_reader &reader, TreeItem *root);
+
+      bool segmentation_enabled;
+      bool segmentation_update_map;
+      bool segmentation_temporal_update;
+      bool segmentation_update_data;
+
+      bool FeatureEnabled[8][8];
+      int  FeatureData[8][8];
+
+      bool SegIdPreSkip;
+      int LastActiveSegId;
+    };
+    segmentation_params_struct segmentation_params;
+
+    struct delta_q_params_struct
+    {
+      void parse(int base_q_idx, sub_byte_reader &reader, TreeItem *root);
+
+      int delta_q_res;
+      bool delta_q_present;
+    };
+    delta_q_params_struct delta_q_params;
+
+    struct delta_lf_params_struct
+    {
+      void parse(bool delta_q_present, bool allow_intrabc, sub_byte_reader &reader, TreeItem *root);
+
+      bool delta_lf_present;
+      int  delta_lf_res;
+      bool delta_lf_multi;
+    };
+    delta_lf_params_struct delta_lf_params;
+
+    bool CodedLossless;
+
+    bool seg_feature_active_idx(int idx, int feature) const { return segmentation_params.segmentation_enabled && segmentation_params.FeatureEnabled[idx][feature]; }
+    int get_qindex(bool ignoreDeltaQ, int segmentId) const;
+    bool LosslessArray[8];
+    int SegQMLevel[3][8];
+    bool AllLossless;
+
+    struct loop_filter_params_struct
+    {
+      void parse(bool CodedLossless, bool allow_intrabc, sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header);
+
+      int loop_filter_level[4];
+      int loop_filter_ref_deltas[7];
+      int loop_filter_mode_deltas[2];
+
+      int loop_filter_sharpness;
+      bool loop_filter_delta_enabled;
+      bool loop_filter_delta_update;
+
+    };
+    loop_filter_params_struct loop_filter_params;
+
+    struct cdef_params_struct
+    {
+      void parse(bool CodedLossless, bool allow_intrabc, sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header);
+
+      int cdef_bits;
+      int cdef_y_pri_strength[16];
+      int cdef_y_sec_strength[16];
+      int cdef_uv_pri_strength[16];
+      int cdef_uv_sec_strength[16];
+      int CdefDamping;
+      int cdef_damping_minus_3;
+    };
+    cdef_params_struct cdef_params;
+
+    bool allow_warped_motion;
+    bool reduced_tx_set;
+
+  };  // struct frame_header
 
   QSharedPointer<sequence_header> active_sequence_header;
 };

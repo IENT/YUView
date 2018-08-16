@@ -335,6 +335,15 @@ int parserBase::sub_byte_reader::readNS(int nrBits, QString *bitsRead, int *bit_
   return (v << 1) - m + extra_bit;
 }
 
+int parserBase::sub_byte_reader::readSU(int nrBits, QString *bitsRead)
+{
+  int value = readBits(nrBits, bitsRead);
+  int signMask = 1 << (nrBits - 1);
+  if (value & signMask)
+    value = value - 2 * signMask;
+  return value;
+}
+
 /* Is there more data? There is no more data if the next bit is the terminating bit and all
 * following bits are 0. */
 bool parserBase::sub_byte_reader::more_rbsp_data()
