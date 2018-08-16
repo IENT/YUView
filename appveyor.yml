@@ -3,59 +3,98 @@ configuration: Release
 platform:
   - x64
 clone_folder: C:\projects\YUView
+environment:
+  access_token:
+    secure: OrnQm0bZgvYKk66eRxDm/83jxiWBWrCoXigQd9u3v2lrRPXFR5x+oaFQVlc05Ize
 
 branches:
-  except:
-    - gh-pages
+  only:
+    - deployment
   
 install:
   - '"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64'
-  - cd
   - cd C:\projects
-  - mkdir Qt
-  - cd Qt
-  - git clone https://github.com/ChristianFeldmann/Qt5-YUView-MT.git .
+  - git clone https://github.com/ChristianFeldmann/Qt5-YUView-MT Qt --depth 1
   - set QTDIR=C:\projects\Qt\5.11-release
+  # - set QTDIR=C:\Qt\5.11.1\msvc2015_64
   - set PATH=%PATH%;%QTDIR%\bin
   - cd C:\projects\YUView
   - cd
 
 build_script:
+  # activate the automatic update feature
+  - C:\msys64\usr\bin\sed.exe -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" source/typedef.h
+  # start compiling
   - qmake
   - where nmake
   - nmake
-
+  
 after_build:
-  # Create a directory where we collect everything
+  - git config --global credential.helper store
+  - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+  - git config --global user.email "blaeser@ient.rwth-aachen.de"
+  - git config --global user.name "Appveyor"
   - cd
+  #- git clone https://github.com/aachenmax/YUViewAddons.git --depth 1
+  # create temporary folder for preparing the deployment package
   - mkdir deploy
   - cd deploy
-  # Copy the executable
+  - windeployqt --release --dir C:\projects\YUView\deploy  ..\build\release\YUView.exe
+  # deploy the needed dlls
+  #- mkdir bearer imageformats platforms styles
+  #- copy /Y %QTDIR%\bin\Qt5Core.dll .
+  #- copy /Y %QTDIR%\bin\Qt5Gui.dll .
+  #- copy /Y %QTDIR%\bin\Qt5Network.dll .
+  #- copy /Y %QTDIR%\bin\Qt5Widgets.dll .
+  #- copy /Y %QTDIR%\bin\Qt5OpenGL.dll .
+  #- copy /Y %QTDIR%\bin\Qt5Xml.dll .
+  #- copy /Y %QTDIR%\bin\Qt5Concurrent.dll .
+  #- copy /Y %QTDIR%\plugins\bearer\qgenericbearer.dll bearer\.
+  #- copy /Y %QTDIR%\plugins\imageformats\*.dll imageformats\.
+  #- copy /Y %QTDIR%\plugins\platforms\qwindows.dll platforms\.
+  #- copy /Y %QTDIR%\plugins\styles\qwindowsvistastyle.dll styles\.
+  # copy the actual binary itself...
   - copy ..\build\release\YUView.exe .
-  # Copy the openSSL files
+  # copy the OpenSSL library
+  # - copy ..\YUViewAddons\libs\openssl-1.0.2j-64bit-release-DLL-VS2015\*.dll .
   - copy C:\projects\Qt\openSSL\*.dll .
-  # Copy all the Qt dependencies (this is what windeployqt should do - does not work)
-  - copy C:\projects\Qt\5.11-release\bin\Qt5Core.dll .
-  - copy C:\projects\Qt\5.11-release\bin\Qt5Gui.dll .
-  - copy C:\projects\Qt\5.11-release\bin\Qt5Network.dll .
-  - copy C:\projects\Qt\5.11-release\bin\Qt5Widgets.dll .
-  - copy C:\projects\Qt\5.11-release\bin\Qt5Xml.dll .
-  # And subdirs
-  - mkdir bearer
-  - copy C:\projects\Qt\5.11-release\plugins\bearer\*.dll bearer
-  - mkdir imageformats
-  - copy C:\projects\Qt\5.11-release\plugins\imageformats\*.dll imageformats
+  # copy the modified libde265 library + license
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
-  - mkdir platforms
-  - copy C:\projects\Qt\5.11-release\plugins\platforms\qwindows.dll platforms
-  # Done. Now pack everything into a zip file
-  - 7z a ..\YUView-VS-MT.zip .
+  - copy ..\libde265\LICENCE.TXT libde265
+  - copy ..\LICENSE.GPL3 .
+  # delete junk that is not needed
+  - del /F /Q vcredist*
   - cd C:\projects\YUView
-  - cd
-  
+  # run our versioning tool
+  - python deployment\versioning.py -d deploy -o deploy\versioninfo.txt
+  - dir /s /b deploy
+  # everything is ready for packaging the zip file and the installer
+  - 7z a YUView-Win.zip .\deploy\*
+  - makensis deployment\deploy.nsi
+  # prepare the auto-update using YUViewReleases
+  - git clone -b dev --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
+  - cd YUViewReleases
+  # delete old files from git cache just in case
+  - git rm --ignore-unmatch win\autoupdate\*
+  - git rm --ignore-unmatch win\installers\*
+  # copy the deployment packages
+  - xcopy /E ..\deploy\* win\autoupdate\. /I/Y
+  - xcopy ..\SetupYUView.exe win\installers\ /Y
+  - xcopy ..\YUView-Win.zip win\installers\ /Y
+  - git add win\autoupdate\*
+  - git add win\installers\*
+  - git status
+  # committing
+  - 'git commit -a --allow-empty -m "Appveyor build %APPVEYOR_BUILD_NUMBER%, %APPVEYOR_BUILD_VERSION% based on %APPVEYOR_REPO_COMMIT%"'  
+  # push the finished stuff
+  - git push
+
+  # also collect the artifacts here
 artifacts:
-  - path: YUView-VS-MT.zip
-    name: YUView
-  
-  
+  - path: YUView-Win.zip
+    name: YUView Zip Folder
+    type: zip
+    
+  - path: SetupYUView.exe
+    name: YUView Installer

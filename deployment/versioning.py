@@ -6,7 +6,7 @@ import argparse
 from os import listdir
 from os.path import isfile, join
 
-qtver='5.8'
+qtver='5.11'
 usehashforfiles = ['YUView.exe']
 filter  = ['versioninfo.txt']
 
