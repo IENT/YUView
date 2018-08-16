@@ -78,6 +78,11 @@ public:
   // Returns false if the statistics need to be loaded first.
   void paintStatistics(QPainter *painter, int frameIdx, double zoomFactor);
 
+  // Draw a vector.
+  void paintVector(QPainter *painter, const int &statTypeIdx, const double &zoomFactor,
+                   const int &x1, const int &y1, const int &x2, const int &y2,
+                   const float &vx, const float &vy, bool isLine, const int &xMin, const int &xMax, const int &yMin, const int &yMax);
+
   // Do we need to load some of the statistics before we can draw them?
   itemLoadingState needsLoading(int frameIdx);
 
@@ -91,7 +96,9 @@ public:
   QSize statFrameSize;
 
   // Add new statistics type. Add all types using this function before creating the controls (createStatisticsHandlerControls).
-  void addStatType(const StatisticsType &type) { statsTypeList.append(type); }
+//  void addStatType(const StatisticsType &type) { statsTypeList.append(type); }
+  void addStatType(const StatisticsType &type);
+
   // Clear the statistics type list.
   void clearStatTypes();
 
