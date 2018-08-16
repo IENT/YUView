@@ -146,7 +146,7 @@ OTHER_FILES += \
     docs/about.html \
     docs/help.html
 
-unix {
+unix:!mac {
 	isEmpty(PREFIX) {
 		PREFIX = /usr/local
 	}
@@ -154,18 +154,28 @@ unix {
 		BINDIR = bin
 	}
 
-	target.path = $$PREFIX/$$BINDIR/
+        target.path = $$PREFIX/$$BINDIR/
 
-	data.files = ../data/*
-	data.path = $$PREFIX/share/tanglet/data/
+        metainfo.files = packaging/linux/de.ient.YUView.appdata.xml
+        metainfo.path = $$PREFIX/share/metainfo
+        desktop.files = packaging/linux/de.ient.YUView.desktop
+        desktop.path = $$PREFIX/share/applications
+        mime.files = packaging/linux/de.ient.YUView.xml
+        mime.path = $$PREFIX/share/mime/packages
+        icon32.files = packaging/linux/icons/32x32/de.ient.YUView.png
+        icon64.files = packaging/linux/icons/64x64/de.ient.YUView.png
+        icon128.files = packaging/linux/icons/128x128/de.ient.YUView.png
+        icon256.files = packaging/linux/icons/256x256/de.ient.YUView.png
+        icon512.files = packaging/linux/icons/512x512/de.ient.YUView.png
+        icon1024.files = packaging/linux/icons/1024x1024/de.ient.YUView.png
+        icon32.path = $$PREFIX/share/icons/hicolor/32x32/apps
+        icon64.path = $$PREFIX/share/icons/hicolor/64x64/apps
+        icon128.path = $$PREFIX/share/icons/hicolor/128x128/apps
+        icon256.path = $$PREFIX/share/icons/hicolor/256x256/apps
+        icon512.path = $$PREFIX/share/icons/hicolor/512x512/apps
+        icon1024.path = $$PREFIX/share/icons/hicolor/1024x1024/apps
 
-        icon.files += images/IENT-YUView-64.png
-	icon.path = $$PREFIX/share/icons/hicolor/
-
-        desktop.files = YUView.desktop
-        desktop.path = $$PREFIX/share/applications/
-
-	INSTALLS += target icon desktop
+        INSTALLS += target metainfo desktop mime icon32 icon64 icon128 icon256 icon512 icon1024
 }
 
 

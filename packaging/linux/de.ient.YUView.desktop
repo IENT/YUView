@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Exec=YUView %F
+Name=YUView
+GenericName=YUV Video Player
+X-KDE-StartupNotify=true
+Icon=de.ient.YUView
+Terminal=false
+Categories=AudioVideo
+MimeType=application/YUView
