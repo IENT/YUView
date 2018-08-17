@@ -64,6 +64,7 @@ artifacts:
     name: YUView Installer
 
 # override settings for `deployment` branch
+for:
 -
   branches:
     only:
