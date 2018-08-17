@@ -4,19 +4,21 @@ summary: YUView
 description: YUView - The free cross platform YUV viewer and video analysis tool
 
 grade: stable
-confinement: classic
+confinement: strict
 type: app
-icon: images/IENT-YUView-64.png
+icon: snap/gui/IENT-YUView-64.png
 architectures: 
   - build-on: amd64
     run-on: amd64
 
 apps:
-  YUView:
+  yuview:
     command: desktop-launch ${SNAP}/usr/bin/YUView
-    desktop: usr/share/applications/YUView.desktop 
+    plugs: [home, network, x11, wayland, desktop, desktop-legacy, opengl, gsettings, removable-media]
     environment: 
-        QT_NO_FT_CACHE: 1
+        QT_NO_FT_CACHE: 1        
+        LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-gnu-linux:$SNAP/lib/x86_64-gnu-linux
+        PATH: $SNAP/usr/bin:$SNAP/bin:$PATH
 
 parts:
   yuview:
