@@ -3,6 +3,6 @@
     <mime-type type="application/YUView">
         <comment>YUView video player</comment>
         <glob pattern="*.yuv"/>
-        <icon name="de.ient.YUView"/>
+        <icon name="de.rwth_aachen.ient.YUView"/>
     </mime-type>
 </mime-info>

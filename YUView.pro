@@ -158,18 +158,18 @@ unix:!mac {
 
         target.path = $$PREFIX/$$BINDIR/
 
-        metainfo.files = packaging/linux/de.ient.YUView.appdata.xml
+        metainfo.files = packaging/linux/de.rwth_aachen.ient.YUView.appdata.xml
         metainfo.path = $$PREFIX/share/metainfo
-        desktop.files = packaging/linux/de.ient.YUView.desktop
+        desktop.files = packaging/linux/de.rwth_aachen.ient.YUView.desktop
         desktop.path = $$PREFIX/share/applications
-        mime.files = packaging/linux/de.ient.YUView.xml
+        mime.files = packaging/linux/de.rwth_aachen.ient.YUView.xml
         mime.path = $$PREFIX/share/mime/packages
-        icon32.files = packaging/linux/icons/32x32/de.ient.YUView.png
-        icon64.files = packaging/linux/icons/64x64/de.ient.YUView.png
-        icon128.files = packaging/linux/icons/128x128/de.ient.YUView.png
-        icon256.files = packaging/linux/icons/256x256/de.ient.YUView.png
-        icon512.files = packaging/linux/icons/512x512/de.ient.YUView.png
-        icon1024.files = packaging/linux/icons/1024x1024/de.ient.YUView.png
+        icon32.files = packaging/linux/icons/32x32/de.rwth_aachen.ient.YUView.png
+        icon64.files = packaging/linux/icons/64x64/de.rwth_aachen.ient.YUView.png
+        icon128.files = packaging/linux/icons/128x128/de.rwth_aachen.ient.YUView.png
+        icon256.files = packaging/linux/icons/256x256/de.rwth_aachen.ient.YUView.png
+        icon512.files = packaging/linux/icons/512x512/de.rwth_aachen.ient.YUView.png
+        icon1024.files = packaging/linux/icons/1024x1024/de.rwth_aachen.ient.YUView.png
         icon32.path = $$PREFIX/share/icons/hicolor/32x32/apps
         icon64.path = $$PREFIX/share/icons/hicolor/64x64/apps
         icon128.path = $$PREFIX/share/icons/hicolor/128x128/apps
