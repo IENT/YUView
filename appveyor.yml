@@ -76,7 +76,7 @@ for:
     - git config --global user.email "blaeser@ient.rwth-aachen.de"
     - git config --global user.name "Appveyor"
     # prepare the auto-update using YUViewReleases
-    - git clone -b dev --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
+    - git clone -b master --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
     - cd YUViewReleases
     # delete old files from git cache just in case
     - git rm --ignore-unmatch win\autoupdate\*
