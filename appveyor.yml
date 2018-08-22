@@ -53,7 +53,9 @@ after_build:
   # everything is ready for packaging the zip file and the installer
   - 7z a YUView-Win.zip .\deploy\*
   - makensis deployment\deploy.nsi
-  
+  - IF "%APPVEYOR_REPO_BRANCH%" == "master" (CALL deployment\deploy_to_github.bat)
+ 
+
 artifacts:
   # also collect the artifacts here
   - path: YUView-Win.zip
@@ -64,32 +66,32 @@ artifacts:
     name: YUView Installer
 
 # override settings for `deployment` branch
-for:
--
-  branches:
-    only:
-      - master
-
-  before_deploy:
-    - git config --global credential.helper store
-    - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
-    - git config --global user.email "blaeser@ient.rwth-aachen.de"
-    - git config --global user.name "Appveyor"
-    # prepare the auto-update using YUViewReleases
-    - git clone -b master --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
-    - cd YUViewReleases
-    # delete old files from git cache just in case
-    - git rm --ignore-unmatch win\autoupdate\*
-    - git rm --ignore-unmatch win\installers\*
-    # copy the deployment packages
-    - xcopy /E ..\deploy\* win\autoupdate\. /I/Y
-    - xcopy ..\SetupYUView.exe win\installers\ /Y
-    - xcopy ..\YUView-Win.zip win\installers\ /Y
-    - git add win\autoupdate\*
-    - git add win\installers\*
-    - git status
-    # committing
-    - 'git commit -a --allow-empty -m "Appveyor build %APPVEYOR_BUILD_NUMBER%, %APPVEYOR_BUILD_VERSION% based on %APPVEYOR_REPO_COMMIT%"'  
-    # push the finished stuff
-    - git push
+#for:
+#-
+#  branches:
+#    only:
+#      - master
+#
+#  before_deploy:
+#    - git config --global credential.helper store
+#    - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+#    - git config --global user.email "blaeser@ient.rwth-aachen.de"
+#    - git config --global user.name "Appveyor"
+#    # prepare the auto-update using YUViewReleases
+#    - git clone -b master --single-branch https://github.com/IENT/YUViewReleases.git --depth 1
+#    - cd YUViewReleases
+#    # delete old files from git cache just in case
+#    - git rm --ignore-unmatch win\autoupdate\*
+#    - git rm --ignore-unmatch win\installers\*
+#    # copy the deployment packages
+#    - xcopy /E ..\deploy\* win\autoupdate\. /I/Y
+#    - xcopy ..\SetupYUView.exe win\installers\ /Y
+#    - xcopy ..\YUView-Win.zip win\installers\ /Y
+#    - git add win\autoupdate\*
+#    - git add win\installers\*
+#    - git status
+#    # committing
+#    - 'git commit -a --allow-empty -m "Appveyor build %APPVEYOR_BUILD_NUMBER%, %APPVEYOR_BUILD_VERSION% based on %APPVEYOR_REPO_COMMIT%"'  
+#    # push the finished stuff
+#    - git push
 
