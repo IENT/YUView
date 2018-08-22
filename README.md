@@ -6,7 +6,7 @@ YUView is a QT based, cross-platform YUV player with an advanced analytic toolse
 
 Master branch | Development branch
 ------------ | -------------
-[![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=master)](https://travis-ci.org/IENT/YUView) [![Appveyor build status](https://ci.appveyor.com/api/projects/status/github/IENT/yuview?branch=master&svg=true)](https://ci.appveyor.com/project/ChristianFeldmann/yuview/branch/master) | [![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=development)](https://travis-ci.org/IENT/YUView) [![Build Status](https://ci.appveyor.com/api/projects/status/github/IENT/yuview?branch=development&svg=true)](https://ci.appveyor.com/project/ChristianFeldmann/yuview/branch/development)
+[![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=master)](https://travis-ci.org/IENT/YUView) [![Appveyor build status](https://ci.appveyor.com/api/projects/status/s87bwbu95cat9di0?branch=master&svg=true)](https://ci.appveyor.com/project/aachenmax/yuview/branch/master) | [![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=development)](https://travis-ci.org/IENT/YUView) [![Build Status](https://ci.appveyor.com/api/projects/status/s87bwbu95cat9di0?branch=development&svg=true)](https://ci.appveyor.com/project/aachenmax/yuview/branch/development)
 
 ## Description
 
@@ -32,7 +32,15 @@ Screenshot of YUView:
 
 ## Download
 
-You can download precompiled binaries for Windows and MAC from our release site: [Download](https://github.com/IENT/YUView/releases). For Linux we provide a [YUView flatpak](https://github.com/IENT/YUView/wiki/YUView-on-Linux). If none of these apply to you, you can easily build YUView yourself.
+You can download precompiled binaries for Windows and MAC from our [release site](https://github.com/IENT/YUView/releases) or here:
+
+ - [Windows installer](https://github.com/IENT/YUViewReleases/blob/master/win/installers/SetupYUView.exe?raw=true)
+ - [Windows zip file](https://github.com/IENT/YUViewReleases/blob/master/win/installers/YUView-Win.zip?raw=true)
+ - [Mac OS](https://github.com/IENT/YUViewReleases/blob/master/mac/YUView-MacOs.zip?raw=true)
+
+For the Linux based platforms we are on [flathub](https://flathub.org/apps/details/de.rwth_aachen.ient.YUView). More information on YUView on Linux can be found in out wiki page ["YUView on Linux"](https://github.com/IENT/YUView/wiki/YUView-on-Linux). 
+
+If none of these apply to you, you can easily [build YUView yourself](https://github.com/IENT/YUView/wiki/Compile-YUView).
 
 ## Building
 
