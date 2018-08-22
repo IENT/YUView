@@ -32,7 +32,7 @@ Screenshot of YUView:
 
 ## Download
 
-You can download precompiled binaries for Windows and MAC from our release site: [Download](https://github.com/IENT/YUView/releases). For Ubuntu and Arch Linux we provide [YUView packages](https://github.com/IENT/YUView/wiki/YUView-on-Linux). If none of these apply to you, you can easily build YUView yourself.
+You can download precompiled binaries for Windows and MAC from our release site: [Download](https://github.com/IENT/YUView/releases). For Linux we provide a [YUView flatpak](https://github.com/IENT/YUView/wiki/YUView-on-Linux). If none of these apply to you, you can easily build YUView yourself.
 
 ## Building
 
