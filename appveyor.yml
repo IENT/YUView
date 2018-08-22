@@ -68,7 +68,7 @@ for:
 -
   branches:
     only:
-      - deployment
+      - master
 
   before_deploy:
     - git config --global credential.helper store
