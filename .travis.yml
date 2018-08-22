@@ -31,7 +31,7 @@ script:
   - cd build/release
   - zip -r ../../YUView-MacOs.zip YUView.app
   - cd ../..
-  - 'if [ ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh fi'
+  - 'if [ ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh; fi'
 
 after_success:
   # not needed?
