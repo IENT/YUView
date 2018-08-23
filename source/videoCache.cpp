@@ -194,7 +194,9 @@ void loadingWorker::processCacheJobInternal()
 
 void loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
 {
-  Q_ASSERT_X(currentCacheItem != nullptr && (!currentCacheItem->isIndexedByFrame() || currentFrame >= 0) && !currentCacheItem->taggedForDeletion(), "processLoadingJobInternal", "Invalid non loadable job");
+  Q_ASSERT_X(currentCacheItem != nullptr, "processLoadingJobInternal", "The set job is nullptr");
+  Q_ASSERT_X((!currentCacheItem->isIndexedByFrame() || currentFrame >= 0), "processLoadingJobInternal", "The set frame index is invalid");
+  Q_ASSERT_X(!currentCacheItem->taggedForDeletion(), "processLoadingJobInternal", "The set job was tagged for deletion");
 
   // Load the frame of the item that was given to us.
   // This is performed in the thread (the loading thread with higher priority.
@@ -459,11 +461,12 @@ void videoCache::interactiveLoaderFinished()
     updateCacheStatus();
   
   // The worker finished. Is there another loading request in the queue?
-  if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] != -1)
+  if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] < 0)
   {
     // Let the interactive worker work on the queued request.
     bool loadRawData = splitView->showRawData() && !playback->playing();
     interactiveThread[threadID]->worker()->setJob(interactiveItemQueued[threadID], interactiveItemQueued_Idx[threadID]);
+    interactiveThread[threadID]->worker()->setWorking(true);
     interactiveThread[threadID]->worker()->processLoadingJob(playback->playing(), loadRawData);
     DEBUG_CACHING_DETAIL("videoCache::interactiveLoaderFinished %d started - slot %d", interactiveItemQueued_Idx[threadID], threadID);
 
