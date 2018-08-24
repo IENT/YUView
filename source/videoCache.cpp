@@ -60,6 +60,14 @@
 #define DEBUG_CACHING_DETAIL(fmt,...) ((void)0)
 #endif
 
+#define CACHING_THREAD_JOBS_OUTPUT 1
+#if CACHING_THREAD_JOBS_OUTPUT
+#include <QDebug>
+#define DEBUG_JOBS qDebug
+#else
+#define DEBUG_JOBS(fmt,...) ((void)0)
+#endif
+
 videoCache::cacheJob::cacheJob(playlistItem *item, indexRange range) :
   plItem(item),
   frameRange(range)
@@ -162,8 +170,8 @@ public:
   QString getStatus() { return QString("T%1: %2\n").arg(id).arg(working ? QString::number(currentFrame) : QString("-")); }
   // Process the job in the thread that this worker was moved to. This function can be directly
   // called from the main thread. It will still process the call in the separate thread.
-  void processCacheJob() { QMetaObject::invokeMethod(this, "processCacheJobInternal"); }
-  void processLoadingJob(bool playing, bool loadRawData) { QMetaObject::invokeMethod(this, "processLoadingJobInternal", Q_ARG(bool, playing), Q_ARG(bool, loadRawData)); }
+  void processCacheJob();
+  void processLoadingJob(bool playing, bool loadRawData);
 signals:
   void loadingFinished();
 private slots:
@@ -180,15 +188,29 @@ private:
 // Initially this is 0. The threads will number themselves so that there are never two threads with the same id
 int loadingWorker::id_counter = 0;
 
+void loadingWorker::processCacheJob()
+{
+  DEBUG_JOBS("loadingWorker::processCacheJob invoke processCacheJobInternal");
+  QMetaObject::invokeMethod(this, "processCacheJobInternal"); 
+}
+
+void loadingWorker::processLoadingJob(bool playing, bool loadRawData)
+{
+  DEBUG_JOBS("loadingWorker::processLoadingJob invoke processLoadingJobInternal");
+  QMetaObject::invokeMethod(this, "processLoadingJobInternal", Q_ARG(bool, playing), Q_ARG(bool, loadRawData)); 
+}
+
 void loadingWorker::processCacheJobInternal()
 {
   Q_ASSERT_X(currentCacheItem != nullptr && currentFrame >= 0, "processCacheJobInternal", "Invalid Job");
+  DEBUG_JOBS("loadingWorker::processCacheJobInternal");
 
   // Just cache the frame that was given to us.
   // This is performed in the thread that this worker is currently placed in.
   currentCacheItem->cacheFrame(currentFrame, testMode);
   
   currentCacheItem = nullptr;
+  DEBUG_JOBS("loadingWorker::processCacheJobInternal emit loadingFinished");
   emit loadingFinished();
 }
 
@@ -197,12 +219,14 @@ void loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
   Q_ASSERT_X(currentCacheItem != nullptr, "processLoadingJobInternal", "The set job is nullptr");
   Q_ASSERT_X((!currentCacheItem->isIndexedByFrame() || currentFrame >= 0), "processLoadingJobInternal", "The set frame index is invalid");
   Q_ASSERT_X(!currentCacheItem->taggedForDeletion(), "processLoadingJobInternal", "The set job was tagged for deletion");
+  DEBUG_JOBS("loadingWorker::processLoadingJobInternal");
 
   // Load the frame of the item that was given to us.
   // This is performed in the thread (the loading thread with higher priority.
   currentCacheItem->loadFrame(currentFrame, playing, loadRawData);
 
   emit loadingFinished();
+  DEBUG_JOBS("loadingWorker::processLoadingJobInternal emit loadingFinished");
   currentCacheItem = nullptr;
 }
 
@@ -461,7 +485,7 @@ void videoCache::interactiveLoaderFinished()
     updateCacheStatus();
   
   // The worker finished. Is there another loading request in the queue?
-  if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] < 0)
+  if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] >= 0)
   {
     // Let the interactive worker work on the queued request.
     bool loadRawData = splitView->showRawData() && !playback->playing();
@@ -978,6 +1002,7 @@ void videoCache::threadCachingFinished()
   Q_ASSERT_X(worker->isWorking(), "videoCache::threadCachingFinished", "The worker that just finished was not working?");
   worker->setWorking(false);
   DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - state %d - worker %p", workerState, worker);
+  DEBUG_JOBS("videoCache::threadCachingFinished - state %d - worker %p", workerState, worker);
 
   // Check if all threads have stopped.
   bool jobsRunning = false;
