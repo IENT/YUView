@@ -61,7 +61,7 @@ public:
   // If loadFFmpegLibraryInPath returned false, this contains a string why.
   QStringList getErrors() const { return error_list; }
 
-  QString getLibPath() const { return libPath; }
+  QStringList getLibPaths() const;
 
   // From avformat
   void     (*av_register_all)           ();
@@ -109,13 +109,11 @@ public:
   // From swresample
   unsigned  (*swresample_version) (void);
 
-protected:
-  // The library was loaded from this path
-  QString libPath;
-
 private:
   // bind all functions from the loaded QLibraries.
   bool bindFunctionsFromLibraries();
+
+  void addLibNamesToList(QString libName, QStringList &l, const QLibrary &lib) const;
 
   // Load the function pointers from the four individual libraries
   bool bindFunctionsFromAVFormatLib();
@@ -668,7 +666,7 @@ public:
   // Try to load the ffmpeg libraries and get all the function pointers.
   bool loadFFmpegLibraries();
   
-  QString getLibPath() const { return lib.getLibPath(); }
+  QStringList getLibPaths() const { return lib.getLibPaths(); }
   QString getLibVersionString() const;
   QString getCodecName(AVCodecSpecfier id) const { return QString(lib.avcodec_get_name(id.getCodecID(libVersion.avcodec))); }
 

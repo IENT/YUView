@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ class parserBase
 {
 public:
   parserBase() {}
-  virtual ~parserBase() {};
+  virtual ~parserBase() = 0;
 
   // Get a pointer to the nal unit model. The model is only filled if you call enableModel() first.
   QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
@@ -113,6 +113,13 @@ protected:
     int readUE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);
     // Read an SE(v) code from the array
     int readSE_V(QString *bitsRead=nullptr);
+    // Read an leb128 code from the array (as defined in AV1)
+    uint64_t readLeb128(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    // REad an uvlc code from the array (as defined in AV1)
+    uint64_t readUVLC(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    // Read a NS code from the array (as defined in AV1)
+    int readNS(int nrBits, QString *bitsRead=nullptr, int *bit_count=nullptr);
+
     // Is there more RBSP data or are we at the end?
     bool more_rbsp_data();
     // Will reading of the given number of bits succeed?

@@ -56,7 +56,8 @@ public:
   // TODO: How do we do this?
   bool atEnd() const { return endOfFile; }
 
-  QString getLibraryPath() const { return ff.getLibPath(); }
+  // Return the name, filename and full path of every library loaded
+  QStringList getLibraryPaths() const { return ff.getLibPaths(); }
 
   // Get properties of the bitstream
   double getFramerate() const { return frameRate; }

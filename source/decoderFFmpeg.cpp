@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -70,6 +70,9 @@ decoderFFmpeg::decoderFFmpeg(AVCodecSpecfier codec, QSize size, QByteArray extra
 
   flushing = false;
   internalsSupported = true;
+  // Fill the padding array
+  for (int i=0; i<AV_INPUT_BUFFER_PADDING_SIZE; i++)
+    avPacketPaddingData.append((char)0);
 
   DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
@@ -299,8 +302,7 @@ bool decoderFFmpeg::pushData(QByteArray &data)
     DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing data length %d", data.length());
 
   // Add some padding
-  // TODO: could this be improved somehow?
-  data.append(AV_INPUT_BUFFER_PADDING_SIZE, 0);
+  data.append(avPacketPaddingData);
 
   raw_pkt.set_data(data);
   raw_pkt.set_dts(AV_NOPTS_VALUE);

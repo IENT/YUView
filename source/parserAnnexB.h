@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -99,8 +99,8 @@ protected:
     nal_unit(QUint64Pair filePosStartEnd, int nal_idx) : filePosStartEnd(filePosStartEnd), nal_idx(nal_idx), nal_unit_type_id(-1) {}
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
-                           // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    virtual void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) = 0;
+    // Parse the header from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
+    virtual void parse_nal_unit_header(const QByteArray &header_data, TreeItem *root) = 0;
 
     /// Pointer to the first byte of the start code of the NAL unit
     QUint64Pair filePosStartEnd;

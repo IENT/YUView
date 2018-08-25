@@ -104,7 +104,6 @@ public:
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
-  QString getLibraryPath() const Q_DECL_OVERRIDE { return libraryPath; }
   QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }
   QString getCodecName()         Q_DECL_OVERRIDE { return "hevc"; }
 

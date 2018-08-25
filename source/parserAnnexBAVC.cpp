@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -383,7 +383,6 @@ void parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &head
   if (forbidden_zero_bit != 0)
     throw std::logic_error("The nal unit header forbidden zero bit was not zero.");
 
-  // Read nal unit type
   READBITS(nal_ref_idc, 2);
 
   QStringList nal_unit_type_id_meaning = QStringList()
@@ -589,6 +588,12 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
     CropUnitY = SubHeightC * (2 - frame_mbs_only_flag);
   }
 
+  // Calculate the cropping rectangle
+  PicCropLeftOffset = CropUnitX * frame_crop_left_offset;
+  PicCropWidth = PicWidthInSamplesL - (CropUnitX * frame_crop_right_offset + 1) - PicCropLeftOffset + 1;
+  PicCropTopOffset = CropUnitY * frame_crop_top_offset;
+  PicCropHeight = (16 * FrameHeightInMbs) - (CropUnitY * frame_crop_bottom_offset + 1) - PicCropTopOffset + 1;
+
   bool field_pic_flag = false;  // For now, assume field_pic_flag false
   MbaffFrameFlag = (mb_adaptive_frame_field_flag && !field_pic_flag);
   if (pic_order_cnt_type == 1)
@@ -603,8 +608,8 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   // Parse the VUI
   READFLAG(vui_parameters_present_flag);
   if (vui_parameters_present_flag)
-    vui_parameters.read(reader, itemTree, BitDepthY, BitDepthC, chroma_format_idc);
-
+    vui_parameters.read(reader, itemTree, BitDepthY, BitDepthC, chroma_format_idc, frame_mbs_only_flag);
+   
   // Log all the calculated values
   LOGVAL(BitDepthY);
   LOGVAL(QpBdOffsetY);
@@ -627,11 +632,15 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   LOGVAL(ChromaArrayType);
   LOGVAL(CropUnitX);
   LOGVAL(CropUnitY);
+  LOGVAL(PicCropLeftOffset);
+  LOGVAL(PicCropWidth);
+  LOGVAL(PicCropTopOffset);
+  LOGVAL(PicCropHeight);
   LOGVAL(MbaffFrameFlag);
   LOGVAL(MaxFrameNum);
 }
 
-void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree, int BitDepthY, int BitDepthC, int chroma_format_idc)
+void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree, int BitDepthY, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag)
 {
   READFLAG(aspect_ratio_info_present_flag);
   if (aspect_ratio_info_present_flag) 
@@ -731,6 +740,8 @@ void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, 
     READFLAG(fixed_frame_rate_flag);
 
     frameRate = (double)time_scale / (double)num_units_in_tick;
+    if (frame_mbs_only_flag)
+      frameRate /= 2.0;
     LOGVAL(frameRate);
   }
 
@@ -1783,7 +1794,7 @@ void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_user_data_regist
   sub_byte_reader reader(data);
 
   TreeItem *itemTree = root ? new TreeItem("user_data_registered_itu_t_t35()", root) : nullptr;
-  QStringList itu_t_t35_country_code_meaning = QStringList() << "Japan" << "Albania" << "Algeria" << "American Samoa" << "Germany (Federal Republic of)" << "Anguilla" << "Antigua and Barbuda" << "Argentina" << "Ascension (see S. Helena)" << "Australia" << "Austria" << "Bahamas" << "Bahrain" << "Bangladesh" << "Barbados" << "Belgium" << "Belize" << "Benin (Republic of)" << "Bermudas" << "Bhutan (Kingdom of)" << "Bolivia" << "Botswana" << "Brazil" << "British Antarctic Territory" << "British Indian Ocean Territory" << "British Virgin Islands" << "Brunei Darussalam" << "Bulgaria" << "Myanmar (Union of)" << "Burundi" << "Byelorussia" << "Cameroon" << "Canada" << "Cape Verde" << "Cayman Islands" << "Central African Republic" << "Chad" << "Chile" << "China" << "Colombia" << "Comoros" << "Congo" << "Cook Islands" << "Costa Rica" << "Cuba" << "Cyprus" << "Czech and Slovak Federal Republic" << "Cambodia" << "Democratic People's Republic of Korea" << "Denmark" << "Djibouti" << "Dominican Republic" << "Dominica" << "Ecuador" << "Egypt" << "El Salvador" << "Equatorial Guinea" << "Ethiopia" << "Falkland Islands" << "Fiji" << "Finland" << "France" << "French Polynesia" << "French Southern and Antarctic Lands" << "Gabon" << "Gambia" << "Germany (Federal Republic of)" << "Angola" << "Ghana" << "Gibraltar" << "Greece" << "Grenada" << "Guam" << "Guatemala" << "Guernsey" << "Guinea" << "Guinea-Bissau" << "Guayana" << "Haiti" << "Honduras" << "Hongkong" << "Hungary (Republic of)" << "Iceland" << "India" << "Indonesia" << "Iran (Islamic Republic of)" << "Iraq" << "Ireland" << "Israel" << "Italy" << "Côte d'Ivoire" << "Jamaica" << "Afghanistan" << "Jersey" << "Jordan" << "Kenya" << "Kiribati" << "Korea (Republic of)" << "Kuwait" << "Lao (People's Democratic Republic)" << "Lebanon" << "Lesotho" << "Liberia" << "Libya" << "Liechtenstein" << "Luxembourg" << "Macau" << "Madagascar" << "Malaysia" << "Malawi" << "Maldives" << "Mali" << "Malta" << "Mauritania" << "Mauritius" << "Mexico" << "Monaco" << "Mongolia" << "Montserrat" << "Morocco" << "Mozambique" << "Nauru" << "Nepal" << "Netherlands" << "Netherlands Antilles" << "New Caledonia" << "New Zealand" << "Nicaragua" << "Niger" << "Nigeria" << "Norway" << "Oman" << "Pakistan" << "Panama" << "Papua New Guinea" << "Paraguay" << "Peru" << "Philippines" << "Poland (Republic of)" << "Portugal" << "Puerto Rico" << "Qatar" << "Romania" << "Rwanda" << "Saint Kitts and Nevis" << "Saint Croix" << "Saint Helena and Ascension" << "Saint Lucia" << "San Marino" << "Saint Thomas" << "Sao Tomé and Principe" << "Saint Vincent and the Grenadines" << "Saudi Arabia" << "Senegal" << "Seychelles" << "Sierra Leone" << "Singapore" << "Solomon Islands" << "Somalia" << "South Africa" << "Spain" << "Sri Lanka" << "Sudan" << "Suriname" << "Swaziland" << "Sweden" << "Switzerland" << "Syria" << "Tanzania" << "Thailand" << "Togo" << "Tonga" << "Trinidad and Tobago" << "Tunisia" << "Turkey" << "Turks and Caicos Islands" << "Tuvalu" << "Uganda" << "Ukraine" << "United Arab Emirates" << "United Kingdom" << "United States (ANSI-SCTE 128-1)" << "Burkina Faso" << "Uruguay" << "U.S.S.R." << "Vanuatu" << "Vatican City State" << "Venezuela" << "Viet Nam" << "Wallis and Futuna" << "Western Samoa" << "Yemen (Republic of)" << "Yemen (Republic of)" << "Yugoslavia" << "Zaire" << "Zambia" << "Zimbabwe" << "Unspecified";
+  QStringList itu_t_t35_country_code_meaning = QStringList() << "Japan" << "Albania" << "Algeria" << "American Samoa" << "Germany (Federal Republic of)" << "Anguilla" << "Antigua and Barbuda" << "Argentina" << "Ascension (see S. Helena)" << "Australia" << "Austria" << "Bahamas" << "Bahrain" << "Bangladesh" << "Barbados" << "Belgium" << "Belize" << "Benin (Republic of)" << "Bermudas" << "Bhutan (Kingdom of)" << "Bolivia" << "Botswana" << "Brazil" << "British Antarctic Territory" << "British Indian Ocean Territory" << "British Virgin Islands" << "Brunei Darussalam" << "Bulgaria" << "Myanmar (Union of)" << "Burundi" << "Byelorussia" << "Cameroon" << "Canada" << "Cape Verde" << "Cayman Islands" << "Central African Republic" << "Chad" << "Chile" << "China" << "Colombia" << "Comoros" << "Congo" << "Cook Islands" << "Costa Rica" << "Cuba" << "Cyprus" << "Czech and Slovak Federal Republic" << "Cambodia" << "Democratic People's Republic of Korea" << "Denmark" << "Djibouti" << "Dominican Republic" << "Dominica" << "Ecuador" << "Egypt" << "El Salvador" << "Equatorial Guinea" << "Ethiopia" << "Falkland Islands" << "Fiji" << "Finland" << "France" << "French Polynesia" << "French Southern and Antarctic Lands" << "Gabon" << "Gambia" << "Germany (Federal Republic of)" << "Angola" << "Ghana" << "Gibraltar" << "Greece" << "Grenada" << "Guam" << "Guatemala" << "Guernsey" << "Guinea" << "Guinea-Bissau" << "Guayana" << "Haiti" << "Honduras" << "Hongkong" << "Hungary (Republic of)" << "Iceland" << "India" << "Indonesia" << "Iran (Islamic Republic of)" << "Iraq" << "Ireland" << "Israel" << "Italy" << "Cï¿½te d'Ivoire" << "Jamaica" << "Afghanistan" << "Jersey" << "Jordan" << "Kenya" << "Kiribati" << "Korea (Republic of)" << "Kuwait" << "Lao (People's Democratic Republic)" << "Lebanon" << "Lesotho" << "Liberia" << "Libya" << "Liechtenstein" << "Luxembourg" << "Macau" << "Madagascar" << "Malaysia" << "Malawi" << "Maldives" << "Mali" << "Malta" << "Mauritania" << "Mauritius" << "Mexico" << "Monaco" << "Mongolia" << "Montserrat" << "Morocco" << "Mozambique" << "Nauru" << "Nepal" << "Netherlands" << "Netherlands Antilles" << "New Caledonia" << "New Zealand" << "Nicaragua" << "Niger" << "Nigeria" << "Norway" << "Oman" << "Pakistan" << "Panama" << "Papua New Guinea" << "Paraguay" << "Peru" << "Philippines" << "Poland (Republic of)" << "Portugal" << "Puerto Rico" << "Qatar" << "Romania" << "Rwanda" << "Saint Kitts and Nevis" << "Saint Croix" << "Saint Helena and Ascension" << "Saint Lucia" << "San Marino" << "Saint Thomas" << "Sao Tomï¿½ and Principe" << "Saint Vincent and the Grenadines" << "Saudi Arabia" << "Senegal" << "Seychelles" << "Sierra Leone" << "Singapore" << "Solomon Islands" << "Somalia" << "South Africa" << "Spain" << "Sri Lanka" << "Sudan" << "Suriname" << "Swaziland" << "Sweden" << "Switzerland" << "Syria" << "Tanzania" << "Thailand" << "Togo" << "Tonga" << "Trinidad and Tobago" << "Tunisia" << "Turkey" << "Turks and Caicos Islands" << "Tuvalu" << "Uganda" << "Ukraine" << "United Arab Emirates" << "United Kingdom" << "United States (ANSI-SCTE 128-1)" << "Burkina Faso" << "Uruguay" << "U.S.S.R." << "Vanuatu" << "Vatican City State" << "Venezuela" << "Viet Nam" << "Wallis and Futuna" << "Western Samoa" << "Yemen (Republic of)" << "Yemen (Republic of)" << "Yugoslavia" << "Zaire" << "Zambia" << "Zimbabwe" << "Unspecified";
   READBITS_M(itu_t_t35_country_code, 8, itu_t_t35_country_code_meaning);
   int i = 1;
   if (itu_t_t35_country_code == 0xff)

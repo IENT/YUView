@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 
 #include "parserBase.h"
 #include "parserAnnexB.h"
+#include "parserAV1OBU.h"
 #include "FFMpegLibrariesHandling.h"
 #include "fileSourceFFmpegFile.h"
 
@@ -103,6 +104,8 @@ private:
 
   // Used for parsing if the packets contain an annexB file that we can parse.
   QScopedPointer<parserAnnexB> annexBParser;
+  // Used for parsing if the packets contain an obu file that we can parse.
+  QScopedPointer<parserAV1OBU> obuParser;
 
   void parseExtradata_generic(QByteArray &extradata);
   void parseExtradata_AVC(QByteArray &extradata);

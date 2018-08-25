@@ -57,9 +57,9 @@ public:
   // What statistics do we support?
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
 
-  QString getLibraryPath() const Q_DECL_OVERRIDE { return ff.getLibPath(); }
-  QString getDecoderName() const Q_DECL_OVERRIDE { return "FFmpeg"; }
-  QString getCodecName()         Q_DECL_OVERRIDE;
+  QStringList getLibraryPaths() const Q_DECL_OVERRIDE { return ff.getLibPaths(); }
+  QString     getDecoderName()  const Q_DECL_OVERRIDE { return "FFmpeg"; }
+  QString     getCodecName()          Q_DECL_OVERRIDE;
 
   static QStringList getLogMessages() { return FFmpegVersionHandler::getLogMessages(); }
 
@@ -88,6 +88,9 @@ protected:
 
   // When pushing raw data to the decoder, we need to package it into AVPackets
   AVPacketWrapper raw_pkt;
+
+  // An array of AV_INPUT_BUFFER_PADDING_SIZE zeros to be added as padding in pushData
+  QByteArray avPacketPaddingData;
 };
 
 #endif // DECODERFFMPEG_H

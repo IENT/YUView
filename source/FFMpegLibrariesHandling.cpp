@@ -936,8 +936,6 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
     path = givenPath.absolutePath() + "/";
   }
 
-  libPath = path;
-
   // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll on windows.
   // On linux, the libraries may be named differently. On Ubuntu they are named libavutil-ffmpeg.so.55.
   // On arch linux the name is libavutil.so.55. We will try to look for both namings.
@@ -1006,9 +1004,6 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
   libAvcodec.unload();
   libAvformat.unload();
 
-  // Get the path of the avFormat lib. Actually all libraries might be in different dirs thoug...
-  libPath = QFileInfo(avFormatLib).absolutePath();
-
   // We will load the libraries (in this order):
   // avutil, swresample, avcodec, avformat.
   bool success = true;
@@ -1044,6 +1039,31 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
     return bindFunctionsFromLibraries();
   }
   return false;
+}
+
+void FFmpegLibraryFunctions::addLibNamesToList(QString libName, QStringList &l, const QLibrary &lib) const
+{
+  l.append(libName);
+  if (lib.isLoaded())
+  {
+    l.append(lib.fileName());
+    l.append(lib.fileName());
+  }
+  else
+  {
+    l.append("None");
+    l.append("None");
+  }
+}
+
+QStringList FFmpegLibraryFunctions::getLibPaths() const
+{
+  QStringList ret;
+  addLibNamesToList("AVCodec", ret, libAvcodec);
+  addLibNamesToList("AVFormat", ret, libAvformat);
+  addLibNamesToList("AVUtil", ret, libAvutil);
+  addLibNamesToList("SwResample", ret, libSwresample);
+  return ret;
 }
 
 // ----------------- FFmpegVersionHandler -------------------------------------------

@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -68,6 +68,8 @@ parserAVFormat::parserAVFormat(AVCodecSpecfier codec)
     annexBParser.reset(new parserAnnexBHEVC());
   else if (codecID.isMpeg2())
     annexBParser.reset(new parserAnnexBMpeg2());
+  else if (codecID.isAV1())
+    obuParser.reset(new parserAV1OBU());
 
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
@@ -293,7 +295,8 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 
       int nalID = 0;
       packetDataFormat_t packetFormat = packet.guessDataFormatFromData();
-      while (posInData + 4 <= avpacketData.length())
+      const int MIN_NAL_SIZE = 3;
+      while (posInData + MIN_NAL_SIZE <= avpacketData.length())
       {
         QByteArray firstBytes = avpacketData.mid(posInData, 4);
 
@@ -357,11 +360,43 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
       if (codecID.isMpeg2())
         specificDescription = " - ";    // In mpeg2 there is no concept of NAL units
       else
-        specificDescription = " - NALS:";
+        specificDescription = " - NALs:";
       for (QString n : nalNames)
         specificDescription += (" " + n);
     }
+    else if (obuParser)
+    {
+      int obuID = 0;
+      // Colloect the types of NALs to create a good name later
+      QStringList obuNames;
 
+      const int MIN_OBU_SIZE = 2;
+      while (posInData + MIN_OBU_SIZE <= avpacketData.length())
+      {
+        QString obuTypeName;
+        QUint64Pair obuStartEndPosFile; // Not used
+        try
+        {  
+          int nrBytesRead = obuParser->parseAndAddOBU(obuID, avpacketData.mid(posInData), itemTree, obuStartEndPosFile, &obuTypeName);
+          DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed OBU header %d bytes", nrBytesRead);
+          posInData += nrBytesRead;
+        }
+        catch (...)
+        {
+          // Catch exceptions and just return
+          break;
+        }
+
+        if (!obuTypeName.isEmpty())
+          obuNames.append(obuTypeName);
+        obuID++;
+      }
+
+      specificDescription = " - OBUs:";
+      for (QString n : obuNames)
+        specificDescription += (" " + n);
+    }
+    
     if (itemTree)
       // Set a useful name of the TreeItem (the root for this NAL)
       itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": "") + specificDescription);
