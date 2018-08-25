@@ -191,7 +191,7 @@ private:
 
   // Get the next item and frame to cache from the queue and push it to the given worker.
   // Return false if there are no more jobs to be pushed.
-  bool pushNextJobToThread(loadingThread *thread);
+  bool pushNextJobToCachingThread(loadingThread *thread);
   
   bool updateCacheQueueAndRestartWorker;
 

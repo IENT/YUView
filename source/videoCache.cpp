@@ -60,8 +60,8 @@
 #define DEBUG_CACHING_DETAIL(fmt,...) ((void)0)
 #endif
 
-#define CACHING_THREAD_JOBS_OUTPUT 1
-#if CACHING_THREAD_JOBS_OUTPUT
+#define CACHING_THREAD_JOBS_OUTPUT 0
+#if CACHING_THREAD_JOBS_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_JOBS qDebug
 #else
@@ -348,7 +348,7 @@ void videoCache::startWorkerThreads(int nrThreads)
 
     if (workerState == workerRunning)
       // Push the next job to the worker. Otherwise it will not start working if caching is currently running.
-      pushNextJobToThread(newThread);
+      pushNextJobToCachingThread(newThread);
   }
 }
 
@@ -957,7 +957,7 @@ void videoCache::startCaching()
     // Push a task to all the threads and start them.
     bool jobStarted = false;
     for (int i = 0; i < cachingThreadList.count(); i++)
-      jobStarted |= pushNextJobToThread(cachingThreadList[i]);
+      jobStarted |= pushNextJobToCachingThread(cachingThreadList[i]);
 
     workerState = jobStarted ? workerRunning : workerIdle;
   }
@@ -1002,7 +1002,6 @@ void videoCache::threadCachingFinished()
   Q_ASSERT_X(worker->isWorking(), "videoCache::threadCachingFinished", "The worker that just finished was not working?");
   worker->setWorking(false);
   DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - state %d - worker %p", workerState, worker);
-  DEBUG_JOBS("videoCache::threadCachingFinished - state %d - worker %p", workerState, worker);
 
   // Check if all threads have stopped.
   bool jobsRunning = false;
@@ -1048,7 +1047,7 @@ void videoCache::threadCachingFinished()
       DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished Test mode - start next job", t);
       for (loadingThread *t : cachingThreadList)
         if (t->worker() == worker)
-          jobsRunning |= pushNextJobToThread(t);
+          jobsRunning |= pushNextJobToCachingThread(t);
     }
     return;
   }
@@ -1155,7 +1154,7 @@ void videoCache::threadCachingFinished()
     // Get the thread of the worker and push the next cache job to it
     for (loadingThread *t : cachingThreadList)
       if (t->worker() == worker)
-        jobsRunning |= pushNextJobToThread(t);
+        jobsRunning |= pushNextJobToCachingThread(t);
   }
 
   if (!jobsRunning)
@@ -1185,7 +1184,7 @@ void videoCache::threadCachingFinished()
   DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - new state %d", workerState);
 }
 
-bool videoCache::pushNextJobToThread(loadingThread *thread)
+bool videoCache::pushNextJobToCachingThread(loadingThread *thread)
 {
   if ((cacheQueue.isEmpty() && !testMode) || thread->isQuitting())
     // No more jobs in the cache queue or the job does not accept new jobs.
@@ -1201,7 +1200,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
     thread->worker()->setJob(testItem, frameNr, true);
     thread->worker()->setWorking(true);
     thread->worker()->processCacheJob();
-    DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread - %d of %s", frameNr, testItem->getName().toStdString().c_str());
+    DEBUG_CACHING_DETAIL("videoCache::pushNextJobToCachingThread - %d of %s", frameNr, testItem->getName().toStdString().c_str());
     testLoopCount--;
     return true;
   }
@@ -1219,7 +1218,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
       if (nrThreadsPlayback == 0)
       {
         // No caching while playback is running
-        DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread no new job started nrThreadsPlayback=0");
+        DEBUG_CACHING_DETAIL("videoCache::pushNextJobToCachingThread no new job started nrThreadsPlayback=0");
         return false;
       }
 
@@ -1235,7 +1234,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
       {
         // The maximum number (or more) of threads are already working.
         // Do not start another one.
-        DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread no new job started nrThreadsPlayback=%d threadsWorking=%d", nrThreadsPlayback, threadsWorking);
+        DEBUG_CACHING_DETAIL("videoCache::pushNextJobToCachingThread no new job started nrThreadsPlayback=%d threadsWorking=%d", nrThreadsPlayback, threadsWorking);
         return false;
       }
     }
@@ -1296,7 +1295,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
     plItemFrame frameToRemove = cacheDeQueue.dequeue();
     unsigned int frameToRemoveSize = frameToRemove.first->getCachingFrameSize();
 
-    DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread Remove frame %d of %s", frameToRemove.second, frameToRemove.first->getName().toStdString().c_str());
+    DEBUG_CACHING_DETAIL("videoCache::pushNextJobToCachingThread Remove frame %d of %s", frameToRemove.second, frameToRemove.first->getName().toStdString().c_str());
     frameToRemove.first->removeFrameFromCache(frameToRemove.second);
     cacheLevelCurrent -= frameToRemoveSize;
   }
@@ -1314,7 +1313,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
   thread->worker()->setJob(plItem, frameToCache);
   thread->worker()->setWorking(true);
   thread->worker()->processCacheJob();
-  DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread - %d of %s", frameToCache, plItem->getName().toStdString().c_str());
+  DEBUG_CACHING_DETAIL("videoCache::pushNextJobToCachingThread - %d of %s", frameToCache, plItem->getName().toStdString().c_str());
 
   // Update the cache level
   cacheLevelCurrent += frameSize;
