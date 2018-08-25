@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tabGeneral">
       <attribute name="title">
@@ -948,6 +948,47 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>checkBoxWatchFiles</tabstop>
+  <tabstop>checkBoxContinuePlaybackNewSelection</tabstop>
+  <tabstop>checkBoxAskToSave</tabstop>
+  <tabstop>comboBoxTheme</tabstop>
+  <tabstop>comboBoxSplitLineStyle</tabstop>
+  <tabstop>comboBoxMouseMode</tabstop>
+  <tabstop>pushButtonEditBackgroundColor</tabstop>
+  <tabstop>pushButtonEditGridColor</tabstop>
+  <tabstop>checkBoxPlaybackControlFullScreen</tabstop>
+  <tabstop>groupBoxUpdates</tabstop>
+  <tabstop>comboBoxUpdateSettings</tabstop>
+  <tabstop>groupBoxCaching</tabstop>
+  <tabstop>sliderThreshold</tabstop>
+  <tabstop>checkBoxNrThreads</tabstop>
+  <tabstop>spinBoxNrThreads</tabstop>
+  <tabstop>checkBoxPausPlaybackForCaching</tabstop>
+  <tabstop>checkBoxEnablePlaybackCaching</tabstop>
+  <tabstop>spinBoxThreadLimit</tabstop>
+  <tabstop>lineEditDecoderPath</tabstop>
+  <tabstop>pushButtonDecoderSelectPath</tabstop>
+  <tabstop>pushButtonDecoderClearPath</tabstop>
+  <tabstop>lineEditLibde265File</tabstop>
+  <tabstop>pushButtonLibde265SelectFile</tabstop>
+  <tabstop>pushButtonLibde265ClearFile</tabstop>
+  <tabstop>lineEditLibHMFile</tabstop>
+  <tabstop>pushButtonlibHMSelectFile</tabstop>
+  <tabstop>pushButtonlibHMClearFile</tabstop>
+  <tabstop>lineEditLibJEMFile</tabstop>
+  <tabstop>pushButtonLibJEMSelectFile</tabstop>
+  <tabstop>pushButtonLibJEMClearFile</tabstop>
+  <tabstop>lineEditAVUtil</tabstop>
+  <tabstop>lineEditSWResample</tabstop>
+  <tabstop>lineEditAVCodec</tabstop>
+  <tabstop>lineEditAVFormat</tabstop>
+  <tabstop>pushButtonFFMpegSelectFile</tabstop>
+  <tabstop>pushButtonFFMpegClearFile</tabstop>
+  <tabstop>pushButtonSave</tabstop>
+  <tabstop>pushButtonCancel</tabstop>
+ </tabstops>
  <resources>
   <include location="../images/images.qrc"/>
  </resources>
