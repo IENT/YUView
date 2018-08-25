@@ -164,7 +164,7 @@ class loadingWorker : public QObject
 public:
   loadingWorker(QObject *parent) : QObject(parent) { currentCacheItem = nullptr; working = false; id = id_counter++; }
   playlistItem *getCacheItem() { return currentCacheItem; }
-  void setJob(playlistItem *item, int frame, bool test=false) { currentCacheItem = item; currentFrame = frame; testMode = test; }
+  void setJob(playlistItem *item, int frame, bool test=false);
   void setWorking(bool state) { working = state; }
   bool isWorking() { return working; }
   QString getStatus() { return QString("T%1: %2\n").arg(id).arg(working ? QString::number(currentFrame) : QString("-")); }
@@ -188,6 +188,15 @@ private:
 // Initially this is 0. The threads will number themselves so that there are never two threads with the same id
 int loadingWorker::id_counter = 0;
 
+void loadingWorker::setJob(playlistItem *item, int frame, bool test)
+{
+  Q_ASSERT_X(item != nullptr, "loadingWorker::setJob", "Given item is nullptr");
+  Q_ASSERT_X(frame >= 0, "loadingWorker::setJob", "Given frame index invalid");
+  currentCacheItem = item;
+  currentFrame = frame;
+  testMode = test;
+}
+
 void loadingWorker::processCacheJob()
 {
   DEBUG_JOBS("loadingWorker::processCacheJob invoke processCacheJobInternal");
@@ -202,7 +211,7 @@ void loadingWorker::processLoadingJob(bool playing, bool loadRawData)
 
 void loadingWorker::processCacheJobInternal()
 {
-  Q_ASSERT_X(currentCacheItem != nullptr && currentFrame >= 0, "processCacheJobInternal", "Invalid Job");
+  Q_ASSERT_X(currentCacheItem != nullptr && currentFrame >= 0, "loadingWorker::processLoadingJobInternal", "Invalid Job");
   DEBUG_JOBS("loadingWorker::processCacheJobInternal");
 
   // Just cache the frame that was given to us.
@@ -216,18 +225,18 @@ void loadingWorker::processCacheJobInternal()
 
 void loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
 {
-  Q_ASSERT_X(currentCacheItem != nullptr, "processLoadingJobInternal", "The set job is nullptr");
-  Q_ASSERT_X((!currentCacheItem->isIndexedByFrame() || currentFrame >= 0), "processLoadingJobInternal", "The set frame index is invalid");
-  Q_ASSERT_X(!currentCacheItem->taggedForDeletion(), "processLoadingJobInternal", "The set job was tagged for deletion");
+  Q_ASSERT_X(currentCacheItem != nullptr, "loadingWorker::processLoadingJobInternal", "The set job is nullptr");
+  Q_ASSERT_X((!currentCacheItem->isIndexedByFrame() || currentFrame >= 0), "loadingWorker::processLoadingJobInternal", "The set frame index is invalid");
+  Q_ASSERT_X(!currentCacheItem->taggedForDeletion(), "loadingWorker::processLoadingJobInternal", "The set job was tagged for deletion");
   DEBUG_JOBS("loadingWorker::processLoadingJobInternal");
 
   // Load the frame of the item that was given to us.
   // This is performed in the thread (the loading thread with higher priority.
   currentCacheItem->loadFrame(currentFrame, playing, loadRawData);
 
+  currentCacheItem = nullptr;
   emit loadingFinished();
   DEBUG_JOBS("loadingWorker::processLoadingJobInternal emit loadingFinished");
-  currentCacheItem = nullptr;
 }
 
 class videoCache::loadingThread : public QThread
@@ -485,7 +494,7 @@ void videoCache::interactiveLoaderFinished()
     updateCacheStatus();
   
   // The worker finished. Is there another loading request in the queue?
-  if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] >= 0)
+  if (interactiveItemQueued[threadID] != nullptr && interactiveItemQueued_Idx[threadID] >= 0)
   {
     // Let the interactive worker work on the queued request.
     bool loadRawData = splitView->showRawData() && !playback->playing();
