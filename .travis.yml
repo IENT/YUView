@@ -39,6 +39,8 @@ script:
   - ls -alh
   - ls -alh build
   - ls -alh build/release
+
+after_success:
   # mac specific deployment
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then /usr/local/opt/qt5/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2; fi
   # check what YUView is linking against
@@ -50,9 +52,6 @@ script:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then zip -r ../../YUView-MacOs.zip YUView.app; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd ../..; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" AND ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh; fi
-
-after_success:
-  # not needed?
 
 before_deploy:
   # not needed?
