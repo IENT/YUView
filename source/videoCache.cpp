@@ -60,6 +60,14 @@
 #define DEBUG_CACHING_DETAIL(fmt,...) ((void)0)
 #endif
 
+#define CACHING_THREAD_JOBS_OUTPUT 0
+#if CACHING_THREAD_JOBS_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_JOBS qDebug
+#else
+#define DEBUG_JOBS(fmt,...) ((void)0)
+#endif
+
 videoCache::cacheJob::cacheJob(playlistItem *item, indexRange range) :
   plItem(item),
   frameRange(range)
@@ -156,14 +164,14 @@ class loadingWorker : public QObject
 public:
   loadingWorker(QObject *parent) : QObject(parent) { currentCacheItem = nullptr; working = false; id = id_counter++; }
   playlistItem *getCacheItem() { return currentCacheItem; }
-  void setJob(playlistItem *item, int frame, bool test=false) { currentCacheItem = item; currentFrame = frame; testMode = test; }
+  void setJob(playlistItem *item, int frame, bool test=false);
   void setWorking(bool state) { working = state; }
   bool isWorking() { return working; }
   QString getStatus() { return QString("T%1: %2\n").arg(id).arg(working ? QString::number(currentFrame) : QString("-")); }
   // Process the job in the thread that this worker was moved to. This function can be directly
   // called from the main thread. It will still process the call in the separate thread.
-  void processCacheJob() { QMetaObject::invokeMethod(this, "processCacheJobInternal"); }
-  void processLoadingJob(bool playing, bool loadRawData) { QMetaObject::invokeMethod(this, "processLoadingJobInternal", Q_ARG(bool, playing), Q_ARG(bool, loadRawData)); }
+  void processCacheJob();
+  void processLoadingJob(bool playing, bool loadRawData);
 signals:
   void loadingFinished();
 private slots:
@@ -180,28 +188,55 @@ private:
 // Initially this is 0. The threads will number themselves so that there are never two threads with the same id
 int loadingWorker::id_counter = 0;
 
+void loadingWorker::setJob(playlistItem *item, int frame, bool test)
+{
+  Q_ASSERT_X(item != nullptr, "loadingWorker::setJob", "Given item is nullptr");
+  Q_ASSERT_X(frame >= 0, "loadingWorker::setJob", "Given frame index invalid");
+  currentCacheItem = item;
+  currentFrame = frame;
+  testMode = test;
+}
+
+void loadingWorker::processCacheJob()
+{
+  DEBUG_JOBS("loadingWorker::processCacheJob invoke processCacheJobInternal");
+  QMetaObject::invokeMethod(this, "processCacheJobInternal"); 
+}
+
+void loadingWorker::processLoadingJob(bool playing, bool loadRawData)
+{
+  DEBUG_JOBS("loadingWorker::processLoadingJob invoke processLoadingJobInternal");
+  QMetaObject::invokeMethod(this, "processLoadingJobInternal", Q_ARG(bool, playing), Q_ARG(bool, loadRawData)); 
+}
+
 void loadingWorker::processCacheJobInternal()
 {
-  Q_ASSERT_X(currentCacheItem != nullptr && currentFrame >= 0, "processCacheJobInternal", "Invalid Job");
+  Q_ASSERT_X(currentCacheItem != nullptr && currentFrame >= 0, "loadingWorker::processLoadingJobInternal", "Invalid Job");
+  DEBUG_JOBS("loadingWorker::processCacheJobInternal");
 
   // Just cache the frame that was given to us.
   // This is performed in the thread that this worker is currently placed in.
   currentCacheItem->cacheFrame(currentFrame, testMode);
   
   currentCacheItem = nullptr;
+  DEBUG_JOBS("loadingWorker::processCacheJobInternal emit loadingFinished");
   emit loadingFinished();
 }
 
 void loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
 {
-  Q_ASSERT_X(currentCacheItem != nullptr && (!currentCacheItem->isIndexedByFrame() || currentFrame >= 0) && !currentCacheItem->taggedForDeletion(), "processLoadingJobInternal", "Invalid non loadable job");
+  Q_ASSERT_X(currentCacheItem != nullptr, "loadingWorker::processLoadingJobInternal", "The set job is nullptr");
+  Q_ASSERT_X((!currentCacheItem->isIndexedByFrame() || currentFrame >= 0), "loadingWorker::processLoadingJobInternal", "The set frame index is invalid");
+  Q_ASSERT_X(!currentCacheItem->taggedForDeletion(), "loadingWorker::processLoadingJobInternal", "The set job was tagged for deletion");
+  DEBUG_JOBS("loadingWorker::processLoadingJobInternal");
 
   // Load the frame of the item that was given to us.
   // This is performed in the thread (the loading thread with higher priority.
   currentCacheItem->loadFrame(currentFrame, playing, loadRawData);
 
-  emit loadingFinished();
   currentCacheItem = nullptr;
+  emit loadingFinished();
+  DEBUG_JOBS("loadingWorker::processLoadingJobInternal emit loadingFinished");
 }
 
 class videoCache::loadingThread : public QThread
@@ -322,7 +357,7 @@ void videoCache::startWorkerThreads(int nrThreads)
 
     if (workerState == workerRunning)
       // Push the next job to the worker. Otherwise it will not start working if caching is currently running.
-      pushNextJobToThread(newThread);
+      pushNextJobToCachingThread(newThread);
   }
 }
 
@@ -459,11 +494,12 @@ void videoCache::interactiveLoaderFinished()
     updateCacheStatus();
   
   // The worker finished. Is there another loading request in the queue?
-  if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] != -1)
+  if (interactiveItemQueued[threadID] != nullptr && interactiveItemQueued_Idx[threadID] >= 0)
   {
     // Let the interactive worker work on the queued request.
     bool loadRawData = splitView->showRawData() && !playback->playing();
     interactiveThread[threadID]->worker()->setJob(interactiveItemQueued[threadID], interactiveItemQueued_Idx[threadID]);
+    interactiveThread[threadID]->worker()->setWorking(true);
     interactiveThread[threadID]->worker()->processLoadingJob(playback->playing(), loadRawData);
     DEBUG_CACHING_DETAIL("videoCache::interactiveLoaderFinished %d started - slot %d", interactiveItemQueued_Idx[threadID], threadID);
 
@@ -930,7 +966,7 @@ void videoCache::startCaching()
     // Push a task to all the threads and start them.
     bool jobStarted = false;
     for (int i = 0; i < cachingThreadList.count(); i++)
-      jobStarted |= pushNextJobToThread(cachingThreadList[i]);
+      jobStarted |= pushNextJobToCachingThread(cachingThreadList[i]);
 
     workerState = jobStarted ? workerRunning : workerIdle;
   }
@@ -1020,7 +1056,7 @@ void videoCache::threadCachingFinished()
       DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished Test mode - start next job", t);
       for (loadingThread *t : cachingThreadList)
         if (t->worker() == worker)
-          jobsRunning |= pushNextJobToThread(t);
+          jobsRunning |= pushNextJobToCachingThread(t);
     }
     return;
   }
@@ -1127,7 +1163,7 @@ void videoCache::threadCachingFinished()
     // Get the thread of the worker and push the next cache job to it
     for (loadingThread *t : cachingThreadList)
       if (t->worker() == worker)
-        jobsRunning |= pushNextJobToThread(t);
+        jobsRunning |= pushNextJobToCachingThread(t);
   }
 
   if (!jobsRunning)
@@ -1157,7 +1193,7 @@ void videoCache::threadCachingFinished()
   DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - new state %d", workerState);
 }
 
-bool videoCache::pushNextJobToThread(loadingThread *thread)
+bool videoCache::pushNextJobToCachingThread(loadingThread *thread)
 {
   if ((cacheQueue.isEmpty() && !testMode) || thread->isQuitting())
     // No more jobs in the cache queue or the job does not accept new jobs.
@@ -1173,7 +1209,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
     thread->worker()->setJob(testItem, frameNr, true);
     thread->worker()->setWorking(true);
     thread->worker()->processCacheJob();
-    DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread - %d of %s", frameNr, testItem->getName().toStdString().c_str());
+    DEBUG_CACHING_DETAIL("videoCache::pushNextJobToCachingThread - %d of %s", frameNr, testItem->getName().toStdString().c_str());
     testLoopCount--;
     return true;
   }
@@ -1191,7 +1227,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
       if (nrThreadsPlayback == 0)
       {
         // No caching while playback is running
-        DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread no new job started nrThreadsPlayback=0");
+        DEBUG_CACHING_DETAIL("videoCache::pushNextJobToCachingThread no new job started nrThreadsPlayback=0");
         return false;
       }
 
@@ -1207,7 +1243,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
       {
         // The maximum number (or more) of threads are already working.
         // Do not start another one.
-        DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread no new job started nrThreadsPlayback=%d threadsWorking=%d", nrThreadsPlayback, threadsWorking);
+        DEBUG_CACHING_DETAIL("videoCache::pushNextJobToCachingThread no new job started nrThreadsPlayback=%d threadsWorking=%d", nrThreadsPlayback, threadsWorking);
         return false;
       }
     }
@@ -1268,7 +1304,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
     plItemFrame frameToRemove = cacheDeQueue.dequeue();
     unsigned int frameToRemoveSize = frameToRemove.first->getCachingFrameSize();
 
-    DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread Remove frame %d of %s", frameToRemove.second, frameToRemove.first->getName().toStdString().c_str());
+    DEBUG_CACHING_DETAIL("videoCache::pushNextJobToCachingThread Remove frame %d of %s", frameToRemove.second, frameToRemove.first->getName().toStdString().c_str());
     frameToRemove.first->removeFrameFromCache(frameToRemove.second);
     cacheLevelCurrent -= frameToRemoveSize;
   }
@@ -1286,7 +1322,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
   thread->worker()->setJob(plItem, frameToCache);
   thread->worker()->setWorking(true);
   thread->worker()->processCacheJob();
-  DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread - %d of %s", frameToCache, plItem->getName().toStdString().c_str());
+  DEBUG_CACHING_DETAIL("videoCache::pushNextJobToCachingThread - %d of %s", frameToCache, plItem->getName().toStdString().c_str());
 
   // Update the cache level
   cacheLevelCurrent += frameSize;
