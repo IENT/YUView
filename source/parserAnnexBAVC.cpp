@@ -1752,7 +1752,7 @@ bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool
         READFLAG(full_timestamp_flag[i]);
         READFLAG(discontinuity_flag[i]);
         READFLAG(cnt_dropped_flag[i]);
-        READBITS(n_frames[i], 5);
+        READBITS(n_frames[i], 8);
         if (full_timestamp_flag[i])
         {
           READBITS(seconds_value[i], 6); /* 0..59 */
