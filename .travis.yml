@@ -2,19 +2,11 @@ language: cpp
 
 os:
   - linux
-  addons:
-    apt:
-      sources:
-        - ubuntu-toolchain-r-test
-      packages:
-        - g++-7
-  env:
-    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
   - osx
 dist:
   # Request Ubuntu 14 as linux
   - trusty
-compiler:
+compiler: 
   - gcc
 
 branches:
@@ -26,11 +18,17 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository ppa:forkotov02/opt-qt-5.11.1-trusty -y; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update; fi
+  # On linux also get a newer g++. The old one won't work.
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
   
 install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install qt5; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew link --force qt5; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh; fi
+  # On linux, install the new g++ version
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq g++-6; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90; fi
 
 script:
   # Run qmake and make
