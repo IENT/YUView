@@ -160,6 +160,16 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>rgbFormatComboBox</tabstop>
+  <tabstop>colorComponentsComboBox</tabstop>
+  <tabstop>RScaleSpinBox</tabstop>
+  <tabstop>RInvertCheckBox</tabstop>
+  <tabstop>GScaleSpinBox</tabstop>
+  <tabstop>GInvertCheckBox</tabstop>
+  <tabstop>BScaleSpinBox</tabstop>
+  <tabstop>BInvertCheckBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
