@@ -43,7 +43,7 @@
 #include "playlistItems.h"
 #include "settingsDialog.h"
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindow(parent)
 {
   QSettings settings;
   qRegisterMetaType<indexRange>("indexRange");
@@ -57,7 +57,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   ui.setupUi(this);
 
   // Create the update handler
-  updater.reset(new updateHandler(this));
+  updater.reset(new updateHandler(this, useAlternativeSources));
 
   setFocusPolicy(Qt::StrongFocus);
 
@@ -281,7 +281,8 @@ void MainWindow::updateRecentFileActions()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-  if (!ui.playlistTreeWidget->getIsSaved())
+  QSettings settings;
+  if (!ui.playlistTreeWidget->getIsSaved() && settings.value("AskToSaveOnExit", true).toBool())
   {
     QMessageBox::StandardButton resBtn = QMessageBox::question(this, "Quit YUView",
       tr("You have not saved the current playlist, are you sure?\n"),

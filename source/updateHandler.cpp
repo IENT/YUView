@@ -62,6 +62,7 @@ typedef QPair<QString, int> downloadFile;
 // ------------------ updateFileHandler helper class -----------------
 #define UPDATEFILEHANDLER_FILE_NAME "versioninfo.txt"
 #define UPDATEFILEHANDLER_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/master/win/autoupdate/"
+#define UPDATEFILEHANDLER_TESTDEPLOY_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/dev/win/autoupdate/"
 
 class updateFileHandler
 {
@@ -202,18 +203,14 @@ private:
 
 // ------------------ updateHandler -----------------
 
-updateHandler::updateHandler(QWidget *mainWindow) :
+updateHandler::updateHandler(QWidget *mainWindow, bool useAltSources) :
   mainWidget(mainWindow)
 {
-  updaterStatus = updaterIdle;
-  elevatedRights = false;
-  forceUpdate = false;
-  userCheckRequest = false;
-
   // We always perform the update in the path that the current executable is located in
   // and not in the current working directory.
   QFileInfo info(QCoreApplication::applicationFilePath());
   updatePath = info.absolutePath() + "/";
+  useAlternativeSources = useAltSources;
 
   connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::replyFinished);
   connect(&networkManager, &QNetworkAccessManager::sslErrors, this, &updateHandler::sslErrors);
@@ -315,8 +312,16 @@ void updateHandler::replyFinished(QNetworkReply *reply)
     if (updaterStatus == updaterEstablishConnection && !error)
     {
       // The secure connection was successfully established. Now request the update.txt file
-      DEBUG_UPDATE("updateHandler::replyFinished request version info file from" UPDATEFILEHANDLER_URL UPDATEFILEHANDLER_FILE_NAME);
-      networkManager.get(QNetworkRequest(QUrl(UPDATEFILEHANDLER_URL UPDATEFILEHANDLER_FILE_NAME)));
+      if (useAlternativeSources)
+      {
+        DEBUG_UPDATE("updateHandler::replyFinished request version info file from" UPDATEFILEHANDLER_TESTDEPLOY_URL UPDATEFILEHANDLER_FILE_NAME);
+        networkManager.get(QNetworkRequest(QUrl(UPDATEFILEHANDLER_TESTDEPLOY_URL UPDATEFILEHANDLER_FILE_NAME)));
+      }
+      else
+      {
+        DEBUG_UPDATE("updateHandler::replyFinished request version info file from" UPDATEFILEHANDLER_URL UPDATEFILEHANDLER_FILE_NAME);
+        networkManager.get(QNetworkRequest(QUrl(UPDATEFILEHANDLER_URL UPDATEFILEHANDLER_FILE_NAME)));
+      }
       updaterStatus = updaterChecking;
       return;
     }
@@ -497,9 +502,9 @@ void updateHandler::restartYUView(bool elevated)
   // and it should retry to update.
   HINSTANCE h;
   if (elevated)
-    h = ShellExecute(nullptr, L"runas", fullPathToExe, L"updateElevated", nullptr, SW_SHOWNORMAL);
+    h = ShellExecute(nullptr, L"runas", fullPathToExe, useAlternativeSources ? L"updateElevatedAltSource" : L"updateElevated", nullptr, SW_SHOWNORMAL);
   else
-    h = ShellExecute(nullptr, L"open", fullPathToExe, L"updateElevated", nullptr, SW_SHOWNORMAL);
+    h = ShellExecute(nullptr, L"open", fullPathToExe, useAlternativeSources ? L"updateElevatedAltSource" : L"updateElevated", nullptr, SW_SHOWNORMAL);
   INT_PTR retVal = (INT_PTR)h;
   if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
   {
@@ -549,7 +554,11 @@ void updateHandler::downloadNextFile()
   }
 
   DEBUG_UPDATE("updateHandler::downloadNextFile %s", currentDownloadFile);
-  QString fullURL = UPDATEFILEHANDLER_URL + currentDownloadFile.first;
+  QString fullURL;
+  if (useAlternativeSources)
+    fullURL = UPDATEFILEHANDLER_TESTDEPLOY_URL + currentDownloadFile.first;
+  else
+    fullURL = UPDATEFILEHANDLER_URL + currentDownloadFile.first;
   QNetworkReply *reply = networkManager.get(QNetworkRequest(QUrl(fullURL)));
   connect(reply, &QNetworkReply::downloadProgress, this, &updateHandler::updateDownloadProgress);
 }

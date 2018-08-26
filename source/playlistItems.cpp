@@ -45,7 +45,8 @@ namespace playlistItems
     playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemCompressedVideo::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemStatisticsCSVFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemStatisticsVTMBMSFile::getSupportedFileExtensions(allExtensions, filtersList);
 
     // Append the filter for playlist files
     allExtensions.append("yuvplaylist");
@@ -75,7 +76,8 @@ namespace playlistItems
     playlistItemCompressedVideo::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemStatisticsCSVFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemStatisticsVTMBMSFile::getSupportedFileExtensions(allExtensions, filtersList);
 
     // Append the filter for playlist files
       allExtensions.append("yuvplaylist");
@@ -155,14 +157,26 @@ namespace playlistItems
       }
     }
 
-    // Check playlistItemStatisticsFile
+    // Check playlistItemStatisticsCSVFile
     {
       QStringList allExtensions, filtersList;
-      playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+      playlistItemStatisticsCSVFile::getSupportedFileExtensions(allExtensions, filtersList);
 
       if (allExtensions.contains(ext))
       {
-        playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
+        playlistItemStatisticsCSVFile *newStatFile = new playlistItemStatisticsCSVFile(fileName);
+        return newStatFile;
+      }
+    }
+
+    // Check playlistItemVTMBMSStatisticsFile
+    {
+      QStringList allExtensions, filtersList;
+      playlistItemStatisticsVTMBMSFile::getSupportedFileExtensions(allExtensions, filtersList);
+
+      if (allExtensions.contains(ext))
+      {
+        playlistItemStatisticsVTMBMSFile *newStatFile = new playlistItemStatisticsVTMBMSFile(fileName);
         return newStatFile;
       }
     }
@@ -192,6 +206,12 @@ namespace playlistItems
         playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
         return newStatFile;
       }
+      else if (asType == types[5])
+      {
+        // Statistics File
+        playlistItemStatisticsVTMBMSFile *newStatFile = new playlistItemStatisticsVTMBMSFile(fileName);
+        return newStatFile;
+      }
     }
 
     return nullptr;
@@ -216,10 +236,15 @@ namespace playlistItems
       // Load the playlistItemHEVCFile
       newItem = playlistItemCompressedVideo::newPlaylistItemCompressedVideo(elem, filePath);
     }
-    else if (elem.tagName() == "playlistItemStatisticsFile")
+    else if (elem.tagName() == "playlistItemStatisticsCSVFile")
     {
       // Load the playlistItemStatisticsFile
-      newItem = playlistItemStatisticsFile::newplaylistItemStatisticsFile(elem, filePath);
+      newItem = playlistItemStatisticsCSVFile::newplaylistItemStatisticsCSVFile(elem, filePath);
+    }
+    else if (elem.tagName() == "playlistItemStatisticsVTMBMSFile")
+    {
+      // Load the playlistItemVTMBMSStatisticsFile
+      newItem = playlistItemStatisticsVTMBMSFile::newplaylistItemStatisticsVTMBMSFile(elem, filePath);
     }
     else if (elem.tagName() == "playlistItemText")
     {

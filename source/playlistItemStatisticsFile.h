@@ -77,9 +77,6 @@ public:
   // Are statistics currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isStatisticsLoading; }
 
-  // Create a new playlistItemStatisticsFile from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemStatisticsFile *newplaylistItemStatisticsFile(const QDomElementYUView &root, const QString &playlistFilePath);
-
   // Override from playlistItem. Return the statistics values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
 
@@ -87,19 +84,9 @@ public:
   virtual bool              providesStatistics() const Q_DECL_OVERRIDE { return true; }
   virtual statisticHandler *getStatisticsHandler() Q_DECL_OVERRIDE { return &statSource; }
 
-  // Add the file type filters and the extensions of files that we can load.
-  static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
-
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()  Q_DECL_OVERRIDE { return file.isFileChanged(); }
-  virtual void reloadItemSource() Q_DECL_OVERRIDE;
   virtual void updateSettings()   Q_DECL_OVERRIDE { file.updateFileWatchSetting(); statSource.updateSettings(); }
-
-public slots:
-  //! Load the statistics with frameIdx/type from file and put it into the cache.
-  //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
-  //! types which were not requested by the given 'type'.
-  void loadStatisticToCache(int frameIdxInternal, int type);
 
 protected:
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
@@ -108,27 +95,12 @@ protected:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-private:
-
   // The statistics source
   statisticHandler statSource;
 
   // Is the loadFrame function currently loading?
   bool isStatisticsLoading;
 
-  //! Scan the header: What types are saved in this file?
-  void readHeaderFromFile();
-  
-  QStringList parseCSVLine(const QString &line, char delimiter) const;
-
-  // A list of file positions where each POC/type starts
-  QMap<int, QMap<int, int64_t> > pocTypeStartList;
-
-  // --------------- background parsing ---------------
-
-  //! Parser the whole file and get the positions where a new POC/type starts. Save this position in p_pocTypeStartList.
-  //! This is performed in the background using a QFuture.
-  void readFrameAndTypePositionsFromFile();
   QFuture<void> backgroundParserFuture;
   double backgroundParserProgress;
   bool cancelBackgroundParser;

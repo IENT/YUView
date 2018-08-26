@@ -58,6 +58,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   // "Generals" tab
   ui.checkBoxWatchFiles->setChecked(settings.value("WatchFiles", true).toBool());
   ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection", false).toBool());
+  ui.checkBoxAskToSave->setChecked(settings.value("AskToSaveOnExit", true).toBool());
   // UI
   QString theme = settings.value("Theme", "Default").toString();
   int themeIdx = getThemeNameList().indexOf(theme);
@@ -307,6 +308,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // "General" tab
   settings.setValue("WatchFiles", ui.checkBoxWatchFiles->isChecked());
   settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
+  settings.setValue("AskToSaveOnExit", ui.checkBoxAskToSave->isChecked());
   // UI
   settings.setValue("Theme", ui.comboBoxTheme->currentText());
   settings.setValue("SplitViewLineStyle", ui.comboBoxSplitLineStyle->currentText());

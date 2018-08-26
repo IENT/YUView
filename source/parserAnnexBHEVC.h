@@ -178,21 +178,21 @@ protected:
 
     int tick_divisor_minus2;
     int du_cpb_removal_delay_increment_length_minus1;
-    int sub_pic_cpb_params_in_pic_timing_sei_flag;
+    int sub_pic_cpb_params_in_pic_timing_sei_flag = 0;
     int dpb_output_delay_du_length_minus1;
 
     int bit_rate_scale;
     int cpb_size_scale;
     int cpb_size_du_scale;
-    int initial_cpb_removal_delay_length_minus1;
-    int au_cpb_removal_delay_length_minus1;
-    int dpb_output_delay_length_minus1;
+    int initial_cpb_removal_delay_length_minus1 = 23;
+    int au_cpb_removal_delay_length_minus1      = 23;
+    int dpb_output_delay_length_minus1          = 23;
 
-    bool fixed_pic_rate_general_flag[8];
-    bool fixed_pic_rate_within_cvs_flag[8];
-    bool elemental_duration_in_tc_minus1[8];
-    bool low_delay_hrd_flag[8];
-    int cpb_cnt_minus1[8];
+    bool fixed_pic_rate_general_flag[8]    = {0, 0, 0, 0, 0, 0, 0, 0};
+    bool fixed_pic_rate_within_cvs_flag[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    int elemental_duration_in_tc_minus1[8];
+    bool low_delay_hrd_flag[8]             = {0, 0, 0, 0, 0, 0, 0, 0};
+    int cpb_cnt_minus1[8]                  = {0, 0, 0, 0, 0, 0, 0, 0};
 
     sub_layer_hrd_parameters nal_sub_hrd[8];
     sub_layer_hrd_parameters vcl_sub_hrd[8];
@@ -529,7 +529,7 @@ protected:
   // A slice NAL unit.
   struct slice : nal_unit_hevc
   {
-    slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
+    slice(const nal_unit_hevc &nal);
     void parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
     virtual int getPOC() const override { return PicOrderCntVal; }
 

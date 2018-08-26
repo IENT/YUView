@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>de.rwth_aachen.ient.YUView</id>
+  <launchable type="desktop-id">de.rwth_aachen.ient.YUView.desktop</launchable>
+  <name>YUView</name>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license> GPL-3.0-or-later</project_license>
+  <developer_name>Lehrstuhl und Institut für Nachrichtentechnik, RWTH Aachen</developer_name>
+  <summary>QT based, cross-platform YUV player with an advanced analytic toolset</summary>
+  <description>
+    <p>
+      YUView is a Qt based YUV player with an advanced analytic toolset for Linux, Windows and Mac. At its core, YUView is a powerful YUV player that can open and show almost any YUV format. With its simple interface it is easy to navigate through sequences and inspect details and a side by side and comparison view can help to spot differences between two sequences. A sophisticated statistics renderer can overlay the video with supplemental information. More features include playlists, support for visual tests and presentations, support of compressed formats (through libde265 and FFmpeg), support for raw RGB files as well as image files and image sequences, and many more.  
+    </p>
+  </description>
+  <url type="homepage">https://github.com/IENT/YUView</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Overview.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.0">
+    <content_attribute id="violence-cartoon">none</content_attribute>
+    <content_attribute id="violence-fantasy">none</content_attribute>
+    <content_attribute id="violence-realistic">none</content_attribute>
+    <content_attribute id="violence-bloodshed">none</content_attribute>
+    <content_attribute id="violence-sexual">none</content_attribute>
+    <content_attribute id="drugs-alcohol">none</content_attribute>
+    <content_attribute id="drugs-narcotics">none</content_attribute>
+    <content_attribute id="drugs-tobacco">none</content_attribute>
+    <content_attribute id="sex-nudity">none</content_attribute>
+    <content_attribute id="sex-themes">none</content_attribute>
+    <content_attribute id="language-profanity">none</content_attribute>
+    <content_attribute id="language-humor">none</content_attribute>
+    <content_attribute id="language-discrimination">none</content_attribute>
+    <content_attribute id="social-chat">none</content_attribute>
+    <content_attribute id="social-info">none</content_attribute>
+    <content_attribute id="social-audio">none</content_attribute>
+    <content_attribute id="social-location">none</content_attribute>
+    <content_attribute id="social-contacts">none</content_attribute>
+    <content_attribute id="money-purchasing">none</content_attribute>
+    <content_attribute id="money-gambling">none</content_attribute>
+  </content_rating>
+  <releases>
+    <release version="2.1" date="2018-08-22"></release>
+  </releases>
+</component>

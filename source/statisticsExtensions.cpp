@@ -53,6 +53,7 @@ StatisticsType::StatisticsType()
   // Set one of these to true if you want to render something.
   hasValueData = false;
   hasVectorData = false;
+  hasAffineTFData = false;
 
   // Default values for drawing value data
   renderValueData = false;
@@ -71,6 +72,9 @@ StatisticsType::StatisticsType()
   renderGrid = true;
   scaleGridToZoom = false;
   gridPen = QPen(QBrush(QColor(Qt::black)),0.25,Qt::SolidLine);
+
+  // Default: no polygon shape, use Rect
+  isPolygon = false;
 }
 
 StatisticsType::StatisticsType(int tID, const QString &sName, int vectorScaling) : StatisticsType()
@@ -334,6 +338,20 @@ void statisticsData::addBlockVector(unsigned short x, unsigned short y, unsigned
   vectorData.append(vec);
 }
 
+void statisticsData::addBlockAffineTF(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int vecX0, int vecY0, int vecX1, int vecY1, int vecX2, int vecY2)
+{
+  statisticsItem_AffineTF affineTF;
+  affineTF.pos[0] = x;
+  affineTF.pos[1] = y;
+  affineTF.size[0] = w;
+  affineTF.size[1] = h;
+  affineTF.point[0] = QPoint(vecX0,vecY0);
+  affineTF.point[1] = QPoint(vecX1,vecY1);
+  affineTF.point[2] = QPoint(vecX2,vecY2);
+  affineTFData.append(affineTF);
+}
+
+
 void statisticsData::addLine(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int x1, int y1, int x2, int y2)
 {
   statisticsItem_Vector vec;
@@ -346,6 +364,30 @@ void statisticsData::addLine(unsigned short x, unsigned short y, unsigned short 
   vec.isLine = true;
   vectorData.append(vec);
 }
+
+void statisticsData::addPolygonValue(const QVector<QPoint> &points, int val)
+{
+  statisticsItemPolygon_Value value;
+  value.corners = QPolygon(points);
+  value.value = val;
+
+// todo: how to do this nicely?
+//  // Always keep the biggest block size updated.
+//  unsigned int wh = w*h;
+//  if (wh > maxBlockSize)
+//    maxBlockSize = wh;
+
+  polygonValueData.append(value);
+}
+
+void statisticsData::addPolygonVector(const QVector<QPoint> &points, int vecX, int vecY)
+{
+  statisticsItemPolygon_Vector vec;
+  vec.corners = QPolygon(points);
+  vec.point[0] = QPoint(vecX,vecY);
+  polygonVectorData.append(vec);
+}
+
 // Setup an invalid (uninitialized color mapper)
 colorMapper::colorMapper()
 {
