@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>
+    <mime-type type="application/YUView">
+        <comment>YUView video player</comment>
+        <glob pattern="*.yuv"/>
+        <icon name="de.rwth_aachen.ient.YUView"/>
+    </mime-type>
+</mime-info>

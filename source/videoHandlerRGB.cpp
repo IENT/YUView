@@ -929,7 +929,6 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
         getPixelValue(QPoint(x,y), R0, G0, B0);
         rgbItem2->getPixelValue(QPoint(x,y), R1, G1, B1);
 
-        valText = QString("R%1\nG%2\nB%3").arg(R0-R1).arg(G0-G1).arg(B0-B1);
         int DR = (int)R0-R1;
         int DG = (int)G0-G1;
         int DB = (int)B0-B1;
@@ -937,6 +936,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
           painter->setPen((DR == 0 && DG == 0 && DB == 0) ? Qt::white : Qt::black);
         else
           painter->setPen((DR < 0 && DG < 0 && DB < 0) ? Qt::white : Qt::black);
+        valText = QString("R%1\nG%2\nB%3").arg(DR).arg(DG).arg(DB);
       }
       else
       {
@@ -998,10 +998,8 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
   // We directly write the difference values into the QImage buffer in the right format (ABGR).
   unsigned char * restrict dst = outputImage.bits();
 
-  if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
+  if (srcPixelFormat.bitsPerValue >= 8 && srcPixelFormat.bitsPerValue <= 16)
   {
-    // 9 to 16 bits per component. We assume two bytes per value.
-
     // How many values do we have to skip in src to get to the next input value?
     // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
     int offsetToNextValue = (srcPixelFormat.alphaChannel) ? 4 : 3;
@@ -1010,6 +1008,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
 
     if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
     {
+      // 9 to 16 bits per component. We assume two bytes per value.
       // First get the pointer to the first value of each channel. (this item)
       unsigned short *srcR0, *srcG0, *srcB0;
       if (srcPixelFormat.planar)
@@ -1025,19 +1024,19 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
         srcB0 = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posB;
       }
 
-      // First get the pointer to the first value of each channel. (the other item)
+      // Next get the pointer to the first value of each channel. (the other item)
       unsigned short *srcR1, *srcG1, *srcB1;
       if (srcPixelFormat.planar)
       {
-        srcR1 = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
-        srcG1 = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
-        srcB1 = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+        srcR1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+        srcG1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+        srcB1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
       }
       else
       {
-        srcR1 = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posR;
-        srcG1 = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posG;
-        srcB1 = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posB;
+        srcR1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posR;
+        srcG1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posG;
+        srcB1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posB;
       }
 
       for (int y = 0; y < height; y++)
@@ -1102,15 +1101,15 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
       unsigned char *srcR1, *srcG1, *srcB1;
       if (srcPixelFormat.planar)
       {
-        srcR1 = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
-        srcG1 = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
-        srcB1 = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+        srcR1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+        srcG1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+        srcB1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
       }
       else
       {
-        srcR1 = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posR;
-        srcG1 = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posG;
-        srcB1 = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posB;
+        srcR1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posR;
+        srcG1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posG;
+        srcB1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posB;
       }
 
       for (int y = 0; y < height; y++)

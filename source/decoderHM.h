@@ -73,10 +73,7 @@ struct decoderHM_Functions
   libHMDec_error          (*libHMDEC_clear_internal_info)               (libHMDec_context *decCtx);
 };
 
-// This class wraps the de265 library in a demand-load fashion.
-// To easily access the functions, one can use protected inheritance:
-// class de265User : ..., protected de265Wrapper
-// This API is similar to the QOpenGLFunctions API family.
+// This class wraps the HM decoder library in a demand-load fashion.
 class decoderHM : public decoderBaseSingleLib, decoderHM_Functions
 {
 public:

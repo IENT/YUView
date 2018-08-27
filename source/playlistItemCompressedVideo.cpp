@@ -38,6 +38,7 @@
 
 #include <inttypes.h>
 
+#include "bitstreamAnalysisDialog.h"
 #include "decoderFFmpeg.h"
 #include "decoderHM.h"
 #include "decoderLibde265.h"
@@ -118,7 +119,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       possibleDecoders.append(decoderEngineFFMpeg);
     }
     // Parse the loading file
-    parseAnnexBFile(inputFileAnnexBLoading, inputFileAnnexBParser);
+    inputFileAnnexBParser->parseAnnexBFile(inputFileAnnexBLoading);
     // Get the frame size and the pixel format
     frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
     // Raw annexB files will always provide YUV data
@@ -341,7 +342,7 @@ infoData playlistItemCompressedVideo::getInfo() const
       info.items.append(infoItem("Stat Parsing", loadingDecoder->statisticsEnabled() ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
     }
   }
-  info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true, 0));
+  info.items.append(infoItem("NAL units", "Bitstream Analysis", "Show a detailed list of all NAL units.", true, 0));
   if (decoderEngineType == decoderEngineFFMpeg)
     info.items.append(infoItem("FFMpeg Log", "Show FFmpeg Log", "Show the log messages from FFmpeg.", true, 1));
 
@@ -352,52 +353,14 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
 {
   if (buttonID == 0)
   {
-    // The button "Show NAL units" was pressed.
-    // Parse the file using the apropriate parser ...
-    QScopedPointer<parserAnnexB> parserA;
-    QScopedPointer<parserAVFormat> parserB;
-    if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC)
-    {
-      // Just open and parse the file again
-      QScopedPointer<fileSourceAnnexBFile> annexBFile(new fileSourceAnnexBFile(plItemNameOrFileName));
-      // Create a parser
-      if (inputFormatType == inputAnnexBHEVC)
-        parserA.reset(new parserAnnexBHEVC());
-      else if (inputFormatType == inputAnnexBAVC)
-        parserA.reset(new parserAnnexBAVC());
-      
-      // Parse the file
-      parserA->enableModel();
-      if (!parseAnnexBFile(annexBFile, parserA))
-        return;
-    }
-    else // inputLibavformat
-    {
-      // Just open and parse the file again
-      QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(plItemNameOrFileName));
-      AVCodecSpecfier codec = inputFileFFmpegLoading->getCodecSpecifier();
-      parserB.reset(new parserAVFormat(codec));
-      parserB->enableModel();
-      if (!parseFFMpegFile(ffmpegFile, parserB))
-        return;
-    }
-    
-    // ... then, create a dialog with a QTreeView and show the NAL unit list.
-    QDialog newDialog;
-    QTreeView *view = new QTreeView();
-    if (parserA)
-      view->setModel(parserA->getNALUnitModel());
-    else
-      view->setModel(parserB->getNALUnitModel());
-    QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
-    verticalLayout->addWidget(view);
-    newDialog.resize(QSize(1000, 900));
-    view->setColumnWidth(0, 400);
-    view->setColumnWidth(1, 50);
-    newDialog.exec();
+    // The button "Bitstream Analysis" was pressed.
+    QWidget *mainWindow = MainWindow::getMainWindow();
+    analyzer.reset(new bitstreamAnalysisDialog(mainWindow, plItemNameOrFileName, inputFormatType));
+    analyzer->exec();
   }
   else if (buttonID == 1)
   {
+    // The button "shof ffmpeg log" was pressed
     QStringList log = decoderFFmpeg::getLogMessages();
     QString msg;
     for (QString l : log)
@@ -996,121 +959,4 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
 
     emit signalItemChanged(true, RECACHE_CLEAR);
   }
-}
-
-bool playlistItemCompressedVideo::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QScopedPointer<parserAnnexB> &parser)
-{
-  DEBUG_COMPRESSED("playlistItemCompressedVideo::parseAnnexBFile");
-
-  // Show a modal QProgressDialog while this operation is running.
-  // If the user presses cancel, we will cancel and return false (opening the file failed).
-  // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
-  QWidget *mainWindow = MainWindow::getMainWindow();
-  // Create the dialog
-  int64_t maxPos = file->getFileSize();;
-  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
-  int curPercentValue = 0;
-  QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, 100, mainWindow);
-  progress.setMinimumDuration(1000);  // Show after 1s
-  progress.setAutoClose(false);
-  progress.setAutoReset(false);
-  progress.setWindowModality(Qt::WindowModal);
-
-  // Just push all NAL units from the annexBFile into the annexBParser
-  QByteArray nalData;
-  int nalID = 0;
-  QUint64Pair nalStartEndPosFile;
-  while (!file->atEnd())
-  {
-    // Update the progress dialog
-    if (progress.wasCanceled())
-      return false;
-    int64_t pos = file->pos();
-    int newPercentValue = pos * 100 / maxPos;
-    if (newPercentValue != curPercentValue)
-    {
-      progress.setValue(newPercentValue);
-      curPercentValue = newPercentValue;
-    }
-
-    try
-    {
-      nalData = file->getNextNALUnit(false, &nalStartEndPosFile);
-      parser->parseAndAddNALUnit(nalID, nalData, nullptr, nalStartEndPosFile);
-    }
-    catch (...)
-    {
-      // Reading a NAL unit failed at some point.
-      // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_COMPRESSED(":parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
-    }
-
-    nalID++;
-  }
-  
-  // We are done.
-  parser->parseAndAddNALUnit(-1, QByteArray());
-  return !progress.wasCanceled();
-}
-
-bool playlistItemCompressedVideo::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file, QScopedPointer<parserAVFormat> &parser)
-{
-  // Seek to the beginning of the stream.
-  file->seekToPTS(0);
-
-  // Show a modal QProgressDialog while this operation is running.
-  // If the user presses cancel, we will cancel and return false (opening the file failed).
-  // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
-  QWidget *mainWindow = MainWindow::getMainWindow();
-  // Create the dialog
-  int64_t maxPTS = file->getMaxPTS();
-  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
-  int curPercentValue = 0;
-  QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
-  progress.setMinimumDuration(1000);  // Show after 1s
-  progress.setAutoClose(false);
-  progress.setAutoReset(false);
-  progress.setWindowModality(Qt::WindowModal);
-
-  // First get the extradata and push it to the parser
-  QByteArray extradata = file->getExtradata();
-  parser->parseExtradata(extradata);
-
-  // Parse the metadata
-  QStringPairList metadata = file->getMetadata();
-  parser->parseMetadata(metadata);
-
-  // Now iterate over all packets and send them to the parser
-  const bool getVideoPacketsOnly = true;
-  AVPacketWrapper packet = file->getNextPacket(false, getVideoPacketsOnly);
-  
-  int packetID = 0;
-  while (!file->atEnd())
-  {
-    if (progress.wasCanceled())
-      return false;
-    int newPercentValue = packet.get_pts() * 100 / maxPTS;
-    if (newPercentValue != curPercentValue)
-    {
-      progress.setValue(newPercentValue);
-      curPercentValue = newPercentValue;
-    }
-
-    try
-    {
-      parser->parseAVPacket(packetID, packet);
-    }
-    catch (...)
-    {
-      // Reading a NAL unit failed at some point.
-      // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_COMPRESSED("parseAVPacket Exception thrown parsing NAL %d", packetID);
-    }
-    packetID++;
-    packet = file->getNextPacket(false, getVideoPacketsOnly);
-  }
-    
-  // Seek back to the beginning of the stream.
-  file->seekToPTS(0);
-  return !progress.wasCanceled();
 }

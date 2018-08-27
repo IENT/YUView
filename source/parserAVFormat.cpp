@@ -35,6 +35,7 @@
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
 #include "parserAnnexBMpeg2.h"
+#include "mainwindow.h"
 
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
@@ -495,4 +496,66 @@ void parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, sub_byte_reade
 
   // Let the hevc annexB parser parse this
   annexBParser->parseAndAddNALUnitNoThrow(unitID, nalData, itemTree);
+}
+
+bool parserAVFormat::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file)
+{
+  // Seek to the beginning of the stream.
+  file->seekToPTS(0);
+
+  // Show a modal QProgressDialog while this operation is running.
+  // If the user presses cancel, we will cancel and return false (opening the file failed).
+  // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
+  QWidget *mainWindow = MainWindow::getMainWindow();
+  // Create the dialog
+  int64_t maxPTS = file->getMaxPTS();
+  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
+  int curPercentValue = 0;
+  QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
+  progress.setMinimumDuration(1000);  // Show after 1s
+  progress.setAutoClose(false);
+  progress.setAutoReset(false);
+  progress.setWindowModality(Qt::WindowModal);
+
+  // First get the extradata and push it to the parser
+  QByteArray extradata = file->getExtradata();
+  parseExtradata(extradata);
+
+  // Parse the metadata
+  QStringPairList metadata = file->getMetadata();
+  parseMetadata(metadata);
+
+  // Now iterate over all packets and send them to the parser
+  const bool getVideoPacketsOnly = true;
+  AVPacketWrapper packet = file->getNextPacket(false, getVideoPacketsOnly);
+
+  int packetID = 0;
+  while (!file->atEnd())
+  {
+    if (progress.wasCanceled())
+      return false;
+    int newPercentValue = packet.get_pts() * 100 / maxPTS;
+    if (newPercentValue != curPercentValue)
+    {
+      progress.setValue(newPercentValue);
+      curPercentValue = newPercentValue;
+    }
+
+    try
+    {
+      parseAVPacket(packetID, packet);
+    }
+    catch (...)
+    {
+      // Reading a NAL unit failed at some point.
+      // This is not too bad. Just don't use this NAL unit and continue with the next one.
+      DEBUG_AVFORMAT("parseAVPacket Exception thrown parsing NAL %d", packetID);
+    }
+    packetID++;
+    packet = file->getNextPacket(false, getVideoPacketsOnly);
+  }
+
+  // Seek back to the beginning of the stream.
+  file->seekToPTS(0);
+  return !progress.wasCanceled();
 }

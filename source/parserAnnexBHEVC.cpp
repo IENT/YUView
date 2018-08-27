@@ -272,14 +272,20 @@ void parserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(sub_byte_reader &rea
   if (maxNumSubLayersMinus1 >= 8)
     throw std::logic_error("The value of maxNumSubLayersMinus1 must be in the range of 0 to 7");
 
-  for(int i = 0; i <= maxNumSubLayersMinus1; i++) 
+  for(int i = 0; i <= maxNumSubLayersMinus1; i++)
   {
     READFLAG(fixed_pic_rate_general_flag[i]);
     if (!fixed_pic_rate_general_flag[i])
+    {
       READFLAG(fixed_pic_rate_within_cvs_flag[i]);
+    }
+    else
+    {
+      fixed_pic_rate_within_cvs_flag[i] = 1;
+    }
     if (fixed_pic_rate_within_cvs_flag[i])
     {
-      READFLAG(elemental_duration_in_tc_minus1[i]);
+      READUEV(elemental_duration_in_tc_minus1[i]);
       low_delay_hrd_flag[i] = false;
     }
     else
@@ -1020,6 +1026,28 @@ bool parserAnnexBHEVC::slice::bFirstAUInDecodingOrder = true;
 int parserAnnexBHEVC::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
 int parserAnnexBHEVC::slice::prevTid0Pic_PicOrderCntMsb = 0;
 
+parserAnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
+{
+  PicOrderCntVal = -1;
+  PicOrderCntMsb = -1;
+
+  // When not present, the value of dependent_slice_segment_flag is inferred to be equal to 0.
+  dependent_slice_segment_flag = false;
+  pic_output_flag = true;
+  short_term_ref_pic_set_sps_flag = false;
+  short_term_ref_pic_set_idx = 0;
+  num_long_term_sps = 0;
+  num_long_term_pics = 0;
+  deblocking_filter_override_flag = false;
+  slice_temporal_mvp_enabled_flag = false;
+  collocated_from_l0_flag = true;
+  slice_sao_luma_flag = false;
+  slice_sao_chroma_flag = false;
+  num_entry_point_offsets = 0;
+
+  globalPOC = -1;
+}
+
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
 void parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
 {
@@ -1123,10 +1151,6 @@ void parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
       }
       if(actSPS->sps_temporal_mvp_enabled_flag)
         READFLAG(slice_temporal_mvp_enabled_flag)
-    }
-    else 
-    {
-      slice_pic_order_cnt_lsb = 0;
     }
 
     if(actSPS->sample_adaptive_offset_enabled_flag)

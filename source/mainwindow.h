@@ -50,7 +50,7 @@ class MainWindow : public QMainWindow
   Q_OBJECT
 
 public:
-  explicit MainWindow(QWidget *parent = 0);
+  explicit MainWindow(bool useAlternativeSources, QWidget *parent = 0);
 
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   
@@ -59,7 +59,7 @@ private:
   
 public:
   // Check for a new update (if we do this automatically)
-  void autoUpdateCheck() { updater->startCheckForNewVersion(false); }
+  void autoUpdateCheck() { updater->startCheckForNewVersion(false, false); }
   // The application was restarted with elevated rights. Force an update now.
   // This is a NO-OP on platforms other than windows.
   void forceUpdateElevated() { updater->forceUpdateElevated(); }

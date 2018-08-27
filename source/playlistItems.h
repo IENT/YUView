@@ -35,7 +35,8 @@
 
 #include "playlistItemCompressedVideo.h"
 #include "playlistItemDifference.h"
-#include "playlistItemStatisticsFile.h"
+#include "playlistItemStatisticsCSVFile.h"
+#include "playlistItemStatisticsVTMBMSFile.h"
 #include "playlistItemImageFile.h"
 #include "playlistItemImageFileSequence.h"
 #include "playlistItemOverlay.h"
