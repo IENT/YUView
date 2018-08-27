@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -66,12 +66,12 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
     // Just open and parse the file again
     QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(fileName));
     AVCodecSpecfier codec = ffmpegFile->getCodecSpecifier();
-    QScopedPointer<parserAVFormat> parserAVFormat(new parserAVFormat(codec));
-    parserAVFormat->enableModel();
-    if (!parserAVFormat->parseFFMpegFile(ffmpegFile))
+    QScopedPointer<parserAVFormat> p(new parserAVFormat(codec));
+    p->enableModel();
+    if (!p->parseFFMpegFile(ffmpegFile))
       return;
 
-    parser.reset(parserAVFormat.take());
+    parser.reset(p.take());
   }
   else
     return;

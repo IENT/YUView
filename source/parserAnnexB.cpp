@@ -33,7 +33,7 @@
 #include "parserAnnexB.h"
 #include <assert.h>
 #include "mainwindow.h"
-#include <QProgressdialog>
+#include <QProgressDialog>
 
 #define PARSERANNEXB_DEBUG_OUTPUT 0
 #if PARSERANNEXB_DEBUG_OUTPUT && !NDEBUG
