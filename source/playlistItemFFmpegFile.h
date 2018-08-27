@@ -84,7 +84,7 @@ public:
   // For FFMpeg items, a mutex must be locked when caching a frame (only one frame can be cached at a time).
   void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE;
 
-  // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
+  // Load the frame in the video item. Emit signalItemChanged(true,false) when done. Always called from a thread.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
 
 public slots:

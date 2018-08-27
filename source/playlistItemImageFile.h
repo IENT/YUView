@@ -83,7 +83,7 @@ public:
   virtual void reloadItemSource()       Q_DECL_OVERRIDE { needToLoadImage = false; }
   virtual void updateSettings()         Q_DECL_OVERRIDE;
 
-  // Load the frame
+  // Load the frame. Emit signalItemChanged(true,false) when done. Always called from a thread.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals=true) Q_DECL_OVERRIDE;
 
   // Is the image currently being loaded?
