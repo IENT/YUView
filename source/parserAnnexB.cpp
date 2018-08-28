@@ -35,7 +35,7 @@
 #include "mainwindow.h"
 #include <QProgressDialog>
 
-#define PARSERANNEXB_DEBUG_OUTPUT 0
+#define PARSERANNEXB_DEBUG_OUTPUT 1
 #if PARSERANNEXB_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_ANNEXB qDebug
