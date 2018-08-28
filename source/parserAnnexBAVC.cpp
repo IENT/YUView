@@ -355,7 +355,7 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
       sei_count++;
     }
 
-    specificDescription = QString(" Number Messages: %1").arg(sei_count);
+    specificDescription = QString(" (#%1)").arg(sei_count);
     if (nalTypeName)
       *nalTypeName = QString("SEI(#%1)").arg(sei_count);
   }
