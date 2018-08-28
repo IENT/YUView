@@ -306,7 +306,7 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
       TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
       
       // Parse the SEI header and remove it from the data array
-      int nrBytes = new_sei->parse_sei_message(sei_data, message_tree);
+      int nrBytes = new_sei->parse_sei_header(sei_data, message_tree);
       sei_data.remove(0, nrBytes);
 
       if (message_tree)
@@ -337,6 +337,11 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
       {
         auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
         new_user_data_sei->parse_user_data_sei(sub_sei_data, message_tree);
+      }
+      else
+      {
+        // The default parser just logs the raw bytes
+        new_sei->parser_sei_bytes(sub_sei_data, message_tree);
       }
       
       // Remove the sei payload bytes from the data
@@ -1438,7 +1443,7 @@ QByteArray parserAnnexBAVC::nal_unit_avc::getNALHeader() const
   return QByteArray(c, 1);
 }
 
-int parserAnnexBAVC::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root)
+int parserAnnexBAVC::sei::parse_sei_header(QByteArray &sliceHeaderData, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1612,6 +1617,28 @@ int parserAnnexBAVC::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeIte
   LOGVAL(payloadSize);
 
   return reader.nrBytesRead();
+}
+
+void parserAnnexBAVC::sei::parser_sei_bytes(QByteArray &data, TreeItem *root)
+{
+  if (root == nullptr)
+    return;
+
+  // Create a new TreeItem root for the item
+  TreeItem *const itemTree = new TreeItem("raw_bytes()", root);
+
+  for (int i=0; i<data.length(); i++)
+  {
+    unsigned char c = data[i];
+    QString binary;
+    for (int j=7; j>=0; j--)
+      if (c & (1<<j))
+        binary.append("1");
+      else
+        binary.append("0");
+
+    new TreeItem(QString("data[%1]").arg(i), c, QString("u(8)"), binary, itemTree);
+  }
 }
 
 parserAnnexB::sei_parsing_return_t parserAnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)

@@ -442,8 +442,10 @@ protected:
   {
     sei(const nal_unit_avc &nal) : nal_unit_avc(nal) {}
     sei(QSharedPointer<sei> sei_src) : nal_unit_avc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; payloadTypeName = sei_src->payloadTypeName; }
-    // Parse SEI message and return how many bytes were read
-    int parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root);
+    // Parse SEI header (type, length) and return how many bytes were read
+    int parse_sei_header(QByteArray &sliceHeaderData, TreeItem *root);
+    // If parsing of a special SEI is not implemented, this function can just parse/show the raw bytes.
+    void parser_sei_bytes(QByteArray &data, TreeItem *root);
 
     int payloadType;
     int last_payload_type_byte;
