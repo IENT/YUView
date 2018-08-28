@@ -878,12 +878,12 @@ void playlistItemCompressedVideo::loadFrame(int frameIdx, bool playing, bool loa
     if (stateYUV == LoadingNeeded)
     {
       // Load the requested current frame
-      DEBUG_COMPRESSED("playlistItemRawFile::loadFrame loading frame %d %s", frameIdxInternal, playing ? "(playing)" : "");
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::loadFrame loading frame %d %s", frameIdxInternal, playing ? "(playing)" : "");
       video->loadFrame(frameIdxInternal);
     }
     if (stateStat == LoadingNeeded)
     {
-      DEBUG_COMPRESSED("playlistItemRawFile::loadFrame loading statistics %d %s", frameIdxInternal, playing ? "(playing)" : "");
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::loadFrame loading statistics %d %s", frameIdxInternal, playing ? "(playing)" : "");
       statSource.loadStatistics(frameIdxInternal);
     }
 
@@ -898,7 +898,7 @@ void playlistItemCompressedVideo::loadFrame(int frameIdx, bool playing, bool loa
     int nextFrameIdx = frameIdxInternal + 1;
     if (nextFrameIdx <= startEndFrame.second)
     {
-      DEBUG_COMPRESSED("playlistItemRawFile::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
+      DEBUG_COMPRESSED("playlistItplaylistItemCompressedVideoemRawFile::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
       isFrameLoadingDoubleBuffer = true;
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;

@@ -562,6 +562,10 @@ protected:
   // parameter sets. Here we keep a list of seis that need to be parsed after the parameter sets were recieved.
   QList<QSharedPointer<sei>> reparse_sei;
 
+  // In an SEI, the number of bytes indicated do not consider the emulation prevention. This function
+  // can determine the real number of bytes that we need to read from the input considering the emulation prevention
+  int determineRealNumberOfBytesSEIEmulationPrevention(QByteArray &in, int nrBytes);
+
   bool CpbDpbDelaysPresentFlag {false};
 };
 

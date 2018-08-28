@@ -312,7 +312,9 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
       if (message_tree)
         message_tree->itemData[0] = QString("sei_message %1 - %2").arg(sei_count).arg(new_sei->payloadTypeName);
 
-      QByteArray sub_sei_data = sei_data.mid(0, new_sei->payloadSize);
+      // The real number of bytes to read from the bitstream may be higher than the indicated payload size (emulation prevention)
+      int realPayloadSize = determineRealNumberOfBytesSEIEmulationPrevention(sei_data, new_sei->payloadSize);
+      QByteArray sub_sei_data = sei_data.mid(0, realPayloadSize);
 
       if (new_sei->payloadType == 0)
       {
@@ -338,7 +340,7 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
       }
       
       // Remove the sei payload bytes from the data
-      sei_data.remove(0, new_sei->payloadSize);
+      sei_data.remove(0, realPayloadSize);
       if (sei_data.length() == 1)
       {
         // This should be the rspb trailing bits (10000000)
@@ -1759,7 +1761,7 @@ bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool
           READBITS(minutes_value[i], 6); /* 0..59 */
           READBITS(hours_value[i], 5);   /* 0..23 */
         } 
-        else 
+        else
         {
           READFLAG(seconds_flag[i]);
           if (seconds_flag[i])
@@ -2251,4 +2253,32 @@ QPair<int,int> parserAnnexBAVC::getSampleAspectRatio()
     }
   }
   return QPair<int,int>(1,1);
+}
+
+int parserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray &in, int nrBytes)
+{
+  int nrZeroBytes = 0;
+  int pos = 0;
+  while (nrBytes > 0)
+  {
+    if (pos >= in.length())
+      throw std::logic_error("Error while determining real SEI payload size.");
+    char c = (char)in.at(pos);
+
+    if (nrZeroBytes == 2 && c == 3)
+      // Emulation prevention
+      nrZeroBytes = 0;
+    else
+    {
+      if (c == 0)
+        nrZeroBytes++;
+      else
+        nrZeroBytes = 0;
+      nrBytes--;
+    }
+
+    pos++;
+  }
+
+  return pos;
 }
