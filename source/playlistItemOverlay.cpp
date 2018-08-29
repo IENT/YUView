@@ -229,7 +229,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
   // Align the rest of the items
   int alignmentMode = 0;
   if (propertiesWidget != nullptr)
-    alignmentMode = ui.alignmentMode->currentIndex();
+    alignmentMode = ui.comboBoxAlignment->currentIndex();
 
   DEBUG_OVERLAY("playlistItemOverlay::updateLayout childCount %d", childCount());
   for (int i = 1; i < childCount(); i++)
@@ -288,27 +288,32 @@ void playlistItemOverlay::createPropertiesWidget()
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   ui.verticalLayout->insertLayout(0, createPlaylistItemControls());
-  ui.verticalLayout->insertStretch(3, 1);
+  ui.verticalLayout->insertStretch(4, 1);
 
   // Alignment mode
-  ui.alignmentMode->addItems(QStringList() << "Top Left" << "Top Center" << "Top Right");
-  ui.alignmentMode->addItems(QStringList() << "Center Left" << "Center" << "Center Right");
-  ui.alignmentMode->addItems(QStringList() << "Bottom Left" << "Bottom Center" << "Bottom Right");
-  ui.alignmentMode->setCurrentIndex(alignmentMode);
+  ui.comboBoxAlignment->addItems(QStringList() << "Top Left" << "Top Center" << "Top Right");
+  ui.comboBoxAlignment->addItems(QStringList() << "Center Left" << "Center" << "Center Right");
+  ui.comboBoxAlignment->addItems(QStringList() << "Bottom Left" << "Bottom Center" << "Bottom Right");
+
+  ui.comboBoxArangement->addItems(QStringList() << "2D Square" << "Side by Side" << "Stacked" );
 
   // Offset
-  ui.alignmentHozizontal->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
-  ui.alignmentVertical->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
-  ui.alignmentHozizontal->setValue(manualAlignment.x());
-  ui.alignmentVertical->setValue(manualAlignment.y());
+  // ui.alignmentHozizontal->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+  // ui.alignmentVertical->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+  // ui.alignmentHozizontal->setValue(manualAlignment.x());
+  // ui.alignmentVertical->setValue(manualAlignment.y());
 
   // Add the Container Layout
-  ui.verticalLayout->insertLayout(3,createContainerItemControls());
+  ui.verticalLayout->insertLayout(3, createContainerItemControls());
 
   // Connect signals/slots
-  connect(ui.alignmentMode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::controlChanged);
-  connect(ui.alignmentHozizontal, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::controlChanged);
-  connect(ui.alignmentVertical, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::controlChanged);
+  connect(ui.overlayGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_overlayGroupBox_toggled);
+  connect(ui.arangeGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_arangeGroupBox_toggled);
+  connect(ui.CustomGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_CustomGroupBox_toggled);
+
+  // connect(ui.alignmentMode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::controlChanged);
+  // connect(ui.alignmentHozizontal, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::controlChanged);
+  // connect(ui.alignmentVertical, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::controlChanged);
 }
 
 void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -353,9 +358,9 @@ void playlistItemOverlay::controlChanged(int idx)
   Q_UNUSED(idx);
 
   // One of the controls changed. Update values and emit the redraw signal
-  alignmentMode = ui.alignmentMode->currentIndex();
-  manualAlignment.setX(ui.alignmentHozizontal->value());
-  manualAlignment.setY(ui.alignmentVertical->value());
+  // alignmentMode = ui.alignmentMode->currentIndex();
+  // manualAlignment.setX(ui.alignmentHozizontal->value());
+  // manualAlignment.setY(ui.alignmentVertical->value());
 
   // No new item was added but update the layout of the items
   updateLayout(false);
@@ -369,6 +374,33 @@ void playlistItemOverlay::childChanged(bool redraw, recacheIndicator recache)
     updateLayout(false);
 
   playlistItemContainer::childChanged(redraw, recache);
+}
+
+void playlistItemOverlay::onGroupBoxToggled(int idx, bool on)
+{
+  const QSignalBlocker blocker0(ui.overlayGroupBox);
+  const QSignalBlocker blocker1(ui.arangeGroupBox);
+  const QSignalBlocker blocker2(ui.CustomGroupBox);
+  if (on)
+  {
+    // Disable the other two
+    if (idx != 0)
+      ui.overlayGroupBox->setChecked(false);
+    if (idx != 1)
+      ui.arangeGroupBox->setChecked(false);
+    if (idx != 2)
+      ui.CustomGroupBox->setChecked(false);
+  }
+  else
+  {
+    // Switch it back on. We behave like radio buttons.
+    if (idx == 0)
+      ui.overlayGroupBox->setChecked(true);
+    if (idx == 1)
+      ui.arangeGroupBox->setChecked(true);
+    if (idx == 2)
+      ui.CustomGroupBox->setChecked(true);
+  }
 }
 
 void playlistItemOverlay::loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals)
@@ -418,3 +450,4 @@ bool playlistItemOverlay::isLoadingDoubleBuffer() const
       return true;
   return false;
 }
+

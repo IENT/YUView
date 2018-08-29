@@ -71,11 +71,17 @@ public:
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
-protected slots:
-  void controlChanged(int idx);
-  void childChanged(bool redraw, recacheIndicator recache) Q_DECL_OVERRIDE;
-
 private:
+
+  enum arangementModeEnum
+  {
+    ALIGN,
+    ARANGE,
+    CUSTOM
+  };
+  arangementModeEnum arangementMode;
+
+  void onGroupBoxToggled(int idx, bool on);
 
   // Overload from playlistItem. Create a properties widget custom to the playlistItemOverlay
   // and set propertiesWidget to point to it.
@@ -96,6 +102,14 @@ private:
   void updateLayout(bool checkNumber=true);
 
   QSpacerItem *vSpacer;
+
+private slots:
+  void controlChanged(int idx);
+  void childChanged(bool redraw, recacheIndicator recache) Q_DECL_OVERRIDE;
+
+  void on_overlayGroupBox_toggled(bool on) { onGroupBoxToggled(0, on); }
+  void on_arangeGroupBox_toggled(bool on)  { onGroupBoxToggled(1, on); };
+  void on_CustomGroupBox_toggled(bool on)  { onGroupBoxToggled(2, on); };
 };
 
 #endif // PLAYLISTITEMOVERLAY_H
