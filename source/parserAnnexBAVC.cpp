@@ -959,16 +959,19 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   }
 
   // Since the MbaffFrameFlag flag is now finally known, we can check the range of first_mb_in_slice
-  if (refSPS->MbaffFrameFlag)
+  if (refSPS->MbaffFrameFlag == 0)
   {
+    firstMacroblockAddressInSlice = first_mb_in_slice;
     if (first_mb_in_slice > refSPS->PicSizeInMbs - 1)
       throw std::logic_error("first_mb_in_slice shall be in the range of 0 to PicSizeInMbs - 1, inclusive");
   }
   else
   {
+    firstMacroblockAddressInSlice = first_mb_in_slice * 2;
     if (first_mb_in_slice > refSPS->PicSizeInMbs / 2 - 1)
       throw std::logic_error("first_mb_in_slice shall be in the range of 0 to PicSizeInMbs / 2 - 1, inclusive.");
   }
+  LOGVAL(firstMacroblockAddressInSlice);
 
   if (IdrPicFlag)
   {

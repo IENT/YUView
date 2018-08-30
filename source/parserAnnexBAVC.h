@@ -420,8 +420,8 @@ protected:
     // from the parsed values.
     int IdrPicFlag;
     slice_type_enum slice_type;
-    bool slice_type_fixed;  // slice_type_id is > 4
-                            // For pic_order_cnt_type == 0
+    bool slice_type_fixed;  // slice_type_id is > 4 For pic_order_cnt_type == 0
+    int firstMacroblockAddressInSlice;
     int prevPicOrderCntMsb {-1};
     int prevPicOrderCntLsb {-1};
     int PicOrderCntMsb {-1};
