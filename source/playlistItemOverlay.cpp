@@ -34,6 +34,7 @@
 
 #include <limits>
 #include <QPainter>
+#include <QPointer>
 
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG
@@ -144,7 +145,10 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   DEBUG_OVERLAY("playlistItemOverlay::drawItem frame %d", frameIdx);
 
   if (childLlistUpdateRequired)
+  {
     updateChildList();
+    updateCustomPositionGrid();
+  }
 
   if (childCount() == 0)
   {
@@ -303,13 +307,16 @@ void playlistItemOverlay::createPropertiesWidget()
   // ui.alignmentHozizontal->setValue(manualAlignment.x());
   // ui.alignmentVertical->setValue(manualAlignment.y());
 
+  // Create and add the grid layout for the custom positions
+  customPositionGrid = new QGridLayout(ui.customGroupBox);
+  
   // Add the Container Layout
   ui.verticalLayout->insertLayout(3, createContainerItemControls());
 
   // Connect signals/slots
   connect(ui.overlayGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_overlayGroupBox_toggled);
   connect(ui.arangeGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_arangeGroupBox_toggled);
-  connect(ui.CustomGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_CustomGroupBox_toggled);
+  connect(ui.customGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_customGroupBox_toggled);
 
   // connect(ui.alignmentMode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::controlChanged);
   // connect(ui.alignmentHozizontal, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::controlChanged);
@@ -380,7 +387,7 @@ void playlistItemOverlay::onGroupBoxToggled(int idx, bool on)
 {
   const QSignalBlocker blocker0(ui.overlayGroupBox);
   const QSignalBlocker blocker1(ui.arangeGroupBox);
-  const QSignalBlocker blocker2(ui.CustomGroupBox);
+  const QSignalBlocker blocker2(ui.customGroupBox);
   if (on)
   {
     // Disable the other two
@@ -389,7 +396,7 @@ void playlistItemOverlay::onGroupBoxToggled(int idx, bool on)
     if (idx != 1)
       ui.arangeGroupBox->setChecked(false);
     if (idx != 2)
-      ui.CustomGroupBox->setChecked(false);
+      ui.customGroupBox->setChecked(false);
   }
   else
   {
@@ -399,7 +406,7 @@ void playlistItemOverlay::onGroupBoxToggled(int idx, bool on)
     if (idx == 1)
       ui.arangeGroupBox->setChecked(true);
     if (idx == 2)
-      ui.CustomGroupBox->setChecked(true);
+      ui.customGroupBox->setChecked(true);
   }
 }
 
@@ -451,3 +458,71 @@ bool playlistItemOverlay::isLoadingDoubleBuffer() const
   return false;
 }
 
+// Returns a possibly new widget at given row and column, having a set column span.
+// Any existing widgets of other types or other span will be removed.
+template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column)
+{
+  Q_ASSERT(grid->columnCount() <= 3);
+  QPointer<QWidget> widgets[3];
+  for (int j = 0; j < grid->columnCount(); ++j)
+  {
+    auto item = grid->itemAtPosition(row, j);
+    if (item) 
+      widgets[j] = item->widget();
+  }
+
+  auto widget = qobject_cast<W*>(widgets[column]);
+  if (!widget)
+  {
+    // There may be an incompatible widget there.
+    delete widgets[column];
+    widget = new W;
+    grid->addWidget(widget, row, column, 1, 1, Qt::AlignLeft);
+  }
+  return widget;
+}
+
+void playlistItemOverlay::clear(int startRow)
+{
+  for (int i = startRow; i < customPositionGrid->rowCount(); ++i)
+    for (int j = 0; j < customPositionGrid->columnCount(); ++j)
+    {
+      auto item = customPositionGrid->itemAtPosition(i, j);
+      if (item) 
+        delete item->widget();
+    }
+}
+
+void playlistItemOverlay::updateCustomPositionGrid()
+{
+  if (!propertiesWidget)
+    return;
+
+  const int row = childCount();
+  for (int i = 0; i < row; i++)
+  {
+    // Counter
+    //playlistItem *item = getChildPlaylistItem(i);
+    auto name = widgetAt<QLabel>(customPositionGrid, i, 0);
+    name->setText(QString("Item %1").arg(i));
+
+    // Width
+    auto width = widgetAt<QSpinBox>(customPositionGrid, i, 1);
+    width->setValue(0);
+
+    // Height
+    auto height = widgetAt<QSpinBox>(customPositionGrid, i, 2);
+    height->setValue(0);
+  }
+
+  // Remove all widgets (rows) which are not used anymore
+  clear(row);
+
+  if (row > 0)
+  {
+    customPositionGrid->setColumnStretch(0, 0);
+    customPositionGrid->setColumnStretch(1, 1); // Last tow columns should stretch
+    customPositionGrid->setColumnStretch(2, 1);
+    customPositionGrid->setRowStretch(row, 1); // Last row should stretch
+  }
+}

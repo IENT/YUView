@@ -258,9 +258,9 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
   // Draw all the polygon value types. Also, if the zoom factor is larger than STATISTICS_DRAW_VALUES_ZOOM,
   // also save a list of all the values of the blocks and their position in order to draw the values in the next step.
-//  QList<QPoint> drawStatPoints;       // The positions of each value
-//  QList<QStringList> drawStatTexts;   // For each point: The values to draw
-//  double maxLineWidth = 0.0;          // Also get the maximum width of the lines that is drawn. This will be used as an offset.
+  // QList<QPoint> drawStatPoints;       // The positions of each value
+  // QList<QStringList> drawStatTexts;   // For each point: The values to draw
+  // double maxLineWidth = 0.0;          // Also get the maximum width of the lines that is drawn. This will be used as an offset.
   for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
     int typeIdx = statsTypeList[i].typeID;

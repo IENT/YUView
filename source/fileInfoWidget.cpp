@@ -34,6 +34,7 @@
 
 #include <QPointer>
 #include <QPushButton>
+#include <QGridLayout>
 #include <QVariant>
 #include "labelElided.h"
 
@@ -61,7 +62,8 @@ void FileInfoWidget::clear(int startRow)
     for (int j = 0; j < grid.columnCount(); ++j)
     {
       auto item = grid.itemAtPosition(i, j);
-      if (item) delete item->widget();
+      if (item) 
+        delete item->widget();
     }
 }
 
@@ -74,7 +76,8 @@ template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column
   for (int j = 0; j < grid->columnCount(); ++j)
   {
     auto item = grid->itemAtPosition(row, j);
-    if (item) widgets[j] = item->widget();
+    if (item) 
+      widgets[j] = item->widget();
   }
 
   if (columnSpan == 1 && widgets[0] == widgets[1])

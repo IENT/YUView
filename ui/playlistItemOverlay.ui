@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>352</width>
-    <height>592</height>
+    <width>220</width>
+    <height>205</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -44,6 +44,9 @@
      <property name="checkable">
       <bool>true</bool>
      </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <widget class="QLabel" name="labelArangement">
@@ -59,12 +62,15 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="CustomGroupBox">
+    <widget class="QGroupBox" name="customGroupBox">
      <property name="title">
       <string>Custom</string>
      </property>
      <property name="checkable">
       <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
      </property>
     </widget>
    </item>

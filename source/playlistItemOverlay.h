@@ -37,6 +37,8 @@
 #include "typedef.h"
 #include "ui_playlistItemOverlay.h"
 
+#include <QGridLayout>
+
 class playlistItemOverlay : public playlistItemContainer
 {
   Q_OBJECT
@@ -103,13 +105,18 @@ private:
 
   QSpacerItem *vSpacer;
 
+  // The grid layout that contains all the custom positions
+  QGridLayout *customPositionGrid = nullptr;
+  void updateCustomPositionGrid();
+  void clear(int startRow);
+
 private slots:
   void controlChanged(int idx);
   void childChanged(bool redraw, recacheIndicator recache) Q_DECL_OVERRIDE;
 
   void on_overlayGroupBox_toggled(bool on) { onGroupBoxToggled(0, on); }
   void on_arangeGroupBox_toggled(bool on)  { onGroupBoxToggled(1, on); };
-  void on_CustomGroupBox_toggled(bool on)  { onGroupBoxToggled(2, on); };
+  void on_customGroupBox_toggled(bool on)  { onGroupBoxToggled(2, on); };
 };
 
 #endif // PLAYLISTITEMOVERLAY_H
