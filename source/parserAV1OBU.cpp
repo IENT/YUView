@@ -409,6 +409,63 @@ void parserAV1OBU::sequence_header::parse_sequence_header(const QByteArray &sequ
   color_config.read(reader, itemTree, seq_profile);
 
   READFLAG(film_grain_params_present);
+
+  // Calculate the RFC6381 'Codecs' parameter as it is needed in DASH
+  {
+    // We add the parameters from back to front. The last parameters can be omitted if they are the default values
+    QString rfc6381CodecsParameter, rfc6381CodecsParameterShortened;
+    bool add = false;
+
+    // videoFullRangeFlag (1 digit)
+    QString range = (color_config.color_range ? ".1" : ".0");
+    rfc6381CodecsParameter.prepend(range);
+    add |= (range != ".0");
+    if (add)
+      rfc6381CodecsParameterShortened.prepend(range);
+
+    // matrixCoefficients	(2 digits)
+    QString matrix = (color_config.color_description_present_flag ? QString(".%1").arg(color_config.matrix_coefficients, 2, 10, QChar('0')) : ".01");
+    rfc6381CodecsParameter.prepend(matrix);
+    add |= (matrix != ".01");
+    if (add)
+      rfc6381CodecsParameterShortened.prepend(matrix);
+
+    // transfer_characteristics (2 digits)
+    QString transfer = (color_config.color_description_present_flag ? QString(".%1").arg(color_config.transfer_characteristics, 2, 10, QChar('0')) : ".01");
+    rfc6381CodecsParameter.prepend(transfer);
+    add |= (transfer != ".01");
+    if (add)
+      rfc6381CodecsParameterShortened.prepend(transfer);
+
+    // color_primaries (2 digits)
+    QString primaries = (color_config.color_description_present_flag ? QString(".%1").arg(color_config.color_primaries, 2, 10, QChar('0')) : ".01");
+    rfc6381CodecsParameter.prepend(primaries);
+    add |= (primaries != ".01");
+    if (add)
+      rfc6381CodecsParameterShortened.prepend(primaries);
+
+    // chromaSubsampling (3 digits)
+    QString subsampling = QString(".%1%2%3").arg(color_config.subsampling_x ? "1" : "0").arg(color_config.subsampling_y ? "1" : "0").arg(color_config.subsampling_x && color_config.subsampling_y ? color_config.chroma_sample_position : 0);
+    rfc6381CodecsParameter.prepend(subsampling);
+    add |= (subsampling != ".110");
+    if (add)
+      rfc6381CodecsParameterShortened.prepend(subsampling);
+
+    // Monochrome (1 digit)
+    QString monochrome = QString(".%1").arg(color_config.mono_chrome ? "1" : "0");
+    rfc6381CodecsParameter.prepend(monochrome);
+    add |= (monochrome != ".0");
+    if (add)
+      rfc6381CodecsParameterShortened.prepend(monochrome);
+
+    // From here, all values are mandatory
+    QString remainder = QString("av01.%1.%2%3.%4").arg(seq_profile).arg(seq_level_idx[0], 2, 10, QChar('0')).arg(seq_tier[0] ? "H" : "M").arg(color_config.BitDepth, 2, 10, QChar('0'));
+    rfc6381CodecsParameter.prepend(remainder);
+    rfc6381CodecsParameterShortened.prepend(remainder);
+    
+    LOGVAL(rfc6381CodecsParameter);
+    LOGVAL(rfc6381CodecsParameterShortened);
+  }
 }
 
 void parserAV1OBU::sequence_header::timing_info_struct::read(sub_byte_reader &reader, TreeItem *root)
