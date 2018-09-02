@@ -451,9 +451,21 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const QDomEleme
 
   if (oldFormat)
   {
-    int alignment = root.findChildValue("alignmentMode").toInt();
+    int alignmentMode = root.findChildValue("alignmentMode").toInt();
     int manualAlignmentX = root.findChildValue("manualAlignmentX").toInt();
     int manualAlignmentY = root.findChildValue("manualAlignmentY").toInt();
+
+    // We can not really map the old (and not really pratical) notation
+    if (manualAlignmentX != 0 || manualAlignmentY != 0)
+    {
+      newOverlay->layoutMode = CUSTOM;
+      newOverlay->customPositions[0] = QPoint(manualAlignmentX, manualAlignmentY);
+    }
+    else
+    {
+      newOverlay->layoutMode = OVERLAY;
+      newOverlay->arangementMode = alignmentMode;
+    }
 
     DEBUG_OVERLAY("playlistItemOverlay::newPlaylistItemOverlay alignmentMode %d manualAlignment (%d,%d)", alignment, manualAlignmentX, manualAlignmentY);
   }
