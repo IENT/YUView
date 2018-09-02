@@ -34,9 +34,8 @@ Screenshot of YUView:
 
 You can download precompiled binaries for Windows and MAC from our [release site](https://github.com/IENT/YUView/releases) or here:
 
- - [Windows installer](https://github.com/IENT/YUViewReleases/blob/master/win/installers/SetupYUView.exe?raw=true)
  - [Windows zip file](https://github.com/IENT/YUViewReleases/blob/master/win/installers/YUView-Win.zip?raw=true)
- - [Mac OS](https://github.com/IENT/YUViewReleases/blob/master/mac/YUView-MacOs.zip?raw=true)
+ - [MacOS zip file](https://github.com/IENT/YUViewReleases/blob/master/mac/YUView-MacOs.zip?raw=true)
 
 For the Linux based platforms we are on [flathub](https://flathub.org/apps/details/de.rwth_aachen.ient.YUView). More information on YUView on Linux can be found in out wiki page ["YUView on Linux"](https://github.com/IENT/YUView/wiki/YUView-on-Linux). 
 
