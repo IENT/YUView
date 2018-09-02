@@ -75,13 +75,13 @@ public:
 
 private:
 
-  enum arangementModeEnum
+  enum layoutModeEnum
   {
     OVERLAY,
     ARANGE,
     CUSTOM
   };
-  arangementModeEnum arangementMode {OVERLAY};
+  layoutModeEnum layoutMode {OVERLAY};
 
   void onGroupBoxToggled(int idx, bool on);
 
@@ -104,6 +104,10 @@ private:
   void updateCustomPositionGrid();
   void clear(int startRow);
   QPoint getCutomPositionOfItem(int itemIndex) const;
+
+  int overlayMode {0};
+  int arangementMode {0};
+  QMap<int, QPoint> customPositions;
 
 private slots:
   void slotControlChanged();

@@ -254,7 +254,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
 
   QList<int> columns, rows;
   const int nrRowsCols = int(sqrt(childCount() - 1)) + 1;
-  if (arangementMode == ARANGE)
+  if (layoutMode == ARANGE)
   {
     // Before calculating the actual position of each item, we have to pre-calculate 
     // the row/column height/width for the 2D layout
@@ -277,7 +277,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
   }
 
   // Align the rest of the items
-  DEBUG_OVERLAY("playlistItemOverlay::updateLayout childCount %d arangementMode %d", childCount(), arangementMode);
+  DEBUG_OVERLAY("playlistItemOverlay::updateLayout childCount %d layoutMode %d", childCount(), layoutMode);
   for (int i = 1; i < childCount(); i++)
   {
     playlistItem *childItem = getChildPlaylistItem(i);
@@ -288,12 +288,10 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
       targetRect.setSize(childSize);
       targetRect.moveCenter(QPoint(0,0));
 
-      if (arangementMode == OVERLAY)
+      if (layoutMode == OVERLAY)
       {
-        const int mode = ui.comboBoxAlignment ? ui.comboBoxAlignment->currentIndex() : 0;
-
         // Align based on alignment mode (must be between 0 and 8)
-        switch (mode)
+        switch (overlayMode)
         {
         case 0:
           targetRect.moveTopLeft(firstItemRect.topLeft()); break;
@@ -315,11 +313,9 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
           targetRect.moveCenter(QPoint(0,0)); break;
         }
       }
-      else if (arangementMode == ARANGE)
+      else if (layoutMode == ARANGE)
       {
-        const int mode = ui.comboBoxArangement ? ui.comboBoxArangement->currentIndex() : 0;
-
-        if (mode == 0)
+        if (arangementMode == 0)
         {
           // 2D
           const int r = i / nrRowsCols;
@@ -332,14 +328,14 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
             x += columns[i];
           targetRect.moveTopLeft(firstItemRect.topLeft() + QPoint(x, y));
         }
-        else if (mode == 1)
+        else if (arangementMode == 1)
         {
           // Side by side
           QPoint newTopLeft = childItemRects[i-1].topRight();
           newTopLeft.setX(newTopLeft.x() + 1);
           targetRect.moveTopLeft(newTopLeft);
         }
-        else if (mode == 2)
+        else if (arangementMode == 2)
         {
           // Stacked
           QPoint newTopLeft = childItemRects[i-1].bottomLeft();
@@ -347,10 +343,10 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
           targetRect.moveTopLeft(newTopLeft);
         }
       }
-      else if (arangementMode = CUSTOM)
+      else if (layoutMode = CUSTOM)
       {
         // Just use the provided custion positions per item
-        QPoint pos = getCutomPositionOfItem(i);
+        QPoint pos = customPositions[i-1];
         targetRect.moveTopLeft(firstItemRect.topLeft() + pos);
       }
 
@@ -378,17 +374,17 @@ void playlistItemOverlay::createPropertiesWidget()
   ui.verticalLayout->insertLayout(0, createPlaylistItemControls());
 
   // Alignment mode
-  ui.comboBoxAlignment->addItems(QStringList() << "Top Left" << "Top Center" << "Top Right");
-  ui.comboBoxAlignment->addItems(QStringList() << "Center Left" << "Center" << "Center Right");
-  ui.comboBoxAlignment->addItems(QStringList() << "Bottom Left" << "Bottom Center" << "Bottom Right");
+  ui.comboBoxOverlayMode->addItems(QStringList() << "Top Left" << "Top Center" << "Top Right");
+  ui.comboBoxOverlayMode->addItems(QStringList() << "Center Left" << "Center" << "Center Right");
+  ui.comboBoxOverlayMode->addItems(QStringList() << "Bottom Left" << "Bottom Center" << "Bottom Right");
+  ui.comboBoxOverlayMode->setCurrentIndex(overlayMode);
+  
+  ui.comboBoxArangementMode->addItems(QStringList() << "2D Grid" << "Side by Side" << "Stacked" );
+  ui.comboBoxArangementMode->setCurrentIndex(arangementMode);
 
-  ui.comboBoxArangement->addItems(QStringList() << "2D Grid" << "Side by Side" << "Stacked" );
-
-  // Offset
-  // ui.alignmentHozizontal->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
-  // ui.alignmentVertical->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
-  // ui.alignmentHozizontal->setValue(manualAlignment.x());
-  // ui.alignmentVertical->setValue(manualAlignment.y());
+  ui.overlayGroupBox->setChecked(layoutMode == OVERLAY);
+  ui.arangeGroupBox->setChecked(layoutMode == ARANGE);
+  ui.customGroupBox->setChecked(layoutMode == CUSTOM);
 
   // Create and add the grid layout for the custom positions
   customPositionGrid = new QGridLayout(ui.customGroupBox);
@@ -403,12 +399,8 @@ void playlistItemOverlay::createPropertiesWidget()
   connect(ui.overlayGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_overlayGroupBox_toggled);
   connect(ui.arangeGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_arangeGroupBox_toggled);
   connect(ui.customGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_customGroupBox_toggled);
-  connect(ui.comboBoxAlignment, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::slotControlChanged);
-  connect(ui.comboBoxArangement, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::slotControlChanged);
-
-  // connect(ui.alignmentMode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::controlChanged);
-  // connect(ui.alignmentHozizontal, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::controlChanged);
-  // connect(ui.alignmentVertical, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::controlChanged);
+  connect(ui.comboBoxOverlayMode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::slotControlChanged);
+  connect(ui.comboBoxArangementMode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::slotControlChanged);
 }
 
 void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -419,25 +411,19 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDi
   playlistItem::appendPropertiesToPlaylist(d);
 
   // Append the overlay properties
-  d.appendProperiteChild("arangementMode", QString::number(arangementMode));
-  if (arangementMode == OVERLAY)
-  {
-    const int overlayMode = ui.comboBoxAlignment ? ui.comboBoxAlignment->currentIndex() : 0;
+  d.appendProperiteChild("layoutMode", QString::number(layoutMode));
+  if (layoutMode == OVERLAY)
     d.appendProperiteChild("overlayMode", QString::number(overlayMode));
-  }
-  else if (arangementMode == ARANGE)
-  {
-    const int arangementMode = ui.comboBoxArangement ? ui.comboBoxArangement->currentIndex() : 0;
+  else if (layoutMode == ARANGE)
     d.appendProperiteChild("arangementMode", QString::number(arangementMode));
-  }
   else
   {
-    assert(arangementMode == CUSTOM);
+    assert(layoutMode == CUSTOM);
     for (int i = 1; i < childCount(); i++)
     {
-      QPoint customPosition = getCutomPositionOfItem(i);
-      d.appendProperiteChild(QString("ItemPos%1X").arg(i), QString::number(customPosition.x()));
-      d.appendProperiteChild(QString("ItemPos%1Y").arg(i), QString::number(customPosition.y()));
+      QPoint p = customPositions[i-1];
+      d.appendProperiteChild(QString("ItemPos%1X").arg(i), QString::number(p.x()));
+      d.appendProperiteChild(QString("ItemPos%1Y").arg(i), QString::number(p.y()));
     }
   }
 
@@ -451,20 +437,56 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const QDomEleme
 {
   Q_UNUSED(filePath);
 
-  playlistItemOverlay *newOverlay = new playlistItemOverlay();
-
   // TODO:
   // Implement a new function to load the new format
   // Also add a legacy function that can interprete the old format
 
-  //int alignment = root.findChildValue("alignmentMode").toInt();
-  //int manualAlignmentX = root.findChildValue("manualAlignmentX").toInt();
-  //int manualAlignmentY = root.findChildValue("manualAlignmentY").toInt();
+  bool oldFormat = (!root.findChildValue("alignmentMode").isEmpty());
+  bool newFormat = (!root.findChildValue("layoutMode").isEmpty());
+  if (!oldFormat && !newFormat)
+    // Error loading. It should be one of these formats
+    return nullptr;
 
-  /*newOverlay->alignmentMode = alignment;
-  newOverlay->manualAlignment = QPoint(manualAlignmentX, manualAlignmentY);*/
+  playlistItemOverlay *newOverlay = new playlistItemOverlay();
 
-  DEBUG_OVERLAY("playlistItemOverlay::newPlaylistItemOverlay alignmentMode %d manualAlignment (%d,%d)", alignment, manualAlignmentX, manualAlignmentY);
+  if (oldFormat)
+  {
+    int alignment = root.findChildValue("alignmentMode").toInt();
+    int manualAlignmentX = root.findChildValue("manualAlignmentX").toInt();
+    int manualAlignmentY = root.findChildValue("manualAlignmentY").toInt();
+
+    DEBUG_OVERLAY("playlistItemOverlay::newPlaylistItemOverlay alignmentMode %d manualAlignment (%d,%d)", alignment, manualAlignmentX, manualAlignmentY);
+  }
+  else
+  {
+    newOverlay->layoutMode = (layoutModeEnum)root.findChildValue("layoutMode").toInt();
+    DEBUG_OVERLAY("playlistItemOverlay::newPlaylistItemOverlay layoutMode %d", newOverlay->layoutMode);
+    if (newOverlay->layoutMode == OVERLAY)
+    {
+      newOverlay->overlayMode = root.findChildValue("overlayMode").toInt();
+    }
+    else if (newOverlay->layoutMode == ARANGE)
+    {
+      newOverlay->arangementMode = root.findChildValue("arangementMode").toInt();
+    }
+    else if (newOverlay->layoutMode == CUSTOM)
+    {
+      int i = 1;
+      while (true)
+      {
+        QString strX = root.findChildValue(QString("ItemPos%1X").arg(i));
+        QString strY = root.findChildValue(QString("ItemPos%1Y").arg(i));
+        if (strX.isEmpty() || strY.isEmpty())
+          break;
+
+        QPoint pos = QPoint(strX.toInt(), strY.toInt());
+        newOverlay->customPositions[i-1] = pos;
+
+        i++;
+      }
+    }
+  }
+  
   playlistItem::loadPropertiesFromPlaylist(root, newOverlay);
 
   return newOverlay;
@@ -474,6 +496,13 @@ void playlistItemOverlay::slotControlChanged()
 {
   // One of the controls changed. Update the layout and emit the signal
   // that this item changed (needs to be redrawn)
+  overlayMode    = ui.comboBoxOverlayMode->currentIndex();
+  arangementMode = ui.comboBoxArangementMode->currentIndex();
+  for (int i = 1; i < childCount(); i++)
+  {
+    QPoint p = getCutomPositionOfItem(i);
+    customPositions[i-1] = p;
+  }
   
   // No new item was added but update the layout of the items
   updateLayout(false);
@@ -517,11 +546,11 @@ void playlistItemOverlay::onGroupBoxToggled(int idx, bool on)
 
   // Update the arangement mode
   if (ui.overlayGroupBox->isChecked())
-    arangementMode = OVERLAY;
+    layoutMode = OVERLAY;
   else if (ui.arangeGroupBox->isChecked())
-    arangementMode = ARANGE;
+    layoutMode = ARANGE;
   else if (ui.customGroupBox->isChecked())
-    arangementMode = CUSTOM;
+    layoutMode = CUSTOM;
 
   slotControlChanged();
 }
@@ -626,11 +655,15 @@ void playlistItemOverlay::updateCustomPositionGrid()
     QSpinBox *width = widgetAt<QSpinBox>(customPositionGrid, i, 1);
     width->setRange(-CUSTOM_POS_MAX, CUSTOM_POS_MAX);
     connect(width, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::slotControlChanged);
+    QSignalBlocker widthSignalBlocker(width);
+    width->setValue(customPositions[i].x());
 
     // Height
     QSpinBox *height = widgetAt<QSpinBox>(customPositionGrid, i, 2);
     height->setRange(-CUSTOM_POS_MAX, CUSTOM_POS_MAX);
     connect(height, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::slotControlChanged);
+    QSignalBlocker heightSignalBlocker(height);
+    height->setValue(customPositions[i].y());
   }
 
   // Remove all widgets (rows) which are not used anymore
