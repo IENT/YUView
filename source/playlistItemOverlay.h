@@ -77,11 +77,11 @@ private:
 
   enum arangementModeEnum
   {
-    ALIGN,
+    OVERLAY,
     ARANGE,
     CUSTOM
   };
-  arangementModeEnum arangementMode;
+  arangementModeEnum arangementMode {OVERLAY};
 
   void onGroupBoxToggled(int idx, bool on);
 
@@ -91,27 +91,22 @@ private:
 
   SafeUi<Ui::playlistItemOverlay_Widget> ui;
 
-  int alignmentMode;
-  QPoint manualAlignment;
+  QRect boundingRect;           //< The bounding rect of the complete overlay
+  QList<QRect> childItemRects;  //< The position and size of each child item
+  QList<int>   childItemsIDs;   //< The ID of every child item
 
-  // The layout of the child items
-  QRect boundingRect;
-  QList<QRect> childItems;
-
-  // Update the child item layout and this item's bounding QRect. If checkNumber is true the values
-  // will be updated only if the number of items in childItems and childCount() disagree (if new items
-  // were added to the overlay)
-  void updateLayout(bool checkNumber=true);
-
-  QSpacerItem *vSpacer;
+  // Update the child item layout and this item's bounding QRect. If onlyIfItemsChanged is true the values
+  // will be updated only if the number or oder of items changed.
+  void updateLayout(bool onlyIfItemsChanged=true);
 
   // The grid layout that contains all the custom positions
   QGridLayout *customPositionGrid = nullptr;
   void updateCustomPositionGrid();
   void clear(int startRow);
+  QPoint getCutomPositionOfItem(int itemIndex) const;
 
 private slots:
-  void controlChanged(int idx);
+  void slotControlChanged();
   void childChanged(bool redraw, recacheIndicator recache) Q_DECL_OVERRIDE;
 
   void on_overlayGroupBox_toggled(bool on) { onGroupBoxToggled(0, on); }
