@@ -1450,7 +1450,8 @@ void parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
       maxPOCCount = -1;
     }
     int POC = pocCounterOffset + new_slice->PicOrderCntVal;
-    if (POC > maxPOCCount && !new_slice->isIRAP())
+    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit calculated POC %d - pocCounterOffset %d maxPOCCount %d%s%s", POC, pocCounterOffset, maxPOCCount, (new_slice->isIRAP() ? " - IRAP" : ""), (new_slice->NoRaslOutputFlag ? "" : " - RASL"));
+    if (POC > maxPOCCount && !(new_slice->isIRAP() && new_slice->NoRaslOutputFlag))
       maxPOCCount = POC;
     new_slice->globalPOC = POC;
 
