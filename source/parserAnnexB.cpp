@@ -35,7 +35,7 @@
 #include "mainwindow.h"
 #include <QProgressDialog>
 
-#define PARSERANNEXB_DEBUG_OUTPUT 1
+#define PARSERANNEXB_DEBUG_OUTPUT 0
 #if PARSERANNEXB_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_ANNEXB qDebug
@@ -59,7 +59,7 @@ void parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool ran
   frameList.append(newFrame);
 
   if (POCList.contains(poc))
-    throw std::logic_error("Error adding Frame - POC already present."); 
+    throw std::logic_error(std::string("Error adding Frame POC already present - " + std::to_string(poc))); 
   POCList.append(poc);
 }
 
@@ -156,10 +156,14 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
       nalData = file->getNextNALUnit(false, &nalStartEndPosFile);
       parseAndAddNALUnit(nalID, nalData, nullptr, nalStartEndPosFile);
     }
-    catch (...)
+    catch (const std::exception &exc)
     {
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
+      DEBUG_ANNEXB("parseAndAddNALUnit Exception thrown parsing NAL %d - %s", nalID, exc.what());
+    }
+    catch (...)
+    {
       DEBUG_ANNEXB("parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
     }
 
