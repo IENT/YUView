@@ -1,0 +1,4 @@
+REM Harvest the deploy direcotry
+REM heat.exe dir "..\..\deploy" -gg -sfrag -sreg -template fragment -out harvestedDirectory.wxs
+candle.exe -dConfiguration=Release -dOutDir=bin\Release\ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj\Release\ -arch x64 -ext "C:\Program Files (x86)\WiX Toolset v3.11\bin\\WixUIExtension.dll" YUView.wxs
+Light.exe -out bin\Release\YUViewSetup.msi -pdbout bin\Release\YUViewSetup.wixpdb -cultures:null -ext "C:\Program Files (x86)\WiX Toolset v3.11\bin\\WixUIExtension.dll" -contentsfile obj\Release\YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj\Release\YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj\Release\YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt -wixprojectfile D:\Projekte\YUViewSetup\YUViewSetup.wixproj obj\Release\YUView.wixobj
