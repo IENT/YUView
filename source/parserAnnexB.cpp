@@ -172,5 +172,6 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
 
   // We are done.
   parseAndAddNALUnit(-1, QByteArray());
+  DEBUG_ANNEXB("parseAndAddNALUnit Parsing done. Found %d POCs.", POCList.length());
   return !progress.wasCanceled();
 }

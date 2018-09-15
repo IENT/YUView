@@ -100,12 +100,14 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   if (isInputFormatTypeAnnexB())
   {
     // Open file
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Open annexB file");
     inputFileAnnexBLoading.reset(new fileSourceAnnexBFile(compressedFilePath));
     if (cachingEnabled)
       inputFileAnnexBCaching.reset(new fileSourceAnnexBFile(compressedFilePath));
     // inputFormatType a parser
     if (inputFormatType == inputAnnexBHEVC)
     {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is HEVC");
       inputFileAnnexBParser.reset(new parserAnnexBHEVC());
       ffmpegCodec.setTypeHEVC();
       possibleDecoders.append(decoderEngineLibde265);
@@ -114,21 +116,26 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     }
     else if (inputFormatType == inputAnnexBAVC)
     {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is AVC");
       inputFileAnnexBParser.reset(new parserAnnexBAVC());
       ffmpegCodec.setTypeAVC();
       possibleDecoders.append(decoderEngineFFMpeg);
     }
     // Parse the loading file
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Start parsing of file");
     inputFileAnnexBParser->parseAnnexBFile(inputFileAnnexBLoading);
     // Get the frame size and the pixel format
     frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size %dx%d", frameSize.width(), frameSize.height());
     // Raw annexB files will always provide YUV data
     format_yuv = inputFileAnnexBParser->getPixelFormat();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo YUV format %s", format_yuv.getName().toStdString().c_str());
     rawFormat = raw_YUV;
   }
   else
   {
     // Try ffmpeg to open the file
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Open file using ffmpeg");
     inputFileFFmpegLoading.reset(new fileSourceFFmpegFile());
     QWidget *mainWindow = MainWindow::getMainWindow();
     if (!inputFileFFmpegLoading->openFile(compressedFilePath, mainWindow))
@@ -138,12 +145,20 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     }
     // Is this file RGB or YUV?
     rawFormat = inputFileFFmpegLoading->getRawFormat();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Raw format %s", rawFormat == raw_YUV ? "YUV" : rawFormat == raw_RGB ? "RGB" : "Unknown");
     if (rawFormat == raw_YUV)
       format_yuv = inputFileFFmpegLoading->getPixelFormatYUV();
     else if (rawFormat == raw_RGB)
       format_rgb = inputFileFFmpegLoading->getPixelFormatRGB();
+    else
+    {
+      setError("Unknown raw format.");
+      return;
+    }
     frameSize = inputFileFFmpegLoading->getSequenceSizeSamples();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size %dx%d", frameSize.width(), frameSize.height());
     ffmpegCodec = inputFileFFmpegLoading->getCodecSpecifier();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getName().toStdString().c_str());
     possibleDecoders.append(decoderEngineFFMpeg);
     if (ffmpegCodec.isHEVC())
     {
@@ -218,6 +233,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   }
 
   // Allocate the decoders
+  DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Initializing decoder enigne type %d", decoderEngineType);
   if (!allocateDecoder(displayComponent))
     return;
 
@@ -228,15 +244,18 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   }
 
   // Fill the list of statistics that we can provide
+  DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Fill the statistics list");
   fillStatisticList();
 
   // Set the frame number limits
   startEndFrame = getStartEndFrameLimits();
+  DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Start end frame limits %d,%d", startEndFrame.first, startEndFrame.second);
   if (startEndFrame.second == -1)
     // No frames to decode
     return;
 
   // Seek both decoders to the start of the bitstream (this will also push the parameter sets / extradata to the decoder)
+  DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Seek decoders to 0");
   seekToPosition(0, 0, false);
   if (cachingEnabled)
     seekToPosition(0, 0, true);
@@ -708,15 +727,23 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
 
   if (decoderEngineType == decoderEngineLibde265)
   {
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive libde265 decoder");
     loadingDecoder.reset(new decoderLibde265(displayComponent));
     if (cachingEnabled)
+    {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing caching libde265 decoder");
       cachingDecoder.reset(new decoderLibde265(displayComponent, true));
+    }
   }
   else if (decoderEngineType == decoderEngineHM)
   {
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive HM decoder");
     loadingDecoder.reset(new decoderHM(displayComponent));
     if (cachingEnabled)
+    {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder caching interactive HM decoder");
       cachingDecoder.reset(new decoderHM(displayComponent, true));
+    }
   }
   else if (decoderEngineType == decoderEngineFFMpeg)
   {
@@ -728,15 +755,23 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
       auto profileLevel = inputFileAnnexBParser->getProfileLevel();
       auto ratio = inputFileAnnexBParser->getSampleAspectRatio();
 
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive ffmpeg decoder from raw anexB stream. frameSize %dx%d extradata length %d yuvPixelFormat %s profile/level %d/%d, aspect raio %d/%d", frameSize.width(), frameSize.height(), extradata.length(), fmt.getName().toStdString().c_str(), profileLevel.first, profileLevel.second, ratio.first, ratio.second);
       loadingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio));
       if (cachingEnabled)
+      {
+        DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing caching ffmpeg decoder from raw anexB stream. Same settings.");
         cachingDecoder.reset(new decoderFFmpeg(ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio, true));
+      }
     }
     else
     {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive ffmpeg decoder using ffmpeg as parser");
       loadingDecoder.reset(new decoderFFmpeg(inputFileFFmpegLoading->getVideoCodecPar()));
       if (cachingEnabled)
+      {
+        DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing caching ffmpeg decoder using ffmpeg as parser");
         cachingDecoder.reset(new decoderFFmpeg(inputFileFFmpegCaching->getVideoCodecPar()));
+      }
     }
   }
   else

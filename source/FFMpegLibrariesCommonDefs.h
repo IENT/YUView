@@ -35,6 +35,7 @@
 
 #include "stdint.h"
 #include <errno.h>
+#include <QString>
 
 /* This file defines all FFmpeg specific defines like structs, enums and some common things like Rational.
  * These things do not change when a new major version of the libraries is released. (If they do, they will
@@ -488,6 +489,18 @@ namespace FFmpeg
     void setTypeAVC()   { if (id == AV_CODEC_ID_NONE && !isTypeHEVC && !isTypeMpeg2 && !isTypeAV1) isTypeAVC = true; }
     void setTypeMpeg2() { if (id == AV_CODEC_ID_NONE && !isTypeHEVC && !isTypeAVC && !isTypeAV1) isTypeMpeg2 = true; }
     void setTypeAV1()   { if (id == AV_CODEC_ID_NONE && !isTypeHEVC && !isTypeAVC && !isTypeMpeg2) isTypeAV1 = true; }
+    QString getName()
+    {
+      if (isHEVC())
+        return "HEVC";
+      if (isAVC())
+        return "AVC";
+      if (isMpeg2())
+        return "Mpeg2";
+      if (isAV1())
+        return "AV1";
+      return "Unknown";
+    }
   private:
     AVCodecID id {AV_CODEC_ID_NONE};
     
