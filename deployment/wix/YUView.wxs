@@ -35,6 +35,7 @@
     
     <WixVariable Id="WixUILicenseRtf" Value="YUViewLicense.rtf" />
     <WixVariable Id="WixUIDialogBmp" Value="YUViewBanner.bmp" />
+    <WixVariable Id="WixUIBannerBmp" Value="YUViewBannerTop.bmp" />
     <WixVariable Id="WixUINewIco" Value="YUViewIco.bmp" />
     <UIRef Id="WixUI_Minimal" />
 
