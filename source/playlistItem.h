@@ -73,6 +73,9 @@ public:
   void setName(const QString &name);
 
   // Every playlist item has a unique (within the playlist) ID
+  // TODO: This ID is also saved in the playlist. We can append playlists to existing 
+  //       playlists. In this case, we could get items with identical IDs. This must not happen.
+  //       I think we need the playlist item to generate a truely unique ID here (using a timecode and everything).
   unsigned int getID() const { return id; }
   // If an item is loaded from a playlist, it also has a palylistID (which it was given when the playlist was saved)
   unsigned int getPlaylistID() const { return playlistID; }

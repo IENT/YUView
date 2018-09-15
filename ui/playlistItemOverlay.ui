@@ -6,83 +6,76 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>142</width>
-    <height>101</height>
+    <width>126</width>
+    <height>116</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0">
    <item>
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+    <widget class="QGroupBox" name="overlayGroupBox">
+     <property name="title">
+      <string>Overlay</string>
      </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="labelAlignment">
+        <property name="text">
+         <string>Alignment</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBoxOverlayMode"/>
+      </item>
+     </layout>
     </widget>
    </item>
    <item>
-    <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label_3">
-       <property name="toolTip">
-        <string>At what position should the items in this overlay be aligned?</string>
-       </property>
-       <property name="text">
-        <string>Alignment</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QComboBox" name="alignmentMode">
-       <property name="toolTip">
-        <string>At what position should the items in this overlay be aligned?</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label">
-       <property name="toolTip">
-        <string>Here you can specify an offset from the point of alignment</string>
-       </property>
-       <property name="text">
-        <string>Offset Y</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QSpinBox" name="alignmentVertical">
-       <property name="toolTip">
-        <string>Here you can specify an offset from the point of alignment</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="toolTip">
-        <string>Here you can specify an offset from the point of alignment</string>
-       </property>
-       <property name="text">
-        <string>Offset X</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QSpinBox" name="alignmentHozizontal">
-       <property name="toolTip">
-        <string>Here you can specify an offset from the point of alignment</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <widget class="QGroupBox" name="arangeGroupBox">
+     <property name="title">
+      <string>Arange</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="labelArangement">
+        <property name="text">
+         <string>Arangement</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBoxArangementMode"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="customGroupBox">
+     <property name="title">
+      <string>Custom</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>alignmentMode</tabstop>
-  <tabstop>alignmentHozizontal</tabstop>
-  <tabstop>alignmentVertical</tabstop>
- </tabstops>
  <resources/>
  <connections/>
 </ui>

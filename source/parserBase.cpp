@@ -302,9 +302,9 @@ uint64_t parserBase::sub_byte_reader::readUVLC(QString *bitsRead, int *bit_count
     leadingZeros++;
   }
   if (leadingZeros >= 32)
-    return (1 << 32) - 1;
+    return ((uint64_t)1 << 32) - 1;
   uint64_t value = readBits(leadingZeros, bitsRead);
-  return value + (1 << leadingZeros) - 1;
+  return value + ((uint64_t)1 << leadingZeros) - 1;
 }
 
 int parserBase::sub_byte_reader::readNS(int nrBits, QString *bitsRead, int *bit_count)
