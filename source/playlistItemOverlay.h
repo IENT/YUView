@@ -73,6 +73,8 @@ public:
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
+  void guessBestLayout();
+
 private:
 
   enum layoutModeEnum
@@ -91,9 +93,9 @@ private:
 
   SafeUi<Ui::playlistItemOverlay_Widget> ui;
 
-  QRect boundingRect;           //< The bounding rect of the complete overlay
-  QList<QRect> childItemRects;  //< The position and size of each child item
-  QList<int>   childItemsIDs;   //< The ID of every child item
+  QRect               boundingRect;    //< The bounding rect of the complete overlay
+  QList<QRect>        childItemRects;  //< The position and size of each child item
+  QList<unsigned int> childItemsIDs;   //< The ID of every child item
 
   // Update the child item layout and this item's bounding QRect. If onlyIfItemsChanged is true the values
   // will be updated only if the number or oder of items changed.

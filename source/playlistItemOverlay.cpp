@@ -32,6 +32,8 @@
 
 #include "playlistItemOverlay.h"
 
+#include "playlistItemStatisticsFile.h"
+
 #include <cmath>
 #include <limits>
 #include <QPainter>
@@ -343,7 +345,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
           targetRect.moveTopLeft(newTopLeft);
         }
       }
-      else if (layoutMode = CUSTOM)
+      else if (layoutMode == CUSTOM)
       {
         // Just use the provided custion positions per item
         QPoint pos = customPositions[i-1];
@@ -436,10 +438,6 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDi
 playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const QDomElementYUView &root, const QString &filePath)
 {
   Q_UNUSED(filePath);
-
-  // TODO:
-  // Implement a new function to load the new format
-  // Also add a legacy function that can interprete the old format
 
   bool oldFormat = (!root.findChildValue("alignmentMode").isEmpty());
   bool newFormat = (!root.findChildValue("layoutMode").isEmpty());
@@ -723,4 +721,21 @@ QPoint playlistItemOverlay::getCutomPositionOfItem(int itemIdx) const
   int posY = spinBoxY->value();
 
   return QPoint(posX, posY);
+}
+
+void playlistItemOverlay::guessBestLayout()
+{
+  // Are there statistic items? If yes, we select an overlay. If no, we select a 2D arangement
+  bool statisticsPresent = false;
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = getChildPlaylistItem(i);
+    playlistItemStatisticsFile *childStas = dynamic_cast<playlistItemStatisticsFile*>(childItem);
+    if (childStas)
+      statisticsPresent = true;
+  }
+
+  layoutMode = ARANGE;
+  if (statisticsPresent)
+    layoutMode = OVERLAY;
 }

@@ -331,6 +331,7 @@ void PlaylistTreeWidget::addOverlayItem()
     }
   }
 
+  newOverlay->guessBestLayout();
   appendNewItem(newOverlay);
   setCurrentItem(newOverlay);
 }
