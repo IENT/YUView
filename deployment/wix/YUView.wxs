@@ -9,15 +9,12 @@
 		<Directory Id="TARGETDIR" Name="SourceDir">
 			<Directory Id="ProgramFiles64Folder">
 				<Directory Id="APPLICATIONFOLDER" Name="YUView">
-					<Component Id="MainExecutable">
-						<File Source="..\..\deploy\YUView.exe" />
-					</Component>
 				</Directory>
 			</Directory>
 		</Directory>
   
     <Feature Id='ProductFeature' Title='YUView' Level='1'>
-      <ComponentRef Id='MainExecutable' />
+      <ComponentGroupRef Id="YUViewComponents" />
     </Feature>
     
     <WixVariable Id="WixUILicenseRtf" Value="YUViewLicense.rtf" />
