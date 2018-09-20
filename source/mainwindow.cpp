@@ -147,9 +147,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   mChartHandler.setPlaybackController(ui.playbackController);
   mChartHandler.setPlaylistTreeWidget(ui.playlistTreeWidget);
   mChartHandler.setChartWidget(ui.chartDockWidget);
-  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, &mChartHandler, &ChartHandler::currentSelectedItemsChanged);
-  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, &mChartHandler, &ChartHandler::itemAboutToBeDeleted);
-  connect(ui.playbackController, &PlaybackController::frameIndexChanged, &mChartHandler, &ChartHandler::playbackControllerFrameChanged);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, &mChartHandler, &ChartHandler::currentSelectedItemsChanged, Qt::QueuedConnection);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, &mChartHandler, &ChartHandler::itemAboutToBeDeleted, Qt::QueuedConnection);
+  connect(ui.playbackController, &PlaybackController::frameIndexChanged, &mChartHandler, &ChartHandler::playbackControllerFrameChanged, Qt::QueuedConnection);
 
 
   updateSettings();

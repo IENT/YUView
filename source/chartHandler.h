@@ -139,8 +139,11 @@ public:
   void setPlaybackController( PlaybackController *aPBC ) { this->mPlayback = aPBC; }
 
 
+  QVariant createStatisticsChartAsVariant(itemWidgetCoord& aCoord);
 
 public slots:
+  void asynchFinished();
+
   /**
    * @brief currentSelectedItemsChanged
    * slot, after the playlist item selection have changed
@@ -242,7 +245,6 @@ private:
 
   QCheckBox* mCbDrawChart;
 
-
   //list of all created Widgets and items
   QVector<itemWidgetCoord> mListItemWidget;
   // Pointer to the TreeWidget
@@ -250,8 +252,13 @@ private:
   // Pointer to the PlaybackController
   QPointer<PlaybackController> mPlayback;
 
-  QList<QBasicTimer> mListTimer;
   QBasicTimer mTimer;
+
+  bool mDoMultiThread = false;
+  bool mCancelBackgroundParser = false;
+  QFuture<QVariant> mBackgroundParserFuture;
+  QFutureWatcher<QVariant> mFutureWatcherWidgets;
+  QList<QPair<QFuture<QVariant>, itemWidgetCoord>> mMapFutureItemWidgetCoord;
 
 
 // functions

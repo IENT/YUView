@@ -37,7 +37,7 @@
 #include <QtMath>
 
 // Activate this if you want to know when what is loaded.
-#define STATISTICS_DEBUG_LOADING 0
+#define STATISTICS_DEBUG_LOADING 1
 #if STATISTICS_DEBUG_LOADING && !NDEBUG
 #define DEBUG_STAT qDebug
 #else
@@ -51,6 +51,27 @@ statisticHandler::statisticHandler()
   spacerItems[0] = nullptr;
   spacerItems[1] = nullptr;
   connect(&statisticsStyleUI, &StatisticsStyleControl::StyleChanged, this, &statisticHandler::updateStatisticItem, Qt::QueuedConnection);
+}
+
+statisticHandler& statisticHandler::operator=(const statisticHandler& aHandler)
+{
+  statsCacheFrameIdx = aHandler.statsCacheFrameIdx;
+
+  spacerItems[0] = aHandler.spacerItems[0];
+  spacerItems[1] = aHandler.spacerItems[1];
+
+  QMutexLocker lock(&statsCacheAccessMutex);
+
+  statsTypeList = aHandler.statsTypeList;
+  statsTypeList.detach();
+
+  statsTypeListBackup = aHandler.statsTypeListBackup;
+  statsTypeListBackup.detach();
+
+  statsCache = aHandler.statsCache;
+  statsCache.detach();
+
+  return *this;
 }
 
 itemLoadingState statisticHandler::needsLoading(int frameIdx)

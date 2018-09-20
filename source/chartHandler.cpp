@@ -31,6 +31,7 @@
 */
 
 #include "chartHandler.h"
+#include <QtConcurrent>
 
 
 // Default-Constructor
@@ -71,6 +72,9 @@ ChartHandler::ChartHandler() : mYUVChartFactory(&this->mNoDataToShowWidget, &thi
     if(aClicked)
       this->playbackControllerFrameChanged(-1);
   });
+
+  // define the future watcher
+  connect(&mFutureWatcherWidgets,  &QFutureWatcher<QVariant>::finished, this, &ChartHandler::asynchFinished, Qt::QueuedConnection);
 }
 
 /*-------------------- public functions --------------------*/
@@ -140,6 +144,31 @@ void ChartHandler::removeWidgetFromList(playlistItem* aItem)
   tmp.mItem = aItem;
   if (this->mListItemWidget.contains(tmp))
     this->mListItemWidget.removeAll(tmp);
+}
+
+void ChartHandler::asynchFinished()
+{
+  QVariant chartVariant = this->mFutureWatcherWidgets.result();
+  QWidget* chart = chartVariant.value<QWidget*>();
+
+  QFuture<QVariant> future = this->mFutureWatcherWidgets.future();
+  QPair<QFuture<QVariant>, itemWidgetCoord> pair;
+
+  foreach (auto itempair, mMapFutureItemWidgetCoord)
+  {
+    if(itempair.first == future)
+    {
+      pair.second = itempair.second;
+      break;
+    }
+  }
+
+  if(pair.second.mItem == NULL)
+    return;
+
+  this->placeChart(pair.second, chart);
+
+  this->mMapFutureItemWidgetCoord.removeOne(pair);
 }
 
 /*-------------------- private functions --------------------*/
@@ -1033,6 +1062,8 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   if(!aCoord.mWidget)
     return &(this->mNoDataToShowWidget);
 
+  //this->placeChart(aCoord, &this->mDataIsLoadingWidget);
+
   // get current frame index, we use the playback controller
   int frameIndex = this->mPlayback->getCurrentFrame();
 
@@ -1169,6 +1200,12 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   return this->mLastStatisticsWidget;
 }
 
+QVariant ChartHandler::createStatisticsChartAsVariant(itemWidgetCoord& aCoord)
+{
+  QWidget* chart = this->createStatisticsChart(aCoord);
+  return QVariant::fromValue(chart);
+}
+
 void ChartHandler::onStatisticsChange(const QString aString)
 {
   if(!this->mCbDrawChart->isChecked())
@@ -1186,7 +1223,34 @@ void ChartHandler::onStatisticsChange(const QString aString)
 
     QWidget* chart;
     if(aString != CBX_OPTION_SELECT) // new type was selected in the combobox
-      chart = this->createStatisticsChart(coord); // so we generate the statistic
+    {
+      if(this->mDoMultiThread)
+      {
+        if(this->mBackgroundParserFuture.isRunning())
+        {
+          this->mCancelBackgroundParser = true;
+          this->mBackgroundParserFuture.cancel();
+          this->mBackgroundParserFuture.waitForFinished();
+          this->mCancelBackgroundParser = false;
+        }
+
+        this->placeChart(coord, &this->mDataIsLoadingWidget);
+        this->mBackgroundParserFuture = QtConcurrent::run(this, &ChartHandler::createStatisticsChartAsVariant, coord);
+        this->mFutureWatcherWidgets.setFuture(this->mBackgroundParserFuture);
+        QPair<QFuture<QVariant>, itemWidgetCoord> pair;
+        pair.first = this->mBackgroundParserFuture;
+        pair.second = coord;
+        mMapFutureItemWidgetCoord.append(pair);
+
+        // chart will be placed after the thread is finished
+      }
+      else
+      {
+        chart = this->createStatisticsChart(coord); // so we generate the statistic
+        // at least, we have to place the chart and show it
+        this->placeChart(coord, chart);
+      }
+    }
     else // "Select..." was selected so
     {
       // we set a default-widget
@@ -1198,10 +1262,9 @@ void ChartHandler::onStatisticsChange(const QString aString)
         QWidget* widget = coord.mChart->widget(i);
         coord.mChart->removeWidget(widget);
       }
+      // at least, we have to place the chart and show it
+      this->placeChart(coord, chart);
     }
-
-    // at least, we have to place the chart and show it
-    this->placeChart(coord, chart);
   }
 }
 

@@ -271,6 +271,9 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 
     setStartEndFrame( indexRange(0, maxPOC), false);
 
+    // copy states from one statistics-handler to the other one
+    chartStatSource = statSource;
+
     // Parsing complete
     backgroundParserProgress = 100.0;
 
@@ -463,6 +466,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
 
 void playlistItemStatisticsFile::loadStatisticToCache(int frameIdxInternal, int typeID)
 {
+  QMutexLocker lock(&this->mLockStatAccess);
   try
   {
     if (!file.isOk())
@@ -474,6 +478,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdxInternal, int 
     {
       // There are no statistics in the file for the given frame and index.
       statSource.statsCache.insert(typeID, statisticsData());
+      chartStatSource.statsCache.insert(typeID, statisticsData());
       return;
     }
 
@@ -550,11 +555,20 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdxInternal, int 
       Q_ASSERT_X(statsType != nullptr, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
 
       if (vectorData && statsType->hasVectorData)
+      {
         statSource.statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
+        chartStatSource.statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
+      }
       else if (lineData && statsType->hasVectorData)
+      {
         statSource.statsCache[type].addLine(posX, posY, width, height, values[0], values[1], values[2], values[3]);
+        chartStatSource.statsCache[type].addLine(posX, posY, width, height, values[0], values[1], values[2], values[3]);
+      }
       else
+      {
         statSource.statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
+        chartStatSource.statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
+      }
     }
 
   } // try
@@ -732,66 +746,66 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loa
 }
 
 QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData(indexRange aRange, bool aReset, QString aType)
-{
+{   
   // getting the max range
   indexRange realRange = this->getFrameIdxRange();
 
   int rangeSize = aRange.second - aRange.first;
   int frameSize = realRange.second - realRange.first;
+
   if(aReset || (rangeSize != frameSize))
-  {
     this->mStatisticData.clear();
 
-    // running through the statisticsList
-    foreach (StatisticsType statType, this->statSource.getStatisticsTypeList())
+  // running through the statisticsList
+  foreach (StatisticsType statType, this->chartStatSource.getStatisticsTypeList())
+  {
+    if(aType == "" || aType == statType.typeName)
     {
-      if(aType == "" || aType == statType.typeName)
+      // creating the resultList, where we save all the datalists
+      QList<QList<QVariant>> resultList;
+      // getting the key
+      QString key  = statType.typeName;
+      // creating the data list
+      QList<QVariant> dataList;
+
+      // getting all the statistic-data by the typeId
+      int typeIdx = statType.typeID;
+
+      if (this->isRangeInside(realRange, aRange))
       {
-        // creating the resultList, where we save all the datalists
-        QList<QList<QVariant>> resultList;
-        // getting the key
-        QString key  = statType.typeName;
-        // creating the data list
-        QList<QVariant> dataList;
-
-        // getting all the statistic-data by the typeId
-        int typeIdx = statType.typeID;
-
-        if (this->isRangeInside(realRange, aRange))
+        for(int frame = aRange.first; frame <= aRange.second; frame++)
         {
-          for(int frame = aRange.first; frame <= aRange.second; frame++)
-          {
-            dataList.clear();
-            // first we have to load the statistic
-            this->loadStatisticToCache(frame, typeIdx);
+          dataList.clear();
 
-            statisticsData statDataByType = this->statSource.statsCache[typeIdx];
-            // the data can be a value or a vector, converting the data into an QVariant and append it to the dataList
-            if(statType.hasValueData)
+          // first we have to load the statistic
+          this->loadStatisticToCache(frame, typeIdx);
+
+          statisticsData statDataByType = this->chartStatSource.statsCache[typeIdx];
+          // the data can be a value or a vector, converting the data into an QVariant and append it to the dataList
+          if(statType.hasValueData)
+          {
+            foreach (statisticsItem_Value val, statDataByType.valueData)
             {
-              foreach (statisticsItem_Value val, statDataByType.valueData)
-              {
-                QVariant variant = QVariant::fromValue(val);
-                dataList.append(variant);
-              }
+              QVariant variant = QVariant::fromValue(val);
+              dataList.append(variant);
             }
-            else if(statType.hasVectorData)
-            {
-              foreach (statisticsItem_Vector val, statDataByType.vectorData)
-              {
-                QVariant variant = QVariant::fromValue(val);
-                dataList.append(variant);
-              }
-            }
-            // appending the data to the resultList
-            resultList.append(dataList);
           }
-          // adding each key with the resultList, inside of the resultList
-          this->mStatisticData.insert(key, resultList);
+          else if(statType.hasVectorData)
+          {
+            foreach (statisticsItem_Vector val, statDataByType.vectorData)
+            {
+              QVariant variant = QVariant::fromValue(val);
+              dataList.append(variant);
+            }
+          }
+          // appending the data to the resultList
+          resultList.append(dataList);
         }
-        if(aType != "")
-          break;
+        // adding each key with the resultList, inside of the resultList
+        this->mStatisticData.insert(key, resultList);
       }
+      if(aType != "")
+        break;
     }
   }
   return &this->mStatisticData;
@@ -1061,6 +1075,8 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
 
 QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
 {
+  this->chartStatSource.statsCache.clear();
+
   //if we have the same frame --> just one frame we look at
   if(aRange.first == aRange.second) // same frame --> just one frame same as current frame
     return this->sortAndCategorizeData(aType, aRange.first);
@@ -1178,5 +1194,5 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
 
 bool playlistItemStatisticsFile::isDataAvaible()
 {
-  return backgroundParserProgress >= 100.0;
+  return backgroundParserFuture.isFinished();
 }

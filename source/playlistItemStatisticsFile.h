@@ -35,6 +35,7 @@
 
 #include <QBasicTimer>
 #include <QFuture>
+#include <QMutex>
 #include "fileSource.h"
 #include "playlistItem.h"
 #include "statisticHandler.h"
@@ -153,6 +154,8 @@ private:
 
   // The statistics source
   statisticHandler statSource;
+  statisticHandler chartStatSource;
+  QMutex mLockStatAccess;
   // Is the loadFrame function currently loading?
   bool isStatisticsLoading;
   // A list of file positions where each POC/type starts

@@ -52,6 +52,8 @@ class statisticHandler : public QObject
 public:
   statisticHandler();
 
+  statisticHandler& operator=(const statisticHandler &aHandler);
+
   // Get the statistics values under the cursor position (if they are visible)
   ValuePairList getValuesAt(const QPoint &pos);
 
