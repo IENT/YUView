@@ -401,6 +401,11 @@ ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx,
   return values;
 }
 
+QVector<int> frameHandler::getPixelValues2(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
+{
+
+}
+
 QList<infoItem> frameHandler::getFileInfoList() const
 {
 

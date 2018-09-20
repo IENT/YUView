@@ -70,6 +70,9 @@ public:
 
   // Return the RGB values of the given pixel. If a second item is provided, return the difference values to that item.
   virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr, const int frameIdx1=0);
+
+  virtual QVector<int> getPixelValues2(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr, const int frameIdx1=0);
+
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
   virtual bool isPixelDark(const QPoint &pixelPos);
 

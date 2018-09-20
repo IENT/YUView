@@ -205,6 +205,8 @@ private slots:
    */
   void onColorSpaceChange(const QString aString);
 
+//  void getData(playlistItem *aItem, itemWidgetCoord& aCoord, const QString aString);
+
   /**
    * @brief switchOrderEnableStatistics
    * if the selected statistic-type changed, we have to decide if the order/sort-combobox is enabled
@@ -303,7 +305,7 @@ private:
    * @return
    * a List with the order-gruop-normalize options
    */
-  QList<QWidget*> generateOrderWidgetsOnly(bool aAddOptions);
+  QList<QWidget*> generateOrderWidgetsOnly(bool aAddOptions, bool aNoOptions = false);
 
   /**
    * @brief generateOrderByLayout

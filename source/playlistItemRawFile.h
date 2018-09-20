@@ -51,6 +51,8 @@ public:
   // sourcePixelFormat, you can set them as well.
   playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize=QSize(-1,-1), const QString &sourcePixelFormat=QString(), const QString &fmt=QString());
 
+  virtual ~playlistItemRawFile();
+
   // Overload from playlistItem. Save the raw file item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
 
@@ -66,6 +68,7 @@ public:
   virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual QVector<int> getPixelValues2(const QPoint &pixelPos, int frameIdx);
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -79,7 +82,7 @@ public:
   virtual void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE { if (testMode) dataSource.clearFileCache(); playlistItemWithVideo::cacheFrame(idx, testMode); }
 
   // ----- function for getting the data to fill the histogramms / charts -----
-  QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
+  QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false);
 
   /**
    * @brief sortAndCategorizeData
@@ -117,10 +120,17 @@ public:
    */
   virtual bool isDataAvaible() Q_DECL_OVERRIDE;
 
+  void setColorType(QString type){this->colorType = type;}
+  QString getColorType(){return this->colorType;}
+
 public slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
   virtual void loadRawData(int frameIdxInternal);
+
+Q_SIGNALS:
+  void currentIndexChanged(playlistItemRawFile*, const QString &);
+
 
 protected:
   // Override from playlistItemIndexed. For a raw file the index range is 0...numFrames-1. 
@@ -138,6 +148,8 @@ private:
   } RawFormat;
   RawFormat rawFormat;
 
+  QString colorType = "";
+
   // Overload from playlistItem. Create a properties widget custom to the RawFile
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
@@ -145,8 +157,6 @@ private:
   virtual qint64 getNumberFrames() const;
   
   fileSource dataSource;
-  
-
 
   videoHandlerYUV *getYUVVideo() { return dynamic_cast<videoHandlerYUV*>(video.data()); }
   videoHandlerRGB *getRGBVideo() { return dynamic_cast<videoHandlerRGB*>(video.data()); }
@@ -161,6 +171,37 @@ private:
   bool parseY4MFile();
   bool isY4MFile;
   QList<quint64> y4mFrameIndices;
+
+  // --------------- background parsing ---------------
+
+  // Set if the file is sorted by POC and the types are 'random' within this POC (true)
+  // or if the file is sorted by typeID and the POC is 'random'
+  bool fileSortedByPOC;
+  // If not -1, this gives the POC in which the parser noticed a block that was outside of the "frame"
+  int  blockOutsideOfFrame_idx;
+  // The maximum POC number in the file (as far as we know)
+  int maxPOC;
+
+  // If an error occurred while parsing, this error text will be set and can be shown
+  QString parsingError;
+
+  fileSource file;
+
+  int currentDrawnFrameIdx;
+
+  QFuture<void> backgroundParserFuture;
+  QFuture<QMap<QString, QList<QList<QVariant>>>*> backgroundDataLoader;
+
+  double backgroundParserProgress;
+
+  bool cancelBackgroundParser;
+  // A timer is used to frequently update the status of the background process (every second)
+  QBasicTimer timer;
+  virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
+
+  //! Parser the whole file and get the positions where a new POC/type starts. Save this position in p_pocTypeStartList.
+  //! This is performed in the background using a QFuture.
+  void readFrameAndTypePositionsFromFile();
 
   // --------------- data statistics---------------
 

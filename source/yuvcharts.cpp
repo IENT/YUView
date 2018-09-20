@@ -216,6 +216,10 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const cha
   // creating the result
   QChart* chart = new QChart();
 
+  // creating result chartview and set the data
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+
   // appending the series to the chart
   chart->addSeries(settings.mSeries);
   // setting an animationoption (not necessary but it's nice to see)
@@ -266,47 +270,16 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const cha
         break;
       case sdtRGB:
       {
-        //First Option: Define Categories and set them as xAxis Values
-//        qreal rangeMin = aSortedData->at(0).mValues.first()->first.toReal();
-//        qreal rangeMax = aSortedData->at(0).mValues.last()->first.toReal();
-
-//        QStringList categories;
-
-//        for (int i = rangeMin; i <= rangeMax; i = i+40)
-//          categories << QString::number(i);
-
-//        QBarCategoryAxis *axis = new QBarCategoryAxis();
-
-//        //axis->setRange(rangeMin, rangeMax);
-
-//        axis->append(categories);
-
-//        chart->setAxisX(axis, settings.mSeries);
-
-        //Second Option: Define numerical range for the values
-
-        //qreal Minn = settings.mCategories.first();
-
         qreal rangeMin = aSortedData->at(0).mValues.first()->first.toReal();
         qreal rangeMax = aSortedData->at(0).mValues.last()->first.toReal();
+        QStringList categories;
 
-        QValueAxis* axisX = new QValueAxis;
+        for (int i = rangeMin; i <= rangeMax; i = i+40)
+          categories << QString::number(i);
 
-        int x = rangeMax/rangeMin;
-        //qreal tickSteps = (qRound(range/rangeMax));
-
-
-
-
-
-        //axisX->setTickCount(tickSteps);
-        axisX->setRange(0,  rangeMax-rangeMin);
-
-
-        //axisX->applyNiceNumbers();
-        chart->setAxisX(axisX, settings.mSeries);
-
-        break;
+        QBarCategoryAxis *axis = new QBarCategoryAxis();
+        axis->append(categories);
+        chart->setAxisX(axis);
       }
       default:
         // was set before
@@ -317,10 +290,6 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const cha
   // setting Options for the chart-legend
   chart->legend()->setVisible(settings.mShowLegend);
   chart->legend()->setAlignment(Qt::AlignBottom);
-
-  // creating result chartview and set the data
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
 
   // final return the created chart
   return chartView;
@@ -520,61 +489,34 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
   selectedColor.append(qRgba(120, 255, 120, 255));
   selectedColor.append(qRgba(120, 120, 255, 255));
 
-//  if(aSortedData->at(0).mLabel == "RGB" || aSortedData->at(0).mLabel == "YUV")
-//  {
-//    int partialVal = aSortedData->at(0).mValues.count()/3;
-//    for (int i = 0; i < 3; i++)
-//    {
-//      for (int j = 0; j < partialVal; j++)
-//      {
-//        int pos = ((partialVal*i)+j);
-//        collectedData data = aSortedData->at(0);
-//        QBarSet* set = new QBarSet("Values from 0 to 255 of Selected Color");
-//        //int *x = aSortedData->at(0).mValues.at(pos)->second;
-//        auto chartData = data.mValues.at(pos);
-//        int amount = chartData->second;
-//        int* count = NULL;
-//        count = new int(0);
-//        *count += amount;
-//        *set << *count;
-//        set->setColor(selectedColor.at(i));
-//        series->append(set);
-//      }
-//    }
+  int col = 0;
+  if(aSortedData->at(0).mLabel == "R" || aSortedData->at(0).mLabel == "Y")
+    col = 0;
+  else if (aSortedData->at(0).mLabel == "G" || aSortedData->at(0).mLabel == "U")
+    col = 1;
+  else if (aSortedData->at(0).mLabel == "B" || aSortedData->at(0).mLabel == "V")
+    col = 2;
 
-//  }
-//  else
-//  {
+  //for custom xAxis
+  settings.mSetCustomAxes = (settings.mStatDataType == sdtRGB);
 
-    int col = 0;
-    if(aSortedData->at(0).mLabel == "R" || aSortedData->at(0).mLabel == "Y")
-      col = 0;
-    else if (aSortedData->at(0).mLabel == "G" || aSortedData->at(0).mLabel == "U")
-      col = 1;
-    else if (aSortedData->at(0).mLabel == "B" || aSortedData->at(0).mLabel == "V")
-      col = 2;
+  QBarSet* set = new QBarSet(aSortedData->at(0).mLabel);
 
-    //for custom xAxis
-    settings.mSetCustomAxes = 1;
-    settings.mStatDataType = sdtRGB;
+  // because of the QHash we know how many QBarSet we have to create and add to the series in settings-struct
+  foreach (int key, mapValueCountSorted.keys())
+  {
+    settings.mCategories << QString::number(key);
 
-    QBarSet* set = new QBarSet(aSortedData->at(0).mLabel);
+    // creating the set with an label from the given Value
+    //*set->append(QString::number(key));
 
-    // because of the QHash we know how many QBarSet we have to create and add to the series in settings-struct
-    foreach (int key, mapValueCountSorted.keys())
-    {
-      // creating the set with an label from the given Value
-      //*set->append(QString::number(key));
-      settings.mCategories << QString::number(key);
-      // adding the count to the set, which we want to display
-      int *count = mapValueCountSorted.value(key); // getting the adress of the total
-      *set << *count; // remenber to dereference the count to get the real value of count
-      // at least add the set to the series in the settings-struct
-      series->append(set);
-
-    }
-
-    set->setColor(selectedColor.at(col));
+    // adding the count to the set, which we want to display
+    int *count = mapValueCountSorted.value(key); // getting the adress of the total
+    *set << *count; // remember to dereference the count to get the real value of count
+    // at least add the set to the series in the settings-struct
+    series->append(set);
+  }
+  set->setColor(selectedColor.at(col));
 
   return settings;
 }

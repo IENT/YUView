@@ -1035,6 +1035,22 @@ void videoHandlerYUV::slotYUVControlChanged()
   }
 }
 
+QVector<int> videoHandlerYUV::getPixelValues2(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
+{
+  QVector<int> values;
+
+  unsigned int Y,U,V;
+
+  getPixelValue(pixelPos, Y, U, V);
+
+  values.append(Y);
+  values.append(U);
+  values.append(V);
+
+  return values;
+
+}
+
 /* Get the pixels values so we can show them in the info part of the zoom box.
  * If a second frame handler is provided, the difference values from that item will be returned.
  */
@@ -1091,6 +1107,12 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
 
     unsigned int Y,U,V;
     getPixelValue(pixelPos, Y, U, V);
+
+
+
+    values.append(ValuePair("Y", QString::number(Y)));
+    values.append(ValuePair("U", QString::number(U)));
+    values.append(ValuePair("V", QString::number(V)));
 
     if (showPixelValuesAsDiff)
     {
