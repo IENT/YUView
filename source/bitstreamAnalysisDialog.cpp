@@ -76,8 +76,9 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
   else
     return;
 
-  ui.dataTreeView->setColumnWidth(0, 400);
-  ui.dataTreeView->setColumnWidth(1, 50);
-
   ui.dataTreeView->setModel(parser->getNALUnitModel());
+
+  ui.dataTreeView->setColumnWidth(0, 300);
+  ui.dataTreeView->setColumnWidth(1, 50);
+  ui.dataTreeView->setColumnWidth(2, 70);
 }

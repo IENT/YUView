@@ -163,7 +163,6 @@ enum de265_chroma {
 
 typedef int64_t de265_PTS;
 
-
 LIBDE265_API int de265_get_image_width(const struct de265_image*,int channel);
 LIBDE265_API int de265_get_image_height(const struct de265_image*,int channel);
 LIBDE265_API enum de265_chroma de265_get_chroma_format(const struct de265_image*);
