@@ -52,12 +52,12 @@ public:
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
-  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
-
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
   QByteArray getExtradata() Q_DECL_OVERRIDE;
   QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE;
   QPair<int,int> getSampleAspectRatio() Q_DECL_OVERRIDE;
+
+  bool parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -85,7 +85,7 @@ protected:
     virtual bool isParameterSet() const override { return nal_type == VPS_NUT || nal_type == SPS_NUT || nal_type == PPS_NUT; }
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
+    bool parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
 
     bool isIRAP();
     bool isSLNR();
@@ -95,18 +95,18 @@ protected:
 
     // The information of the NAL unit header
     nal_unit_type nal_type {UNSPECIFIED};
-    int nuh_layer_id;
-    int nuh_temporal_id_plus1;
+    unsigned int nuh_layer_id;
+    unsigned int nuh_temporal_id_plus1;
   };
 
   // The profile tier level syntax elements. 7.3.3
   struct profile_tier_level
   {
-    void parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1, TreeItem *root);
+    bool parse_profile_tier_level(reader_helper &reader, bool profilePresentFlag, int maxNumSubLayersMinus1);
 
-    int general_profile_space {0};
+    unsigned int general_profile_space {0};
     bool general_tier_flag {false};
-    int general_profile_idc {0};
+    unsigned int general_profile_idc {0};
     bool general_profile_compatibility_flag[32] {false};  // TODO: Is this correct initialization?
     bool general_progressive_source_flag {false};
     bool general_interlaced_source_flag {false};
@@ -126,15 +126,14 @@ protected:
     bool general_inbld_flag {false};
     bool general_reserved_zero_bit {0};  // general_reserved_zero_34bits or general_reserved_zero_43bits
 
-    int general_level_idc {0};
+    unsigned int general_level_idc {0};
 
     // A maximum of 8 sub-layer are allowed
     bool sub_layer_profile_present_flag[8] {false};
     bool sub_layer_level_present_flag[8] {false};
-    int  reserved_zero_2bits[8] {0};
-    int  sub_layer_profile_space[8] {0};
+    unsigned int  sub_layer_profile_space[8] {0};
     bool sub_layer_tier_flag[8] {false};
-    int  sub_layer_profile_idc[8] {0};
+    unsigned int  sub_layer_profile_idc[8] {0};
     bool sub_layer_profile_compatibility_flag[8][32] {{false}};
     bool sub_layer_progressive_source_flag[8] {false};
     bool sub_layer_interlaced_source_flag[8] {false};
@@ -152,47 +151,47 @@ protected:
     int  sub_layer_reserved_zero_bits[8] {0}; // sub_layer_reserved_zero_34bits or sub_layer_reserved_zero_43bits
     bool sub_layer_inbld_flag[8] {false};
     bool sub_layer_reserved_zero_bit[8] {false};
-    int  sub_layer_level_idc[8] {0};
+    unsigned int  sub_layer_level_idc[8] {0};
   };
 
   // E.2.3 Sub-layer HRD parameters syntax
   struct sub_layer_hrd_parameters
   {
-    void parse_sub_layer_hrd_parameters(sub_byte_reader &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, TreeItem *root);
+    bool parse_sub_layer_hrd_parameters(reader_helper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag);
 
-    QList<int> bit_rate_value_minus1;
-    QList<int> cpb_size_value_minus1;
-    QList<int> cpb_size_du_value_minus1;
-    QList<int> bit_rate_du_value_minus1;
+    QList<unsigned int> bit_rate_value_minus1;
+    QList<unsigned int> cpb_size_value_minus1;
+    QList<unsigned int> cpb_size_du_value_minus1;
+    QList<unsigned int> bit_rate_du_value_minus1;
     QList<bool> cbr_flag;
   };
 
   // E.2.2 HRD parameters syntax
   struct hrd_parameters
   {
-    void parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root);
+    bool parse_hrd_parameters(reader_helper &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1);
 
     bool nal_hrd_parameters_present_flag {false};
     bool vcl_hrd_parameters_present_flag {false};
     bool sub_pic_hrd_params_present_flag;
 
-    int tick_divisor_minus2;
-    int du_cpb_removal_delay_increment_length_minus1;
-    int sub_pic_cpb_params_in_pic_timing_sei_flag = 0;
-    int dpb_output_delay_du_length_minus1;
+    unsigned int tick_divisor_minus2;
+    unsigned int du_cpb_removal_delay_increment_length_minus1;
+    bool         sub_pic_cpb_params_in_pic_timing_sei_flag {false};
+    unsigned int dpb_output_delay_du_length_minus1;
 
-    int bit_rate_scale;
-    int cpb_size_scale;
-    int cpb_size_du_scale;
-    int initial_cpb_removal_delay_length_minus1 = 23;
-    int au_cpb_removal_delay_length_minus1      = 23;
-    int dpb_output_delay_length_minus1          = 23;
+    unsigned int bit_rate_scale;
+    unsigned int cpb_size_scale;
+    unsigned int cpb_size_du_scale;
+    unsigned int initial_cpb_removal_delay_length_minus1 {23};
+    unsigned int au_cpb_removal_delay_length_minus1      {23};
+    unsigned int dpb_output_delay_length_minus1          {23};
 
     bool fixed_pic_rate_general_flag[8]    = {0, 0, 0, 0, 0, 0, 0, 0};
     bool fixed_pic_rate_within_cvs_flag[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-    int elemental_duration_in_tc_minus1[8];
+    unsigned int elemental_duration_in_tc_minus1[8];
     bool low_delay_hrd_flag[8]             = {0, 0, 0, 0, 0, 0, 0, 0};
-    int cpb_cnt_minus1[8]                  = {0, 0, 0, 0, 0, 0, 0, 0};
+    unsigned int cpb_cnt_minus1[8]                  = {0, 0, 0, 0, 0, 0, 0, 0};
 
     sub_layer_hrd_parameters nal_sub_hrd[8];
     sub_layer_hrd_parameters vcl_sub_hrd[8];
@@ -201,10 +200,10 @@ protected:
   // 7.3.4 Scaling list data syntax
   struct scaling_list_data
   {
-    void parse_scaling_list_data(sub_byte_reader &reader, TreeItem *root);
+    bool parse_scaling_list_data(reader_helper &reader);
 
     bool scaling_list_pred_mode_flag[4][6];
-    int scaling_list_pred_matrix_id_delta[4][6];
+    unsigned int scaling_list_pred_matrix_id_delta[4][6];
     int scaling_list_dc_coef_minus8[2][6];
   };
 
@@ -213,9 +212,9 @@ protected:
   struct slice;
   struct pred_weight_table
   {
-    void parse_pred_weight_table(sub_byte_reader &reader, sps *actSPS, slice *actSlice, TreeItem *root);
+    bool parse_pred_weight_table(reader_helper &reader, sps *actSPS, slice *actSlice);
 
-    int luma_log2_weight_denom;
+    unsigned int luma_log2_weight_denom;
     int delta_chroma_log2_weight_denom;
     QList<bool> luma_weight_l0_flag;
     QList<bool> chroma_weight_l0_flag;
@@ -235,67 +234,67 @@ protected:
   // 7.3.7 Short-term reference picture set syntax
   struct st_ref_pic_set
   {
-    void parse_st_ref_pic_set(sub_byte_reader &reader, int stRpsIdx, sps *actSPS, TreeItem *root);
+    bool parse_st_ref_pic_set(reader_helper &reader, unsigned int stRpsIdx, sps *actSPS);
     int NumPicTotalCurr(int CurrRpsIdx, slice *actSlice);
 
     bool inter_ref_pic_set_prediction_flag;
-    int delta_idx_minus1;
+    unsigned int delta_idx_minus1;
     bool delta_rps_sign;
-    int abs_delta_rps_minus1;
+    unsigned int abs_delta_rps_minus1;
     QList<bool> used_by_curr_pic_flag;
     QList<bool> use_delta_flag;
 
-    int num_negative_pics;
-    int num_positive_pics;
-    QList<int> delta_poc_s0_minus1;
+    unsigned int num_negative_pics;
+    unsigned int num_positive_pics;
+    QList<unsigned int> delta_poc_s0_minus1;
     QList<bool> used_by_curr_pic_s0_flag;
-    QList<int> delta_poc_s1_minus1;
+    QList<unsigned int> delta_poc_s1_minus1;
     QList<bool> used_by_curr_pic_s1_flag;
 
     // Calculated values. These are static. They are used for reference picture set prediction.
-    static int NumNegativePics[65];
-    static int NumPositivePics[65];
+    static unsigned int NumNegativePics[65];
+    static unsigned int NumPositivePics[65];
     static int DeltaPocS0[65][16];
     static int DeltaPocS1[65][16];
     static bool UsedByCurrPicS0[65][16];
     static bool UsedByCurrPicS1[65][16];
-    static int NumDeltaPocs[65];
+    static unsigned int NumDeltaPocs[65];
   };
 
   struct vui_parameters
   {
-    void parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root);
+    bool parse_vui_parameters(reader_helper &reader, sps *actSPS);
 
     bool aspect_ratio_info_present_flag;
-    int aspect_ratio_idc;
-    int sar_width;
-    int sar_height;
+    unsigned int aspect_ratio_idc;
+    unsigned int sar_width;
+    unsigned int sar_height;
     bool overscan_info_present_flag;
     bool overscan_appropriate_flag;
     bool video_signal_type_present_flag;
-    int video_format {5};
+    unsigned int video_format {5};
     bool video_full_range_flag {false};
     bool colour_description_present_flag;
-    int colour_primaries;
-    int transfer_characteristics;
-    int matrix_coeffs;
+    unsigned int colour_primaries;
+    unsigned int transfer_characteristics;
+    unsigned int matrix_coeffs;
     bool chroma_loc_info_present_flag;
-    int chroma_sample_loc_type_top_field;
-    int chroma_sample_loc_type_bottom_field;
+    unsigned int chroma_sample_loc_type_top_field;
+    unsigned int chroma_sample_loc_type_bottom_field;
     bool neutral_chroma_indication_flag;
     bool field_seq_flag;
     bool frame_field_info_present_flag;
     bool default_display_window_flag;
-    int def_disp_win_left_offset;
-    int def_disp_win_right_offset;
-    int def_disp_win_top_offset;
-    int def_disp_win_bottom_offset;
+    unsigned int def_disp_win_left_offset;
+    unsigned int def_disp_win_right_offset;
+    unsigned int def_disp_win_top_offset;
+    unsigned int def_disp_win_bottom_offset;
 
     bool vui_timing_info_present_flag;
-    int vui_num_units_in_tick;
-    int vui_time_scale;
+    unsigned int vui_num_units_in_tick;
+    unsigned int vui_time_scale;
     bool vui_poc_proportional_to_timing_flag;
-    int vui_num_ticks_poc_diff_one_minus1;
+    unsigned int vui_num_ticks_poc_diff_one_minus1;
     bool vui_hrd_parameters_present_flag;
     hrd_parameters vui_hrd_parameters;
 
@@ -303,11 +302,11 @@ protected:
     bool tiles_fixed_structure_flag;
     bool motion_vectors_over_pic_boundaries_flag;
     bool restricted_ref_pic_lists_flag;
-    int min_spatial_segmentation_idc;
-    int max_bytes_per_pic_denom;
-    int max_bits_per_min_cu_denom;
-    int log2_max_mv_length_horizontal;
-    int log2_max_mv_length_vertical;
+    unsigned int min_spatial_segmentation_idc;
+    unsigned int max_bytes_per_pic_denom;
+    unsigned int max_bits_per_min_cu_denom;
+    unsigned int log2_max_mv_length_horizontal;
+    unsigned int log2_max_mv_length_vertical;
 
     // Calculated values
     double frameRate;
@@ -315,12 +314,12 @@ protected:
 
   struct ref_pic_lists_modification
   {
-    void parse_ref_pic_lists_modification(sub_byte_reader &reader, slice *actSlice, int NumPicTotalCurr, TreeItem *root);
+    bool parse_ref_pic_lists_modification(reader_helper &reader, slice *actSlice, int NumPicTotalCurr);
 
     bool ref_pic_list_modification_flag_l0;
-    QList<int> list_entry_l0;
+    QList<unsigned int> list_entry_l0;
     bool ref_pic_list_modification_flag_l1;
-    QList<int> list_entry_l1;
+    QList<unsigned int> list_entry_l1;
   };
 
   // The video parameter set. 7.3.2.1
@@ -328,33 +327,33 @@ protected:
   {
     vps(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
 
-    void parse_vps(const QByteArray &parameterSetData, TreeItem *root);
+    bool parse_vps(const QByteArray &parameterSetData, TreeItem *root);
 
-    int vps_video_parameter_set_id;     /// vps ID
+    unsigned int vps_video_parameter_set_id;     /// vps ID
     bool vps_base_layer_internal_flag;
     bool vps_base_layer_available_flag;
-    int vps_max_layers_minus1;          /// How many layers are there. Is this a scalable bitstream?
-    int vps_max_sub_layers_minus1;
+    unsigned int vps_max_layers_minus1;          /// How many layers are there. Is this a scalable bitstream?
+    unsigned int vps_max_sub_layers_minus1;
     bool vps_temporal_id_nesting_flag;
-    int vps_reserved_0xffff_16bits;
+    unsigned int vps_reserved_0xffff_16bits;
 
     profile_tier_level ptl;
 
     bool vps_sub_layer_ordering_info_present_flag;
-    bool vps_max_dec_pic_buffering_minus1[7];
-    bool vps_max_num_reorder_pics[7];
-    bool vps_max_latency_increase_plus1[7];
-    int vps_max_layer_id;
-    int vps_num_layer_sets_minus1;
+    unsigned int vps_max_dec_pic_buffering_minus1[7];
+    unsigned int vps_max_num_reorder_pics[7];
+    unsigned int vps_max_latency_increase_plus1[7];
+    unsigned int vps_max_layer_id;
+    unsigned int vps_num_layer_sets_minus1;
     QList<bool> layer_id_included_flag[7];
 
     bool vps_timing_info_present_flag {false};
-    int vps_num_units_in_tick;
-    int vps_time_scale;
+    unsigned int vps_num_units_in_tick;
+    unsigned int vps_time_scale;
     bool vps_poc_proportional_to_timing_flag;
-    int vps_num_ticks_poc_diff_one_minus1;
-    int vps_num_hrd_parameters;
-    QList<int>  hrd_layer_set_idx;
+    unsigned int vps_num_ticks_poc_diff_one_minus1;
+    unsigned int vps_num_hrd_parameters;
+    QList<unsigned int> hrd_layer_set_idx;
     QList<bool> cprms_present_flag;
 
     QList<hrd_parameters> vps_hrd_parameters;
@@ -368,39 +367,39 @@ protected:
   struct sps : nal_unit_hevc
   {
     sps(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
-    void parse_sps(const QByteArray &parameterSetData, TreeItem *root);
+    bool parse_sps(const QByteArray &parameterSetData, TreeItem *root);
 
-    int sps_video_parameter_set_id;
-    int sps_max_sub_layers_minus1;
+    unsigned int sps_video_parameter_set_id;
+    unsigned int sps_max_sub_layers_minus1;
     bool sps_temporal_id_nesting_flag;
     profile_tier_level ptl;
 
-    int sps_seq_parameter_set_id;
-    int chroma_format_idc;
-    int separate_colour_plane_flag {false};
-    int pic_width_in_luma_samples;
-    int pic_height_in_luma_samples;
-    int conformance_window_flag;
+    unsigned int sps_seq_parameter_set_id;
+    unsigned int chroma_format_idc;
+    bool separate_colour_plane_flag {false};
+    unsigned int pic_width_in_luma_samples;
+    unsigned int pic_height_in_luma_samples;
+    bool conformance_window_flag;
 
-    int conf_win_left_offset {0};
-    int conf_win_right_offset {0};
-    int conf_win_top_offset {0};
-    int conf_win_bottom_offset {0};
+    unsigned int conf_win_left_offset {0};
+    unsigned int conf_win_right_offset {0};
+    unsigned int conf_win_top_offset {0};
+    unsigned int conf_win_bottom_offset {0};
 
-    int bit_depth_luma_minus8;
-    int bit_depth_chroma_minus8;
-    int log2_max_pic_order_cnt_lsb_minus4;
+    unsigned int bit_depth_luma_minus8;
+    unsigned int bit_depth_chroma_minus8;
+    unsigned int log2_max_pic_order_cnt_lsb_minus4;
     bool sps_sub_layer_ordering_info_present_flag;
-    QList<int> sps_max_dec_pic_buffering_minus1;
-    QList<int> sps_max_num_reorder_pics;
-    QList<int> sps_max_latency_increase_plus1;
+    QList<unsigned int> sps_max_dec_pic_buffering_minus1;
+    QList<unsigned int> sps_max_num_reorder_pics;
+    QList<unsigned int> sps_max_latency_increase_plus1;
 
-    int log2_min_luma_coding_block_size_minus3;
-    int log2_diff_max_min_luma_coding_block_size;
-    int log2_min_luma_transform_block_size_minus2;
-    int log2_diff_max_min_luma_transform_block_size;
-    int max_transform_hierarchy_depth_inter;
-    int max_transform_hierarchy_depth_intra;
+    unsigned int log2_min_luma_coding_block_size_minus3;
+    unsigned int log2_diff_max_min_luma_coding_block_size;
+    unsigned int log2_min_luma_transform_block_size_minus2;
+    unsigned int log2_diff_max_min_luma_transform_block_size;
+    unsigned int max_transform_hierarchy_depth_inter;
+    unsigned int max_transform_hierarchy_depth_intra;
     bool scaling_list_enabled_flag;
     bool sps_scaling_list_data_present_flag;
     scaling_list_data sps_scaling_list_data;
@@ -408,16 +407,16 @@ protected:
     bool amp_enabled_flag;
     bool sample_adaptive_offset_enabled_flag;
     bool pcm_enabled_flag;
-    int pcm_sample_bit_depth_luma_minus1;
-    int pcm_sample_bit_depth_chroma_minus1;
-    int log2_min_pcm_luma_coding_block_size_minus3;
-    int log2_diff_max_min_pcm_luma_coding_block_size;
+    unsigned int pcm_sample_bit_depth_luma_minus1;
+    unsigned int pcm_sample_bit_depth_chroma_minus1;
+    unsigned int log2_min_pcm_luma_coding_block_size_minus3;
+    unsigned int log2_diff_max_min_pcm_luma_coding_block_size;
     bool pcm_loop_filter_disabled_flag;
-    int num_short_term_ref_pic_sets;
+    unsigned int num_short_term_ref_pic_sets;
     QList<st_ref_pic_set> sps_st_ref_pic_sets;
     bool long_term_ref_pics_present_flag;
-    int num_long_term_ref_pics_sps {0};
-    QList<int> lt_ref_pic_poc_lsb_sps;
+    unsigned int num_long_term_ref_pics_sps {0};
+    QList<unsigned int> lt_ref_pic_poc_lsb_sps;
     QList<bool> used_by_curr_pic_lt_sps_flag;
 
     bool sps_temporal_mvp_enabled_flag;
@@ -430,14 +429,14 @@ protected:
     bool sps_range_extension_flag {false};
     bool sps_multilayer_extension_flag {false};
     bool sps_3d_extension_flag {false};
-    int sps_extension_5bits {0};
+    unsigned int sps_extension_5bits {0};
 
     // Calculated values
-    int ChromaArrayType;
-    int SubWidthC, SubHeightC;
-    int MinCbLog2SizeY, CtbLog2SizeY, CtbSizeY, PicWidthInCtbsY, PicHeightInCtbsY, PicSizeInCtbsY;  // 7.4.3.2.1
+    unsigned int ChromaArrayType;
+    unsigned int SubWidthC, SubHeightC;
+    unsigned int MinCbLog2SizeY, CtbLog2SizeY, CtbSizeY, PicWidthInCtbsY, PicHeightInCtbsY, PicSizeInCtbsY;  // 7.4.3.2.1
 
-                                                                                                    // Get the actual size of the image that will be returned. Internally the image might be bigger.
+    // Get the actual size of the image that will be returned. Internally the image might be bigger.
     int get_conformance_cropping_width() const { return (pic_width_in_luma_samples - (SubWidthC * conf_win_right_offset) - SubWidthC * conf_win_left_offset); }
     int get_conformance_cropping_height() const { return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
   };
@@ -445,17 +444,17 @@ protected:
   struct pps;
   struct pps_range_extension
   {
-    void parse_pps_range_extension(sub_byte_reader &reader, pps *actPPS, TreeItem *root);
+    bool parse_pps_range_extension(reader_helper &reader, pps *actPPS);
 
-    int log2_max_transform_skip_block_size_minus2;
+    unsigned int log2_max_transform_skip_block_size_minus2;
     bool cross_component_prediction_enabled_flag;
     bool chroma_qp_offset_list_enabled_flag {false};
-    int diff_cu_chroma_qp_offset_depth;
-    int chroma_qp_offset_list_len_minus1;
+    unsigned int diff_cu_chroma_qp_offset_depth;
+    unsigned int chroma_qp_offset_list_len_minus1;
     QList<int> cb_qp_offset_list;
     QList<int> cr_qp_offset_list;
-    int log2_sao_offset_scale_luma;
-    int log2_sao_offset_scale_chroma;
+    unsigned int log2_sao_offset_scale_luma;
+    unsigned int log2_sao_offset_scale_chroma;
   };
 
   typedef QMap<int, QSharedPointer<vps>> vps_map;
@@ -466,22 +465,22 @@ protected:
   struct pps : nal_unit_hevc
   {
     pps(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
-    void parse_pps(const QByteArray &parameterSetData, TreeItem *root);
+    bool parse_pps(const QByteArray &parameterSetData, TreeItem *root);
 
-    int pps_pic_parameter_set_id;
-    int pps_seq_parameter_set_id;
+    unsigned int pps_pic_parameter_set_id;
+    unsigned int pps_seq_parameter_set_id;
     bool dependent_slice_segments_enabled_flag;
     bool output_flag_present_flag;
-    int num_extra_slice_header_bits;
+    unsigned int num_extra_slice_header_bits;
     bool sign_data_hiding_enabled_flag;
     bool cabac_init_present_flag;
-    int num_ref_idx_l0_default_active_minus1;
-    int num_ref_idx_l1_default_active_minus1;
+    unsigned int num_ref_idx_l0_default_active_minus1;
+    unsigned int num_ref_idx_l1_default_active_minus1;
     int init_qp_minus26;
     bool constrained_intra_pred_flag;
     bool transform_skip_enabled_flag;
     bool cu_qp_delta_enabled_flag;
-    int diff_cu_qp_delta_depth;
+    unsigned int diff_cu_qp_delta_depth;
     int pps_cb_qp_offset;
     int pps_cr_qp_offset;
     bool pps_slice_chroma_qp_offsets_present_flag;
@@ -490,11 +489,11 @@ protected:
     bool transquant_bypass_enabled_flag;
     bool tiles_enabled_flag;
     bool entropy_coding_sync_enabled_flag;
-    int num_tile_columns_minus1;
-    int num_tile_rows_minus1;
+    unsigned int num_tile_columns_minus1;
+    unsigned int num_tile_rows_minus1;
     bool uniform_spacing_flag;
-    QList<int> column_width_minus1;
-    QList<int> row_height_minus1;
+    QList<unsigned int> column_width_minus1;
+    QList<unsigned int> row_height_minus1;
     bool loop_filter_across_tiles_enabled_flag;
     bool pps_loop_filter_across_slices_enabled_flag;
     bool deblocking_filter_control_present_flag;
@@ -505,13 +504,13 @@ protected:
     bool pps_scaling_list_data_present_flag;
     scaling_list_data pps_scaling_list_data;
     bool lists_modification_present_flag;
-    int log2_parallel_merge_level_minus2;
+    unsigned int log2_parallel_merge_level_minus2;
     bool slice_segment_header_extension_present_flag;
     bool pps_extension_present_flag;
     bool pps_range_extension_flag {false};
     bool pps_multilayer_extension_flag {false};
     bool pps_3d_extension_flag {false};
-    int pps_extension_5bits {0};
+    unsigned int pps_extension_5bits {0};
 
     pps_range_extension range_extension;
 
@@ -530,44 +529,44 @@ protected:
   struct slice : nal_unit_hevc
   {
     slice(const nal_unit_hevc &nal);
-    void parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
+    bool parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
     virtual int getPOC() const override { return PicOrderCntVal; }
 
     bool first_slice_segment_in_pic_flag;
     bool no_output_of_prior_pics_flag;
     bool dependent_slice_segment_flag {false};
-    int slice_pic_parameter_set_id;
-    int slice_segment_address;
+    unsigned int slice_pic_parameter_set_id;
+    unsigned int slice_segment_address;
     QList<bool> slice_reserved_flag;
-    int slice_type;
+    unsigned int slice_type;
     bool pic_output_flag {true};
-    int colour_plane_id;
-    int slice_pic_order_cnt_lsb {0};
+    unsigned int colour_plane_id;
+    unsigned int slice_pic_order_cnt_lsb {0};
     bool short_term_ref_pic_set_sps_flag {false};
     st_ref_pic_set st_rps;
-    int short_term_ref_pic_set_idx {0};
-    int num_long_term_sps {0};
-    int num_long_term_pics {0};
-    QList<int> lt_idx_sps;
-    QList<int> poc_lsb_lt;
+    unsigned int short_term_ref_pic_set_idx {0};
+    unsigned int num_long_term_sps {0};
+    unsigned int num_long_term_pics {0};
+    QList<unsigned int> lt_idx_sps;
+    QList<unsigned int> poc_lsb_lt;
     QList<bool> used_by_curr_pic_lt_flag;
     QList<bool> delta_poc_msb_present_flag;
-    QList<int> delta_poc_msb_cycle_lt;
+    QList<unsigned int> delta_poc_msb_cycle_lt;
     bool slice_temporal_mvp_enabled_flag {false};
     bool slice_sao_luma_flag {false};
     bool slice_sao_chroma_flag {false};
     bool num_ref_idx_active_override_flag;
-    int num_ref_idx_l0_active_minus1;
-    int num_ref_idx_l1_active_minus1;
+    unsigned int num_ref_idx_l0_active_minus1;
+    unsigned int num_ref_idx_l1_active_minus1;
 
     ref_pic_lists_modification slice_rpl_mod;
 
     bool mvd_l1_zero_flag;
     bool cabac_init_flag;
     bool collocated_from_l0_flag {true};
-    int collocated_ref_idx;
+    unsigned int collocated_ref_idx;
     pred_weight_table slice_pred_weight_table;
-    int five_minus_max_num_merge_cand;
+    unsigned int five_minus_max_num_merge_cand;
     int slice_qp_delta;
     int slice_cb_qp_offset;
     int slice_cr_qp_offset;
@@ -578,12 +577,12 @@ protected:
     int slice_tc_offset_div2;
     bool slice_loop_filter_across_slices_enabled_flag;
 
-    int num_entry_point_offsets {0};
-    int offset_len_minus1;
-    QList<int> entry_point_offset_minus1;
+    unsigned int num_entry_point_offsets {0};
+    unsigned int offset_len_minus1;
+    QList<unsigned int> entry_point_offset_minus1;
 
-    int slice_segment_header_extension_length;
-    QList<int> slice_segment_header_extension_data_byte;
+    unsigned int slice_segment_header_extension_length;
+    QList<unsigned int> slice_segment_header_extension_data_byte;
 
     // Calculated values
     int PicOrderCntVal {-1}; // The slice POC
@@ -612,8 +611,8 @@ protected:
   {
     sei(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
     sei(QSharedPointer<sei> sei_src) : nal_unit_hevc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; payloadTypeName = sei_src->payloadTypeName; }
-    // Parse the SEI and return how many bytes were read
-    int parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
+    // Parse the SEI and return how many bytes were read. -1 if an error occured.
+    int parse_sei_header(const QByteArray &sliceHeaderData, TreeItem *root);
 
     int payloadType;
     int last_payload_type_byte;
@@ -625,7 +624,7 @@ protected:
   struct user_data_sei : sei
   {
     user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    void parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root);
+    sei_parsing_return_t parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root);
 
     QString user_data_UUID;
     QString user_data_message;
@@ -638,20 +637,21 @@ protected:
     // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced VPS was not found (yet).
     // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
     sei_parsing_return_t parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &active_VPS_list, TreeItem *root);
-    void reparse_active_parameter_sets_sei(const vps_map &active_VPS_list) { parse(active_VPS_list, true); }
+    sei_parsing_return_t reparse_active_parameter_sets_sei(const vps_map &active_VPS_list) { return parse_internal(active_VPS_list) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
-    int active_video_parameter_set_id;
+    unsigned int active_video_parameter_set_id;
     bool self_contained_cvs_flag;
     bool no_parameter_set_update_flag;
-    int num_sps_ids_minus1;
-    QList<int> active_seq_parameter_set_id;
-    QList<int> layer_sps_idx;
+    unsigned int num_sps_ids_minus1;
+    QList<unsigned int> active_seq_parameter_set_id;
+    QList<unsigned int> layer_sps_idx;
 
   private:
     // These are used internally when parsing of the SEI must be prosponed until the VPS is received.
-    bool parse(const vps_map &active_VPS_list, bool reparse);
-    TreeItem *itemTree;
-    QByteArray sei_data_storage;
+    bool parse_internal(const vps_map &active_VPS_list);
+    bool parse_vps_id();
+    bool is_reparse_needed(const vps_map &active_VPS_list) { return !active_VPS_list.contains(active_video_parameter_set_id); }
+    reader_helper reader;
   };
 
   class pic_timing_sei : public sei
@@ -661,34 +661,38 @@ protected:
     // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced VPS was not found (yet).
     // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
     sei_parsing_return_t parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &active_VPS_list, const sps_map &active_SPS_list, TreeItem *root);
-    void reparse_pic_timing_sei(const vps_map &active_VPS_list, const sps_map &active_SPS_list);
+    sei_parsing_return_t reparse_pic_timing_sei(const vps_map &active_VPS_list, const sps_map &active_SPS_list) { return parse_internal(active_VPS_list, active_SPS_list) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
-    int pic_struct;
-    int source_scan_type;
+    unsigned int pic_struct;
+    unsigned int source_scan_type;
     bool duplicate_flag;
 
-    int au_cpb_removal_delay_minus1;
-    int pic_dpb_output_delay;
-    int pic_dpb_output_du_delay;
-    int num_decoding_units_minus1;
+    unsigned int au_cpb_removal_delay_minus1;
+    unsigned int pic_dpb_output_delay;
+    unsigned int pic_dpb_output_du_delay;
+    unsigned int num_decoding_units_minus1;
     bool du_common_cpb_removal_delay_flag;
-    int du_common_cpb_removal_delay_increment_minus1;
-    QList<int> num_nalus_in_du_minus1;
-    QList<int> du_cpb_removal_delay_increment_minus1;
+    unsigned int du_common_cpb_removal_delay_increment_minus1;
+    QList<unsigned int> num_nalus_in_du_minus1;
+    QList<unsigned int> du_cpb_removal_delay_increment_minus1;
 
   private:
     // These are used internally when parsing of the SEI must be prosponed until the VPS is received.
-    bool parse(const vps_map &active_VPS_list, const sps_map &active_SPS_list, bool reparse);
-    TreeItem *itemTree;
+    bool parse_internal(const vps_map &active_VPS_list, const sps_map &active_SPS_list);
+    bool is_reparse_needed(const vps_map &active_VPS_list, const sps_map &active_SPS_list);
+    TreeItem *rootItem;
     QByteArray sei_data_storage;
   };
 
-  struct alternative_transfer_characteristics_sei : sei
+  class alternative_transfer_characteristics_sei : public sei
   {
+  public:
     alternative_transfer_characteristics_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    void parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, TreeItem *root);
+    parserAnnexB::sei_parsing_return_t parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, TreeItem *root) { return parse_internal(sliceHeaderData, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
-    int preferred_transfer_characteristics;
+    unsigned int preferred_transfer_characteristics;
+  private:
+    bool parse_internal(QByteArray &sliceHeaderData, TreeItem *root);
   };
 
   // Get the meaning/interpretation mapping of some values

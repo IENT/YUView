@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ public:
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
-  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  bool parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
   // TODO: Reading from raw mpeg2 streams not supported (yet? Is this even defined / possible?)
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE { Q_UNUSED(iFrameNr); Q_UNUSED(filePos); return QList<QByteArray>(); }
@@ -83,60 +83,61 @@ private:
     virtual ~nal_unit_mpeg2() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    void parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root) Q_DECL_OVERRIDE;
+    bool parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root) Q_DECL_OVERRIDE;
 
     virtual QByteArray getNALHeader() const override;
     virtual bool isParameterSet() const override { return nal_unit_type == SEQUENCE_HEADER; }
 
+    QStringList get_start_code_meanings();
     QString interprete_start_code(int start_code);
 
     nal_unit_type_enum nal_unit_type {UNSPECIFIED};
-    int slice_id {-1};   // in case of SLICE
-    int system_start_codes {-1}; // in case of SYSTEM_START_CODE
-    int start_code_value {-1}; 
+    unsigned int slice_id {0};         // in case of SLICE
+    unsigned system_start_codes {0};   // in case of SYSTEM_START_CODE
+    unsigned int start_code_value {0}; 
   };
 
   struct sequence_header : nal_unit_mpeg2
   {
     sequence_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
-    void parse_sequence_header(const QByteArray &parameterSetData, TreeItem *root);
+    bool parse_sequence_header(const QByteArray &parameterSetData, TreeItem *root);
 
-    int sequence_header_code;
-    int horizontal_size_value;
-    int vertical_size_value;
-    int aspect_ratio_information;
-    int frame_rate_code;
-    int bit_rate_value;
+    unsigned int sequence_header_code;
+    unsigned int horizontal_size_value;
+    unsigned int vertical_size_value;
+    unsigned int aspect_ratio_information;
+    unsigned int frame_rate_code;
+    unsigned int bit_rate_value;
     bool marker_bit;
-    int vbv_buffer_size_value;
+    unsigned int vbv_buffer_size_value;
     bool constrained_parameters_flag;
     bool load_intra_quantiser_matrix;
-    int intra_quantiser_matrix[64];
+    unsigned int intra_quantiser_matrix[64];
     bool load_non_intra_quantiser_matrix;
-    int non_intra_quantiser_matrix[64];
+    unsigned int non_intra_quantiser_matrix[64];
   };
 
   struct picture_header : nal_unit_mpeg2
   {
     picture_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
-    void parse_picture_header(const QByteArray &parameterSetData, TreeItem *root);
+    bool parse_picture_header(const QByteArray &parameterSetData, TreeItem *root);
 
-    int temporal_reference;
-    int picture_coding_type;
-    int vbv_delay;
+    unsigned int temporal_reference;
+    unsigned int picture_coding_type;
+    unsigned int vbv_delay;
     bool full_pel_forward_vector;
-    int forward_f_code;
+    unsigned int forward_f_code;
     bool full_pel_backward_vector;
-    int backward_f_code;
+    unsigned int backward_f_code;
     QList<int> extra_information_picture_list;
   };
 
   struct group_of_pictures_header : nal_unit_mpeg2
   {
     group_of_pictures_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {};
-    void parse_group_of_pictures_header(const QByteArray &parameterSetData, TreeItem *root);
+    bool parse_group_of_pictures_header(const QByteArray &parameterSetData, TreeItem *root);
 
-    int time_code;
+    unsigned int time_code;
     bool closed_gop;
     bool broken_link;
   };
@@ -144,7 +145,7 @@ private:
   struct user_data : nal_unit_mpeg2
   {
     user_data(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
-    void parse_user_data(const QByteArray &parameterSetData, TreeItem *root);
+    bool parse_user_data(const QByteArray &parameterSetData, TreeItem *root);
   };
 
   enum nal_extension_type
@@ -166,9 +167,9 @@ private:
     nal_extension(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
     nal_extension(QSharedPointer<nal_extension> src) : nal_unit_mpeg2(src) { extension_start_code_identifier = src->extension_start_code_identifier; extension_type = src->extension_type; }
     // Peek the extension start code identifier (4 bits) in the payload
-    void parse_extension_start_code(QByteArray &extension_payload, TreeItem *root);
+    bool parse_extension_start_code(QByteArray &extension_payload, TreeItem *root);
 
-    int extension_start_code_identifier;
+    unsigned int extension_start_code_identifier;
     nal_extension_type extension_type;
     QString get_extension_function_name();
   };
@@ -176,32 +177,32 @@ private:
   struct sequence_extension : nal_extension
   {
     sequence_extension(const nal_extension &nal) : nal_extension(nal) {}
-    void parse_sequence_extension(const QByteArray &parameterSetData, TreeItem *root);
+    bool parse_sequence_extension(const QByteArray &parameterSetData, TreeItem *root);
 
-    int profile_and_level_indication;
+    unsigned int profile_and_level_indication;
     bool progressive_sequence;
-    int chroma_format;
-    int horizontal_size_extension;
-    int vertical_size_extension;
-    int bit_rate_extension;
+    unsigned int chroma_format;
+    unsigned int horizontal_size_extension;
+    unsigned int vertical_size_extension;
+    unsigned int bit_rate_extension;
     bool marker_bit;
-    int vbv_buffer_size_extension;
+    unsigned int vbv_buffer_size_extension;
     bool low_delay;
-    int frame_rate_extension_n {0};
-    int frame_rate_extension_d {0};
+    unsigned int frame_rate_extension_n {0};
+    unsigned int frame_rate_extension_d {0};
 
-    int profile_identification;
-    int level_identification;
+    unsigned int profile_identification;
+    unsigned int level_identification;
   };
 
   struct picture_coding_extension : nal_extension
   {
     picture_coding_extension(const nal_extension &nal) : nal_extension(nal) {}
-    void parse_picture_coding_extension(const QByteArray &parameterSetData, TreeItem *root);
+    bool parse_picture_coding_extension(const QByteArray &parameterSetData, TreeItem *root);
 
-    int f_code[2][2];
-    int intra_dc_precision;
-    int picture_structure;
+    unsigned int f_code[2][2];
+    unsigned int intra_dc_precision;
+    unsigned int picture_structure;
     bool top_field_first;
     bool frame_pred_frame_dct;
     bool concealment_motion_vectors;
@@ -213,10 +214,10 @@ private:
     bool progressive_frame;
     bool composite_display_flag;
     bool v_axis;
-    int field_sequence;
+    unsigned int field_sequence;
     bool sub_carrier;
-    int burst_amplitude;
-    int sub_carrier_phase;
+    unsigned int burst_amplitude;
+    unsigned int sub_carrier_phase;
   };
 
   // We will keep a pointer to the first sequence extension to be able to retrive some data

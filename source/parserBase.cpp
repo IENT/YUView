@@ -37,6 +37,14 @@ parserBase::~parserBase()
 {
 }
 
+parserBase::NALUnitModel::NALUnitModel()
+{
+}
+
+parserBase::NALUnitModel::~NALUnitModel()
+{
+}
+
 QVariant parserBase::NALUnitModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
   if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != nullptr)
@@ -52,12 +60,12 @@ QVariant parserBase::NALUnitModel::data(const QModelIndex &index, int role) cons
   if (!index.isValid())
     return QVariant();
 
-  if (role != Qt::DisplayRole && role != Qt::ToolTipRole)
-    return QVariant();
-
   TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
-
-  return QVariant(item->itemData.value(index.column()));
+  if (role == Qt::ForegroundRole)
+    return QVariant(item->foregroundBrush);
+  else if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
+    return QVariant(item->itemData.value(index.column()));
+  return QVariant();
 }
 
 QModelIndex parserBase::NALUnitModel::index(int row, int column, const QModelIndex &parent) const
@@ -223,7 +231,7 @@ QByteArray parserBase::sub_byte_reader::readBytes(int nrBytes)
   QByteArray retArray;
   for (int i = 0; i < nrBytes; i++)
   {
-    if (posInBuffer_bytes >= byteArray.size())
+    if (posInBuffer_bytes >= (unsigned int)byteArray.size())
       throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
 
     retArray.append(byteArray[posInBuffer_bytes]);
@@ -233,7 +241,7 @@ QByteArray parserBase::sub_byte_reader::readBytes(int nrBytes)
   return retArray;
 }
 
-int parserBase::sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
+unsigned int parserBase::sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
 {
   int readBit = readBits(1, bitsRead);
   if (bit_count)
@@ -250,7 +258,7 @@ int parserBase::sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
   }
 
   // Read "golLength" bits
-  int val = readBits(golLength, bitsRead);
+  unsigned int val = readBits(golLength, bitsRead);
   // Add the exponentional part
   val += (1 << golLength)-1;
 
@@ -260,9 +268,9 @@ int parserBase::sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
   return val;
 }
 
-int parserBase::sub_byte_reader::readSE_V(QString *bitsRead)
+int parserBase::sub_byte_reader::readSE_V(QString *bitsRead, int *bit_count)
 {
-  int val = readUE_V(bitsRead);
+  int val = readUE_V(bitsRead, bit_count);
   if (val%2 == 0) 
     return -(val+1)/2;
   else
@@ -307,12 +315,12 @@ uint64_t parserBase::sub_byte_reader::readUVLC(QString *bitsRead, int *bit_count
   return value + ((uint64_t)1 << leadingZeros) - 1;
 }
 
-int parserBase::sub_byte_reader::readNS(int nrBits, QString *bitsRead, int *bit_count)
+int parserBase::sub_byte_reader::readNS(int maxVal, QString *bitsRead, int *bit_count)
 {
   // FloorLog2
   int floorVal;
   {
-    int x = nrBits;
+    int x = maxVal;
     int s = 0;
     while (x != 0)
     {
@@ -323,7 +331,7 @@ int parserBase::sub_byte_reader::readNS(int nrBits, QString *bitsRead, int *bit_
   }
   
   int w = floorVal + 1;
-  int m = (1 << w) - nrBits;
+  int m = (1 << w) - maxVal;
   int v = readBits(w-1, bitsRead);
   if (bit_count)
     *bit_count += w-1;
@@ -348,8 +356,8 @@ int parserBase::sub_byte_reader::readSU(int nrBits, QString *bitsRead)
 * following bits are 0. */
 bool parserBase::sub_byte_reader::more_rbsp_data()
 {
-  int posBytes = posInBuffer_bytes;
-  int posBits  = posInBuffer_bits;
+  unsigned int posBytes = posInBuffer_bytes;
+  unsigned int posBits  = posInBuffer_bits;
   bool terminatingBitFound = false;
   if (posBits == 8)
   {
@@ -374,7 +382,7 @@ bool parserBase::sub_byte_reader::more_rbsp_data()
     }
     posBytes++;
   }
-  while(posBytes < byteArray.size())
+  while(posBytes < (unsigned int)byteArray.size())
   {
     unsigned char c = byteArray[posBytes];
     if (terminatingBitFound && c != 0)
@@ -410,7 +418,7 @@ bool parserBase::sub_byte_reader::gotoNextByte()
   // Advance pointer
   posInBuffer_bytes++;
 
-  if (posInBuffer_bytes >= byteArray.size()) 
+  if (posInBuffer_bytes >= (unsigned int)byteArray.size()) 
     // The next byte is outside of the current buffer. Error.
     return false;    
 
@@ -421,7 +429,7 @@ bool parserBase::sub_byte_reader::gotoNextByte()
       // The current byte is an emulation prevention 3 byte. Skip it.
       posInBuffer_bytes++; // Skip byte
 
-      if (posInBuffer_bytes >= byteArray.size()) {
+      if (posInBuffer_bytes >= (unsigned int)byteArray.size()) {
         // The next byte is outside of the current buffer. Error
         return false;
       }
@@ -500,3 +508,444 @@ QByteArray parserBase::sub_byte_writer::getByteArray()
   return byteArray;
 }
 
+/// --------------- reader_helper ---------------------
+
+void parserBase::reader_helper::init(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name)
+{
+  set_input(inArr);
+  if (item)
+  {
+    if (new_sub_item_name.isEmpty())
+      currentTreeLevel = item;
+    else
+      currentTreeLevel = new TreeItem(new_sub_item_name, item);
+  }
+  itemHierarchy.append(currentTreeLevel);
+}
+
+void parserBase::reader_helper::addLogSubLevel(const QString name)
+{
+  assert(!name.isEmpty());
+  if (itemHierarchy.last() == nullptr)
+    return;
+  currentTreeLevel = new TreeItem(name, itemHierarchy.last());
+  itemHierarchy.append(currentTreeLevel);
+}
+
+void parserBase::reader_helper::removeLogSubLevel()
+{
+  if (itemHierarchy.length() <= 1)
+    // Don't remove the root
+    return;
+  itemHierarchy.removeLast();
+  currentTreeLevel = itemHierarchy.last();
+}
+
+// TODO: Fixed length / variable length codes logging
+bool parserBase::reader_helper::readBits(int numBits, unsigned int &into, QString intoName, QString meaning)
+{
+  QString code;
+  if (!readBits_catch(into, numBits, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, meaning, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readBits(int numBits, uint64_t &into, QString intoName, QString meaning)
+{
+  QString code;
+  if (!readBits64_catch(into, numBits, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, meaning, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readBits(int numBits, unsigned int &into, QString intoName, QStringList meanings)
+{
+  QString code;
+  if (!readBits_catch(into, numBits, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, getMeaningValue(meanings, into), currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readBits(int numBits, unsigned int &into, QString intoName, QMap<int,QString> meanings)
+{
+  QString code;
+  if (!readBits_catch(into, numBits, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, getMeaningValue(meanings, into), currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx)
+{
+  QString code;
+  unsigned int val;
+  if (!readBits_catch(val, numBits, &code))
+    return false;
+  into.append(val);
+  if (idx >= 0)
+    intoName += QString("[%1]").arg(idx);
+  if (currentTreeLevel)
+    new TreeItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readBits(int numBits, QByteArray &into, QString intoName, int idx)
+{
+  assert(numBits <= 8);
+  QString code;
+  unsigned int val;
+  if (!readBits_catch(val, numBits, &code))
+    return false;
+  into.append(val);
+  if (idx >= 0)
+    intoName += QString("[%1]").arg(idx);
+  if (currentTreeLevel)
+    new TreeItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readBits(int numBits, unsigned int &into, QMap<int, QString> intoNames)
+{
+  QString code;
+  if (!readBits_catch(into, numBits, &code))
+    return false;
+  if (currentTreeLevel)    
+    new TreeItem(getMeaningValue(intoNames, into), into, QString("u(v) -> u(%1)").arg(numBits), code, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readZeroBits(int numBits, QString intoName)
+{
+  QString code;
+  bool allZero = true;
+  bool bitsToRead = numBits;
+  while (numBits > 0)
+  {
+    unsigned int into;
+    if (!readBits_catch(into, 1, &code))
+      return false;
+    if (into != 0)
+      allZero = false;
+    numBits--;
+  }
+  if (currentTreeLevel)
+  {
+    new TreeItem(intoName, allZero ? "0" : "Not 0", QString("u(v) -> u(%1)").arg(bitsToRead), code, currentTreeLevel);
+    if (!allZero)
+      addErrorMessageChildItem("The zero bits " + intoName + " must be zero");
+  }
+  return allZero;
+}
+
+bool parserBase::reader_helper::ignoreBits(int numBits)
+{
+  unsigned int into;
+  if (!readBits_catch(into, numBits))
+    return false;
+  return true;
+}
+
+bool parserBase::reader_helper::readFlag(bool &into, QString intoName, QString meaning)
+{
+  QString code;
+  unsigned int read_val;
+  if (!readBits_catch(read_val, 1, &code))
+    return false;
+  into = (read_val != 0);
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, "u(1)", code, meaning, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readFlag(QList<bool> &into, QString intoName, int idx)
+{
+  QString code;
+  unsigned int read_val;
+  if (!readBits_catch(read_val, 1, &code))
+    return false;
+  bool val = (read_val != 0);
+  into.append(val);
+  if (idx >= 0)
+    intoName += QString("[%1]").arg(idx);
+  if (currentTreeLevel)
+    new TreeItem(intoName, val, "u(1)", code, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readFlag(bool &into, QString intoName, QStringList meanings)
+{
+  QString code;
+  unsigned int read_val;
+  if (!readBits_catch(read_val, 1, &code))
+    return false;
+  into = (read_val != 0);
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, "u(1)", code, getMeaningValue(meanings, read_val), currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readUEV(unsigned int &into, QString intoName, QStringList meanings)
+{
+  QString code;
+  int bit_count;
+  if (!readUEV_catch(into, &bit_count, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("ue(v) -> ue(%1)").arg(bit_count), code, getMeaningValue(meanings, into), currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readUEV(QList<quint32> &into, QString intoName, int idx)
+{
+  QString code;
+  int bit_count;
+  unsigned int val;
+  if (!readUEV_catch(val, &bit_count, &code))
+    return false;
+  into.append(val);
+  if (idx >= 0)
+    intoName += QString("[%1]").arg(idx);
+  if (currentTreeLevel)
+    new TreeItem(intoName, val, QString("ue(v) -> ue(%1)").arg(bit_count), code, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readSEV(int &into, QString intoName, QStringList meanings)
+{
+  QString code;
+  int bit_count;
+  if (!readSEV_catch(into, &bit_count, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("se(v) -> se(%1)").arg(bit_count), code, getMeaningValue(meanings, (unsigned int)into), currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readSEV(QList<int> into, QString intoName, int idx)
+{
+  QString code;
+  int bit_count;
+  unsigned int val;
+  if (!readUEV_catch(val, &bit_count, &code))
+    return false;
+  into.append(val);
+  if (idx >= 0)
+    intoName += QString("[%1]").arg(idx);
+  if (currentTreeLevel)
+    new TreeItem(intoName, val, QString("se(v) -> se(%1)").arg(bit_count), code, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readLeb128(uint64_t &into, QString intoName)
+{
+  QString code;
+  int bit_count;
+  if (!readLeb128_catch(into, &bit_count, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("leb128(v) -> leb128(%1)").arg(bit_count), code, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readUVLC(uint64_t &into, QString intoName)
+{
+  QString code;
+  int bit_count;
+  if (!readUVLC_catch(into, &bit_count, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("leb128(v) -> leb128(%1)").arg(bit_count), code, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readNS(int &into, QString intoName, int maxVal)
+{
+  QString code;
+  int bit_count;
+  if (!readNS_catch(into, maxVal, &bit_count, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("ns(%1)").arg(bit_count), code, currentTreeLevel);
+  return true;
+}
+
+bool parserBase::reader_helper::readSU(int &into, QString intoName, int nrBits)
+{
+  QString code;
+  if (!readSU_catch(into, nrBits, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("su(%1)").arg(nrBits), code, currentTreeLevel);
+  return true;
+}
+
+void parserBase::reader_helper::logValue(int value, QString valueName, QString meaning)
+{
+  if (currentTreeLevel)
+    new TreeItem(valueName, value, "calc", meaning, currentTreeLevel);
+}
+
+void parserBase::reader_helper::logValue(int value, QString valueName, QString coding, QString code, QString meaning)
+{
+  if (currentTreeLevel)
+    new TreeItem(valueName, value, coding, code, meaning, currentTreeLevel);
+}
+
+void parserBase::reader_helper::logValue(QString value, QString valueName, QString meaning)
+{
+  if (currentTreeLevel)
+    new TreeItem(valueName, value, "calc", meaning, currentTreeLevel);
+}
+
+void parserBase::reader_helper::logInfo(QString info)
+{
+  if (currentTreeLevel)
+    new TreeItem(info, currentTreeLevel);
+}
+
+bool parserBase::reader_helper::addErrorMessageChildItem(QString errorMessage, TreeItem *item)
+{
+  if (item)
+  {
+    new TreeItem("Error", "", "", "", errorMessage, item, true);
+    item->setError();
+  }
+  return false;
+}
+
+bool parserBase::reader_helper::readBits_catch(unsigned int &into, int numBits, QString *code)
+{
+  try
+  {
+    into = sub_byte_reader::readBits(numBits, code);
+  }
+  catch (const std::exception& ex)
+  {
+    addErrorMessageChildItem("Reading error:  " + QString(ex.what()));
+    return false;
+  }
+  return true;
+}
+
+bool parserBase::reader_helper::readBits64_catch(uint64_t &into, int numBits, QString *code)
+{
+  try
+  {
+    into = sub_byte_reader::readBits64(numBits, code);
+  }
+  catch (const std::exception& ex)
+  {
+    addErrorMessageChildItem("Reading error:  " + QString(ex.what()));
+    return false;
+  }
+  return true;
+}
+
+bool parserBase::reader_helper::readUEV_catch(unsigned int &into, int *bit_count, QString *code)
+{
+  try
+  {
+    into = sub_byte_reader::readUE_V(code, bit_count);
+  }
+  catch (const std::exception& ex)
+  {
+    addErrorMessageChildItem("Reading error:  " + QString(ex.what()));
+    return false;
+  }
+  return true;
+}
+
+bool parserBase::reader_helper::readSEV_catch(int &into, int *bit_count, QString *code)
+{
+  try
+  {
+    into = sub_byte_reader::readSE_V(code, bit_count);
+  }
+  catch (const std::exception& ex)
+  {
+    addErrorMessageChildItem("Reading error:  " + QString(ex.what()));
+    return false;
+  }
+  return true;
+}
+
+bool parserBase::reader_helper::readLeb128_catch(uint64_t &into, int *bit_count, QString *code)
+{
+  try
+  {
+    into = sub_byte_reader::readLeb128(code, bit_count);
+  }
+  catch (const std::exception& ex)
+  {
+    addErrorMessageChildItem("Reading error:  " + QString(ex.what()));
+    return false;
+  }
+  return true;
+}
+
+bool parserBase::reader_helper::readUVLC_catch(uint64_t &into, int *bit_count, QString *code)
+{
+  try
+  {
+    into = sub_byte_reader::readUVLC(code, bit_count);
+  }
+  catch (const std::exception& ex)
+  {
+    addErrorMessageChildItem("Reading error:  " + QString(ex.what()));
+    return false;
+  }
+  return true;
+}
+
+bool parserBase::reader_helper::readNS_catch(int &into, int maxVal, int *bit_count, QString *code)
+{
+  try
+  {
+    into = sub_byte_reader::readNS(maxVal, code, bit_count);
+  }
+  catch (const std::exception& ex)
+  {
+    addErrorMessageChildItem("Reading error:  " + QString(ex.what()));
+    return false;
+  }
+  return true;
+}
+
+bool parserBase::reader_helper::readSU_catch(int &into, int numBits, QString *code)
+{
+  try
+  {
+    into = sub_byte_reader::readSU(numBits, code);
+  }
+  catch (const std::exception& ex)
+  {
+    addErrorMessageChildItem("Reading error:  " + QString(ex.what()));
+    return false;
+  }
+  return true;
+}
+
+QString parserBase::reader_helper::getMeaningValue(QStringList meanings, unsigned int val)
+{
+  if (val < (unsigned int)meanings.length())
+    return meanings.at(val);
+  else if (val >= (unsigned int)meanings.length() && !meanings.isEmpty())
+    return meanings.last();
+  return "";
+}
+
+QString parserBase::reader_helper::getMeaningValue(QMap<int,QString> meanings, int val)
+{
+  if (meanings.contains(val))
+    return meanings.value(val);
+  else if (meanings.contains(-1))
+    return meanings.value(-1);
+  return "";
+}

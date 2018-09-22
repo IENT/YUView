@@ -33,8 +33,8 @@
 #ifndef PARSERAV1OBU_H
 #define PARSERAV1OBU_H
 
-#include "videoHandlerYUV.h"
 #include "parserBase.h"
+#include "videoHandlerYUV.h"
 
 using namespace YUV_Internals;
 
@@ -44,7 +44,7 @@ public:
     parserAV1OBU();
     ~parserAV1OBU() {}
 
-    int parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
+    bool parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
 
 protected:
 
@@ -81,9 +81,8 @@ protected:
     obu_unit(QSharedPointer<obu_unit> obu_src);
     virtual ~obu_unit() {} // This class is meant to be derived from.
 
-    // Parse the header the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    // Return if one or two bytes of the given data were read.
-    virtual int parse_obu_header(const QByteArray &header_data, TreeItem *root);
+    // Parse the header the given data bytes.
+    bool parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, TreeItem *root);
 
     /// Pointer to the first byte of the start code of the NAL unit
     QUint64Pair filePosStartEnd;
@@ -102,8 +101,8 @@ protected:
     bool          obu_has_size_field {false};
     
     // OBU extension header
-    int temporal_id {0};
-    int spatial_id  {0};
+    unsigned int temporal_id {0};
+    unsigned int spatial_id  {0};
 
     uint64_t obu_size {0};
 
@@ -114,29 +113,29 @@ protected:
   struct sequence_header : obu_unit
   {
     sequence_header(const obu_unit &obu) : obu_unit(obu) {};
-    void parse_sequence_header(const QByteArray &sequenceHeaderData, TreeItem *root);
+    bool parse_sequence_header(const QByteArray &sequenceHeaderData, TreeItem *root);
 
-    int seq_profile;
+    unsigned int seq_profile;
     bool still_picture;
     bool reduced_still_picture_header;
 
     bool timing_info_present_flag;
     bool decoder_model_info_present_flag;
     bool initial_display_delay_present_flag;
-    int operating_points_cnt_minus_1;
-    QList<int> operating_point_idc;
-    QList<int> seq_level_idx;
+    unsigned int operating_points_cnt_minus_1;
+    QList<unsigned int> operating_point_idc;
+    QList<unsigned int> seq_level_idx;
     QList<bool> seq_tier;
     QList<bool> decoder_model_present_for_this_op;
     QList<bool> initial_display_delay_present_for_this_op;
-    QList<int> initial_display_delay_minus_1;
+    QList<unsigned int> initial_display_delay_minus_1;
 
     struct timing_info_struct
     {
-      void read(sub_byte_reader &reader, TreeItem *root);
+      bool parse_timing_info(reader_helper &reader);
 
-      int num_units_in_display_tick;
-      int time_scale;
+      unsigned int num_units_in_display_tick;
+      unsigned int time_scale;
       bool equal_picture_interval;
       uint64_t num_ticks_per_picture_minus_1;
     };
@@ -144,21 +143,21 @@ protected:
 
     struct decoder_model_info_struct
     {
-      void read(sub_byte_reader &reader, TreeItem *root);
+      bool parse_decoder_model(reader_helper &reader);
 
-      int buffer_delay_length_minus_1;
-      int num_units_in_decoding_tick;
-      int buffer_removal_time_length_minus_1;
-      int frame_presentation_time_length_minus_1;
+      unsigned int buffer_delay_length_minus_1;
+      unsigned int num_units_in_decoding_tick;
+      unsigned int buffer_removal_time_length_minus_1;
+      unsigned int frame_presentation_time_length_minus_1;
     };
     decoder_model_info_struct decoder_model_info;
 
     struct operating_parameters_info_struct
     {
-      void read(sub_byte_reader &reader, TreeItem *root, int op, decoder_model_info_struct &dmodel);
+      bool parse_operating_parameters_info(reader_helper &reader, int op, decoder_model_info_struct &dmodel);
 
-      QList<int> decoder_buffer_delay;
-      QList<int> encoder_buffer_delay;
+      QList<unsigned int> decoder_buffer_delay;
+      QList<unsigned int> encoder_buffer_delay;
       QList<bool> low_delay_mode_flag;
     };
     operating_parameters_info_struct operating_parameters_info;
@@ -167,13 +166,13 @@ protected:
     int choose_operating_point() { return 0; }
     int OperatingPointIdc;
 
-    int frame_width_bits_minus_1;
-    int frame_height_bits_minus_1;
-    int max_frame_width_minus_1;
-    int max_frame_height_minus_1;
+    unsigned int frame_width_bits_minus_1;
+    unsigned int frame_height_bits_minus_1;
+    unsigned int max_frame_width_minus_1;
+    unsigned int max_frame_height_minus_1;
     bool frame_id_numbers_present_flag;
-    int delta_frame_id_length_minus_2;
-    int additional_frame_id_length_minus_1;
+    unsigned int delta_frame_id_length_minus_2;
+    unsigned int additional_frame_id_length_minus_1;
     bool use_128x128_superblock;
     bool enable_filter_intra;
     bool enable_intra_edge_filter;
@@ -186,11 +185,11 @@ protected:
     bool enable_jnt_comp;
     bool enable_ref_frame_mvs;
     bool seq_choose_screen_content_tools;
-    int seq_force_screen_content_tools;
-    int seq_force_integer_mv;
+    unsigned int seq_force_screen_content_tools;
+    unsigned int seq_force_integer_mv;
     bool seq_choose_integer_mv;
-    int order_hint_bits_minus_1;
-    int OrderHintBits;
+    unsigned int order_hint_bits_minus_1;
+    unsigned int OrderHintBits;
 
     bool enable_superres;
     bool enable_cdef;
@@ -198,7 +197,7 @@ protected:
 
     struct color_config_struct
     {
-      void read(sub_byte_reader &reader, TreeItem *root, int seq_profile);
+      bool parse_color_config(reader_helper &reader, int seq_profile);
 
       bool high_bitdepth;
       bool twelve_bit;
@@ -311,15 +310,15 @@ protected:
   struct frame_header : obu_unit
   {
     frame_header(const obu_unit &obu) : obu_unit(obu) {};
-    void parse_frame_header(const QByteArray &sequenceHeaderData, TreeItem *root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
+    bool parse_frame_header(const QByteArray &sequenceHeaderData, TreeItem *root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
 
-    void uncompressed_header(sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
+    bool parse_uncompressed_header(reader_helper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
     void mark_ref_frames(int idLen, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
 
     bool show_existing_frame;
-    int frame_to_show_map_idx;
-    int refresh_frame_flags;
-    int display_frame_id;
+    unsigned int frame_to_show_map_idx;
+    unsigned int refresh_frame_flags;
+    unsigned int display_frame_id;
 
     frame_type_enum frame_type;
 
@@ -329,55 +328,55 @@ protected:
     bool error_resilient_mode;
 
     bool disable_cdf_update;
-    int allow_screen_content_tools;
-    int force_integer_mv;
+    unsigned int allow_screen_content_tools;
+    unsigned int force_integer_mv;
 
-    int current_frame_id;
+    unsigned int current_frame_id;
     bool frame_size_override_flag;
-    int order_hint;
-    int OrderHint;
-    int primary_ref_frame;
+    unsigned int order_hint;
+    unsigned int OrderHint;
+    unsigned int primary_ref_frame;
 
     bool buffer_removal_time_present_flag;
     int opPtIdc;
     bool inTemporalLayer;
     bool inSpatialLayer;
-    QList<int> buffer_removal_time;
+    QList<unsigned int> buffer_removal_time;
 
     bool allow_high_precision_mv;
     bool use_ref_frame_mvs;
     bool allow_intrabc;
 
-    QList<int> ref_order_hint;
+    QList<unsigned int> ref_order_hint;
 
-    void frame_size(sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header);
-    void frame_size_with_refs(sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
-    int frame_width_minus_1;
-    int frame_height_minus_1;
-    int FrameWidth;
-    int FrameHeight;
+    bool parse_frame_size(reader_helper &reader, QSharedPointer<sequence_header> seq_header);
+    bool parse_frame_size_with_refs(reader_helper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
+    unsigned int frame_width_minus_1;
+    unsigned int frame_height_minus_1;
+    unsigned int FrameWidth;
+    unsigned int FrameHeight;
 
-    void superres_params(sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header);
+    bool parse_superres_params(reader_helper &reader, QSharedPointer<sequence_header> seq_header);
     bool use_superres;
-    int coded_denom;
-    int SuperresDenom;
-    int UpscaledWidth;
+    unsigned int coded_denom;
+    unsigned int SuperresDenom;
+    unsigned int UpscaledWidth;
 
     void compute_image_size();
     int MiCols;
     int MiRows;
 
-    void render_size(sub_byte_reader &reader, TreeItem *root);
+    bool parse_render_size(reader_helper &reader);
     bool render_and_frame_size_different;
-    int render_width_minus_1;
-    int render_height_minus_1;
-    int RenderWidth;
-    int RenderHeight;
+    unsigned int render_width_minus_1;
+    unsigned int render_height_minus_1;
+    unsigned int RenderWidth;
+    unsigned int RenderHeight;
 
     bool frame_refs_short_signaling;
-    int delta_frame_id_minus_1;
-    int last_frame_idx;
-    int gold_frame_idx;
+    unsigned int delta_frame_id_minus_1;
+    unsigned int last_frame_idx;
+    unsigned int gold_frame_idx;
 
     struct frame_refs_struct
     {
@@ -403,7 +402,7 @@ protected:
 
     bool disable_frame_end_update_cdf;
 
-    void read_interpolation_filter(sub_byte_reader &reader, TreeItem *root);
+    bool read_interpolation_filter(reader_helper &reader);
     bool is_filter_switchable;
     enum interpolation_filter_enum
     {
@@ -417,7 +416,7 @@ protected:
 
     struct tile_info_struct
     {
-      void parse(int MiCols, int MiRows, sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header);
+      bool parse_tile_info(int MiCols, int MiRows, reader_helper &reader, QSharedPointer<sequence_header> seq_header);
 
       int sbCols, sbRows;
       int sbShift;
@@ -444,18 +443,18 @@ protected:
       int startSb;
       int width_in_sbs_minus_1, height_in_sbs_minus_1;
       int maxTileHeightSb;
-      int tile_size_bytes_minus_1;
-      int context_update_tile_id;
+      unsigned int tile_size_bytes_minus_1;
+      unsigned int context_update_tile_id;
       int TileSizeBytes;
     };
     tile_info_struct tile_info;
 
     struct quantization_params_struct
     {
-      void parse(sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header);
-      int read_delta_q(QString deltaValName, sub_byte_reader &reader, TreeItem *root);
+      bool parse_quantization_params(reader_helper &reader, QSharedPointer<sequence_header> seq_header);
+      bool read_delta_q(QString deltaValName, int &delta_q, reader_helper &reader);
 
-      int base_q_idx;
+      unsigned int base_q_idx;
       bool diff_uv_delta;
 
       int DeltaQYDc;
@@ -465,13 +464,13 @@ protected:
       int DeltaQVAc;
 
       bool using_qmatrix;
-      int qm_y, qm_u, qm_v;
+      unsigned int qm_y, qm_u, qm_v;
     };
     quantization_params_struct quantization_params;
 
     struct segmentation_params_struct
     {
-      void parse(int primary_ref_frame, sub_byte_reader &reader, TreeItem *root);
+      bool parse_segmentation_params(int primary_ref_frame, reader_helper &reader);
 
       bool segmentation_enabled;
       bool segmentation_update_map;
@@ -488,19 +487,19 @@ protected:
 
     struct delta_q_params_struct
     {
-      void parse(int base_q_idx, sub_byte_reader &reader, TreeItem *root);
+      bool parse_delta_q_params(int base_q_idx, reader_helper &reader);
 
-      int delta_q_res;
+      unsigned int delta_q_res;
       bool delta_q_present;
     };
     delta_q_params_struct delta_q_params;
 
     struct delta_lf_params_struct
     {
-      void parse(bool delta_q_present, bool allow_intrabc, sub_byte_reader &reader, TreeItem *root);
+      bool parse_delta_lf_params(bool delta_q_present, bool allow_intrabc, reader_helper &reader);
 
       bool delta_lf_present;
-      int  delta_lf_res;
+      unsigned int  delta_lf_res;
       bool delta_lf_multi;
     };
     delta_lf_params_struct delta_lf_params;
@@ -515,13 +514,13 @@ protected:
 
     struct loop_filter_params_struct
     {
-      void parse(bool CodedLossless, bool allow_intrabc, sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header);
+      bool parse_loop_filter_params(bool CodedLossless, bool allow_intrabc, reader_helper &reader, QSharedPointer<sequence_header> seq_header);
 
-      int loop_filter_level[4];
+      unsigned int loop_filter_level[4];
       int loop_filter_ref_deltas[7];
       int loop_filter_mode_deltas[2];
 
-      int loop_filter_sharpness;
+      unsigned int loop_filter_sharpness;
       bool loop_filter_delta_enabled;
       bool loop_filter_delta_update;
 
@@ -530,15 +529,15 @@ protected:
 
     struct cdef_params_struct
     {
-      void parse(bool CodedLossless, bool allow_intrabc, sub_byte_reader &reader, TreeItem *root, QSharedPointer<sequence_header> seq_header);
+      bool parse_cdef_params(bool CodedLossless, bool allow_intrabc, reader_helper &reader, QSharedPointer<sequence_header> seq_header);
 
-      int cdef_bits;
-      int cdef_y_pri_strength[16];
-      int cdef_y_sec_strength[16];
-      int cdef_uv_pri_strength[16];
-      int cdef_uv_sec_strength[16];
+      unsigned int cdef_bits;
+      unsigned int cdef_y_pri_strength[16];
+      unsigned int cdef_y_sec_strength[16];
+      unsigned int cdef_uv_pri_strength[16];
+      unsigned int cdef_uv_sec_strength[16];
       int CdefDamping;
-      int cdef_damping_minus_3;
+      unsigned int cdef_damping_minus_3;
     };
     cdef_params_struct cdef_params;
 

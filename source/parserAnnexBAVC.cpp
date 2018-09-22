@@ -31,7 +31,9 @@
 */
 
 #include "parserAnnexBAVC.h"
+
 #include <cmath>
+#include "parserCommonMacros.h"
 
 #define PARSER_AVC_DEBUG_OUTPUT 0
 #if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
@@ -40,29 +42,6 @@
 #else
 #define DEBUG_AVC(fmt,...) ((void)0)
 #endif
-
-// Read "numBits" bits into the variable "into". 
-#define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
-#define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings,itemTree);}
-#define READBITS_A(into,numBits,i) {QString code; int v=reader.readBits(numBits,&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
-// Read a flag (1 bit) into the variable "into".
-#define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
-#define READFLAG_M(into,meanings) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",meanings,itemTree);}
-#define READFLAG_A(into,i) {bool b=(reader.readBits(1)!=0); into.append(b); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),b,QString("u(1)"),b?"1":"0",itemTree);}
-// Read a unsigned ue(v) code from the bitstream into the variable "into"
-#define READUEV(into) {QString code; into=reader.readUE_V(&code); if (itemTree) new TreeItem(#into,into,QString("ue(v)"),code,itemTree);}
-#define READUEV_M(into,meanings) {QString code; into=reader.readUE_V(&code); if (itemTree) new TreeItem(#into,into,QString("ue(v)"),code,meanings,itemTree);}
-#define READUEV_A(arr,i) {QString code; int v=reader.readUE_V(&code); arr.append(v); if (itemTree) new TreeItem(QString(#arr)+QString("[%1]").arg(i),v,QString("ue(v)"),code,itemTree);}
-#define READUEV_APP(arr) {QString code; int v=reader.readUE_V(&code); arr.append(v); if (itemTree) new TreeItem(QString(#arr),v,QString("ue(v)"),code,itemTree);}
-// Read a signed se(v) code from the bitstream into the variable "into"
-#define READSEV(into) {QString code; into=reader.readSE_V(&code); if (itemTree) new TreeItem(#into,into,QString("se(v)"),code,itemTree);}
-#define READSEV_A(into,i) {QString code; int v=reader.readSE_V(&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("se(v)"),code,itemTree);}
-// Do not actually read anything but also put the value into the tree as a calculated value
-#define LOGVAL(val) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),itemTree);}
-#define LOGVAL_M(val,meaning) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),meaning,itemTree);}
-// Log a custom message (add a cutom item in the tree)
-#define LOGPARAM(name, val, coding, code, meaning) {if (itemTree) new TreeItem(name, val, coding, code, meaning, itemTree);}
-#define LOGINFO(info) {if (itemTree) new TreeItem("Info", info, "", "", itemTree);}
 
 double parserAnnexBAVC::getFramerate() const
 {
@@ -151,7 +130,7 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   if (nalID == -1 && data.isEmpty())
   {
@@ -163,7 +142,7 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     }
     // The file ended
     std::sort(POCList.begin(), POCList.end());
-    return;
+    return false;
   }
 
   // Skip the NAL unit header
@@ -192,7 +171,8 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
 
   // Create a nal_unit and read the header
   nal_unit_avc nal_avc(nalStartEndPosFile, nalID);
-  nal_avc.parse_nal_unit_header(nalHeaderBytes, nalRoot);
+  if (!nal_avc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
+    return false;
 
   if (nal_avc.isSlice())
   {
@@ -214,11 +194,12 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     }
   }
 
+  bool parsingSuccess = true;
   if (nal_avc.nal_unit_type == SPS)
   {
     // A sequence parameter set
     auto new_sps = QSharedPointer<sps>(new sps(nal_avc));
-    new_sps->parse_sps(payload, nalRoot);
+    parsingSuccess = new_sps->parse_sps(payload, nalRoot);
 
     // Add sps (replace old one if existed)
     active_SPS_list.insert(new_sps->seq_parameter_set_id, new_sps);
@@ -227,9 +208,9 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     nalUnitList.append(new_sps);
 
     // Add the SPS ID
-    specificDescription = QString(" SPS_NUT ID %1").arg(new_sps->seq_parameter_set_id);
+    specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(new_sps->seq_parameter_set_id) : " SPS_NUT ERR";
     if (nalTypeName)
-      *nalTypeName = QString("SPS(%1)").arg(new_sps->seq_parameter_set_id);
+      *nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(new_sps->seq_parameter_set_id) : "SPS(ERR)";
 
     if (new_sps->vui_parameters.nal_hrd_parameters_present_flag || new_sps->vui_parameters.vcl_hrd_parameters_present_flag)
       CpbDpbDelaysPresentFlag = true;
@@ -238,7 +219,7 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
   {
     // A picture parameter set
     auto new_pps = QSharedPointer<pps>(new pps(nal_avc));
-    new_pps->parse_pps(payload, nalRoot, active_SPS_list);
+    parsingSuccess = new_pps->parse_pps(payload, nalRoot, active_SPS_list);
 
     // Add pps (replace old one if existed)
     active_PPS_list.insert(new_pps->pic_parameter_set_id, new_pps);
@@ -247,50 +228,53 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     nalUnitList.append(new_pps);
 
     // Add the PPS ID
-    specificDescription = QString(" PPS_NUT ID %1").arg(new_pps->pic_parameter_set_id);
+    specificDescription = parsingSuccess ? QString(" PPS_NUT ID %1").arg(new_pps->pic_parameter_set_id) : "PPS_NUT ERR";
     if (nalTypeName)
-      *nalTypeName = QString("PPS(%1)").arg(new_pps->seq_parameter_set_id);
+      *nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->seq_parameter_set_id) : "PPS(ERR)";
   }
   else if (nal_avc.isSlice())
   {
     // Create a new slice unit
     auto new_slice = QSharedPointer<slice_header>(new slice_header(nal_avc));
-    new_slice->parse_slice_header(payload, active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
+    parsingSuccess = new_slice->parse_slice_header(payload, active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
 
-    if (!new_slice->bottom_field_flag && 
+    if (parsingSuccess && !new_slice->bottom_field_flag && 
       (last_picture_first_slice.isNull() || new_slice->TopFieldOrderCnt != last_picture_first_slice->TopFieldOrderCnt || new_slice->isRandomAccess()) &&
       new_slice->first_mb_in_slice == 0)
       last_picture_first_slice = new_slice;
 
     // Add the POC of the slice
-    specificDescription = QString(" POC %1").arg(new_slice->globalPOC);
+    specificDescription = parsingSuccess ? QString(" POC %1").arg(new_slice->globalPOC) : " ERR";
     if (nalTypeName)
-      *nalTypeName = QString("Slice(POC-%1)").arg(new_slice->globalPOC);
+      *nalTypeName = parsingSuccess ? QString("Slice(POC-%1)").arg(new_slice->globalPOC) : "Slice(ERR)";
 
-    if (new_slice->first_mb_in_slice == 0)
-    {
-      // This slice NAL is the start of a new frame
-      if (curFramePOC != -1)
-      {
-        // Save the info of the last frame
-        addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
-        DEBUG_AVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
-      }
-      curFrameFileStartEndPos = nalStartEndPosFile;
-      curFramePOC = new_slice->globalPOC;
-      curFrameIsRandomAccess = new_slice->isRandomAccess();
-    }
-    else
-      // Another slice NAL which belongs to the last frame
-      // Update the end position
-      curFrameFileStartEndPos.second = nalStartEndPosFile.second;
-
-    if (nal_avc.isRandomAccess())
+    if (parsingSuccess)
     {
       if (new_slice->first_mb_in_slice == 0)
       {
-        // This is the first slice of a random access point. Add it to the list.
-        nalUnitList.append(new_slice);
+        // This slice NAL is the start of a new frame
+        if (curFramePOC != -1)
+        {
+          // Save the info of the last frame
+          addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
+          DEBUG_AVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+        }
+        curFrameFileStartEndPos = nalStartEndPosFile;
+        curFramePOC = new_slice->globalPOC;
+        curFrameIsRandomAccess = new_slice->isRandomAccess();
+      }
+      else
+        // Another slice NAL which belongs to the last frame
+        // Update the end position
+        curFrameFileStartEndPos.second = nalStartEndPosFile.second;
+
+      if (nal_avc.isRandomAccess())
+      {
+        if (new_slice->first_mb_in_slice == 0)
+        {
+          // This is the first slice of a random access point. Add it to the list.
+          nalUnitList.append(new_slice);
+        }
       }
     }
   }
@@ -307,6 +291,8 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
       
       // Parse the SEI header and remove it from the data array
       int nrBytes = new_sei->parse_sei_header(sei_data, message_tree);
+      if (nrBytes == -1)
+        return false;
       sei_data.remove(0, nrBytes);
 
       if (message_tree)
@@ -316,34 +302,40 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
       int realPayloadSize = determineRealNumberOfBytesSEIEmulationPrevention(sei_data, new_sei->payloadSize);
       QByteArray sub_sei_data = sei_data.mid(0, realPayloadSize);
 
+      parsingSuccess = true;
+      sei_parsing_return_t result;
+      QSharedPointer<sei> reparse;
       if (new_sei->payloadType == 0)
       {
         auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
-        if (new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, active_SPS_list, message_tree) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
-          reparse_sei.append(new_buffering_period_sei);
+        result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, active_SPS_list, message_tree);
+        reparse = new_buffering_period_sei;
       }
       else if (new_sei->payloadType == 1)
       {
         auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
-        if (new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, message_tree) == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
-          reparse_sei.append(new_pic_timing_sei);
+        result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, message_tree);
+        reparse = new_pic_timing_sei;
       }
       else if (new_sei->payloadType == 4)
       {
         auto new_user_data_registered_itu_t_t35_sei = QSharedPointer<user_data_registered_itu_t_t35_sei>(new user_data_registered_itu_t_t35_sei(new_sei));
-        new_user_data_registered_itu_t_t35_sei->parse_user_data_registered_itu_t_t35(sub_sei_data, message_tree);
+        result = new_user_data_registered_itu_t_t35_sei->parse_user_data_registered_itu_t_t35(sub_sei_data, message_tree);
       }
       else if (new_sei->payloadType == 5)
       {
         auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
-        new_user_data_sei->parse_user_data_sei(sub_sei_data, message_tree);
+        result = new_user_data_sei->parse_user_data_sei(sub_sei_data, message_tree);
       }
       else
-      {
         // The default parser just logs the raw bytes
-        new_sei->parser_sei_bytes(sub_sei_data, message_tree);
-      }
+        result = new_sei->parser_sei_bytes(sub_sei_data, message_tree);
       
+      if (result == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
+        reparse_sei.append(reparse);
+      if (result == SEI_PARSING_ERROR)
+        parsingSuccess = false;
+
       // Remove the sei payload bytes from the data
       sei_data.remove(0, realPayloadSize);
       if (sei_data.length() == 1)
@@ -355,14 +347,19 @@ void parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
       sei_count++;
     }
 
-    specificDescription = QString(" (#%1)").arg(sei_count);
+    specificDescription = parsingSuccess ? QString(" (#%1)").arg(sei_count) : QString(" (#%1-ERR)").arg(sei_count);
     if (nalTypeName)
-      *nalTypeName = QString("SEI(#%1)").arg(sei_count);
+      *nalTypeName = parsingSuccess ? QString("SEI(#%1)").arg(sei_count) : "SEI(ERR)";
   }
 
   if (nalRoot)
+  {
     // Set a useful name of the TreeItem (the root for this NAL)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_avc.nal_idx).arg(nal_unit_type_toString.value(nal_avc.nal_unit_type)) + specificDescription);
+    nalRoot->setError(!parsingSuccess);
+  }
+
+  return parsingSuccess;
 }
 
 const QStringList parserAnnexBAVC::nal_unit_type_toString = QStringList()
@@ -372,24 +369,15 @@ const QStringList parserAnnexBAVC::nal_unit_type_toString = QStringList()
 << "RESERVED_22" << "RESERVED_23" << "UNSPCIFIED_24" << "UNSPCIFIED_25" << "UNSPCIFIED_26" << "UNSPCIFIED_27" << "UNSPCIFIED_28" << "UNSPCIFIED_29" 
 << "UNSPCIFIED_30" << "UNSPCIFIED_31";
 
-void parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
+bool parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
 {
-  if (header_byte.length() != 1)
-    throw std::logic_error("The AVC header must have only one byte.");
-
   // Create a sub byte parser to access the bits
-  sub_byte_reader reader(header_byte);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("nal_unit_header()", root) : nullptr;
+  reader_helper reader(header_byte, root, "nal_unit_header()");
+  if (header_byte.length() != 1)
+    return reader.addErrorMessageChildItem("The AVC header must have only one byte.");
 
   // Read forbidden_zeor_bit
-  int forbidden_zero_bit;
-  READFLAG(forbidden_zero_bit);
-  if (forbidden_zero_bit != 0)
-    throw std::logic_error("The nal unit header forbidden zero bit was not zero.");
-
+  READZEROBITS(1, "forbidden_zero_bit");
   READBITS(nal_ref_idc, 2);
 
   QStringList nal_unit_type_id_meaning = QStringList()
@@ -421,10 +409,11 @@ void parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &head
   READBITS_M(nal_unit_type_id, 5, nal_unit_type_id_meaning);
 
   // Set the nal unit type
-  nal_unit_type = (nal_unit_type_id > UNSPCIFIED_31 || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type_enum)nal_unit_type_id;
+  nal_unit_type = (nal_unit_type_id > UNSPCIFIED_31) ? UNSPECIFIED : (nal_unit_type_enum)nal_unit_type_id;
+  return true;
 }
 
-void parserAnnexBAVC::read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree)
+bool parserAnnexBAVC::read_scaling_list(reader_helper &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag)
 {
   int lastScale = 8;
   int nextScale = 8;
@@ -440,16 +429,13 @@ void parserAnnexBAVC::read_scaling_list(sub_byte_reader &reader, int *scalingLis
     scalingList[j] = (nextScale == 0) ? lastScale : nextScale;
     lastScale = scalingList[j];
   }
+  return true;
 }
 
-void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
+bool parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
-  sub_byte_reader reader(parameterSetData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("seq_parameter_set_rbsp()", root) : nullptr;
+  reader_helper reader(parameterSetData, root, "seq_parameter_set_rbsp()");
 
   QMap<int, QString> meaningMap;
   meaningMap.insert(44, "CAVLC 4:4:4 Intra Profile");
@@ -473,17 +459,15 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   READBITS(level_idc, 8);
   READUEV(seq_parameter_set_id);
 
-  if ( profile_idc == 100 || profile_idc == 110 || profile_idc == 122 || profile_idc == 244 || profile_idc ==  44 || profile_idc ==  83 || 
-    profile_idc ==  86 || profile_idc == 118 || profile_idc == 128 || profile_idc == 138 || profile_idc == 139 || profile_idc == 134 )
+  if (profile_idc == 100 || profile_idc == 110 || profile_idc == 122 || profile_idc == 244 || profile_idc ==  44 || profile_idc ==  83 || 
+      profile_idc ==  86 || profile_idc == 118 || profile_idc == 128 || profile_idc == 138 || profile_idc == 139 || profile_idc == 134 )
   {
     QStringList chroma_format_idc_meaning = QStringList() << "moochrome" << "4:2:0" << "4:2:2" << "4:4:4" << "4:4:4";
     READUEV_M(chroma_format_idc, chroma_format_idc_meaning);
     if (chroma_format_idc > 3)
-      throw std::logic_error("The value of chroma_format_idc shall be in the range of 0 to 3, inclusive.");
+      return reader.addErrorMessageChildItem("The value of chroma_format_idc shall be in the range of 0 to 3, inclusive.");
     if (chroma_format_idc == 3)
-    {
       READFLAG(separate_colour_plane_flag);
-    }
     READUEV(bit_depth_luma_minus8);
     READUEV(bit_depth_chroma_minus8);
     READFLAG(qpprime_y_zero_transform_bypass_flag);
@@ -496,9 +480,15 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
         if (seq_scaling_list_present_flag[i])
         {
           if (i < 6)
-            read_scaling_list(reader, ScalingList4x4[i], 16, &UseDefaultScalingMatrix4x4Flag[i], itemTree);
+          {
+            if (!read_scaling_list(reader, ScalingList4x4[i], 16, &UseDefaultScalingMatrix4x4Flag[i]))
+              return false;
+          }
           else
-            read_scaling_list(reader, ScalingList8x8[i-6], 64, &UseDefaultScalingMatrix8x8Flag[i-6], itemTree);
+          {
+            if (!read_scaling_list(reader, ScalingList8x8[i-6], 64, &UseDefaultScalingMatrix8x8Flag[i-6]))
+              return false;
+          }
         }
       }
     }
@@ -508,9 +498,9 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   READUEV(pic_order_cnt_type);
   if (pic_order_cnt_type == 0)
   {
-    READUEV(log2_max_pic_order_cnt_lsb_minus4)
-      if (log2_max_pic_order_cnt_lsb_minus4 > 12)
-        throw std::logic_error("The value of log2_max_pic_order_cnt_lsb_minus4 shall be in the range of 0 to 12, inclusive.");
+    READUEV(log2_max_pic_order_cnt_lsb_minus4);
+    if (log2_max_pic_order_cnt_lsb_minus4 > 12)
+      return reader.addErrorMessageChildItem("The value of log2_max_pic_order_cnt_lsb_minus4 shall be in the range of 0 to 12, inclusive.");
     MaxPicOrderCntLsb = 1 << (log2_max_pic_order_cnt_lsb_minus4 + 4);
   }
   else if (pic_order_cnt_type == 1)
@@ -519,8 +509,8 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
     READSEV(offset_for_non_ref_pic);
     READSEV(offset_for_top_to_bottom_field);
     READUEV(num_ref_frames_in_pic_order_cnt_cycle);
-    for(int i=0; i<num_ref_frames_in_pic_order_cnt_cycle; i++)
-      READSEV(offset_for_ref_frame[i])
+    for(unsigned int i=0; i < num_ref_frames_in_pic_order_cnt_cycle; i++)
+      READSEV(offset_for_ref_frame[i]);
   }
 
   READUEV(max_num_ref_frames);
@@ -533,16 +523,16 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
 
   READFLAG(direct_8x8_inference_flag);
   if (!frame_mbs_only_flag && !direct_8x8_inference_flag)
-    throw std::logic_error("When frame_mbs_only_flag is equal to 0, direct_8x8_inference_flag shall be equal to 1.");
+    return reader.addErrorMessageChildItem("When frame_mbs_only_flag is equal to 0, direct_8x8_inference_flag shall be equal to 1.");
 
-  READFLAG(frame_cropping_flag)
-    if (frame_cropping_flag)
-    {
-      READUEV(frame_crop_left_offset);
-      READUEV(frame_crop_right_offset);
-      READUEV(frame_crop_top_offset);
-      READUEV(frame_crop_bottom_offset);
-    }
+  READFLAG(frame_cropping_flag);
+  if (frame_cropping_flag)
+  {
+    READUEV(frame_crop_left_offset);
+    READUEV(frame_crop_right_offset);
+    READUEV(frame_crop_top_offset);
+    READUEV(frame_crop_bottom_offset);
+  }
 
   // Calculate some values
   BitDepthY = 8 + bit_depth_luma_minus8;
@@ -559,9 +549,8 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   PicSizeInMbs = PicWidthInMbs * PicHeightInMbs;
   SubWidthC = (chroma_format_idc == 3) ? 1 : 2;
   SubHeightC = (chroma_format_idc == 1) ? 2 : 1;
-  if (chroma_format_idc == 0)
+  if (chroma_format_idc == 0) // Monochrome
   {
-    // Monochrome
     MbHeightC = 0;
     MbWidthC = 0;
   }
@@ -587,12 +576,12 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   if (ChromaArrayType == 0)
   {
     CropUnitX = 1;
-    CropUnitY = 2 - frame_mbs_only_flag;
+    CropUnitY = 2 - (frame_mbs_only_flag ? 1 : 0);
   }
   else
   {
     CropUnitX = SubWidthC;
-    CropUnitY = SubHeightC * (2 - frame_mbs_only_flag);
+    CropUnitY = SubHeightC * (2 - (frame_mbs_only_flag ? 1 : 0));
   }
 
   // Calculate the cropping rectangle
@@ -606,7 +595,7 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   if (pic_order_cnt_type == 1)
   {
     // (7-12)
-    for (int i = 0; i < num_ref_frames_in_pic_order_cnt_cycle; i++ ) 
+    for (unsigned int i = 0; i < num_ref_frames_in_pic_order_cnt_cycle; i++ ) 
       ExpectedDeltaPerPicOrderCntCycle += offset_for_ref_frame[i];
   }
   // 7-10
@@ -615,7 +604,8 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   // Parse the VUI
   READFLAG(vui_parameters_present_flag);
   if (vui_parameters_present_flag)
-    vui_parameters.read(reader, itemTree, BitDepthY, BitDepthC, chroma_format_idc, frame_mbs_only_flag);
+    if (!vui_parameters.parse_vui(reader, BitDepthY, BitDepthC, chroma_format_idc, frame_mbs_only_flag))
+      return false;
    
   // Log all the calculated values
   LOGVAL(BitDepthY);
@@ -645,9 +635,11 @@ void parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   LOGVAL(PicCropHeight);
   LOGVAL(MbaffFrameFlag);
   LOGVAL(MaxFrameNum);
+
+  return true;
 }
 
-void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree, int BitDepthY, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag)
+bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(reader_helper &reader, int BitDepthY, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag)
 {
   READFLAG(aspect_ratio_info_present_flag);
   if (aspect_ratio_info_present_flag) 
@@ -724,18 +716,18 @@ void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, 
         << "For future use by ITU-T | ISO/IEC";
       READBITS_M(matrix_coefficients, 8, matrix_coefficients_meaning);
       if ((BitDepthC != BitDepthY || chroma_format_idc != 3) && matrix_coefficients == 0)
-        throw std::logic_error("matrix_coefficients shall not be equal to 0 unless both of the following conditions are true: 1 BitDepthC is equal to BitDepthY, 2 chroma_format_idc is equal to 3 (4:4:4).");
+        return reader.addErrorMessageChildItem("matrix_coefficients shall not be equal to 0 unless both of the following conditions are true: 1 BitDepthC is equal to BitDepthY, 2 chroma_format_idc is equal to 3 (4:4:4).");
     }
   }
   READFLAG(chroma_loc_info_present_flag);
   if (chroma_format_idc != 1 && !chroma_loc_info_present_flag)
-    throw std::logic_error("When chroma_format_idc is not equal to 1, chroma_loc_info_present_flag should be equal to 0.");
+    return reader.addErrorMessageChildItem("When chroma_format_idc is not equal to 1, chroma_loc_info_present_flag should be equal to 0.");
   if (chroma_loc_info_present_flag)
   {
     READUEV(chroma_sample_loc_type_top_field);
     READUEV(chroma_sample_loc_type_bottom_field);
     if (chroma_sample_loc_type_top_field > 5 || chroma_sample_loc_type_bottom_field > 5)
-      throw std::logic_error("The value of chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field shall be in the range of 0 to 5, inclusive.");
+      return reader.addErrorMessageChildItem("The value of chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field shall be in the range of 0 to 5, inclusive.");
   }
   READFLAG(timing_info_present_flag);
   if (timing_info_present_flag)
@@ -743,7 +735,7 @@ void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, 
     READBITS(num_units_in_tick, 32);
     READBITS(time_scale, 32);
     if (time_scale == 0)
-      throw std::logic_error("time_scale shall be greater than 0.");
+      return reader.addErrorMessageChildItem("time_scale shall be greater than 0.");
     READFLAG(fixed_frame_rate_flag);
 
     frameRate = (double)time_scale / (double)num_units_in_tick;
@@ -754,21 +746,23 @@ void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, 
 
   READFLAG(nal_hrd_parameters_present_flag);
   if (nal_hrd_parameters_present_flag)
-    nal_hrd.read(reader, itemTree);
+    if (!nal_hrd.parse_hrd(reader))
+      return false;
   READFLAG(vcl_hrd_parameters_present_flag);
   if (vcl_hrd_parameters_present_flag)
-    vcl_hrd.read(reader, itemTree);
+    if (vcl_hrd.parse_hrd(reader))
+      return false;
 
   if (nal_hrd_parameters_present_flag && vcl_hrd_parameters_present_flag)
   {
     if (nal_hrd.initial_cpb_removal_delay_length_minus1 != vcl_hrd.initial_cpb_removal_delay_length_minus1)
-      throw std::logic_error("Shall be equal.");
+      return reader.addErrorMessageChildItem("initial_cpb_removal_delay_length_minus1 and initial_cpb_removal_delay_length_minus1 shall be equal.");
     if (nal_hrd.cpb_removal_delay_length_minus1 != vcl_hrd.cpb_removal_delay_length_minus1)
-      throw std::logic_error("Shall be equal.");
+      return reader.addErrorMessageChildItem("cpb_removal_delay_length_minus1 and cpb_removal_delay_length_minus1 shall be equal.");
     if (nal_hrd.dpb_output_delay_length_minus1 != vcl_hrd.dpb_output_delay_length_minus1)
-      throw std::logic_error("Shall be equal.");
+      return reader.addErrorMessageChildItem("dpb_output_delay_length_minus1 and dpb_output_delay_length_minus1 shall be equal.");
     if (nal_hrd.time_offset_length != vcl_hrd.time_offset_length)
-      throw std::logic_error("Shall be equal.");
+      return reader.addErrorMessageChildItem("time_offset_length and time_offset_length shall be equal.");
   }
 
   if (nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
@@ -785,51 +779,50 @@ void parserAnnexBAVC::sps::vui_parameters_struct::read(sub_byte_reader &reader, 
     READUEV(max_num_reorder_frames);
     READUEV(max_dec_frame_buffering);
   }
+  return true;
 }
 
-void parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree)
+bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_hrd(reader_helper &reader)
 {
   READUEV(cpb_cnt_minus1);
   if (cpb_cnt_minus1 > 31)
-    throw std::logic_error("The value of cpb_cnt_minus1 shall be in the range of 0 to 31, inclusive.");
+    return reader.addErrorMessageChildItem("The value of cpb_cnt_minus1 shall be in the range of 0 to 31, inclusive.");
   READBITS(bit_rate_scale, 4);
   READBITS(cpb_size_scale, 4);
-  for (int SchedSelIdx = 0; SchedSelIdx <= cpb_cnt_minus1; SchedSelIdx++)
+  for (unsigned int SchedSelIdx = 0; SchedSelIdx <= cpb_cnt_minus1; SchedSelIdx++)
   {
     READUEV_A(bit_rate_value_minus1, SchedSelIdx);
     quint32 val_max = 4294967294; // 2^32-2
     if (bit_rate_value_minus1[SchedSelIdx] > val_max)
-      throw std::logic_error("bit_rate_value_minus1[ SchedSelIdx ] shall be in the range of 0 to 2^32-2, inclusive.");
+      return reader.addErrorMessageChildItem("bit_rate_value_minus1[ SchedSelIdx ] shall be in the range of 0 to 2^32-2, inclusive.");
     READUEV_A(cpb_size_value_minus1, SchedSelIdx);
     if (cpb_size_value_minus1[SchedSelIdx] > val_max)
-      throw std::logic_error("cpb_size_value_minus1[ SchedSelIdx ] shall be in the range of 0 to 2^32-2, inclusive.");
+      return reader.addErrorMessageChildItem("cpb_size_value_minus1[ SchedSelIdx ] shall be in the range of 0 to 2^32-2, inclusive.");
     READFLAG_A(cbr_flag, SchedSelIdx);
   }
   READBITS(initial_cpb_removal_delay_length_minus1, 5);
   READBITS(cpb_removal_delay_length_minus1, 5);
   READBITS(dpb_output_delay_length_minus1, 5);
   READBITS(time_offset_length, 5);
+
+  return true;
 }
 
-void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list)
+bool parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list)
 {
   nalPayload = parameterSetData;
-  sub_byte_reader reader(parameterSetData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("pic_parameter_set_rbsp()", root) : nullptr;
+  reader_helper reader(parameterSetData, root, "pic_parameter_set_rbsp()");
 
   READUEV(pic_parameter_set_id);
   if (pic_parameter_set_id > 255)
-    throw std::logic_error("The value of pic_parameter_set_id shall be in the range of 0 to 255, inclusive.");
+    return reader.addErrorMessageChildItem("The value of pic_parameter_set_id shall be in the range of 0 to 255, inclusive.");
   READUEV(seq_parameter_set_id);
   if (seq_parameter_set_id > 31)
-    throw std::logic_error("The value of seq_parameter_set_id shall be in the range of 0 to 31, inclusive.");
+    return reader.addErrorMessageChildItem("The value of seq_parameter_set_id shall be in the range of 0 to 31, inclusive.");
 
   // Get the referenced sps
   if (!active_SPS_list.contains(seq_parameter_set_id))
-    throw std::logic_error("The signaled SPS was not found in the bitstream.");
+    return reader.addErrorMessageChildItem("The signaled SPS was not found in the bitstream.");
   auto refSPS = active_SPS_list.value(seq_parameter_set_id);
 
   QStringList entropy_coding_mode_flag_meaning = QStringList() << "CAVLC" << "CABAC";
@@ -840,14 +833,14 @@ void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIte
   {
     READUEV(slice_group_map_type);
     if (slice_group_map_type > 6)
-      throw std::logic_error("The value of slice_group_map_type shall be in the range of 0 to 6, inclusive.");
+      reader.addErrorMessageChildItem("The value of slice_group_map_type shall be in the range of 0 to 6, inclusive.");
     if (slice_group_map_type == 0)
-      for(int iGroup = 0; iGroup <= num_slice_groups_minus1; iGroup++ )
-      {
+    {
+      for(unsigned int iGroup = 0; iGroup <= num_slice_groups_minus1; iGroup++ )
         READUEV(run_length_minus1[iGroup]);
-      }
+    }
     else if (slice_group_map_type == 2)
-      for(int iGroup = 0; iGroup < num_slice_groups_minus1; iGroup++) 
+      for(unsigned int iGroup = 0; iGroup < num_slice_groups_minus1; iGroup++) 
       {
         READUEV(top_left[iGroup]);
         READUEV(bottom_right[iGroup]);
@@ -861,7 +854,7 @@ void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIte
     else if (slice_group_map_type == 6)
     {
       READUEV(pic_size_in_map_units_minus1);
-      for(int i = 0; i <= pic_size_in_map_units_minus1; i++)
+      for(unsigned int i = 0; i <= pic_size_in_map_units_minus1; i++)
       {
         int nrBits = ceil(log2(num_slice_groups_minus1 + 1));
         READBITS_A(slice_group_id, nrBits, i);
@@ -870,23 +863,23 @@ void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIte
   }
   READUEV(num_ref_idx_l0_default_active_minus1);
   if (num_ref_idx_l0_default_active_minus1 > 31)
-    throw std::logic_error("The value of num_ref_idx_l0_default_active_minus1 shall be in the range of 0 to 31, inclusive.");
+    return reader.addErrorMessageChildItem("The value of num_ref_idx_l0_default_active_minus1 shall be in the range of 0 to 31, inclusive.");
   READUEV(num_ref_idx_l1_default_active_minus1);
   if (num_ref_idx_l1_default_active_minus1 > 31)
-    throw std::logic_error("The value of num_ref_idx_l1_default_active_minus1 shall be in the range of 0 to 31, inclusive.");
+    return reader.addErrorMessageChildItem("The value of num_ref_idx_l1_default_active_minus1 shall be in the range of 0 to 31, inclusive.");
   READFLAG(weighted_pred_flag);
   READBITS(weighted_bipred_idc, 2);
   if (weighted_bipred_idc > 2)
-    throw std::logic_error("The value of weighted_bipred_idc shall be in the range of 0 to 2, inclusive.");
+    return reader.addErrorMessageChildItem("The value of weighted_bipred_idc shall be in the range of 0 to 2, inclusive.");
   READSEV(pic_init_qp_minus26);
-  if (pic_init_qp_minus26 < -(26 + refSPS->QpBdOffsetY) || pic_init_qp_minus26 > 25)
-    throw std::logic_error("The value of pic_init_qp_minus26 shall be in the range of -(26 + QpBdOffsetY ) to +25, inclusive.");
+  if (pic_init_qp_minus26 < -(26 + (int)refSPS->QpBdOffsetY) || pic_init_qp_minus26 > 25)
+    return reader.addErrorMessageChildItem("The value of pic_init_qp_minus26 shall be in the range of -(26 + QpBdOffsetY ) to +25, inclusive.");
   READSEV(pic_init_qs_minus26);
   if (pic_init_qs_minus26 < -26 || pic_init_qs_minus26 > 25)
-    throw std::logic_error("The value of pic_init_qs_minus26 shall be in the range of -26 to +25, inclusive.");
+    return reader.addErrorMessageChildItem("The value of pic_init_qs_minus26 shall be in the range of -26 to +25, inclusive.");
   READSEV(chroma_qp_index_offset);
   if (chroma_qp_index_offset < -12 || chroma_qp_index_offset > 12)
-    throw std::logic_error("The value of chroma_qp_index_offset shall be in the range of -12 to +12, inclusive.");
+    return reader.addErrorMessageChildItem("The value of chroma_qp_index_offset shall be in the range of -12 to +12, inclusive.");
   READFLAG(deblocking_filter_control_present_flag);
   READFLAG(constrained_intra_pred_flag);
   READFLAG(redundant_pic_cnt_present_flag);
@@ -901,26 +894,28 @@ void parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIte
         if (pic_scaling_list_present_flag[i])
         {
           if (i < 6)
-            read_scaling_list(reader, ScalingList4x4[i], 16, &UseDefaultScalingMatrix4x4Flag[i], itemTree);
+          {
+            if (!read_scaling_list(reader, ScalingList4x4[i], 16, &UseDefaultScalingMatrix4x4Flag[i]))
+              return false;
+          }
           else
-            read_scaling_list(reader, ScalingList8x8[i-6], 64, &UseDefaultScalingMatrix8x8Flag[i-6], itemTree);  
+          {
+            if (!read_scaling_list(reader, ScalingList8x8[i-6], 64, &UseDefaultScalingMatrix8x8Flag[i-6]))
+              return false;
+          }
         }
       }
     READSEV(second_chroma_qp_index_offset);
     if (second_chroma_qp_index_offset < -12 || second_chroma_qp_index_offset > 12)
-      throw std::logic_error("The value of second_chroma_qp_index_offset shall be in the range of -12 to +12, inclusive.");
+      return reader.addErrorMessageChildItem("The value of second_chroma_qp_index_offset shall be in the range of -12 to +12, inclusive.");
   }
-
   // rbsp_trailing_bits( )
+  return true;
 }
 
-void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
+bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
 {
-  sub_byte_reader reader(sliceHeaderData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("slice_header()", root) : nullptr;
+  reader_helper reader(sliceHeaderData, root, "slice_header()");
 
   READUEV(first_mb_in_slice);
   QStringList slice_type_id_meaning = QStringList() 
@@ -933,10 +928,10 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   READUEV(pic_parameter_set_id);
   // Get the referenced SPS and PPS
   if (!active_PPS_list.contains(pic_parameter_set_id))
-    throw std::logic_error("The signaled PPS was not found in the bitstream.");
+    return reader.addErrorMessageChildItem("The signaled PPS was not found in the bitstream.");
   auto refPPS = active_PPS_list.value(pic_parameter_set_id);
   if (!active_SPS_list.contains(refPPS->seq_parameter_set_id))
-    throw std::logic_error("The signaled SPS was not found in the bitstream.");
+    return reader.addErrorMessageChildItem("The signaled SPS was not found in the bitstream.");
   auto refSPS = active_SPS_list.value(refPPS->seq_parameter_set_id);
 
   if (refSPS->separate_colour_plane_flag)
@@ -950,9 +945,9 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     READFLAG(field_pic_flag);
     if (field_pic_flag)
     {
-      READFLAG(bottom_field_flag)
-        // Update 
-        refSPS->MbaffFrameFlag = (refSPS->mb_adaptive_frame_field_flag && !field_pic_flag);
+      READFLAG(bottom_field_flag);
+      // Update 
+      refSPS->MbaffFrameFlag = (refSPS->mb_adaptive_frame_field_flag && !field_pic_flag);
       refSPS->PicHeightInMbs = refSPS->FrameHeightInMbs / 2;
       refSPS->PicSizeInMbs = refSPS->PicWidthInMbs * refSPS->PicHeightInMbs;
     }
@@ -963,13 +958,13 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   {
     firstMacroblockAddressInSlice = first_mb_in_slice;
     if (first_mb_in_slice > refSPS->PicSizeInMbs - 1)
-      throw std::logic_error("first_mb_in_slice shall be in the range of 0 to PicSizeInMbs - 1, inclusive");
+      return reader.addErrorMessageChildItem("first_mb_in_slice shall be in the range of 0 to PicSizeInMbs - 1, inclusive");
   }
   else
   {
     firstMacroblockAddressInSlice = first_mb_in_slice * 2;
     if (first_mb_in_slice > refSPS->PicSizeInMbs / 2 - 1)
-      throw std::logic_error("first_mb_in_slice shall be in the range of 0 to PicSizeInMbs / 2 - 1, inclusive.");
+      return reader.addErrorMessageChildItem("first_mb_in_slice shall be in the range of 0 to PicSizeInMbs / 2 - 1, inclusive.");
   }
   LOGVAL(firstMacroblockAddressInSlice);
 
@@ -977,14 +972,14 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   {
     READUEV(idr_pic_id);
     if (idr_pic_id > 65535)
-      throw std::logic_error("The value of idr_pic_id shall be in the range of 0 to 65535, inclusive.");
+      return reader.addErrorMessageChildItem("The value of idr_pic_id shall be in the range of 0 to 65535, inclusive.");
   }
   if (refSPS->pic_order_cnt_type == 0)
   {
     int nrBits = refSPS->log2_max_pic_order_cnt_lsb_minus4 + 4;
     READBITS(pic_order_cnt_lsb, nrBits);
     if (pic_order_cnt_lsb > refSPS->MaxPicOrderCntLsb - 1)
-      throw std::logic_error("The value of the pic_order_cnt_lsb shall be in the range of 0 to MaxPicOrderCntLsb - 1, inclusive.");
+      return reader.addErrorMessageChildItem("The value of the pic_order_cnt_lsb shall be in the range of 0 to MaxPicOrderCntLsb - 1, inclusive.");
     if (refPPS->bottom_field_pic_order_in_frame_present_flag && !field_pic_flag)
       READSEV(delta_pic_order_cnt_bottom);
   }
@@ -1015,19 +1010,25 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     }
   }
   if (nal_unit_type == CODED_SLICE_EXTENSION || nal_unit_type == CODED_SLICE_EXTENSION_DEPTH_MAP)
-    ref_pic_list_mvc_modification.read(reader, itemTree, slice_type); /* specified in Annex H */
+  {
+    if (!ref_pic_list_mvc_modification.parse_ref_pic_list_mvc_modification(reader, slice_type)) /* specified in Annex H */
+      return false;
+  }
   else
-    ref_pic_list_modification.read(reader, itemTree, slice_type);
+    if (!ref_pic_list_modification.parse_ref_pic_list_modification(reader, slice_type))
+      return false;
   if ((refPPS->weighted_pred_flag && (slice_type == SLICE_P || slice_type == SLICE_SP)) || 
     (refPPS->weighted_bipred_idc == 1 && slice_type == SLICE_B))
-    pred_weight_table.read(reader, itemTree, slice_type, refSPS->ChromaArrayType, num_ref_idx_l0_active_minus1, num_ref_idx_l1_active_minus1);
+    if (!pred_weight_table.parse_pred_weight_table(reader, slice_type, refSPS->ChromaArrayType, num_ref_idx_l0_active_minus1, num_ref_idx_l1_active_minus1))
+      return false;
   if (nal_ref_idc != 0)
-    dec_ref_pic_marking.read(reader, itemTree, IdrPicFlag);
+    if (!dec_ref_pic_marking.parse_dec_ref_pic_marking(reader, IdrPicFlag))
+      return false;
   if (refPPS->entropy_coding_mode_flag && slice_type != SLICE_I && slice_type != SLICE_SI)
   {
     READUEV(cabac_init_idc);
     if (cabac_init_idc > 2)
-      throw std::logic_error("The value of cabac_init_idc shall be in the range of 0 to 2, inclusive.");
+      return reader.addErrorMessageChildItem("The value of cabac_init_idc shall be in the range of 0 to 2, inclusive.");
   }
   READSEV(slice_qp_delta);
   if (slice_type == SLICE_SP || slice_type == SLICE_SI)
@@ -1065,7 +1066,7 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     else
     {
       if (prev_pic.isNull())
-        throw std::logic_error("This is not an IDR picture but there is no previous picture available. Can not calculate POC.");
+        return reader.addErrorMessageChildItem("This is not an IDR picture (IdrPicFlag not set) but there is no previous picture available. Can not calculate POC.");
 
       if (first_mb_in_slice == 0)
       {
@@ -1097,9 +1098,9 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
       }
     }
 
-    if((pic_order_cnt_lsb < prevPicOrderCntLsb) && ((prevPicOrderCntLsb - pic_order_cnt_lsb) >= (refSPS->MaxPicOrderCntLsb / 2)))
+    if(((int)pic_order_cnt_lsb < prevPicOrderCntLsb) && ((prevPicOrderCntLsb - pic_order_cnt_lsb) >= (refSPS->MaxPicOrderCntLsb / 2)))
       PicOrderCntMsb = prevPicOrderCntMsb + refSPS->MaxPicOrderCntLsb;
-    else if ((pic_order_cnt_lsb > prevPicOrderCntLsb) && ((pic_order_cnt_lsb - prevPicOrderCntLsb) > (refSPS->MaxPicOrderCntLsb / 2)))
+    else if (((int)pic_order_cnt_lsb > prevPicOrderCntLsb) && ((pic_order_cnt_lsb - prevPicOrderCntLsb) > (refSPS->MaxPicOrderCntLsb / 2)))
       PicOrderCntMsb = prevPicOrderCntMsb - refSPS->MaxPicOrderCntLsb;
     else 
       PicOrderCntMsb = prevPicOrderCntMsb;
@@ -1115,8 +1116,8 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   else
   {
     if (!IdrPicFlag && prev_pic.isNull())
-      throw std::logic_error("This is not an IDR picture but there is no previous picture available. Can not calculate POC.");
-
+      return reader.addErrorMessageChildItem("This is not an IDR picture (IdrPicFlag not set) but there is no previous picture available. Can not calculate POC.");
+    
     int prevFrameNum = -1;
     if (!prev_pic.isNull())
       prevFrameNum = prev_pic->frame_num;
@@ -1134,7 +1135,7 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     // (8-6), (8-11)
     if(IdrPicFlag)
       FrameNumOffset = 0;
-    else if (prevFrameNum > frame_num)
+    else if (prevFrameNum > (int)frame_num)
       FrameNumOffset = prevFrameNumOffset + refSPS->MaxFrameNum;
     else 
       FrameNumOffset = prevFrameNumOffset;
@@ -1240,14 +1241,15 @@ void parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
       DEBUG_AVC("POC - first slice - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
     }
   }
+  return true;
 }
 
-void parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type)
+bool parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::parse_ref_pic_list_mvc_modification(reader_helper & reader, slice_type_enum slice_type)
 {
   if (slice_type != SLICE_I && slice_type != SLICE_SI)
   {
     READFLAG(ref_pic_list_modification_flag_l0);
-    int modification_of_pic_nums_idc;
+    unsigned int modification_of_pic_nums_idc;
     if (ref_pic_list_modification_flag_l0)
       do 
       {
@@ -1255,19 +1257,19 @@ void parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::read(s
         modification_of_pic_nums_idc_l0.append(modification_of_pic_nums_idc);
         if (modification_of_pic_nums_idc == 0 || modification_of_pic_nums_idc == 1)
         {
-          int abs_diff_pic_num_minus1;
+          unsigned int abs_diff_pic_num_minus1;
           READUEV(abs_diff_pic_num_minus1);
           abs_diff_pic_num_minus1_l0.append(abs_diff_pic_num_minus1);
         }
         else if (modification_of_pic_nums_idc == 2)
         {
-          int long_term_pic_num;
+          unsigned int long_term_pic_num;
           READUEV(long_term_pic_num);
           long_term_pic_num_l0.append(long_term_pic_num);
         }
         else if (modification_of_pic_nums_idc == 4 || modification_of_pic_nums_idc == 5)
         {
-          int abs_diff_view_idx_minus1;
+          unsigned int abs_diff_view_idx_minus1;
           READUEV(abs_diff_view_idx_minus1);
           abs_diff_view_idx_minus1_l0.append(abs_diff_view_idx_minus1);
         }
@@ -1276,7 +1278,7 @@ void parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::read(s
   if (slice_type == SLICE_B) 
   {
     READFLAG(ref_pic_list_modification_flag_l1);
-    int modification_of_pic_nums_idc;
+    unsigned int modification_of_pic_nums_idc;
     if (ref_pic_list_modification_flag_l1)
       do 
       {
@@ -1284,32 +1286,33 @@ void parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::read(s
         modification_of_pic_nums_idc_l1.append(modification_of_pic_nums_idc);
         if (modification_of_pic_nums_idc == 0 || modification_of_pic_nums_idc == 1)
         {
-          int abs_diff_pic_num_minus1;
+          unsigned int abs_diff_pic_num_minus1;
           READUEV(abs_diff_pic_num_minus1);
           abs_diff_pic_num_minus1_l1.append(abs_diff_pic_num_minus1);
         }
         else if (modification_of_pic_nums_idc == 2)
         {
-          int long_term_pic_num;
+          unsigned int long_term_pic_num;
           READUEV(long_term_pic_num);
           long_term_pic_num_l1.append(long_term_pic_num);
         }
         else if (modification_of_pic_nums_idc == 4 || modification_of_pic_nums_idc == 5)
         {
-          int abs_diff_view_idx_minus1;
+          unsigned int abs_diff_view_idx_minus1;
           READUEV(abs_diff_view_idx_minus1);
           abs_diff_view_idx_minus1_l1.append(abs_diff_view_idx_minus1);
         }
       } while(modification_of_pic_nums_idc != 3);
   }
+  return true;
 }
 
-void parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type)
+bool parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::parse_ref_pic_list_modification(reader_helper & reader, slice_type_enum slice_type)
 {
   if (slice_type != SLICE_I && slice_type != SLICE_SI)
   {
     READFLAG(ref_pic_list_modification_flag_l0);
-    int modification_of_pic_nums_idc;
+    unsigned int modification_of_pic_nums_idc;
     if (ref_pic_list_modification_flag_l0)
       do 
       { 
@@ -1317,13 +1320,13 @@ void parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::read(sub_b
         modification_of_pic_nums_idc_l0.append(modification_of_pic_nums_idc);
         if (modification_of_pic_nums_idc == 0 || modification_of_pic_nums_idc == 1)
         {
-          int abs_diff_pic_num_minus1;
+          unsigned int abs_diff_pic_num_minus1;
           READUEV(abs_diff_pic_num_minus1);
           abs_diff_pic_num_minus1_l0.append(abs_diff_pic_num_minus1);
         }
         else if (modification_of_pic_nums_idc == 2)
         {
-          int long_term_pic_num;
+          unsigned int long_term_pic_num;
           READUEV(long_term_pic_num);
           long_term_pic_num_l0.append(long_term_pic_num);
         }
@@ -1332,7 +1335,7 @@ void parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::read(sub_b
   if (slice_type == 1) 
   {
     READFLAG(ref_pic_list_modification_flag_l1);
-    int modification_of_pic_nums_idc;
+    unsigned int modification_of_pic_nums_idc;
     if (ref_pic_list_modification_flag_l1)
       do 
       {
@@ -1340,21 +1343,22 @@ void parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::read(sub_b
         modification_of_pic_nums_idc_l1.append(modification_of_pic_nums_idc);
         if (modification_of_pic_nums_idc == 0 || modification_of_pic_nums_idc == 1)
         {
-          int abs_diff_pic_num_minus1;
+          unsigned int abs_diff_pic_num_minus1;
           READUEV(abs_diff_pic_num_minus1);
           abs_diff_pic_num_minus1_l1.append(abs_diff_pic_num_minus1);
         }
         else if (modification_of_pic_nums_idc == 2)
         {
-          int long_term_pic_num;
+          unsigned int long_term_pic_num;
           READUEV(long_term_pic_num);
           long_term_pic_num_l1.append(long_term_pic_num);
         }
       } while (modification_of_pic_nums_idc != 3);
   }
+  return true;
 }
 
-void parserAnnexBAVC::slice_header::pred_weight_table_struct::read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slice_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1)
+bool parserAnnexBAVC::slice_header::pred_weight_table_struct::parse_pred_weight_table(reader_helper & reader, slice_type_enum slice_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1)
 {
   READUEV(luma_log2_weight_denom);
   if (ChromaArrayType != 0)
@@ -1406,10 +1410,10 @@ void parserAnnexBAVC::slice_header::pred_weight_table_struct::read(sub_byte_read
           }
       }
     }
+  return true;
 }
 
-
-void parserAnnexBAVC::slice_header::dec_ref_pic_marking_struct::read(sub_byte_reader & reader, TreeItem * itemTree, bool IdrPicFlag)
+bool parserAnnexBAVC::slice_header::dec_ref_pic_marking_struct::parse_dec_ref_pic_marking(reader_helper & reader, bool IdrPicFlag)
 {
   if (IdrPicFlag)
   {
@@ -1419,22 +1423,23 @@ void parserAnnexBAVC::slice_header::dec_ref_pic_marking_struct::read(sub_byte_re
   else
   {
     READFLAG(adaptive_ref_pic_marking_mode_flag);
-    int memory_management_control_operation;
+    unsigned int memory_management_control_operation;
     if (adaptive_ref_pic_marking_mode_flag)
       do 
       {
-        READUEV(memory_management_control_operation)
-          memory_management_control_operation_list.append(memory_management_control_operation);
+        READUEV(memory_management_control_operation);
+        memory_management_control_operation_list.append(memory_management_control_operation);
         if (memory_management_control_operation == 1 || memory_management_control_operation == 3)
-          READUEV_APP(difference_of_pic_nums_minus1)
-          if (memory_management_control_operation == 2)
-            READUEV_APP(long_term_pic_num);
+          READUEV_APP(difference_of_pic_nums_minus1);
+        if (memory_management_control_operation == 2)
+          READUEV_APP(long_term_pic_num);
         if (memory_management_control_operation == 3 || memory_management_control_operation == 6)
           READUEV_APP(long_term_frame_idx);
         if (memory_management_control_operation == 4)
           READUEV_APP(max_long_term_frame_idx_plus1);
       } while (memory_management_control_operation != 0);
   }
+  return true;
 }
 
 QByteArray parserAnnexBAVC::nal_unit_avc::getNALHeader() const
@@ -1448,36 +1453,22 @@ QByteArray parserAnnexBAVC::nal_unit_avc::getNALHeader() const
 
 int parserAnnexBAVC::sei::parse_sei_header(QByteArray &sliceHeaderData, TreeItem *root)
 {
-  sub_byte_reader reader(sliceHeaderData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("sei_message()", root) : nullptr;
+  reader_helper reader(sliceHeaderData, root, "sei_message()");
 
   payloadType = 0;
-
-  // Read byte by byte
-  int byte;
-  QString code;
-  byte = reader.readBits(8, &code);
-  while (byte == 255) // 0xFF
   {
-    payloadType += 255;
+    QMap<int, QString> variableNames;
+    variableNames.insert(255, "ff_byte");
+    variableNames.insert(-1, "last_payload_type_byte");
+    unsigned int byte;
+    do
+    {
+      if (!reader.readBits(8, byte, variableNames))
+        return -1;
 
-    if (itemTree) 
-      new TreeItem("ff_byte", byte, QString("f(8)"), code, itemTree);
-
-    // Read the next byte
-    code.clear();
-    byte = reader.readBits(8, &code);
+      payloadType += byte;
+    } while (byte == 255);
   }
-
-  // The next byte is not 255 (0xFF)
-  last_payload_type_byte = byte;
-  if (itemTree) 
-    new TreeItem("last_payload_type_byte", byte, QString("u(8)"), code, itemTree);
-
-  payloadType += last_payload_type_byte;
 
   if (payloadType == 0)
     payloadTypeName = "buffering_period";
@@ -1595,37 +1586,28 @@ int parserAnnexBAVC::sei::parse_sei_header(QByteArray &sliceHeaderData, TreeItem
   LOGVAL_M(payloadType,payloadTypeName);
 
   payloadSize = 0;
-
-  // Read the next byte
-  code.clear();
-  byte = reader.readBits(8, &code);
-  while (byte == 255) // 0xFF
   {
-    payloadSize += 255;
+    QMap<int, QString> variableNames;
+    variableNames.insert(255, "ff_byte");
+    variableNames.insert(-1, "last_payload_size_byte");
+    unsigned int byte;
+    do
+    {
+      if (!reader.readBits(8, byte, variableNames))
+        return -1;
 
-    if (itemTree) 
-      new TreeItem("ff_byte", byte, QString("f(8)"), code, itemTree);
-
-    // Read the next byte
-    code.clear();
-    byte = reader.readBits(8, &code);
+      payloadSize += byte;
+    } while (byte == 255);
   }
-
-  // The next byte is not 255
-  last_payload_size_byte = byte;
-  if (itemTree) 
-    new TreeItem("last_payload_size_byte", byte, QString("u(8)"), code, itemTree);
-
-  payloadSize += last_payload_size_byte;
   LOGVAL(payloadSize);
 
   return reader.nrBytesRead();
 }
 
-void parserAnnexBAVC::sei::parser_sei_bytes(QByteArray &data, TreeItem *root)
+parserAnnexB::sei_parsing_return_t parserAnnexBAVC::sei::parser_sei_bytes(QByteArray &data, TreeItem *root)
 {
   if (root == nullptr)
-    return;
+    return SEI_PARSING_OK;
 
   // Create a new TreeItem root for the item
   TreeItem *const itemTree = new TreeItem("raw_bytes()", root);
@@ -1642,6 +1624,8 @@ void parserAnnexBAVC::sei::parser_sei_bytes(QByteArray &data, TreeItem *root)
 
     new TreeItem(QString("data[%1]").arg(i), c, QString("u(8)"), binary, itemTree);
   }
+
+  return SEI_PARSING_OK;
 }
 
 parserAnnexB::sei_parsing_return_t parserAnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
@@ -1656,14 +1640,14 @@ parserAnnexB::sei_parsing_return_t parserAnnexBAVC::buffering_period_sei::parse_
 
 bool parserAnnexBAVC::buffering_period_sei::parse(const sps_map &active_SPS_list, bool reparse)
 {
-  sub_byte_reader reader(sei_data_storage);
+  reader_helper reader(sei_data_storage, itemTree);
 
   READUEV(seq_parameter_set_id);
   if (!active_SPS_list.contains(seq_parameter_set_id))
   {
     if (reparse)
       // When reparsing after the VPS, this must not happen
-      throw std::logic_error("The signaled SPS was not found in the bitstream.");
+      return reader.addErrorMessageChildItem("The signaled SPS was not found in the bitstream.");
     else
       return false;
   }
@@ -1705,7 +1689,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBAVC::pic_timing_sei::parse_pic_ti
 
 bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, bool reparse)
 {
-  sub_byte_reader reader(sei_data_storage);
+  reader_helper reader(sei_data_storage, itemTree);
   
   // TODO: Is this really the correct sps? I did not really understand everything.
   const int seq_parameter_set_id = 0;
@@ -1713,7 +1697,7 @@ bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool
   {
     if (reparse)
       // When reparsing after the VPS, this must not happen
-      throw std::logic_error("The signaled SPS was not found in the bitstream.");
+      return reader.addErrorMessageChildItem("The signaled SPS was not found in the bitstream.");
     else
       return false;
   }
@@ -1818,21 +1802,20 @@ bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool
   return true;
 }
 
-void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_user_data_registered_itu_t_t35(QByteArray &data, TreeItem * root)
+bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_internal(QByteArray &data, TreeItem * root)
 {
+  reader_helper reader(data, root, "user_data_registered_itu_t_t35()");
+
   if (data.length() < 2)
-    throw std::logic_error("Invalid length of user_data_registered_itu_t_t35 SEI.");
+    return reader.addErrorMessageChildItem("Invalid length of user_data_registered_itu_t_t35 SEI.");
 
-  sub_byte_reader reader(data);
-
-  TreeItem *itemTree = root ? new TreeItem("user_data_registered_itu_t_t35()", root) : nullptr;
   QStringList itu_t_t35_country_code_meaning = QStringList() << "Japan" << "Albania" << "Algeria" << "American Samoa" << "Germany (Federal Republic of)" << "Anguilla" << "Antigua and Barbuda" << "Argentina" << "Ascension (see S. Helena)" << "Australia" << "Austria" << "Bahamas" << "Bahrain" << "Bangladesh" << "Barbados" << "Belgium" << "Belize" << "Benin (Republic of)" << "Bermudas" << "Bhutan (Kingdom of)" << "Bolivia" << "Botswana" << "Brazil" << "British Antarctic Territory" << "British Indian Ocean Territory" << "British Virgin Islands" << "Brunei Darussalam" << "Bulgaria" << "Myanmar (Union of)" << "Burundi" << "Byelorussia" << "Cameroon" << "Canada" << "Cape Verde" << "Cayman Islands" << "Central African Republic" << "Chad" << "Chile" << "China" << "Colombia" << "Comoros" << "Congo" << "Cook Islands" << "Costa Rica" << "Cuba" << "Cyprus" << "Czech and Slovak Federal Republic" << "Cambodia" << "Democratic People's Republic of Korea" << "Denmark" << "Djibouti" << "Dominican Republic" << "Dominica" << "Ecuador" << "Egypt" << "El Salvador" << "Equatorial Guinea" << "Ethiopia" << "Falkland Islands" << "Fiji" << "Finland" << "France" << "French Polynesia" << "French Southern and Antarctic Lands" << "Gabon" << "Gambia" << "Germany (Federal Republic of)" << "Angola" << "Ghana" << "Gibraltar" << "Greece" << "Grenada" << "Guam" << "Guatemala" << "Guernsey" << "Guinea" << "Guinea-Bissau" << "Guayana" << "Haiti" << "Honduras" << "Hongkong" << "Hungary (Republic of)" << "Iceland" << "India" << "Indonesia" << "Iran (Islamic Republic of)" << "Iraq" << "Ireland" << "Israel" << "Italy" << "C�te d'Ivoire" << "Jamaica" << "Afghanistan" << "Jersey" << "Jordan" << "Kenya" << "Kiribati" << "Korea (Republic of)" << "Kuwait" << "Lao (People's Democratic Republic)" << "Lebanon" << "Lesotho" << "Liberia" << "Libya" << "Liechtenstein" << "Luxembourg" << "Macau" << "Madagascar" << "Malaysia" << "Malawi" << "Maldives" << "Mali" << "Malta" << "Mauritania" << "Mauritius" << "Mexico" << "Monaco" << "Mongolia" << "Montserrat" << "Morocco" << "Mozambique" << "Nauru" << "Nepal" << "Netherlands" << "Netherlands Antilles" << "New Caledonia" << "New Zealand" << "Nicaragua" << "Niger" << "Nigeria" << "Norway" << "Oman" << "Pakistan" << "Panama" << "Papua New Guinea" << "Paraguay" << "Peru" << "Philippines" << "Poland (Republic of)" << "Portugal" << "Puerto Rico" << "Qatar" << "Romania" << "Rwanda" << "Saint Kitts and Nevis" << "Saint Croix" << "Saint Helena and Ascension" << "Saint Lucia" << "San Marino" << "Saint Thomas" << "Sao Tom� and Principe" << "Saint Vincent and the Grenadines" << "Saudi Arabia" << "Senegal" << "Seychelles" << "Sierra Leone" << "Singapore" << "Solomon Islands" << "Somalia" << "South Africa" << "Spain" << "Sri Lanka" << "Sudan" << "Suriname" << "Swaziland" << "Sweden" << "Switzerland" << "Syria" << "Tanzania" << "Thailand" << "Togo" << "Tonga" << "Trinidad and Tobago" << "Tunisia" << "Turkey" << "Turks and Caicos Islands" << "Tuvalu" << "Uganda" << "Ukraine" << "United Arab Emirates" << "United Kingdom" << "United States (ANSI-SCTE 128-1)" << "Burkina Faso" << "Uruguay" << "U.S.S.R." << "Vanuatu" << "Vatican City State" << "Venezuela" << "Viet Nam" << "Wallis and Futuna" << "Western Samoa" << "Yemen (Republic of)" << "Yemen (Republic of)" << "Yugoslavia" << "Zaire" << "Zambia" << "Zimbabwe" << "Unspecified";
   READBITS_M(itu_t_t35_country_code, 8, itu_t_t35_country_code_meaning);
   int i = 1;
   if (itu_t_t35_country_code == 0xff)
   {
-   READBITS(itu_t_t35_country_code_extension_byte, 8);
-   i = 2;
+    READBITS(itu_t_t35_country_code_extension_byte, 8);
+    i = 2;
   }
   if (itu_t_t35_country_code == 0xB5)
   {
@@ -1851,8 +1834,8 @@ void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_user_data_regist
 
     if (user_identifier == 1195456820)
     {
-      // ATSC1_data
-      parse_ATSC1_data(reader, itemTree);
+      if (!parse_ATSC1_data(reader))
+        return false;
     }
     else
     {
@@ -1875,11 +1858,13 @@ void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_user_data_regist
       i++;
     }
   }
+
+  return true;
 }
 
-void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(sub_byte_reader &reader, TreeItem * root)
+bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(reader_helper &reader)
 {
-  TreeItem *itemTree = root ? new TreeItem("ATSC1_data", root) : nullptr;
+  reader_sub_level s(reader, "ATSC1_data");
   
   QMap<int, QString> user_data_type_code_meaning;
   user_data_type_code_meaning.insert(3, "cc_data() / DTV CC");
@@ -1903,17 +1888,18 @@ void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(sub_b
         cc_count = (reader.nrBytesLeft() - 1) / 3;
     }
     
-    // Now should follow (cc_count * 24 bits of cc_data_pkts)
-    // Just display the raw bytes of the payload
-    for (int i = 0; i < cc_count; i++)
-    {
-      QString code; 
-      int v = reader.readBits(24,&code); 
-      QString meaning = getCCDataPacketMeaning(v);
-      cc_packet_data.append(v);
-      if (itemTree) 
-        new TreeItem(QString("cc_packet_data[%1]").arg(i), v, QString("u(v) -> u(%1)").arg(24),code, meaning, itemTree);
-    }
+    // TODO
+    // // Now should follow (cc_count * 24 bits of cc_data_pkts)
+    // // Just display the raw bytes of the payload
+    // for (int i = 0; i < cc_count; i++)
+    // {
+    //   QString code; 
+    //   int v = reader.readBits(24, &code, QString("cc_packet_data[%1]").arg(i), meaning);
+    //   QString meaning = getCCDataPacketMeaning(v);
+    //   cc_packet_data.append(v);
+    //   if (itemTree) 
+    //     new TreeItem(QString("cc_packet_data[%1]").arg(i), v, QString("u(v) -> u(%1)").arg(24),code, meaning, itemTree);
+    // }
 
     READBITS(marker_bits, 8);
     // The ATSC marker_bits indicator should be 255
@@ -1926,6 +1912,8 @@ void parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(sub_b
       idx++;
     }
   }
+
+  return true;
 }
 
 QString parserAnnexBAVC::user_data_registered_itu_t_t35_sei::getCCDataPacketMeaning(int cc_packet_data)
@@ -2062,17 +2050,20 @@ bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::checkByteParity(int va
   return nrOneBits % 2 == 1;
 }
 
-void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
+bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData, TreeItem *root)
 {
   user_data_UUID = sliceHeaderData.mid(0, 16).toHex();
   user_data_message = sliceHeaderData.mid(16);
+
+  if (!root)
+    return true;
 
   if (sliceHeaderData.mid(16, 4) == "x264")
   {
     // Create a new TreeItem root for the item
     // The macros will use this variable to add all the parsed variables
-    TreeItem *const itemTree = root ? new TreeItem("x264 user data", root) : nullptr;
-    LOGPARAM("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578");
+    TreeItem *const itemTree = new TreeItem("x264 user data", root);
+    new TreeItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578", itemTree);
 
     // This seems to be x264 user data. These contain the encoder settings which might be useful
     QStringList list = user_data_message.split(QRegExp("[\r\n\t ]+"), QString::SkipEmptyParts);
@@ -2085,7 +2076,7 @@ void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeader
         QStringList option = val.split("=");
         if (option.length() == 2)
         {
-          LOGPARAM(option[0], option[1], "", "", "");
+          new TreeItem(option[0], option[1], "", "", "", itemTree);
         }
       }
       else
@@ -2093,14 +2084,14 @@ void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeader
         if (val == "-")
         {
           if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
-            LOGPARAM("Info", aggregate_string, "", "", "")
-            aggregate_string = "";
+            new TreeItem("Info", aggregate_string, "", "", "", itemTree);
+          aggregate_string = "";
         }
         else if (val == "options:")
         {
           options = true;
           if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
-            LOGPARAM("Info", aggregate_string, "", "", "")
+            new TreeItem("Info", aggregate_string, "", "", "", itemTree);
         }
         else
           aggregate_string += " " + val;
@@ -2110,10 +2101,11 @@ void parserAnnexBAVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeader
   else
   {
     // Just log the data as a string
-    TreeItem *const itemTree = root ? new TreeItem("custom user data", root) : nullptr;
-    LOGPARAM("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578");
-    LOGPARAM("User Data", QString(user_data_message), "", "", "");
+    TreeItem *const itemTree = new TreeItem("custom user data", root);
+    new TreeItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578", itemTree);
   }
+
+  return true;
 }
 
 QList<QByteArray> parserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)

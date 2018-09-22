@@ -59,10 +59,7 @@ public:
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
   // It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).
   // When there are no more NAL units in the file (the file ends), call this function one last time with empty data and a nalID of -1.
-  virtual void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) = 0;
-
-  // Parse and add a NAL unit but just return on error and don't throw an exception
-  void parseAndAddNALUnitNoThrow(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr);
+  virtual bool parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) = 0;
 
   // Get some format properties
   virtual double getFramerate() const = 0;
@@ -100,7 +97,7 @@ protected:
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
     // Parse the header from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    virtual void parse_nal_unit_header(const QByteArray &header_data, TreeItem *root) = 0;
+    virtual bool parse_nal_unit_header(const QByteArray &header_data, TreeItem *root) = 0;
 
     /// Pointer to the first byte of the start code of the NAL unit
     QUint64Pair filePosStartEnd;
@@ -117,7 +114,7 @@ protected:
     QByteArray getRawNALData() const { return getNALHeader() + nalPayload; }
 
     // Each nal unit (in all known standards) has a type id
-    int nal_unit_type_id;
+    unsigned int nal_unit_type_id;
 
     // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
     QByteArray nalPayload;
@@ -128,6 +125,7 @@ protected:
   enum sei_parsing_return_t
   {
     SEI_PARSING_OK,                      // Parsing is done
+    SEI_PARSING_ERROR,                   // A parsing error occured
     SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
   };
   

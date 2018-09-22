@@ -49,9 +49,9 @@ public:
   parserAVFormat(AVCodecSpecfier codec);
   ~parserAVFormat() {}
 
-  void parseExtradata(QByteArray &extradata);
-  void parseMetadata(QStringPairList &metadata);
-  void parseAVPacket(int packetID, AVPacketWrapper &packet);
+  bool parseExtradata(QByteArray &extradata);
+  bool parseMetadata(QStringPairList &metadata);
+  bool parseAVPacket(int packetID, AVPacketWrapper &packet);
 
   bool parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file);
 
@@ -60,44 +60,44 @@ private:
 
   struct hvcC_nalUnit
   {
-    void parse_hvcC_nalUnit(int unitID, sub_byte_reader &reader, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser);
+    bool parse_hvcC_nalUnit(int unitID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser);
 
-    int nalUnitLength;
+    unsigned int nalUnitLength;
   };
 
   struct hvcC_naluArray
   {
-    void parse_hvcC_naluArray(int arrayID, sub_byte_reader &reader, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser);
+    bool parse_hvcC_naluArray(int arrayID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser);
 
     bool array_completeness;
     bool reserved_flag_false;
-    int NAL_unit_type;
-    int numNalus;
+    unsigned int NAL_unit_type;
+    unsigned int numNalus;
     QList<hvcC_nalUnit> nalList;
   };
 
   struct hvcC
   {
-    void parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser);
+    bool parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser);
 
-    int configurationVersion;
-    int general_profile_space;
+    unsigned int configurationVersion;
+    unsigned int general_profile_space;
     bool general_tier_flag;
-    int general_profile_idc;
-    int general_profile_compatibility_flags;
+    unsigned int general_profile_idc;
+    unsigned int general_profile_compatibility_flags;
     uint64_t general_constraint_indicator_flags;
-    int general_level_idc;
-    int min_spatial_segmentation_idc;
-    int parallelismType;
-    int chromaFormat;
-    int bitDepthLumaMinus8;
-    int bitDepthChromaMinus8;
-    int avgFrameRate;
-    int constantFrameRate;
-    int numTemporalLayers;
+    unsigned int general_level_idc;
+    unsigned int min_spatial_segmentation_idc;
+    unsigned int parallelismType;
+    unsigned int chromaFormat;
+    unsigned int bitDepthLumaMinus8;
+    unsigned int bitDepthChromaMinus8;
+    unsigned int avgFrameRate;
+    unsigned int constantFrameRate;
+    unsigned int numTemporalLayers;
     bool temporalIdNested;
-    int lengthSizeMinusOne;
-    int numOfArrays;
+    unsigned int lengthSizeMinusOne;
+    unsigned int numOfArrays;
 
     QList<hvcC_naluArray> naluArrayList;
   };
@@ -107,10 +107,10 @@ private:
   // Used for parsing if the packets contain an obu file that we can parse.
   QScopedPointer<parserAV1OBU> obuParser;
 
-  void parseExtradata_generic(QByteArray &extradata);
-  void parseExtradata_AVC(QByteArray &extradata);
-  void parseExtradata_hevc(QByteArray &extradata);
-  void parseExtradata_mpeg2(QByteArray &extradata);
+  bool parseExtradata_generic(QByteArray &extradata);
+  bool parseExtradata_AVC(QByteArray &extradata);
+  bool parseExtradata_hevc(QByteArray &extradata);
+  bool parseExtradata_mpeg2(QByteArray &extradata);
 
   // The start code pattern to look for in case of a raw format
   QByteArray startCode;

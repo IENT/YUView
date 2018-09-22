@@ -35,7 +35,7 @@
 #include "mainwindow.h"
 #include <QProgressDialog>
 
-#define PARSERANNEXB_DEBUG_OUTPUT 0
+#define PARSERANNEXB_DEBUG_OUTPUT 1
 #if PARSERANNEXB_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_ANNEXB qDebug
@@ -102,18 +102,6 @@ QUint64Pair parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
   if (codingOrderFrameIdx < 0 || codingOrderFrameIdx >= frameList.size())
     return QUint64Pair(-1, -1);
   return frameList[codingOrderFrameIdx].fileStartEndPos;
-}
-
-void parserAnnexB::parseAndAddNALUnitNoThrow(int nalID, QByteArray data, TreeItem * parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
-{
-  try
-  {
-    parseAndAddNALUnit(nalID, data, parent, nalStartEndPosFile, nalTypeName);
-  }
-  catch (...)
-  {
-    // Catch exceptions and just return
-  }
 }
 
 bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)

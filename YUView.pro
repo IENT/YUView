@@ -85,6 +85,7 @@ HEADERS += \
     source/parserAV1OBU.h \
     source/parserAVFormat.h \
     source/parserBase.h \
+    source/parserCommonMacros.h \
     source/playbackController.h \
     source/playlistItem.h \
     source/playlistItemCompressedVideo.h \

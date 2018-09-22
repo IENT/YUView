@@ -52,7 +52,7 @@ public:
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
-  void parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  bool parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
   QByteArray getExtradata() Q_DECL_OVERRIDE;
@@ -101,7 +101,7 @@ protected:
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    void parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root) Q_DECL_OVERRIDE;
+    bool parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root) Q_DECL_OVERRIDE;
 
     bool isRandomAccess() { return nal_unit_type == CODED_SLICE_IDR; }
     bool isSlice()        { return nal_unit_type >= CODED_SLICE_NON_IDR && nal_unit_type <= CODED_SLICE_IDR; }
@@ -109,7 +109,7 @@ protected:
     virtual bool isParameterSet() const override { return nal_unit_type == SPS || nal_unit_type == PPS; }
 
     /// The information of the NAL unit header
-    int nal_ref_idc {-1};
+    unsigned int nal_ref_idc {0};
     nal_unit_type_enum nal_unit_type {UNSPECIFIED};
   };
 
@@ -117,22 +117,22 @@ protected:
   struct sps : nal_unit_avc
   {
     sps(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
-    void parse_sps(const QByteArray &parameterSetData, TreeItem *root);
+    bool parse_sps(const QByteArray &parameterSetData, TreeItem *root);
 
-    int profile_idc;
+    unsigned int profile_idc;
     bool constraint_set0_flag;
     bool constraint_set1_flag;
     bool constraint_set2_flag;
     bool constraint_set3_flag;
     bool constraint_set4_flag;
     bool constraint_set5_flag;
-    int reserved_zero_2bits;
-    int level_idc;
-    int seq_parameter_set_id;
-    int chroma_format_idc {1};
+    unsigned int reserved_zero_2bits;
+    unsigned int level_idc;
+    unsigned int seq_parameter_set_id;
+    unsigned int chroma_format_idc {1};
     bool separate_colour_plane_flag {false};
-    int bit_depth_luma_minus8 {0};
-    int bit_depth_chroma_minus8 {0};
+    unsigned int bit_depth_luma_minus8 {0};
+    unsigned int bit_depth_chroma_minus8 {0};
     bool qpprime_y_zero_transform_bypass_flag {false};
     bool seq_scaling_matrix_present_flag {false};
     bool seq_scaling_list_present_flag[8];
@@ -140,71 +140,71 @@ protected:
     bool UseDefaultScalingMatrix4x4Flag[6];
     int ScalingList8x8[6][64];
     bool UseDefaultScalingMatrix8x8Flag[2];
-    int log2_max_frame_num_minus4;
-    int pic_order_cnt_type;
-    int log2_max_pic_order_cnt_lsb_minus4;
+    unsigned int log2_max_frame_num_minus4;
+    unsigned int pic_order_cnt_type;
+    unsigned int log2_max_pic_order_cnt_lsb_minus4;
     bool delta_pic_order_always_zero_flag;
     int offset_for_non_ref_pic;
     int offset_for_top_to_bottom_field;
-    int num_ref_frames_in_pic_order_cnt_cycle;
+    unsigned int num_ref_frames_in_pic_order_cnt_cycle;
     int offset_for_ref_frame[256];
-    int max_num_ref_frames;
+    unsigned int max_num_ref_frames;
     bool gaps_in_frame_num_value_allowed_flag;
-    int pic_width_in_mbs_minus1;
-    int pic_height_in_map_units_minus1;
+    unsigned pic_width_in_mbs_minus1;
+    unsigned pic_height_in_map_units_minus1;
     bool frame_mbs_only_flag;
     bool mb_adaptive_frame_field_flag {false};
     bool direct_8x8_inference_flag;
     bool frame_cropping_flag;
-    int frame_crop_left_offset {0};
-    int frame_crop_right_offset {0};
-    int frame_crop_top_offset {0};
-    int frame_crop_bottom_offset {0};
+    unsigned int frame_crop_left_offset {0};
+    unsigned int frame_crop_right_offset {0};
+    unsigned int frame_crop_top_offset {0};
+    unsigned int frame_crop_bottom_offset {0};
     bool vui_parameters_present_flag;
 
     struct vui_parameters_struct
     {
-      void read(sub_byte_reader &reader, TreeItem *root, int BitDeptYC, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag);
+      bool parse_vui(reader_helper &reader, int BitDeptYC, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag);
 
       bool aspect_ratio_info_present_flag;
-      int aspect_ratio_idc {0};
-      int sar_width;
-      int sar_height;
+      unsigned int aspect_ratio_idc {0};
+      unsigned int sar_width;
+      unsigned int sar_height;
 
       bool overscan_info_present_flag;
       bool overscan_appropriate_flag;
 
       bool video_signal_type_present_flag;
-      int video_format {5};
+      unsigned int video_format {5};
       bool video_full_range_flag {false};
       bool colour_description_present_flag;
-      int colour_primaries {2};
-      int transfer_characteristics {2};
-      int matrix_coefficients {2};
+      unsigned int colour_primaries {2};
+      unsigned int transfer_characteristics {2};
+      unsigned int matrix_coefficients {2};
 
       bool chroma_loc_info_present_flag;
-      int chroma_sample_loc_type_top_field {0};
-      int chroma_sample_loc_type_bottom_field {0};
+      unsigned int chroma_sample_loc_type_top_field {0};
+      unsigned int chroma_sample_loc_type_bottom_field {0};
 
       bool timing_info_present_flag;
-      int num_units_in_tick;
-      int time_scale;
+      unsigned int num_units_in_tick;
+      unsigned int time_scale;
       bool fixed_frame_rate_flag {false};
 
       struct hrd_parameters_struct
       {
-        void read(sub_byte_reader &reader, TreeItem *root);
+        bool parse_hrd(reader_helper &reader);
 
-        int cpb_cnt_minus1;
-        int bit_rate_scale;
-        int cpb_size_scale;
+        unsigned int cpb_cnt_minus1;
+        unsigned int bit_rate_scale;
+        unsigned int cpb_size_scale;
         QList<quint32> bit_rate_value_minus1;
         QList<quint32> cpb_size_value_minus1;
         QList<bool> cbr_flag;
-        int initial_cpb_removal_delay_length_minus1 {23};
-        int cpb_removal_delay_length_minus1;
-        int dpb_output_delay_length_minus1;
-        int time_offset_length {24};
+        unsigned int initial_cpb_removal_delay_length_minus1 {23};
+        unsigned int cpb_removal_delay_length_minus1;
+        unsigned int dpb_output_delay_length_minus1;
+        unsigned int time_offset_length {24};
       };
       hrd_parameters_struct nal_hrd;
       hrd_parameters_struct vcl_hrd;
@@ -215,12 +215,12 @@ protected:
       bool pic_struct_present_flag;
       bool bitstream_restriction_flag;
       bool motion_vectors_over_pic_boundaries_flag;
-      int max_bytes_per_pic_denom;
-      int max_bits_per_mb_denom;
-      int log2_max_mv_length_horizontal;
-      int log2_max_mv_length_vertical;
-      int max_num_reorder_frames;
-      int max_dec_frame_buffering;
+      unsigned int max_bytes_per_pic_denom;
+      unsigned int max_bits_per_mb_denom;
+      unsigned int log2_max_mv_length_horizontal;
+      unsigned int log2_max_mv_length_vertical;
+      unsigned int max_num_reorder_frames;
+      unsigned int max_dec_frame_buffering;
 
       // The following values are not read from the bitstream but are calculated from the read values.
       double frameRate;
@@ -228,35 +228,35 @@ protected:
     vui_parameters_struct vui_parameters;
 
     // The following values are not read from the bitstream but are calculated from the read values.
-    int BitDepthY;
-    int QpBdOffsetY;
-    int BitDepthC;
-    int QpBdOffsetC;
-    int PicWidthInMbs;
-    int FrameHeightInMbs;
-    int PicHeightInMbs;
-    int PicHeightInMapUnits;
-    int PicSizeInMbs;
-    int PicSizeInMapUnits;
-    int SubWidthC;
-    int SubHeightC;
-    int MbHeightC;
-    int MbWidthC;
-    int PicHeightInSamplesL;
-    int PicHeightInSamplesC;
-    int PicWidthInSamplesL;
-    int PicWidthInSamplesC;
-    int ChromaArrayType;
-    int CropUnitX;
-    int CropUnitY;
-    int PicCropLeftOffset;
+    unsigned int BitDepthY;
+    unsigned int QpBdOffsetY;
+    unsigned int BitDepthC;
+    unsigned int QpBdOffsetC;
+    unsigned int PicWidthInMbs;
+    unsigned int FrameHeightInMbs;
+    unsigned int PicHeightInMbs;
+    unsigned int PicHeightInMapUnits;
+    unsigned int PicSizeInMbs;
+    unsigned int PicSizeInMapUnits;
+    unsigned int SubWidthC;
+    unsigned int SubHeightC;
+    unsigned int MbHeightC;
+    unsigned int MbWidthC;
+    unsigned int PicHeightInSamplesL;
+    unsigned int PicHeightInSamplesC;
+    unsigned int PicWidthInSamplesL;
+    unsigned int PicWidthInSamplesC;
+    unsigned int ChromaArrayType;
+    unsigned int CropUnitX;
+    unsigned int CropUnitY;
+    unsigned int PicCropLeftOffset;
     int PicCropWidth;
-    int PicCropTopOffset;
+    unsigned int PicCropTopOffset;
     int PicCropHeight;
     bool MbaffFrameFlag;
-    int MaxPicOrderCntLsb {0};
+    unsigned int MaxPicOrderCntLsb {0};
     int ExpectedDeltaPerPicOrderCntCycle {0};
-    int MaxFrameNum;
+    unsigned int MaxFrameNum;
   };
   typedef QMap<int, QSharedPointer<sps>> sps_map;
 
@@ -264,25 +264,25 @@ protected:
   struct pps : nal_unit_avc
   {
     pps(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
-    void parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list);
+    bool parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list);
 
-    int pic_parameter_set_id;
-    int seq_parameter_set_id;
+    unsigned int pic_parameter_set_id;
+    unsigned int seq_parameter_set_id;
     bool entropy_coding_mode_flag;
     bool bottom_field_pic_order_in_frame_present_flag;
-    int num_slice_groups_minus1;
-    int slice_group_map_type;
-    int run_length_minus1[8];
-    int top_left[8];
-    int bottom_right[8];
+    unsigned int num_slice_groups_minus1;
+    unsigned int slice_group_map_type;
+    unsigned int run_length_minus1[8];
+    unsigned int top_left[8];
+    unsigned int bottom_right[8];
     bool slice_group_change_direction_flag;
-    int slice_group_change_rate_minus1;
-    int pic_size_in_map_units_minus1;
-    QList<int> slice_group_id;
-    int num_ref_idx_l0_default_active_minus1;
-    int num_ref_idx_l1_default_active_minus1;
+    unsigned int slice_group_change_rate_minus1;
+    unsigned int pic_size_in_map_units_minus1;
+    QList<unsigned int> slice_group_id;
+    unsigned int num_ref_idx_l0_default_active_minus1;
+    unsigned int num_ref_idx_l1_default_active_minus1;
     bool weighted_pred_flag;
-    int weighted_bipred_idc;
+    unsigned int weighted_bipred_idc;
     int pic_init_qp_minus26;
     int pic_init_qs_minus26;
     int chroma_qp_index_offset;
@@ -309,7 +309,7 @@ protected:
   struct slice_header : nal_unit_avc
   {
     slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
-    void parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root);
+    bool parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root);
 
     enum slice_type_enum
     {
@@ -320,32 +320,32 @@ protected:
       SLICE_SI
     };
 
-    int first_mb_in_slice;
-    int slice_type_id;
-    int pic_parameter_set_id;
-    int colour_plane_id;
-    int frame_num;
+    unsigned int first_mb_in_slice;
+    unsigned int slice_type_id;
+    unsigned int pic_parameter_set_id;
+    unsigned int colour_plane_id;
+    unsigned int frame_num;
     bool field_pic_flag {false};
     bool bottom_field_flag {false};
-    int idr_pic_id;
-    int pic_order_cnt_lsb;
+    unsigned int idr_pic_id;
+    unsigned int pic_order_cnt_lsb;
     int delta_pic_order_cnt_bottom {0};
     int delta_pic_order_cnt[2];
-    int redundant_pic_cnt {0};
+    unsigned int redundant_pic_cnt {0};
     bool direct_spatial_mv_pred_flag;
     bool num_ref_idx_active_override_flag;
-    int num_ref_idx_l0_active_minus1;
-    int num_ref_idx_l1_active_minus1;
+    unsigned int num_ref_idx_l0_active_minus1;
+    unsigned int num_ref_idx_l1_active_minus1;
 
     struct ref_pic_list_mvc_modification_struct
     {
-      void read(sub_byte_reader &reader, TreeItem *itemTree, slice_type_enum slicy_type);
+      bool parse_ref_pic_list_mvc_modification(reader_helper &reader, slice_type_enum slicy_type);
 
       bool ref_pic_list_modification_flag_l0;
-      QList<int> modification_of_pic_nums_idc_l0;
-      QList<int> abs_diff_pic_num_minus1_l0;
-      QList<int> long_term_pic_num_l0;
-      QList<int> abs_diff_view_idx_minus1_l0;
+      QList<unsigned int> modification_of_pic_nums_idc_l0;
+      QList<unsigned int> abs_diff_pic_num_minus1_l0;
+      QList<unsigned int> long_term_pic_num_l0;
+      QList<unsigned int> abs_diff_view_idx_minus1_l0;
 
       bool ref_pic_list_modification_flag_l1;
       QList<int> modification_of_pic_nums_idc_l1;
@@ -357,7 +357,7 @@ protected:
 
     struct ref_pic_list_modification_struct
     {
-      void read(sub_byte_reader &reader, TreeItem *itemTree, slice_type_enum slicy_type);
+      bool parse_ref_pic_list_modification(reader_helper &reader, slice_type_enum slicy_type);
 
       bool ref_pic_list_modification_flag_l0;
       QList<int> modification_of_pic_nums_idc_l0;
@@ -373,10 +373,10 @@ protected:
 
     struct pred_weight_table_struct
     {
-      void read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slicy_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1);
+      bool parse_pred_weight_table(reader_helper & reader, slice_type_enum slicy_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1);
 
-      int luma_log2_weight_denom;
-      int chroma_log2_weight_denom;
+      unsigned int luma_log2_weight_denom;
+      unsigned int chroma_log2_weight_denom;
       QList<bool> luma_weight_l0_flag_list;
       QList<int> luma_weight_l0;
       QList<int> luma_offset_l0;
@@ -394,7 +394,7 @@ protected:
 
     struct dec_ref_pic_marking_struct
     {
-      void read(sub_byte_reader & reader, TreeItem * itemTree, bool IdrPicFlag);
+      bool parse_dec_ref_pic_marking(reader_helper & reader, bool IdrPicFlag);
 
       bool no_output_of_prior_pics_flag;
       bool long_term_reference_flag;
@@ -407,14 +407,14 @@ protected:
     };
     dec_ref_pic_marking_struct dec_ref_pic_marking;
 
-    int cabac_init_idc;
+    unsigned int cabac_init_idc;
     int slice_qp_delta;
     bool sp_for_switch_flag;
     int slice_qs_delta;
-    int disable_deblocking_filter_idc;
+    unsigned int disable_deblocking_filter_idc;
     int slice_alpha_c0_offset_div2;
     int slice_beta_offset_div2;
-    int slice_group_change_cycle;
+    unsigned int slice_group_change_cycle;
 
     // These values are not parsed from the slice header but are calculated
     // from the parsed values.
@@ -445,7 +445,7 @@ protected:
     // Parse SEI header (type, length) and return how many bytes were read
     int parse_sei_header(QByteArray &sliceHeaderData, TreeItem *root);
     // If parsing of a special SEI is not implemented, this function can just parse/show the raw bytes.
-    void parser_sei_bytes(QByteArray &data, TreeItem *root);
+    sei_parsing_return_t parser_sei_bytes(QByteArray &data, TreeItem *root);
 
     int payloadType;
     int last_payload_type_byte;
@@ -463,9 +463,9 @@ protected:
     sei_parsing_return_t parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root);
     void reparse_buffering_period_sei(const sps_map &active_SPS_list) { parse(active_SPS_list, true); }
 
-    int seq_parameter_set_id;
-    QList<int> initial_cpb_removal_delay;
-    QList<int> initial_cpb_removal_delay_offset;
+    unsigned int seq_parameter_set_id;
+    QList<unsigned int> initial_cpb_removal_delay;
+    QList<unsigned int> initial_cpb_removal_delay_offset;
 
   private:
     // These are used internally when parsing of the SEI must be prosponed until the SPS is received.
@@ -483,25 +483,25 @@ protected:
     sei_parsing_return_t parse_pic_timing_sei(QByteArray &data, const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root);
     void reparse_pic_timing_sei(const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag) { parse(active_SPS_list, CpbDpbDelaysPresentFlag, true); }
 
-    int cpb_removal_delay;
-    int dpb_output_delay;
+    unsigned int cpb_removal_delay;
+    unsigned int dpb_output_delay;
 
-    int pic_struct;
+    unsigned int pic_struct;
     QList<bool> clock_timestamp_flag;
-    int ct_type[3];
+    unsigned int ct_type[3];
     bool nuit_field_based_flag[3];
-    int counting_type[3];
+    unsigned int counting_type[3];
     bool full_timestamp_flag[3];
     bool discontinuity_flag[3];
     bool cnt_dropped_flag[3];
-    int n_frames[3];
-    int seconds_value[3];
-    int minutes_value[3];
-    int hours_value[3];
+    unsigned int n_frames[3];
+    unsigned int seconds_value[3];
+    unsigned int minutes_value[3];
+    unsigned int hours_value[3];
     bool seconds_flag[3];
     bool minutes_flag[3];
     bool hours_flag[3];
-    int time_offset[3];
+    unsigned int time_offset[3];
 
   private:
     // These are used internally when parsing of the SEI must be prosponed until the SPS is received.
@@ -514,7 +514,7 @@ protected:
   {
   public:
     user_data_registered_itu_t_t35_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    void parse_user_data_registered_itu_t_t35(QByteArray &data, TreeItem *root);
+    sei_parsing_return_t parse_user_data_registered_itu_t_t35(QByteArray &data, TreeItem *root) { return parse_internal(data, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     unsigned int itu_t_t35_country_code;
     unsigned int itu_t_t35_country_code_extension_byte;
@@ -523,32 +523,36 @@ protected:
     unsigned int itu_t_t35_provider_code;
     unsigned int user_identifier;
     // ATSC1 data
-    int user_data_type_code;
+    unsigned int user_data_type_code;
     bool process_em_data_flag;
     bool process_cc_data_flag;
     bool additional_data_flag;
-    int cc_count;
-    int em_data;
+    unsigned int cc_count;
+    unsigned int em_data;
     QList<int> cc_packet_data;
-    int marker_bits;
-    QList<int> ATSC_reserved_user_data;
+    unsigned int marker_bits;
+    QList<unsigned int> ATSC_reserved_user_data;
 
   private:
-    void parse_ATSC1_data(sub_byte_reader &reader, TreeItem *root);
+    bool parse_internal(QByteArray &data, TreeItem *root);
+    bool parse_ATSC1_data(reader_helper &reader);
     QString getCCDataPacketMeaning(int cc_packet_data);
     bool checkByteParity(int val);
   };
 
-  struct user_data_sei : sei
+  class user_data_sei : sei
   {
+  public:
     user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    void parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root);
+    sei_parsing_return_t parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root) { return parse_internal(sliceHeaderData, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     QString user_data_UUID;
     QString user_data_message;
+  private:
+    bool parse_internal(QByteArray &sliceHeaderData, TreeItem *root);
   };
 
-  static void read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree);
+  static bool read_scaling_list(reader_helper &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag);
 
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.

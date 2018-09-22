@@ -32,10 +32,11 @@
 
 #include "parserAVFormat.h"
 
+#include "mainwindow.h"
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
 #include "parserAnnexBMpeg2.h"
-#include "mainwindow.h"
+#include "parserCommonMacros.h"
 
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
@@ -44,20 +45,6 @@
 #else
 #define DEBUG_AVFORMAT(fmt,...) ((void)0)
 #endif
-
-/* Some macros that we use to read syntax elements from the bitstream.
-* The advantage of these macros is, that they can directly also create the tree structure for the QAbstractItemModel that is 
-* used to show the NAL units and their content. The tree will only be added if the pointer to the given tree itemTree is valid.
-*/
-#define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
-#define READBITS64(into,numBits) {QString code; into=reader.readBits64(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
-#define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings,itemTree);}
-#define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
-// Log a string and a value
-#define LOGSTRVAL(str,val) {if (itemTree) new TreeItem(str,val,QString("info"),QString(),itemTree);}
-#define LOG(str,val,coding,code) {if (itemTree) new TreeItem(str,val,coding,code,itemTree);}
-#define LOG_VAR(var,length) {QString code=QString::number(var,2); while (code.size() < length) code.prepend("0"); if (itemTree) new TreeItem(#var,var,QString("u(%1)").arg(length),code,itemTree);}
-#define LOG_VAR_SUB(var,length) {QString code=QString::number(var,2); while (code.size() < length) code.prepend("0"); if (subTree) new TreeItem(#var,var,QString("u(%1)").arg(length),code,subTree);}
 
 parserAVFormat::parserAVFormat(AVCodecSpecfier codec)
 { 
@@ -77,25 +64,26 @@ parserAVFormat::parserAVFormat(AVCodecSpecfier codec)
   startCode.append((char)1);
 }
 
-void parserAVFormat::parseExtradata(QByteArray &extradata)
+bool parserAVFormat::parseExtradata(QByteArray &extradata)
 {
   if (extradata.isEmpty())
-    return;
+    return true;
 
   if (codecID.isAVC())
-    parseExtradata_AVC(extradata);
+    return parseExtradata_AVC(extradata);
   else if (codecID.isHEVC())
-    parseExtradata_hevc(extradata);
+    return parseExtradata_hevc(extradata);
   else if (codecID.isMpeg2())
-    parseExtradata_mpeg2(extradata);
+    return parseExtradata_mpeg2(extradata);
   else
-    parseExtradata_generic(extradata);
+    return parseExtradata_generic(extradata);
+  return true;
 }
 
-void parserAVFormat::parseMetadata(QStringPairList &metadata)
+bool parserAVFormat::parseMetadata(QStringPairList &metadata)
 {
   if (metadata.isEmpty())
-    return;
+    return true;
 
   TreeItem *metadataRoot = nullptr;
   if (!nalUnitModel.rootItem.isNull())
@@ -109,9 +97,10 @@ void parserAVFormat::parseMetadata(QStringPairList &metadata)
       new TreeItem(p.first, p.second, "", "", metadataRoot);
     }
   }
+  return true;
 }
 
-void parserAVFormat::parseExtradata_generic(QByteArray &extradata)
+bool parserAVFormat::parseExtradata_generic(QByteArray &extradata)
 {
   TreeItem *extradataRoot = nullptr;
   if (!nalUnitModel.rootItem.isNull())
@@ -126,78 +115,81 @@ void parserAVFormat::parseExtradata_generic(QByteArray &extradata)
       new TreeItem(QString("Byte %1").arg(i), val, "b(8)", code, extradataRoot);
     }
   }
+  return true;
 }
 
-void parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
+bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 {
   if (nalUnitModel.rootItem.isNull())
-    return;
+    return true;
+  TreeItem *root = nalUnitModel.rootItem.data();
 
   if (extradata.at(0) == 1 && extradata.length() >= 7)
   {
-    TreeItem *itemTree = new TreeItem("Extradata (Raw AVC NAL units)", nalUnitModel.rootItem.data());
+    reader_helper reader(extradata, root, "Extradata (Raw AVC NAL units)");
 
     // The extradata uses the avcc format (see avc.c in libavformat)
-    int profile = (unsigned char)extradata.at(1);
-    int profile_compat = (unsigned char)extradata.at(2);
-    int level = (unsigned char)extradata.at(3);
-    int reserved_6_one_bits = (unsigned char)((extradata.at(4) & 0xFC) >> 2);  // 6 one bits
-    int nal_size_length_minus1 = (unsigned char)(extradata.at(4) & 0x03);  // 2 bits
-    int reserved_3_one_bits = (unsigned char)((extradata.at(5) & 0xE0) >> 5);  // 3 one bits
-    int number_of_sps = (unsigned char)(extradata.at(5) & 0x1f); // 5 bits
-
-    LOG_VAR(profile, 8);
-    LOG_VAR(profile_compat, 8);
-    LOG_VAR(level, 8);
-    LOG_VAR(reserved_6_one_bits, 6);
-    LOG_VAR(nal_size_length_minus1, 2);
-    LOG_VAR(reserved_3_one_bits, 3);
-    LOG_VAR(number_of_sps, 5);
+    unsigned int profile, profile_compat, level, reserved_6_one_bits, nal_size_length_minus1, reserved_3_one_bits, number_of_sps;
+    READBITS(profile, 8);
+    READBITS(profile_compat, 8);
+    READBITS(level, 8);
+    READBITS(reserved_6_one_bits, 6);
+    READBITS(nal_size_length_minus1, 2);
+    READBITS(reserved_3_one_bits, 3);
+    READBITS(number_of_sps, 5);
 
     int pos = 6;
     int nalID = 0;
-    for (int i = 0; i < number_of_sps; i++)
+    for (unsigned int i = 0; i < number_of_sps; i++)
     {
-      TreeItem *subTree = new TreeItem(QString("SPS %1").arg(i), itemTree);
+      QByteArray size_bytes = extradata.mid(pos, 2);
+      reader_helper sps_size_reader(size_bytes, reader.getCurrentItemTree(), QString("SPS %1").arg(i));
+      unsigned int sps_size;
+      if (!sps_size_reader.readBits(16, sps_size, "sps_size"))
+        return false;
 
-      int sps_size = (unsigned char)(extradata.at(pos++)) << 7;
-      sps_size += (unsigned char)(extradata.at(pos++));
-      LOG_VAR_SUB(sps_size, 16);
-
-      QByteArray rawNAL = extradata.mid(pos, sps_size);
-      annexBParser->parseAndAddNALUnitNoThrow(nalID, rawNAL, subTree);
+      TreeItem *subTree = sps_size_reader.getCurrentItemTree();
+      QByteArray rawNAL = extradata.mid(pos+2, sps_size);
+      if (!annexBParser->parseAndAddNALUnit(nalID, rawNAL, subTree))
+        subTree->setError();
       nalID++;
-      pos += sps_size;
+      pos += sps_size + 2;
     }
 
     int nrPPS = extradata.at(pos++);
     for (int i = 0; i < nrPPS; i++)
     {
-      TreeItem *subTree = new TreeItem(QString("PPS %1").arg(i), itemTree);
+      QByteArray size_bytes = extradata.mid(pos, 2);
+      reader_helper pps_size_reader(size_bytes, reader.getCurrentItemTree(), QString("PPS %1").arg(i));
+      unsigned int pps_size;
+      if (!pps_size_reader.readBits(16, pps_size, "pps_size"))
+        return false;
 
-      int pps_size = (unsigned char)(extradata.at(pos++)) << 7;
-      pps_size += (unsigned char)(extradata.at(pos++));
-      LOG_VAR_SUB(pps_size, 16);
-
-      QByteArray rawNAL = extradata.mid(pos, pps_size);
-      annexBParser->parseAndAddNALUnitNoThrow(nalID, rawNAL, subTree);
+      TreeItem *subTree = pps_size_reader.getCurrentItemTree();
+      QByteArray rawNAL = extradata.mid(pos+2, pps_size);
+      if (!annexBParser->parseAndAddNALUnit(nalID, rawNAL, subTree))
+        subTree->setError();
       nalID++;
-      pos += pps_size;
+      pos += pps_size + 2;
     }
   }
+
+  return true;
 }
 
-void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
+bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
 {
   if (nalUnitModel.rootItem.isNull())
-    return;
+    return true;
+  TreeItem *root = nalUnitModel.rootItem.data();
 
   if (extradata.at(0) == 1)
   {
     // The extradata is using the hvcC format
-    TreeItem *extradataRoot = new TreeItem("Extradata (HEVC hvcC format)", nalUnitModel.rootItem.data());
+    TreeItem *extradataRoot = new TreeItem("Extradata (HEVC hvcC format)", root);
     hvcC h;
-    h.parse_hvcC(extradata, extradataRoot, annexBParser);
+    if (!h.parse_hvcC(extradata, extradataRoot, annexBParser))
+      return false;
   }
   else if (extradata.at(0) == 0)
   {
@@ -207,7 +199,7 @@ void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
     startCode.append((char)0);
     startCode.append((char)1);
 
-    TreeItem *extradataRoot = new TreeItem("Extradata (Raw HEVC NAL units)", nalUnitModel.rootItem.data());
+    TreeItem *extradataRoot = new TreeItem("Extradata (Raw HEVC NAL units)", root);
 
     int nalID = 0;
     int nextStartCode = extradata.indexOf(startCode);
@@ -218,19 +210,23 @@ void parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
       int length = nextStartCode - posInData;
       QByteArray nalData = (nextStartCode >= 0) ? extradata.mid(posInData, length) : extradata.mid(posInData);
       // Let the hevc annexB parser parse this
-      annexBParser->parseAndAddNALUnitNoThrow(nalID, nalData, extradataRoot);
+      if (!annexBParser->parseAndAddNALUnit(nalID, nalData, extradataRoot))
+        extradataRoot->setError();
       nalID++;
       posInData = nextStartCode + 3;
     }
   }
   else
-    throw std::logic_error("Unsupported extradata format (configurationVersion != 1)");  
+    return reader_helper::addErrorMessageChildItem("Unsupported extradata format (configurationVersion != 1)", root);
+  
+  return true;
 }
 
-void parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
+bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
 {
   if (nalUnitModel.rootItem.isNull())
-    return;
+    return true;
+  TreeItem *root = nalUnitModel.rootItem.data();
 
   if (extradata.at(0) == 0)
   {
@@ -240,7 +236,7 @@ void parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
     startCode.append((char)0);
     startCode.append((char)1);
 
-    TreeItem *extradataRoot = new TreeItem("Extradata (Raw Mpeg2 units)", nalUnitModel.rootItem.data());
+    TreeItem *extradataRoot = new TreeItem("Extradata (Raw Mpeg2 units)", root);
 
     int nalID = 0;
     int nextStartCode = extradata.indexOf(startCode);
@@ -251,42 +247,41 @@ void parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
       int length = nextStartCode - posInData;
       QByteArray nalData = (nextStartCode >= 0) ? extradata.mid(posInData, length) : extradata.mid(posInData);
       // Let the hevc annexB parser parse this
-      annexBParser->parseAndAddNALUnitNoThrow(nalID, nalData, extradataRoot);
+      if (!annexBParser->parseAndAddNALUnit(nalID, nalData, extradataRoot))
+        extradataRoot->setError();
       nalID++;
       posInData = nextStartCode + 3;
     }
   }
   else
-    throw std::logic_error("Unsupported extradata format (configurationVersion != 1)");  
+    return reader_helper::addErrorMessageChildItem("Unsupported extradata format (configurationVersion != 1)", root);
+
+  return true;
 }
 
-void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
+bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 {
-  if (!nalUnitModel.rootItem.isNull())
+  TreeItem *parent = nalUnitModel.rootItem.data();
+  if (parent)
   {
     // Use the given tree item. If it is not set, use the nalUnitMode (if active).
     // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
     // yet. We want to parse the item and then set a good description.
     QString specificDescription;
-    TreeItem *parent = nalUnitModel.rootItem.data();
-    TreeItem *itemTree = nullptr;
-    if (parent)
-      itemTree = new TreeItem(parent);
-    else if (!nalUnitModel.rootItem.isNull())
-      itemTree = new TreeItem(nalUnitModel.rootItem.data());
+    TreeItem *itemTree = new TreeItem(parent);
 
     int posInData = 0;
     QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.get_data()), packet.get_data_size());
     
     // Log all the packet info
-    LOGSTRVAL("stream_index", packet.get_stream_index());
-    LOGSTRVAL("pts", packet.get_pts());
-    LOGSTRVAL("dts", packet.get_dts());
-    LOGSTRVAL("duration", packet.get_duration());
-    LOGSTRVAL("flag_keyframe", packet.get_flag_keyframe());
-    LOGSTRVAL("flag_corrupt", packet.get_flag_corrupt());
-    LOGSTRVAL("flag_discard", packet.get_flag_discard());
-    LOGSTRVAL("data_size", packet.get_data_size());
+    new TreeItem("stream_index", packet.get_stream_index(), itemTree);
+    new TreeItem("pts", packet.get_pts(), itemTree);
+    new TreeItem("dts", packet.get_dts(), itemTree);
+    new TreeItem("duration", packet.get_duration(), itemTree);
+    new TreeItem("flag_keyframe", packet.get_flag_keyframe(), itemTree);
+    new TreeItem("flag_corrupt", packet.get_flag_corrupt(), itemTree);
+    new TreeItem("flag_discard", packet.get_flag_discard(), itemTree);
+    new TreeItem("data_size", packet.get_data_size(), itemTree);
 
     if (annexBParser)
     {
@@ -309,7 +304,7 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
           else if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)1)
             offset = 3;
           else
-            throw std::logic_error("Start code could not be found.");
+            return reader_helper::addErrorMessageChildItem("Start code could not be found.", itemTree);
 
           // Look for the next start code (or the end of the file)
           int nextStartCodePos = avpacketData.indexOf(startCode, posInData + 3);
@@ -338,9 +333,9 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 
           if (size < 0)
             // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
-            throw std::logic_error("Invalid size indicator in packet.");
+            return reader_helper::addErrorMessageChildItem("Invalid size indicator in packet.", itemTree);
           if (posInData + size > avpacketData.length())
-            throw std::logic_error("Not enough data in the input array to read NAL unit.");
+            return reader_helper::addErrorMessageChildItem("Not enough data in the input array to read NAL unit.", itemTree);
 
           nalData = avpacketData.mid(posInData, size);
           posInData += size;
@@ -350,7 +345,8 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
         // Parse the NAL data
         QString nalTypeName;
         QUint64Pair nalStartEndPosFile; // Not used
-        annexBParser->parseAndAddNALUnitNoThrow(nalID, nalData, itemTree, nalStartEndPosFile, &nalTypeName);
+        if (!annexBParser->parseAndAddNALUnit(nalID, nalData, itemTree, nalStartEndPosFile, &nalTypeName))
+          itemTree->setError();
         if (!nalTypeName.isEmpty())
           nalNames.append(nalTypeName);
         nalID++;
@@ -397,36 +393,37 @@ void parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
         specificDescription += (" " + n);
     }
     
-    if (itemTree)
-      // Set a useful name of the TreeItem (the root for this NAL)
-      itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": "") + specificDescription);
+    // Set a useful name of the TreeItem (the root for this NAL)
+    itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": "") + specificDescription);
   }
+
+  return true;
 }
 
-void parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *itemTree, QScopedPointer<parserAnnexB> &annexBParser)
+bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser)
 {
-  sub_byte_reader reader(hvcCData);
+  reader_helper reader(hvcCData, root);
   reader.disableEmulationPrevention();
 
-  int reserved_4onebits, reserved_5onebits, reserver_6onebits;
+  unsigned int reserved_4onebits, reserved_5onebits, reserver_6onebits;
 
   // The first 22 bytes are the hvcC header
   READBITS(configurationVersion, 8);
   if (configurationVersion != 1)
     throw std::logic_error("Only configuration version 1 supported.");
   READBITS(general_profile_space, 2);
-  READFLAG(general_tier_flag)
+  READFLAG(general_tier_flag);
   READBITS(general_profile_idc, 5);
   READBITS(general_profile_compatibility_flags, 32);
-  READBITS64(general_constraint_indicator_flags, 48);
+  READBITS(general_constraint_indicator_flags, 48);
   READBITS(general_level_idc, 8);
   READBITS(reserved_4onebits, 4);
   if (reserved_4onebits != 15)
-    throw std::logic_error("The reserved 4 one bits should all be one.");
+    return reader.addErrorMessageChildItem("The reserved 4 one bits should all be one.");
   READBITS(min_spatial_segmentation_idc, 12);
   READBITS(reserver_6onebits, 6);
   if (reserver_6onebits != 63)
-    throw std::logic_error("The reserved 6 one bits should all be one.");
+    return reader.addErrorMessageChildItem("The reserved 6 one bits should all be one.");
   QStringList parallelismTypeMeaning = QStringList()
     << "mixed-type parallel decoding"
     << "slice-based parallel decoding"
@@ -435,15 +432,15 @@ void parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *itemTree, 
   READBITS_M(parallelismType, 2, parallelismTypeMeaning);
   READBITS(reserver_6onebits, 6);
   if (reserver_6onebits != 63)
-    throw std::logic_error("The reserved 6 one bits should all be one.");
+    return reader.addErrorMessageChildItem("The reserved 6 one bits should all be one.");
   READBITS(chromaFormat, 2);
   READBITS(reserved_5onebits, 5);
   if (reserved_5onebits != 31)
-    throw std::logic_error("The reserved 6 one bits should all be one.");
+    return reader.addErrorMessageChildItem("The reserved 6 one bits should all be one.");
   READBITS(bitDepthLumaMinus8, 3);
   READBITS(reserved_5onebits, 5);
   if (reserved_5onebits != 31)
-    throw std::logic_error("The reserved 6 one bits should all be one.");
+    return reader.addErrorMessageChildItem("The reserved 6 one bits should all be one.");
   READBITS(bitDepthChromaMinus8, 3);
   READBITS(avgFrameRate, 16);
   READBITS(constantFrameRate, 2);
@@ -453,41 +450,42 @@ void parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *itemTree, 
   READBITS(numOfArrays, 8);
 
   // Now parse the contained raw NAL unit arrays
-  for (int i = 0; i < numOfArrays; i++)
+  for (unsigned int i = 0; i < numOfArrays; i++)
   {
     hvcC_naluArray a;
-    a.parse_hvcC_naluArray(i, reader, itemTree, annexBParser);
+    if (!a.parse_hvcC_naluArray(i, reader, annexBParser))
+      return false;
     naluArrayList.append(a);
   }
+  return true;
 }
 
-void parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, sub_byte_reader &reader, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser)
+bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser)
 {
-  // Create a new TreeItem root for this nalArray
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem(QString("nal unit array %1").arg(arrayID), root) : nullptr;
+  reader_sub_level(reader, QString("nal unit array %1").arg(arrayID));
 
   // The next 3 bytes contain info about the array
   READFLAG(array_completeness);
   READFLAG(reserved_flag_false);
   if (reserved_flag_false)
-    throw std::logic_error("The reserved_flag_false should be false.");
+    return reader.addErrorMessageChildItem("The reserved_flag_false should be false.");
   READBITS(NAL_unit_type, 6);
   READBITS(numNalus, 16);
   
-  for (int i = 0; i < numNalus; i++)
+  for (unsigned int i = 0; i < numNalus; i++)
   {
     hvcC_nalUnit nal;
-    nal.parse_hvcC_nalUnit(i, reader, itemTree, annexBParser);
+    if (!nal.parse_hvcC_nalUnit(i, reader, annexBParser))
+      return false;
     nalList.append(nal);
   }
+
+  return true;
 }
 
-void parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, sub_byte_reader &reader, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser)
+bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser)
 {
-  // Create a new TreeItem root for this nalUnit
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem(QString("nal unit %1").arg(unitID), root) : nullptr;
+  reader_sub_level(reader, QString("nal unit %1").arg(unitID));
 
   READBITS(nalUnitLength, 16);
 
@@ -495,7 +493,10 @@ void parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, sub_byte_reade
   QByteArray nalData = reader.readBytes(nalUnitLength);
 
   // Let the hevc annexB parser parse this
-  annexBParser->parseAndAddNALUnitNoThrow(unitID, nalData, itemTree);
+  if (!annexBParser->parseAndAddNALUnit(unitID, nalData))
+    return false;
+
+  return true;
 }
 
 bool parserAVFormat::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file)
@@ -541,16 +542,11 @@ bool parserAVFormat::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file)
       curPercentValue = newPercentValue;
     }
 
-    try
+    if (!parseAVPacket(packetID, packet))
     {
-      parseAVPacket(packetID, packet);
+      DEBUG_AVFORMAT("parseAVPacket error parsing NAL %d", packetID);
     }
-    catch (...)
-    {
-      // Reading a NAL unit failed at some point.
-      // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_AVFORMAT("parseAVPacket Exception thrown parsing NAL %d", packetID);
-    }
+
     packetID++;
     packet = file->getNextPacket(false, getVideoPacketsOnly);
   }

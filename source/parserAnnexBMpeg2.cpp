@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -32,42 +32,23 @@
 
 #include "parserAnnexBMpeg2.h"
 
-// Read "numBits" bits into the variable "into". 
-#define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
-#define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings,itemTree);}
-#define READBITS_A(into,numBits,i) {QString code; int v=reader.readBits(numBits,&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
-// Read a flag (1 bit) into the variable "into".
-#define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
-#define READFLAG_M(into,meanings) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",meanings,itemTree);}
-#define READFLAG_A(into,i) {bool b=(reader.readBits(1)!=0); into.append(b); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),b,QString("u(1)"),b?"1":"0",itemTree);}
-// Do not actually read anything but also put the value into the tree as a calculated value
-#define LOGVAL_M(val,meaning) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),meaning,itemTree);}
-// Read "numBits" bits and ignore them.
-#define IGNOREBITS(numBits) {reader.readBits(numBits);}
+#include "parserCommonMacros.h"
 
 const QStringList parserAnnexBMpeg2::nal_unit_type_toString = QStringList()
   << "UNSPECIFIED" << "PICTURE" << "SLICE" << "USER_DATA" << "SEQUENCE_HEADER" << "SEQUENCE_ERROR" << "EXTENSION_START" << "SEQUENCE_END"
   << "GROUP_START" << "SYSTEM_START_CODE" << "RESERVED";
 
-void parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
+bool parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
 {
-  if (header_byte.length() != 1)
-    throw std::logic_error("The AVC header must have only one byte.");
-
   // Create a sub byte parser to access the bits
-  sub_byte_reader reader(header_byte);
+  reader_helper reader(header_byte, root, "header_code()");
 
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("header_code()", root) : nullptr;
+  if (header_byte.length() != 1)
+    return reader.addErrorMessageChildItem("The header code must be one byte only.");
 
-  // Parse the start code
-  QString code;
-  start_code_value = reader.readBits(8, &code);
-  QString start_code_value_meaning = interprete_start_code(start_code_value);
-  
-  if (itemTree) 
-    new TreeItem("start_code_value", start_code_value, QString("u(v) -> u(8)"), code, start_code_value_meaning, itemTree);
+  READBITS_M(start_code_value, 8, get_start_code_meanings());
+
+  return true;
 }
 
 QByteArray parserAnnexBMpeg2::nal_unit_mpeg2::getNALHeader() const
@@ -75,6 +56,27 @@ QByteArray parserAnnexBMpeg2::nal_unit_mpeg2::getNALHeader() const
   QByteArray ret;
   ret.append(start_code_value);
   return ret;
+}
+
+QStringList parserAnnexBMpeg2::nal_unit_mpeg2::get_start_code_meanings()
+{
+  QStringList meanings = QStringList();
+  meanings.append("picture_start_code");
+  // 01 through AF
+  for (int i=0x01; i<0xaf; i++)
+    meanings.append(QString("slice_start_code - slice %1").arg(i));
+  meanings.append("reserved");
+  meanings.append("reserved");
+  meanings.append("user_data_start_code");
+  meanings.append("sequence_header_code");
+  meanings.append("sequence_error_code");
+  meanings.append("extension_start_code");
+  meanings.append("reserved");
+  meanings.append("sequence_end_code");
+  meanings.append("group_start_code");
+  meanings.append("system start codes");
+  
+  return meanings;
 }
 
 QString parserAnnexBMpeg2::nal_unit_mpeg2::interprete_start_code(int start_code)
@@ -135,7 +137,7 @@ QString parserAnnexBMpeg2::nal_unit_mpeg2::interprete_start_code(int start_code)
   return "";
 }
 
-void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   // Skip the NAL unit header
   int skip = 0;
@@ -163,42 +165,48 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
 
   // Create a nal_unit and read the header
   nal_unit_mpeg2 nal_mpeg2(nalStartEndPosFile, nalID);
-  nal_mpeg2.parse_nal_unit_header(nalHeaderBytes, nalRoot);
+  if (!nal_mpeg2.parse_nal_unit_header(nalHeaderBytes, nalRoot))
+    return false;
 
+  bool parsingSuccess = true;
   if (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER)
   {
     // A sequence header
     auto new_sequence_header = QSharedPointer<sequence_header>(new sequence_header(nal_mpeg2));
-    new_sequence_header->parse_sequence_header(payload, nalRoot);
-    specificDescription = QString(" Sequence Header");
+    parsingSuccess = new_sequence_header->parse_sequence_header(payload, nalRoot);
+
+    specificDescription = parsingSuccess ? " Sequence Header" : " Sequence Header (Error)";
     if (nalTypeName)
-      *nalTypeName = QString(" SeqHeader");
-    if (!first_sequence_header)
+      *nalTypeName = parsingSuccess ? " SeqHeader" : " SeqHeader(Err)";
+    if (parsingSuccess && !first_sequence_header)
       first_sequence_header = new_sequence_header;
   }
   else if (nal_mpeg2.nal_unit_type == PICTURE)
   {
     auto new_picture_header = QSharedPointer<picture_header>(new picture_header(nal_mpeg2));
-    new_picture_header->parse_picture_header(payload, nalRoot);
-    specificDescription = QString(" Picture Header");
+    parsingSuccess = new_picture_header->parse_picture_header(payload, nalRoot);
+
+    specificDescription = parsingSuccess ? " Picture Header" : " Picture Header (Error)";
     if (nalTypeName)
-      *nalTypeName = QString(" PicHeader");
+      *nalTypeName = parsingSuccess ? " PicHeader" : " picHeader(Err)";
   }
   else if (nal_mpeg2.nal_unit_type == GROUP_START)
   {
     auto new_group_of_pictures_header = QSharedPointer<group_of_pictures_header>(new group_of_pictures_header(nal_mpeg2));
-    new_group_of_pictures_header->parse_group_of_pictures_header(payload, nalRoot);
-    specificDescription = QString(" Group of Pictures");
+    parsingSuccess = new_group_of_pictures_header->parse_group_of_pictures_header(payload, nalRoot);
+
+    specificDescription = parsingSuccess ? " Group of Pictures" : " Group of Pictures (Error)";
     if (nalTypeName)
-      *nalTypeName = QString(" PicGroup");
+      *nalTypeName = parsingSuccess ? " PicGroup" : " PicGroup(Err)";
   }
   else if (nal_mpeg2.nal_unit_type == USER_DATA)
   {
     auto new_user_data = QSharedPointer<user_data>(new user_data(nal_mpeg2));
-    new_user_data->parse_user_data(payload, nalRoot);
-    specificDescription = QString(" User Data");
+    parsingSuccess = new_user_data->parse_user_data(payload, nalRoot);
+
+    specificDescription = parsingSuccess ? " User Data" : " User Data (Error)";
     if (nalTypeName)
-      *nalTypeName = QString(" UserData");
+      *nalTypeName = parsingSuccess ? " UserData" : " UserData(Err)";
   }
   else if (nal_mpeg2.nal_unit_type == EXTENSION_START)
   {
@@ -206,7 +214,8 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
 
     // An extension
     auto new_extension = QSharedPointer<nal_extension>(new nal_extension(nal_mpeg2));
-    new_extension->parse_extension_start_code(payload, message_tree);
+    if (!new_extension->parse_extension_start_code(payload, message_tree))
+      return false;
 
     if (message_tree)
       message_tree->itemData[0] = new_extension->get_extension_function_name();
@@ -214,20 +223,23 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
     if (new_extension->extension_type == EXT_SEQUENCE)
     {
       auto new_sequence_extension = QSharedPointer<sequence_extension>(new sequence_extension(new_extension));
-      new_sequence_extension->parse_sequence_extension(payload, message_tree);
+      parsingSuccess = new_sequence_extension->parse_sequence_extension(payload, message_tree);
+
+      specificDescription = parsingSuccess ? " Sequence Extension": " Sequence Extension (Error)";
       if (nalTypeName)
-        *nalTypeName = QString(" SeqExt");
-      specificDescription = QString(" Sequence Extension");
+        *nalTypeName = parsingSuccess ? " SeqExt" : " SeqExt(Err)";
+      
       if (!first_sequence_extension)
         first_sequence_extension = new_sequence_extension;
     }
     else if (new_extension->extension_type == EXT_PICTURE_CODING)
     {
       auto new_picture_coding_extension = QSharedPointer<picture_coding_extension>(new picture_coding_extension(new_extension));
-      new_picture_coding_extension->parse_picture_coding_extension(payload, message_tree);
+      parsingSuccess = new_picture_coding_extension->parse_picture_coding_extension(payload, message_tree);
+
+      specificDescription = parsingSuccess ? " Picture Coding Extension" : " Picture Coding Extension (Error)";
       if (nalTypeName)
-        *nalTypeName = QString(" PicCodExt");
-      specificDescription = QString(" Picture Coding Extension");
+        *nalTypeName = parsingSuccess ? " PicCodExt" : " PicCodExt(Err)";
     }
     else
     {
@@ -240,16 +252,14 @@ void parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_mpeg2.nal_idx).arg(nal_unit_type_toString.value(nal_mpeg2.nal_unit_type)) + specificDescription);
+
+  return parsingSuccess;
 }
 
-void parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray & parameterSetData, TreeItem * root)
+bool parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
-  sub_byte_reader reader(parameterSetData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("sequence_header()", root) : nullptr;
+  reader_helper reader(parameterSetData, root, "sequence_header()");
 
   READBITS(horizontal_size_value, 12);
   READBITS(vertical_size_value, 12);
@@ -276,7 +286,7 @@ void parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray 
   READBITS_M(bit_rate_value, 18, "The lower 18 bits of bit_rate.");
   READFLAG(marker_bit);
   if (!marker_bit)
-    throw std::logic_error("The marker_bit shall be set to 1 to prevent emulation of start codes.");
+    reader.addErrorMessageChildItem("The marker_bit shall be set to 1 to prevent emulation of start codes.");
   READBITS_M(vbv_buffer_size_value, 10, "the lower 10 bits of vbv_buffer_size");
   READFLAG(constrained_parameters_flag);
   READFLAG(load_intra_quantiser_matrix);
@@ -291,16 +301,13 @@ void parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray 
     for (int i=0; i<64; i++)
       READBITS(non_intra_quantiser_matrix[i], 8);
   }
+  return true;
 }
 
-void parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, TreeItem * root)
+bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
-  sub_byte_reader reader(parameterSetData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("picture_header()", root) : nullptr;
+  reader_helper reader(parameterSetData, root, "picture_header");
 
   READBITS(temporal_reference, 10);
   QStringList picture_coding_type_meaning = QStringList()
@@ -328,27 +335,26 @@ void parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & 
     
     if (!abort)
     {
-      int extra_information_picture;
+      unsigned int extra_information_picture;
       READBITS(extra_information_picture, 8);
     }
   }
+  return true;
 }
 
-void parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header(const QByteArray & parameterSetData, TreeItem * root)
+bool parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
-  sub_byte_reader reader(parameterSetData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("group_of_pictures_header()", root) : nullptr;
+  reader_helper reader(parameterSetData, root, "group_of_pictures_header()");
 
   READBITS(time_code, 25);
   READFLAG(closed_gop);
   READFLAG(broken_link);
+
+  return true;
 }
 
-void parserAnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterSetData, TreeItem * root)
+bool parserAnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
 
@@ -368,11 +374,12 @@ void parserAnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterS
        new TreeItem(QString("byte[%1]").arg(i++), c, QString("u(v) -> u(8)"), code, itemTree);
     }
   }
+  return true;
 }
 
-void parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & extension_payload, TreeItem * itemTree)
+bool parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & extension_payload, TreeItem * itemTree)
 {
-  sub_byte_reader reader(extension_payload);
+  reader_helper reader(extension_payload, itemTree);
 
   QStringList extension_start_code_identifier_meaning = QStringList()
     << "Reserved"
@@ -409,6 +416,8 @@ void parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & e
     extension_type = EXT_PICTURE_TEMPORAL_SCALABLE;
   else
     extension_type = EXT_RESERVED;
+
+  return true;
 }
 
 QString parserAnnexBMpeg2::nal_extension::get_extension_function_name()
@@ -438,10 +447,10 @@ QString parserAnnexBMpeg2::nal_extension::get_extension_function_name()
   }
 }
 
-void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem * itemTree)
+bool parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
-  sub_byte_reader reader(parameterSetData);
+  reader_helper reader(parameterSetData, root);
   
   IGNOREBITS(4);  // The extension_start_code_identifier was already read
   READBITS(profile_and_level_indication, 8);
@@ -470,20 +479,22 @@ void parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByte
   READBITS_M(bit_rate_extension, 12, "12 most significant bits from bit_rate");
   READFLAG(marker_bit);
   if (!marker_bit)
-    throw std::logic_error("The marker_bit shall be set to 1 to prevent emulation of start codes.");
+    return reader.addErrorMessageChildItem("The marker_bit shall be set to 1 to prevent emulation of start codes.");
   READBITS_M(vbv_buffer_size_extension, 8, "most significant bits from vbv_buffer_size");
   QStringList low_delay_meaning = QStringList()
     << "sequence may contain B-pictures, the frame re-ordering delay is present in the VBV description and the bitstream shall not contain big pictures"
     << "sequence does not contain any B-pictures, the frame e-ordering delay is not present in the VBV description and the bitstream may contain 'big pictures'";
-  READFLAG_M(low_delay, low_delay_meaning)
+  READFLAG_M(low_delay, low_delay_meaning);
   READBITS(frame_rate_extension_n, 2);
   READBITS(frame_rate_extension_d, 5);
+
+  return true;
 }
 
-void parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, TreeItem * itemTree)
+bool parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, TreeItem *itemTree)
 {
   nalPayload = parameterSetData;
-  sub_byte_reader reader(parameterSetData);
+  reader_helper reader(parameterSetData, itemTree);
 
   IGNOREBITS(4);  // The extension_start_code_identifier was already read
   READBITS(f_code[0][0], 4); // forward horizontal
@@ -514,6 +525,8 @@ void parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension
     READBITS(burst_amplitude, 7);
     READBITS(sub_carrier_phase, 8);
   }
+
+  return true;
 }
 
 QPair<int,int> parserAnnexBMpeg2::getProfileLevel()
