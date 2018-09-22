@@ -629,7 +629,7 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToDTS,
   QByteArrayList parametersets;
   if (isInputFormatTypeAnnexB())
   {
-    uint64_t filePos;
+    uint64_t filePos = 0;
     if (!bothFFmpeg)
       parametersets = inputFileAnnexBParser->getSeekFrameParamerSets(seekToFrame, filePos);
     DEBUG_COMPRESSED("playlistItemCompressedVideo::seekToPosition seeking annexB file to filePos %" PRIu64 "", filePos);

@@ -678,7 +678,7 @@ bool parserAV1OBU::frame_header::parse_uncompressed_header(reader_helper &reader
 {
   reader_sub_level r(reader, "uncompressed_header()");
   
-  int idLen;
+  int idLen = -1;
   if (seq_header->frame_id_numbers_present_flag)
   {
     idLen = seq_header->additional_frame_id_length_minus_1 + seq_header->delta_frame_id_length_minus_2 + 3;

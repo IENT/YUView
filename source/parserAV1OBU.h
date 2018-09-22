@@ -291,8 +291,8 @@ protected:
   {
     frame_type_enum RefFrameType[8];
     bool RefValid[8];
-    bool RefOrderHint[8];
-    bool OrderHints[8];
+    unsigned int RefOrderHint[8];
+    unsigned int OrderHints[8];
     int RefFrameId[8];
 
     bool SeenFrameHeader;
@@ -517,7 +517,7 @@ protected:
       bool parse_loop_filter_params(bool CodedLossless, bool allow_intrabc, reader_helper &reader, QSharedPointer<sequence_header> seq_header);
 
       unsigned int loop_filter_level[4];
-      int loop_filter_ref_deltas[7];
+      int loop_filter_ref_deltas[8];
       int loop_filter_mode_deltas[2];
 
       unsigned int loop_filter_sharpness;

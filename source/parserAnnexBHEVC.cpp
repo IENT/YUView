@@ -551,6 +551,9 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
         result = new_alternative_transfer_characteristics_sei->parse_alternative_transfer_characteristics_sei(sub_sei_data, message_tree);
         reparse = new_alternative_transfer_characteristics_sei;
       }
+      else
+        // The default parser just logs the raw bytes
+        result = new_sei->parser_sei_bytes(sub_sei_data, message_tree);
 
       if (result == SEI_PARSING_WAIT_FOR_PARAMETER_SETS)
         reparse_sei.append(reparse);
@@ -946,7 +949,7 @@ bool parserAnnexBHEVC::st_ref_pic_set::parse_st_ref_pic_set(reader_helper &reade
       READFLAG_A(used_by_curr_pic_s0_flag, i);
 
       if (i==0)
-        DeltaPocS0[stRpsIdx][i] = -(delta_poc_s0_minus1.last() + 1); // (7-65)
+        DeltaPocS0[stRpsIdx][i] = -((int)delta_poc_s0_minus1.last() + 1); // (7-65)
       else
         DeltaPocS0[stRpsIdx][i] = DeltaPocS0[stRpsIdx][i-1] - (delta_poc_s0_minus1.last() + 1); // (7-67)
       LOGSTRVAL(QString("DeltaPocS0[%1][%2]").arg(stRpsIdx).arg(i), DeltaPocS0[stRpsIdx][i]);
@@ -2072,6 +2075,30 @@ int parserAnnexBHEVC::sei::parse_sei_header(const QByteArray &sliceHeaderData, T
   return reader.nrBytesRead();
 }
 
+parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::sei::parser_sei_bytes(QByteArray &data, TreeItem *root)
+{
+  if (root == nullptr)
+    return SEI_PARSING_OK;
+
+  // Create a new TreeItem root for the item
+  TreeItem *const itemTree = new TreeItem("raw_bytes()", root);
+
+  for (int i=0; i<data.length(); i++)
+  {
+    unsigned char c = data[i];
+    QString binary;
+    for (int j=7; j>=0; j--)
+      if (c & (1<<j))
+        binary.append("1");
+      else
+        binary.append("0");
+
+    new TreeItem(QString("data[%1]").arg(i), c, QString("u(8)"), binary, itemTree);
+  }
+
+  return SEI_PARSING_OK;
+}
+
 parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
 {
   user_data_UUID = sliceHeaderData.mid(0, 16).toHex();
@@ -2105,7 +2132,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_d
         {
           if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
             new TreeItem("Info", aggregate_string, "", "", "", itemTree);
-            aggregate_string = "";
+          aggregate_string = "";
         }
         else if (val == "options:")
         {

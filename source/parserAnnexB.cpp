@@ -146,6 +146,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
     }
     catch (const std::exception &exc)
     {
+      Q_UNUSED(exc);
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
       DEBUG_ANNEXB("parseAndAddNALUnit Exception thrown parsing NAL %d - %s", nalID, exc.what());

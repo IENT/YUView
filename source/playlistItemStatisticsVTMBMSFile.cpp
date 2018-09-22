@@ -467,8 +467,9 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
           // useful for debugging:
   //        QStringList all_captured = statisitcMatch.capturedTexts();
 
-
           poc = statisitcMatch.captured(1).toInt();
+          width = statisitcMatch.captured(4).toInt();
+          height = statisitcMatch.captured(5).toInt();
           // if there is a new POC, we are done here!
           if (poc != frameIdxInternal)
             break;
@@ -478,8 +479,6 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
           {
             posX = statisitcMatch.captured(2).toInt();
             posY = statisitcMatch.captured(3).toInt();
-            width = statisitcMatch.captured(4).toInt();
-            height = statisitcMatch.captured(5).toInt();
 
             // Check if block is within the image range
             if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.getFrameSize().width() || posY + height > statSource.getFrameSize().height()))
@@ -538,7 +537,6 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
                   // Block not in image. Warn about this.
                   blockOutsideOfFrame_idx = frameIdxInternal;
               }
-
             }
 
             if (aType->hasVectorData)
