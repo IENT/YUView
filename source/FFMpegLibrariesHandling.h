@@ -426,7 +426,7 @@ public:
   void free_packet();
   void set_data(QByteArray &set_data);
   void set_pts(int64_t pts);
-  void set_dts(int64_t pts);
+  void set_dts(int64_t dts);
   explicit operator bool() const { return pkt != nullptr; };
   AVPacket *get_packet()       { update(); return pkt; }
   int      get_stream_index()  { update(); return stream_index; }
@@ -712,7 +712,7 @@ public:
   AVDictionaryWrapper    get_metadata(AVFrameWrapper &frame);
 
   // Seek to a specific frame
-  int seek_frame(AVFormatContextWrapper &fmt, int stream_idx, int pts);
+  int seek_frame(AVFormatContextWrapper &fmt, int stream_idx, int dts);
 
   // All the function pointers of the ffmpeg library
   FFmpegLibraryFunctions lib;

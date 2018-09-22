@@ -48,7 +48,7 @@
 #include "videoHandlerRGB.h"
 #include "mainwindow.h"
 
-#define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
+#define COMPRESSED_VIDEO_DEBUG_OUTPUT 1
 #if COMPRESSED_VIDEO_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_COMPRESSED qDebug
@@ -472,15 +472,15 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     // Get the closest possible seek position
     int seekToFrame = -1;
     int seekToAnnexBFrameCount = -1;
-    int seekToPTS = -1;
+    int seekToDTS = -1;
     if (isInputFormatTypeAnnexB())
       seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdxInternal, seekToAnnexBFrameCount);
     else
     {
       if (caching)
-        seekToPTS = inputFileFFmpegCaching->getClosestSeekableDTSBefore(frameIdxInternal, seekToFrame);
+        seekToDTS = inputFileFFmpegCaching->getClosestSeekableDTSBefore(frameIdxInternal, seekToFrame);
       else
-        seekToPTS = inputFileFFmpegLoading->getClosestSeekableDTSBefore(frameIdxInternal, seekToFrame);
+        seekToDTS = inputFileFFmpegLoading->getClosestSeekableDTSBefore(frameIdxInternal, seekToFrame);
     }
 
     if (curFrameIdx == -1 || seekToFrame > curFrameIdx + FORWARD_SEEK_THRESHOLD)
@@ -493,8 +493,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     {
       // Seek and update the frame counters. The seekToPosition function will update the currentFrameIdx[] indices
       readAnnexBFrameCounterCodingOrder = seekToAnnexBFrameCount;
-      DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData seeking to frame %d PTS %d AnnexBCnt %d", seekToFrame, seekToPTS, readAnnexBFrameCounterCodingOrder);
-      seekToPosition(seekToFrame, seekToPTS, caching);
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData seeking to frame %d PTS %d AnnexBCnt %d", seekToFrame, seekToDTS, readAnnexBFrameCounterCodingOrder);
+      seekToPosition(seekToFrame, seekToDTS, caching);
     }
   }
   
@@ -614,7 +614,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
   }
 }
 
-void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS, bool caching)
+void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToDTS, bool caching)
 {
   // Do the seek
   decoderBase *dec = caching ? cachingDecoder.data() : loadingDecoder.data();
@@ -642,11 +642,11 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToPTS,
   {
     if (!bothFFmpeg)
       parametersets = caching ? inputFileFFmpegCaching->getParameterSets() : inputFileFFmpegLoading->getParameterSets();
-    DEBUG_COMPRESSED("playlistItemCompressedVideo::seekToPosition seeking ffmpeg file to pts %d", seekToPTS);
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::seekToPosition seeking ffmpeg file to pts %d", seekToDTS);
     if (caching)
-      inputFileFFmpegCaching->seekToPTS(seekToPTS);
+      inputFileFFmpegCaching->seekToDTS(seekToDTS);
     else
-      inputFileFFmpegLoading->seekToPTS(seekToPTS);
+      inputFileFFmpegLoading->seekToDTS(seekToDTS);
   }
 
   // In case of using ffmpeg for decoding, we don't need to push the parameter sets (the

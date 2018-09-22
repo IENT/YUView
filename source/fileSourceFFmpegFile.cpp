@@ -299,7 +299,7 @@ bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow
     return false;
 
   // Seek back to the beginning
-  seekToPTS(0);
+  seekToDTS(0);
 
   return true;
 }
@@ -319,7 +319,7 @@ void fileSourceFFmpegFile::updateFileWatchSetting()
 int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const
 {
   // We are always be able to seek to the beginning of the file
-  int bestSeekPTS = keyFrameList[0].pts;
+  int bestSeekDTS = keyFrameList[0].dts;
   seekToFrameIdx = keyFrameList[0].frame;
 
   for (pictureIdx idx : keyFrameList)
@@ -329,7 +329,7 @@ int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToF
       if (idx.frame <= frameIdx)
       {
         // We could seek here
-        bestSeekPTS = idx.pts;
+        bestSeekDTS = idx.dts;
         seekToFrameIdx = idx.frame;
       }
       else
@@ -337,13 +337,13 @@ int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToF
     }
   }
 
-  return bestSeekPTS;
+  return bestSeekDTS;
 }
 
 bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
 {
   // Create the dialog
-  int64_t maxPTS = getMaxPTS();
+  int64_t maxPTS = getMaxTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
   int curPercentValue = 0;
   QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
@@ -358,7 +358,7 @@ bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
     DEBUG_FFMPEG("fileSourceFFmpegFile::scanBitstream: frame %d pts %d dts %d%s", nrFrames, (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
 
     if (pkt.get_flag_keyframe())
-      keyFrameList.append(pictureIdx(nrFrames, pkt.get_pts()));
+      keyFrameList.append(pictureIdx(nrFrames, pkt.get_dts()));
 
     if (progress.wasCanceled())
       return false;
@@ -469,26 +469,26 @@ bool fileSourceFFmpegFile::goToNextVideoPacket(bool videoPacketsOnly)
   return true;
 }
 
-bool fileSourceFFmpegFile::seekToPTS(int64_t pts)
+bool fileSourceFFmpegFile::seekToDTS(int64_t dts)
 {
   if (!isFileOpened)
     return false;
 
-  int ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), pts);
+  int ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), dts);
   if (ret != 0)
   {
-    DEBUG_FFMPEG("FFmpegLibraries::seekToPTS Error PTS %ld. Return Code %d", pts, ret);
+    DEBUG_FFMPEG("FFmpegLibraries::seekToDTS Error DTS %ld. Return Code %d", dts, ret);
     return false;
   }
 
   // We seeked somewhere, so we are not at the end of the file anymore.
   endOfFile = false;
 
-  DEBUG_FFMPEG("FFmpegLibraries::seekToPTS Successfully seeked to PTS %d", pts);
+  DEBUG_FFMPEG("FFmpegLibraries::seekToDTS Successfully seeked to DTS %d", dts);
   return true;
 }
 
-int64_t fileSourceFFmpegFile::getMaxPTS() 
+int64_t fileSourceFFmpegFile::getMaxTS() 
 { 
   if (!isFileOpened)
     return -1; 

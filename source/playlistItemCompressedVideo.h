@@ -165,7 +165,7 @@ protected:
   int currentFrameIdx[2] {-1, -1};
 
   // Seek the input file to the given position, reset the decoder and prepare it to start decoding from the given position.
-  void seekToPosition(int seekToFrame, int seekToPTS, bool caching);
+  void seekToPosition(int seekToFrame, int seekToDTS, bool caching);
 
   // For certain decoders (FFmpeg or HM), pushing data may fail. The decoder may or may not switch to retrieveing mode.
   // In this case, we must re-push the packet for which pushing failed.

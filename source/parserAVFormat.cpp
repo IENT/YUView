@@ -127,6 +127,7 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
   if (extradata.at(0) == 1 && extradata.length() >= 7)
   {
     reader_helper reader(extradata, root, "Extradata (Raw AVC NAL units)");
+    IGNOREBITS(8); // Ignore the "1" byte which we already found
 
     // The extradata uses the avcc format (see avc.c in libavformat)
     unsigned int profile, profile_compat, level, reserved_6_one_bits, nal_size_length_minus1, reserved_3_one_bits, number_of_sps;
@@ -502,14 +503,14 @@ bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper 
 bool parserAVFormat::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file)
 {
   // Seek to the beginning of the stream.
-  file->seekToPTS(0);
+  file->seekToDTS(0);
 
   // Show a modal QProgressDialog while this operation is running.
   // If the user presses cancel, we will cancel and return false (opening the file failed).
   // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
   QWidget *mainWindow = MainWindow::getMainWindow();
   // Create the dialog
-  int64_t maxPTS = file->getMaxPTS();
+  int64_t maxPTS = file->getMaxTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
   int curPercentValue = 0;
   QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
@@ -552,6 +553,6 @@ bool parserAVFormat::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file)
   }
 
   // Seek back to the beginning of the stream.
-  file->seekToPTS(0);
+  file->seekToDTS(0);
   return !progress.wasCanceled();
 }

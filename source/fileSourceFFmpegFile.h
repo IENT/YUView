@@ -82,8 +82,8 @@ public:
   void updateFileWatchSetting();
   bool isFileChanged() { bool b = fileChanged; fileChanged = false; return b; }
 
-  bool seekToPTS(int64_t pts);
-  int64_t getMaxPTS();
+  bool seekToDTS(int64_t dts);
+  int64_t getMaxTS();
 
   int getNumberFrames() const { return nrFrames; }
   AVCodecSpecfier getCodecSpecifier() { return video_stream.getCodecSpecifier(); }
@@ -135,9 +135,9 @@ protected:
   // This connects both values.
   struct pictureIdx
   {
-    pictureIdx(int64_t frame, int64_t pts) : frame(frame), pts(pts) {}
+    pictureIdx(int64_t frame, int64_t dts) : frame(frame), dts(dts) {}
     int64_t frame;
-    int64_t pts;
+    int64_t dts;
   };
 
   packetDataFormat_t packetDataFormat {packetFormatUnknown};
