@@ -46,6 +46,10 @@ public:
 
     bool parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
 
+    // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
+    // When parsing of raw OBU files is added, we will need this.
+    bool runParsingOfFile(QString fileName) Q_DECL_OVERRIDE { Q_UNUSED(fileName); assert(false); return false; }
+
 protected:
 
   enum frame_type_enum

@@ -35,7 +35,6 @@
 #include <QImageReader>
 #include <QPainter>
 #include <QSettings>
-#include <QtConcurrent>
 #include "fileSource.h"
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."

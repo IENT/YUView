@@ -52,6 +52,11 @@ public:
   QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
   void enableModel();
 
+  // For parsing files in the background (threading) in the bitstream analysis dialog:
+  virtual bool runParsingOfFile(QString fileName) = 0;
+  int getParsingProgressPercent() { return progressPercentValue; }
+  void setAbortParsing() { cancelBackgroundParser = true; }
+
 protected:
   // ----- Some nested classes that are only used in the scope of the parser classes
 
@@ -266,8 +271,17 @@ protected:
 
     // The root of the tree
     QScopedPointer<TreeItem> rootItem;
+
+    // This is the current number of first level child items which we show right now.
+    // The brackground parser will add more items and it will notify the bitstreamAnalysisWindow
+    // about them. The bitstream analysis window will then update this count and the view to show the new items.
+    unsigned int nrShowChildItems {0};
   };
   NALUnitModel nalUnitModel;
+
+  // If this variable is set (from an external thread), the parsing process should cancel immediately
+  bool cancelBackgroundParser {false};
+  int  progressPercentValue   {0};
 };
 
 #endif // PARSERBASEE_H

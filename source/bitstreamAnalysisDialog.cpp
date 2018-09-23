@@ -42,43 +42,32 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
 {
   ui.setupUi(this);
 
-  // Parse the file using the apropriate parser ...
-  if (inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC)
-  {
-    // Just open and parse the file again
-    QScopedPointer<fileSourceAnnexBFile> annexBFile(new fileSourceAnnexBFile(fileName));
-    // Create a parser
-    QScopedPointer<parserAnnexB> parserAnnexB;
-    if (inputFormatType == inputAnnexBHEVC)
-      parserAnnexB.reset(new parserAnnexBHEVC());
-    else if (inputFormatType == inputAnnexBAVC)
-      parserAnnexB.reset(new parserAnnexBAVC());
-
-    // Parse the file
-    parserAnnexB->enableModel();
-    if (!parserAnnexB->parseAnnexBFile(annexBFile))
-      return;
-
-    parser.reset(parserAnnexB.take());
-  }
-  else if (inputFormatType == inputLibavformat)
-  {
-    // Just open and parse the file again
-    QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(fileName));
-    AVCodecSpecfier codec = ffmpegFile->getCodecSpecifier();
-    QScopedPointer<parserAVFormat> p(new parserAVFormat(codec));
-    p->enableModel();
-    if (!p->parseFFMpegFile(ffmpegFile))
-      return;
-
-    parser.reset(p.take());
-  }
-  else
+  if (inputFormatType == inputInvalid)
     return;
+
+  // Setup the parser
+  if (inputFormatType == inputAnnexBHEVC)
+    parser.reset(new parserAnnexBHEVC());
+  else if (inputFormatType == inputAnnexBAVC)
+    parser.reset(new parserAnnexBAVC());
+  else if (inputFormatType == inputLibavformat)
+    parser.reset(new parserAVFormat());
+  
+  parser->enableModel();
 
   ui.dataTreeView->setModel(parser->getNALUnitModel());
 
   ui.dataTreeView->setColumnWidth(0, 300);
   ui.dataTreeView->setColumnWidth(1, 50);
   ui.dataTreeView->setColumnWidth(2, 70);
+
+  compressedFilePath = fileName;
+
+  // Start the background parsing thread
+  QtConcurrent::run(this, &bitstreamAnalysisDialog::backgroundParsingFunction);
+}
+
+void bitstreamAnalysisDialog::backgroundParsingFunction()
+{
+  parser->runParsingOfFile(compressedFilePath);
 }

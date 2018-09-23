@@ -46,17 +46,18 @@
 class parserAVFormat : public parserBase
 {
 public:
-  parserAVFormat(AVCodecSpecfier codec);
+  parserAVFormat();
   ~parserAVFormat() {}
+  
+  // This function can run in a separate thread
+  bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
+
+private:
+  AVCodecSpecfier codecID;
 
   bool parseExtradata(QByteArray &extradata);
   bool parseMetadata(QStringPairList &metadata);
   bool parseAVPacket(int packetID, AVPacketWrapper &packet);
-
-  bool parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file);
-
-private:
-  AVCodecSpecfier codecID;
 
   struct hvcC_nalUnit
   {

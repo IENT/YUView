@@ -122,6 +122,21 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       possibleDecoders.append(decoderEngineFFMpeg);
     }
     // Parse the loading file
+    // TODO:
+    // Show a modal QProgressDialog while this operation is running.
+    // // If the user presses cancel, we will cancel and return false (opening the file failed).
+    // // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
+    // QWidget *mainWindow = MainWindow::getMainWindow();
+    // // Create the dialog
+    // int64_t maxPos = file->getFileSize();;
+    // // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
+    // int curPercentValue = 0;
+    // QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, 100, mainWindow);
+    // progress.setMinimumDuration(1000);  // Show after 1s
+    // progress.setAutoClose(false);
+    // progress.setAutoReset(false);
+    // progress.setWindowModality(Qt::WindowModal);
+
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Start parsing of file");
     inputFileAnnexBParser->parseAnnexBFile(inputFileAnnexBLoading);
     // Get the frame size and the pixel format

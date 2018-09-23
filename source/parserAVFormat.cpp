@@ -46,18 +46,8 @@
 #define DEBUG_AVFORMAT(fmt,...) ((void)0)
 #endif
 
-parserAVFormat::parserAVFormat(AVCodecSpecfier codec)
+parserAVFormat::parserAVFormat()
 { 
-  codecID = codec; 
-  if (codecID.isAVC())
-    annexBParser.reset(new parserAnnexBAVC());
-  else if (codecID.isHEVC())
-    annexBParser.reset(new parserAnnexBHEVC());
-  else if (codecID.isMpeg2())
-    annexBParser.reset(new parserAnnexBMpeg2());
-  else if (codecID.isAV1())
-    obuParser.reset(new parserAV1OBU());
-
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
   startCode.append((char)0);
@@ -500,48 +490,43 @@ bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper 
   return true;
 }
 
-bool parserAVFormat::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file)
+bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
-  // Seek to the beginning of the stream.
-  file->seekToDTS(0);
+  // Open the file, get the codec which is used and create the needed parser
+  QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(compressedFilePath));
+  codecID = ffmpegFile->getCodecSpecifier();
+  if (codecID.isAVC())
+    annexBParser.reset(new parserAnnexBAVC());
+  else if (codecID.isHEVC())
+    annexBParser.reset(new parserAnnexBHEVC());
+  else if (codecID.isMpeg2())
+    annexBParser.reset(new parserAnnexBMpeg2());
+  else if (codecID.isAV1())
+    obuParser.reset(new parserAV1OBU());
 
-  // Show a modal QProgressDialog while this operation is running.
-  // If the user presses cancel, we will cancel and return false (opening the file failed).
-  // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
-  QWidget *mainWindow = MainWindow::getMainWindow();
-  // Create the dialog
-  int64_t maxPTS = file->getMaxTS();
-  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
-  int curPercentValue = 0;
-  QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
-  progress.setMinimumDuration(1000);  // Show after 1s
-  progress.setAutoClose(false);
-  progress.setAutoReset(false);
-  progress.setWindowModality(Qt::WindowModal);
+  int maxPTS = ffmpegFile->getMaxTS();
+
+  // Seek to the beginning of the stream.
+  ffmpegFile->seekToDTS(0);
 
   // First get the extradata and push it to the parser
-  QByteArray extradata = file->getExtradata();
+  QByteArray extradata = ffmpegFile->getExtradata();
   parseExtradata(extradata);
 
   // Parse the metadata
-  QStringPairList metadata = file->getMetadata();
+  QStringPairList metadata = ffmpegFile->getMetadata();
   parseMetadata(metadata);
 
   // Now iterate over all packets and send them to the parser
   const bool getVideoPacketsOnly = true;
-  AVPacketWrapper packet = file->getNextPacket(false, getVideoPacketsOnly);
+  AVPacketWrapper packet = ffmpegFile->getNextPacket(false, getVideoPacketsOnly);
 
   int packetID = 0;
-  while (!file->atEnd())
+  while (!ffmpegFile->atEnd())
   {
-    if (progress.wasCanceled())
+    if (cancelBackgroundParser)
       return false;
-    int newPercentValue = packet.get_pts() * 100 / maxPTS;
-    if (newPercentValue != curPercentValue)
-    {
-      progress.setValue(newPercentValue);
-      curPercentValue = newPercentValue;
-    }
+    progressPercentValue = packet.get_pts() * 100 / maxPTS;
 
     if (!parseAVPacket(packetID, packet))
     {
@@ -549,10 +534,10 @@ bool parserAVFormat::parseFFMpegFile(QScopedPointer<fileSourceFFmpegFile> &file)
     }
 
     packetID++;
-    packet = file->getNextPacket(false, getVideoPacketsOnly);
+    packet = ffmpegFile->getNextPacket(false, getVideoPacketsOnly);
   }
 
   // Seek back to the beginning of the stream.
-  file->seekToDTS(0);
-  return !progress.wasCanceled();
+  ffmpegFile->seekToDTS(0);
+  return true;
 }

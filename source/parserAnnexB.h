@@ -87,6 +87,9 @@ public:
 
   bool parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file);
 
+  // Called from the bitstream analyzer. This function can run in a background process.
+  bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
+
 protected:
   
   /* The basic NAL unit. Contains the NAL header and the file position of the unit.

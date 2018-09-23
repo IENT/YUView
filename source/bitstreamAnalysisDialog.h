@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -34,7 +34,10 @@
 #define BITSTREAMANALYSISDIALOG_H
 
 #include <QDialog>
+#include <QtConcurrent>
+
 #include "ui_bitstreamAnalysisDialog.h"
+
 #include "typedef.h"
 #include "parserBase.h"
 
@@ -45,13 +48,16 @@ class bitstreamAnalysisDialog : public QDialog
 public:
   bitstreamAnalysisDialog(QWidget *parent, QString fileName, inputFormat inputFormatType);
 
-  private slots:
+private slots:
   
 private:
   
   Ui::bitstreamAnalysisDialog ui;
 
   QScopedPointer<parserBase> parser;
+  QFuture<void> backgroundParserFuture;
+  void backgroundParsingFunction();
+  QString compressedFilePath;
 };
 
 #endif // BITSTREAMANALYSISDIALOG_H

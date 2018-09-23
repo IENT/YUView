@@ -108,41 +108,26 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::parseAnnexBFile");
 
-  // Show a modal QProgressDialog while this operation is running.
-  // If the user presses cancel, we will cancel and return false (opening the file failed).
-  // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
-  QWidget *mainWindow = MainWindow::getMainWindow();
-  // Create the dialog
-  int64_t maxPos = file->getFileSize();;
-  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
-  int curPercentValue = 0;
-  QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, 100, mainWindow);
-  progress.setMinimumDuration(1000);  // Show after 1s
-  progress.setAutoClose(false);
-  progress.setAutoReset(false);
-  progress.setWindowModality(Qt::WindowModal);
-
   // Just push all NAL units from the annexBFile into the annexBParser
   QByteArray nalData;
   int nalID = 0;
   QUint64Pair nalStartEndPosFile;
+  int64_t maxPos = file->getFileSize();;
   while (!file->atEnd())
   {
     // Update the progress dialog
-    if (progress.wasCanceled())
+    if (cancelBackgroundParser)
       return false;
     int64_t pos = file->pos();
-    int newPercentValue = pos * 100 / maxPos;
-    if (newPercentValue != curPercentValue)
-    {
-      progress.setValue(newPercentValue);
-      curPercentValue = newPercentValue;
-    }
+    progressPercentValue = pos * 100 / maxPos;
 
     try
     {
       nalData = file->getNextNALUnit(false, &nalStartEndPosFile);
-      parseAndAddNALUnit(nalID, nalData, nullptr, nalStartEndPosFile);
+      if (!parseAndAddNALUnit(nalID, nalData, nullptr, nalStartEndPosFile))
+      {
+        DEBUG_ANNEXB("parseAndAddNALUnit Error parsing NAL %d", nalID);
+      }
     }
     catch (const std::exception &exc)
     {
@@ -162,5 +147,12 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
   // We are done.
   parseAndAddNALUnit(-1, QByteArray());
   DEBUG_ANNEXB("parseAndAddNALUnit Parsing done. Found %d POCs.", POCList.length());
-  return !progress.wasCanceled();
+  return true;
+}
+
+bool parserAnnexB::runParsingOfFile(QString compressedFilePath)
+{
+  DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
+  QScopedPointer<fileSourceAnnexBFile> file(new fileSourceAnnexBFile(compressedFilePath));
+  return parseAnnexBFile(file);
 }

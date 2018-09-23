@@ -35,7 +35,7 @@
 
 #include "decoderBase.h"
 #include "fileSourceFFmpegFile.h"
-#include "parserAVFormat.h"
+#include "parserAnnexB.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
 #include "bitstreamAnalysisDialog.h"

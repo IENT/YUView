@@ -35,7 +35,6 @@
 #include <cassert>
 #include <iostream>
 #include <QDebug>
-#include <QtConcurrent>
 #include <QTime>
 #include "statisticsExtensions.h"
 

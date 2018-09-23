@@ -34,7 +34,6 @@
 
 #include <QFileInfo>
 #include <QPainter>
-#include <QtConcurrent>
 #include <QUrl>
 #include <QVBoxLayout>
 
