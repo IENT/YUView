@@ -41,7 +41,7 @@ using namespace YUV_Internals;
 class parserAV1OBU : public parserBase
 {
   Q_OBJECT
-  
+
 public:
     parserAV1OBU();
     ~parserAV1OBU() {}
@@ -386,7 +386,7 @@ protected:
 
     struct frame_refs_struct
     {
-      void set_frame_refs(int OrderHintBits, bool enable_order_hint, int last_frame_idx, int gold_frame_idx, int OrderHint, global_decoding_values &decValues);
+      bool set_frame_refs(reader_helper &reader, int OrderHintBits, bool enable_order_hint, int last_frame_idx, int gold_frame_idx, int OrderHint, global_decoding_values &decValues);
 
       int find_latest_backward(int curFrameHint);
       int find_earliest_backward(int curFrameHint);

@@ -50,7 +50,7 @@ parserAnnexB::parserAnnexB()
   curFrameIsRandomAccess = false;
 }
 
-void parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool randomAccessPoint)
+bool parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool randomAccessPoint)
 {
   annexBFrame newFrame;
   newFrame.poc = poc;
@@ -59,8 +59,9 @@ void parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool ran
   frameList.append(newFrame);
 
   if (POCList.contains(poc))
-    throw std::logic_error(std::string("Error adding Frame POC already present - " + std::to_string(poc))); 
+    return false;
   POCList.append(poc);
+  return true;
 }
 
 int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const

@@ -403,7 +403,7 @@ bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QSco
   // The first 22 bytes are the hvcC header
   READBITS(configurationVersion, 8);
   if (configurationVersion != 1)
-    throw std::logic_error("Only configuration version 1 supported.");
+    return reader.addErrorMessageChildItem("Only configuration version 1 supported.");
   READBITS(general_profile_space, 2);
   READFLAG(general_tier_flag);
   READBITS(general_profile_idc, 5);

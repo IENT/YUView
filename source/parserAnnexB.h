@@ -148,7 +148,7 @@ protected:
   QList<int> POCList;
 
   // Returns false if the POC was already present int the list
-  void addFrameToList(int poc, QUint64Pair fileStartEndPos, bool randomAccessPoint);
+  bool addFrameToList(int poc, QUint64Pair fileStartEndPos, bool randomAccessPoint);
 
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.

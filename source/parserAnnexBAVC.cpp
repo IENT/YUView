@@ -137,7 +137,8 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     if (curFramePOC != -1)
     {
       // Save the info of the last frame
-      addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
+      if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
+        return reader_helper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
       DEBUG_AVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
     }
     // The file ended
@@ -256,7 +257,8 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
         if (curFramePOC != -1)
         {
           // Save the info of the last frame
-          addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
+          if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
+            return reader_helper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
           DEBUG_AVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
@@ -2279,12 +2281,13 @@ QPair<int,int> parserAnnexBAVC::getSampleAspectRatio()
 
 int parserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray &in, int nrBytes)
 {
+  if (in.length() <= 0)
+    return 0;
+
   int nrZeroBytes = 0;
   int pos = 0;
   while (nrBytes > 0)
   {
-    if (pos >= in.length())
-      throw std::logic_error("Error while determining real SEI payload size.");
     char c = (char)in.at(pos);
 
     if (nrZeroBytes == 2 && c == 3)

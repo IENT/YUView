@@ -311,7 +311,8 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     if (curFramePOC != -1)
     {
       // Save the info of the last frame
-      addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
+      if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
+        return reader_helper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
       DEBUG_HEVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
     }
     // The file ended
@@ -476,7 +477,8 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
         if (curFramePOC != -1)
         {
           // Save the info of the last frame
-          addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess);
+          if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
+            return reader_helper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
           DEBUG_HEVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
         }
         curFrameFileStartEndPos = nalStartEndPosFile;

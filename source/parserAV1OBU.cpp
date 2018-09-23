@@ -867,7 +867,8 @@ bool parserAV1OBU::frame_header::parse_uncompressed_header(reader_helper &reader
         {
           READBITS(last_frame_idx, 3);
           READBITS(gold_frame_idx, 3);
-          frame_refs.set_frame_refs(seq_header->OrderHintBits, seq_header->enable_order_hint, last_frame_idx, gold_frame_idx, OrderHint, decValues);
+          if (!frame_refs.set_frame_refs(reader, seq_header->OrderHintBits, seq_header->enable_order_hint, last_frame_idx, gold_frame_idx, OrderHint, decValues))
+            return false;
         }
       }
       for (int i = 0; i < REFS_PER_FRAME; i++)
@@ -1126,7 +1127,7 @@ bool parserAV1OBU::frame_header::parse_frame_size_with_refs(reader_helper &reade
   return true;
 }
 
-void parserAV1OBU::frame_header::frame_refs_struct::set_frame_refs(int OrderHintBits, bool enable_order_hint, int last_frame_idx, int gold_frame_idx, int OrderHint, global_decoding_values &decValues)
+bool parserAV1OBU::frame_header::frame_refs_struct::set_frame_refs(reader_helper &reader, int OrderHintBits, bool enable_order_hint, int last_frame_idx, int gold_frame_idx, int OrderHint, global_decoding_values &decValues)
 {
   for (int i = 0; i < REFS_PER_FRAME; i++)
     ref_frame_idx[i] = -1;
@@ -1144,11 +1145,11 @@ void parserAV1OBU::frame_header::frame_refs_struct::set_frame_refs(int OrderHint
 
   int lastOrderHint = shiftedOrderHints[last_frame_idx];
   if (lastOrderHint >= curFrameHint)
-    throw std::logic_error("It is a requirement of bitstream conformance that lastOrderHint is strictly less than curFrameHint.");
+    return reader.addErrorMessageChildItem("It is a requirement of bitstream conformance that lastOrderHint is strictly less than curFrameHint.");
 
   int goldOrderHint = shiftedOrderHints[gold_frame_idx];
   if (goldOrderHint >= curFrameHint)
-    throw std::logic_error("It is a requirement of bitstream conformance that goldOrderHint is strictly less than curFrameHint.");
+    return reader.addErrorMessageChildItem("It is a requirement of bitstream conformance that goldOrderHint is strictly less than curFrameHint.");
 
   int ref = find_latest_backward(curFrameHint);
   if (ref >= 0)
@@ -1202,6 +1203,8 @@ void parserAV1OBU::frame_header::frame_refs_struct::set_frame_refs(int OrderHint
     if (ref_frame_idx[i] < 0 )
       ref_frame_idx[i] = ref;
   }
+
+  return true;
 }
 
 int parserAV1OBU::frame_header::frame_refs_struct::find_latest_backward(int curFrameHint)
