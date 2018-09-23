@@ -43,6 +43,8 @@ using namespace YUV_Internals;
 // This class knows how to parse the bitrstream of HEVC annexB files
 class parserAnnexBHEVC : public parserAnnexB
 {
+  Q_OBJECT
+  
 public:
   parserAnnexBHEVC() : parserAnnexB() {}
   ~parserAnnexBHEVC() {};

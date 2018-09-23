@@ -42,20 +42,26 @@ class TreeItem;
 
 /* Abstract base class that prvides features which are common to all parsers
  */
-class parserBase
+class parserBase : public QObject
 {
+  Q_OBJECT
+
 public:
   parserBase() {}
   virtual ~parserBase() = 0;
 
   // Get a pointer to the nal unit model. The model is only filled if you call enableModel() first.
   QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
+  void setNewNumberModelItems(unsigned int n) { nalUnitModel.setNewNumberModelItems(n); }
   void enableModel();
 
   // For parsing files in the background (threading) in the bitstream analysis dialog:
   virtual bool runParsingOfFile(QString fileName) = 0;
   int getParsingProgressPercent() { return progressPercentValue; }
   void setAbortParsing() { cancelBackgroundParser = true; }
+
+signals:
+  void nalModelUpdated(unsigned int newNumberItems);
 
 protected:
   // ----- Some nested classes that are only used in the scope of the parser classes
@@ -276,6 +282,7 @@ protected:
     // The brackground parser will add more items and it will notify the bitstreamAnalysisWindow
     // about them. The bitstream analysis window will then update this count and the view to show the new items.
     unsigned int nrShowChildItems {0};
+    void setNewNumberModelItems(unsigned int);
   };
   NALUnitModel nalUnitModel;
 

@@ -38,7 +38,9 @@
 #include "parserAnnexBMpeg2.h"
 #include "parserCommonMacros.h"
 
-#define PARSERAVCFORMAT_DEBUG_OUTPUT 0
+#include <QThread>
+
+#define PARSERAVCFORMAT_DEBUG_OUTPUT 1
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_AVFORMAT qDebug
@@ -532,9 +534,20 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     {
       DEBUG_AVFORMAT("parseAVPacket error parsing NAL %d", packetID);
     }
+    else
+    {
+      DEBUG_AVFORMAT("parseAVPacket NAL %d", packetID);
+    }
 
     packetID++;
     packet = ffmpegFile->getNextPacket(false, getVideoPacketsOnly);
+    //QThread::msleep(200);
+    
+    if (!nalUnitModel.rootItem.isNull())
+    {
+      unsigned int newNumberItems = (unsigned int)nalUnitModel.rootItem->childItems.size();
+      emit nalModelUpdated(newNumberItems);
+    }
   }
 
   // Seek back to the beginning of the stream.

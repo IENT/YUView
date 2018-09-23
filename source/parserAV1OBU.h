@@ -40,6 +40,8 @@ using namespace YUV_Internals;
 
 class parserAV1OBU : public parserBase
 {
+  Q_OBJECT
+  
 public:
     parserAV1OBU();
     ~parserAV1OBU() {}

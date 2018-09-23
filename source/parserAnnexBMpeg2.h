@@ -37,6 +37,8 @@
 
 class parserAnnexBMpeg2 : public parserAnnexB
 {
+  Q_OBJECT
+  
 public:
   parserAnnexBMpeg2() {};
   ~parserAnnexBMpeg2() {};

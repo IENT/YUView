@@ -41,6 +41,7 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
   QDialog(parent)
 {
   ui.setupUi(this);
+  setAttribute(Qt::WA_DeleteOnClose);
 
   if (inputFormatType == inputInvalid)
     return;
@@ -63,8 +64,26 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
 
   compressedFilePath = fileName;
 
+  connect(parser.get(), &parserBase::nalModelUpdated, this, &bitstreamAnalysisDialog::updateParserItemModel);
+
   // Start the background parsing thread
-  QtConcurrent::run(this, &bitstreamAnalysisDialog::backgroundParsingFunction);
+  backgroundParserFuture = QtConcurrent::run(this, &bitstreamAnalysisDialog::backgroundParsingFunction);
+}
+
+bitstreamAnalysisDialog::~bitstreamAnalysisDialog()
+{
+  // If the background thread is still working, abort it.
+  if (backgroundParserFuture.isRunning())
+  {
+    // signal to background thread that we want to cancel the processing
+    parser->setAbortParsing();
+    backgroundParserFuture.waitForFinished();
+  }
+}
+
+void bitstreamAnalysisDialog::updateParserItemModel(unsigned int newNumberItems)
+{
+  parser->setNewNumberModelItems(newNumberItems);
 }
 
 void bitstreamAnalysisDialog::backgroundParsingFunction()

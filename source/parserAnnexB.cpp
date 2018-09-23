@@ -35,7 +35,7 @@
 #include "mainwindow.h"
 #include <QProgressDialog>
 
-#define PARSERANNEXB_DEBUG_OUTPUT 1
+#define PARSERANNEXB_DEBUG_OUTPUT 0
 #if PARSERANNEXB_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_ANNEXB qDebug
@@ -142,6 +142,12 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
     }
 
     nalID++;
+
+    if (!nalUnitModel.rootItem.isNull())
+    {
+      unsigned int newNumberItems = (unsigned int)nalUnitModel.rootItem->childItems.size();
+      emit nalModelUpdated(newNumberItems);
+    }
   }
 
   // We are done.

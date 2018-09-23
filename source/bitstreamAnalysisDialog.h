@@ -47,8 +47,10 @@ class bitstreamAnalysisDialog : public QDialog
 
 public:
   bitstreamAnalysisDialog(QWidget *parent, QString fileName, inputFormat inputFormatType);
+  ~bitstreamAnalysisDialog();
 
 private slots:
+  void updateParserItemModel(unsigned int nalModelUpdated);
   
 private:
   

@@ -33,6 +33,14 @@
 #include "parserBase.h"
 #include <assert.h>
 
+#define PARSERBASE_DEBUG_OUTPUT 0
+#if PARSERBASE_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_PARSER qDebug
+#else
+#define DEBUG_PARSER(fmt,...) ((void)0)
+#endif
+
 /// --------------- parserBase ---------------------
 
 parserBase::~parserBase()
@@ -879,8 +887,6 @@ QVariant parserBase::NALUnitModel::headerData(int section, Qt::Orientation orien
 
 QVariant parserBase::NALUnitModel::data(const QModelIndex &index, int role) const
 {
-  //qDebug() << "ileSourceHEVCAnnexBFile::data " << index;
-
   if (!index.isValid())
     return QVariant();
 
@@ -894,8 +900,6 @@ QVariant parserBase::NALUnitModel::data(const QModelIndex &index, int role) cons
 
 QModelIndex parserBase::NALUnitModel::index(int row, int column, const QModelIndex &parent) const
 {
-  //qDebug() << "ileSourceHEVCAnnexBFile::index " << row << column << parent;
-
   if (!hasIndex(row, column, parent))
     return QModelIndex();
 
@@ -918,8 +922,6 @@ QModelIndex parserBase::NALUnitModel::index(int row, int column, const QModelInd
 
 QModelIndex parserBase::NALUnitModel::parent(const QModelIndex &index) const
 {
-  //qDebug() << "ileSourceHEVCAnnexBFile::parent " << index;
-
   if (!index.isValid())
     return QModelIndex();
 
@@ -939,16 +941,26 @@ QModelIndex parserBase::NALUnitModel::parent(const QModelIndex &index) const
 
 int parserBase::NALUnitModel::rowCount(const QModelIndex &parent) const
 {
-  //qDebug() << "ileSourceHEVCAnnexBFile::rowCount " << parent;
-
   if (parent.column() > 0)
     return 0;
 
   if (!parent.isValid())
   {
     TreeItem *p = rootItem.data();
+    DEBUG_PARSER("NALUnitModel::rowCount root %d", (p == nullptr) ? 0 : nrShowChildItems);
     return (p == nullptr) ? 0 : nrShowChildItems;
   }
   TreeItem *p = static_cast<TreeItem*>(parent.internalPointer());
+  DEBUG_PARSER("NALUnitModel::rowCount %d", (p == nullptr) ? 0 : p->childItems.count());
   return (p == nullptr) ? 0 : p->childItems.count();
+}
+
+void parserBase::NALUnitModel::setNewNumberModelItems(unsigned int n)
+{
+  unsigned int nrAddItems = nrShowChildItems - n;
+  int lastIndex = nrShowChildItems;
+  DEBUG_PARSER("NALUnitModel::setNewNumberModelItems old %d new %d", nrShowChildItems, n);
+  beginInsertRows(QModelIndex(), lastIndex, lastIndex+nrAddItems);
+  nrShowChildItems = n;
+  endInsertRows();
 }

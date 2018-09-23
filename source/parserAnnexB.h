@@ -45,6 +45,7 @@ using namespace YUV_Internals;
 */
 class parserAnnexB : public parserBase
 {
+  Q_OBJECT
 
 public:
   parserAnnexB();

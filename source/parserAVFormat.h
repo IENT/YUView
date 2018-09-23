@@ -45,6 +45,8 @@
  */
 class parserAVFormat : public parserBase
 {
+  Q_OBJECT
+  
 public:
   parserAVFormat();
   ~parserAVFormat() {}
