@@ -46,13 +46,17 @@
 class parserAVFormat : public parserBase
 {
   Q_OBJECT
-  
+
 public:
   parserAVFormat();
   ~parserAVFormat() {}
+
+  QString getStreamInfoText() Q_DECL_OVERRIDE { return streamInfoText; }
   
   // This function can run in a separate thread
   bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
+
+  int getVideoStreamIndex() { return videoStreamIndex; }
 
 private:
   AVCodecSpecfier codecID;
@@ -63,14 +67,14 @@ private:
 
   struct hvcC_nalUnit
   {
-    bool parse_hvcC_nalUnit(int unitID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser);
+    bool parse_hvcC_nalUnit(int unitID, parserCommon::reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser);
 
     unsigned int nalUnitLength;
   };
 
   struct hvcC_naluArray
   {
-    bool parse_hvcC_naluArray(int arrayID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser);
+    bool parse_hvcC_naluArray(int arrayID, parserCommon::reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser);
 
     bool array_completeness;
     bool reserved_flag_false;
@@ -81,7 +85,7 @@ private:
 
   struct hvcC
   {
-    bool parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser);
+    bool parse_hvcC(QByteArray &hvcCData, parserCommon::TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser);
 
     unsigned int configurationVersion;
     unsigned int general_profile_space;
@@ -117,6 +121,12 @@ private:
 
   // The start code pattern to look for in case of a raw format
   QByteArray startCode;
+
+  // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
+  // we update this text while parsing the file.
+  QString streamInfoText;
+
+  int videoStreamIndex { -1 };
 };
 
 #endif // PARSERAVFORMAT_H

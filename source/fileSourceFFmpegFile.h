@@ -70,10 +70,9 @@ public:
   // Do not mix calls to these two functions when reading a file.
   QByteArray getNextNALUnit(bool getLastDataAgain=false, uint64_t *pts=nullptr);
   // Return the next packet (unless getLastPackage is set in which case we return the current packet)
-  AVPacketWrapper getNextPacket(bool getLastPackage=false, bool videoPacketsOnly=true);
-  // Return the raw extradata (in avformat format containing the parameter sets)
+  AVPacketWrapper getNextPacket(bool getLastPackage=false, bool videoPacket=true);
+  // Return the raw extradata/metadata (in avformat format containing the parameter sets)
   QByteArray getExtradata();
-  //
   QStringPairList getMetadata();
   // Return a list containing the raw data of all parameter set NAL units
   QList<QByteArray> getParameterSets();
@@ -85,9 +84,15 @@ public:
   bool seekToDTS(int64_t dts);
   int64_t getMaxTS();
 
+  // Get information on the video stream
   int getNumberFrames() const { return nrFrames; }
   AVCodecSpecfier getCodecSpecifier() { return video_stream.getCodecSpecifier(); }
   AVCodecParametersWrapper getVideoCodecPar() { return video_stream.get_codecpar(); }
+
+  // Get more general information about the streams
+  unsigned int getNumberOfStreams() { return fmt_ctx ? fmt_ctx.get_nb_streams() : 0; }
+  int getVideoStreamIndex() { return video_stream.get_index(); }
+  QString getFileInfoAsText();
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
@@ -101,7 +106,7 @@ protected:
   FFmpegVersionHandler ff;          //< Access to the libraries independent of their version
   AVFormatContextWrapper fmt_ctx;
   void openFileAndFindVideoStream(QString fileName);
-  bool goToNextVideoPacket(bool videoPacketsOnly=true);
+  bool goToNextPacket(bool videoPacketsOnly=false);
   AVPacketWrapper pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile {false};           //< Are we at the end of file (draining mode)?
   // Seek the stream to the given pts value, flush the decoder and load the first packet so

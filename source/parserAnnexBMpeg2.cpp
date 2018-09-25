@@ -34,6 +34,8 @@
 
 #include "parserCommonMacros.h"
 
+using namespace parserCommon;
+
 const QStringList parserAnnexBMpeg2::nal_unit_type_toString = QStringList()
   << "UNSPECIFIED" << "PICTURE" << "SLICE" << "USER_DATA" << "SEQUENCE_HEADER" << "SEQUENCE_ERROR" << "EXTENSION_START" << "SEQUENCE_END"
   << "GROUP_START" << "SYSTEM_START_CODE" << "RESERVED";
@@ -160,8 +162,8 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
   TreeItem *nalRoot = nullptr;
   if (parent)
     nalRoot = new TreeItem(parent);
-  else if (!nalUnitModel.rootItem.isNull())
-    nalRoot = new TreeItem(nalUnitModel.rootItem.data());
+  else if (!packetModel.rootItem.isNull())
+    nalRoot = new TreeItem(packetModel.rootItem.data());
 
   // Create a nal_unit and read the header
   nal_unit_mpeg2 nal_mpeg2(nalStartEndPosFile, nalID);

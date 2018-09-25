@@ -57,11 +57,13 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
+  virtual QString getStreamInfoText() { return stream_info.getStreamInfoText(); }
+
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
   // It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).
   // When there are no more NAL units in the file (the file ends), call this function one last time with empty data and a nalID of -1.
-  virtual bool parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) = 0;
-
+  virtual bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) = 0;
+  
   // Get some format properties
   virtual double getFramerate() const = 0;
   virtual QSize getSequenceSizeSamples() const = 0;
@@ -100,8 +102,8 @@ protected:
     nal_unit(QUint64Pair filePosStartEnd, int nal_idx) : filePosStartEnd(filePosStartEnd), nal_idx(nal_idx), nal_unit_type_id(-1) {}
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
-    // Parse the header from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    virtual bool parse_nal_unit_header(const QByteArray &header_data, TreeItem *root) = 0;
+    // Parse the header from the given data bytes. If a parserCommon::TreeItem pointer is provided, the values will be added to the tree as well.
+    virtual bool parse_nal_unit_header(const QByteArray &header_data, parserCommon::TreeItem *root) = 0;
 
     /// Pointer to the first byte of the start code of the NAL unit
     QUint64Pair filePosStartEnd;
@@ -161,6 +163,18 @@ protected:
   // The POC of the current frame. We save this we encounter a NAL from the next POC; then we add it.
   int curFramePOC;
   bool curFrameIsRandomAccess;
+
+  // Save general information about the file here
+  struct stream_info_type
+  {
+    QString getStreamInfoText();
+
+    int64_t file_size;
+    int nr_nal_units { 0 };
+    int nr_frames    { 0 };
+    bool parsing     { false };
+  };
+  stream_info_type stream_info;
 };
 
 #endif // PARSERANNEXB_H

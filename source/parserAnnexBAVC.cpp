@@ -35,6 +35,8 @@
 #include <cmath>
 #include "parserCommonMacros.h"
 
+using namespace parserCommon;
+
 #define PARSER_AVC_DEBUG_OUTPUT 0
 #if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -167,8 +169,8 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
   TreeItem *nalRoot = nullptr;
   if (parent)
     nalRoot = new TreeItem(parent);
-  else if (!nalUnitModel.rootItem.isNull())
-    nalRoot = new TreeItem(nalUnitModel.rootItem.data());
+  else if (!packetModel.rootItem.isNull())
+    nalRoot = new TreeItem(packetModel.rootItem.data());
 
   // Create a nal_unit and read the header
   nal_unit_avc nal_avc(nalStartEndPosFile, nalID);

@@ -35,7 +35,7 @@
 #include <QSettings>
 #include <QProgressDialog>
 
-#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
+#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 1
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
@@ -55,13 +55,13 @@ fileSourceFFmpegFile::fileSourceFFmpegFile()
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFmpegFile::fileSystemWatcherFileChanged);
 }
 
-AVPacketWrapper fileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool videoPacketsOnly)
+AVPacketWrapper fileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool videoPacket)
 {
   if (getLastPackage)
     return pkt;
 
   // Load the next packet
-  if (!goToNextVideoPacket(videoPacketsOnly))
+  if (!goToNextPacket(videoPacket))
   {
     posInFile = -1;
     return AVPacketWrapper();
@@ -78,7 +78,7 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(bool getLastDataAgain, uint64_t 
   // Is a packet loaded?
   if (currentPacketData.isEmpty())
   {
-    if (!goToNextVideoPacket())
+    if (!goToNextPacket(true))
     {
       posInFile = -1;
       return QByteArray();
@@ -353,7 +353,7 @@ bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
   progress.setWindowModality(Qt::WindowModal);
 
   nrFrames = 0;
-  while (goToNextVideoPacket())
+  while (goToNextPacket(true))
   {
     DEBUG_FFMPEG("fileSourceFFmpegFile::scanBitstream: frame %d pts %d dts %d%s", nrFrames, (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
 
@@ -373,6 +373,7 @@ bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
     nrFrames++;
   }
 
+  DEBUG_FFMPEG("fileSourceFFmpegFile::scanBitstream: Scan done. Found %d frames and %d keyframes.", nrFrames, keyFrameList.length());
   return !progress.wasCanceled();
 }
 
@@ -439,7 +440,7 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   isFileOpened = true;
 }
 
-bool fileSourceFFmpegFile::goToNextVideoPacket(bool videoPacketsOnly)
+bool fileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
 {
   //Load the next video stream packet into the packet buffer
   int ret = 0;
@@ -450,15 +451,17 @@ bool fileSourceFFmpegFile::goToNextVideoPacket(bool videoPacketsOnly)
       pkt.unref_packet(ff);
   
     ret = fmt_ctx.read_frame(ff, pkt);
-    DEBUG_FFMPEG("fileSourceFFmpegFile::goToNextVideoPacket: pts %d dts %d%s", (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
+    pkt.is_video_packet = (pkt.get_stream_index() == video_stream.get_index());
   }
-  while (ret == 0 && (!videoPacketsOnly || pkt.get_stream_index() != video_stream.get_index()));
+  while (ret == 0 && videoPacketsOnly && !pkt.is_video_packet);
   
   if (ret < 0)
   {
     endOfFile = true;
     return false;
   }
+
+  DEBUG_FFMPEG("fileSourceFFmpegFile::goToNextPacket: Return: stream %d pts %d dts %d%s", (int)pkt.get_stream_index(), (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
 
   if (packetDataFormat == packetFormatUnknown)
     // This is the first video package that we find and we don't know what the format of the packet data is.
@@ -484,7 +487,7 @@ bool fileSourceFFmpegFile::seekToDTS(int64_t dts)
   // We seeked somewhere, so we are not at the end of the file anymore.
   endOfFile = false;
 
-  DEBUG_FFMPEG("FFmpegLibraries::seekToDTS Successfully seeked to DTS %d", dts);
+  DEBUG_FFMPEG("FFmpegLibraries::seekToDTS Successfully seeked to DTS %d", (int)dts);
   return true;
 }
 
@@ -496,4 +499,19 @@ int64_t fileSourceFFmpegFile::getMaxTS()
   // duration / AV_TIME_BASE is the duration in seconds
   // pts * timeBase is also in seconds
   return duration / AV_TIME_BASE * timeBase.den / timeBase.num;
+}
+
+QString fileSourceFFmpegFile::getFileInfoAsText()
+{
+  QString info;
+
+  info += fmt_ctx.getInfoText();
+  for(unsigned int i=0; i<fmt_ctx.get_nb_streams(); i++)
+  {
+    AVStreamWrapper s = fmt_ctx.get_stream(i);
+    info += QString("\nStream %1:\n").arg(i);
+    info += s.getInfoText();
+  }
+
+  return info;
 }

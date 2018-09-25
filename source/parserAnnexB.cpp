@@ -109,18 +109,21 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::parseAnnexBFile");
 
+  stream_info.file_size = file->getFileSize();
+  stream_info.parsing = true;
+  emit streamInfoTextUpdated();
+
   // Just push all NAL units from the annexBFile into the annexBParser
   QByteArray nalData;
   int nalID = 0;
   QUint64Pair nalStartEndPosFile;
-  int64_t maxPos = file->getFileSize();;
   while (!file->atEnd())
   {
     // Update the progress dialog
     if (cancelBackgroundParser)
       return false;
     int64_t pos = file->pos();
-    progressPercentValue = pos * 100 / maxPos;
+    progressPercentValue = clip((int)(pos * 100 / stream_info.file_size), 0, 100);
 
     try
     {
@@ -144,16 +147,20 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
 
     nalID++;
 
-    if (!nalUnitModel.rootItem.isNull())
-    {
-      unsigned int newNumberItems = (unsigned int)nalUnitModel.rootItem->childItems.size();
-      emit nalModelUpdated(newNumberItems);
-    }
+    if (packetModel)
+      emit nalModelUpdated(packetModel.getNumberFirstLevelChildren());
   }
 
   // We are done.
   parseAndAddNALUnit(-1, QByteArray());
   DEBUG_ANNEXB("parseAndAddNALUnit Parsing done. Found %d POCs.", POCList.length());
+
+  stream_info.parsing = false;
+  stream_info.nr_nal_units = nalID;
+  stream_info.nr_frames = frameList.size();
+  emit streamInfoTextUpdated();
+  emit backgroundParsingDone();
+
   return true;
 }
 
@@ -162,4 +169,21 @@ bool parserAnnexB::runParsingOfFile(QString compressedFilePath)
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
   QScopedPointer<fileSourceAnnexBFile> file(new fileSourceAnnexBFile(compressedFilePath));
   return parseAnnexBFile(file);
+}
+
+QString parserAnnexB::stream_info_type::getStreamInfoText()
+{
+  QString info;
+  info += QString("File Size: %1\n").arg(file_size);
+  if (parsing)
+  {
+    info += QString("Number NAL units: Parsing...\n");
+    info += QString("Number Frames: Parsing...\n");
+  }
+  else
+  {
+    info += QString("Number NAL units: %1\n").arg(nr_nal_units);
+    info += QString("Number Frames: %1\n").arg(nr_frames);
+  }
+  return info;
 }

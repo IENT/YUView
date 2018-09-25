@@ -35,6 +35,8 @@
 #include <algorithm>
 #include "parserCommonMacros.h"
 
+using namespace parserCommon;
+
 #define READDELTAQ(into) do { if (!read_delta_q(#into, into, reader)) return false; } while(0)
 
 #define SELECT_SCREEN_CONTENT_TOOLS 2
@@ -161,8 +163,8 @@ bool parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, 
   TreeItem *obuRoot = nullptr;
   if (parent)
     obuRoot = new TreeItem(parent);
-  else if (!nalUnitModel.rootItem.isNull())
-    obuRoot = new TreeItem(nalUnitModel.rootItem.data());
+  else if (!packetModel.rootItem.isNull())
+    obuRoot = new TreeItem(packetModel.rootItem.data());
 
   // Read the OBU header
   obu_unit obu(obuStartEndPosFile, obuID);

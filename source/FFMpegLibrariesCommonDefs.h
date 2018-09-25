@@ -501,6 +501,7 @@ namespace FFmpeg
         return "AV1";
       return "Unknown";
     }
+    AVCodecID getRawID() { return id; }
   private:
     AVCodecID id {AV_CODEC_ID_NONE};
     

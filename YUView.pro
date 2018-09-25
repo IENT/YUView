@@ -26,6 +26,7 @@ SOURCES += \
     source/parserAV1OBU.cpp \
     source/parserAVFormat.cpp \
     source/parserBase.cpp \
+    source/parserCommon.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
     source/playlistItemCompressedVideo.cpp \
@@ -85,6 +86,7 @@ HEADERS += \
     source/parserAV1OBU.h \
     source/parserAVFormat.h \
     source/parserBase.h \
+    source/parserCommon.h \
     source/parserCommonMacros.h \
     source/playbackController.h \
     source/playlistItem.h \

@@ -35,6 +35,7 @@
 
 #include <QDialog>
 #include <QtConcurrent>
+#include <QStatusBar>
 
 #include "ui_bitstreamAnalysisDialog.h"
 
@@ -51,6 +52,10 @@ public:
 
 private slots:
   void updateParserItemModel(unsigned int nalModelUpdated);
+  void updateStreamInfoText();
+  void backgroundParsingDone();
+  void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
+  void showVideoStreamOnlyCheckBoxToggled(bool state) { parser->setShowVideoStreamOnly(state); }
   
 private:
   
@@ -60,6 +65,9 @@ private:
   QFuture<void> backgroundParserFuture;
   void backgroundParsingFunction();
   QString compressedFilePath;
+
+  // We create the status bar manually because the QtDesigner does not support status bars in dialogs
+  QStatusBar *statusBar;
 };
 
 #endif // BITSTREAMANALYSISDIALOG_H

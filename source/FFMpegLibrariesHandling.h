@@ -301,7 +301,8 @@ class AVCodecParametersWrapper
 public:
   AVCodecParametersWrapper() { param = nullptr; }
   AVCodecParametersWrapper(AVCodecParameters *p, FFmpegLibraryVersion v) { param = p; libVer = v; update(); }
-  explicit operator bool() const { return param != nullptr; };
+  explicit operator bool() const { return param != nullptr; }
+  QString getInfoText();
 
   AVMediaType getCodecType()          { update(); return codec_type; }
   AVCodecSpecfier getCodecSpecifier() { update(); return codec_id; }
@@ -364,6 +365,7 @@ public:
   AVStreamWrapper() { str = nullptr; }
   AVStreamWrapper(AVStream *src_str, FFmpegLibraryVersion v) { str = src_str; libVer = v; update(); }
   explicit operator bool() const { return str != nullptr; };
+  QString getInfoText();
 
   AVMediaType getCodecType();
   AVCodecSpecfier getCodecSpecifier();
@@ -439,6 +441,9 @@ public:
   bool     get_flag_discard()  { update(); return flags & AV_PKT_FLAG_DISCARD; }
   uint8_t *get_data()          { update(); return data; }
   int      get_data_size()     { update(); return size; }
+
+  // This is not part of the AVPacket but is set by fileSourceFFmpegFile when reading an AVPacket
+  bool     is_video_packet;
   
   packetDataFormat_t guessDataFormatFromData();
 
@@ -486,6 +491,7 @@ public:
   void updateFrom(AVFormatContext *c) { assert(ctx == nullptr); ctx = c; update(); }
   void avformat_close_input(FFmpegVersionHandler &ver);
   explicit operator bool() const { return ctx != nullptr; };
+  QString getInfoText();
 
   unsigned int get_nb_streams() { update(); return nb_streams; }
   AVStreamWrapper get_stream(int idx) { update(); return streams[idx]; }

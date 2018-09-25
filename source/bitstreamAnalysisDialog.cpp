@@ -43,6 +43,9 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
   ui.setupUi(this);
   setAttribute(Qt::WA_DeleteOnClose);
 
+  statusBar = new QStatusBar;
+  ui.verticalLayout->addWidget(statusBar);
+
   if (inputFormatType == inputInvalid)
     return;
 
@@ -56,18 +59,26 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
   
   parser->enableModel();
 
-  ui.dataTreeView->setModel(parser->getNALUnitModel());
+  ui.dataTreeView->setModel(parser->getPacketItemModel());
 
-  ui.dataTreeView->setColumnWidth(0, 300);
-  ui.dataTreeView->setColumnWidth(1, 50);
-  ui.dataTreeView->setColumnWidth(2, 70);
+  ui.dataTreeView->setColumnWidth(0, 600);
+  ui.dataTreeView->setColumnWidth(1, 100);
+  ui.dataTreeView->setColumnWidth(2, 120);
 
   compressedFilePath = fileName;
 
   connect(parser.get(), &parserBase::nalModelUpdated, this, &bitstreamAnalysisDialog::updateParserItemModel);
+  connect(parser.get(), &parserBase::streamInfoTextUpdated, this, &bitstreamAnalysisDialog::updateStreamInfoText);
+  connect(parser.get(), &parserBase::backgroundParsingDone, this, &bitstreamAnalysisDialog::backgroundParsingDone);
+  
+  connect(ui.showVideoStreamOnlyCheckBox, &QCheckBox::toggled, this, &bitstreamAnalysisDialog::showVideoStreamOnlyCheckBoxToggled);
+  connect(ui.colorCodeStreamsCheckBox, &QCheckBox::toggled, this, &bitstreamAnalysisDialog::colorCodeStreamsCheckBoxToggled);
 
   // Start the background parsing thread
+  statusBar->showMessage("Parsing file ...");
   backgroundParserFuture = QtConcurrent::run(this, &bitstreamAnalysisDialog::backgroundParsingFunction);
+
+  updateStreamInfoText();
 }
 
 bitstreamAnalysisDialog::~bitstreamAnalysisDialog()
@@ -84,6 +95,17 @@ bitstreamAnalysisDialog::~bitstreamAnalysisDialog()
 void bitstreamAnalysisDialog::updateParserItemModel(unsigned int newNumberItems)
 {
   parser->setNewNumberModelItems(newNumberItems);
+  statusBar->showMessage(QString("Parsing file (%1%)").arg(parser->getParsingProgressPercent()));
+}
+
+void bitstreamAnalysisDialog::updateStreamInfoText()
+{
+  ui.streamInfoLabel->setText(parser->getStreamInfoText());
+}
+
+void bitstreamAnalysisDialog::backgroundParsingDone()
+{
+  statusBar->showMessage("Parsing done.");
 }
 
 void bitstreamAnalysisDialog::backgroundParsingFunction()

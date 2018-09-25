@@ -49,6 +49,20 @@
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 
+QString timestampToString(int64_t timestamp, AVRational timebase)
+{
+  double d_seconds = (double)timestamp * timebase.num / timebase.den;
+  int hours = (int)(d_seconds / 60 / 60);
+  d_seconds -= hours * 60 * 60;
+  int minutes = (int)(d_seconds / 60);
+  d_seconds -= minutes * 60;
+  int seconds = (int)d_seconds;
+  d_seconds -= seconds;
+  int milliseconds = (int)(d_seconds * 1000);
+
+  return QString("%1:%2:%3.%4").arg(hours, 2, 10, QChar('0')).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0')).arg(milliseconds, 3, 10, QChar('0'));
+}
+
 // ------------- Internal classes to parse the ffmpeg version specific pointers -----------------
 
 // AVPacket is part of avcodec. The definition is different for different major versions of avcodec.
@@ -1647,6 +1661,43 @@ int AVFormatContextWrapper::read_frame(FFmpegVersionHandler &ff, AVPacketWrapper
   return ff.lib.av_read_frame(ctx, pkt.get_packet());
 }
 
+QString AVFormatContextWrapper::getInfoText()
+{
+  if (ctx == nullptr)
+    return "Format context not initialized";
+  update();
+
+  QString info;
+
+  if (ctx_flags != 0)
+  {
+    info += QString("Flags: ");
+    if (ctx_flags & 1)
+      info += QString("No-Header");
+    if (ctx_flags & 2)
+      info += QString("Un-seekable");
+    info += QString("\n");
+  }
+
+  AVRational time_base;
+  time_base.num = 1;
+  time_base.den = AV_TIME_BASE;
+
+  info += QString("Number streams: %1\n").arg(nb_streams);
+  info += QString("File name: %1\n").arg(filename);
+  info += QString("Start time: %1 (%2)\n").arg(start_time).arg(timestampToString(start_time, time_base));
+  info += QString("Duration: %1 (%2)\n").arg(duration).arg(timestampToString(duration, time_base));
+  if (bit_rate > 0)
+    info += QString("Bitrate: %1\n").arg(bit_rate);
+  info += QString("Packet size: %1\n").arg(packet_size);
+  info += QString("Max delay: %1\n").arg(max_delay);
+  info += QString("Number programs: %1\n").arg(nb_programs);
+  info += QString("Number chapters: %1\n").arg(nb_chapters);
+
+  return info;
+}
+
+
 void AVCodecWrapper::update()
 {
   if (codec == nullptr)
@@ -2042,6 +2093,65 @@ void AVStreamWrapper::update()
     assert(false);
 }
 
+
+QString AVStreamWrapper::getInfoText()
+{
+  if (str == nullptr)
+    return "Error - stream is null";
+  update();
+
+  QString info;
+  info += QString("  Index: %1\n").arg(index);
+  info += QString("  ID: %1\n").arg(id);
+  info += QString("  Codec: %1\n").arg(codec.codec_id_string);
+  info += QString("  Time base: %1/%2\n").arg(time_base.num).arg(time_base.den);
+  info += QString("  Start Time: %1 (%2)\n").arg(start_time).arg(timestampToString(start_time, time_base));
+  info += QString("  Duration: %1 (%2)\n").arg(duration).arg(timestampToString(duration, time_base));
+  info += QString("  Number Frames: %1\n").arg(nb_frames);
+
+  if (disposition != 0)
+  {
+    info += QString("  Disposition: ");
+    if (disposition & 0x0001)
+      info += QString("Default ");
+    if (disposition & 0x0002)
+      info += QString("Dub ");
+    if (disposition & 0x0004)
+      info += QString("Original ");
+    if (disposition & 0x0008)
+      info += QString("Comment ");
+    if (disposition & 0x0010)
+      info += QString("Lyrics ");
+    if (disposition & 0x0020)
+      info += QString("Karaoke ");
+    if (disposition & 0x0040)
+      info += QString("Forced ");
+    if (disposition & 0x0080)
+      info += QString("Hearing_Imparied ");
+    if (disposition & 0x0100)
+      info += QString("Visual_Impaired ");
+    if (disposition & 0x0200)
+      info += QString("Clean_Effects ");
+    if (disposition & 0x0400)
+      info += QString("Attached_Pic ");
+    if (disposition & 0x0800)
+      info += QString("Timed_Thumbnails ");
+    if (disposition & 0x1000)
+      info += QString("Captions ");
+    if (disposition & 0x2000)
+      info += QString("Descriptions ");
+    if (disposition & 0x4000)
+      info += QString("Metadata ");
+    if (disposition & 0x8000)
+      info += QString("Dependent ");
+    info += QString("\n"); 
+  }
+  info += QString("  Sample Aspect Ratio: %1:%2\n").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den);
+  info += QString("  Average Frame Rate: %1/%2 (%3)\n").arg(avg_frame_rate.num).arg(avg_frame_rate.den).arg((double)avg_frame_rate.num/avg_frame_rate.den, 0, 'f', 2);
+  info += codecpar.getInfoText();
+  return info;
+}
+
 AVMediaType AVStreamWrapper::getCodecType()
 {
   update();
@@ -2093,6 +2203,98 @@ AVColorSpace AVStreamWrapper::get_colorspace()
   if (libVer.avformat <= 56 || !codecpar)
     return codec.get_colorspace();
   return codecpar.get_colorspace();
+}
+
+QString AVCodecParametersWrapper::getInfoText()
+{
+  if (param == nullptr)
+    return "";
+  update();
+
+  QString info;
+
+  QStringList codecTypes = QStringList() << "Unknown" << "Video" << "Audio" << "Data" << "Subtile" << "Attachement" << "NB";
+  info += QString("  Codec Type: %1\n").arg(codecTypes.at((int)codec_type + 1));
+  info += QString("  Codec ID: %1\n").arg((int)codec_id.getRawID());
+  info += QString("  Codec Tag: %1\n").arg(codec_tag);
+  info += QString("  Format: %1\n").arg(format);
+  info += QString("  Bitrate: %1\n").arg(bit_rate);
+  info += QString("  Bits per coded sample: %1\n").arg(bits_per_coded_sample);
+  info += QString("  Bits per Raw sample: %1\n").arg(bits_per_raw_sample);
+  info += QString("  Profile: %1\n").arg(profile);
+  info += QString("  Level: %1\n").arg(level);
+  info += QString("  Width/height: %1/%2\n").arg(width).arg(height);
+  info += QString("  Sample aspect ratio: %1:%2\n").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den);
+  QStringList fieldOrders = QStringList() << "Unknown" << "Progressive" << "Top coded_first, top displayed first" << "Bottom coded first, bottom displayed first" << "Top coded first, bottom displayed first" << "Bottom coded first, top displayed first";
+  info += QString("  Field Order: %1\n").arg(fieldOrders.at((int)codec_type));
+  QStringList colorRanges = QStringList() << "Unspecified" << "The normal 219*2^(n-8) MPEG YUV ranges" << "The normal 2^n-1 JPEG YUV ranges" << "Not part of ABI";
+  info += QString("  Color Range: %1\n").arg(colorRanges.at((int)color_range));
+  QStringList colorPrimaries = QStringList() 
+    << "Reserved" 
+    << "BT709 / ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B"
+    << "Unspecified"
+    << "Reserved"
+    << "BT470M / FCC Title 47 Code of Federal Regulations 73.682 (a)(20)"
+    << "BT470BG / ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM"
+    << "SMPTE170M / also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC"
+    << "SMPTE240M"
+    << "FILM - colour filters using Illuminant C"
+    << "ITU-R BT2020"
+    << "SMPTE ST 428-1 (CIE 1931 XYZ)"
+    << "SMPTE ST 431-2 (2011)"
+    << "SMPTE ST 432-1 D65 (2010)"
+    << "Not part of ABI";
+  info += QString("  Color Primaries: %1\n").arg(colorPrimaries.at((int)color_primaries));
+  QStringList colorTransfers = QStringList()
+    << "Reseved"
+    << "BT709 / ITU-R BT1361"
+    << "Unspecified"
+    << "Reserved"
+    << "Gamma22 / ITU-R BT470M / ITU-R BT1700 625 PAL & SECAM"
+    << "Gamma28 / ITU-R BT470BG"
+    << "SMPTE170M / ITU-R BT601-6 525 or 625 / ITU-R BT1358 525 or 625 / ITU-R BT1700 NTSC"
+    << "SMPTE240M"
+    << "Linear transfer characteristics"
+    << "Logarithmic transfer characteristic (100:1 range)"
+    << "Logarithmic transfer characteristic (100 * Sqrt(10) : 1 range)"
+    << "IEC 61966-2-4"
+    << "ITU-R BT1361 Extended Colour Gamut"
+    << "IEC 61966-2-1 (sRGB or sYCC)"
+    << "ITU-R BT2020 for 10-bit system"
+    << "ITU-R BT2020 for 12-bit system"
+    << "SMPTE ST 2084 for 10-, 12-, 14- and 16-bit systems"
+    << "SMPTE ST 428-1"
+    << "ARIB STD-B67, known as Hybrid log-gamma"
+    << "Not part of ABI";
+  info += QString("  Color Transfer: %1\n").arg(colorTransfers.at((int)color_trc));
+  QStringList colorSpaces = QStringList() 
+    << "RGB - order of coefficients is actually GBR, also IEC 61966-2-1 (sRGB)"
+    << "BT709 / ITU-R BT1361 / IEC 61966-2-4 xvYCC709 / SMPTE RP177 Annex B"
+    << "Unspecified"
+    << "Reserved"
+    << "FCC Title 47 Code of Federal Regulations 73.682 (a)(20)"
+    << "BT470BG / ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM / IEC 61966-2-4 xvYCC601"
+    << "SMPTE170M / ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC"
+    << "SMPTE240M"
+    << "YCOCG - Used by Dirac / VC-2 and H.264 FRext, see ITU-T SG16"
+    << "ITU-R BT2020 non-constant luminance system"
+    << "ITU-R BT2020 constant luminance system"
+    << "SMPTE 2085, Y'D'zD'x"
+    << "Not part of ABI";
+  info += QString("  Color Space: %1\n").arg(colorSpaces.at((int)color_space));
+  QStringList chromaLocations = QStringList()
+    << "Unspecified"
+    << "Left / MPEG-2/4 4:2:0, H.264 default for 4:2:0"
+    << "Center / MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0"
+    << "Top Left / ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2"
+    << "Top"
+    << "Bottom Left"
+    << "Bottom"
+    << "Not part of ABI";
+  info += QString("  Chroma Location: %1\n").arg(chromaLocations.at((int)chroma_location));
+  info += QString("  Video Delay: %1\n").arg(video_delay);
+
+  return info;
 }
 
 void AVCodecParametersWrapper::setClearValues()
