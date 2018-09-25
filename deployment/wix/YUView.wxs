@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="YUView" Language="1033" Version="2.1" Manufacturer="IENT RWTH-Aachen" UpgradeCode="07fd1dd5-9b1e-453d-974b-4ff7919a49c7">
+  <Product Id="*" Name="YUView" Language="1033" Version="2.1" Manufacturer="IENT RWTH Aachen University" UpgradeCode="07fd1dd5-9b1e-453d-974b-4ff7919a49c7">
     <Package InstallerVersion="200" Compressed="yes" Platform="x64" InstallScope="perMachine" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
@@ -24,7 +24,7 @@
                   Target="[#fil3E83ED7F7D6B84D78789778753FB9420]"
                   WorkingDirectory="APPLICATIONROOTDIRECTORY"/>
         <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>
-        <RegistryValue Root="HKCU" Key="Software\Microsoft\MyApplicationName" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+        <RegistryValue Root="HKCU" Key="Software\IENT\YUView" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
       </Component>
     </DirectoryRef>
 
