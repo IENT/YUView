@@ -375,6 +375,7 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
         // Show the file name for this item instead.
         int width = rowItemList[4].toInt();
         int height = rowItemList[5].toInt();
+
         if (width > 0 && height > 0)
         {
           statSource.statFrameSize = QSize(width, height);

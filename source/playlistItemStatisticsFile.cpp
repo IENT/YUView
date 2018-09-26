@@ -308,6 +308,7 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
   QMap<QString, QMap<int, int*>*>* dataMapStatisticsItemValue = new QMap<QString, QMap<int, int*>*>;
   QMap<QString, QHash<QPoint, int*>*>* dataMapStatisticsItemVector = new QMap<QString, QHash<QPoint, int*>*>;
 
+  // define the result list
   QList<collectedData>* resultData = new QList<collectedData>;
 
   indexRange range(aFrameIndex, aFrameIndex);
@@ -316,8 +317,8 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
   // getting allData from the type
   QList<QList<QVariant>> allData = this->mStatisticData.value(aType);
 
-  // check that we have at least data
-  if(allData.count() == 0) // no data avaible
+  //check that we have a result
+  if(allData.count() <= 0) // in this case, we have no result so we can return at this point
     return resultData;
 
   // getting the data depends on the actual selected frameIndex / POC
