@@ -46,7 +46,7 @@ class parserAnnexBHEVC : public parserAnnexB
   Q_OBJECT
   
 public:
-  parserAnnexBHEVC() : parserAnnexB() {}
+  parserAnnexBHEVC(QObject *parent = nullptr) : parserAnnexB(parent) {}
   ~parserAnnexBHEVC() {};
 
   // Get some properties

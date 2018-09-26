@@ -48,7 +48,7 @@ class parserAnnexB : public parserBase
   Q_OBJECT
 
 public:
-  parserAnnexB();
+  parserAnnexB(QObject *parent = nullptr);
   virtual ~parserAnnexB() {};
 
   // How many POC's have been found in the file

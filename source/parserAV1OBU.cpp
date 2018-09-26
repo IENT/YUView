@@ -74,7 +74,7 @@ const QStringList parserAV1OBU::obu_type_toString = QStringList()
   << "RESERVED" << "OBU_SEQUENCE_HEADER" << "OBU_TEMPORAL_DELIMITER" << "OBU_FRAME_HEADER" << "OBU_TILE_GROUP" 
   << "OBU_METADATA" << "OBU_FRAME" << "OBU_REDUNDANT_FRAME_HEADER" << "OBU_TILE_LIST" << "OBU_PADDING";
 
-parserAV1OBU::parserAV1OBU()
+parserAV1OBU::parserAV1OBU(QObject *parent) : parserBase(parent)
 {
   // Reset all values in parserAV1OBU
   memset(&decValues, 0, sizeof(global_decoding_values));
@@ -163,8 +163,8 @@ bool parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, 
   TreeItem *obuRoot = nullptr;
   if (parent)
     obuRoot = new TreeItem(parent);
-  else if (!packetModel.rootItem.isNull())
-    obuRoot = new TreeItem(packetModel.rootItem.data());
+  else if (!packetModel->isNull())
+    obuRoot = new TreeItem(packetModel->getRootItem());
 
   // Read the OBU header
   obu_unit obu(obuStartEndPosFile, obuID);

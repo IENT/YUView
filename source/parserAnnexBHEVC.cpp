@@ -343,8 +343,8 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
   TreeItem *nalRoot = nullptr;
   if (parent)
     nalRoot = new TreeItem(parent);
-  else if (!packetModel.rootItem.isNull())
-    nalRoot = new TreeItem(packetModel.rootItem.data());
+  else if (!packetModel->isNull())
+    nalRoot = new TreeItem(packetModel->getRootItem());
 
   // Create a nal_unit and read the header
   nal_unit_hevc nal_hevc(nalStartEndPosFile, nalID);

@@ -45,9 +45,11 @@ using namespace parserCommon;
 
 /// --------------- parserBase ---------------------
 
-parserBase::parserBase()
+parserBase::parserBase(QObject *parent) : QObject(parent)
 {
-  streamIndexFilter.setSourceModel(&packetModel);
+  packetModel.reset(new PacketItemModel(parent));
+  streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
+  streamIndexFilter->setSourceModel(packetModel.data());
 }
 
 parserBase::~parserBase()
@@ -56,8 +58,8 @@ parserBase::~parserBase()
 
 void parserBase::enableModel()
 {
-  if (packetModel.rootItem.isNull())
-    packetModel.rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
+  if (packetModel->isNull())
+    packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
 }
 
 void parserBase::setShowVideoStreamOnly(bool showVideoOnly) 
@@ -65,7 +67,7 @@ void parserBase::setShowVideoStreamOnly(bool showVideoOnly)
   int idx = getVideoStreamIndex();
   if (idx >= 0)
   {
-    packetModel.setShowVideoStreamOnly(showVideoOnly);
-    streamIndexFilter.setShowVideoStreamOnly(showVideoOnly, idx);
+    packetModel->setShowVideoStreamOnly(showVideoOnly);
+    streamIndexFilter->setShowVideoStreamOnly(showVideoOnly, idx);
   }
 }

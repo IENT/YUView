@@ -48,7 +48,7 @@ class parserAVFormat : public parserBase
   Q_OBJECT
 
 public:
-  parserAVFormat();
+  parserAVFormat(QObject *parent = nullptr);
   ~parserAVFormat() {}
 
   QString getStreamInfoText() Q_DECL_OVERRIDE { return streamInfoText; }

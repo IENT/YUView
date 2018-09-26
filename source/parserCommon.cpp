@@ -880,7 +880,7 @@ QList<QColor> PacketItemModel::streamIndexColors = QList<QColor>()
   << QColor("#6d4c41")  // brown (600)
   << QColor("#7cb342"); // light green (600)
 
-PacketItemModel::PacketItemModel()
+PacketItemModel::PacketItemModel(QObject *parent) : QAbstractItemModel(parent)
 {
 }
 
@@ -1014,6 +1014,7 @@ void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
 bool FilterByStreamIndexProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
   Q_UNUSED(sourceRow);
+  return true;
 
   if (filterStreamIndex == -1)
   {

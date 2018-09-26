@@ -50,7 +50,7 @@ using namespace parserCommon;
 #define DEBUG_AVFORMAT(fmt,...) ((void)0)
 #endif
 
-parserAVFormat::parserAVFormat()
+parserAVFormat::parserAVFormat(QObject *parent) : parserBase(parent)
 { 
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
@@ -76,11 +76,11 @@ bool parserAVFormat::parseExtradata(QByteArray &extradata)
 
 bool parserAVFormat::parseMetadata(QStringPairList &metadata)
 {
-  if (metadata.isEmpty() || !packetModel)
+  if (metadata.isEmpty() || !packetModel->isNull())
     return true;
 
   // Log all entries in the metadata list
-  TreeItem *metadataRoot = new TreeItem("Metadata", packetModel.getRootItem());
+  TreeItem *metadataRoot = new TreeItem("Metadata", packetModel->getRootItem());
   for (QStringPair p : metadata)
     new TreeItem(p.first, p.second, "", "", metadataRoot);
   return true;
@@ -88,11 +88,11 @@ bool parserAVFormat::parseMetadata(QStringPairList &metadata)
 
 bool parserAVFormat::parseExtradata_generic(QByteArray &extradata)
 {
-  if (extradata.isEmpty() || !packetModel)
+  if (extradata.isEmpty() || !packetModel->isNull())
     return true;
 
   // Log all bytes in the extradata
-  TreeItem *extradataRoot = new TreeItem("Extradata", packetModel.getRootItem());
+  TreeItem *extradataRoot = new TreeItem("Extradata", packetModel->getRootItem());
   for (int i = 0; i < extradata.length(); i++)
   {
     int val = (unsigned char)extradata.at(i);
@@ -104,12 +104,12 @@ bool parserAVFormat::parseExtradata_generic(QByteArray &extradata)
 
 bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 {
-  if (extradata.isEmpty() || !packetModel)
+  if (extradata.isEmpty() || !packetModel->isNull())
     return true;
 
   if (extradata.at(0) == 1 && extradata.length() >= 7)
   {
-    reader_helper reader(extradata, packetModel.getRootItem(), "Extradata (Raw AVC NAL units)");
+    reader_helper reader(extradata, packetModel->getRootItem(), "Extradata (Raw AVC NAL units)");
     IGNOREBITS(8); // Ignore the "1" byte which we already found
 
     // The extradata uses the avcc format (see avc.c in libavformat)
@@ -163,13 +163,13 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 
 bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
 {
-  if (extradata.isEmpty() || !packetModel)
+  if (extradata.isEmpty() || !packetModel->isNull())
     return true;
 
   if (extradata.at(0) == 1)
   {
     // The extradata is using the hvcC format
-    TreeItem *extradataRoot = new TreeItem("Extradata (HEVC hvcC format)", packetModel.getRootItem());
+    TreeItem *extradataRoot = new TreeItem("Extradata (HEVC hvcC format)", packetModel->getRootItem());
     hvcC h;
     if (!h.parse_hvcC(extradata, extradataRoot, annexBParser))
       return false;
@@ -182,7 +182,7 @@ bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
     startCode.append((char)0);
     startCode.append((char)1);
 
-    TreeItem *extradataRoot = new TreeItem("Extradata (Raw HEVC NAL units)", packetModel.getRootItem());
+    TreeItem *extradataRoot = new TreeItem("Extradata (Raw HEVC NAL units)", packetModel->getRootItem());
 
     int nalID = 0;
     int nextStartCode = extradata.indexOf(startCode);
@@ -200,14 +200,14 @@ bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
     }
   }
   else
-    return reader_helper::addErrorMessageChildItem("Unsupported extradata format (configurationVersion != 1)", packetModel.getRootItem());
+    return reader_helper::addErrorMessageChildItem("Unsupported extradata format (configurationVersion != 1)", packetModel->getRootItem());
   
   return true;
 }
 
 bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
 {
-  if (extradata.isEmpty() || !packetModel)
+  if (extradata.isEmpty() || !packetModel->isNull())
     return true;
 
   if (extradata.at(0) == 0)
@@ -218,7 +218,7 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
     startCode.append((char)0);
     startCode.append((char)1);
 
-    TreeItem *extradataRoot = new TreeItem("Extradata (Raw Mpeg2 units)", packetModel.getRootItem());
+    TreeItem *extradataRoot = new TreeItem("Extradata (Raw Mpeg2 units)", packetModel->getRootItem());
 
     int nalID = 0;
     int nextStartCode = extradata.indexOf(startCode);
@@ -236,20 +236,20 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
     }
   }
   else
-    return reader_helper::addErrorMessageChildItem("Unsupported extradata format (configurationVersion != 1)", packetModel.getRootItem());
+    return reader_helper::addErrorMessageChildItem("Unsupported extradata format (configurationVersion != 1)", packetModel->getRootItem());
 
   return true;
 }
 
 bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 {
-  if (packetModel)
+  if (packetModel->isNull())
   {
     // Use the given tree item. If it is not set, use the nalUnitMode (if active).
     // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
     // yet. We want to parse the item and then set a good description.
     QString specificDescription;
-    TreeItem *itemTree = new TreeItem(packetModel.getRootItem());
+    TreeItem *itemTree = new TreeItem(packetModel->getRootItem());
 
     int posInData = 0;
     QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.get_data()), packet.get_data_size());
@@ -541,8 +541,8 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     packet = ffmpegFile->getNextPacket(false, false);
     QThread::msleep(200);
     
-    if (packetModel)
-      emit nalModelUpdated(packetModel.getNumberFirstLevelChildren());
+    if (packetModel->isNull())
+      emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
   }
 
   // Seek back to the beginning of the stream.

@@ -43,7 +43,7 @@
 #define DEBUG_ANNEXB(fmt,...) ((void)0)
 #endif
 
-parserAnnexB::parserAnnexB()
+parserAnnexB::parserAnnexB(QObject *parent) : parserBase(parent)
 {
   curFrameFileStartEndPos = QUint64Pair(-1, -1);
   curFramePOC = -1;
@@ -147,8 +147,8 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
 
     nalID++;
 
-    if (packetModel)
-      emit nalModelUpdated(packetModel.getNumberFirstLevelChildren());
+    if (!packetModel->isNull())
+      emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
   }
 
   // We are done.

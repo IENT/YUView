@@ -252,7 +252,7 @@ namespace parserCommon
   class PacketItemModel : public QAbstractItemModel
   {
   public:
-    PacketItemModel();
+    PacketItemModel(QObject *parent);
     ~PacketItemModel();
 
     // The functions that must be overridden from the QAbstractItemModel
@@ -266,7 +266,7 @@ namespace parserCommon
     // The root of the tree
     QScopedPointer<TreeItem> rootItem;
     TreeItem *getRootItem() { return rootItem.get(); }
-    explicit operator bool() const { return !rootItem.isNull(); }
+    bool isNull() { return rootItem.isNull(); }
 
     unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
     void setUseColorCoding(bool colorCoding);
@@ -289,7 +289,7 @@ namespace parserCommon
     Q_OBJECT
 
   public:
-    FilterByStreamIndexProxyModel(QObject *parent = 0) : QSortFilterProxyModel(parent) {};
+    FilterByStreamIndexProxyModel(QObject *parent) : QSortFilterProxyModel(parent) {};
     void setShowVideoStreamOnly(bool showVideoOnly, int videoStreamIndex);
 
   protected:

@@ -40,7 +40,7 @@ class parserAnnexBMpeg2 : public parserAnnexB
   Q_OBJECT
   
 public:
-  parserAnnexBMpeg2() {};
+  parserAnnexBMpeg2(QObject *parent = nullptr) : parserAnnexB(parent) {};
   ~parserAnnexBMpeg2() {};
 
   // Get properties

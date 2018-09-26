@@ -43,7 +43,7 @@ class parserAV1OBU : public parserBase
   Q_OBJECT
 
 public:
-    parserAV1OBU();
+    parserAV1OBU(QObject *parent = nullptr);
     ~parserAV1OBU() {}
 
     bool parseAndAddOBU(int obuID, QByteArray data, parserCommon::TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);

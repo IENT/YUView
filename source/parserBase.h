@@ -45,12 +45,12 @@ class parserBase : public QObject
   Q_OBJECT
 
 public:
-  parserBase();
+  parserBase(QObject *parent);
   virtual ~parserBase() = 0;
 
   // Get a pointer to the nal unit model. The model is only filled if you call enableModel() first.
-  QAbstractItemModel *getPacketItemModel() { return &streamIndexFilter; }
-  void setNewNumberModelItems(unsigned int n) { packetModel.setNewNumberModelItems(n); }
+  QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
+  void setNewNumberModelItems(unsigned int n) { packetModel->setNewNumberModelItems(n); }
   void enableModel();
 
   // Get info about the stream in formatted text form
@@ -63,7 +63,7 @@ public:
 
   virtual int getVideoStreamIndex() { return -1; }
 
-  void setStreamColorCoding(bool colorCoding) { packetModel.setUseColorCoding(colorCoding); }
+  void setStreamColorCoding(bool colorCoding) { packetModel->setUseColorCoding(colorCoding); }
   void setShowVideoStreamOnly(bool showVideoOnly);
 
 signals:
@@ -74,8 +74,8 @@ signals:
   void streamInfoTextUpdated();
 
 protected:
-  parserCommon::PacketItemModel packetModel;
-  parserCommon::FilterByStreamIndexProxyModel streamIndexFilter;
+  QScopedPointer<parserCommon::PacketItemModel> packetModel;
+  QScopedPointer<parserCommon::FilterByStreamIndexProxyModel> streamIndexFilter;
 
   // If this variable is set (from an external thread), the parsing process should cancel immediately
   bool cancelBackgroundParser {false};
