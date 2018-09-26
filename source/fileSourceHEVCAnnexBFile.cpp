@@ -281,14 +281,20 @@ void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_rea
   if (maxNumSubLayersMinus1 >= 8)
     throw std::logic_error("The value of maxNumSubLayersMinus1 must be in the range of 0 to 7");
 
-  for(int i = 0; i <= maxNumSubLayersMinus1; i++) 
+  for(int i = 0; i <= maxNumSubLayersMinus1; i++)
   {
     READFLAG(fixed_pic_rate_general_flag[i]);
     if (!fixed_pic_rate_general_flag[i])
+    {
       READFLAG(fixed_pic_rate_within_cvs_flag[i]);
+    }
+    else
+    {
+      fixed_pic_rate_within_cvs_flag[i] = 1;
+    }
     if (fixed_pic_rate_within_cvs_flag[i])
     {
-      READFLAG(elemental_duration_in_tc_minus1[i]);
+      READUEV(elemental_duration_in_tc_minus1[i]);
       low_delay_hrd_flag[i] = false;
     }
     else
@@ -1062,6 +1068,7 @@ fileSourceHEVCAnnexBFile::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc
   // When not present, the value of dependent_slice_segment_flag is inferred to be equal to 0.
   dependent_slice_segment_flag = false;
   pic_output_flag = true;
+  slice_pic_order_cnt_lsb = 0;
   short_term_ref_pic_set_sps_flag = false;
   short_term_ref_pic_set_idx = 0;
   num_long_term_sps = 0;
@@ -1179,10 +1186,6 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
       }
       if(actSPS->sps_temporal_mvp_enabled_flag)
         READFLAG(slice_temporal_mvp_enabled_flag)
-    }
-    else 
-    {
-      slice_pic_order_cnt_lsb = 0;
     }
 
     if(actSPS->sample_adaptive_offset_enabled_flag)

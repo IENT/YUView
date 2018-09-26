@@ -46,7 +46,8 @@ namespace playlistItems
     playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemStatisticsCSVFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemStatisticsVTMBMSFile::getSupportedFileExtensions(allExtensions, filtersList);
 
     // Append the filter for playlist files
     allExtensions.append("yuvplaylist");
@@ -77,7 +78,8 @@ namespace playlistItems
     playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemStatisticsCSVFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemStatisticsVTMBMSFile::getSupportedFileExtensions(allExtensions, filtersList);
 
     // Append the filter for playlist files
       allExtensions.append("yuvplaylist");
@@ -172,20 +174,32 @@ namespace playlistItems
       }
     }
 
-    // Check playlistItemStatisticsFile
+    // Check playlistItemStatisticsCSVFile
     {
       QStringList allExtensions, filtersList;
-      playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+      playlistItemStatisticsCSVFile::getSupportedFileExtensions(allExtensions, filtersList);
 
       if (allExtensions.contains(ext))
       {
-        playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
+        playlistItemStatisticsCSVFile *newStatFile = new playlistItemStatisticsCSVFile(fileName);
+        return newStatFile;
+      }
+    }
+
+    // Check playlistItemVTMBMSStatisticsFile
+    {
+      QStringList allExtensions, filtersList;
+      playlistItemStatisticsVTMBMSFile::getSupportedFileExtensions(allExtensions, filtersList);
+
+      if (allExtensions.contains(ext))
+      {
+        playlistItemStatisticsVTMBMSFile *newStatFile = new playlistItemStatisticsVTMBMSFile(fileName);
         return newStatFile;
       }
     }
 
     // Unknown file type extension. Ask the user as what file type he wants to open this file.
-    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File (Raw Annex-B)" << "FFmpeg file" << "Statistics File";
+    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File (Raw Annex-B)" << "FFmpeg file" << "Statistics File" << "VTM/BMS Statistics File";
     bool ok;
     QString asType = QInputDialog::getItem(parent, "Select file type", "The file type could not be determined from the file extension. Please select the type of the file.", types, 0, false, &ok);
     if (ok && !asType.isEmpty())
@@ -218,6 +232,12 @@ namespace playlistItems
         playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
         return newStatFile;
       }
+      else if (asType == types[5])
+      {
+        // Statistics File
+        playlistItemStatisticsVTMBMSFile *newStatFile = new playlistItemStatisticsVTMBMSFile(fileName);
+        return newStatFile;
+      }
     }
 
     return nullptr;
@@ -247,10 +267,15 @@ namespace playlistItems
       // Load the playlistItemFFmpegFile
       newItem = playlistItemFFmpegFile::newplaylistItemFFmpegFile(elem, filePath);
     }
-    else if (elem.tagName() == "playlistItemStatisticsFile")
+    else if (elem.tagName() == "playlistItemStatisticsCSVFile")
     {
       // Load the playlistItemStatisticsFile
-      newItem = playlistItemStatisticsFile::newplaylistItemStatisticsFile(elem, filePath);
+      newItem = playlistItemStatisticsCSVFile::newplaylistItemStatisticsCSVFile(elem, filePath);
+    }
+    else if (elem.tagName() == "playlistItemStatisticsVTMBMSFile")
+    {
+      // Load the playlistItemVTMBMSStatisticsFile
+      newItem = playlistItemStatisticsVTMBMSFile::newplaylistItemStatisticsVTMBMSFile(elem, filePath);
     }
     else if (elem.tagName() == "playlistItemText")
     {

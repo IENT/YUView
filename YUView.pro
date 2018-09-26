@@ -37,6 +37,8 @@ SOURCES += \
     source/playlistItems.cpp \
     source/playListItemStatisticOverlay.cpp \
     source/playlistItemStatisticsFile.cpp \
+    source/playlistItemStatisticsCSVFile.cpp \
+    source/playlistItemStatisticsVTMBMSFile.cpp \
     source/playlistItemText.cpp \
     source/playlistItemWithVideo.cpp \
     source/playlistTreeWidget.cpp \
@@ -97,6 +99,8 @@ HEADERS += \
     source/playlistItems.h \
     source/playListItemStatisticOverlay.h \
     source/playlistItemStatisticsFile.h \
+    source/playlistItemStatisticsCSVFile.h \
+    source/playlistItemStatisticsVTMBMSFile.h \
     source/playlistItemText.h \
     source/playlistItemWithVideo.h \
     source/playlistTreeWidget.h \
@@ -159,15 +163,38 @@ OTHER_FILES += \
     docs/about.html \
     docs/help.html
 
-target.path = /usr/bin/
+unix:!mac {
+	isEmpty(PREFIX) {
+		PREFIX = /usr/local
+	}
+	isEmpty(BINDIR) {
+		BINDIR = bin
+	}
 
-desktop.path = /usr/share/applications
-desktop.files = YUView.desktop
+        target.path = $$PREFIX/$$BINDIR/
 
-icon64.path = /usr/share/pixmaps
-icon64.files += images/IENT-YUView-64.png
+        metainfo.files = packaging/linux/de.rwth_aachen.ient.YUView.appdata.xml
+        metainfo.path = $$PREFIX/share/metainfo
+        desktop.files = packaging/linux/de.rwth_aachen.ient.YUView.desktop
+        desktop.path = $$PREFIX/share/applications
+        mime.files = packaging/linux/de.rwth_aachen.ient.YUView.xml
+        mime.path = $$PREFIX/share/mime/packages
+        icon32.files = packaging/linux/icons/32x32/de.rwth_aachen.ient.YUView.png
+        icon64.files = packaging/linux/icons/64x64/de.rwth_aachen.ient.YUView.png
+        icon128.files = packaging/linux/icons/128x128/de.rwth_aachen.ient.YUView.png
+        icon256.files = packaging/linux/icons/256x256/de.rwth_aachen.ient.YUView.png
+        icon512.files = packaging/linux/icons/512x512/de.rwth_aachen.ient.YUView.png
+        icon1024.files = packaging/linux/icons/1024x1024/de.rwth_aachen.ient.YUView.png
+        icon32.path = $$PREFIX/share/icons/hicolor/32x32/apps
+        icon64.path = $$PREFIX/share/icons/hicolor/64x64/apps
+        icon128.path = $$PREFIX/share/icons/hicolor/128x128/apps
+        icon256.path = $$PREFIX/share/icons/hicolor/256x256/apps
+        icon512.path = $$PREFIX/share/icons/hicolor/512x512/apps
+        icon1024.path = $$PREFIX/share/icons/hicolor/1024x1024/apps
 
-INSTALLS += target desktop icon64
+        INSTALLS += target metainfo desktop mime icon32 icon64 icon128 icon256 icon512 icon1024
+}
+
 
 contains(QT_ARCH, x86_32|i386) {
     warning("You are building for a 32 bit system. This is untested!")

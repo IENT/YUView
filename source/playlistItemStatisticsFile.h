@@ -78,9 +78,6 @@ public:
   // Are statistics currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isStatisticsLoading; }
 
-  // Create a new playlistItemStatisticsFile from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemStatisticsFile *newplaylistItemStatisticsFile(const QDomElementYUView &root, const QString &playlistFilePath);
-
   // Override from playlistItem. Return the statistics values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
 
@@ -88,12 +85,8 @@ public:
   virtual bool              providesStatistics() const Q_DECL_OVERRIDE { return true; }
   virtual statisticHandler *getStatisticsHandler() Q_DECL_OVERRIDE { return &statSource; }
 
-  // Add the file type filters and the extensions of files that we can load.
-  static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
-
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()  Q_DECL_OVERRIDE { return file.isFileChanged(); }
-  virtual void reloadItemSource() Q_DECL_OVERRIDE;
   virtual void updateSettings()   Q_DECL_OVERRIDE { file.updateFileWatchSetting(); statSource.updateSettings(); }
 
   // ----- function for getting the data to fill the histogramms / charts -----
@@ -150,8 +143,6 @@ protected:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-private:
-
   // The statistics source
   statisticHandler statSource;
   statisticHandler chartStatSource;
@@ -161,13 +152,12 @@ private:
   // A list of file positions where each POC/type starts
   QMap<int, QMap<int, qint64> > pocTypeStartList;
 
-  //! Scan the header: What types are saved in this file?
-  void readHeaderFromFile();
-
-  // parses the CVSLine
-  QStringList parseCSVLine(const QString &line, char delimiter) const;
-
-  // --------------- background parsing ---------------
+  QFuture<void> backgroundParserFuture;
+  double backgroundParserProgress;
+  bool cancelBackgroundParser;
+  // A timer is used to frequently update the status of the background process (every second)
+  QBasicTimer timer;
+  virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
 
   // Set if the file is sorted by POC and the types are 'random' within this POC (true)
   // or if the file is sorted by typeID and the POC is 'random'

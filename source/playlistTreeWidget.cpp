@@ -34,6 +34,7 @@
 
 #include <QBuffer>
 #include <QFileDialog>
+#include <QHeaderView>
 #include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
@@ -41,6 +42,7 @@
 #include <QPainter>
 #include <QScopedValueRollback>
 #include <QSettings>
+#include <QHeaderView>
 #include "playlistItems.h"
 
 // Activate this if you want to know when which signals/slots are handled

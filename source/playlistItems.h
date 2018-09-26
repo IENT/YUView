@@ -34,13 +34,10 @@
 #define PLAYLISTITEMHANDLER_H
 
 #include "playlistItemDifference.h"
+#include "playlistItemRawCodedVideo.h"
 #include "playlistItemFFmpegFile.h"
-#include "playlistItemImageFile.h"
-#include "playlistItemImageFileSequence.h"
-#include "playlistItemOverlay.h"
-#include "playlistItemRawFile.h"
-#include "playlistItemStatisticsFile.h"
-#include "playListItemStatisticOverlay.h"
+#include "playlistItemStatisticsCSVFile.h"
+#include "playlistItemStatisticsVTMBMSFile.h"
 #include "playlistItemImageFile.h"
 #include "playlistItemImageFileSequence.h"
 #include "playlistItemOverlay.h"
