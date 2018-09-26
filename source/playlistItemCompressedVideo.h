@@ -179,8 +179,6 @@ protected:
   // might be unable to decode some of the frames at the end of the sequence.
   bool decodingOfFrameNotPossible {false};
 
-  QScopedPointer<bitstreamAnalysisDialog> analyzer;
-
 private slots:
   // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.

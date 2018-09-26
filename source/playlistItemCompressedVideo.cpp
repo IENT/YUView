@@ -389,8 +389,8 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
   {
     // The button "Bitstream Analysis" was pressed.
     QWidget *mainWindow = MainWindow::getMainWindow();
-    analyzer.reset(new bitstreamAnalysisDialog(mainWindow, plItemNameOrFileName, inputFormatType));
-    analyzer->exec();
+    bitstreamAnalysisDialog analyzer(mainWindow, plItemNameOrFileName, inputFormatType);
+    analyzer.exec();
   }
   else if (buttonID == 1)
   {

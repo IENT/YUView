@@ -41,7 +41,7 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
   QDialog(parent)
 {
   ui.setupUi(this);
-  setAttribute(Qt::WA_DeleteOnClose);
+  //setAttribute(Qt::WA_DeleteOnClose);
 
   statusBar = new QStatusBar;
   ui.verticalLayout->addWidget(statusBar);
@@ -51,11 +51,11 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
 
   // Setup the parser
   if (inputFormatType == inputAnnexBHEVC)
-    parser.reset(new parserAnnexBHEVC());
+    parser.reset(new parserAnnexBHEVC(this));
   else if (inputFormatType == inputAnnexBAVC)
-    parser.reset(new parserAnnexBAVC());
+    parser.reset(new parserAnnexBAVC(this));
   else if (inputFormatType == inputLibavformat)
-    parser.reset(new parserAVFormat());
+    parser.reset(new parserAVFormat(this));
   
   parser->enableModel();
 
