@@ -226,7 +226,7 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData(index
           dataList.clear();
 
           // first we have to load the statistic
-          this->loadStatisticToCache(frame, typeIdx);
+          //this->loadStatisticToCache(frame, typeIdx);
 
           statisticsData statDataByType = this->chartStatSource.statsCache[typeIdx];
           // the data can be a value or a vector, converting the data into an QVariant and append it to the dataList
@@ -308,11 +308,17 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
   QMap<QString, QMap<int, int*>*>* dataMapStatisticsItemValue = new QMap<QString, QMap<int, int*>*>;
   QMap<QString, QHash<QPoint, int*>*>* dataMapStatisticsItemVector = new QMap<QString, QHash<QPoint, int*>*>;
 
+  QList<collectedData>* resultData = new QList<collectedData>;
+
   indexRange range(aFrameIndex, aFrameIndex);
   this->getData(range, true, aType);
 
   // getting allData from the type
   QList<QList<QVariant>> allData = this->mStatisticData.value(aType);
+
+  // check that we have at least data
+  if(allData.count() == 0) // no data avaible
+    return resultData;
 
   // getting the data depends on the actual selected frameIndex / POC
   QList<QVariant> data = allData.at(0);
@@ -419,8 +425,8 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
       }
     }
   }
+
   // at least we order the data based on the width & height (from low to high) and make the data handling easier
-  QList<collectedData>* resultData = new QList<collectedData>;
 
   // first init maxElemtents with the amount of data in dataMapStatisticsItemValue
   int maxElementsToNeed = dataMapStatisticsItemValue->keys().count();

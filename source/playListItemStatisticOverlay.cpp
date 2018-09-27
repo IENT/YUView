@@ -32,18 +32,6 @@
 
 #include "playListItemStatisticOverlay.h"
 
-
-PlayListItemStatisticOverlay::PlayListItemStatisticOverlay()
-    : playlistItemOverlay("Statistic Overlay Item")
-{
-    // This text is drawn if there are no child items in the overlay
-    infoText = "Please drop some statistic items onto this overlay.";
-}
-
-
-/* For an overlay item, the info list is just a list of the names of the
- * child elements.
- */
 infoData PlayListItemStatisticOverlay::getInfo() const
 {
   infoData info("Statistic Overlay Info");
@@ -74,22 +62,4 @@ void PlayListItemStatisticOverlay::setPlayListStatisticFile(playlistItemStatisti
 playlistItemStatisticsFile* PlayListItemStatisticOverlay::getPlayListStatisticFile()
 {
     return this->mStatFile;
-}
-
-QList<collectedData>* playlistItem::sortAndCategorizeData(const QString aType, const int aFrameIndex)
-{
-  Q_UNUSED(aType);
-  Q_UNUSED(aFrameIndex);
-
-  QList<collectedData>* result = new QList<collectedData>();
-  return result;
-}
-
-QList<collectedData>* playlistItem::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
-{
-  Q_UNUSED(aType);
-  Q_UNUSED(aRange);
-
-  QList<collectedData>* result = new QList<collectedData>();
-  return result;
 }

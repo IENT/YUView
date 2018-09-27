@@ -130,11 +130,11 @@ public:
 
 
 
-public slots:
-  //! Load the statistics with frameIdx/type from file and put it into the cache.
-  //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
-  //! types which were not requested by the given 'type'.
-  void loadStatisticToCache(int frameIdxInternal, int type);
+//public slots:
+//  //! Load the statistics with frameIdx/type from file and put it into the cache.
+//  //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
+//  //! types which were not requested by the given 'type'.
+//  void loadStatisticToCache(int frameIdxInternal, int type);
 
 protected:
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
@@ -173,15 +173,6 @@ protected:
   fileSource file;
 
   int currentDrawnFrameIdx;
-
-  QFuture<void> backgroundParserFuture;
-
-  double backgroundParserProgress;
-
-  bool cancelBackgroundParser;
-  // A timer is used to frequently update the status of the background process (every second)
-  QBasicTimer timer;
-  virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
 
   //! Parser the whole file and get the positions where a new POC/type starts. Save this position in p_pocTypeStartList.
   //! This is performed in the background using a QFuture.
