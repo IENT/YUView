@@ -3,3 +3,5 @@ Makefile
 YUView.pro.user
 *.VC.opendb
 *.VC.db
+
+build

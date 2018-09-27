@@ -117,6 +117,12 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>rgbOrderComboBox</tabstop>
+  <tabstop>bitDepthSpinBox</tabstop>
+  <tabstop>planarCheckBox</tabstop>
+  <tabstop>alphaChannelCheckBox</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

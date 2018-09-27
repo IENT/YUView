@@ -1505,7 +1505,7 @@ void fileSourceAVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &s
         READFLAG(full_timestamp_flag[i]);
         READFLAG(discontinuity_flag[i]);
         READFLAG(cnt_dropped_flag[i]);
-        READBITS(n_frames[i], 5);
+        READBITS(n_frames[i], 8);
         if (full_timestamp_flag[i])
         {
           READBITS(seconds_value[i], 6); /* 0..59 */
