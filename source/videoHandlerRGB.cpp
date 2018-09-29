@@ -347,6 +347,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   // Set all the values of the properties widget to the values of this class
   ui.rgbFormatComboBox->addItems(rgbPresetList.getFormattedNames());
   ui.rgbFormatComboBox->addItem("Custom...");
+  ui.rgbFormatComboBox->setEnabled(!isSizeFixed);
   int idx = rgbPresetList.indexOf(srcPixelFormat);
   if (idx == -1 && srcPixelFormat.isValid())
   {
@@ -359,9 +360,6 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   }
   else if (idx > 0)
     ui.rgbFormatComboBox->setCurrentIndex(idx);
-  else
-    ui.rgbFormatComboBox->setCurrentText("Unknown pixel format");
-  ui.rgbFormatComboBox->setEnabled(!isSizeFixed);
 
   ui.colorComponentsComboBox->addItems(QStringList() << "RGB" << "Red Only" << "Green only" << "Blue only");
   ui.colorComponentsComboBox->setCurrentIndex((int)componentDisplayMode);
@@ -869,8 +867,12 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, i
   // Get the file extension
   QString ext = fileInfo.suffix().toLower();
   QString subFormat = "rgb";
+  bool testAlpha = true;
   if (ext == "bgr" || ext == "gbr" || ext == "brg" || ext == "grb" || ext == "rbg")
+  {
     subFormat = ext;
+    testAlpha = false;
+  }
   else
   {
     // Check if there is a format indicator in the file name
@@ -884,6 +886,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, i
       if (f.contains("_" + i) || f.contains(" " + i))
       {
         subFormat = i;
+        testAlpha = false;
         break;
       }
     }
@@ -898,12 +901,13 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, i
 
   for (int bitDepth : testBitDepths)
   {
-    if (bitDepth==8)
+    // If testAlpha is set, we will test with and without alpha channel
+    for (int i = 0; i < testAlpha ? 2 : 1; i++)
     {
       // assume RGB if subFormat does not indicate anything else
       rgbPixelFormat cFormat;
-      cFormat.setRGBFormatFromString(subFormat);
-      cFormat.bitsPerValue = 8;
+      cFormat.setRGBFormatFromString(i == 0 ? subFormat : subFormat + "a");
+      cFormat.bitsPerValue = bitDepth;
 
       // Check if the file size and the assumed format match
       int bpf = cFormat.bytesPerFrame(size);
@@ -914,29 +918,13 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, i
         setSrcPixelFormat(cFormat);
         return;
       }
-    }
-    else if (bitDepth==10)
-    {
-      // Assume 444 format if subFormat is set. Otherwise assume 420
-      rgbPixelFormat cFormat;
-      cFormat.setRGBFormatFromString(subFormat);
-      cFormat.bitsPerValue = 10;
-
-      // Check if the file size and the assumed format match
-      int bpf = cFormat.bytesPerFrame(size);
-      if (bpf != 0 && (fileSize % bpf) == 0)
-      {
-        // Bits per frame and file size match
-        setFrameSize(size);
-        setSrcPixelFormat(cFormat);
-        return;
-      }
-    }
-    else
-    {
-        // do other stuff
     }
   }
+
+  // Still no match. Set RGB 8 bit planar not alpha channel.
+  // This will probably be wrong but we are out of options
+  rgbPixelFormat cFormat(8, true);
+  setSrcPixelFormat(cFormat);
 }
 
 void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference, const int frameIdxItem1)

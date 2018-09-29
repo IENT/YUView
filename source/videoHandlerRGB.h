@@ -65,7 +65,7 @@ namespace RGB_Internals
     int posG {1};
     int posB {2};
     int posA {-1};  // The position of alpha can be -1 (no alpha channel)
-    int bitsPerValue {0};
+    int bitsPerValue {-1};
     bool planar {false};
   };
 }
