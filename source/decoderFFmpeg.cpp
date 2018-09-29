@@ -244,7 +244,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     else
     {
       // We only need to iterate over the image once and copy all values per line at once (RGB(A))
-      const int wDst = frameSize.width() * nrBytesPerSample * (pixFmt.alphaChannel ? 4 : 3);
+      const int wDst = frameSize.width() * nrBytesPerSample * pixFmt.nrChannels();
       for (int y = 0; y < hDst; y++)
       {
         uint8_t *src = frame.get_data(0);

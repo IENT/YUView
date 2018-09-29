@@ -61,27 +61,11 @@ using namespace RGB_Internals;
 #    endif
 #endif
 
-videoHandlerRGB_CustomFormatDialog::videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar, bool alpha)
+rgbPixelFormat::rgbPixelFormat(int bitsPerValue, bool planar, int posR, int posG, int posB, int posA)
+  : posR(posR), posG(posG), posB(posB), posA(posA), bitsPerValue(bitsPerValue), planar(planar)
 {
-  setupUi(this);
-
-  // Set the correct index
-  rgbOrderComboBox->setCurrentIndex(0);  // Default is RGB
-  for (int i = 0; i < rgbOrderComboBox->count(); i++)
-  {
-    if (rgbOrderComboBox->itemText(i).toLower() == rgbFormat.toLower())
-    {
-      rgbOrderComboBox->setCurrentIndex(i);
-      break;
-    }
-  }
-
-  if (bitDepth == 0)
-    bitDepth = 8;
-  bitDepthSpinBox->setValue(bitDepth);
-
-  planarCheckBox->setChecked(planar);
-  alphaChannelCheckBox->setChecked(alpha);
+  Q_ASSERT_X(posR != posG && posR != posB && posG != posB, "rgbPixelFormat", "Invalid RGB format set"); 
+  Q_ASSERT_X(posA != posR && posA != posG && posA != posB, "rgbPixelFormat", "Invalid alpha component for RGB format set"); 
 }
 
 QString rgbPixelFormat::getName() const
@@ -90,8 +74,6 @@ QString rgbPixelFormat::getName() const
     return "Unknown Pixel Format";
 
   QString name = getRGBFormatString();
-  if (alphaChannel)
-    name.append("A");
   name.append(QString(" %1bit").arg(bitsPerValue));
   if (planar)
     name.append(" planar");
@@ -106,16 +88,15 @@ void rgbPixelFormat::setFromName(const QString &name)
     posR = 0;
     posG = 0;
     posB = 0;
+    posA = -1;
     bitsPerValue = 0;
     planar = false;
-    alphaChannel = false;
   }
   else
   {
-    setRGBFormatFromString(name.left(3));
-    alphaChannel = (name[3] == 'A');
+    setRGBFormatFromString(name.left(4));
     int bitIdx = name.indexOf("bit");
-    bitsPerValue = name.mid(alphaChannel ? 5 : 4, (alphaChannel ? 5 : 4) - bitIdx).toInt();
+    bitsPerValue = name.mid(bitIdx-2, 2).toInt();
     planar = name.contains("planar");
   }
 }
@@ -123,7 +104,7 @@ void rgbPixelFormat::setFromName(const QString &name)
 QString rgbPixelFormat::getRGBFormatString() const
 {
   QString name;
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < nrChannels(); i++)
   {
     if (posR == i)
       name.append("R");
@@ -131,13 +112,21 @@ QString rgbPixelFormat::getRGBFormatString() const
       name.append("G");
     if (posB == i)
       name.append("B");
+    if (posA == i)
+      name.append("A");
   }
   return name;
 }
 
 void rgbPixelFormat::setRGBFormatFromString(const QString &format)
 {
-  for (int i = 0; i < 3; i++)
+  int n = format.length();
+  if (n < 3)
+    return;
+  if (n > 4)
+    n = 4;
+
+  for (int i = 0; i < n; i++)
   {
     if (format[i].toLower() == 'r')
       posR = i;
@@ -145,47 +134,10 @@ void rgbPixelFormat::setRGBFormatFromString(const QString &format)
       posG = i;
     else if (format[i].toLower() == 'b')
       posB = i;
+    else if (format[i].toLower() == 'a')
+      posA = i;
   }
 }
-
-/* The default constructor of the RGBFormatList will fill the list with all supported RGB file formats.
- * Don't forget to implement actual support for all of them in the conversion functions.
-*/
-videoHandlerRGB::RGBFormatList::RGBFormatList()
-{
-  append(rgbPixelFormat(8,  false, false, 0, 1, 2));  // RGB 8bit
-  append(rgbPixelFormat(10, false, false, 0, 1, 2));  // RGB 10bit
-  append(rgbPixelFormat(8,  false,  true, 0, 1, 2));  // RGBA 8bit
-  append(rgbPixelFormat(8,  false, false, 1, 2, 0));  // BRG 8bit
-  append(rgbPixelFormat(10, false, false, 1, 2, 0));  // BRG 10bit
-  append(rgbPixelFormat(10, false, true , 0, 1, 2));  // RGB 10bit planar
-}
-
-/* Put all the names of the RGB formats into a list and return it
-*/
-QStringList videoHandlerRGB::RGBFormatList::getFormattedNames() const
-{
-  QStringList l;
-  for (int i = 0; i < count(); i++)
-  {
-    l.append(at(i).getName());
-  }
-  return l;
-}
-
-rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const QString &name) const
-{
-  for (int i = 0; i < count(); i++)
-  {
-    if (at(i) == name)
-      return at(i);
-  }
-  // If the format could not be found, we return the "Unknown Pixel Format" format
-  return rgbPixelFormat();
-}
-
-// Initialize the static rgbPresetList
-videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 
 /* Get the number of bytes for a frame with this RGB format and the given size
 */
@@ -196,9 +148,101 @@ int64_t rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
 
   int64_t numSamples = frameSize.height() * frameSize.width();
 
-  int channels = (alphaChannel) ? 4 : 3;
-  return numSamples * channels * ((bitsPerValue + 7) / 8);
+  return numSamples * nrChannels() * ((bitsPerValue + 7) / 8);
 }
+
+/// ---------------------------- videoHandlerRGB_CustomFormatDialog ---------------------
+
+videoHandlerRGB_CustomFormatDialog::videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar)
+{
+  setupUi(this);
+
+  // Set the default (RGB no alpha)
+  rgbOrderComboBox->setCurrentIndex(0);
+  alphaChannelGroupBox->setChecked(false);
+  afterRGBRadioButton->setChecked(false);
+
+  QString f = rgbFormat.toLower();
+  if (f.length() == 3 || f.length() == 4)
+  {
+    if (f.length() == 4 && f.at(0) == 'a')
+    {
+      alphaChannelGroupBox->setChecked(true);
+      beforeRGBRadioButton->setChecked(true);
+      f.remove(0, 1); // Remove the 'a'
+    }
+    else if (f.length() == 4 && f.at(3) == 'a')
+    {
+      alphaChannelGroupBox->setChecked(true);
+      afterRGBRadioButton->setChecked(true);
+      f.remove(3, 1); // Remove the 'a'
+    }
+
+    for (int i = 0; i < rgbOrderComboBox->count(); i++)
+      if (rgbOrderComboBox->itemText(i).toLower() == f)
+      {
+        rgbOrderComboBox->setCurrentIndex(i);
+        break;
+      }
+  }
+
+  if (bitDepth == 0)
+    bitDepth = 8;
+  bitDepthSpinBox->setValue(bitDepth);
+
+  planarCheckBox->setChecked(planar);
+}
+
+QString videoHandlerRGB_CustomFormatDialog::getRGBFormat() const
+{ 
+  QString f = rgbOrderComboBox->currentText(); 
+  if (alphaChannelGroupBox->isChecked())
+  {
+    if (beforeRGBRadioButton->isChecked())
+      f.prepend("A");
+    if (afterRGBRadioButton->isChecked())
+      f.append("A");
+  }
+  return f;
+}
+
+/// ------------------------- videoHandlerRGB -------------------
+
+/* The default constructor of the RGBFormatList will fill the list with all supported RGB file formats.
+ * Don't forget to implement actual support for all of them in the conversion functions.
+*/
+videoHandlerRGB::RGBFormatList::RGBFormatList()
+{
+  append(rgbPixelFormat(8,  false, 0, 1, 2));     // RGB 8bit
+  append(rgbPixelFormat(10, false, 0, 1, 2));     // RGB 10bit
+  append(rgbPixelFormat(8,  false, 0, 1, 2, 3));  // RGBA 8bit
+  append(rgbPixelFormat(8,  false, 1, 2, 0));     // BRG 8bit
+  append(rgbPixelFormat(10, false, 1, 2, 0));     // BRG 10bit
+  append(rgbPixelFormat(10, false, 0, 1, 2));     // RGB 10bit planar
+}
+
+/* Put all the names of the RGB formats into a list and return it
+*/
+QStringList videoHandlerRGB::RGBFormatList::getFormattedNames() const
+{
+  QStringList l;
+  for (int i = 0; i < count(); i++)
+    l.append(at(i).getName());
+  return l;
+}
+
+rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const QString &name) const
+{
+  for (int i = 0; i < count(); i++)
+    if (at(i) == name)
+      return at(i);
+  
+  // If the format could not be found, we return the "Unknown Pixel Format" format
+  return rgbPixelFormat();
+}
+
+// Initialize the static rgbPresetList
+videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 
 // --------------------- videoHandlerRGB ----------------------------------
 
@@ -304,13 +348,19 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   ui.rgbFormatComboBox->addItems(rgbPresetList.getFormattedNames());
   ui.rgbFormatComboBox->addItem("Custom...");
   int idx = rgbPresetList.indexOf(srcPixelFormat);
-  if (idx == -1)
-    ui.rgbFormatComboBox->setCurrentText("Unknown pixel format");
+  if (idx == -1 && srcPixelFormat.isValid())
+  {
+    // Custom pixel format (but a known pixel format). Add and select it.
+    rgbPresetList.append(srcPixelFormat);
+    int nrItems = ui.rgbFormatComboBox->count();
+    ui.rgbFormatComboBox->insertItem(nrItems - 1, srcPixelFormat.getName());
+    idx = rgbPresetList.indexOf(srcPixelFormat);
+    ui.rgbFormatComboBox->setCurrentIndex(idx);
+  }
   else if (idx > 0)
     ui.rgbFormatComboBox->setCurrentIndex(idx);
   else
-    // Custom pixel format (but a known pixel format)
-    ui.rgbFormatComboBox->setCurrentText(srcPixelFormat.getName());
+    ui.rgbFormatComboBox->setCurrentText("Unknown pixel format");
   ui.rgbFormatComboBox->setEnabled(!isSizeFixed);
 
   ui.colorComponentsComboBox->addItems(QStringList() << "RGB" << "Red Only" << "Green only" << "Blue only");
@@ -370,14 +420,13 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   if (idx == rgbPresetList.count())
   {
     // The user selected the "custom format..." option
-    videoHandlerRGB_CustomFormatDialog dialog(srcPixelFormat.getRGBFormatString(), srcPixelFormat.bitsPerValue, srcPixelFormat.planar, srcPixelFormat.alphaChannel);
+    videoHandlerRGB_CustomFormatDialog dialog(srcPixelFormat.getRGBFormatString(), srcPixelFormat.bitsPerValue, srcPixelFormat.planar);
     if (dialog.exec() == QDialog::Accepted)
     {
       // Set the custom format
       srcPixelFormat.setRGBFormatFromString(dialog.getRGBFormat());
       srcPixelFormat.bitsPerValue = dialog.getBitDepth();
       srcPixelFormat.planar = dialog.getPlanar();
-      srcPixelFormat.alphaChannel = dialog.getAlphaChannel();
     }
 
     // Check if the custom format it in the presets list. If not, add it
@@ -566,7 +615,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
 
   // How many values do we have to skip in src to get to the next input value?
   // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
-  int offsetToNextValue = (srcPixelFormat.alphaChannel) ? 4 : 3;
+  int offsetToNextValue = srcPixelFormat.nrChannels();
   if (srcPixelFormat.planar)
     offsetToNextValue = 1;
 
@@ -765,7 +814,7 @@ void videoHandlerRGB::getPixelValue(const QPoint &pixelPos, unsigned int &R, uns
 
   // How many values do we have to skip in src to get to the next input value?
   // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
-  int offsetToNextValue = (srcPixelFormat.alphaChannel) ? 4 : 3;
+  int offsetToNextValue = srcPixelFormat.nrChannels();
   if (srcPixelFormat.planar)
     offsetToNextValue = 1;
 
@@ -820,17 +869,35 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, i
   // Get the file extension
   QString ext = fileInfo.suffix().toLower();
   QString subFormat = "rgb";
-  if (ext == "rgb" || ext == "bgr" || ext == "gbr")
+  if (ext == "bgr" || ext == "gbr" || ext == "brg" || ext == "grb" || ext == "rbg")
     subFormat = ext;
+  else
+  {
+    // Check if there is a format indicator in the file name
+    QString f = fileInfo.fileName().toLower();
+    QStringList rgbCombinations = QStringList() << "rgb" << "rgb" << "gbr" << "grb" << "brg" << "bgr";
+    QStringList rgbaCombinations;
+    for (QString i : rgbCombinations)
+      rgbaCombinations << "a" + i << i + "a" << i;
+    for (QString i : rgbaCombinations)
+    {
+      if (f.contains("_" + i) || f.contains(" " + i))
+      {
+        subFormat = i;
+        break;
+      }
+    }
+  }
 
   // If the bit depth could not be determined, check 8 and 10 bit
-  int testBitDepths = (bitDepth > 0) ? 1 : 2;
+  QList<int> testBitDepths;
+  if (bitDepth > 0)
+    testBitDepths << bitDepth;
+  else
+    testBitDepths << 8 << 10;
 
-  for (int i = 0; i < testBitDepths; i++)
+  for (int bitDepth : testBitDepths)
   {
-    if (testBitDepths == 2)
-      bitDepth = (i == 0) ? 8 : 10;
-
     if (bitDepth==8)
     {
       // assume RGB if subFormat does not indicate anything else
@@ -1002,7 +1069,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
   {
     // How many values do we have to skip in src to get to the next input value?
     // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
-    int offsetToNextValue = (srcPixelFormat.alphaChannel) ? 4 : 3;
+    int offsetToNextValue = srcPixelFormat.nrChannels();
     if (srcPixelFormat.planar)
       offsetToNextValue = 1;
 

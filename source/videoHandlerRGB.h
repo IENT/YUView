@@ -44,16 +44,14 @@ namespace RGB_Internals
   {
   public:
     // The default constructor (will create an "Unknown Pixel Format")
-    rgbPixelFormat() : posR(0), posG(1), posB(2), bitsPerValue(0), planar(false), alphaChannel(false) {}
-    // Convenience constructor that takes all the values.
-    rgbPixelFormat(int bitsPerValue, bool planar, bool alphaChannel, int posR=0, int posG=1, int posB=2)
-      : posR(posR), posG(posG), posB(posB), bitsPerValue(bitsPerValue), planar(planar), alphaChannel(alphaChannel)
-    { Q_ASSERT_X(posR != posG && posR != posB && posG != posB, "rgbPixelFormat", "Invalid RGB format set"); }
+    rgbPixelFormat() {}
+    rgbPixelFormat(int bitsPerValue, bool planar, int posR=0, int posG=1, int posB=2, int posA=-1);
     bool operator==(const rgbPixelFormat &a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
     bool operator!=(const rgbPixelFormat &a) const { return getName()!= a.getName(); }
     bool operator==(const QString &a) const { return getName() == a; }
     bool operator!=(const QString &a) const { return getName() != a; }
-    bool isValid() { return bitsPerValue != 0 && posR != posG && posR != posB && posG != posB; }
+    bool isValid() const { return bitsPerValue != 0 && posR != posG && posR != posB && posG != posB; }
+    int  nrChannels() const { return posA == -1 ? 3 : 4; }
     // Get a name representation of this item (this will be unique for the set parameters)
     QString getName() const;
     void setFromName(const QString &name);
@@ -63,10 +61,12 @@ namespace RGB_Internals
     // Get the number of bytes for a frame with this rgbPixelFormat and the given size
     int64_t bytesPerFrame(const QSize &frameSize) const;
     // The order of each component (E.g. for GBR this is posR=2,posG=0,posB=1)
-    int posR, posG, posB;
-    int bitsPerValue;
-    bool planar;
-    bool alphaChannel;
+    int posR {0};
+    int posG {1};
+    int posB {2};
+    int posA {-1};  // The position of alpha can be -1 (no alpha channel)
+    int bitsPerValue {0};
+    bool planar {false};
   };
 }
 
@@ -75,11 +75,10 @@ class videoHandlerRGB_CustomFormatDialog : public QDialog, private Ui::CustomRGB
   Q_OBJECT
 
 public:
-  videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar, bool alpha);
-  QString getRGBFormat() const { return rgbOrderComboBox->currentText(); }
+  videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar);
+  QString getRGBFormat() const;
   int getBitDepth() const { return bitDepthSpinBox->value(); }
   bool getPlanar() const { return planarCheckBox->isChecked(); }
-  bool getAlphaChannel() const { return alphaChannelCheckBox->isChecked(); }
 };
 
 /** The videoHandlerRGB can be used in any playlistItem to read/display RGB data. A playlistItem could even provide multiple RGB videos.
