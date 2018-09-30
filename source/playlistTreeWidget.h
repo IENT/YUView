@@ -35,7 +35,9 @@
 
 #include <array>
 #include <QPointer>
+#include <QTimer>
 #include <QTreeWidget>
+
 #include "playlistItem.h"
 #include "typedef.h"
 #include "viewStateHandler.h"
@@ -52,10 +54,11 @@ class PlaylistTreeWidget : public QTreeWidget
 
 public:
   explicit PlaylistTreeWidget(QWidget *parent = 0);
+  ~PlaylistTreeWidget();
   
   // Are there changes in the playlist that haven't been saved yet?
   // If the playlist is empty, this will always return true.
-  bool getIsSaved() { return (topLevelItemCount() == 0) ? true : p_isSaved; }
+  bool getIsSaved() { return (topLevelItemCount() == 0) ? true : isSaved; }
 
   // load the given files into the playlist
   void loadFiles(const QStringList &files);
@@ -171,17 +174,16 @@ protected slots:
 
 private:
 
-  //
   playlistItem* getDropTarget(const QPoint &pos) const;
 
-  // Load the given playlist file
   bool loadPlaylistFile(const QString &filePath);
+  QString getPlaylistString(QDir dirName);
 
   // Whether slotSelectionChanged should immediately exit
   bool ignoreSlotSelectionChanged;
 
   // If the playlist is changed and the changes have not been saved yet, this will be true.
-  bool p_isSaved;
+  bool isSaved { true };
 
   // Update all items that have children. This is called when an item is deleted (it might be one from a 
   // compbound item) or something is dropped (might be dropped on a compbound item)
@@ -198,6 +200,9 @@ private:
 
   // We have a pointer to the viewStateHandler to load/save the view states to playlist
   QPointer<viewStateHandler> stateHandler;
+
+  void autoSavePlaylist();
+  QTimer autosaveTimer;
 };
 
 #endif // PLAYLISTTREEWIDGET_H
