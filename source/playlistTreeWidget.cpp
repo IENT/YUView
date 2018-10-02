@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -206,7 +206,7 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
     // Actually move all the items
     QTreeWidget::dropEvent(event);
 
-    // Query the selected items that were dropped and add a new bufferStatusWidget 
+    // Query the selected items that were dropped and add a new bufferStatusWidget
     // for each of them. The old bufferStatusWidget will be deleted by the tree widget.
     QList<int> toRows;
     for(QTreeWidgetItem* item : dragItems)
@@ -337,7 +337,16 @@ void PlaylistTreeWidget::addOverlayItem()
 
 void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChanged)
 {
-  insertTopLevelItem(topLevelItemCount(), item);
+  insertNewItem(nullptr, topLevelItemCount(), item, emitplaylistChanged);
+}
+
+void PlaylistTreeWidget::insertNewItem(QTreeWidgetItem *parent, int index, playlistItem *item, bool emitplaylistChanged)
+{
+  if( !parent )
+    insertTopLevelItem(index, item);
+  else
+    parent->insertChild(index, item);
+
   connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
   connect(item, &playlistItem::signalItemDoubleBufferLoaded, this, &PlaylistTreeWidget::slotItemDoubleBufferLoaded);
   setItemWidget(item, 1, new bufferStatusWidget(item, this));
@@ -357,6 +366,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   QAction *createText = menu.addAction("Add Text Frame");
   QAction *createDiff = menu.addAction("Add Difference Sequence");
   QAction *createOverlay = menu.addAction("Add Overlay");
+  QAction *reload     = menu.addAction("Reload with different decoder");
 
   QAction *deleteAction = nullptr;
   QAction *cloneAction = nullptr;
@@ -374,6 +384,17 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
     }
   }
 
+  // enable reload only if any RAWCoded items are selected
+  reload->setEnabled(false);
+  for (QTreeWidgetItem* it: selectedItems())
+  {
+    if( dynamic_cast<playlistItemRawCodedVideo*>(it) )
+    {
+      reload->setEnabled(true);
+      break;
+    }
+  }
+
   QAction* action = menu.exec(event->globalPos());
   if (action == nullptr)
     return;
@@ -387,6 +408,8 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
     addDifferenceItem();
   else if (action == createOverlay)
     addOverlayItem();
+  else if (action == reload)
+    reloadPlaylistItems(selectedItems());
   else if (action == deleteAction)
     deletePlaylistItems(true);
   else if (action == cloneAction)
@@ -583,7 +606,7 @@ void PlaylistTreeWidget::deletePlaylistItems(bool selectionOnly)
     for (int i = 0; i < topLevelItemCount(); i++)
       itemList.append(dynamic_cast<playlistItem*>(topLevelItem(i)));
   }
-    
+
   // For all items, expand the items that contain children. However, do not add an item twice.
   QList<playlistItem*> unfoldedItemList;
   for (playlistItem *plItem : itemList)
@@ -597,7 +620,7 @@ void PlaylistTreeWidget::deletePlaylistItems(bool selectionOnly)
         if (!unfoldedItemList.contains(child))
           unfoldedItemList.append(child);
     }
-    
+
     // Add the item itself (if not yet in the list)
     if (!unfoldedItemList.contains(plItem))
       unfoldedItemList.append(plItem);
@@ -610,32 +633,88 @@ void PlaylistTreeWidget::deletePlaylistItems(bool selectionOnly)
   // Actually delete the items in the unfolded list
   for (playlistItem *plItem : unfoldedItemList)
   {
-    // Tag the item for deletion. This will disable loading/caching of the item.
-    plItem->tagItemForDeletion();
-
-    // If the item is in a container item we have to inform the container that the item will be deleted.
-    playlistItem *parentItem = plItem->parentPlaylistItem();
-    if (parentItem)
-      parentItem->itemAboutToBeDeleted(plItem);
-    else
-    {
-      // The item has no parent. It is a top level item.
-      int topIdx = indexOfTopLevelItem(plItem);
-      if (topIdx != -1)
-        takeTopLevelItem(topIdx);
-    }
-
-    // Emit that the item is about to be delete
-    emit itemAboutToBeDeleted(plItem);
+    deletePlaylistItem(plItem);
   }
 
   if (!selectionOnly)
     // One of the items we deleted might be the child of a container item.
     // Update all container items.
     updateAllContainterItems();
-  
+
   // Something was deleted. The playlist changed.
   emit playlistChanged();
+}
+
+void PlaylistTreeWidget::deletePlaylistItem(playlistItem *plItem)
+{
+  // Tag the item for deletion. This will disable loading/caching of the item.
+  plItem->tagItemForDeletion();
+
+  // If the item is in a container item we have to inform the container that the item will be deleted.
+  playlistItem *parentItem = plItem->parentPlaylistItem();
+  if (parentItem)
+    parentItem->itemAboutToBeDeleted(plItem);
+  else
+  {
+    // The item has no parent. It is a top level item.
+    int topIdx = indexOfTopLevelItem(plItem);
+    if (topIdx != -1)
+      takeTopLevelItem(topIdx);
+  }
+
+  // Emit that the item is about to be delete
+  emit itemAboutToBeDeleted(plItem);
+}
+
+void PlaylistTreeWidget::reloadPlaylistItems(QList<QTreeWidgetItem *> selection)
+{
+  bool topLevelItemsOnly = true;
+
+  // Get the selected items
+  for (QTreeWidgetItem* item : selection)
+  {
+    if ( !dynamic_cast<playlistItemRawCodedVideo*>(item) )
+      continue;
+
+    playlistItem * plItem = dynamic_cast<playlistItem*>(item);
+    assert( plItem );
+
+    bool isCurrent = item==currentItem();
+    int index = -1;
+    QTreeWidgetItem* parent = item->parent();
+    if (parent)
+    {
+      index = item->parent()->indexOfChild(item);
+      topLevelItemsOnly = false;
+    }
+    else
+    {
+      index = indexOfTopLevelItem(item);
+    }
+
+    playlistItem *newItem = playlistItems::createPlaylistItemFromFile(this, plItem->getName());
+    if( !newItem )
+    {
+      qWarning() << "Reloading of item " << plItem->getName() << " failed.";
+      continue;
+    }
+    deletePlaylistItem(plItem);
+    insertNewItem(parent, index, newItem, false);
+
+    item->setSelected(true);
+    if (isCurrent)
+      setCurrentItem(newItem, 0, QItemSelectionModel::SelectCurrent);
+    else
+      setCurrentItem(newItem, 0, QItemSelectionModel::Select);
+  }
+
+  if (!topLevelItemsOnly)
+    // One of the items we deleted was the child of a container item.
+    // Update all container items.
+    updateAllContainterItems();
+
+  emit playlistChanged();
+  emit currentItemChanged(currentItem(), nullptr);
 }
 
 void PlaylistTreeWidget::loadFiles(const QStringList &files)

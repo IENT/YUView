@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -52,7 +52,7 @@ class PlaylistTreeWidget : public QTreeWidget
 
 public:
   explicit PlaylistTreeWidget(QWidget *parent = 0);
-  
+
   // Are there changes in the playlist that haven't been saved yet?
   // If the playlist is empty, this will always return true.
   bool getIsSaved() { return (topLevelItemCount() == 0) ? true : p_isSaved; }
@@ -62,6 +62,9 @@ public:
 
   // Remove the selected / all items from the playlist tree widget and delete them
   void deletePlaylistItems(bool selectionOnly);
+
+  // Reload the selected items to choose a different decoder
+  void reloadPlaylistItems(QList<QTreeWidgetItem*> selection);
 
   // Get a list of all playlist items that are currently in the playlist. Including all child items.
   QList<playlistItem*> getAllPlaylistItems(const bool topLevelOnly=false) const;
@@ -88,11 +91,11 @@ public:
 
   // Update the caching status of all items
   void updateCachingStatus() { emit dataChanged(QModelIndex(), QModelIndex()); };
-  
+
 public slots:
   void savePlaylistToFile();
 
-  // Slots for going to the next item. WrapAround = if the current item is the last one in the list, 
+  // Slots for going to the next item. WrapAround = if the current item is the last one in the list,
   // goto the first item in the list. Return if there is a next item.
   // callByPlayback is true if this call is caused by the playback function going to the next item.
   bool selectNextItem(bool wrapAround=false, bool callByPlayback=false);
@@ -116,7 +119,7 @@ signals:
   // We need to update the values of the item. Redraw the item if redraw is set.
   void selectedItemChanged(bool redraw);
 
-  // Something changed for the given item so that all cached frames are now invalid. This is 
+  // Something changed for the given item so that all cached frames are now invalid. This is
   // connected to the cache so that it can recache the item.
   void signalItemRecache(playlistItem *item, recacheIndicator clearItemCache);
 
@@ -183,7 +186,7 @@ private:
   // If the playlist is changed and the changes have not been saved yet, this will be true.
   bool p_isSaved;
 
-  // Update all items that have children. This is called when an item is deleted (it might be one from a 
+  // Update all items that have children. This is called when an item is deleted (it might be one from a
   // compbound item) or something is dropped (might be dropped on a compbound item)
   void updateAllContainterItems();
 
@@ -193,8 +196,15 @@ private:
   // Append the new item at the end of the playlist and connect signals/slots
   void appendNewItem(playlistItem *item, bool emitplaylistChanged = true);
 
+  // Insert the new item at the specified position of the playlist and connect signals/slots.
+  // If parent is NULL, it will be added as a top-level item.
+  void insertNewItem(QTreeWidgetItem * parent, int index, playlistItem * item, bool emitplaylistChanged);
+
   // Clone the selected item as often as the user wants
   void cloneSelectedItem();
+
+  // Delete a playlist item and emit the necessary signals
+  void deletePlaylistItem(playlistItem * plItem);
 
   // We have a pointer to the viewStateHandler to load/save the view states to playlist
   QPointer<viewStateHandler> stateHandler;
