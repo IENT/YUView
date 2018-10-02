@@ -1212,7 +1212,9 @@ void statisticHandler::loadPlaylist(const QDomElementYUView &root)
 
 void statisticHandler::updateSettings()
 {
-  for (int row = 0; row < statsTypeList.length(); ++row)
+  assert(!secondaryControlsWidget || itemStyleButtons[0].length() == itemStyleButtons[1].length());
+
+  for (int row = 0; row < itemStyleButtons[0].length(); ++row)
   {
     itemStyleButtons[0][row]->setIcon(convertIcon(":img_edit.png"));
     if (secondaryControlsWidget)
