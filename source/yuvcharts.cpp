@@ -86,7 +86,7 @@ QWidget* YUVChartFactory::createChart(const chartOrderBy aOrderBy, playlistItem*
       case ct2DBarChart:
         return this->mBarChart.createChart(aOrderBy, aItem, aRange, aType, sortedData);
       default:
-      return this->mNoDataToShowWidget;
+        return this->mNoDataToShowWidget;
     }
   }
 
@@ -554,9 +554,8 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
   // we save in the QHash the value first as key and later we use it as label, and we save the total of counts to the value
   // we save the total as pointer, so we have the advantage, that we dont need to replace the last added count
   // but we have to observe that this is not so easy it might be
-  // always remember if you want to change the value of an primitive datat ype which you saved as pointer
+  // always remember if you want to change the value of an primitive datatype which you saved as pointer
   // you have to dereference the pointer and then you can change it!
-
   for (int i = 0; i < aSortedData->count(); i++)
   {
     // first getting the data

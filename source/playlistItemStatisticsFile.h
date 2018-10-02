@@ -180,7 +180,6 @@ protected:
 
 
   // --------------- data statistics---------------
-
   // List of statistic values
   QMap<QString, QList<QList<QVariant>>> mStatisticData;
 
