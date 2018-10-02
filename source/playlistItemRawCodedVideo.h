@@ -113,7 +113,7 @@ public:
   virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
 
   // Ask the user which decoder engine to use
-  static decoderEngine askForDecoderEngine(QWidget *parent);
+  static decoderEngine askForDecoderEngine(QWidget *parent, bool useDefaultSetting);
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is

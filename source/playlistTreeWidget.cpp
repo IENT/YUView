@@ -692,7 +692,7 @@ void PlaylistTreeWidget::reloadPlaylistItems(QList<QTreeWidgetItem *> selection)
       index = indexOfTopLevelItem(item);
     }
 
-    playlistItem *newItem = playlistItems::createPlaylistItemFromFile(this, plItem->getName());
+    playlistItem *newItem = playlistItems::createPlaylistItemFromFile(this, plItem->getName(), false);
     if( !newItem )
     {
       qWarning() << "Reloading of item " << plItem->getName() << " failed.";

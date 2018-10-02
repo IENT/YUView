@@ -76,7 +76,7 @@ playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath
   displaySignal = displayComponent;
   if (displaySignal < 0)
     displaySignal = 0;
-  
+
   // Allocate the decoders
   decoderEngineType = e;
   if (e == decoderLibde265)
@@ -274,7 +274,7 @@ void playlistItemRawCodedVideo::drawItem(QPainter *painter, int frameIdx, double
   }
   else if (loadingDecoder->errorInDecoder())
   {
-    // There was an error in the deocder. 
+    // There was an error in the deocder.
     infoText = "There was an error when loading the decoder: \n";
     infoText += loadingDecoder->decoderErrorString();
     infoText += "\n";
@@ -470,8 +470,16 @@ void playlistItemRawCodedVideo::loadFrame(int frameIdx, bool playing, bool loadR
   }
 }
 
-playlistItemRawCodedVideo::decoderEngine playlistItemRawCodedVideo::askForDecoderEngine(QWidget *parent)
+playlistItemRawCodedVideo::decoderEngine playlistItemRawCodedVideo::askForDecoderEngine(QWidget *parent, bool useDefaultSetting)
 {
+  if( useDefaultSetting )
+  {
+    QSettings settings;
+    int defaultIdx = decoderEngineNames.indexOf( settings.value("Decoders/DefaultHEVCDecoder", "").toString() );
+    if (defaultIdx >= 0 && defaultIdx < decoder_NUM)
+      return decoderEngine(defaultIdx);
+  }
+
   bool ok;
   QString label = "<html><head/><body><p>There are multiple decoders that we can use in order to decode the raw coded video bitstream file:</p><p><b>libde265:</b> A very fast and open source HEVC decoder. The internals version even supports display of the prediction and residual signal.</p><p><b>libHM:</b> The library version of the HEVC reference test model software (HM). Slower than libde265.</p><p><b>JEM:</b> The library version of the the HEVC next generation decoder software JEM.</p></body></html>";
   QString item = QInputDialog::getItem(parent, "Select a decoder engine", label, decoderEngineNames, 0, false, &ok);

@@ -95,7 +95,7 @@ namespace playlistItems
     return nameFilters;
   }
 
-  playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileName)
+  playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileName, bool useDefaultSetting)
   {
     QFileInfo fi(fileName);
     QString ext = fi.suffix().toLower();
@@ -119,7 +119,7 @@ namespace playlistItems
 
       if (allExtensions.contains(ext))
       {
-        playlistItemRawCodedVideo::decoderEngine engine = playlistItemRawCodedVideo::askForDecoderEngine(parent);
+        playlistItemRawCodedVideo::decoderEngine engine = playlistItemRawCodedVideo::askForDecoderEngine(parent, useDefaultSetting);
         if (engine == playlistItemRawCodedVideo::decoderInvalid)
           return nullptr;
         playlistItemRawCodedVideo *newRawCodedVideo = new playlistItemRawCodedVideo(fileName, 0, engine);
@@ -214,7 +214,7 @@ namespace playlistItems
       else if (asType == types[2])
       {
         // HEVC file
-        playlistItemRawCodedVideo::decoderEngine engine = playlistItemRawCodedVideo::askForDecoderEngine(parent);
+        playlistItemRawCodedVideo::decoderEngine engine = playlistItemRawCodedVideo::askForDecoderEngine(parent, useDefaultSetting);
         if (engine == playlistItemRawCodedVideo::decoderInvalid)
           return nullptr;
         playlistItemRawCodedVideo *newRawCodedVideo = new playlistItemRawCodedVideo(fileName, 0, engine);
