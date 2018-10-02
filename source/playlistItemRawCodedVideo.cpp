@@ -49,7 +49,7 @@
 #endif
 
 // Initialize the static names list of the decoder engines
-QStringList playlistItemRawCodedVideo::decoderEngineNames = QStringList() << "libDe265" << "HM" << "JEM";
+const QStringList playlistItemRawCodedVideo::decoderEngineNames = QStringList() << "libDe265" << "HM" << "JEM";
 
 playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath, int displayComponent, decoderEngine e)
   : playlistItemWithVideo(hevcFilePath, playlistItem_Indexed)

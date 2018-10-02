@@ -59,6 +59,8 @@ public:
     decoder_NUM
   } decoderEngine;
 
+  const static QStringList decoderEngineNames;
+
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
@@ -161,8 +163,6 @@ protected:
   int displaySignal;
 
   SafeUi<Ui::playlistItemHEVCFile_Widget> ui;
-
-  static QStringList decoderEngineNames;
 
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }

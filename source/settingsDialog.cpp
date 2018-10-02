@@ -41,6 +41,7 @@
 #include "hevcNextGenDecoderJEM.h"
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
+#include "playlistItemRawCodedVideo.h"
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
 
@@ -132,6 +133,13 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.lineEditAVCodec->setText(settings.value("FFMpeg.avcodec", "").toString());
   ui.lineEditAVUtil->setText(settings.value("FFMpeg.avutil", "").toString());
   ui.lineEditSWResample->setText(settings.value("FFMpeg.swresample", "").toString());
+  // Default Decoder
+  int decIdx = playlistItemRawCodedVideo::decoderEngineNames.indexOf( settings.value("DefaultHEVCDecoder", "").toString() );
+  ui.checkUseDefaultDecoder->setChecked(decIdx >= 0);
+  ui.comboBoxDefaultHEVCDecoder->addItems(playlistItemRawCodedVideo::decoderEngineNames);
+  ui.comboBoxDefaultHEVCDecoder->setCurrentIndex(std::max(decIdx, 0));
+  ui.comboBoxDefaultHEVCDecoder->setEnabled(ui.checkUseDefaultDecoder->isChecked());
+  connect(ui.checkUseDefaultDecoder, &QCheckBox::toggled, ui.comboBoxDefaultHEVCDecoder, &QComboBox::setEnabled);
   settings.endGroup();
 }
 
@@ -352,8 +360,17 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("FFMpeg.avcodec", ui.lineEditAVCodec->text());
   settings.setValue("FFMpeg.avutil", ui.lineEditAVUtil->text());
   settings.setValue("FFMpeg.swresample", ui.lineEditSWResample->text());
-  settings.endGroup();
-  
+  // Default Decoder
+  if (ui.checkUseDefaultDecoder->isChecked() && ui.comboBoxDefaultHEVCDecoder->currentIndex() >= 0)
+  {
+    settings.setValue("DefaultHEVCDecoder", playlistItemRawCodedVideo::decoderEngineNames[ui.comboBoxDefaultHEVCDecoder->currentIndex()]);
+  }
+  else
+  {
+    settings.setValue("DefaultHEVCDecoder", "");
+  }
+ settings.endGroup();
+
   accept();
 }
 
