@@ -53,10 +53,10 @@ infoData PlayListItemStatisticOverlay::getInfo() const
 }
 
 // setter for the statistic file
-void PlayListItemStatisticOverlay::setPlayListStatisticFile(playlistItemStatisticsFile aStatFile)
-{
-    this->mStatFile = &aStatFile;
-}
+//void PlayListItemStatisticOverlay::setPlayListStatisticFile(playlistItemStatisticsFile aStatFile)
+//{
+//    this->mStatFile = &aStatFile;
+//}
 
 // getter for the statistic file
 playlistItemStatisticsFile* PlayListItemStatisticOverlay::getPlayListStatisticFile()

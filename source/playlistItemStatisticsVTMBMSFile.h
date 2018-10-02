@@ -68,7 +68,7 @@ public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.
   //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
   //! types which were not requested by the given 'type'.
-  void loadStatisticToCache(int frameIdxInternal, int type);
+  virtual void loadStatisticToCache(int frameIdxInternal, int type) Q_DECL_OVERRIDE;
 
 private:
 

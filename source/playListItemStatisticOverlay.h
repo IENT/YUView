@@ -51,7 +51,7 @@ public:
     virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Statistic Overlay Properties"; }
 
     // setter for the statistic file, after loading,
-    void setPlayListStatisticFile(playlistItemStatisticsFile aStatFile);
+    //void setPlayListStatisticFile(playlistItemStatisticsFile aStatFile);
 
     // getter for the statistic file
     playlistItemStatisticsFile* getPlayListStatisticFile();

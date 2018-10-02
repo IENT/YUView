@@ -226,7 +226,7 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData(index
           dataList.clear();
 
           // first we have to load the statistic
-          //this->loadStatisticToCache(frame, typeIdx);
+          this->loadStatisticToCache(frame, typeIdx);
 
           statisticsData statDataByType = this->chartStatSource.statsCache[typeIdx];
           // the data can be a value or a vector, converting the data into an QVariant and append it to the dataList

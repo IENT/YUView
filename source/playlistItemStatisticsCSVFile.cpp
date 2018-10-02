@@ -241,6 +241,7 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
 
     // Cleanup old types
     statSource.clearStatTypes();
+    chartStatSource.clearStatTypes();
 
     // scan header lines first
     // also count the lines per Frame for more efficient memory allocation
@@ -266,6 +267,7 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
         // Last type is complete. Store this initial state.
         aType.setInitialState();
         statSource.addStatType(aType);
+        chartStatSource.addStatType(aType);
 
         // start from scratch for next item
         aType = StatisticsType();
@@ -374,7 +376,10 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
         int width = rowItemList[4].toInt();
         int height = rowItemList[5].toInt();
         if (width > 0 && height > 0)
+        {
           statSource.statFrameSize = QSize(width, height);
+          chartStatSource.statFrameSize = QSize(width, height);
+        }
         if (rowItemList[6].toDouble() > 0.0)
           frameRate = rowItemList[6].toDouble();
       }
@@ -410,6 +415,7 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
     {
       // There are no statistics in the file for the given frame and index.
       statSource.statsCache.insert(typeID, statisticsData());
+      chartStatSource.statsCache.insert(typeID, statisticsData());
       return;
     }
 
@@ -486,11 +492,20 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
       Q_ASSERT_X(statsType != nullptr, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
 
       if (vectorData && statsType->hasVectorData)
+      {
         statSource.statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
+        chartStatSource.statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
+      }
       else if (lineData && statsType->hasVectorData)
+      {
         statSource.statsCache[type].addLine(posX, posY, width, height, values[0], values[1], values[2], values[3]);
+        chartStatSource.statsCache[type].addLine(posX, posY, width, height, values[0], values[1], values[2], values[3]);
+      }
       else
+      {
         statSource.statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
+        chartStatSource.statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
+      }
     }
 
   } // try

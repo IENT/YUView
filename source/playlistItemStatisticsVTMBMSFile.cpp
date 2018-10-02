@@ -203,6 +203,7 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
 
     // Cleanup old types
     statSource.clearStatTypes();
+    chartStatSource.clearStatTypes();
 
     while (!file.atEnd())
     {
@@ -230,6 +231,7 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
       if (sequenceSizeMatch.hasMatch())
       {
         statSource.statFrameSize = QSize(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt());
+        chartStatSource.statFrameSize = QSize(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt());
       }
 
       // get available statistics
@@ -334,6 +336,7 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
 
         // add the new type if it is not already in the list
         statSource.addStatType(aType); // check if in list is done by addStatsType
+        chartStatSource.addStatType(aType); // check if in list is done by addStatsType
       }
     }
   } // try
@@ -366,6 +369,7 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
     {
       // There are no statistics in the file for the given frame and index.
       statSource.statsCache.insert(typeID, statisticsData());
+      chartStatSource.statsCache.insert(typeID, statisticsData());
       return;
     }
 
@@ -495,10 +499,12 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
                 int vecX1 = statisitcMatch.captured(8).toInt();
                 int vecY1 = statisitcMatch.captured(9).toInt();
                 statSource.statsCache[typeID].addLine(posX, posY, width, height, vecX, vecY,vecX1,vecY1);
+                chartStatSource.statsCache[typeID].addLine(posX, posY, width, height, vecX, vecY,vecX1,vecY1);
               }
               else
               {
                 statSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
+                chartStatSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
               }
             }
             else if (aType->hasAffineTFData)
@@ -510,11 +516,13 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
               int vecX2 = statisitcMatch.captured(10).toInt();
               int vecY2 = statisitcMatch.captured(11).toInt();
               statSource.statsCache[typeID].addBlockAffineTF(posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
+              chartStatSource.statsCache[typeID].addBlockAffineTF(posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
             }
             else
             {
               scalar = statisitcMatch.captured(6).toInt();
               statSource.statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
+              chartStatSource.statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
             }
           }
           else
@@ -546,11 +554,13 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
               vecX = statisitcMatch.captured(3).toInt();
               vecY = statisitcMatch.captured(4).toInt();
               statSource.statsCache[typeID].addPolygonVector(points, vecX, vecY);
+              chartStatSource.statsCache[typeID].addPolygonVector(points, vecX, vecY);
             }
             else if(aType->hasValueData)
             {
               scalar = statisitcMatch.captured(3).toInt();
               statSource.statsCache[typeID].addPolygonValue(points, scalar);
+              chartStatSource.statsCache[typeID].addPolygonValue(points, scalar);
             }
           }
         }
@@ -561,6 +571,7 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
     {
       // There are no statistics in the file for the given frame and index.
       statSource.statsCache.insert(typeID, statisticsData());
+      chartStatSource.statsCache.insert(typeID, statisticsData());
       return;
     }
 
