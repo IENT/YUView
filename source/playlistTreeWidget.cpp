@@ -825,7 +825,12 @@ bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
 
   // Load the playlist file to buffer
   QByteArray fileBytes = file.readAll();
-  QBuffer buffer(&fileBytes);
+  return loadPlaylistFromByteArray(fileBytes, filePath);
+}
+
+bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString filePath)
+{
+  QBuffer buffer(&data);
 
   // Try to open the DOM document
   QDomDocument doc;
@@ -836,10 +841,6 @@ bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
   if (!success)
   {
     QMessageBox::critical(this, "Error loading playlist.", "The playlist file format could not be recognized.");
-    /*qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: Could not parse PList file!";
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error message: " << errorMessage;
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error line: " << errorLine;
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error column: " << errorColumn;*/
     return false;
   }
 
@@ -943,6 +944,31 @@ void PlaylistTreeWidget::updateSettings()
 
     plItem->updateSettings();
   }
+}
+
+bool PlaylistTreeWidget::isAutosaveAvailable()
+{
+  QSettings settings;
+  return settings.contains("Autosaveplaylist");
+}
+
+void PlaylistTreeWidget::loadAutosavedPlaylist()
+{
+  QSettings settings;
+  if (!settings.contains("Autosaveplaylist"))
+    return;
+
+  QByteArray compressedPlaylist = settings.value("Autosaveplaylist").toByteArray();
+  QByteArray uncompressedPlaylist = qUncompress(compressedPlaylist);
+  loadPlaylistFromByteArray(uncompressedPlaylist, QDir::current().absolutePath());
+
+  dropAutosavedPlaylist();
+}
+
+void PlaylistTreeWidget::dropAutosavedPlaylist()
+{
+  QSettings settings;
+  settings.remove("Autosaveplaylist");
 }
 
 void PlaylistTreeWidget::cloneSelectedItem()

@@ -91,6 +91,10 @@ public:
 
   // Update the caching status of all items
   void updateCachingStatus() { emit dataChanged(QModelIndex(), QModelIndex()); };
+
+  bool isAutosaveAvailable();
+  void loadAutosavedPlaylist();
+  void dropAutosavedPlaylist();
   
 public slots:
   void savePlaylistToFile();
@@ -177,6 +181,7 @@ private:
   playlistItem* getDropTarget(const QPoint &pos) const;
 
   bool loadPlaylistFile(const QString &filePath);
+  bool loadPlaylistFromByteArray(QByteArray data, QString filePath);
   QString getPlaylistString(QDir dirName);
 
   // Whether slotSelectionChanged should immediately exit
