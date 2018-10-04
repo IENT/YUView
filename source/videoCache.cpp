@@ -192,7 +192,7 @@ int loadingWorker::id_counter = 0;
 void loadingWorker::setJob(playlistItem *item, int frame, bool test)
 {
   Q_ASSERT_X(item != nullptr, "loadingWorker::setJob", "Given item is nullptr");
-  Q_ASSERT_X(frame >= 0, "loadingWorker::setJob", "Given frame index invalid");
+  Q_ASSERT_X(frame >= 0 || !item->isIndexedByFrame(), "loadingWorker::setJob", "Given frame index invalid");
   currentCacheItem = item;
   currentFrame = frame;
   testMode = test;
@@ -212,7 +212,8 @@ void loadingWorker::processLoadingJob(bool playing, bool loadRawData)
 
 void loadingWorker::processCacheJobInternal()
 {
-  Q_ASSERT_X(currentCacheItem != nullptr && currentFrame >= 0, "loadingWorker::processLoadingJobInternal", "Invalid Job");
+  Q_ASSERT_X(currentCacheItem != nullptr, "loadingWorker::processLoadingJobInternal", "Invalid Job - Item is nullptr");
+  Q_ASSERT_X(currentFrame >= 0 || !currentCacheItem->isIndexedByFrame(), "loadingWorker::processLoadingJobInternal", "Given frame index invalid");
   DEBUG_JOBS("loadingWorker::processCacheJobInternal");
 
   // Just cache the frame that was given to us.
