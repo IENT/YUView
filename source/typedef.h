@@ -58,6 +58,8 @@ typedef enum
   inputLibavformat,   // This is a container file which we will read using libavformat
   input_NUM
 } inputFormat;
+QString getInputFormatName(inputFormat i);
+inputFormat getInputFormatFromName(QString name);
 
 typedef enum
 {
@@ -67,6 +69,8 @@ typedef enum
   decoderEngineFFMpeg,        // The FFMpeg decoder
   decoderEngineNum
 } decoderEngine;
+QString getDecoderEngineName(decoderEngine e);
+decoderEngine getDecoderEngineFromName(QString name);
 
 // Maximum possible value for int
 #ifndef INT_MAX

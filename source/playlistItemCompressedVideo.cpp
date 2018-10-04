@@ -63,10 +63,6 @@
 // by lower than this threshold, we will not seek.
 #define FORWARD_SEEK_THRESHOLD 5
 
-// Initialize the static names list of the decoder engines
-QStringList playlistItemCompressedVideo::inputFormatNames = QStringList() << "annexBHEVC" << "annexBAVC" << "FFMpeg";
-QStringList playlistItemCompressedVideo::decoderEngineNames = QStringList() << "libDe265" << "HM" << "FFMpeg";
-
 playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compressedFilePath, int displayComponent, inputFormat input, decoderEngine decoder)
   : playlistItemWithVideo(compressedFilePath, playlistItem_Indexed)
 {
@@ -222,13 +218,22 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       decoderEngineType = possibleDecoders[0];
     else if (possibleDecoders.length() > 1)
     {
-      // Prefer libde265 over FFmpeg over others
-      if (possibleDecoders.contains(decoderEngineLibde265))
-        decoderEngineType = decoderEngineLibde265;
-      else if (possibleDecoders.contains(decoderEngineFFMpeg))
-        decoderEngineType = decoderEngineFFMpeg;
+      // Is a default decoder set in the settings?
+      QSettings settings;
+      settings.beginGroup("Decoders");
+      decoderEngine defaultDecoder = (decoderEngine)settings.value("DefaultDecoder", -1).toInt();
+      if (possibleDecoders.contains(defaultDecoder))
+        decoderEngineType = defaultDecoder;
       else
-        decoderEngineType = possibleDecoders[0];
+      {
+        // Prefer libde265 over FFmpeg over others
+        if (possibleDecoders.contains(decoderEngineLibde265))
+          decoderEngineType = decoderEngineLibde265;
+        else if (possibleDecoders.contains(decoderEngineFFMpeg))
+          decoderEngineType = decoderEngineFFMpeg;
+        else
+          decoderEngineType = possibleDecoders[0];
+      }
     }
   }
 
@@ -284,10 +289,8 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   d.appendProperiteChild("relativePath", relativePath);
   d.appendProperiteChild("displayComponent", QString::number(loadingDecoder->getDecodeSignal()));
 
-  QString readerEngine = inputFormatNames.at(inputFormatType);
-  d.appendProperiteChild("inputFormat", readerEngine);
-  QString decoderTypeName = decoderEngineNames.at(decoderEngineType);
-  d.appendProperiteChild("decoder", decoderTypeName);
+  d.appendProperiteChild("inputFormat", getInputFormatName(inputFormatType));
+  d.appendProperiteChild("decoder", getDecoderEngineName(decoderEngineType));
   
   root.appendChild(d);
 }
@@ -304,18 +307,14 @@ playlistItemCompressedVideo *playlistItemCompressedVideo::newPlaylistItemCompres
   if (filePath.isEmpty())
     return nullptr;
 
-  inputFormat input = inputAnnexBHEVC;
-  QString inputName = root.findChildValue("inputFormat");
-  int idx = inputFormatNames.indexOf(inputName);
-  if (idx >= 0 && idx < input_NUM)
-    input = inputFormat(idx);
-
-  decoderEngine decoder = decoderEngineLibde265;
-  QString decoderName = root.findChildValue("decoder");
-  idx = decoderEngineNames.indexOf(decoderName);
-  if (idx >= 0 && idx < decoderEngineNum)
-    decoder = decoderEngine(idx);
-
+  inputFormat input = getInputFormatFromName(root.findChildValue("inputFormat"));
+  if (input == inputInvalid)
+    input = inputAnnexBHEVC;
+  
+  decoderEngine decoder = getDecoderEngineFromName(root.findChildValue("decoder"));
+  if (decoder == decoderEngineInvalid)
+    decoder = decoderEngineLibde265;
+  
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   playlistItemCompressedVideo *newFile = new playlistItemCompressedVideo(filePath, displaySignal, input, decoder);
 
@@ -332,7 +331,7 @@ infoData playlistItemCompressedVideo::getInfo() const
   // At first append the file information part (path, date created, file size...)
   // info.items.append(loadingDecoder->getFileInfoList());
 
-  info.items.append(infoItem("Reader", inputFormatNames.at(inputFormatType)));
+  info.items.append(infoItem("Reader", getInputFormatName(inputFormatType)));
   if (inputFileFFmpegLoading)
   {
     QStringList l = inputFileFFmpegLoading->getLibraryPaths();
@@ -709,7 +708,7 @@ void playlistItemCompressedVideo::createPropertiesWidget()
   // Add decoders we can use
   for (decoderEngine e : possibleDecoders)
   {
-    QString decoderTypeName = decoderEngineNames.at(e);
+    QString decoderTypeName = getDecoderEngineName(e);
     ui.comboBoxDecoder->addItem(decoderTypeName);
   }
   ui.comboBoxDecoder->setCurrentIndex(possibleDecoders.indexOf(decoderEngineType));

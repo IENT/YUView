@@ -104,7 +104,7 @@ public:
   // We only have one caching decoder so it is better if only one thread caches frames from this item.
   // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.
   virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
-
+  
 protected:
   // Override from playlistItemIndexed. The readerEngine can tell us how many frames there are in the sequence.
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
@@ -157,9 +157,6 @@ protected:
   void fillStatisticList();
 
   SafeUi<Ui::playlistItemCompressedFile_Widget> ui;
-
-  static QStringList inputFormatNames;
-  static QStringList decoderEngineNames;
 
   // The current frame index of the decoders (interactive/caching)
   int currentFrameIdx[2] {-1, -1};
