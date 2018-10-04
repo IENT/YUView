@@ -35,7 +35,7 @@
 #include "mainwindow.h"
 #include <QProgressDialog>
 
-#define PARSERANNEXB_DEBUG_OUTPUT 1
+#define PARSERANNEXB_DEBUG_OUTPUT 0
 #if PARSERANNEXB_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_ANNEXB qDebug
@@ -106,7 +106,7 @@ QUint64Pair parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
 
 bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
 {
-  DEBUG_ANNEXB("playlistItemCompressedVideo::parseAnnexBFile");
+  DEBUG_ANNEXB("parserAnnexB::parseAnnexBFile");
 
   // Show a modal QProgressDialog while this operation is running.
   // If the user presses cancel, we will cancel and return false (opening the file failed).
