@@ -297,14 +297,15 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
 
     if (!stateReadingFrames)
     {
-      bool bNewPicture;
+      bool bNewPicture = false;
       bool checkOutputPictures = false;
       // The picture pointer will be invalid when we push the next NAL unit to the decoder.
       currentHMPic = nullptr;
+      int err = 0;
 
       if (!lastNALUnit.isEmpty())
       {
-        libHMDec_push_nal_unit(decoder, lastNALUnit, lastNALUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
+        err = libHMDec_push_nal_unit(decoder, lastNALUnit, lastNALUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
         DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData pushed last NAL length %d%s%s", lastNALUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
         // bNewPicture should now be false
         assert(!bNewPicture);
@@ -317,14 +318,17 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
         assert(nalUnit.length() > 0);
         endOfFile = annexBFile->atEnd();
         bool endOfFile = annexBFile->atEnd();
-        libHMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
+        err = libHMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
         DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
-        
+
         if (bNewPicture)
           // Save the NAL unit
           lastNALUnit = nalUnit;
       }
-      
+
+      if (err!=LIBHMDEC_OK)
+        qWarning("libHMDec_push_nal_unit() returned error %i.", err);
+
       if (checkOutputPictures)
         stateReadingFrames = true;
     }
