@@ -36,6 +36,14 @@
 #include <QFontDialog>
 #include <QPainter>
 
+// Activate this if you want to know when which buffer is loaded/converted to image and so on.
+#define PLAYLISTITEMTEXT_DEBUG 0
+#if PLAYLISTITEMTEXT_DEBUG && !NDEBUG
+#define DEBUG_TEXT qDebug
+#else
+#define DEBUG_TEXT(fmt,...) ((void)0)
+#endif
+
 playlistItemText::playlistItemText(const QString &initialText)
   : playlistItem(QString("Text: \"%1\"").arg(initialText), playlistItem_Static)
 {
@@ -139,7 +147,7 @@ void playlistItemText::on_textEdit_textChanged()
   QString t = ui.textEdit->toPlainText();
   text = t;
 
-  // Only show the first 50 characters
+  // Only show the first 50 characters in the name
   if (t.length() > 50)
   {
     t.truncate(50);
@@ -155,6 +163,7 @@ void playlistItemText::on_textEdit_textChanged()
   }
 
   setName(QString("Text: \"%1\"").arg(t));
+  DEBUG_TEXT("playlistItemText::on_textEdit_textChanged New test length %d", text.length());
 
   emit signalItemChanged(true, RECACHE_NONE);
 }
