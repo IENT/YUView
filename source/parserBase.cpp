@@ -48,8 +48,9 @@ using namespace parserCommon;
 parserBase::parserBase(QObject *parent) : QObject(parent)
 {
   packetModel.reset(new PacketItemModel(parent));
-  streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
-  streamIndexFilter->setSourceModel(packetModel.data());
+  
+  //streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
+  //streamIndexFilter->setSourceModel(packetModel.data());
 }
 
 parserBase::~parserBase()
@@ -68,6 +69,6 @@ void parserBase::setShowVideoStreamOnly(bool showVideoOnly)
   if (idx >= 0)
   {
     packetModel->setShowVideoStreamOnly(showVideoOnly);
-    streamIndexFilter->setShowVideoStreamOnly(showVideoOnly, idx);
+    //streamIndexFilter->setShowVideoStreamOnly(showVideoOnly, idx);
   }
 }
