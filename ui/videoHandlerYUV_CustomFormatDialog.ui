@@ -423,6 +423,19 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>comboBoxChromaSubsampling</tabstop>
+  <tabstop>comboBoxBitDepth</tabstop>
+  <tabstop>comboBoxEndianess</tabstop>
+  <tabstop>comboBoxChromaOffsetX</tabstop>
+  <tabstop>comboBoxChromaOffsetY</tabstop>
+  <tabstop>groupBoxPlanar</tabstop>
+  <tabstop>comboBoxPlaneOrder</tabstop>
+  <tabstop>checkBoxUVInterleaved</tabstop>
+  <tabstop>groupBoxPacked</tabstop>
+  <tabstop>comboBoxPackingOrder</tabstop>
+  <tabstop>checkBoxBytePacking</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

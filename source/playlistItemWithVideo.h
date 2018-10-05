@@ -72,7 +72,7 @@ public:
   // This item is cachable, if caching is enabled and if the raw format is valid (can be cached).
   virtual bool isCachable() const Q_DECL_OVERRIDE { return !unresolvableError && playlistItem::isCachable() && video->isFormatValid(); }
 
-  // Load the frame in the video item. Emit signalItemChanged(true) when done.
+  // Load the frame in the video item. Emit signalItemChanged(true,false) when done. Always called from a thread.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
 
   // Is an image currently being loaded?

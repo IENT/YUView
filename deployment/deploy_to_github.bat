@@ -7,7 +7,7 @@ cd YUViewReleases
 git rm --ignore-unmatch win\autoupdate\*
 git rm --ignore-unmatch win\installers\*
 xcopy /E ..\deploy\* win\autoupdate\. /I/Y
-xcopy ..\SetupYUView.exe win\installers\ /Y
+xcopy ..\YUViewSetup.msi win\installers\ /Y
 xcopy ..\YUView-Win.zip win\installers\ /Y
 git add win\autoupdate\*
 git add win\installers\*
