@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1616</width>
+    <width>1576</width>
     <height>1182</height>
    </rect>
   </property>
@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabStreamInfo">
       <attribute name="title">
@@ -25,12 +25,9 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>
-        <widget class="QLabel" name="streamInfoLabel">
-         <property name="text">
-          <string>Stream Info</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        <widget class="QPlainTextEdit" name="streamInfoText">
+         <property name="readOnly">
+          <bool>true</bool>
          </property>
         </widget>
        </item>

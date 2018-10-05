@@ -99,7 +99,7 @@ void bitstreamAnalysisDialog::updateParserItemModel(unsigned int newNumberItems)
 
 void bitstreamAnalysisDialog::updateStreamInfoText()
 {
-  ui.streamInfoLabel->setText(parser->getStreamInfoText());
+  ui.streamInfoText->document()->setPlainText(parser->getStreamInfoText());
 }
 
 void bitstreamAnalysisDialog::backgroundParsingDone()
