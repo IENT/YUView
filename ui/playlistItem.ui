@@ -105,6 +105,13 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>startSpinBox</tabstop>
+  <tabstop>endSpinBox</tabstop>
+  <tabstop>rateSpinBox</tabstop>
+  <tabstop>samplingSpinBox</tabstop>
+  <tabstop>durationSpinBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
