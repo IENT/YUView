@@ -41,7 +41,6 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
   QDialog(parent)
 {
   ui.setupUi(this);
-  //setAttribute(Qt::WA_DeleteOnClose);
 
   statusBar = new QStatusBar;
   ui.verticalLayout->addWidget(statusBar);

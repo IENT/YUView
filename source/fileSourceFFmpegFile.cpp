@@ -35,7 +35,7 @@
 #include <QSettings>
 #include <QProgressDialog>
 
-#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 1
+#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug

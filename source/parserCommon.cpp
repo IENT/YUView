@@ -1013,6 +1013,7 @@ void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
 
 bool FilterByStreamIndexProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
+  DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow row %d -> accept", sourceRow);
   Q_UNUSED(sourceRow);
   return true;
 
@@ -1040,12 +1041,12 @@ void FilterByStreamIndexProxyModel::setShowVideoStreamOnly(bool showVideoOnly, i
     // Enable filtering
     DEBUG_PARSER("FilterByStreamIndexProxyModel::setShowVideoStreamOnly enable filter stream %d", videoStreamIndex);
     filterStreamIndex = videoStreamIndex;
-    emit dataChanged(QModelIndex(), QModelIndex());
-    return;
   }
-
-  // Disable filtering
-  DEBUG_PARSER("FilterByStreamIndexProxyModel::setShowVideoStreamOnly disable filter");
-  filterStreamIndex = -1;
+  else
+  {
+    // Disable filtering
+    DEBUG_PARSER("FilterByStreamIndexProxyModel::setShowVideoStreamOnly disable filter");
+    filterStreamIndex = -1;
+  }
   emit dataChanged(QModelIndex(), QModelIndex());
 }
