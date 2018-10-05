@@ -57,7 +57,7 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  virtual QString getStreamInfoText() { return stream_info.getStreamInfoText(); }
+  virtual QString getStreamInfoText() Q_DECL_OVERRIDE { return stream_info.getStreamInfoText(); }
 
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
   // It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).

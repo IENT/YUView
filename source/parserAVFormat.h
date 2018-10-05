@@ -56,7 +56,7 @@ public:
   // This function can run in a separate thread
   bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
 
-  int getVideoStreamIndex() { return videoStreamIndex; }
+  int getVideoStreamIndex() Q_DECL_OVERRIDE { return videoStreamIndex; }
 
 private:
   AVCodecSpecfier codecID;
