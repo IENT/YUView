@@ -125,7 +125,7 @@ private:
   struct cacheJob
   {
     cacheJob() {}
-    cacheJob(playlistItem *item, indexRange range);
+    cacheJob(playlistItem *item, indexRange range) { plItem = item; frameRange = range; }
     QPointer<playlistItem> plItem;
     indexRange frameRange;
   };
@@ -152,24 +152,26 @@ private:
   // Enqueue the job in the queue. If all frames within the range are already cached in the item, do nothing.
   void enqueueCacheJob(playlistItem* item, indexRange range);
 
-  unsigned int cacheRateInBytesPerMs;
+  unsigned int cacheRateInBytesPerMs {0};
 
   // Start the given number of worker threads (if caching is running, also new jobs will be pushed to the workers)
   void startWorkerThreads(int nrThreads);
   // If this number is > 0, the indicated number of threads will be deleted when a worker finishes (threadCachingFinished() is called)
-  int deleteNrThreads;
+  int deleteNrThreads {0};
   // How many threads are to be used when playback is running?
   int nrThreadsPlayback;
 
-  // Our tiny internal state machine for the worker
-  enum workerStateEnum
+  // Our tiny internal state machine for the workers
+  enum workersStateEnum
   {
-    workerIdle,         // The worker is idle. We can update the cacheQuene and go to workerRunning
-    workerRunning,      // The worker is running. If it finishes by itself goto workerIdle. If an interrupt is requested, goto workerInterruptRequested.
-    workerIntReqStop,   // The worker is running but an interrupt was requested. Next goto workerIdle.
-    workerIntReqRestart // The worker is running but an interrupt was requested because the queue needs updating. If the worker finished, we will update the queue and goto workerRunning.
+    workersIdle,         // The workers are idle. We can update the cacheQuene and go to workerRunning
+    workersRunning,      // The workers are running. If it finishes by itself goto workerIdle. If an interrupt is requested, goto workerInterruptRequested.
+    workersIntReqStop,   // The workers are running but an interrupt was requested. When all workers are done, goto workerIdle.
+    workersIntReqRestart // The workers are running but an interrupt was requested because the queue needs updating. When all workers finished, we will update the queue and goto workerRunning.
   };
-  workerStateEnum workerState;
+  workersStateEnum workersState {workersIdle};
+  // When this is set and the worker state is workersIntReqStop, the cache will be cleared once all workers have finished.
+  bool clearCacheOnStop {false};
   
   // This list contains the items that are scheduled for deletion. 
   // All items in this list will be deleted (->deleteLate()) when caching has halted.
@@ -196,7 +198,7 @@ private:
   bool updateCacheQueueAndRestartWorker;
 
   // This item is watched. When caching of it is done, we will notify the playback controller.
-  playlistItem *watchingItem;
+  playlistItem *watchingItem {nullptr};
 
   // If visible, we will show the current status of the threads in here
   QPointer<QLabel> cachingInfoLabel;
@@ -215,7 +217,7 @@ private:
   // Things for testing the caching speed
   QPointer<QProgressDialog> testProgressDialog;
   QPointer<playlistItem> testItem;              //< The item to use for the test
-  bool testMode;                                //< Set to true when the test is running
+  bool testMode {false};                        //< Set to true when the test is running
   int testLoopCount;                            //< Set before the test starts. Count down to 0. Then the test is over.
   QTimer testProgrssUpdateTimer;                //< Periodically update the progress dialog
   void updateTestProgress();

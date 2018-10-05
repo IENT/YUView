@@ -68,11 +68,7 @@
 #define DEBUG_JOBS(fmt,...) ((void)0)
 #endif
 
-videoCache::cacheJob::cacheJob(playlistItem *item, indexRange range) :
-  plItem(item),
-  frameRange(range)
-{
-}
+/// ----------------------- videoCacheStatusWidget -------------------------
 
 void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
 {
@@ -158,6 +154,8 @@ void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned
   update();
 }
 
+/// ------------------------ loadingWorker ------------------------
+
 class loadingWorker : public QObject
 {
   Q_OBJECT
@@ -241,6 +239,8 @@ void loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
   DEBUG_JOBS("loadingWorker::processLoadingJobInternal emit loadingFinished");
 }
 
+/// -------------------------- videoCache::loadingThread --------------------
+
 class videoCache::loadingThread : public QThread
 {
   Q_OBJECT
@@ -274,7 +274,7 @@ private:
   bool quitting;  // Are er quitting the job? If yes, do not push new jobs to it.
 };
 
-// ------- Video Cache ----------
+/// ---------------------------------- videoCache ------------------------------
 
 videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, splitViewWidget *view, QWidget *parent)
   : QObject(parent)
@@ -283,11 +283,6 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   playback  = playbackController;
   splitView = view;
   parentWidget = parent;
-  cacheRateInBytesPerMs = 0;
-  deleteNrThreads = 0;
-  watchingItem = nullptr;
-  workerState = workerIdle;
-  testMode = false;
   
   // Create the interactive threads
   for (int i=0; i<2; i++)
@@ -357,7 +352,7 @@ void videoCache::startWorkerThreads(int nrThreads)
 
     DEBUG_CACHING("videoCache::startWorkerThreads Started thread %p", newThread);
 
-    if (workerState == workerRunning)
+    if (workersState == workersRunning)
       // Push the next job to the worker. Otherwise it will not start working if caching is currently running.
       pushNextJobToCachingThread(newThread);
   }
@@ -406,7 +401,7 @@ void videoCache::updateSettings()
         t->deleteLater();
 
         DEBUG_CACHING("videoCache::updateSettings Deleting thread %p with worker %d", t, i);
-        nrThreadsToRemove --;
+        nrThreadsToRemove--;
       }
     }
 
@@ -523,28 +518,28 @@ void videoCache::interactiveLoaderFinished()
 void videoCache::scheduleCachingListUpdate()
 {
   // The playlist changed. We have to rethink what to cache next.
-  if (workerState == workerRunning)
+  if (workersState == workersRunning)
   {
-    // First the worker has to stop. Request a stop and an update of the queue.
-    workerState = workerIntReqRestart;
-    DEBUG_CACHING("videoCache::playlistChanged new state %d (workerIntReqRestart)", workerState);
+    // First, the worker has to stop. Request a stop and an update of the queue.
+    workersState = workersIntReqRestart;
+    DEBUG_CACHING("videoCache::playlistChanged new state %d (workersIntReqRestart)", workersState);
     return;
   }
-  else if (workerState == workerIntReqRestart)
+  else if (workersState == workersIntReqRestart)
   {
     // The worker is still running but we already requested an interrupt and an update of the queue.
-    DEBUG_CACHING("videoCache::playlistChanged new state %d (workerIntReqRestart)", workerState);
+    DEBUG_CACHING("videoCache::playlistChanged new state %d (workersIntReqRestart)", workersState);
     return;
   }
 
-  assert(workerState == workerIdle);
+  assert(workersState == workersIdle);
   if (cachingEnabled)
   {
     // Update the cache queue and restart the worker.
     updateCacheQueue();
     startCaching();
   }
-  DEBUG_CACHING("videoCache::playlistChanged new state %d", workerState);
+  DEBUG_CACHING("videoCache::playlistChanged new state %d", workersState);
 }
 
 void videoCache::updateCacheQueue()
@@ -965,7 +960,7 @@ void videoCache::startCaching()
   if (cacheQueue.isEmpty() && !testMode)
   {
     // Nothing in the queue to start caching for.
-    workerState = workerIdle;
+    workersState = workersIdle;
   }
   else
   {
@@ -974,7 +969,7 @@ void videoCache::startCaching()
     for (int i = 0; i < cachingThreadList.count(); i++)
       jobStarted |= pushNextJobToCachingThread(cachingThreadList[i]);
 
-    workerState = jobStarted ? workerRunning : workerIdle;
+    workersState = jobStarted ? workersRunning : workersIdle;
   }
 }
 
@@ -998,7 +993,7 @@ void videoCache::watchItemForCachingFinished(playlistItem *item)
       playback->itemCachingFinished(watchingItem);
       watchingItem = nullptr;
     }
-    else if (workerState == workerIdle)
+    else if (workersState == workersIdle)
     {
       // If the caching is currently not running, start it. Otherwise we will wait forever.
       DEBUG_CACHING("videoCache::watchItemForCachingFinished waiting for item. Start caching.");
@@ -1016,7 +1011,7 @@ void videoCache::threadCachingFinished()
   loadingWorker *worker = dynamic_cast<loadingWorker*>(sender);
   Q_ASSERT_X(worker->isWorking(), "videoCache::threadCachingFinished", "The worker that just finished was not working?");
   worker->setWorking(false);
-  DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - state %d - worker %p", workerState, worker);
+  DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - state %d - worker %p", workersState, worker);
 
   // Check if all threads have stopped.
   bool jobsRunning = false;
@@ -1030,7 +1025,7 @@ void videoCache::threadCachingFinished()
 
   if (testMode)
   {
-    if (workerState == workerIntReqRestart)
+    if (workersState == workersIntReqRestart)
     {
       // The test has not started yet. We are waiting for the normal caching to finish first.
       if (!jobsRunning)
@@ -1040,7 +1035,7 @@ void videoCache::threadCachingFinished()
         startCaching();
       }
     }
-    else if (testLoopCount < 0 || workerState == workerIntReqStop)
+    else if (testLoopCount < 0 || workersState == workersIntReqStop)
     {
       // The test is over or was canceled.
       // We are not going to start any new threads. Wait for the remaining threads to finish.
@@ -1056,7 +1051,7 @@ void videoCache::threadCachingFinished()
         startCaching();
       }
     }
-    else if (workerState == workerRunning)
+    else if (workersState == workersRunning)
     {
       // The caching performance test is running. Just push another test job.
       DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished Test mode - start next job");
@@ -1164,7 +1159,7 @@ void videoCache::threadCachingFinished()
     DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished Deleting thread %p", t);
     deleteNrThreads--;
   }
-  else if (workerState == workerRunning)
+  else if (workersState == workersRunning)
   {
     // Get the thread of the worker and push the next cache job to it
     for (loadingThread *t : cachingThreadList)
@@ -1176,9 +1171,9 @@ void videoCache::threadCachingFinished()
   {
     // All jobs are done
     DEBUG_CACHING("videoCache::threadCachingFinished - All jobs done");
-    if (workerState == workerIntReqStop || workerState == workerRunning)
-      workerState = workerIdle;
-    else if (workerState == workerIntReqRestart)
+    if (workersState == workersIntReqStop || workersState == workersRunning)
+      workersState = workersIdle;
+    else if (workersState == workersIntReqRestart)
     {
       updateCacheQueue();
       startCaching();
@@ -1186,23 +1181,23 @@ void videoCache::threadCachingFinished()
   }
 
   // Start/stop the timer that will update the caching status widget and the debug stuff
-  if (statusUpdateTimer.isActive() && workerState == workerIdle)
+  if (statusUpdateTimer.isActive() && workersState == workersIdle)
     // Stop the timer and update one last time
     statusUpdateTimer.stop();
-  else if (!statusUpdateTimer.isActive() && workerState != workerIdle)
+  else if (!statusUpdateTimer.isActive() && workersState != workersIdle)
     // The timer is not started yet, but it should be.
     // Update now and start the timer to trigger future updates.
     statusUpdateTimer.start(100);
   
   updateCacheStatus();
 
-  DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - new state %d", workerState);
+  DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - new state %d", workersState);
 }
 
 bool videoCache::pushNextJobToCachingThread(loadingThread *thread)
 {
   if ((cacheQueue.isEmpty() && !testMode) || thread->isQuitting())
-    // No more jobs in the cache queue or the job does not accept new jobs.
+    // No more jobs in the cache queue or the thread does not accept new jobs.
     return false;
 
   if (testMode)
@@ -1345,7 +1340,7 @@ void videoCache::itemAboutToBeDeleted(playlistItem* item)
   bool loadingItem = (interactiveThread[0]->worker()->getCacheItem() == item || interactiveThread[1]->worker()->getCacheItem() == item);
   bool cachingItem = false;
 
-  if (workerState != workerIdle)
+  if (workersState != workersIdle)
   {
     // Are we currently caching a frame from this item?
     for (loadingThread *t : cachingThreadList)
@@ -1353,7 +1348,7 @@ void videoCache::itemAboutToBeDeleted(playlistItem* item)
         cachingItem = true;
 
     // An item is about to be deleted. We need to rethink what to cache next.
-    workerState = workerIntReqRestart;
+    workersState = workersIntReqRestart;
   }
 
   if (cachingItem || loadingItem)
@@ -1394,7 +1389,7 @@ void videoCache::itemNeedsRecache(playlistItem* item, recacheIndicator clearItem
     // Something about the given playlistitem changed and all items in the cache are invalid.
     // If a thread is currently caching the given item, we have to stop caching, clear the cache,
     // rethink what to cache and restart the caching.
-    if (workerState != workerIdle)
+    if (workersState != workersIdle)
     {
       // Are we currently caching a frame from this item?
       bool cachingItem = false;
@@ -1411,7 +1406,7 @@ void videoCache::itemNeedsRecache(playlistItem* item, recacheIndicator clearItem
       else
         // We can clear the cache now
         item->removeAllFramesFromCache();
-      workerState = workerIntReqRestart;
+      workersState = workersIntReqRestart;
     }
     else
     {
@@ -1505,7 +1500,7 @@ void videoCache::testConversionSpeed()
   testMode = true;
   testProgrssUpdateTimer.start(200);
 
-  if (workerState == workerIdle)
+  if (workersState == workersIdle)
   {
     // Start caching (in test mode)
     testDuration.start();
@@ -1513,7 +1508,7 @@ void videoCache::testConversionSpeed()
   }
   else
     // Request a restart (in test mode)
-    workerState = workerIntReqRestart;
+    workersState = workersIntReqRestart;
 }
 
 void videoCache::updateTestProgress()
@@ -1523,7 +1518,7 @@ void videoCache::updateTestProgress()
 
   // Check if the dialog was canceled
   if (testProgressDialog->wasCanceled())
-    workerState = workerIntReqStop;
+    workersState = workersIntReqStop;
 
   // Update the dialog progress
   testProgressDialog->setValue(1000-testLoopCount);
@@ -1539,7 +1534,7 @@ void videoCache::testFinished()
   delete testProgressDialog;
   testProgressDialog.clear();
 
-  if (workerState == workerIntReqStop)
+  if (workersState == workersIntReqStop)
     // The test was canceled
     return;
   
