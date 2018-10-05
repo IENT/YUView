@@ -88,7 +88,7 @@ public:
 
   QUint64Pair getFrameStartEndPos(int codingOrderFrameIdx);
 
-  bool parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file);
+  bool parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QWidget *mainWindow=nullptr);
 
   // Called from the bitstream analyzer. This function can run in a background process.
   bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;

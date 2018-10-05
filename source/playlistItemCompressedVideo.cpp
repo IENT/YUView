@@ -93,6 +93,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   QSize frameSize;
   YUV_Internals::yuvPixelFormat format_yuv;
   RGB_Internals::rgbPixelFormat format_rgb;
+  QWidget *mainWindow = MainWindow::getMainWindow();
   if (isInputFormatTypeAnnexB())
   {
     // Open file
@@ -117,24 +118,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       ffmpegCodec.setTypeAVC();
       possibleDecoders.append(decoderEngineFFMpeg);
     }
-    // Parse the loading file
-    // TODO:
-    // Show a modal QProgressDialog while this operation is running.
-    // // If the user presses cancel, we will cancel and return false (opening the file failed).
-    // // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
-    // QWidget *mainWindow = MainWindow::getMainWindow();
-    // // Create the dialog
-    // int64_t maxPos = file->getFileSize();;
-    // // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
-    // int curPercentValue = 0;
-    // QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, 100, mainWindow);
-    // progress.setMinimumDuration(1000);  // Show after 1s
-    // progress.setAutoClose(false);
-    // progress.setAutoReset(false);
-    // progress.setWindowModality(Qt::WindowModal);
 
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Start parsing of file");
-    inputFileAnnexBParser->parseAnnexBFile(inputFileAnnexBLoading);
+    inputFileAnnexBParser->parseAnnexBFile(inputFileAnnexBLoading, mainWindow);
     // Get the frame size and the pixel format
     frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size %dx%d", frameSize.width(), frameSize.height());
@@ -148,7 +134,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     // Try ffmpeg to open the file
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Open file using ffmpeg");
     inputFileFFmpegLoading.reset(new fileSourceFFmpegFile());
-    QWidget *mainWindow = MainWindow::getMainWindow();
     if (!inputFileFFmpegLoading->openFile(compressedFilePath, mainWindow))
     {
       setError("Error opening file using libavcodec.");

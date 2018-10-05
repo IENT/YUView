@@ -105,9 +105,24 @@ QUint64Pair parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
   return frameList[codingOrderFrameIdx].fileStartEndPos;
 }
 
-bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
+bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QWidget *mainWindow)
 {
   DEBUG_ANNEXB("parserAnnexB::parseAnnexBFile");
+
+  int64_t maxPos = file->getFileSize();
+  QScopedPointer<QProgressDialog> progressDialog;
+  int curPercentValue = 0;
+  if (mainWindow)
+  {
+    // Show a modal QProgressDialog while this operation is running.
+    // If the user presses cancel, we will cancel and return false (opening the file failed).
+    // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
+    progressDialog.reset(new QProgressDialog("Parsing AnnexB bitstream...", "Cancel", 0, 100, mainWindow));
+    progressDialog->setMinimumDuration(1000);  // Show after 1s
+    progressDialog->setAutoClose(false);
+    progressDialog->setAutoReset(false);
+    progressDialog->setWindowModality(Qt::WindowModal);
+  }
 
   stream_info.file_size = file->getFileSize();
   stream_info.parsing = true;
@@ -146,6 +161,20 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
     }
 
     nalID++;
+
+    if (progressDialog)
+    {
+      // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
+      if (progressDialog->wasCanceled())
+        return false;
+
+      int newPercentValue = (int)((file->pos() - maxPos) * 100 / maxPos);
+      if (newPercentValue != curPercentValue)
+      {
+        progressDialog->setValue(newPercentValue);
+        curPercentValue = newPercentValue;
+      }
+    }
 
     if (!packetModel->isNull())
       emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
