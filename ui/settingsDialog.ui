@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabGeneral">
       <attribute name="title">
@@ -886,6 +886,25 @@
               <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
             </property>
            </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxDefaultDecoder">
+         <property name="title">
+          <string>Default Decoder</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QCheckBox" name="checkUseDefaultDecoder">
+            <property name="text">
+             <string>Use default HEVC Decoder</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBoxDefaultHEVCDecoder"/>
           </item>
          </layout>
         </widget>

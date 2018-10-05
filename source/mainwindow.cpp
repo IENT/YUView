@@ -269,6 +269,9 @@ void MainWindow::updateRecentFileActions()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+  // prevent crash if still playing
+  ui.playbackController->pausePlayback();
+
   QSettings settings;
   if (!ui.playlistTreeWidget->getIsSaved() && settings.value("AskToSaveOnExit", true).toBool())
   {

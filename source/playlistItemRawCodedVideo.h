@@ -59,6 +59,8 @@ public:
     decoder_NUM
   } decoderEngine;
 
+  const static QStringList decoderEngineNames;
+
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
@@ -111,7 +113,7 @@ public:
   virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
 
   // Ask the user which decoder engine to use
-  static decoderEngine askForDecoderEngine(QWidget *parent);
+  static decoderEngine askForDecoderEngine(QWidget *parent, bool useDefaultSetting);
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
@@ -161,8 +163,6 @@ protected:
   int displaySignal;
 
   SafeUi<Ui::playlistItemHEVCFile_Widget> ui;
-
-  static QStringList decoderEngineNames;
 
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
