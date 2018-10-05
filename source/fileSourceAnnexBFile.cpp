@@ -36,9 +36,9 @@
 #define ANNEXBFILE_DEBUG_OUTPUT 0
 #if ANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_ANNEXB qDebug
+#define DEBUG_ANNEXBFILEFILE qDebug
 #else
-#define DEBUG_ANNEXB(fmt,...) ((void)0)
+#define DEBUG_ANNEXBFILE(fmt,...) ((void)0)
 #endif
 
 fileSourceAnnexBFile::fileSourceAnnexBFile()
@@ -54,7 +54,7 @@ fileSourceAnnexBFile::fileSourceAnnexBFile()
 // Open the file and fill the read buffer. 
 bool fileSourceAnnexBFile::openFile(const QString &fileName)
 {
-  DEBUG_ANNEXB("fileSourceAnnexBFile::openFile fileName %s", fileName);
+  DEBUG_ANNEXBFILE("fileSourceAnnexBFile::openFile fileName %s", fileName);
 
   // Open the input file (again)
   fileSource::openFile(fileName);
@@ -106,7 +106,7 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, QUint64Pa
     {
       // No start code found ... append all data in the current buffer.
       lastReturnArray += fileBuffer.mid(posInBuffer);
-      DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getNextNALUnit no start code found - ret size %d", retArray.size());
+      DEBUG_ANNEXBFILE("fileSourceHEVCAnnexBFile::getNextNALUnit no start code found - ret size %d", retArray.size());
 
       if (fileBufferSize < BUFFER_SIZE)
       {
@@ -159,7 +159,7 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, QUint64Pa
   if (startEndPosInFile)
     startEndPosInFile->second = bufferStartPosInFile + nextStartCodePos;
   lastReturnArray += fileBuffer.mid(posInBuffer, nextStartCodePos - posInBuffer);
-  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getNextNALUnit start code found - ret size %d", lastReturnArray.size());
+  DEBUG_ANNEXBFILE("fileSourceHEVCAnnexBFile::getNextNALUnit start code found - ret size %d", lastReturnArray.size());
   posInBuffer = nextStartCodePos;
   return lastReturnArray;
 }
@@ -194,7 +194,7 @@ QByteArray fileSourceAnnexBFile::getFrameData(QUint64Pair startEndFilePos)
     if (headerOffset == 3)
       retArray.append((char)0);
 
-    DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::getFrameData Load NAL - size %d", nalData.length());
+    DEBUG_ANNEXBFILE("fileSourceHEVCAnnexBFile::getFrameData Load NAL - size %d", nalData.length());
     retArray += nalData;
   }
 
@@ -209,7 +209,7 @@ bool fileSourceAnnexBFile::updateBuffer()
   fileBufferSize = srcFile.read(fileBuffer.data(), BUFFER_SIZE);
   posInBuffer = 0;
 
-  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::updateBuffer fileBufferSize %d", fileBufferSize);
+  DEBUG_ANNEXBFILE("fileSourceHEVCAnnexBFile::updateBuffer fileBufferSize %d", fileBufferSize);
   return (fileBufferSize > 0);
 }
 
@@ -218,7 +218,7 @@ bool fileSourceAnnexBFile::seek(int64_t pos)
   if (!isFileOpened)
     return false;
 
-  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::seek ot %d", pos);
+  DEBUG_ANNEXBFILE("fileSourceHEVCAnnexBFile::seek ot %d", pos);
   // Seek the file and update the buffer
   srcFile.seek(pos);
   fileBufferSize = srcFile.read(fileBuffer.data(), BUFFER_SIZE);
@@ -239,7 +239,7 @@ bool fileSourceAnnexBFile::seek(int64_t pos)
     if (fileBuffer.at(0) == (char)0 && fileBuffer.at(1) == (char)0 && fileBuffer.at(2) == (char)1)
       return true;
 
-    DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::seek could not find start code at seek position");
+    DEBUG_ANNEXBFILE("fileSourceHEVCAnnexBFile::seek could not find start code at seek position");
     return false;
   }
 

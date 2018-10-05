@@ -107,7 +107,7 @@ QUint64Pair parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
 
 bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file)
 {
-  DEBUG_ANNEXB("playlistItemCompressedVideo::parseAnnexBFile");
+  DEBUG_ANNEXB("parserAnnexB::parseAnnexBFile");
 
   stream_info.file_size = file->getFileSize();
   stream_info.parsing = true;

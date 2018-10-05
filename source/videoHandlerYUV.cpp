@@ -848,7 +848,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
   // Add the preset YUV formats. If the current format is in the list, add it and select it.
   ui.yuvFormatComboBox->addItems(yuvPresetsList.getFormattedNames());
   int idx = yuvPresetsList.indexOf(srcPixelFormat);
-  if (idx == -1)
+  if (idx == -1 && srcPixelFormat.isValid())
   {
     // The currently set pixel format is not in the presets list. Add and select it.
     ui.yuvFormatComboBox->addItem(srcPixelFormat.getName());
@@ -1485,6 +1485,11 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, i
       }
     }
   }
+
+  // Still no match. Set YUV 4:2:0 8 bit so that we can show something 
+  // This will probably be wrong but we are out of options
+  yuvPixelFormat fmt = yuvPixelFormat(YUV_420, 8, Order_YUV);
+  setSrcPixelFormat(fmt, false);
 }
 
 /** Try to guess the format of the raw YUV data. A list of candidates is tried (candidateModes) and it is checked if

@@ -123,10 +123,14 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   // "Decoders" tab
   settings.beginGroup("Decoders");
   ui.lineEditDecoderPath->setText(settings.value("SearchPath", "").toString());
+
+  for (int i=0; i<decoderEngineNum; i++)
+    ui.comboBoxDefaultDecoder->addItem(getDecoderEngineName((decoderEngine)i));
+  ui.comboBoxDefaultDecoder->setCurrentIndex(settings.value("DefaultDecoder", 0).toInt());
+
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
   ui.lineEditLibJEMFile->setText(settings.value("libJEMFile", "").toString());
-  // FFMpeg files
   ui.lineEditAVFormat->setText(settings.value("FFMpeg.avformat", "").toString());
   ui.lineEditAVCodec->setText(settings.value("FFMpeg.avcodec", "").toString());
   ui.lineEditAVUtil->setText(settings.value("FFMpeg.avutil", "").toString());
@@ -343,6 +347,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // "Decoders" tab
   settings.beginGroup("Decoders");
   settings.setValue("SearchPath", ui.lineEditDecoderPath->text());
+  settings.setValue("DefaultDecoder", ui.comboBoxDefaultDecoder->currentIndex());
   // Raw coded video files
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
