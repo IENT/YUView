@@ -276,7 +276,8 @@ bool decoderHM::pushData(QByteArray &data)
 
   // Push the data of the NAL unit. The function libHMDec_push_nal_unit can handle data 
   // with a start code and without.
-  bool checkOutputPictures, bNewPicture;
+  bool checkOutputPictures = false;
+  bool bNewPicture = false;
   libHMDec_error err = libHMDec_push_nal_unit(decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
   if (err != LIBHMDEC_OK)
     return setErrorB(QString("Error pushing data to decoder (libHMDec_push_nal_unit) length %1").arg(data.length()));
