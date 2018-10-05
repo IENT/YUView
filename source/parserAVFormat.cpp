@@ -539,7 +539,9 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
     packetID++;
     packet = ffmpegFile->getNextPacket(false, false);
-    QThread::msleep(200);
+    
+    // For signal slot debugging purposes, sleep
+    // QThread::msleep(200);
     
     if (!packetModel->isNull())
       emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
