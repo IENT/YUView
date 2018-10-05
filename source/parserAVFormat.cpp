@@ -76,7 +76,7 @@ bool parserAVFormat::parseExtradata(QByteArray &extradata)
 
 bool parserAVFormat::parseMetadata(QStringPairList &metadata)
 {
-  if (metadata.isEmpty() || !packetModel->isNull())
+  if (metadata.isEmpty() || packetModel->isNull())
     return true;
 
   // Log all entries in the metadata list
@@ -88,7 +88,7 @@ bool parserAVFormat::parseMetadata(QStringPairList &metadata)
 
 bool parserAVFormat::parseExtradata_generic(QByteArray &extradata)
 {
-  if (extradata.isEmpty() || !packetModel->isNull())
+  if (extradata.isEmpty() || packetModel->isNull())
     return true;
 
   // Log all bytes in the extradata
@@ -104,7 +104,7 @@ bool parserAVFormat::parseExtradata_generic(QByteArray &extradata)
 
 bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 {
-  if (extradata.isEmpty() || !packetModel->isNull())
+  if (extradata.isEmpty() || packetModel->isNull())
     return true;
 
   if (extradata.at(0) == 1 && extradata.length() >= 7)
@@ -163,7 +163,7 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 
 bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
 {
-  if (extradata.isEmpty() || !packetModel->isNull())
+  if (extradata.isEmpty() || packetModel->isNull())
     return true;
 
   if (extradata.at(0) == 1)
@@ -243,7 +243,7 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
 
 bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 {
-  if (packetModel->isNull())
+  if (!packetModel->isNull())
   {
     // Use the given tree item. If it is not set, use the nalUnitMode (if active).
     // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
@@ -541,7 +541,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     packet = ffmpegFile->getNextPacket(false, false);
     QThread::msleep(200);
     
-    if (packetModel->isNull())
+    if (!packetModel->isNull())
       emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
   }
 
