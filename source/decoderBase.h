@@ -63,7 +63,7 @@ public:
   virtual int nrSignalsSupported() const { return 1; }
   virtual QStringList getSignalNames() const { return QStringList() << "Reconstruction"; }
   virtual bool isSignalDifference(int signalID) const { Q_UNUSED(signalID); return false; }
-  void setDecodeSignal(int signalID) { if (signalID >= 0 && signalID < nrSignalsSupported()) decodeSignal = signalID; }
+  virtual void setDecodeSignal(int signalID, bool &decoderResetNeeded) { if (signalID >= 0 && signalID < nrSignalsSupported()) decodeSignal = signalID; decoderResetNeeded = false; }
   int getDecodeSignal() { return decodeSignal; }
 
   // -- The decoding interface

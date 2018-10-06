@@ -72,7 +72,8 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
   loadDecoderLibrary(settings.value("libde265File", "").toString());
   settings.endGroup();
 
-  setDecodeSignal(signalID);
+  bool resetDecoder;
+  setDecodeSignal(signalID, resetDecoder);
   allocateNewDecoder();
 }
 
@@ -95,6 +96,16 @@ void decoderLibde265::resetDecoder()
   
   // Create new decoder
   allocateNewDecoder();
+}
+
+void decoderLibde265::setDecodeSignal(int signalID, bool &decoderResetNeeded)
+{
+  decoderResetNeeded = false;
+  if (signalID == decodeSignal)
+    return;
+  if (signalID >= 0 && signalID < nrSignalsSupported())
+    decodeSignal = signalID;
+  decoderResetNeeded = true;
 }
 
 void decoderLibde265::resolveLibraryFunctionPointers()

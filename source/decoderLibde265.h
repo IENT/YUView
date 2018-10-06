@@ -92,6 +92,7 @@ public:
   int nrSignalsSupported() const Q_DECL_OVERRIDE { return nrSignals; }
   bool isSignalDifference(int signalID) const Q_DECL_OVERRIDE { return signalID == 2 || signalID == 3; }
   QStringList getSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
+  void setDecodeSignal(int signalID, bool &decoderResetNeeded) Q_DECL_OVERRIDE;
 
   // Decoding / pushing data
   bool decodeNextFrame() Q_DECL_OVERRIDE;
