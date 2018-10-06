@@ -640,8 +640,6 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
 
   // If we know nothing about the YUV format, assume YUV 4:2:0 8 bit planar by default.
   srcPixelFormat = yuvPixelFormat(YUV_420, 8, Order_YUV);
-
-  showPixelValuesAsDiff = false;
 }
 
 videoHandlerYUV::~videoHandlerYUV()
@@ -1245,8 +1243,8 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
       {
         unsigned int Yu,Uu,Vu;
         getPixelValue(QPoint(x,y), Yu, Uu, Vu);
-        Y = Yu - differenceZeroValue; 
-        U = Uu - differenceZeroValue; 
+        Y = Yu - differenceZeroValue;
+        U = Uu - differenceZeroValue;
         V = Vu - differenceZeroValue;
 
         drawWhite = (mathParameters[Luma].invert) ? (Y > 0) : (Y < 0);
