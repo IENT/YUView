@@ -902,7 +902,8 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, i
   for (int bitDepth : testBitDepths)
   {
     // If testAlpha is set, we will test with and without alpha channel
-    for (unsigned int i = 0; i < (testAlpha ? 2 : 1); i++)
+    unsigned int nrTests = testAlpha ? 2 : 1;
+    for (unsigned int i = 0; i < nrTests; i++)
     {
       // assume RGB if subFormat does not indicate anything else
       rgbPixelFormat cFormat;
