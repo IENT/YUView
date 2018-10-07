@@ -85,9 +85,6 @@ decoderHM::decoderHM(int signalID, bool cachingDecoder) :
   loadDecoderLibrary(settings.value("libHMFile", "").toString());
   settings.endGroup();
 
-  // Set the signal to decode (if supported)
-  setDecodeSignal(signalID);
-
   if (decoderState != decoderError)
     allocateNewDecoder();
 }

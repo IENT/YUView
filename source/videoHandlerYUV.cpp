@@ -634,14 +634,11 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   yuvColorConversionType = BT709_LimitedRange;
 
   // Set the default YUV transformation parameters.
-  // TODO: Why is the offset 125 for Luma??
   mathParameters[Luma] = yuvMathParameters(1, 125, false);
   mathParameters[Chroma] = yuvMathParameters(1, 128, false);
 
   // If we know nothing about the YUV format, assume YUV 4:2:0 8 bit planar by default.
   srcPixelFormat = yuvPixelFormat(YUV_420, 8, Order_YUV);
-
-  showPixelValuesAsDiff = false;
 }
 
 videoHandlerYUV::~videoHandlerYUV()
@@ -955,9 +952,19 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
   // Set the new pixel format. Lock the mutex, so that no background process is running wile the format changes.
   srcPixelFormat = format;
 
+  // Update the math parameter offset (the default offset depends on the bit depth and the range)
+  int shift = format.bitsPerSample - 8;
+  const bool fullRange = (yuvColorConversionType == BT709_FullRange || yuvColorConversionType == BT601_FullRange || yuvColorConversionType == BT2020_FullRange);
+  mathParameters[Luma].offset = (fullRange ? 128 : 125) << shift;
+  mathParameters[Chroma].offset = 128 << shift;
+
   if (ui.created())
+  {
     // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
     ui.chromaInterpolationComboBox->setEnabled(format.subsampled());
+    ui.lumaOffsetSpinBox->setValue(mathParameters[Luma].offset);
+    ui.chromaOffsetSpinBox->setValue(mathParameters[Chroma].offset);
+  }
   
   if (emitSignal)
   {
@@ -1245,8 +1252,8 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
       {
         unsigned int Yu,Uu,Vu;
         getPixelValue(QPoint(x,y), Yu, Uu, Vu);
-        Y = Yu - differenceZeroValue; 
-        U = Uu - differenceZeroValue; 
+        Y = Yu - differenceZeroValue;
+        U = Uu - differenceZeroValue;
         V = Vu - differenceZeroValue;
 
         drawWhite = (mathParameters[Luma].invert) ? (Y > 0) : (Y < 0);
@@ -2964,7 +2971,6 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
   const ColorConversion conversion = yuvColorConversionType;
   const int w = curFrameSize.width();
   const int h = curFrameSize.height();
-  Q_UNUSED(conversion);
 
   // Do we have to apply YUV math?
   const yuvMathParameters mathY = mathParameters[Luma];

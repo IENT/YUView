@@ -946,8 +946,19 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
 {
   if (loadingDecoder && idx != loadingDecoder->getDecodeSignal())
   {
-    loadingDecoder->setDecodeSignal(idx);
-    cachingDecoder->setDecodeSignal(idx);
+    bool resetDecoder = false;
+    loadingDecoder->setDecodeSignal(idx, resetDecoder);
+    cachingDecoder->setDecodeSignal(idx, resetDecoder);
+
+    if (resetDecoder)
+    {
+      loadingDecoder->resetDecoder();
+      cachingDecoder->resetDecoder();
+
+      // Reset the decoded frame indices so that decoding of the current frame is triggered
+      currentFrameIdx[0] = -1;
+      currentFrameIdx[1] = -1;
+    }
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a redraw.
     videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());

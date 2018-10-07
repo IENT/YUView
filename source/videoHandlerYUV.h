@@ -249,7 +249,7 @@ public:
 
   // If this is set, the pixel values drawn in the drawPixels function will be scaled according to the bit depth.
   // E.g: The bit depth is 8 and the pixel value is 127, then the value shown will be -1.
-  bool showPixelValuesAsDiff;
+  bool showPixelValuesAsDiff {false};
 
   QByteArray getDiffYUV() const;
 

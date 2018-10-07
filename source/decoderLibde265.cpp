@@ -72,7 +72,8 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
   loadDecoderLibrary(settings.value("libde265File", "").toString());
   settings.endGroup();
 
-  setDecodeSignal(signalID);
+  bool resetDecoder;
+  setDecodeSignal(signalID, resetDecoder);
   allocateNewDecoder();
 }
 
@@ -95,6 +96,16 @@ void decoderLibde265::resetDecoder()
   
   // Create new decoder
   allocateNewDecoder();
+}
+
+void decoderLibde265::setDecodeSignal(int signalID, bool &decoderResetNeeded)
+{
+  decoderResetNeeded = false;
+  if (signalID == decodeSignal)
+    return;
+  if (signalID >= 0 && signalID < nrSignalsSupported())
+    decodeSignal = signalID;
+  decoderResetNeeded = true;
 }
 
 void decoderLibde265::resolveLibraryFunctionPointers()
@@ -400,12 +411,19 @@ void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst
   if (dst.capacity() < nrBytes)
     dst.resize(nrBytes);
 
+  uint8_t *dst_c = (uint8_t*)dst.data();
+
   // We can now copy from src to dst
-  char* dst_c = dst.data();
   for (int c = 0; c < nrPlanes; c++)
   {
+    const int width = de265_get_image_width(src, c);
+    const int height = de265_get_image_height(src, c);
+    const int bitDepth = de265_get_bits_per_pixel(src, c);
+    const int nrBytesPerSample = (de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
+    const size_t widthInBytes = width * nrBytesPerSample;
+
     const uint8_t* img_c = nullptr;
-    if (decodeSignal == 0 || nrSignals == 1)
+    if (decodeSignal == 0)
       img_c = de265_get_image_plane(src, c, &stride);
     else if (decodeSignal == 1)
       img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);
@@ -413,20 +431,15 @@ void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst
       img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, c, &stride);
     else if (decodeSignal == 3)
       img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, c, &stride);
-    
+      
     if (img_c == nullptr)
       return;
 
-    int width = de265_get_image_width(src, c);
-    int height = de265_get_image_height(src, c);
-    int nrBytesPerSample = (de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
-    size_t size = width * nrBytesPerSample;
-
     for (int y = 0; y < height; y++)
     {
-      memcpy(dst_c, img_c, size);
+      memcpy(dst_c, img_c, widthInBytes);
       img_c += stride;
-      dst_c += size;
+      dst_c += widthInBytes;
     }
   }
 }
