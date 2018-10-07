@@ -72,6 +72,8 @@ public slots:
 
 private:
 
+  QString getPlaylistTag() const Q_DECL_OVERRIDE { return "playlistItemStatisticsVTMBMSFile"; }
+
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();
   

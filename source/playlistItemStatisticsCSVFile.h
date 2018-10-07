@@ -70,6 +70,8 @@ public slots:
 
 private:
 
+  QString getPlaylistTag() const Q_DECL_OVERRIDE { return "playlistItemStatisticsCSVFile"; }
+
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();
   

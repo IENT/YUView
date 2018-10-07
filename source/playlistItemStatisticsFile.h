@@ -45,8 +45,6 @@ class playlistItemStatisticsFile : public playlistItem
 
 public:
 
-  /*
-  */
   playlistItemStatisticsFile(const QString &itemNameOrFileName);
   virtual ~playlistItemStatisticsFile();
 
@@ -63,12 +61,9 @@ public:
   */
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Statistics File Properties"; }
 
-  // ------ Statistics ----
-
-  // Does the playlistItem provide statistics? If yes, the following functions can be
-  // used to access it
-
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
+
+  // ------ Statistics ----
 
   // Do we need to load the statistics first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) Q_DECL_OVERRIDE { Q_UNUSED(loadRawdata); return statSource.needsLoading(getFrameIdxInternal(frameIdx)); }
@@ -95,6 +90,9 @@ protected:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
+  // Get the tag/name which is used when saving the item to a playlist
+  virtual QString getPlaylistTag() const = 0;
+
   // The statistics source
   statisticHandler statSource;
 
@@ -112,7 +110,7 @@ protected:
   // or if the file is sorted by typeID and the POC is 'random'
   bool fileSortedByPOC;
   // If not -1, this gives the POC in which the parser noticed a block that was outside of the "frame"
-  int  blockOutsideOfFrame_idx;
+  int blockOutsideOfFrame_idx;
   // The maximum POC number in the file (as far as we know)
   int maxPOC;
 

@@ -150,6 +150,8 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
     else
       ui.playlistTreeWidget->dropAutosavedPlaylist();
   }
+  // Start the timer now (and not in the constructor of rht playlistTreeWidget) so that the autosave is not accidetly overwritten.
+  ui.playlistTreeWidget->startAutosaveTimer();
 
   updateSettings();
 }

@@ -95,6 +95,7 @@ public:
   bool isAutosaveAvailable();
   void loadAutosavedPlaylist();
   void dropAutosavedPlaylist();
+  void startAutosaveTimer();
   
 public slots:
   void savePlaylistToFile();

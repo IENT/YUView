@@ -182,7 +182,7 @@ namespace playlistItems
     }
 
     // Unknown file type extension. Ask the user as what file type he wants to open this file.
-    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "Compressed file" << "Statistics File";
+    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "Compressed file" << "Statistics File CSV" << "Statistics File VTMBMS";
     bool ok;
     QString asType = QInputDialog::getItem(parent, "Select file type", "The file type could not be determined from the file extension. Please select the type of the file.", types, 0, false, &ok);
     if (ok && !asType.isEmpty())
@@ -203,10 +203,10 @@ namespace playlistItems
       else if (asType == types[3])
       {
         // Statistics File
-        playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
+        playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsCSVFile(fileName);
         return newStatFile;
       }
-      else if (asType == types[5])
+      else if (asType == types[4])
       {
         // Statistics File
         playlistItemStatisticsVTMBMSFile *newStatFile = new playlistItemStatisticsVTMBMSFile(fileName);
@@ -231,12 +231,12 @@ namespace playlistItems
       newItem = playlistItemRawFile::newplaylistItemRawFile(elem, filePath);
     }
     // For backwards compability (playlistItemCompressedFile used to be called playlistItemRawCodedVideo or playlistItemHEVCFile)
-    else if (elem.tagName() == "playlistItemCompressedFile" || elem.tagName() == "playlistItemFFmpegFile" || elem.tagName() == "playlistItemHEVCFile" || elem.tagName() == "playlistItemRawCodedVideo")
+    else if (elem.tagName() == "playlistItemCompressedVideo" || elem.tagName() == "playlistItemCompressedFile" || elem.tagName() == "playlistItemFFmpegFile" || elem.tagName() == "playlistItemHEVCFile" || elem.tagName() == "playlistItemRawCodedVideo")
     {
       // Load the playlistItemHEVCFile
       newItem = playlistItemCompressedVideo::newPlaylistItemCompressedVideo(elem, filePath);
     }
-    else if (elem.tagName() == "playlistItemStatisticsCSVFile")
+    else if (elem.tagName() == "playlistItemStatisticsFile" || elem.tagName() == "playlistItemStatisticsCSVFile")
     {
       // Load the playlistItemStatisticsFile
       newItem = playlistItemStatisticsCSVFile::newplaylistItemStatisticsCSVFile(elem, filePath);

@@ -134,9 +134,6 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) :
 
   connect(this, &PlaylistTreeWidget::itemSelectionChanged, this, &PlaylistTreeWidget::slotSelectionChanged);
   connect(&autosaveTimer, &QTimer::timeout, this, &PlaylistTreeWidget::autoSavePlaylist);
-
-  autosaveTimer.setTimerType(Qt::VeryCoarseTimer);
-  autosaveTimer.start(10000);
 }
 
 PlaylistTreeWidget::~PlaylistTreeWidget()
@@ -1016,6 +1013,12 @@ void PlaylistTreeWidget::autoSavePlaylist()
     QByteArray compressedPlaylist = qCompress(playlistAsString.toLatin1());
     settings.setValue("Autosaveplaylist", compressedPlaylist);
   }
+}
+
+void PlaylistTreeWidget::startAutosaveTimer()
+{
+  autosaveTimer.setTimerType(Qt::VeryCoarseTimer);
+  autosaveTimer.start(10000);
 }
 
 void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *item2)
