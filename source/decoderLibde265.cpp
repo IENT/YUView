@@ -418,7 +418,6 @@ void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst
   {
     const int width = de265_get_image_width(src, c);
     const int height = de265_get_image_height(src, c);
-    const int bitDepth = de265_get_bits_per_pixel(src, c);
     const int nrBytesPerSample = (de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
     const size_t widthInBytes = width * nrBytesPerSample;
 

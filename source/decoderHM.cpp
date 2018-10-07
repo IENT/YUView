@@ -560,7 +560,7 @@ void decoderHM::fillStatisticList(statisticHandler &statSource) const
 
 QString decoderHM::getDecoderName() const
 {
-  return (decoderError) ? "HM" : libHMDec_get_version();
+  return (decoderState == decoderError) ? "HM" : libHMDec_get_version();
 }
 
 bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)
