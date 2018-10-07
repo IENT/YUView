@@ -97,9 +97,8 @@ decoderHM::~decoderHM()
 
 QStringList decoderHM::getLibraryNames()
 {
-  // If the file name is not set explicitly, QLibrary will try to open
-  // the libde265.so file first. Since this has been compiled for linux
-  // it will fail and not even try to open the libde265.dylib.
+  // If the file name is not set explicitly, QLibrary will try to open the .so file first. 
+  // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
   QStringList names = 
     is_Q_OS_MAC ?

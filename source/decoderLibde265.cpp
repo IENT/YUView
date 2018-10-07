@@ -66,7 +66,6 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder) :
   // Libde265 can only decoder HEVC in YUV format
   rawFormat = raw_YUV;
 
-  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");
   loadDecoderLibrary(settings.value("libde265File", "").toString());

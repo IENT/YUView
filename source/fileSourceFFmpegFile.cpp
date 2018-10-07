@@ -381,8 +381,6 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
 {
   isFileOpened = false;
 
-  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
-  // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading the libraries.
   if (!ff.loadFFmpegLibraries())
     return;
 

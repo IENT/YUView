@@ -46,8 +46,8 @@ using namespace RGB_Internals;
 decoderFFmpeg::decoderFFmpeg(AVCodecSpecfier codec, QSize size, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder) : 
   decoderBase(cachingDecoder)
 {
-  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
-  // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading the libraries.
+  // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading 
+  // the libraries which is slow and uses a lot of memory.
   if (!ff.loadFFmpegLibraries())
     return;
 
@@ -80,8 +80,8 @@ decoderFFmpeg::decoderFFmpeg(AVCodecSpecfier codec, QSize size, QByteArray extra
 decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder) :
   decoderBase(cachingDecoder)
 {
-  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
-  // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading the libraries.
+  // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading 
+  // the libraries which is slow and uses a lot of memory.
   if (!ff.loadFFmpegLibraries())
     return;
 
