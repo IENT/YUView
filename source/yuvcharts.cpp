@@ -176,7 +176,7 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const cha
       settings = this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
       break;
     case cobPerFrameGrpByBlocksizeNrmByArea:
-      settings = this->makeStatisticsPerFrameGrpByBlocksizeNrmArea(aSortedData, aItem);
+      settings = this->makeStatisticsPerFrameGrpByBlocksizeNrmArea(aSortedData);
       break;
 
     case cobRangeGrpByValueNrmNone:
@@ -189,7 +189,7 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const cha
       settings = this->makeStatisticsFrameRangeGrpByBlocksizeNrmNone(aSortedData);
       break;
     case cobRangeGrpByBlocksizeNrmByArea:
-      settings = this->makeStatisticsFrameRangeGrpByBlocksizeNrmArea(aSortedData, aItem, aRange);
+      settings = this->makeStatisticsFrameRangeGrpByBlocksizeNrmArea(aSortedData);
       break;
 
     case cobAllFramesGrpByValueNrmNone:
@@ -202,7 +202,7 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const cha
       settings = this->makeStatisticsAllFramesGrpByBlocksizeNrmNone(aSortedData);
       break;
     case cobAllFramesGrpByBlocksizeNrmByArea:
-      settings = this->makeStatisticsAllFramesGrpByBlocksizeNrmArea(aSortedData, aItem);
+      settings = this->makeStatisticsAllFramesGrpByBlocksizeNrmArea(aSortedData);
       break;
 
     default:
@@ -376,13 +376,9 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
   return settings;
 }
 
-chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem)
+chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData)
 {
-  // first calculate total amount of pixel
-  // the range doesn matter, we look at one frame
-  int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csPerFrame, indexRange(0, 0));
-
-  return this->calculateAndDefineGrpByBlocksizeNrmArea(aSortedData, totalAmountPixel);
+  return this->calculateAndDefineGrpByBlocksizeNrmArea(aSortedData);
 }
 
 chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByValNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem)
@@ -511,12 +507,9 @@ chartSettingsData YUVBarChart::makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QLi
   return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
 }
 
-chartSettingsData YUVBarChart::makeStatisticsFrameRangeGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem, const indexRange aRange)
+chartSettingsData YUVBarChart::makeStatisticsFrameRangeGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData)
 {
-  // calc the total amount of pixel
-  int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csRange, aRange);
-
-  return this->calculateAndDefineGrpByBlocksizeNrmArea(aSortedData, totalAmountPixel);
+  return this->calculateAndDefineGrpByBlocksizeNrmArea(aSortedData);
 }
 
 chartSettingsData YUVBarChart::makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData)
@@ -540,12 +533,9 @@ chartSettingsData YUVBarChart::makeStatisticsAllFramesGrpByBlocksizeNrmNone(QLis
   return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
 }
 
-chartSettingsData YUVBarChart::makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem)
+chartSettingsData YUVBarChart::makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData)
 {
-  // the range doesn matter, we look at all frames
-  int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csAllFrames, indexRange(0, 0));
-
-  return this->calculateAndDefineGrpByBlocksizeNrmArea(aSortedData, totalAmountPixel);
+  return this->calculateAndDefineGrpByBlocksizeNrmArea(aSortedData);
 }
 
 chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collectedData>* aSortedData, const int aTotalAmountPixel)
@@ -649,7 +639,7 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
   return settings;
 }
 
-chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, const int aTotalAmountPixel)
+chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData)
 {
   QBarSeries* series = new QBarSeries();
   // define result
@@ -663,7 +653,34 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
   QBarSet* set;
   QHash<int, QBarSet*> coordCategorieSet; // saving the set, to add them later
 
-  // calculate total amount of pixel depends on the blocksize
+  int totalAmountBlocks = 0;
+
+  // calculate the total amount of blocks, it doesn´t matter which size the block has
+  for (int i = 0; i < aSortedData->count(); ++i)
+  {
+    collectedData data = aSortedData->at(i);
+    // check that we can add them
+    if(data.mStatDataType == sdtStructStatisticsItem_Value) // if the type is sdtStructStatisticsItem_Value we know that the first element of qpair is an int
+    {
+      foreach (auto chartData, data.mValues)
+      {
+        // we sum up the blocks and weight them with the value
+        if(chartData->first.toInt() == 0) // if value is zero, the amount of block with the weight are zero too. So we add them with an weight of 1
+          totalAmountBlocks += chartData->second;
+        else
+          totalAmountBlocks += chartData->second * chartData->first.toInt();
+      }
+    }
+  }
+
+  // we have no data, so we can return at this point. Remenber to set the settings to false and return the settings
+  if(totalAmountBlocks == 0)
+  {
+    settings.mSettingsIsValid = false;
+    return settings;
+  }
+
+  // calculate all ratio
   for (int i = 0; i < aSortedData->count(); i++)
   {
     // first getting the data
@@ -677,23 +694,16 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
     {
       settings.mShowLegend = true;
 
-      // get the width and the height
-      QStringList numberStrings = data.mLabel.split("x");
-      QString widthStr  = numberStrings.at(0);
-      QString heightStr = numberStrings.at(1);
-      int width = widthStr.toInt();
-      int height = heightStr.toInt();
-
       // if we have more than one value
       foreach (auto chartData, data.mValues)
       {
         int chartValue = chartData->first.toInt();
-        int amountPixelofValue = ((width * height) * chartData->second); // chartData->second holds the amount
-
+        int weight = (chartValue == 0) ? 1 : chartValue; // if the amount is zero we have to adjust the weight. We set the weight ot 1
+        int amountBlocks = chartData->second;
         // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
-        double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
+        double ratio = ((amountBlocks * weight) / (double)totalAmountBlocks) * 100;
 
-        // cause of maybe other pixelvalues it can happen that we calculate more pixel than we have really
+        // cause of maybe other pixel values it can happen that we calculate more pixel than we have really
         if(ratio > 100.0)
           ratio = 100.0;
 

@@ -46,7 +46,7 @@
 // 1: Basic operation is written to qDebug: If a new item is selected, what is the decision to cache/remove next?
 //    When is caching of a frame started?
 // 2: Show all details. What are the threads doing when? What is removed when? ...
-#define CACHING_DEBUG_OUTPUT 1
+#define CACHING_DEBUG_OUTPUT 0
 #if CACHING_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_CACHING qDebug

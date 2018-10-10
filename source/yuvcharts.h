@@ -593,7 +593,7 @@ private:
    * @return
    * a struct, contains all chart settings and options
    */
-  chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem);
+  chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
 
   /**
    * @brief makeStatisticsFrameRangeGrpByValNrmNone
@@ -654,7 +654,7 @@ private:
    * @return
    * a struct, contains all chart settings and options
    */
-  chartSettingsData makeStatisticsFrameRangeGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem, const indexRange aRange);
+  chartSettingsData makeStatisticsFrameRangeGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
 
   /**
    * @brief makeStatisticsAllFramesGrpByValNrmNone
@@ -712,7 +712,7 @@ private:
    * @return
    * a struct, contains all chart settings and options
    */
-  chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem);
+  chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
 
   /**
    * @brief calculateAndDefineGrpByValueNrmArea
@@ -742,7 +742,7 @@ private:
    * @return
    * defined chartSettingsData
    */
-  chartSettingsData calculateAndDefineGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, const int aTotalAmountPixel);
+  chartSettingsData calculateAndDefineGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
 };
 
 /**

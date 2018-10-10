@@ -37,7 +37,7 @@
 #include <QtMath>
 
 // Activate this if you want to know when what is loaded.
-#define STATISTICS_DEBUG_LOADING 1
+#define STATISTICS_DEBUG_LOADING 0
 #if STATISTICS_DEBUG_LOADING && !NDEBUG
 #define DEBUG_STAT qDebug
 #else

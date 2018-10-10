@@ -419,7 +419,6 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
       return;
     }
 
-
     qint64 startPos = pocTypeStartList[frameIdxInternal][typeID];
     if (fileSortedByPOC)
     {
