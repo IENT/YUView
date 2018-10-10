@@ -405,6 +405,7 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
 
 void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, int typeID)
 {
+  QMutexLocker lock (&mLockStatAccess);
   try
   {
     if (!file.isOk())
