@@ -66,12 +66,4 @@ namespace playlistItems
   playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath);
 }
 
-enum itemOverlayType
-{
-  otOverlay,              ///< The item does show, that the default-overlay should load
-  otStatistic,            ///< The item does show, that the statistic-overlay should load
-  otUnknown               ///< The item does show, that the Overlaytype is not defined
-};
-
-
 #endif // PLAYLISTITEMHANDLER_H

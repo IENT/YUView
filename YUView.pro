@@ -35,7 +35,6 @@ SOURCES += \
     source/playlistItemRawCodedVideo.cpp \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
-    source/playListItemStatisticOverlay.cpp \
     source/playlistItemStatisticsFile.cpp \
     source/playlistItemStatisticsCSVFile.cpp \
     source/playlistItemStatisticsVTMBMSFile.cpp \
@@ -97,7 +96,6 @@ HEADERS += \
     source/playlistItemRawCodedVideo.h \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
-    source/playListItemStatisticOverlay.h \
     source/playlistItemStatisticsFile.h \
     source/playlistItemStatisticsCSVFile.h \
     source/playlistItemStatisticsVTMBMSFile.h \

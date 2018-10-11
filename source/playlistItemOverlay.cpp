@@ -43,19 +43,8 @@
 #define DEBUG_OVERLAY(fmt,...) ((void)0)
 #endif
 // Default-Constructor depend on default name
-playlistItemOverlay::playlistItemOverlay() :
+playlistItemOverlay::playlistItemOverlay():
   playlistItemContainer("Overlay Item")
-{
-    this->init();
-}
-playlistItemOverlay::playlistItemOverlay(QString aItemName) :
-  playlistItemContainer(aItemName)
-{
-    this->init();
-}
-
-// help function for init; necessary for constructor
-void playlistItemOverlay::init()
 {
   setIcon(0, convertIcon(":img_overlay.png"));
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
