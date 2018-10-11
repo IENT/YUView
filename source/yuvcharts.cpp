@@ -578,6 +578,7 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
         int value = variant.toInt(); // because auf sdtStructStatisticsItem_Value we know that the variant is an int
         int amount = chartData->second;
         int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
+
         // check if we have insert the count yet
         if(hashValueCount.value(value))
           count = hashValueCount.value(value); // was inserted
@@ -591,7 +592,7 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
         }
 
         // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
-        *count += (width * height) * amount;
+        *count += ((width * height) * amount);
       }
       // check the type
       if((data.mStatDataType != dataType) && (dataType == lastDataType))

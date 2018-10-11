@@ -34,6 +34,14 @@
 #include <QtConcurrent>
 
 
+// Activate this if you want to know when what is loaded.
+#define CHARTHANDLER_DEBUG_LOADING 0
+#if CHARTHANDLER_DEBUG_LOADING && !NDEBUG
+#define DEBUG_CHART qDebug
+#else
+#define DEBUG_CHART(fmt,...) ((void)0)
+#endif
+
 // Default-Constructor
 ChartHandler::ChartHandler() : mYUVChartFactory(&this->mNoDataToShowWidget, &this->mDataIsLoadingWidget)
 {
@@ -1062,7 +1070,7 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   if(!aCoord.mWidget)
     return &(this->mNoDataToShowWidget);
 
-  //this->placeChart(aCoord, &this->mDataIsLoadingWidget);
+  this->placeChart(aCoord, &this->mDataIsLoadingWidget);
 
   // get current frame index, we use the playback controller
   int frameIndex = this->mPlayback->getCurrentFrame();
@@ -1369,5 +1377,16 @@ void ChartHandler::timerEvent(QTimerEvent *event)
   if(!anyItemsSelected) // check that really something is selected
     return;
 
-  this->currentSelectedItemsChanged(items[0], items[0]);
+  QList<playlistItem*> allItems = this->mPlaylist->getAllPlaylistItems();
+
+  int anyItemIsLoading = 0;
+  foreach (playlistItem* item, allItems)
+    if(!item->isDataAvaible())
+      anyItemIsLoading++;
+
+  if(items[0]->isDataAvaible() && (anyItemIsLoading == 0))
+    this->currentSelectedItemsChanged(items[0], items[0]);
+
+  if(anyItemIsLoading == 0)
+    this->mTimer.stop();
 }

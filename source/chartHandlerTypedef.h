@@ -147,8 +147,8 @@ struct collectedData
    */
   collectedData(const collectedData* aData)
   {
-    this->mLabel = aData->mLabel;
-    this->mValues   = aData->mValues;
+    this->mLabel  = aData->mLabel;
+    this->mValues = aData->mValues;
   }
 
   /**

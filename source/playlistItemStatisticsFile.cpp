@@ -226,7 +226,7 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData(index
           dataList.clear();
 
           // first we have to load the statistic
-          this->loadStatisticToCache(this->getFrameIdxInternal(frame), typeIdx);
+          this->loadStatisticToCache(frame, typeIdx);
 
           statisticsData statDataByType = this->chartStatSource.statsCache[typeIdx];
           // the data can be a value or a vector, converting the data into an QVariant and append it to the dataList
@@ -310,6 +310,8 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
 
   // define the result list
   QList<collectedData>* resultData = new QList<collectedData>;
+
+  this->chartStatSource.statsCache.clear();
 
   indexRange range(aFrameIndex, aFrameIndex);
   this->getData(range, true, aType);
@@ -465,9 +467,8 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
     {
       QMap<int, int*>* valuesmap = dataMapStatisticsItemValue->value(key);
       foreach (int valuekey, valuesmap->keys())
-      {
         delete valuesmap->value(valuekey);
-      }
+
       delete valuesmap;
     }
     delete dataMapStatisticsItemValue;
@@ -505,22 +506,24 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
     foreach (auto key, dataMapStatisticsItemVector->keys())
     {
       auto valuesmap = dataMapStatisticsItemVector->value(key);
+
       foreach (auto valuekey, valuesmap->keys())
-      {
         delete valuesmap->value(valuekey);
-      }
+
       delete valuesmap;
     }
     delete dataMapStatisticsItemVector;
-
   }
 
 
 //  // a debug output
 //  for(int i = 0; i< resultData->count(); i++) {
 //    collectedData cd = resultData->at(i);
-//    foreach (int* valuePair, cd.mValueList) {
-//      QString debugstring(cd.mLabel + ": " + QString::number(valuePair[0]) + " : " + QString::number(valuePair[1]));
+//    foreach (auto valuePair, cd.mValues)
+//    {
+//      QVariant variant = valuePair->first;
+//      int amount = valuePair->second;
+//      QString debugstring(cd.mLabel + ": " + QString::number(variant.toInt()) + " : " + QString::number(amount));
 //      qDebug() << debugstring;
 //    }
 //  }
@@ -530,8 +533,6 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
 
 QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
 {
-  this->chartStatSource.statsCache.clear();
-
   //if we have the same frame --> just one frame we look at
   if(aRange.first == aRange.second) // same frame --> just one frame same as current frame
     return this->sortAndCategorizeData(aType, aRange.first);
@@ -576,6 +577,8 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
         preResult->append(resultCollectedData);
       }
     }
+
+    delete collectedDataByFrameList;
   }
 
   // at this point we have a tree-structure, each label has a list with all values, but the values are not summed up
@@ -642,6 +645,10 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
   // we don't need the temporary created preResult anymore (remember: get memory, free memory)
   preResult->clear();
   delete preResult;
+
+  // clear the cache to reduce memory
+  this->chartStatSource.statsCache.clear();
+  this->mStatisticData.clear();
 
   // finally return our result
   return result;
