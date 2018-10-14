@@ -19,7 +19,7 @@ install:
   - 7z x openSSL.zip
   - ps: $env:path="C:\projects\openSSL;$($env:path)"
   # Get Qt and add it to the path
-  - cirl -L -o Qt.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase5.11/Qt-5.11.zip
+  - curl -L -o Qt.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase5.11/Qt-5.11.zip
   - 7z x Qt.zip
   - ps: $env:path="C:\projects\Qt;C:\projects\Qt\bin;$($env:path)"
   - cd
