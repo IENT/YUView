@@ -287,7 +287,7 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   // Append all the properties of the HEVC file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
   d.appendProperiteChild("relativePath", relativePath);
-  d.appendProperiteChild("displayComponent", QString::number(loadingDecoder->getDecodeSignal()));
+  d.appendProperiteChild("displayComponent", QString::number(loadingDecoder ? loadingDecoder->getDecodeSignal() : -1));
 
   d.appendProperiteChild("inputFormat", getInputFormatName(inputFormatType));
   d.appendProperiteChild("decoder", getDecoderEngineName(decoderEngineType));

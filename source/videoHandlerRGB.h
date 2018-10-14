@@ -50,7 +50,7 @@ namespace RGB_Internals
     bool operator!=(const rgbPixelFormat &a) const { return getName()!= a.getName(); }
     bool operator==(const QString &a) const { return getName() == a; }
     bool operator!=(const QString &a) const { return getName() != a; }
-    bool isValid() const { return bitsPerValue != 0 && posR != posG && posR != posB && posG != posB; }
+    bool isValid() const { return bitsPerValue > 0 && posR != posG && posR != posB && posG != posB; }
     int  nrChannels() const { return posA == -1 ? 3 : 4; }
     // Get a name representation of this item (this will be unique for the set parameters)
     QString getName() const;
@@ -94,7 +94,7 @@ public:
   virtual ~videoHandlerRGB();
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
+  virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat.isValid()); }
 
   // Return the RGB values for the given pixel
   virtual QStringPairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1 = 0) Q_DECL_OVERRIDE;
