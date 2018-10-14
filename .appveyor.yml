@@ -22,6 +22,10 @@ install:
   - curl -L -o Qt.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase5.11/Qt-5.11.zip
   - 7z x Qt.zip
   - ps: $env:path="C:\projects\Qt;C:\projects\Qt\bin;$($env:path)"
+  # Get Qt Tools and add the path to it
+  - curl -L -o QtTools.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.11/Qt-5.11-Tools.zip
+  - 7z x QtTools.zip
+  - ps: $env:path="C:\projects\Qttools\bin;$($env:path)"
   - cd
 
 build_script:
