@@ -14,13 +14,18 @@ branches:
 install:
   - '"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64'
   - cd C:\projects
-  - git clone https://github.com/ChristianFeldmann/Qt5-YUView-MT Qt --depth 1
-  - set QTDIR=C:\projects\Qt\5.11-release
-  - set PATH=%PATH%;%QTDIR%\bin
-  - cd C:\projects\YUView
+  # Get the precompiled openSSL libraries
+  - curl -L -o openSSL.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1/openSSL_1_1_1_stable.zip
+  - 7z x openSSL.zip
+  - ps: $env:path="C:\projects\openSSL;$($env:path)"
+  # Get Qt and add it to the path
+  - curl -L -o Qt.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.11/Qt-5.11.zip
+  - 7z x Qt.zip
+  - ps: $env:path="C:\projects\Qt;C:\projects\Qt\bin;$($env:path)"
   - cd
 
 build_script:
+  - cd C:\projects\YUView
   # activate the automatic update feature
   - C:\msys64\usr\bin\sed.exe -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" source/typedef.h
   # start compiling
@@ -38,7 +43,7 @@ after_build:
   - copy ..\build\release\YUView.exe .
   - windeployqt --release --dir C:\projects\YUView\deploy YUView.exe
   # copy the OpenSSL library
-  - copy C:\projects\Qt\openSSL\*.dll .
+  - copy C:\projects\openSSL\*.dll .
   # copy the modified libde265 library + license
   - mkdir libde265
   - copy ..\libde265\libde265-internals.dll libde265
@@ -58,7 +63,6 @@ after_build:
   - cd C:\projects\YUView
   - IF "%APPVEYOR_REPO_BRANCH%" == "master" (CALL deployment\deploy_to_github.bat)
  
-
 artifacts:
   # also collect the artifacts here
   - path: YUView-Win.zip
