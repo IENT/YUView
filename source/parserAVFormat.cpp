@@ -58,6 +58,32 @@ parserAVFormat::parserAVFormat(QObject *parent) : parserBase(parent)
   startCode.append((char)1);
 }
 
+QList<QTreeWidgetItem*> parserAVFormat::getStreamInfo()
+{
+  // streamInfoAllStreams containse all the info for all streams.
+  // The first QStringPairList contains the general info, next all infos for each stream follows
+
+  QList<QTreeWidgetItem*> info;
+  if (streamInfoAllStreams.count() == 0)
+    return info;
+  
+  QStringPairList generalInfo = streamInfoAllStreams[0];
+  QTreeWidgetItem *general = new QTreeWidgetItem(QStringList() << "General");
+  for (QStringPair p : generalInfo)
+    new QTreeWidgetItem(general, QStringList() << p.first << p.second);
+  info.append(general);
+
+  for (int i=1; i<streamInfoAllStreams.count(); i++)
+  {
+    QTreeWidgetItem *streamInfo = new QTreeWidgetItem(QStringList() << QString("Stream %1").arg(i-1));
+    for (QStringPair p : streamInfoAllStreams[i])
+      new QTreeWidgetItem(streamInfo, QStringList() << p.first << p.second);
+    info.append(streamInfo);
+  }
+
+  return info;
+}
+
 bool parserAVFormat::parseExtradata(QByteArray &extradata)
 {
   if (extradata.isEmpty())
@@ -513,8 +539,9 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   QStringPairList metadata = ffmpegFile->getMetadata();
   parseMetadata(metadata);
 
-  streamInfoText = ffmpegFile->getFileInfoAsText();
-  emit streamInfoTextUpdated();
+  // After opening the file, we can get information on it
+  streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  emit streamInfoUpdated();
 
   // Now iterate over all packets and send them to the parser
   AVPacketWrapper packet = ffmpegFile->getNextPacket(false, false);
@@ -550,8 +577,8 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   // Seek back to the beginning of the stream.
   ffmpegFile->seekToDTS(0);
 
-  streamInfoText = ffmpegFile->getFileInfoAsText();
-  emit streamInfoTextUpdated();
+  streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  emit streamInfoUpdated();
   emit backgroundParsingDone();
 
   return true;

@@ -57,7 +57,7 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  virtual QString getStreamInfoText() Q_DECL_OVERRIDE { return stream_info.getStreamInfoText(); }
+  virtual QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE { return stream_info.getStreamInfo(); }
 
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
   // It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).
@@ -167,7 +167,7 @@ protected:
   // Save general information about the file here
   struct stream_info_type
   {
-    QString getStreamInfoText();
+    QList<QTreeWidgetItem*> getStreamInfo();
 
     int64_t file_size;
     int nr_nal_units { 0 };

@@ -1661,42 +1661,44 @@ int AVFormatContextWrapper::read_frame(FFmpegVersionHandler &ff, AVPacketWrapper
   return ff.lib.av_read_frame(ctx, pkt.get_packet());
 }
 
-QString AVFormatContextWrapper::getInfoText()
+QStringPairList AVFormatContextWrapper::getInfoText()
 {
-  if (ctx == nullptr)
-    return "Format context not initialized";
-  update();
+  QStringPairList info;
 
-  QString info;
+  if (ctx == nullptr)
+  {
+    info.append(QStringPair("Format context not initialized", ""));
+    return info;
+  }
+  update();
 
   if (ctx_flags != 0)
   {
-    info += QString("Flags: ");
+    QString flags;
     if (ctx_flags & 1)
-      info += QString("No-Header");
+      flags += QString("No-Header");
     if (ctx_flags & 2)
-      info += QString("Un-seekable");
-    info += QString("\n");
+      flags += QString("Un-seekable");
+    info.append(QStringPair("Flags", flags));
   }
 
   AVRational time_base;
   time_base.num = 1;
   time_base.den = AV_TIME_BASE;
 
-  info += QString("Number streams: %1\n").arg(nb_streams);
-  info += QString("File name: %1\n").arg(filename);
-  info += QString("Start time: %1 (%2)\n").arg(start_time).arg(timestampToString(start_time, time_base));
-  info += QString("Duration: %1 (%2)\n").arg(duration).arg(timestampToString(duration, time_base));
+  info.append(QStringPair("Number streams", QString::number(nb_streams)));
+  info.append(QStringPair("File name", filename));
+  info.append(QStringPair("Start time", QString("%1 (%2)").arg(start_time).arg(timestampToString(start_time, time_base))));
+  info.append(QStringPair("Duration", QString("%1 (%2)").arg(duration).arg(timestampToString(duration, time_base))));
   if (bit_rate > 0)
-    info += QString("Bitrate: %1\n").arg(bit_rate);
-  info += QString("Packet size: %1\n").arg(packet_size);
-  info += QString("Max delay: %1\n").arg(max_delay);
-  info += QString("Number programs: %1\n").arg(nb_programs);
-  info += QString("Number chapters: %1\n").arg(nb_chapters);
+    info.append(QStringPair("Bitrate", QString::number(bit_rate)));
+  info.append(QStringPair("Packet size", QString::number(packet_size)));
+  info.append(QStringPair("Max delay", QString::number(max_delay)));
+  info.append(QStringPair("Number programs", QString::number(nb_programs)));
+  info.append(QStringPair("Number chapters", QString::number(nb_chapters)));
 
   return info;
 }
-
 
 void AVCodecWrapper::update()
 {
@@ -2094,60 +2096,66 @@ void AVStreamWrapper::update()
 }
 
 
-QString AVStreamWrapper::getInfoText()
+QStringPairList AVStreamWrapper::getInfoText()
 {
-  if (str == nullptr)
-    return "Error - stream is null";
-  update();
+  QStringPairList info;
 
-  QString info;
-  info += QString("  Index: %1\n").arg(index);
-  info += QString("  ID: %1\n").arg(id);
-  info += QString("  Codec: %1\n").arg(codec.codec_id_string);
-  info += QString("  Time base: %1/%2\n").arg(time_base.num).arg(time_base.den);
-  info += QString("  Start Time: %1 (%2)\n").arg(start_time).arg(timestampToString(start_time, time_base));
-  info += QString("  Duration: %1 (%2)\n").arg(duration).arg(timestampToString(duration, time_base));
-  info += QString("  Number Frames: %1\n").arg(nb_frames);
+  if (str == nullptr)
+  {
+    info.append(QStringPair("Error stream is null", ""));
+    return info;
+  }
+  update();
+  
+  info.append(QStringPair("Index", QString::number(index)));
+  info.append(QStringPair("ID", QString::number(id)));
+  info.append(QStringPair("Codec", codec.codec_id_string));
+  info.append(QStringPair("Time base", QString("%1/%2").arg(time_base.num).arg(time_base.den)));
+  info.append(QStringPair("Start Time", QString("%1 (%2)").arg(start_time).arg(timestampToString(start_time, time_base))));
+  info.append(QStringPair("Duration", QString("%1 (%2)").arg(duration).arg(timestampToString(duration, time_base))));
+  info.append(QStringPair("Number Frames", QString::number(nb_frames)));
 
   if (disposition != 0)
   {
-    info += QString("  Disposition: ");
+    QString dispText;
     if (disposition & 0x0001)
-      info += QString("Default ");
+      dispText += QString("Default ");
     if (disposition & 0x0002)
-      info += QString("Dub ");
+      dispText += QString("Dub ");
     if (disposition & 0x0004)
-      info += QString("Original ");
+      dispText += QString("Original ");
     if (disposition & 0x0008)
-      info += QString("Comment ");
+      dispText += QString("Comment ");
     if (disposition & 0x0010)
-      info += QString("Lyrics ");
+      dispText += QString("Lyrics ");
     if (disposition & 0x0020)
-      info += QString("Karaoke ");
+      dispText += QString("Karaoke ");
     if (disposition & 0x0040)
-      info += QString("Forced ");
+      dispText += QString("Forced ");
     if (disposition & 0x0080)
-      info += QString("Hearing_Imparied ");
+      dispText += QString("Hearing_Imparied ");
     if (disposition & 0x0100)
-      info += QString("Visual_Impaired ");
+      dispText += QString("Visual_Impaired ");
     if (disposition & 0x0200)
-      info += QString("Clean_Effects ");
+      dispText += QString("Clean_Effects ");
     if (disposition & 0x0400)
-      info += QString("Attached_Pic ");
+      dispText += QString("Attached_Pic ");
     if (disposition & 0x0800)
-      info += QString("Timed_Thumbnails ");
+      dispText += QString("Timed_Thumbnails ");
     if (disposition & 0x1000)
-      info += QString("Captions ");
+      dispText += QString("Captions ");
     if (disposition & 0x2000)
-      info += QString("Descriptions ");
+      dispText += QString("Descriptions ");
     if (disposition & 0x4000)
-      info += QString("Metadata ");
+      dispText += QString("Metadata ");
     if (disposition & 0x8000)
-      info += QString("Dependent ");
-    info += QString("\n"); 
+      dispText += QString("Dependent ");
+    info.append(QStringPair("Disposition", dispText));
   }
-  info += QString("  Sample Aspect Ratio: %1:%2\n").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den);
-  info += QString("  Average Frame Rate: %1/%2 (%3)\n").arg(avg_frame_rate.num).arg(avg_frame_rate.den).arg((double)avg_frame_rate.num/avg_frame_rate.den, 0, 'f', 2);
+
+  info.append(QStringPair("Sample Aspect Ratio", QString("%1:%2").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den)));
+  info.append(QStringPair("Average Frame Rate", QString("%1/%2 (%3)").arg(avg_frame_rate.num).arg(avg_frame_rate.den).arg((double)avg_frame_rate.num/avg_frame_rate.den, 0, 'f', 2)));
+
   info += codecpar.getInfoText();
   return info;
 }
@@ -2205,30 +2213,33 @@ AVColorSpace AVStreamWrapper::get_colorspace()
   return codecpar.get_colorspace();
 }
 
-QString AVCodecParametersWrapper::getInfoText()
+QStringPairList AVCodecParametersWrapper::getInfoText()
 {
+  QStringPairList info;
+
   if (param == nullptr)
-    return "";
+  {
+    info.append(QStringPair("Codec parameters are nullptr", ""));
+    return info;
+  }
   update();
-
-  QString info;
-
+  
   QStringList codecTypes = QStringList() << "Unknown" << "Video" << "Audio" << "Data" << "Subtile" << "Attachement" << "NB";
-  info += QString("  Codec Type: %1\n").arg(codecTypes.at((int)codec_type + 1));
-  info += QString("  Codec ID: %1\n").arg((int)codec_id.getRawID());
-  info += QString("  Codec Tag: %1\n").arg(codec_tag);
-  info += QString("  Format: %1\n").arg(format);
-  info += QString("  Bitrate: %1\n").arg(bit_rate);
-  info += QString("  Bits per coded sample: %1\n").arg(bits_per_coded_sample);
-  info += QString("  Bits per Raw sample: %1\n").arg(bits_per_raw_sample);
-  info += QString("  Profile: %1\n").arg(profile);
-  info += QString("  Level: %1\n").arg(level);
-  info += QString("  Width/height: %1/%2\n").arg(width).arg(height);
-  info += QString("  Sample aspect ratio: %1:%2\n").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den);
+  info.append(QStringPair("Codec Type", codecTypes.at((int)codec_type + 1)));
+  info.append(QStringPair("Codec ID", QString::number((int)codec_id.getRawID())));
+  info.append(QStringPair("Codec Tag", QString::number(codec_tag)));
+  info.append(QStringPair("Format", QString::number(format)));
+  info.append(QStringPair("Bitrate", QString::number(bit_rate)));
+  info.append(QStringPair("Bits per coded sample", QString::number(bits_per_coded_sample)));
+  info.append(QStringPair("Bits per Raw sample", QString::number(bits_per_raw_sample)));
+  info.append(QStringPair("Profile", QString::number(profile)));
+  info.append(QStringPair("Level", QString::number(level)));
+  info.append(QStringPair("Width/Height", QString("%1/%2").arg(width).arg(height)));
+  info.append(QStringPair("Sample aspect ratio", QString("%1:%2").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den)));
   QStringList fieldOrders = QStringList() << "Unknown" << "Progressive" << "Top coded_first, top displayed first" << "Bottom coded first, bottom displayed first" << "Top coded first, bottom displayed first" << "Bottom coded first, top displayed first";
-  info += QString("  Field Order: %1\n").arg(fieldOrders.at((int)codec_type));
+  info.append(QStringPair("Field Order", fieldOrders.at((int)codec_type)));
   QStringList colorRanges = QStringList() << "Unspecified" << "The normal 219*2^(n-8) MPEG YUV ranges" << "The normal 2^n-1 JPEG YUV ranges" << "Not part of ABI";
-  info += QString("  Color Range: %1\n").arg(colorRanges.at((int)color_range));
+  info.append(QStringPair("Color Range", colorRanges.at((int)color_range)));
   QStringList colorPrimaries = QStringList() 
     << "Reserved" 
     << "BT709 / ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B"
@@ -2244,7 +2255,7 @@ QString AVCodecParametersWrapper::getInfoText()
     << "SMPTE ST 431-2 (2011)"
     << "SMPTE ST 432-1 D65 (2010)"
     << "Not part of ABI";
-  info += QString("  Color Primaries: %1\n").arg(colorPrimaries.at((int)color_primaries));
+  info.append(QStringPair("Color Primaries", colorPrimaries.at((int)color_primaries)));
   QStringList colorTransfers = QStringList()
     << "Reseved"
     << "BT709 / ITU-R BT1361"
@@ -2266,7 +2277,7 @@ QString AVCodecParametersWrapper::getInfoText()
     << "SMPTE ST 428-1"
     << "ARIB STD-B67, known as Hybrid log-gamma"
     << "Not part of ABI";
-  info += QString("  Color Transfer: %1\n").arg(colorTransfers.at((int)color_trc));
+  info.append(QStringPair("Color Transfer", colorTransfers.at((int)color_trc)));
   QStringList colorSpaces = QStringList() 
     << "RGB - order of coefficients is actually GBR, also IEC 61966-2-1 (sRGB)"
     << "BT709 / ITU-R BT1361 / IEC 61966-2-4 xvYCC709 / SMPTE RP177 Annex B"
@@ -2281,7 +2292,7 @@ QString AVCodecParametersWrapper::getInfoText()
     << "ITU-R BT2020 constant luminance system"
     << "SMPTE 2085, Y'D'zD'x"
     << "Not part of ABI";
-  info += QString("  Color Space: %1\n").arg(colorSpaces.at((int)color_space));
+  info.append(QStringPair("Color Space", colorSpaces.at((int)color_space)));
   QStringList chromaLocations = QStringList()
     << "Unspecified"
     << "Left / MPEG-2/4 4:2:0, H.264 default for 4:2:0"
@@ -2291,8 +2302,8 @@ QString AVCodecParametersWrapper::getInfoText()
     << "Bottom Left"
     << "Bottom"
     << "Not part of ABI";
-  info += QString("  Chroma Location: %1\n").arg(chromaLocations.at((int)chroma_location));
-  info += QString("  Video Delay: %1\n").arg(video_delay);
+  info.append(QStringPair("Chroma Location", chromaLocations.at((int)chroma_location)));
+  info.append(QStringPair("Video Delay", QString::number(video_delay)));
 
   return info;
 }

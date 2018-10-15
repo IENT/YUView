@@ -52,7 +52,7 @@ public:
 
 private slots:
   void updateParserItemModel(unsigned int nalModelUpdated);
-  void updateStreamInfoText();
+  void updateStreamInfo();
   void backgroundParsingDone();
   void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
   void showVideoStreamOnlyCheckBoxToggled(bool state);

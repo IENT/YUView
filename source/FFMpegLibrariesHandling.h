@@ -302,7 +302,7 @@ public:
   AVCodecParametersWrapper() { param = nullptr; }
   AVCodecParametersWrapper(AVCodecParameters *p, FFmpegLibraryVersion v) { param = p; libVer = v; update(); }
   explicit operator bool() const { return param != nullptr; }
-  QString getInfoText();
+  QStringPairList getInfoText();
 
   AVMediaType getCodecType()          { update(); return codec_type; }
   AVCodecSpecfier getCodecSpecifier() { update(); return codec_id; }
@@ -365,7 +365,7 @@ public:
   AVStreamWrapper() { str = nullptr; }
   AVStreamWrapper(AVStream *src_str, FFmpegLibraryVersion v) { str = src_str; libVer = v; update(); }
   explicit operator bool() const { return str != nullptr; };
-  QString getInfoText();
+  QStringPairList getInfoText();
 
   AVMediaType getCodecType();
   AVCodecSpecfier getCodecSpecifier();
@@ -491,7 +491,7 @@ public:
   void updateFrom(AVFormatContext *c) { assert(ctx == nullptr); ctx = c; update(); }
   void avformat_close_input(FFmpegVersionHandler &ver);
   explicit operator bool() const { return ctx != nullptr; };
-  QString getInfoText();
+  QStringPairList getInfoText();
 
   unsigned int get_nb_streams() { update(); return nb_streams; }
   AVStreamWrapper get_stream(int idx) { update(); return streams[idx]; }

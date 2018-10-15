@@ -35,6 +35,7 @@
 
 #include <QAbstractItemModel>
 #include <QString>
+#include <QTreeWidgetItem>
 
 #include "parserCommon.h"
 
@@ -56,8 +57,8 @@ public:
   void setNewNumberModelItems(unsigned int n) { packetModel->setNewNumberModelItems(n); }
   void enableModel();
 
-  // Get info about the stream in formatted text form
-  virtual QString getStreamInfoText() = 0;
+  // Get info about the stream organized in a tree
+  virtual QList<QTreeWidgetItem*> getStreamInfo() = 0;
 
   // For parsing files in the background (threading) in the bitstream analysis dialog:
   virtual bool runParsingOfFile(QString fileName) = 0;
@@ -72,8 +73,9 @@ signals:
   // An item was added to the nal model. This is emitted whenever a NAL unit or an AVPacket is parsed.
   void nalModelUpdated(unsigned int newNumberItems);
   void backgroundParsingDone();
-  // The getStreamInfoText() function will return a new text with more information
-  void streamInfoTextUpdated();
+  
+  // Signal that the getStreamInfo() function will now return an updated info
+  void streamInfoUpdated();
 
 protected:
   QScopedPointer<parserCommon::PacketItemModel> packetModel;

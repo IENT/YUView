@@ -126,7 +126,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
 
   stream_info.file_size = file->getFileSize();
   stream_info.parsing = true;
-  emit streamInfoTextUpdated();
+  emit streamInfoUpdated();
 
   // Just push all NAL units from the annexBFile into the annexBParser
   QByteArray nalData;
@@ -187,7 +187,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   stream_info.parsing = false;
   stream_info.nr_nal_units = nalID;
   stream_info.nr_frames = frameList.size();
-  emit streamInfoTextUpdated();
+  emit streamInfoUpdated();
   emit backgroundParsingDone();
 
   return true;
@@ -200,19 +200,20 @@ bool parserAnnexB::runParsingOfFile(QString compressedFilePath)
   return parseAnnexBFile(file);
 }
 
-QString parserAnnexB::stream_info_type::getStreamInfoText()
+QList<QTreeWidgetItem*> parserAnnexB::stream_info_type::getStreamInfo()
 {
-  QString info;
-  info += QString("File Size: %1\n").arg(file_size);
+  QList<QTreeWidgetItem*> infoList;
+  infoList.append(new QTreeWidgetItem(QStringList() << "File size" << QString::number(file_size)));
   if (parsing)
   {
-    info += QString("Number NAL units: Parsing...\n");
-    info += QString("Number Frames: Parsing...\n");
+    infoList.append(new QTreeWidgetItem(QStringList() << "Number NAL units" << "Parsing..."));
+    infoList.append(new QTreeWidgetItem(QStringList() << "Number Frames" << "Parsing..."));
   }
   else
   {
-    info += QString("Number NAL units: %1\n").arg(nr_nal_units);
-    info += QString("Number Frames: %1\n").arg(nr_frames);
+    infoList.append(new QTreeWidgetItem(QStringList() << "Number NAL units" << QString::number(nr_nal_units)));
+    infoList.append(new QTreeWidgetItem(QStringList() << "Number Frames" << QString::number(nr_frames)));
   }
-  return info;
+
+  return infoList;
 }

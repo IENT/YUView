@@ -499,15 +499,14 @@ int64_t fileSourceFFmpegFile::getMaxTS()
   return duration / AV_TIME_BASE * timeBase.den / timeBase.num;
 }
 
-QString fileSourceFFmpegFile::getFileInfoAsText()
+QList<QStringPairList> fileSourceFFmpegFile::getFileInfoForAllStreams()
 {
-  QString info;
+  QList<QStringPairList> info;
 
   info += fmt_ctx.getInfoText();
   for(unsigned int i=0; i<fmt_ctx.get_nb_streams(); i++)
   {
     AVStreamWrapper s = fmt_ctx.get_stream(i);
-    info += QString("\nStream %1:\n").arg(i);
     info += s.getInfoText();
   }
 

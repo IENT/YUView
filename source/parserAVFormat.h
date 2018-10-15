@@ -51,7 +51,7 @@ public:
   parserAVFormat(QObject *parent = nullptr);
   ~parserAVFormat() {}
 
-  QString getStreamInfoText() Q_DECL_OVERRIDE { return streamInfoText; }
+  QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE;
   
   // This function can run in a separate thread
   bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
@@ -123,8 +123,8 @@ private:
   QByteArray startCode;
 
   // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
-  // we update this text while parsing the file.
-  QString streamInfoText;
+  // we update this list while parsing the file.
+  QList<QStringPairList> streamInfoAllStreams;
 
   int videoStreamIndex { -1 };
 };
