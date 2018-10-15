@@ -504,7 +504,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
 
     specificDescription = parsingSuccess ? QString(" POC %1").arg(POC) : " POC ERR";
     if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("Slice(POC-%1)").arg(POC) : "Slice(ERR)";
+      *nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(POC) : "Slice(ERR)";
   }
   else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
   {

@@ -289,8 +289,7 @@ namespace parserCommon
     Q_OBJECT
 
   public:
-    FilterByStreamIndexProxyModel(QObject *parent) : QSortFilterProxyModel(parent) {};
-    void setShowVideoStreamOnly(bool showVideoOnly, int videoStreamIndex);
+    FilterByStreamIndexProxyModel(QObject *parent, int filterStreamIndex) : QSortFilterProxyModel(parent), filterStreamIndex(filterStreamIndex){};
 
   protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;

@@ -933,14 +933,12 @@ QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &paren
     return QModelIndex();
 
   TreeItem *parentItem;
-
   if (!parent.isValid())
     parentItem = rootItem.data();
   else
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
 
-  if (parentItem == nullptr)
-    return QModelIndex();
+  Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::index", "pointer to parent is null. This must never happen");
 
   TreeItem *childItem = parentItem->childItems.value(row, nullptr);
   if (childItem)
@@ -984,7 +982,7 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
 
 void PacketItemModel::setNewNumberModelItems(unsigned int n)
 {
-  unsigned int nrAddItems = nrShowChildItems - n;
+  unsigned int nrAddItems = n - nrShowChildItems;
   int lastIndex = nrShowChildItems;
   beginInsertRows(QModelIndex(), lastIndex, lastIndex+nrAddItems);
   nrShowChildItems = n;
@@ -1006,47 +1004,43 @@ void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
     return;
 
   showVideoOnly = videoOnly;
-  //emit dataChanged(QModelIndex(), QModelIndex());
+  emit dataChanged(QModelIndex(), QModelIndex());
 }
 
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------
 
-bool FilterByStreamIndexProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
+bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex &sourceParent) const
 {
-  DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow row %d -> accept", sourceRow);
-  Q_UNUSED(sourceRow);
-  return true;
-
   if (filterStreamIndex == -1)
   {
-    DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow %d - accepting all", sourceRow);
+    DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow %d - accepting all", row);
     return true;
   }
 
-  TreeItem *p = static_cast<TreeItem*>(sourceParent.internalPointer());
-  if (p != nullptr)
+  TreeItem *parentItem;
+  if (!sourceParent.isValid())
   {
-    DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d filter %d", p->getStreamIndex(), filterStreamIndex);
-    return p->getStreamIndex() == filterStreamIndex;
-  }
-
-  DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> accept");
-  return true;
-}
-
-void FilterByStreamIndexProxyModel::setShowVideoStreamOnly(bool showVideoOnly, int videoStreamIndex)
-{
-  if (showVideoOnly && filterStreamIndex == -1 && videoStreamIndex != -1)
-  {
-    // Enable filtering
-    DEBUG_PARSER("FilterByStreamIndexProxyModel::setShowVideoStreamOnly enable filter stream %d", videoStreamIndex);
-    filterStreamIndex = videoStreamIndex;
+    // Get the root item
+    QAbstractItemModel *s = sourceModel();
+    PacketItemModel *p = static_cast<PacketItemModel*>(s);
+    if (p == nullptr)
+    {
+      DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow Unable to get root item");  
+      return false;
+    }
+    parentItem = p->getRootItem();
   }
   else
+    parentItem = static_cast<TreeItem*>(sourceParent.internalPointer());
+  Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::index", "pointer to parent is null. This must never happen");
+
+  TreeItem *childItem = parentItem->childItems.value(row, nullptr);
+  if (childItem != nullptr)
   {
-    // Disable filtering
-    DEBUG_PARSER("FilterByStreamIndexProxyModel::setShowVideoStreamOnly disable filter");
-    filterStreamIndex = -1;
+    DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d filter %d", childItem->getStreamIndex(), filterStreamIndex);
+    return childItem->getStreamIndex() == filterStreamIndex;
   }
-  emit dataChanged(QModelIndex(), QModelIndex());
+
+  DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> reject");
+  return false;
 }

@@ -49,7 +49,10 @@ public:
   virtual ~parserBase() = 0;
 
   // Get a pointer to the nal unit model. The model is only filled if you call enableModel() first.
+  //QAbstractItemModel *getPacketItemModel() { return packetModel.data(); }
   QAbstractItemModel *getPacketItemModel() { return packetModel.data(); }
+  QAbstractItemModel *getFilteredPacketItemModel();
+  
   void setNewNumberModelItems(unsigned int n) { packetModel->setNewNumberModelItems(n); }
   void enableModel();
 
@@ -64,7 +67,6 @@ public:
   virtual int getVideoStreamIndex() { return -1; }
 
   void setStreamColorCoding(bool colorCoding) { packetModel->setUseColorCoding(colorCoding); }
-  void setShowVideoStreamOnly(bool showVideoOnly);
 
 signals:
   // An item was added to the nal model. This is emitted whenever a NAL unit or an AVPacket is parsed.
@@ -75,7 +77,7 @@ signals:
 
 protected:
   QScopedPointer<parserCommon::PacketItemModel> packetModel;
-  //QScopedPointer<parserCommon::FilterByStreamIndexProxyModel> streamIndexFilter;
+  QScopedPointer<parserCommon::FilterByStreamIndexProxyModel> streamIndexFilter;
 
   // If this variable is set (from an external thread), the parsing process should cancel immediately
   bool cancelBackgroundParser {false};

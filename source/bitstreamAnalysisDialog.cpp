@@ -107,6 +107,18 @@ void bitstreamAnalysisDialog::backgroundParsingDone()
   statusBar->showMessage("Parsing done.");
 }
 
+void bitstreamAnalysisDialog::showVideoStreamOnlyCheckBoxToggled(bool state)
+{
+  if (showVideoStreamOnly != state)
+  {
+    showVideoStreamOnly = state;
+    if (showVideoStreamOnly)
+      ui.dataTreeView->setModel(parser->getFilteredPacketItemModel());
+    else
+      ui.dataTreeView->setModel(parser->getPacketItemModel());
+  }
+}
+
 void bitstreamAnalysisDialog::backgroundParsingFunction()
 {
   parser->runParsingOfFile(compressedFilePath);

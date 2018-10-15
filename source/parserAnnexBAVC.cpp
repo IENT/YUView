@@ -249,7 +249,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     // Add the POC of the slice
     specificDescription = parsingSuccess ? QString(" POC %1").arg(new_slice->globalPOC) : " ERR";
     if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("Slice(POC-%1)").arg(new_slice->globalPOC) : "Slice(ERR)";
+      *nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(new_slice->globalPOC) : "Slice(ERR)";
 
     if (parsingSuccess)
     {

@@ -42,7 +42,7 @@
 
 using namespace parserCommon;
 
-#define PARSERAVCFORMAT_DEBUG_OUTPUT 1
+#define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_AVFORMAT qDebug
