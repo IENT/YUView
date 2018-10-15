@@ -114,11 +114,13 @@ public:
   // Update the settings. For the statistics this means updating the icons for editing statistic.
   void updateSettings();
 
+  void setToDefaults();
+
 signals:
   // Update the item (and maybe redraw it)
   void updateItem(bool redraw);
   // Request to load the statistics for the given frame index/typeIdx into statsCache.
-  void requestStatisticsLoading(int frameIdx, int typeIdx);
+  void requestStatisticsLoading(int frameIdx, int typeIdx, statisticHandler* = nullptr);
 
 private:
 

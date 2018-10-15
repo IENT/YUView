@@ -403,9 +403,17 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
   return;
 }
 
-void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, int typeID)
+void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, int typeID, statisticHandler* aHandler)
 {
   QMutexLocker lock (&mLockStatAccess);
+
+  if(aHandler == nullptr)
+  {
+    std::cerr << "Error while parsing. No Handler";
+    parsingError = QString("Error while parsing meta data. No Handler");
+    return;
+  }
+
   try
   {
     if (!file.isOk())
@@ -416,8 +424,7 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
     if (!pocTypeStartList.contains(frameIdxInternal) || !pocTypeStartList[frameIdxInternal].contains(typeID))
     {
       // There are no statistics in the file for the given frame and index.
-      statSource.statsCache.insert(typeID, statisticsData());
-      chartStatSource.statsCache.insert(typeID, statisticsData());
+      aHandler->statsCache.insert(typeID, statisticsData());
       return;
     }
 
@@ -485,28 +492,19 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
       int height = rowItemList[4].toUInt();
 
       // Check if block is within the image range
-      if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.statFrameSize.width() || posY + height > statSource.statFrameSize.height()))
+      if (blockOutsideOfFrame_idx == -1 && (posX + width > aHandler->statFrameSize.width() || posY + height > aHandler->statFrameSize.height()))
         // Block not in image. Warn about this.
         blockOutsideOfFrame_idx = frameIdxInternal;
 
-      const StatisticsType *statsType = statSource.getStatisticsType(type);
+      const StatisticsType *statsType = aHandler->getStatisticsType(type);
       Q_ASSERT_X(statsType != nullptr, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
 
       if (vectorData && statsType->hasVectorData)
-      {
-        statSource.statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
-        chartStatSource.statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
-      }
+        aHandler->statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
       else if (lineData && statsType->hasVectorData)
-      {
-        statSource.statsCache[type].addLine(posX, posY, width, height, values[0], values[1], values[2], values[3]);
-        chartStatSource.statsCache[type].addLine(posX, posY, width, height, values[0], values[1], values[2], values[3]);
-      }
+        aHandler->statsCache[type].addLine(posX, posY, width, height, values[0], values[1], values[2], values[3]);
       else
-      {
-        statSource.statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
-        chartStatSource.statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
-      }
+        aHandler->statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
     }
 
   } // try
@@ -578,8 +576,8 @@ void playlistItemStatisticsCSVFile::reloadItemSource()
 
   // Clear the parsed data
   pocTypeStartList.clear();
-  statSource.statsCache.clear();
-  statSource.statsCacheFrameIdx = -1;
+  statSource.setToDefaults();
+  chartStatSource.setToDefaults();
 
   // Reopen the file
   file.openFile(plItemNameOrFileName);

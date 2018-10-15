@@ -356,8 +356,18 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
   return;
 }
 
-void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal, int typeID)
+void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal, int typeID, statisticHandler* aHandler)
 {
+  // lock so we are thread-safe
+  QMutexLocker lock (&mLockStatAccess);
+
+  if(aHandler == nullptr)
+  {
+    std::cerr << "Error while parsing. No Handler";
+    parsingError = QString("Error while parsing meta data. No Handler");
+    return;
+  }
+
   try
   {
     if (!file.isOk())
@@ -368,8 +378,7 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
     if (!pocStartList.contains(frameIdxInternal))
     {
       // There are no statistics in the file for the given frame and index.
-      statSource.statsCache.insert(typeID, statisticsData());
-      chartStatSource.statsCache.insert(typeID, statisticsData());
+      aHandler->statsCache.insert(typeID, statisticsData());
       return;
     }
 
@@ -498,14 +507,10 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
               {
                 int vecX1 = statisitcMatch.captured(8).toInt();
                 int vecY1 = statisitcMatch.captured(9).toInt();
-                statSource.statsCache[typeID].addLine(posX, posY, width, height, vecX, vecY,vecX1,vecY1);
-                chartStatSource.statsCache[typeID].addLine(posX, posY, width, height, vecX, vecY,vecX1,vecY1);
+                aHandler->statsCache[typeID].addLine(posX, posY, width, height, vecX, vecY,vecX1,vecY1);
               }
               else
-              {
-                statSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
-                chartStatSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
-              }
+                aHandler->statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
             }
             else if (aType->hasAffineTFData)
             {
@@ -515,14 +520,12 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
               int vecY1 = statisitcMatch.captured(9).toInt();
               int vecX2 = statisitcMatch.captured(10).toInt();
               int vecY2 = statisitcMatch.captured(11).toInt();
-              statSource.statsCache[typeID].addBlockAffineTF(posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
-              chartStatSource.statsCache[typeID].addBlockAffineTF(posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
+              aHandler->statsCache[typeID].addBlockAffineTF(posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
             }
             else
             {
               scalar = statisitcMatch.captured(6).toInt();
-              statSource.statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
-              chartStatSource.statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
+              aHandler->statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
             }
           }
           else
@@ -553,25 +556,22 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
             {
               vecX = statisitcMatch.captured(3).toInt();
               vecY = statisitcMatch.captured(4).toInt();
-              statSource.statsCache[typeID].addPolygonVector(points, vecX, vecY);
-              chartStatSource.statsCache[typeID].addPolygonVector(points, vecX, vecY);
+              aHandler->statsCache[typeID].addPolygonVector(points, vecX, vecY);
             }
             else if(aType->hasValueData)
             {
               scalar = statisitcMatch.captured(3).toInt();
-              statSource.statsCache[typeID].addPolygonValue(points, scalar);
-              chartStatSource.statsCache[typeID].addPolygonValue(points, scalar);
+              aHandler->statsCache[typeID].addPolygonValue(points, scalar);
             }
           }
         }
       }
     }
 
-    if(!statSource.statsCache.contains(typeID))
+    if(!aHandler->statsCache.contains(typeID))
     {
       // There are no statistics in the file for the given frame and index.
-      statSource.statsCache.insert(typeID, statisticsData());
-      chartStatSource.statsCache.insert(typeID, statisticsData());
+      aHandler->statsCache.insert(typeID, statisticsData());
       return;
     }
 

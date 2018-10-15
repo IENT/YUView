@@ -130,7 +130,7 @@ void statisticHandler::loadStatistics(int frameIdx)
       statTypeRenderCount++;
       if (!statsCache.contains(typeIdx))
         // Load the statistics
-        emit requestStatisticsLoading(frameIdx, typeIdx);
+        emit requestStatisticsLoading(frameIdx, typeIdx, this);
     }
   }
 
@@ -1239,6 +1239,12 @@ void statisticHandler::updateSettings()
     if (secondaryControlsWidget)
       itemStyleButtons[1][row]->setIcon(convertIcon(":img_edit.png"));
   }
+}
+
+void statisticHandler::setToDefaults()
+{
+  this->statsCache.clear();
+  this->statsCacheFrameIdx = -1;
 }
 
 void statisticHandler::updateStatisticsHandlerControls()

@@ -225,8 +225,8 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData(index
         {
           dataList.clear();
 
-          // first we have to load the statistic
-          this->loadStatisticToCache(frame, typeIdx);
+          // first we have to load the statistic,
+          this->loadStatisticToCache(frame, typeIdx, &chartStatSource);
 
           statisticsData statDataByType = this->chartStatSource.statsCache[typeIdx];
           // the data can be a value or a vector, converting the data into an QVariant and append it to the dataList
@@ -559,7 +559,7 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
       {
         collectedData* resultCollectedData = preResult->at(j);
 
-        if(*resultCollectedData == frameData)
+        if(*resultCollectedData == frameData) // if we have the item before, we just can add it
         {
           resultCollectedData->addValues(frameData);
           wasnotinside = false;
@@ -578,11 +578,10 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
       }
     }
 
-    delete collectedDataByFrameList;
+    delete collectedDataByFrameList; // delete memory, because it was allocated before in function sortAndCategorizeData
   }
 
   // at this point we have a tree-structure, each label has a list with all values, but the values are not summed up
-  // and we have to
 
   // we create the data for the result
   QList<collectedData>* result = new QList<collectedData>();
@@ -646,7 +645,7 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
   preResult->clear();
   delete preResult;
 
-  // clear the cache to reduce memory
+  // clear the cache to reduce memory and we dont need it anymore
   this->chartStatSource.statsCache.clear();
   this->mStatisticData.clear();
 
@@ -656,5 +655,6 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
 
 bool playlistItemStatisticsFile::isDataAvaible()
 {
+  // if the backgroundParser is finished, we have all data avaible and so we can display them
   return backgroundParserFuture.isFinished();
 }
