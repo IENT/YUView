@@ -73,8 +73,52 @@ YUVChartFactory::YUVChartFactory(QWidget *aNoDataToShowWidget, QWidget *aDataIsL
 
 QWidget* YUVChartFactory::createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
 {
+  // first get the settings
+  chartSettingsData settings = this->createSettings(aOrderBy, aItem, aRange, aType, aSortedData);
+
+  // create the chart depends on the settings an return it
+  return this->createChart(settings);
+}
+
+QWidget* YUVChartFactory::createChart(chartSettingsData aSettings)
+{
+  // first we have to check wether we have 2D or 3D data. after we know it, we can decide what to do
+  if(aSettings.m3DData.empty()) // we have 2D-data
+  {
+    switch (this->m2DType) // check which chart type we have to draw
+    {
+      case ct2DBarChart:
+        return this->mBarChart.createChart(aSettings);
+      default:
+        return  this->mNoDataToShowWidget; // as default
+    }
+  }
+  else if(! aSettings.m3DData.empty()) // we have 3D-Data
+  {
+    switch (this->m3DType)
+    {
+      case ct3DBarChart:
+        return this->mBarChart3D.createChart(aSettings);
+      case ct3DSurfaceChart:
+        return this->mSurfaceChart3D.createChart(aSettings);
+      default:
+        return  this->mNoDataToShowWidget; // as default
+    }
+  }
+
+  // in case something gone wrong
+  return this->mNoDataToShowWidget;
+}
+
+chartSettingsData YUVChartFactory::createSettings(const chartOrderBy aOrderBy, playlistItem *aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
+{
   Q_UNUSED(aSortedData)
 
+  // first we define a default result
+  chartSettingsData defaultResult;
+  defaultResult.mSettingsIsValid = false;
+
+  // getting the data
   QList<collectedData>* sortedData = aItem->sortAndCategorizeDataByRange(aType, aRange);
 
   // our bar chart can not display 3D, so we check if in one collectedData has 3D-Data
@@ -84,12 +128,13 @@ QWidget* YUVChartFactory::createChart(const chartOrderBy aOrderBy, playlistItem*
     switch (this->m2DType)
     {
       case ct2DBarChart:
-        return this->mBarChart.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+        return this->mBarChart.createSettings(aOrderBy, aItem, aRange, aType, sortedData);
       default:
-        return this->mNoDataToShowWidget;
+        return defaultResult;
     }
   }
 
+  // check that we have 3D-data
   bool is3DData = this->is3DData(sortedData);
   if(is3DData)
   {
@@ -103,15 +148,15 @@ QWidget* YUVChartFactory::createChart(const chartOrderBy aOrderBy, playlistItem*
     switch (this->m3DType)
     {
       case ct3DBarChart:
-        return this->mBarChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
-      case ct3dSurfaceChart:
-        return this->mSurfaceChart3D.createChart(aOrderBy, aItem, aRange, aType, sortedData);
+        return this->mBarChart3D.createSettings(aOrderBy, aItem, aRange, aType, sortedData);
+      case ct3DSurfaceChart:
+        return this->mSurfaceChart3D.createSettings(aOrderBy, aItem, aRange, aType, sortedData);
       default:
-        return this->mNoDataToShowWidget;
+        return defaultResult;
     }
   }
 
-  return this->mNoDataToShowWidget;
+  return defaultResult;
 }
 
 void YUVChartFactory::set3DCoordinationRange(const int aMinX, const int aMaxX, const int aMinY, const int aMaxY)
@@ -138,6 +183,92 @@ void YUVChartFactory::set3DCoordinationtoDefault()
 
 QWidget* YUVBarChart::createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
 {
+  // first we generate the settings
+  chartSettingsData settings = this->createSettings(aOrderBy, aItem, aRange, aType, aSortedData);
+
+  // next we generate the chart and give it back
+  return this->createChart(settings);
+}
+
+QWidget* YUVBarChart::createChart(chartSettingsData aSettings)
+{
+  // check if settings are not valid, so we display a default-widget
+  if(!aSettings.mSettingsIsValid)
+    return this->mNoDataToShowWidget;
+
+  // creating the result
+  QChart* chart = new QChart();
+
+  // appending the series to the chart
+  chart->addSeries(aSettings.mSeries);
+  // setting an animationoption (not necessary but it's nice to see)
+  chart->setAnimationOptions(QChart::SeriesAnimations);
+  // creating default-axes: always have to be called before you add some custom axes
+  chart->createDefaultAxes();
+
+  // we check if we have to create custom axes,
+  // but first we implement an default
+
+  // if we have set any categories, we can add a custom x-axis
+  if(aSettings.mCategories.count() > 0)
+  {
+    QBarCategoryAxis* axis = new QBarCategoryAxis();
+    axis->setCategories(aSettings.mCategories);
+    chart->setAxisX(axis, aSettings.mSeries);
+  }
+  else
+  {
+    // check that we can cast to the specifi axis-type
+    if (dynamic_cast<QBarCategoryAxis*> (chart->axisX()))
+    {
+      // get the specific axis-type
+      QBarCategoryAxis* xaxis = dynamic_cast<QBarCategoryAxis*> (chart->axisX());
+      QStringList categorieslist = xaxis->categories(); // get the categories
+
+      // check how much elements we have
+      // the axis was created by the chart itself, so it has a default-value
+      if(categorieslist.count() == 1)
+      {
+        QBarCategoryAxis* axis = new QBarCategoryAxis();
+        axis->setLabelsVisible(false);
+        chart->setAxisX(axis, aSettings.mSeries);
+      }
+    }
+  }
+
+  // in this case we check that we have to set custom axes
+  if(aSettings.mSetCustomAxes)
+  {
+    switch (aSettings.mStatDataType)
+    {
+      case sdtStructStatisticsItem_Value:
+        // first no custom axes
+        break;
+      case sdtStructStatisticsItem_Vector:
+        // first no custom axes
+        break;
+      case sdtRGB:
+        break;
+      default:
+        // was set before
+        break;
+    }
+  }
+
+  // setting Options for the chart-legend
+  chart->legend()->setVisible(aSettings.mShowLegend);
+  chart->legend()->setAlignment(Qt::AlignBottom);
+
+  // creating result chartview and set the data
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+
+  // final return the created chart
+  return chartView;
+}
+
+chartSettingsData YUVBarChart::createSettings(const chartOrderBy aOrderBy, playlistItem *aItem, const indexRange aRange, const QString aType, QList<collectedData> *aSortedData)
+{
   // just a holder
   QList<collectedData>* sortedData = NULL;
 
@@ -147,21 +278,25 @@ QWidget* YUVBarChart::createChart(const chartOrderBy aOrderBy, playlistItem* aIt
   else
     sortedData = aItem->sortAndCategorizeDataByRange(aType, aRange);
 
+  chartSettingsData result;
+  result.mSettingsIsValid = false;
+
   // can we display it?
   if(this->is2DData(sortedData))
     return this->makeStatistic(sortedData, aOrderBy, aItem, aRange);
   else // at this point we have 3D Data and we can not display it with YUVBarChart
-    return this->mNoDataToShowWidget;
+    return result;
 }
 
-QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
+chartSettingsData YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
 {
+  // define the result settings
+  chartSettingsData settings;
+  settings.mSettingsIsValid = false;
+
   // if we have no keys, we cant show any data so return at this point
   if(!aSortedData->count())
-    return this->mNoDataToShowWidget;
-
-  // define the settings
-  chartSettingsData settings;
+    return settings;
 
   // check what we have to do
   switch (aOrderBy)
@@ -206,82 +341,11 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const cha
       break;
 
     default:
-      return this->mNoDataToShowWidget;
+      return settings;
   }
 
-  // check if settings are not valid, so we display a default-widget
-  if(!settings.mSettingsIsValid)
-    return this->mNoDataToShowWidget;
-
-  // creating the result
-  QChart* chart = new QChart();
-
-  // appending the series to the chart
-  chart->addSeries(settings.mSeries);
-  // setting an animationoption (not necessary but it's nice to see)
-  chart->setAnimationOptions(QChart::SeriesAnimations);
-  // creating default-axes: always have to be called before you add some custom axes
-  chart->createDefaultAxes();
-
-  // we check if we have to create custom axes,
-  // but first we implement an default
-
-  // if we have set any categories, we can add a custom x-axis
-  if(settings.mCategories.count() > 0)
-  {
-    QBarCategoryAxis* axis = new QBarCategoryAxis();
-    axis->setCategories(settings.mCategories);
-    chart->setAxisX(axis, settings.mSeries);
-  }
-  else
-  {
-    // check that we can cast to the specifi axis-type
-    if (dynamic_cast<QBarCategoryAxis*> (chart->axisX()))
-    {
-      // get the specific axis-type
-      QBarCategoryAxis* xaxis = dynamic_cast<QBarCategoryAxis*> (chart->axisX());
-      QStringList categorieslist = xaxis->categories(); // get the categories
-
-      // check how much elements we have
-      // the axis was created by the chart itself, so it has a default-value
-      if(categorieslist.count() == 1)
-      {
-        QBarCategoryAxis* axis = new QBarCategoryAxis();
-        axis->setLabelsVisible(false);
-        chart->setAxisX(axis, settings.mSeries);
-      }
-    }
-  }
-
-  // in this case we check that we have to set custom axes
-  if(settings.mSetCustomAxes)
-  {
-    switch (settings.mStatDataType)
-    {
-      case sdtStructStatisticsItem_Value:
-        // first no custom axes
-        break;
-      case sdtStructStatisticsItem_Vector:
-        // first no custom axes
-        break;
-      case sdtRGB:
-        break;
-      default:
-        // was set before
-        break;
-    }
-  }
-
-  // setting Options for the chart-legend
-  chart->legend()->setVisible(settings.mShowLegend);
-  chart->legend()->setAlignment(Qt::AlignBottom);
-
-  // creating result chartview and set the data
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
-
-  // final return the created chart
-  return chartView;
+  // at least we have to return our settings
+  return settings;
 }
 
 chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData)
@@ -852,9 +916,39 @@ YUV3DCharts::YUV3DCharts(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWi
 
 QWidget* YUV3DCharts::createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData)
 {
-  // check that we have init OpenGl
-  if(!this->hasOpenGL())
+  chartSettingsData settings = this->createSettings(aOrderBy, aItem, aRange, aType, aSortedData);
+
+  if(settings.mIs3DData)
+    return this->createChart(settings);
+  else
+  {
+    //set as default that we display barChart
+    YUVBarChart barChart(this->mNoDataToShowWidget, this->mDataIsLoadingWidget);
+    return barChart.createChart(settings);
+  }
+}
+
+QWidget* YUV3DCharts::createChart(chartSettingsData aSettings)
+{
+  // settings are not valid? so we display a default widget
+  if(!aSettings.mSettingsIsValid)
     return this->mNoDataToShowWidget;
+
+  // change data in the 3D-graph
+  this->mModifier->applyDataToGraph(aSettings);
+
+  return this->mWidgetGraph;
+}
+
+chartSettingsData YUV3DCharts::createSettings(const chartOrderBy aOrderBy, playlistItem *aItem, const indexRange aRange, const QString aType, QList<collectedData> *aSortedData)
+{
+  // define a basic result
+  chartSettingsData result;
+  result.mSettingsIsValid = false;
+
+  // check that we have init OpenGl
+  if(!this->hasOpenGL()) // no OpenGL -- no 3D -Graph
+    return result;
 
   // just a holder
   QList<collectedData>* sortedData = NULL;
@@ -868,8 +962,8 @@ QWidget* YUV3DCharts::createChart(const chartOrderBy aOrderBy, playlistItem* aIt
   // can we display it?
   if(this->is3DData(sortedData))
     return  this->makeStatistic(sortedData, aOrderBy, aItem, aRange);
-  else // at this point we have 3D Data and we can not display it with YUV3DBarChart
-    return this->mNoDataToShowWidget;
+  else // at this point we have 2D Data and we can not display it with YUV3DBarChart
+    return result;
 }
 
 void YUV3DCharts::set3DCoordinationRange(const int aMinX, const int aMaxX, const int aMinY, const int aMaxY)
@@ -896,15 +990,18 @@ void YUV3DCharts::set3DCoordinationtoDefault()
   this->mMaxY = INT_MAX;
 }
 
-QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
+chartSettingsData YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange)
 {
   Q_UNUSED(aItem)
   Q_UNUSED(aRange)
+
+  // define the result settings
+  chartSettingsData settings;
+  settings.mSettingsIsValid = false;
+
   // if we have no keys, we cant show any data so return at this point
   if(!aSortedData->count())
-    return this->mNoDataToShowWidget;
-
-  chartSettingsData settings;
+    return settings;
 
   switch (aOrderBy)
   {
@@ -915,9 +1012,11 @@ QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const cha
       settings = this->makeStatisticsPerFrameGrpByValNrm(aSortedData);
       break;
     case cobPerFrameGrpByBlocksizeNrmNone:
-      return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);    // take care, we leave here! We create a 2D graph, 3D graph possible
+      settings = this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);    // take care, we set the settings for a 2D-graph
+      break;
     case cobPerFrameGrpByBlocksizeNrmByArea:
-      return this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);        // take care, we leave here! We create a 2D graph, 3D graph possible
+      settings =  this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);       // take care, we set the settings for a 2D-graph
+      break;
 
     case cobRangeGrpByValueNrmNone:
       settings = this->makeStatisticsFrameRangeGrpByValNrmNone(aSortedData);
@@ -926,9 +1025,11 @@ QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const cha
       settings = this->makeStatisticsFrameRangeGrpByValNrm(aSortedData);
       break;
     case cobRangeGrpByBlocksizeNrmNone:
-      return this->makeStatisticsFrameRangeGrpByBlocksizeNrmNone(aSortedData);  // take care, we leave here! We create a 2D graph, 3D graph possible
+      settings = this->makeStatisticsFrameRangeGrpByBlocksizeNrmNone(aSortedData);  // take care, we set the settings for a 2D-graph
+      break;
     case cobRangeGrpByBlocksizeNrmByArea:
-      return this->makeStatisticsFrameRangeGrpByBlocksizeNrm(aSortedData);      // take care, we leave here! We create a 2D graph, 3D graph possible
+      settings = this->makeStatisticsFrameRangeGrpByBlocksizeNrm(aSortedData);      // take care, we set the settings for a 2D-graph
+      break;
 
     case cobAllFramesGrpByValueNrmNone:
       settings = this->makeStatisticsAllFramesGrpByValNrmNone(aSortedData);
@@ -937,22 +1038,17 @@ QWidget* YUV3DCharts::makeStatistic(QList<collectedData>* aSortedData, const cha
       settings = this->makeStatisticsAllFramesGrpByValNrm(aSortedData);
       break;
     case cobAllFramesGrpByBlocksizeNrmNone:
-      return this->makeStatisticsAllFramesGrpByBlocksizeNrmNone(aSortedData);   // take care, we leave here! We create a 2D graph, 3D graph possible
+      settings = this->makeStatisticsAllFramesGrpByBlocksizeNrmNone(aSortedData);   // take care, we set the settings for a 2D-graph
+      break;
     case cobAllFramesGrpByBlocksizeNrmByArea:
-      return this->makeStatisticsAllFramesGrpByBlocksizeNrm(aSortedData);       // take care, we leave here! We create a 2D graph, 3D graph possible
+      settings = this->makeStatisticsAllFramesGrpByBlocksizeNrm(aSortedData);       // take care, we set the settings for a 2D-graph
+      break;
 
     default:
-      return this->mNoDataToShowWidget;
+      return settings;
   }
 
-  // settings are not valid? so we display a default widget
-  if(!settings.mSettingsIsValid)
-    return this->mNoDataToShowWidget;
-
-  // change data in the 3D-graph
-  this->mModifier->applyDataToGraph(settings);
-
-  return this->mWidgetGraph;
+  return settings;
 }
 
 chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData)
@@ -1035,8 +1131,9 @@ chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
     }
   }
 
-  settings.m3DData = resultValueCount;
-  settings.mStatDataType = dataType;
+  settings.m3DData        = resultValueCount;
+  settings.mIs3DData      = true;
+  settings.mStatDataType  = dataType;
 
   settings.define3DRanges(mMinX, mMaxX, mMinY, mMaxY);
 
@@ -1150,8 +1247,9 @@ chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrm(QList<collected
       resultValue[x][y] = (resultValueCount[x][y] / maxAmountVector) * 100.0;
   }
 
-  settings.m3DData = resultValue;
-  settings.mStatDataType = dataType;
+  settings.m3DData        = resultValue;
+  settings.mIs3DData      = true;
+  settings.mStatDataType  = dataType;
   settings.define3DRanges(mMinX, mMaxX, mMinY, mMaxY);
 
   return settings;
@@ -1169,8 +1267,10 @@ chartSettingsData YUV3DCharts::makeStatisticsAllFramesGrpByValNrm(QList<collecte
   return this->makeStatisticsPerFrameGrpByValNrm(aSortedData);
 }
 
-QWidget* YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
 {
+  chartSettingsData settings;
+
   statisticsDataType dataType = sdtUnknown;
   statisticsDataType lastDataType = sdtUnknown;
 
@@ -1208,44 +1308,30 @@ QWidget* YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collecte
     lastDataType  = data.mStatDataType;
   }
 
-  // ToDo -oCH: implement possible settings for the datatype
+  settings.mSetCustomAxes = false;
+  settings.mIs3DData      = false;
+  settings.mShowLegend    = true;
+  settings.mSeries        = series;
 
-  // creating the result
-  QChart* chart = new QChart();
-
-  // appending the series to the chart
-  chart->addSeries(series);
-  // setting an animationoption (not necessary but it's nice to see)
-  chart->setAnimationOptions(QChart::SeriesAnimations);
-  // creating default-axes: always have to be called before you add some custom axes
-  chart->createDefaultAxes();
-
-  // setting Options for the chart-legend
-  chart->legend()->setVisible(true);
-  chart->legend()->setAlignment(Qt::AlignBottom);
-
-  // creating result chartview and set the data
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
-
-  // final return the created chart
-  return chartView;
+  return settings;
 }
 
-QWidget* YUV3DCharts::makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
 {
   // the amount of data is not the same, but the code is the same
   return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
 }
 
-QWidget* YUV3DCharts::makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData> *aSortedData)
 {
   // the amount of data is not the same, but the code is the same
   return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
 }
 
-QWidget* YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
 {
+  chartSettingsData settings;
+
   statisticsDataType dataType = sdtUnknown;
   statisticsDataType lastDataType = sdtUnknown;
 
@@ -1305,37 +1391,21 @@ QWidget* YUV3DCharts::makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedDat
     lastDataType  = data.mStatDataType;
   }
 
-  // ToDo -oCH: implement possible settings for the datatype
+  settings.mSetCustomAxes = false;
+  settings.mIs3DData      = false;
+  settings.mShowLegend    = true;
+  settings.mSeries        = series;
 
-  // creating the result to display the data
-  QChart* chart = new QChart();
-
-  // appending the series to the chart
-  chart->addSeries(series);
-  // setting an animationoption (not necessary but it's nice to see)
-  chart->setAnimationOptions(QChart::SeriesAnimations);
-  // creating default-axes: always have to be called before you add some custom axes
-  chart->createDefaultAxes();
-
-  // setting Options for the chart-legend
-  chart->legend()->setVisible(true);
-  chart->legend()->setAlignment(Qt::AlignBottom);
-
-  // creating result chartview and set the data
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
-
-  // final return the created chart
-  return chartView;
+  return settings;
 }
 
-QWidget* YUV3DCharts::makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
 {
   // the amount of data is not the same, but the code is the same
   return this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);
 }
 
-QWidget* YUV3DCharts::makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
+chartSettingsData YUV3DCharts::makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData> *aSortedData)
 {
   // the amount of data is not the same, but the code is the same
   return this->makeStatisticsPerFrameGrpByBlocksizeNrm(aSortedData);

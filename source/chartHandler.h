@@ -139,7 +139,7 @@ public:
   void setPlaybackController( PlaybackController *aPBC ) { this->mPlayback = aPBC; }
 
 
-  QVariant createStatisticsChartAsVariant(itemWidgetCoord& aCoord);
+  chartSettingsData createStatisticsChartSettings(itemWidgetCoord& aCoord);
 
 public slots:
   void asynchFinished();
@@ -254,11 +254,11 @@ private:
 
   QBasicTimer mTimer;
 
-  bool mDoMultiThread = false;
+  bool mDoMultiThread = true;
   bool mCancelBackgroundParser = false;
-  QFuture<QVariant> mBackgroundParserFuture;
-  QFutureWatcher<QVariant> mFutureWatcherWidgets;
-  QList<QPair<QFuture<QVariant>, itemWidgetCoord>> mMapFutureItemWidgetCoord;
+  QFuture<chartSettingsData> mBackgroundParserFuture;
+  QFutureWatcher<chartSettingsData> mFutureWatcherWidgets;
+  QList<QPair<QFuture<chartSettingsData>, itemWidgetCoord>> mMapFutureItemWidgetCoord;
 
 
 // functions

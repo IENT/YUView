@@ -101,16 +101,26 @@ enum statisticsDataType
 };
 
 /*-------------------- enum chartType --------------------*/
+/**
+ * @brief The chartType2D enum
+ * enum to define which 2D chart type we want
+ * for example bar-chart, pie-chart and so on
+ */
 enum chartType2D
 {
   ct2DBarChart,           // draw a bar chart
   ct2DUnknown             // undefined
 };
 
+/**
+ * @brief The chartType2D enum
+ * enum to define which 2D chart type we want
+ * for example bar-chart, pie-chart and so on
+ */
 enum chartType3D
 {
   ct3DBarChart,           // draw a 3D bar chart
-  ct3dSurfaceChart,       // draw a 3D surface chart
+  ct3DSurfaceChart,       // draw a 3D surface chart
   ct3DUnknown             // undefined
 };
 
@@ -337,6 +347,7 @@ struct chartSettingsData
 
   //for 3D data we use
   QMap<int, QMap<int, double>> m3DData;
+  bool mIs3DData = false;
 
   // use maybe later for caching or something else
   indexRange mX3DRange = indexRange(0, 0);

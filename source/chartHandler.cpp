@@ -154,13 +154,153 @@ void ChartHandler::removeWidgetFromList(playlistItem* aItem)
     this->mListItemWidget.removeAll(tmp);
 }
 
+chartSettingsData ChartHandler::createStatisticsChartSettings(itemWidgetCoord &aCoord)
+{
+  // basic settings
+  chartSettingsData settings;
+  settings.mSettingsIsValid = false;
+
+  // get current frame index, we use the playback controller
+  int frameIndex = this->mPlayback->getCurrentFrame();
+
+  QString type("");
+  QVariant showVariant(csUnknown);
+  QVariant groupVariant(cgbUnknown);
+  QVariant normaVariant(cnUnknown);
+
+  // we need the selected StatisticType, so we have to find the combobox and get the text of it
+  QObjectList children = aCoord.mWidget->children();
+  foreach (auto child, children)
+  {
+    if(dynamic_cast<QComboBox*> (child)) // finding the combobox
+    {
+      // we need to differentiate between the type-combobox and order-combobox, but we have to find both values
+      if(child->objectName() == OPTION_NAME_CBX_CHART_TYPES)
+        type = (dynamic_cast<QComboBox*>(child))->currentText();
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
+        showVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
+        groupVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)
+        normaVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+
+      // all found, so we can leave here
+      //! take care, this is one if-statement
+      if((type != "")
+         && (showVariant.value<chartShow>() != csUnknown)
+         && (groupVariant.value<chartGroupBy>() != cgbUnknown)
+         && (normaVariant.value<chartNormalize>() != cnUnknown))
+        break;
+    }
+  }
+
+  // type was not found, so we return a default
+  if(type == "" || type == CBX_OPTION_SELECT)
+    return settings;
+
+  // results for the lambda
+  QString negXstring = "";
+  QString posXstring = "";
+  QString negYstring = "";
+  QString posYstring = "";
+
+  // small lambda to find the edits with the max and min of 3d data
+  std::function<void(QObjectList)> findAndSetNumberStrings3D = [&] (QObjectList aChildrenList)
+  {
+    foreach (auto child, aChildrenList)
+    {
+      if(child->children().count() > 1)
+        findAndSetNumberStrings3D(child->children());
+      else
+      {
+        if(child->objectName() == EDIT_NAME_LIMIT_NEGX)
+          negXstring = (dynamic_cast<QLineEdit*>(child))->text();
+        if(child->objectName() == EDIT_NAME_LIMIT_POSX)
+          posXstring = (dynamic_cast<QLineEdit*>(child))->text();
+        if(child->objectName() == EDIT_NAME_LIMIT_NEGY)
+          negYstring = (dynamic_cast<QLineEdit*>(child))->text();
+        if(child->objectName() == EDIT_NAME_LIMIT_POSY)
+          posYstring = (dynamic_cast<QLineEdit*>(child))->text();
+      }
+    }
+  };
+
+  // call the lambda not only define it
+  findAndSetNumberStrings3D(children);
+
+  chartOrderBy order = cobUnknown; // set an default
+  // we dont have found the sort-order so set it
+  chartShow showart = showVariant.value<chartShow>();
+
+  if(showart == csPerFrame)
+  {
+    // this is for the case, that the playlistitem selection changed and the playbackcontroller has a selected frame
+    // which is greater than the maxFrame of the new selected file
+    indexRange maxrange = aCoord.mItem->getStartEndFrameLimits();
+    if(frameIndex > maxrange.second)
+    {
+      frameIndex = maxrange.second;
+      this->mPlayback->setCurrentFrame(frameIndex);
+    }
+  }
+
+  if((showart != csUnknown)
+     && (groupVariant.value<chartGroupBy>() != cgbUnknown)
+     && (normaVariant.value<chartNormalize>() != cnUnknown))
+    // get selected one
+    order = EnumAuxiliary::makeChartOrderBy(showVariant.value<chartShow>(), groupVariant.value<chartGroupBy>(), normaVariant.value<chartNormalize>());
+
+  if(showart == csAllFrames && order == this->mLastChartOrderBy && type == this->mLastStatisticsType)
+    return settings;
+  else
+  {
+    this->mLastChartOrderBy = order;
+    this->mLastStatisticsType = type;
+  }
+
+  // and at this point we create the statistic
+  indexRange range;
+  if(showart == csPerFrame)
+  {
+    range.first = frameIndex;
+    range.second = frameIndex;
+  }
+  else if(showart == csAllFrames)
+    range = aCoord.mItem->getFrameIdxRange();
+  else if(showart == csRange)
+    range = this->getFrameRange(aCoord);
+  else // this case should never happen, but who now :D
+    return settings;
+
+  //define the max and min; set INT_MIN as min and INT_MAX as max as default
+  int negX = INT_MIN;
+  if(negXstring != "")
+    negX = negXstring.toInt();
+
+  int posX = INT_MAX;
+  if(posXstring != "")
+    posX = posXstring.toInt();
+
+  int negY = INT_MIN;
+  if(negYstring != "")
+    negY = negYstring.toInt();
+
+  int posY = INT_MAX;
+  if(posYstring != "")
+    posY = posYstring.toInt();
+
+  this->mYUVChartFactory.set3DCoordinationRange(negX, posX, negY, posY);
+
+  return this->mYUVChartFactory.createSettings(order, aCoord.mItem, range, type);
+}
+
 void ChartHandler::asynchFinished()
 {
-  QVariant chartVariant = this->mFutureWatcherWidgets.result();
-  QWidget* chart = chartVariant.value<QWidget*>();
+  // get the result
+  chartSettingsData settings = this->mFutureWatcherWidgets.result();
 
-  QFuture<QVariant> future = this->mFutureWatcherWidgets.future();
-  QPair<QFuture<QVariant>, itemWidgetCoord> pair;
+  QFuture<chartSettingsData> future = this->mFutureWatcherWidgets.future();
+  QPair<QFuture<chartSettingsData>, itemWidgetCoord> pair;
 
   foreach (auto itempair, mMapFutureItemWidgetCoord)
   {
@@ -171,9 +311,10 @@ void ChartHandler::asynchFinished()
     }
   }
 
-  if(pair.second.mItem == NULL)
+  if(pair.second.mItem == nullptr)
     return;
 
+  QWidget* chart = this->mYUVChartFactory.createChart(settings);
   this->placeChart(pair.second, chart);
 
   this->mMapFutureItemWidgetCoord.removeOne(pair);
@@ -1070,148 +1211,13 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   if(!aCoord.mWidget)
     return &(this->mNoDataToShowWidget);
 
-  this->placeChart(aCoord, &this->mDataIsLoadingWidget);
+  // generate the settings based on the input from the user
+  chartSettingsData settings = this->createStatisticsChartSettings(aCoord);
 
-  // get current frame index, we use the playback controller
-  int frameIndex = this->mPlayback->getCurrentFrame();
-
-  QString type("");
-  QVariant showVariant(csUnknown);
-  QVariant groupVariant(cgbUnknown);
-  QVariant normaVariant(cnUnknown);
-
-  // we need the selected StatisticType, so we have to find the combobox and get the text of it
-  QObjectList children = aCoord.mWidget->children();
-  foreach (auto child, children)
-  {
-    if(dynamic_cast<QComboBox*> (child)) // finding the combobox
-    {
-      // we need to differentiate between the type-combobox and order-combobox, but we have to find both values
-      if(child->objectName() == OPTION_NAME_CBX_CHART_TYPES)
-        type = (dynamic_cast<QComboBox*>(child))->currentText();
-      else if(child->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
-        showVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
-      else if(child->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
-        groupVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
-      else if(child->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)
-        normaVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
-
-      // all found, so we can leave here
-      //! take care, this is one if-statement
-      if((type != "")
-         && (showVariant.value<chartShow>() != csUnknown)
-         && (groupVariant.value<chartGroupBy>() != cgbUnknown)
-         && (normaVariant.value<chartNormalize>() != cnUnknown))
-        break;
-    }
-  }
-
-  // type was not found, so we return a default
-  if(type == "" || type == CBX_OPTION_SELECT)
-    return &(this->mNoDataToShowWidget);
-
-  // results for the lambda
-  QString negXstring = "";
-  QString posXstring = "";
-  QString negYstring = "";
-  QString posYstring = "";
-
-  // small lambda to find the edits with the max and min of 3d data
-  std::function<void(QObjectList)> findAndSetNumberStrings3D = [&] (QObjectList aChildrenList)
-  {
-    foreach (auto child, aChildrenList)
-    {
-      if(child->children().count() > 1)
-        findAndSetNumberStrings3D(child->children());
-      else
-      {
-        if(child->objectName() == EDIT_NAME_LIMIT_NEGX)
-          negXstring = (dynamic_cast<QLineEdit*>(child))->text();
-        if(child->objectName() == EDIT_NAME_LIMIT_POSX)
-          posXstring = (dynamic_cast<QLineEdit*>(child))->text();
-        if(child->objectName() == EDIT_NAME_LIMIT_NEGY)
-          negYstring = (dynamic_cast<QLineEdit*>(child))->text();
-        if(child->objectName() == EDIT_NAME_LIMIT_POSY)
-          posYstring = (dynamic_cast<QLineEdit*>(child))->text();
-      }
-    }
-  };
-
-  // call the lambda not only define it
-  findAndSetNumberStrings3D(children);
-
-  chartOrderBy order = cobUnknown; // set an default
-  // we dont have found the sort-order so set it
-  chartShow showart = showVariant.value<chartShow>();
-
-  if(showart == csPerFrame)
-  {
-    // this is for the case, that the playlistitem selection changed and the playbackcontroller has a selected frame
-    // which is greater than the maxFrame of the new selected file
-    indexRange maxrange = aCoord.mItem->getStartEndFrameLimits();
-    if(frameIndex > maxrange.second)
-    {
-      frameIndex = maxrange.second;
-      this->mPlayback->setCurrentFrame(frameIndex);
-    }
-  }
-
-  if((showart != csUnknown)
-     && (groupVariant.value<chartGroupBy>() != cgbUnknown)
-     && (normaVariant.value<chartNormalize>() != cnUnknown))
-    // get selected one
-    order = EnumAuxiliary::makeChartOrderBy(showVariant.value<chartShow>(), groupVariant.value<chartGroupBy>(), normaVariant.value<chartNormalize>());
-
-  if(showart == csAllFrames && order == this->mLastChartOrderBy && type == this->mLastStatisticsType)
-    return this->mLastStatisticsWidget;
-  else
-  {
-    this->mLastChartOrderBy = order;
-    this->mLastStatisticsType = type;
-  }
-
-  // and at this point we create the statistic
-  indexRange range;
-  if(showart == csPerFrame)
-  {
-    range.first = frameIndex;
-    range.second = frameIndex;
-  }
-  else if(showart == csAllFrames)
-    range = aCoord.mItem->getFrameIdxRange();
-  else if(showart == csRange)
-    range = this->getFrameRange(aCoord);
-  else // this case should never happen, but who now :D
-    return &(this->mNoDataToShowWidget);
-
-  //define the max and min; set INT_MIN as min and INT_MAX as max as default
-  int negX = INT_MIN;
-  if(negXstring != "")
-    negX = negXstring.toInt();
-
-  int posX = INT_MAX;
-  if(posXstring != "")
-    posX = posXstring.toInt();
-
-  int negY = INT_MIN;
-  if(negYstring != "")
-    negY = negYstring.toInt();
-
-  int posY = INT_MAX;
-  if(posYstring != "")
-    posY = posYstring.toInt();
-
-  this->mYUVChartFactory.set3DCoordinationRange(negX, posX, negY, posY);
-
-  this->mLastStatisticsWidget = this->mYUVChartFactory.createChart(order, aCoord.mItem, range, type);
+  // generate the chart and display it
+  this->mLastStatisticsWidget = this->mYUVChartFactory.createChart(settings);
 
   return this->mLastStatisticsWidget;
-}
-
-QVariant ChartHandler::createStatisticsChartAsVariant(itemWidgetCoord& aCoord)
-{
-  QWidget* chart = this->createStatisticsChart(aCoord);
-  return QVariant::fromValue(chart);
 }
 
 void ChartHandler::onStatisticsChange(const QString aString)
@@ -1243,9 +1249,9 @@ void ChartHandler::onStatisticsChange(const QString aString)
         }
 
         this->placeChart(coord, &this->mDataIsLoadingWidget);
-        this->mBackgroundParserFuture = QtConcurrent::run(this, &ChartHandler::createStatisticsChartAsVariant, coord);
+        this->mBackgroundParserFuture = QtConcurrent::run(this, &ChartHandler::createStatisticsChartSettings, coord);
         this->mFutureWatcherWidgets.setFuture(this->mBackgroundParserFuture);
-        QPair<QFuture<QVariant>, itemWidgetCoord> pair;
+        QPair<QFuture<chartSettingsData>, itemWidgetCoord> pair;
         pair.first = this->mBackgroundParserFuture;
         pair.second = coord;
         mMapFutureItemWidgetCoord.append(pair);

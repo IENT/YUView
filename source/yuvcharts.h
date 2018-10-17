@@ -113,7 +113,7 @@ class YUVCharts : public QObject
 
   /**
    * @brief createChart
-   * function which will control hoq the chart is making
+   * function which will control how the chart is making
    *
    * @param aOrderBy
    * the order type: frame-art, value or blocksize, noralisation or not
@@ -136,6 +136,44 @@ class YUVCharts : public QObject
    * a complete chartview with the data
    */
   virtual QWidget* createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) = 0;
+
+  /**
+   * @brief createChart
+   * function will create an chart which depends on the given settings
+   *
+   * @param aSettings
+   * settings how the chart should look
+   *
+   * @return
+   * a complete chartview with the data
+   */
+  virtual QWidget* createChart(chartSettingsData aSettings) = 0;
+
+  /**
+   * @brief createSettings
+   * function that creat a complete setting for the chart
+   *
+   * @param aOrderBy
+   * the order type: frame-art, value or blocksize, noralisation or not
+   *
+   * @param aItem
+   * specified item we look at, we get the data and lot more
+   *
+   * @param aRange
+   * range we look at (also for current frame or all frames)
+   *
+   * @param aType
+   * if statistics-item: the selected type is needed
+   *
+   * @param aSortedData
+   * the amount of data if avaible
+   * this parameter is optional
+   * if aSorted is null, we get the data from the item new otherwise we use the parameter
+   *
+   * @return
+   * a complete setting; basic for an chart
+   */
+  virtual chartSettingsData createSettings(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) = 0;
 
   /**
    * @brief getTotalAmountOfPixel
@@ -220,6 +258,44 @@ public:
   QWidget* createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
   /**
+   * @brief createChart
+   * function will create an chart which depends on the given settings
+   *
+   * @param aSettings
+   * settings how the chart should look
+   *
+   * @return
+   * a complete chartview with the data
+   */
+  QWidget* createChart(chartSettingsData aSettings) Q_DECL_OVERRIDE;
+
+  /**
+   * @brief createSettings
+   * function that creat a complete setting for the chart
+   *
+   * @param aOrderBy
+   * the order type: frame-art, value or blocksize, noralisation or not
+   *
+   * @param aItem
+   * specified item we look at, we get the data and lot more
+   *
+   * @param aRange
+   * range we look at (also for current frame or all frames)
+   *
+   * @param aType
+   * if statistics-item: the selected type is needed
+   *
+   * @param aSortedData
+   * the amount of data if avaible
+   * this parameter is optional
+   * if aSorted is null, we get the data from the item new otherwise we use the parameter
+   *
+   * @return
+   * a complete setting; basic for an chart
+   */
+  chartSettingsData createSettings(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
+
+  /**
    * @brief hasOpenGL
    * creating an YUV3DBarChart-Object, we check that we can init OpenGL
    *
@@ -271,7 +347,7 @@ protected:
 
   /**
    * @brief makeStatistic
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * creates the setting based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    *
    * @param aSortedData
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
@@ -286,9 +362,9 @@ protected:
    * range, we look at
    *
    * @return
-   * a chartview, that can be placed
+   * a setting, that the chart depends on
    */
-  QWidget* makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange);
+  chartSettingsData makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange);
 
   /**
    * @brief makeStatisticsPerFrameGrpByValNrmNone
@@ -377,9 +453,9 @@ protected:
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @return
-   * the chart to display
+   * settings
    */
-  QWidget* makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
 
   /**
    * @brief makeStatisticsFrameRangeGrpByBlocksizeNrmNone
@@ -390,9 +466,9 @@ protected:
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @return
-   * the chart to display
+   * settings
    */
-  QWidget* makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
 
   /**
    * @brief makeStatisticsAllFramesGrpByBlocksizeNrmNone
@@ -405,7 +481,7 @@ protected:
    * @return
    * the chart to display
    */
-  QWidget* makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
 
   /**
    * @brief makeStatisticsPerFrameGrpByBlocksizeNrm
@@ -416,9 +492,9 @@ protected:
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @return
-   * the chart to display
+   * settings
    */
-  QWidget* makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
 
   /**
    * @brief makeStatisticsFrameRangeGrpByBlocksizeNrm
@@ -429,9 +505,9 @@ protected:
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @return
-   * the chart to display
+   * settings
    */
-  QWidget* makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsFrameRangeGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
 
   /**
    * @brief makeStatisticsAllFramesGrpByBlocksizeNrm
@@ -442,9 +518,9 @@ protected:
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @return
-   * the chart to display
+   * settings
    */
-  QWidget* makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrm(QList<collectedData>* aSortedData);
 
 };
 
@@ -515,10 +591,16 @@ public:
   //documentation see @YUVCharts::createChart
   QWidget* createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
+  //documentation see @YUVCharts::createChart
+  QWidget* createChart(chartSettingsData aSettings) Q_DECL_OVERRIDE;
+
+  //documentation see @YUVCharts::createSettings
+  chartSettingsData createSettings(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
+
 private:
   /**
    * @brief makeStatistic
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * creates settings the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    *
    * @param aSortedData
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
@@ -533,9 +615,9 @@ private:
    * range, we look at
    *
    * @return
-   * a chartview, that can be placed
+   * a setting, the chart depends on it
    */
-  QWidget* makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange);
+  chartSettingsData makeStatistic(QList<collectedData>* aSortedData, const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange);
 
   /**
    * @brief makeStatisticsPerFrameGrpByValNrmNone
@@ -756,9 +838,6 @@ public:
   YUV3DBarChart();
   //reintroduce the constructor
   YUV3DBarChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget);
-
-  //documentation see @YUVCharts::createChart
-  //QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, indexRange aRange, QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 };
 
 /**
@@ -776,6 +855,12 @@ public:
   //documentation see @YUVCharts::createChart
   //! aSortedData is not used in this function
   QWidget* createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
+
+  //documentation see @YUVCharts::createChart
+  QWidget* createChart(chartSettingsData aSettings) Q_DECL_OVERRIDE;
+
+  //documentation see @YUVCharts::createSettings
+  chartSettingsData createSettings(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
   /**
    * @brief set3DCoordinationRange
@@ -823,7 +908,7 @@ private:
   chartType2D m2DType = ct2DBarChart;
 
   // holder for the 3D chart
-  chartType3D m3DType = ct3dSurfaceChart;
+  chartType3D m3DType = ct3DSurfaceChart;
 
   // identifier to use the coordinates
   bool mUse3DCoordinationLimits = false;
