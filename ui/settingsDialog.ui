@@ -634,34 +634,6 @@
           <string>Specific HEVC Decoder Libraries</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="2">
-           <widget class="QPushButton" name="pushButtonLibde265SelectFile">
-            <property name="toolTip">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <widget class="QPushButton" name="pushButtonlibHMClearFile">
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="1">
            <widget class="QLineEdit" name="lineEditLibHMFile">
             <property name="toolTip">
@@ -675,6 +647,24 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelJEM">
+            <property name="text">
+             <string>libJEM</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="pushButtonLibJEMSelectFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="0">
            <widget class="QLabel" name="labelLibHM">
             <property name="toolTip">
@@ -685,34 +675,6 @@
             </property>
             <property name="text">
              <string>libHM</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QPushButton" name="pushButtonLibde265ClearFile">
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QPushButton" name="pushButtonlibHMSelectFile">
-            <property name="toolTip">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
             </property>
            </widget>
           </item>
@@ -742,13 +704,6 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>libJEM</string>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="1">
            <widget class="QLineEdit" name="lineEditLibJEMFile">
             <property name="readOnly">
@@ -756,8 +711,53 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="2">
-           <widget class="QPushButton" name="pushButtonLibJEMSelectFile">
+          <item row="1" column="3">
+           <widget class="QPushButton" name="pushButtonlibHMClearFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QPushButton" name="pushButtonLibde265ClearFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="pushButtonLibde265SelectFile">
+            <property name="toolTip">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="pushButtonlibHMSelectFile">
+            <property name="toolTip">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -769,6 +769,38 @@
           </item>
           <item row="2" column="3">
            <widget class="QPushButton" name="pushButtonLibJEMClearFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labelVVC">
+            <property name="text">
+             <string>libVVC</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="lineEditLibVVCFile"/>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButtonLibVVCSelectFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QPushButton" name="pushButtonLibVVCClearFile">
             <property name="text">
              <string/>
             </property>

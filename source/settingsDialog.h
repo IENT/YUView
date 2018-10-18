@@ -71,7 +71,8 @@ private slots:
   void on_pushButtonlibHMClearFile_clicked() { ui.lineEditLibHMFile->clear(); }
   void on_pushButtonLibJEMClearFile_clicked() { ui.lineEditLibJEMFile->clear(); }
   void on_pushButtonFFMpegClearFile_clicked() { ui.lineEditAVFormat->clear(); ui.lineEditAVCodec->clear(); ui.lineEditAVUtil->clear(); ui.lineEditSWResample->clear(); }
-
+  void on_pushButtonLibVVCSelectFile_clicked();
+  void on_pushButtonLibVVCClearFile_clicked() { ui.lineEditLibVVCFile->clear(); }
   // Save/Load buttons
   void on_pushButtonSave_clicked();
   void on_pushButtonCancel_clicked() { reject(); }

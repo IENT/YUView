@@ -39,6 +39,7 @@
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
 #include "hevcNextGenDecoderJEM.h"
+#include "vvcDecoderVTM.h"
 
 #define HEVC_DEBUG_OUTPUT 0
 #if HEVC_DEBUG_OUTPUT && !NDEBUG
@@ -49,7 +50,7 @@
 #endif
 
 // Initialize the static names list of the decoder engines
-QStringList playlistItemRawCodedVideo::decoderEngineNames = QStringList() << "libDe265" << "HM" << "JEM";
+QStringList playlistItemRawCodedVideo::decoderEngineNames = QStringList() << "libDe265" << "HM" << "JEM" << "VVC";
 
 playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath, int displayComponent, decoderEngine e)
   : playlistItemWithVideo(hevcFilePath, playlistItem_Indexed)
@@ -94,6 +95,12 @@ playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath
     loadingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal));
     cachingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal, true));
   }
+  else if (e == decoderVVC)
+  {
+    loadingDecoder.reset(new vvcDecoderVTM(displaySignal));
+    cachingDecoder.reset(new vvcDecoderVTM(displaySignal, true));
+  }
+
   else
     return;
 
@@ -235,6 +242,8 @@ void playlistItemRawCodedVideo::infoListButtonPressed(int buttonID)
     file.reset(new fileSourceHEVCAnnexBFile);
   else if (decoderEngineType == decoderJEM)
     file.reset(new fileSourceJEMAnnexBFile);
+  else if (decoderEngineType == decoderVVC)
+    file.reset(new fileSourceVVCAnnexBFile);
 
   // Parse the annex B file again and save all the values read
   if (!file->openFile(plItemNameOrFileName, true))
@@ -393,7 +402,8 @@ void playlistItemRawCodedVideo::getSupportedFileExtensions(QStringList &allExten
   allExtensions.append("hevc");
   allExtensions.append("265");
   allExtensions.append("bin");
-  filters.append("Annex B raw coded video (*.hevc, *.265, *.bin)");
+  allExtensions.append("vvc");
+  filters.append("Annex B raw coded video (*.hevc, *.265, *.bin, *.vvc)");
 }
 
 void playlistItemRawCodedVideo::reloadItemSource()

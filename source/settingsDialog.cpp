@@ -41,6 +41,7 @@
 #include "hevcNextGenDecoderJEM.h"
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
+#include "vvcDecoderVTM.h"
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
 
@@ -127,6 +128,8 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
   ui.lineEditLibJEMFile->setText(settings.value("libJEMFile", "").toString());
+  ui.lineEditLibVVCFile->setText(settings.value("libVVCFile", "").toString());
+
   // FFMpeg files
   ui.lineEditAVFormat->setText(settings.value("FFMpeg.avformat", "").toString());
   ui.lineEditAVCodec->setText(settings.value("FFMpeg.avcodec", "").toString());
@@ -300,6 +303,18 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
   }
 }
 
+void SettingsDialog::on_pushButtonLibVVCSelectFile_clicked()
+{
+  QStringList newFiles = getLibraryPath(ui.lineEditLibVVCFile->text(), "Please select the VVCDecoderLib library file to use.");
+  if (newFiles.count() != 1)
+    return;
+  QString error;
+  if (!vvcDecoderVTM::checkLibraryFile(newFiles[0], error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable VVCDecoderLib library. Error: " + error);
+  else
+    ui.lineEditLibVVCFile->setText(newFiles[0]);
+}
+
 void SettingsDialog::on_pushButtonSave_clicked()
 {
   // --- Save the settings ---
@@ -347,6 +362,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
   settings.setValue("libJEMFile", ui.lineEditLibJEMFile->text());
+  settings.setValue("libVVCFile", ui.lineEditLibVVCFile->text());
   // FFMpeg files
   settings.setValue("FFMpeg.avformat", ui.lineEditAVFormat->text());
   settings.setValue("FFMpeg.avcodec", ui.lineEditAVCodec->text());

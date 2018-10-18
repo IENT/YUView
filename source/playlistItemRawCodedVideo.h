@@ -56,6 +56,7 @@ public:
     decoderLibde265,      // The libde265 decoder
     decoderHM,            // The HM reference software decoder
     decoderJEM,           // The JEM reference software decoder
+    decoderVVC,
     decoder_NUM
   } decoderEngine;
 
