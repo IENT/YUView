@@ -16,10 +16,12 @@ SOURCES += \
     source/fileSourceAVCAnnexBFile.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/fileSourceJEMAnnexBFile.cpp \
+    source/fileSourceVVCAnnexBFile.cpp \
     source/frameHandler.cpp \
     source/hevcDecoderLibde265.cpp \
     source/hevcDecoderHM.cpp \
     source/hevcNextGenDecoderJEM.cpp \
+    source/vvcDecoderVTM.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
@@ -69,10 +71,12 @@ HEADERS += \
     source/fileSourceAVCAnnexBFile.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/fileSourceJEMAnnexBFile.h \
+    source/fileSourceVVCAnnexBFile.h \
     source/frameHandler.h \
     source/hevcDecoderHM.h \
     source/hevcDecoderLibde265.h \
     source/hevcNextGenDecoderJEM.h \
+    source/vvcDecoderVTM.h \
     source/labelElided.h \
     source/mainwindow.h \
     source/mainwindow_performanceTestDialog.h \

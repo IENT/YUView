@@ -163,17 +163,17 @@ void vvcDecoderVTM::resolveLibraryFunctionPointers()
   if (!resolve(libVVCDEC_get_chroma_format,       "libVVCDEC_get_chroma_format")) return;
   if (!resolve(libVVCDEC_get_internal_bit_depth,  "libVVCDEC_get_internal_bit_depth")) return;
   
-  //if (!resolve(libVVCDEC_get_internal_type_number, "libVVCDEC_get_internal_type_number")) return;
-  //if (!resolve(libVVCDEC_get_internal_type_name, "libVVCDEC_get_internal_type_name")) return;
-  //if (!resolve(libVVCDEC_get_internal_type, "libVVCDEC_get_internal_type")) return;
-  //if (!resolve(libVVCDEC_get_internal_type_max, "libVVCDEC_get_internal_type_max")) return;
-  //if (!resolve(libVVCDEC_get_internal_type_vector_scaling, "libVVCDEC_get_internal_type_vector_scaling")) return;
-  //if (!resolve(libVVCDEC_get_internal_type_description, "libVVCDEC_get_internal_type_description")) return;
-  //if (!resolve(libVVCDEC_get_internal_info, "libVVCDEC_get_internal_info")) return;
-  //if (!resolve(libVVCDEC_clear_internal_info, "libVVCDEC_clear_internal_info")) return;
+  if (!resolve(libVVCDEC_get_internal_type_number, "libVVCDEC_get_internal_type_number")) return;
+  if (!resolve(libVVCDEC_get_internal_type_name, "libVVCDEC_get_internal_type_name")) return;
+  if (!resolve(libVVCDEC_get_internal_type, "libVVCDEC_get_internal_type")) return;
+  if (!resolve(libVVCDEC_get_internal_type_max, "libVVCDEC_get_internal_type_max")) return;
+  if (!resolve(libVVCDEC_get_internal_type_vector_scaling, "libVVCDEC_get_internal_type_vector_scaling")) return;
+  if (!resolve(libVVCDEC_get_internal_type_description, "libVVCDEC_get_internal_type_description")) return;
+  if (!resolve(libVVCDEC_get_internal_info, "libVVCDEC_get_internal_info")) return;
+  if (!resolve(libVVCDEC_clear_internal_info, "libVVCDEC_clear_internal_info")) return;
   
-  // All interbals functions were successfully retrieved
-  internalsSupported = false;
+  // All internals functions were successfully retrieved
+  internalsSupported = true;
 
   return;
   
@@ -408,6 +408,15 @@ QByteArray vvcDecoderVTM::loadYUVFrameData(int frameIdx)
           // Picture decoded
           DEBUG_DECJEM("vvcDecoderVTM::loadYUVFrameData decoded the requested frame %d - POC %d", currentOutputBufferFrameIndex, libVVCDEC_get_POC(pic));
 
+          if (retrieveStatistics)
+          {
+            // Get the statistics from the image and put them into the statistics cache
+            cacheStatistics(pic);
+
+            // The cache now contains the statistics for iPOC
+            statsCacheCurPOC = currentOutputBufferFrameIndex;
+          }
+
           return currentOutputBuffer;
         }
         else
@@ -526,17 +535,127 @@ bool vvcDecoderVTM::reloadItemSource()
   return parsingError;
 }
 
+void vvcDecoderVTM::cacheStatistics(libVVCDec_picture *img)
+{
+  if (!wrapperInternalsSupported())
+    return;
+
+  DEBUG_DECJEM("vvcDecoderVTM::cacheStatistics POC %d", libVVCDEC_get_POC(img));
+
+  // Clear the local statistics cache
+  curPOCStats.clear();
+
+  // Get all the statistics
+  // TODO: Could we only retrieve the statistics that are active/displayed?
+  unsigned int nrTypes = libVVCDEC_get_internal_type_number();
+  for (unsigned int t = 0; t <= nrTypes; t++)
+  {
+    bool callAgain;
+    do
+    {
+      // Get a pointer to the data values and how many values in this array are valid.
+      unsigned int nrValues;
+      libVVCDec_BlockValue *stats = libVVCDEC_get_internal_info(decoder, img, t, nrValues, callAgain);
+
+      libVVCDec_InternalsType statType = libVVCDEC_get_internal_type(t);
+      if (stats != nullptr && nrValues > 0)
+      {
+        for (unsigned int i = 0; i < nrValues; i++)
+        {
+          libVVCDec_BlockValue b = stats[i];
+          if (statType == libVVCDEC_TYPE_VECTOR)
+            curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, b.value, b.value2);
+          else
+            curPOCStats[t].addBlockValue(b.x, b.y, b.w, b.h, b.value);
+        }
+      }
+    } while (callAgain); // Continue until there are no more values to cache
+  }
+}
+
 void vvcDecoderVTM::fillStatisticList(statisticHandler &statSource) const
 {
-  // not implemented
-  return;
+  // Ask the decoder how many internals types there are
+  unsigned int nrTypes = libVVCDEC_get_internal_type_number();
+
+  for (unsigned int i = 0; i < nrTypes; i++)
+  {
+    QString name = libVVCDEC_get_internal_type_name(i);
+    QString description = libVVCDEC_get_internal_type_description(i);
+    libVVCDec_InternalsType statType = libVVCDEC_get_internal_type(i);
+    int max = 0;
+    if (statType == libVVCDEC_TYPE_RANGE || statType == libVVCDEC_TYPE_RANGE_ZEROCENTER || statType == libVVCDEC_TYPE_INTRA_DIR)
+    {
+      unsigned int uMax = libVVCDEC_get_internal_type_max(i);
+      max = (uMax > INT_MAX) ? INT_MAX : uMax;
+    }
+
+    if (statType == libVVCDEC_TYPE_FLAG)
+    {
+      StatisticsType flag(i, name, "jet", 0, 1);
+      flag.description = description;
+      statSource.addStatType(flag);
+    }
+    else if (statType == libVVCDEC_TYPE_RANGE)
+    {
+      StatisticsType range(i, name, "jet", 0, max);
+      range.description = description;
+      statSource.addStatType(range);
+    }
+    else if (statType == libVVCDEC_TYPE_RANGE_ZEROCENTER)
+    {
+      StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
+      rangeZero.description = description;
+      statSource.addStatType(rangeZero);
+    }
+    else if (statType == libVVCDEC_TYPE_VECTOR)
+    {
+      unsigned int scale = libVVCDEC_get_internal_type_vector_scaling(i);
+      StatisticsType vec(i, name, scale);
+      vec.description = description;
+      statSource.addStatType(vec);
+    }
+    else if (statType == libVVCDEC_TYPE_INTRA_DIR)
+    {
+
+      StatisticsType intraDir(i, name, "jet", 0, max);
+      intraDir.description = description;
+      intraDir.hasVectorData = true;
+      intraDir.renderVectorData = true;
+      intraDir.vectorScale = 32;
+      // Don't draw the vector values for the intra dir. They don't have actual meaning.
+      intraDir.renderVectorDataValues = false;
+      statSource.addStatType(intraDir);
+    }
+  }
 }
 
 statisticsData vvcDecoderVTM::getStatisticsData(int frameIdx, int typeIdx)
 {
-  // not implemented
-  statisticsData dummy;
-  return dummy;
+  DEBUG_DECJEM("vvcDecoderVTM::getStatisticsData %s", retrieveStatistics ? "" : "staistics retrievel avtivated");
+  if (!retrieveStatistics)
+    retrieveStatistics = true;
+
+  if (frameIdx != statsCacheCurPOC)
+  {
+    if (currentOutputBufferFrameIndex == frameIdx && currentHMPic != NULL)
+    {
+      // We don't have to decode everything again if we still have a valid pointer to the picture
+      cacheStatistics(currentHMPic);
+      // The cache now contains the statistics for iPOC
+      statsCacheCurPOC = currentOutputBufferFrameIndex;
+
+      return curPOCStats[typeIdx];
+    }
+    else if (currentOutputBufferFrameIndex == frameIdx)
+      // We will have to decode the current frame again to get the internals/statistics
+      // This can be done like this:
+      currentOutputBufferFrameIndex++;
+
+    loadYUVFrameData(frameIdx);
+  }
+
+  return curPOCStats[typeIdx];
 }
 
 

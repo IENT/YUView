@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2014, ITU/ISO/IEC
+* Copyright (c) 2010-2018, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without

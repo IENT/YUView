@@ -66,15 +66,15 @@ struct vvcDecoderVTM_Functions
   libVVCDec_ChromaFormat (*libVVCDEC_get_chroma_format)      (libVVCDec_picture *pic);
   int                    (*libVVCDEC_get_internal_bit_depth) (libVVCDec_picture *pic, libVVCDec_ColorComponent c);
 
-//  // Internals
-//  unsigned int            (*libJEMDEC_get_internal_type_number)          ();
-//  char                   *(*libJEMDEC_get_internal_type_name)            (unsigned int idx);
-//  libVVCDec_InternalsType (*libJEMDEC_get_internal_type)                 (unsigned int idx);
-//  unsigned int            (*libJEMDEC_get_internal_type_max)             (unsigned int idx);
-//  unsigned int            (*libJEMDEC_get_internal_type_vector_scaling)  (unsigned int idx);
-//  char                   *(*libJEMDEC_get_internal_type_description)     (unsigned int idx);
-//  libVVCDec_BlockValue   *(*libJEMDEC_get_internal_info)                 (libJEMDec_context*, libJEMDec_picture *pic, unsigned int typeIdx, unsigned int &nrValues, bool &callAgain);
-//  libJEMDec_error         (*libJEMDEC_clear_internal_info)               (libJEMDec_context *decCtx);
+  // Internals
+  unsigned int            (*libVVCDEC_get_internal_type_number)          ();
+  char                   *(*libVVCDEC_get_internal_type_name)            (unsigned int idx);
+  libVVCDec_InternalsType (*libVVCDEC_get_internal_type)                 (unsigned int idx);
+  unsigned int            (*libVVCDEC_get_internal_type_max)             (unsigned int idx);
+  unsigned int            (*libVVCDEC_get_internal_type_vector_scaling)  (unsigned int idx);
+  char                   *(*libVVCDEC_get_internal_type_description)     (unsigned int idx);
+  libVVCDec_BlockValue   *(*libVVCDEC_get_internal_info)                 (libVVCDec_context*, libVVCDec_picture *pic, unsigned int typeIdx, unsigned int &nrValues, bool &callAgain);
+  libVVCDec_error         (*libVVCDEC_clear_internal_info)               (libVVCDec_context *decCtx);
 };
 
 // This class wraps the de265 library in a demand-load fashion.
@@ -143,7 +143,7 @@ private:
   libVVCDec_picture *currentHMPic;
 
   // Statistics caching
-  //void cacheStatistics(libVVCDec_picture *pic);
+  void cacheStatistics(libVVCDec_picture *pic);
 
   // Are we currently reading from the decoder or are we pushing more NAL units?
   bool stateReadingFrames;
