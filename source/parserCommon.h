@@ -265,7 +265,7 @@ namespace parserCommon
 
     // The root of the tree
     QScopedPointer<TreeItem> rootItem;
-    TreeItem *getRootItem() { return rootItem.get(); }
+    TreeItem *getRootItem() { return rootItem.data(); }
     bool isNull() { return rootItem.isNull(); }
 
     unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
