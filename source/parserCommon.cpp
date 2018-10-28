@@ -306,6 +306,17 @@ bool sub_byte_reader::more_rbsp_data()
   return false;
 }
 
+/* Is there more data? If the current position in the sei_payload() syntax structure is not the position of the last (least significant, right-
+   most) bit that is equal to 1 that is less than 8 * payloadSize bits from the beginning of the syntax structure (i.e.,
+   the position of the payload_bit_equal_to_one syntax element), the return value of payload_extension_present( )
+   is equal to TRUE.
+ */
+bool sub_byte_reader::payload_extension_present()
+{
+  // TODO: What is the difference to this?
+  return more_rbsp_data();
+}
+
 bool sub_byte_reader::testReadingBits(int nrBits)
 {
   const int curBitsLeft = 8 - posInBuffer_bits;
@@ -572,7 +583,7 @@ bool reader_helper::readFlag(bool &into, QString intoName, QString meaning)
   return true;
 }
 
-bool reader_helper::readFlag(QList<bool> &into, QString intoName, int idx)
+bool reader_helper::readFlag(QList<bool> &into, QString intoName, int idx, QString meaning)
 {
   QString code;
   unsigned int read_val;
@@ -583,7 +594,7 @@ bool reader_helper::readFlag(QList<bool> &into, QString intoName, int idx)
   if (idx >= 0)
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
-    new TreeItem(intoName, val, "u(1)", code, currentTreeLevel);
+    new TreeItem(intoName, val, "u(1)", code, meaning, currentTreeLevel);
   return true;
 }
 
@@ -610,7 +621,18 @@ bool reader_helper::readUEV(unsigned int &into, QString intoName, QStringList me
   return true;
 }
 
-bool reader_helper::readUEV(QList<quint32> &into, QString intoName, int idx)
+bool reader_helper::readUEV(unsigned int &into, QString intoName, QString meaning)
+{
+  QString code;
+  int bit_count;
+  if (!readUEV_catch(into, &bit_count, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("ue(v) -> ue(%1)").arg(bit_count), code, meaning, currentTreeLevel);
+  return true;
+}
+
+bool reader_helper::readUEV(QList<quint32> &into, QString intoName, int idx, QString meaning)
 {
   QString code;
   int bit_count;
@@ -621,7 +643,7 @@ bool reader_helper::readUEV(QList<quint32> &into, QString intoName, int idx)
   if (idx >= 0)
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
-    new TreeItem(intoName, val, QString("ue(v) -> ue(%1)").arg(bit_count), code, currentTreeLevel);
+    new TreeItem(intoName, val, QString("ue(v) -> ue(%1)").arg(bit_count), code, meaning, currentTreeLevel);
   return true;
 }
 

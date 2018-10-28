@@ -73,6 +73,7 @@ namespace parserCommon
 
     // Is there more RBSP data or are we at the end?
     bool more_rbsp_data();
+    bool payload_extension_present();
     // Will reading of the given number of bits succeed?
     bool testReadingBits(int nrBits);
     // How many full bytes were read/are left from the reader?
@@ -175,13 +176,14 @@ namespace parserCommon
     bool ignoreBits(int numBits);
 
     bool readFlag(bool &into, QString intoName, QString meaning = "");
-    bool readFlag(QList<bool> &into, QString intoName, int idx);
+    bool readFlag(QList<bool> &into, QString intoName, int idx, QString meaning = "");
     bool readFlag(bool &into, QString intoName, QStringList meanings);
     
-    bool readUEV( unsigned int &into, QString intoName, QStringList meanings = QStringList());
-    bool readUEV(QList<quint32> &into, QString intoName, int idx);
-    bool readSEV(          int &into, QString intoName, QStringList meanings = QStringList());
-    bool readSEV(    QList<int> into, QString intoName, int idx);
+    bool readUEV(unsigned int   &into, QString intoName, QStringList meanings = QStringList());
+    bool readUEV(unsigned int   &into, QString intoName, QString meaning);
+    bool readUEV(QList<quint32> &into, QString intoName, int idx, QString meaning = "");
+    bool readSEV(          int  &into, QString intoName, QStringList meanings = QStringList());
+    bool readSEV(    QList<int>  into, QString intoName, int idx);
     bool readLeb128(uint64_t &into, QString intoName);
     bool readUVLC(uint64_t &into, QString intoName);
     bool readNS(int &into, QString intoName, int maxVal);
@@ -200,12 +202,13 @@ namespace parserCommon
     TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
     // Some functions passed thourgh from the sub_byte_reader
-    bool          more_rbsp_data() { return sub_byte_reader::more_rbsp_data(); }
-    unsigned int  nrBytesRead()    { return sub_byte_reader::nrBytesRead();    }
-    unsigned int  nrBytesLeft()    { return sub_byte_reader::nrBytesLeft();    }
-    bool          testReadingBits(int nrBits) { return sub_byte_reader::testReadingBits(nrBits); }
-    void          disableEmulationPrevention() { sub_byte_reader::disableEmulationPrevention(); }
-    QByteArray    readBytes(int nrBytes) { return sub_byte_reader::readBytes(nrBytes); }
+    bool          more_rbsp_data()             { return sub_byte_reader::more_rbsp_data();             }
+    bool          payload_extension_present()  { return sub_byte_reader::payload_extension_present();  }
+    unsigned int  nrBytesRead()                { return sub_byte_reader::nrBytesRead();                }
+    unsigned int  nrBytesLeft()                { return sub_byte_reader::nrBytesLeft();                }
+    bool          testReadingBits(int nrBits)  { return sub_byte_reader::testReadingBits(nrBits);      }
+    void          disableEmulationPrevention() {        sub_byte_reader::disableEmulationPrevention(); }
+    QByteArray    readBytes(int nrBytes)       { return sub_byte_reader::readBytes(nrBytes);           }
   protected:
     // TODO: This is just too much. Replace by one function maybe ...
     /*
