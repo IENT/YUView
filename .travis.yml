@@ -17,7 +17,6 @@ before_install:
   - eval "${MATRIX_EVAL}"
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository ppa:forkotov02/opt-qt-5.11.1-trusty -y; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update; fi
   # On linux also get a newer g++. The old one won't work.
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
