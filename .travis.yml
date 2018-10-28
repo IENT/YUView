@@ -22,14 +22,14 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
   
 install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.11/Qt-5.11_mac.zip Qt.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; unzip -a Qt.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.11/QtCharts-5.11_mac.zip QtCharts.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; unzip -a QtCharts.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; cd QtCharts; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; make install; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; cd ..; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; export PATH="$TRAVIS_BUILD_DIR"/Qt/bin:$PATH; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.11/Qt-5.11_mac.zip Qt.zip; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip -a Qt.zip; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.11/QtCharts-5.11_mac.zip QtCharts.zip; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip -a QtCharts.zip; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd QtCharts; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then make install; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd ..; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export PATH="$TRAVIS_BUILD_DIR"/Qt/bin:$PATH; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh; fi
   # On linux, install the new g++ version
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq g++-8; fi
