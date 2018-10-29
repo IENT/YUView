@@ -23,9 +23,9 @@ before_install:
   
 install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.11/Qt-5.11_mac.zip -o Qt.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip --quiet -a Qt.zip; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip -q -a Qt.zip; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.11/QtCharts-5.11_mac.zip -o QtCharts.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip --quiet -a QtCharts.zip; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip -q -a QtCharts.zip; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd QtCharts; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then make install; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd ..; fi
