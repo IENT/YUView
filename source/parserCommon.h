@@ -136,7 +136,7 @@ namespace parserCommon
     void setError(bool isError = true) { error = isError; }
     bool isError()                     { return error; }
 
-    QString getName(bool showStreamIndex) { return (showStreamIndex && streamIndex != -1) ? QString("Stream %1 - ").arg(streamIndex) + itemData[0] : itemData[0]; }
+    QString getName(bool showStreamIndex) const { QString r = (showStreamIndex && streamIndex != -1) ? QString("Stream %1 - ").arg(streamIndex) : ""; if (itemData.count() > 0) r += itemData[0]; return r; }
 
     QList<TreeItem*> childItems;
     QList<QString> itemData;

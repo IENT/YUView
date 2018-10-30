@@ -42,7 +42,7 @@
 
 using namespace parserCommon;
 
-#define PARSERAVCFORMAT_DEBUG_OUTPUT 0
+#define PARSERAVCFORMAT_DEBUG_OUTPUT 1
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_AVFORMAT qDebug
@@ -374,7 +374,7 @@ bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
       else if (obuParser)
       {
         int obuID = 0;
-        // Colloect the types of NALs to create a good name later
+        // Colloect the types of OBus to create a good name later
         QStringList obuNames;
 
         const int MIN_OBU_SIZE = 2;
@@ -385,7 +385,7 @@ bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
           try
           {  
             int nrBytesRead = obuParser->parseAndAddOBU(obuID, avpacketData.mid(posInData), itemTree, obuStartEndPosFile, &obuTypeName);
-            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed OBU header %d bytes", nrBytesRead);
+            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
             posInData += nrBytesRead;
           }
           catch (...)
@@ -397,6 +397,12 @@ bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
           if (!obuTypeName.isEmpty())
             obuNames.append(obuTypeName);
           obuID++;
+
+          if (obuID > 200)
+          {
+            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket We encountered more than 200 OBUs in one packet. This is probably an error.");
+            return false;
+          }
         }
 
         specificDescription = " - OBUs:";
@@ -557,11 +563,11 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
     if (!parseAVPacket(packetID, packet))
     {
-      DEBUG_AVFORMAT("parseAVPacket error parsing NAL %d", packetID);
+      DEBUG_AVFORMAT("parseAVPacket error parsing Packet %d", packetID);
     }
     else
     {
-      DEBUG_AVFORMAT("parseAVPacket NAL %d", packetID);
+      DEBUG_AVFORMAT("parseAVPacket Packet %d", packetID);
     }
 
     packetID++;

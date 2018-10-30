@@ -65,7 +65,7 @@ inputFormat getInputFormatFromName(QString name)
 
 QString getDecoderEngineName(decoderEngine e)
 {
-  if (e == decoderEngineInvalid || e == decoderEngineNum)
+  if (e == decoderEngineInvalid || e == decoderEngineNum || e > decoderEngineNum)
     return "";
   QStringList l = QStringList() << "libDe265" << "HM" << "FFMpeg";
   return l.at((int)e);

@@ -46,7 +46,7 @@ public:
     parserAV1OBU(QObject *parent = nullptr);
     ~parserAV1OBU() {}
 
-    bool parseAndAddOBU(int obuID, QByteArray data, parserCommon::TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
+    unsigned int parseAndAddOBU(int obuID, QByteArray data, parserCommon::TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
 
     // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
     // When parsing of raw OBU files is added, we will need this.
