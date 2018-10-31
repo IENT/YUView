@@ -193,6 +193,17 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>SplitViewgroupBox</tabstop>
+  <tabstop>viewComboBox</tabstop>
+  <tabstop>separateViewGroupBox</tabstop>
+  <tabstop>linkViewsCheckBox</tabstop>
+  <tabstop>playbackPrimaryCheckBox</tabstop>
+  <tabstop>regularGridCheckBox</tabstop>
+  <tabstop>gridSizeBox</tabstop>
+  <tabstop>zoomBoxCheckBox</tabstop>
+  <tabstop>zoomFactorSpinBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

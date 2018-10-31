@@ -52,7 +52,10 @@ after_build:
   - dir /s /b deploy
   # everything is ready for packaging the zip file and the installer
   - 7z a YUView-Win.zip .\deploy\*
-  - makensis deployment\deploy.nsi
+  - cd deployment\wix
+  - createWIXInstaller.bat
+  - copy bin\Release\YUViewSetup.msi C:\projects\YUView
+  - cd C:\projects\YUView
   - IF "%APPVEYOR_REPO_BRANCH%" == "master" (CALL deployment\deploy_to_github.bat)
  
 
@@ -62,7 +65,7 @@ artifacts:
     name: YUView Zip Folder
     type: zip
     
-  - path: SetupYUView.exe
+  - path: YUViewSetup.msi
     name: YUView Installer
 
 # override settings for `deployment` branch

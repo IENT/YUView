@@ -1,18 +1,34 @@
 language: cpp
 
 os:
+  - linux
   - osx
+dist:
+  # Request Ubuntu 14 as linux
+  - trusty
+compiler: 
+  - gcc
 
 branches:
   except:
     - gh-pages
 
 before_install:
-  - brew update
-
+  - eval "${MATRIX_EVAL}"
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository ppa:forkotov02/opt-qt-5.11.1-trusty -y; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update; fi
+  # On linux also get a newer g++. The old one won't work.
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
+  
 install:
-  - brew install qt5
-  - brew link --force qt5
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install qt5; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew link --force qt5; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh; fi
+  # On linux, install the new g++ version
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq g++-6; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90; fi
 
 script:
   # Run qmake and make
@@ -21,20 +37,19 @@ script:
   - ls -alh
   - ls -alh build
   - ls -alh build/release
-  # mac specific deployment
-  - /usr/local/opt/qt5/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2
-  # check what YUView is linking against
-  - otool -L build/release/YUView.app/Contents/MacOs/YUView
-  # copy the libde265 library
-  - cp libde265/libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.
-  # prepare zip package
-  - cd build/release
-  - zip -r ../../YUView-MacOs.zip YUView.app
-  - cd ../..
-  - 'if [ ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh; fi'
 
 after_success:
-  # not needed?
+  # mac specific deployment
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then /usr/local/opt/qt5/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2; fi
+  # check what YUView is linking against
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then otool -L build/release/YUView.app/Contents/MacOs/YUView; fi
+  # copy the libde265 library
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cp libde265/libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.; fi
+  # prepare zip package
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd build/release; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then zip -r ../../YUView-MacOs.zip YUView.app; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd ../..; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" AND ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh; fi
 
 before_deploy:
   # not needed?

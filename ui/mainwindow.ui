@@ -59,7 +59,7 @@
      <x>0</x>
      <y>0</y>
      <width>1167</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
@@ -264,8 +264,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>85</width>
-       <height>545</height>
+       <width>274</width>
+       <height>120</height>
       </rect>
      </property>
     </widget>
@@ -366,7 +366,7 @@
   <customwidget>
    <class>ChartWidget</class>
    <extends>QWidget</extends>
-   <header>chartWidget.h</header>
+   <header location="global">chartWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

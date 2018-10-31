@@ -64,7 +64,6 @@ public:
     */
   ~ChartWidget();
 
-  //
   /**
    * @brief setChartWidget
    * places a Widget and add it to an stack

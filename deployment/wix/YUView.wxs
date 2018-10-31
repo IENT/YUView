@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="YUView" Language="1033" Version="2.1" Manufacturer="IENT RWTH Aachen University" UpgradeCode="07fd1dd5-9b1e-453d-974b-4ff7919a49c7">
+    <Package InstallerVersion="200" Compressed="yes" Platform="x64" InstallScope="perMachine" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+  
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="APPLICATIONFOLDER" Name="YUView">
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="YUView"/>
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="{6B14ED57-BCD5-45CB-84C3-E822D9F5950B}">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="YUView"
+                  Description="YUV Viewer and Analysis Tool"
+                  Target="[#fil3E83ED7F7D6B84D78789778753FB9420]"
+                  WorkingDirectory="APPLICATIONFOLDER"/>
+        <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU" Key="Software\IENT\YUView" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id='ProductFeature' Title='YUView' Level='1'>
+      <ComponentGroupRef Id="YUViewComponents" />
+      <ComponentRef Id="ApplicationShortcut" />
+    </Feature>
+    
+    <WixVariable Id="WixUILicenseRtf" Value="YUViewLicense.rtf" />
+    <WixVariable Id="WixUIDialogBmp" Value="YUViewBanner.bmp" />
+    <WixVariable Id="WixUIBannerBmp" Value="YUViewBannerTop.bmp" />
+    <WixVariable Id="WixUINewIco" Value="YUViewIco.bmp" />
+    <UIRef Id="WixUI_Minimal" />
+
+    <Icon Id="YUView.ico" SourceFile="..\..\images\YUView.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="YUView.ico" />
+
+  </Product>
+</Wix>

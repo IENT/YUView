@@ -850,6 +850,28 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>groupBoxBlockData</tabstop>
+  <tabstop>comboBoxDataColorMap</tabstop>
+  <tabstop>pushButtonEditMinColor</tabstop>
+  <tabstop>pushButtonEditMaxColor</tabstop>
+  <tabstop>pushButtonEditColorMap</tabstop>
+  <tabstop>spinBoxRangeMin</tabstop>
+  <tabstop>spinBoxRangeMax</tabstop>
+  <tabstop>checkBoxScaleValueToBlockSize</tabstop>
+  <tabstop>groupBoxVector</tabstop>
+  <tabstop>comboBoxVectorLineStyle</tabstop>
+  <tabstop>doubleSpinBoxVectorLineWidth</tabstop>
+  <tabstop>checkBoxVectorScaleToZoom</tabstop>
+  <tabstop>comboBoxVectorHeadStyle</tabstop>
+  <tabstop>checkBoxVectorMapToColor</tabstop>
+  <tabstop>pushButtonEditVectorColor</tabstop>
+  <tabstop>groupBoxGrid</tabstop>
+  <tabstop>pushButtonEditGridColor</tabstop>
+  <tabstop>comboBoxGridLineStyle</tabstop>
+  <tabstop>doubleSpinBoxGridLineWidth</tabstop>
+  <tabstop>checkBoxGridScaleToZoom</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
