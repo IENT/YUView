@@ -40,10 +40,12 @@
 #define READFLAG(into) do { if (!reader.readFlag(into, #into)) return false; } while(0)
 #define READFLAG_M(into,meanings) do { if (!reader.readFlag(into, #into, meanings)) return false; } while(0)
 #define READFLAG_A(into,idx) do { if (!reader.readFlag(into, #into, idx)) return false; } while(0)
+#define READFLAG_A_M(into,idx,meanings) do { if (!reader.readFlag(into, #into, idx, meanings)) return false; } while(0)
 
 #define READUEV(into) do { if (!reader.readUEV(into, #into)) return false; } while(0)
 #define READUEV_M(into,meanings) do { if (!reader.readUEV(into, #into, meanings)) return false; } while(0)
 #define READUEV_A(into,idx) do { if (!reader.readUEV(into, #into, idx)) return false; } while(0)
+#define READUEV_A_M(into,idx,meanings) do { if (!reader.readUEV(into, #into, idx, meanings)) return false; } while(0)
 
 #define READSEV(into) do { if (!reader.readSEV(into, #into)) return false; } while(0)
 #define READSEV_A(into,idx) do { if (!reader.readSEV(into, #into, idx)) return false; } while(0)
