@@ -2318,7 +2318,7 @@ bool parserAnnexBHEVC::buffering_period_sei::parse_internal(const sps_map &activ
 
   bool NalHrdBpPresentFlag = hrd.nal_hrd_parameters_present_flag;
   // TODO: Really not sure if this is correct
-  int CpbCnt = hrd.cpb_cnt_minus1[0];
+  int CpbCnt = hrd.cpb_cnt_minus1[0] + 1;
   if (NalHrdBpPresentFlag)
   {
     for (int i=0; i<CpbCnt; i++)
