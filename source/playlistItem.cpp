@@ -39,20 +39,12 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType t
 {
   setName(itemNameOrFileName);
   setType(type);
-  cachingEnabled = false;
-  itemTaggedForDeletion = false;
-
+  savedCenterOffset = QPoint(0, 0);
+  
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
   id = idCounter++;
-  playlistID = -1;
 
-  // Default values for an playlistItem_Indexed
-  frameRate = DEFAULT_FRAMERATE;
-  sampling  = 1;
   startEndFrame = indexRange(-1, -1);
-
-  // Default duration for a playlistItem_static
-  duration = PLAYLISTITEMTEXT_DEFAULT_DURATION;
 }
 
 playlistItem::~playlistItem()

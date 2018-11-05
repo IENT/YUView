@@ -186,7 +186,7 @@ private:
   QString getPlaylistString(QDir dirName);
 
   // Whether slotSelectionChanged should immediately exit
-  bool ignoreSlotSelectionChanged;
+  bool ignoreSlotSelectionChanged {false};
 
   // If the playlist is changed and the changes have not been saved yet, this will be true.
   bool isSaved { true };
