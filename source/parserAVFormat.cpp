@@ -420,7 +420,7 @@ bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 
 bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser)
 {
-  reader_helper reader(hvcCData, root);
+  reader_helper reader(hvcCData, root, "hvcC");
   reader.disableEmulationPrevention();
 
   unsigned int reserved_4onebits, reserved_5onebits, reserver_6onebits;
@@ -480,7 +480,7 @@ bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QSco
 
 bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser)
 {
-  reader_sub_level(reader, QString("nal unit array %1").arg(arrayID));
+  reader_sub_level sub_level_adder(reader, QString("nal unit array %1").arg(arrayID));
 
   // The next 3 bytes contain info about the array
   READFLAG(array_completeness);
@@ -503,7 +503,7 @@ bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_he
 
 bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser)
 {
-  reader_sub_level(reader, QString("nal unit %1").arg(unitID));
+  reader_sub_level sub_level_adder(reader, QString("nal unit %1").arg(unitID));
 
   READBITS(nalUnitLength, 16);
 
@@ -511,7 +511,7 @@ bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper 
   QByteArray nalData = reader.readBytes(nalUnitLength);
 
   // Let the hevc annexB parser parse this
-  if (!annexBParser->parseAndAddNALUnit(unitID, nalData))
+  if (!annexBParser->parseAndAddNALUnit(unitID, nalData, reader.getCurrentItemTree()))
     return false;
 
   return true;
