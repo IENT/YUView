@@ -531,15 +531,16 @@ protected:
     bool additional_data_flag;
     unsigned int cc_count;
     unsigned int em_data;
-    QList<int> cc_packet_data;
+    QList<unsigned int> cc_packet_data;
     unsigned int marker_bits;
     QList<unsigned int> ATSC_reserved_user_data;
 
   private:
     bool parse_internal(QByteArray &data, parserCommon::TreeItem *root);
     bool parse_ATSC1_data(parserCommon::reader_helper &reader);
-    QString getCCDataPacketMeaning(int cc_packet_data);
-    bool checkByteParity(int val);
+
+    static QString getCCDataPacketMeaning(unsigned int cc_packet_data);
+    static bool checkByteParity(int val);
   };
 
   class user_data_sei : sei

@@ -1892,18 +1892,10 @@ bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(reade
         cc_count = (reader.nrBytesLeft() - 1) / 3;
     }
     
-    // TODO
-    // // Now should follow (cc_count * 24 bits of cc_data_pkts)
-    // // Just display the raw bytes of the payload
-    // for (int i = 0; i < cc_count; i++)
-    // {
-    //   QString code; 
-    //   int v = reader.readBits(24, &code, QString("cc_packet_data[%1]").arg(i), meaning);
-    //   QString meaning = getCCDataPacketMeaning(v);
-    //   cc_packet_data.append(v);
-    //   if (itemTree) 
-    //     new TreeItem(QString("cc_packet_data[%1]").arg(i), v, QString("u(v) -> u(%1)").arg(24),code, meaning, itemTree);
-    // }
+    // Now should follow (cc_count * 24 bits of cc_data_pkts)
+    // Just display the raw bytes of the payload
+    for (unsigned int i = 0; i < cc_count; i++)
+      READBITS_A_M(cc_packet_data, 24, i, &getCCDataPacketMeaning);
 
     READBITS(marker_bits, 8);
     // The ATSC marker_bits indicator should be 255
@@ -1920,12 +1912,12 @@ bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(reade
   return true;
 }
 
-QString parserAnnexBAVC::user_data_registered_itu_t_t35_sei::getCCDataPacketMeaning(int cc_packet_data)
+QString parserAnnexBAVC::user_data_registered_itu_t_t35_sei::getCCDataPacketMeaning(unsigned int cc_packet_data)
 {
   // Parse the 3 bytes as 608
-  int byte0 = (cc_packet_data >> 16) & 0xff;
-  int byte1 = (cc_packet_data >> 8) & 0xff;
-  int byte2 = cc_packet_data & 0xff;
+  unsigned int byte0 = (cc_packet_data >> 16) & 0xff;
+  unsigned int byte1 = (cc_packet_data >> 8) & 0xff;
+  unsigned int byte2 = cc_packet_data & 0xff;
     
   // Ignore if this flag is not set
   bool cc_valid = ((byte0 & 4) > 0);

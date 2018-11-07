@@ -501,6 +501,16 @@ bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, 
   return true;
 }
 
+bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, meaning_callback_function pMeaning)
+{
+  QString code;
+  if (!readBits_catch(into, numBits, &code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, pMeaning(into), currentTreeLevel);
+  return true;
+}
+
 bool reader_helper::readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx)
 {
   QString code;
@@ -512,6 +522,20 @@ bool reader_helper::readBits(int numBits, QList<unsigned int> &into, QString int
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
     new TreeItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code, currentTreeLevel);
+  return true;
+}
+
+bool reader_helper::readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx, meaning_callback_function pMeaning)
+{
+  QString code;
+  unsigned int val;
+  if (!readBits_catch(val, numBits, &code))
+    return false;
+  into.append(val);
+  if (idx >= 0)
+    intoName += QString("[%1]").arg(idx);
+  if (currentTreeLevel)
+    new TreeItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code, pMeaning(val), currentTreeLevel);
   return true;
 }
 

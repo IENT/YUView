@@ -152,6 +152,8 @@ namespace parserCommon
     int streamIndex { -1 };
   };
 
+  typedef QString (*meaning_callback_function)(unsigned int);
+
   // This is a wrapper around the sub_byte_reader that adds the functionality to log the read symbold to TreeItems
   class reader_helper : protected parserCommon::sub_byte_reader
   {
@@ -169,7 +171,9 @@ namespace parserCommon
     bool readBits(int numBits, uint64_t     &into, QString intoName, QString meaning = "");
     bool readBits(int numBits, unsigned int &into, QString intoName, QStringList meanings);
     bool readBits(int numBits, unsigned int &into, QString intoName, QMap<int,QString> meanings);
+    bool readBits(int numBits, unsigned int &into, QString intoName, meaning_callback_function pMeaning);
     bool readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx);
+    bool readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx, meaning_callback_function pMeaning);
     bool readBits(int numBits, QByteArray &into, QString intoName, int idx);
     bool readBits(int numBits, unsigned int &into, QMap<int, QString> intoNames);
     bool readZeroBits(int numBits, QString intoName);
