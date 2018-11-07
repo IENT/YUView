@@ -106,7 +106,7 @@ public:
   // Update the splitView. newFrame should be true if the frame index was changed or the playlistitem needs a redraw.
   // If newFrame is true, this will not automatically trigger a redraw, because first we might need to load the right frame.
   // itemRedraw indicates if the playlist item initiated this redraw (possibly the item also needs to be reloaded).
-  void update(bool newFrame=false, bool itemRedraw=false);
+  void update(bool newFrame=false, bool itemRedraw=false, bool updateOtherWidget=true);
 
   // Called by the playback controller if playback was just started. In this case, we immediately see if the double buffer
   // of the visible item(s) need to be updated.
@@ -230,6 +230,7 @@ protected:
 
   bool       splitting {false};             //!< If true the view will be split into 2 parts
   bool       splittingDragging {false};     //!< True if the user is currently dragging the splitter
+  void       setSplittingPoint(double p);
   double     splittingPoint {0.5};          //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
   enum       splitStyle {SOLID_LINE, TOP_BOTTOM_HANDLERS};
   splitStyle splittingLineStyle;            //!< The style of the splitting line. This can be set in the settings window.
