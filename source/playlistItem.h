@@ -296,7 +296,7 @@ private:
 
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
   QPoint savedCenterOffset[2];
-  double savedZoom[2];
+  double savedZoom[2] {1.0, 1.0};
 
   // The UI
   SafeUi<Ui::playlistItem> ui;

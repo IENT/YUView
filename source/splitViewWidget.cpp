@@ -1187,11 +1187,13 @@ void splitViewWidget::setCenterOffset(QPoint offset)
   auto item = playlist->getSelectedItems();
   if (item[0])
   {
+    DEBUG_LOAD_DRAW("splitViewWidget::setCenterOffset item %d (%d,%d)", item[0]->getID(), offset.x(), offset.y());
     item[0]->saveCenterOffset(centerOffset, isSeparateWidget);
     item[0]->saveCenterOffset(otherWidget->centerOffset, !isSeparateWidget);
   }
   if (item[1])
   {
+    DEBUG_LOAD_DRAW("splitViewWidget::setCenterOffset item %d (%d,%d)", item[1]->getID(), offset.x(), offset.y());
     item[1]->saveCenterOffset(centerOffset, isSeparateWidget);
     item[1]->saveCenterOffset(otherWidget->centerOffset, !isSeparateWidget);
   }
@@ -1214,11 +1216,13 @@ void splitViewWidget::setZoomFactor(double zoom)
   auto item = playlist->getSelectedItems();
   if (item[0])
   {
+    DEBUG_LOAD_DRAW("splitViewWidget::setZoomFactor item %d (%f)", item[0]->getID(), zoom);
     item[0]->saveZoomFactor(zoomFactor, isSeparateWidget);
     item[0]->saveZoomFactor(otherWidget->zoomFactor, !isSeparateWidget);
   }
   if (item[1])
   {
+    DEBUG_LOAD_DRAW("splitViewWidget::setZoomFactor item %d (%f)", item[0]->getID(), zoom);
     item[1]->saveZoomFactor(zoomFactor, isSeparateWidget);
     item[1]->saveZoomFactor(otherWidget->zoomFactor, !isSeparateWidget);
   }
@@ -1664,14 +1668,15 @@ void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistI
     // Restore the zoom and position which was saved in the playlist item
     if (item1)
     {
-      item1->getZoomAndPosition(centerOffset, zoomFactor, true);
-      item1->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, false);
+      item1->getZoomAndPosition(centerOffset, zoomFactor, false);
+      item1->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, true);
     }
     else if (item2)
     {
-      item2->getZoomAndPosition(centerOffset, zoomFactor, true);
-      item2->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, false);
+      item2->getZoomAndPosition(centerOffset, zoomFactor, false);
+      item2->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, true);
     }
+    DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item %d (%d,%d-%f)", item1->getID(), centerOffset.x(), centerOffset.y(), zoomFactor);
   }
 }
 
