@@ -1186,9 +1186,15 @@ void splitViewWidget::setCenterOffset(QPoint offset)
   // Save the center offset in the currently selected item
   auto item = playlist->getSelectedItems();
   if (item[0])
-    item[0]->saveCenterOffset(offset);
+  {
+    item[0]->saveCenterOffset(centerOffset, isSeparateWidget);
+    item[0]->saveCenterOffset(otherWidget->centerOffset, !isSeparateWidget);
+  }
   if (item[1])
-    item[1]->saveCenterOffset(offset);
+  {
+    item[1]->saveCenterOffset(centerOffset, isSeparateWidget);
+    item[1]->saveCenterOffset(otherWidget->centerOffset, !isSeparateWidget);
+  }
 }
 
 void splitViewWidget::setSplittingPoint(double point)
@@ -1201,12 +1207,21 @@ void splitViewWidget::setSplittingPoint(double point)
 void splitViewWidget::setZoomFactor(double zoom)
 {
   zoomFactor = zoom;
+  if (linkViews)
+    otherWidget->zoomFactor = zoom;
+
   // Save the zoom factor in the currently selected item
   auto item = playlist->getSelectedItems();
   if (item[0])
-    item[0]->saveZoomFactor(zoom);
+  {
+    item[0]->saveZoomFactor(zoomFactor, isSeparateWidget);
+    item[0]->saveZoomFactor(otherWidget->zoomFactor, !isSeparateWidget);
+  }
   if (item[1])
-    item[1]->saveZoomFactor(zoom);
+  {
+    item[1]->saveZoomFactor(zoomFactor, isSeparateWidget);
+    item[1]->saveZoomFactor(otherWidget->zoomFactor, !isSeparateWidget);
+  }
 }
 
 void splitViewWidget::updateMouseCursor(const QPoint &mousePos)
@@ -1637,6 +1652,8 @@ void splitViewWidget::toggleSeparateViewHideShow()
 
 void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
 {
+  Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
+
   if (!item1 && !item2)
     return;
 
@@ -1646,9 +1663,15 @@ void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistI
   {
     // Restore the zoom and position which was saved in the playlist item
     if (item1)
-      item1->getZoomAndPosition(centerOffset, zoomFactor);
+    {
+      item1->getZoomAndPosition(centerOffset, zoomFactor, true);
+      item1->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, false);
+    }
     else if (item2)
-      item2->getZoomAndPosition(centerOffset, zoomFactor);
+    {
+      item2->getZoomAndPosition(centerOffset, zoomFactor, true);
+      item2->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, false);
+    }
   }
 }
 
@@ -1855,7 +1878,6 @@ void splitViewWidget::getViewState(QPoint &offset, double &zoom, bool &split, do
 
 void splitViewWidget::setViewState(const QPoint &offset, double zoom, bool split, double splitPoint, int mode)
 {
-  // Set all the values
   if (isSeparateWidget)
     otherWidget->controls.SplitViewgroupBox->setChecked(split);
   else
@@ -1874,12 +1896,8 @@ void splitViewWidget::setViewState(const QPoint &offset, double zoom, bool split
     setViewMode(COMPARISON);
 
   if (linkViews)
-  {
-    // Also set the state of the other widget
     otherWidget->setViewMode(viewMode);
-  }
 
-  // Update the view
   update();
 }
 
@@ -1941,7 +1959,6 @@ void splitViewWidget::testDrawingSpeed()
 {
   DEBUG_LOAD_DRAW("splitViewWidget::testDrawingSpeed");
 
-  // Get the item that we will use.
   auto selection = playlist->getSelectedItems();
   if (selection[0] == nullptr)
   {

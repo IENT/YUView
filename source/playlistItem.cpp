@@ -39,7 +39,6 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType t
 {
   setName(itemNameOrFileName);
   setType(type);
-  savedCenterOffset = QPoint(0, 0);
   
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
   id = idCounter++;

@@ -217,9 +217,9 @@ public:
   int getFrameIdxExternal(int frameIdxInternal) const { return frameIdxInternal - startEndFrame.first; }
 
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
-  void saveCenterOffset(QPoint centerOffset) { savedCenterOffset = centerOffset; }
-  void saveZoomFactor(double zoom) { savedZoom = zoom; }
-  void getZoomAndPosition(QPoint &centerOffset, double &zoom) { centerOffset = savedCenterOffset; zoom = savedZoom; }
+  void saveCenterOffset(QPoint centerOffset, bool primaryView) { savedCenterOffset[primaryView ? 0 : 1] = centerOffset; }
+  void saveZoomFactor(double zoom, bool primaryView) { savedZoom[primaryView ? 0 : 1] = zoom; }
+  void getZoomAndPosition(QPoint &centerOffset, double &zoom, bool primaryView) { centerOffset = savedCenterOffset[primaryView ? 0 : 1]; zoom = savedZoom[primaryView ? 0 : 1]; }
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -295,8 +295,8 @@ private:
   unsigned int playlistID {0};
 
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
-  QPoint savedCenterOffset;
-  double savedZoom;
+  QPoint savedCenterOffset[2];
+  double savedZoom[2];
 
   // The UI
   SafeUi<Ui::playlistItem> ui;
