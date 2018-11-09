@@ -1666,15 +1666,16 @@ void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistI
   if (savePositionAndZoomPerItem)
   {
     // Restore the zoom and position which was saved in the playlist item
+    const bool getOtherViewValuesFromOtherSlot = !linkViews;
     if (item1)
     {
       item1->getZoomAndPosition(centerOffset, zoomFactor, false);
-      item1->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, true);
+      item1->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, getOtherViewValuesFromOtherSlot);
     }
     else if (item2)
     {
       item2->getZoomAndPosition(centerOffset, zoomFactor, false);
-      item2->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, true);
+      item2->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, getOtherViewValuesFromOtherSlot);
     }
     DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item %d (%d,%d-%f)", item1->getID(), centerOffset.x(), centerOffset.y(), zoomFactor);
   }
