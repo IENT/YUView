@@ -48,6 +48,23 @@
 #include <QThread>
 #include <QWidget>
 
+QString QDomElementYUView::findChildValue(const QString &tagName, QStringPairList &attributeList) const
+{
+  for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
+    if (n.isElement() && n.toElement().tagName() == tagName)
+    {
+      QDomNamedNodeMap attributes = n.toElement().attributes();
+      for (int i = 0; i < attributes.length(); i++)
+      {
+        QString name = attributes.item(i).nodeName();
+        QString val  = attributes.item(i).nodeValue();
+        attributeList.append(QStringPair(name, val));
+      }
+      return n.toElement().text();
+    }
+  return QString();
+}
+
 QString getInputFormatName(inputFormat i)
 {
   if (i == inputInvalid || i == input_NUM)

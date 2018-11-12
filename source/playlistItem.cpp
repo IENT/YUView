@@ -39,20 +39,11 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType t
 {
   setName(itemNameOrFileName);
   setType(type);
-  cachingEnabled = false;
-  itemTaggedForDeletion = false;
-
+  
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
   id = idCounter++;
-  playlistID = -1;
 
-  // Default values for an playlistItem_Indexed
-  frameRate = DEFAULT_FRAMERATE;
-  sampling  = 1;
   startEndFrame = indexRange(-1, -1);
-
-  // Default duration for a playlistItem_static
-  duration = PLAYLISTITEMTEXT_DEFAULT_DURATION;
 }
 
 playlistItem::~playlistItem()
@@ -132,7 +123,6 @@ void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d) const
 
   if (type == playlistItem_Indexed)
   {
-    // Append the items of the static or dynamic item
     d.appendProperiteChild("startFrame", QString::number(startEndFrame.first));
     d.appendProperiteChild("endFrame", QString::number(startEndFrame.second));
     d.appendProperiteChild("sampling", QString::number(sampling));
@@ -140,6 +130,13 @@ void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d) const
   }
   else
     d.appendProperiteChild("duration", QString::number(duration));
+
+  d.appendProperiteChild("viewCenterOffsetView0X", QString::number(savedCenterOffset[0].x()));
+  d.appendProperiteChild("viewCenterOffsetView0Y", QString::number(savedCenterOffset[0].y()));
+  d.appendProperiteChild("viewZoomFactorView0", QString::number(savedZoom[0]));
+  d.appendProperiteChild("viewCenterOffsetView1X", QString::number(savedCenterOffset[1].x()));
+  d.appendProperiteChild("viewCenterOffsetView1Y", QString::number(savedCenterOffset[1].y()));
+  d.appendProperiteChild("viewZoomFactorView1", QString::number(savedZoom[1]));
 }
 
 // Load the start/end frame, sampling and frame rate from playlist
@@ -157,6 +154,13 @@ void playlistItem::loadPropertiesFromPlaylist(const QDomElementYUView &root, pla
   }
   else
     newItem->duration = root.findChildValue("duration").toDouble();
+
+  newItem->savedCenterOffset[0].setX(root.findChildValueInt("viewCenterOffsetView0X", 0));
+  newItem->savedCenterOffset[0].setY(root.findChildValueInt("viewCenterOffsetView0Y", 0));
+  newItem->savedZoom[0] = root.findChildValueDouble("viewZoomFactorView0", 1.0);
+  newItem->savedCenterOffset[1].setX(root.findChildValueInt("viewCenterOffsetView1X", 0));
+  newItem->savedCenterOffset[1].setY(root.findChildValueInt("viewCenterOffsetView1Y", 0));
+  newItem->savedZoom[1] = root.findChildValueDouble("viewZoomFactorView1", 1.0);
 }
 
 void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
