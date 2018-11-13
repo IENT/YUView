@@ -55,21 +55,21 @@ namespace parserCommon
     void set_input(const QByteArray &inArr) { byteArray = inArr; }
     
     // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
-    unsigned int readBits(int nrBits, QString *bitsRead=nullptr);
-    uint64_t     readBits64(int nrBits, QString *bitsRead=nullptr);
+    unsigned int readBits(int nrBits, QString &bitsRead);
+    uint64_t     readBits64(int nrBits, QString &bitsRead);
     QByteArray   readBytes(int nrBytes);
     // Read an UE(v) code from the array. If given, increase bit_count with every bit read.
-    unsigned int readUE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    unsigned int readUE_V(QString &bitsRead, int &bit_count);
     // Read an SE(v) code from the array
-    int readSE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    int readSE_V(QString &bitsRead, int &bit_count);
     // Read an leb128 code from the array (as defined in AV1)
-    uint64_t readLeb128(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    uint64_t readLeb128(QString &bitsRead, int &bit_count);
     // REad an uvlc code from the array (as defined in AV1)
-    uint64_t readUVLC(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    uint64_t readUVLC(QString &bitsRead, int &bit_count);
     // Read a NS code from the array (as defined in AV1)
-    int readNS(int maxVal, QString *bitsRead=nullptr, int *bit_count=nullptr);
+    int readNS(int maxVal, QString &bitsRead, int &bit_count);
     // Read a SU code from the array (as defined in AV1)
-    int readSU(int nrBits, QString *bitsRead=nullptr);
+    int readSU(int nrBits, QString &bitsRead);
 
     // Is there more RBSP data or are we at the end?
     bool more_rbsp_data();
@@ -229,14 +229,14 @@ namespace parserCommon
         }
     }
     */
-    bool readBits_catch(unsigned int &into, int numBits, QString *code=nullptr);
-    bool readBits64_catch(uint64_t &into, int numBits, QString *code=nullptr);
-    bool readUEV_catch(unsigned int &into, int *bit_count, QString *code);
-    bool readSEV_catch(int &into, int *bit_count, QString *code);
-    bool readLeb128_catch(uint64_t &into, int *bit_count, QString *code);
-    bool readUVLC_catch(uint64_t &into, int *bit_count, QString *code);
-    bool readNS_catch(int &into, int maxVal, int *bit_count, QString *code);
-    bool readSU_catch(int &into, int numBits, QString *code);
+    bool readBits_catch(unsigned int &into, int numBits, QString &code);
+    bool readBits64_catch(uint64_t &into, int numBits, QString &code);
+    bool readUEV_catch(unsigned int &into, int &bit_count, QString &code);
+    bool readSEV_catch(int &into, int &bit_count, QString &code);
+    bool readLeb128_catch(uint64_t &into, int &bit_count, QString &code);
+    bool readUVLC_catch(uint64_t &into, int &bit_count, QString &code);
+    bool readNS_catch(int &into, int maxVal, int &bit_count, QString &code);
+    bool readSU_catch(int &into, int numBits, QString &code);
 
     QString getMeaningValue(QStringList meanings, unsigned int val);
     QString getMeaningValue(QMap<int,QString> meanings, int val);
