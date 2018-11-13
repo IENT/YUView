@@ -345,7 +345,7 @@ infoData playlistItemCompressedVideo::getInfo() const
   {
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
-    info.items.append(infoItem("Num POCs", QString::number(startEndFrame.second), "The number of pictures in the stream."));
+    info.items.append(infoItem("Num POCs", QString::number(startEndFrame.second - startEndFrame.first + 1), "The number of pictures in the stream."));
     if (decodingEnabled)
     {
       QStringList l = loadingDecoder->getLibraryPaths();

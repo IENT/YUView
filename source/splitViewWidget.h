@@ -106,7 +106,7 @@ public:
   // Update the splitView. newFrame should be true if the frame index was changed or the playlistitem needs a redraw.
   // If newFrame is true, this will not automatically trigger a redraw, because first we might need to load the right frame.
   // itemRedraw indicates if the playlist item initiated this redraw (possibly the item also needs to be reloaded).
-  void update(bool newFrame=false, bool itemRedraw=false);
+  void update(bool newFrame=false, bool itemRedraw=false, bool updateOtherWidget=true);
 
   // Called by the playback controller if playback was just started. In this case, we immediately see if the double buffer
   // of the visible item(s) need to be updated.
@@ -164,6 +164,10 @@ public slots:
   // This can be connected from the main window to allow keyboard shortcuts.
   void toggleSeparateViewHideShow();
 
+  // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
+  // This function will restore the view/position of the items (if enabled)
+  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
+
 private slots:
 
   // Slots for the controls. They are connected when the main function sets up the controls (setuptControls).
@@ -184,7 +188,7 @@ protected:
   // Set the view mode and update the view mode combo box. Disable the combo box events if emitSignal is false.
   void setViewMode(ViewMode v, bool emitSignal=false);
   // The current view mode (split view or comparison view)
-  ViewMode viewMode;
+  ViewMode viewMode {SIDE_BY_SIDE};
 
   /// Activate/Deactivate the splitting view. Only use this function!
   void setSplitEnabled(bool splitting);
@@ -204,9 +208,9 @@ protected:
   // Override the QWidget event to handle touch gestures
   virtual bool event(QEvent *event) Q_DECL_OVERRIDE;
   // When touching (pinch/swipe) these values are updated to enable interactive zooming
-  double  currentStepScaleFactor;
+  double  currentStepScaleFactor {1.0};
   QPointF currentStepCenterPointOffset;
-  bool    currentlyPinching;
+  bool    currentlyPinching {false};
 
   // Use the current mouse position within the widget to update the mouse cursor.
   void updateMouseCursor();
@@ -224,38 +228,41 @@ protected:
   virtual QSize	minimumSizeHint() const Q_DECL_OVERRIDE { return minSizeHint; }
   QSize minSizeHint;
 
-  bool       splitting;          //!< If true the view will be split into 2 parts
-  bool       splittingDragging;  //!< True if the user is currently dragging the splitter
-  double     splittingPoint;     //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
+  bool       splitting {false};             //!< If true the view will be split into 2 parts
+  bool       splittingDragging {false};     //!< True if the user is currently dragging the splitter
+  void       setSplittingPoint(double p);
+  double     splittingPoint {0.5};          //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
   enum       splitStyle {SOLID_LINE, TOP_BOTTOM_HANDLERS};
-  splitStyle splittingLineStyle; //!< The style of the splitting line. This can be set in the settings window.
+  splitStyle splittingLineStyle;            //!< The style of the splitting line. This can be set in the settings window.
 
-  QPoint  centerOffset;     //!< The offset of the view to the center (0,0)
-  bool    viewDragging;     //!< True if the user is currently moving the view
+  void    setCenterOffset(QPoint offset);
+  QPoint  centerOffset;                     //!< The offset of the view to the center (0,0)
+  bool    viewDragging {false};             //!< True if the user is currently moving the view
   QPoint  viewDraggingMousePosStart;
   QPoint  viewDraggingStartOffset;
-  bool    viewZooming;      //!< True if the user is currently zooming using the mouse (zoom box)
+  bool    viewZooming {false};              //!< True if the user is currently zooming using the mouse (zoom box)
   QPoint  viewZoomingMousePosStart;
   QPoint  viewZoomingMousePos;
-  QRect   viewActiveArea; //!< The active area, where the picture is drawn into
+  QRect   viewActiveArea;                   //!< The active area, where the picture is drawn into
 
-  double  zoomFactor;        //!< The current zoom factor
-  QFont   zoomFactorFont;    //!< The font to use for the zoom factor indicator
-  QPoint  zoomFactorFontPos; //!< The position where the zoom factor indication will be shown
+  void    setZoomFactor(double zoom);
+  double  zoomFactor {1.0};                 //!< The current zoom factor
+  QFont   zoomFactorFont;                   //!< The font to use for the zoom factor indicator
+  QPoint  zoomFactorFontPos;                //!< The position where the zoom factor indication will be shown
 
   // The zoom box(es)
-  bool   drawZoomBox;            //!< If set to true, the paint event will draw the zoom box(es)
-  QPoint zoomBoxMousePosition;   //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
-  QColor zoomBoxBackgroundColor; //!< The color of the zoom box background (read from settings)
+  bool   drawZoomBox {false};               //!< If set to true, the paint event will draw the zoom box(es)
+  QPoint zoomBoxMousePosition;              //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
+  QColor zoomBoxBackgroundColor;            //!< The color of the zoom box background (read from settings)
   void   paintZoomBox(int view, QPainter &painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing);
 
   //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
   void   updatePixelPositions();
-  QPoint zoomBoxPixelUnderCursor[2];  // The above function will update this. (The position of the pixel under the cursor (per item))
+  QPoint zoomBoxPixelUnderCursor[2];        //!< The above function will update this. (The position of the pixel under the cursor (per item))
 
   // Regular grid
-  bool drawRegularGrid;
-  int  regularGridSize;      //!< The size of each block in the regular grid in pixels
+  bool drawRegularGrid {false};
+  int  regularGridSize {64};                //!< The size of each block in the regular grid in pixels
   QColor regularGridColor;
   void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
@@ -265,18 +272,18 @@ protected:
   QPointer<videoCache>         cache;
 
   // Primary/Separate widget handling
-  bool isSeparateWidget;          //!< Is this the primary widget in the main windows or the one in the separate window
+  bool isSeparateWidget;                   //!< Is this the primary widget in the main windows or the one in the separate window
   QPointer<splitViewWidget> otherWidget;   //!< Pointer to the other (primary or separate) widget
-  bool linkViews;                 //!< Link the two widgets (link zoom factor, position and split position)
-  bool playbackPrimary;           //!< When playback is running and this is the primary view and the secondary view is shown, don't run playback for this view.
+  bool linkViews {false};                  //!< Link the two widgets (link zoom factor, position and split position)
+  bool playbackPrimary {false};            //!< When playback is running and this is the primary view and the secondary view is shown, don't run playback for this view.
 
   // Freezing of the view
-  bool isViewFrozen;              //!< Is the view frozen?
+  bool isViewFrozen {false};               //!< Is the view frozen?
 
   // Draw the "Loading..." message (if needed)
   void drawLoadingMessage(QPainter *painter, const QPoint &pos);
   // True if the "Loading..." message is currently being drawn for one of the two items
-  bool drawingLoadingMessage[2];
+  bool drawingLoadingMessage[2] {false, false};
 
   // Draw a ruler at the top and left that indicate the x and y position of the visible pixels
   void paintPixelRulersX(QPainter &painter, playlistItem *item, int xPixMin, int xPixMax, double zoom, QPoint centerPoints, QPoint offset);
@@ -309,7 +316,7 @@ protected:
   // 
   QPointer<QProgressDialog> testProgressDialog;
   int testLoopCount;                            //< Set before the test starts. Count down to 0. Then the test is over.
-  bool testMode;                                //< Set to true when the test is running
+  bool testMode {false};                                //< Set to true when the test is running
   QTimer testProgrssUpdateTimer;                //< Periodically update the progress dialog
   QElapsedTimer testDuration;                   //< Used to obtain the duration of the test
   void updateTestProgress();
