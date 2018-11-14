@@ -38,7 +38,7 @@
 #include <QSettings>
 #include "typedef.h"
 
-#define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
+#define FFmpegDecoderLibHandling_DEBUG_OUTPUT 1
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_LIB qDebug
@@ -867,7 +867,9 @@ bool FFmpegLibraryFunctions::bindFunctionsFromSWResampleLib()
 bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
 {
   // Loading the libraries was successfull. Get/check function pointers.
-  return bindFunctionsFromAVFormatLib() && bindFunctionsFromAVCodecLib() && bindFunctionsFromAVUtilLib() && bindFunctionsFromSWResampleLib();
+  bool success = bindFunctionsFromAVFormatLib() && bindFunctionsFromAVCodecLib() && bindFunctionsFromAVUtilLib() && bindFunctionsFromSWResampleLib();
+  DEBUG_LIB("FFmpegLibraryFunctions::bindFunctionsFromLibraries %s", success ? "success" : "failed");
+  return success;
 }
 
 QFunctionPointer FFmpegLibraryFunctions::resolveAvUtil(const char *symbol)
@@ -973,23 +975,32 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
     
     // Start with the avutil library
     libAvutil.setFileName(path + constructLibName.arg("avutil").arg(libVersions[0]));
-    if (!libAvutil.load())
-      success = false;
+    success = libAvutil.load();
+    DEBUG_LIB("FFmpegLibraryFunctions::loadFFmpegLibraryInPath Try to load libAvutil %s - %s", libAvutil.fileName().toStdString().c_str(), success ? "success" : "failed");
 
     // Next, the swresample library.
     libSwresample.setFileName(path + constructLibName.arg("swresample").arg(libVersions[1]));
-    if (success && !libSwresample.load())
-      success = false;
+    if (success)
+    {
+      success = libSwresample.load();
+      DEBUG_LIB("FFmpegLibraryFunctions::loadFFmpegLibraryInPath Try to load libSwresample %s - %s", libSwresample.fileName().toStdString().c_str(), success ? "success" : "failed");
+    }
 
     // avcodec
     libAvcodec.setFileName(path + constructLibName.arg("avcodec").arg(libVersions[2]));
-    if (success && !libAvcodec.load())
-      success = false;
+    if (success)
+    {
+      success = libAvcodec.load();
+      DEBUG_LIB("FFmpegLibraryFunctions::loadFFmpegLibraryInPath Try to load libAvcodec %s - %s", libAvcodec.fileName().toStdString().c_str(), success ? "success" : "failed");
+    }
 
     // avformat
     libAvformat.setFileName(path + constructLibName.arg("avformat").arg(libVersions[3]));
-    if (success && !libAvformat.load())
-      success = false;
+    if (success)
+    {
+      success = libAvformat.load();
+      DEBUG_LIB("FFmpegLibraryFunctions::loadFFmpegLibraryInPath Try to load libAvformat %s - %s", libAvformat.fileName().toStdString().c_str(), success ? "success" : "failed");
+    }
 
     if (success)
       break;
@@ -1245,34 +1256,36 @@ bool FFmpegVersionHandler::checkLibraryVersions()
 {
   // Get the version number of the opened libraries and check them against the
   // versions we tried to open. Also get the minor and micro version numbers.
-  
+  DEBUG_LIB("FFmpegVersionHandler::checkLibraryVersions avutil %d, swresample %d, avcodec %d, avformat %d", libVersion.avutil, libVersion.swresample, libVersion.avcodec, libVersion.avformat);
+
   int avCodecVer = lib.avcodec_version();
+  DEBUG_LIB("FFmpegVersionHandler::checkLibraryVersions lib avCodecVer %d", avCodecVer);
   if (AV_VERSION_MAJOR(avCodecVer) != libVersion.avcodec)
-  {
-    error_list.append("The openend libAvCodec returned a different major version than it's file name indicates.");
-    // Try the next version
-    return false;
-  }
+    return setError(QString("The openend libAvCodec returned a different major version (%1) than it's file name indicates (%2).").arg(AV_VERSION_MAJOR(avCodecVer)).arg(libVersion.avcodec));
+
   libVersion.avcodec_minor = AV_VERSION_MINOR(avCodecVer);
   libVersion.avcodec_micro = AV_VERSION_MICRO(avCodecVer);
 
   int avFormatVer = lib.avformat_version();
+  DEBUG_LIB("FFmpegVersionHandler::checkLibraryVersions lib avFormatVer %d", avFormatVer);
   if (AV_VERSION_MAJOR(avFormatVer) != libVersion.avformat)
-    return setError("The openend libAvFormat returned a different major version than it's file name indicates.");
+    return setError(QString("The openend libAvFormat returned a different major version (%1) than it's file name indicates (%2).").arg(AV_VERSION_MAJOR(avFormatVer)).arg(libVersion.avformat));
   
   libVersion.avformat_minor = AV_VERSION_MINOR(avFormatVer);
   libVersion.avformat_micro = AV_VERSION_MICRO(avFormatVer);
 
   int avUtilVer = lib.avutil_version();
+  DEBUG_LIB("FFmpegVersionHandler::checkLibraryVersions lib avUtilVer %d", avUtilVer);
   if (AV_VERSION_MAJOR(avUtilVer) != libVersion.avutil)
-    return setError("The openend libAvUtil returned a different major version than it's file name indicates.");
+    return setError(QString("The openend libAvUtil returned a different major version (%1) than it's file name indicates (%2).").arg(AV_VERSION_MAJOR(avUtilVer)).arg(libVersion.avutil));
     
   libVersion.avutil_minor = AV_VERSION_MINOR(avUtilVer);
   libVersion.avutil_micro = AV_VERSION_MICRO(avUtilVer);
 
   int swresampleVer = lib.swresample_version();
+  DEBUG_LIB("FFmpegVersionHandler::checkLibraryVersions lib swresampleVer %d", swresampleVer);
   if (AV_VERSION_MAJOR(swresampleVer) != libVersion.swresample)
-    return setError("The openend libSwresampleVer returned a different major version than it's file name indicates.");
+    return setError(QString("The openend libSwresampleVer returned a different major version (%1) than it's file name indicates (%2).").arg(AV_VERSION_MAJOR(swresampleVer)).arg(libVersion.swresample));
     
   libVersion.swresample_minor = AV_VERSION_MINOR(swresampleVer);
   libVersion.swresample_micro = AV_VERSION_MICRO(swresampleVer);
@@ -1293,6 +1306,8 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
     verNum[1] = getLibVersionSwresample(v);
     verNum[2] = getLibVersionCodec(v);
     verNum[3] = getLibVersionFormat(v);
+
+    DEBUG_LIB("FFmpegVersionHandler::loadFFmpegLibraryInPath checking Version %d-%d-%d-%d", verNum[0], verNum[1], verNum[2], verNum[3]);
 
     if (lib.loadFFmpegLibraryInPath(path, verNum))
     {
