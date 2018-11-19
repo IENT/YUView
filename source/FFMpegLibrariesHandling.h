@@ -52,6 +52,8 @@ public:
 
   FFmpegLibraryFunctions();
 
+  void setLoggingDestination(QStringList *loggingList) { logList = loggingList; }
+
   // Load the FFmpeg libraries from the given path.
   // The 4 ints give the versions of the 4 libraries (Util, codec, format, swresample)
   bool loadFFmpegLibraryInPath(QString path, int libVersions[4]);
@@ -131,8 +133,12 @@ private:
   template <typename T> bool resolveSwresample(T &ptr, const char *symbol);
 
   // Error handling
-  bool setError(const QString &reason) { error_list.append(reason); return false; }
+  bool setError(const QString &reason) { error_list.append(reason); log("FFmpegLibraryFunctions::setError", reason); return false; }
   QStringList error_list;
+
+  // Logging
+  void log(QString f, QString s) { if (logList) logList->append(f + " " + s); }
+  QStringList *logList { nullptr };
 
   QLibrary libAvutil;
   QLibrary libSwresample;
@@ -728,7 +734,7 @@ public:
   static RGB_Internals::rgbPixelFormat convertAVPixelFormatRGB(AVPixelFormat pixelFormat);
   static AVPixelFormat convertYUVAVPixelFormat(YUV_Internals::yuvPixelFormat fmt);
   // Check if the given four files can be used to open FFmpeg.
-  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error);
+  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error, QStringList &logging);
 
   // Logging. By default we set the logging level of ffmpeg to AV_LOG_ERROR (Log errors and everything worse)
   static QStringList getLogMessages() { return logMessages; }
@@ -755,6 +761,9 @@ private:
   // Error handling
   bool setError(const QString &reason) { error_list.append(reason); return false; }
   QStringList error_list;
+
+  void log(QString f, QString s) { if (logList) logList->append(f + " " + s); }
+  QStringList *logList { nullptr };
 
   // Logging (FFmpeg only has a C interface and does not support void* determination)
   static QStringList logMessages;

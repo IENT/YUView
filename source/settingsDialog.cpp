@@ -36,6 +36,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
+#include <QTextStream>
 #include "typedef.h"
 #include "decoderHM.h"
 #include "decoderLibde265.h"
@@ -293,9 +294,25 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
   }
 
   // Try to open ffmpeg using the four libraries
-  QStringList error;
-  if (!FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable ffmpeg avFormat library. Error: " + error.join(" "));
+  QStringList error, logList;
+  if (FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error, logList))
+  {
+    QMessageBox::StandardButton b = QMessageBox::question(this, "Error opening the library", "The selected file does not appear to be a usable ffmpeg avFormat library. Error: " + error.join(" ") + "\nWe have collected a more detailed log. Do you want to save it to disk?");
+    if (b == QMessageBox::Yes)
+    {
+      QString filePath = QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
+      QFile logFile(filePath);
+      logFile.open(QIODevice::WriteOnly);
+      if (logFile.isOpen())
+      {
+        QTextStream outputStream(&logFile);
+        for (auto l : logList)
+          outputStream << l << "\n";
+      }
+      else
+        QMessageBox::information(this, "Error opening file", "There was an error opening the log file " + filePath);
+    }
+  }
   else
   {
     ui.lineEditAVCodec->setText(avCodecLib);
