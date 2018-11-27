@@ -121,8 +121,11 @@ QList<int> playlistItemWithVideo::getCachedFrames() const
 {
   // Convert indices from internal to external indices
   QList<int> retList;
-  QList<int> internalIndices = video->getCachedFrames();
-  for (int i : internalIndices)
-    retList.append(getFrameIdxExternal(i));
+  if (video)
+  {
+    QList<int> internalIndices = video->getCachedFrames();
+    for (int i : internalIndices)
+      retList.append(getFrameIdxExternal(i));
+  }
   return retList;
 }
