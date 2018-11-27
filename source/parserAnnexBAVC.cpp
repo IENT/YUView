@@ -742,6 +742,8 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(reader_helper &reade
       return reader.addErrorMessageChildItem("time_scale shall be greater than 0.");
     READFLAG(fixed_frame_rate_flag);
 
+    // TODO: This is definitely not correct. num_units_in_tick and time_scale just define the minimal
+    //       time interval that can be represented in the bitstream
     frameRate = (double)time_scale / (double)num_units_in_tick;
     if (frame_mbs_only_flag)
       frameRate /= 2.0;
