@@ -61,7 +61,7 @@ public:
   QString     getDecoderName()  const Q_DECL_OVERRIDE { return "FFmpeg"; }
   QString     getCodecName()          Q_DECL_OVERRIDE;
 
-  static QStringList getLogMessages() { return FFmpegVersionHandler::getLogMessages(); }
+  static QStringList getLogMessages() { return FFmpegVersionHandler::getFFmpegLog(); }
 
 protected:
 

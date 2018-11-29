@@ -294,10 +294,10 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
   }
 
   // Try to open ffmpeg using the four libraries
-  QStringList error, logList;
-  if (!FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error, logList))
+  QStringList logList;
+  if (!FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, logList))
   {
-    QMessageBox::StandardButton b = QMessageBox::question(this, "Error opening the library", "The selected file does not appear to be a usable ffmpeg avFormat library. Error: " + error.join(" ") + "\nWe have collected a more detailed log. Do you want to save it to disk?");
+    QMessageBox::StandardButton b = QMessageBox::question(this, "Error opening the library", "The selected file does not appear to be a usable ffmpeg avFormat library. \nWe have collected a more detailed log. Do you want to save it to disk?");
     if (b == QMessageBox::Yes)
     {
       QString filePath = QFileDialog::getSaveFileName(this, "Select a destination for the log file.");

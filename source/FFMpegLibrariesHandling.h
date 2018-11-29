@@ -52,17 +52,12 @@ public:
 
   FFmpegLibraryFunctions();
 
-  void setLoggingDestination(QStringList *loggingList) { logList = loggingList; }
-
   // Load the FFmpeg libraries from the given path.
   // The 4 ints give the versions of the 4 libraries (Util, codec, format, swresample)
   bool loadFFmpegLibraryInPath(QString path, int libVersions[4]);
   // Try to load the 4 given specific libraries
   bool loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib);
   
-  // If loadFFmpegLibraryInPath returned false, this contains a string why.
-  QStringList getErrors() const { return error_list; }
-
   QStringList getLibPaths() const;
 
   // From avformat
@@ -111,6 +106,8 @@ public:
   // From swresample
   unsigned  (*swresample_version) (void);
 
+  void setLogList(QStringList *l) { logList = l; }
+
 private:
   // bind all functions from the loaded QLibraries.
   bool bindFunctionsFromLibraries();
@@ -131,10 +128,6 @@ private:
   template <typename T> bool resolveAvCodec(T &ptr, const char *symbol, bool failIsError=true);
   QFunctionPointer resolveSwresample(const char *symbol);
   template <typename T> bool resolveSwresample(T &ptr, const char *symbol);
-
-  // Error handling
-  bool setError(const QString &reason) { error_list.append(reason); log("FFmpegLibraryFunctions::setError", reason); return false; }
-  QStringList error_list;
 
   // Logging
   void log(QString f, QString s) { if (logList) logList->append(f + " " + s); }
@@ -673,8 +666,6 @@ class FFmpegVersionHandler
 public:
   FFmpegVersionHandler();
 
-  QStringList getErrors() const { return error_list + lib.getErrors(); }
-
   // Try to load the ffmpeg libraries and get all the function pointers.
   bool loadFFmpegLibraries();
   
@@ -734,11 +725,13 @@ public:
   static RGB_Internals::rgbPixelFormat convertAVPixelFormatRGB(AVPixelFormat pixelFormat);
   static AVPixelFormat convertYUVAVPixelFormat(YUV_Internals::yuvPixelFormat fmt);
   // Check if the given four files can be used to open FFmpeg.
-  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error, QStringList &logging);
+  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &logging);
 
   // Logging. By default we set the logging level of ffmpeg to AV_LOG_ERROR (Log errors and everything worse)
-  static QStringList getLogMessages() { return logMessages; }
+  static QStringList getFFmpegLog() { return logListFFmpeg; }
   void enableLoggingWarning();
+
+  QStringList getLog() const { return logList; }
 
 private:
 
@@ -758,15 +751,12 @@ private:
   int getLibVersionFormat(FFmpegVersions ver);
   int getLibVersionSwresample(FFmpegVersions ver);
 
-  // Error handling
-  bool setError(const QString &reason) { error_list.append(reason); return false; }
-  QStringList error_list;
+  // Log what is happening when loading the libraries / opening files.
+  void log(QString f, QString s) { logList.append(f + " " + s); }
+  QStringList logList;
 
-  void log(QString f, QString s) { if (logList) logList->append(f + " " + s); }
-  QStringList *logList { nullptr };
-
-  // Logging (FFmpeg only has a C interface and does not support void* determination)
-  static QStringList logMessages;
+  // FFmpeg has a callback where it loggs stuff. This log goes here.
+  static QStringList logListFFmpeg;
   static void avLogCallback(void *ptr, int level, const char *fmt, va_list vargs);
 };
 

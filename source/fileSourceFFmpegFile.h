@@ -97,6 +97,8 @@ public:
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
   int getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const;
+
+  QStringList getFFmpegLoadingLog() const { return ff.getLog(); }
   
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }

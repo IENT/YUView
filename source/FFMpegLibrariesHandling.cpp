@@ -38,15 +38,13 @@
 #include <QSettings>
 #include "typedef.h"
 
-#define FFmpegDecoderLibHandling_DEBUG_OUTPUT 1
+#define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_LIB qDebug
+#define LOG(x) do { log(__func__, x); qDebug() << __func__ << " " << x; } while(0)
 #else
-#define DEBUG_LIB(fmt,...) ((void)0)
-#endif
-
 #define LOG(x) log(__func__, x)
+#endif
 
 using namespace YUV_Internals;
 using namespace RGB_Internals;
@@ -879,8 +877,7 @@ bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
 {
   // Loading the libraries was successfull. Get/check function pointers.
   bool success = bindFunctionsFromAVFormatLib() && bindFunctionsFromAVCodecLib() && bindFunctionsFromAVUtilLib() && bindFunctionsFromSWResampleLib();
-  LOG(success ? "success" : "failed");
-  DEBUG_LIB("FFmpegLibraryFunctions::bindFunctionsFromLibraries %s", success ? "success" : "failed");
+  LOG("Binding functions " + success ? "succeeded" : "failed");
   return success;
 }
 
@@ -888,7 +885,7 @@ QFunctionPointer FFmpegLibraryFunctions::resolveAvUtil(const char *symbol)
 {
   QFunctionPointer ptr = libAvutil.resolve(symbol);
   if (!ptr)
-    setError(QStringLiteral("Error loading the avutil library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the avutil library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -902,7 +899,7 @@ QFunctionPointer FFmpegLibraryFunctions::resolveAvFormat(const char *symbol)
 {
   QFunctionPointer ptr = libAvformat.resolve(symbol);
   if (!ptr)
-    setError(QStringLiteral("Error loading the avformat library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the avformat library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -917,7 +914,7 @@ QFunctionPointer FFmpegLibraryFunctions::resolveAvCodec(const char *symbol, bool
   // Failure to resolve the function is only an error if failIsError is set.
   QFunctionPointer ptr = libAvcodec.resolve(symbol);
   if (!ptr && failIsError)
-    setError(QStringLiteral("Error loading the avcodec library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the avcodec library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -931,7 +928,7 @@ QFunctionPointer FFmpegLibraryFunctions::resolveSwresample(const char *symbol)
 {
   QFunctionPointer ptr = libSwresample.resolve(symbol);
   if (!ptr)
-    setError(QStringLiteral("Error loading the swresample library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the swresample library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -944,8 +941,6 @@ template <typename T> bool FFmpegLibraryFunctions::resolveSwresample(T &fun, con
 bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersions[4])
 {
   // Clear the error state if one was set.
-  LOG("Start - path " + path);
-  error_list.clear();
   libAvutil.unload();
   libSwresample.unload();
   libAvcodec.unload();
@@ -992,16 +987,14 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
     // Start with the avutil library
     libAvutil.setFileName(path + constructLibName.arg("avutil").arg(libVersions[0]));
     success = libAvutil.load();
-    LOG("Try to load libAvutil " + libAvutil.fileName() + (success ? "success" : "fail"));
-    DEBUG_LIB("FFmpegLibraryFunctions::loadFFmpegLibraryInPath Try to load libAvutil %s - %s", libAvutil.fileName().toStdString().c_str(), success ? "success" : "failed");
+    LOG("Try to load libAvutil " + libAvutil.fileName() + (success ? " success" : " fail"));
 
     // Next, the swresample library.
     libSwresample.setFileName(path + constructLibName.arg("swresample").arg(libVersions[1]));
     if (success)
     {
       success = libSwresample.load();
-      LOG("Try to load libSwresample " + libSwresample.fileName() + (success ? "success" : "fail"));
-      DEBUG_LIB("FFmpegLibraryFunctions::loadFFmpegLibraryInPath Try to load libSwresample %s - %s", libSwresample.fileName().toStdString().c_str(), success ? "success" : "failed");
+      LOG("Try to load libSwresample " + libSwresample.fileName() + (success ? " success" : " fail"));
     }
 
     // avcodec
@@ -1009,8 +1002,7 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
     if (success)
     {
       success = libAvcodec.load();
-      LOG("Try to load libAvcodec " + libAvcodec.fileName() + (success ? "success" : "fail"));
-      DEBUG_LIB("FFmpegLibraryFunctions::loadFFmpegLibraryInPath Try to load libAvcodec %s - %s", libAvcodec.fileName().toStdString().c_str(), success ? "success" : "failed");
+      LOG("Try to load libAvcodec " + libAvcodec.fileName() + (success ? " success" : " fail"));
     }
 
     // avformat
@@ -1018,8 +1010,7 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
     if (success)
     {
       success = libAvformat.load();
-      LOG("Try to load libAvformat " + libAvformat.fileName() + (success ? "success" : "fail"));
-      DEBUG_LIB("FFmpegLibraryFunctions::loadFFmpegLibraryInPath Try to load libAvformat %s - %s", libAvformat.fileName().toStdString().c_str(), success ? "success" : "failed");
+      LOG("Try to load libAvformat " + libAvformat.fileName() + (success ? " success" : " fail"));
     }
 
     if (success)
@@ -1044,7 +1035,6 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
 bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib)
 {
   // Clear the error state if one was set.
-  error_list.clear();
   libAvutil.unload();
   libSwresample.unload();
   libAvcodec.unload();
@@ -1054,16 +1044,14 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
   // avutil, swresample, avcodec, avformat.
   libAvutil.setFileName(avUtilLib);
   bool success = libAvutil.load();
-  LOG("Try to load libAvutil " + libAvutil.fileName() + (success ? "success" : "fail"));
-  DEBUG_LIB("FFmpegLibraryFunctions::loadFFMpegLibrarySpecific Try to load libAvutil %s - %s", libAvutil.fileName().toStdString().c_str(), success ? "success" : "failed");
+  LOG("Try to load libAvutil " + libAvutil.fileName() + (success ? " success" : " fail"));
 
   // Next, the swresample library.
   libSwresample.setFileName(swResampleLib);
   if (success)
   {
     success = libSwresample.load();
-    LOG("Try to load libSwresample " + libSwresample.fileName() + (success ? "success" : "fail"));
-    DEBUG_LIB("FFmpegLibraryFunctions::loadFFMpegLibrarySpecific Try to load libSwresample %s - %s", libSwresample.fileName().toStdString().c_str(), success ? "success" : "failed");
+    LOG("Try to load libSwresample " + libSwresample.fileName() + (success ? " success" : " fail"));
   } 
 
   // avcodec
@@ -1071,8 +1059,7 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
   if (success)
   {
     success = libAvcodec.load();
-    LOG("Try to load libAvcodec " + libAvcodec.fileName() + (success ? "success" : "fail"));
-    DEBUG_LIB("FFmpegLibraryFunctions::loadFFMpegLibrarySpecific Try to load libAvcodec %s - %s", libAvcodec.fileName().toStdString().c_str(), success ? "success" : "failed");
+    LOG("Try to load libAvcodec " + libAvcodec.fileName() + (success ? " success" : " fail"));
   } 
 
   // avformat
@@ -1080,13 +1067,12 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
   if (success)
   {
     success = libAvformat.load();
-    LOG("Try to load libAvformat " + libAvformat.fileName() + (success ? "success" : "fail"));
-    DEBUG_LIB("FFmpegLibraryFunctions::loadFFMpegLibrarySpecific Try to load libAvformat %s - %s", libAvformat.fileName().toStdString().c_str(), success ? "success" : "failed");
+    LOG("Try to load libAvformat " + libAvformat.fileName() + (success ? " success" : " fail"));
   } 
 
   if (!success)
   {
-    LOG("Unloading libraries of failure.");
+    LOG("Unloading already loaded libraries");
     libAvutil.unload();
     libSwresample.unload();
     libAvcodec.unload();
@@ -1127,7 +1113,7 @@ QStringList FFmpegLibraryFunctions::getLibPaths() const
 
 // ----------------- FFmpegVersionHandler -------------------------------------------
 
-QStringList FFmpegVersionHandler::logMessages;
+QStringList FFmpegVersionHandler::logListFFmpeg;
 
 FFmpegVersionHandler::FFmpegVersionHandler()
 {
@@ -1137,6 +1123,7 @@ FFmpegVersionHandler::FFmpegVersionHandler()
   libVersion.swresample = -1;
 
   librariesLoaded = false;
+  lib.setLogList(&logList);
 }
 
 void FFmpegVersionHandler::avLogCallback(void *ptr, int level, const char *fmt, va_list vargs)
@@ -1145,7 +1132,7 @@ void FFmpegVersionHandler::avLogCallback(void *ptr, int level, const char *fmt, 
   QString msg;
   msg.vsprintf(fmt, vargs);
   QDateTime now = QDateTime::currentDateTime();
-  FFmpegVersionHandler::logMessages.append(now.toString("hh:mm:ss.zzz") + QString(" - L%1 - ").arg(level) + msg);
+  FFmpegVersionHandler::logListFFmpeg.append(now.toString("hh:mm:ss.zzz") + QString(" - L%1 - ").arg(level) + msg);
 }
 
 bool FFmpegVersionHandler::loadFFmpegLibraries()
@@ -1163,36 +1150,44 @@ bool FFmpegVersionHandler::loadFFmpegLibraries()
   QString avCodecLib = settings.value("FFMpeg.avcodec", "").toString();
   QString avUtilLib = settings.value("FFMpeg.avutil", "").toString();
   QString swResampleLib = settings.value("FFMpeg.swresample", "").toString();
-  librariesLoaded = loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
-  if (librariesLoaded)
+  if (!avFormatLib.isEmpty() && !avCodecLib.isEmpty() && !avUtilLib.isEmpty() && !swResampleLib.isEmpty())
   {
-    lib.av_log_set_callback(&FFmpegVersionHandler::avLogCallback);
-    return true;
+    LOG("Trying to load the libraries specified in the settings.");
+    librariesLoaded = loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
   }
+  else
+    LOG("No ffmpeg libraries were specified in the settings.");
 
-  // Next, we will try some other paths / options
-  QStringList possibilites;
-  QString decoderSearchPath = settings.value("SearchPath", "").toString();
-  if (!decoderSearchPath.isEmpty())
-    possibilites.append(decoderSearchPath);                                   // Try the specific search path (if one is set)
-  possibilites.append(QDir::currentPath() + "/");                             // Try the current working directory
-  possibilites.append(QDir::currentPath() + "/ffmpeg/");
-  possibilites.append(QCoreApplication::applicationDirPath() + "/");          // Try the path of the YUView.exe
-  possibilites.append(QCoreApplication::applicationDirPath() + "/ffmpeg/");
-  possibilites.append("");                                                    // Just try to call QLibrary::load so that the system folder will be searched.
-
-  for (QString path : possibilites)
+  if (!librariesLoaded)
   {
-    librariesLoaded = loadFFmpegLibraryInPath(path);
-    if (librariesLoaded)
+    // Next, we will try some other paths / options
+    QStringList possibilites;
+    QString decoderSearchPath = settings.value("SearchPath", "").toString();
+    if (!decoderSearchPath.isEmpty())
+      possibilites.append(decoderSearchPath);                                   // Try the specific search path (if one is set)
+    possibilites.append(QDir::currentPath() + "/");                             // Try the current working directory
+    possibilites.append(QDir::currentPath() + "/ffmpeg/");
+    possibilites.append(QCoreApplication::applicationDirPath() + "/");          // Try the path of the YUView.exe
+    possibilites.append(QCoreApplication::applicationDirPath() + "/ffmpeg/");
+    possibilites.append("");                                                    // Just try to call QLibrary::load so that the system folder will be searched.
+
+    for (QString path : possibilites)
     {
-      lib.av_log_set_callback(FFmpegVersionHandler::avLogCallback);
-      return true;
+      if (path.isEmpty())
+        LOG("Trying to load the libraries in the system path");
+      else
+        LOG("Trying to load the libraries in the path " + path);
+
+      librariesLoaded = loadFFmpegLibraryInPath(path);
+      if (librariesLoaded)
+        break;
     }
   }
 
-  // Loading the libraries failed
-  return false;
+  if (librariesLoaded)
+    lib.av_log_set_callback(&FFmpegVersionHandler::avLogCallback);
+
+  return librariesLoaded;
 }
 
 bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
@@ -1200,16 +1195,25 @@ bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
   AVFormatContext *f_ctx = nullptr;
   int ret = lib.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
   if (ret < 0)
-    return setError(QStringLiteral("Error opening file (avformat_open_input). Ret code %1").arg(ret));
+  {
+    LOG(QStringLiteral("Error opening file (avformat_open_input). Ret code %1").arg(ret));
+    return false;
+  }
   if (f_ctx == nullptr)
-    return setError(QStringLiteral("Error opening file (avformat_open_input). No format context returned."));
+  {
+    LOG(QStringLiteral("Error opening file (avformat_open_input). No format context returned."));
+    return false;
+  }
   
   // The wrapper will take ownership of this pointer
   fmt = AVFormatContextWrapper(f_ctx, libVersion);
   
   ret = lib.avformat_find_stream_info(fmt.get_format_ctx(), nullptr);
   if (ret < 0)
-    return setError(QStringLiteral("Error opening file (avformat_find_stream_info). Ret code %1").arg(ret));
+  {
+    LOG(QStringLiteral("Error opening file (avformat_find_stream_info). Ret code %1").arg(ret));
+    return false;
+  }
   
   // Get the codec id string using avcodec_get_name for each stream
   for(unsigned int idx=0; idx < fmt.get_nb_streams(); idx++)
@@ -1290,40 +1294,48 @@ bool FFmpegVersionHandler::checkLibraryVersions()
 {
   // Get the version number of the opened libraries and check them against the
   // versions we tried to open. Also get the minor and micro version numbers.
-  DEBUG_LIB("FFmpegVersionHandler::checkLibraryVersions avutil %d, swresample %d, avcodec %d, avformat %d", libVersion.avutil, libVersion.swresample, libVersion.avcodec, libVersion.avformat);
+  LOG(QString("versions avutil %1, swresample %2, avcodec %3, avformat %4").arg(libVersion.avutil).arg(libVersion.swresample).arg(libVersion.avcodec).arg(libVersion.avformat));
 
   int avCodecVer = lib.avcodec_version();
-  DEBUG_LIB("FFmpegVersionHandler::checkLibraryVersions lib avCodecVer %d-%d-%d", AV_VERSION_MAJOR(avCodecVer), AV_VERSION_MINOR(avCodecVer), AV_VERSION_MICRO(avCodecVer));
   LOG("lib avCodecVer " + libVerToString(avCodecVer));
   if (AV_VERSION_MAJOR(avCodecVer) != libVersion.avcodec)
-    return setError(QString("The openend libAvCodec returned a different major version (%1) than it's file name indicates (%2).").arg(AV_VERSION_MAJOR(avCodecVer)).arg(libVersion.avcodec));
+  {
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(avCodecVer)).arg(libVersion.avcodec));
+    return false;
+  }
 
   libVersion.avcodec_minor = AV_VERSION_MINOR(avCodecVer);
   libVersion.avcodec_micro = AV_VERSION_MICRO(avCodecVer);
 
   int avFormatVer = lib.avformat_version();
-  DEBUG_LIB("FFmpegVersionHandler::checkLibraryVersions lib avCodecVer %d-%d-%d", AV_VERSION_MAJOR(avFormatVer), AV_VERSION_MINOR(avFormatVer), AV_VERSION_MICRO(avFormatVer));
   LOG("lib avFormatVer " + libVerToString(avFormatVer));
   if (AV_VERSION_MAJOR(avFormatVer) != libVersion.avformat)
-    return setError(QString("The openend libAvFormat returned a different major version (%1) than it's file name indicates (%2).").arg(AV_VERSION_MAJOR(avFormatVer)).arg(libVersion.avformat));
+  {
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(avFormatVer)).arg(libVersion.avformat));
+    return false;
+  }
   
   libVersion.avformat_minor = AV_VERSION_MINOR(avFormatVer);
   libVersion.avformat_micro = AV_VERSION_MICRO(avFormatVer);
 
   int avUtilVer = lib.avutil_version();
-  DEBUG_LIB("FFmpegVersionHandler::checkLibraryVersions lib avCodecVer %d-%d-%d", AV_VERSION_MAJOR(avUtilVer), AV_VERSION_MINOR(avUtilVer), AV_VERSION_MICRO(avUtilVer));
   LOG("lib avUtilVer " + libVerToString(avUtilVer));
   if (AV_VERSION_MAJOR(avUtilVer) != libVersion.avutil)
-    return setError(QString("The openend libAvUtil returned a different major version (%1) than it's file name indicates (%2).").arg(AV_VERSION_MAJOR(avUtilVer)).arg(libVersion.avutil));
+  {
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(avUtilVer)).arg(libVersion.avutil));
+    return false;
+  }
     
   libVersion.avutil_minor = AV_VERSION_MINOR(avUtilVer);
   libVersion.avutil_micro = AV_VERSION_MICRO(avUtilVer);
 
   int swresampleVer = lib.swresample_version();
-  DEBUG_LIB("FFmpegVersionHandler::checkLibraryVersions lib avCodecVer %d-%d-%d", AV_VERSION_MAJOR(swresampleVer), AV_VERSION_MINOR(swresampleVer), AV_VERSION_MICRO(swresampleVer));
   LOG("lib swresampleVer " + libVerToString(swresampleVer));
   if (AV_VERSION_MAJOR(swresampleVer) != libVersion.swresample)
-    return setError(QString("The openend libSwresampleVer returned a different major version (%1) than it's file name indicates (%2).").arg(AV_VERSION_MAJOR(swresampleVer)).arg(libVersion.swresample));
+  {
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(swresampleVer)).arg(libVersion.swresample));
+    return false;
+  }
     
   libVersion.swresample_minor = AV_VERSION_MINOR(swresampleVer);
   libVersion.swresample_micro = AV_VERSION_MICRO(swresampleVer);
@@ -1345,8 +1357,6 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
     verNum[2] = getLibVersionCodec(v);
     verNum[3] = getLibVersionFormat(v);
 
-    DEBUG_LIB("FFmpegVersionHandler::loadFFmpegLibraryInPath checking Version %d-%d-%d-%d", verNum[0], verNum[1], verNum[2], verNum[3]);
-
     if (lib.loadFFmpegLibraryInPath(path, verNum))
     {
       // This worked. Now check the version number of the libraries
@@ -1357,14 +1367,18 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
 
       success = checkLibraryVersions();
       if (success)
+      {
         // Everything worked. We can break the loop over all versions that we support.
+        LOG("checking the library versions was successfull.");
         break;
+      }
+      else
+        LOG("checking the library versions was not successfull.");
     }
   }
 
   if (success)
   {
-    error_list.clear();
     // Initialize libavformat and register all the muxers, demuxers and protocols.
     lib.av_register_all();
     // If needed, we would also have to register the network features (avformat_network_init)
@@ -1380,7 +1394,7 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
   {
     FFmpegVersions v = (FFmpegVersions)i;
     
-    LOG("Trying to load libraries " + avFormatLib + " " + avCodecLib + " " + avUtilLib + " " + swResampleLib);
+    LOG(QString("Trying to load libraries avFromat %1 avCodec %2 avUtil %3 swResample %4").arg(avFormatLib).arg(avCodecLib).arg(avUtilLib).arg(swResampleLib));
     if (lib.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
     {
       // This worked. Now check the version number of the libraries
@@ -1390,7 +1404,7 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
       libVersion.avformat = getLibVersionFormat(v);
       LOG("Testing versions of the library. Currently looking for:");
       LOG(QString("avutil: %1.xx.xx").arg(libVersion.avutil));
-      LOG(QString("swresample: %1.xx.xx").arg(libVersion.swresample));
+      LOG(QString("swresample: %1.xx.xx").arg(libVersion.swresample)) ;
       LOG(QString("avcodec: %1.xx.xx").arg(libVersion.avcodec));
       LOG(QString("avformat: %1.xx.xx").arg(libVersion.avformat));
       
@@ -1403,7 +1417,6 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
 
   if (success)
   {
-    error_list.clear();
     // Initialize libavformat and register all the muxers, demuxers and protocols.
     lib.av_register_all();
     // If needed, we would also have to register the network features (avformat_network_init)
@@ -1413,16 +1426,12 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
   return success;
 }
 
-bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error, QStringList &logging)
+bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &logging)
 {
   FFmpegVersionHandler handler;
-  handler.logList = &logging;
-  if (!handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
-  {
-    error = handler.getErrors();
-    return false;
-  }
-  return true;
+  bool success = !handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
+  logging = handler.getLog();
+  return success;
 }
 
 void FFmpegVersionHandler::enableLoggingWarning()
@@ -2721,7 +2730,10 @@ bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCod
       return false;
     int ret = lib.avcodec_parameters_to_context(decCtx.get_codec(), origin_par);
     if (ret < 0)
-      return setError(QString("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+    {
+      LOG(QString("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+      return false;
+    }
   }
   else
   {

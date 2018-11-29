@@ -132,6 +132,7 @@ FORMS += \
     ui/playbackController.ui \
     ui/playlistItem.ui \
     ui/playlistItemCompressedFile.ui \
+    ui/playlistItemCompressedFile_logDialog.ui \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
     ui/playlistItemHEVCFile.ui \
