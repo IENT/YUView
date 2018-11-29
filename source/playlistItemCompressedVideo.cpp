@@ -47,6 +47,7 @@
 #include "videoHandlerYUV.h"
 #include "videoHandlerRGB.h"
 #include "mainwindow.h"
+#include "ui_playlistItemCompressedFile_logDialog.h"
 
 #define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
 #if COMPRESSED_VIDEO_DEBUG_OUTPUT
@@ -369,26 +370,34 @@ infoData playlistItemCompressedVideo::getInfo() const
 
 void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
 {
+  QWidget *mainWindow = MainWindow::getMainWindow();
   if (buttonID == 0)
   {
     // The button "Bitstream Analysis" was pressed.
-    QWidget *mainWindow = MainWindow::getMainWindow();
     bitstreamAnalysisDialog analyzer(mainWindow, plItemNameOrFileName, inputFormatType);
     analyzer.exec();
   }
   else if (buttonID == 1)
   {
     // The button "shof ffmpeg log" was pressed
-    QStringList log = decoderFFmpeg::getLogMessages();
-    QString msg;
-    for (QString l : log)
-      msg.append(l);
-    QDialog newDialog;
-    QPlainTextEdit *edit = new QPlainTextEdit();
-    edit->setPlainText(msg);
-    QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
-    verticalLayout->addWidget(edit);
-    newDialog.resize(QSize(1000, 900));
+    QDialog newDialog(mainWindow);
+    Ui::ffmpegLogDialog uiDialog;
+    uiDialog.setupUi(&newDialog);
+    
+    // Get the ffmpeg log
+    QStringList logFFmpeg = decoderFFmpeg::getLogMessages();
+    QString logFFmpegString;
+    for (QString l : logFFmpeg)
+      logFFmpegString.append(l);
+    uiDialog.ffmpegLogEdit->setPlainText(logFFmpegString);
+
+    // Get the loading log
+    QStringList logLoading = inputFileFFmpegLoading->getFFmpegLoadingLog();
+    QString logLoadingString;
+    for (QString l : logLoading)
+      logLoadingString.append(l + "\n");
+    uiDialog.libraryLogEdit->setPlainText(logLoadingString);
+        
     newDialog.exec();
   }
 }

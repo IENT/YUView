@@ -41,732 +41,741 @@
 #define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_LIB qDebug
+#define LOG(x) do { log(__func__, x); qDebug() << __func__ << " " << x; } while(0)
 #else
-#define DEBUG_LIB(fmt,...) ((void)0)
+#define LOG(x) log(__func__, x)
 #endif
 
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+namespace
 {
-  double d_seconds = (double)timestamp * timebase.num / timebase.den;
-  int hours = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  int minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  int seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  int milliseconds = (int)(d_seconds * 1000);
+  QString timestampToString(int64_t timestamp, AVRational timebase)
+  {
+    double d_seconds = (double)timestamp * timebase.num / timebase.den;
+    int hours = (int)(d_seconds / 60 / 60);
+    d_seconds -= hours * 60 * 60;
+    int minutes = (int)(d_seconds / 60);
+    d_seconds -= minutes * 60;
+    int seconds = (int)d_seconds;
+    d_seconds -= seconds;
+    int milliseconds = (int)(d_seconds * 1000);
 
-  return QString("%1:%2:%3.%4").arg(hours, 2, 10, QChar('0')).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0')).arg(milliseconds, 3, 10, QChar('0'));
-}
+    return QString("%1:%2:%3.%4").arg(hours, 2, 10, QChar('0')).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0')).arg(milliseconds, 3, 10, QChar('0'));
+  }
 
-// ------------- Internal classes to parse the ffmpeg version specific pointers -----------------
+  QString libVerToString(int version)
+  {
+    return QString("%1.%2.%3").arg(AV_VERSION_MAJOR(version)).arg(AV_VERSION_MINOR(version)).arg(AV_VERSION_MICRO(version));
+  }
 
-// AVPacket is part of avcodec. The definition is different for different major versions of avcodec.
-// These are the version independent functions to retrive data from AVPacket.
-typedef struct AVPacket_56
-{
-  AVBufferRef *buf;
-  int64_t pts;
-  int64_t dts;
-  uint8_t *data;
-  int size;
-  int stream_index;
-  int flags;
-  AVPacketSideData *side_data;
-  int side_data_elems;
-  int duration;
-  void (*destruct)(struct AVPacket *);
-  void *priv;
-  int64_t pos;
-  int64_t convergence_duration;
-} AVPacket_56;
+  // ------------- Internal classes to parse the ffmpeg version specific pointers -----------------
 
-typedef struct AVPacket_57_58
-{
-  AVBufferRef *buf;
-  int64_t pts;
-  int64_t dts;
-  uint8_t *data;
-  int size;
-  int stream_index;
-  int flags;
-  AVPacketSideData *side_data;
-  int side_data_elems;
-  int64_t duration;
-  int64_t pos;
-  int64_t convergence_duration;
-} AVPacket_57_58;
+  // AVPacket is part of avcodec. The definition is different for different major versions of avcodec.
+  // These are the version independent functions to retrive data from AVPacket.
+  typedef struct AVPacket_56
+  {
+    AVBufferRef *buf;
+    int64_t pts;
+    int64_t dts;
+    uint8_t *data;
+    int size;
+    int stream_index;
+    int flags;
+    AVPacketSideData *side_data;
+    int side_data_elems;
+    int duration;
+    void (*destruct)(struct AVPacket *);
+    void *priv;
+    int64_t pos;
+    int64_t convergence_duration;
+  } AVPacket_56;
 
-// AVFormatContext is part of avformat.
-// These functions give us version independent access to the structs.
-typedef struct AVFormatContext_56 
-{
-  const AVClass *av_class;
-  struct AVInputFormat *iformat;
-  struct AVOutputFormat *oformat;
-  void *priv_data;
-  AVIOContext *pb;
-  int ctx_flags;
-  unsigned int nb_streams; //
-  AVStream **streams; //
-  char filename[1024];
-  int64_t start_time;
-  int64_t duration; //
-  int bit_rate;
-  unsigned int packet_size;
-  int max_delay;
-  int flags;
-  unsigned int probesize;
-  int max_analyze_duration;
-  const uint8_t *key;
-  int keylen;
-  unsigned int nb_programs;
-  AVProgram **programs;
-  enum AVCodecID video_codec_id;
-  enum AVCodecID audio_codec_id;
-  enum AVCodecID subtitle_codec_id;
-  unsigned int max_index_size;
-  unsigned int max_picture_buffer;
-  unsigned int nb_chapters;
-  AVChapter **chapters;
-  AVDictionary *metadata;
+  typedef struct AVPacket_57_58
+  {
+    AVBufferRef *buf;
+    int64_t pts;
+    int64_t dts;
+    uint8_t *data;
+    int size;
+    int stream_index;
+    int flags;
+    AVPacketSideData *side_data;
+    int side_data_elems;
+    int64_t duration;
+    int64_t pos;
+    int64_t convergence_duration;
+  } AVPacket_57_58;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVFormatContext_56;
+  // AVFormatContext is part of avformat.
+  // These functions give us version independent access to the structs.
+  typedef struct AVFormatContext_56 
+  {
+    const AVClass *av_class;
+    struct AVInputFormat *iformat;
+    struct AVOutputFormat *oformat;
+    void *priv_data;
+    AVIOContext *pb;
+    int ctx_flags;
+    unsigned int nb_streams; //
+    AVStream **streams; //
+    char filename[1024];
+    int64_t start_time;
+    int64_t duration; //
+    int bit_rate;
+    unsigned int packet_size;
+    int max_delay;
+    int flags;
+    unsigned int probesize;
+    int max_analyze_duration;
+    const uint8_t *key;
+    int keylen;
+    unsigned int nb_programs;
+    AVProgram **programs;
+    enum AVCodecID video_codec_id;
+    enum AVCodecID audio_codec_id;
+    enum AVCodecID subtitle_codec_id;
+    unsigned int max_index_size;
+    unsigned int max_picture_buffer;
+    unsigned int nb_chapters;
+    AVChapter **chapters;
+    AVDictionary *metadata;
 
-typedef struct AVFormatContext_57
-{
-  const AVClass *av_class;
-  struct AVInputFormat *iformat;
-  struct AVOutputFormat *oformat;
-  void *priv_data;
-  AVIOContext *pb;
-  int ctx_flags;
-  unsigned int nb_streams;
-  AVStream **streams;
-  char filename[1024];
-  int64_t start_time;
-  int64_t duration;
-  int64_t bit_rate;
-  unsigned int packet_size;
-  int max_delay;
-  int flags;
-  unsigned int probesize;
-  int max_analyze_duration;
-  const uint8_t *key;
-  int keylen;
-  unsigned int nb_programs;
-  AVProgram **programs;
-  enum AVCodecID video_codec_id;
-  enum AVCodecID audio_codec_id;
-  enum AVCodecID subtitle_codec_id;
-  unsigned int max_index_size;
-  unsigned int max_picture_buffer;
-  unsigned int nb_chapters;
-  AVChapter **chapters;
-  AVDictionary *metadata;
-  
-  // Actually, there is more here, but the variables above are the only we need.
-} AVFormatContext_57;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVFormatContext_56;
 
-typedef struct AVFormatContext_58
-{
-  const AVClass *av_class;
-  struct AVInputFormat *iformat;
-  struct AVOutputFormat *oformat;
-  void *priv_data;
-  AVIOContext *pb;
-  int ctx_flags;
-  unsigned int nb_streams;
-  AVStream **streams;
-  char filename[1024];
-  char *url;
-  int64_t start_time;
-  int64_t duration;
-  int64_t bit_rate;
-  unsigned int packet_size;
-  int max_delay;
-  int flags;
-  int64_t probesize;
-  int64_t max_analyze_duration;
-  const uint8_t *key;
-  int keylen;
-  unsigned int nb_programs;
-  AVProgram **programs;
-  enum AVCodecID video_codec_id;
-  enum AVCodecID audio_codec_id;
-  enum AVCodecID subtitle_codec_id;
-  unsigned int max_index_size;
-  unsigned int max_picture_buffer;
-  unsigned int nb_chapters;
-  AVChapter **chapters;
-  AVDictionary *metadata;
+  typedef struct AVFormatContext_57
+  {
+    const AVClass *av_class;
+    struct AVInputFormat *iformat;
+    struct AVOutputFormat *oformat;
+    void *priv_data;
+    AVIOContext *pb;
+    int ctx_flags;
+    unsigned int nb_streams;
+    AVStream **streams;
+    char filename[1024];
+    int64_t start_time;
+    int64_t duration;
+    int64_t bit_rate;
+    unsigned int packet_size;
+    int max_delay;
+    int flags;
+    unsigned int probesize;
+    int max_analyze_duration;
+    const uint8_t *key;
+    int keylen;
+    unsigned int nb_programs;
+    AVProgram **programs;
+    enum AVCodecID video_codec_id;
+    enum AVCodecID audio_codec_id;
+    enum AVCodecID subtitle_codec_id;
+    unsigned int max_index_size;
+    unsigned int max_picture_buffer;
+    unsigned int nb_chapters;
+    AVChapter **chapters;
+    AVDictionary *metadata;
+    
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVFormatContext_57;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVFormatContext_58;
+  typedef struct AVFormatContext_58
+  {
+    const AVClass *av_class;
+    struct AVInputFormat *iformat;
+    struct AVOutputFormat *oformat;
+    void *priv_data;
+    AVIOContext *pb;
+    int ctx_flags;
+    unsigned int nb_streams;
+    AVStream **streams;
+    char filename[1024];
+    char *url;
+    int64_t start_time;
+    int64_t duration;
+    int64_t bit_rate;
+    unsigned int packet_size;
+    int max_delay;
+    int flags;
+    int64_t probesize;
+    int64_t max_analyze_duration;
+    const uint8_t *key;
+    int keylen;
+    unsigned int nb_programs;
+    AVProgram **programs;
+    enum AVCodecID video_codec_id;
+    enum AVCodecID audio_codec_id;
+    enum AVCodecID subtitle_codec_id;
+    unsigned int max_index_size;
+    unsigned int max_picture_buffer;
+    unsigned int nb_chapters;
+    AVChapter **chapters;
+    AVDictionary *metadata;
+
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVFormatContext_58;
 
 
-// AVCodec is (of course) part of avcodec
-typedef struct AVCodec_56_57_58
-{
-  const char *name;
-  const char *long_name;
-  enum AVMediaType type;
-  enum AVCodecID id;
-  int capabilities;
-  const AVRational *supported_framerates; ///< array of supported framerates, or NULL if any, array is terminated by {0,0}
-  const enum AVPixelFormat *pix_fmts;     ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
-  const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
-  const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
-  const uint64_t *channel_layouts;         ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
-  uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
-  const AVClass *priv_class;              ///< AVClass for the private context
-  //const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
-  
-  // Actually, there is more here, but nothing more of the public API
-} AVCodec_56_57_58;
+  // AVCodec is (of course) part of avcodec
+  typedef struct AVCodec_56_57_58
+  {
+    const char *name;
+    const char *long_name;
+    enum AVMediaType type;
+    enum AVCodecID id;
+    int capabilities;
+    const AVRational *supported_framerates; ///< array of supported framerates, or NULL if any, array is terminated by {0,0}
+    const enum AVPixelFormat *pix_fmts;     ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
+    const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
+    const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
+    const uint64_t *channel_layouts;         ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
+    uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
+    const AVClass *priv_class;              ///< AVClass for the private context
+    //const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
+    
+    // Actually, there is more here, but nothing more of the public API
+  } AVCodec_56_57_58;
 
-// AVCodecContext is part of avcodec
-typedef struct AVCodecContext_56 
-{
-  const AVClass *av_class;
-  int log_level_offset;
+  // AVCodecContext is part of avcodec
+  typedef struct AVCodecContext_56 
+  {
+    const AVClass *av_class;
+    int log_level_offset;
 
-  AVMediaType codec_type; //
-  const struct AVCodec *codec;
-  char codec_name[32];
-  AVCodecID codec_id; // 
-  unsigned int codec_tag;
-  unsigned int stream_codec_tag;
-  void *priv_data;
-  struct AVCodecInternal *internal;
-  void *opaque;
-  int bit_rate; //
-  int bit_rate_tolerance;
-  int global_quality;
-  int compression_level;
-  int flags;
-  int flags2;
-  uint8_t *extradata; //
-  int extradata_size; //
-  AVRational time_base;
-  int ticks_per_frame;
-  int delay;
-  int width, height;  //
-  int coded_width, coded_height;
-  int gop_size;
-  AVPixelFormat pix_fmt; //
-  int me_method;
-  void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
-  AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
-  int max_b_frames;
-  float b_quant_factor;
-  int rc_strategy;
-  int b_frame_strategy;
-  float b_quant_offset;
-  int has_b_frames; //
-  int mpeg_quant;
-  float i_quant_factor;
-  float i_quant_offset;
-  float lumi_masking;
-  float temporal_cplx_masking;
-  float spatial_cplx_masking;
-  float p_masking;
-  float dark_masking;
-  int slice_count;
-  int prediction_method;
-  int *slice_offset;
-  AVRational sample_aspect_ratio; //
-  int me_cmp;
-  int me_sub_cmp;
-  int mb_cmp;
-  int ildct_cmp;
-  int dia_size;
-  int last_predictor_count;
-  int pre_me;
-  int me_pre_cmp;
-  int pre_dia_size;
-  int me_subpel_quality;
-  int dtg_active_format;
-  int me_range;
-  int intra_quant_bias;
-  int inter_quant_bias;
-  int slice_flags;
-  int xvmc_acceleration;
-  int mb_decision;
-  uint16_t *intra_matrix;
-  uint16_t *inter_matrix;
-  int scenechange_threshold;
-  int noise_reduction;
-  int me_threshold;
-  int mb_threshold;
-  int intra_dc_precision;
-  int skip_top;
-  int skip_bottom;
-  float border_masking;
-  int mb_lmin;
-  int mb_lmax;
-  int me_penalty_compensation;
-  int bidir_refine;
-  int brd_scale;
-  int keyint_min;
-  int refs;
-  int chromaoffset;
-  int scenechange_factor;
-  int mv0_threshold;
-  int b_sensitivity;
-  AVColorPrimaries color_primaries; //
-  AVColorTransferCharacteristic color_trc; //
-  AVColorSpace colorspace;  //
-  AVColorRange color_range; //
-  AVChromaLocation chroma_sample_location; //
+    AVMediaType codec_type; //
+    const struct AVCodec *codec;
+    char codec_name[32];
+    AVCodecID codec_id; // 
+    unsigned int codec_tag;
+    unsigned int stream_codec_tag;
+    void *priv_data;
+    struct AVCodecInternal *internal;
+    void *opaque;
+    int bit_rate; //
+    int bit_rate_tolerance;
+    int global_quality;
+    int compression_level;
+    int flags;
+    int flags2;
+    uint8_t *extradata; //
+    int extradata_size; //
+    AVRational time_base;
+    int ticks_per_frame;
+    int delay;
+    int width, height;  //
+    int coded_width, coded_height;
+    int gop_size;
+    AVPixelFormat pix_fmt; //
+    int me_method;
+    void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
+    AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
+    int max_b_frames;
+    float b_quant_factor;
+    int rc_strategy;
+    int b_frame_strategy;
+    float b_quant_offset;
+    int has_b_frames; //
+    int mpeg_quant;
+    float i_quant_factor;
+    float i_quant_offset;
+    float lumi_masking;
+    float temporal_cplx_masking;
+    float spatial_cplx_masking;
+    float p_masking;
+    float dark_masking;
+    int slice_count;
+    int prediction_method;
+    int *slice_offset;
+    AVRational sample_aspect_ratio; //
+    int me_cmp;
+    int me_sub_cmp;
+    int mb_cmp;
+    int ildct_cmp;
+    int dia_size;
+    int last_predictor_count;
+    int pre_me;
+    int me_pre_cmp;
+    int pre_dia_size;
+    int me_subpel_quality;
+    int dtg_active_format;
+    int me_range;
+    int intra_quant_bias;
+    int inter_quant_bias;
+    int slice_flags;
+    int xvmc_acceleration;
+    int mb_decision;
+    uint16_t *intra_matrix;
+    uint16_t *inter_matrix;
+    int scenechange_threshold;
+    int noise_reduction;
+    int me_threshold;
+    int mb_threshold;
+    int intra_dc_precision;
+    int skip_top;
+    int skip_bottom;
+    float border_masking;
+    int mb_lmin;
+    int mb_lmax;
+    int me_penalty_compensation;
+    int bidir_refine;
+    int brd_scale;
+    int keyint_min;
+    int refs;
+    int chromaoffset;
+    int scenechange_factor;
+    int mv0_threshold;
+    int b_sensitivity;
+    AVColorPrimaries color_primaries; //
+    AVColorTransferCharacteristic color_trc; //
+    AVColorSpace colorspace;  //
+    AVColorRange color_range; //
+    AVChromaLocation chroma_sample_location; //
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVCodecContext_56;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVCodecContext_56;
 
-typedef struct AVCodecContext_57 
-{
-  const AVClass *av_class;
-  int log_level_offset;
-  AVMediaType codec_type;
-  const struct AVCodec *codec;
-  char codec_name[32];
-  AVCodecID codec_id;
-  unsigned int codec_tag;
-  unsigned int stream_codec_tag;
-  void *priv_data;
-  struct AVCodecInternal *internal;
-  void *opaque;
-  int64_t bit_rate;
-  int bit_rate_tolerance;
-  int global_quality;
-  int compression_level;
-  int flags;
-  int flags2;
-  uint8_t *extradata;
-  int extradata_size;
-  AVRational time_base;
-  int ticks_per_frame;
-  int delay;
-  int width, height;
-  int coded_width, coded_height;
-  int gop_size;
-  AVPixelFormat pix_fmt;
-  int me_method;
-  void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
-  AVPixelFormat (*get_format)(struct AVCodecContext *s, const AVPixelFormat * fmt);
-  int max_b_frames;
-  float b_quant_factor;
-  int rc_strategy;
-  int b_frame_strategy;
-  float b_quant_offset;
-  int has_b_frames;
-  int mpeg_quant;
-  float i_quant_factor;
-  float i_quant_offset;
-  float lumi_masking;
-  float temporal_cplx_masking;
-  float spatial_cplx_masking;
-  float p_masking;
-  float dark_masking;
-  int slice_count;
-  int prediction_method;
-  int *slice_offset;
-  AVRational sample_aspect_ratio;
-  int me_cmp;
-  int me_sub_cmp;
-  int mb_cmp;
-  int ildct_cmp;
-  int dia_size;
-  int last_predictor_count;
-  int pre_me;
-  int me_pre_cmp;
-  int pre_dia_size;
-  int me_subpel_quality;
-  int dtg_active_format;
-  int me_range;
-  int intra_quant_bias;
-  int inter_quant_bias;
-  int slice_flags;
-  int xvmc_acceleration;
-  int mb_decision;
-  uint16_t *intra_matrix;
-  uint16_t *inter_matrix;
-  int scenechange_threshold;
-  int noise_reduction;
-  int me_threshold;
-  int mb_threshold;
-  int intra_dc_precision;
-  int skip_top;
-  int skip_bottom;
-  float border_masking;
-  int mb_lmin;
-  int mb_lmax;
-  int me_penalty_compensation;
-  int bidir_refine;
-  int brd_scale;
-  int keyint_min;
-  int refs;
-  int chromaoffset;
-  int scenechange_factor;
-  int mv0_threshold;
-  int b_sensitivity;
-  AVColorPrimaries color_primaries;
-  AVColorTransferCharacteristic color_trc;
-  AVColorSpace colorspace;
-  AVColorRange color_range;
-  AVChromaLocation chroma_sample_location;
+  typedef struct AVCodecContext_57 
+  {
+    const AVClass *av_class;
+    int log_level_offset;
+    AVMediaType codec_type;
+    const struct AVCodec *codec;
+    char codec_name[32];
+    AVCodecID codec_id;
+    unsigned int codec_tag;
+    unsigned int stream_codec_tag;
+    void *priv_data;
+    struct AVCodecInternal *internal;
+    void *opaque;
+    int64_t bit_rate;
+    int bit_rate_tolerance;
+    int global_quality;
+    int compression_level;
+    int flags;
+    int flags2;
+    uint8_t *extradata;
+    int extradata_size;
+    AVRational time_base;
+    int ticks_per_frame;
+    int delay;
+    int width, height;
+    int coded_width, coded_height;
+    int gop_size;
+    AVPixelFormat pix_fmt;
+    int me_method;
+    void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
+    AVPixelFormat (*get_format)(struct AVCodecContext *s, const AVPixelFormat * fmt);
+    int max_b_frames;
+    float b_quant_factor;
+    int rc_strategy;
+    int b_frame_strategy;
+    float b_quant_offset;
+    int has_b_frames;
+    int mpeg_quant;
+    float i_quant_factor;
+    float i_quant_offset;
+    float lumi_masking;
+    float temporal_cplx_masking;
+    float spatial_cplx_masking;
+    float p_masking;
+    float dark_masking;
+    int slice_count;
+    int prediction_method;
+    int *slice_offset;
+    AVRational sample_aspect_ratio;
+    int me_cmp;
+    int me_sub_cmp;
+    int mb_cmp;
+    int ildct_cmp;
+    int dia_size;
+    int last_predictor_count;
+    int pre_me;
+    int me_pre_cmp;
+    int pre_dia_size;
+    int me_subpel_quality;
+    int dtg_active_format;
+    int me_range;
+    int intra_quant_bias;
+    int inter_quant_bias;
+    int slice_flags;
+    int xvmc_acceleration;
+    int mb_decision;
+    uint16_t *intra_matrix;
+    uint16_t *inter_matrix;
+    int scenechange_threshold;
+    int noise_reduction;
+    int me_threshold;
+    int mb_threshold;
+    int intra_dc_precision;
+    int skip_top;
+    int skip_bottom;
+    float border_masking;
+    int mb_lmin;
+    int mb_lmax;
+    int me_penalty_compensation;
+    int bidir_refine;
+    int brd_scale;
+    int keyint_min;
+    int refs;
+    int chromaoffset;
+    int scenechange_factor;
+    int mv0_threshold;
+    int b_sensitivity;
+    AVColorPrimaries color_primaries;
+    AVColorTransferCharacteristic color_trc;
+    AVColorSpace colorspace;
+    AVColorRange color_range;
+    AVChromaLocation chroma_sample_location;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVCodecContext_57;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVCodecContext_57;
 
-typedef struct AVCodecContext_58
-{
-  const AVClass *av_class;
-  int log_level_offset;
-  enum AVMediaType codec_type;
-  const struct AVCodec *codec;
-  enum AVCodecID codec_id;
-  unsigned int codec_tag;
-  void *priv_data;
-  struct AVCodecInternal *internal;
-  void *opaque;
-  int64_t bit_rate;
-  int bit_rate_tolerance;
-  int global_quality;
-  int compression_level;
-  int flags;
-  int flags2;
-  uint8_t *extradata;
-  int extradata_size;
-  AVRational time_base;
-  int ticks_per_frame;
-  int delay;
-  int width, height;
-  int coded_width, coded_height;
-  int gop_size;
-  enum AVPixelFormat pix_fmt;
-  void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
-  enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
-  int max_b_frames;
-  float b_quant_factor;
-  int b_frame_strategy;
-  float b_quant_offset;
-  int has_b_frames;
-  int mpeg_quant;
-  float i_quant_factor;
-  float i_quant_offset;
-  float lumi_masking;
-  float temporal_cplx_masking;
-  float spatial_cplx_masking;
-  float p_masking;
-  float dark_masking;
-  int slice_count;
-  int prediction_method;
-  int *slice_offset;
-  AVRational sample_aspect_ratio;
-  int me_cmp;
-  int me_sub_cmp;
-  int mb_cmp;
-  int ildct_cmp;
-  int dia_size;
-  int last_predictor_count;
-  int pre_me;
-  int me_pre_cmp;
-  int pre_dia_size;
-  int me_subpel_quality;
-  int me_range;
-  int slice_flags;
-  int mb_decision;
-  uint16_t *intra_matrix;
-  uint16_t *inter_matrix;
-  int scenechange_threshold;
-  int noise_reduction;
-  int intra_dc_precision;
-  int skip_top;
-  int skip_bottom;
-  int mb_lmin;
-  int mb_lmax;
-  int me_penalty_compensation;
-  int bidir_refine;
-  int brd_scale;
-  int keyint_min;
-  int refs;
-  int chromaoffset;
-  int mv0_threshold;
-  int b_sensitivity;
-  enum AVColorPrimaries color_primaries;
-  enum AVColorTransferCharacteristic color_trc;
-  enum AVColorSpace colorspace;
-  enum AVColorRange color_range;
-  enum AVChromaLocation chroma_sample_location;
-  int slices;
+  typedef struct AVCodecContext_58
+  {
+    const AVClass *av_class;
+    int log_level_offset;
+    enum AVMediaType codec_type;
+    const struct AVCodec *codec;
+    enum AVCodecID codec_id;
+    unsigned int codec_tag;
+    void *priv_data;
+    struct AVCodecInternal *internal;
+    void *opaque;
+    int64_t bit_rate;
+    int bit_rate_tolerance;
+    int global_quality;
+    int compression_level;
+    int flags;
+    int flags2;
+    uint8_t *extradata;
+    int extradata_size;
+    AVRational time_base;
+    int ticks_per_frame;
+    int delay;
+    int width, height;
+    int coded_width, coded_height;
+    int gop_size;
+    enum AVPixelFormat pix_fmt;
+    void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
+    enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
+    int max_b_frames;
+    float b_quant_factor;
+    int b_frame_strategy;
+    float b_quant_offset;
+    int has_b_frames;
+    int mpeg_quant;
+    float i_quant_factor;
+    float i_quant_offset;
+    float lumi_masking;
+    float temporal_cplx_masking;
+    float spatial_cplx_masking;
+    float p_masking;
+    float dark_masking;
+    int slice_count;
+    int prediction_method;
+    int *slice_offset;
+    AVRational sample_aspect_ratio;
+    int me_cmp;
+    int me_sub_cmp;
+    int mb_cmp;
+    int ildct_cmp;
+    int dia_size;
+    int last_predictor_count;
+    int pre_me;
+    int me_pre_cmp;
+    int pre_dia_size;
+    int me_subpel_quality;
+    int me_range;
+    int slice_flags;
+    int mb_decision;
+    uint16_t *intra_matrix;
+    uint16_t *inter_matrix;
+    int scenechange_threshold;
+    int noise_reduction;
+    int intra_dc_precision;
+    int skip_top;
+    int skip_bottom;
+    int mb_lmin;
+    int mb_lmax;
+    int me_penalty_compensation;
+    int bidir_refine;
+    int brd_scale;
+    int keyint_min;
+    int refs;
+    int chromaoffset;
+    int mv0_threshold;
+    int b_sensitivity;
+    enum AVColorPrimaries color_primaries;
+    enum AVColorTransferCharacteristic color_trc;
+    enum AVColorSpace colorspace;
+    enum AVColorRange color_range;
+    enum AVChromaLocation chroma_sample_location;
+    int slices;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVCodecContext_58;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVCodecContext_58;
 
-// AVStream is part of AVFormat
-typedef struct AVStream_56
-{
-  int index;
-  int id;
-  AVCodecContext *codec;
-  void *priv_data;
-  struct AVFrac pts;
-  AVRational time_base;
-  int64_t start_time;
-  int64_t duration;
-  int64_t nb_frames;
-  int disposition;
-  enum AVDiscard discard;
-  AVRational sample_aspect_ratio;
-  AVDictionary *metadata;
-  AVRational avg_frame_rate;
-  AVPacket_56 attached_pic;
-  AVPacketSideData *side_data;
-  int nb_side_data;
-  int event_flags;
-} AVStream_56;
+  // AVStream is part of AVFormat
+  typedef struct AVStream_56
+  {
+    int index;
+    int id;
+    AVCodecContext *codec;
+    void *priv_data;
+    struct AVFrac pts;
+    AVRational time_base;
+    int64_t start_time;
+    int64_t duration;
+    int64_t nb_frames;
+    int disposition;
+    enum AVDiscard discard;
+    AVRational sample_aspect_ratio;
+    AVDictionary *metadata;
+    AVRational avg_frame_rate;
+    AVPacket_56 attached_pic;
+    AVPacketSideData *side_data;
+    int nb_side_data;
+    int event_flags;
+  } AVStream_56;
 
-typedef struct AVProbeData_57 {
-  const char *filename;
-  unsigned char *buf;
-  int buf_size;
-  const char *mime_type;
-} AVProbeData_57;
+  typedef struct AVProbeData_57 {
+    const char *filename;
+    unsigned char *buf;
+    int buf_size;
+    const char *mime_type;
+  } AVProbeData_57;
 
-typedef struct AVStream_57
-{
-  int index;
-  int id;
-  AVCodecContext *codec;  // Deprecated. Might be removed in the next major version.
-  void *priv_data;
-  struct AVFrac pts;  // Deprecated. Might be removed in the next major version.
-  AVRational time_base;
-  int64_t start_time;
-  int64_t duration;
-  int64_t nb_frames;
-  int disposition;
-  enum AVDiscard discard;
-  AVRational sample_aspect_ratio;
-  AVDictionary *metadata;
-  AVRational avg_frame_rate;
-  AVPacket_57_58 attached_pic;
-  AVPacketSideData *side_data;
-  int nb_side_data;
-  int event_flags;
-  // All field following this line are not part of the public API and may change/be removed. However,
-  // we still need them here because further below some fields which are part of the public API will follow.
-  // I really don't understand who thought up this idiotic scheme...
-#define MAX_STD_TIMEBASES (30*12+30+3+6)
-  struct {
-    int64_t last_dts;
-    int64_t duration_gcd;
-    int duration_count;
-    int64_t rfps_duration_sum;
-    double (*duration_error)[2][MAX_STD_TIMEBASES];
-    int64_t codec_info_duration;
-    int64_t codec_info_duration_fields;
-    int found_decoder;
-    int64_t last_duration;
-    int64_t fps_first_dts;
-    int     fps_first_dts_idx;
-    int64_t fps_last_dts;
-    int     fps_last_dts_idx;
-  } *info;
-  int pts_wrap_bits;
-  int64_t first_dts;
-  int64_t cur_dts;
-  int64_t last_IP_pts;
-  int last_IP_duration;
-  int probe_packets;
-  int codec_info_nb_frames;
-  enum AVStreamParseType need_parsing;
-  struct AVCodecParserContext *parser;
-  struct AVPacketList *last_in_packet_buffer;
-  AVProbeData_57 probe_data;
-#define MAX_REORDER_DELAY 16
-  int64_t pts_buffer[MAX_REORDER_DELAY+1];
-  AVIndexEntry *index_entries;
-  int nb_index_entries;
-  unsigned int index_entries_allocated_size;
-  AVRational r_frame_rate;
-  int stream_identifier;
-  int64_t interleaver_chunk_size;
-  int64_t interleaver_chunk_duration;
-  int request_probe;
-  int skip_to_keyframe;
-  int skip_samples;
-  int64_t start_skip_samples;
-  int64_t first_discard_sample;
-  int64_t last_discard_sample;
-  int nb_decoded_frames;
-  int64_t mux_ts_offset;
-  int64_t pts_wrap_reference;
-  int pts_wrap_behavior;
-  int update_initial_durations_done;
-  int64_t pts_reorder_error[MAX_REORDER_DELAY+1];
-  uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];
-  int64_t last_dts_for_order_check;
-  uint8_t dts_ordered;
-  uint8_t dts_misordered;
-  int inject_global_side_data;
-  // All fields above this line are not part of the public API.
-  // All fields below are part of the public API and ABI again.
-  char *recommended_encoder_configuration;
-  AVRational display_aspect_ratio;
-  struct FFFrac *priv_pts;
-  AVStreamInternal *internal;
-  AVCodecParameters *codecpar;
-} AVStream_57;
+  typedef struct AVStream_57
+  {
+    int index;
+    int id;
+    AVCodecContext *codec;  // Deprecated. Might be removed in the next major version.
+    void *priv_data;
+    struct AVFrac pts;  // Deprecated. Might be removed in the next major version.
+    AVRational time_base;
+    int64_t start_time;
+    int64_t duration;
+    int64_t nb_frames;
+    int disposition;
+    enum AVDiscard discard;
+    AVRational sample_aspect_ratio;
+    AVDictionary *metadata;
+    AVRational avg_frame_rate;
+    AVPacket_57_58 attached_pic;
+    AVPacketSideData *side_data;
+    int nb_side_data;
+    int event_flags;
+    // All field following this line are not part of the public API and may change/be removed. However,
+    // we still need them here because further below some fields which are part of the public API will follow.
+    // I really don't understand who thought up this idiotic scheme...
+  #define MAX_STD_TIMEBASES (30*12+30+3+6)
+    struct {
+      int64_t last_dts;
+      int64_t duration_gcd;
+      int duration_count;
+      int64_t rfps_duration_sum;
+      double (*duration_error)[2][MAX_STD_TIMEBASES];
+      int64_t codec_info_duration;
+      int64_t codec_info_duration_fields;
+      int found_decoder;
+      int64_t last_duration;
+      int64_t fps_first_dts;
+      int     fps_first_dts_idx;
+      int64_t fps_last_dts;
+      int     fps_last_dts_idx;
+    } *info;
+    int pts_wrap_bits;
+    int64_t first_dts;
+    int64_t cur_dts;
+    int64_t last_IP_pts;
+    int last_IP_duration;
+    int probe_packets;
+    int codec_info_nb_frames;
+    enum AVStreamParseType need_parsing;
+    struct AVCodecParserContext *parser;
+    struct AVPacketList *last_in_packet_buffer;
+    AVProbeData_57 probe_data;
+  #define MAX_REORDER_DELAY 16
+    int64_t pts_buffer[MAX_REORDER_DELAY+1];
+    AVIndexEntry *index_entries;
+    int nb_index_entries;
+    unsigned int index_entries_allocated_size;
+    AVRational r_frame_rate;
+    int stream_identifier;
+    int64_t interleaver_chunk_size;
+    int64_t interleaver_chunk_duration;
+    int request_probe;
+    int skip_to_keyframe;
+    int skip_samples;
+    int64_t start_skip_samples;
+    int64_t first_discard_sample;
+    int64_t last_discard_sample;
+    int nb_decoded_frames;
+    int64_t mux_ts_offset;
+    int64_t pts_wrap_reference;
+    int pts_wrap_behavior;
+    int update_initial_durations_done;
+    int64_t pts_reorder_error[MAX_REORDER_DELAY+1];
+    uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];
+    int64_t last_dts_for_order_check;
+    uint8_t dts_ordered;
+    uint8_t dts_misordered;
+    int inject_global_side_data;
+    // All fields above this line are not part of the public API.
+    // All fields below are part of the public API and ABI again.
+    char *recommended_encoder_configuration;
+    AVRational display_aspect_ratio;
+    struct FFFrac *priv_pts;
+    AVStreamInternal *internal;
+    AVCodecParameters *codecpar;
+  } AVStream_57;
 
-typedef struct AVStream_58
-{
-  int index;
-  int id;
-  AVCodecContext *codec;
-  void *priv_data;
-  AVRational time_base;
-  int64_t start_time;
-  int64_t duration;
-  int64_t nb_frames;
-  int disposition;
-  enum AVDiscard discard;
-  AVRational sample_aspect_ratio;
-  AVDictionary *metadata;
-  AVRational avg_frame_rate;
-  AVPacket_57_58 attached_pic;
-  AVPacketSideData *side_data;
-  int            nb_side_data;
-  int event_flags;
-  AVRational r_frame_rate;
-  char *recommended_encoder_configuration;
-  AVCodecParameters *codecpar;
+  typedef struct AVStream_58
+  {
+    int index;
+    int id;
+    AVCodecContext *codec;
+    void *priv_data;
+    AVRational time_base;
+    int64_t start_time;
+    int64_t duration;
+    int64_t nb_frames;
+    int disposition;
+    enum AVDiscard discard;
+    AVRational sample_aspect_ratio;
+    AVDictionary *metadata;
+    AVRational avg_frame_rate;
+    AVPacket_57_58 attached_pic;
+    AVPacketSideData *side_data;
+    int            nb_side_data;
+    int event_flags;
+    AVRational r_frame_rate;
+    char *recommended_encoder_configuration;
+    AVCodecParameters *codecpar;
 
-  // All field following this line are not part of the public API and may change/be removed.
-} AVStream_58;
+    // All field following this line are not part of the public API and may change/be removed.
+  } AVStream_58;
 
-// AVCodecParameters is part of avcodec.
-typedef struct AVCodecParameters_57_58
-{
-  AVMediaType codec_type;
-  AVCodecID   codec_id;
-  uint32_t    codec_tag;
-  uint8_t *extradata;
-  int extradata_size;
-  int format;
-  int64_t bit_rate;
-  int bits_per_coded_sample;
-  int bits_per_raw_sample;
-  int profile;
-  int level;
-  int width;
-  int height;
-  AVRational                    sample_aspect_ratio;
-  AVFieldOrder                  field_order;
-  AVColorRange                  color_range;
-  AVColorPrimaries              color_primaries;
-  AVColorTransferCharacteristic color_trc;
-  AVColorSpace                  color_space;
-  AVChromaLocation              chroma_location;
-  int video_delay;
+  // AVCodecParameters is part of avcodec.
+  typedef struct AVCodecParameters_57_58
+  {
+    AVMediaType codec_type;
+    AVCodecID   codec_id;
+    uint32_t    codec_tag;
+    uint8_t *extradata;
+    int extradata_size;
+    int format;
+    int64_t bit_rate;
+    int bits_per_coded_sample;
+    int bits_per_raw_sample;
+    int profile;
+    int level;
+    int width;
+    int height;
+    AVRational                    sample_aspect_ratio;
+    AVFieldOrder                  field_order;
+    AVColorRange                  color_range;
+    AVColorPrimaries              color_primaries;
+    AVColorTransferCharacteristic color_trc;
+    AVColorSpace                  color_space;
+    AVChromaLocation              chroma_location;
+    int video_delay;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVCodecParameters_57_58;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVCodecParameters_57_58;
 
-// AVFrames is part of AVUtil
-typedef struct AVFrame_54 
-{
-  uint8_t *data[AV_NUM_DATA_POINTERS];
-  int linesize[AV_NUM_DATA_POINTERS];
-  uint8_t **extended_data;
-  int width, height;
-  int nb_samples;
-  int format;
-  int key_frame;
-  AVPictureType pict_type;
-  uint8_t *base[AV_NUM_DATA_POINTERS];
-  AVRational sample_aspect_ratio;
-  int64_t pts;
-  int64_t pkt_pts;
-  int64_t pkt_dts;
-  int coded_picture_number;
-  int display_picture_number;
-  int quality;
+  // AVFrames is part of AVUtil
+  typedef struct AVFrame_54 
+  {
+    uint8_t *data[AV_NUM_DATA_POINTERS];
+    int linesize[AV_NUM_DATA_POINTERS];
+    uint8_t **extended_data;
+    int width, height;
+    int nb_samples;
+    int format;
+    int key_frame;
+    AVPictureType pict_type;
+    uint8_t *base[AV_NUM_DATA_POINTERS];
+    AVRational sample_aspect_ratio;
+    int64_t pts;
+    int64_t pkt_pts;
+    int64_t pkt_dts;
+    int coded_picture_number;
+    int display_picture_number;
+    int quality;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVFrame_54;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVFrame_54;
 
-typedef struct AVFrame_55_56
-{
-  uint8_t *data[AV_NUM_DATA_POINTERS];
-  int linesize[AV_NUM_DATA_POINTERS];
-  uint8_t **extended_data;
-  int width, height;
-  int nb_samples;
-  int format;
-  int key_frame;
-  AVPictureType pict_type;
-  AVRational sample_aspect_ratio;
-  int64_t pts;
-  int64_t pkt_pts;
-  int64_t pkt_dts;
-  int coded_picture_number;
-  int display_picture_number;
-  int quality;
+  typedef struct AVFrame_55_56
+  {
+    uint8_t *data[AV_NUM_DATA_POINTERS];
+    int linesize[AV_NUM_DATA_POINTERS];
+    uint8_t **extended_data;
+    int width, height;
+    int nb_samples;
+    int format;
+    int key_frame;
+    AVPictureType pict_type;
+    AVRational sample_aspect_ratio;
+    int64_t pts;
+    int64_t pkt_pts;
+    int64_t pkt_dts;
+    int coded_picture_number;
+    int display_picture_number;
+    int quality;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVFrame_55_56;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVFrame_55_56;
 
-// ------------------- AVInputFormat ---------------
-// AVInputFormat is part of AVFormat
-typedef struct AVInputFormat_56_57_58
-{
-  const char *name;
-  const char *long_name;
-  int flags;
-  const char *extensions;
-  const struct AVCodecTag * const *codec_tag;
-  const AVClass *priv_class;
-  const char *mime_type;
-} AVInputFormat_56_57_58;
+  // ------------------- AVInputFormat ---------------
+  // AVInputFormat is part of AVFormat
+  typedef struct AVInputFormat_56_57_58
+  {
+    const char *name;
+    const char *long_name;
+    int flags;
+    const char *extensions;
+    const struct AVCodecTag * const *codec_tag;
+    const AVClass *priv_class;
+    const char *mime_type;
+  } AVInputFormat_56_57_58;
 
-// ------------------- AVFrameSideData ---------------
-// AVFrameSideData is part of AVUtil
-typedef struct AVFrameSideData_54_55_56
-{
-  enum AVFrameSideDataType type;
-  uint8_t *data;
-  int size;
-  AVDictionary *metadata;
-  AVBufferRef *buf;
-} AVFrameSideData_54_55_56;
+  // ------------------- AVFrameSideData ---------------
+  // AVFrameSideData is part of AVUtil
+  typedef struct AVFrameSideData_54_55_56
+  {
+    enum AVFrameSideDataType type;
+    uint8_t *data;
+    int size;
+    AVDictionary *metadata;
+    AVBufferRef *buf;
+  } AVFrameSideData_54_55_56;
 
-// ------------------- AVMotionVector ---------------
+  // ------------------- AVMotionVector ---------------
 
-typedef struct AVMotionVector_54
-{
-  int32_t source;
-  uint8_t w, h;
-  int16_t src_x, src_y;
-  int16_t dst_x, dst_y;
-  uint64_t flags;
-} AVMotionVector_54;
+  typedef struct AVMotionVector_54
+  {
+    int32_t source;
+    uint8_t w, h;
+    int16_t src_x, src_y;
+    int16_t dst_x, dst_y;
+    uint64_t flags;
+  } AVMotionVector_54;
 
-typedef struct AVMotionVector_55_56 
-{
-  int32_t source;
-  uint8_t w, h;
-  int16_t src_x, src_y;
-  int16_t dst_x, dst_y;
-  uint64_t flags;
-  int32_t motion_x, motion_y;
-  uint16_t motion_scale;
-} AVMotionVector_55_56;
+  typedef struct AVMotionVector_55_56 
+  {
+    int32_t source;
+    uint8_t w, h;
+    int16_t src_x, src_y;
+    int16_t dst_x, dst_y;
+    uint64_t flags;
+    int32_t motion_x, motion_y;
+    uint16_t motion_scale;
+  } AVMotionVector_55_56;
+
+} // End of anonymous namespace
 
 // -------- FFmpegLibraryFunctions -----------
 
@@ -867,14 +876,16 @@ bool FFmpegLibraryFunctions::bindFunctionsFromSWResampleLib()
 bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
 {
   // Loading the libraries was successfull. Get/check function pointers.
-  return bindFunctionsFromAVFormatLib() && bindFunctionsFromAVCodecLib() && bindFunctionsFromAVUtilLib() && bindFunctionsFromSWResampleLib();
+  bool success = bindFunctionsFromAVFormatLib() && bindFunctionsFromAVCodecLib() && bindFunctionsFromAVUtilLib() && bindFunctionsFromSWResampleLib();
+  LOG("Binding functions " + success ? "succeeded" : "failed");
+  return success;
 }
 
 QFunctionPointer FFmpegLibraryFunctions::resolveAvUtil(const char *symbol)
 {
   QFunctionPointer ptr = libAvutil.resolve(symbol);
   if (!ptr)
-    setError(QStringLiteral("Error loading the avutil library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the avutil library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -888,7 +899,7 @@ QFunctionPointer FFmpegLibraryFunctions::resolveAvFormat(const char *symbol)
 {
   QFunctionPointer ptr = libAvformat.resolve(symbol);
   if (!ptr)
-    setError(QStringLiteral("Error loading the avformat library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the avformat library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -903,7 +914,7 @@ QFunctionPointer FFmpegLibraryFunctions::resolveAvCodec(const char *symbol, bool
   // Failure to resolve the function is only an error if failIsError is set.
   QFunctionPointer ptr = libAvcodec.resolve(symbol);
   if (!ptr && failIsError)
-    setError(QStringLiteral("Error loading the avcodec library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the avcodec library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -917,7 +928,7 @@ QFunctionPointer FFmpegLibraryFunctions::resolveSwresample(const char *symbol)
 {
   QFunctionPointer ptr = libSwresample.resolve(symbol);
   if (!ptr)
-    setError(QStringLiteral("Error loading the swresample library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the swresample library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -930,7 +941,6 @@ template <typename T> bool FFmpegLibraryFunctions::resolveSwresample(T &fun, con
 bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersions[4])
 {
   // Clear the error state if one was set.
-  error_list.clear();
   libAvutil.unload();
   libSwresample.unload();
   libAvcodec.unload();
@@ -943,11 +953,14 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
   {
     QDir givenPath(path);
     if (!givenPath.exists())
-      // The given path is invalid
+    {
+      LOG("The given path is invalid");
       return false;
+    }
 
     // Get the absolute path
     path = givenPath.absolutePath() + "/";
+    LOG("Absolute path " + path);
   }
 
   // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll on windows.
@@ -973,28 +986,38 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
     
     // Start with the avutil library
     libAvutil.setFileName(path + constructLibName.arg("avutil").arg(libVersions[0]));
-    if (!libAvutil.load())
-      success = false;
+    success = libAvutil.load();
+    LOG("Try to load libAvutil " + libAvutil.fileName() + (success ? " success" : " fail"));
 
     // Next, the swresample library.
     libSwresample.setFileName(path + constructLibName.arg("swresample").arg(libVersions[1]));
-    if (success && !libSwresample.load())
-      success = false;
+    if (success)
+    {
+      success = libSwresample.load();
+      LOG("Try to load libSwresample " + libSwresample.fileName() + (success ? " success" : " fail"));
+    }
 
     // avcodec
     libAvcodec.setFileName(path + constructLibName.arg("avcodec").arg(libVersions[2]));
-    if (success && !libAvcodec.load())
-      success = false;
+    if (success)
+    {
+      success = libAvcodec.load();
+      LOG("Try to load libAvcodec " + libAvcodec.fileName() + (success ? " success" : " fail"));
+    }
 
     // avformat
     libAvformat.setFileName(path + constructLibName.arg("avformat").arg(libVersions[3]));
-    if (success && !libAvformat.load())
-      success = false;
+    if (success)
+    {
+      success = libAvformat.load();
+      LOG("Try to load libAvformat " + libAvformat.fileName() + (success ? " success" : " fail"));
+    }
 
     if (success)
       break;
     else
     {
+      LOG("Unloading libraries of failure.");
       libAvutil.unload();
       libSwresample.unload();
       libAvcodec.unload();
@@ -1012,7 +1035,6 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
 bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib)
 {
   // Clear the error state if one was set.
-  error_list.clear();
   libAvutil.unload();
   libSwresample.unload();
   libAvcodec.unload();
@@ -1020,28 +1042,37 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
 
   // We will load the libraries (in this order):
   // avutil, swresample, avcodec, avformat.
-  bool success = true;
   libAvutil.setFileName(avUtilLib);
-  if (!libAvutil.load())
-    success = false;
+  bool success = libAvutil.load();
+  LOG("Try to load libAvutil " + libAvutil.fileName() + (success ? " success" : " fail"));
 
   // Next, the swresample library.
   libSwresample.setFileName(swResampleLib);
-  if (success && !libSwresample.load())
-    success = false;
+  if (success)
+  {
+    success = libSwresample.load();
+    LOG("Try to load libSwresample " + libSwresample.fileName() + (success ? " success" : " fail"));
+  } 
 
   // avcodec
   libAvcodec.setFileName(avCodecLib);
-  if (success && !libAvcodec.load())
-    success = false;
+  if (success)
+  {
+    success = libAvcodec.load();
+    LOG("Try to load libAvcodec " + libAvcodec.fileName() + (success ? " success" : " fail"));
+  } 
 
   // avformat
   libAvformat.setFileName(avFormatLib);
-  if (success && !libAvformat.load())
-    success = false;
+  if (success)
+  {
+    success = libAvformat.load();
+    LOG("Try to load libAvformat " + libAvformat.fileName() + (success ? " success" : " fail"));
+  } 
 
   if (!success)
   {
+    LOG("Unloading already loaded libraries");
     libAvutil.unload();
     libSwresample.unload();
     libAvcodec.unload();
@@ -1082,7 +1113,7 @@ QStringList FFmpegLibraryFunctions::getLibPaths() const
 
 // ----------------- FFmpegVersionHandler -------------------------------------------
 
-QStringList FFmpegVersionHandler::logMessages;
+QStringList FFmpegVersionHandler::logListFFmpeg;
 
 FFmpegVersionHandler::FFmpegVersionHandler()
 {
@@ -1092,6 +1123,7 @@ FFmpegVersionHandler::FFmpegVersionHandler()
   libVersion.swresample = -1;
 
   librariesLoaded = false;
+  lib.setLogList(&logList);
 }
 
 void FFmpegVersionHandler::avLogCallback(void *ptr, int level, const char *fmt, va_list vargs)
@@ -1100,7 +1132,7 @@ void FFmpegVersionHandler::avLogCallback(void *ptr, int level, const char *fmt, 
   QString msg;
   msg.vsprintf(fmt, vargs);
   QDateTime now = QDateTime::currentDateTime();
-  FFmpegVersionHandler::logMessages.append(now.toString("hh:mm:ss.zzz") + QString(" - L%1 - ").arg(level) + msg);
+  FFmpegVersionHandler::logListFFmpeg.append(now.toString("hh:mm:ss.zzz") + QString(" - L%1 - ").arg(level) + msg);
 }
 
 bool FFmpegVersionHandler::loadFFmpegLibraries()
@@ -1118,36 +1150,44 @@ bool FFmpegVersionHandler::loadFFmpegLibraries()
   QString avCodecLib = settings.value("FFMpeg.avcodec", "").toString();
   QString avUtilLib = settings.value("FFMpeg.avutil", "").toString();
   QString swResampleLib = settings.value("FFMpeg.swresample", "").toString();
-  librariesLoaded = loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
-  if (librariesLoaded)
+  if (!avFormatLib.isEmpty() && !avCodecLib.isEmpty() && !avUtilLib.isEmpty() && !swResampleLib.isEmpty())
   {
-    lib.av_log_set_callback(&FFmpegVersionHandler::avLogCallback);
-    return true;
+    LOG("Trying to load the libraries specified in the settings.");
+    librariesLoaded = loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
   }
+  else
+    LOG("No ffmpeg libraries were specified in the settings.");
 
-  // Next, we will try some other paths / options
-  QStringList possibilites;
-  QString decoderSearchPath = settings.value("SearchPath", "").toString();
-  if (!decoderSearchPath.isEmpty())
-    possibilites.append(decoderSearchPath);                                   // Try the specific search path (if one is set)
-  possibilites.append(QDir::currentPath() + "/");                             // Try the current working directory
-  possibilites.append(QDir::currentPath() + "/ffmpeg/");
-  possibilites.append(QCoreApplication::applicationDirPath() + "/");          // Try the path of the YUView.exe
-  possibilites.append(QCoreApplication::applicationDirPath() + "/ffmpeg/");
-  possibilites.append("");                                                    // Just try to call QLibrary::load so that the system folder will be searched.
-
-  for (QString path : possibilites)
+  if (!librariesLoaded)
   {
-    librariesLoaded = loadFFmpegLibraryInPath(path);
-    if (librariesLoaded)
+    // Next, we will try some other paths / options
+    QStringList possibilites;
+    QString decoderSearchPath = settings.value("SearchPath", "").toString();
+    if (!decoderSearchPath.isEmpty())
+      possibilites.append(decoderSearchPath);                                   // Try the specific search path (if one is set)
+    possibilites.append(QDir::currentPath() + "/");                             // Try the current working directory
+    possibilites.append(QDir::currentPath() + "/ffmpeg/");
+    possibilites.append(QCoreApplication::applicationDirPath() + "/");          // Try the path of the YUView.exe
+    possibilites.append(QCoreApplication::applicationDirPath() + "/ffmpeg/");
+    possibilites.append("");                                                    // Just try to call QLibrary::load so that the system folder will be searched.
+
+    for (QString path : possibilites)
     {
-      lib.av_log_set_callback(FFmpegVersionHandler::avLogCallback);
-      return true;
+      if (path.isEmpty())
+        LOG("Trying to load the libraries in the system path");
+      else
+        LOG("Trying to load the libraries in the path " + path);
+
+      librariesLoaded = loadFFmpegLibraryInPath(path);
+      if (librariesLoaded)
+        break;
     }
   }
 
-  // Loading the libraries failed
-  return false;
+  if (librariesLoaded)
+    lib.av_log_set_callback(&FFmpegVersionHandler::avLogCallback);
+
+  return librariesLoaded;
 }
 
 bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
@@ -1155,16 +1195,25 @@ bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
   AVFormatContext *f_ctx = nullptr;
   int ret = lib.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
   if (ret < 0)
-    return setError(QStringLiteral("Error opening file (avformat_open_input). Ret code %1").arg(ret));
+  {
+    LOG(QStringLiteral("Error opening file (avformat_open_input). Ret code %1").arg(ret));
+    return false;
+  }
   if (f_ctx == nullptr)
-    return setError(QStringLiteral("Error opening file (avformat_open_input). No format context returned."));
+  {
+    LOG(QStringLiteral("Error opening file (avformat_open_input). No format context returned."));
+    return false;
+  }
   
   // The wrapper will take ownership of this pointer
   fmt = AVFormatContextWrapper(f_ctx, libVersion);
   
   ret = lib.avformat_find_stream_info(fmt.get_format_ctx(), nullptr);
   if (ret < 0)
-    return setError(QStringLiteral("Error opening file (avformat_find_stream_info). Ret code %1").arg(ret));
+  {
+    LOG(QStringLiteral("Error opening file (avformat_find_stream_info). Ret code %1").arg(ret));
+    return false;
+  }
   
   // Get the codec id string using avcodec_get_name for each stream
   for(unsigned int idx=0; idx < fmt.get_nb_streams(); idx++)
@@ -1245,34 +1294,48 @@ bool FFmpegVersionHandler::checkLibraryVersions()
 {
   // Get the version number of the opened libraries and check them against the
   // versions we tried to open. Also get the minor and micro version numbers.
-  
+  LOG(QString("versions avutil %1, swresample %2, avcodec %3, avformat %4").arg(libVersion.avutil).arg(libVersion.swresample).arg(libVersion.avcodec).arg(libVersion.avformat));
+
   int avCodecVer = lib.avcodec_version();
+  LOG("lib avCodecVer " + libVerToString(avCodecVer));
   if (AV_VERSION_MAJOR(avCodecVer) != libVersion.avcodec)
   {
-    error_list.append("The openend libAvCodec returned a different major version than it's file name indicates.");
-    // Try the next version
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(avCodecVer)).arg(libVersion.avcodec));
     return false;
   }
+
   libVersion.avcodec_minor = AV_VERSION_MINOR(avCodecVer);
   libVersion.avcodec_micro = AV_VERSION_MICRO(avCodecVer);
 
   int avFormatVer = lib.avformat_version();
+  LOG("lib avFormatVer " + libVerToString(avFormatVer));
   if (AV_VERSION_MAJOR(avFormatVer) != libVersion.avformat)
-    return setError("The openend libAvFormat returned a different major version than it's file name indicates.");
+  {
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(avFormatVer)).arg(libVersion.avformat));
+    return false;
+  }
   
   libVersion.avformat_minor = AV_VERSION_MINOR(avFormatVer);
   libVersion.avformat_micro = AV_VERSION_MICRO(avFormatVer);
 
   int avUtilVer = lib.avutil_version();
+  LOG("lib avUtilVer " + libVerToString(avUtilVer));
   if (AV_VERSION_MAJOR(avUtilVer) != libVersion.avutil)
-    return setError("The openend libAvUtil returned a different major version than it's file name indicates.");
+  {
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(avUtilVer)).arg(libVersion.avutil));
+    return false;
+  }
     
   libVersion.avutil_minor = AV_VERSION_MINOR(avUtilVer);
   libVersion.avutil_micro = AV_VERSION_MICRO(avUtilVer);
 
   int swresampleVer = lib.swresample_version();
+  LOG("lib swresampleVer " + libVerToString(swresampleVer));
   if (AV_VERSION_MAJOR(swresampleVer) != libVersion.swresample)
-    return setError("The openend libSwresampleVer returned a different major version than it's file name indicates.");
+  {
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(swresampleVer)).arg(libVersion.swresample));
+    return false;
+  }
     
   libVersion.swresample_minor = AV_VERSION_MINOR(swresampleVer);
   libVersion.swresample_micro = AV_VERSION_MICRO(swresampleVer);
@@ -1304,14 +1367,18 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
 
       success = checkLibraryVersions();
       if (success)
+      {
         // Everything worked. We can break the loop over all versions that we support.
+        LOG("checking the library versions was successfull.");
         break;
+      }
+      else
+        LOG("checking the library versions was not successfull.");
     }
   }
 
   if (success)
   {
-    error_list.clear();
     // Initialize libavformat and register all the muxers, demuxers and protocols.
     lib.av_register_all();
     // If needed, we would also have to register the network features (avformat_network_init)
@@ -1327,6 +1394,7 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
   {
     FFmpegVersions v = (FFmpegVersions)i;
     
+    LOG(QString("Trying to load libraries avFromat %1 avCodec %2 avUtil %3 swResample %4").arg(avFormatLib).arg(avCodecLib).arg(avUtilLib).arg(swResampleLib));
     if (lib.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
     {
       // This worked. Now check the version number of the libraries
@@ -1334,7 +1402,12 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
       libVersion.swresample = getLibVersionSwresample(v);
       libVersion.avcodec = getLibVersionCodec(v);
       libVersion.avformat = getLibVersionFormat(v);
-
+      LOG("Testing versions of the library. Currently looking for:");
+      LOG(QString("avutil: %1.xx.xx").arg(libVersion.avutil));
+      LOG(QString("swresample: %1.xx.xx").arg(libVersion.swresample)) ;
+      LOG(QString("avcodec: %1.xx.xx").arg(libVersion.avcodec));
+      LOG(QString("avformat: %1.xx.xx").arg(libVersion.avformat));
+      
       success = checkLibraryVersions();
       if (success)
         // Everything worked. We can break the loop over all versions that we support.
@@ -1344,24 +1417,21 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
 
   if (success)
   {
-    error_list.clear();
     // Initialize libavformat and register all the muxers, demuxers and protocols.
     lib.av_register_all();
     // If needed, we would also have to register the network features (avformat_network_init)
+    LOG("Successfully loaded specific libraries.");
   }
 
   return success;
 }
 
-bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error)
+bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &logging)
 {
   FFmpegVersionHandler handler;
-  if (!handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
-  {
-    error = handler.getErrors();
-    return false;
-  }
-  return true;
+  bool success = !handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
+  logging = handler.getLog();
+  return success;
 }
 
 void FFmpegVersionHandler::enableLoggingWarning()
@@ -2660,7 +2730,10 @@ bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCod
       return false;
     int ret = lib.avcodec_parameters_to_context(decCtx.get_codec(), origin_par);
     if (ret < 0)
-      return setError(QString("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+    {
+      LOG(QString("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+      return false;
+    }
   }
   else
   {
