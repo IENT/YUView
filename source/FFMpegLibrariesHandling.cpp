@@ -38,7 +38,7 @@
 #include <QSettings>
 #include "typedef.h"
 
-#define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
+#define FFmpegDecoderLibHandling_DEBUG_OUTPUT 1
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define LOG(x) do { log(__func__, x); qDebug() << __func__ << " " << x; } while(0)
@@ -775,6 +775,64 @@ namespace
     uint16_t motion_scale;
   } AVMotionVector_55_56;
 
+  // -------------------- AVPixFmtDescriptor and AVComponentDescriptor (part of AVUtil) -----------------
+
+  typedef struct AVComponentDescriptor_54 
+  {
+    uint16_t plane        : 2;
+    uint16_t step_minus1  : 3;
+    uint16_t offset_plus1 : 3;
+    uint16_t shift        : 3;
+    uint16_t depth_minus1 : 4;
+  } AVComponentDescriptor_54;
+
+  typedef struct AVPixFmtDescriptor_54
+  {
+    const char *name;
+    uint8_t nb_components;
+    uint8_t log2_chroma_w;
+    uint8_t log2_chroma_h;
+    uint8_t flags;
+    AVComponentDescriptor_54 comp[4];
+    const char *alias;
+  } AVPixFmtDescriptor_54;
+
+  typedef struct AVComponentDescriptor_55_56
+  {
+    int plane;
+    int step;
+    int offset;
+    int shift;
+    int depth;
+
+    // deprectaed
+    int step_minus1;
+    int depth_minus1;
+    int offset_plus1;
+  } AVComponentDescriptor_55_56;
+
+  typedef struct AVPixFmtDescriptor_55
+  {
+    const char *name;
+    uint8_t nb_components;
+    uint8_t log2_chroma_w;
+    uint8_t log2_chroma_h;
+    uint64_t flags;
+    AVComponentDescriptor_55_56 comp[4];
+    const char *alias;
+  } AVPixFmtDescriptor_55;
+
+  typedef struct AVPixFmtDescriptor_56
+  {
+    const char *name;
+    uint8_t nb_components;
+    uint8_t log2_chroma_w;
+    uint8_t log2_chroma_h;
+    uint64_t flags;
+    AVComponentDescriptor_55_56 comp[4];
+    const char *alias;
+  } AVPixFmtDescriptor_56;
+
 } // End of anonymous namespace
 
 // -------- FFmpegLibraryFunctions -----------
@@ -865,6 +923,10 @@ bool FFmpegLibraryFunctions::bindFunctionsFromAVUtilLib()
   if (!resolveAvUtil(av_frame_get_metadata, "av_frame_get_metadata")) return false;
   if (!resolveAvUtil(av_log_set_callback, "av_log_set_callback")) return false;
   if (!resolveAvUtil(av_log_set_level, "av_log_set_level")) return false;
+  if (!resolveAvUtil(av_pix_fmt_desc_get, "av_pix_fmt_desc_get")) return false;
+  if (!resolveAvUtil(av_pix_fmt_desc_next, "av_pix_fmt_desc_next")) return false;
+  if (!resolveAvUtil(av_pix_fmt_desc_get_id, "av_pix_fmt_desc_get_id")) return false;
+  
   return true;
 }
 
@@ -877,7 +939,10 @@ bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
 {
   // Loading the libraries was successfull. Get/check function pointers.
   bool success = bindFunctionsFromAVFormatLib() && bindFunctionsFromAVCodecLib() && bindFunctionsFromAVUtilLib() && bindFunctionsFromSWResampleLib();
-  LOG("Binding functions " + success ? "succeeded" : "failed");
+  if (success)
+    LOG("Binding functions successfull");
+  else
+    LOG("Binding functions failed");
   return success;
 }
 
@@ -1219,8 +1284,7 @@ bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
   for(unsigned int idx=0; idx < fmt.get_nb_streams(); idx++)
   {
     AVStreamWrapper stream = fmt.get_stream(idx);
-    const char *name = lib.avcodec_get_name(stream.getCodecSpecifier().getCodecID(libVersion.avcodec));
-    stream.getCodec().codec_id_string = QString(name);
+    stream.codecIDWrapper = getCodecIDWrapper(stream.getCodecID());
   }
 
   return true;
@@ -1231,10 +1295,15 @@ AVCodecParametersWrapper FFmpegVersionHandler::alloc_code_parameters()
   return AVCodecParametersWrapper(lib.avcodec_parameters_alloc(), libVersion);
 }
 
-AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecSpecfier codec_id)
+AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecIDWrapper codecId)
 {
-  AVCodecID id = codec_id.getCodecID(libVersion.avcodec);
-  return AVCodecWrapper(lib.avcodec_find_decoder(id), libVersion);
+  AVCodec *c = lib.avcodec_find_decoder(codecId.codecID);
+  if (c == nullptr)
+  {
+    LOG("Unable to find decoder for codec " + codecId.codecName);
+    return AVCodecWrapper();
+  }
+  return AVCodecWrapper(c, libVersion);
 }
 
 AVCodecContextWrapper FFmpegVersionHandler::alloc_decoder(AVCodecWrapper &codec)
@@ -1439,192 +1508,319 @@ void FFmpegVersionHandler::enableLoggingWarning()
   lib.av_log_set_level(AV_LOG_WARNING);
 }
 
-RawFormat FFmpegVersionHandler::getRawFormat(AVPixelFormat pixelFormat)
+AVPixFmtDescriptorWrapper FFmpegVersionHandler::getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixFmt)
 {
-  if (convertAVPixelFormatYUV(pixelFormat).isValid())
-    return raw_YUV;
-  if (convertAVPixelFormatRGB(pixelFormat).isValid())
-    return raw_RGB;
-  return raw_Invalid;
+  return AVPixFmtDescriptorWrapper(lib.av_pix_fmt_desc_get(pixFmt), libVersion);
 }
 
-// Convert from the AVPixelFormat to the internal yuvPixelFormat
-yuvPixelFormat FFmpegVersionHandler::convertAVPixelFormatYUV(AVPixelFormat pixelFormat)
+yuvPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
 {
-  // YUV 4:2:0 formats
-  if (pixelFormat == AV_PIX_FMT_YUV420P)
-    return yuvPixelFormat(YUV_420, 8);
-  if (pixelFormat == AV_PIX_FMT_YUV420P16LE)
-    return yuvPixelFormat(YUV_420, 16);
-  if (pixelFormat == AV_PIX_FMT_YUV420P16BE)
-    return yuvPixelFormat(YUV_420, 16, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV420P9BE)
-    return yuvPixelFormat(YUV_420, 9, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV420P9LE)
-    return yuvPixelFormat(YUV_420, 9);
-  if (pixelFormat == AV_PIX_FMT_YUV420P10BE)
-    return yuvPixelFormat(YUV_420, 10, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV420P10LE)
-    return yuvPixelFormat(YUV_420, 10);
-  if (pixelFormat == AV_PIX_FMT_YUV420P12BE)
-    return yuvPixelFormat(YUV_420, 12, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV420P12LE)
-    return yuvPixelFormat(YUV_420, 12);
-  if (pixelFormat == AV_PIX_FMT_YUV420P14BE)
-    return yuvPixelFormat(YUV_420, 14, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV420P14LE)
-    return yuvPixelFormat(YUV_420, 14);
+  if (getRawFormat() == raw_RGB || !flagsSupported())
+    return yuvPixelFormat();
 
-  // YUV 4:2:2 formats
-  if (pixelFormat == AV_PIX_FMT_YUV422P)
-    return yuvPixelFormat(YUV_422, 8);
-  if (pixelFormat == AV_PIX_FMT_YUV422P16LE)
-    return yuvPixelFormat(YUV_422, 16);
-  if (pixelFormat == AV_PIX_FMT_YUV422P16BE)
-    return yuvPixelFormat(YUV_422, 16, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV422P10BE)
-    return yuvPixelFormat(YUV_422, 10, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV422P10LE)
-    return yuvPixelFormat(YUV_422, 10);
-  if (pixelFormat == AV_PIX_FMT_YUV422P9BE)
-    return yuvPixelFormat(YUV_422, 9, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV422P9LE)
-    return yuvPixelFormat(YUV_422, 9);
-  if (pixelFormat == AV_PIX_FMT_YUV422P12BE)
-    return yuvPixelFormat(YUV_422, 12, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV422P12LE)
-    return yuvPixelFormat(YUV_422, 12);
-  if (pixelFormat == AV_PIX_FMT_YUV422P14BE)
-    return yuvPixelFormat(YUV_422, 14, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV422P14LE)
-    return yuvPixelFormat(YUV_422, 14);
-
-  // YUV 4:4:4 formats
-  if (pixelFormat == AV_PIX_FMT_YUV444P)
-    return yuvPixelFormat(YUV_444, 8);
-  if (pixelFormat == AV_PIX_FMT_YUV444P16LE)
-    return yuvPixelFormat(YUV_444, 16);
-  if (pixelFormat == AV_PIX_FMT_YUV444P16BE)
-    return yuvPixelFormat(YUV_444, 16, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV444P9BE)
-    return yuvPixelFormat(YUV_444, 9, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV444P9LE)
-    return yuvPixelFormat(YUV_444, 9);
-  if (pixelFormat == AV_PIX_FMT_YUV444P10BE)
-    return yuvPixelFormat(YUV_444, 10, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV444P10LE)
-    return yuvPixelFormat(YUV_444, 10);
-  if (pixelFormat == AV_PIX_FMT_YUV444P12BE)
-    return yuvPixelFormat(YUV_444, 12, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV444P12LE)
-    return yuvPixelFormat(YUV_444, 12);
-  if (pixelFormat == AV_PIX_FMT_YUV444P14BE)
-    return yuvPixelFormat(YUV_444, 14, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV444P14LE)
-    return yuvPixelFormat(YUV_444, 14);
-
-  return yuvPixelFormat();
-}
-
-rgbPixelFormat FFmpegVersionHandler::convertAVPixelFormatRGB(AVPixelFormat pixelFormat)
-{
-  if (pixelFormat == AV_PIX_FMT_RGB24)
-    return rgbPixelFormat(8, false, false);
-  if (pixelFormat == AV_PIX_FMT_BGR24)
-    return rgbPixelFormat(8, false, false, 2, 1, 0);
-  if (pixelFormat == AV_PIX_FMT_ARGB)
-    return rgbPixelFormat(8, false, true);
-  if (pixelFormat == AV_PIX_FMT_ABGR)
-    return rgbPixelFormat(8, false, true, 2, 1, 0);
-  if (pixelFormat == AV_PIX_FMT_RGB48LE)
-    return rgbPixelFormat(16, false, false);
+  YUVSubsamplingType subsampling;
+  if (nb_components == 1)
+    subsampling = YUV_400;
+  else if (log2_chroma_w == 0 && log2_chroma_h == 0)
+    subsampling = YUV_444;
+  else if (log2_chroma_w == 1 && log2_chroma_h == 0)
+    subsampling = YUV_422;
+  else if (log2_chroma_w == 1 && log2_chroma_h == 1)
+    subsampling = YUV_420;
+  else if (log2_chroma_w == 0 && log2_chroma_h == 1)
+    subsampling = YUV_440;
+  else if (log2_chroma_w == 2 && log2_chroma_h == 2)
+    subsampling = YUV_410;
+  else if (log2_chroma_w == 0 && log2_chroma_h == 2)
+    subsampling = YUV_411;
+  else
+    return yuvPixelFormat();
   
-  // Other formats are not yet supported
-  // Adding them should be straightforward (but also not trivial)
-  return rgbPixelFormat();
+  YUVPlaneOrder planeOrder;
+  if (nb_components == 1)
+    planeOrder = Order_YUV;
+  else if (nb_components == 3 && !flagHasAlphaPlane())
+    planeOrder = Order_YUV;
+  else if (nb_components == 4 && flagHasAlphaPlane())
+    planeOrder = Order_YUVA;
+  else
+    return yuvPixelFormat();
+    
+  bool bigEndian = flagIsBigEndian();
+
+  int bitsPerSample = comp[0].depth;
+  for (int i=1; i<nb_components; i++)
+    if (comp[i].depth != bitsPerSample)
+      // Varying bit depths for components is not supported
+      return yuvPixelFormat();
+  
+  if (flagIsBitWisePacked() || !flagIsPlanar())
+    // Maybe this could be supported but I don't think that any decoder actually uses this.
+    // If you encounter a format that does not work because of this check please let us know.
+    return yuvPixelFormat();
+
+  return yuvPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
 }
 
-// Convert from yuvPixelFormat to AVPixelFormat
-AVPixelFormat FFmpegVersionHandler::convertYUVAVPixelFormat(yuvPixelFormat fmt)
+rgbPixelFormat AVPixFmtDescriptorWrapper::getRGBPixelFormat()
 {
-  if (fmt.subsampling == YUV_420)
+  if (getRawFormat() == raw_YUV || !flagsSupported())
+    return rgbPixelFormat();
+
+  int bitsPerSample = comp[0].depth;
+  for (int i=1; i<nb_components; i++)
+    if (comp[i].depth != bitsPerSample)
+      // Varying bit depths for components is not supported
+      return rgbPixelFormat();
+
+  if (flagIsBitWisePacked() || !flagIsPlanar())
+    // Maybe this could be supported but I don't think that any decoder actually uses this.
+    // If you encounter a format that does not work because of this check please let us know.
+    return rgbPixelFormat();
+
+  // The only possible order of planes seems to be RGB(A)
+  return rgbPixelFormat(bitsPerSample, true, 0, 1, 2, flagHasAlphaPlane() ? 3 : -1);
+}
+
+bool AVPixFmtDescriptorWrapper::flagsSupported()
+{
+  // We don't support any of these
+  if (flagIsPallette())
+    return false;
+  if (flagIsHWAcceleratedFormat())
+    return false;
+  if (flagIsIsPseudoPallette())
+    return false;
+  if (flagIsBayerPattern())
+    return false;
+  if (flagIsFloat())
+    return false;
+  return true;
+}
+
+bool AVPixFmtDescriptorWrapper::operator==(const AVPixFmtDescriptorWrapper &other)
+{
+  if (nb_components != other.nb_components)
+    return false;
+  if (log2_chroma_w != other.log2_chroma_w)
+    return false;
+  if (log2_chroma_h != other.log2_chroma_h)
+    return false;
+  if (flags != other.flags)
+    return false;
+
+  for (int i=0; i<4; i++)
   {
-    if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P16LE;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P16BE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P9BE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P9LE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P10BE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P10LE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P12BE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P12LE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P14BE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P14LE;
+    if (comp[i].plane != other.comp[i].plane)
+      return false;
+    if (comp[i].step != other.comp[i].step)
+      return false;
+    if (comp[i].offset != other.comp[i].offset)
+      return false;
+    if (comp[i].shift != other.comp[i].shift)
+      return false;
+    if (comp[i].depth != other.comp[i].depth)
+      return false;
   }
-  if (fmt.subsampling == YUV_422)
+  return true;
+}
+
+AVPixelFormat FFmpegVersionHandler::getAVPixelFormatFromWrapper(AVPixFmtDescriptorWrapper wrapper)
+{
+  // We will have to search through all pixel formats which the library knows and compare them to the 
+  // one we are looking for. Unfortunately there is no other more direct search function in libavutil.
+  AVPixFmtDescriptor *desc = lib.av_pix_fmt_desc_next(nullptr);
+  while (desc != nullptr)
   {
-    if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P16LE;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P16BE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P10BE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P10LE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P9BE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P9LE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P12BE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P12LE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P14BE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P14LE;
-  }
-  if (fmt.subsampling == YUV_444)
-  {
-    if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P16LE;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P16BE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P9BE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P9LE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P10BE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P10LE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P12BE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P12LE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P14BE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P14LE;
+    AVPixFmtDescriptorWrapper descWrapper(desc, libVersion);
+
+    if (descWrapper == wrapper)
+      return lib.av_pix_fmt_desc_get_id(desc);
+
+    // Get the next descriptor
+    desc = lib.av_pix_fmt_desc_next(desc);
   }
 
   return AV_PIX_FMT_NONE;
 }
+
+// // Convert from the AVPixelFormat to the internal yuvPixelFormat
+// yuvPixelFormat FFmpegVersionHandler::convertAVPixelFormatYUV(AVPixelFormat pixelFormat)
+// {
+//   // YUV 4:2:0 formats
+//   if (pixelFormat == AV_PIX_FMT_YUV420P)
+//     return yuvPixelFormat(YUV_420, 8);
+//   if (pixelFormat == AV_PIX_FMT_YUV420P16LE)
+//     return yuvPixelFormat(YUV_420, 16);
+//   if (pixelFormat == AV_PIX_FMT_YUV420P16BE)
+//     return yuvPixelFormat(YUV_420, 16, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV420P9BE)
+//     return yuvPixelFormat(YUV_420, 9, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV420P9LE)
+//     return yuvPixelFormat(YUV_420, 9);
+//   if (pixelFormat == AV_PIX_FMT_YUV420P10BE)
+//     return yuvPixelFormat(YUV_420, 10, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV420P10LE)
+//     return yuvPixelFormat(YUV_420, 10);
+//   if (pixelFormat == AV_PIX_FMT_YUV420P12BE)
+//     return yuvPixelFormat(YUV_420, 12, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV420P12LE)
+//     return yuvPixelFormat(YUV_420, 12);
+//   if (pixelFormat == AV_PIX_FMT_YUV420P14BE)
+//     return yuvPixelFormat(YUV_420, 14, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV420P14LE)
+//     return yuvPixelFormat(YUV_420, 14);
+
+//   // YUV 4:2:2 formats
+//   if (pixelFormat == AV_PIX_FMT_YUV422P)
+//     return yuvPixelFormat(YUV_422, 8);
+//   if (pixelFormat == AV_PIX_FMT_YUV422P16LE)
+//     return yuvPixelFormat(YUV_422, 16);
+//   if (pixelFormat == AV_PIX_FMT_YUV422P16BE)
+//     return yuvPixelFormat(YUV_422, 16, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV422P10BE)
+//     return yuvPixelFormat(YUV_422, 10, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV422P10LE)
+//     return yuvPixelFormat(YUV_422, 10);
+//   if (pixelFormat == AV_PIX_FMT_YUV422P9BE)
+//     return yuvPixelFormat(YUV_422, 9, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV422P9LE)
+//     return yuvPixelFormat(YUV_422, 9);
+//   if (pixelFormat == AV_PIX_FMT_YUV422P12BE)
+//     return yuvPixelFormat(YUV_422, 12, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV422P12LE)
+//     return yuvPixelFormat(YUV_422, 12);
+//   if (pixelFormat == AV_PIX_FMT_YUV422P14BE)
+//     return yuvPixelFormat(YUV_422, 14, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV422P14LE)
+//     return yuvPixelFormat(YUV_422, 14);
+
+//   // YUV 4:4:4 formats
+//   if (pixelFormat == AV_PIX_FMT_YUV444P)
+//     return yuvPixelFormat(YUV_444, 8);
+//   if (pixelFormat == AV_PIX_FMT_YUV444P16LE)
+//     return yuvPixelFormat(YUV_444, 16);
+//   if (pixelFormat == AV_PIX_FMT_YUV444P16BE)
+//     return yuvPixelFormat(YUV_444, 16, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV444P9BE)
+//     return yuvPixelFormat(YUV_444, 9, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV444P9LE)
+//     return yuvPixelFormat(YUV_444, 9);
+//   if (pixelFormat == AV_PIX_FMT_YUV444P10BE)
+//     return yuvPixelFormat(YUV_444, 10, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV444P10LE)
+//     return yuvPixelFormat(YUV_444, 10);
+//   if (pixelFormat == AV_PIX_FMT_YUV444P12BE)
+//     return yuvPixelFormat(YUV_444, 12, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV444P12LE)
+//     return yuvPixelFormat(YUV_444, 12);
+//   if (pixelFormat == AV_PIX_FMT_YUV444P14BE)
+//     return yuvPixelFormat(YUV_444, 14, Order_YUV, true);
+//   if (pixelFormat == AV_PIX_FMT_YUV444P14LE)
+//     return yuvPixelFormat(YUV_444, 14);
+
+//   return yuvPixelFormat();
+// }
+
+// rgbPixelFormat FFmpegVersionHandler::convertAVPixelFormatRGB(AVPixelFormat pixelFormat)
+// {
+//   if (pixelFormat == AV_PIX_FMT_RGB24)
+//     return rgbPixelFormat(8, false, false);
+//   if (pixelFormat == AV_PIX_FMT_BGR24)
+//     return rgbPixelFormat(8, false, false, 2, 1, 0);
+//   if (pixelFormat == AV_PIX_FMT_ARGB)
+//     return rgbPixelFormat(8, false, true);
+//   if (pixelFormat == AV_PIX_FMT_ABGR)
+//     return rgbPixelFormat(8, false, true, 2, 1, 0);
+//   if (pixelFormat == AV_PIX_FMT_RGB48LE)
+//     return rgbPixelFormat(16, false, false);
+  
+//   // Other formats are not yet supported
+//   // Adding them should be straightforward (but also not trivial)
+//   return rgbPixelFormat();
+// }
+
+// // Convert from yuvPixelFormat to AVPixelFormat
+// AVPixelFormat FFmpegVersionHandler::convertYUVAVPixelFormat(yuvPixelFormat fmt)
+// {
+//   if (fmt.subsampling == YUV_420)
+//   {
+//     if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P;
+//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P16LE;
+//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P16BE;
+//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P9BE;
+//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P9LE;
+//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P10BE;
+//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P10LE;
+//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P12BE;
+//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P12LE;
+//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P14BE;
+//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV420P14LE;
+//   }
+//   if (fmt.subsampling == YUV_422)
+//   {
+//     if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P;
+//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P16LE;
+//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P16BE;
+//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P10BE;
+//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P10LE;
+//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P9BE;
+//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P9LE;
+//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P12BE;
+//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P12LE;
+//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P14BE;
+//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV422P14LE;
+//   }
+//   if (fmt.subsampling == YUV_444)
+//   {
+//     if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P;
+//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P16LE;
+//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P16BE;
+//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P9BE;
+//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P9LE;
+//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P10BE;
+//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P10LE;
+//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P12BE;
+//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P12LE;
+//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P14BE;
+//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
+//       return AV_PIX_FMT_YUV444P14LE;
+//   }
+
+//   return AV_PIX_FMT_NONE;
+// }
 
 void AVFormatContextWrapper::update()
 {
@@ -1652,9 +1848,9 @@ void AVFormatContextWrapper::update()
     max_analyze_duration = src->max_analyze_duration;
     key = QString::fromLatin1((const char*)src->key, src->keylen);
     nb_programs = src->nb_programs;
-    video_codec_id = AVCodecSpecfier(libVer.avcodec, src->video_codec_id);
-    audio_codec_id = AVCodecSpecfier(libVer.avcodec, src->audio_codec_id);
-    subtitle_codec_id = AVCodecSpecfier(libVer.avcodec, src->subtitle_codec_id);
+    video_codec_id = src->video_codec_id;
+    audio_codec_id = src->audio_codec_id;
+    subtitle_codec_id = src->subtitle_codec_id;
     max_index_size = src->max_index_size;
     max_picture_buffer = src->max_picture_buffer;
     nb_chapters = src->nb_chapters;
@@ -1680,9 +1876,9 @@ void AVFormatContextWrapper::update()
     max_analyze_duration = src->max_analyze_duration;
     key = QString::fromLatin1((const char*)src->key, src->keylen);
     nb_programs = src->nb_programs;
-    video_codec_id = AVCodecSpecfier(libVer.avcodec, src->video_codec_id);
-    audio_codec_id = AVCodecSpecfier(libVer.avcodec, src->audio_codec_id);
-    subtitle_codec_id = AVCodecSpecfier(libVer.avcodec, src->subtitle_codec_id);
+    video_codec_id = src->video_codec_id;
+    audio_codec_id = src->audio_codec_id;
+    subtitle_codec_id = src->subtitle_codec_id;
     max_index_size = src->max_index_size;
     max_picture_buffer = src->max_picture_buffer;
     nb_chapters = src->nb_chapters;
@@ -1709,9 +1905,9 @@ void AVFormatContextWrapper::update()
     max_analyze_duration = src->max_analyze_duration;
     key = QString::fromLatin1((const char*)src->key, src->keylen);
     nb_programs = src->nb_programs;
-    video_codec_id = AVCodecSpecfier(libVer.avcodec, src->video_codec_id);
-    audio_codec_id = AVCodecSpecfier(libVer.avcodec, src->audio_codec_id);
-    subtitle_codec_id = AVCodecSpecfier(libVer.avcodec, src->subtitle_codec_id);
+    video_codec_id = src->video_codec_id;
+    audio_codec_id = src->audio_codec_id;
+    subtitle_codec_id = src->subtitle_codec_id;
     max_index_size = src->max_index_size;
     max_picture_buffer = src->max_picture_buffer;
     nb_chapters = src->nb_chapters;
@@ -1781,7 +1977,7 @@ void AVCodecWrapper::update()
     name = QString(src->name);
     long_name = QString(src->long_name);
     type = src->type;
-    id = AVCodecSpecfier(libVer.avcodec, src->id);
+    id = src->id;
     capabilities = src->capabilities;
     if (src->supported_framerates)
     {
@@ -1851,7 +2047,7 @@ void AVCodecContextWrapper::update()
     AVCodecContext_56 *src = reinterpret_cast<AVCodecContext_56*>(codec);
     codec_type = src->codec_type;
     codec_name = QString(src->codec_name);
-    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
+    codec_id = src->codec_id;
     codec_tag = src->codec_tag;
     stream_codec_tag = src->stream_codec_tag;
     bit_rate = src->bit_rate;
@@ -1935,7 +2131,7 @@ void AVCodecContextWrapper::update()
     AVCodecContext_57 *src = reinterpret_cast<AVCodecContext_57*>(codec);
     codec_type = src->codec_type;
     codec_name = QString(src->codec_name);
-    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
+    codec_id = src->codec_id;
     codec_tag = src->codec_tag;
     stream_codec_tag = src->stream_codec_tag;
     bit_rate = src->bit_rate;
@@ -2019,7 +2215,7 @@ void AVCodecContextWrapper::update()
     AVCodecContext_58 *src = reinterpret_cast<AVCodecContext_58*>(codec);
     codec_type = src->codec_type;
     codec_name = QString("Not supported in AVCodec >= 58");
-    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
+    codec_id = src->codec_id;
     codec_tag = src->codec_tag;
     stream_codec_tag = -1;
     bit_rate = src->bit_rate;
@@ -2179,7 +2375,8 @@ QStringPairList AVStreamWrapper::getInfoText()
   
   info.append(QStringPair("Index", QString::number(index)));
   info.append(QStringPair("ID", QString::number(id)));
-  info.append(QStringPair("Codec", codec.codec_id_string));
+  // TODO: This needs to be resolved differently
+  //info.append(QStringPair("Codec", codec.codec_id_string));
   info.append(QStringPair("Time base", QString("%1/%2").arg(time_base.num).arg(time_base.den)));
   info.append(QStringPair("Start Time", QString("%1 (%2)").arg(start_time).arg(timestampToString(start_time, time_base))));
   info.append(QStringPair("Duration", QString("%1 (%2)").arg(duration).arg(timestampToString(duration, time_base))));
@@ -2238,16 +2435,16 @@ AVMediaType AVStreamWrapper::getCodecType()
   return codecpar.getCodecType();
 }
 
-AVCodecSpecfier AVStreamWrapper::getCodecSpecifier()
+AVCodecID AVStreamWrapper::getCodecID()
 {
   update();
   if (str == nullptr)
-    return AVCodecSpecfier();
+    return AV_CODEC_ID_NONE;
   
   if (libVer.avformat <= 56 || !codecpar)
-    return codec.getCodecSpecifier();
+    return codec.getCodecID();
   else
-    return codecpar.getCodecSpecifier();
+    return codecpar.getCodecID();
 }
 
 AVRational AVStreamWrapper::get_time_base()
@@ -2296,7 +2493,7 @@ QStringPairList AVCodecParametersWrapper::getInfoText()
   
   QStringList codecTypes = QStringList() << "Unknown" << "Video" << "Audio" << "Data" << "Subtile" << "Attachement" << "NB";
   info.append(QStringPair("Codec Type", codecTypes.at((int)codec_type + 1)));
-  info.append(QStringPair("Codec ID", QString::number((int)codec_id.getRawID())));
+  info.append(QStringPair("Codec ID", QString::number((int)codec_id)));
   info.append(QStringPair("Codec Tag", QString::number(codec_tag)));
   info.append(QStringPair("Format", QString::number(format)));
   info.append(QStringPair("Bitrate", QString::number(bit_rate)));
@@ -2421,12 +2618,12 @@ void AVCodecParametersWrapper::setAVMediaType(AVMediaType type)
   }
 }
 
-void AVCodecParametersWrapper::setAVCodecSpecifier(AVCodecSpecfier id)
+void AVCodecParametersWrapper::setAVCodecID(AVCodecID id)
 {
   if (libVer.avformat == 57 || libVer.avformat == 58)
   {
     AVCodecParameters_57_58 *src = reinterpret_cast<AVCodecParameters_57_58*>(param);
-    src->codec_id = id.getCodecID(libVer.avcodec);
+    src->codec_id = id;
     codec_id = id;
   }
 }
@@ -2506,7 +2703,7 @@ void AVCodecParametersWrapper::update()
     AVCodecParameters_57_58 *src = reinterpret_cast<AVCodecParameters_57_58*>(param);
     
     codec_type = src->codec_type;
-    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
+    codec_id = src->codec_id;
     codec_tag = src->codec_tag;
     extradata = src->extradata;
     extradata_size = src->extradata_size;
@@ -2718,6 +2915,19 @@ QString FFmpegVersionHandler::getLibVersionString() const
   s += QString("swresample %1.%2.%3").arg(libVersion.swresample).arg(libVersion.swresample_minor).arg(libVersion.swresample_micro);
 
   return s;
+}
+
+AVCodecIDWrapper FFmpegVersionHandler::getCodecIDWrapper(AVCodecID id)
+{
+  QString codecName = lib.avcodec_get_name(id);
+  return AVCodecIDWrapper(id, codecName);
+}
+
+AVCodecID FFmpegVersionHandler::getCodecIDFromWrapper(AVCodecIDWrapper wrapper)
+{
+  // TODO:
+  assert(false);
+  return AV_CODEC_ID_NONE;
 }
 
 bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCodecParametersWrapper &codecpar)
@@ -3117,4 +3327,68 @@ void AVMotionVectorWrapper::update()
   }
   else
     assert(false);
+}
+
+AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descriptor, FFmpegLibraryVersion libVer) : fmtDescriptor(descriptor)
+{
+  if (libVer.avutil == 54)
+  {
+    AVPixFmtDescriptor_54 *src = reinterpret_cast<AVPixFmtDescriptor_54*>(descriptor);
+    name = QString(src->name);
+    nb_components = src->nb_components;
+    log2_chroma_w = src->log2_chroma_w;
+    log2_chroma_h = src->log2_chroma_h;
+    flags = src->flags;
+
+    for (int i=0; i<4; i++)
+    {
+      comp[i].plane = src->comp[i].plane;
+      comp[i].step = src->comp[i].step_minus1 + 1;
+      comp[i].offset = src->comp[i].offset_plus1 - 1;
+      comp[i].shift = src->comp[i].shift;
+      comp[i].depth = src->comp[i].depth_minus1 + 1;
+    }
+
+    aliases = QString(src->alias);
+  }
+  else if (libVer.avutil == 55)
+  {
+    AVPixFmtDescriptor_55 *src = reinterpret_cast<AVPixFmtDescriptor_55*>(descriptor);
+    name = QString(src->name);
+    nb_components = src->nb_components;
+    log2_chroma_w = src->log2_chroma_w;
+    log2_chroma_h = src->log2_chroma_h;
+    flags = src->flags;
+
+    for (int i=0; i<4; i++)
+    {
+      comp[i].plane = src->comp[i].plane;
+      comp[i].step = src->comp[i].step;
+      comp[i].offset = src->comp[i].offset;
+      comp[i].shift = src->comp[i].shift;
+      comp[i].depth = src->comp[i].depth;
+    }
+
+    aliases = QString(src->alias);
+  }
+  else if (libVer.avutil == 56)
+  {
+    AVPixFmtDescriptor_56 *src = reinterpret_cast<AVPixFmtDescriptor_56*>(descriptor);
+    name = QString(src->name);
+    nb_components = src->nb_components;
+    log2_chroma_w = src->log2_chroma_w;
+    log2_chroma_h = src->log2_chroma_h;
+    flags = src->flags;
+
+    for (int i=0; i<4; i++)
+    {
+      comp[i].plane = src->comp[i].plane;
+      comp[i].step = src->comp[i].step;
+      comp[i].offset = src->comp[i].offset;
+      comp[i].shift = src->comp[i].shift;
+      comp[i].depth = src->comp[i].depth;
+    }
+
+    aliases = QString(src->alias);
+  }
 }

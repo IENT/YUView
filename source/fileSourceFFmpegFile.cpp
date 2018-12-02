@@ -184,8 +184,8 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
   QList<QByteArray> retArray;
 
   // Since the FFmpeg developers don't want to make it too easy, the extradata is organized differently depending on the codec.
-  AVCodecSpecfier codec = video_stream.getCodecSpecifier();
-  if (codec.isHEVC())
+  AVCodecIDWrapper codecID = ff.getCodecIDWrapper(video_stream.getCodecID());
+  if (codecID.isHEVC())
   {
     if (extradata.at(0) == 1)
     {
@@ -223,7 +223,7 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
       }
     }
   }
-  else if (codec.isAVC())
+  else if (codecID.isAVC())
   {
     // Note: Actually we would only need this if we would feed the AVC bitstream to a different decoder then ffmpeg.
     //       So this function is so far not called (and not tested).
@@ -414,11 +414,14 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
     frameRate = -1;
   else
     frameRate = avgFrameRate.num / double(avgFrameRate.den);
-  rawFormat = FFmpegVersionHandler::getRawFormat(video_stream.getCodec().get_pixel_format());
+
+  AVPixFmtDescriptorWrapper ffmpegPixFormat = ff.getAvPixFmtDescriptionFromAvPixelFormat(video_stream.getCodec().get_pixel_format());
+  rawFormat = ffmpegPixFormat.getRawFormat();
   if (rawFormat == raw_YUV)
-    pixelFormat_yuv = FFmpegVersionHandler::convertAVPixelFormatYUV(video_stream.getCodec().get_pixel_format());
+    pixelFormat_yuv = ffmpegPixFormat.getYUVPixelFormat();
   else if (rawFormat == raw_RGB)
-    pixelFormat_rgb = FFmpegVersionHandler::convertAVPixelFormatRGB(video_stream.getCodec().get_pixel_format());
+    pixelFormat_rgb = ffmpegPixFormat.getRGBPixelFormat();
+  
   duration = fmt_ctx.get_duration();
   timeBase = video_stream.get_time_base();
 

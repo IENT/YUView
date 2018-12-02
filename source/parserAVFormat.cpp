@@ -521,7 +521,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
   // Open the file, get the codec which is used and create the needed parser
   QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(compressedFilePath));
-  codecID = ffmpegFile->getCodecSpecifier();
+  codecID = ffmpegFile->getVideoStreamCodecID();
   if (codecID.isAVC())
     annexBParser.reset(new parserAnnexBAVC());
   else if (codecID.isHEVC())

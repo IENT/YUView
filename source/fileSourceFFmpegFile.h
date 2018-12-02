@@ -86,7 +86,7 @@ public:
 
   // Get information on the video stream
   int getNumberFrames() const { return nrFrames; }
-  AVCodecSpecfier getCodecSpecifier() { return video_stream.getCodecSpecifier(); }
+  AVCodecIDWrapper getVideoStreamCodecID() { return ff.getCodecIDWrapper(video_stream.getCodecID()); }
   AVCodecParametersWrapper getVideoCodecPar() { return video_stream.get_codecpar(); }
 
   // Get more general information about the streams
