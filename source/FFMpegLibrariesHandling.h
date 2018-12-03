@@ -362,6 +362,8 @@ public:
   AVCodecIDWrapper() {}
   AVCodecIDWrapper(AVCodecID codecID, QString codecName) : codecID(codecID), codecName(codecName) {}
 
+  QString getCodecName() { return codecName; }
+
   void setTypeHEVC() { codecName = "hevc"; }
   void setTypeAVC()  { codecName = "h264";  }
 
@@ -372,6 +374,8 @@ public:
 
   bool operator==(const AVCodecIDWrapper &a) { return codecID == a.codecID; }
 
+  friend FFmpegVersionHandler;
+private:
   AVCodecID codecID {AV_CODEC_ID_NONE};
   QString codecName;
 };
@@ -776,7 +780,7 @@ public:
   // Only these functions can be used to get valid versions of these wrappers (they have to use ffmpeg functions
   // to retrieve the needed information)
   AVCodecIDWrapper getCodecIDWrapper(AVCodecID id);
-  AVCodecID getCodecIDFromWrapper(AVCodecIDWrapper wrapper);
+  AVCodecID getCodecIDFromWrapper(AVCodecIDWrapper &wrapper);
   AVPixFmtDescriptorWrapper getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixFmt);
   AVPixelFormat getAVPixelFormatFromWrapper(AVPixFmtDescriptorWrapper wrapper);
 

@@ -1297,10 +1297,11 @@ AVCodecParametersWrapper FFmpegVersionHandler::alloc_code_parameters()
 
 AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecIDWrapper codecId)
 {
-  AVCodec *c = lib.avcodec_find_decoder(codecId.codecID);
+  AVCodecID avCodecID = getCodecIDFromWrapper(codecId);
+  AVCodec *c = lib.avcodec_find_decoder(avCodecID);
   if (c == nullptr)
   {
-    LOG("Unable to find decoder for codec " + codecId.codecName);
+    LOG("Unable to find decoder for codec " + codecId.getCodecName());
     return AVCodecWrapper();
   }
   return AVCodecWrapper(c, libVersion);
@@ -2922,10 +2923,23 @@ AVCodecIDWrapper FFmpegVersionHandler::getCodecIDWrapper(AVCodecID id)
   return AVCodecIDWrapper(id, codecName);
 }
 
-AVCodecID FFmpegVersionHandler::getCodecIDFromWrapper(AVCodecIDWrapper wrapper)
+AVCodecID FFmpegVersionHandler::getCodecIDFromWrapper(AVCodecIDWrapper &wrapper)
 {
-  // TODO:
-  assert(false);
+  if (wrapper.codecID != AV_CODEC_ID_NONE)
+    return wrapper.codecID;
+
+  int codecID = 1;
+  QString codecName = lib.avcodec_get_name((AVCodecID)codecID++);
+  while (codecName != "unknown_codec")
+  {
+    if (codecName == wrapper.codecName)
+    {
+      wrapper.codecID = (AVCodecID)codecID;
+      return wrapper.codecID;
+    }
+    codecName = lib.avcodec_get_name((AVCodecID)codecID++);
+  }
+  
   return AV_CODEC_ID_NONE;
 }
 

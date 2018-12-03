@@ -435,7 +435,7 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
     return setErrorB(QStringLiteral("Video codec already allocated."));
   videoCodec = ff.find_decoder(codecID);
   if(!videoCodec)
-    return setErrorB(QStringLiteral("Could not find a video decoder for the given codec ") + codecID.codecName);
+    return setErrorB(QStringLiteral("Could not find a video decoder for the given codec ") + codecID.getCodecName());
 
   if (decCtx)
     return setErrorB(QStringLiteral("Decoder context already allocated."));
@@ -482,6 +482,5 @@ QString decoderFFmpeg::getCodecName()
   if (!decCtx)
     return "";
 
-  AVCodecIDWrapper codecID = ff.getCodecIDWrapper(decCtx.getCodecID());
-  return codecID.codecName;
+  return ff.getCodecIDWrapper(decCtx.getCodecID()).getCodecName();
 }
