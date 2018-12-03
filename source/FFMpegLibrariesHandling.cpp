@@ -38,7 +38,7 @@
 #include <QSettings>
 #include "typedef.h"
 
-#define FFmpegDecoderLibHandling_DEBUG_OUTPUT 1
+#define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define LOG(x) do { log(__func__, x); qDebug() << __func__ << " " << x; } while(0)
@@ -2360,7 +2360,6 @@ void AVStreamWrapper::update()
   else 
     assert(false);
 }
-
 
 QStringPairList AVStreamWrapper::getInfoText()
 {

@@ -178,10 +178,12 @@ namespace FFmpeg
     AV_PIX_FMT_NONE = -1
   };
 
-  // The order / numbering of the values in this enum changes depending on the libavcodec version number
+  /* The order / numbering of the values in this enum changes depending on the libavcodec version number 
+   * or even how the library was compiled. The id for AV_CODEC_ID_NONE is always 0.
+   */
   enum AVCodecID
   {
-    AV_CODEC_ID_NONE = -1
+    AV_CODEC_ID_NONE = 0
   };
 
   enum AVColorPrimaries 
