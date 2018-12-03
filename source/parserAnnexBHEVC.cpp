@@ -1262,7 +1262,7 @@ bool parserAnnexBHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeIt
   // This could be added and is definitely interesting.
   // ... later
 
-  return false;
+  return true;
 }
 
 bool parserAnnexBHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
@@ -1801,9 +1801,10 @@ bool parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
   int MaxPicOrderCntLsb = 1 << (actSPS->log2_max_pic_order_cnt_lsb_minus4 + 4);
   LOGVAL(MaxPicOrderCntLsb);
 
-  // The variable NoRaslOutputFlag is specified as follows:
+  // If the current picture is an IDR picture, a BLA picture, the first picture in the bitstream in decoding order, or the first
+  // picture that follows an end of sequence NAL unit in decoding order, the variable NoRaslOutputFlag is set equal to 1.
   NoRaslOutputFlag = false;
-  if (nal_type == IDR_W_RADL || nal_type == BLA_W_LP)
+  if (nal_type == IDR_W_RADL || nal_type == IDR_N_LP || nal_type == BLA_W_LP)
     NoRaslOutputFlag = true;
   else if (bFirstAUInDecodingOrder) 
   {
