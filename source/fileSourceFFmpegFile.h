@@ -50,7 +50,7 @@ public:
 
   // Load the ffmpeg libraries and try to open the file. The fileSource will install a watcher for the file.
   // Return false if anything goes wrong.
-  bool openFile(const QString &filePath, QWidget *mainWindow=nullptr, fileSourceFFmpegFile *other=nullptr);
+  bool openFile(const QString &filePath, QWidget *mainWindow=nullptr, fileSourceFFmpegFile *other=nullptr, bool parseFile=true);
   
   // Is the file at the end?
   // TODO: How do we do this?

@@ -265,7 +265,7 @@ fileSourceFFmpegFile::~fileSourceFFmpegFile()
     pkt.free_packet();
 }
 
-bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow, fileSourceFFmpegFile *other)
+bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow, fileSourceFFmpegFile *other, bool parseFile)
 {
   // Check if the file exists
   fileInfo.setFile(filePath);
@@ -295,11 +295,14 @@ bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow
     nrFrames = other->nrFrames;
     keyFrameList = other->keyFrameList;
   }
-  else if (!scanBitstream(mainWindow))
-    return false;
-
-  // Seek back to the beginning
-  seekToDTS(0);
+  else if (parseFile)
+  {
+    if (!scanBitstream(mainWindow))
+      return false;
+    
+    // Seek back to the beginning
+    seekToDTS(0);
+  }
 
   return true;
 }

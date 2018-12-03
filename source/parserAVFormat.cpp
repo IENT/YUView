@@ -519,8 +519,10 @@ bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper 
 
 bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
-  // Open the file, get the codec which is used and create the needed parser
-  QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(compressedFilePath));
+  // Open the file but don't parse it yet.
+  QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile());
+  ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false);
+
   codecID = ffmpegFile->getVideoStreamCodecID();
   if (codecID.isAVC())
     annexBParser.reset(new parserAnnexBAVC());
