@@ -1583,6 +1583,67 @@ rgbPixelFormat AVPixFmtDescriptorWrapper::getRGBPixelFormat()
   return rgbPixelFormat(bitsPerSample, true, 0, 1, 2, flagHasAlphaPlane() ? 3 : -1);
 }
 
+bool AVPixFmtDescriptorWrapper::setValuesFromYUVPixelFormat(YUV_Internals::yuvPixelFormat fmt)
+{
+  if (fmt.planeOrder == Order_YVU || fmt.planeOrder == Order_YVUA)
+    return false;
+
+  if (fmt.subsampling == YUV_422)
+  {
+    log2_chroma_w = 1;
+    log2_chroma_h = 0;
+  }
+  else if (fmt.subsampling == YUV_422)
+  {
+    log2_chroma_w = 1;
+    log2_chroma_h = 0;
+  }
+  else if (fmt.subsampling == YUV_420)
+  {
+    log2_chroma_w = 1;
+    log2_chroma_h = 1;
+  }
+  else if (fmt.subsampling == YUV_440)
+  {
+    log2_chroma_w = 0;
+    log2_chroma_h = 1;
+  }
+  else if (fmt.subsampling == YUV_410)
+  {
+    log2_chroma_w = 2;
+    log2_chroma_h = 2;
+  }
+  else if (fmt.subsampling == YUV_411)
+  {
+    log2_chroma_w = 0;
+    log2_chroma_h = 2;
+  }
+  else if (fmt.subsampling == YUV_400)
+    nb_components = 1;
+  else
+    return false;
+
+  nb_components = fmt.subsampling == YUV_400 ? 1 : 3;
+
+  if (fmt.bigEndian)
+    flags += (1 << 0);
+  if (fmt.planar)
+    flags += (1 << 4);
+  if (fmt.planeOrder == Order_YUVA)
+    // Has alpha channel
+    flags += (1 << 7);
+
+  for (int i=0; i<4; i++)
+  {
+    comp[i].plane = i;
+    comp[i].step = 1;
+    comp[i].offset = 0;
+    comp[i].shift = 0;
+    comp[i].depth = fmt.bitsPerSample;
+  }
+  return true;
+}
+
 bool AVPixFmtDescriptorWrapper::flagsSupported()
 {
   // We don't support any of these
@@ -1644,184 +1705,6 @@ AVPixelFormat FFmpegVersionHandler::getAVPixelFormatFromWrapper(AVPixFmtDescript
 
   return AV_PIX_FMT_NONE;
 }
-
-// // Convert from the AVPixelFormat to the internal yuvPixelFormat
-// yuvPixelFormat FFmpegVersionHandler::convertAVPixelFormatYUV(AVPixelFormat pixelFormat)
-// {
-//   // YUV 4:2:0 formats
-//   if (pixelFormat == AV_PIX_FMT_YUV420P)
-//     return yuvPixelFormat(YUV_420, 8);
-//   if (pixelFormat == AV_PIX_FMT_YUV420P16LE)
-//     return yuvPixelFormat(YUV_420, 16);
-//   if (pixelFormat == AV_PIX_FMT_YUV420P16BE)
-//     return yuvPixelFormat(YUV_420, 16, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV420P9BE)
-//     return yuvPixelFormat(YUV_420, 9, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV420P9LE)
-//     return yuvPixelFormat(YUV_420, 9);
-//   if (pixelFormat == AV_PIX_FMT_YUV420P10BE)
-//     return yuvPixelFormat(YUV_420, 10, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV420P10LE)
-//     return yuvPixelFormat(YUV_420, 10);
-//   if (pixelFormat == AV_PIX_FMT_YUV420P12BE)
-//     return yuvPixelFormat(YUV_420, 12, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV420P12LE)
-//     return yuvPixelFormat(YUV_420, 12);
-//   if (pixelFormat == AV_PIX_FMT_YUV420P14BE)
-//     return yuvPixelFormat(YUV_420, 14, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV420P14LE)
-//     return yuvPixelFormat(YUV_420, 14);
-
-//   // YUV 4:2:2 formats
-//   if (pixelFormat == AV_PIX_FMT_YUV422P)
-//     return yuvPixelFormat(YUV_422, 8);
-//   if (pixelFormat == AV_PIX_FMT_YUV422P16LE)
-//     return yuvPixelFormat(YUV_422, 16);
-//   if (pixelFormat == AV_PIX_FMT_YUV422P16BE)
-//     return yuvPixelFormat(YUV_422, 16, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV422P10BE)
-//     return yuvPixelFormat(YUV_422, 10, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV422P10LE)
-//     return yuvPixelFormat(YUV_422, 10);
-//   if (pixelFormat == AV_PIX_FMT_YUV422P9BE)
-//     return yuvPixelFormat(YUV_422, 9, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV422P9LE)
-//     return yuvPixelFormat(YUV_422, 9);
-//   if (pixelFormat == AV_PIX_FMT_YUV422P12BE)
-//     return yuvPixelFormat(YUV_422, 12, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV422P12LE)
-//     return yuvPixelFormat(YUV_422, 12);
-//   if (pixelFormat == AV_PIX_FMT_YUV422P14BE)
-//     return yuvPixelFormat(YUV_422, 14, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV422P14LE)
-//     return yuvPixelFormat(YUV_422, 14);
-
-//   // YUV 4:4:4 formats
-//   if (pixelFormat == AV_PIX_FMT_YUV444P)
-//     return yuvPixelFormat(YUV_444, 8);
-//   if (pixelFormat == AV_PIX_FMT_YUV444P16LE)
-//     return yuvPixelFormat(YUV_444, 16);
-//   if (pixelFormat == AV_PIX_FMT_YUV444P16BE)
-//     return yuvPixelFormat(YUV_444, 16, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV444P9BE)
-//     return yuvPixelFormat(YUV_444, 9, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV444P9LE)
-//     return yuvPixelFormat(YUV_444, 9);
-//   if (pixelFormat == AV_PIX_FMT_YUV444P10BE)
-//     return yuvPixelFormat(YUV_444, 10, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV444P10LE)
-//     return yuvPixelFormat(YUV_444, 10);
-//   if (pixelFormat == AV_PIX_FMT_YUV444P12BE)
-//     return yuvPixelFormat(YUV_444, 12, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV444P12LE)
-//     return yuvPixelFormat(YUV_444, 12);
-//   if (pixelFormat == AV_PIX_FMT_YUV444P14BE)
-//     return yuvPixelFormat(YUV_444, 14, Order_YUV, true);
-//   if (pixelFormat == AV_PIX_FMT_YUV444P14LE)
-//     return yuvPixelFormat(YUV_444, 14);
-
-//   return yuvPixelFormat();
-// }
-
-// rgbPixelFormat FFmpegVersionHandler::convertAVPixelFormatRGB(AVPixelFormat pixelFormat)
-// {
-//   if (pixelFormat == AV_PIX_FMT_RGB24)
-//     return rgbPixelFormat(8, false, false);
-//   if (pixelFormat == AV_PIX_FMT_BGR24)
-//     return rgbPixelFormat(8, false, false, 2, 1, 0);
-//   if (pixelFormat == AV_PIX_FMT_ARGB)
-//     return rgbPixelFormat(8, false, true);
-//   if (pixelFormat == AV_PIX_FMT_ABGR)
-//     return rgbPixelFormat(8, false, true, 2, 1, 0);
-//   if (pixelFormat == AV_PIX_FMT_RGB48LE)
-//     return rgbPixelFormat(16, false, false);
-  
-//   // Other formats are not yet supported
-//   // Adding them should be straightforward (but also not trivial)
-//   return rgbPixelFormat();
-// }
-
-// // Convert from yuvPixelFormat to AVPixelFormat
-// AVPixelFormat FFmpegVersionHandler::convertYUVAVPixelFormat(yuvPixelFormat fmt)
-// {
-//   if (fmt.subsampling == YUV_420)
-//   {
-//     if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P;
-//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P16LE;
-//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P16BE;
-//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P9BE;
-//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P9LE;
-//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P10BE;
-//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P10LE;
-//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P12BE;
-//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P12LE;
-//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P14BE;
-//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV420P14LE;
-//   }
-//   if (fmt.subsampling == YUV_422)
-//   {
-//     if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P;
-//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P16LE;
-//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P16BE;
-//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P10BE;
-//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P10LE;
-//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P9BE;
-//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P9LE;
-//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P12BE;
-//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P12LE;
-//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P14BE;
-//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV422P14LE;
-//   }
-//   if (fmt.subsampling == YUV_444)
-//   {
-//     if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P;
-//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P16LE;
-//     if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P16BE;
-//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P9BE;
-//     if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P9LE;
-//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P10BE;
-//     if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P10LE;
-//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P12BE;
-//     if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P12LE;
-//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P14BE;
-//     if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-//       return AV_PIX_FMT_YUV444P14LE;
-//   }
-
-//   return AV_PIX_FMT_NONE;
-// }
 
 void AVFormatContextWrapper::update()
 {

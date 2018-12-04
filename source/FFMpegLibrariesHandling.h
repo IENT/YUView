@@ -699,9 +699,11 @@ public:
   YUV_Internals::yuvPixelFormat getYUVPixelFormat();
   RGB_Internals::rgbPixelFormat getRGBPixelFormat();
 
+  bool setValuesFromYUVPixelFormat(YUV_Internals::yuvPixelFormat fmt);
+
   // AVPixFmtDescriptor
   QString name;
-  int nb_components;  ///< The number of components each pixel has, (1-4)
+  int nb_components {0};  ///< The number of components each pixel has, (1-4)
 
   /**
    * Amount to shift the luma width right to find the chroma width.
@@ -710,7 +712,7 @@ public:
    * The note above is needed to ensure rounding up.
    * This value only refers to the chroma components.
    */
-  int log2_chroma_w;
+  int log2_chroma_w {0};
   
   /**
     * Amount to shift the luma height right to find the chroma height.
@@ -719,7 +721,7 @@ public:
     * The note above is needed to ensure rounding up.
     * This value only refers to the chroma components.
     */
-  int log2_chroma_h;
+  int log2_chroma_h {0};
 
   // The flags. Fortunately, these do not change with the version of AVUtil.
   int flags;

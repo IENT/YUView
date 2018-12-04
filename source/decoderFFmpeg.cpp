@@ -59,6 +59,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray ex
   codecpar.setExtradata(extradata);
   
   // TODO: This needs a new interface
+  
   // AVPixelFormat f = FFmpegVersionHandler::convertYUVAVPixelFormat(fmt);
   // codecpar.setAVPixelFormat(f);
   
