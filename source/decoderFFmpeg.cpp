@@ -58,10 +58,13 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray ex
   codecpar.setSize(size.width(), size.height());
   codecpar.setExtradata(extradata);
   
-  // TODO: This needs a new interface
-  
-  // AVPixelFormat f = FFmpegVersionHandler::convertYUVAVPixelFormat(fmt);
-  // codecpar.setAVPixelFormat(f);
+  AVPixelFormat f = ff.getAVPixelFormatFromYUVPixelFormat(fmt);
+  if (f == AV_PIX_FMT_NONE)
+  {
+    setError("Error determining the AVPixelFormat.");
+    return;
+  }
+  codecpar.setAVPixelFormat(f);
   
   codecpar.setProfileLevel(profileLevel.first, profileLevel.second);
   codecpar.setSampleAspectRatio(sampleAspectRatio.first, sampleAspectRatio.second);
@@ -69,7 +72,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray ex
   if (!createDecoder(codecID, codecpar))
   {
     setError("Error creating the needed decoder.");
-    return ;
+    return;
   }
 
   flushing = false;

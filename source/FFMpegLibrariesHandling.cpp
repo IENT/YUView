@@ -1633,10 +1633,10 @@ bool AVPixFmtDescriptorWrapper::setValuesFromYUVPixelFormat(YUV_Internals::yuvPi
     // Has alpha channel
     flags += (1 << 7);
 
-  for (int i=0; i<4; i++)
+  for (int i=0; i<nb_components; i++)
   {
     comp[i].plane = i;
-    comp[i].step = 1;
+    comp[i].step = (fmt.bitsPerSample > 8) ? 2 : 1;
     comp[i].offset = 0;
     comp[i].shift = 0;
     comp[i].depth = fmt.bitsPerSample;
@@ -1671,7 +1671,7 @@ bool AVPixFmtDescriptorWrapper::operator==(const AVPixFmtDescriptorWrapper &othe
   if (flags != other.flags)
     return false;
 
-  for (int i=0; i<4; i++)
+  for (int i=0; i<nb_components; i++)
   {
     if (comp[i].plane != other.comp[i].plane)
       return false;
@@ -1687,8 +1687,11 @@ bool AVPixFmtDescriptorWrapper::operator==(const AVPixFmtDescriptorWrapper &othe
   return true;
 }
 
-AVPixelFormat FFmpegVersionHandler::getAVPixelFormatFromWrapper(AVPixFmtDescriptorWrapper wrapper)
+AVPixelFormat FFmpegVersionHandler::getAVPixelFormatFromYUVPixelFormat(yuvPixelFormat pixFmt)
 {
+  AVPixFmtDescriptorWrapper wrapper;
+  wrapper.setValuesFromYUVPixelFormat(pixFmt);
+
   // We will have to search through all pixel formats which the library knows and compare them to the 
   // one we are looking for. Unfortunately there is no other more direct search function in libavutil.
   AVPixFmtDescriptor *desc = lib.av_pix_fmt_desc_next(nullptr);

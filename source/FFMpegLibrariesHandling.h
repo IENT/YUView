@@ -692,7 +692,7 @@ private:
 class AVPixFmtDescriptorWrapper
 {
 public:
-  AVPixFmtDescriptorWrapper();
+  AVPixFmtDescriptorWrapper() {};
   AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, FFmpegLibraryVersion libVer);
 
   RawFormat getRawFormat() { return flagIsRGB() ? raw_RGB : raw_YUV; }
@@ -724,7 +724,7 @@ public:
   int log2_chroma_h {0};
 
   // The flags. Fortunately, these do not change with the version of AVUtil.
-  int flags;
+  int flags {0};
   bool flagIsBigEndian()           { return flags & (1 << 0); } // Pixel format is big-endian.
   bool flagIsPallette()            { return flags & (1 << 1); } // Pixel format has a palette in data[1], values are indexes in this palette.
   bool flagIsBitWisePacked()       { return flags & (1 << 2); } // All values of a component are bit-wise packed end to end.
@@ -784,7 +784,7 @@ public:
   AVCodecIDWrapper getCodecIDWrapper(AVCodecID id);
   AVCodecID getCodecIDFromWrapper(AVCodecIDWrapper &wrapper);
   AVPixFmtDescriptorWrapper getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixFmt);
-  AVPixelFormat getAVPixelFormatFromWrapper(AVPixFmtDescriptorWrapper wrapper);
+  AVPixelFormat getAVPixelFormatFromYUVPixelFormat(YUV_Internals::yuvPixelFormat pixFmt);
 
   bool configureDecoder(AVCodecContextWrapper &decCtx, AVCodecParametersWrapper &codecpar);
 
