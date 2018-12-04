@@ -1429,7 +1429,7 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
 bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &logging)
 {
   FFmpegVersionHandler handler;
-  bool success = !handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
+  bool success = handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
   logging = handler.getLog();
   return success;
 }
