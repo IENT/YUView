@@ -1394,7 +1394,7 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
   {
     FFmpegVersions v = (FFmpegVersions)i;
     
-    LOG(QString("Trying to load libraries avFromat %1 avCodec %2 avUtil %3 swResample %4").arg(avFormatLib).arg(avCodecLib).arg(avUtilLib).arg(swResampleLib));
+    LOG(QString("Trying to load libraries avFormat %1 avCodec %2 avUtil %3 swResample %4").arg(avFormatLib).arg(avCodecLib).arg(avUtilLib).arg(swResampleLib));
     if (lib.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
     {
       // This worked. Now check the version number of the libraries
