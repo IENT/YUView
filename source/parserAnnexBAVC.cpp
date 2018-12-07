@@ -1064,7 +1064,7 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     // 8.2.1.1 Decoding process for picture order count type 0
     // In: PicOrderCntMsb (of previous pic)
     // Out: TopFieldOrderCnt, BottomFieldOrderCnt
-    if (IdrPicFlag)
+    if (IdrPicFlag || (slice_type == SLICE_I && prev_pic.isNull()))
     {
       prevPicOrderCntMsb = 0;
       prevPicOrderCntLsb = 0;
@@ -1072,8 +1072,8 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     else
     {
       if (prev_pic.isNull())
-        return reader.addErrorMessageChildItem("This is not an IDR picture (IdrPicFlag not set) but there is no previous picture available. Can not calculate POC.");
-
+        return reader.addErrorMessageChildItem("This is not an IDR picture (IdrPicFlag not set) and not an I frame but there is no previous picture available. Can not calculate POC.");
+      
       if (first_mb_in_slice == 0)
       {
         // If the previous reference picture in decoding order included a memory_management_control_operation equal to 5, the following applies:
@@ -1121,8 +1121,8 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   }
   else
   {
-    if (!IdrPicFlag && prev_pic.isNull())
-      return reader.addErrorMessageChildItem("This is not an IDR picture (IdrPicFlag not set) but there is no previous picture available. Can not calculate POC.");
+    if (!IdrPicFlag && slice_type != SLICE_I && prev_pic.isNull())
+      return reader.addErrorMessageChildItem("This is not an IDR picture (IdrPicFlag not set) or an I frame but there is no previous picture available. Can not calculate POC.");
     
     int prevFrameNum = -1;
     if (!prev_pic.isNull())
@@ -1212,10 +1212,24 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   
   if (prev_pic.isNull())
   {
-    globalPOC = 0;
-    globalPOC_lastIDR = 0;
-    globalPOC_highestGlobalPOCLastGOP = 0;
-    DEBUG_AVC("POC - First pic - global POC %d", globalPOC);
+    if (slice_type == SLICE_I)
+    {
+      if (field_pic_flag && bottom_field_flag)
+        globalPOC = BottomFieldOrderCnt;
+      else
+        globalPOC = TopFieldOrderCnt;
+
+      globalPOC_highestGlobalPOCLastGOP = globalPOC;
+      globalPOC_lastIDR = 0;
+      DEBUG_AVC("POC - First pic non IDR but I - global POC %d", globalPOC);
+    }
+    else
+    {
+      globalPOC = 0;
+      globalPOC_lastIDR = 0;
+      globalPOC_highestGlobalPOCLastGOP = 0;
+      DEBUG_AVC("POC - First pic - global POC %d", globalPOC);
+    }
   }
   else
   {
