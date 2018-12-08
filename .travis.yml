@@ -32,10 +32,7 @@ install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd QtCharts; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then make install; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd ..; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export PATH=/Users/travis/build/Qt/bin/:$PATH; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ls /Users/travis/build; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ls /Users/travis/build/Qt/bin; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then which qmake; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export PATH=/Users/travis/build/Qt/bin:$PATH; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh; fi
   # On linux, install the new g++ version
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq g++-8; fi
