@@ -1628,7 +1628,8 @@ bool parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
     for (unsigned int i=0; i < actPPS->num_extra_slice_header_bits; i++)
       READFLAG_A(slice_reserved_flag, i);
 
-    READUEV(slice_type); // Max 3 bits read. 0-B 1-P 2-I
+    QStringList slice_type_meaning = QStringList() << "B-Slice" << "P-Slice" << "I-Slice";
+    READUEV_M(slice_type, slice_type_meaning); // Max 3 bits read. 0-B 1-P 2-I
     if (actPPS->output_flag_present_flag) 
       READFLAG(pic_output_flag);
 
