@@ -46,7 +46,7 @@ class parserAnnexBHEVC : public parserAnnexB
   Q_OBJECT
   
 public:
-  parserAnnexBHEVC(QObject *parent = nullptr) : parserAnnexB(parent) {}
+  parserAnnexBHEVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); }
   ~parserAnnexBHEVC() {};
 
   // Get some properties
@@ -764,6 +764,13 @@ protected:
   // It is allowed that units (like SEI messages) sent before the parameter sets but still refer to the 
   // parameter sets. Here we keep a list of seis that need to be parsed after the parameter sets were recieved.
   QList<QSharedPointer<sei>> reparse_sei;
+
+  // For every frame, we save the file position where the NAL unit of the first slice starts and where the NAL of the last slice ends.
+  // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
+  QUint64Pair curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+  // The POC of the current frame. We save this we encounter a NAL from the next POC; then we add it.
+  int curFramePOC {-1};
+  bool curFrameIsRandomAccess {false};
 };
 
 #endif //PARSERANNEXBHEVC_H

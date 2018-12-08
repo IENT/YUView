@@ -272,13 +272,10 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
         // Update the end position
         curFrameFileStartEndPos.second = nalStartEndPosFile.second;
 
-      if (nal_avc.isRandomAccess())
+      if (new_slice->isRandomAccess() && new_slice->first_mb_in_slice == 0)
       {
-        if (new_slice->first_mb_in_slice == 0)
-        {
-          // This is the first slice of a random access point. Add it to the list.
-          nalUnitList.append(new_slice);
-        }
+        // This is the first slice of a random access point. Add it to the list.
+        nalUnitList.append(new_slice);
       }
     }
   }

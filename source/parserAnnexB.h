@@ -48,7 +48,7 @@ class parserAnnexB : public parserBase
   Q_OBJECT
 
 public:
-  parserAnnexB(QObject *parent = nullptr);
+  parserAnnexB(QObject *parent = nullptr) : parserBase(parent) {};
   virtual ~parserAnnexB() {};
 
   // How many POC's have been found in the file
@@ -157,12 +157,7 @@ protected:
   // So basically all information we need to seek in the stream and get the active parameter sets to start the decoder at a certain position.
   QList<QSharedPointer<nal_unit>> nalUnitList;
 
-  // For every frame, we save the file position where the NAL unit of the first slice starts and where the NAL of the last slice ends.
-  // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
-  QUint64Pair curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
-  // The POC of the current frame. We save this we encounter a NAL from the next POC; then we add it.
-  int curFramePOC;
-  bool curFrameIsRandomAccess;
+  int pocOfFirstRandomAccessFrame {-1};
 
   // Save general information about the file here
   struct stream_info_type
