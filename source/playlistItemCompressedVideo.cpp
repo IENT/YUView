@@ -392,11 +392,14 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     uiDialog.ffmpegLogEdit->setPlainText(logFFmpegString);
 
     // Get the loading log
-    QStringList logLoading = inputFileFFmpegLoading->getFFmpegLoadingLog();
-    QString logLoadingString;
-    for (QString l : logLoading)
-      logLoadingString.append(l + "\n");
-    uiDialog.libraryLogEdit->setPlainText(logLoadingString);
+    if (inputFileFFmpegLoading)
+    {
+      QStringList logLoading = inputFileFFmpegLoading->getFFmpegLoadingLog();
+      QString logLoadingString;
+      for (QString l : logLoading)
+        logLoadingString.append(l + "\n");
+      uiDialog.libraryLogEdit->setPlainText(logLoadingString);
+    }
         
     newDialog.exec();
   }
