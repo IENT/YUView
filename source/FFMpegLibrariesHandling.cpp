@@ -229,10 +229,10 @@ namespace
     const enum AVPixelFormat *pix_fmts;     ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
     const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
     const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
-    const uint64_t *channel_layouts;         ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
+    const uint64_t *channel_layouts;        ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
     uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
     const AVClass *priv_class;              ///< AVClass for the private context
-    //const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
+    //const AVProfile *profiles;            ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
     
     // Actually, there is more here, but nothing more of the public API
   } AVCodec_56_57_58;
@@ -2815,16 +2815,17 @@ AVCodecID FFmpegVersionHandler::getCodecIDFromWrapper(AVCodecIDWrapper &wrapper)
     return wrapper.codecID;
 
   int codecID = 1;
-  QString codecName = lib.avcodec_get_name((AVCodecID)codecID++);
-  while (codecName != "unknown_codec")
+  QString codecName;
+  do
   {
+    QString codecName = lib.avcodec_get_name((AVCodecID)codecID);
     if (codecName == wrapper.codecName)
     {
       wrapper.codecID = (AVCodecID)codecID;
       return wrapper.codecID;
     }
-    codecName = lib.avcodec_get_name((AVCodecID)codecID++);
-  }
+    codecID++;
+  } while (codecName != "unknown_codec");
   
   return AV_CODEC_ID_NONE;
 }
