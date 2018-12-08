@@ -29,7 +29,7 @@ install:
   - curl -L -o QtTools.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.11/Qt-5.11-Tools.zip
   - 7z x QtTools.zip
   - ps: $env:path="C:\projects\Qttools\bin;$($env:path)"
-  - 'dir "C:\Program Files (x86)\Common Files\Merge Modules\"'
+  - dir "C:\Program Files (x86)\Common Files\Merge Modules\"
   - cd
 
 build_script:
@@ -57,6 +57,8 @@ after_build:
   - copy ..\libde265\libde265-internals.dll libde265
   - copy ..\libde265\LICENCE.TXT libde265
   - copy ..\LICENSE.GPL3 .
+  # Copy the windows runtime
+  - copy "C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC140_CRT_x64.msm" .
   # delete junk that is not needed
   - del /F /Q vcredist*
   - cd C:\projects\YUView
