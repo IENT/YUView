@@ -43,7 +43,7 @@
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 
-decoderFFmpeg::decoderFFmpeg(AVCodecSpecfier codec, QSize size, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder) : 
+decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder) : 
   decoderBase(cachingDecoder)
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading 
@@ -54,18 +54,25 @@ decoderFFmpeg::decoderFFmpeg(AVCodecSpecfier codec, QSize size, QByteArray extra
   // Create the cofiguration parameters
   AVCodecParametersWrapper codecpar = ff.alloc_code_parameters();
   codecpar.setAVMediaType(AVMEDIA_TYPE_VIDEO);
-  codecpar.setAVCodecSpecifier(codec);
+  codecpar.setAVCodecID(ff.getCodecIDFromWrapper(codecID));
   codecpar.setSize(size.width(), size.height());
   codecpar.setExtradata(extradata);
-  AVPixelFormat f = FFmpegVersionHandler::convertYUVAVPixelFormat(fmt);
+  
+  AVPixelFormat f = ff.getAVPixelFormatFromYUVPixelFormat(fmt);
+  if (f == AV_PIX_FMT_NONE)
+  {
+    setError("Error determining the AVPixelFormat.");
+    return;
+  }
   codecpar.setAVPixelFormat(f);
+  
   codecpar.setProfileLevel(profileLevel.first, profileLevel.second);
   codecpar.setSampleAspectRatio(sampleAspectRatio.first, sampleAspectRatio.second);
 
-  if (!createDecoder(codec, codecpar))
+  if (!createDecoder(codecID, codecpar))
   {
     setError("Error creating the needed decoder.");
-    return ;
+    return;
   }
 
   flushing = false;
@@ -85,8 +92,8 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
   if (!ff.loadFFmpegLibraries())
     return;
 
-  AVCodecSpecfier codec = codecpar.getCodecSpecifier();
-  if (!createDecoder(codec, codecpar))
+  AVCodecIDWrapper codecID = ff.getCodecIDWrapper(codecpar.getCodecID());
+  if (!createDecoder(codecID, codecpar))
   {
     setError("Error creating the needed decoder.");
     return ;
@@ -108,6 +115,9 @@ decoderFFmpeg::~decoderFFmpeg()
 
 void decoderFFmpeg::resetDecoder()
 {
+  if (decoderState == decoderError)
+    return;
+    
   DEBUG_FFMPEG("decoderFFmpeg::resetDecoder");
   ff.flush_buffers(decCtx);
   decoderState = decoderNeedsMoreData;
@@ -422,14 +432,14 @@ void decoderFFmpeg::fillStatisticList(statisticHandler &statSource) const
   statSource.addStatType(motionVec1);
 }
 
-bool decoderFFmpeg::createDecoder(AVCodecSpecfier streamCodecID, AVCodecParametersWrapper codecpar)
+bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWrapper codecpar)
 {
   // Allocate the decoder context
   if (videoCodec)
     return setErrorB(QStringLiteral("Video codec already allocated."));
-  videoCodec = ff.find_decoder(streamCodecID);
+  videoCodec = ff.find_decoder(codecID);
   if(!videoCodec)
-    return setErrorB(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
+    return setErrorB(QStringLiteral("Could not find a video decoder for the given codec ") + codecID.getCodecName());
 
   if (decCtx)
     return setErrorB(QStringLiteral("Decoder context already allocated."));
@@ -445,12 +455,14 @@ bool decoderFFmpeg::createDecoder(AVCodecSpecfier streamCodecID, AVCodecParamete
 
   // Get some parameters from the decoder context
   frameSize = QSize(decCtx.get_width(), decCtx.get_height());
-  rawFormat = FFmpegVersionHandler::getRawFormat(decCtx.get_pixel_format());
+
+  AVPixFmtDescriptorWrapper ffmpegPixFormat = ff.getAvPixFmtDescriptionFromAvPixelFormat(decCtx.get_pixel_format());
+  rawFormat = ffmpegPixFormat.getRawFormat();
   if (rawFormat == raw_YUV)
-    formatYUV = FFmpegVersionHandler::convertAVPixelFormatYUV(decCtx.get_pixel_format());
+    formatYUV = ffmpegPixFormat.getYUVPixelFormat();
   else if (rawFormat == raw_RGB)
-    formatRGB = FFmpegVersionHandler::convertAVPixelFormatRGB(decCtx.get_pixel_format());
-  
+    formatRGB = ffmpegPixFormat.getRGBPixelFormat();
+
   // Ask the decoder to provide motion vectors (if possible)
   AVDictionaryWrapper opts;
   int ret = ff.av_dict_set(opts, "flags2", "+export_mvs", 0);
@@ -474,6 +486,5 @@ QString decoderFFmpeg::getCodecName()
   if (!decCtx)
     return "";
 
-  AVCodecSpecfier codec = decCtx.getCodecSpecifier();
-  return ff.getCodecName(codec);
+  return ff.getCodecIDWrapper(decCtx.getCodecID()).getCodecName();
 }

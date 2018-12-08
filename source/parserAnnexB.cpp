@@ -43,24 +43,24 @@
 #define DEBUG_ANNEXB(fmt,...) ((void)0)
 #endif
 
-parserAnnexB::parserAnnexB(QObject *parent) : parserBase(parent)
-{
-  curFrameFileStartEndPos = QUint64Pair(-1, -1);
-  curFramePOC = -1;
-  curFrameIsRandomAccess = false;
-}
-
 bool parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool randomAccessPoint)
 {
-  annexBFrame newFrame;
-  newFrame.poc = poc;
-  newFrame.fileStartEndPos = fileStartEndPos;
-  newFrame.randomAccessPoint = randomAccessPoint;
-  frameList.append(newFrame);
-
   if (POCList.contains(poc))
     return false;
-  POCList.append(poc);
+
+  if (pocOfFirstRandomAccessFrame == -1 && randomAccessPoint)
+    pocOfFirstRandomAccessFrame = poc;
+  if (poc >= pocOfFirstRandomAccessFrame)
+  {
+    // We don't add frames which we can not decode because they are before the first RA (I) frame
+    annexBFrame newFrame;
+    newFrame.poc = poc;
+    newFrame.fileStartEndPos = fileStartEndPos;
+    newFrame.randomAccessPoint = randomAccessPoint;
+    frameList.append(newFrame);
+
+    POCList.append(poc);
+  }
   return true;
 }
 

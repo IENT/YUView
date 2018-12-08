@@ -136,7 +136,7 @@ protected:
   inputFormat inputFormatType;
   bool isInputFormatTypeAnnexB() const { return inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC; }
   bool isInputFormatTypeFFmpeg() const { return inputFormatType == inputLibavformat; }
-  AVCodecSpecfier ffmpegCodec;
+  AVCodecIDWrapper ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
   // read the NAL units from the compressed file.

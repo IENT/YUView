@@ -39,7 +39,7 @@
 class decoderFFmpeg : public decoderBase
 {
 public:
-  decoderFFmpeg(AVCodecSpecfier codec, QSize frameSize, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder=false);
+  decoderFFmpeg(AVCodecIDWrapper codec, QSize frameSize, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder=false);
   decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder=false);
   ~decoderFFmpeg();
 
@@ -60,14 +60,14 @@ public:
   QStringList getLibraryPaths() const Q_DECL_OVERRIDE { return ff.getLibPaths(); }
   QString     getDecoderName()  const Q_DECL_OVERRIDE { return "FFmpeg"; }
   QString     getCodecName()          Q_DECL_OVERRIDE;
-
+  
   static QStringList getLogMessages() { return FFmpegVersionHandler::getFFmpegLog(); }
 
 protected:
 
   FFmpegVersionHandler ff;
 
-  bool createDecoder(AVCodecSpecfier streamCodecID, AVCodecParametersWrapper codecpar=AVCodecParametersWrapper());
+  bool createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWrapper codecpar=AVCodecParametersWrapper());
 
   AVCodecWrapper videoCodec;        //< The video decoder codec
   AVCodecContextWrapper decCtx;     //< The decoder context

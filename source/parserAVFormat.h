@@ -59,7 +59,7 @@ public:
   int getVideoStreamIndex() Q_DECL_OVERRIDE { return videoStreamIndex; }
 
 private:
-  AVCodecSpecfier codecID;
+  AVCodecIDWrapper codecID;
 
   bool parseExtradata(QByteArray &extradata);
   bool parseMetadata(QStringPairList &metadata);

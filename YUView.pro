@@ -70,7 +70,7 @@ HEADERS += \
     source/decoderHM.h \
     source/decoderLibde265.h \
     source/FFMpegLibrariesHandling.h \
-    source/FFMpegLibrariesCommonDefs.h \
+    source/FFMpegLibrariesTypes.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceAnnexBFile.h \

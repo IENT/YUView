@@ -154,7 +154,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     }
     frameSize = inputFileFFmpegLoading->getSequenceSizeSamples();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size %dx%d", frameSize.width(), frameSize.height());
-    ffmpegCodec = inputFileFFmpegLoading->getCodecSpecifier();
+    ffmpegCodec = inputFileFFmpegLoading->getVideoStreamCodecID();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getName().toStdString().c_str());
     possibleDecoders.append(decoderEngineFFMpeg);
     if (ffmpegCodec.isHEVC())
@@ -392,11 +392,14 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     uiDialog.ffmpegLogEdit->setPlainText(logFFmpegString);
 
     // Get the loading log
-    QStringList logLoading = inputFileFFmpegLoading->getFFmpegLoadingLog();
-    QString logLoadingString;
-    for (QString l : logLoading)
-      logLoadingString.append(l + "\n");
-    uiDialog.libraryLogEdit->setPlainText(logLoadingString);
+    if (inputFileFFmpegLoading)
+    {
+      QStringList logLoading = inputFileFFmpegLoading->getFFmpegLoadingLog();
+      QString logLoadingString;
+      for (QString l : logLoading)
+        logLoadingString.append(l + "\n");
+      uiDialog.libraryLogEdit->setPlainText(logLoadingString);
+    }
         
     newDialog.exec();
   }

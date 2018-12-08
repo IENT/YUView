@@ -33,7 +33,7 @@
 #ifndef FFMPEGDECODERLIBHANDLING_H
 #define FFMPEGDECODERLIBHANDLING_H
 
-#include "FFMpegLibrariesCommonDefs.h"
+#include "FFMpegLibrariesTypes.h"
 #include "stdint.h"
 #include "videoHandlerYUV.h"
 #include "videoHandlerRGB.h"
@@ -70,15 +70,15 @@ public:
   unsigned (*avformat_version)          (void);
 
   // From avcodec
-  AVCodec           *(*avcodec_find_decoder)   (AVCodecID id);
-  AVCodecContext    *(*avcodec_alloc_context3) (const AVCodec *codec);
-  int                (*avcodec_open2)          (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
-  void               (*avcodec_free_context)   (AVCodecContext **avctx);
-  void               (*av_init_packet)         (AVPacket *pkt);
-  void               (*av_packet_unref)        (AVPacket *pkt);
-  void               (*avcodec_flush_buffers)  (AVCodecContext *avctx);
-  unsigned           (*avcodec_version)        (void);
-  const char        *(*avcodec_get_name)       (AVCodecID id);
+  AVCodec           *(*avcodec_find_decoder)     (AVCodecID id);
+  AVCodecContext    *(*avcodec_alloc_context3)   (const AVCodec *codec);
+  int                (*avcodec_open2)            (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
+  void               (*avcodec_free_context)     (AVCodecContext **avctx);
+  void               (*av_init_packet)           (AVPacket *pkt);
+  void               (*av_packet_unref)          (AVPacket *pkt);
+  void               (*avcodec_flush_buffers)    (AVCodecContext *avctx);
+  unsigned           (*avcodec_version)          (void);
+  const char        *(*avcodec_get_name)         (AVCodecID id);
   AVCodecParameters *(*avcodec_parameters_alloc) (void);
 
   // The following functions are part of the new API.
@@ -92,16 +92,19 @@ public:
   int             (*avcodec_decode_video2) (AVCodecContext *avctx, AVFrame *picture, int *got_picture_ptr, const AVPacket *avpkt);
 
   // From avutil
-  AVFrame           *(*av_frame_alloc)         (void);
-  void               (*av_frame_free)          (AVFrame **frame);
-  void              *(*av_mallocz)             (size_t size);
-  unsigned           (*avutil_version)         (void);
-  int                (*av_dict_set)            (AVDictionary **pm, const char *key, const char *value, int flags);
-  AVDictionaryEntry *(*av_dict_get)            (AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
-  AVFrameSideData   *(*av_frame_get_side_data) (const AVFrame *frame, AVFrameSideDataType type);
-  AVDictionary      *(*av_frame_get_metadata)  (const AVFrame *frame);
-  void 	             (*av_log_set_callback)    (void(*callback)(void *, int, const char *, va_list));
-  void 	             (*av_log_set_level)       (int level);
+  AVFrame                  *(*av_frame_alloc)         (void);
+  void                      (*av_frame_free)          (AVFrame **frame);
+  void                     *(*av_mallocz)             (size_t size);
+  unsigned                  (*avutil_version)         (void);
+  int                       (*av_dict_set)            (AVDictionary **pm, const char *key, const char *value, int flags);
+  AVDictionaryEntry        *(*av_dict_get)            (AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
+  AVFrameSideData          *(*av_frame_get_side_data) (const AVFrame *frame, AVFrameSideDataType type);
+  AVDictionary             *(*av_frame_get_metadata)  (const AVFrame *frame);
+  void 	                    (*av_log_set_callback)    (void(*callback)(void *, int, const char *, va_list));
+  void 	                    (*av_log_set_level)       (int level);  
+  AVPixFmtDescriptor       *(*av_pix_fmt_desc_get)    (AVPixelFormat pix_fmt);
+  AVPixFmtDescriptor       *(*av_pix_fmt_desc_next)   (const AVPixFmtDescriptor *prev);
+  AVPixelFormat             (*av_pix_fmt_desc_get_id) (const AVPixFmtDescriptor *desc);
 
   // From swresample
   unsigned  (*swresample_version) (void);
@@ -189,7 +192,7 @@ public:
   explicit operator bool() const { return codec != nullptr; };
 
   AVMediaType getCodecType()  { update(); return codec_type; }
-  AVCodecSpecfier getCodecSpecifier(){ update(); return codec_id; }
+  AVCodecID getCodecID(){ update(); return codec_id; }
   AVCodecContext *get_codec() { return codec; }
   AVPixelFormat get_pixel_format() { update(); return pix_fmt; }
   int get_width() { update(); return width; }
@@ -198,9 +201,6 @@ public:
   AVRational get_time_base() { update(); return time_base; }
   QByteArray get_extradata() { update(); return extradata; }
 
-  // Set when the context is openend (open_input)
-  QString codec_id_string;
-
 private:
   // Update all private values from the AVCodecContext
   void update();
@@ -208,7 +208,7 @@ private:
   // These are private. Use "update" to update them from the AVCodecContext
   AVMediaType codec_type;
   QString codec_name;
-  AVCodecSpecfier codec_id;
+  AVCodecID codec_id;
   unsigned int codec_tag;
   unsigned int stream_codec_tag;
   int bit_rate;
@@ -304,7 +304,7 @@ public:
   QStringPairList getInfoText();
 
   AVMediaType getCodecType()          { update(); return codec_type; }
-  AVCodecSpecfier getCodecSpecifier() { update(); return codec_id; }
+  AVCodecID getCodecID()              { update(); return codec_id; }
   int get_width()                     { update(); return width; }
   int get_height()                    { update(); return height; }
   AVColorSpace get_colorspace()       { update(); return color_space; }
@@ -313,7 +313,7 @@ public:
   void setClearValues();
 
   void setAVMediaType(AVMediaType type);
-  void setAVCodecSpecifier(AVCodecSpecfier id);
+  void setAVCodecID(AVCodecID id);
   void setExtradata(QByteArray extradata);
   void setSize(int width, int height);
   void setAVPixelFormat(AVPixelFormat f);
@@ -328,8 +328,8 @@ private:
 
   // These are private. Use "update" to update them from the AVCodecParameters
   AVMediaType codec_type;
-  AVCodecSpecfier codec_id;
-  uint32_t    codec_tag;
+  AVCodecID codec_id;
+  uint32_t codec_tag;
   uint8_t *extradata;
   int extradata_size;
   int format;
@@ -356,6 +356,30 @@ private:
   FFmpegLibraryVersion libVer;
 };
 
+class AVCodecIDWrapper
+{
+public:
+  AVCodecIDWrapper() {}
+  AVCodecIDWrapper(AVCodecID codecID, QString codecName) : codecID(codecID), codecName(codecName) {}
+
+  QString getCodecName() { return codecName; }
+
+  void setTypeHEVC() { codecName = "hevc"; }
+  void setTypeAVC()  { codecName = "h264";  }
+
+  bool isHEVC()  { return codecName == "hevc"; }
+  bool isAVC()   { return codecName == "h264"; }
+  bool isMpeg2() { return codecName == "mpeg2video"; }
+  bool isAV1()   { return codecName == "av1"; }
+
+  bool operator==(const AVCodecIDWrapper &a) { return codecID == a.codecID; }
+
+  friend FFmpegVersionHandler;
+private:
+  AVCodecID codecID {AV_CODEC_ID_NONE};
+  QString codecName;
+};
+
 // This is a version independent wrapper for the version dependent ffmpeg AVStream.
 // It is our own and can be created on the stack and is nicer to debug.
 class AVStreamWrapper
@@ -367,7 +391,7 @@ public:
   QStringPairList getInfoText();
 
   AVMediaType getCodecType();
-  AVCodecSpecfier getCodecSpecifier();
+  AVCodecID getCodecID();
   AVCodecContextWrapper &getCodec() { update(); return codec; };
   AVRational get_avg_frame_rate()   { update(); return avg_frame_rate; }
   AVRational get_time_base();
@@ -377,6 +401,9 @@ public:
   int get_index() { update(); return index; }
 
   AVCodecParametersWrapper get_codecpar() { update(); return codecpar; }
+
+  // This is set when the file is opened (in FFmpegVersionHandler::open_input)
+  AVCodecIDWrapper codecIDWrapper;
 
 private:
   void update();
@@ -524,9 +551,9 @@ private:
   int max_analyze_duration;
   QString key;
   unsigned int nb_programs;
-  AVCodecSpecfier video_codec_id;
-  AVCodecSpecfier audio_codec_id;
-  AVCodecSpecfier subtitle_codec_id;
+  AVCodecID video_codec_id;
+  AVCodecID audio_codec_id;
+  AVCodecID subtitle_codec_id;
   unsigned int max_index_size;
   unsigned int max_picture_buffer;
   unsigned int nb_chapters;
@@ -543,7 +570,7 @@ public:
   AVCodecWrapper(AVCodec *codec, FFmpegLibraryVersion libVer) : codec(codec), libVer(libVer) {}
   explicit operator bool() const { return codec != nullptr; }
   AVCodec *getAVCodec() { return codec; }
-
+  AVCodecID getCodecID() { update(); return id; }
   QString getName() { update(); return name; }
   QString getLongName() { update(); return long_name; }
 
@@ -553,7 +580,7 @@ private:
   QString name;
   QString long_name;
   AVMediaType type;
-  AVCodecSpecfier id;
+  AVCodecID id;
   int capabilities;                        ///< see AV_CODEC_CAP_
   QList<AVRational> supported_framerates;  ///< terminated by {0,0}
   QList<AVPixelFormat> pix_fmts;           ///< array is terminated by -1
@@ -657,6 +684,86 @@ private:
   FFmpegLibraryVersion libVer;
 };
 
+/* This class parses the AVPixFmtDescriptor independent of the ffmpeg library version.
+ * Unfortunately, the AVPixelFormat enum differs with the version of the ffmpeg libraries and
+ * also how the library was compiled. So we use the av_pix_fmt_desc_get function to get this 
+ * descriptor which can give us all information about the pixel format.
+ */
+class AVPixFmtDescriptorWrapper
+{
+public:
+  AVPixFmtDescriptorWrapper() {};
+  AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, FFmpegLibraryVersion libVer);
+
+  RawFormat getRawFormat() { return flagIsRGB() ? raw_RGB : raw_YUV; }
+  YUV_Internals::yuvPixelFormat getYUVPixelFormat();
+  RGB_Internals::rgbPixelFormat getRGBPixelFormat();
+
+  bool setValuesFromYUVPixelFormat(YUV_Internals::yuvPixelFormat fmt);
+
+  // AVPixFmtDescriptor
+  QString name;
+  int nb_components {0};  ///< The number of components each pixel has, (1-4)
+
+  /**
+   * Amount to shift the luma width right to find the chroma width.
+   * For YV12 this is 1 for example.
+   * chroma_width = -((-luma_width) >> log2_chroma_w)
+   * The note above is needed to ensure rounding up.
+   * This value only refers to the chroma components.
+   */
+  int log2_chroma_w {0};
+  
+  /**
+    * Amount to shift the luma height right to find the chroma height.
+    * For YV12 this is 1 for example.
+    * chroma_height= -((-luma_height) >> log2_chroma_h)
+    * The note above is needed to ensure rounding up.
+    * This value only refers to the chroma components.
+    */
+  int log2_chroma_h {0};
+
+  // The flags. Fortunately, these do not change with the version of AVUtil.
+  int flags {0};
+  bool flagIsBigEndian()           { return flags & (1 << 0); } // Pixel format is big-endian.
+  bool flagIsPallette()            { return flags & (1 << 1); } // Pixel format has a palette in data[1], values are indexes in this palette.
+  bool flagIsBitWisePacked()       { return flags & (1 << 2); } // All values of a component are bit-wise packed end to end.
+  bool flagIsHWAcceleratedFormat() { return flags & (1 << 3); } // Pixel format is an HW accelerated format.
+  bool flagIsPlanar()              { return flags & (1 << 4); } // At least one pixel component is not in the first data plane.
+  bool flagIsRGB()                 { return flags & (1 << 5); } // The pixel format contains RGB-like data (as opposed to YUV/grayscale).
+  bool flagIsIsPseudoPallette()    { return flags & (1 << 6); } // The pixel format is "pseudo-paletted".
+  bool flagHasAlphaPlane()         { return flags & (1 << 7); } // The pixel format has an alpha channel. This is set on all formats that support alpha in some way, including AV_PIX_FMT_PAL8. The alpha is always straight, never pre-multiplied.
+  bool flagIsBayerPattern()        { return flags & (1 << 8); } // The pixel format is following a Bayer pattern
+  bool flagIsFloat()               { return flags & (1 << 9); } // The pixel format contains IEEE-754 floating point values.
+
+  /**
+    * Parameters that describe how pixels are packed.
+    * If the format has 2 or 4 components, then alpha is last.
+    * If the format has 1 or 2 components, then luma is 0.
+    * If the format has 3 or 4 components,
+    * if the RGB flag is set then 0 is red, 1 is green and 2 is blue;
+    * otherwise 0 is luma, 1 is chroma-U and 2 is chroma-V.
+    */
+  struct AVComponentDescriptor
+  {
+    int plane;    ///< which of the 4 planes contains the component
+    int step;     ///< Number of elements between 2 horizontally consecutive pixels
+    int offset;   ///< Number of elements before the component of the first pixel
+    int shift;    ///< number of least significant bits that must be shifted away to get the value
+    int depth;    ///< number of bits in the component
+  };
+
+  QString aliases;
+  AVComponentDescriptor comp[4];
+
+  bool operator==(const AVPixFmtDescriptorWrapper &a);
+
+private:
+
+  AVPixFmtDescriptor *fmtDescriptor {nullptr};
+  bool flagsSupported();
+};
+
 /* This class abstracts from the different versions of FFmpeg (and the libraries within it).
  * With a given path, it will try to open all supported library versions, starting with the 
  * newest one. If a new FFmpeg version is released, support for it will have to be added here.
@@ -671,7 +778,13 @@ public:
   
   QStringList getLibPaths() const { return lib.getLibPaths(); }
   QString getLibVersionString() const;
-  QString getCodecName(AVCodecSpecfier id) const { return QString(lib.avcodec_get_name(id.getCodecID(libVersion.avcodec))); }
+
+  // Only these functions can be used to get valid versions of these wrappers (they have to use ffmpeg functions
+  // to retrieve the needed information)
+  AVCodecIDWrapper getCodecIDWrapper(AVCodecID id);
+  AVCodecID getCodecIDFromWrapper(AVCodecIDWrapper &wrapper);
+  AVPixFmtDescriptorWrapper getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixFmt);
+  AVPixelFormat getAVPixelFormatFromYUVPixelFormat(YUV_Internals::yuvPixelFormat pixFmt);
 
   bool configureDecoder(AVCodecContextWrapper &decCtx, AVCodecParametersWrapper &codecpar);
 
@@ -697,8 +810,8 @@ public:
 
   // Open the input file. This will call avformat_open_input and avformat_find_stream_info.
   bool open_input(AVFormatContextWrapper &fmt, QString url);
-  // Try to find a decoder for the given codecID (avcodec_find_decoder)
-  AVCodecWrapper find_decoder(AVCodecSpecfier codec_id);
+  // Try to find a decoder for the given codecID
+  AVCodecWrapper find_decoder(AVCodecIDWrapper codecID);
   // Allocate the decoder (avcodec_alloc_context3)
   AVCodecContextWrapper alloc_decoder(AVCodecWrapper &codec);
   // Set info in the dictionary
@@ -719,10 +832,7 @@ public:
 
   // All the function pointers of the ffmpeg library
   FFmpegLibraryFunctions lib;
-
-  static RawFormat getRawFormat(AVPixelFormat pixelFormat);
-  static YUV_Internals::yuvPixelFormat convertAVPixelFormatYUV(AVPixelFormat pixelFormat);
-  static RGB_Internals::rgbPixelFormat convertAVPixelFormatRGB(AVPixelFormat pixelFormat);
+  
   static AVPixelFormat convertYUVAVPixelFormat(YUV_Internals::yuvPixelFormat fmt);
   // Check if the given four files can be used to open FFmpeg.
   static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &logging);

@@ -46,7 +46,7 @@ class parserAnnexBAVC : public parserAnnexB
   Q_OBJECT
   
 public:
-  parserAnnexBAVC(QObject *parent = nullptr) : parserAnnexB(parent) {};
+  parserAnnexBAVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); };
   ~parserAnnexBAVC() {};
 
   // Get properties
@@ -105,7 +105,6 @@ protected:
     // Parse the parameter set from the given data bytes. If a parserCommon::TreeItem pointer is provided, the values will be added to the tree as well.
     bool parse_nal_unit_header(const QByteArray &header_byte, parserCommon::TreeItem *root) Q_DECL_OVERRIDE;
 
-    bool isRandomAccess() { return nal_unit_type == CODED_SLICE_IDR; }
     bool isSlice()        { return nal_unit_type >= CODED_SLICE_NON_IDR && nal_unit_type <= CODED_SLICE_IDR; }
     virtual QByteArray getNALHeader() const override;
     virtual bool isParameterSet() const override { return nal_unit_type == SPS || nal_unit_type == PPS; }
@@ -312,6 +311,7 @@ protected:
   {
     slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
     bool parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, parserCommon::TreeItem *root);
+    bool isRandomAccess() { return (nal_unit_type == CODED_SLICE_IDR || slice_type == SLICE_I); }
 
     enum slice_type_enum
     {
@@ -576,6 +576,13 @@ protected:
   int determineRealNumberOfBytesSEIEmulationPrevention(QByteArray &in, int nrBytes);
 
   bool CpbDpbDelaysPresentFlag {false};
+
+  // For every frame, we save the file position where the NAL unit of the first slice starts and where the NAL of the last slice ends.
+  // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
+  QUint64Pair curFrameFileStartEndPos;  //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+  // The POC of the current frame. We save this we encounter a NAL from the next POC; then we add it.
+  int curFramePOC {-1};
+  bool curFrameIsRandomAccess {false};
 };
 
 #endif // PARSERANNEXBAVC_H
