@@ -11,8 +11,8 @@ branches:
   except:
     - gh-pages
 
-init:
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#init:
+#  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   
 install:
   - '"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64'
@@ -29,6 +29,7 @@ install:
   - curl -L -o QtTools.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.11/Qt-5.11-Tools.zip
   - 7z x QtTools.zip
   - ps: $env:path="C:\projects\Qttools\bin;$($env:path)"
+  - dir C:\Program Files (x86)\Common Files\Merge Modules
   - cd
 
 build_script:
@@ -109,5 +110,5 @@ artifacts:
 #    # push the finished stuff
 #    - git push
 
-on_finish:
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
