@@ -29,8 +29,6 @@ install:
   - curl -L -o QtTools.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.11/Qt-5.11-Tools.zip
   - 7z x QtTools.zip
   - ps: $env:path="C:\projects\Qttools\bin;$($env:path)"
-  - cd "C:\Program Files\Common Files\"
-  - dir
   - cd
 
 build_script:
@@ -113,4 +111,3 @@ artifacts:
 
 on_finish:
   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-  
