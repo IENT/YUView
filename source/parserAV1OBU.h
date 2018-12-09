@@ -52,6 +52,7 @@ public:
     // When parsing of raw OBU files is added, we will need this.
     bool runParsingOfFile(QString fileName) Q_DECL_OVERRIDE { Q_UNUSED(fileName); assert(false); return false; }
     QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE { return QList<QTreeWidgetItem*>(); }
+    unsigned int getNrStreams() Q_DECL_OVERRIDE { return 1; }
 
 protected:
 

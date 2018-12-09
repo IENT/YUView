@@ -102,6 +102,7 @@ void bitstreamAnalysisDialog::updateStreamInfo()
   ui.streamInfoTreeWidget->clear();
   ui.streamInfoTreeWidget->addTopLevelItems(parser->getStreamInfo());
   ui.streamInfoTreeWidget->expandAll();
+  ui.showVideoStreamOnlyCheckBox->setEnabled(parser->getNrStreams() > 1);
 }
 
 void bitstreamAnalysisDialog::backgroundParsingDone()

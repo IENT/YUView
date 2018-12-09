@@ -52,6 +52,7 @@ public:
   ~parserAVFormat() {}
 
   QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE;
+  unsigned int getNrStreams() Q_DECL_OVERRIDE { return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1; }
   
   // This function can run in a separate thread
   bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
