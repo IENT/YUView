@@ -345,15 +345,19 @@ int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToF
 
 bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
 {
-  // Create the dialog
+  // Create the dialog (if the given pointer is not null)
   int64_t maxPTS = getMaxTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
   int curPercentValue = 0;
-  QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
-  progress.setMinimumDuration(1000);  // Show after 1s
-  progress.setAutoClose(false);
-  progress.setAutoReset(false);
-  progress.setWindowModality(Qt::WindowModal);
+  QScopedPointer<QProgressDialog> progress;
+  if (mainWindow != nullptr)
+  {
+    progress.reset(new QProgressDialog("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow));
+    progress->setMinimumDuration(1000);  // Show after 1s
+    progress->setAutoClose(false);
+    progress->setAutoReset(false);
+    progress->setWindowModality(Qt::WindowModal);
+  }
 
   nrFrames = 0;
   while (goToNextPacket(true))
@@ -363,13 +367,14 @@ bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
     if (pkt.get_flag_keyframe())
       keyFrameList.append(pictureIdx(nrFrames, pkt.get_dts()));
 
-    if (progress.wasCanceled())
+    if (progress && progress->wasCanceled())
       return false;
 
     int newPercentValue = pkt.get_pts() * 100 / maxPTS;
     if (newPercentValue != curPercentValue)
     {
-      progress.setValue(newPercentValue);
+      if (progress)
+        progress->setValue(newPercentValue);
       curPercentValue = newPercentValue;
     }
 
@@ -377,7 +382,7 @@ bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
   }
 
   DEBUG_FFMPEG("fileSourceFFmpegFile::scanBitstream: Scan done. Found %d frames and %d keyframes.", nrFrames, keyFrameList.length());
-  return !progress.wasCanceled();
+  return !progress->wasCanceled();
 }
 
 void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)

@@ -1020,7 +1020,8 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
 
 void PacketItemModel::setNewNumberModelItems(unsigned int n)
 {
-  unsigned int nrAddItems = n - nrShowChildItems;
+  Q_ASSERT_X(n >= nrShowChildItems, "PacketItemModel::setNewNumberModelItems", "Setting a smaller number of items.");
+  unsigned int nrAddItems = nrShowChildItems - n;
   int lastIndex = nrShowChildItems;
   beginInsertRows(QModelIndex(), lastIndex, lastIndex+nrAddItems);
   nrShowChildItems = n;
