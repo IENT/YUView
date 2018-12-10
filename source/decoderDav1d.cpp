@@ -113,75 +113,45 @@ void decoderDav1d::setDecodeSignal(int signalID, bool &decoderResetNeeded)
 
 void decoderDav1d::resolveLibraryFunctionPointers()
 {
-  //// Get/check function pointers
-  //if (!resolve(de265_new_decoder, "de265_new_decoder")) return;
-  //if (!resolve(de265_set_parameter_bool, "de265_set_parameter_bool")) return;
-  //if (!resolve(de265_set_parameter_int, "de265_set_parameter_int")) return;
-  //if (!resolve(de265_disable_logging, "de265_disable_logging")) return;
-  //if (!resolve(de265_set_verbosity, "de265_set_verbosity")) return;
-  //if (!resolve(de265_start_worker_threads, "de265_start_worker_threads")) return;
-  //if (!resolve(de265_set_limit_TID, "de265_set_limit_TID")) return;
-  //if (!resolve(de265_get_error_text, "de265_get_error_text")) return;
-  //if (!resolve(de265_get_chroma_format, "de265_get_chroma_format")) return;
-  //if (!resolve(de265_get_image_width, "de265_get_image_width")) return;
-  //if (!resolve(de265_get_image_height, "de265_get_image_height")) return;
-  //if (!resolve(de265_get_image_plane, "de265_get_image_plane")) return;
-  //if (!resolve(de265_get_bits_per_pixel,"de265_get_bits_per_pixel")) return;
-  //if (!resolve(de265_decode, "de265_decode")) return;
-  //if (!resolve(de265_push_data, "de265_push_data")) return;
-  //if (!resolve(de265_push_NAL, "de265_push_NAL")) return;
-  //if (!resolve(de265_flush_data, "de265_flush_data")) return;
-  //if (!resolve(de265_get_next_picture, "de265_get_next_picture")) return;
-  //if (!resolve(de265_free_decoder, "de265_free_decoder")) return;
-  //DEBUG_DAV1D("decoderLibde265::loadDecoderLibrary - decoding functions found");
+  // Get/check function pointers
+  if (!resolve(dav1d_version, "dav1d_version")) return;
+  if (!resolve(dav1d_default_settings, "dav1d_default_settings")) return;
+  if (!resolve(dav1d_open, "dav1d_open")) return;
+  if (!resolve(dav1d_parse_sequence_header, "dav1d_parse_sequence_header")) return;
+  if (!resolve(dav1d_send_data, "dav1d_send_data")) return;
+  if (!resolve(dav1d_get_picture, "dav1d_get_picture")) return;
+  if (!resolve(dav1d_close, "dav1d_close")) return;
+  if (!resolve(dav1d_flush, "dav1d_flush")) return;
 
-  //// Get pointers to the internals/statistics functions (if present)
-  //// If not, disable the statistics extraction. Normal decoding of the video will still work.
+  if (!resolve(dav1d_data_create, "dav1d_data_create")) return;
 
-  //if (!resolveInternals(de265_internals_get_CTB_Info_Layout, "de265_internals_get_CTB_Info_Layout")) return;
-  //if (!resolveInternals(de265_internals_get_CTB_sliceIdx, "de265_internals_get_CTB_sliceIdx")) return;
-  //if (!resolveInternals(de265_internals_get_CB_Info_Layout, "de265_internals_get_CB_Info_Layout")) return;
-  //if (!resolveInternals(de265_internals_get_CB_info, "de265_internals_get_CB_info")) return;
-  //if (!resolveInternals(de265_internals_get_PB_Info_layout, "de265_internals_get_PB_Info_layout")) return;
-  //if (!resolveInternals(de265_internals_get_PB_info, "de265_internals_get_PB_info")) return;
-  //if (!resolveInternals(de265_internals_get_IntraDir_Info_layout, "de265_internals_get_IntraDir_Info_layout")) return;
-  //if (!resolveInternals(de265_internals_get_intraDir_info, "de265_internals_get_intraDir_info")) return;
-  //if (!resolveInternals(de265_internals_get_TUInfo_Info_layout, "de265_internals_get_TUInfo_Info_layout")) return;
-  //if (!resolveInternals(de265_internals_get_TUInfo_info, "de265_internals_get_TUInfo_info")) return;
-  //// All interbals functions were successfully retrieved
-  //DEBUG_DAV1D("decoderLibde265::loadDecoderLibrary - statistics internals found");
-
-  //// Get pointers to the functions for retrieving prediction/residual signals
-  //if (!resolveInternals(de265_internals_get_image_plane, "de265_internals_get_image_plane")) return;
-  //if (!resolveInternals(de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool")) return;
-  //// The prediction and residual signal can be obtained
-  //nrSignals = 4;
-  //DEBUG_DAV1D("decoderLibde265::loadDecoderLibrary - prediction/residual internals found");
+  DEBUG_DAV1D("decoderDav1d::resolveLibraryFunctionPointers - decoding functions found");
 }
 
-template <typename T> T decoderDav1d::resolve(T &fun, const char *symbol)
+template <typename T> T decoderDav1d::resolve(T &fun, const char *symbol, bool optional)
 {
   QFunctionPointer ptr = library.resolve(symbol);
   if (!ptr)
   {
-    setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
+    if (!optional)
+      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
     return nullptr;
   }
 
   return fun = reinterpret_cast<T>(ptr);
 }
 
-template <typename T> T decoderDav1d::resolveInternals(T &fun, const char *symbol)
-{
-  return fun = reinterpret_cast<T>(library.resolve(symbol));
-}
-
 void decoderDav1d::allocateNewDecoder()
 {
   if (decoder != nullptr)
+  {
+    DEBUG_DAV1D("decoderDav1d::allocateNewDecoder Error a decoder was already allocated");
     return;
+  }
 
   DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - decodeSignal %d", decodeSignal);
+
+  dav1d_default_settings(&settings);
 
   // Create new decoder object
   int err = dav1d_open(&decoder, &settings);
@@ -307,51 +277,66 @@ QByteArray decoderDav1d::getRawFrameData()
 
 bool decoderDav1d::pushData(QByteArray &data) 
 {
-  return false;
-  //if (decoderState != decoderNeedsMoreData)
-  //{
-  //  DEBUG_DAV1D("decoderLibde265::pushData: Wrong decoder state.");
-  //  return false;
-  //}
-  //if (flushing)
-  //{
-  //  DEBUG_DAV1D("decoderLibde265::pushData: Do not push data when flushing!");
-  //  return false;
-  //}
+  if (decoderState != decoderNeedsMoreData)
+  {
+    DEBUG_DAV1D("decoderDav1d::pushData: Wrong decoder state.");
+    return false;
+  }
+  if (flushing)
+  {
+    DEBUG_DAV1D("decoderDav1d::pushData: Do not push data when flushing!");
+    return false;
+  }
 
-  //// Push the data to the decoder
-  //if (data.size() > 0)
-  //{
-  //  // de265_push_NAL expects the NAL data without the start code
-  //  int offset = 0;
-  //  if (data.at(0) == (char)0 && data.at(1) == (char)0)
-  //  {
-  //    if (data.at(2) == (char)1)
-  //      offset = 3;
-  //    if (data.at(2) == (char)0 && data.at(3) == (char)1)
-  //      offset = 4;
-  //  }
-  //  // de265_push_NAL will return either DE265_OK or DE265_ERROR_OUT_OF_MEMORY
-  //  de265_error err = de265_push_NAL(decoder, data.data() + offset, data.size() - offset, 0, nullptr);
-  //  DEBUG_DAV1D("decoderLibde265::pushData push data %d bytes%s%s", data.size(), err != DE265_OK ? " - err " : "", err != DE265_OK ? de265_get_error_text(err) : "");
-  //  if (err != DE265_OK)
-  //    return setErrorB("Error pushing data to decoder (de265_push_NAL): " + QString(de265_get_error_text(err)));
-  //}
-  //else
-  //{
-  //  // The input file is at the end. Switch to flushing mode.
-  //  DEBUG_DAV1D("decoderLibde265::pushData input ended - flushing");
-  //  de265_error err = de265_flush_data(decoder);
-  //  if (err != DE265_OK)
-  //    return setErrorB("Error switching to flushing mode.");
-  //  flushing = true;
-  //}
+  if (!sequenceHeaderPushed)
+  {
+    // The first packet which is pushed to the decoder should be a sequence header.
+    // Otherwise, the decoder can not decode the data.
+    if (data.size() == 0)
+    {
+      DEBUG_DAV1D("decoderDav1d::pushData Error: Sequence header not pushed yet and the data is empty");
+      return setErrorB("Error: Sequence header not pushed yet and the data is empty.");
+    }
 
-  //// Check for an available frame
-  //if (decodeFrame())
-  //  decodedFrameWaiting = true;
+    Dav1dSequenceHeader seq;
+    int err = dav1d_parse_sequence_header(&seq, (const uint8_t*)data.data(), data.size());
+    if (err == 0)
+      sequenceHeaderPushed = true;
+    else
+      DEBUG_DAV1D("decoderDav1d::pushData Error: No sequence header revieved yet and parsing of this packet as slice header failed. Ignoring packet.");
+  }
+  else if (data.size() == 0)
+  {
+    // The input file is at the end. Switch to flushing mode.
+    DEBUG_DAV1D("decoderDav1d::pushData input ended - flushing");
+    flushing = true;
+  }
+  else
+  {
+    // Since dav1d consumes the data (takes ownership), we need to copy it to a new buffer from dav1d
+    Dav1dData *dav1dData = new Dav1dData;
+    uint8_t *rawDataPointer = dav1d_data_create(dav1dData, data.size());
+    memcpy(rawDataPointer, data.data(), data.size());
+    
+    int err = dav1d_send_data(decoder, dav1dData);
+    if (err == -EAGAIN)
+    {
+      // The data was not consumed and must be pushed again after retrieving some frames
+      delete dav1dData;
+      return false;
+    }
+    else if (err != 0)
+    {
+      delete dav1dData;
+      return setErrorB("Error pushing data to the decoder.");
+    }
+  }
 
-  //return true;
+  // Check for an available frame
+  if (decodeFrame())
+    decodedFrameWaiting = true;
+
+  return true;
 }
 
 #if SSE_CONVERSION
@@ -431,6 +416,16 @@ bool decoderDav1d::checkLibraryFile(QString libFilePath, QString &error)
   testDecoder.resolveLibraryFunctionPointers();
   error = testDecoder.decoderErrorString();
   return !testDecoder.errorInDecoder();
+}
+
+QString decoderDav1d::getDecoderName() const
+{
+  if (decoder)
+  {
+    QString ver = QString(dav1d_version());
+    return "Dav1d deoder Version " + ver;
+  }
+  return "Dav1d decoder";
 }
 
 QStringList decoderDav1d::getLibraryNames()

@@ -42,7 +42,7 @@ struct decoderDav1d_Functions
 {
   decoderDav1d_Functions();
 
-  const char *(*dav1d_version)();
+  const char *(*dav1d_version)               ();
   void        (*dav1d_default_settings)      (Dav1dSettings*);
   int         (*dav1d_open)                  (Dav1dContext**, const Dav1dSettings*);
   int         (*dav1d_parse_sequence_header) (Dav1dSequenceHeader*, const uint8_t*, const size_t);
@@ -50,6 +50,8 @@ struct decoderDav1d_Functions
   int         (*dav1d_get_picture)           (Dav1dContext*, Dav1dPicture*);
   void        (*dav1d_close)                 (Dav1dContext**);
   void        (*dav1d_flush)                 (Dav1dContext*);
+
+  uint8_t    *(*dav1d_data_create)           (Dav1dData *data, size_t sz);
 };
 
 // This class wraps the libde265 library in a demand-load fashion.
@@ -74,8 +76,8 @@ public:
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
-  QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }
-  QString getCodecName()         Q_DECL_OVERRIDE { return "hevc"; }
+  QString getDecoderName() const Q_DECL_OVERRIDE;
+  QString getCodecName()         Q_DECL_OVERRIDE { return "AV1"; }
 
 private:
   // A private constructor that creates an uninitialized decoder library.
@@ -85,14 +87,13 @@ private:
   // Try to resolve all the required function pointers from the library
   void resolveLibraryFunctionPointers() Q_DECL_OVERRIDE;
 
-  // Return the possible names of the libde265 library
+  // Return the possible names of the dav1d library
   QStringList getLibraryNames() Q_DECL_OVERRIDE;
 
   // The function template for resolving the functions.
   // This can not go into the base class because then the template
   // generation does not work.
-  template <typename T> T resolve(T &ptr, const char *symbol);
-  template <typename T> T resolveInternals(T &ptr, const char *symbol);
+  template <typename T> T resolve(T &ptr, const char *symbol, bool optional=false);
 
   void allocateNewDecoder();
 
@@ -101,6 +102,7 @@ private:
 
   int nrSignals {1};
   bool flushing {false};
+  bool sequenceHeaderPushed {false};
 
   // When pushing frames, the decoder will try to decode a frame to check if this is possible.
   // If this is true, a frame is waiting from that step and decodeNextFrame will not actually decode a new frame.
