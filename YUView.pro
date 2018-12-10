@@ -125,7 +125,12 @@ HEADERS += \
     source/yuviewapp.h \
     decoder/libde265/de265.h \
     decoder/libde265/de265_internals.h \
-    decoder/libde265/de265-version.h
+    decoder/libde265/de265-version.h \
+    decoder/dav1d/common.h \
+    decoder/dav1d/data.h \
+    decoder/dav1d/dav1d.h \
+    decoder/dav1d/headers.h \
+    decoder/dav1d/picture.h
 
 FORMS += \
     ui/bitstreamAnalysisDialog.ui \
@@ -157,6 +162,7 @@ RESOURCES += \
 
 INCLUDEPATH += \
     decoder/libde265 \
+    decoder/dav1d \
     source/
 
 OTHER_FILES += \
