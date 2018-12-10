@@ -17,11 +17,12 @@ install:
   - git clone https://github.com/ChristianFeldmann/Qt5-YUView-MT Qt --depth 1
   - set QTDIR=C:\projects\Qt\5.11-release
   - set PATH=%PATH%;%QTDIR%\bin
-  - cd C:\projects\YUView
-  - cd
+  # Download libde265_internals (needed later to pack the installer)
+  - curl -L -o libde265.dll https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll
 
 build_script:
   # activate the automatic update feature
+  - cd C:\projects\YUView
   - C:\msys64\usr\bin\sed.exe -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" source/typedef.h
   # start compiling
   - qmake
@@ -41,8 +42,8 @@ after_build:
   - copy C:\projects\Qt\openSSL\*.dll .
   # copy the modified libde265 library + license
   - mkdir libde265
-  - copy ..\libde265\libde265-internals.dll libde265
-  - copy ..\libde265\LICENCE.TXT libde265
+  - copy C:\projects\libde265.dll libde265
+  - copy ..\decoder\libde265\LICENCE.TXT libde265
   - copy ..\LICENSE.GPL3 .
   # delete junk that is not needed
   - del /F /Q vcredist*
@@ -58,7 +59,6 @@ after_build:
   - cd C:\projects\YUView
   - IF "%APPVEYOR_REPO_BRANCH%" == "master" (CALL deployment\deploy_to_github.bat)
  
-
 artifacts:
   # also collect the artifacts here
   - path: YUView-Win.zip
