@@ -9,6 +9,7 @@ CONFIG += c++11
 SOURCES += \
     source/bitstreamAnalysisDialog.cpp \
     source/decoderBase.cpp \
+    source/decoderDav1d.cpp \
     source/decoderFFmpeg.cpp \
     source/decoderHM.cpp \
     source/decoderLibde265.cpp \
@@ -66,6 +67,7 @@ SOURCES += \
 HEADERS += \
     source/bitstreamAnalysisDialog.h \
     source/decoderBase.h \
+    source/decoderDav1d.h \
     source/decoderFFmpeg.h \
     source/decoderHM.h \
     source/decoderLibde265.h \
