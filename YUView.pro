@@ -122,7 +122,10 @@ HEADERS += \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
-    source/yuviewapp.h
+    source/yuviewapp.h \
+    decoder/libde265/de265.h \
+    decoder/libde265/de265_internals.h \
+    decoder/libde265/de265-version.h
 
 FORMS += \
     ui/bitstreamAnalysisDialog.ui \
@@ -153,8 +156,8 @@ RESOURCES += \
     docs/resources.qrc
 
 INCLUDEPATH += \
-    libde265 \
-    source
+    decoder/libde265 \
+    source/
 
 OTHER_FILES += \
     HACKING.md \
