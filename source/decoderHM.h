@@ -109,8 +109,7 @@ private:
   // The function template for resolving the functions.
   // This can not go into the base class because then the template
   // generation does not work.
-  template <typename T> T resolve(T &ptr, const char *symbol);
-  template <typename T> T resolveInternals(T &ptr, const char *symbol);
+  template <typename T> T resolve(T &ptr, const char *symbol, bool optional=false);
 
   void allocateNewDecoder();
 
