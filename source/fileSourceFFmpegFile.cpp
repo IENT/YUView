@@ -35,6 +35,8 @@
 #include <QSettings>
 #include <QProgressDialog>
 
+#include "parserCommon.h"
+
 #define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -70,7 +72,7 @@ AVPacketWrapper fileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool vi
   return pkt;
 }
 
-QByteArray fileSourceFFmpegFile::getNextNALUnit(bool getLastDataAgain, uint64_t *pts)
+QByteArray fileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pts)
 {
   if (getLastDataAgain)
     return lastReturnArray;
@@ -147,6 +149,50 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(bool getLastDataAgain, uint64_t 
     posInData += 4 + size;
     if (posInData >= currentPacketData.size())
       currentPacketData.clear();
+  }
+  else if (packetDataFormat == packetFormatOBU)
+  {
+    parserCommon::sub_byte_reader reader(currentPacketData, posInData);
+
+    QString bitsRead;
+    bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);
+    reader.readBits(4, bitsRead); // obu_type
+    bool obu_extension_flag = (reader.readBits(1, bitsRead) != 0);
+    bool obu_has_size_field = (reader.readBits(1, bitsRead) != 0);
+    bool obu_reserved_1bit = (reader.readBits(1, bitsRead) != 0);
+
+    if (obu_forbidden_bit || obu_reserved_1bit)
+    {
+      currentPacketData.clear();
+      return QByteArray();
+    }
+    if (obu_extension_flag)
+    {
+      reader.readBits(3, bitsRead); // temporal_id
+      reader.readBits(2, bitsRead); // spatial_id
+      unsigned int extension_header_reserved_3bits = reader.readBits(3, bitsRead);
+      if (extension_header_reserved_3bits != 0)
+      {
+        currentPacketData.clear();
+        return QByteArray();
+      }
+    }
+    if (obu_has_size_field)
+    {
+      int bitCount;
+      unsigned int obu_size = reader.readLeb128(bitsRead, bitCount);
+      unsigned int debug_nr_bytesRead = reader.nrBytesRead();
+      unsigned int completeSize = obu_size + reader.nrBytesRead();
+      lastReturnArray = currentPacketData.mid(posInData, completeSize);
+      posInData += completeSize;
+    }
+    else
+    {
+      // The OBU is the remainder of the input
+      lastReturnArray = currentPacketData.mid(posInData);
+      posInData = currentPacketData.size();
+      currentPacketData.clear();
+    }
   }
 
   if (pts)
