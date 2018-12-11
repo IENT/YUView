@@ -93,8 +93,8 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
   {
     // Try various paths/names next
     // If the file name is not set explicitly, QLibrary will try to open
-    // the libde265.so file first. Since this has been compiled for linux
-    // it will fail and not even try to open the libde265.dylib.
+    // the decLibXXX.so file first. Since this has been compiled for linux
+    // it will fail and not even try to open the decLixXXX.dylib.
     // On windows and linux ommitting the extension works
     QStringList libNames = getLibraryNames();
 
@@ -110,9 +110,9 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
     QStringList const libPaths = QStringList()
       << searchPath
       << QDir::currentPath() + "/%1"
-      << QDir::currentPath() + "/libde265/%1"
+      << QDir::currentPath() + "/decoder/%1"
       << QCoreApplication::applicationDirPath() + "/%1"
-      << QCoreApplication::applicationDirPath() + "/libde265/%1"
+      << QCoreApplication::applicationDirPath() + "/decoder/%1"
       << "%1"; // Try the system directories.
 
     for (auto &libName : libNames)
