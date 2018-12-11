@@ -66,6 +66,7 @@ typedef enum
   decoderEngineInvalid = -1,  // invalid value
   decoderEngineLibde265,      // The libde265 decoder
   decoderEngineHM,            // The HM reference software decoder
+  decoderEngineDav1d,         // The dav1d AV1 decoder
   decoderEngineFFMpeg,        // The FFMpeg decoder
   decoderEngineNum
 } decoderEngine;
