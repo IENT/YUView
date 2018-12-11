@@ -173,6 +173,8 @@ void decoderLibde265::allocateNewDecoder()
 {
   if (decoder != nullptr)
     return;
+  if (decoderState == decoderError)
+    return;
 
   DEBUG_LIBDE265("decoderLibde265::allocateNewDecoder - decodeSignal %d", decodeSignal);
 

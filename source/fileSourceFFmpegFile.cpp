@@ -181,7 +181,6 @@ QByteArray fileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pt
     {
       int bitCount;
       unsigned int obu_size = reader.readLeb128(bitsRead, bitCount);
-      unsigned int debug_nr_bytesRead = reader.nrBytesRead();
       unsigned int completeSize = obu_size + reader.nrBytesRead();
       lastReturnArray = currentPacketData.mid(posInData, completeSize);
       posInData += completeSize;

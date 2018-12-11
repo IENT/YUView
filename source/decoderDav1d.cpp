@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ decoderDav1d::decoderDav1d(int signalID, bool cachingDecoder) :
 
   QSettings settings;
   settings.beginGroup("Decoders");
-  loadDecoderLibrary(settings.value("libde265File", "").toString());
+  loadDecoderLibrary(settings.value("libDav1dFile", "").toString());
   settings.endGroup();
 
   bool resetDecoder;
@@ -148,6 +148,8 @@ void decoderDav1d::allocateNewDecoder()
     DEBUG_DAV1D("decoderDav1d::allocateNewDecoder Error a decoder was already allocated");
     return;
   }
+  if (decoderState == decoderError)
+    return;
 
   DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
@@ -303,7 +305,10 @@ bool decoderDav1d::pushData(QByteArray &data)
     if (err == 0)
       sequenceHeaderPushed = true;
     else
+    {
       DEBUG_DAV1D("decoderDav1d::pushData Error: No sequence header revieved yet and parsing of this packet as slice header failed. Ignoring packet.");
+      return true;
+    }
   }
   else if (data.size() == 0)
   {
@@ -434,9 +439,10 @@ QStringList decoderDav1d::getLibraryNames()
   // the libde265.so file first. Since this has been compiled for linux
   // it will fail and not even try to open the libde265.dylib.
   // On windows and linux ommitting the extension works
-  QStringList libNames = is_Q_OS_MAC ?
-    QStringList() << "dav1d-internals.dylib" << "dav1d.dylib" :
-    QStringList() << "dav1d-internals" << "dav1d";
-
-  return libNames;
+  if (is_Q_OS_MAC)
+    return QStringList() << "libdav1d-internals.dylib" << "libdav1d.dylib";
+  if (is_Q_OS_WIN)
+    return QStringList() << "dav1d-internals" << "dav1d";
+  if (is_Q_OS_LINUX)
+    return QStringList() << "libdav1d-internals" << "libdav1d";
 }
