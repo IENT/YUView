@@ -437,7 +437,8 @@ enum packetDataFormat_t
 {
   packetFormatUnknown,
   packetFormatRawNAL,
-  packetFormatMP4
+  packetFormatMP4,
+  packetFormatOBU
 };
 
 // A wrapper around the different versions of the AVPacket versions.
@@ -475,6 +476,10 @@ public:
 
 private:
   void update();
+
+  bool checkForRawNALFormat(QByteArray &data, bool threeByteStartCode=false);
+  bool checkForMp4Format(QByteArray &data);
+  bool checkForObuFormat(QByteArray &data);
 
   // These are private. Use "update" to update them from the AVFormatContext
   AVBufferRef *buf;

@@ -37,6 +37,7 @@
 #include <QDir>
 #include <QSettings>
 #include "typedef.h"
+#include "parserCommon.h"
 
 #define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG
@@ -3060,15 +3061,34 @@ packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
   // We will try to guess the format of the data from the data in this AVPacket.
   // This should always work unless a format is used which we did not encounter so far (which is not listed above)
   // Also I think this should be identical for all packets in a bitstream.
-  if (avpacketData.at(0) == (char)0 && avpacketData.at(1) == (char)0 && avpacketData.at(2) == (char)0 && avpacketData.at(3) == (char)1)
-    // A package length of 1 is not possible so this must be the raw NAL format.
+  if (checkForRawNALFormat(avpacketData, false))
     return packetFormatRawNAL;
+  if (checkForMp4Format(avpacketData))
+    return packetFormatMP4;
+  // This might be an OBU (AV1) stream
+  if (checkForObuFormat(avpacketData))
+    return packetFormatOBU;
+  if (checkForRawNALFormat(avpacketData, true))
+    return packetFormatRawNAL;
+  return packetFormatUnknown;
+}
+
+bool AVPacketWrapper::checkForRawNALFormat(QByteArray &data, bool threeByteStartCode)
+{
+  if (threeByteStartCode && data.length() > 3 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
+    return true;
+  if (!threeByteStartCode && data.length() > 4 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
+    return true;
+  return false;  
+}
+
+bool AVPacketWrapper::checkForMp4Format(QByteArray &data)
+{
   // Check the ISO mp4 format: Parse the whole data and check if the size bytes per Unit are correct.
   int posInData = 0;
-  bool isMP4Format = true;
-  while (posInData + 4 <= avpacketData.length())
+  while (posInData + 4 <= data.length())
   {
-    QByteArray firstBytes = avpacketData.mid(posInData, 4);
+    QByteArray firstBytes = data.mid(posInData, 4);
 
     int size = (unsigned char)firstBytes.at(3);
     size += (unsigned char)firstBytes.at(2) << 8;
@@ -3077,25 +3097,60 @@ packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
     posInData += 4;
 
     if (size < 0)
-    {
       // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
-      isMP4Format = false;
-      break;
-    }
-    if (posInData + size > avpacketData.length())
-    {
+      return false;
+    if (posInData + size > data.length())
       // Not enough data in the input array to read NAL unit.
-      isMP4Format = false;
-      break;
-    }
+      return false;
     posInData += size;
   }
-  if (isMP4Format)
-    return packetFormatMP4;
-  if (avpacketData.at(0) == (char)0 && avpacketData.at(1) == (char)0 && avpacketData.at(2) == (char)1)
-    // There is a 3 byte start code and this is not a mp4 formatted file. Looks like a raw NAL stream
-    return packetFormatRawNAL;
-  return packetFormatUnknown;
+  return true;
+}
+
+bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
+{
+  try
+  {
+    int posInData = 0;
+    while (posInData + 2 <= data.length())
+    {
+      parserCommon::sub_byte_reader reader(data, posInData);
+
+      QString bitsRead;
+      bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);
+      reader.readBits(4, bitsRead); // obu_type
+      bool obu_extension_flag = (reader.readBits(1, bitsRead) != 0);
+      bool obu_has_size_field = (reader.readBits(1, bitsRead) != 0);
+      bool obu_reserved_1bit = (reader.readBits(1, bitsRead) != 0);
+
+      if (obu_forbidden_bit || obu_reserved_1bit)
+        return false;
+      if (obu_extension_flag)
+      {
+        reader.readBits(3, bitsRead); // temporal_id
+        reader.readBits(2, bitsRead); // spatial_id
+        unsigned int extension_header_reserved_3bits = reader.readBits(3, bitsRead);
+        if (extension_header_reserved_3bits != 0)
+          return false;
+      }
+      unsigned int obu_size;
+      if (obu_has_size_field)
+      {
+        int bitCount;
+        obu_size = reader.readLeb128(bitsRead, bitCount);
+      }
+      else
+      {
+        obu_size = (data.size() - posInData) - 1 - (obu_extension_flag ? 1 : 0);
+      }
+      posInData += obu_size + reader.nrBytesRead();
+    }
+  }
+  catch(...)
+  {
+    return false;
+  }
+  return true;
 }
 
 void AVPacketWrapper::update()
