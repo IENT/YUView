@@ -3051,9 +3051,15 @@ void AVPacketWrapper::set_dts(int64_t d)
 
 packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
 {
+  if (packetFormat != packetFormatUnknown)
+    return packetFormat;
+
   QByteArray avpacketData = QByteArray::fromRawData((const char*)(get_data()), get_data_size());
   if (avpacketData.length() < 4)
-    return packetFormatUnknown;
+  {
+    packetFormat = packetFormatUnknown;
+    return packetFormat;
+  }
 
   // AVPacket data can be in one of two formats:
   // 1: The raw annexB format with start codes (0x00000001 or 0x000001)
@@ -3062,24 +3068,24 @@ packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
   // This should always work unless a format is used which we did not encounter so far (which is not listed above)
   // Also I think this should be identical for all packets in a bitstream.
   if (checkForRawNALFormat(avpacketData, false))
-    return packetFormatRawNAL;
-  if (checkForMp4Format(avpacketData))
-    return packetFormatMP4;
+    packetFormat = packetFormatRawNAL;
+  else if (checkForMp4Format(avpacketData))
+    packetFormat = packetFormatMP4;
   // This might be an OBU (AV1) stream
-  if (checkForObuFormat(avpacketData))
-    return packetFormatOBU;
-  if (checkForRawNALFormat(avpacketData, true))
-    return packetFormatRawNAL;
-  return packetFormatUnknown;
+  else if (checkForObuFormat(avpacketData))
+    packetFormat = packetFormatOBU;
+  else if (checkForRawNALFormat(avpacketData, true))
+    packetFormat = packetFormatRawNAL;
+  return packetFormat;
 }
 
 bool AVPacketWrapper::checkForRawNALFormat(QByteArray &data, bool threeByteStartCode)
 {
   if (threeByteStartCode && data.length() > 3 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
     return true;
-  if (!threeByteStartCode && data.length() > 4 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
+  if (!threeByteStartCode && data.length() > 4 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 && data.at(3) == (char)1)
     return true;
-  return false;  
+  return false;
 }
 
 bool AVPacketWrapper::checkForMp4Format(QByteArray &data)

@@ -472,6 +472,7 @@ public:
   // This is not part of the AVPacket but is set by fileSourceFFmpegFile when reading an AVPacket
   bool     is_video_packet;
   
+  // Guess the format. The actual guessing is only performed if the packetFormat is not set yet.
   packetDataFormat_t guessDataFormatFromData();
 
 private:
@@ -497,6 +498,7 @@ private:
 
   AVPacket *pkt;
   FFmpegLibraryVersion libVer;
+  packetDataFormat_t packetFormat {packetFormatUnknown};
 };
 
 class AVDictionaryWrapper
