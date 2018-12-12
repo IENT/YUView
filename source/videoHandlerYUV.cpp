@@ -3649,7 +3649,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
     return QImage();  // Loading failed
 
   // Both YUV buffers are up to date. Really calculate the difference.
-  DEBUG_YUV("videoHandlerYUV::calculateDifference frame %d", frame);
+  DEBUG_YUV("videoHandlerYUV::calculateDifference frame idx item 0 %d - item 1 %d", frameIdxItem0, frameIdxItem1);
 
   // The items can be of different size (we then calculate the difference of the top left aligned part)
   const int w_in[2] = {frameSize.width(), yuvItem2->frameSize.width()};
