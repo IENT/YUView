@@ -571,7 +571,7 @@ bool reader_helper::readZeroBits(int numBits, QString intoName)
   }
   if (currentTreeLevel)
   {
-    new TreeItem(intoName, allZero ? "0" : "Not 0", QString("u(v) -> u(%1)").arg(bitsToRead), code, currentTreeLevel);
+    new TreeItem(intoName, allZero ? QString("0") : QString("Not 0"), QString("u(v) -> u(%1)").arg(bitsToRead), code, currentTreeLevel);
     if (!allZero)
       addErrorMessageChildItem("The zero bits " + intoName + " must be zero");
   }
