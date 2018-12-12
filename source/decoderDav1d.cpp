@@ -189,92 +189,77 @@ bool decoderDav1d::decodeNextFrame()
 
 bool decoderDav1d::decodeFrame()
 {
-  //int more = 1;
-  //curImage = nullptr;
-  //while (more && curImage == nullptr)
-  //{
-  //  more = 0;
-  //  de265_error err = de265_decode(decoder, &more);
+  if (decoder == nullptr)
+    return false;
 
-  //  if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA)
-  //  {
-  //    decoderState = decoderNeedsMoreData;
-  //    return false;
-  //  }
-  //  else if (err != DE265_OK)
-  //    return setErrorB("Error decoding (de265_decode)");
+  memset(&curPicture, 0, sizeof(curPicture));
+  int res = dav1d_get_picture(decoder, &curPicture);
+  if (res >= 0)
+  { 
+    // We did get a picture
+    // Get the resolution / yuv format from the frame
+    QSize s = QSize(curPicture.p.w, curPicture.p.h);
+    if (!s.isValid())
+      DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid frame size");
+    auto subsampling = convertFromInternalSubsampling(curPicture.p.layout);
+    if (subsampling == YUV_NUM_SUBSAMPLINGS)
+      DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid subsampling");
+    int bitDepth = curPicture.p.bpc;
+    if (bitDepth < 8 || bitDepth > 16)
+      DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid bit depth");
 
-  //  curImage = de265_get_next_picture(decoder);
-  //}
+    if (!frameSize.isValid() && !formatYUV.isValid())
+    {
+      // Set the values
+      frameSize = s;
+      formatYUV = yuvPixelFormat(subsampling, bitDepth);
+    }
+    else
+    {
+      // Check the values against the previously set values
+      if (frameSize != s)
+        return setErrorB("Recieved a frame of different size");
+      if (formatYUV.subsampling != subsampling)
+        return setErrorB("Recieved a frame with different subsampling");
+      if (formatYUV.bitsPerSample != bitDepth)
+        return setErrorB("Recieved a frame with different bit depth");
+    }
+    DEBUG_DAV1D("decoderDav1d::decodeFrame Picture decoded - switching to retrieve frame mode");
 
-  //if (more == 0 && curImage == nullptr)
-  //{
-  //  // Decoding ended
-  //  decoderState = decoderEndOfBitstream;
-  //  return false;
-  //}
+    decoderState = decoderRetrieveFrames;
+    currentOutputBuffer.clear();
+    return true;
+  }
+  else if (res != -EAGAIN)
+      return setErrorB("Error retrieving frame from decoder.");
 
-  //if (curImage != nullptr)
-  //{
-  //  // Get the resolution / yuv format from the frame
-  //  QSize s = QSize(de265_get_image_width(curImage, 0), de265_get_image_height(curImage, 0));
-  //  if (!s.isValid())
-  //    DEBUG_DAV1D("decoderLibde265::decodeFrame got invalid frame size");
-  //  auto subsampling = convertFromInternalSubsampling(de265_get_chroma_format(curImage));
-  //  if (subsampling == YUV_NUM_SUBSAMPLINGS)
-  //    DEBUG_DAV1D("decoderLibde265::decodeFrame got invalid subsampling");
-  //  int bitDepth = de265_get_bits_per_pixel(curImage, 0);
-  //  if (bitDepth < 8 || bitDepth > 16)
-  //    DEBUG_DAV1D("decoderLibde265::decodeFrame got invalid bit depth");
-
-  //  if (!frameSize.isValid() && !formatYUV.isValid())
-  //  {
-  //    // Set the values
-  //    frameSize = s;
-  //    formatYUV = yuvPixelFormat(subsampling, bitDepth);
-  //  }
-  //  else
-  //  {
-  //    // Check the values against the previously set values
-  //    if (frameSize != s)
-  //      return setErrorB("Recieved a frame of different size");
-  //    if (formatYUV.subsampling != subsampling)
-  //      return setErrorB("Recieved a frame with different subsampling");
-  //    if (formatYUV.bitsPerSample != bitDepth)
-  //      return setErrorB("Recieved a frame with different bit depth");
-  //  }
-  //  DEBUG_DAV1D("decoderLibde265::decodeFrame Picture decoded");
-
-  //  decoderState = decoderRetrieveFrames;
-  //  currentOutputBuffer.clear();
-  //  return true;
-  //}
+  if (decoderState != decoderNeedsMoreData)
+    DEBUG_DAV1D("decoderDav1d::decodeFrame No frame available - switching back to data push mode");
+  decoderState = decoderNeedsMoreData;
   return false;
 }
 
 QByteArray decoderDav1d::getRawFrameData()
 {
-  return QByteArray();
-  //if (curImage == nullptr)
-  //  return QByteArray();
-  //if (decoderState != decoderRetrieveFrames)
-  //{
-  //  DEBUG_DAV1D("decoderLibde265::getRawFrameData: Wrong decoder state.");
-  //  return QByteArray();
-  //}
+  if (curPicture.p.w <= 0 || curPicture.p.h <= 0)
+  {
+    DEBUG_DAV1D("decoderDav1d::getRawFrameData: Current picture has invalid size.");
+    return QByteArray();
+  }
+  if (decoderState != decoderRetrieveFrames)
+  {
+    DEBUG_DAV1D("decoderDav1d::getRawFrameData: Wrong decoder state.");
+    return QByteArray();
+  }
 
-  //if (currentOutputBuffer.isEmpty())
-  //{
-  //  // Put image data into buffer
-  //  copyImgToByteArray(curImage, currentOutputBuffer);
-  //  DEBUG_DAV1D("decoderLibde265::getRawFrameData copied frame to buffer");
+  if (currentOutputBuffer.isEmpty())
+  {
+    // Put image data into buffer
+    copyImgToByteArray(curPicture, currentOutputBuffer);
+    DEBUG_DAV1D("decoderDav1d::getRawFrameData copied frame to buffer");
+  }
 
-  //  if (retrieveStatistics)
-  //    // Get the statistics from the image and put them into the statistics cache
-  //    cacheStatistics(curImage);
-  //}
-
-  //return currentOutputBuffer;
+  return currentOutputBuffer;
 }
 
 bool decoderDav1d::pushData(QByteArray &data) 
@@ -303,14 +288,30 @@ bool decoderDav1d::pushData(QByteArray &data)
     Dav1dSequenceHeader seq;
     int err = dav1d_parse_sequence_header(&seq, (const uint8_t*)data.data(), data.size());
     if (err == 0)
+    {
       sequenceHeaderPushed = true;
+
+      QSize s = QSize(seq.max_width, seq.max_height);
+      if (!s.isValid())
+        DEBUG_DAV1D("decoderDav1d::pushData got invalid frame size");
+      auto subsampling = convertFromInternalSubsampling(seq.layout);
+      if (subsampling == YUV_NUM_SUBSAMPLINGS)
+        DEBUG_DAV1D("decoderDav1d::pushData got invalid subsampling");
+      int bitDepth = (seq.hbd == 0 ? 8 : (seq.hbd == 1 ? 10 : (seq.hbd == 2 ? 12 : -1)));
+      if (bitDepth < 8 || bitDepth > 16)
+        DEBUG_DAV1D("decoderDav1d::pushData got invalid bit depth");
+
+      frameSize = s;
+      formatYUV = yuvPixelFormat(subsampling, bitDepth);
+    }
     else
     {
       DEBUG_DAV1D("decoderDav1d::pushData Error: No sequence header revieved yet and parsing of this packet as slice header failed. Ignoring packet.");
       return true;
     }
   }
-  else if (data.size() == 0)
+
+  if (data.size() == 0)
   {
     // The input file is at the end. Switch to flushing mode.
     DEBUG_DAV1D("decoderDav1d::pushData input ended - flushing");
@@ -328,13 +329,16 @@ bool decoderDav1d::pushData(QByteArray &data)
     {
       // The data was not consumed and must be pushed again after retrieving some frames
       delete dav1dData;
+      DEBUG_DAV1D("decoderDav1d::pushData need to re-push data");
       return false;
     }
     else if (err != 0)
     {
       delete dav1dData;
+      DEBUG_DAV1D("decoderDav1d::pushData error pushing data");
       return setErrorB("Error pushing data to the decoder.");
     }
+    DEBUG_DAV1D("decoderDav1d::pushData successfully pushed %d bytes", data.size());
   }
 
   // Check for an available frame
@@ -345,63 +349,58 @@ bool decoderDav1d::pushData(QByteArray &data)
 }
 
 #if SSE_CONVERSION
-void decoderDav1d::copyImgToByteArray(const Dav1dPicture *src, byteArrayAligned &dst)
+void decoderDav1d::copyImgToByteArray(const Dav1dPicture &src, byteArrayAligned &dst)
 #else
-void decoderDav1d::copyImgToByteArray(const Dav1dPicture *src, QByteArray &dst)
+void decoderDav1d::copyImgToByteArray(const Dav1dPicture &src, QByteArray &dst)
 #endif
 {
-  //// How many image planes are there?
-  //de265_chroma cMode = de265_get_chroma_format(src);
-  //int nrPlanes = (cMode == de265_chroma_mono) ? 1 : 3;
+  // How many image planes are there?
+  int nrPlanes = (src.p.layout == DAV1D_PIXEL_LAYOUT_I400) ? 1 : 3;
+  
+  // At first get how many bytes we are going to write
+  const int nrBytesPerSample = (src.p.bpc > 8) ? 2 : 1;
+  int nrBytes = src.p.w * src.p.h * nrBytesPerSample;
+  if (src.p.layout == DAV1D_PIXEL_LAYOUT_I420)
+    nrBytes += (src.p.w / 2) * (src.p.h / 2) * 2 * nrBytesPerSample;
+  else if (src.p.layout == DAV1D_PIXEL_LAYOUT_I422)
+    nrBytes += (src.p.w / 2) * src.p.h * 2 * nrBytesPerSample;
+  else if (src.p.layout == DAV1D_PIXEL_LAYOUT_I444)
+    nrBytes += src.p.w * src.p.h * 2 * nrBytesPerSample;
 
-  //// At first get how many bytes we are going to write
-  //int nrBytes = 0;
-  //int stride;
-  //for (int c = 0; c < nrPlanes; c++)
-  //{
-  //  int width = de265_get_image_width(src, c);
-  //  int height = de265_get_image_height(src, c);
-  //  int nrBytesPerSample = (de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
+  DEBUG_DAV1D("decoderDav1d::copyImgToByteArray nrBytes %d", nrBytes);
 
-  //  nrBytes += width * height * nrBytesPerSample;
-  //}
+  // Is the output big enough?
+  if (dst.capacity() < nrBytes)
+   dst.resize(nrBytes);
 
-  //DEBUG_DAV1D("decoderLibde265::copyImgToByteArray nrBytes %d", nrBytes);
+  uint8_t *dst_c = (uint8_t*)dst.data();
 
-  //// Is the output big enough?
-  //if (dst.capacity() < nrBytes)
-  //  dst.resize(nrBytes);
+  // We can now copy from src to dst
+  for (int c = 0; c < nrPlanes; c++)
+  {
+    int width = src.p.w;
+    int height = src.p.h;
+    if (c != 0)
+    {
+      if (src.p.layout == DAV1D_PIXEL_LAYOUT_I420 || src.p.layout == DAV1D_PIXEL_LAYOUT_I422)
+        width /= 2;
+      if (src.p.layout == DAV1D_PIXEL_LAYOUT_I420)
+        height /= 2;
+    }
+    const size_t widthInBytes = width * nrBytesPerSample;
 
-  //uint8_t *dst_c = (uint8_t*)dst.data();
+    uint8_t* img_c = (uint8_t*)src.data[c];
+    if (img_c == nullptr)
+      return;
 
-  //// We can now copy from src to dst
-  //for (int c = 0; c < nrPlanes; c++)
-  //{
-  //  const int width = de265_get_image_width(src, c);
-  //  const int height = de265_get_image_height(src, c);
-  //  const int nrBytesPerSample = (de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
-  //  const size_t widthInBytes = width * nrBytesPerSample;
-
-  //  const uint8_t* img_c = nullptr;
-  //  if (decodeSignal == 0)
-  //    img_c = de265_get_image_plane(src, c, &stride);
-  //  else if (decodeSignal == 1)
-  //    img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);
-  //  else if (decodeSignal == 2)
-  //    img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, c, &stride);
-  //  else if (decodeSignal == 3)
-  //    img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, c, &stride);
-
-  //  if (img_c == nullptr)
-  //    return;
-
-  //  for (int y = 0; y < height; y++)
-  //  {
-  //    memcpy(dst_c, img_c, widthInBytes);
-  //    img_c += stride;
-  //    dst_c += widthInBytes;
-  //  }
-  //}
+    const int stride = (c == 0) ? src.stride[0] : src.stride[1];
+    for (int y = 0; y < height; y++)
+    {
+      memcpy(dst_c, img_c, widthInBytes);
+      img_c += stride;
+      dst_c += widthInBytes;
+    }
+  }
 }
 
 bool decoderDav1d::checkLibraryFile(QString libFilePath, QString &error)
@@ -445,4 +444,19 @@ QStringList decoderDav1d::getLibraryNames()
     return QStringList() << "dav1d-internals" << "dav1d";
   if (is_Q_OS_LINUX)
     return QStringList() << "libdav1d-internals" << "libdav1d";
+}
+
+YUVSubsamplingType decoderDav1d::convertFromInternalSubsampling(Dav1dPixelLayout layout)
+{
+  if (layout == DAV1D_PIXEL_LAYOUT_I400)
+    return YUV_400;
+  else if (layout == DAV1D_PIXEL_LAYOUT_I420)
+    return YUV_420;
+  else if (layout == DAV1D_PIXEL_LAYOUT_I422)
+    return YUV_422;
+  else if (layout == DAV1D_PIXEL_LAYOUT_I444)
+    return YUV_444;
+  
+  // Invalid
+  return YUV_NUM_SUBSAMPLINGS;
 }

@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -108,23 +108,20 @@ private:
   // If this is true, a frame is waiting from that step and decodeNextFrame will not actually decode a new frame.
   bool decodedFrameWaiting {false};
 
-  // Try to decode a frame. If successfull, the frame will be pointed to by curImage.
+  // Try to decode a frame. If successfull, the frame will be in curPicture.
   bool decodeFrame();
-  const Dav1dPicture* curImage {nullptr};
+  Dav1dPicture curPicture;
 
-  // With the given partitioning mode, the size of the CU and the prediction block index, calculate the
-  // sub-position and size of the prediction block
-  void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const;
-  void cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth, bool isIntra, uint8_t *const intraDirY, uint8_t *const intraDirC, int intraDir_infoUnit_size, int widthInIntraDirUnits);
+  YUVSubsamplingType convertFromInternalSubsampling(Dav1dPixelLayout layout);
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as necessary
   // without invoking the copy operation from the libde265 buffer to the QByteArray again.
 #if SSE_CONVERSION
   byteArrayAligned currentOutputBuffer;
-  void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);
+  void copyImgToByteArray(const Dav1dPicture &src, byteArrayAligned &dst);
 #else
   QByteArray currentOutputBuffer;
-  void copyImgToByteArray(const Dav1dPicture *src, QByteArray &dst);   // Copy the raw data from the Dav1dPicture source *src to the byte array
+  void copyImgToByteArray(const Dav1dPicture &src, QByteArray &dst);   // Copy the raw data from the Dav1dPicture source *src to the byte array
 #endif
 };
 
