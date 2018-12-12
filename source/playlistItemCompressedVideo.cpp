@@ -41,6 +41,7 @@
 #include "bitstreamAnalysisDialog.h"
 #include "decoderFFmpeg.h"
 #include "decoderHM.h"
+#include "decoderDav1d.h"
 #include "decoderLibde265.h"
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
@@ -155,13 +156,16 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     frameSize = inputFileFFmpegLoading->getSequenceSizeSamples();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size %dx%d", frameSize.width(), frameSize.height());
     ffmpegCodec = inputFileFFmpegLoading->getVideoStreamCodecID();
-    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getName().toStdString().c_str());
-    possibleDecoders.append(decoderEngineFFMpeg);
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getCodecName().toStdString().c_str());
+    if (ffmpegCodec.isAVC() || ffmpegCodec.isHEVC())
+      possibleDecoders.append(decoderEngineFFMpeg);
     if (ffmpegCodec.isHEVC())
     {
       possibleDecoders.append(decoderEngineLibde265);
       possibleDecoders.append(decoderEngineHM);
     }
+    if (ffmpegCodec.isAV1())
+      possibleDecoders.append(decoderEngineDav1d);
 
     if (cachingEnabled)
     {
@@ -566,8 +570,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
       }
       else if (isInputFormatTypeFFmpeg() && decoderEngineType != decoderEngineFFMpeg)
       {
-        // Get the next NAL unit and push it to the decoder
-        QByteArray data = caching ? inputFileFFmpegCaching->getNextNALUnit(repushData) : inputFileFFmpegLoading->getNextNALUnit(repushData);
+        // Get the next unit (NAL or OBU) form ffmepg and push it to the decoder
+        QByteArray data = caching ? inputFileFFmpegCaching->getNextUnit(repushData) : inputFileFFmpegLoading->getNextUnit(repushData);
         DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData retrived nal unit from file - size %d", data.size());
         repushData = !dec->pushData(data);
       }
@@ -756,6 +760,16 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
       cachingDecoder.reset(new decoderHM(displayComponent, true));
     }
   }
+  else if (decoderEngineType == decoderEngineDav1d)
+  {
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive dav1d decoder");
+    loadingDecoder.reset(new decoderDav1d(displayComponent));
+    if (cachingEnabled)
+    {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder caching interactive dav1d decoder");
+      cachingDecoder.reset(new decoderDav1d(displayComponent, true));
+    }
+  }
   else if (decoderEngineType == decoderEngineFFMpeg)
   {
     if (isInputFormatTypeAnnexB())
@@ -867,7 +881,7 @@ ValuePairListSets playlistItemCompressedVideo::getPixelValues(const QPoint &pixe
 void playlistItemCompressedVideo::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
   QStringList ext;
-  ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "cgi" << "ivr" << "lvf"
+  ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "cgi" << "ivf" << "ivr" << "lvf"
       << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" << "mjpeg" << "mpg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" << "mvi" << "mxg" << "v" << "ogg" 
       << "mjpg" << "viv" << "webm" << "xmv" << "ts" << "mxf";
   QString filtersString = "FFMpeg files (";

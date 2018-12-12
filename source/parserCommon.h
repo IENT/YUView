@@ -50,9 +50,9 @@ namespace parserCommon
   {
   public:
     sub_byte_reader() {};
-    sub_byte_reader(const QByteArray &inArr) : byteArray(inArr) {}
+    sub_byte_reader(const QByteArray &inArr, unsigned int inArrOffset = 0) : byteArray(inArr), posInBuffer_bytes(inArrOffset), initialPosInBuffer(inArrOffset) {}
     
-    void set_input(const QByteArray &inArr) { byteArray = inArr; }
+    void set_input(const QByteArray &inArr, unsigned int inArrOffset = 0) { byteArray = inArr; posInBuffer_bytes = inArrOffset; initialPosInBuffer = inArrOffset; }
     
     // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
     unsigned int readBits(int nrBits, QString &bitsRead);
@@ -77,7 +77,7 @@ namespace parserCommon
     // Will reading of the given number of bits succeed?
     bool testReadingBits(int nrBits);
     // How many full bytes were read/are left from the reader?
-    unsigned int nrBytesRead() { return (posInBuffer_bits == 0) ? posInBuffer_bytes : posInBuffer_bytes + 1; }
+    unsigned int nrBytesRead() { return posInBuffer_bytes - initialPosInBuffer + (posInBuffer_bits != 0 ? 1 : 0); }
     unsigned int nrBytesLeft() { return std::min((unsigned int)0, byteArray.size() - posInBuffer_bytes - 1); }
 
     void disableEmulationPrevention() { skipEmulationPrevention = false; }
@@ -94,6 +94,7 @@ namespace parserCommon
     unsigned int posInBuffer_bytes   {0}; // The byte position in the buffer
     unsigned int posInBuffer_bits    {0}; // The sub byte (bit) position in the buffer (0...7)
     unsigned int numEmuPrevZeroBytes {0}; // The number of emulation prevention three bytes that were found
+    unsigned int initialPosInBuffer  {0}; // The position that was given when creating the sub reader
   };
 
   /* This class provides the ability to write to a QByteArray on a bit basis. 

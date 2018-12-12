@@ -9,6 +9,7 @@ CONFIG += c++11
 SOURCES += \
     source/bitstreamAnalysisDialog.cpp \
     source/decoderBase.cpp \
+    source/decoderDav1d.cpp \
     source/decoderFFmpeg.cpp \
     source/decoderHM.cpp \
     source/decoderLibde265.cpp \
@@ -66,6 +67,7 @@ SOURCES += \
 HEADERS += \
     source/bitstreamAnalysisDialog.h \
     source/decoderBase.h \
+    source/decoderDav1d.h \
     source/decoderFFmpeg.h \
     source/decoderHM.h \
     source/decoderLibde265.h \
@@ -122,7 +124,15 @@ HEADERS += \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
-    source/yuviewapp.h
+    source/yuviewapp.h \
+    decoder/libde265/de265.h \
+    decoder/libde265/de265_internals.h \
+    decoder/libde265/de265-version.h \
+    decoder/dav1d/common.h \
+    decoder/dav1d/data.h \
+    decoder/dav1d/dav1d.h \
+    decoder/dav1d/headers.h \
+    decoder/dav1d/picture.h
 
 FORMS += \
     ui/bitstreamAnalysisDialog.ui \
@@ -153,8 +163,9 @@ RESOURCES += \
     docs/resources.qrc
 
 INCLUDEPATH += \
-    libde265 \
-    source
+    decoder/libde265 \
+    decoder/dav1d \
+    source/
 
 OTHER_FILES += \
     HACKING.md \

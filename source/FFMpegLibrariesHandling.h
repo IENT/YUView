@@ -437,7 +437,8 @@ enum packetDataFormat_t
 {
   packetFormatUnknown,
   packetFormatRawNAL,
-  packetFormatMP4
+  packetFormatMP4,
+  packetFormatOBU
 };
 
 // A wrapper around the different versions of the AVPacket versions.
@@ -471,10 +472,15 @@ public:
   // This is not part of the AVPacket but is set by fileSourceFFmpegFile when reading an AVPacket
   bool     is_video_packet;
   
+  // Guess the format. The actual guessing is only performed if the packetFormat is not set yet.
   packetDataFormat_t guessDataFormatFromData();
 
 private:
   void update();
+
+  bool checkForRawNALFormat(QByteArray &data, bool threeByteStartCode=false);
+  bool checkForMp4Format(QByteArray &data);
+  bool checkForObuFormat(QByteArray &data);
 
   // These are private. Use "update" to update them from the AVFormatContext
   AVBufferRef *buf;
@@ -492,6 +498,7 @@ private:
 
   AVPacket *pkt;
   FFmpegLibraryVersion libVer;
+  packetDataFormat_t packetFormat {packetFormatUnknown};
 };
 
 class AVDictionaryWrapper

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>535</width>
-    <height>591</height>
+    <height>605</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tabGeneral">
       <attribute name="title">
@@ -772,7 +772,7 @@
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QLabel" name="label">
+           <widget class="QLabel" name="labelLibJEM">
             <property name="text">
              <string>libJEM</string>
             </property>
@@ -798,6 +798,38 @@
           </item>
           <item row="2" column="3">
            <widget class="QPushButton" name="pushButtonLibJEMClearFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labellibDav1d">
+            <property name="text">
+             <string>libDav1d</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="lineEditLibDav1d"/>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButtonLibDav1dSelectFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QPushButton" name="pushButtonLibDav1dClearFile">
             <property name="text">
              <string/>
             </property>

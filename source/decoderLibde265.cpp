@@ -129,53 +129,51 @@ void decoderLibde265::resolveLibraryFunctionPointers()
   if (!resolve(de265_flush_data, "de265_flush_data")) return;
   if (!resolve(de265_get_next_picture, "de265_get_next_picture")) return;
   if (!resolve(de265_free_decoder, "de265_free_decoder")) return;
-  DEBUG_LIBDE265("decoderLibde265::loadDecoderLibrary - decoding functions found");
+  DEBUG_LIBDE265("decoderLibde265::resolveLibraryFunctionPointers - decoding functions found");
 
   // Get pointers to the internals/statistics functions (if present)
   // If not, disable the statistics extraction. Normal decoding of the video will still work.
 
-  if (!resolveInternals(de265_internals_get_CTB_Info_Layout, "de265_internals_get_CTB_Info_Layout")) return;
-  if (!resolveInternals(de265_internals_get_CTB_sliceIdx, "de265_internals_get_CTB_sliceIdx")) return;
-  if (!resolveInternals(de265_internals_get_CB_Info_Layout, "de265_internals_get_CB_Info_Layout")) return;
-  if (!resolveInternals(de265_internals_get_CB_info, "de265_internals_get_CB_info")) return;
-  if (!resolveInternals(de265_internals_get_PB_Info_layout, "de265_internals_get_PB_Info_layout")) return;
-  if (!resolveInternals(de265_internals_get_PB_info, "de265_internals_get_PB_info")) return;
-  if (!resolveInternals(de265_internals_get_IntraDir_Info_layout, "de265_internals_get_IntraDir_Info_layout")) return;
-  if (!resolveInternals(de265_internals_get_intraDir_info, "de265_internals_get_intraDir_info")) return;
-  if (!resolveInternals(de265_internals_get_TUInfo_Info_layout, "de265_internals_get_TUInfo_Info_layout")) return;
-  if (!resolveInternals(de265_internals_get_TUInfo_info, "de265_internals_get_TUInfo_info")) return;
+  if (!resolve(de265_internals_get_CTB_Info_Layout, "de265_internals_get_CTB_Info_Layout", true)) return;
+  if (!resolve(de265_internals_get_CTB_sliceIdx, "de265_internals_get_CTB_sliceIdx", true)) return;
+  if (!resolve(de265_internals_get_CB_Info_Layout, "de265_internals_get_CB_Info_Layout", true)) return;
+  if (!resolve(de265_internals_get_CB_info, "de265_internals_get_CB_info", true)) return;
+  if (!resolve(de265_internals_get_PB_Info_layout, "de265_internals_get_PB_Info_layout", true)) return;
+  if (!resolve(de265_internals_get_PB_info, "de265_internals_get_PB_info", true)) return;
+  if (!resolve(de265_internals_get_IntraDir_Info_layout, "de265_internals_get_IntraDir_Info_layout", true)) return;
+  if (!resolve(de265_internals_get_intraDir_info, "de265_internals_get_intraDir_info", true)) return;
+  if (!resolve(de265_internals_get_TUInfo_Info_layout, "de265_internals_get_TUInfo_Info_layout", true)) return;
+  if (!resolve(de265_internals_get_TUInfo_info, "de265_internals_get_TUInfo_info", true)) return;
   // All interbals functions were successfully retrieved
   internalsSupported = true;
-  DEBUG_LIBDE265("decoderLibde265::loadDecoderLibrary - statistics internals found");
+  DEBUG_LIBDE265("decoderLibde265::resolveLibraryFunctionPointers - statistics internals found");
   
   // Get pointers to the functions for retrieving prediction/residual signals
-  if (!resolveInternals(de265_internals_get_image_plane, "de265_internals_get_image_plane")) return;
-  if (!resolveInternals(de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool")) return;
+  if (!resolve(de265_internals_get_image_plane, "de265_internals_get_image_plane", true)) return;
+  if (!resolve(de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool", true)) return;
   // The prediction and residual signal can be obtained
   nrSignals = 4;
-  DEBUG_LIBDE265("decoderLibde265::loadDecoderLibrary - prediction/residual internals found");
+  DEBUG_LIBDE265("decoderLibde265::resolveLibraryFunctionPointers - prediction/residual internals found");
 }
 
-template <typename T> T decoderLibde265::resolve(T &fun, const char *symbol)
+template <typename T> T decoderLibde265::resolve(T &fun, const char *symbol, bool optional)
 {
   QFunctionPointer ptr = library.resolve(symbol);
   if (!ptr)
   {
-    setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
+    if (!optional)
+      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
     return nullptr;
   }
 
   return fun = reinterpret_cast<T>(ptr);
 }
 
-template <typename T> T decoderLibde265::resolveInternals(T &fun, const char *symbol)
-{
-  return fun = reinterpret_cast<T>(library.resolve(symbol));
-}
-
 void decoderLibde265::allocateNewDecoder()
 {
   if (decoder != nullptr)
+    return;
+  if (decoderState == decoderError)
     return;
 
   DEBUG_LIBDE265("decoderLibde265::allocateNewDecoder - decodeSignal %d", decodeSignal);
