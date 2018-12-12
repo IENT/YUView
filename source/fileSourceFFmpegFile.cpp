@@ -154,43 +154,54 @@ QByteArray fileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pt
   {
     parserCommon::sub_byte_reader reader(currentPacketData, posInData);
 
-    QString bitsRead;
-    bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);
-    reader.readBits(4, bitsRead); // obu_type
-    bool obu_extension_flag = (reader.readBits(1, bitsRead) != 0);
-    bool obu_has_size_field = (reader.readBits(1, bitsRead) != 0);
-    bool obu_reserved_1bit = (reader.readBits(1, bitsRead) != 0);
+    try
+    {
+      QString bitsRead;
+      bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);
+      reader.readBits(4, bitsRead); // obu_type
+      bool obu_extension_flag = (reader.readBits(1, bitsRead) != 0);
+      bool obu_has_size_field = (reader.readBits(1, bitsRead) != 0);
+      bool obu_reserved_1bit = (reader.readBits(1, bitsRead) != 0);
 
-    if (obu_forbidden_bit || obu_reserved_1bit)
-    {
-      currentPacketData.clear();
-      return QByteArray();
-    }
-    if (obu_extension_flag)
-    {
-      reader.readBits(3, bitsRead); // temporal_id
-      reader.readBits(2, bitsRead); // spatial_id
-      unsigned int extension_header_reserved_3bits = reader.readBits(3, bitsRead);
-      if (extension_header_reserved_3bits != 0)
+      if (obu_forbidden_bit || obu_reserved_1bit)
       {
         currentPacketData.clear();
         return QByteArray();
       }
+      if (obu_extension_flag)
+      {
+        reader.readBits(3, bitsRead); // temporal_id
+        reader.readBits(2, bitsRead); // spatial_id
+        unsigned int extension_header_reserved_3bits = reader.readBits(3, bitsRead);
+        if (extension_header_reserved_3bits != 0)
+        {
+          currentPacketData.clear();
+          return QByteArray();
+        }
+      }
+      if (obu_has_size_field)
+      {
+        int bitCount;
+        unsigned int obu_size = reader.readLeb128(bitsRead, bitCount);
+        unsigned int completeSize = obu_size + reader.nrBytesRead();
+        lastReturnArray = currentPacketData.mid(posInData, completeSize);
+        posInData += completeSize;
+        if (posInData >= currentPacketData.size())
+          currentPacketData.clear();
+      }
+      else
+      {
+        // The OBU is the remainder of the input
+        lastReturnArray = currentPacketData.mid(posInData);
+        posInData = currentPacketData.size();
+        currentPacketData.clear();
+      }
     }
-    if (obu_has_size_field)
+    catch(...)
     {
-      int bitCount;
-      unsigned int obu_size = reader.readLeb128(bitsRead, bitCount);
-      unsigned int completeSize = obu_size + reader.nrBytesRead();
-      lastReturnArray = currentPacketData.mid(posInData, completeSize);
-      posInData += completeSize;
-    }
-    else
-    {
-      // The OBU is the remainder of the input
-      lastReturnArray = currentPacketData.mid(posInData);
-      posInData = currentPacketData.size();
+      // The reader threw an exception
       currentPacketData.clear();
+      return QByteArray();
     }
   }
 
