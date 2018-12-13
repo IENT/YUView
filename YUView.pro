@@ -56,6 +56,7 @@ SOURCES += \
     source/typedef.cpp \
     source/updateHandler.cpp \
     source/videoCache.cpp \
+    source/videoCacheInfoWidget.cpp \
     source/videoHandler.cpp \
     source/videoHandlerDifference.cpp \
     source/videoHandlerRGB.cpp \
@@ -117,6 +118,7 @@ HEADERS += \
     source/typedef.h \
     source/updateHandler.h \
     source/videoCache.h \
+    source/videoCacheInfoWidget.h \
     source/videoHandler.h \
     source/videoHandlerDifference.h \
     source/videoHandlerRGB.h \
