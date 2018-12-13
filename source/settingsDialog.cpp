@@ -38,6 +38,7 @@
 #include <QSettings>
 #include <QTextStream>
 #include "typedef.h"
+#include "decoderDav1d.h"
 #include "decoderHM.h"
 #include "decoderLibde265.h"
 #include "FFMpegLibrariesHandling.h"
@@ -132,6 +133,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
+  ui.lineEditLibDav1d->setText(settings.value("libDav1dFile", "").toString());
   ui.lineEditLibJEMFile->setText(settings.value("libJEMFile", "").toString());
   ui.lineEditAVFormat->setText(settings.value("FFMpeg.avformat", "").toString());
   ui.lineEditAVCodec->setText(settings.value("FFMpeg.avcodec", "").toString());
@@ -264,6 +266,18 @@ void SettingsDialog::on_pushButtonLibJEMSelectFile_clicked()
     ui.lineEditLibJEMFile->setText(newFiles[0]);*/
 }
 
+void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
+{
+  QStringList newFiles = getLibraryPath(ui.lineEditLibDav1d->text(), "Please select the libDav1d library file to use.");
+  if (newFiles.count() != 1)
+    return;
+  QString error;
+  if (!decoderDav1d::checkLibraryFile(newFiles[0], error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libDav1d library. Error: " + error);
+  else
+    ui.lineEditLibDav1d->setText(newFiles[0]);
+}
+
 void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 {
   QStringList newFiles = getLibraryPath(ui.lineEditAVFormat->text(), "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.", true);
@@ -371,6 +385,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
   settings.setValue("libJEMFile", ui.lineEditLibJEMFile->text());
+  settings.setValue("libDav1dFile", ui.lineEditLibDav1d->text());
   // FFMpeg files
   settings.setValue("FFMpeg.avformat", ui.lineEditAVFormat->text());
   settings.setValue("FFMpeg.avcodec", ui.lineEditAVCodec->text());

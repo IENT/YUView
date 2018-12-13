@@ -2293,7 +2293,7 @@ int parserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray
 
   int nrZeroBytes = 0;
   int pos = 0;
-  while (nrBytes > 0)
+  while (nrBytes > 0 && pos < in.length())
   {
     char c = (char)in.at(pos);
 
