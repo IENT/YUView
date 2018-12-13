@@ -122,13 +122,15 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Start parsing of file");
     inputFileAnnexBParser->parseAnnexBFile(inputFileAnnexBLoading, mainWindow);
+    
     // Get the frame size and the pixel format
     frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size %dx%d", frameSize.width(), frameSize.height());
-    // Raw annexB files will always provide YUV data
     format_yuv = inputFileAnnexBParser->getPixelFormat();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo YUV format %s", format_yuv.getName().toStdString().c_str());
-    rawFormat = raw_YUV;
+    rawFormat = raw_YUV;  // Raw annexB files will always provide YUV data
+    frameRate = inputFileAnnexBParser->getFramerate();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %s", rateFPS);
   }
   else
   {
@@ -154,6 +156,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     }
     frameSize = inputFileFFmpegLoading->getSequenceSizeSamples();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size %dx%d", frameSize.width(), frameSize.height());
+    frameRate = inputFileFFmpegLoading->getFramerate();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %s", rateFPS);
     ffmpegCodec = inputFileFFmpegLoading->getVideoStreamCodecID();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getName().toStdString().c_str());
     possibleDecoders.append(decoderEngineFFMpeg);
