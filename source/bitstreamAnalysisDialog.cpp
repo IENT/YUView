@@ -58,8 +58,9 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
   
   parser->enableModel();
 
-  ui.dataTreeView->setModel(parser->getPacketItemModel());
+  ui.streamInfoTreeWidget->setColumnWidth(0, 300);
 
+  ui.dataTreeView->setModel(parser->getPacketItemModel());
   ui.dataTreeView->setColumnWidth(0, 600);
   ui.dataTreeView->setColumnWidth(1, 100);
   ui.dataTreeView->setColumnWidth(2, 120);
