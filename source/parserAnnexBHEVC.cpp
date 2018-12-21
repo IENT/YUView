@@ -646,7 +646,14 @@ bool parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(reader_helpe
       READFLAG(general_reserved_zero_bit);
   }
 
-  READBITS(general_level_idc, 8);
+  QString (*general_level_idc_meaning)(unsigned int) = [](unsigned int idc)
+  {
+    if (idc % 30 == 0)
+      return QString("Level %1").arg(idc / 30);
+    else
+      return QString("Level %1").arg(double(idc) / 30, -1, 'f', 1);
+  };
+  READBITS_M(general_level_idc, 8, general_level_idc_meaning);
 
   for(int i = 0; i < maxNumSubLayersMinus1; i++)
   {
