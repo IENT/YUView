@@ -69,7 +69,7 @@ public:
 
   int nrSignalsSupported() const Q_DECL_OVERRIDE { return nrSignals; }
   bool isSignalDifference(int signalID) const Q_DECL_OVERRIDE { return signalID == 2 || signalID == 3; }
-  QStringList getSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
+  QStringList getSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Reconstruction pre-filter"; }
   void setDecodeSignal(int signalID, bool &decoderResetNeeded) Q_DECL_OVERRIDE;
 
   // Decoding / pushing data
@@ -103,6 +103,7 @@ private:
 
   Dav1dContext *decoder {nullptr};
   Dav1dSettings settings;
+  Dav1dAnalyzerSettings analyzerSettings;
 
   int nrSignals {1};
   bool flushing {false};
@@ -130,6 +131,8 @@ private:
     int getBitDepth() const;
     uint8_t *getData(int component) const;
     ptrdiff_t getStride(int component) const;
+    uint8_t *getDataPrediction(int component) const;
+    uint8_t *getDataReconstructionPreFiltering(int component) const;
     
   private:
     Dav1dPicture_original curPicture_original;

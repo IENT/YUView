@@ -40,7 +40,7 @@
 #include "typedef.h"
 
 // Debug the decoder (0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERDAV1D_DEBUG_OUTPUT 0
+#define DECODERDAV1D_DEBUG_OUTPUT 1
 #if DECODERDAV1D_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERDAV1D_DEBUG_OUTPUT == 1
@@ -94,12 +94,12 @@ void decoderDav1d::resetDecoder()
   if (!decoder)
     return setError("Resetting the decoder failed. No decoder allocated.");
 
-  dav1d_flush(decoder);
+  dav1d_close(&decoder);
+  if (decoder != nullptr)
+    DEBUG_DAV1D("Error closing the decoder. The close function should set the decoder pointer to NULL");
+  decoder = nullptr;
 
-  decoderBase::resetDecoder();
-  currentOutputBuffer.clear();
-  decodedFrameWaiting = false;
-  flushing = false;
+  allocateNewDecoder();
 }
 
 void decoderDav1d::setDecodeSignal(int signalID, bool &decoderResetNeeded)
@@ -173,6 +173,18 @@ void decoderDav1d::allocateNewDecoder()
     setError("Error opening new decoder (dav1d_open)");
     return;
   }
+
+  dav1d_default_analyzer_settings(&analyzerSettings);
+
+  if (nrSignals > 0)
+  {
+    if (decodeSignal == 1)
+      analyzerSettings.export_prediction = 1;
+    else if (decodeSignal == 2)
+      analyzerSettings.export_prefilter = 1;
+  }
+
+  dav1d_set_analyzer_settings(decoder, &analyzerSettings);
 
   // The decoder is ready to receive data
   decoderBase::resetDecoder();
@@ -407,7 +419,14 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
     }
     const size_t widthInBytes = width * nrBytesPerSample;
 
-    uint8_t* img_c = curPicture.getData(c);
+    uint8_t* img_c;
+    if (decodeSignal == 0)
+      img_c = curPicture.getData(c);
+    else if (decodeSignal == 1)
+      img_c = curPicture.getDataPrediction(c);
+    else if (decodeSignal == 2)
+      img_c = curPicture.getDataReconstructionPreFiltering(c);
+
     if (img_c == nullptr)
       return;
 
@@ -510,9 +529,9 @@ void decoderDav1d::Dav1dPictureWrapper::setInternalsSupported()
 void decoderDav1d::Dav1dPictureWrapper::clear()
 {
   if (internalsSupported)
-    memset(&curPicture_original, 0, sizeof(curPicture_original));
-  else
     memset(&curPicture_analizer, 0, sizeof(curPicture_analizer));
+  else
+    memset(&curPicture_original, 0, sizeof(curPicture_original));
 }
 
 QSize decoderDav1d::Dav1dPictureWrapper::getFrameSize() const
@@ -545,6 +564,20 @@ uint8_t *decoderDav1d::Dav1dPictureWrapper::getData(int component) const
     return (uint8_t*)curPicture_analizer.data[component];
   else
     return (uint8_t*)curPicture_original.data[component];
+}
+
+uint8_t *decoderDav1d::Dav1dPictureWrapper::getDataPrediction(int component) const
+{
+  if (!internalsSupported)
+    return nullptr;
+  return (uint8_t*)curPicture_analizer.pred[component];
+}
+
+uint8_t *decoderDav1d::Dav1dPictureWrapper::getDataReconstructionPreFiltering(int component) const
+{
+  if (!internalsSupported)
+    return nullptr;
+  return (uint8_t*)curPicture_analizer.pre_lpf[component];
 }
 
 ptrdiff_t decoderDav1d::Dav1dPictureWrapper::getStride(int component) const
