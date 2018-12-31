@@ -32,13 +32,14 @@
 
 #include "decoderDav1d.h"
 
+#include <cassert>
 #include <cstring>
 #include <QCoreApplication>
 #include <QDir>
 #include <QSettings>
 #include "typedef.h"
 
-// Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
+// Debug the decoder (0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define DECODERDAV1D_DEBUG_OUTPUT 0
 #if DECODERDAV1D_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -126,6 +127,15 @@ void decoderDav1d::resolveLibraryFunctionPointers()
   if (!resolve(dav1d_data_create, "dav1d_data_create")) return;
 
   DEBUG_DAV1D("decoderDav1d::resolveLibraryFunctionPointers - decoding functions found");
+
+  // 
+  if (!resolve(dav1d_default_analyzer_settings, "dav1d_default_analyzer_settings")) return;
+  if (!resolve(dav1d_set_analyzer_settings, "dav1d_set_analyzer_settings")) return;
+  
+  DEBUG_DAV1D("decoderDav1d::resolveLibraryFunctionPointers - analizer functions found");
+  internalsSupported = true;
+  nrSignals = 3;  // We can also get prediction and reconstruction before filtering
+  curPicture.setInternalsSupported();
 }
 
 template <typename T> T decoderDav1d::resolve(T &fun, const char *symbol, bool optional)
@@ -192,19 +202,20 @@ bool decoderDav1d::decodeFrame()
   if (decoder == nullptr)
     return false;
 
-  memset(&curPicture, 0, sizeof(curPicture));
-  int res = dav1d_get_picture(decoder, &curPicture);
+  curPicture.clear();
+
+  int res = dav1d_get_picture(decoder, curPicture.getPicture());
   if (res >= 0)
   { 
     // We did get a picture
     // Get the resolution / yuv format from the frame
-    QSize s = QSize(curPicture.p.w, curPicture.p.h);
+    QSize s = curPicture.getFrameSize();
     if (!s.isValid())
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid frame size");
-    auto subsampling = convertFromInternalSubsampling(curPicture.p.layout);
+    auto subsampling = curPicture.getSubsampling();
     if (subsampling == YUV_NUM_SUBSAMPLINGS)
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid subsampling");
-    int bitDepth = curPicture.p.bpc;
+    int bitDepth = curPicture.getBitDepth();
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid bit depth");
 
@@ -241,7 +252,8 @@ bool decoderDav1d::decodeFrame()
 
 QByteArray decoderDav1d::getRawFrameData()
 {
-  if (curPicture.p.w <= 0 || curPicture.p.h <= 0)
+  QSize s = curPicture.getFrameSize();
+  if (s.width() <= 0 || s.height() <= 0)
   {
     DEBUG_DAV1D("decoderDav1d::getRawFrameData: Current picture has invalid size.");
     return QByteArray();
@@ -257,6 +269,10 @@ QByteArray decoderDav1d::getRawFrameData()
     // Put image data into buffer
     copyImgToByteArray(curPicture, currentOutputBuffer);
     DEBUG_DAV1D("decoderDav1d::getRawFrameData copied frame to buffer");
+
+    if (retrieveStatistics)
+      // Get the statistics from the image and put them into the statistics cache
+      cacheStatistics(curPicture);
   }
 
   return currentOutputBuffer;
@@ -349,23 +365,25 @@ bool decoderDav1d::pushData(QByteArray &data)
 }
 
 #if SSE_CONVERSION
-void decoderDav1d::copyImgToByteArray(const Dav1dPicture &src, byteArrayAligned &dst)
+void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, byteArrayAligned &dst)
 #else
-void decoderDav1d::copyImgToByteArray(const Dav1dPicture &src, QByteArray &dst)
+void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray &dst)
 #endif
 {
   // How many image planes are there?
-  int nrPlanes = (src.p.layout == DAV1D_PIXEL_LAYOUT_I400) ? 1 : 3;
+  int nrPlanes = (src.getSubsampling() == YUV_400) ? 1 : 3;
   
   // At first get how many bytes we are going to write
-  const int nrBytesPerSample = (src.p.bpc > 8) ? 2 : 1;
-  int nrBytes = src.p.w * src.p.h * nrBytesPerSample;
-  if (src.p.layout == DAV1D_PIXEL_LAYOUT_I420)
-    nrBytes += (src.p.w / 2) * (src.p.h / 2) * 2 * nrBytesPerSample;
-  else if (src.p.layout == DAV1D_PIXEL_LAYOUT_I422)
-    nrBytes += (src.p.w / 2) * src.p.h * 2 * nrBytesPerSample;
-  else if (src.p.layout == DAV1D_PIXEL_LAYOUT_I444)
-    nrBytes += src.p.w * src.p.h * 2 * nrBytesPerSample;
+  const int nrBytesPerSample = (src.getBitDepth() > 8) ? 2 : 1;
+  const QSize framSize = src.getFrameSize();
+  int nrBytes = frameSize.width() * frameSize.height() * nrBytesPerSample;
+  YUVSubsamplingType layout = src.getSubsampling();
+  if (layout == YUV_420)
+    nrBytes += (frameSize.width() / 2) * (frameSize.height() / 2) * 2 * nrBytesPerSample;
+  else if (layout == YUV_422)
+    nrBytes += (frameSize.width() / 2) * frameSize.height() * 2 * nrBytesPerSample;
+  else if (layout == YUV_444)
+    nrBytes += frameSize.width() * frameSize.height() * 2 * nrBytesPerSample;
 
   DEBUG_DAV1D("decoderDav1d::copyImgToByteArray nrBytes %d", nrBytes);
 
@@ -378,22 +396,22 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPicture &src, QByteArray &dst)
   // We can now copy from src to dst
   for (int c = 0; c < nrPlanes; c++)
   {
-    int width = src.p.w;
-    int height = src.p.h;
+    int width = framSize.width();
+    int height = framSize.height();
     if (c != 0)
     {
-      if (src.p.layout == DAV1D_PIXEL_LAYOUT_I420 || src.p.layout == DAV1D_PIXEL_LAYOUT_I422)
+      if (layout == YUV_420 || layout == YUV_422)
         width /= 2;
-      if (src.p.layout == DAV1D_PIXEL_LAYOUT_I420)
+      if (layout == YUV_420)
         height /= 2;
     }
     const size_t widthInBytes = width * nrBytesPerSample;
 
-    uint8_t* img_c = (uint8_t*)src.data[c];
+    uint8_t* img_c = curPicture.getData(c);
     if (img_c == nullptr)
       return;
 
-    const int stride = (c == 0) ? src.stride[0] : src.stride[1];
+    const int stride = (c == 0) ? curPicture.getStride(0) : curPicture.getStride(1);
     for (int y = 0; y < height; y++)
     {
       memcpy(dst_c, img_c, widthInBytes);
@@ -418,6 +436,7 @@ bool decoderDav1d::checkLibraryFile(QString libFilePath, QString &error)
   // Now let's see if we can retrive all the function pointers that we will need.
   // If this works, we can be fairly certain that this is a valid libde265 library.
   testDecoder.resolveLibraryFunctionPointers();
+
   error = testDecoder.decoderErrorString();
   return !testDecoder.errorInDecoder();
 }
@@ -456,7 +475,82 @@ YUVSubsamplingType decoderDav1d::convertFromInternalSubsampling(Dav1dPixelLayout
     return YUV_422;
   else if (layout == DAV1D_PIXEL_LAYOUT_I444)
     return YUV_444;
-  
+
   // Invalid
   return YUV_NUM_SUBSAMPLINGS;
+}
+
+void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
+{
+  if (!internalsSupported)
+    return;
+
+  DEBUG_DAV1D("decoderDav1d::cacheStatistics");
+
+  // Clear the local statistics cache
+  curPOCStats.clear();
+
+  // TODO
+  // ...
+}
+
+/// ------------------------- Dav1dPictureWrapper -----------------------
+
+decoderDav1d::Dav1dPictureWrapper::Dav1dPictureWrapper()
+{
+  curPicture = reinterpret_cast<Dav1dPicture*>(&curPicture_original);
+}
+
+void decoderDav1d::Dav1dPictureWrapper::setInternalsSupported()
+{
+  internalsSupported = true;
+  curPicture = reinterpret_cast<Dav1dPicture*>(&curPicture_analizer);
+}
+
+void decoderDav1d::Dav1dPictureWrapper::clear()
+{
+  if (internalsSupported)
+    memset(&curPicture_original, 0, sizeof(curPicture_original));
+  else
+    memset(&curPicture_analizer, 0, sizeof(curPicture_analizer));
+}
+
+QSize decoderDav1d::Dav1dPictureWrapper::getFrameSize() const
+{
+  if (internalsSupported)
+    return QSize(curPicture_analizer.p.w, curPicture_analizer.p.h);
+  else
+    return QSize(curPicture_original.p.w, curPicture_original.p.h);
+}
+
+YUVSubsamplingType decoderDav1d::Dav1dPictureWrapper::getSubsampling() const
+{
+  if (internalsSupported)
+    return decoderDav1d::convertFromInternalSubsampling(curPicture_analizer.p.layout);
+  else
+    return decoderDav1d::convertFromInternalSubsampling(curPicture_original.p.layout);
+}
+
+int decoderDav1d::Dav1dPictureWrapper::getBitDepth() const
+{
+  if (internalsSupported)
+    return curPicture_analizer.p.bpc;
+  else
+    return curPicture_original.p.bpc;
+}
+
+uint8_t *decoderDav1d::Dav1dPictureWrapper::getData(int component) const
+{
+  if (internalsSupported)
+    return (uint8_t*)curPicture_analizer.data[component];
+  else
+    return (uint8_t*)curPicture_original.data[component];
+}
+
+ptrdiff_t decoderDav1d::Dav1dPictureWrapper::getStride(int component) const
+{
+  if (internalsSupported)
+    return curPicture_analizer.stride[component];
+  else
+    return curPicture_original.stride[component];
 }

@@ -52,6 +52,10 @@ struct decoderDav1d_Functions
   void        (*dav1d_flush)                 (Dav1dContext*);
 
   uint8_t    *(*dav1d_data_create)           (Dav1dData *data, size_t sz);
+
+  // The interface for the analizer. These might not be available in the library.
+  void        (*dav1d_default_analyzer_settings) (Dav1dAnalyzerSettings *s);
+  int         (*dav1d_set_analyzer_settings)     (Dav1dContext *c, const Dav1dAnalyzerSettings *s);
 };
 
 // This class wraps the libde265 library in a demand-load fashion.
@@ -108,21 +112,47 @@ private:
   // If this is true, a frame is waiting from that step and decodeNextFrame will not actually decode a new frame.
   bool decodedFrameWaiting {false};
 
+  static YUVSubsamplingType convertFromInternalSubsampling(Dav1dPixelLayout layout);
+
   // Try to decode a frame. If successfull, the frame will be in curPicture.
   bool decodeFrame();
-  Dav1dPicture curPicture;
 
-  YUVSubsamplingType convertFromInternalSubsampling(Dav1dPixelLayout layout);
+  class Dav1dPictureWrapper
+  {
+  public:
+    Dav1dPictureWrapper();
+    void setInternalsSupported();
+
+    void clear();
+    QSize getFrameSize() const;
+    Dav1dPicture *getPicture() const { return curPicture; }
+    YUVSubsamplingType getSubsampling() const;
+    int getBitDepth() const;
+    uint8_t *getData(int component) const;
+    ptrdiff_t getStride(int component) const;
+    
+  private:
+    Dav1dPicture_original curPicture_original;
+    Dav1dPicture_analizer curPicture_analizer;
+    // Points to one if the above
+    Dav1dPicture *curPicture {nullptr};
+    bool internalsSupported {false};
+  };
+
+  Dav1dPictureWrapper curPicture;
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as necessary
   // without invoking the copy operation from the libde265 buffer to the QByteArray again.
 #if SSE_CONVERSION
   byteArrayAligned currentOutputBuffer;
-  void copyImgToByteArray(const Dav1dPicture &src, byteArrayAligned &dst);
+  void copyImgToByteArray(const Dav1dPictureWrapper &src, byteArrayAligned &dst);
 #else
   QByteArray currentOutputBuffer;
-  void copyImgToByteArray(const Dav1dPicture &src, QByteArray &dst);   // Copy the raw data from the Dav1dPicture source *src to the byte array
+  void copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray &dst);   // Copy the raw data from the Dav1dPicture source *src to the byte array
 #endif
+
+  // Statistics caching
+  void cacheStatistics(const Dav1dPictureWrapper &img);
 };
 
 #endif // DECODERDAV1D_H
