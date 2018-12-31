@@ -41,7 +41,14 @@ typedef struct Dav1dPictureParameters {
     int bpc; ///< bits per pixel component (8 or 10)
 } Dav1dPictureParameters;
 
-typedef struct Dav1dPicture {
+/* The abstract Dav1dPicture struct. Depending on the library, this is either a
+ * Dav1dPicture_original or a Dav1dPicture_analizer
+ */
+struct Dav1dPicture;
+
+/* The original unmodified definition of a Dav1dPicture
+ */
+typedef struct Dav1dPicture_original {
     Dav1dSequenceHeader *seq_hdr;
     Dav1dFrameHeader *frame_hdr;
 
@@ -64,7 +71,49 @@ typedef struct Dav1dPicture {
     struct Dav1dRef *frame_hdr_ref, *seq_hdr_ref, *ref; ///< allocation origins
 
     void *allocator_data; ///< pointer managed by the allocator
-} Dav1dPicture;
+} Dav1dPicture_original;
+
+/* The modified definition of a Dav1dPicture with the analizer extension
+ */
+typedef struct Dav1dPicture_analizer {
+  Dav1dSequenceHeader *seq_hdr;
+  Dav1dFrameHeader *frame_hdr;
+
+  /**
+  * Pointers to planar image data (Y is [0], U is [1], V is [2]). The data
+  * should be bytes (for 8 bpc) or words (for 10 bpc). In case of words
+  * containing 10 bpc image data, the pixels should be located in the LSB
+  * bits, so that values range between [0, 1023]; the upper bits should be
+  * zero'ed out.
+  */
+  void *data[3];
+
+  /**
+  * Number of bytes between 2 lines in data[] for luma [0] or chroma [1].
+  */
+  ptrdiff_t stride[2];
+
+  Dav1dPictureParameters p;
+  Dav1dDataProps m;
+  struct Dav1dRef *frame_hdr_ref, *seq_hdr_ref, *ref; ///< allocation origins
+
+  void *allocator_data; ///< pointer managed by the allocator
+
+  /// --------------------------
+  /// Everything below this line is from the analizer extension. 
+
+  // In addition to the reconstruction (which is stored in data), also export:
+  //   pred: The prediction image
+  //   pre_lpf: The reconstruction prior to loop filtering
+  void *pred[3], *pre_lpf[3];
+
+  // Give access to the internal block data. Internally, the data is in the 
+  // format of the Av1Block struct.
+  void *blk_data;
+
+  // Indicate if this frame is meant for output or if it is an invisible frame
+  int invisible;
+} Dav1dPicture_analizer;
 
 typedef struct Dav1dPicAllocator {
     void *cookie; ///< custom data to pass to the allocator callbacks.
