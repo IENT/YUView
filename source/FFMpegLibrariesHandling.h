@@ -144,18 +144,18 @@ private:
 
 struct FFmpegLibraryVersion
 {
-  int avutil;
-  int swresample;
-  int avcodec;
-  int avformat;
-  int avutil_minor;
-  int swresample_minor;
-  int avcodec_minor;
-  int avformat_minor;
-  int avutil_micro;
-  int swresample_micro;
-  int avcodec_micro;
-  int avformat_micro;
+  int avutil {0};
+  int swresample {0};
+  int avcodec {0};
+  int avformat {0};
+  int avutil_minor {0};
+  int swresample_minor {0};
+  int avcodec_minor {0};
+  int avformat_minor {0};
+  int avutil_micro {0};
+  int swresample_micro {0};
+  int avcodec_micro {0};
+  int avformat_micro {0};
 };
 
 class FFmpegVersionHandler;
@@ -519,7 +519,7 @@ private:
 class AVFormatContextWrapper
 {
 public:
-  AVFormatContextWrapper() { ctx = nullptr; };
+  AVFormatContextWrapper() {};
   AVFormatContextWrapper(AVFormatContext *c, FFmpegLibraryVersion v) { ctx = c; libVer = v; update(); }
   void updateFrom(AVFormatContext *c) { assert(ctx == nullptr); ctx = c; update(); }
   void avformat_close_input(FFmpegVersionHandler &ver);
@@ -543,37 +543,37 @@ private:
   AVInputFormatWrapper iformat;
 
   // These are private. Use "update" to update them from the AVFormatContext
-  int ctx_flags;
-  unsigned int nb_streams;
+  int ctx_flags {0};
+  unsigned int nb_streams {0};
   QList<AVStreamWrapper> streams;
   QString filename;
-  int64_t start_time;
-  int64_t duration;
-  int bit_rate;
-  unsigned int packet_size;
-  int max_delay;
-  int flags;
+  int64_t start_time {-1};
+  int64_t duration {-1};
+  int bit_rate {0};
+  unsigned int packet_size {0};
+  int max_delay {0};
+  int flags {0};
 
-  unsigned int probesize;
-  int max_analyze_duration;
+  unsigned int probesize {0};
+  int max_analyze_duration {0};
   QString key;
-  unsigned int nb_programs;
-  AVCodecID video_codec_id;
-  AVCodecID audio_codec_id;
-  AVCodecID subtitle_codec_id;
-  unsigned int max_index_size;
-  unsigned int max_picture_buffer;
-  unsigned int nb_chapters;
+  unsigned int nb_programs {0};
+  AVCodecID video_codec_id {AV_CODEC_ID_NONE};
+  AVCodecID audio_codec_id {AV_CODEC_ID_NONE};
+  AVCodecID subtitle_codec_id {AV_CODEC_ID_NONE};
+  unsigned int max_index_size {0};
+  unsigned int max_picture_buffer {0};
+  unsigned int nb_chapters {0};
   AVDictionaryWrapper metadata;
 
-  AVFormatContext *ctx;
+  AVFormatContext *ctx {nullptr};
   FFmpegLibraryVersion libVer;
 };
 
 class AVCodecWrapper
 {
 public:
-  AVCodecWrapper() { codec = nullptr; }
+  AVCodecWrapper() {}
   AVCodecWrapper(AVCodec *codec, FFmpegLibraryVersion libVer) : codec(codec), libVer(libVer) {}
   explicit operator bool() const { return codec != nullptr; }
   AVCodec *getAVCodec() { return codec; }
@@ -587,16 +587,16 @@ private:
   QString name;
   QString long_name;
   AVMediaType type;
-  AVCodecID id;
-  int capabilities;                        ///< see AV_CODEC_CAP_
+  AVCodecID id {AV_CODEC_ID_NONE};
+  int capabilities {0};                    ///< see AV_CODEC_CAP_
   QList<AVRational> supported_framerates;  ///< terminated by {0,0}
   QList<AVPixelFormat> pix_fmts;           ///< array is terminated by -1
   QList<int> supported_samplerates;        ///< array is terminated by 0
   QList<AVSampleFormat> sample_fmts;       ///< array is terminated by -1
   QList<uint64_t> channel_layouts;         ///< array is terminated by 0
-  uint8_t max_lowres;                      ///< maximum value for lowres supported by the decoder
+  uint8_t max_lowres {0};                  ///< maximum value for lowres supported by the decoder
 
-  AVCodec *codec;
+  AVCodec *codec {nullptr};
   FFmpegLibraryVersion libVer;
 };
 

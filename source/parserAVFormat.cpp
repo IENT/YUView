@@ -521,7 +521,11 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
   // Open the file but don't parse it yet.
   QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile());
-  ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false);
+  if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
+  {
+    emit backgroundParsingDone("Error opening the ffmpeg file.");
+    return false;
+  }
 
   codecID = ffmpegFile->getVideoStreamCodecID();
   if (codecID.isAVC())
@@ -532,6 +536,11 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     annexBParser.reset(new parserAnnexBMpeg2());
   else if (codecID.isAV1())
     obuParser.reset(new parserAV1OBU());
+  else
+  {
+    emit backgroundParsingDone("Unknown codec ID " + codecID.getCodecName());
+    return false;
+  }
 
   int max_ts = ffmpegFile->getMaxTS();
   videoStreamIndex = ffmpegFile->getVideoStreamIndex();
@@ -587,7 +596,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   emit streamInfoUpdated();
-  emit backgroundParsingDone();
+  emit backgroundParsingDone("");
 
   return true;
 }

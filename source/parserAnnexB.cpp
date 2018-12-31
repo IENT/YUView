@@ -188,7 +188,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   stream_info.nr_nal_units = nalID;
   stream_info.nr_frames = frameList.size();
   emit streamInfoUpdated();
-  emit backgroundParsingDone();
+  emit backgroundParsingDone("");
 
   return true;
 }

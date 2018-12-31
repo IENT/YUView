@@ -73,7 +73,7 @@ public:
 signals:
   // An item was added to the nal model. This is emitted whenever a NAL unit or an AVPacket is parsed.
   void nalModelUpdated(unsigned int newNumberItems);
-  void backgroundParsingDone();
+  void backgroundParsingDone(QString error);
   
   // Signal that the getStreamInfo() function will now return an updated info
   void streamInfoUpdated();

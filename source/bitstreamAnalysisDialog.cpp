@@ -106,9 +106,12 @@ void bitstreamAnalysisDialog::updateStreamInfo()
   ui.showVideoStreamOnlyCheckBox->setEnabled(parser->getNrStreams() > 1);
 }
 
-void bitstreamAnalysisDialog::backgroundParsingDone()
+void bitstreamAnalysisDialog::backgroundParsingDone(QString error)
 {
-  statusBar->showMessage("Parsing done.");
+  if (error.isEmpty())
+    statusBar->showMessage("Parsing done.");
+  else
+    statusBar->showMessage("Error parsing the file: " + error);
 }
 
 void bitstreamAnalysisDialog::showVideoStreamOnlyCheckBoxToggled(bool state)
