@@ -34,6 +34,7 @@
 #define DECODERDAV1D_H
 
 #include "dav1d.h"
+#include "blockData.h"
 #include "decoderBase.h"
 #include "videoHandlerYUV.h"
 #include <QLibrary>
@@ -133,6 +134,7 @@ private:
     ptrdiff_t getStride(int component) const;
     uint8_t *getDataPrediction(int component) const;
     uint8_t *getDataReconstructionPreFiltering(int component) const;
+    Av1Block *getBlockData() const;
     
   private:
     Dav1dPicture_original curPicture_original;
@@ -154,8 +156,11 @@ private:
   void copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray &dst);   // Copy the raw data from the Dav1dPicture source *src to the byte array
 #endif
 
-  // Statistics caching
+  // Statistics
+  void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
   void cacheStatistics(const Dav1dPictureWrapper &img);
+  void parseBlockRecursive(Av1Block *blockData, int x, int y, const int heightInBlocks, const int b4_stride, BlockLevel level=BL_128X128);
+  unsigned int subBlockSize {0};
 };
 
 #endif // DECODERDAV1D_H

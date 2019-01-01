@@ -174,16 +174,26 @@ void decoderDav1d::allocateNewDecoder()
     return;
   }
 
+  // Apply the analizer settings
   dav1d_default_analyzer_settings(&analyzerSettings);
-
   if (nrSignals > 0)
   {
     if (decodeSignal == 1)
+    {
       analyzerSettings.export_prediction = 1;
+      DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of prediction");
+    }
     else if (decodeSignal == 2)
+    {
       analyzerSettings.export_prefilter = 1;
+      DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of reconstruction pre-filtering");
+    }
   }
-
+  if (retrieveStatistics)
+  {
+    analyzerSettings.export_blkdata = 1;
+    DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of block data");
+  }
   dav1d_set_analyzer_settings(decoder, &analyzerSettings);
 
   // The decoder is ready to receive data
@@ -328,6 +338,7 @@ bool decoderDav1d::pushData(QByteArray &data)
       int bitDepth = (seq.hbd == 0 ? 8 : (seq.hbd == 1 ? 10 : (seq.hbd == 2 ? 12 : -1)));
       if (bitDepth < 8 || bitDepth > 16)
         DEBUG_DAV1D("decoderDav1d::pushData got invalid bit depth");
+      subBlockSize = (seq.sb128 >= 1) ? 128 : 64;
 
       frameSize = s;
       formatYUV = yuvPixelFormat(subsampling, bitDepth);
@@ -499,6 +510,17 @@ YUVSubsamplingType decoderDav1d::convertFromInternalSubsampling(Dav1dPixelLayout
   return YUV_NUM_SUBSAMPLINGS;
 }
 
+void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
+{
+  StatisticsType predMode(0, "Pred Mode", "jet", 0, 1);
+  predMode.description = "The prediction mode (intra/inter) per block";
+  predMode.valMap.insert(0, "INTRA");
+  predMode.valMap.insert(1, "INTER");
+  statSource.addStatType(predMode);
+
+  // TODO: More...
+}
+
 void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
 {
   if (!internalsSupported)
@@ -509,8 +531,69 @@ void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
   // Clear the local statistics cache
   curPOCStats.clear();
 
+  Av1Block *blockData = img.getBlockData();
+
+  QSize frameSize = img.getFrameSize();
+
+  const int bw = ((frameSize.width() + 7) >> 3) << 1;
+  const int b4_stride = (bw + 31) & ~31;
+
+  const int aligned_w = (frameSize.width() + 127) & ~127;
+  const int aligned_h = (frameSize.height() + 127) & ~127;
+
+  const int widthInBlocks = aligned_w >> 2;
+  const int heightInBlocks = aligned_h >> 2;
+
+  const int sb_step = subBlockSize >> 2;
+
+  for (int y = 0; y < heightInBlocks; y += sb_step)
+    for (int x = 0; x < widthInBlocks; x += sb_step)
+      parseBlockRecursive(blockData, x, y, heightInBlocks, b4_stride);
+
   // TODO
   // ...
+}
+
+void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, const int heightInBlocks, const int b4_stride, BlockLevel level)
+{
+  if (y > heightInBlocks)
+    return;
+
+  Av1Block b = blockData[y * b4_stride + x];
+  const BlockLevel blockLevel = (BlockLevel)b.bl;
+
+  //assert(b.bl >= 0 && b.bl <= 4);
+  if (b.bl < 0 || b.bl > 4)
+    return;
+
+  const int blockWidth4 = 1 << (5 - level);
+
+  if (blockLevel > level)
+  {
+    // Recurse
+    const BlockLevel nextLevel = (BlockLevel)(level + 1);
+    const int subw = blockWidth4 / 2;
+    parseBlockRecursive(blockData, x       , y       , heightInBlocks, b4_stride, nextLevel);
+    parseBlockRecursive(blockData, x + subw, y       , heightInBlocks, b4_stride, nextLevel);
+    parseBlockRecursive(blockData, x       , y + subw, heightInBlocks, b4_stride, nextLevel);
+    parseBlockRecursive(blockData, x + subw, y + subw, heightInBlocks, b4_stride, nextLevel);
+  }
+  else
+  {
+    // Parse the current block
+    const BlockSize      blockSize      = (BlockSize)b.bs;
+    const BlockPartition blockPartition = (BlockPartition)b.bp;
+
+    const int cbPosX = x * 4;
+    const int cbPosY = y * 4;
+    const int cbSizePix = blockWidth4 * 4;
+    const int predMode = (b.intra == 0) ? 1 : 0;
+
+    // Set prediction mode (ID 0)
+    curPOCStats[0].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, predMode);
+  }
+
+
 }
 
 /// ------------------------- Dav1dPictureWrapper -----------------------
@@ -568,16 +651,16 @@ uint8_t *decoderDav1d::Dav1dPictureWrapper::getData(int component) const
 
 uint8_t *decoderDav1d::Dav1dPictureWrapper::getDataPrediction(int component) const
 {
-  if (!internalsSupported)
-    return nullptr;
-  return (uint8_t*)curPicture_analizer.pred[component];
+  if (internalsSupported)
+    return (uint8_t*)curPicture_analizer.pred[component];
+  return nullptr;
 }
 
 uint8_t *decoderDav1d::Dav1dPictureWrapper::getDataReconstructionPreFiltering(int component) const
 {
-  if (!internalsSupported)
-    return nullptr;
-  return (uint8_t*)curPicture_analizer.pre_lpf[component];
+  if (internalsSupported)
+    return (uint8_t*)curPicture_analizer.pre_lpf[component];
+  return nullptr;
 }
 
 ptrdiff_t decoderDav1d::Dav1dPictureWrapper::getStride(int component) const
@@ -586,4 +669,11 @@ ptrdiff_t decoderDav1d::Dav1dPictureWrapper::getStride(int component) const
     return curPicture_analizer.stride[component];
   else
     return curPicture_original.stride[component];
+}
+
+Av1Block *decoderDav1d::Dav1dPictureWrapper::getBlockData() const
+{
+  if (internalsSupported)
+    return reinterpret_cast<Av1Block*>(curPicture_analizer.blk_data);
+  return nullptr;
 }
