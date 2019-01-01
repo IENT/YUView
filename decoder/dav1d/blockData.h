@@ -124,9 +124,9 @@ enum InterPredMode {
   N_INTER_PRED_MODES,
 };
 
-typedef struct mv {
+typedef struct motionVector {
   int16_t y, x;
-} mv;
+} motionVector;
 
 enum MotionMode {
   MM_TRANSLATION,
@@ -148,7 +148,7 @@ typedef struct Av1Block {
       uint8_t interintra_type, interintra_mode, motion_mode;
       uint8_t max_ytx, filter2d;
       uint16_t tx_split[2];
-      mv mv[2];
+      motionVector mv[2];
     }; // inter
   };
 } Av1Block;

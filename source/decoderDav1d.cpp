@@ -563,7 +563,7 @@ void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, const 
   const BlockLevel blockLevel = (BlockLevel)b.bl;
 
   //assert(b.bl >= 0 && b.bl <= 4);
-  if (b.bl < 0 || b.bl > 4)
+  if (b.bl > 4)
     return;
 
   const int blockWidth4 = 1 << (5 - level);
