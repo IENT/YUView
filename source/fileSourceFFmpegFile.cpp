@@ -231,6 +231,9 @@ QStringPairList fileSourceFFmpegFile::getMetadata()
 
 QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
 {
+  if (!isFileOpened)
+    return {};
+
   /* The SPS/PPS are somewhere else in containers:
    * In mp4-container (mkv also) PPS/SPS are stored separate from frame data in global headers. 
    * To access them from libav* APIs you need to look for extradata field in AVCodecContext of AVStream 
@@ -401,6 +404,9 @@ int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToF
 
 bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
 {
+  if (!isFileOpened)
+    return false;
+
   // Create the dialog (if the given pointer is not null)
   int64_t maxPTS = getMaxTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
