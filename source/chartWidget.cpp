@@ -49,7 +49,7 @@ ChartWidget::~ChartWidget()
 
 void ChartWidget::setChartWidget(QWidget *aWidget)
 {
-  if (aWidget)
+  if(aWidget)
   {
     // Show the widget
     this->mWidget = aWidget;
@@ -70,6 +70,6 @@ void ChartWidget::setChartWidget(QWidget *aWidget)
 
 void ChartWidget::removeChartWidget(QWidget* aWidget)
 {
-  if (aWidget)
+  if(aWidget)
     this->mStack.removeWidget(aWidget);
 }

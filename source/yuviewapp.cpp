@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
   QApplication app(argc, argv);
 
   qRegisterMetaType<recacheIndicator>("recacheIndicator");
+  qRegisterMetaType<itemWidgetCoord>("itemWidgetCoord");
 
   //printf("Build Version: %s \n",YUVIEW_HASH);
   // check the YUVIEW_HASH against the JSON output from here:

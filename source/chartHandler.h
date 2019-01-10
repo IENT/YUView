@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2017  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2018  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -39,6 +39,9 @@
 #include "playbackController.h"
 #include "yuvcharts.h"
 
+//define some classes, so we don´t have to write the include in the header
+class ChartWorkerThread;
+
 #define CHECKBOX_DRAW_CHART             "cbDrawChart"
 #define OPTION_NAME_CBX_CHART_TYPES     "cbxTypes"
 #define OPTION_NAME_CBX_CHART_FRAMESHOW "cbxOptionsShow"
@@ -70,8 +73,18 @@ public:
   /**
    * @brief ChartHandler
    * default-constructor
+   *
+   * creates all necessary objects, threads and so on
    */
   ChartHandler();
+
+  /**
+    * @brief ChartHandler
+    * default-destructor
+    *
+    * determine all running threads in the background
+    */
+  ~ChartHandler();
 
   /**
    * @brief createChartWidget
@@ -139,10 +152,30 @@ public:
   void setPlaybackController( PlaybackController *aPBC ) { this->mPlayback = aPBC; }
 
 
+  /**
+   * @brief createStatisticsChartSettings
+   * the method creates the settings for the chart from the user input based on the widget
+   *
+   * @param aCoord
+   * which item is used and the information about it
+   *
+   * @return
+   * if settings was created before,the setting will return.
+   * Otherwise it will create the settings based on the user input
+   */
   chartSettingsData createStatisticsChartSettings(itemWidgetCoord& aCoord);
 
 public slots:
-  void asynchFinished();
+
+  /**
+   * @brief asynchFinished
+   * slot, if a thread is finished, we can get the result
+   * from the thread and display the result to the user
+   *
+   * @param aId
+   * id of the workerobject in the thread
+   */
+  void asynchFinished(int aId);
 
   /**
    * @brief currentSelectedItemsChanged
@@ -243,6 +276,7 @@ private:
   // save the last selected statistics-type
   QString mLastStatisticsType = "";
 
+  // checkbox if the chart should drawn or not
   QCheckBox* mCbDrawChart;
 
   //list of all created Widgets and items
@@ -252,13 +286,13 @@ private:
   // Pointer to the PlaybackController
   QPointer<PlaybackController> mPlayback;
 
+  // timer for checking, that the item is loading or is loaded
   QBasicTimer mTimer;
 
+  // variable to handle the multithreading
   bool mDoMultiThread = true;
+  QHash<int, ChartWorkerThread*> mWorkerThreads; // ordered by the id of the worker-object
   bool mCancelBackgroundParser = false;
-  QFuture<chartSettingsData> mBackgroundParserFuture;
-  QFutureWatcher<chartSettingsData> mFutureWatcherWidgets;
-  QList<QPair<QFuture<chartSettingsData>, itemWidgetCoord>> mMapFutureItemWidgetCoord;
 
 
 // functions
@@ -426,9 +460,10 @@ private:
  *
  * () - implement different chart-types (bar, pie, ...)
  * (done) -- implement Interface, that  the base is for diffrent types of charts
- * () -- getting better labels for the axes
+ * () -- getting better labels for the axes -> improved by setting labels depends on the type of chart and kind of playlistitem
  *
  * () - implement calculating and creating the chart in an seperate thread, not in main-thread
+ * () -- implement handling with threads, starting, aborting and so on
  *
  * () - save last selected frameindex in charthandler? so we can change the frameindex after the selected file has changed
  *
@@ -452,5 +487,9 @@ private:
  *    --must include the last settings (comboboxes)
  *    --load the last items --> save the filepath from the items
  *    ---if file can't be loaded (maybe not exits anymore) mark chart-savefile as broken
+ *
+ * () - implement tooltip in the charts if hovering with mouse over the chart
+ *
+ *
  */
 #endif // CHARTHANDLER_H

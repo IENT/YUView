@@ -36,6 +36,7 @@
 #include <QtCharts>
 #include "typedef.h"
 
+// define class prototypes, so we don´t have to do the inlcude in this header file
 class playlistItem;
 
 /**
@@ -265,60 +266,6 @@ struct collectedData
 
 };
 
-/*-------------------- struct itemWidgetCoord --------------------*/
-/**
- * @brief The itemWidgetCoord struct
- * necesseray, because if we want to use QMap or QHash,
- * we have to implement the <() operator(QMap) or the ==() operator(QHash)
- * a small work around, just implement the ==() based on the struct
- */
-struct itemWidgetCoord
-{
-  playlistItem* mItem;
-  QWidget*      mWidget;
-  QStackedWidget*      mChart;
-
-  /**
-   * @brief itemWidgetCoord
-   * default-constructor
-   */
-  itemWidgetCoord()
-    : mItem(NULL), mWidget(NULL),mChart(new QStackedWidget)// initialise member
-  {}
-
-  /**
-   * @brief operator ==
-   * check that the Pointer on the items are equal
-   *
-   * @param aCoord
-   * an already existing itemWidgetCoord
-   *
-   * @return
-   * true, if both item pointers are the same item
-   * otherwise false
-   */
-  bool operator==(const itemWidgetCoord& aCoord) const
-  {
-    return (mItem == aCoord.mItem);
-  }
-
-  /**
-   * @brief operator ==
-   * check that the Pointer on the items are equal
-   *
-   * @param aCoord
-   * an already existing itemWidgetCoord
-   *
-   * @return
-   * true, if both item pointers are the same item
-   * otherwise false
-   */
-  bool operator==(const playlistItem* aItem) const
-  {
-    return (mItem == aItem);
-  }
-};
-
 /*-------------------- struct chartSettingsData --------------------*/
 /**
  * @brief The chartSettingsData struct
@@ -416,6 +363,100 @@ struct chartSettingsData
 
     if((aMaxY != INT_MAX) && (aMaxY > mY3DRange.second))
       mY3DRange.second = aMaxY;
+  }
+};
+
+/*-------------------- struct itemWidgetCoord --------------------*/
+/**
+ * @brief The itemWidgetCoord struct
+ * necesseray, because if we want to use QMap or QHash,
+ * we have to implement the <() operator(QMap) or the ==() operator(QHash)
+ * a small work around, just implement the ==() based on the struct
+ */
+struct itemWidgetCoord
+{
+  playlistItem* mItem;
+  QWidget*      mWidget;
+  QStackedWidget*      mChart;
+
+  bool mHasSettings = false;
+  chartSettingsData mSettings;
+
+
+  /**
+   * @brief itemWidgetCoord
+   * default-constructor
+   */
+  itemWidgetCoord()
+    : mItem(NULL), mWidget(NULL), mChart(new QStackedWidget)// initialise member
+  {}
+
+  /**
+   * @brief itemWidgetCoord
+   * copy-constructor
+   *
+   * @param aCoord
+   * element that have to copy
+   */
+  itemWidgetCoord(const itemWidgetCoord& aCoord)
+  {
+    this->mItem = aCoord.mItem;
+    this->mWidget = aCoord.mWidget;
+    this->mChart = aCoord.mChart;
+  }
+
+  /*
+    *@brief ~itemWidgetCoord
+    * default-destructor
+    */
+  ~itemWidgetCoord()
+  {
+  }
+
+  /**
+   * @brief operator ==
+   * check that the Pointer on the items are equal
+   *
+   * @param aCoord
+   * an already existing itemWidgetCoord
+   *
+   * @return
+   * true, if both item pointers are the same item
+   * otherwise false
+   */
+  bool operator==(const itemWidgetCoord& aCoord) const
+  {
+    return (mItem == aCoord.mItem);
+  }
+
+  /**
+   * @brief operator ==
+   * check that the Pointer on the items are equal
+   *
+   * @param aCoord
+   * an already existing itemWidgetCoord
+   *
+   * @return
+   * true, if both item pointers are the same item
+   * otherwise false
+   */
+  bool operator==(const playlistItem* aItem) const
+  {
+    return (mItem == aItem);
+  }
+
+  /**
+   * @brief setSettings
+   * if chartSettingsData was calculated, we can save it
+   * if a chartSettingsData was set, a boolean to check is set to true
+   *
+   * @param aSettings
+   * chartSettingsData struct which should be set
+   */
+  void setSettings(chartSettingsData aSettings)
+  {
+    this->mSettings = aSettings;
+    this->mHasSettings = true;
   }
 };
 
@@ -685,5 +726,8 @@ Q_DECLARE_METATYPE(chartGroupBy)
 Q_DECLARE_METATYPE(chartNormalize)
 Q_DECLARE_METATYPE(chartType2D)
 Q_DECLARE_METATYPE(chartType3D)
+
+// necessary that threads can work handle and work with
+Q_DECLARE_METATYPE(itemWidgetCoord)
 
 #endif // CHARTHANDLERTYPEDEF_H

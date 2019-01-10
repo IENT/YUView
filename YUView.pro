@@ -10,6 +10,7 @@ SOURCES += \
     source/chartHandler.cpp \
     source/chartHandlerTypedef.cpp \
     source/chartWidget.cpp \
+    source/chartWorker.cpp \
     source/decoderBase.cpp \
     source/FFmpegDecoder.cpp \
     source/FFMpegDecoderLibHandling.cpp \
@@ -61,13 +62,15 @@ SOURCES += \
     source/viewStateHandler.cpp \
     source/yuviewapp.cpp \
     source/yuvcharts.cpp \
-    source/graphmodifier.cpp
+    source/graphmodifier.cpp \
+
 
 
 HEADERS += \
     source/chartHandler.h \
     source/chartHandlerTypedef.h \
     source/chartWidget.h \
+    source/chartWorker.h \
     source/decoderBase.h \
     source/FFmpegDecoder.h \
     source/FFMpegDecoderLibHandling.h \

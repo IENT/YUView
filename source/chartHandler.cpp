@@ -31,6 +31,7 @@
 */
 
 #include "chartHandler.h"
+#include "chartWorker.h"
 #include <QtConcurrent>
 
 
@@ -41,6 +42,9 @@
 #else
 #define DEBUG_CHART(fmt,...) ((void)0)
 #endif
+
+// set the id-counter to an default value
+int ChartWorker::chart_id_counter = 0;
 
 // Default-Constructor
 ChartHandler::ChartHandler() : mYUVChartFactory(&this->mNoDataToShowWidget, &this->mDataIsLoadingWidget)
@@ -70,6 +74,26 @@ ChartHandler::ChartHandler() : mYUVChartFactory(&this->mNoDataToShowWidget, &thi
 
   this->mDataIsLoadingWidget.setLayout(basicLayout);
 
+  // init the workerthreads
+  // calculate the best amount of threads
+  int nrThreads = QThread::idealThreadCount() - 1;
+  if (nrThreads <= 0)
+    nrThreads = 1;
+
+  // init the maximum amount of threads
+  for (int i = 0; i < nrThreads; i++)
+  {
+    // make an thread
+    ChartWorkerThread* workerThread = new ChartWorkerThread(nullptr, this);
+    // start the thread
+    workerThread->start(QThread::HighPriority);
+    // set the connect; defines what happen, if the thread has finished
+    connect(workerThread->worker(), &ChartWorker::loadingFinished, this, &ChartHandler::asynchFinished, Qt::QueuedConnection);
+    // at least, we save the thread by the worker id in an hashtable, to coordinate them
+    int workerId = workerThread->worker()->id();
+    this->mWorkerThreads.insert(workerId, workerThread);
+  }
+
   // set defaults to the draw-chart-checkbox
   this->mCbDrawChart = new QCheckBox("");
   this->mCbDrawChart->setChecked(true);
@@ -80,9 +104,13 @@ ChartHandler::ChartHandler() : mYUVChartFactory(&this->mNoDataToShowWidget, &thi
     if(aClicked)
       this->playbackControllerFrameChanged(-1);
   });
+}
 
-  // define the future watcher
-  connect(&mFutureWatcherWidgets,  &QFutureWatcher<QVariant>::finished, this, &ChartHandler::asynchFinished, Qt::QueuedConnection);
+ChartHandler::~ChartHandler()
+{
+  // we have to quit all threads, we have started before
+  for (int i = 0; i < this->mWorkerThreads.count(); i++)
+    this->mWorkerThreads.value(i)->quitWhenDone();
 }
 
 /*-------------------- public functions --------------------*/
@@ -104,12 +132,16 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
   if (this->mListItemWidget.contains(coord)) // was stored
     return this->mListItemWidget.at(this->mListItemWidget.indexOf(coord)).mWidget;
 
+  // check if we support the file-type, but the data is not avaible
   if((playlistItemIsSupported(aItem) && (aItem) && (!aItem->isDataAvaible())))
   {
+    // was not avaible, so we start a timer and check it later again
     this->mTimer.start(1000, this);
+    // return a basic widget
     return &(this->mDataIsLoadingWidget);
   }
   else
+    // data was avaible, sowe can stop the timer, if it is running
     if(this->mTimer.isActive())
       this->mTimer.stop();
 
@@ -131,6 +163,7 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
     coord.mItem = NULL;
   }
 
+  // return the created widget
   return coord.mWidget;
 }
 
@@ -156,6 +189,10 @@ void ChartHandler::removeWidgetFromList(playlistItem* aItem)
 
 chartSettingsData ChartHandler::createStatisticsChartSettings(itemWidgetCoord &aCoord)
 {
+  // if our itemWidgetCoord was calculated before, we can return the settings directly
+  if(aCoord.mHasSettings)
+    return aCoord.mSettings;
+
   // basic settings
   chartSettingsData settings;
   settings.mSettingsIsValid = false;
@@ -163,6 +200,7 @@ chartSettingsData ChartHandler::createStatisticsChartSettings(itemWidgetCoord &a
   // get current frame index, we use the playback controller
   int frameIndex = this->mPlayback->getCurrentFrame();
 
+  // init defaults
   QString type("");
   QVariant showVariant(csUnknown);
   QVariant groupVariant(cgbUnknown);
@@ -174,13 +212,17 @@ chartSettingsData ChartHandler::createStatisticsChartSettings(itemWidgetCoord &a
   {
     if(dynamic_cast<QComboBox*> (child)) // finding the combobox
     {
-      // we need to differentiate between the type-combobox and order-combobox, but we have to find both values
+      // we need to differentiate between the type-combobox and order-combobox, but we have to find all values
+      // case type
       if(child->objectName() == OPTION_NAME_CBX_CHART_TYPES)
         type = (dynamic_cast<QComboBox*>(child))->currentText();
+      // case chartShow
       else if(child->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
         showVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      // case chartGroupBy
       else if(child->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
         groupVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      // case chartNormalize
       else if(child->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)
         normaVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
 
@@ -244,21 +286,26 @@ chartSettingsData ChartHandler::createStatisticsChartSettings(itemWidgetCoord &a
     }
   }
 
+  // we can generate the order if all variants has valid values
   if((showart != csUnknown)
      && (groupVariant.value<chartGroupBy>() != cgbUnknown)
      && (normaVariant.value<chartNormalize>() != cnUnknown))
     // get selected one
     order = EnumAuxiliary::makeChartOrderBy(showVariant.value<chartShow>(), groupVariant.value<chartGroupBy>(), normaVariant.value<chartNormalize>());
 
+  // check if showart are allframes, and the order are identical to the one before,
+  // so we dont have to load generate the settings new
   if(showart == csAllFrames && order == this->mLastChartOrderBy && type == this->mLastStatisticsType)
     return settings;
   else
   {
+    // set the new last-types
     this->mLastChartOrderBy = order;
     this->mLastStatisticsType = type;
   }
 
   // and at this point we create the statistic
+  // first we define the range depends on the selected kind of chartShow
   indexRange range;
   if(showart == csPerFrame)
   {
@@ -289,56 +336,59 @@ chartSettingsData ChartHandler::createStatisticsChartSettings(itemWidgetCoord &a
   if(posYstring != "")
     posY = posYstring.toInt();
 
+  //define the range
   this->mYUVChartFactory.set3DCoordinationRange(negX, posX, negY, posY);
 
+  // create settings from the factory and return it
+  // the factory decides what happen next, which kind of chart will created
   return this->mYUVChartFactory.createSettings(order, aCoord.mItem, range, type);
 }
 
-void ChartHandler::asynchFinished()
+void ChartHandler::asynchFinished(int aId)
 {
   // get the result
-  chartSettingsData settings = this->mFutureWatcherWidgets.result();
+  chartSettingsData settings = this->mWorkerThreads.value(aId)->worker()->result();
+  // get the coord, that the settings based on
+  itemWidgetCoord coord = this->mWorkerThreads.value(aId)->worker()->coord();
 
-  QFuture<chartSettingsData> future = this->mFutureWatcherWidgets.future();
-  QPair<QFuture<chartSettingsData>, itemWidgetCoord> pair;
-
-  foreach (auto itempair, mMapFutureItemWidgetCoord)
-  {
-    if(itempair.first == future)
-    {
-      pair.second = itempair.second;
-      break;
-    }
-  }
-
-  if(pair.second.mItem == nullptr)
+  // if our item is a nullptr we can leave
+  if(coord.mItem == nullptr)
     return;
 
-  QWidget* chart = this->mYUVChartFactory.createChart(settings);
-  this->placeChart(pair.second, chart);
+  // set the settings, to the coord, so we don´t have to calculate it later again
+  coord.setSettings(settings);
 
-  this->mMapFutureItemWidgetCoord.removeOne(pair);
+  // create the chart an d place it, so the user can see the chart
+  QWidget* chart = this->mYUVChartFactory.createChart(settings);
+  this->placeChart(coord, chart);
 }
 
 /*-------------------- private functions --------------------*/
 itemWidgetCoord ChartHandler::getItemWidgetCoord(playlistItem *aItem)
 {
+  // we find the itemWidgetCoord from the ItemWidgetList.
+
+  // we create a default itemWidgetCoord
   itemWidgetCoord coord;
+  // set the item
   coord.mItem = aItem;
 
+  // contains the list our coord?
   if (this->mListItemWidget.contains(coord))
-    coord = this->mListItemWidget.at(this->mListItemWidget.indexOf(coord));
+    coord = this->mListItemWidget.at(this->mListItemWidget.indexOf(coord)); // contains
   else
-    coord.mItem   = NULL;
+    coord.mItem   = nullptr; // not containing, set the item to an nullptr
 
   return coord;
 }
 
 void ChartHandler::placeChart(itemWidgetCoord aCoord, QWidget* aChart)
 {
+  // we just can place a Widget if the widget was added before to the stacked widget
   if(aCoord.mChart->indexOf(aChart) == -1)
     aCoord.mChart->addWidget(aChart);
 
+  // after adding we can set it
   aCoord.mChart->setCurrentWidget(aChart);
 }
 
@@ -511,6 +561,9 @@ QLayout* ChartHandler::generateOrderByLayout(bool aAddOptions)
 
 void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
 {
+  if(aSlider == aSpinbox) // both are sender? should not happen
+    return;
+
   // the object holders
   QSlider* sldBeginFrame  = NULL;
   QSlider* sldEndFrame    = NULL;
@@ -549,7 +602,7 @@ void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
   QObjectList children = coord.mWidget->children();
 
 
-  //try to find the childs
+  //try to find the childs (recusiv)
   foreach (auto child, children)
   {
     if(child->children().count() > 1)
@@ -564,7 +617,7 @@ void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
       break;
   }
 
-  //what happens!, we have had find both sliders and spinboxes
+  //what happens!, we have to have find both sliders and spinboxes
   if(!(sldBeginFrame && sldEndFrame && sbxBeginFrame && sbxEndFrame))
     return;
 
@@ -667,7 +720,7 @@ void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
   }
 
   // at least, create the statistics
-  // no valid string is possible, because it will get later
+  // no valid string is possible / necessary, because it will get later
   this->onStatisticsChange("");
 }
 
@@ -727,7 +780,7 @@ indexRange ChartHandler::getFrameRange(itemWidgetCoord aCoord)
   // in this loop we go thru all widget-elements we have
   foreach (auto widget, aCoord.mWidget->children())
   {
-    // if our widget has child-widgets we have to control them again
+    // if our widget has child-widgets, we have to control them again
     if(widget->children().count() > 1)
     {
       foreach (auto innerwidget, widget->children())
@@ -816,6 +869,7 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
 {
   Q_UNUSED(aNewFrameIndex)
 
+  // if the option is selected, we don´t draw the chart
   if(!this->mCbDrawChart->isChecked())
     return;
 
@@ -848,10 +902,13 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
       }
       chartShow showart = showVariant.value<chartShow>();
 
+      // remember, we just look at csPerFrame; every other we can leave
       if(showart != csPerFrame)
         return;
     }
-    QWidget* chart; // just a holder, will be set in the following
+
+    // just a holder, will be set in the following
+    QWidget* chart;
 
     // check what form of playlistitem was selected
     if(dynamic_cast<playlistItemStatisticsFile*> (items[0]))
@@ -1238,23 +1295,31 @@ void ChartHandler::onStatisticsChange(const QString aString)
     QWidget* chart;
     if(aString != CBX_OPTION_SELECT) // new type was selected in the combobox
     {
+      // we do multithread at this point
       if(this->mDoMultiThread)
       {
-        if(this->mBackgroundParserFuture.isRunning())
+        //get an not working thread
+        ChartWorkerThread* workerThread = nullptr;
+        for (int i = 0; i < this->mWorkerThreads.count(); i++)
         {
-          this->mCancelBackgroundParser = true;
-          this->mBackgroundParserFuture.cancel();
-          this->mBackgroundParserFuture.waitForFinished();
-          this->mCancelBackgroundParser = false;
+          workerThread = this->mWorkerThreads.value(i);
+          if(!workerThread->worker()->isWorking())
+            break;
         }
 
+        // set an chart, that the data is loading
         this->placeChart(coord, &this->mDataIsLoadingWidget);
-        this->mBackgroundParserFuture = QtConcurrent::run(this, &ChartHandler::createStatisticsChartSettings, coord);
-        this->mFutureWatcherWidgets.setFuture(this->mBackgroundParserFuture);
-        QPair<QFuture<chartSettingsData>, itemWidgetCoord> pair;
-        pair.first = this->mBackgroundParserFuture;
-        pair.second = coord;
-        mMapFutureItemWidgetCoord.append(pair);
+
+        // if we have the settings calculated before, we can display the chart directly
+        if(coord.mHasSettings)
+        {
+          QWidget* chart = this->mYUVChartFactory.createChart(coord.mSettings);
+          this->placeChart(coord, chart);
+          return;
+        }
+
+        // set the job and the worker wll start to process it
+        workerThread->worker()->processLoadingJob(coord);
 
         // chart will be placed after the thread is finished
       }
@@ -1269,6 +1334,9 @@ void ChartHandler::onStatisticsChange(const QString aString)
     {
       // we set a default-widget
       chart = this->mChartWidget->getDefaultWidget();
+
+      for(int i = 0; i < this->mWorkerThreads.count(); i++)
+        this->mWorkerThreads.value(i)->reset();
 
       // remove all, cause we dont need them anymore
       for(int i = coord.mChart->count(); i >= 0; i--)
@@ -1375,24 +1443,30 @@ void ChartHandler::spinboxRangeChange(int aValue)
 
 void ChartHandler::timerEvent(QTimerEvent *event)
 {
+  // check that it is the right timer
   if(event->timerId() != this->mTimer.timerId())
     return;
 
+  // get selected items
   auto items = this->mPlaylist->getSelectedItems();
   bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
   if(!anyItemsSelected) // check that really something is selected
     return;
 
+  // get all items, to compare them
   QList<playlistItem*> allItems = this->mPlaylist->getAllPlaylistItems();
 
+  // get the amount of loading items
   int anyItemIsLoading = 0;
   foreach (playlistItem* item, allItems)
     if(!item->isDataAvaible())
       anyItemIsLoading++;
 
+  // check that no item is loading and that the selected item is loaded complete
   if(items[0]->isDataAvaible() && (anyItemIsLoading == 0))
     this->currentSelectedItemsChanged(items[0], items[0]);
 
+  // if no item is loading, we can stop the timer
   if(anyItemIsLoading == 0)
     this->mTimer.stop();
 }

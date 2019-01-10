@@ -1,6 +1,6 @@
 ﻿/*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2017  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2018  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -91,13 +91,14 @@ private:
 
 /**
  * @brief The YUVCharts class
- * basic class for charts
+ * basic class for charts (abstract-class)
  */
 class YUVCharts : public QObject
 {
   Q_OBJECT
 
-  public:
+public:
+
   /**
    * @brief YUVCharts
    * default-constructor
@@ -229,6 +230,17 @@ class YUV3DCharts : public YUVCharts
   Q_OBJECT
 public:
 
+  /**
+   * @brief YUV3DCharts
+   * default-constructor
+   * in inherited classes it should be reintroduced or reimplemented always
+   *
+   * @param aNoDataToShowWidget
+   * a basic widget if no data is to show
+   *
+   * @param aDataIsLoadingWidget
+   * a basic widget if the data is still loading
+   */
   YUV3DCharts(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget);
 
   /**
@@ -534,7 +546,13 @@ class YUV3DSurfaceChart : public YUV3DCharts
   Q_OBJECT
 
 public:
+
+  /**
+   * @brief YUV3DSurfaceChart
+   * default-constructor
+   */
   YUV3DSurfaceChart();
+
   /**
    * @brief YUV3DSurfaceChart
    * default-constructor
@@ -547,10 +565,40 @@ public:
    * a basic widget if the data is still loading
    */
   YUV3DSurfaceChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget);
+};
+
+/**
+ * @brief The YUVBarChart class
+ * the YUVBarChart class can display 2D Data
+ */
+class YUVBarChart : public YUVCharts
+{
+  Q_OBJECT
+
+public:
+
+  /**
+   * @brief YUVBarChart
+   * default-constructor
+   */
+  YUVBarChart();
+
+  /**
+   * @brief YUVBarChart
+   * default-constructor
+   * in inherited classes it should be reintroduced or reimplemented always
+   *
+   * @param aNoDataToShowWidget
+   * a basic widget if no data is to show
+   *
+   * @param aDataIsLoadingWidget
+   * a basic widget if the data is still loading
+   */
+  YUVBarChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget) : YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget){}
 
   /**
    * @brief createChart
-   * function which will control hoq the chart is making
+   * function which will control how the chart is making
    *
    * @param aOrderBy
    * the order type: frame-art, value or blocksize, noralisation or not
@@ -572,29 +620,44 @@ public:
    * @return
    * a complete chartview with the data
    */
-  //QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
-};
-
-/**
- * @brief The YUVBarChart class
- * the YUVBarChart class can display 2D Data
- */
-class YUVBarChart : public YUVCharts
-{
-  Q_OBJECT
-
-public:
-  YUVBarChart();
-  //reintroduce the constructor
-  YUVBarChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget) : YUVCharts(aNoDataToShowWidget, aDataIsLoadingWidget){}
-
-  //documentation see @YUVCharts::createChart
   QWidget* createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
-  //documentation see @YUVCharts::createChart
+  /**
+   * @brief createChart
+   * function will create an chart which depends on the given settings
+   *
+   * @param aSettings
+   * settings how the chart should look
+   *
+   * @return
+   * a complete chartview with the data
+   */
   QWidget* createChart(chartSettingsData aSettings) Q_DECL_OVERRIDE;
 
-  //documentation see @YUVCharts::createSettings
+  /**
+   * @brief createSettings
+   * function that creat a complete setting for the chart
+   *
+   * @param aOrderBy
+   * the order type: frame-art, value or blocksize, noralisation or not
+   *
+   * @param aItem
+   * specified item we look at, we get the data and lot more
+   *
+   * @param aRange
+   * range we look at (also for current frame or all frames)
+   *
+   * @param aType
+   * if statistics-item: the selected type is needed
+   *
+   * @param aSortedData
+   * the amount of data if avaible
+   * this parameter is optional
+   * if aSorted is null, we get the data from the item new otherwise we use the parameter
+   *
+   * @return
+   * a complete setting; basic for an chart
+   */
   chartSettingsData createSettings(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
 private:
@@ -835,8 +898,24 @@ class YUV3DBarChart : public YUV3DCharts
 {
   Q_OBJECT
 public:
+
+  /**
+   * @brief YUV3DBarChart
+   * default-constructor
+   */
   YUV3DBarChart();
-  //reintroduce the constructor
+
+  /**
+   * @brief YUV3DBarChart
+   * default-constructor
+   * in inherited classes it should be reintroduced or reimplemented always
+   *
+   * @param aNoDataToShowWidget
+   * a basic widget if no data is to show
+   *
+   * @param aDataIsLoadingWidget
+   * a basic widget if the data is still loading
+   */
   YUV3DBarChart(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget);
 };
 
@@ -848,18 +927,86 @@ class YUVChartFactory : public YUVCharts
 {
   Q_OBJECT
 public:
+
+  /**
+   * @brief YUVChartFactory
+   * default-constructor
+   */
   YUVChartFactory();
-  //reintroduce the constructor
+
+  /**
+   * @brief YUVChartFactory
+   * default-constructor
+   * in inherited classes it should be reintroduced or reimplemented always
+   *
+   * @param aNoDataToShowWidget
+   * a basic widget if no data is to show
+   *
+   * @param aDataIsLoadingWidget
+   * a basic widget if the data is still loading
+   */
   YUVChartFactory(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget);
 
-  //documentation see @YUVCharts::createChart
-  //! aSortedData is not used in this function
+  /**
+   * @brief createChart
+   * function which will control how the chart is making
+   *
+   * @param aOrderBy
+   * the order type: frame-art, value or blocksize, noralisation or not
+   *
+   * @param aItem
+   * specified item we look at, we get the data and lot more
+   *
+   * @param aRange
+   * range we look at (also for current frame or all frames)
+   *
+   * @param aType
+   * if statistics-item: the selected type is needed
+   *
+   * @param aSortedData
+   * ! aSortedData is not used in this function
+   *
+   * @return
+   * a complete chartview with the data
+   */
   QWidget* createChart(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
-  //documentation see @YUVCharts::createChart
+  /**
+   * @brief createChart
+   * function will create an chart which depends on the given settings
+   *
+   * @param aSettings
+   * settings how the chart should look
+   *
+   * @return
+   * a complete chartview with the data
+   */
   QWidget* createChart(chartSettingsData aSettings) Q_DECL_OVERRIDE;
 
-  //documentation see @YUVCharts::createSettings
+  /**
+   * @brief createSettings
+   * function that creat a complete setting for the chart
+   *
+   * @param aOrderBy
+   * the order type: frame-art, value or blocksize, noralisation or not
+   *
+   * @param aItem
+   * specified item we look at, we get the data and lot more
+   *
+   * @param aRange
+   * range we look at (also for current frame or all frames)
+   *
+   * @param aType
+   * if statistics-item: the selected type is needed
+   *
+   * @param aSortedData
+   * the amount of data if avaible
+   * this parameter is optional
+   * if aSorted is null, we get the data from the item new otherwise we use the parameter
+   *
+   * @return
+   * a complete setting; basic for an chart
+   */
   chartSettingsData createSettings(const chartOrderBy aOrderBy, playlistItem* aItem, const indexRange aRange, const QString aType, QList<collectedData>* aSortedData = NULL) Q_DECL_OVERRIDE;
 
   /**

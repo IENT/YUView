@@ -17,6 +17,7 @@ int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, const chartShow aShow,
   QSize size = aItem->getSize();
   int totalAmountPixel = size.height() * size.width();
 
+  // the amount of pixel depends on the amount of frames
   if(aShow == csPerFrame)
     return totalAmountPixel;
   else if(aShow == csAllFrames)
@@ -25,7 +26,7 @@ int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, const chartShow aShow,
     // in calculation you have to add 1, because the amount of viewed frames is always one higher than the calculated
     return (totalAmountPixel * (aRange.second - aRange.first + 1));
   else
-    return 0;
+    return 1;
 }
 
 bool YUVCharts::is2DData(QList<collectedData>* aSortedData)
@@ -205,6 +206,22 @@ QWidget* YUVBarChart::createChart(chartSettingsData aSettings)
   chart->setAnimationOptions(QChart::SeriesAnimations);
   // creating default-axes: always have to be called before you add some custom axes
   chart->createDefaultAxes();
+  // accept to hover with the mouse
+  chart->setAcceptHoverEvents(true);
+
+  // set hover elements
+  if(dynamic_cast<QAbstractBarSeries*>(aSettings.mSeries))
+  {
+    connect(dynamic_cast<QAbstractBarSeries*>(aSettings.mSeries), &QBarSeries::hovered, chart, [&](bool aStatus, int aIndex, QBarSet* aBarSet){
+      if(aStatus)
+      {
+        qreal value = aBarSet->at(aIndex);
+        QToolTip::showText(QCursor::pos(), "Amount is: " + QString::number(value));
+      }
+
+    });
+
+  }
 
   // we check if we have to create custom axes,
   // but first we implement an default
@@ -1571,7 +1588,6 @@ YUV3DSurfaceChart::YUV3DSurfaceChart(QWidget* aNoDataToShowWidget, QWidget* aDat
     vLayout->addWidget(new QLabel(QStringLiteral("Row range")));
     vLayout->addWidget(axisMinSliderZ);
     vLayout->addWidget(axisMaxSliderZ);
-
 
     // create modifier to handle the sliders and so on
     Surface3DGraphModifier* modifier = new Surface3DGraphModifier(widgetgraph);
