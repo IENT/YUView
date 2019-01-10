@@ -285,6 +285,8 @@ struct chartSettingsData
   // check if we have to show the legend of the chart
   bool mShowLegend = false;
 
+  bool mIsNormalized = false;
+
   // list of categories
   QStringList mCategories;
 

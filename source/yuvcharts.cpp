@@ -212,11 +212,18 @@ QWidget* YUVBarChart::createChart(chartSettingsData aSettings)
   // set hover elements
   if(dynamic_cast<QAbstractBarSeries*>(aSettings.mSeries))
   {
-    connect(dynamic_cast<QAbstractBarSeries*>(aSettings.mSeries), &QBarSeries::hovered, chart, [&](bool aStatus, int aIndex, QBarSet* aBarSet){
+    connect(dynamic_cast<QAbstractBarSeries*>(aSettings.mSeries), &QBarSeries::hovered, chart, [aSettings](bool aStatus, int aIndex, QBarSet* aBarSet){
       if(aStatus)
       {
         qreal value = aBarSet->at(aIndex);
-        QToolTip::showText(QCursor::pos(), "Amount is: " + QString::number(value));
+        QString numberString = QString::number(value);
+        QTextStream stream(&numberString);
+        stream.setRealNumberPrecision(2);
+
+        if(aSettings.mIsNormalized)
+          QToolTip::showText(QCursor::pos(), "Amount normalized: " + QString::number(value, 'f', 2) + "%");
+        else
+          QToolTip::showText(QCursor::pos(), "Amount is: " + numberString);
       }
 
     });
@@ -625,6 +632,7 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
   // define result
   chartSettingsData settings;
   settings.mSeries = series;
+  settings.mIsNormalized = true;
 
   statisticsDataType dataType = sdtUnknown;
   statisticsDataType lastDataType = sdtUnknown;
@@ -726,6 +734,7 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByBlocksizeNrmArea(QList<col
   // define result
   chartSettingsData settings;
   settings.mSeries = series;
+  settings.mIsNormalized = true;
 
   statisticsDataType dataType = sdtUnknown;
   statisticsDataType lastDataType = sdtUnknown;
@@ -1150,6 +1159,7 @@ chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
 
   settings.m3DData        = resultValueCount;
   settings.mIs3DData      = true;
+  settings.mIsNormalized  = true;
   settings.mStatDataType  = dataType;
 
   settings.define3DRanges(mMinX, mMaxX, mMinY, mMaxY);
@@ -1172,6 +1182,7 @@ chartSettingsData YUV3DCharts::makeStatisticsAllFramesGrpByValNrmNone(QList<coll
 chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrm(QList<collectedData> *aSortedData)
 {
   chartSettingsData settings;
+
   statisticsDataType dataType = sdtUnknown;
   statisticsDataType lastDataType = sdtUnknown;
 
@@ -1267,6 +1278,7 @@ chartSettingsData YUV3DCharts::makeStatisticsPerFrameGrpByValNrm(QList<collected
   settings.m3DData        = resultValue;
   settings.mIs3DData      = true;
   settings.mStatDataType  = dataType;
+  settings.mIsNormalized  = true;
   settings.define3DRanges(mMinX, mMaxX, mMinY, mMaxY);
 
   return settings;

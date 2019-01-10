@@ -1,4 +1,4 @@
-#include "chartworker.h"
+#include "chartWorker.h"
 
 ChartWorker::ChartWorker(QObject* aParent)
   : QObject(aParent)
