@@ -31,6 +31,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// bl is of this type
 enum BlockLevel {
   BL_128X128,
   BL_64X64,
@@ -40,6 +41,7 @@ enum BlockLevel {
   N_BL_LEVELS,
 };
 
+// bs is of this type
 enum BlockSize {
   BS_128x128,
   BS_128x64,
@@ -66,6 +68,7 @@ enum BlockSize {
   N_BS_SIZES,
 };
 
+// bp is of this type
 enum BlockPartition {
   PARTITION_NONE,     // [ ] <-.
   PARTITION_H,        // [-]   |
@@ -81,6 +84,7 @@ enum BlockPartition {
   N_SUB8X8_PARTITIONS = PARTITION_T_TOP_SPLIT,
 };
 
+// y_mode and uv_mode are of this type
 enum IntraPredMode {
   DC_PRED,
   VERT_PRED,
@@ -132,6 +136,38 @@ enum MotionMode {
   MM_TRANSLATION,
   MM_OBMC,
   MM_WARP,
+};
+
+// tx and max_ytx are of this type
+enum TxfmSize {
+  TX_4X4,
+  TX_8X8,
+  TX_16X16,
+  TX_32X32,
+  TX_64X64,
+  N_TX_SIZES,
+};
+
+// comp_type is of this type
+enum CompInterType {
+  COMP_INTER_NONE,
+  COMP_INTER_WEIGHTED_AVG,
+  COMP_INTER_AVG,
+  COMP_INTER_SEG,
+  COMP_INTER_WEDGE,
+};
+
+// inter_mode is of this type
+enum CompInterPredMode {
+  NEARESTMV_NEARESTMV,
+  NEARMV_NEARMV,
+  NEARESTMV_NEWMV,
+  NEWMV_NEARESTMV,
+  NEARMV_NEWMV,
+  NEWMV_NEARMV,
+  GLOBALMV_GLOBALMV,
+  NEWMV_NEWMV,
+  N_COMP_INTER_PRED_MODES,
 };
 
 typedef struct Av1Block {

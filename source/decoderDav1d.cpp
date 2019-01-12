@@ -518,6 +518,127 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
   predMode.valMap.insert(1, "INTER");
   statSource.addStatType(predMode);
 
+  // LastActiveSegId indicates the real maximum. But that can also vary per frame.
+  // 255 is the maximum maximum.
+  StatisticsType segmentID(1, "Segment ID", "jet", 0, 255);
+  segmentID.description = "Specifies which segment is associated with the current intra block being decoded";
+  statSource.addStatType(segmentID);
+
+  StatisticsType skip(2, "skip", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  skip.description = "Equal to 0 indicates that there may be some transform coefficients for this block. 1 Indicates there are none.";
+  statSource.addStatType(skip);
+
+  StatisticsType skip_mode(3, "skip_mode", 0, QColor(0, 0, 0), 1, QColor(0,255,0));
+  skip_mode.description = "Equal to 1 indicates that signaling of most of the mode info is skipped";
+  statSource.addStatType(skip_mode);
+
+  // Intra specific values
+
+  StatisticsType intraPredModeLuma(4, "intra pred mode (Y)", "jet", 0, 13);
+  intraPredModeLuma.description = "Intra prediction mode Luma (Y)";
+  intraPredModeLuma.valMap.insert(0, "DC_PRED");
+  intraPredModeLuma.valMap.insert(1, "VERT_PRED");
+  intraPredModeLuma.valMap.insert(2, "HOR_PRED");
+  intraPredModeLuma.valMap.insert(3, "DIAG_DOWN_LEFT_PRED");
+  intraPredModeLuma.valMap.insert(4, "DIAG_DOWN_RIGHT_PRED");
+  intraPredModeLuma.valMap.insert(5, "VERT_RIGHT_PRED");
+  intraPredModeLuma.valMap.insert(6, "HOR_DOWN_PRED");
+  intraPredModeLuma.valMap.insert(7, "HOR_UP_PRED");
+  intraPredModeLuma.valMap.insert(8, "VERT_LEFT_PRED");
+  intraPredModeLuma.valMap.insert(9, "SMOOTH_PRED");
+  intraPredModeLuma.valMap.insert(10, "SMOOTH_V_PRED");
+  intraPredModeLuma.valMap.insert(11, "SMOOTH_H_PRED");
+  intraPredModeLuma.valMap.insert(12, "PAETH_PRED");
+  intraPredModeLuma.valMap.insert(13, "CFL_PRED");
+  statSource.addStatType(intraPredModeLuma);
+
+  StatisticsType intraPredModeChroma(5, "intra pred mode (UV)", "jet", 0, 12);
+  intraPredModeChroma.description = "Intra prediction mode Chroma (UV)";
+  intraPredModeChroma.valMap.insert(0, "DC_PRED");
+  intraPredModeChroma.valMap.insert(1, "VERT_PRED");
+  intraPredModeChroma.valMap.insert(2, "HOR_PRED");
+  intraPredModeChroma.valMap.insert(3, "DIAG_DOWN_LEFT_PRED");
+  intraPredModeChroma.valMap.insert(4, "DIAG_DOWN_RIGHT_PRED");
+  intraPredModeChroma.valMap.insert(5, "VERT_RIGHT_PRED");
+  intraPredModeChroma.valMap.insert(6, "HOR_DOWN_PRED");
+  intraPredModeChroma.valMap.insert(7, "HOR_UP_PRED");
+  intraPredModeChroma.valMap.insert(8, "VERT_LEFT_PRED");
+  intraPredModeChroma.valMap.insert(9, "SMOOTH_PRED");
+  intraPredModeChroma.valMap.insert(10, "SMOOTH_V_PRED");
+  intraPredModeChroma.valMap.insert(11, "SMOOTH_H_PRED");
+  intraPredModeChroma.valMap.insert(12, "PAETH_PRED");
+  statSource.addStatType(intraPredModeChroma);
+
+  StatisticsType paletteSizeLuma(6, "palette size (Y)", 0, QColor(0, 0, 0), 255, QColor(0,0,255));
+  statSource.addStatType(paletteSizeLuma);
+
+  StatisticsType paletteSizeChroma(7, "palette size (U)", 0, QColor(0, 0, 0), 255, QColor(0,0,255));
+  statSource.addStatType(paletteSizeChroma);
+
+  StatisticsType intraAngleDeltaLuma(8, "intra angle delta (Y)", "col3_bblg", -3, 4);
+  intraAngleDeltaLuma.description = "Offset to be applied to the intra prediction angle specified by the prediction mode";
+  statSource.addStatType(intraAngleDeltaLuma);
+
+  StatisticsType intraAngleDeltaChroma(9, "intra angle delta (UV)", "col3_bblg", -3, 4);
+  intraAngleDeltaChroma.description = "Offset to be applied to the intra prediction angle specified by the prediction mode";
+  statSource.addStatType(intraAngleDeltaChroma);
+
+  StatisticsType chromaFromLumaAlphaU(10, "chroma from luma alpha (U)", "col3_bblg", -128, 128);
+  chromaFromLumaAlphaU.description = "CflAlphaU: contains the signed value of the alpha component for the U component";
+  statSource.addStatType(chromaFromLumaAlphaU);
+
+  StatisticsType chromaFromLumaAlphaV(11, "chroma from luma alpha (V)", "col3_bblg", -128, 128);
+  chromaFromLumaAlphaV.description = "CflAlphaU: contains the signed value of the alpha component for the U component";
+  statSource.addStatType(chromaFromLumaAlphaV);
+
+  // Inter specific values
+
+  StatisticsType refFrames0(12, "ref frame index 0", "jet", 0, 7);
+  statSource.addStatType(refFrames0);
+
+  StatisticsType refFrames1(13, "ref frame index 1", "jet", 0, 7);
+  statSource.addStatType(refFrames1);
+
+  StatisticsType compoundPredType(14, "compound prediction type", "jet", 0, 4);
+  compoundPredType.valMap.insert(0, "COMP_INTER_NONE");
+  compoundPredType.valMap.insert(1, "COMP_INTER_WEIGHTED_AVG");
+  compoundPredType.valMap.insert(2, "COMP_INTER_AVG");
+  compoundPredType.valMap.insert(3, "COMP_INTER_SEG");
+  compoundPredType.valMap.insert(4, "COMP_INTER_WEDGE");
+  statSource.addStatType(compoundPredType);
+
+  // 15: wedge_idx
+  // 16: mask_sign
+
+  StatisticsType interMode(17, "inter mode", "jet", 0, 7);
+  interMode.valMap.insert(0, "NEARESTMV_NEARESTMV");
+  interMode.valMap.insert(1, "NEARMV_NEARMV");
+  interMode.valMap.insert(2, "NEARESTMV_NEWMV");
+  interMode.valMap.insert(3, "NEWMV_NEARESTMV");
+  interMode.valMap.insert(4, "NEARMV_NEWMV");
+  interMode.valMap.insert(5, "NEWMV_NEARMV");
+  interMode.valMap.insert(6, "GLOBALMV_GLOBALMV");
+  interMode.valMap.insert(7, "NEWMV_NEWMV");
+  statSource.addStatType(interMode);
+
+  // 18: drl_idx
+  // 19: interintra_type
+  // 20: interintra_mode
+  // 21: motion_mode
+  // max_ytx
+  // filter2d
+  // tx_split
+
+  StatisticsType motionVec0(22, "Motion Vector 0", 4);
+  motionVec0.description = "The motion vector for component 0";
+  statSource.addStatType(motionVec0);
+  
+  StatisticsType motionVec1(23, "Motion Vector 1", 4);
+  motionVec1.description = "The motion vector for component 1";
+  statSource.addStatType(motionVec1);
+
+  // TODO: tx (transform size)
+
   // TODO: More...
 }
 
@@ -532,7 +653,9 @@ void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
   curPOCStats.clear();
 
   Av1Block *blockData = img.getBlockData();
-
+  Dav1dSequenceHeader *sequenceHeader = img.getSequenceHeader();
+  Dav1dFrameHeader *frameHeader = img.getFrameHeader();
+  
   QSize frameSize = img.getFrameSize();
 
   const int bw = ((frameSize.width() + 7) >> 3) << 1;
@@ -548,10 +671,10 @@ void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
 
   for (int y = 0; y < heightInBlocks; y += sb_step)
     for (int x = 0; x < widthInBlocks; x += sb_step)
-      parseBlockRecursive(blockData, x, y, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockRecursive(blockData, x, y, widthInBlocks, heightInBlocks, b4_stride, BL_128X128, sequenceHeader, frameHeader);
 }
 
-void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, const int widthInBlocks, const int heightInBlocks, const int b4_stride, BlockLevel level)
+void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, const int widthInBlocks, const int heightInBlocks, const int b4_stride, BlockLevel level, Dav1dSequenceHeader *sequenceHeader, Dav1dFrameHeader *frameHeader)
 {
   if (y > heightInBlocks)
     return;
@@ -570,10 +693,10 @@ void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, const 
     // Recurse
     const BlockLevel nextLevel = (BlockLevel)(level + 1);
     const int subw = blockWidth4 / 2;
-    parseBlockRecursive(blockData, x       , y       , widthInBlocks, heightInBlocks, b4_stride, nextLevel);
-    parseBlockRecursive(blockData, x + subw, y       , widthInBlocks, heightInBlocks, b4_stride, nextLevel);
-    parseBlockRecursive(blockData, x       , y + subw, widthInBlocks, heightInBlocks, b4_stride, nextLevel);
-    parseBlockRecursive(blockData, x + subw, y + subw, widthInBlocks, heightInBlocks, b4_stride, nextLevel);
+    parseBlockRecursive(blockData, x       , y       , widthInBlocks, heightInBlocks, b4_stride, nextLevel, sequenceHeader, frameHeader);
+    parseBlockRecursive(blockData, x + subw, y       , widthInBlocks, heightInBlocks, b4_stride, nextLevel, sequenceHeader, frameHeader);
+    parseBlockRecursive(blockData, x       , y + subw, widthInBlocks, heightInBlocks, b4_stride, nextLevel, sequenceHeader, frameHeader);
+    parseBlockRecursive(blockData, x + subw, y + subw, widthInBlocks, heightInBlocks, b4_stride, nextLevel, sequenceHeader, frameHeader);
   }
   else
   {
@@ -586,57 +709,57 @@ void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, const 
     switch (blockPartition)
     {
     case PARTITION_NONE:
-      parseBlockPartition(blockData, x, y, bs, bs, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x, y, bs, bs, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
       break;
     case PARTITION_H:
-      parseBlockPartition(blockData, x, y    , bs, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x, y + o, bs, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x, y    , bs, bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x, y + o, bs, bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
       break;
     case PARTITION_V:
-      parseBlockPartition(blockData, x    , y, bs / 2, bs, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x + o, y, bs / 2, bs, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x    , y, bs / 2, bs, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x + o, y, bs / 2, bs, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
       break;
     case PARTITION_T_TOP_SPLIT: // PARTITION_HORZ_A
-      parseBlockPartition(blockData, x    , y    , bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x + o, y    , bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x    , y + o, bs    , bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x    , y    , bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x + o, y    , bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x    , y + o, bs    , bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
       break;
     case PARTITION_T_BOTTOM_SPLIT: // PARTITION_HORZ_B
-      parseBlockPartition(blockData, x    , y    , bs    , bs / 2, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x    , y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x + o, y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x    , y    , bs    , bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x    , y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x + o, y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
       break;
     case PARTITION_T_LEFT_SPLIT: // PARTITION_VERT_A
-      parseBlockPartition(blockData, x    , y    , bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x    , y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x + o, y    , bs / 2, bs    , widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x    , y    , bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x    , y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x + o, y    , bs / 2, bs    , widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
       break;
     case PARTITION_T_RIGHT_SPLIT: // PARTITION_VERT_B
-      parseBlockPartition(blockData, x    , y    , bs / 2, bs    , widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x    , y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x + o, y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x    , y    , bs / 2, bs    , widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x    , y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x + o, y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
       break;
     case PARTITION_H4: // PARTITION_HORZ_4
-      parseBlockPartition(blockData, x, y         , bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x, y + oq    , bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x, y + oq * 2, bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x, y + oq * 3, bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x, y         , bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x, y + oq    , bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x, y + oq * 2, bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x, y + oq * 3, bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
       break;
     case PARTITION_V4: // PARTITION_VER_4
-      parseBlockPartition(blockData, x         , y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x + oq    , y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x + oq * 2, y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride);
-      parseBlockPartition(blockData, x + oq * 3, y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x         , y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x + oq    , y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x + oq * 2, y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+      parseBlockPartition(blockData, x + oq * 3, y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
       break;
     case PARTITION_SPLIT:
       if (blockLevel == BL_8X8)
       {
         // 4 square 4x4 blocks. This is allowed.
         assert(blockWidth4 == 2);
-        parseBlockPartition(blockData, x    , y    , 1, 1, widthInBlocks, heightInBlocks, b4_stride);
-        parseBlockPartition(blockData, x + 1, y    , 1, 1, widthInBlocks, heightInBlocks, b4_stride);
-        parseBlockPartition(blockData, x    , y + 1, 1, 1, widthInBlocks, heightInBlocks, b4_stride);
-        parseBlockPartition(blockData, x + 1, y + 1, 1, 1, widthInBlocks, heightInBlocks, b4_stride);
+        parseBlockPartition(blockData, x    , y    , 1, 1, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+        parseBlockPartition(blockData, x + 1, y    , 1, 1, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+        parseBlockPartition(blockData, x    , y + 1, 1, 1, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
+        parseBlockPartition(blockData, x + 1, y + 1, 1, 1, widthInBlocks, heightInBlocks, b4_stride, sequenceHeader, frameHeader);
       }
       else
       {
@@ -647,8 +770,10 @@ void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, const 
   }
 }
 
-void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, const int widthInBlocks, const int heightInBlocks, const int b4_stride)
+void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, const int widthInBlocks, const int heightInBlocks, const int b4_stride, Dav1dSequenceHeader *sequenceHeader, Dav1dFrameHeader *frameHeader)
 {
+  Q_UNUSED(sequenceHeader);
+
   if (y > heightInBlocks || x > widthInBlocks)
     return;
 
@@ -660,8 +785,67 @@ void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int bl
   const int cbHeight = blockHeight4 * 4;
 
   // Set prediction mode (ID 0)
-  const int predMode = (b.intra == 0) ? 1 : 0;
+  const bool isIntra = (b.intra != 0);
+  const int predMode = isIntra ? 0 : 1;
   curPOCStats[0].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, predMode);
+
+  bool FrameIsIntra = (frameHeader->frame_type == DAV1D_FRAME_TYPE_KEY || frameHeader->frame_type == DAV1D_FRAME_TYPE_INTRA);
+  if (FrameIsIntra)
+  {
+    // Set the segment ID (ID 1)
+    curPOCStats[1].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.seg_id);
+  }
+
+  // Set the skip "flag" (ID 2)
+  curPOCStats[2].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.skip);
+
+  // Set the skip_mode (ID 3)
+  curPOCStats[3].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.skip_mode);
+
+  if (isIntra)
+  {
+    // Set the intra pred mode luma/chrmoa (ID 4, 5)
+    curPOCStats[4].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.y_mode);
+    curPOCStats[5].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.uv_mode);
+
+    // Set the palette size Y/UV (ID 6, 7)
+    curPOCStats[6].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.pal_sz[0]);
+    curPOCStats[7].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.pal_sz[1]);
+
+    // Set the intra angle delta luma/chroma (ID 8, 9)
+    curPOCStats[8].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.y_angle);
+    curPOCStats[9].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.uv_angle);
+
+    if (b.y_mode == CFL_PRED)
+    {
+      // Set the chroma from luma alpha U/V (ID 10, 11)
+      curPOCStats[10].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[0]);
+      curPOCStats[11].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[1]);
+    }
+  }
+  else
+  {
+
+    // Set the reference frame indices 0/1 (ID 12, 13)
+    curPOCStats[12].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[0]);
+    curPOCStats[13].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[1]);
+
+    // Set the compound prediction type (ID 14)
+    curPOCStats[14].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.comp_type);
+
+    // 
+    //
+
+    // Set the inter mode (ID 17)
+    curPOCStats[17].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.inter_mode);
+
+    //
+    //
+
+    // Set motion vector 0/1 (ID 22, 23)
+    curPOCStats[22].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
+    curPOCStats[23].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
+  }
 
 }
 
@@ -745,4 +929,20 @@ Av1Block *decoderDav1d::Dav1dPictureWrapper::getBlockData() const
   if (internalsSupported)
     return reinterpret_cast<Av1Block*>(curPicture_analizer.blk_data);
   return nullptr;
+}
+
+Dav1dSequenceHeader *decoderDav1d::Dav1dPictureWrapper::getSequenceHeader() const
+{
+  if (internalsSupported)
+    return curPicture_analizer.seq_hdr;
+  else
+    return curPicture_original.seq_hdr;
+}
+
+Dav1dFrameHeader *decoderDav1d::Dav1dPictureWrapper::getFrameHeader() const
+{
+  if (internalsSupported)
+    return curPicture_analizer.frame_hdr;
+  else
+    return curPicture_original.frame_hdr;
 }

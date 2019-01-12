@@ -135,6 +135,9 @@ private:
     uint8_t *getDataPrediction(int component) const;
     uint8_t *getDataReconstructionPreFiltering(int component) const;
     Av1Block *getBlockData() const;
+
+    Dav1dSequenceHeader *getSequenceHeader() const;
+    Dav1dFrameHeader *getFrameHeader() const;
     
   private:
     Dav1dPicture_original curPicture_original;
@@ -159,8 +162,8 @@ private:
   // Statistics
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
   void cacheStatistics(const Dav1dPictureWrapper &img);
-  void parseBlockRecursive(Av1Block *blockData, int x, int y, const int widthInBlocks, const int heightInBlocks, const int b4_stride, BlockLevel level=BL_128X128);
-  void parseBlockPartition(Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, const int widthInBlocks, const int heightInBlocks, const int b4_stride);
+  void parseBlockRecursive(Av1Block *blockData, int x, int y, const int widthInBlocks, const int heightInBlocks, const int b4_stride, BlockLevel level, Dav1dSequenceHeader *sequenceHeader, Dav1dFrameHeader *frameHeader);
+  void parseBlockPartition(Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, const int widthInBlocks, const int heightInBlocks, const int b4_stride, Dav1dSequenceHeader *sequenceHeader, Dav1dFrameHeader *frameHeader);
   unsigned int subBlockSize {0};
 };
 
