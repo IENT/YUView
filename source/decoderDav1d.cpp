@@ -548,13 +548,10 @@ void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
 
   for (int y = 0; y < heightInBlocks; y += sb_step)
     for (int x = 0; x < widthInBlocks; x += sb_step)
-      parseBlockRecursive(blockData, x, y, heightInBlocks, b4_stride);
-
-  // TODO
-  // ...
+      parseBlockRecursive(blockData, x, y, widthInBlocks, heightInBlocks, b4_stride);
 }
 
-void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, const int heightInBlocks, const int b4_stride, BlockLevel level)
+void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, const int widthInBlocks, const int heightInBlocks, const int b4_stride, BlockLevel level)
 {
   if (y > heightInBlocks)
     return;
@@ -573,26 +570,98 @@ void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, const 
     // Recurse
     const BlockLevel nextLevel = (BlockLevel)(level + 1);
     const int subw = blockWidth4 / 2;
-    parseBlockRecursive(blockData, x       , y       , heightInBlocks, b4_stride, nextLevel);
-    parseBlockRecursive(blockData, x + subw, y       , heightInBlocks, b4_stride, nextLevel);
-    parseBlockRecursive(blockData, x       , y + subw, heightInBlocks, b4_stride, nextLevel);
-    parseBlockRecursive(blockData, x + subw, y + subw, heightInBlocks, b4_stride, nextLevel);
+    parseBlockRecursive(blockData, x       , y       , widthInBlocks, heightInBlocks, b4_stride, nextLevel);
+    parseBlockRecursive(blockData, x + subw, y       , widthInBlocks, heightInBlocks, b4_stride, nextLevel);
+    parseBlockRecursive(blockData, x       , y + subw, widthInBlocks, heightInBlocks, b4_stride, nextLevel);
+    parseBlockRecursive(blockData, x + subw, y + subw, widthInBlocks, heightInBlocks, b4_stride, nextLevel);
   }
   else
   {
-    // Parse the current block
-    const BlockSize      blockSize      = (BlockSize)b.bs;
+    // Parse the current partition. How is it split into blocks?
     const BlockPartition blockPartition = (BlockPartition)b.bp;
 
-    const int cbPosX = x * 4;
-    const int cbPosY = y * 4;
-    const int cbSizePix = blockWidth4 * 4;
-    const int predMode = (b.intra == 0) ? 1 : 0;
-
-    // Set prediction mode (ID 0)
-    curPOCStats[0].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, predMode);
+    const int o = blockWidth4 / 2;
+    const int oq = blockWidth4 / 2;
+    const int bs = blockWidth4;
+    switch (blockPartition)
+    {
+    case PARTITION_NONE:
+      parseBlockPartition(blockData, x, y, bs, bs, widthInBlocks, heightInBlocks, b4_stride);
+      break;
+    case PARTITION_H:
+      parseBlockPartition(blockData, x, y    , bs, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x, y + o, bs, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      break;
+    case PARTITION_V:
+      parseBlockPartition(blockData, x    , y, bs / 2, bs, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x + o, y, bs / 2, bs, widthInBlocks, heightInBlocks, b4_stride);
+      break;
+    case PARTITION_T_TOP_SPLIT: // PARTITION_HORZ_A
+      parseBlockPartition(blockData, x    , y    , bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x + o, y    , bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x    , y + o, bs    , bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      break;
+    case PARTITION_T_BOTTOM_SPLIT: // PARTITION_HORZ_B
+      parseBlockPartition(blockData, x    , y    , bs    , bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x    , y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x + o, y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      break;
+    case PARTITION_T_LEFT_SPLIT: // PARTITION_VERT_A
+      parseBlockPartition(blockData, x    , y    , bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x    , y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x + o, y    , bs / 2, bs    , widthInBlocks, heightInBlocks, b4_stride);
+      break;
+    case PARTITION_T_RIGHT_SPLIT: // PARTITION_VERT_B
+      parseBlockPartition(blockData, x    , y    , bs / 2, bs    , widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x    , y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x + o, y + o, bs / 2, bs / 2, widthInBlocks, heightInBlocks, b4_stride);
+      break;
+    case PARTITION_H4: // PARTITION_HORZ_4
+      parseBlockPartition(blockData, x, y         , bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x, y + oq    , bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x, y + oq * 2, bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x, y + oq * 3, bs, bs / 4, widthInBlocks, heightInBlocks, b4_stride);
+      break;
+    case PARTITION_V4: // PARTITION_VER_4
+      parseBlockPartition(blockData, x         , y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x + oq    , y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x + oq * 2, y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride);
+      parseBlockPartition(blockData, x + oq * 3, y, bs / 4, bs, widthInBlocks, heightInBlocks, b4_stride);
+      break;
+    case PARTITION_SPLIT:
+      if (blockLevel == BL_8X8)
+      {
+        // 4 square 4x4 blocks. This is allowed.
+        assert(blockWidth4 == 2);
+        parseBlockPartition(blockData, x    , y    , 1, 1, widthInBlocks, heightInBlocks, b4_stride);
+        parseBlockPartition(blockData, x + 1, y    , 1, 1, widthInBlocks, heightInBlocks, b4_stride);
+        parseBlockPartition(blockData, x    , y + 1, 1, 1, widthInBlocks, heightInBlocks, b4_stride);
+        parseBlockPartition(blockData, x + 1, y + 1, 1, 1, widthInBlocks, heightInBlocks, b4_stride);
+      }
+      else
+      {
+        // This should not happen here
+        return;
+      }
+    }
   }
+}
 
+void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, const int widthInBlocks, const int heightInBlocks, const int b4_stride)
+{
+  if (y > heightInBlocks || x > widthInBlocks)
+    return;
+
+  Av1Block b = blockData[y * b4_stride + x];
+
+  const int cbPosX = x * 4;
+  const int cbPosY = y * 4;
+  const int cbWidth = blockWidth4 * 4;
+  const int cbHeight = blockHeight4 * 4;
+
+  // Set prediction mode (ID 0)
+  const int predMode = (b.intra == 0) ? 1 : 0;
+  curPOCStats[0].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, predMode);
 
 }
 

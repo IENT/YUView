@@ -159,7 +159,8 @@ private:
   // Statistics
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
   void cacheStatistics(const Dav1dPictureWrapper &img);
-  void parseBlockRecursive(Av1Block *blockData, int x, int y, const int heightInBlocks, const int b4_stride, BlockLevel level=BL_128X128);
+  void parseBlockRecursive(Av1Block *blockData, int x, int y, const int widthInBlocks, const int heightInBlocks, const int b4_stride, BlockLevel level=BL_128X128);
+  void parseBlockPartition(Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, const int widthInBlocks, const int heightInBlocks, const int b4_stride);
   unsigned int subBlockSize {0};
 };
 
