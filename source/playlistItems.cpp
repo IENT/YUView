@@ -43,8 +43,7 @@ namespace playlistItems
     QStringList allExtensions, filtersList;
 
     playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemCompressedVideo::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsCSVFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsVTMBMSFile::getSupportedFileExtensions(allExtensions, filtersList);
@@ -74,9 +73,8 @@ namespace playlistItems
   {
     QStringList allExtensions, filtersList;
 
+    playlistItemCompressedVideo::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsCSVFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsVTMBMSFile::getSupportedFileExtensions(allExtensions, filtersList);
@@ -112,30 +110,15 @@ namespace playlistItems
       }
     }
 
-    // Check playlistItemRawCodedVideo
+    // Check playlistItemCompressedVideo
     {
       QStringList allExtensions, filtersList;
-      playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
+      playlistItemCompressedVideo::getSupportedFileExtensions(allExtensions, filtersList);
 
       if (allExtensions.contains(ext))
       {
-        playlistItemRawCodedVideo::decoderEngine engine = playlistItemRawCodedVideo::askForDecoderEngine(parent);
-        if (engine == playlistItemRawCodedVideo::decoderInvalid)
-          return nullptr;
-        playlistItemRawCodedVideo *newRawCodedVideo = new playlistItemRawCodedVideo(fileName, 0, engine);
+        playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0);
         return newRawCodedVideo;
-      }
-    }
-
-    // Check playlistItemFFmpegFile
-    {
-      QStringList allExtensions, filtersList;
-      playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
-
-      if (allExtensions.contains(ext))
-      {
-        playlistItemFFmpegFile *newFFMPEGFile = new playlistItemFFmpegFile(fileName);
-        return newFFMPEGFile;
       }
     }
 
@@ -199,7 +182,7 @@ namespace playlistItems
     }
 
     // Unknown file type extension. Ask the user as what file type he wants to open this file.
-    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File (Raw Annex-B)" << "FFmpeg file" << "Statistics File" << "VTM/BMS Statistics File";
+    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "Compressed file" << "Statistics File CSV" << "Statistics File VTMBMS";
     bool ok;
     QString asType = QInputDialog::getItem(parent, "Select file type", "The file type could not be determined from the file extension. Please select the type of the file.", types, 0, false, &ok);
     if (ok && !asType.isEmpty())
@@ -213,26 +196,17 @@ namespace playlistItems
       }
       else if (asType == types[2])
       {
-        // HEVC file
-        playlistItemRawCodedVideo::decoderEngine engine = playlistItemRawCodedVideo::askForDecoderEngine(parent);
-        if (engine == playlistItemRawCodedVideo::decoderInvalid)
-          return nullptr;
-        playlistItemRawCodedVideo *newRawCodedVideo = new playlistItemRawCodedVideo(fileName, 0, engine);
+        // Compressed video
+        playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0);
         return newRawCodedVideo;
       }
       else if (asType == types[3])
       {
-        // FFmpeg file
-        playlistItemFFmpegFile *newFFmpegFile = new playlistItemFFmpegFile(fileName);
-        return newFFmpegFile;
-      }
-      else if (asType == types[4])
-      {
         // Statistics File
-        playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
+        playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsCSVFile(fileName);
         return newStatFile;
       }
-      else if (asType == types[5])
+      else if (asType == types[4])
       {
         // Statistics File
         playlistItemStatisticsVTMBMSFile *newStatFile = new playlistItemStatisticsVTMBMSFile(fileName);
@@ -256,18 +230,13 @@ namespace playlistItems
       // This is a playlistItemYUVFile. Create a new one and add it to the playlist
       newItem = playlistItemRawFile::newplaylistItemRawFile(elem, filePath);
     }
-    // For backwards compability (the playlistItemRawCodedVideo used to be called playlistItemHEVCFile)
-    else if (elem.tagName() == "playlistItemHEVCFile" || elem.tagName() == "playlistItemRawCodedVideo")
+    // For backwards compability (playlistItemCompressedFile used to be called playlistItemRawCodedVideo or playlistItemHEVCFile)
+    else if (elem.tagName() == "playlistItemCompressedVideo" || elem.tagName() == "playlistItemCompressedFile" || elem.tagName() == "playlistItemFFmpegFile" || elem.tagName() == "playlistItemHEVCFile" || elem.tagName() == "playlistItemRawCodedVideo")
     {
       // Load the playlistItemHEVCFile
-      newItem = playlistItemRawCodedVideo::newplaylistItemRawCodedVideo(elem, filePath);
+      newItem = playlistItemCompressedVideo::newPlaylistItemCompressedVideo(elem, filePath);
     }
-    else if (elem.tagName() == "playlistItemFFmpegFile")
-    {
-      // Load the playlistItemFFmpegFile
-      newItem = playlistItemFFmpegFile::newplaylistItemFFmpegFile(elem, filePath);
-    }
-    else if (elem.tagName() == "playlistItemStatisticsCSVFile")
+    else if (elem.tagName() == "playlistItemStatisticsFile" || elem.tagName() == "playlistItemStatisticsCSVFile")
     {
       // Load the playlistItemStatisticsFile
       newItem = playlistItemStatisticsCSVFile::newplaylistItemStatisticsCSVFile(elem, filePath);

@@ -73,6 +73,9 @@ public:
   void setName(const QString &name);
 
   // Every playlist item has a unique (within the playlist) ID
+  // TODO: This ID is also saved in the playlist. We can append playlists to existing 
+  //       playlists. In this case, we could get items with identical IDs. This must not happen.
+  //       I think we need the playlist item to generate a truely unique ID here (using a timecode and everything).
   unsigned int getID() const { return id; }
   // If an item is loaded from a playlist, it also has a palylistID (which it was given when the playlist was saved)
   unsigned int getPlaylistID() const { return playlistID; }
@@ -212,6 +215,11 @@ public:
   // Using the set start frame, get the index within the item.
   int getFrameIdxInternal(int frameIdx) const { return frameIdx + startEndFrame.first; }
   int getFrameIdxExternal(int frameIdxInternal) const { return frameIdxInternal - startEndFrame.first; }
+
+  // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
+  void saveCenterOffset(QPoint centerOffset, bool primaryView) { savedCenterOffset[primaryView ? 0 : 1] = centerOffset; }
+  void saveZoomFactor(double zoom, bool primaryView) { savedZoom[primaryView ? 0 : 1] = zoom; }
+  void getZoomAndPosition(QPoint &centerOffset, double &zoom, bool primaryView) { centerOffset = savedCenterOffset[primaryView ? 0 : 1]; zoom = savedZoom[primaryView ? 0 : 1]; }
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -242,11 +250,11 @@ protected:
   void preparePropertiesWidget(const QString &name);
 
   // Is caching enabled for this item? This can be changed at any point.
-  bool cachingEnabled;
+  bool cachingEnabled {false};
   
   // Item is being deleted. We might need to wait until all caching/loading jobs for the item are finished
   // before we can actually delete it. An item that is tagged for deletion should not be cached/loaded anymore.
-  bool itemTaggedForDeletion;
+  bool itemTaggedForDeletion {false};
 
   // When saving the playlist, append the properties of the playlist item (the id)
   void appendPropertiesToPlaylist(QDomElementYUView &d) const;
@@ -258,12 +266,12 @@ protected:
   void setType(playlistItemType newType);
 
   // ------ playlistItem_Indexed
-  double      frameRate;
-  int         sampling;
+  double      frameRate {DEFAULT_FRAMERATE};
+  int         sampling  {1};
   indexRange  startEndFrame;
 
   // ------ playlistItem_Static
-  double duration;    // The duration that this item is shown for
+  double duration {PLAYLISTITEMTEXT_DEFAULT_DURATION};    // The duration that this item is shown for
 
   // Create the playlist controls and return a pointer to the root layout
   QLayout *createPlaylistItemControls();
@@ -284,7 +292,11 @@ private:
   static unsigned int idCounter;
   unsigned int id;
   // The playlist ID is set if the item is loaded from a playlist. Don't forget to reset this after the playlist was loaded.
-  unsigned int playlistID;
+  unsigned int playlistID {0};
+
+  // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
+  QPoint savedCenterOffset[2];
+  double savedZoom[2] {1.0, 1.0};
 
   // The UI
   SafeUi<Ui::playlistItem> ui;

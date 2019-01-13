@@ -27,8 +27,8 @@ install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew link --force qt5; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh; fi
   # On linux, install the new g++ version
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq g++-6; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq g++-8; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90; fi
 
 script:
   # Run qmake and make

@@ -127,7 +127,7 @@ namespace YUV_Internals
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder=Order_YUV, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true), planeOrder(planeOrder), uvInterleaved(false) { setDefaultChromaOffset(); }
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false), uvInterleaved(false), packingOrder(packingOrder), bytePacking(bytePacking) { setDefaultChromaOffset(); }
     bool isValid() const;
-    qint64 bytesPerFrame(const QSize &frameSize) const;
+    int64_t bytesPerFrame(const QSize &frameSize) const;
     QString getName() const;
     int getSubsamplingHor() const;
     int getSubsamplingVer() const;
@@ -203,7 +203,7 @@ public:
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position. If th second item
   // cannot be cast to a videoHandlerYUV, we call the frameHandler::getPixelValues function.
-  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr, const int frameIdx1 = 0) Q_DECL_OVERRIDE;
+  virtual QStringPairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr, const int frameIdx1 = 0) Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
@@ -212,21 +212,21 @@ public:
   virtual QImage calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one YUV frame with the current format
-  virtual qint64 getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual int64_t getBytesPerFrame() const Q_DECL_OVERRIDE { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // If the sub format is "444" we will assume 4:4:4 input. Otherwise 4:2:0 will be assumed.
-  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.
-  virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, qint64 fileSize=-1) Q_DECL_OVERRIDE;
+  virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, int64_t fileSize=-1) Q_DECL_OVERRIDE;
 
   // Create the YUV controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
-  virtual QLayout *createYUVVideoHandlerControls(bool isSizeFixed=false);
+  virtual QLayout *createVideoHandlerControls(bool isSizeFixed=false) Q_DECL_OVERRIDE;
 
   // Get the name of the currently selected YUV pixel format
   virtual QString getRawYUVPixelFormatName() const { return srcPixelFormat.getName(); }
@@ -243,29 +243,13 @@ public:
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
   virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2 = nullptr, const bool markDifference = false, const int frameIdxItem1 = 0) Q_DECL_OVERRIDE;
 
-  // The Frame size is about to change. If this happens, our local buffers all need updating.
-  virtual void setFrameSize(const QSize &size) Q_DECL_OVERRIDE ;
-
-  // The buffer of the raw YUV data of the current frame (and its frame index)
-  // Before using the currentFrameRawYUVData, you have to check if the currentFrameRawYUVData_frameIdx is correct. If not,
-  // you have to call loadFrame() to load the frame and set it correctly.
-  QByteArray currentFrameRawYUVData;
-  int        currentFrameRawYUVData_frameIdx;
-
-  // A buffer with the raw YUV data (this is filled if signalRequesRawData() is emitted)
-  QByteArray rawYUVData;
-  int        rawYUVData_frameIdx;
-
-  // Invalidate all YUV related buffers. Then call the videoHandler::invalidateAllBuffers() function
-  virtual void invalidateAllBuffers() Q_DECL_OVERRIDE;
-
   // Load the given frame and convert it to image. After this, currentFrameRawYUVData and currentFrame will
   // contain the frame with the given frame index.
   virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false) Q_DECL_OVERRIDE;
 
   // If this is set, the pixel values drawn in the drawPixels function will be scaled according to the bit depth.
   // E.g: The bit depth is 8 and the pixel value is 127, then the value shown will be -1.
-  bool showPixelValuesAsDiff;
+  bool showPixelValuesAsDiff {false};
 
   QByteArray getDiffYUV() const;
 
@@ -273,19 +257,8 @@ public:
 
   bool getIs_YUV_diff() const;
 
-signals:
-
-  // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
-  // is emitted, the requested data should be in rawData and rawData_frameIdx should be identical to
-  // frameIndex. caching will signal if this call comes from a caching thread or not. If it does come
-  // from a caching thread, the result must be ready when the call to this function returns.
-  void signalRequestRawData(int frameIndex, bool caching);
-
 protected:
-
-  // Check if the current buffer for the raw YUV data (currentFrameRawYUVData) is up to date for the given frame index
-  virtual itemLoadingState needsLoadingRawValues(int frameIdx) Q_DECL_OVERRIDE { return (currentFrameRawYUVData_frameIdx == frameIdx) ? LoadingNotNeeded : LoadingNeeded; }
-
+  
   // How do we perform interpolation for the subsampled YUV formats?
   YUV_Internals::InterpolationMode interpolationMode;
 

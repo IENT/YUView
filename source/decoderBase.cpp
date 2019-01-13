@@ -47,57 +47,38 @@
 #define DEBUG_HEVCDECODERBASE if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
 #endif
 #else
-#define DEBUG_HEVCDECODERBASE(fmt,...) ((void)0)
+#define DEBUG_DECODERBASE(fmt,...) ((void)0)
 #endif
 
-decoderBase::decoderBase(bool cachingDecoder) :
-  decoderError(false),
-  parsingError(false),
-  internalsSupported(false),
-  nrSignalsSupported(1)
+decoderBase::decoderBase(bool cachingDecoder)
 {
-  retrieveStatistics = false;
-  statsCacheCurPOC = -1;
+  DEBUG_DECODERBASE("decoderBase::decoderBase create base%s", cachingDecoder ? " - caching" : "");
   isCachingDecoder = cachingDecoder;
-  decodeSignal = 0;
 
-  nrBitsC0 = -1;
-  pixelFormat = YUV_NUM_SUBSAMPLINGS;
-
-  // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
-  // When using the zoom box the getOneFrame function is called frequently so we
-  // keep this buffer to not decode the same frame over and over again.
-  currentOutputBufferFrameIndex = -1;
+  resetDecoder();
 }
 
-void decoderBase::setDecodeSignal(int signalID)
+void decoderBase::resetDecoder()
 {
-  if (nrSignalsSupported == 1)
-    return;
-
-  DEBUG_HEVCDECODERBASE("hmDecoder::setDecodeSignal old %d new %d", decodeSignal, signalID);
-
-  if (signalID != decodeSignal)
-  {
-    // A different signal was selected
-    decodeSignal = signalID;
-
-    // We will have to decode the current frame again to get the internals/statistics
-    // This can be done like this:
-    currentOutputBufferFrameIndex = -1;
-    // Now the next call to loadYUVFrameData will load the frame again...
-  }
+  DEBUG_DECODERBASE("decoderBase::resetDecoder");
+  decoderState = decoderNeedsMoreData;
+  statsCacheCurPOC = -1;
+  frameSize = QSize();
+  formatYUV = yuvPixelFormat();
+  rawFormat = raw_Invalid;
 }
 
-void decoderBase::setError(const QString &reason)
+statisticsData decoderBase::getStatisticsData(int typeIdx)
 {
-  decoderError = true;
-  errorString = reason;
+  if (!retrieveStatistics)
+    return statisticsData();
+
+  return curPOCStats[typeIdx];
 }
 
-void decoderBase::loadDecoderLibrary(QString specificLibrary)
+void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
 {
-  // Try to load the libde265 library from the current working directory
+  // Try to load the HM library from the current working directory
   // Unfortunately relative paths like this do not work: (at least on windows)
   // library.setFileName(".\\libde265");
 
@@ -111,6 +92,10 @@ void decoderBase::loadDecoderLibrary(QString specificLibrary)
   if (!libLoaded)
   {
     // Try various paths/names next
+    // If the file name is not set explicitly, QLibrary will try to open
+    // the decLibXXX.so file first. Since this has been compiled for linux
+    // it will fail and not even try to open the decLixXXX.dylib.
+    // On windows and linux ommitting the extension works
     QStringList libNames = getLibraryNames();
 
     // Get the additional search path from the settings
@@ -125,9 +110,9 @@ void decoderBase::loadDecoderLibrary(QString specificLibrary)
     QStringList const libPaths = QStringList()
       << searchPath
       << QDir::currentPath() + "/%1"
-      << QDir::currentPath() + "/libde265/%1"
+      << QDir::currentPath() + "/decoder/%1"
       << QCoreApplication::applicationDirPath() + "/%1"
-      << QCoreApplication::applicationDirPath() + "/libde265/%1"
+      << QCoreApplication::applicationDirPath() + "/decoder/%1"
       << "%1"; // Try the system directories.
 
     for (auto &libName : libNames)
@@ -148,15 +133,22 @@ void decoderBase::loadDecoderLibrary(QString specificLibrary)
   if (!libLoaded)
   {
     libraryPath.clear();
-    return setError(library.errorString());
+    QString error = "Error loading library: " + library.errorString() + "\n";
+    error += "We could not load one of the supported decoder library (";
+    QStringList libNames = getLibraryNames();
+    for (int i = 0; i < libNames.count(); i++)
+    {
+      if (i == 0)
+        error += libNames[0];
+      else
+        error += ", " + libNames[i];
+    }
+    error += ").\n";
+    error += "\n";
+    error += "We do not ship all of the decoder libraries.\n";
+    error += "You can find download links in Help->Downloads.";
+    return setError(error);
   }
 
   resolveLibraryFunctionPointers();
-}
-
-yuvPixelFormat decoderBase::getYUVPixelFormat()
-{
-  if (pixelFormat >= YUV_444 && pixelFormat <= YUV_400 && nrBitsC0 >= 8 && nrBitsC0 <= 16)
-    return yuvPixelFormat(pixelFormat, nrBitsC0);
-  return yuvPixelFormat();
 }

@@ -38,8 +38,6 @@
 #include "fileSource.h"
 #include "playlistItemWithVideo.h"
 #include "typedef.h"
-#include "videoHandlerRGB.h"
-#include "videoHandlerYUV.h"
 
 class playlistItemRawFile : public playlistItemWithVideo
 {
@@ -57,7 +55,7 @@ public:
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Properties" : "RGB File Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return (rawFormat == raw_YUV) ? "YUV File Properties" : "RGB File Properties"; }
 
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemRawFile *newplaylistItemRawFile(const QDomElementYUView &root, const QString &playlistFilePath);
@@ -93,34 +91,22 @@ protected:
   
 private:
 
-  typedef enum
-  {
-    YUV,
-    RGB
-  } RawFormat;
-  RawFormat rawFormat;
-
   // Overload from playlistItem. Create a properties widget custom to the RawFile
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-  virtual qint64 getNumberFrames() const;
+  virtual int64_t getNumberFrames() const;
   
   fileSource dataSource;
-  
-  videoHandlerYUV *getYUVVideo() { return dynamic_cast<videoHandlerYUV*>(video.data()); }
-  videoHandlerRGB *getRGBVideo() { return dynamic_cast<videoHandlerRGB*>(video.data()); }
-  const videoHandlerYUV *getYUVVideo() const { return dynamic_cast<const videoHandlerYUV*>(video.data()); }
-  const videoHandlerRGB *getRGBVideo() const { return dynamic_cast<const videoHandlerRGB*>(video.data()); }
 
-  qint64 getBytesPerFrame() const;
+  int64_t getBytesPerFrame() const { return video->getBytesPerFrame(); }
 
   // A y4m file is a raw YUV file but it adds a header (which has information about the YUV format)
   // and start indicators for every frame. This file will parse the header and save all the byte
   // offsets for each raw YUV frame.
   bool parseY4MFile();
   bool isY4MFile;
-  QList<quint64> y4mFrameIndices;
+  QList<uint64_t> y4mFrameIndices;
 };
 
 #endif // PLAYLISTITEMRAWFILE_H

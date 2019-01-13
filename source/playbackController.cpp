@@ -118,8 +118,8 @@ void PlaybackController::on_playPauseButton_clicked()
     fpsLabel->setStyleSheet("");
     splitViewPrimary->freezeView(false);
 
-    splitViewPrimary->update(false, false);
-    splitViewSeparate->update(false, false);
+    splitViewPrimary->update(false, true);
+    splitViewSeparate->update(false, true);
   }
   else
   {
@@ -353,11 +353,13 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
     updateFrameRange();
 
   // Check if the current frame is outside of the (new) allowed range
+  bool updated = false;
   if (currentFrameIdx > frameSlider->maximum())
-    setCurrentFrame(frameSlider->maximum());
+    updated = setCurrentFrame(frameSlider->maximum());
   else if (currentFrameIdx < frameSlider->minimum())
-    setCurrentFrame(frameSlider->minimum());
-  else if (redraw)
+    updated = setCurrentFrame(frameSlider->minimum());
+  
+  if (redraw && !updated)
   {
     splitViewPrimary->update(false, true);
     splitViewSeparate->update(false, true);
@@ -587,13 +589,13 @@ void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
 /* Set the value currentFrame to frame and update the value in the splinBox and the slider without
  * invoking any events from these controls. Also update the splitView.
 */
-void PlaybackController::setCurrentFrame(int frame, bool updateView)
+bool PlaybackController::setCurrentFrame(int frame, bool updateView)
 {
   if (frame == currentFrameIdx)
-    return;
+    return false;
   if (!currentItem[0] || (!currentItem[0]->isIndexedByFrame() && (!currentItem[1] || !currentItem[1]->isIndexedByFrame())))
     // Both items (that are selcted) are not indexed by frame.
-    return;
+    return false;
 
   DEBUG_PLAYBACK("PlaybackController::setCurrentFrame %d", frame);
 
@@ -609,5 +611,7 @@ void PlaybackController::setCurrentFrame(int frame, bool updateView)
     // Also update the view to display the new frame
     splitViewPrimary->update(true);
     splitViewSeparate->update();
+    return true;
   }
+  return false;
 }

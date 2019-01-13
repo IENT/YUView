@@ -34,7 +34,8 @@
 #define PLAYLISTITEMWITHVIDEO_H
 
 #include "playlistItem.h"
-#include "videoHandler.h"
+#include "videoHandlerRGB.h"
+#include "videoHandlerYUV.h"
 
 /* This class is a helper class that you can inherit from if your playlistItem uses a videoHandler. 
  * Here, we already define a lot of the forwards to the video handler. If you have multiple videos
@@ -59,19 +60,19 @@ public:
 
   // -- Caching
   // Cache the given frame
-  virtual void cacheFrame(int frameIdx, bool testMode) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video->cacheFrame(getFrameIdxInternal(frameIdx), testMode); }
+  virtual void cacheFrame(int frameIdx, bool testMode) Q_DECL_OVERRIDE { if (!cachingEnabled || unresolvableError) return; video->cacheFrame(getFrameIdxInternal(frameIdx), testMode); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE;
-  virtual int getNumberCachedFrames() const Q_DECL_OVERRIDE { return video->getNumberCachedFrames(); }
+  virtual int getNumberCachedFrames() const Q_DECL_OVERRIDE { return unresolvableError ? 0 : video->getNumberCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
-  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return video->getCachingFrameSize(); }
+  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return unresolvableError ? 0 : video->getCachingFrameSize(); }
   // Remove the given frame from the cache
-  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { video->removeFrameFromCache(getFrameIdxInternal(idx)); }
-  virtual void removeAllFramesFromCache() Q_DECL_OVERRIDE { video->removeAllFrameFromCache(); }
+  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { if (video) video->removeFrameFromCache(getFrameIdxInternal(idx)); }
+  virtual void removeAllFramesFromCache() Q_DECL_OVERRIDE { if (video) video->removeAllFrameFromCache(); }
   // This item is cachable, if caching is enabled and if the raw format is valid (can be cached).
-  virtual bool isCachable() const Q_DECL_OVERRIDE { return playlistItem::isCachable() && video->isFormatValid(); }
+  virtual bool isCachable() const Q_DECL_OVERRIDE { return !unresolvableError && playlistItem::isCachable() && video->isFormatValid(); }
 
-  // Load the frame in the video item. Emit signalItemChanged(true) when done.
+  // Load the frame in the video item. Emit signalItemChanged(true,false) when done. Always called from a thread.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
 
   // Is an image currently being loaded?
@@ -81,6 +82,14 @@ public:
 protected:
   // A pointer to the videHandler. In the derived class, don't foret to set this.
   QScopedPointer<videoHandler> video;
+
+  // The videoHandler can be a videoHandlerRGB or a videoHandlerYUV
+  RawFormat rawFormat;
+  // Get a raw pointer to either version of the videoHandler
+  videoHandlerYUV *getYUVVideo() { assert(rawFormat == raw_YUV); return dynamic_cast<videoHandlerYUV*>(video.data()); }
+  videoHandlerRGB *getRGBVideo() { assert(rawFormat == raw_RGB); return dynamic_cast<videoHandlerRGB*>(video.data()); }
+  const videoHandlerYUV *getYUVVideo() const { assert(rawFormat == raw_YUV); return dynamic_cast<const videoHandlerYUV*>(video.data()); }
+  const videoHandlerRGB *getRGBVideo() const { assert(rawFormat == raw_RGB); return dynamic_cast<const videoHandlerRGB*>(video.data()); }
 
   // Connect the basic signals from the video
   void connectVideo();

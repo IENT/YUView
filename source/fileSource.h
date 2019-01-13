@@ -69,21 +69,21 @@ public:
   // Pass on to srcFile
   virtual bool atEnd() const { return !isFileOpened ? true : srcFile.atEnd(); }
   QByteArray readLine() { return !isFileOpened ? QByteArray() : srcFile.readLine(); }
-  bool seek(qint64 pos) { return !isFileOpened ? false : srcFile.seek(pos); }
-  qint64 pos() { return !isFileOpened ? 0 : srcFile.pos(); }
+  virtual bool seek(int64_t pos) { return !isFileOpened ? false : srcFile.seek(pos); }
+  int64_t pos() { return !isFileOpened ? 0 : srcFile.pos(); }
 
   // Guess the format (width, height, frameTate...) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
   void formatFromFilename(QSize &frameSize, int &frameRate, int &bitDepth) const;
 
   // Get the file size in bytes
-  qint64 getFileSize() const { return !isFileOpened ? -1 : fileInfo.size(); }
+  int64_t getFileSize() const { return !isFileOpened ? -1 : fileInfo.size(); }
 
   // Read the given number of bytes starting at startPos into the QByteArray out
   // Resize the QByteArray if necessary. Return how many bytes were read.
-  qint64 readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrBytes);
+  int64_t readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes);
 #if SSE_CONVERSION
-  void readBytes(byteArrayAligned &data, qint64 startPos, qint64 nrBytes);
+  void readBytes(byteArrayAligned &data, int64_t startPos, int64_t nrBytes);
 #endif
 
   QString getAbsoluteFilePath() const { return fileInfo.absoluteFilePath(); }

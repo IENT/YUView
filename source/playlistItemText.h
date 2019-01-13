@@ -82,7 +82,6 @@ private:
   SafeUi<Ui::playlistItemText> ui;
 
 private slots:
-  // Slots for the controls (automatically connected by the UI)
   void on_selectFontButton_clicked();
   void on_selectColorButton_clicked();
   void on_textEdit_textChanged();

@@ -43,6 +43,7 @@
 // so that we can address all the positions in it with int (using such a large buffer is not a good
 // idea anyways)
 #define STAT_PARSING_BUFFER_SIZE 1048576
+#define STAT_MAX_STRING_SIZE 1<<28
 
 playlistItemStatisticsCSVFile::playlistItemStatisticsCSVFile(const QString &itemNameOrFileName)
   : playlistItemStatisticsFile(itemNameOrFileName)
@@ -100,7 +101,10 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
         // Less bytes than the maximum buffer size were read. The file is at the end.
         // This is the last run of the loop.
         fileAtEnd = true;
-
+      // a corrupted file may contain an arbitrary amount of non-\n symbols
+      // prevent lineBuffer overflow by dumping it for such cases
+      if (lineBuffer.size() > STAT_MAX_STRING_SIZE)
+        lineBuffer.clear(); // prevent an overflow here
       for (int i = 0; i < bufferSize; i++)
       {
         // Search for '\n' newline characters
@@ -200,8 +204,10 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
           lineBufferStartPos = bufferStartPos + i + 1;
         }
         else
+        {
           // No newline character found
           lineBuffer.append(inputBuffer.at(i));
+        }
       }
 
       bufferStartPos += bufferSize;
@@ -216,15 +222,15 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
   } // try
   catch (const char *str)
   {
-    std::cerr << "Error while parsing meta data: " << str << '\n';
+    std::cerr << "Error while parsing meta data: " << str << "\n";
     parsingError = QString("Error while parsing meta data: ") + QString(str);
     emit signalItemChanged(false, RECACHE_NONE);
     return;
   }
-  catch (...)
+  catch (const std::exception& ex)
   {
-    std::cerr << "Error while parsing meta data.";
-    parsingError = QString("Error while parsing meta data.");
+    std::cerr << "Error while parsing:" << ex.what() << "\n";
+    parsingError = QString("Error while parsing: ") + QString(ex.what());
     emit signalItemChanged(false, RECACHE_NONE);
     return;
   }
@@ -374,7 +380,7 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
         int width = rowItemList[4].toInt();
         int height = rowItemList[5].toInt();
         if (width > 0 && height > 0)
-          statSource.statFrameSize = QSize(width, height);
+          statSource.setFrameSize(QSize(width, height));
         if (rowItemList[6].toDouble() > 0.0)
           frameRate = rowItemList[6].toDouble();
       }
@@ -478,7 +484,7 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
       int height = rowItemList[4].toUInt();
 
       // Check if block is within the image range
-      if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.statFrameSize.width() || posY + height > statSource.statFrameSize.height()))
+      if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.getFrameSize().width() || posY + height > statSource.getFrameSize().height()))
         // Block not in image. Warn about this.
         blockOutsideOfFrame_idx = frameIdxInternal;
 

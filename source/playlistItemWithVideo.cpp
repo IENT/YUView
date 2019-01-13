@@ -41,12 +41,14 @@
 #endif
 
 playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName, playlistItemType type)
- : playlistItem(itemNameOrFileName, type), video(nullptr) 
+ : playlistItem(itemNameOrFileName, type)
 {
   // Nothing is currently being loaded
   isFrameLoading = false;
   isFrameLoadingDoubleBuffer = false;
   unresolvableError = false;
+  // No videoHandler is allocated yet. Don't forget to do this in derived classes.
+  rawFormat = raw_Invalid;
 };
 
 void playlistItemWithVideo::connectVideo()
@@ -119,8 +121,11 @@ QList<int> playlistItemWithVideo::getCachedFrames() const
 {
   // Convert indices from internal to external indices
   QList<int> retList;
-  QList<int> internalIndices = video->getCachedFrames();
-  for (int i : internalIndices)
-    retList.append(getFrameIdxExternal(i));
+  if (video)
+  {
+    QList<int> internalIndices = video->getCachedFrames();
+    for (int i : internalIndices)
+      retList.append(getFrameIdxExternal(i));
+  }
   return retList;
 }

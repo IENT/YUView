@@ -65,11 +65,13 @@ private slots:
   void on_pushButtonLibde265SelectFile_clicked();
   void on_pushButtonlibHMSelectFile_clicked();
   void on_pushButtonLibJEMSelectFile_clicked();
+  void on_pushButtonLibDav1dSelectFile_clicked();
   void on_pushButtonFFMpegSelectFile_clicked();
   void on_pushButtonDecoderClearPath_clicked() { ui.lineEditDecoderPath->clear(); }
   void on_pushButtonLibde265ClearFile_clicked() { ui.lineEditLibde265File->clear(); }
   void on_pushButtonlibHMClearFile_clicked() { ui.lineEditLibHMFile->clear(); }
   void on_pushButtonLibJEMClearFile_clicked() { ui.lineEditLibJEMFile->clear(); }
+  void on_pushButtonLibDav1dClearFile_clicked() { ui.lineEditLibDav1d->clear(); }
   void on_pushButtonFFMpegClearFile_clicked() { ui.lineEditAVFormat->clear(); ui.lineEditAVCodec->clear(); ui.lineEditAVUtil->clear(); ui.lineEditSWResample->clear(); }
 
   // Save/Load buttons

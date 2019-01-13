@@ -66,7 +66,8 @@ public:
   // Get the currently shown frame index
   int getCurrentFrame() const { return currentFrameIdx; }
   // Set the current frame in the controls and update the splitView without invoking more events from the controls.
-  void setCurrentFrame(int frame, bool updateView=true);
+  // Return if an update was performed.
+  bool setCurrentFrame(int frame, bool updateView=true);
 
   // Using the currentFrameIdx and the repreat mode, calculate the next frame index.
   // -1: The next frame is the first fame of the next item.

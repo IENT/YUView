@@ -287,7 +287,7 @@ QImage frameHandler::calculateDifference(frameHandler *item2, const int frameIdx
   QImage diffImg(width, height, platformImageFormat());
 
   // Also calculate the MSE while we're at it (R,G,B)
-  qint64 mseAdd[3] = {0, 0, 0};
+  int64_t mseAdd[3] = {0, 0, 0};
 
   for (int y = 0; y < height; y++)
   {
@@ -350,7 +350,7 @@ bool frameHandler::isPixelDark(const QPoint &pixelPos)
   return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
 }
 
-ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
+QStringPairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
 {
   Q_UNUSED(frameIdx);
   Q_UNUSED(frameIdx1); 
@@ -359,16 +359,16 @@ ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx,
   int height = (item2) ? qMin(frameSize.height(), item2->frameSize.height()) : frameSize.height();
 
   if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-    return ValuePairList();
+    return QStringPairList();
 
   // Is the format (of both items) valid?
   if (!isFormatValid())
-    return ValuePairList();
+    return QStringPairList();
   if (item2 && !item2->isFormatValid())
-    return ValuePairList();
+    return QStringPairList();
 
   // Get the RGB values from the image
-  ValuePairList values;
+  QStringPairList values;
 
   if (item2)
   {
@@ -380,17 +380,17 @@ ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx,
     int g = int(qGreen(pixel1)) - int(qGreen(pixel2));
     int b = int(qBlue(pixel1)) - int(qBlue(pixel2));
 
-    values.append(ValuePair("R", QString::number(r)));
-    values.append(ValuePair("G", QString::number(g)));
-    values.append(ValuePair("B", QString::number(b)));
+    values.append(QStringPair("R", QString::number(r)));
+    values.append(QStringPair("G", QString::number(g)));
+    values.append(QStringPair("B", QString::number(b)));
   }
   else
   {
     // No second item. Return the RGB values of this item.
     QRgb val = getPixelVal(pixelPos);
-    values.append(ValuePair("R", QString::number(qRed(val))));
-    values.append(ValuePair("G", QString::number(qGreen(val))));
-    values.append(ValuePair("B", QString::number(qBlue(val))));
+    values.append(QStringPair("R", QString::number(qRed(val))));
+    values.append(QStringPair("G", QString::number(qGreen(val))));
+    values.append(QStringPair("B", QString::number(qBlue(val))));
   }
 
   return values;

@@ -56,6 +56,7 @@ public:
 
   // Do we need to load the given frame first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE { return difference.needsLoading(getFrameIdxInternal(frameIdx), loadRawData); }
+  // This is part of the caching interface. The loadFrame function is always called from a different thread.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isDifferenceLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isDifferenceLoadingToDoubleBuffer; }

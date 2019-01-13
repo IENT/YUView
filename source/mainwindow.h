@@ -63,6 +63,9 @@ public:
   // The application was restarted with elevated rights. Force an update now.
   // This is a NO-OP on platforms other than windows.
   void forceUpdateElevated() { updater->forceUpdateElevated(); }
+
+  // Get the main window from the QApplication
+  static QWidget *getMainWindow();
   
 public slots:
   void loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles(files); }

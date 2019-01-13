@@ -37,6 +37,8 @@
 #include "typedef.h"
 #include "ui_playlistItemOverlay.h"
 
+#include <QGridLayout>
+
 class playlistItemOverlay : public playlistItemContainer
 {
   Q_OBJECT
@@ -71,11 +73,19 @@ public:
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
-protected slots:
-  void controlChanged(int idx);
-  void childChanged(bool redraw, recacheIndicator recache) Q_DECL_OVERRIDE;
+  void guessBestLayout();
 
 private:
+
+  enum layoutModeEnum
+  {
+    OVERLAY,
+    ARANGE,
+    CUSTOM
+  };
+  layoutModeEnum layoutMode {OVERLAY};
+
+  void onGroupBoxToggled(int idx, bool on);
 
   // Overload from playlistItem. Create a properties widget custom to the playlistItemOverlay
   // and set propertiesWidget to point to it.
@@ -83,19 +93,31 @@ private:
 
   SafeUi<Ui::playlistItemOverlay_Widget> ui;
 
-  int alignmentMode;
-  QPoint manualAlignment;
+  QRect               boundingRect;    //< The bounding rect of the complete overlay
+  QList<QRect>        childItemRects;  //< The position and size of each child item
+  QList<unsigned int> childItemsIDs;   //< The ID of every child item
 
-  // The layout of the child items
-  QRect boundingRect;
-  QList<QRect> childItems;
+  // Update the child item layout and this item's bounding QRect. If onlyIfItemsChanged is true the values
+  // will be updated only if the number or oder of items changed.
+  void updateLayout(bool onlyIfItemsChanged=true);
 
-  // Update the child item layout and this item's bounding QRect. If checkNumber is true the values
-  // will be updated only if the number of items in childItems and childCount() disagree (if new items
-  // were added to the overlay)
-  void updateLayout(bool checkNumber=true);
+  // The grid layout that contains all the custom positions
+  QGridLayout *customPositionGrid = nullptr;
+  void updateCustomPositionGrid();
+  void clear(int startRow);
+  QPoint getCutomPositionOfItem(int itemIndex) const;
 
-  QSpacerItem *vSpacer;
+  int overlayMode {0};
+  int arangementMode {0};
+  QMap<int, QPoint> customPositions;
+
+private slots:
+  void slotControlChanged();
+  void childChanged(bool redraw, recacheIndicator recache) Q_DECL_OVERRIDE;
+
+  void on_overlayGroupBox_toggled(bool on) { onGroupBoxToggled(0, on); }
+  void on_arangeGroupBox_toggled(bool on)  { onGroupBoxToggled(1, on); };
+  void on_customGroupBox_toggled(bool on)  { onGroupBoxToggled(2, on); };
 };
 
 #endif // PLAYLISTITEMOVERLAY_H

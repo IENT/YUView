@@ -76,7 +76,6 @@ bool fileSource::openFile(const QString &filePath)
 
   // Install a watcher for the file (if file watching is active)
   updateFileWatchSetting();
-
   fileChanged = false;
 
   return true;
@@ -84,7 +83,7 @@ bool fileSource::openFile(const QString &filePath)
 
 #if SSE_CONVERSION
 // Resize the target array if necessary and read the given number of bytes to the data array
-void fileSource::readBytes(byteArrayAligned &targetBuffer, qint64 startPos, qint64 nrBytes)
+void fileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
   if(!isOk())
     return;
@@ -98,7 +97,7 @@ void fileSource::readBytes(byteArrayAligned &targetBuffer, qint64 startPos, qint
 #endif
 
 // Resize the target array if necessary and read the given number of bytes to the data array
-qint64 fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrBytes)
+int64_t fileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
   if(!isOk())
     return 0;
@@ -170,9 +169,9 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
       // The regular expressions to match. They are sorted from most detailed to least so that the most
       // detailed ones are tested first.
       QStringList regExprList;
-      regExprList << "([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)b?[\\._]";  // Something_2160x1440_60_8_more.yuv or Something_2160x1440_60_8b.yuv
-      regExprList << "([0-9]+)x([0-9]+)_([0-9]+)[\\._]";            // Something_2160x1440_60_more.yuv or Something_2160x1440_60.yuv
-      regExprList << "([0-9]+)x([0-9]+)[\\._]";                    // Something_2160x1440_more.yuv or Something_2160x1440.yuv
+      regExprList << "([0-9]+)x([0-9]+)_([0-9]+)(?:Hz)?_([0-9]+)b?[\\._]";    // Something_2160x1440_60_8_more.yuv or Something_2160x1440_60_8b.yuv or Something_2160x1440_60Hz_8_more.yuv
+      regExprList << "([0-9]+)x([0-9]+)_([0-9]+)(?:Hz)?[\\._]";               // Something_2160x1440_60_more.yuv or Something_2160x1440_60.yuv
+      regExprList << "([0-9]+)x([0-9]+)[\\._]";                               // Something_2160x1440_more.yuv or Something_2160x1440.yuv
 
       for (QString regExpStr : regExprList)
       {

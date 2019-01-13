@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>238</width>
-    <height>141</height>
+    <width>231</width>
+    <height>188</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -96,14 +96,46 @@
     </widget>
    </item>
    <item>
-    <widget class="QCheckBox" name="alphaChannelCheckBox">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;There is an alpha channel. After the color channels, another channel with alpha values is read.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
+    <widget class="QGroupBox" name="alphaChannelGroupBox">
+     <property name="title">
       <string>Alpha Channel</string>
      </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QRadioButton" name="afterRGBRadioButton">
+        <property name="text">
+         <string>After RGB data (e.g. RGBA)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="beforeRGBRadioButton">
+        <property name="text">
+         <string>Before RGB data (e.g. ARGB)</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -121,7 +153,9 @@
   <tabstop>rgbOrderComboBox</tabstop>
   <tabstop>bitDepthSpinBox</tabstop>
   <tabstop>planarCheckBox</tabstop>
-  <tabstop>alphaChannelCheckBox</tabstop>
+  <tabstop>alphaChannelGroupBox</tabstop>
+  <tabstop>afterRGBRadioButton</tabstop>
+  <tabstop>beforeRGBRadioButton</tabstop>
  </tabstops>
  <resources/>
  <connections>

@@ -112,15 +112,12 @@ private:
   playlistItem *plItem;
 };
 
-PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) :
-  QTreeWidget(parent),
-  ignoreSlotSelectionChanged(false)
+PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
   setDragEnabled(true);
   setDropIndicatorShown(true);
   setDragDropMode(QAbstractItemView::InternalMove);
   setSortingEnabled(true);
-  p_isSaved = true;
   setContextMenuPolicy(Qt::DefaultContextMenu);
 
   setColumnCount(2);
@@ -134,6 +131,16 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) :
   //header()->resizeSection(1, 10);
 
   connect(this, &PlaylistTreeWidget::itemSelectionChanged, this, &PlaylistTreeWidget::slotSelectionChanged);
+  connect(&autosaveTimer, &QTimer::timeout, this, &PlaylistTreeWidget::autoSavePlaylist);
+}
+
+PlaylistTreeWidget::~PlaylistTreeWidget()
+{
+  // This is a conventional quit. Remove the automatically saved playlist.
+  autosaveTimer.stop();
+  QSettings settings;
+  if (settings.contains("Autosaveplaylist"))
+    settings.remove("Autosaveplaylist");
 }
 
 playlistItem* PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
@@ -193,7 +200,7 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
     }
     event->acceptProposedAction();
     // the playlist has been modified and changes are not saved
-    p_isSaved = false;
+    isSaved = false;
 
     // Load the files to the playlist
     loadFiles(fileList);
@@ -331,6 +338,7 @@ void PlaylistTreeWidget::addOverlayItem()
     }
   }
 
+  newOverlay->guessBestLayout();
   appendNewItem(newOverlay);
   setCurrentItem(newOverlay);
 }
@@ -698,7 +706,7 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
 
         // Add the file as one of the recently openend files.
         addFileToRecentFileSetting(filePath);
-        p_isSaved = false;
+        isSaved = false;
       }
     }
   }
@@ -726,21 +734,8 @@ void PlaylistTreeWidget::addFileToRecentFileSetting(const QString &fileName)
   settings.setValue("recentFileList", files);
 }
 
-void PlaylistTreeWidget::savePlaylistToFile()
+QString PlaylistTreeWidget::getPlaylistString(QDir dirName)
 {
-  // ask user for file location
-  QSettings settings;
-
-  QString filename = QFileDialog::getSaveFileName(this, tr("Save Playlist"), settings.value("LastPlaylistPath").toString(), tr("Playlist Files (*.yuvplaylist)"));
-  if (filename.isEmpty())
-    return;
-  if (!filename.endsWith(".yuvplaylist", Qt::CaseInsensitive))
-    filename += ".yuvplaylist";
-
-  // remember this directory for next time
-  QDir dirName(filename.section('/', 0, -2));
-  settings.setValue("LastPlaylistPath", dirName.path());
-
   // Create the XML document structure
   QDomDocument document;
   document.appendChild(document.createProcessingInstruction(QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
@@ -762,15 +757,33 @@ void PlaylistTreeWidget::savePlaylistToFile()
   plist.appendChild(states);
   stateHandler->savePlaylist(states);
 
+  return document.toString();
+}
+
+void PlaylistTreeWidget::savePlaylistToFile()
+{
+  // ask user for file location
+  QSettings settings;
+
+  QString filename = QFileDialog::getSaveFileName(this, tr("Save Playlist"), settings.value("LastPlaylistPath").toString(), tr("Playlist Files (*.yuvplaylist)"));
+  if (filename.isEmpty())
+    return;
+  if (!filename.endsWith(".yuvplaylist", Qt::CaseInsensitive))
+    filename += ".yuvplaylist";
+
+  // remember this directory for next time
+  QDir dirName(filename.section('/', 0, -2));
+  settings.setValue("LastPlaylistPath", dirName.path());
+
   // Write the XML structure to file
   QFile file(filename);
   file.open(QIODevice::WriteOnly | QIODevice::Text);
   QTextStream outStream(&file);
-  outStream << document.toString();
+  outStream << getPlaylistString(dirName);
   file.close();
 
   // We saved the playlist
-  p_isSaved = true;
+  isSaved = true;
 }
 
 bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
@@ -807,7 +820,12 @@ bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
 
   // Load the playlist file to buffer
   QByteArray fileBytes = file.readAll();
-  QBuffer buffer(&fileBytes);
+  return loadPlaylistFromByteArray(fileBytes, filePath);
+}
+
+bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString filePath)
+{
+  QBuffer buffer(&data);
 
   // Try to open the DOM document
   QDomDocument doc;
@@ -818,10 +836,6 @@ bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
   if (!success)
   {
     QMessageBox::critical(this, "Error loading playlist.", "The playlist file format could not be recognized.");
-    /*qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: Could not parse PList file!";
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error message: " << errorMessage;
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error line: " << errorLine;
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error column: " << errorColumn;*/
     return false;
   }
 
@@ -927,6 +941,31 @@ void PlaylistTreeWidget::updateSettings()
   }
 }
 
+bool PlaylistTreeWidget::isAutosaveAvailable()
+{
+  QSettings settings;
+  return settings.contains("Autosaveplaylist");
+}
+
+void PlaylistTreeWidget::loadAutosavedPlaylist()
+{
+  QSettings settings;
+  if (!settings.contains("Autosaveplaylist"))
+    return;
+
+  QByteArray compressedPlaylist = settings.value("Autosaveplaylist").toByteArray();
+  QByteArray uncompressedPlaylist = qUncompress(compressedPlaylist);
+  loadPlaylistFromByteArray(uncompressedPlaylist, QDir::current().absolutePath());
+
+  dropAutosavedPlaylist();
+}
+
+void PlaylistTreeWidget::dropAutosavedPlaylist()
+{
+  QSettings settings;
+  settings.remove("Autosaveplaylist");
+}
+
 void PlaylistTreeWidget::cloneSelectedItem()
 {
   QList<QTreeWidgetItem*> items = selectedItems();
@@ -955,6 +994,29 @@ void PlaylistTreeWidget::cloneSelectedItem()
       }
     }
   }
+}
+
+void PlaylistTreeWidget::autoSavePlaylist()
+{
+  QSettings settings;
+  if (topLevelItemCount() == 0)
+  {
+    // Empty playlist
+    if (settings.contains("Autosaveplaylist"))
+      settings.remove("Autosaveplaylist");
+  }
+  else
+  {
+    QString playlistAsString = getPlaylistString(QDir::current());
+    QByteArray compressedPlaylist = qCompress(playlistAsString.toLatin1());
+    settings.setValue("Autosaveplaylist", compressedPlaylist);
+  }
+}
+
+void PlaylistTreeWidget::startAutosaveTimer()
+{
+  autosaveTimer.setTimerType(Qt::VeryCoarseTimer);
+  autosaveTimer.start(10000);
 }
 
 void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *item2)

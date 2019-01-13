@@ -64,6 +64,12 @@ public:
   bool isInCache(int idx) const;
   virtual void removeFrameFromCache(int frameIdx);
   virtual void removeAllFrameFromCache();
+
+  // Get the number of bytes for one frame (RGB or YUV) with the current format (if this video handler uses raw data)
+  virtual int64_t getBytesPerFrame() const { return -1; }
+
+  // The Frame size is about to change. If this happens, our local buffers all need updating.
+  virtual void setFrameSize(const QSize &size) Q_DECL_OVERRIDE ;
   
   // Same as the calculateDifference in frameHandler. For a video we have to make sure that the right frame is loaded first.
   virtual QImage calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
@@ -71,11 +77,11 @@ public:
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw data in the right raw format.
   // If a file size is given, it is tested if the guessed format and the file size match. You can overload this
   // for any specific raw format. The default implementation does nothing.
-  virtual void setFormatFromCorrelation(const QByteArray &rawData, qint64 fileSize=-1) { Q_UNUSED(rawData); Q_UNUSED(fileSize); }
+  virtual void setFormatFromCorrelation(const QByteArray &rawData, int64_t fileSize=-1) { Q_UNUSED(rawData); Q_UNUSED(fileSize); }
 
   // If you know the frame size and the bit depth and the file size then we can try to guess
   // the format from that. You can override this for a specific raw format. The default implementation does nothing.
-  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo) { Q_UNUSED(size); Q_UNUSED(bitDepth); Q_UNUSED(fileSize); Q_UNUSED(fileInfo); }
+  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo) { Q_UNUSED(size); Q_UNUSED(bitDepth); Q_UNUSED(fileSize); Q_UNUSED(fileInfo); }
 
   // The input frame buffer. After the signal signalRequestFrame(int) is emitted, the corresponding frame should be in here and
   // requestedFrame_idx should be set.
@@ -84,7 +90,7 @@ public:
 
   // If reloading a raw file (because it changed), this function will clear all buffers (also the cache). With the next drawFrame(),
   // the data will be reloaded from file.
-  virtual void invalidateAllBuffers();
+  void invalidateAllBuffers();
 
   // The user changed the frame. Do we need to load something before we can draw it? Do we need to update the double buffer?
   // loadRawValues: Do we also need to update the buffer of the raw values because they will be drawn?
@@ -100,6 +106,23 @@ public:
 
   // Set the image in the double buffer as the current image. After this, a new image can be loaded to the double buffer.
   void activateDoubleBuffer();
+
+  // Create the controls for this videoHandler and return a pointer to the layout (nullptr if the handler has no controls).
+  // isSizeFixed: For example a YUV file does not have a fixed format (the user can change this),
+  // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
+  virtual QLayout *createVideoHandlerControls(bool isSizeFixed=false) { Q_UNUSED(isSizeFixed); return nullptr; }
+
+  // TODO: Explain better what the difference between these two is (currentFrameRawData and rawData)
+
+  // The buffer of the raw data (RGB or YUV) of the current frame (and its frame index)
+  // Before using the currentFrameRawData, you have to check if the currentFrameRawData_frameIdx is correct. If not,
+  // you have to call loadFrame() to load the frame and set it correctly.
+  QByteArray currentFrameRawData;
+  int        currentFrameRawData_frameIdx;
+
+  // A buffer with the raw RGB data (this is filled if signalRequestRawData() is emitted)
+  QByteArray rawData;
+  int        rawData_frameIdx;
   
 signals:
 
@@ -109,17 +132,24 @@ signals:
 
   // The video handler requests a certain frame to be loaded. After this signal is emitted, the frame should be in requestedFrame.
   void signalRequestFrame(int frameIdx, bool caching);
+
+  // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
+  // is emitted, the requested data should be in rawYUVData and rawYUVData_frameIdx should be identical to
+  // frameIndex. caching will signal if this call comes from a caching thread or not. If it does come
+  // from a caching thread, the result must be ready when the call to this function returns.
+  void signalRequestRawData(int frameIndex, bool caching);
     
 protected:
-
-  // --- Drawing: The current frame is kept in the frameHandler::currentImage. But if currentImageIdx is not identical to
-  // the requested frame in the draw event, we will have to update currentImage.
-  int currentImageIdx;
 
   // Do we need to load the raw values (because they are drawn on screen?)
   // The videoHandler will draw the pixel values (drawPixelValues()) using the 8bit QImage currentImage so 
   // no loading is needed. However, the videoHandlerRGB or YUV may have to load the raw values from the file.
-  virtual itemLoadingState needsLoadingRawValues(int frameIdx) { Q_UNUSED(frameIdx); return LoadingNotNeeded; }
+  // Check if the current buffer for the raw data (currentFrameRawData) is up to date for the given frame index
+  itemLoadingState needsLoadingRawValues(int frameIdx) { return (currentFrameRawData_frameIdx == frameIdx) ? LoadingNotNeeded : LoadingNeeded; }
+
+  // --- Drawing: The current frame is kept in the frameHandler::currentImage. But if currentImageIdx is not identical to
+  // the requested frame in the draw event, we will have to update currentImage.
+  int currentImageIdx;
 
   // As the frameHandler implementations, we get the pixel values from currentImage. For a video, however, we
   // have to first check if currentImage contains the correct frame.

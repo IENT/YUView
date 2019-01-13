@@ -7,29 +7,35 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
+    source/bitstreamAnalysisDialog.cpp \
     source/decoderBase.cpp \
-    source/FFmpegDecoder.cpp \
-    source/FFMpegDecoderLibHandling.cpp \
+    source/decoderDav1d.cpp \
+    source/decoderFFmpeg.cpp \
+    source/decoderHM.cpp \
+    source/decoderLibde265.cpp \
+    source/FFMpegLibrariesHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceAnnexBFile.cpp \
-    source/fileSourceAVCAnnexBFile.cpp \
-    source/fileSourceHEVCAnnexBFile.cpp \
-    source/fileSourceJEMAnnexBFile.cpp \
+    source/fileSourceFFmpegFile.cpp \
     source/frameHandler.cpp \
-    source/hevcDecoderLibde265.cpp \
-    source/hevcDecoderHM.cpp \
-    source/hevcNextGenDecoderJEM.cpp \
     source/mainwindow.cpp \
+    source/parserAnnexB.cpp \
+    source/parserAnnexBAVC.cpp \
+    source/parserAnnexBHEVC.cpp \
+    source/parserAnnexBMpeg2.cpp \
+    source/parserAV1OBU.cpp \
+    source/parserAVFormat.cpp \
+    source/parserBase.cpp \
+    source/parserCommon.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
+    source/playlistItemCompressedVideo.cpp \
     source/playlistItemContainer.cpp \
     source/playlistItemDifference.cpp \
-    source/playlistItemFFmpegFile.cpp \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
     source/playlistItemOverlay.cpp \
-    source/playlistItemRawCodedVideo.cpp \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
     source/playlistItemStatisticsFile.cpp \
@@ -51,6 +57,7 @@ SOURCES += \
     source/typedef.cpp \
     source/updateHandler.cpp \
     source/videoCache.cpp \
+    source/videoCacheInfoWidget.cpp \
     source/videoHandler.cpp \
     source/videoHandlerDifference.cpp \
     source/videoHandlerRGB.cpp \
@@ -59,32 +66,39 @@ SOURCES += \
     source/yuviewapp.cpp
 
 HEADERS += \
+    source/bitstreamAnalysisDialog.h \
     source/decoderBase.h \
-    source/FFmpegDecoder.h \
-    source/FFMpegDecoderLibHandling.h \
-    source/FFMpegDecoderCommonDefs.h \
+    source/decoderDav1d.h \
+    source/decoderFFmpeg.h \
+    source/decoderHM.h \
+    source/decoderLibde265.h \
+    source/FFMpegLibrariesHandling.h \
+    source/FFMpegLibrariesTypes.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceAnnexBFile.h \
-    source/fileSourceAVCAnnexBFile.h \
-    source/fileSourceHEVCAnnexBFile.h \
-    source/fileSourceJEMAnnexBFile.h \
+    source/fileSourceFFmpegFile.h \
     source/frameHandler.h \
-    source/hevcDecoderHM.h \
-    source/hevcDecoderLibde265.h \
-    source/hevcNextGenDecoderJEM.h \
     source/labelElided.h \
     source/mainwindow.h \
     source/mainwindow_performanceTestDialog.h \
+    source/parserAnnexB.h \
+    source/parserAnnexBAVC.h \
+    source/parserAnnexBHEVC.h \
+    source/parserAnnexBMpeg2.h \
+    source/parserAV1OBU.h \
+    source/parserAVFormat.h \
+    source/parserBase.h \
+    source/parserCommon.h \
+    source/parserCommonMacros.h \
     source/playbackController.h \
     source/playlistItem.h \
+    source/playlistItemCompressedVideo.h \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
-    source/playlistItemFFmpegFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
     source/playlistItemOverlay.h \
-    source/playlistItemRawCodedVideo.h \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
     source/playlistItemStatisticsFile.h \
@@ -106,19 +120,31 @@ HEADERS += \
     source/typedef.h \
     source/updateHandler.h \
     source/videoCache.h \
+    source/videoCacheInfoWidget.h \
     source/videoHandler.h \
     source/videoHandlerDifference.h \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
-    source/yuviewapp.h
+    source/yuviewapp.h \
+    decoder/libde265/de265.h \
+    decoder/libde265/de265_internals.h \
+    decoder/libde265/de265-version.h \
+    decoder/dav1d/common.h \
+    decoder/dav1d/data.h \
+    decoder/dav1d/dav1d.h \
+    decoder/dav1d/headers.h \
+    decoder/dav1d/picture.h
 
 FORMS += \
+    ui/bitstreamAnalysisDialog.ui \
     ui/frameHandler.ui \
     ui/mainwindow.ui \
     ui/mainwindow_performanceTestDialog.ui \
     ui/playbackController.ui \
     ui/playlistItem.ui \
+    ui/playlistItemCompressedFile.ui \
+    ui/playlistItemCompressedFile_logDialog.ui \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
     ui/playlistItemHEVCFile.ui \
@@ -139,8 +165,9 @@ RESOURCES += \
     docs/resources.qrc
 
 INCLUDEPATH += \
-    libde265 \
-    source
+    decoder/libde265 \
+    decoder/dav1d \
+    source/
 
 OTHER_FILES += \
     HACKING.md \

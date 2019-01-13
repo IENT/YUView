@@ -121,7 +121,6 @@ void playlistItemContainer::updateChildList()
     delete childLayout;
 
   // Now add the statistics controls from all items that can provide statistics
-  bool statisticsPresent = false;
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *item = getChildPlaylistItem(i);
@@ -136,13 +135,8 @@ void playlistItemContainer::updateChildList()
 
       containerStatLayout.addWidget(line);
       containerStatLayout.addWidget(item->getStatisticsHandler()->getSecondaryStatisticsHandlerControls());
-      statisticsPresent = true;
     }
   }
-
-  if (statisticsPresent)
-    // Add a spacer item at the end
-    containerStatLayout.addSpacerItem(new QSpacerItem(0, 10, QSizePolicy::Ignored, QSizePolicy::MinimumExpanding));
 
   // Finally, we have to update the start/end Frame
   childChanged(false, RECACHE_NONE);

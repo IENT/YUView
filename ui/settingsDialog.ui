@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>525</width>
-    <height>492</height>
+    <width>535</width>
+    <height>605</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,42 +25,58 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QCheckBox" name="checkBoxWatchFiles">
-         <property name="toolTip">
-          <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string>General</string>
          </property>
-         <property name="whatsThis">
-          <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
-         </property>
-         <property name="text">
-          <string>Watch open files for changes</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="checkBoxContinuePlaybackNewSelection">
-         <property name="toolTip">
-          <string>Should playback continue if a new sequence is selected from the playlist?</string>
-         </property>
-         <property name="whatsThis">
-          <string>Should playback continue if a new sequence is selected from the playlist?</string>
-         </property>
-         <property name="text">
-          <string>Continue playback when a new sequence is selected</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="checkBoxAskToSave">
-         <property name="text">
-          <string>Ask to save playlist on exit</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="checkBoxContinuePlaybackNewSelection">
+            <property name="toolTip">
+             <string>Should playback continue if a new sequence is selected from the playlist?</string>
+            </property>
+            <property name="whatsThis">
+             <string>Should playback continue if a new sequence is selected from the playlist?</string>
+            </property>
+            <property name="text">
+             <string>Continue playback when a new sequence is selected</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="checkBoxAskToSave">
+            <property name="text">
+             <string>Ask to save playlist on exit</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="checkBoxWatchFiles">
+            <property name="toolTip">
+             <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
+            </property>
+            <property name="whatsThis">
+             <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
+            </property>
+            <property name="text">
+             <string>Watch open files for changes</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QCheckBox" name="checkBoxSavePositionPerItem">
+            <property name="text">
+             <string>Restore position and zoom factor for each item in the playlist</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
@@ -565,34 +581,15 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayoutDecoderPath">
-         <item>
-          <widget class="QLabel" name="labelDecoderPath">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="whatsThis">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
+        <layout class="QGridLayout" name="gridLayout_6">
+         <item row="1" column="0">
+          <widget class="QLabel" name="labelDefaultDecoder">
            <property name="text">
-            <string>Decoder Search Path</string>
+            <string>Default Decoder</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLineEdit" name="lineEditDecoderPath">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="whatsThis">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
+         <item row="0" column="2">
           <widget class="QPushButton" name="pushButtonDecoderSelectPath">
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -609,7 +606,36 @@
            </property>
           </widget>
          </item>
-         <item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="comboBoxDefaultDecoder"/>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="lineEditDecoderPath">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="whatsThis">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="labelDecoderPath">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="whatsThis">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Decoder Search Path</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="3">
           <widget class="QPushButton" name="pushButtonDecoderClearPath">
            <property name="text">
             <string/>
@@ -621,6 +647,9 @@
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayoutDecoderPath"/>
        </item>
        <item>
         <widget class="QGroupBox" name="groupBoxHEVC">
@@ -743,7 +772,7 @@
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QLabel" name="label">
+           <widget class="QLabel" name="labelLibJEM">
             <property name="text">
              <string>libJEM</string>
             </property>
@@ -769,6 +798,38 @@
           </item>
           <item row="2" column="3">
            <widget class="QPushButton" name="pushButtonLibJEMClearFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labellibDav1d">
+            <property name="text">
+             <string>libDav1d</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="lineEditLibDav1d"/>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButtonLibDav1dSelectFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QPushButton" name="pushButtonLibDav1dClearFile">
             <property name="text">
              <string/>
             </property>
@@ -950,9 +1011,6 @@
  </customwidgets>
  <tabstops>
   <tabstop>tabWidget</tabstop>
-  <tabstop>checkBoxWatchFiles</tabstop>
-  <tabstop>checkBoxContinuePlaybackNewSelection</tabstop>
-  <tabstop>checkBoxAskToSave</tabstop>
   <tabstop>comboBoxTheme</tabstop>
   <tabstop>comboBoxSplitLineStyle</tabstop>
   <tabstop>comboBoxMouseMode</tabstop>

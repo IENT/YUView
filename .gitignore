@@ -1,7 +1,12 @@
 Makefile
 .qmake.stash
 YUView.pro.user
+# Exclude files that will be created by visual studio
 *.VC.opendb
 *.VC.db
-
-build
+*.sln
+*.vcxproj*
+/.vs
+/build
+/GeneratedFiles
+/x64

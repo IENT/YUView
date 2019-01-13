@@ -51,6 +51,8 @@ videoHandler::videoHandler()
   currentImage_frameIndex = -1;
   doubleBufferImageFrameIdx = -1;
   cacheValid = true;
+  currentFrameRawData_frameIdx = -1;
+  rawData_frameIdx = -1;
 }
 
 void videoHandler::slotVideoControlChanged()
@@ -75,6 +77,18 @@ void videoHandler::slotVideoControlChanged()
   // The cache is invalid until the item is recached
   setCacheInvalid();
 }
+
+void videoHandler::setFrameSize(const QSize &size)
+{
+  if (size != frameSize)
+  {
+    currentFrameRawData_frameIdx = -1;
+    currentImageIdx = -1;
+  }
+
+  frameHandler::setFrameSize(size);
+}
+
 
 itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
 {
@@ -352,6 +366,9 @@ void videoHandler::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 
 void videoHandler::invalidateAllBuffers()
 {
+  currentFrameRawData_frameIdx = -1;
+  rawData_frameIdx = -1;
+
   // Check if the new resolution changed the number of frames in the sequence
   emit signalUpdateFrameLimits();
 

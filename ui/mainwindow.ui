@@ -59,7 +59,7 @@
      <x>0</x>
      <y>0</y>
      <width>1167</width>
-     <height>21</height>
+     <height>18</height>
     </rect>
    </property>
   </widget>
@@ -118,7 +118,7 @@
         </size>
        </property>
        <property name="textElideMode">
-        <enum>Qt::ElideMiddle</enum>
+        <enum>Qt::ElideLeft</enum>
        </property>
        <property name="sortingEnabled">
         <bool>false</bool>
@@ -229,8 +229,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>274</width>
-       <height>127</height>
+       <width>268</width>
+       <height>117</height>
       </rect>
      </property>
     </widget>
@@ -243,7 +243,7 @@
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents"/>
+   <widget class="VideoCacheInfoWidget" name="cachingInfoWidget"/>
   </widget>
   <widget class="QDockWidget" name="displayDockWidget">
    <property name="sizePolicy">
@@ -310,6 +310,12 @@
    <class>PropertiesWidget</class>
    <extends>QWidget</extends>
    <header>propertiesWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>VideoCacheInfoWidget</class>
+   <extends>QWidget</extends>
+   <header>videoCacheInfoWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

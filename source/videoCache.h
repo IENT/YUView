@@ -46,23 +46,6 @@
 class videoHandler;
 class videoCache;
 
-class videoCacheStatusWidget : public QWidget
-{
-  Q_OBJECT
-
-public:
-  videoCacheStatusWidget(QWidget *parent) : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0) {}
-  // Override the paint event
-  virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-  void updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
-private:
-  // The floating point values (0 to 1) of the end positions of the blocks to draw
-  QList<float> relativeValsEnd;
-  unsigned int cacheLevelMB;
-  unsigned int cacheRateInBytesPerMs;
-  qint64 cacheLevelMaxMB;
-};
-
 class videoCache : public QObject
 {
   Q_OBJECT
@@ -82,11 +65,14 @@ public:
   // item that can be visible at the same time.
   void loadFrame(playlistItem *item, int frameIndex, int loadingSlot);
 
-  // Setup the caching info dock widget here.
-  void setupControls(QDockWidget *dock);
-
   // Test the conversion speed with the currently selected item
   void testConversionSpeed();
+
+  QStringList getCacheStatusText();
+
+signals:
+  // This will be emitted on a regular basis to update the videoCacheInfoWidget
+  void updateCacheStatus();
 
 private slots:
 
@@ -110,9 +96,6 @@ private slots:
   // Something about the given playlistitem changed so that all items in the cache are now invalid.
   void itemNeedsRecache(playlistItem* item, recacheIndicator itemNeedsRecache);
 
-  // update the caching rate at the video cache controller every 1s
-  void updateCachingRate(unsigned int cacheRate) { cacheRateInBytesPerMs = cacheRate; }
-
   // Call the function playback->itemCachingFinished(item) when caching of this item is done.
   void watchItemForCachingFinished(playlistItem *item);
 
@@ -125,7 +108,7 @@ private:
   struct cacheJob
   {
     cacheJob() {}
-    cacheJob(playlistItem *item, indexRange range);
+    cacheJob(playlistItem *item, indexRange range) { plItem = item; frameRange = range; }
     QPointer<playlistItem> plItem;
     indexRange frameRange;
   };
@@ -146,30 +129,30 @@ private:
   // The queue with a list of frames/items that can be removed from the queue if necessary
   QQueue<plItemFrame> cacheDeQueue;
   // If a frame is removed can be determined by the following cache states:
-  qint64 cacheLevelMax;
-  qint64 cacheLevelCurrent;
+  int64_t cacheLevelMax;
+  int64_t cacheLevelCurrent;
 
   // Enqueue the job in the queue. If all frames within the range are already cached in the item, do nothing.
   void enqueueCacheJob(playlistItem* item, indexRange range);
 
-  unsigned int cacheRateInBytesPerMs;
-
   // Start the given number of worker threads (if caching is running, also new jobs will be pushed to the workers)
   void startWorkerThreads(int nrThreads);
   // If this number is > 0, the indicated number of threads will be deleted when a worker finishes (threadCachingFinished() is called)
-  int deleteNrThreads;
+  int deleteNrThreads {0};
   // How many threads are to be used when playback is running?
   int nrThreadsPlayback;
 
-  // Our tiny internal state machine for the worker
-  enum workerStateEnum
+  // Our tiny internal state machine for the workers
+  enum workersStateEnum
   {
-    workerIdle,         // The worker is idle. We can update the cacheQuene and go to workerRunning
-    workerRunning,      // The worker is running. If it finishes by itself goto workerIdle. If an interrupt is requested, goto workerInterruptRequested.
-    workerIntReqStop,   // The worker is running but an interrupt was requested. Next goto workerIdle.
-    workerIntReqRestart // The worker is running but an interrupt was requested because the queue needs updating. If the worker finished, we will update the queue and goto workerRunning.
+    workersIdle,         // The workers are idle. We can update the cacheQuene and go to workerRunning
+    workersRunning,      // The workers are running. If it finishes by itself goto workerIdle. If an interrupt is requested, goto workerInterruptRequested.
+    workersIntReqStop,   // The workers are running but an interrupt was requested. When all workers are done, goto workerIdle.
+    workersIntReqRestart // The workers are running but an interrupt was requested because the queue needs updating. When all workers finished, we will update the queue and goto workerRunning.
   };
-  workerStateEnum workerState;
+  workersStateEnum workersState {workersIdle};
+  // When this is set and the worker state is workersIntReqStop, the cache will be cleared once all workers have finished.
+  bool clearCacheOnStop {false};
   
   // This list contains the items that are scheduled for deletion. 
   // All items in this list will be deleted (->deleteLate()) when caching has halted.
@@ -196,26 +179,18 @@ private:
   bool updateCacheQueueAndRestartWorker;
 
   // This item is watched. When caching of it is done, we will notify the playback controller.
-  playlistItem *watchingItem;
+  playlistItem *watchingItem {nullptr};
 
   // If visible, we will show the current status of the threads in here
   QPointer<QLabel> cachingInfoLabel;
   
-  // Keep a pointer to the status widget so we can update it when necessary
-  QPointer<videoCacheStatusWidget> statusWidget;
   // A timer that is used to update the status widget and the info panel when caching is running
   QTimer statusUpdateTimer;
-  void updateCachingInfoLabel(bool forceNotVisible=false);
-
-  // When caching is running, the cache will update the status widget itself but there are some
-  // cases when this must be triggered externally (for example if an item is deleted).
-  // forceNonVisible: Also update the widgets if the controls are not visible (done when the controls are created).
-  void updateCacheStatus(bool forceNonVisible=false);
 
   // Things for testing the caching speed
   QPointer<QProgressDialog> testProgressDialog;
   QPointer<playlistItem> testItem;              //< The item to use for the test
-  bool testMode;                                //< Set to true when the test is running
+  bool testMode {false};                        //< Set to true when the test is running
   int testLoopCount;                            //< Set before the test starts. Count down to 0. Then the test is over.
   QTimer testProgrssUpdateTimer;                //< Periodically update the progress dialog
   void updateTestProgress();

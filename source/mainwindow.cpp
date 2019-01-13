@@ -94,6 +94,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   });
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.playbackController, &PlaybackController::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.propertiesWidget, &PropertiesWidget::currentSelectedItemsChanged);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.displaySplitView, &splitViewWidget::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, this, &MainWindow::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemChanged, ui.playbackController, &PlaybackController::selectionPropertiesChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, ui.propertiesWidget, &PropertiesWidget::itemAboutToBeDeleted);
@@ -104,7 +105,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
 
   // Create the videoCache object
   cache.reset(new videoCache(ui.playlistTreeWidget, ui.playbackController, ui.displaySplitView, this));
-  cache->setupControls(ui.cachingDebugDock);
+  connect(cache.data(), &videoCache::updateCacheStatus, ui.cachingInfoWidget, &VideoCacheInfoWidget::onUpdateCacheStatus);
 
   createMenusAndActions();
 
@@ -113,6 +114,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   ui.displaySplitView->setPlaybackController(ui.playbackController);
   ui.displaySplitView->setPlaylistTreeWidget(ui.playlistTreeWidget);
   ui.displaySplitView->setVideoCache(cache.data());
+  ui.cachingInfoWidget->setPlaylistAndCache(ui.playlistTreeWidget, cache.data());
   separateViewWindow.splitView.setPlaybackController(ui.playbackController);
   separateViewWindow.splitView.setPlaylistTreeWidget(ui.playlistTreeWidget);
 
@@ -140,7 +142,32 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
   ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
 
+  if (ui.playlistTreeWidget->isAutosaveAvailable())
+  {
+    QMessageBox::StandardButton resBtn = QMessageBox::question(this, "Restore Playlist",
+      tr("It looks like YUView crashed the last time you used it. We are sorry about that. However, we have an autosave of the playlist you were working with. Do you want to resotre this playlist?\n"),
+      QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+    if (resBtn == QMessageBox::Yes)
+      ui.playlistTreeWidget->loadAutosavedPlaylist();
+    else
+      ui.playlistTreeWidget->dropAutosavedPlaylist();
+  }
+  // Start the timer now (and not in the constructor of rht playlistTreeWidget) so that the autosave is not accidetly overwritten.
+  ui.playlistTreeWidget->startAutosaveTimer();
+
   updateSettings();
+}
+
+QWidget *MainWindow::getMainWindow()
+{
+  QWidgetList l = QApplication::topLevelWidgets();
+  for (QWidget *w : l)
+  {
+    MainWindow *mw = dynamic_cast<MainWindow*>(w);
+    if (mw)
+      return mw;
+  }
+  return nullptr;
 }
 
 void MainWindow::createMenusAndActions()
@@ -269,6 +296,9 @@ void MainWindow::updateRecentFileActions()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+  // Stop playback
+  ui.playbackController->pausePlayback();
+
   QSettings settings;
   if (!ui.playlistTreeWidget->getIsSaved() && settings.value("AskToSaveOnExit", true).toBool())
   {

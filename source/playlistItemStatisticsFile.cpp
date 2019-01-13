@@ -35,7 +35,6 @@
 #include <cassert>
 #include <iostream>
 #include <QDebug>
-#include <QtConcurrent>
 #include <QTime>
 #include "statisticsExtensions.h"
 
@@ -137,7 +136,7 @@ void playlistItemStatisticsFile::createPropertiesWidget()
   assert(!propertiesWidget);
 
   // Create a new widget and populate it with controls
-  preparePropertiesWidget(QStringLiteral("playlistItemStatisticsFile"));
+  preparePropertiesWidget(getPlaylistTag());
 
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
@@ -162,7 +161,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath(file.getAbsoluteFilePath());
 
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemStatisticsFile");
+  QDomElementYUView d = root.ownerDocument().createElement(getPlaylistTag());
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);

@@ -43,6 +43,7 @@
 // so that we can address all the positions in it with int (using such a large buffer is not a good
 // idea anyways)
 #define STAT_PARSING_BUFFER_SIZE 1048576
+#define STAT_MAX_STRING_SIZE 1<<28
 
 playlistItemStatisticsVTMBMSFile::playlistItemStatisticsVTMBMSFile(const QString &itemNameOrFileName)
   : playlistItemStatisticsFile(itemNameOrFileName)
@@ -99,7 +100,10 @@ void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
         // Less bytes than the maximum buffer size were read. The file is at the end.
         // This is the last run of the loop.
         fileAtEnd = true;
-
+      // a corrupted file may contain an arbitrary amount of non-\n symbols
+      // prevent lineBuffer overflow by dumping it for such cases
+      if (lineBuffer.size() > STAT_MAX_STRING_SIZE)
+        lineBuffer.clear(); // prevent an overflow here
       for (int i = 0; i < bufferSize; i++)
       {
         // Search for '\n' newline characters
@@ -162,8 +166,10 @@ void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
           lineBufferStartPos = bufferStartPos + i + 1;
         }
         else
+        {
           // No newline character found
           lineBuffer.append(inputBuffer.at(i));
+        }
       }
 
       bufferStartPos += bufferSize;
@@ -178,15 +184,15 @@ void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
   } // try
   catch (const char *str)
   {
-    std::cerr << "Error while parsing meta data: " << str << '\n';
+    std::cerr << "Error while parsing meta data: " << str << "\n";
     parsingError = QString("Error while parsing meta data: ") + QString(str);
     emit signalItemChanged(false, RECACHE_NONE);
     return;
   }
-  catch (...)
+  catch (const std::exception& ex)
   {
-    std::cerr << "Error while parsing meta data.";
-    parsingError = QString("Error while parsing meta data.");
+    std::cerr << "Error while parsing:" << ex.what() << "\n";
+    parsingError = QString("Error while parsing: ") + QString(ex.what());
     emit signalItemChanged(false, RECACHE_NONE);
     return;
   }
@@ -229,7 +235,7 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
       QRegularExpressionMatch sequenceSizeMatch = sequenceSizeRegex.match(aLine);
       if (sequenceSizeMatch.hasMatch())
       {
-        statSource.statFrameSize = QSize(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt());
+        statSource.setFrameSize(QSize(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt()));
       }
 
       // get available statistics
@@ -467,8 +473,9 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
           // useful for debugging:
   //        QStringList all_captured = statisitcMatch.capturedTexts();
 
-
           poc = statisitcMatch.captured(1).toInt();
+          width = statisitcMatch.captured(4).toInt();
+          height = statisitcMatch.captured(5).toInt();
           // if there is a new POC, we are done here!
           if (poc != frameIdxInternal)
             break;
@@ -478,11 +485,9 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
           {
             posX = statisitcMatch.captured(2).toInt();
             posY = statisitcMatch.captured(3).toInt();
-            width = statisitcMatch.captured(4).toInt();
-            height = statisitcMatch.captured(5).toInt();
 
             // Check if block is within the image range
-            if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.statFrameSize.width() || posY + height > statSource.statFrameSize.height()))
+            if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.getFrameSize().width() || posY + height > statSource.getFrameSize().height()))
               // Block not in image. Warn about this.
               blockOutsideOfFrame_idx = frameIdxInternal;
 
@@ -534,11 +539,10 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
                 points << QPoint(x,y);
 
                 // Check if polygon is within the image range
-                if (blockOutsideOfFrame_idx == -1 && (x + width > statSource.statFrameSize.width() || y + height > statSource.statFrameSize.height()))
+                if (blockOutsideOfFrame_idx == -1 && (x + width > statSource.getFrameSize().width() || y + height > statSource.getFrameSize().height()))
                   // Block not in image. Warn about this.
                   blockOutsideOfFrame_idx = frameIdxInternal;
               }
-
             }
 
             if (aType->hasVectorData)

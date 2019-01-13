@@ -34,11 +34,12 @@
 
 #include <QPointer>
 #include <QPushButton>
+#include <QGridLayout>
 #include <QVariant>
 #include "labelElided.h"
 
 static const char kInfoIndex[] = "fi_infoIndex";
-static const char kInfoRow[] = "fi_infoRow";
+static const char kInfoButtonID[] = "fi_buttonID";
 
 /* The file info group box can display information on a file (or any other display object).
  * If you provide a list of QString tuples, this class will fill a grid layout with the
@@ -61,7 +62,8 @@ void FileInfoWidget::clear(int startRow)
     for (int j = 0; j < grid.columnCount(); ++j)
     {
       auto item = grid.itemAtPosition(i, j);
-      if (item) delete item->widget();
+      if (item) 
+        delete item->widget();
     }
 }
 
@@ -74,7 +76,8 @@ template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column
   for (int j = 0; j < grid->columnCount(); ++j)
   {
     auto item = grid->itemAtPosition(row, j);
-    if (item) widgets[j] = item->widget();
+    if (item) 
+      widgets[j] = item->widget();
   }
 
   if (columnSpan == 1 && widgets[0] == widgets[1])
@@ -96,7 +99,6 @@ template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column
 
 int FileInfoWidget::addInfo(const infoData &data, int row, int infoIndex)
 {
-  int const firstRow = row;
   for (auto &info : data.items)
   {
     auto name = widgetAt<QLabel>(&grid, row, 0);
@@ -117,7 +119,7 @@ int FileInfoWidget::addInfo(const infoData &data, int row, int infoIndex)
       button->setText(info.text);
       button->setToolTip(info.toolTip);
       button->setProperty(kInfoIndex, infoIndex);
-      button->setProperty(kInfoRow, row - firstRow);
+      button->setProperty(kInfoButtonID, info.buttonID);
       connect(button, &QPushButton::clicked, this, &FileInfoWidget::infoButtonClickedSlot, Qt::UniqueConnection);
     }
     grid.setRowStretch(row, 0);
@@ -163,5 +165,5 @@ void FileInfoWidget::infoButtonClickedSlot()
   auto button = qobject_cast<QPushButton*>(QObject::sender());
   if (button)
     emit infoButtonClicked(button->property(kInfoIndex).toInt(),
-                           button->property(kInfoRow).toInt());
+                           button->property(kInfoButtonID).toInt());
 }

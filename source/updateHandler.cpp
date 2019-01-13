@@ -532,7 +532,7 @@ void updateHandler::abortUpdate(QString errorMsg)
   updaterStatus = updaterIdle;
 }
 
-void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
+void updateHandler::updateDownloadProgress(int64_t val, int64_t max)
 {
   Q_UNUSED(max);
   if (downloadProgress)
