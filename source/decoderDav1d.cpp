@@ -40,7 +40,7 @@
 #include "typedef.h"
 
 // Debug the decoder (0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERDAV1D_DEBUG_OUTPUT 1
+#define DECODERDAV1D_DEBUG_OUTPUT 0
 #if DECODERDAV1D_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERDAV1D_DEBUG_OUTPUT == 1
@@ -583,23 +583,31 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
   intraAngleDeltaChroma.description = "Offset to be applied to the intra prediction angle specified by the prediction mode";
   statSource.addStatType(intraAngleDeltaChroma);
 
-  StatisticsType chromaFromLumaAlphaU(10, "chroma from luma alpha (U)", "col3_bblg", -128, 128);
+  StatisticsType intraDirLuma(10, "Intra direction luma", 4);
+  intraDirLuma.description = "Intra prediction direction luma";
+  statSource.addStatType(intraDirLuma);
+
+  StatisticsType intraDirChroma(11, "Intra direction chroma", 4);
+  intraDirChroma.description = "Intra prediction direction chroma";
+  statSource.addStatType(intraDirChroma);
+    
+  StatisticsType chromaFromLumaAlphaU(12, "chroma from luma alpha (U)", "col3_bblg", -128, 128);
   chromaFromLumaAlphaU.description = "CflAlphaU: contains the signed value of the alpha component for the U component";
   statSource.addStatType(chromaFromLumaAlphaU);
 
-  StatisticsType chromaFromLumaAlphaV(11, "chroma from luma alpha (V)", "col3_bblg", -128, 128);
+  StatisticsType chromaFromLumaAlphaV(13, "chroma from luma alpha (V)", "col3_bblg", -128, 128);
   chromaFromLumaAlphaV.description = "CflAlphaU: contains the signed value of the alpha component for the U component";
   statSource.addStatType(chromaFromLumaAlphaV);
 
   // Inter specific values
 
-  StatisticsType refFrames0(12, "ref frame index 0", "jet", 0, 7);
+  StatisticsType refFrames0(14, "ref frame index 0", "jet", 0, 7);
   statSource.addStatType(refFrames0);
 
-  StatisticsType refFrames1(13, "ref frame index 1", "jet", 0, 7);
+  StatisticsType refFrames1(15, "ref frame index 1", "jet", 0, 7);
   statSource.addStatType(refFrames1);
 
-  StatisticsType compoundPredType(14, "compound prediction type", "jet", 0, 4);
+  StatisticsType compoundPredType(16, "compound prediction type", "jet", 0, 4);
   compoundPredType.valMap.insert(0, "COMP_INTER_NONE");
   compoundPredType.valMap.insert(1, "COMP_INTER_WEIGHTED_AVG");
   compoundPredType.valMap.insert(2, "COMP_INTER_AVG");
@@ -816,22 +824,41 @@ void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int bl
     curPOCStats[8].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.y_angle);
     curPOCStats[9].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.uv_angle);
 
+    // Calculate and set the indra prediction direction luma/chroma (ID 10, 11)
+    for (int yc=0; yc<2; yc++)
+    {
+      int angleDelta = (yc == 0) ? b.y_angle : b.uv_angle;
+      IntraPredMode predMode = (yc == 0) ? (IntraPredMode)b.y_mode : (IntraPredMode)b.uv_mode;
+      QIntPair vec = calculateIntraPredDirection(predMode, angleDelta);
+      if (vec.first == 0 && vec.second == 0)
+        return;
+      
+      int blockScale = std::min(blockWidth4, blockHeight4);
+      int vecX = (float)vec.first * blockScale / 4;
+      int vecY = (float)vec.second * blockScale / 4;
+      
+      curPOCStats[10 + yc].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, vecX, vecY);
+    }
+
     if (b.y_mode == CFL_PRED)
     {
-      // Set the chroma from luma alpha U/V (ID 10, 11)
-      curPOCStats[10].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[0]);
-      curPOCStats[11].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[1]);
+      // Set the chroma from luma alpha U/V (ID 12, 13)
+      curPOCStats[12].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[0]);
+      curPOCStats[13].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[1]);
     }
   }
   else
   {
+    CompInterType compoundType = (CompInterType)b.comp_type;
+    bool isCompound = (compoundType != COMP_INTER_NONE);
 
-    // Set the reference frame indices 0/1 (ID 12, 13)
-    curPOCStats[12].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[0]);
-    curPOCStats[13].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[1]);
+    // Set the reference frame indices 0/1 (ID 14, 15)
+    curPOCStats[14].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[0]);
+    if (isCompound)
+      curPOCStats[15].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[1]);
 
-    // Set the compound prediction type (ID 14)
-    curPOCStats[14].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.comp_type);
+    // Set the compound prediction type (ID 16)
+    curPOCStats[16].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.comp_type);
 
     // 
     //
@@ -844,9 +871,56 @@ void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int bl
 
     // Set motion vector 0/1 (ID 22, 23)
     curPOCStats[22].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
-    curPOCStats[23].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
+    if (isCompound)
+      curPOCStats[23].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
   }
 
+}
+
+QIntPair decoderDav1d::calculateIntraPredDirection(IntraPredMode predMode, int angleDelta)
+{
+  if (predMode == DC_PRED || predMode > VERT_LEFT_PRED)
+    return QIntPair(0, 0);
+
+  // angleDelta should be between -4 and 3
+  const int modeIndex = predMode - VERT_PRED;
+  assert(modeIndex >= 0 && modeIndex < 8);
+  const int deltaIndex = angleDelta + 4;
+  assert(deltaIndex >= 0 && deltaIndex < 8);
+
+  /* The python code which was used to create the vectorTable
+  import math
+
+  def getVector(m, s):
+    a = m + 3 * s
+    x = -math.cos(math.radians(a))
+    y = -math.sin(math.radians(a))
+    return round(x*32), round(y*32)	
+  
+  modes = [90, 180, 45, 135, 113, 157, 203, 67]
+  sub_angles = [-4, -3, -2, -1, 0, 1, 2, 3]
+  for m in modes:
+    out = ""
+    for s in sub_angles:
+      x, y = getVector(m, s)
+      out += "{{{0}, {1}}}, ".format(x, y)
+    print(out)
+  */
+
+  static const int vectorTable[8][8][2] =
+  {
+    {{-7, 31}, {-5, 32}, {-3, 32}, {-2, 32}, {0, 32}, {2, 32}, {3, 32}, {5, 32}},
+    {{31, 7}, {32, 5}, {32, 3}, {32, 2}, {32, 0}, {32, -2}, {32, -3}, {32, -5}},
+    {{-27, 17}, {-26, 19}, {-25, 20}, {-24, 21}, {-23, 23}, {-21, 24}, {-20, 25}, {-19, 26}},
+    {{17, 27}, {19, 26}, {20, 25}, {21, 24}, {23, 23}, {24, 21}, {25, 20}, {26, 19}},
+    {{6, 31}, {8, 31}, {9, 31}, {11, 30}, {13, 29}, {14, 29}, {16, 28}, {17, 27}},
+    {{26, 18}, {27, 17}, {28, 16}, {29, 14}, {29, 13}, {30, 11}, {31, 9}, {31, 8}},
+    {{31, -6}, {31, -8}, {31, -9}, {30, -11}, {29, -13}, {29, -14}, {28, -16}, {27, -17}},
+    {{-18, 26}, {-17, 27}, {-16, 28}, {-14, 29}, {-13, 29}, {-11, 30}, {-9, 31}, {-8, 31}}
+   };
+
+  QIntPair vec(vectorTable[modeIndex][deltaIndex][0], vectorTable[modeIndex][deltaIndex][1]);
+  return vec;
 }
 
 /// ------------------------- Dav1dPictureWrapper -----------------------

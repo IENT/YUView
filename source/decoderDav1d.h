@@ -164,6 +164,7 @@ private:
   void cacheStatistics(const Dav1dPictureWrapper &img);
   void parseBlockRecursive(Av1Block *blockData, int x, int y, const int widthInBlocks, const int heightInBlocks, const int b4_stride, BlockLevel level, Dav1dSequenceHeader *sequenceHeader, Dav1dFrameHeader *frameHeader);
   void parseBlockPartition(Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, const int widthInBlocks, const int heightInBlocks, const int b4_stride, Dav1dSequenceHeader *sequenceHeader, Dav1dFrameHeader *frameHeader);
+  QIntPair calculateIntraPredDirection(IntraPredMode predMode, int angleDelta);
   unsigned int subBlockSize {0};
 };
 
