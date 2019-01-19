@@ -615,10 +615,13 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
   compoundPredType.valMap.insert(4, "COMP_INTER_WEDGE");
   statSource.addStatType(compoundPredType);
 
-  // 15: wedge_idx
-  // 16: mask_sign
+  StatisticsType wedgeIndex(17, "wedge index", "jet", 0, 16);
+  statSource.addStatType(wedgeIndex);
 
-  StatisticsType interMode(17, "inter mode", "jet", 0, 7);
+  StatisticsType maskSign(18, "mask sign", 0, QColor(0, 0, 0), 1, QColor(0,255,255));
+  statSource.addStatType(maskSign);
+  
+  StatisticsType interMode(19, "inter mode", "jet", 0, 7);
   interMode.valMap.insert(0, "NEARESTMV_NEARESTMV");
   interMode.valMap.insert(1, "NEARMV_NEARMV");
   interMode.valMap.insert(2, "NEARESTMV_NEWMV");
@@ -629,25 +632,38 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
   interMode.valMap.insert(7, "NEWMV_NEWMV");
   statSource.addStatType(interMode);
 
-  // 18: drl_idx
-  // 19: interintra_type
-  // 20: interintra_mode
-  // 21: motion_mode
-  // max_ytx
-  // filter2d
-  // tx_split
+  StatisticsType drlIndex(20, "dynamic reference list index", 0, QColor(0, 0, 0), 16, QColor(0,255,255));
+  statSource.addStatType(drlIndex);
 
-  StatisticsType motionVec0(22, "Motion Vector 0", 4);
+  StatisticsType interintraType(21, "inter-intra type", "jet", 0, 2);
+  interintraType.valMap.insert(0, "INTER_INTRA_NONE");
+  interintraType.valMap.insert(1, "INTER_INTRA_BLEND");
+  interintraType.valMap.insert(2, "INTER_INTRA_WEDGE");
+  statSource.addStatType(interintraType);
+
+  StatisticsType interintraMode(22, "inter-intra mode", "jet", 0, 4);
+  interintraMode.valMap.insert(0, "II_DC_PRED");
+  interintraMode.valMap.insert(1, "II_VERT_PRED");
+  interintraMode.valMap.insert(2, "II_HOR_PRED");
+  interintraMode.valMap.insert(3, "II_SMOOTH_PRED");
+  interintraMode.valMap.insert(4, "N_INTER_INTRA_PRED_MODES");
+  statSource.addStatType(interintraMode);
+
+  StatisticsType motionMode(23, "motion mode", "jet", 0, 2);
+  motionMode.valMap.insert(0, "MM_TRANSLATION");
+  motionMode.valMap.insert(1, "MM_OBMC");
+  motionMode.valMap.insert(2, "MM_WARP");
+  statSource.addStatType(motionMode);
+
+  StatisticsType motionVec0(24, "Motion Vector 0", 4);
   motionVec0.description = "The motion vector for component 0";
   statSource.addStatType(motionVec0);
   
-  StatisticsType motionVec1(23, "Motion Vector 1", 4);
+  StatisticsType motionVec1(25, "Motion Vector 1", 4);
   motionVec1.description = "The motion vector for component 1";
   statSource.addStatType(motionVec1);
 
-  // TODO: tx (transform size)
-
-  // TODO: More...
+  // TODO: tx (transform size) (tx_split)
 }
 
 void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
@@ -847,7 +863,7 @@ void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int bl
       curPOCStats[13].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[1]);
     }
   }
-  else
+  else // inter
   {
     CompInterType compoundType = (CompInterType)b.comp_type;
     bool isCompound = (compoundType != COMP_INTER_NONE);
@@ -860,19 +876,38 @@ void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int bl
     // Set the compound prediction type (ID 16)
     curPOCStats[16].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.comp_type);
 
-    // 
-    //
+    // Set the wedge index (ID 17)
+    if (b.comp_type == COMP_INTER_WEDGE || b.interintra_type == INTER_INTRA_WEDGE)
+      curPOCStats[17].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.wedge_idx);
 
-    // Set the inter mode (ID 17)
-    curPOCStats[17].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.inter_mode);
+    // Set the mask sign (ID 18)
+    if (isCompound) // TODO: This might not be correct
+      curPOCStats[18].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.mask_sign);
 
-    //
-    //
+    // Set the inter mode (ID 19)
+    curPOCStats[19].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.inter_mode);
 
-    // Set motion vector 0/1 (ID 22, 23)
-    curPOCStats[22].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
+    // Set the dynamic reference list index (ID 20)
+    if (isCompound) // TODO: This might not be correct
+      curPOCStats[20].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.drl_idx);
+
     if (isCompound)
-      curPOCStats[23].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
+    {
+      // Set inter intra type (ID 21)
+      curPOCStats[21].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_type);
+      // Set inter intra mode (ID 22)
+      curPOCStats[22].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_mode);
+    }
+
+    // Set motion mode (ID 23)
+    curPOCStats[23].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.motion_mode);
+
+    // Set motion vector 0/1 (ID 24, 25)
+    curPOCStats[24].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
+    if (isCompound)
+      curPOCStats[25].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
+
+    // TODO: transform tree
   }
 
 }

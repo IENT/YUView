@@ -112,14 +112,6 @@ enum IntraPredMode {
   FILTER_PRED = N_INTRA_PRED_MODES,
 };
 
-enum InterIntraPredMode {
-  II_DC_PRED,
-  II_VERT_PRED,
-  II_HOR_PRED,
-  II_SMOOTH_PRED,
-  N_INTER_INTRA_PRED_MODES,
-};
-
 enum InterPredMode {
   NEARESTMV,
   NEARMV,
@@ -131,12 +123,6 @@ enum InterPredMode {
 typedef struct motionVector {
   int16_t y, x;
 } motionVector;
-
-enum MotionMode {
-  MM_TRANSLATION,
-  MM_OBMC,
-  MM_WARP,
-};
 
 // tx and max_ytx are of this type
 enum TxfmSize {
@@ -168,6 +154,28 @@ enum CompInterPredMode {
   GLOBALMV_GLOBALMV,
   NEWMV_NEWMV,
   N_COMP_INTER_PRED_MODES,
+};
+
+// interintra_type is of this type
+enum InterIntraType {
+  INTER_INTRA_NONE,
+  INTER_INTRA_BLEND,
+  INTER_INTRA_WEDGE,
+};
+
+// interintra_mode is of this type
+enum InterIntraPredMode {
+  II_DC_PRED,
+  II_VERT_PRED,
+  II_HOR_PRED,
+  II_SMOOTH_PRED,
+  N_INTER_INTRA_PRED_MODES,
+};
+
+enum MotionMode {
+  MM_TRANSLATION,
+  MM_OBMC,
+  MM_WARP,
 };
 
 typedef struct Av1Block {
