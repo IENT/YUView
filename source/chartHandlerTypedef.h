@@ -96,7 +96,7 @@ class playlistItem;
 enum statisticsDataType
 {
   sdtInt,                         // value is type of integer
-  sdtRGB,                         // value is type of RGB
+  sdtRGB,                         // value is type of RGB / YUV
   sdtStructStatisticsItem_Value,  // value is type of struct --> statisticItem_Value
   sdtStructStatisticsItem_Vector, // value is type of struct --> statisticItem_Vector
   sdtObjectStatisticsData,        // value is type of object --> statisticData

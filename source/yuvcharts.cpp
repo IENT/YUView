@@ -270,16 +270,16 @@ QWidget* YUVBarChart::makeStatistic(QList<collectedData>* aSortedData, const cha
         break;
       case sdtRGB:
       {
-        qreal rangeMin = aSortedData->at(0).mValues.first()->first.toReal();
-        qreal rangeMax = aSortedData->at(0).mValues.last()->first.toReal();
-        QStringList categories;
+//        qreal rangeMin = aSortedData->at(0).mValues.first()->first.toReal();
+//        qreal rangeMax = aSortedData->at(0).mValues.last()->first.toReal();
+//        QStringList categories;
 
-        for (int i = rangeMin; i <= rangeMax; i = i+40)
-          categories << QString::number(i);
+//        for (int i = rangeMin; i <= rangeMax; i = i+40)
+//          categories << QString::number(i);
 
-        QBarCategoryAxis *axis = new QBarCategoryAxis();
-        axis->append(categories);
-        chart->setAxisX(axis);
+//        QBarCategoryAxis *axis = new QBarCategoryAxis();
+//        axis->append(categories);
+//        chart->setAxisX(axis);
       }
       default:
         // was set before

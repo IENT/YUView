@@ -1278,7 +1278,6 @@ QWidget* ChartHandler::createColorSpaceWidget(playlistItem *aItem, itemWidgetCoo
   QWidget *basicWidget      = new QWidget;
   QVBoxLayout *basicLayout  = new QVBoxLayout(basicWidget);
   QComboBox* cbxTypes       = new QComboBox;
-  QComboBox* cbxFrame       = new QComboBox;
   QLabel* lblStat           = new QLabel(CBX_LABEL_IMAGE_TYPE);
   QFormLayout* topLayout    = new QFormLayout;
 
@@ -1288,41 +1287,60 @@ QWidget* ChartHandler::createColorSpaceWidget(playlistItem *aItem, itemWidgetCoo
   cbxTypes->setObjectName(OPTION_NAME_CBX_CHART_TYPES);
 
   // getting the range
-  indexRange range;
+  //indexRange range;
 
-  int frameIndex = this->mPlayback->getCurrentFrame();
-  cbxFrame->addItem(QString::number(frameIndex));
-  range.first = frameIndex;
-  range.second = frameIndex;
+//  int frameIndex = this->mPlayback->getCurrentFrame();
+//  cbxFrame->addItem(QString::number(frameIndex));
+//  range.first = frameIndex;
+//  range.second = frameIndex;
+
+//  //check if map contains items
+//  if(dynamic_cast<playlistItemRawFile*> (aItem))
+//  {
+//    //add options to select
+//    cbxTypes->addItem(CBX_OPTION_SELECT);
+//    cbxTypes->addItem("Y");
+//    cbxTypes->addItem("U");
+//    cbxTypes->addItem("V");
+//  }
+//  else if (dynamic_cast<playlistItemImageFile*> (aItem))
+//  {
+//    //add options to select
+//    cbxTypes->addItem(CBX_OPTION_SELECT);
+//    cbxTypes->addItem("R");
+//    cbxTypes->addItem("G");
+//    cbxTypes->addItem("B");
+//  }
+//  else
+//    // no items, add a info
+//    cbxTypes->addItem(CBX_OPTION_NO_TYPES);
+
+  // getting the range
+  auto range = aItem->getFrameIdxRange();
+  range.first = this->mPlayback->getCurrentFrame();
+  range.second = this->mPlayback->getCurrentFrame();
+  // save the data, that we dont have to load it later again
+  aCoord.mData = aItem->getData(range, true);
 
   //check if map contains items
-  if(dynamic_cast<playlistItemRawFile*> (aItem))
+  if(aCoord.mData->keys().count() > 0)
   {
-    //add options to select
+    //map has items, so add them
     cbxTypes->addItem(CBX_OPTION_SELECT);
-    cbxTypes->addItem("Y");
-    cbxTypes->addItem("U");
-    cbxTypes->addItem("V");
-  }
-  else if (dynamic_cast<playlistItemImageFile*> (aItem))
-  {
-    //add options to select
-    cbxTypes->addItem(CBX_OPTION_SELECT);
-    cbxTypes->addItem("R");
-    cbxTypes->addItem("G");
-    cbxTypes->addItem("B");
+
+    foreach (QString type, aCoord.mData->keys())
+      cbxTypes->addItem(type); // fill with data
   }
   else
     // no items, add a info
     cbxTypes->addItem(CBX_OPTION_NO_TYPES);
-
 //   @see http://stackoverflow.com/questions/16794695/connecting-overloaded-signals-and-slots-in-qt-5
 //   do the connect after adding the items otherwise the connect will be call
 
   connect(cbxTypes,
           static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
           this,
-          &ChartHandler::onColorSpaceChange);
+          &ChartHandler::onStatisticsChange);
 
   connect(cbxTypes,
           static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
@@ -1330,7 +1348,7 @@ QWidget* ChartHandler::createColorSpaceWidget(playlistItem *aItem, itemWidgetCoo
           &ChartHandler::switchOrderEnableStatistics);
 
   // getting the list to the order by - components
-  QList<QWidget*> listGeneratedWidgets = this->generateOrderWidgetsOnly(false, true);
+  QList<QWidget*> listGeneratedWidgets = this->generateOrderWidgetsOnly(cbxTypes->count() > 1);
   bool hasOddAmount = listGeneratedWidgets.count() % 2 == 1;
 
   // adding the components, check how we add them
@@ -1365,6 +1383,11 @@ QWidget* ChartHandler::createColorSpaceWidget(playlistItem *aItem, itemWidgetCoo
     }
   }
 
+  // at this point we add all widgets if we dont have an odd amount
+  if(!hasOddAmount)
+    for (int i = 0; i < listGeneratedWidgets.count(); i +=2) // take care, we increment i every time by 2!!
+      topLayout->addRow(listGeneratedWidgets.at(i), listGeneratedWidgets.at(i+1));
+
   // add all to our layout
   basicLayout->addLayout(topLayout);
   basicLayout->addWidget(aCoord.mChart);
@@ -1394,7 +1417,7 @@ void ChartHandler::onColorSpaceChange(const QString aString)
     plirf->setColorType(aString);
     // now we need the combination, try to find it
     itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
-    coord.mData = items[0]->getData(range, true);
+//    coord.mData = items[0]->getData(range, true);
     // necessary at this point, because now we have all the data
     this->setRangeToComponents(coord, NULL);
 
@@ -1454,8 +1477,8 @@ QWidget* ChartHandler::createColorSpaceChart(itemWidgetCoord& aCoord)
   if (!plirf)
     return this->mLastStatisticsWidget;
 
-  plirf->setColorType(type);
-  plirf->getData(range, true);
+//  plirf->setColorType(type);
+//  plirf->getData(range, true);
   this->mLastStatisticsWidget = this->mYUVChartFactory.createChart(order, aCoord.mItem, range, type);
 
   return this->mLastStatisticsWidget;
