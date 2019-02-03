@@ -85,6 +85,9 @@ decoderLibde265::~decoderLibde265()
 
 void decoderLibde265::resetDecoder()
 {
+  if (!decoder)
+    return;
+
   // Delete decoder
   de265_error err = de265_free_decoder(decoder);
   if (err != DE265_OK)

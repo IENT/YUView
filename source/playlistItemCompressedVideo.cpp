@@ -816,7 +816,9 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
     infoText = "There was an error allocating the new decoder: \n";
     infoText += loadingDecoder->decoderErrorString();
     infoText += "\n";
+    return false;
   }
+
   return true;
 }
 
