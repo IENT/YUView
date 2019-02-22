@@ -61,6 +61,9 @@ int main(int argc, char *argv[])
   QApplication::setApplicationVersion(versionString);
   QApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
   QApplication::setOrganizationDomain("ient.rwth-aachen.de");
+#ifdef Q_OS_LINUX
+  QGuiApplication::setDesktopFileName("YUView");
+#endif
 
   QStringList args = app.arguments();
 
