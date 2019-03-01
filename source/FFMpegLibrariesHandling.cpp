@@ -3161,6 +3161,9 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
 
 void AVPacketWrapper::update()
 {
+  if (pkt == nullptr)
+    return;
+  
   if (libVer.avcodec == 56)
   {
     AVPacket_56 *src = reinterpret_cast<AVPacket_56*>(pkt);
