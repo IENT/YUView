@@ -33,6 +33,7 @@
 #include "parserCommon.h"
 
 #include <QString>
+#include <assert.h>
 
 #define PARSERCOMMON_DEBUG_OUTPUT 0
 #if PARSERCOMMON_DEBUG_OUTPUT && !NDEBUG
