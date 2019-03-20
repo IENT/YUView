@@ -159,11 +159,22 @@ private:
   void copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray &dst);   // Copy the raw data from the Dav1dPicture source *src to the byte array
 #endif
 
+  struct dav1dFrameInfo
+  {
+    dav1dFrameInfo(QSize s, Dav1dFrameType frameType);
+    QSize frameSize;
+    QSize frameSizeAligned;
+    QSize sizeInBlocks;
+    QSize sizeInBlocksAligned;
+    int b4_stride;
+    Dav1dFrameType frameType;
+  };
+
   // Statistics
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
   void cacheStatistics(const Dav1dPictureWrapper &img);
-  void parseBlockRecursive(Av1Block *blockData, int x, int y, const int widthInBlocks, const int heightInBlocks, const int b4_stride, BlockLevel level, Dav1dSequenceHeader *sequenceHeader, Dav1dFrameHeader *frameHeader);
-  void parseBlockPartition(Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, const int widthInBlocks, const int heightInBlocks, const int b4_stride, Dav1dSequenceHeader *sequenceHeader, Dav1dFrameHeader *frameHeader);
+  void parseBlockRecursive(Av1Block *blockData, int x, int y, BlockLevel level, dav1dFrameInfo &frameInfo);
+  void parseBlockPartition(Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, dav1dFrameInfo &frameInfo);
   QIntPair calculateIntraPredDirection(IntraPredMode predMode, int angleDelta);
   unsigned int subBlockSize {0};
 };
