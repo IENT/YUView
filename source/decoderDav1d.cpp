@@ -676,7 +676,28 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
   motionVec1.description = "The motion vector for component 1";
   statSource.addStatType(motionVec1);
 
-  // TODO: tx (transform size) (tx_split)
+  StatisticsType transformDepth(26, "Transform Size", "jet", 0, 19);
+  transformDepth.description = "The transform size";
+  transformDepth.valMap.insert(0, "TX_4X4");
+  transformDepth.valMap.insert(1, "TX_8X8");
+  transformDepth.valMap.insert(2, "TX_16X16");
+  transformDepth.valMap.insert(3, "TX_32X32");
+  transformDepth.valMap.insert(4, "TX_64X64");
+  transformDepth.valMap.insert(5, "RTX_4X8");
+  transformDepth.valMap.insert(6, "RTX_8X4");
+  transformDepth.valMap.insert(7, "RTX_8X16");
+  transformDepth.valMap.insert(8, "RTX_16X8");
+  transformDepth.valMap.insert(9, "RTX_16X32");
+  transformDepth.valMap.insert(10, "RTX_32X16");
+  transformDepth.valMap.insert(11, "RTX_32X64");
+  transformDepth.valMap.insert(12, "RTX_64X32");
+  transformDepth.valMap.insert(13, "RTX_4X16");
+  transformDepth.valMap.insert(14, "RTX_16X4");
+  transformDepth.valMap.insert(15, "RTX_8X32");
+  transformDepth.valMap.insert(16, "RTX_32X8");
+  transformDepth.valMap.insert(17, "RTX_16X64");
+  transformDepth.valMap.insert(18, "RTX_64X16");
+  statSource.addStatType(transformDepth);
 }
 
 void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
@@ -844,14 +865,14 @@ void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int bl
     curPOCStats[8].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.y_angle);
     curPOCStats[9].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.uv_angle);
 
-    // Calculate and set the indra prediction direction luma/chroma (ID 10, 11)
+    // Calculate and set the intra prediction direction luma/chroma (ID 10, 11)
     for (int yc=0; yc<2; yc++)
     {
       int angleDelta = (yc == 0) ? b.y_angle : b.uv_angle;
       IntraPredMode predMode = (yc == 0) ? (IntraPredMode)b.y_mode : (IntraPredMode)b.uv_mode;
       QIntPair vec = calculateIntraPredDirection(predMode, angleDelta);
       if (vec.first == 0 && vec.second == 0)
-        return;
+        continue;
       
       int blockScale = std::min(blockWidth4, blockHeight4);
       int vecX = (float)vec.first * blockScale / 4;
@@ -910,10 +931,26 @@ void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int bl
     curPOCStats[24].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
     if (isCompound)
       curPOCStats[25].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
-
-    // TODO: transform tree
   }
 
+  const TxfmSize tx_val = TxfmSize(isIntra ? b.tx : b.max_ytx);
+  static const int TxfmSizeWidthTable[] = {4, 8, 16, 32, 64, 4, 8, 8, 16, 16, 32, 32, 64, 4, 16, 8, 32, 16, 64};
+  static const int TxfmSizeHeightTable[] = { 4, 8, 16, 32, 64, 8, 4, 16, 8, 32, 16, 64, 32, 16, 4, 32, 8, 64, 16};
+  const int tx_w = TxfmSizeWidthTable[tx_val];
+  const int tx_h = TxfmSizeHeightTable[tx_val];
+  assert(tx_w <= cbWidth && tx_h <= cbHeight);
+
+  for (int x = 0; x < cbWidth; x += tx_w)
+  {
+    for (int y = 0; y < cbHeight; y += tx_h)
+    {
+      // Set the transform size (ID 26)
+      const int x_abs = cbPosX + x;
+      const int y_abs = cbPosY + y;
+      if (x_abs < frameInfo.frameSize.width() && y_abs < frameInfo.frameSize.height())
+        curPOCStats[26].addBlockValue(x_abs, y_abs, tx_w, tx_h, (int)tx_val);
+    }
+  }
 }
 
 QIntPair decoderDav1d::calculateIntraPredDirection(IntraPredMode predMode, int angleDelta)
