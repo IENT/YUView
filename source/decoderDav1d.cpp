@@ -141,11 +141,11 @@ void decoderDav1d::resolveLibraryFunctionPointers()
 
   DEBUG_DAV1D("decoderDav1d::resolveLibraryFunctionPointers - decoding functions found");
 
-  // 
-  if (!resolve(dav1d_default_analyzer_settings, "dav1d_default_analyzer_settings")) return;
-  if (!resolve(dav1d_set_analyzer_settings, "dav1d_set_analyzer_settings")) return;
+  // This means that 
+  if (!resolve(dav1d_default_analyzer_settings, "dav1d_default_analyzer_flags", true)) return;
+  if (!resolve(dav1d_set_analyzer_settings, "dav1d_set_analyzer_flags", true)) return;
   
-  DEBUG_DAV1D("decoderDav1d::resolveLibraryFunctionPointers - analizer functions found");
+  DEBUG_DAV1D("decoderDav1d::resolveLibraryFunctionPointers - analyzer functions found");
   internalsSupported = true;
   nrSignals = 3;  // We can also get prediction and reconstruction before filtering
   curPicture.setInternalsSupported();
@@ -187,27 +187,30 @@ void decoderDav1d::allocateNewDecoder()
     return;
   }
 
-  // Apply the analizer settings
-  dav1d_default_analyzer_settings(&analyzerSettings);
-  if (nrSignals > 0)
+  if (internalsSupported)
   {
-    if (decodeSignal == 1)
+    // Apply the analizer settings
+    dav1d_default_analyzer_settings(&analyzerSettings);
+    if (nrSignals > 0)
     {
-      analyzerSettings.export_prediction = 1;
-      DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of prediction");
+      if (decodeSignal == 1)
+      {
+        analyzerSettings.export_prediction = 1;
+        DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of prediction");
+      }
+      else if (decodeSignal == 2)
+      {
+        analyzerSettings.export_prefilter = 1;
+        DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of reconstruction pre-filtering");
+      }
     }
-    else if (decodeSignal == 2)
+    if (retrieveStatistics)
     {
-      analyzerSettings.export_prefilter = 1;
-      DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of reconstruction pre-filtering");
+      analyzerSettings.export_blkdata = 1;
+      DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of block data");
     }
+    dav1d_set_analyzer_settings(decoder, &analyzerSettings);
   }
-  if (retrieveStatistics)
-  {
-    analyzerSettings.export_blkdata = 1;
-    DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of block data");
-  }
-  dav1d_set_analyzer_settings(decoder, &analyzerSettings);
 
   // The decoder is ready to receive data
   decoderBase::resetDecoder();
@@ -997,102 +1000,4 @@ QIntPair decoderDav1d::calculateIntraPredDirection(IntraPredMode predMode, int a
 
   QIntPair vec(vectorTable[modeIndex][deltaIndex][0], vectorTable[modeIndex][deltaIndex][1]);
   return vec;
-}
-
-/// ------------------------- Dav1dPictureWrapper -----------------------
-
-decoderDav1d::Dav1dPictureWrapper::Dav1dPictureWrapper()
-{
-  curPicture = reinterpret_cast<Dav1dPicture*>(&curPicture_original);
-}
-
-void decoderDav1d::Dav1dPictureWrapper::setInternalsSupported()
-{
-  internalsSupported = true;
-  curPicture = reinterpret_cast<Dav1dPicture*>(&curPicture_analizer);
-}
-
-void decoderDav1d::Dav1dPictureWrapper::clear()
-{
-  if (internalsSupported)
-    memset(&curPicture_analizer, 0, sizeof(curPicture_analizer));
-  else
-    memset(&curPicture_original, 0, sizeof(curPicture_original));
-}
-
-QSize decoderDav1d::Dav1dPictureWrapper::getFrameSize() const
-{
-  if (internalsSupported)
-    return QSize(curPicture_analizer.p.w, curPicture_analizer.p.h);
-  else
-    return QSize(curPicture_original.p.w, curPicture_original.p.h);
-}
-
-YUVSubsamplingType decoderDav1d::Dav1dPictureWrapper::getSubsampling() const
-{
-  if (internalsSupported)
-    return decoderDav1d::convertFromInternalSubsampling(curPicture_analizer.p.layout);
-  else
-    return decoderDav1d::convertFromInternalSubsampling(curPicture_original.p.layout);
-}
-
-int decoderDav1d::Dav1dPictureWrapper::getBitDepth() const
-{
-  if (internalsSupported)
-    return curPicture_analizer.p.bpc;
-  else
-    return curPicture_original.p.bpc;
-}
-
-uint8_t *decoderDav1d::Dav1dPictureWrapper::getData(int component) const
-{
-  if (internalsSupported)
-    return (uint8_t*)curPicture_analizer.data[component];
-  else
-    return (uint8_t*)curPicture_original.data[component];
-}
-
-uint8_t *decoderDav1d::Dav1dPictureWrapper::getDataPrediction(int component) const
-{
-  if (internalsSupported)
-    return (uint8_t*)curPicture_analizer.pred[component];
-  return nullptr;
-}
-
-uint8_t *decoderDav1d::Dav1dPictureWrapper::getDataReconstructionPreFiltering(int component) const
-{
-  if (internalsSupported)
-    return (uint8_t*)curPicture_analizer.pre_lpf[component];
-  return nullptr;
-}
-
-ptrdiff_t decoderDav1d::Dav1dPictureWrapper::getStride(int component) const
-{
-  if (internalsSupported)
-    return curPicture_analizer.stride[component];
-  else
-    return curPicture_original.stride[component];
-}
-
-Av1Block *decoderDav1d::Dav1dPictureWrapper::getBlockData() const
-{
-  if (internalsSupported)
-    return reinterpret_cast<Av1Block*>(curPicture_analizer.blk_data);
-  return nullptr;
-}
-
-Dav1dSequenceHeader *decoderDav1d::Dav1dPictureWrapper::getSequenceHeader() const
-{
-  if (internalsSupported)
-    return curPicture_analizer.seq_hdr;
-  else
-    return curPicture_original.seq_hdr;
-}
-
-Dav1dFrameHeader *decoderDav1d::Dav1dPictureWrapper::getFrameHeader() const
-{
-  if (internalsSupported)
-    return curPicture_analizer.frame_hdr;
-  else
-    return curPicture_original.frame_hdr;
 }

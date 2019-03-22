@@ -55,8 +55,8 @@ struct decoderDav1d_Functions
   uint8_t    *(*dav1d_data_create)           (Dav1dData *data, size_t sz);
 
   // The interface for the analizer. These might not be available in the library.
-  void        (*dav1d_default_analyzer_settings) (Dav1dAnalyzerSettings *s);
-  int         (*dav1d_set_analyzer_settings)     (Dav1dContext *c, const Dav1dAnalyzerSettings *s);
+  void        (*dav1d_default_analyzer_settings) (Dav1dAnalyzerFlags *s);
+  int         (*dav1d_set_analyzer_settings)     (Dav1dContext *c, const Dav1dAnalyzerFlags *s);
 };
 
 // This class wraps the libde265 library in a demand-load fashion.
@@ -104,7 +104,7 @@ private:
 
   Dav1dContext *decoder {nullptr};
   Dav1dSettings settings;
-  Dav1dAnalyzerSettings analyzerSettings;
+  Dav1dAnalyzerFlags analyzerSettings;
 
   int nrSignals {1};
   bool flushing {false};
@@ -122,28 +122,26 @@ private:
   class Dav1dPictureWrapper
   {
   public:
-    Dav1dPictureWrapper();
-    void setInternalsSupported();
+    Dav1dPictureWrapper() {}
 
-    void clear();
-    QSize getFrameSize() const;
-    Dav1dPicture *getPicture() const { return curPicture; }
-    YUVSubsamplingType getSubsampling() const;
-    int getBitDepth() const;
-    uint8_t *getData(int component) const;
-    ptrdiff_t getStride(int component) const;
-    uint8_t *getDataPrediction(int component) const;
-    uint8_t *getDataReconstructionPreFiltering(int component) const;
-    Av1Block *getBlockData() const;
+    void setInternalsSupported() { internalsSupported = true;  }
 
-    Dav1dSequenceHeader *getSequenceHeader() const;
-    Dav1dFrameHeader *getFrameHeader() const;
+    void clear() { memset(&curPicture, 0, sizeof(Dav1dPicture)); }
+    QSize getFrameSize() const { return QSize(curPicture.p.w, curPicture.p.h); }
+    Dav1dPicture *getPicture() const { return (Dav1dPicture*)(&curPicture); }
+    YUVSubsamplingType getSubsampling() const { return decoderDav1d::convertFromInternalSubsampling(curPicture.p.layout); }
+    int getBitDepth() const { return curPicture.p.bpc; }
+    uint8_t *getData(int component) const { return (uint8_t*)curPicture.data[component]; }
+    ptrdiff_t getStride(int component) const { return curPicture.stride[component]; }
+    uint8_t *getDataPrediction(int component) const { return internalsSupported ? (uint8_t*)curPicture.pred[component] : nullptr; }
+    uint8_t *getDataReconstructionPreFiltering(int component) const { return internalsSupported ? (uint8_t*)curPicture.pre_lpf[component] : nullptr; }
+    Av1Block *getBlockData() const { return internalsSupported ? reinterpret_cast<Av1Block*>(curPicture.blk_data) : nullptr; }
+
+    Dav1dSequenceHeader *getSequenceHeader() const { return curPicture.seq_hdr; }
+    Dav1dFrameHeader *getFrameHeader() const { return curPicture.frame_hdr; }
     
   private:
-    Dav1dPicture_original curPicture_original;
-    Dav1dPicture_analizer curPicture_analizer;
-    // Points to one if the above
-    Dav1dPicture *curPicture {nullptr};
+    Dav1dPicture curPicture;
     bool internalsSupported {false};
   };
 
