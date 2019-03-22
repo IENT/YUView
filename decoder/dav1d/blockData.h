@@ -131,7 +131,21 @@ enum TxfmSize {
   TX_16X16,
   TX_32X32,
   TX_64X64,
-  N_TX_SIZES,
+  RTX_4X8,
+  RTX_8X4,
+  RTX_8X16,
+  RTX_16X8,
+  RTX_16X32,
+  RTX_32X16,
+  RTX_32X64,
+  RTX_64X32,
+  RTX_4X16,
+  RTX_16X4,
+  RTX_8X32,
+  RTX_32X8,
+  RTX_16X64,
+  RTX_64X16,
+  N_TX_SIZES
 };
 
 // comp_type is of this type

@@ -25,18 +25,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __DAV1D_H__
-#define __DAV1D_H__
+#ifndef DAV1D_H
+#define DAV1D_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <errno.h>
+#include <stdarg.h>
 
 #include "common.h"
 #include "picture.h"
 #include "data.h"
+#include "version.h"
 
 typedef struct Dav1dContext Dav1dContext;
 typedef struct Dav1dRef Dav1dRef;
@@ -44,25 +46,36 @@ typedef struct Dav1dRef Dav1dRef;
 #define DAV1D_MAX_FRAME_THREADS 256
 #define DAV1D_MAX_TILE_THREADS 64
 
+typedef struct Dav1dLogger {
+    void *cookie; ///< Custom data to pass to the callback.
+    /**
+     * Logger callback. Default prints to stderr. May be NULL to disable logging.
+     *
+     * @param cookie Custom pointer passed to all calls.
+     * @param format The vprintf compatible format string.
+     * @param     ap List of arguments referenced by the format string.
+     */
+    void (*callback)(void *cookie, const char *format, va_list ap);
+} Dav1dLogger;
+
 typedef struct Dav1dSettings {
     int n_frame_threads;
     int n_tile_threads;
-    Dav1dPicAllocator allocator;
     int apply_grain;
     int operating_point; ///< select an operating point for scalable AV1 bitstreams (0 - 31)
     int all_layers; ///< output all spatial layers of a scalable AV1 biststream
+    Dav1dPicAllocator allocator;
+    Dav1dLogger logger;
 } Dav1dSettings;
 
-/* The settings for the analizer. These are only available in the analizer extension of dav1d
- */
-typedef struct Dav1dAnalyzerSettings {
-  int export_prediction;
-  int export_prefilter;
-  int export_bitsperblk;  // Not implemented yet
-  int export_bitsused;    // Not implemented yet
-  int export_blkdata;
-  int export_invisible_frames;
-} Dav1dAnalyzerSettings;
+typedef struct Dav1dAnalyzerFlags {
+    int export_prediction;
+    int export_prefilter;
+    int export_bitsperblk;  // Not implemented yet
+    int export_bitsused;    // Not implemented yet
+    int export_blkdata;
+    int export_invisible_frames;
+} Dav1dAnalyzerFlags;
 
 /**
  * Get library version.
@@ -77,12 +90,11 @@ DAV1D_API const char *dav1d_version(void);
 DAV1D_API void dav1d_default_settings(Dav1dSettings *s);
 
 /**
-* Initialize analyzer settings to default values (all zero)
-* This is only available in the analizer extension of dav1d.
-*
-* @param s Input analyzer settings context.
-*/
-DAV1D_API void dav1d_default_analyzer_settings(Dav1dAnalyzerSettings *s);
+ * Initialize analyzer flags to default values (all zero)
+ *
+ * @param s Input analyzer flags context.
+ */
+DAV1D_API void dav1d_default_analyzer_flags(Dav1dAnalyzerFlags *s);
 
 /**
  * Allocate and open a decoder instance.
@@ -99,18 +111,17 @@ DAV1D_API void dav1d_default_analyzer_settings(Dav1dAnalyzerSettings *s);
 DAV1D_API int dav1d_open(Dav1dContext **c_out, const Dav1dSettings *s);
 
 /**
-* Apply the given analyzer settings.
-* This is only available in the analizer extension of dav1d.
-* 
-* @param     c The opened decoder instance. 
-* @param     s The analyzer settings it set.
-* 
-* @note This must be called right after the decoder was opened 
-*       (dav1d_open) and before any actual decoding was performed.
-* 
-* @return 0 on success, or < 0 (a negative errno code) on error.
-*/
-DAV1D_API int dav1d_set_analyzer_settings(Dav1dContext *c, const Dav1dAnalyzerSettings *s);
+ * Apply the given analyzer settings.
+ * 
+ * @param     c The opened decoder instance. 
+ * @param     s The analyzer settings it set.
+ * 
+ * @note This must be called right after the decoder was opened 
+ *       (dav1d_open) and before any actual decoding was performed.
+ * 
+ * @return 0 on success, or < 0 (a negative errno code) on error.
+ */
+DAV1D_API int dav1d_set_analyzer_flags(Dav1dContext *c, const Dav1dAnalyzerFlags *s);
 
 /**
  * Parse a Sequence Header OBU from bitstream data.
@@ -220,4 +231,4 @@ DAV1D_API void dav1d_flush(Dav1dContext *c);
 }
 # endif
 
-#endif /* __DAV1D_H__ */
+#endif /* DAV1D_H */
