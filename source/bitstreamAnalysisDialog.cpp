@@ -120,9 +120,9 @@ void bitstreamAnalysisDialog::showVideoStreamOnlyCheckBoxToggled(bool state)
   {
     showVideoStreamOnly = state;
     if (showVideoStreamOnly)
-      ui.dataTreeView->setModel(parser->getFilteredPacketItemModel());
+      parser->setFilterStreamIndex(parser->getVideoStreamIndex());
     else
-      ui.dataTreeView->setModel(parser->getPacketItemModel());
+      parser->setFilterStreamIndex(-1);
   }
 }
 
