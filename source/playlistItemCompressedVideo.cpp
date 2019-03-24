@@ -420,7 +420,7 @@ itemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool lo
 
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
   auto videoState = video->needsLoading(frameIdxInternal, loadRawData);
-  if (videoState == LoadingNeeded && decodingOfFrameNotPossible && frameIdxInternal >= currentFrameIdx[0])
+  if (videoState == LoadingNeeded && decodingNotPossibleAfter >= 0 && frameIdxInternal >= decodingNotPossibleAfter && frameIdxInternal >= currentFrameIdx[0])
     // The decoder can not decode this frame. 
     return LoadingNotNeeded;
   if (videoState == LoadingNeeded || statSource.needsLoading(frameIdxInternal) == LoadingNeeded)
@@ -432,7 +432,7 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
 {
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  if (decodingOfFrameNotPossible)
+  if (decodingNotPossibleAfter >= 0 && frameIdxInternal >= decodingNotPossibleAfter)
   {
     infoText = "Decoding of the frame not possible:\n";
     infoText += "The frame could not be decoded. Possibly, the bitstream is corrupt or was cut at an invalid position.";
@@ -557,7 +557,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
           if (!dec->decodeFrames())
           {
             DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData The decoder did not switch to decoding frame mode. Error.");
-            decodingOfFrameNotPossible = true;
+            decodingNotPossibleAfter = frameIdxInternal;
             break;
           }
           // Pushing the data failed because the ffmpeg decoder wants us to read frames first.
@@ -605,12 +605,12 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     if (!dec->needsMoreData() && !dec->decodeFrames())
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData decoder neither needs more data nor can decode frames");
-      decodingOfFrameNotPossible = true;
+      decodingNotPossibleAfter = frameIdxInternal;
       break;
     }
   }
 
-  if (decodingOfFrameNotPossible)
+  if (decodingNotPossibleAfter >= 0 && frameIdxInternal >= decodingNotPossibleAfter)
   {
     // The specified frame (which is thoretically in the bitstream) can not be decoded.
     // Maybe the bitstream was cut at a position that it was not supposed to be cut at.
@@ -639,7 +639,7 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToDTS,
   decoderBase *dec = caching ? cachingDecoder.data() : loadingDecoder.data();
   dec->resetDecoder();
   repushData = false;
-  decodingOfFrameNotPossible = false;
+  decodingNotPossibleAfter = -1;
 
   // Retrieval of the raw metadata is only required if the the reader or the decoder is not ffmpeg
   const bool bothFFmpeg = (!isInputFormatTypeAnnexB() && decoderEngineType == decoderEngineFFMpeg);
