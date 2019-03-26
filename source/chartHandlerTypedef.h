@@ -700,6 +700,8 @@ class EnumAuxiliary : private QObject
    * a created enum, combines the parameters
    */
   static chartOrderBy makeChartOrderBy(chartShow aShow, chartGroupBy aGroup, chartNormalize aNormalize);
+
+  static chartShow getShowType(chartOrderBy aType);
 };
 
 // other necessary implementations

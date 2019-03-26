@@ -294,6 +294,9 @@ private:
   QHash<int, ChartWorkerThread*> mWorkerThreads; // ordered by the id of the worker-object
   bool mCancelBackgroundParser = false;
 
+  // contains all names of GUI-elements. Names will add in constructor
+  QStringList mSupportedList;
+
 
 // functions
 /*----------auxiliary functions----------*/
@@ -391,6 +394,14 @@ private:
    */
   void rangeChange(bool aSlider = true, bool aSpinbox = false);
 
+  /**
+   * @brief enableWidgets
+   * can change the enable state of the given widget; all possible objectnames are hold in an supportedlist
+   *
+   * @param aChild
+   * wiget as object
+   */
+  void enableWidgets(QObject* aChild, bool aEnabled);
 
 /*----------playListItemStatisticsFile----------*/
   /**

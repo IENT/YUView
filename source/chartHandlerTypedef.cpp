@@ -300,3 +300,19 @@ chartOrderBy EnumAuxiliary::makeChartOrderBy(chartShow aShow, chartGroupBy aGrou
   else
     return cobUnknown;
 }
+
+chartShow EnumAuxiliary::getShowType(chartOrderBy aType)
+{
+  QString strType = "" + aType;
+
+  if(strType.contains("PerFrame", Qt::CaseInsensitive))
+    return csPerFrame;
+
+  if(strType.contains("Range", Qt::CaseInsensitive))
+    return csRange;
+
+  if(strType.contains("AllFrames", Qt::CaseInsensitive))
+    return csAllFrames;
+
+  return csUnknown;
+}

@@ -74,6 +74,14 @@ ChartHandler::ChartHandler() : mYUVChartFactory(&this->mNoDataToShowWidget, &thi
 
   this->mDataIsLoadingWidget.setLayout(basicLayout);
 
+  // add all names to supportedList
+  this->mSupportedList.clear();
+  mSupportedList << CHECKBOX_DRAW_CHART << OPTION_NAME_CBX_CHART_TYPES << OPTION_NAME_CBX_CHART_FRAMESHOW
+                << OPTION_NAME_CBX_CHART_GROUPBY << OPTION_NAME_CBX_CHART_NORMALIZE
+                << SLIDER_FRAME_RANGE_BEGIN << SLIDER_FRAME_RANGE_END << SPINBOX_FRAME_RANGE_BEGIN
+                << SPINBOX_FRAME_RANGE_END << EDIT_NAME_LIMIT_NEGX << EDIT_NAME_LIMIT_POSX
+                << EDIT_NAME_LIMIT_NEGY << EDIT_NAME_LIMIT_POSY;
+
   // init the workerthreads
   // calculate the best amount of threads
   int nrThreads = QThread::idealThreadCount() - 1;
@@ -361,6 +369,7 @@ void ChartHandler::asynchFinished(int aId)
   // create the chart an d place it, so the user can see the chart
   QWidget* chart = this->mYUVChartFactory.createChart(settings);
   this->placeChart(coord, chart);
+  this->enableWidgets(coord.mWidget, true);
 }
 
 /*-------------------- private functions --------------------*/
@@ -408,7 +417,7 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
   QComboBox* cbxOptionsGroup = new QComboBox;
 
   // we need a label for a simple text-information
-  QLabel* lblOptionsNormalize    = new QLabel(CBX_LABEL_NORMALIZE );
+  QLabel* lblOptionsNormalize    = new QLabel(CBX_LABEL_NORMALIZE);
   // furthermore we need the combobox
   QComboBox* cbxOptionsNormalize = new QComboBox;
 
@@ -722,6 +731,31 @@ void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
   // at least, create the statistics
   // no valid string is possible / necessary, because it will get later
   this->onStatisticsChange("");
+}
+
+void ChartHandler::enableWidgets(QObject* aChild, bool aEnabled)
+{
+  if((dynamic_cast<QWidget*>(aChild)))
+    (dynamic_cast<QWidget*>(aChild))->setEnabled(aEnabled);
+
+  QObjectList childrenList = aChild->children();
+
+  foreach (auto child, childrenList)
+  {
+    // recursive, if we have more layers in our widget
+    if(child->children().count() > 1)
+      this->enableWidgets(child, aEnabled);
+
+    // get the objectname
+    QString objectname = child->objectName();
+    if(this->mSupportedList.contains(objectname)) // check if found child should ne disabeld or enabled
+      (dynamic_cast<QWidget*>(child))->setEnabled(aEnabled); // change status enabled or disabled
+  }
+
+  // we have to set the slider and spinboxes enable new,
+  //because the enable-state depends on the chartshow (perframe, range, allframes)
+  if(aEnabled)
+    switchOrderEnableStatistics("no matter"); // the string doesnt matter, because if "Selected"-option is seleted, this action/at this code the programm never deleivers
 }
 
 void ChartHandler::setRangeToComponents(itemWidgetCoord aCoord, QObject* aObject)
@@ -1307,6 +1341,8 @@ void ChartHandler::onStatisticsChange(const QString aString)
             break;
         }
 
+        this->enableWidgets(coord.mWidget, false);
+
         // set an chart, that the data is loading
         this->placeChart(coord, &this->mDataIsLoadingWidget);
 
@@ -1315,10 +1351,11 @@ void ChartHandler::onStatisticsChange(const QString aString)
         {
           QWidget* chart = this->mYUVChartFactory.createChart(coord.mSettings);
           this->placeChart(coord, chart);
+          this->enableWidgets(coord.mWidget, true);
           return;
         }
 
-        // set the job and the worker wll start to process it
+        // set the job and the worker will start to process it
         workerThread->worker()->processLoadingJob(coord);
 
         // chart will be placed after the thread is finished
