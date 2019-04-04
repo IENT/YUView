@@ -174,7 +174,7 @@ protected:
 
   // If the bitstream is invalid (for example it was cut at a position that it should not be cut at), we
   // might be unable to decode some of the frames at the end of the sequence.
-  bool decodingOfFrameNotPossible {false};
+  int decodingNotPossibleAfter { -1 };
 
 private slots:
   // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the videoHandler if the frame that is

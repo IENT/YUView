@@ -297,13 +297,16 @@ namespace parserCommon
     Q_OBJECT
 
   public:
-    FilterByStreamIndexProxyModel(QObject *parent, int filterStreamIndex) : QSortFilterProxyModel(parent), filterStreamIndex(filterStreamIndex){};
+    FilterByStreamIndexProxyModel(QObject *parent) : QSortFilterProxyModel(parent) {};
+
+    int filterStreamIndex() const { return streamIndex; }
+    void setFilterStreamIndex(int idx);
 
   protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
 
   private:
-    int filterStreamIndex { -1 };
+    int streamIndex { -1 };
   };
 }
 
