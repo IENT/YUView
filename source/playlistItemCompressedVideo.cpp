@@ -161,7 +161,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %s", rateFPS);
     ffmpegCodec = inputFileFFmpegLoading->getVideoStreamCodecID();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getCodecName().toStdString().c_str());
-    if (ffmpegCodec.isAVC() || ffmpegCodec.isHEVC())
+    if (!ffmpegCodec.isNone())
       possibleDecoders.append(decoderEngineFFMpeg);
     if (ffmpegCodec.isHEVC())
     {
