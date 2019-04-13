@@ -371,7 +371,7 @@ infoData playlistItemCompressedVideo::getInfo() const
   }
   info.items.append(infoItem("NAL units", "Bitstream Analysis", "Show a detailed list of all NAL units.", true, 0));
   if (decoderEngineType == decoderEngineFFMpeg)
-    info.items.append(infoItem("FFMpeg Log", "Show FFmpeg Log", "Show the log messages from FFmpeg.", true, 1));
+    info.items.append(infoItem("FFmpeg Log", "Show FFmpeg Log", "Show the log messages from FFmpeg.", true, 1));
 
   return info;
 }
@@ -890,7 +890,7 @@ void playlistItemCompressedVideo::getSupportedFileExtensions(QStringList &allExt
   ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "cgi" << "ivf" << "ivr" << "lvf"
       << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" << "mjpeg" << "mpg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" << "mvi" << "mxg" << "v" << "ogg" 
       << "mjpg" << "viv" << "webm" << "xmv" << "ts" << "mxf";
-  QString filtersString = "FFMpeg files (";
+  QString filtersString = "FFmpeg files (";
   for (QString e : ext)
     filtersString.append(QString("*.%1").arg(e));
   filtersString.append(")");
