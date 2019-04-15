@@ -130,7 +130,8 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
   auto playlistItemIsSupported = [=](playlistItem* aItem) {
     // add dynamic_cast<YOURPLAYLISTITEMTYPE*>(aItem) with OR-check to support your playlistitem
     return dynamic_cast<playlistItemStatisticsFile*>(aItem)
-           || false;
+        || dynamic_cast<playlistItemRawFile*>(aItem)
+        || false;
   };
 
   // check if the widget was already created and stored
@@ -164,6 +165,17 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
     // in case of getting the widget a second time, we just have to load it from the list
     this->mListItemWidget << coord;
   }
+  // in case of playlistItemRawFile
+  else if (dynamic_cast<playlistItemRawFile*>(aItem))
+  {
+    // cast item to right type
+    playlistItemRawFile* pltrf = dynamic_cast<playlistItemRawFile*>(aItem);
+    // get the widget and save it
+    coord.mWidget = this->createColorSpaceWidget(pltrf, coord);
+    // we save an item-widget combination in a list
+    // in case of getting the widget a second time, we just have to load it from the list
+    this->mListItemWidget << coord;
+  }
   else
   {
     // in case of default, that we dont know the item-type
@@ -181,6 +193,10 @@ QString ChartHandler::getChartsTitle(playlistItem *aItem)
   // in case of playlistItemStatisticsFile
   if(dynamic_cast<playlistItemStatisticsFile*> (aItem))
     return CHARTSWIDGET_WINDOW_TITLE_STATISTICS;
+
+  // in case of playlistItemRawFile
+  if(dynamic_cast<playlistItemRawFile*> (aItem))
+    return CHARTSWIDGET_WINDOW_TITLE_IMAGE;
 
   // return default name
   return CHARTSWIDGET_WINDOW_TITLE_DEFAULT;
@@ -760,6 +776,9 @@ void ChartHandler::enableWidgets(QObject* aChild, bool aEnabled)
 
 void ChartHandler::setRangeToComponents(itemWidgetCoord aCoord, QObject* aObject)
 {
+  if(!aCoord.mWidget)
+    return;
+
   QObjectList list;
 
   if(aObject)
@@ -916,42 +935,53 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
   {
     // now we need the combination, try to find it
     itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
-
+    QString type("");
     // check which show-option is selected
     // if something other is selected than csPerFrame, we can leave
     if(coord.mWidget) // only do the part, if we have created the widget before
     {
       QVariant showVariant(csUnknown);
+      chartShow showart = csUnknown;
       QObjectList children = coord.mWidget->children();
       foreach (auto child, children)
       {
         if(dynamic_cast<QComboBox*> (child)) // finding the combobox
         {
           if(child->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
-          {
             showVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+
+          if(child->objectName() == OPTION_NAME_CBX_CHART_TYPES)
+            type = (dynamic_cast<QComboBox*>(child))->currentText();
+
+          showart = showVariant.value<chartShow>();
+          if(showart != csUnknown && type != "")
             break;
-          }
         }
       }
-      chartShow showart = showVariant.value<chartShow>();
 
       // remember, we just look at csPerFrame; every other we can leave
       if(showart != csPerFrame)
         return;
+      // we must have an valid type
+      if(type == "")
+        return;
+
+      this->onStatisticsChange(type);
     }
 
-    // just a holder, will be set in the following
-    QWidget* chart;
+//    // just a holder, will be set in the following
+//    QWidget* chart;
 
-    // check what form of playlistitem was selected
-    if(dynamic_cast<playlistItemStatisticsFile*> (items[0]))
-      chart = this->createStatisticsChart(coord);
-    else
-      // the selected item is not defined at this point, so show a default
-      chart = &(this->mNoDataToShowWidget);
+//    // check what form of playlistitem was selected
+//    if(dynamic_cast<playlistItemStatisticsFile*> (items[0]))
+//      chart = this->createStatisticsChart(coord);
+//    else if(dynamic_cast<playlistItemRawFile*> (items[0]))
+//      chart = this->createColorSpaceChart(coord);
+//    else
+//      // the selected item is not defined at this point, so show a default
+//      chart = &(this->mNoDataToShowWidget);
 
-    this->placeChart(coord, chart);
+//    this->placeChart(coord, chart);
   }
 }
 
@@ -1311,6 +1341,145 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   return this->mLastStatisticsWidget;
 }
 
+QWidget* ChartHandler::createColorSpaceWidget(playlistItemRawFile *aItem, itemWidgetCoord& aCoord)
+{
+  //define a simple layout for the Image file Widget
+  QWidget *basicWidget      = new QWidget;
+  QVBoxLayout *basicLayout  = new QVBoxLayout(basicWidget);
+  QComboBox* cbxTypes       = new QComboBox;
+  QLabel* lblStat           = new QLabel(CBX_LABEL_IMAGE_TYPE);
+  QFormLayout* topLayout    = new QFormLayout;
+
+  basicLayout->addWidget(lblStat);
+
+  //setting name for the combobox, to find it later dynamicly
+  cbxTypes->setObjectName(OPTION_NAME_CBX_CHART_TYPES);
+
+  QList<QString> types = aItem->getTypes();
+
+  //check if map contains items
+  if(types.count() > 0)
+  {
+    //map has items, so add them
+    cbxTypes->addItem(CBX_OPTION_SELECT);
+
+    foreach (QString type, types)
+      cbxTypes->addItem(type); // fill with data
+  }
+  else
+    // no items, add a info
+    cbxTypes->addItem(CBX_OPTION_NO_TYPES);
+//   @see http://stackoverflow.com/questions/16794695/connecting-overloaded-signals-and-slots-in-qt-5
+//   do the connect after adding the items otherwise the connect will be call
+
+  connect(cbxTypes,
+          static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+          this,
+          &ChartHandler::onStatisticsChange);
+
+  connect(cbxTypes,
+          static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+          this,
+          &ChartHandler::switchOrderEnableStatistics);
+
+  // getting the list to the order by - components
+  QList<QWidget*> listGeneratedWidgets = this->generateOrderWidgetsOnly(cbxTypes->count() > 1);
+  bool hasOddAmount = listGeneratedWidgets.count() % 2 == 1;
+
+  // adding the components, check how we add them
+  if(hasOddAmount)
+  {
+    topLayout->addWidget(lblStat);
+    topLayout->addWidget(cbxTypes);
+  }
+  else
+    topLayout->addRow(lblStat, cbxTypes);
+
+  // adding the widgets from the list to the toplayout
+  // we do this here at this way, because if we use generateOrderByLayout we get a distance-difference in the layout
+  foreach (auto widget, listGeneratedWidgets)
+  {
+    if(hasOddAmount)
+      topLayout->addWidget(widget);
+
+    if((widget->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
+       || (widget->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
+       || (widget->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE))
+      // finding the combobox and define the action
+    {
+      connect(dynamic_cast<QComboBox*> (widget),
+              static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+              this,
+              &ChartHandler::onStatisticsChange);
+      connect(dynamic_cast<QComboBox*> (widget),
+              static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+              this,
+              &ChartHandler::switchOrderEnableStatistics);
+    }
+  }
+
+  // at this point we add all widgets if we dont have an odd amount
+  if(!hasOddAmount)
+    for (int i = 0; i < listGeneratedWidgets.count(); i +=2) // take care, we increment i every time by 2!!
+      topLayout->addRow(listGeneratedWidgets.at(i), listGeneratedWidgets.at(i+1));
+
+  // add all to our layout
+  basicLayout->addLayout(topLayout);
+  basicLayout->addWidget(aCoord.mChart);
+
+  return basicWidget;
+}
+
+QWidget* ChartHandler::createColorSpaceChart(itemWidgetCoord& aCoord)
+{
+//  chartOrderBy order = cobPerFrameGrpByValueNrmNone;
+
+//  // if aCoord.mWidget is null, can happen if loading a new file and the playbackcontroller will be set to 0
+//  // return that we cant show data
+//  if(!aCoord.mWidget)
+//    return &(this->mNoDataToShowWidget);
+
+//  indexRange range;
+//  int frameIndex = this->mPlayback->getCurrentFrame();
+//  range.first = frameIndex;
+//  range.second = frameIndex;
+
+//  QString type("");
+
+//  //we need the selected StatisticType, so we have to find the combobox and get the text of it
+//  QObjectList children = aCoord.mWidget->children();
+
+//  foreach (auto child, children)
+//  {
+//    if(dynamic_cast<QComboBox*> (child)) // finding the combobox
+//    {
+//      // we need to differentiate between the type-combobox and order-combobox, but we have to find both values
+//      if(child->objectName() == OPTION_NAME_CBX_CHART_TYPES)
+//        type = (dynamic_cast<QComboBox*>(child))->currentText();
+//    }
+//  }
+//  playlistItemRawFile* plirf = dynamic_cast<playlistItemRawFile*>(aCoord.mItem);
+//  if (!plirf)
+//    return this->mLastStatisticsWidget;
+
+//  this->mLastStatisticsWidget = this->mYUVChartFactory.createChart(order, aCoord.mItem, range, type);
+
+//  return this->mLastStatisticsWidget;
+
+  // if aCoord.mWidget is null, can happen if loading a new file and the playbackcontroller will be set to 0
+  // return that we cant show data
+  if(!aCoord.mWidget)
+    return &(this->mNoDataToShowWidget);
+
+  // generate the settings based on the input from the user
+  chartSettingsData settings = this->createStatisticsChartSettings(aCoord);
+
+  // generate the chart and display it
+  this->mLastStatisticsWidget = this->mYUVChartFactory.createChart(settings);
+
+  return this->mLastStatisticsWidget;
+}
+
 void ChartHandler::onStatisticsChange(const QString aString)
 {
   if(!this->mCbDrawChart->isChecked())
@@ -1323,6 +1492,11 @@ void ChartHandler::onStatisticsChange(const QString aString)
   {
     // now we need the combination, try to find it
     itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
+
+    //check if valid, can happen that it is invalid at first start
+    if(!coord.mWidget)
+      return;
+
     // necessary at this point, because now we have all the data
     this->setRangeToComponents(coord, NULL);
 

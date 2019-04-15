@@ -473,6 +473,10 @@ void playlistItemRawFile::loadRawData(int frameIdxInternal)
     fileStartPos = frameIdxInternal * getBytesPerFrame();
   qint64 nrBytes = getBytesPerFrame();
 
+  indexRange range;
+  range.first = frameIdxInternal;
+  range.second = frameIdxInternal;
+
   if (rawFormat == YUV)
   {
     if (dataSource.readBytes(getYUVVideo()->rawYUVData, fileStartPos, nrBytes) < nrBytes)
@@ -533,4 +537,319 @@ void playlistItemRawFile::reloadItemSource()
 
   // Emit that the item needs redrawing and the cache changed.
   emit signalItemChanged(true, RECACHE_NONE);
+}
+
+QMap<QString, QList<QList<QVariant>>>* playlistItemRawFile::getData(indexRange range, bool reset)
+{
+  this->mDataIsLoading= true;
+
+  if (reset)
+    this->mStatisticData.clear();
+
+  int size = 256;
+  int histYR[size] = { 0 };
+  int histUG[size] = { 0 };
+  int histVB[size] = { 0 };
+  QSize imageSize = this->getSize();
+
+  for(int frame = range.first; frame <= range.second; frame++)
+  {
+    for(int width = 0; width < imageSize.width(); width++)
+    {
+      for(int height = 0; height < imageSize.height(); height++)
+      {
+        ValuePairListSets valuesets = this->getPixelValues(QPoint(width, height),  frame);
+
+        for(int i = 0; i < valuesets.count(); i++)
+        {
+          QPair<QString, ValuePairList> pair = valuesets.at(i);
+
+          if(pair.second.count() == 3)
+          {
+            int pos;
+
+            pos = pair.second.at(0).second.toInt();
+            histYR[pos]++;
+
+            pos = pair.second.at(1).second.toInt();
+            histUG[pos]++;
+
+            pos = pair.second.at(2).second.toInt();
+            histVB[pos]++;
+          }
+        }
+      }
+    }
+  }
+
+   QList<QVariant> dataListYUVRGB, dataListYR, dataListUG, dataListVB;
+
+  for(int i = 0; i < size; i++)
+  {
+    dataListYR.append(histYR[i]);
+    dataListUG.append(histUG[i]);
+    dataListVB.append(histVB[i]);
+  }
+
+  dataListYUVRGB.append(dataListYR);
+  dataListYUVRGB.append(dataListUG);
+  dataListYUVRGB.append(dataListVB);
+
+  QList<QList<QVariant>> resultListYUVRGB, resultListYR, resultListUG, resultListVB;
+  resultListYUVRGB.append(dataListYUVRGB);
+  resultListYR.append(dataListYR);
+  resultListUG.append(dataListUG);
+  resultListVB.append(dataListVB);
+
+  if(rawFormat == YUV)
+  {
+//    this->mStatisticData.insert("YUV", resultListYUVRGB);
+    this->mStatisticData.insert("Y", resultListYR);
+    this->mStatisticData.insert("U", resultListUG);
+    this->mStatisticData.insert("V", resultListVB);
+  }
+  else if(rawFormat == RGB)
+  {
+//    this->mStatisticData.insert("RGB", resultListYUVRGB);
+    this->mStatisticData.insert("R", resultListYR);
+    this->mStatisticData.insert("G", resultListUG);
+    this->mStatisticData.insert("B", resultListVB);
+  }
+
+  this->mDataIsLoading= false;
+
+  return &this->mStatisticData;
+}
+
+QList<collectedData>* playlistItemRawFile::sortAndCategorizeData(const QString aType, const int aFrameIndex)
+{
+  Q_UNUSED(aFrameIndex)
+
+  //check if data was loaded  if(!(&this->mStatisticData))
+  if(this->mStatisticData.empty())
+    this->getData(this->getFrameIdxRange(), true);
+
+  collectedData data;
+  data.mStatDataType = sdtRGB;
+  QString key = aType;
+  data.mLabel = key;
+  QList<collectedData>* result = new QList<collectedData>();
+
+  //ask if selected Type is "YUV"
+  if (key == "YUV")
+  {
+    QLinkedList<QString> stringContainer;
+    stringContainer << "Y" << "U" << "V";
+    QString controlString;
+
+    foreach (controlString, stringContainer)
+    {
+      key = controlString;
+
+      QList<QList<QVariant>> resultLists = this->mStatisticData.value(key);
+      QMap<int, int> map;
+
+      for (int i = 0; i < resultLists.count(); i++)
+      {
+        QList<QVariant> dataList = resultLists.at(i);
+        for (int j = 0; j < dataList.count(); j++)
+        {
+          QVariant variant = dataList.at(j);
+          int colorValue = variant.toInt();
+          int value = map.value(colorValue);
+          value++;
+          map.insert(colorValue, value);
+        }
+      }
+
+      foreach (int key, map.keys())
+      {
+        data.addValue(QVariant::fromValue(key), map.value(key));
+      }
+
+    }
+    result->append(data);
+    return result;
+  }
+  else
+  {
+    QList<QList<QVariant>> resultLists = this->mStatisticData.value(key);
+    QHash<int, int> map;
+
+    if(resultLists.count() == 0)
+      return result;
+
+    QList<QVariant> dataList = resultLists.at(0);
+    for (int j = 0; j < dataList.count(); j++)
+    {
+      int counter = dataList.at(j).toInt();
+      map.insert(j, counter);
+    }
+
+
+//    for (int i = 0; i < resultLists.count(); i++)
+//    {
+//      QList<QVariant> dataList = resultLists.at(i);
+//      for (int j = 0; j < dataList.count(); j++)
+//      {
+//        QVariant variant = dataList.at(j);
+//        int colorValue = variant.toInt();
+//        int value = map.value(colorValue);
+//        value++;
+//        map.insert(colorValue, value);
+//      }
+//    }
+
+    foreach (int key, map.keys())
+      data.addValue(QVariant::fromValue(key), map.value(key));
+
+    QList<collectedData>* result = new QList<collectedData>();
+    result->append(data);
+    return result;
+  }
+}
+
+QList<collectedData>* playlistItemRawFile::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
+{
+  //if we have the same frame --> just one frame we look at
+  if(aRange.first == aRange.second) // same frame --> just one frame same as current frame
+    return this->sortAndCategorizeData(aType, aRange.first);
+
+  // we create a tempory list, to collect all data from all frames
+  // and we start to sort them by the label
+  QList<collectedData*>* preResult = new QList<collectedData*>();
+
+  // next step get the data for each frame
+  for (int frame = aRange.first; frame <= aRange.second; frame++)
+  {
+    // get the data for the actual frame
+    QList<collectedData>* collectedDataByFrameList = this->sortAndCategorizeData(aType, frame);
+
+    // now we have to integrate the new Data from one Frame to all other frames
+    for(int i = 0; i< collectedDataByFrameList->count(); i++)
+    {
+      collectedData frameData = collectedDataByFrameList->at(i);
+
+      bool wasnotinside = true;
+
+      // first: check if we have the collected data-label inside of our result list
+      for(int j = 0; j < preResult->count(); j++)
+      {
+        collectedData* resultCollectedData = preResult->at(j);
+
+        if(*resultCollectedData == frameData)
+        {
+          resultCollectedData->addValues(frameData);
+          wasnotinside = false;
+          break;
+        }
+      }
+
+      // second: the data-label was not inside, so we create and fill with data
+      if(wasnotinside)
+      {
+        collectedData* resultCollectedData = new collectedData;
+        resultCollectedData->mLabel = frameData.mLabel;
+        resultCollectedData->mStatDataType =frameData.mStatDataType;
+        resultCollectedData->addValues(frameData);
+        preResult->append(resultCollectedData);
+      }
+    }
+  }
+
+  // at this point we have a tree-structure, each label has a list with all values, but the values are not summed up
+  // and we have to
+
+  // we create the data for the result
+  QList<collectedData>* result = new QList<collectedData>();
+
+  // running thru all preResult-Elements
+  for (int i = 0; i < preResult->count(); i++)
+  {
+    // creating a list for all Data
+    QList<QPair<QVariant, int>*>* tmpDataList = new QList<QPair<QVariant, int>*>();
+
+    //get the data from preResult at an index
+    collectedData* preData = preResult->at(i);
+
+    // now we go thru all possible data-elements
+    for (int j = 0; j < preData->mValues.count(); j++)
+    {
+      // getting the real-data (value and amount)
+      QPair<QVariant, int>* preDataValuePair = preData->mValues.at(j);
+
+      //define a auxillary-variable
+      bool wasnotinside = true;
+
+      // run thru all data, we have already in our list
+      for (int k = 0; k < tmpDataList->count(); k++)
+      {
+        // getting data from our list
+        QPair<QVariant, int>* resultData = tmpDataList->at(k);
+
+        // and compare each value for the result with the given value
+        if(resultData->first == preDataValuePair->first)
+        {
+          // if we found an equal pair of value, we have to sum up the amount
+          resultData->second += preDataValuePair->second;
+          wasnotinside = false;   // take care, that we change our bool
+          break; // we can leave the loop, because every value is just one time in our list
+        }
+      }
+
+      // we have the data not inside our list
+      if(wasnotinside)
+      {
+        // we create a copy and insert it to the list
+        QPair<QVariant, int>* dptcnt = new QPair<QVariant, int>();
+        dptcnt->first = preDataValuePair->first;
+        dptcnt->second = preDataValuePair->second;
+        tmpDataList->append(dptcnt);
+      }
+    }
+
+    //define the new data for the result
+    collectedData data;
+    data.mLabel = preData->mLabel;
+    data.mStatDataType  = preData->mStatDataType;
+    data.addValueList(tmpDataList);
+
+    // at least append the new collected Data to our result-list
+    result->append(data);
+  }
+
+  // we don't need the temporary created preResult anymore (remember: get memory, free memory)
+  preResult->clear();
+  delete preResult;
+
+  // finally return our result
+  return result;
+}
+
+bool playlistItemRawFile::isDataAvaible()
+{
+  //return backgroundParserFuture.isFinished();
+  return !this->mDataIsLoading;
+}
+
+QList<QString> playlistItemRawFile::getTypes()
+{
+  if(!this->mStatisticData.empty())
+    return this->mStatisticData.keys();
+
+  QList<QString> result;
+  if(rawFormat == YUV)
+  {
+    result.append("Y");
+    result.append("U");
+    result.append("V");
+  }
+  else if(rawFormat == RGB)
+  {
+    result.append("R");
+    result.append("G");
+    result.append("B");
+  }
+
+  return result;
 }

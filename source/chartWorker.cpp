@@ -71,7 +71,14 @@ void ChartWorker::processLoadingJobInternal(itemWidgetCoord aCoord)
 
   // at this point we can calculate the data
   // This is performed in the thread (the loading thread with higher priority.
-  this->mCachedData = this->mChartHandler->createStatisticsChartSettings(aCoord);
+
+  //at this point, we have to decide which function we call
+  if(dynamic_cast<playlistItemStatisticsFile*> (aCoord.mItem))
+    this->mCachedData = this->mChartHandler->createStatisticsChartSettings(aCoord);
+  else if(dynamic_cast<playlistItemRawFile*> (aCoord.mItem))
+    this->mCachedData = this->mChartHandler->createStatisticsChartSettings(aCoord);
+  else
+    this->mCachedData.mSettingsIsValid = false;
 
   // check that we can should do an emit
   if(this->mDoEmit)

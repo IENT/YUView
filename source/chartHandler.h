@@ -164,7 +164,6 @@ public:
    * Otherwise it will create the settings based on the user input
    */
   chartSettingsData createStatisticsChartSettings(itemWidgetCoord& aCoord);
-
 public slots:
 
   /**
@@ -430,6 +429,34 @@ private:
    * a chartview, that can be placed
    */
   QWidget* createStatisticsChart(itemWidgetCoord& aCoord);
+
+/*----------playListItemStatisticsFile----------*/
+  /**
+   * @brief createColorSpaceWidget
+   * creates Widget based on a "playListItemImageFile"
+   *
+   * @param aItem
+   * a playlistItem
+   *
+   * @param aCoord
+   * a itemWidgetCoord where data can be saved in
+   *
+   * @return
+   * a option-widget for the playlistItemImageFile and playlistItemRawFile
+   */
+  QWidget* createColorSpaceWidget(playlistItemRawFile* aItem, itemWidgetCoord& aCoord);
+
+  /**
+   * @brief createImageColorAnalysisChart
+   * creating the Chart depending on the data
+   *
+   * @param aCoord
+   * data for the chart
+   *
+   * @return
+   * a chartview, that can be placed
+   */
+  QWidget* createColorSpaceChart(itemWidgetCoord& aCoord);
 };
 
 

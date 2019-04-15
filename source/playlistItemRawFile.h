@@ -78,6 +78,47 @@ public:
   // Cache the given frame
   virtual void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE { if (testMode) dataSource.clearFileCache(); playlistItemWithVideo::cacheFrame(idx, testMode); }
 
+  // ----- function for getting the data to fill the histogramms / charts -----
+  QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false);
+
+  /**
+   * @brief sortAndCategorizeData
+   * the data from the frame will be ordered and categorized by his value
+   *
+   * @param aType
+   * statistic-type
+   *
+   * @param aFrameIndex
+   * actual viewed frame
+   *
+   * @return
+   * a list of sort and categorized data for the viewed frame
+   */
+  QList<collectedData>* sortAndCategorizeData(const QString aType, const int aFrameIndex) Q_DECL_OVERRIDE;
+
+  /**
+   * @brief sortAndCategorizeDataByRange
+   * the data from the frame will be ordered and categorized by his value
+   * calls internally sortAndCategorizeData for each frame of the item
+   *
+   * @param aType
+   * statistic-type
+   *
+   * @return
+   * a list of sort and categorized data
+   */
+  QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) Q_DECL_OVERRIDE;
+
+  /**
+   * @brief isDataAvaible
+   * checks if the data of the playlistItem are loaded completly
+   *
+   * @return true if all data are loaded, otherwise false
+   */
+  virtual bool isDataAvaible() Q_DECL_OVERRIDE;
+
+  QList<QString> getTypes();
+
 public slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
@@ -121,6 +162,18 @@ private:
   bool parseY4MFile();
   bool isY4MFile;
   QList<quint64> y4mFrameIndices;
+
+
+  QFuture<void> backgroundParserFuture;
+  QFuture<QMap<QString, QList<QList<QVariant>>>*> backgroundDataLoader;
+
+  // --------------- data statistics---------------
+
+  // List of statistic values
+  QMap<QString, QList<QList<QVariant>>> mStatisticData;
+  bool mDataIsLoading = false;
+
+
 };
 
 #endif // PLAYLISTITEMRAWFILE_H

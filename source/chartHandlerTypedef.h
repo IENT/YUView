@@ -72,6 +72,7 @@ class playlistItem;
 /*-------------------- consts window title --------------------*/
 #define CHARTSWIDGET_WINDOW_TITLE_DEFAULT "Charts"
 #define CHARTSWIDGET_WINDOW_TITLE_STATISTICS "Statistics File Chart"
+#define CHARTSWIDGET_WINDOW_TITLE_IMAGE "Image File Chart"
 
 /*-------------------- consts text --------------------*/
 #define WIDGET_NO_DATA_TO_SHOW      "No data to show.\nPlease select another combination or change the currently viewed frame."
@@ -85,6 +86,8 @@ class playlistItem;
 #define SLIDER_LABEL_BEGIN_FRAME    "Begin frame: "
 #define SLIDER_LABEL_END_FRAME      "End frame: "
 
+#define CBX_LABEL_IMAGE_TYPE        "Image File: "
+#define CBX_LABEL_RAW_TYPE          "Raw File:"
 
 /*-------------------- enum statisticsDataType --------------------*/
 /**
