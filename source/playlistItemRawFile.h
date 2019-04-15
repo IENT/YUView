@@ -79,7 +79,7 @@ public:
   virtual void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE { if (testMode) dataSource.clearFileCache(); playlistItemWithVideo::cacheFrame(idx, testMode); }
 
   // ----- function for getting the data to fill the histogramms / charts -----
-  QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false);
+  QMap<QString, QList<QList<QVariant>>>* getData (indexRange aRange, bool aReset=false);
 
   /**
    * @brief sortAndCategorizeData

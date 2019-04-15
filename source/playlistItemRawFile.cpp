@@ -539,85 +539,80 @@ void playlistItemRawFile::reloadItemSource()
   emit signalItemChanged(true, RECACHE_NONE);
 }
 
-QMap<QString, QList<QList<QVariant>>>* playlistItemRawFile::getData(indexRange range, bool reset)
+QMap<QString, QList<QList<QVariant>>>* playlistItemRawFile::getData(indexRange aRange, bool aReset)
 {
   this->mDataIsLoading= true;
 
-  if (reset)
+  if (aReset)
     this->mStatisticData.clear();
 
-  int size = 256;
-  int histYR[size] = { 0 };
-  int histUG[size] = { 0 };
-  int histVB[size] = { 0 };
-  QSize imageSize = this->getSize();
-
-  for(int frame = range.first; frame <= range.second; frame++)
+  if(this->mStatisticData.isEmpty())
   {
-    for(int width = 0; width < imageSize.width(); width++)
+    int size = 256;
+    int histYR[size] = { 0 };
+    int histUG[size] = { 0 };
+    int histVB[size] = { 0 };
+    QSize imageSize = this->getSize();
+
+    for(int frame = aRange.first; frame <= aRange.second; frame++)
     {
-      for(int height = 0; height < imageSize.height(); height++)
+      for(int width = 0; width < imageSize.width(); width++)
       {
-        ValuePairListSets valuesets = this->getPixelValues(QPoint(width, height),  frame);
-
-        for(int i = 0; i < valuesets.count(); i++)
+        for(int height = 0; height < imageSize.height(); height++)
         {
-          QPair<QString, ValuePairList> pair = valuesets.at(i);
+          ValuePairListSets valuesets = this->getPixelValues(QPoint(width, height),  frame);
 
-          if(pair.second.count() == 3)
+          for(int i = 0; i < valuesets.count(); i++)
           {
-            int pos;
+            QPair<QString, ValuePairList> pair = valuesets.at(i);
 
-            pos = pair.second.at(0).second.toInt();
-            histYR[pos]++;
+            if(pair.second.count() == 3)
+            {
+              int pos;
 
-            pos = pair.second.at(1).second.toInt();
-            histUG[pos]++;
+              pos = pair.second.at(0).second.toInt();
+              histYR[pos]++;
 
-            pos = pair.second.at(2).second.toInt();
-            histVB[pos]++;
+              pos = pair.second.at(1).second.toInt();
+              histUG[pos]++;
+
+              pos = pair.second.at(2).second.toInt();
+              histVB[pos]++;
+            }
           }
         }
       }
     }
-  }
 
-   QList<QVariant> dataListYUVRGB, dataListYR, dataListUG, dataListVB;
+    QList<QVariant> dataListYR, dataListUG, dataListVB;
 
-  for(int i = 0; i < size; i++)
-  {
-    dataListYR.append(histYR[i]);
-    dataListUG.append(histUG[i]);
-    dataListVB.append(histVB[i]);
-  }
+    for(int i = 0; i < size; i++)
+    {
+      dataListYR.append(histYR[i]);
+      dataListUG.append(histUG[i]);
+      dataListVB.append(histVB[i]);
+    }
 
-  dataListYUVRGB.append(dataListYR);
-  dataListYUVRGB.append(dataListUG);
-  dataListYUVRGB.append(dataListVB);
+    QList<QList<QVariant>> resultListYR, resultListUG, resultListVB;
+    resultListYR.append(dataListYR);
+    resultListUG.append(dataListUG);
+    resultListVB.append(dataListVB);
 
-  QList<QList<QVariant>> resultListYUVRGB, resultListYR, resultListUG, resultListVB;
-  resultListYUVRGB.append(dataListYUVRGB);
-  resultListYR.append(dataListYR);
-  resultListUG.append(dataListUG);
-  resultListVB.append(dataListVB);
-
-  if(rawFormat == YUV)
-  {
-//    this->mStatisticData.insert("YUV", resultListYUVRGB);
-    this->mStatisticData.insert("Y", resultListYR);
-    this->mStatisticData.insert("U", resultListUG);
-    this->mStatisticData.insert("V", resultListVB);
-  }
-  else if(rawFormat == RGB)
-  {
-//    this->mStatisticData.insert("RGB", resultListYUVRGB);
-    this->mStatisticData.insert("R", resultListYR);
-    this->mStatisticData.insert("G", resultListUG);
-    this->mStatisticData.insert("B", resultListVB);
+    if(rawFormat == YUV)
+    {
+      this->mStatisticData.insert("Y", resultListYR);
+      this->mStatisticData.insert("U", resultListUG);
+      this->mStatisticData.insert("V", resultListVB);
+    }
+    else if(rawFormat == RGB)
+    {
+      this->mStatisticData.insert("R", resultListYR);
+      this->mStatisticData.insert("G", resultListUG);
+      this->mStatisticData.insert("B", resultListVB);
+    }
   }
 
   this->mDataIsLoading= false;
-
   return &this->mStatisticData;
 }
 
@@ -627,7 +622,12 @@ QList<collectedData>* playlistItemRawFile::sortAndCategorizeData(const QString a
 
   //check if data was loaded  if(!(&this->mStatisticData))
   if(this->mStatisticData.empty())
-    this->getData(this->getFrameIdxRange(), true);
+  {
+    indexRange range;
+    range.first  = aFrameIndex;
+    range.second = aFrameIndex;
+    this->getData(range, true);
+  }
 
   collectedData data;
   data.mStatDataType = sdtRGB;
@@ -663,9 +663,7 @@ QList<collectedData>* playlistItemRawFile::sortAndCategorizeData(const QString a
       }
 
       foreach (int key, map.keys())
-      {
         data.addValue(QVariant::fromValue(key), map.value(key));
-      }
 
     }
     result->append(data);
@@ -685,20 +683,6 @@ QList<collectedData>* playlistItemRawFile::sortAndCategorizeData(const QString a
       int counter = dataList.at(j).toInt();
       map.insert(j, counter);
     }
-
-
-//    for (int i = 0; i < resultLists.count(); i++)
-//    {
-//      QList<QVariant> dataList = resultLists.at(i);
-//      for (int j = 0; j < dataList.count(); j++)
-//      {
-//        QVariant variant = dataList.at(j);
-//        int colorValue = variant.toInt();
-//        int value = map.value(colorValue);
-//        value++;
-//        map.insert(colorValue, value);
-//      }
-//    }
 
     foreach (int key, map.keys())
       data.addValue(QVariant::fromValue(key), map.value(key));
