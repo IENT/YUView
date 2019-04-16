@@ -372,6 +372,8 @@ public:
   bool isMpeg2() { return codecName == "mpeg2video"; }
   bool isAV1()   { return codecName == "av1"; }
 
+  bool isNone()  { return codecName.isEmpty() || codecName == "unknown_codec" || codecName == "none"; }
+
   bool operator==(const AVCodecIDWrapper &a) { return codecID == a.codecID; }
 
   friend FFmpegVersionHandler;

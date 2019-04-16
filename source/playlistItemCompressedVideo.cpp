@@ -160,7 +160,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %s", rateFPS);
     ffmpegCodec = inputFileFFmpegLoading->getVideoStreamCodecID();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getCodecName().toStdString().c_str());
-    if (ffmpegCodec.isAVC() || ffmpegCodec.isHEVC())
+    if (!ffmpegCodec.isNone())
       possibleDecoders.append(decoderEngineFFMpeg);
     if (ffmpegCodec.isHEVC())
     {
@@ -882,7 +882,7 @@ void playlistItemCompressedVideo::getSupportedFileExtensions(QStringList &allExt
   ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "cgi" << "ivf" << "ivr" << "lvf"
       << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" << "mjpeg" << "mpg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" << "mvi" << "mxg" << "v" << "ogg" 
       << "mjpg" << "viv" << "webm" << "xmv" << "ts" << "mxf";
-  QString filtersString = "FFMpeg files (";
+  QString filtersString = "FFmpeg files (";
   for (QString e : ext)
     filtersString.append(QString("*.%1").arg(e));
   filtersString.append(")");

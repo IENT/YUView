@@ -536,7 +536,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     annexBParser.reset(new parserAnnexBMpeg2());
   else if (codecID.isAV1())
     obuParser.reset(new parserAV1OBU());
-  else
+  else if (codecID.isNone())
   {
     emit backgroundParsingDone("Unknown codec ID " + codecID.getCodecName());
     return false;

@@ -1212,10 +1212,10 @@ bool FFmpegVersionHandler::loadFFmpegLibraries()
   // First try the specific FFMpeg libraries (if set)
   QSettings settings;
   settings.beginGroup("Decoders");
-  QString avFormatLib = settings.value("FFMpeg.avformat", "").toString();
-  QString avCodecLib = settings.value("FFMpeg.avcodec", "").toString();
-  QString avUtilLib = settings.value("FFMpeg.avutil", "").toString();
-  QString swResampleLib = settings.value("FFMpeg.swresample", "").toString();
+  QString avFormatLib = settings.value("FFmpeg.avformat", "").toString();
+  QString avCodecLib = settings.value("FFmpeg.avcodec", "").toString();
+  QString avUtilLib = settings.value("FFmpeg.avutil", "").toString();
+  QString swResampleLib = settings.value("FFmpeg.swresample", "").toString();
   if (!avFormatLib.isEmpty() && !avCodecLib.isEmpty() && !avUtilLib.isEmpty() && !swResampleLib.isEmpty())
   {
     LOG("Trying to load the libraries specified in the settings.");
