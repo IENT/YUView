@@ -300,7 +300,7 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
           aType.renderValueData = true;
           aType.colMapper = colorMapper("jet", 0, 1);
         }
-        else if (statType == "Integer")  // for now do the same as for Flags
+        else if (statType.contains("Integer"))  // for now do the same as for Flags
         {
           QString rangeInfo = availableStatisticsMatch.captured(3);
           QRegularExpression rangeInfoRegex("\\[([0-9\\-]+), *([0-9\\-]+)\\]");
