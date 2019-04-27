@@ -146,21 +146,17 @@ void decoderHM::resolveLibraryFunctionPointers()
   DEBUG_DECHM("decoderHM::loadDecoderLibrary - prediction/residual internals found");
 }
 
-template <typename T> T decoderHM::resolve(T &fun, const char *symbol)
+template <typename T> T decoderHM::resolve(T &fun, const char *symbol, bool optional)
 {
   QFunctionPointer ptr = library.resolve(symbol);
   if (!ptr)
   {
-    setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
+    if (!optional)
+      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
     return nullptr;
   }
 
   return fun = reinterpret_cast<T>(ptr);
-}
-
-template <typename T> T decoderHM::resolveInternals(T &fun, const char *symbol)
-{
-  return fun = reinterpret_cast<T>(library.resolve(symbol));
 }
 
 void decoderHM::resetDecoder()

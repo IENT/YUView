@@ -29,12 +29,13 @@ install:
   - curl -L -o QtTools.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.11/Qt-5.11-Tools.zip
   - 7z x QtTools.zip
   - ps: $env:path="C:\projects\Qttools\bin;$($env:path)"
-  - dir "C:\Program Files (x86)\Common Files\Merge Modules\"
-  - cd
+  # Download libde265_internals (needed later to pack the installer)
+  - curl -L -o libde265.dll https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll
 
 build_script:
   - cd C:\projects\YUView
   # activate the automatic update feature
+  - cd C:\projects\YUView
   - C:\msys64\usr\bin\sed.exe -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" source/typedef.h
   # start compiling
   - qmake
@@ -53,9 +54,9 @@ after_build:
   # copy the OpenSSL library
   - copy C:\projects\openSSL\*.dll .
   # copy the modified libde265 library + license
-  - mkdir libde265
-  - copy ..\libde265\libde265-internals.dll libde265
-  - copy ..\libde265\LICENCE.TXT libde265
+  - mkdir decoder
+  - copy C:\projects\libde265.dll decoder
+  - copy ..\decoder\libde265\LICENCE.TXT decoder
   - copy ..\LICENSE.GPL3 .
   # delete junk that is not needed
   - del /F /Q vcredist*

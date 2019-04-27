@@ -46,23 +46,6 @@
 class videoHandler;
 class videoCache;
 
-class videoCacheStatusWidget : public QWidget
-{
-  Q_OBJECT
-
-public:
-  videoCacheStatusWidget(QWidget *parent) : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0) {}
-  // Override the paint event
-  virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-  void updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
-private:
-  // The floating point values (0 to 1) of the end positions of the blocks to draw
-  QList<float> relativeValsEnd;
-  unsigned int cacheLevelMB;
-  unsigned int cacheRateInBytesPerMs;
-  int64_t cacheLevelMaxMB;
-};
-
 class videoCache : public QObject
 {
   Q_OBJECT
@@ -82,11 +65,14 @@ public:
   // item that can be visible at the same time.
   void loadFrame(playlistItem *item, int frameIndex, int loadingSlot);
 
-  // Setup the caching info dock widget here.
-  void setupControls(QDockWidget *dock);
-
   // Test the conversion speed with the currently selected item
   void testConversionSpeed();
+
+  QStringList getCacheStatusText();
+
+signals:
+  // This will be emitted on a regular basis to update the videoCacheInfoWidget
+  void updateCacheStatus();
 
 private slots:
 
@@ -109,9 +95,6 @@ private slots:
 
   // Something about the given playlistitem changed so that all items in the cache are now invalid.
   void itemNeedsRecache(playlistItem* item, recacheIndicator itemNeedsRecache);
-
-  // update the caching rate at the video cache controller every 1s
-  void updateCachingRate(unsigned int cacheRate) { cacheRateInBytesPerMs = cacheRate; }
 
   // Call the function playback->itemCachingFinished(item) when caching of this item is done.
   void watchItemForCachingFinished(playlistItem *item);
@@ -151,8 +134,6 @@ private:
 
   // Enqueue the job in the queue. If all frames within the range are already cached in the item, do nothing.
   void enqueueCacheJob(playlistItem* item, indexRange range);
-
-  unsigned int cacheRateInBytesPerMs {0};
 
   // Start the given number of worker threads (if caching is running, also new jobs will be pushed to the workers)
   void startWorkerThreads(int nrThreads);
@@ -203,16 +184,8 @@ private:
   // If visible, we will show the current status of the threads in here
   QPointer<QLabel> cachingInfoLabel;
   
-  // Keep a pointer to the status widget so we can update it when necessary
-  QPointer<videoCacheStatusWidget> statusWidget;
   // A timer that is used to update the status widget and the info panel when caching is running
   QTimer statusUpdateTimer;
-  void updateCachingInfoLabel(bool forceNotVisible=false);
-
-  // When caching is running, the cache will update the status widget itself but there are some
-  // cases when this must be triggered externally (for example if an item is deleted).
-  // forceNonVisible: Also update the widgets if the controls are not visible (done when the controls are created).
-  void updateCacheStatus(bool forceNonVisible=false);
 
   // Things for testing the caching speed
   QPointer<QProgressDialog> testProgressDialog;

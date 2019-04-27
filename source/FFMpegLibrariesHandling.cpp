@@ -37,736 +37,804 @@
 #include <QDir>
 #include <QSettings>
 #include "typedef.h"
+#include "parserCommon.h"
 
 #define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_LIB qDebug
+#define LOG(x) do { log(__func__, x); qDebug() << __func__ << " " << x; } while(0)
 #else
-#define DEBUG_LIB(fmt,...) ((void)0)
+#define LOG(x) log(__func__, x)
 #endif
 
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+namespace
 {
-  double d_seconds = (double)timestamp * timebase.num / timebase.den;
-  int hours = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  int minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  int seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  int milliseconds = (int)(d_seconds * 1000);
+  QString timestampToString(int64_t timestamp, AVRational timebase)
+  {
+    double d_seconds = (double)timestamp * timebase.num / timebase.den;
+    int hours = (int)(d_seconds / 60 / 60);
+    d_seconds -= hours * 60 * 60;
+    int minutes = (int)(d_seconds / 60);
+    d_seconds -= minutes * 60;
+    int seconds = (int)d_seconds;
+    d_seconds -= seconds;
+    int milliseconds = (int)(d_seconds * 1000);
 
-  return QString("%1:%2:%3.%4").arg(hours, 2, 10, QChar('0')).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0')).arg(milliseconds, 3, 10, QChar('0'));
-}
+    return QString("%1:%2:%3.%4").arg(hours, 2, 10, QChar('0')).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0')).arg(milliseconds, 3, 10, QChar('0'));
+  }
 
-// ------------- Internal classes to parse the ffmpeg version specific pointers -----------------
+  QString libVerToString(int version)
+  {
+    return QString("%1.%2.%3").arg(AV_VERSION_MAJOR(version)).arg(AV_VERSION_MINOR(version)).arg(AV_VERSION_MICRO(version));
+  }
 
-// AVPacket is part of avcodec. The definition is different for different major versions of avcodec.
-// These are the version independent functions to retrive data from AVPacket.
-typedef struct AVPacket_56
-{
-  AVBufferRef *buf;
-  int64_t pts;
-  int64_t dts;
-  uint8_t *data;
-  int size;
-  int stream_index;
-  int flags;
-  AVPacketSideData *side_data;
-  int side_data_elems;
-  int duration;
-  void (*destruct)(struct AVPacket *);
-  void *priv;
-  int64_t pos;
-  int64_t convergence_duration;
-} AVPacket_56;
+  // ------------- Internal classes to parse the ffmpeg version specific pointers -----------------
 
-typedef struct AVPacket_57_58
-{
-  AVBufferRef *buf;
-  int64_t pts;
-  int64_t dts;
-  uint8_t *data;
-  int size;
-  int stream_index;
-  int flags;
-  AVPacketSideData *side_data;
-  int side_data_elems;
-  int64_t duration;
-  int64_t pos;
-  int64_t convergence_duration;
-} AVPacket_57_58;
+  // AVPacket is part of avcodec. The definition is different for different major versions of avcodec.
+  // These are the version independent functions to retrive data from AVPacket.
+  typedef struct AVPacket_56
+  {
+    AVBufferRef *buf;
+    int64_t pts;
+    int64_t dts;
+    uint8_t *data;
+    int size;
+    int stream_index;
+    int flags;
+    AVPacketSideData *side_data;
+    int side_data_elems;
+    int duration;
+    void (*destruct)(struct AVPacket *);
+    void *priv;
+    int64_t pos;
+    int64_t convergence_duration;
+  } AVPacket_56;
 
-// AVFormatContext is part of avformat.
-// These functions give us version independent access to the structs.
-typedef struct AVFormatContext_56 
-{
-  const AVClass *av_class;
-  struct AVInputFormat *iformat;
-  struct AVOutputFormat *oformat;
-  void *priv_data;
-  AVIOContext *pb;
-  int ctx_flags;
-  unsigned int nb_streams; //
-  AVStream **streams; //
-  char filename[1024];
-  int64_t start_time;
-  int64_t duration; //
-  int bit_rate;
-  unsigned int packet_size;
-  int max_delay;
-  int flags;
-  unsigned int probesize;
-  int max_analyze_duration;
-  const uint8_t *key;
-  int keylen;
-  unsigned int nb_programs;
-  AVProgram **programs;
-  enum AVCodecID video_codec_id;
-  enum AVCodecID audio_codec_id;
-  enum AVCodecID subtitle_codec_id;
-  unsigned int max_index_size;
-  unsigned int max_picture_buffer;
-  unsigned int nb_chapters;
-  AVChapter **chapters;
-  AVDictionary *metadata;
+  typedef struct AVPacket_57_58
+  {
+    AVBufferRef *buf;
+    int64_t pts;
+    int64_t dts;
+    uint8_t *data;
+    int size;
+    int stream_index;
+    int flags;
+    AVPacketSideData *side_data;
+    int side_data_elems;
+    int64_t duration;
+    int64_t pos;
+    int64_t convergence_duration;
+  } AVPacket_57_58;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVFormatContext_56;
+  // AVFormatContext is part of avformat.
+  // These functions give us version independent access to the structs.
+  typedef struct AVFormatContext_56 
+  {
+    const AVClass *av_class;
+    struct AVInputFormat *iformat;
+    struct AVOutputFormat *oformat;
+    void *priv_data;
+    AVIOContext *pb;
+    int ctx_flags;
+    unsigned int nb_streams; //
+    AVStream **streams; //
+    char filename[1024];
+    int64_t start_time;
+    int64_t duration; //
+    int bit_rate;
+    unsigned int packet_size;
+    int max_delay;
+    int flags;
+    unsigned int probesize;
+    int max_analyze_duration;
+    const uint8_t *key;
+    int keylen;
+    unsigned int nb_programs;
+    AVProgram **programs;
+    enum AVCodecID video_codec_id;
+    enum AVCodecID audio_codec_id;
+    enum AVCodecID subtitle_codec_id;
+    unsigned int max_index_size;
+    unsigned int max_picture_buffer;
+    unsigned int nb_chapters;
+    AVChapter **chapters;
+    AVDictionary *metadata;
 
-typedef struct AVFormatContext_57
-{
-  const AVClass *av_class;
-  struct AVInputFormat *iformat;
-  struct AVOutputFormat *oformat;
-  void *priv_data;
-  AVIOContext *pb;
-  int ctx_flags;
-  unsigned int nb_streams;
-  AVStream **streams;
-  char filename[1024];
-  int64_t start_time;
-  int64_t duration;
-  int64_t bit_rate;
-  unsigned int packet_size;
-  int max_delay;
-  int flags;
-  unsigned int probesize;
-  int max_analyze_duration;
-  const uint8_t *key;
-  int keylen;
-  unsigned int nb_programs;
-  AVProgram **programs;
-  enum AVCodecID video_codec_id;
-  enum AVCodecID audio_codec_id;
-  enum AVCodecID subtitle_codec_id;
-  unsigned int max_index_size;
-  unsigned int max_picture_buffer;
-  unsigned int nb_chapters;
-  AVChapter **chapters;
-  AVDictionary *metadata;
-  
-  // Actually, there is more here, but the variables above are the only we need.
-} AVFormatContext_57;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVFormatContext_56;
 
-typedef struct AVFormatContext_58
-{
-  const AVClass *av_class;
-  struct AVInputFormat *iformat;
-  struct AVOutputFormat *oformat;
-  void *priv_data;
-  AVIOContext *pb;
-  int ctx_flags;
-  unsigned int nb_streams;
-  AVStream **streams;
-  char filename[1024];
-  char *url;
-  int64_t start_time;
-  int64_t duration;
-  int64_t bit_rate;
-  unsigned int packet_size;
-  int max_delay;
-  int flags;
-  int64_t probesize;
-  int64_t max_analyze_duration;
-  const uint8_t *key;
-  int keylen;
-  unsigned int nb_programs;
-  AVProgram **programs;
-  enum AVCodecID video_codec_id;
-  enum AVCodecID audio_codec_id;
-  enum AVCodecID subtitle_codec_id;
-  unsigned int max_index_size;
-  unsigned int max_picture_buffer;
-  unsigned int nb_chapters;
-  AVChapter **chapters;
-  AVDictionary *metadata;
+  typedef struct AVFormatContext_57
+  {
+    const AVClass *av_class;
+    struct AVInputFormat *iformat;
+    struct AVOutputFormat *oformat;
+    void *priv_data;
+    AVIOContext *pb;
+    int ctx_flags;
+    unsigned int nb_streams;
+    AVStream **streams;
+    char filename[1024];
+    int64_t start_time;
+    int64_t duration;
+    int64_t bit_rate;
+    unsigned int packet_size;
+    int max_delay;
+    int flags;
+    unsigned int probesize;
+    int max_analyze_duration;
+    const uint8_t *key;
+    int keylen;
+    unsigned int nb_programs;
+    AVProgram **programs;
+    enum AVCodecID video_codec_id;
+    enum AVCodecID audio_codec_id;
+    enum AVCodecID subtitle_codec_id;
+    unsigned int max_index_size;
+    unsigned int max_picture_buffer;
+    unsigned int nb_chapters;
+    AVChapter **chapters;
+    AVDictionary *metadata;
+    
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVFormatContext_57;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVFormatContext_58;
+  typedef struct AVFormatContext_58
+  {
+    const AVClass *av_class;
+    struct AVInputFormat *iformat;
+    struct AVOutputFormat *oformat;
+    void *priv_data;
+    AVIOContext *pb;
+    int ctx_flags;
+    unsigned int nb_streams;
+    AVStream **streams;
+    char filename[1024];
+    char *url;
+    int64_t start_time;
+    int64_t duration;
+    int64_t bit_rate;
+    unsigned int packet_size;
+    int max_delay;
+    int flags;
+    int64_t probesize;
+    int64_t max_analyze_duration;
+    const uint8_t *key;
+    int keylen;
+    unsigned int nb_programs;
+    AVProgram **programs;
+    enum AVCodecID video_codec_id;
+    enum AVCodecID audio_codec_id;
+    enum AVCodecID subtitle_codec_id;
+    unsigned int max_index_size;
+    unsigned int max_picture_buffer;
+    unsigned int nb_chapters;
+    AVChapter **chapters;
+    AVDictionary *metadata;
+
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVFormatContext_58;
 
 
-// AVCodec is (of course) part of avcodec
-typedef struct AVCodec_56_57_58
-{
-  const char *name;
-  const char *long_name;
-  enum AVMediaType type;
-  enum AVCodecID id;
-  int capabilities;
-  const AVRational *supported_framerates; ///< array of supported framerates, or NULL if any, array is terminated by {0,0}
-  const enum AVPixelFormat *pix_fmts;     ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
-  const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
-  const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
-  const uint64_t *channel_layouts;         ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
-  uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
-  const AVClass *priv_class;              ///< AVClass for the private context
-  //const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
-  
-  // Actually, there is more here, but nothing more of the public API
-} AVCodec_56_57_58;
+  // AVCodec is (of course) part of avcodec
+  typedef struct AVCodec_56_57_58
+  {
+    const char *name;
+    const char *long_name;
+    enum AVMediaType type;
+    enum AVCodecID id;
+    int capabilities;
+    const AVRational *supported_framerates; ///< array of supported framerates, or NULL if any, array is terminated by {0,0}
+    const enum AVPixelFormat *pix_fmts;     ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
+    const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
+    const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
+    const uint64_t *channel_layouts;        ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
+    uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
+    const AVClass *priv_class;              ///< AVClass for the private context
+    //const AVProfile *profiles;            ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
+    
+    // Actually, there is more here, but nothing more of the public API
+  } AVCodec_56_57_58;
 
-// AVCodecContext is part of avcodec
-typedef struct AVCodecContext_56 
-{
-  const AVClass *av_class;
-  int log_level_offset;
+  // AVCodecContext is part of avcodec
+  typedef struct AVCodecContext_56 
+  {
+    const AVClass *av_class;
+    int log_level_offset;
 
-  AVMediaType codec_type; //
-  const struct AVCodec *codec;
-  char codec_name[32];
-  AVCodecID codec_id; // 
-  unsigned int codec_tag;
-  unsigned int stream_codec_tag;
-  void *priv_data;
-  struct AVCodecInternal *internal;
-  void *opaque;
-  int bit_rate; //
-  int bit_rate_tolerance;
-  int global_quality;
-  int compression_level;
-  int flags;
-  int flags2;
-  uint8_t *extradata; //
-  int extradata_size; //
-  AVRational time_base;
-  int ticks_per_frame;
-  int delay;
-  int width, height;  //
-  int coded_width, coded_height;
-  int gop_size;
-  AVPixelFormat pix_fmt; //
-  int me_method;
-  void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
-  AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
-  int max_b_frames;
-  float b_quant_factor;
-  int rc_strategy;
-  int b_frame_strategy;
-  float b_quant_offset;
-  int has_b_frames; //
-  int mpeg_quant;
-  float i_quant_factor;
-  float i_quant_offset;
-  float lumi_masking;
-  float temporal_cplx_masking;
-  float spatial_cplx_masking;
-  float p_masking;
-  float dark_masking;
-  int slice_count;
-  int prediction_method;
-  int *slice_offset;
-  AVRational sample_aspect_ratio; //
-  int me_cmp;
-  int me_sub_cmp;
-  int mb_cmp;
-  int ildct_cmp;
-  int dia_size;
-  int last_predictor_count;
-  int pre_me;
-  int me_pre_cmp;
-  int pre_dia_size;
-  int me_subpel_quality;
-  int dtg_active_format;
-  int me_range;
-  int intra_quant_bias;
-  int inter_quant_bias;
-  int slice_flags;
-  int xvmc_acceleration;
-  int mb_decision;
-  uint16_t *intra_matrix;
-  uint16_t *inter_matrix;
-  int scenechange_threshold;
-  int noise_reduction;
-  int me_threshold;
-  int mb_threshold;
-  int intra_dc_precision;
-  int skip_top;
-  int skip_bottom;
-  float border_masking;
-  int mb_lmin;
-  int mb_lmax;
-  int me_penalty_compensation;
-  int bidir_refine;
-  int brd_scale;
-  int keyint_min;
-  int refs;
-  int chromaoffset;
-  int scenechange_factor;
-  int mv0_threshold;
-  int b_sensitivity;
-  AVColorPrimaries color_primaries; //
-  AVColorTransferCharacteristic color_trc; //
-  AVColorSpace colorspace;  //
-  AVColorRange color_range; //
-  AVChromaLocation chroma_sample_location; //
+    AVMediaType codec_type; //
+    const struct AVCodec *codec;
+    char codec_name[32];
+    AVCodecID codec_id; // 
+    unsigned int codec_tag;
+    unsigned int stream_codec_tag;
+    void *priv_data;
+    struct AVCodecInternal *internal;
+    void *opaque;
+    int bit_rate; //
+    int bit_rate_tolerance;
+    int global_quality;
+    int compression_level;
+    int flags;
+    int flags2;
+    uint8_t *extradata; //
+    int extradata_size; //
+    AVRational time_base;
+    int ticks_per_frame;
+    int delay;
+    int width, height;  //
+    int coded_width, coded_height;
+    int gop_size;
+    AVPixelFormat pix_fmt; //
+    int me_method;
+    void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
+    AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
+    int max_b_frames;
+    float b_quant_factor;
+    int rc_strategy;
+    int b_frame_strategy;
+    float b_quant_offset;
+    int has_b_frames; //
+    int mpeg_quant;
+    float i_quant_factor;
+    float i_quant_offset;
+    float lumi_masking;
+    float temporal_cplx_masking;
+    float spatial_cplx_masking;
+    float p_masking;
+    float dark_masking;
+    int slice_count;
+    int prediction_method;
+    int *slice_offset;
+    AVRational sample_aspect_ratio; //
+    int me_cmp;
+    int me_sub_cmp;
+    int mb_cmp;
+    int ildct_cmp;
+    int dia_size;
+    int last_predictor_count;
+    int pre_me;
+    int me_pre_cmp;
+    int pre_dia_size;
+    int me_subpel_quality;
+    int dtg_active_format;
+    int me_range;
+    int intra_quant_bias;
+    int inter_quant_bias;
+    int slice_flags;
+    int xvmc_acceleration;
+    int mb_decision;
+    uint16_t *intra_matrix;
+    uint16_t *inter_matrix;
+    int scenechange_threshold;
+    int noise_reduction;
+    int me_threshold;
+    int mb_threshold;
+    int intra_dc_precision;
+    int skip_top;
+    int skip_bottom;
+    float border_masking;
+    int mb_lmin;
+    int mb_lmax;
+    int me_penalty_compensation;
+    int bidir_refine;
+    int brd_scale;
+    int keyint_min;
+    int refs;
+    int chromaoffset;
+    int scenechange_factor;
+    int mv0_threshold;
+    int b_sensitivity;
+    AVColorPrimaries color_primaries; //
+    AVColorTransferCharacteristic color_trc; //
+    AVColorSpace colorspace;  //
+    AVColorRange color_range; //
+    AVChromaLocation chroma_sample_location; //
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVCodecContext_56;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVCodecContext_56;
 
-typedef struct AVCodecContext_57 
-{
-  const AVClass *av_class;
-  int log_level_offset;
-  AVMediaType codec_type;
-  const struct AVCodec *codec;
-  char codec_name[32];
-  AVCodecID codec_id;
-  unsigned int codec_tag;
-  unsigned int stream_codec_tag;
-  void *priv_data;
-  struct AVCodecInternal *internal;
-  void *opaque;
-  int64_t bit_rate;
-  int bit_rate_tolerance;
-  int global_quality;
-  int compression_level;
-  int flags;
-  int flags2;
-  uint8_t *extradata;
-  int extradata_size;
-  AVRational time_base;
-  int ticks_per_frame;
-  int delay;
-  int width, height;
-  int coded_width, coded_height;
-  int gop_size;
-  AVPixelFormat pix_fmt;
-  int me_method;
-  void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
-  AVPixelFormat (*get_format)(struct AVCodecContext *s, const AVPixelFormat * fmt);
-  int max_b_frames;
-  float b_quant_factor;
-  int rc_strategy;
-  int b_frame_strategy;
-  float b_quant_offset;
-  int has_b_frames;
-  int mpeg_quant;
-  float i_quant_factor;
-  float i_quant_offset;
-  float lumi_masking;
-  float temporal_cplx_masking;
-  float spatial_cplx_masking;
-  float p_masking;
-  float dark_masking;
-  int slice_count;
-  int prediction_method;
-  int *slice_offset;
-  AVRational sample_aspect_ratio;
-  int me_cmp;
-  int me_sub_cmp;
-  int mb_cmp;
-  int ildct_cmp;
-  int dia_size;
-  int last_predictor_count;
-  int pre_me;
-  int me_pre_cmp;
-  int pre_dia_size;
-  int me_subpel_quality;
-  int dtg_active_format;
-  int me_range;
-  int intra_quant_bias;
-  int inter_quant_bias;
-  int slice_flags;
-  int xvmc_acceleration;
-  int mb_decision;
-  uint16_t *intra_matrix;
-  uint16_t *inter_matrix;
-  int scenechange_threshold;
-  int noise_reduction;
-  int me_threshold;
-  int mb_threshold;
-  int intra_dc_precision;
-  int skip_top;
-  int skip_bottom;
-  float border_masking;
-  int mb_lmin;
-  int mb_lmax;
-  int me_penalty_compensation;
-  int bidir_refine;
-  int brd_scale;
-  int keyint_min;
-  int refs;
-  int chromaoffset;
-  int scenechange_factor;
-  int mv0_threshold;
-  int b_sensitivity;
-  AVColorPrimaries color_primaries;
-  AVColorTransferCharacteristic color_trc;
-  AVColorSpace colorspace;
-  AVColorRange color_range;
-  AVChromaLocation chroma_sample_location;
+  typedef struct AVCodecContext_57 
+  {
+    const AVClass *av_class;
+    int log_level_offset;
+    AVMediaType codec_type;
+    const struct AVCodec *codec;
+    char codec_name[32];
+    AVCodecID codec_id;
+    unsigned int codec_tag;
+    unsigned int stream_codec_tag;
+    void *priv_data;
+    struct AVCodecInternal *internal;
+    void *opaque;
+    int64_t bit_rate;
+    int bit_rate_tolerance;
+    int global_quality;
+    int compression_level;
+    int flags;
+    int flags2;
+    uint8_t *extradata;
+    int extradata_size;
+    AVRational time_base;
+    int ticks_per_frame;
+    int delay;
+    int width, height;
+    int coded_width, coded_height;
+    int gop_size;
+    AVPixelFormat pix_fmt;
+    int me_method;
+    void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
+    AVPixelFormat (*get_format)(struct AVCodecContext *s, const AVPixelFormat * fmt);
+    int max_b_frames;
+    float b_quant_factor;
+    int rc_strategy;
+    int b_frame_strategy;
+    float b_quant_offset;
+    int has_b_frames;
+    int mpeg_quant;
+    float i_quant_factor;
+    float i_quant_offset;
+    float lumi_masking;
+    float temporal_cplx_masking;
+    float spatial_cplx_masking;
+    float p_masking;
+    float dark_masking;
+    int slice_count;
+    int prediction_method;
+    int *slice_offset;
+    AVRational sample_aspect_ratio;
+    int me_cmp;
+    int me_sub_cmp;
+    int mb_cmp;
+    int ildct_cmp;
+    int dia_size;
+    int last_predictor_count;
+    int pre_me;
+    int me_pre_cmp;
+    int pre_dia_size;
+    int me_subpel_quality;
+    int dtg_active_format;
+    int me_range;
+    int intra_quant_bias;
+    int inter_quant_bias;
+    int slice_flags;
+    int xvmc_acceleration;
+    int mb_decision;
+    uint16_t *intra_matrix;
+    uint16_t *inter_matrix;
+    int scenechange_threshold;
+    int noise_reduction;
+    int me_threshold;
+    int mb_threshold;
+    int intra_dc_precision;
+    int skip_top;
+    int skip_bottom;
+    float border_masking;
+    int mb_lmin;
+    int mb_lmax;
+    int me_penalty_compensation;
+    int bidir_refine;
+    int brd_scale;
+    int keyint_min;
+    int refs;
+    int chromaoffset;
+    int scenechange_factor;
+    int mv0_threshold;
+    int b_sensitivity;
+    AVColorPrimaries color_primaries;
+    AVColorTransferCharacteristic color_trc;
+    AVColorSpace colorspace;
+    AVColorRange color_range;
+    AVChromaLocation chroma_sample_location;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVCodecContext_57;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVCodecContext_57;
 
-typedef struct AVCodecContext_58
-{
-  const AVClass *av_class;
-  int log_level_offset;
-  enum AVMediaType codec_type;
-  const struct AVCodec *codec;
-  enum AVCodecID codec_id;
-  unsigned int codec_tag;
-  void *priv_data;
-  struct AVCodecInternal *internal;
-  void *opaque;
-  int64_t bit_rate;
-  int bit_rate_tolerance;
-  int global_quality;
-  int compression_level;
-  int flags;
-  int flags2;
-  uint8_t *extradata;
-  int extradata_size;
-  AVRational time_base;
-  int ticks_per_frame;
-  int delay;
-  int width, height;
-  int coded_width, coded_height;
-  int gop_size;
-  enum AVPixelFormat pix_fmt;
-  void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
-  enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
-  int max_b_frames;
-  float b_quant_factor;
-  int b_frame_strategy;
-  float b_quant_offset;
-  int has_b_frames;
-  int mpeg_quant;
-  float i_quant_factor;
-  float i_quant_offset;
-  float lumi_masking;
-  float temporal_cplx_masking;
-  float spatial_cplx_masking;
-  float p_masking;
-  float dark_masking;
-  int slice_count;
-  int prediction_method;
-  int *slice_offset;
-  AVRational sample_aspect_ratio;
-  int me_cmp;
-  int me_sub_cmp;
-  int mb_cmp;
-  int ildct_cmp;
-  int dia_size;
-  int last_predictor_count;
-  int pre_me;
-  int me_pre_cmp;
-  int pre_dia_size;
-  int me_subpel_quality;
-  int me_range;
-  int slice_flags;
-  int mb_decision;
-  uint16_t *intra_matrix;
-  uint16_t *inter_matrix;
-  int scenechange_threshold;
-  int noise_reduction;
-  int intra_dc_precision;
-  int skip_top;
-  int skip_bottom;
-  int mb_lmin;
-  int mb_lmax;
-  int me_penalty_compensation;
-  int bidir_refine;
-  int brd_scale;
-  int keyint_min;
-  int refs;
-  int chromaoffset;
-  int mv0_threshold;
-  int b_sensitivity;
-  enum AVColorPrimaries color_primaries;
-  enum AVColorTransferCharacteristic color_trc;
-  enum AVColorSpace colorspace;
-  enum AVColorRange color_range;
-  enum AVChromaLocation chroma_sample_location;
-  int slices;
+  typedef struct AVCodecContext_58
+  {
+    const AVClass *av_class;
+    int log_level_offset;
+    enum AVMediaType codec_type;
+    const struct AVCodec *codec;
+    enum AVCodecID codec_id;
+    unsigned int codec_tag;
+    void *priv_data;
+    struct AVCodecInternal *internal;
+    void *opaque;
+    int64_t bit_rate;
+    int bit_rate_tolerance;
+    int global_quality;
+    int compression_level;
+    int flags;
+    int flags2;
+    uint8_t *extradata;
+    int extradata_size;
+    AVRational time_base;
+    int ticks_per_frame;
+    int delay;
+    int width, height;
+    int coded_width, coded_height;
+    int gop_size;
+    enum AVPixelFormat pix_fmt;
+    void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
+    enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
+    int max_b_frames;
+    float b_quant_factor;
+    int b_frame_strategy;
+    float b_quant_offset;
+    int has_b_frames;
+    int mpeg_quant;
+    float i_quant_factor;
+    float i_quant_offset;
+    float lumi_masking;
+    float temporal_cplx_masking;
+    float spatial_cplx_masking;
+    float p_masking;
+    float dark_masking;
+    int slice_count;
+    int prediction_method;
+    int *slice_offset;
+    AVRational sample_aspect_ratio;
+    int me_cmp;
+    int me_sub_cmp;
+    int mb_cmp;
+    int ildct_cmp;
+    int dia_size;
+    int last_predictor_count;
+    int pre_me;
+    int me_pre_cmp;
+    int pre_dia_size;
+    int me_subpel_quality;
+    int me_range;
+    int slice_flags;
+    int mb_decision;
+    uint16_t *intra_matrix;
+    uint16_t *inter_matrix;
+    int scenechange_threshold;
+    int noise_reduction;
+    int intra_dc_precision;
+    int skip_top;
+    int skip_bottom;
+    int mb_lmin;
+    int mb_lmax;
+    int me_penalty_compensation;
+    int bidir_refine;
+    int brd_scale;
+    int keyint_min;
+    int refs;
+    int chromaoffset;
+    int mv0_threshold;
+    int b_sensitivity;
+    enum AVColorPrimaries color_primaries;
+    enum AVColorTransferCharacteristic color_trc;
+    enum AVColorSpace colorspace;
+    enum AVColorRange color_range;
+    enum AVChromaLocation chroma_sample_location;
+    int slices;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVCodecContext_58;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVCodecContext_58;
 
-// AVStream is part of AVFormat
-typedef struct AVStream_56
-{
-  int index;
-  int id;
-  AVCodecContext *codec;
-  void *priv_data;
-  struct AVFrac pts;
-  AVRational time_base;
-  int64_t start_time;
-  int64_t duration;
-  int64_t nb_frames;
-  int disposition;
-  enum AVDiscard discard;
-  AVRational sample_aspect_ratio;
-  AVDictionary *metadata;
-  AVRational avg_frame_rate;
-  AVPacket_56 attached_pic;
-  AVPacketSideData *side_data;
-  int nb_side_data;
-  int event_flags;
-} AVStream_56;
+  // AVStream is part of AVFormat
+  typedef struct AVStream_56
+  {
+    int index;
+    int id;
+    AVCodecContext *codec;
+    void *priv_data;
+    struct AVFrac pts;
+    AVRational time_base;
+    int64_t start_time;
+    int64_t duration;
+    int64_t nb_frames;
+    int disposition;
+    enum AVDiscard discard;
+    AVRational sample_aspect_ratio;
+    AVDictionary *metadata;
+    AVRational avg_frame_rate;
+    AVPacket_56 attached_pic;
+    AVPacketSideData *side_data;
+    int nb_side_data;
+    int event_flags;
+  } AVStream_56;
 
-typedef struct AVProbeData_57 {
-  const char *filename;
-  unsigned char *buf;
-  int buf_size;
-  const char *mime_type;
-} AVProbeData_57;
+  typedef struct AVProbeData_57 {
+    const char *filename;
+    unsigned char *buf;
+    int buf_size;
+    const char *mime_type;
+  } AVProbeData_57;
 
-typedef struct AVStream_57
-{
-  int index;
-  int id;
-  AVCodecContext *codec;  // Deprecated. Might be removed in the next major version.
-  void *priv_data;
-  struct AVFrac pts;  // Deprecated. Might be removed in the next major version.
-  AVRational time_base;
-  int64_t start_time;
-  int64_t duration;
-  int64_t nb_frames;
-  int disposition;
-  enum AVDiscard discard;
-  AVRational sample_aspect_ratio;
-  AVDictionary *metadata;
-  AVRational avg_frame_rate;
-  AVPacket_57_58 attached_pic;
-  AVPacketSideData *side_data;
-  int nb_side_data;
-  int event_flags;
-  // All field following this line are not part of the public API and may change/be removed. However,
-  // we still need them here because further below some fields which are part of the public API will follow.
-  // I really don't understand who thought up this idiotic scheme...
-#define MAX_STD_TIMEBASES (30*12+30+3+6)
-  struct {
-    int64_t last_dts;
-    int64_t duration_gcd;
-    int duration_count;
-    int64_t rfps_duration_sum;
-    double (*duration_error)[2][MAX_STD_TIMEBASES];
-    int64_t codec_info_duration;
-    int64_t codec_info_duration_fields;
-    int found_decoder;
-    int64_t last_duration;
-    int64_t fps_first_dts;
-    int     fps_first_dts_idx;
-    int64_t fps_last_dts;
-    int     fps_last_dts_idx;
-  } *info;
-  int pts_wrap_bits;
-  int64_t first_dts;
-  int64_t cur_dts;
-  int64_t last_IP_pts;
-  int last_IP_duration;
-  int probe_packets;
-  int codec_info_nb_frames;
-  enum AVStreamParseType need_parsing;
-  struct AVCodecParserContext *parser;
-  struct AVPacketList *last_in_packet_buffer;
-  AVProbeData_57 probe_data;
-#define MAX_REORDER_DELAY 16
-  int64_t pts_buffer[MAX_REORDER_DELAY+1];
-  AVIndexEntry *index_entries;
-  int nb_index_entries;
-  unsigned int index_entries_allocated_size;
-  AVRational r_frame_rate;
-  int stream_identifier;
-  int64_t interleaver_chunk_size;
-  int64_t interleaver_chunk_duration;
-  int request_probe;
-  int skip_to_keyframe;
-  int skip_samples;
-  int64_t start_skip_samples;
-  int64_t first_discard_sample;
-  int64_t last_discard_sample;
-  int nb_decoded_frames;
-  int64_t mux_ts_offset;
-  int64_t pts_wrap_reference;
-  int pts_wrap_behavior;
-  int update_initial_durations_done;
-  int64_t pts_reorder_error[MAX_REORDER_DELAY+1];
-  uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];
-  int64_t last_dts_for_order_check;
-  uint8_t dts_ordered;
-  uint8_t dts_misordered;
-  int inject_global_side_data;
-  // All fields above this line are not part of the public API.
-  // All fields below are part of the public API and ABI again.
-  char *recommended_encoder_configuration;
-  AVRational display_aspect_ratio;
-  struct FFFrac *priv_pts;
-  AVStreamInternal *internal;
-  AVCodecParameters *codecpar;
-} AVStream_57;
+  typedef struct AVStream_57
+  {
+    int index;
+    int id;
+    AVCodecContext *codec;  // Deprecated. Might be removed in the next major version.
+    void *priv_data;
+    struct AVFrac pts;  // Deprecated. Might be removed in the next major version.
+    AVRational time_base;
+    int64_t start_time;
+    int64_t duration;
+    int64_t nb_frames;
+    int disposition;
+    enum AVDiscard discard;
+    AVRational sample_aspect_ratio;
+    AVDictionary *metadata;
+    AVRational avg_frame_rate;
+    AVPacket_57_58 attached_pic;
+    AVPacketSideData *side_data;
+    int nb_side_data;
+    int event_flags;
+    // All field following this line are not part of the public API and may change/be removed. However,
+    // we still need them here because further below some fields which are part of the public API will follow.
+    // I really don't understand who thought up this idiotic scheme...
+  #define MAX_STD_TIMEBASES (30*12+30+3+6)
+    struct {
+      int64_t last_dts;
+      int64_t duration_gcd;
+      int duration_count;
+      int64_t rfps_duration_sum;
+      double (*duration_error)[2][MAX_STD_TIMEBASES];
+      int64_t codec_info_duration;
+      int64_t codec_info_duration_fields;
+      int found_decoder;
+      int64_t last_duration;
+      int64_t fps_first_dts;
+      int     fps_first_dts_idx;
+      int64_t fps_last_dts;
+      int     fps_last_dts_idx;
+    } *info;
+    int pts_wrap_bits;
+    int64_t first_dts;
+    int64_t cur_dts;
+    int64_t last_IP_pts;
+    int last_IP_duration;
+    int probe_packets;
+    int codec_info_nb_frames;
+    enum AVStreamParseType need_parsing;
+    struct AVCodecParserContext *parser;
+    struct AVPacketList *last_in_packet_buffer;
+    AVProbeData_57 probe_data;
+  #define MAX_REORDER_DELAY 16
+    int64_t pts_buffer[MAX_REORDER_DELAY+1];
+    AVIndexEntry *index_entries;
+    int nb_index_entries;
+    unsigned int index_entries_allocated_size;
+    AVRational r_frame_rate;
+    int stream_identifier;
+    int64_t interleaver_chunk_size;
+    int64_t interleaver_chunk_duration;
+    int request_probe;
+    int skip_to_keyframe;
+    int skip_samples;
+    int64_t start_skip_samples;
+    int64_t first_discard_sample;
+    int64_t last_discard_sample;
+    int nb_decoded_frames;
+    int64_t mux_ts_offset;
+    int64_t pts_wrap_reference;
+    int pts_wrap_behavior;
+    int update_initial_durations_done;
+    int64_t pts_reorder_error[MAX_REORDER_DELAY+1];
+    uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];
+    int64_t last_dts_for_order_check;
+    uint8_t dts_ordered;
+    uint8_t dts_misordered;
+    int inject_global_side_data;
+    // All fields above this line are not part of the public API.
+    // All fields below are part of the public API and ABI again.
+    char *recommended_encoder_configuration;
+    AVRational display_aspect_ratio;
+    struct FFFrac *priv_pts;
+    AVStreamInternal *internal;
+    AVCodecParameters *codecpar;
+  } AVStream_57;
 
-typedef struct AVStream_58
-{
-  int index;
-  int id;
-  AVCodecContext *codec;
-  void *priv_data;
-  AVRational time_base;
-  int64_t start_time;
-  int64_t duration;
-  int64_t nb_frames;
-  int disposition;
-  enum AVDiscard discard;
-  AVRational sample_aspect_ratio;
-  AVDictionary *metadata;
-  AVRational avg_frame_rate;
-  AVPacket_57_58 attached_pic;
-  AVPacketSideData *side_data;
-  int            nb_side_data;
-  int event_flags;
-  AVRational r_frame_rate;
-  char *recommended_encoder_configuration;
-  AVCodecParameters *codecpar;
+  typedef struct AVStream_58
+  {
+    int index;
+    int id;
+    AVCodecContext *codec;
+    void *priv_data;
+    AVRational time_base;
+    int64_t start_time;
+    int64_t duration;
+    int64_t nb_frames;
+    int disposition;
+    enum AVDiscard discard;
+    AVRational sample_aspect_ratio;
+    AVDictionary *metadata;
+    AVRational avg_frame_rate;
+    AVPacket_57_58 attached_pic;
+    AVPacketSideData *side_data;
+    int            nb_side_data;
+    int event_flags;
+    AVRational r_frame_rate;
+    char *recommended_encoder_configuration;
+    AVCodecParameters *codecpar;
 
-  // All field following this line are not part of the public API and may change/be removed.
-} AVStream_58;
+    // All field following this line are not part of the public API and may change/be removed.
+  } AVStream_58;
 
-// AVCodecParameters is part of avcodec.
-typedef struct AVCodecParameters_57_58
-{
-  AVMediaType codec_type;
-  AVCodecID   codec_id;
-  uint32_t    codec_tag;
-  uint8_t *extradata;
-  int extradata_size;
-  int format;
-  int64_t bit_rate;
-  int bits_per_coded_sample;
-  int bits_per_raw_sample;
-  int profile;
-  int level;
-  int width;
-  int height;
-  AVRational                    sample_aspect_ratio;
-  AVFieldOrder                  field_order;
-  AVColorRange                  color_range;
-  AVColorPrimaries              color_primaries;
-  AVColorTransferCharacteristic color_trc;
-  AVColorSpace                  color_space;
-  AVChromaLocation              chroma_location;
-  int video_delay;
+  // AVCodecParameters is part of avcodec.
+  typedef struct AVCodecParameters_57_58
+  {
+    AVMediaType codec_type;
+    AVCodecID   codec_id;
+    uint32_t    codec_tag;
+    uint8_t *extradata;
+    int extradata_size;
+    int format;
+    int64_t bit_rate;
+    int bits_per_coded_sample;
+    int bits_per_raw_sample;
+    int profile;
+    int level;
+    int width;
+    int height;
+    AVRational                    sample_aspect_ratio;
+    AVFieldOrder                  field_order;
+    AVColorRange                  color_range;
+    AVColorPrimaries              color_primaries;
+    AVColorTransferCharacteristic color_trc;
+    AVColorSpace                  color_space;
+    AVChromaLocation              chroma_location;
+    int video_delay;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVCodecParameters_57_58;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVCodecParameters_57_58;
 
-// AVFrames is part of AVUtil
-typedef struct AVFrame_54 
-{
-  uint8_t *data[AV_NUM_DATA_POINTERS];
-  int linesize[AV_NUM_DATA_POINTERS];
-  uint8_t **extended_data;
-  int width, height;
-  int nb_samples;
-  int format;
-  int key_frame;
-  AVPictureType pict_type;
-  uint8_t *base[AV_NUM_DATA_POINTERS];
-  AVRational sample_aspect_ratio;
-  int64_t pts;
-  int64_t pkt_pts;
-  int64_t pkt_dts;
-  int coded_picture_number;
-  int display_picture_number;
-  int quality;
+  // AVFrames is part of AVUtil
+  typedef struct AVFrame_54 
+  {
+    uint8_t *data[AV_NUM_DATA_POINTERS];
+    int linesize[AV_NUM_DATA_POINTERS];
+    uint8_t **extended_data;
+    int width, height;
+    int nb_samples;
+    int format;
+    int key_frame;
+    AVPictureType pict_type;
+    uint8_t *base[AV_NUM_DATA_POINTERS];
+    AVRational sample_aspect_ratio;
+    int64_t pts;
+    int64_t pkt_pts;
+    int64_t pkt_dts;
+    int coded_picture_number;
+    int display_picture_number;
+    int quality;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVFrame_54;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVFrame_54;
 
-typedef struct AVFrame_55_56
-{
-  uint8_t *data[AV_NUM_DATA_POINTERS];
-  int linesize[AV_NUM_DATA_POINTERS];
-  uint8_t **extended_data;
-  int width, height;
-  int nb_samples;
-  int format;
-  int key_frame;
-  AVPictureType pict_type;
-  AVRational sample_aspect_ratio;
-  int64_t pts;
-  int64_t pkt_pts;
-  int64_t pkt_dts;
-  int coded_picture_number;
-  int display_picture_number;
-  int quality;
+  typedef struct AVFrame_55_56
+  {
+    uint8_t *data[AV_NUM_DATA_POINTERS];
+    int linesize[AV_NUM_DATA_POINTERS];
+    uint8_t **extended_data;
+    int width, height;
+    int nb_samples;
+    int format;
+    int key_frame;
+    AVPictureType pict_type;
+    AVRational sample_aspect_ratio;
+    int64_t pts;
+    int64_t pkt_pts;
+    int64_t pkt_dts;
+    int coded_picture_number;
+    int display_picture_number;
+    int quality;
 
-  // Actually, there is more here, but the variables above are the only we need.
-} AVFrame_55_56;
+    // Actually, there is more here, but the variables above are the only we need.
+  } AVFrame_55_56;
 
-// ------------------- AVInputFormat ---------------
-// AVInputFormat is part of AVFormat
-typedef struct AVInputFormat_56_57_58
-{
-  const char *name;
-  const char *long_name;
-  int flags;
-  const char *extensions;
-  const struct AVCodecTag * const *codec_tag;
-  const AVClass *priv_class;
-  const char *mime_type;
-} AVInputFormat_56_57_58;
+  // ------------------- AVInputFormat ---------------
+  // AVInputFormat is part of AVFormat
+  typedef struct AVInputFormat_56_57_58
+  {
+    const char *name;
+    const char *long_name;
+    int flags;
+    const char *extensions;
+    const struct AVCodecTag * const *codec_tag;
+    const AVClass *priv_class;
+    const char *mime_type;
+  } AVInputFormat_56_57_58;
 
-// ------------------- AVFrameSideData ---------------
-// AVFrameSideData is part of AVUtil
-typedef struct AVFrameSideData_54_55_56
-{
-  enum AVFrameSideDataType type;
-  uint8_t *data;
-  int size;
-  AVDictionary *metadata;
-  AVBufferRef *buf;
-} AVFrameSideData_54_55_56;
+  // ------------------- AVFrameSideData ---------------
+  // AVFrameSideData is part of AVUtil
+  typedef struct AVFrameSideData_54_55_56
+  {
+    enum AVFrameSideDataType type;
+    uint8_t *data;
+    int size;
+    AVDictionary *metadata;
+    AVBufferRef *buf;
+  } AVFrameSideData_54_55_56;
 
-// ------------------- AVMotionVector ---------------
+  // ------------------- AVMotionVector ---------------
 
-typedef struct AVMotionVector_54
-{
-  int32_t source;
-  uint8_t w, h;
-  int16_t src_x, src_y;
-  int16_t dst_x, dst_y;
-  uint64_t flags;
-} AVMotionVector_54;
+  typedef struct AVMotionVector_54
+  {
+    int32_t source;
+    uint8_t w, h;
+    int16_t src_x, src_y;
+    int16_t dst_x, dst_y;
+    uint64_t flags;
+  } AVMotionVector_54;
 
-typedef struct AVMotionVector_55_56 
-{
-  int32_t source;
-  uint8_t w, h;
-  int16_t src_x, src_y;
-  int16_t dst_x, dst_y;
-  uint64_t flags;
-  int32_t motion_x, motion_y;
-  uint16_t motion_scale;
-} AVMotionVector_55_56;
+  typedef struct AVMotionVector_55_56 
+  {
+    int32_t source;
+    uint8_t w, h;
+    int16_t src_x, src_y;
+    int16_t dst_x, dst_y;
+    uint64_t flags;
+    int32_t motion_x, motion_y;
+    uint16_t motion_scale;
+  } AVMotionVector_55_56;
+
+  // -------------------- AVPixFmtDescriptor and AVComponentDescriptor (part of AVUtil) -----------------
+
+  typedef struct AVComponentDescriptor_54 
+  {
+    uint16_t plane        : 2;
+    uint16_t step_minus1  : 3;
+    uint16_t offset_plus1 : 3;
+    uint16_t shift        : 3;
+    uint16_t depth_minus1 : 4;
+  } AVComponentDescriptor_54;
+
+  typedef struct AVPixFmtDescriptor_54
+  {
+    const char *name;
+    uint8_t nb_components;
+    uint8_t log2_chroma_w;
+    uint8_t log2_chroma_h;
+    uint8_t flags;
+    AVComponentDescriptor_54 comp[4];
+    const char *alias;
+  } AVPixFmtDescriptor_54;
+
+  typedef struct AVComponentDescriptor_55_56
+  {
+    int plane;
+    int step;
+    int offset;
+    int shift;
+    int depth;
+
+    // deprectaed
+    int step_minus1;
+    int depth_minus1;
+    int offset_plus1;
+  } AVComponentDescriptor_55_56;
+
+  typedef struct AVPixFmtDescriptor_55
+  {
+    const char *name;
+    uint8_t nb_components;
+    uint8_t log2_chroma_w;
+    uint8_t log2_chroma_h;
+    uint64_t flags;
+    AVComponentDescriptor_55_56 comp[4];
+    const char *alias;
+  } AVPixFmtDescriptor_55;
+
+  typedef struct AVPixFmtDescriptor_56
+  {
+    const char *name;
+    uint8_t nb_components;
+    uint8_t log2_chroma_w;
+    uint8_t log2_chroma_h;
+    uint64_t flags;
+    AVComponentDescriptor_55_56 comp[4];
+    const char *alias;
+  } AVPixFmtDescriptor_56;
+
+} // End of anonymous namespace
 
 // -------- FFmpegLibraryFunctions -----------
 
@@ -856,6 +924,10 @@ bool FFmpegLibraryFunctions::bindFunctionsFromAVUtilLib()
   if (!resolveAvUtil(av_frame_get_metadata, "av_frame_get_metadata")) return false;
   if (!resolveAvUtil(av_log_set_callback, "av_log_set_callback")) return false;
   if (!resolveAvUtil(av_log_set_level, "av_log_set_level")) return false;
+  if (!resolveAvUtil(av_pix_fmt_desc_get, "av_pix_fmt_desc_get")) return false;
+  if (!resolveAvUtil(av_pix_fmt_desc_next, "av_pix_fmt_desc_next")) return false;
+  if (!resolveAvUtil(av_pix_fmt_desc_get_id, "av_pix_fmt_desc_get_id")) return false;
+  
   return true;
 }
 
@@ -867,14 +939,19 @@ bool FFmpegLibraryFunctions::bindFunctionsFromSWResampleLib()
 bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
 {
   // Loading the libraries was successfull. Get/check function pointers.
-  return bindFunctionsFromAVFormatLib() && bindFunctionsFromAVCodecLib() && bindFunctionsFromAVUtilLib() && bindFunctionsFromSWResampleLib();
+  bool success = bindFunctionsFromAVFormatLib() && bindFunctionsFromAVCodecLib() && bindFunctionsFromAVUtilLib() && bindFunctionsFromSWResampleLib();
+  if (success)
+    LOG("Binding functions successfull");
+  else
+    LOG("Binding functions failed");
+  return success;
 }
 
 QFunctionPointer FFmpegLibraryFunctions::resolveAvUtil(const char *symbol)
 {
   QFunctionPointer ptr = libAvutil.resolve(symbol);
   if (!ptr)
-    setError(QStringLiteral("Error loading the avutil library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the avutil library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -888,7 +965,7 @@ QFunctionPointer FFmpegLibraryFunctions::resolveAvFormat(const char *symbol)
 {
   QFunctionPointer ptr = libAvformat.resolve(symbol);
   if (!ptr)
-    setError(QStringLiteral("Error loading the avformat library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the avformat library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -903,7 +980,7 @@ QFunctionPointer FFmpegLibraryFunctions::resolveAvCodec(const char *symbol, bool
   // Failure to resolve the function is only an error if failIsError is set.
   QFunctionPointer ptr = libAvcodec.resolve(symbol);
   if (!ptr && failIsError)
-    setError(QStringLiteral("Error loading the avcodec library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the avcodec library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -917,7 +994,7 @@ QFunctionPointer FFmpegLibraryFunctions::resolveSwresample(const char *symbol)
 {
   QFunctionPointer ptr = libSwresample.resolve(symbol);
   if (!ptr)
-    setError(QStringLiteral("Error loading the swresample library: Can't find function %1.").arg(symbol));
+    LOG(QStringLiteral("Error loading the swresample library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -930,7 +1007,6 @@ template <typename T> bool FFmpegLibraryFunctions::resolveSwresample(T &fun, con
 bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersions[4])
 {
   // Clear the error state if one was set.
-  error_list.clear();
   libAvutil.unload();
   libSwresample.unload();
   libAvcodec.unload();
@@ -943,11 +1019,14 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
   {
     QDir givenPath(path);
     if (!givenPath.exists())
-      // The given path is invalid
+    {
+      LOG("The given path is invalid");
       return false;
+    }
 
     // Get the absolute path
     path = givenPath.absolutePath() + "/";
+    LOG("Absolute path " + path);
   }
 
   // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll on windows.
@@ -973,28 +1052,38 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
     
     // Start with the avutil library
     libAvutil.setFileName(path + constructLibName.arg("avutil").arg(libVersions[0]));
-    if (!libAvutil.load())
-      success = false;
+    success = libAvutil.load();
+    LOG("Try to load libAvutil " + libAvutil.fileName() + (success ? " success" : " fail"));
 
     // Next, the swresample library.
     libSwresample.setFileName(path + constructLibName.arg("swresample").arg(libVersions[1]));
-    if (success && !libSwresample.load())
-      success = false;
+    if (success)
+    {
+      success = libSwresample.load();
+      LOG("Try to load libSwresample " + libSwresample.fileName() + (success ? " success" : " fail"));
+    }
 
     // avcodec
     libAvcodec.setFileName(path + constructLibName.arg("avcodec").arg(libVersions[2]));
-    if (success && !libAvcodec.load())
-      success = false;
+    if (success)
+    {
+      success = libAvcodec.load();
+      LOG("Try to load libAvcodec " + libAvcodec.fileName() + (success ? " success" : " fail"));
+    }
 
     // avformat
     libAvformat.setFileName(path + constructLibName.arg("avformat").arg(libVersions[3]));
-    if (success && !libAvformat.load())
-      success = false;
+    if (success)
+    {
+      success = libAvformat.load();
+      LOG("Try to load libAvformat " + libAvformat.fileName() + (success ? " success" : " fail"));
+    }
 
     if (success)
       break;
     else
     {
+      LOG("Unloading libraries of failure.");
       libAvutil.unload();
       libSwresample.unload();
       libAvcodec.unload();
@@ -1012,7 +1101,6 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
 bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib)
 {
   // Clear the error state if one was set.
-  error_list.clear();
   libAvutil.unload();
   libSwresample.unload();
   libAvcodec.unload();
@@ -1020,28 +1108,37 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
 
   // We will load the libraries (in this order):
   // avutil, swresample, avcodec, avformat.
-  bool success = true;
   libAvutil.setFileName(avUtilLib);
-  if (!libAvutil.load())
-    success = false;
+  bool success = libAvutil.load();
+  LOG("Try to load libAvutil " + libAvutil.fileName() + (success ? " success" : " fail"));
 
   // Next, the swresample library.
   libSwresample.setFileName(swResampleLib);
-  if (success && !libSwresample.load())
-    success = false;
+  if (success)
+  {
+    success = libSwresample.load();
+    LOG("Try to load libSwresample " + libSwresample.fileName() + (success ? " success" : " fail"));
+  } 
 
   // avcodec
   libAvcodec.setFileName(avCodecLib);
-  if (success && !libAvcodec.load())
-    success = false;
+  if (success)
+  {
+    success = libAvcodec.load();
+    LOG("Try to load libAvcodec " + libAvcodec.fileName() + (success ? " success" : " fail"));
+  } 
 
   // avformat
   libAvformat.setFileName(avFormatLib);
-  if (success && !libAvformat.load())
-    success = false;
+  if (success)
+  {
+    success = libAvformat.load();
+    LOG("Try to load libAvformat " + libAvformat.fileName() + (success ? " success" : " fail"));
+  } 
 
   if (!success)
   {
+    LOG("Unloading already loaded libraries");
     libAvutil.unload();
     libSwresample.unload();
     libAvcodec.unload();
@@ -1082,7 +1179,7 @@ QStringList FFmpegLibraryFunctions::getLibPaths() const
 
 // ----------------- FFmpegVersionHandler -------------------------------------------
 
-QStringList FFmpegVersionHandler::logMessages;
+QStringList FFmpegVersionHandler::logListFFmpeg;
 
 FFmpegVersionHandler::FFmpegVersionHandler()
 {
@@ -1092,6 +1189,7 @@ FFmpegVersionHandler::FFmpegVersionHandler()
   libVersion.swresample = -1;
 
   librariesLoaded = false;
+  lib.setLogList(&logList);
 }
 
 void FFmpegVersionHandler::avLogCallback(void *ptr, int level, const char *fmt, va_list vargs)
@@ -1100,7 +1198,7 @@ void FFmpegVersionHandler::avLogCallback(void *ptr, int level, const char *fmt, 
   QString msg;
   msg.vsprintf(fmt, vargs);
   QDateTime now = QDateTime::currentDateTime();
-  FFmpegVersionHandler::logMessages.append(now.toString("hh:mm:ss.zzz") + QString(" - L%1 - ").arg(level) + msg);
+  FFmpegVersionHandler::logListFFmpeg.append(now.toString("hh:mm:ss.zzz") + QString(" - L%1 - ").arg(level) + msg);
 }
 
 bool FFmpegVersionHandler::loadFFmpegLibraries()
@@ -1114,40 +1212,48 @@ bool FFmpegVersionHandler::loadFFmpegLibraries()
   // First try the specific FFMpeg libraries (if set)
   QSettings settings;
   settings.beginGroup("Decoders");
-  QString avFormatLib = settings.value("FFMpeg.avformat", "").toString();
-  QString avCodecLib = settings.value("FFMpeg.avcodec", "").toString();
-  QString avUtilLib = settings.value("FFMpeg.avutil", "").toString();
-  QString swResampleLib = settings.value("FFMpeg.swresample", "").toString();
-  librariesLoaded = loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
-  if (librariesLoaded)
+  QString avFormatLib = settings.value("FFmpeg.avformat", "").toString();
+  QString avCodecLib = settings.value("FFmpeg.avcodec", "").toString();
+  QString avUtilLib = settings.value("FFmpeg.avutil", "").toString();
+  QString swResampleLib = settings.value("FFmpeg.swresample", "").toString();
+  if (!avFormatLib.isEmpty() && !avCodecLib.isEmpty() && !avUtilLib.isEmpty() && !swResampleLib.isEmpty())
   {
-    lib.av_log_set_callback(&FFmpegVersionHandler::avLogCallback);
-    return true;
+    LOG("Trying to load the libraries specified in the settings.");
+    librariesLoaded = loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
   }
+  else
+    LOG("No ffmpeg libraries were specified in the settings.");
 
-  // Next, we will try some other paths / options
-  QStringList possibilites;
-  QString decoderSearchPath = settings.value("SearchPath", "").toString();
-  if (!decoderSearchPath.isEmpty())
-    possibilites.append(decoderSearchPath);                                   // Try the specific search path (if one is set)
-  possibilites.append(QDir::currentPath() + "/");                             // Try the current working directory
-  possibilites.append(QDir::currentPath() + "/ffmpeg/");
-  possibilites.append(QCoreApplication::applicationDirPath() + "/");          // Try the path of the YUView.exe
-  possibilites.append(QCoreApplication::applicationDirPath() + "/ffmpeg/");
-  possibilites.append("");                                                    // Just try to call QLibrary::load so that the system folder will be searched.
-
-  for (QString path : possibilites)
+  if (!librariesLoaded)
   {
-    librariesLoaded = loadFFmpegLibraryInPath(path);
-    if (librariesLoaded)
+    // Next, we will try some other paths / options
+    QStringList possibilites;
+    QString decoderSearchPath = settings.value("SearchPath", "").toString();
+    if (!decoderSearchPath.isEmpty())
+      possibilites.append(decoderSearchPath);                                   // Try the specific search path (if one is set)
+    possibilites.append(QDir::currentPath() + "/");                             // Try the current working directory
+    possibilites.append(QDir::currentPath() + "/ffmpeg/");
+    possibilites.append(QCoreApplication::applicationDirPath() + "/");          // Try the path of the YUView.exe
+    possibilites.append(QCoreApplication::applicationDirPath() + "/ffmpeg/");
+    possibilites.append("");                                                    // Just try to call QLibrary::load so that the system folder will be searched.
+
+    for (QString path : possibilites)
     {
-      lib.av_log_set_callback(FFmpegVersionHandler::avLogCallback);
-      return true;
+      if (path.isEmpty())
+        LOG("Trying to load the libraries in the system path");
+      else
+        LOG("Trying to load the libraries in the path " + path);
+
+      librariesLoaded = loadFFmpegLibraryInPath(path);
+      if (librariesLoaded)
+        break;
     }
   }
 
-  // Loading the libraries failed
-  return false;
+  if (librariesLoaded)
+    lib.av_log_set_callback(&FFmpegVersionHandler::avLogCallback);
+
+  return librariesLoaded;
 }
 
 bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
@@ -1155,23 +1261,31 @@ bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
   AVFormatContext *f_ctx = nullptr;
   int ret = lib.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
   if (ret < 0)
-    return setError(QStringLiteral("Error opening file (avformat_open_input). Ret code %1").arg(ret));
+  {
+    LOG(QStringLiteral("Error opening file (avformat_open_input). Ret code %1").arg(ret));
+    return false;
+  }
   if (f_ctx == nullptr)
-    return setError(QStringLiteral("Error opening file (avformat_open_input). No format context returned."));
+  {
+    LOG(QStringLiteral("Error opening file (avformat_open_input). No format context returned."));
+    return false;
+  }
   
   // The wrapper will take ownership of this pointer
   fmt = AVFormatContextWrapper(f_ctx, libVersion);
   
   ret = lib.avformat_find_stream_info(fmt.get_format_ctx(), nullptr);
   if (ret < 0)
-    return setError(QStringLiteral("Error opening file (avformat_find_stream_info). Ret code %1").arg(ret));
+  {
+    LOG(QStringLiteral("Error opening file (avformat_find_stream_info). Ret code %1").arg(ret));
+    return false;
+  }
   
   // Get the codec id string using avcodec_get_name for each stream
   for(unsigned int idx=0; idx < fmt.get_nb_streams(); idx++)
   {
     AVStreamWrapper stream = fmt.get_stream(idx);
-    const char *name = lib.avcodec_get_name(stream.getCodecSpecifier().getCodecID(libVersion.avcodec));
-    stream.getCodec().codec_id_string = QString(name);
+    stream.codecIDWrapper = getCodecIDWrapper(stream.getCodecID());
   }
 
   return true;
@@ -1182,10 +1296,16 @@ AVCodecParametersWrapper FFmpegVersionHandler::alloc_code_parameters()
   return AVCodecParametersWrapper(lib.avcodec_parameters_alloc(), libVersion);
 }
 
-AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecSpecfier codec_id)
+AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecIDWrapper codecId)
 {
-  AVCodecID id = codec_id.getCodecID(libVersion.avcodec);
-  return AVCodecWrapper(lib.avcodec_find_decoder(id), libVersion);
+  AVCodecID avCodecID = getCodecIDFromWrapper(codecId);
+  AVCodec *c = lib.avcodec_find_decoder(avCodecID);
+  if (c == nullptr)
+  {
+    LOG("Unable to find decoder for codec " + codecId.getCodecName());
+    return AVCodecWrapper();
+  }
+  return AVCodecWrapper(c, libVersion);
 }
 
 AVCodecContextWrapper FFmpegVersionHandler::alloc_decoder(AVCodecWrapper &codec)
@@ -1245,34 +1365,48 @@ bool FFmpegVersionHandler::checkLibraryVersions()
 {
   // Get the version number of the opened libraries and check them against the
   // versions we tried to open. Also get the minor and micro version numbers.
-  
+  LOG(QString("versions avutil %1, swresample %2, avcodec %3, avformat %4").arg(libVersion.avutil).arg(libVersion.swresample).arg(libVersion.avcodec).arg(libVersion.avformat));
+
   int avCodecVer = lib.avcodec_version();
+  LOG("lib avCodecVer " + libVerToString(avCodecVer));
   if (AV_VERSION_MAJOR(avCodecVer) != libVersion.avcodec)
   {
-    error_list.append("The openend libAvCodec returned a different major version than it's file name indicates.");
-    // Try the next version
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(avCodecVer)).arg(libVersion.avcodec));
     return false;
   }
+
   libVersion.avcodec_minor = AV_VERSION_MINOR(avCodecVer);
   libVersion.avcodec_micro = AV_VERSION_MICRO(avCodecVer);
 
   int avFormatVer = lib.avformat_version();
+  LOG("lib avFormatVer " + libVerToString(avFormatVer));
   if (AV_VERSION_MAJOR(avFormatVer) != libVersion.avformat)
-    return setError("The openend libAvFormat returned a different major version than it's file name indicates.");
+  {
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(avFormatVer)).arg(libVersion.avformat));
+    return false;
+  }
   
   libVersion.avformat_minor = AV_VERSION_MINOR(avFormatVer);
   libVersion.avformat_micro = AV_VERSION_MICRO(avFormatVer);
 
   int avUtilVer = lib.avutil_version();
+  LOG("lib avUtilVer " + libVerToString(avUtilVer));
   if (AV_VERSION_MAJOR(avUtilVer) != libVersion.avutil)
-    return setError("The openend libAvUtil returned a different major version than it's file name indicates.");
+  {
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(avUtilVer)).arg(libVersion.avutil));
+    return false;
+  }
     
   libVersion.avutil_minor = AV_VERSION_MINOR(avUtilVer);
   libVersion.avutil_micro = AV_VERSION_MICRO(avUtilVer);
 
   int swresampleVer = lib.swresample_version();
+  LOG("lib swresampleVer " + libVerToString(swresampleVer));
   if (AV_VERSION_MAJOR(swresampleVer) != libVersion.swresample)
-    return setError("The openend libSwresampleVer returned a different major version than it's file name indicates.");
+  {
+    LOG(QString("The openend libAvCodec returned a different major version (%1) than we are looking for (%2).").arg(AV_VERSION_MAJOR(swresampleVer)).arg(libVersion.swresample));
+    return false;
+  }
     
   libVersion.swresample_minor = AV_VERSION_MINOR(swresampleVer);
   libVersion.swresample_micro = AV_VERSION_MICRO(swresampleVer);
@@ -1304,14 +1438,18 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
 
       success = checkLibraryVersions();
       if (success)
+      {
         // Everything worked. We can break the loop over all versions that we support.
+        LOG("checking the library versions was successfull.");
         break;
+      }
+      else
+        LOG("checking the library versions was not successfull.");
     }
   }
 
   if (success)
   {
-    error_list.clear();
     // Initialize libavformat and register all the muxers, demuxers and protocols.
     lib.av_register_all();
     // If needed, we would also have to register the network features (avformat_network_init)
@@ -1327,6 +1465,7 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
   {
     FFmpegVersions v = (FFmpegVersions)i;
     
+    LOG(QString("Trying to load libraries avFormat %1 avCodec %2 avUtil %3 swResample %4").arg(avFormatLib).arg(avCodecLib).arg(avUtilLib).arg(swResampleLib));
     if (lib.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
     {
       // This worked. Now check the version number of the libraries
@@ -1334,7 +1473,12 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
       libVersion.swresample = getLibVersionSwresample(v);
       libVersion.avcodec = getLibVersionCodec(v);
       libVersion.avformat = getLibVersionFormat(v);
-
+      LOG("Testing versions of the library. Currently looking for:");
+      LOG(QString("avutil: %1.xx.xx").arg(libVersion.avutil));
+      LOG(QString("swresample: %1.xx.xx").arg(libVersion.swresample)) ;
+      LOG(QString("avcodec: %1.xx.xx").arg(libVersion.avcodec));
+      LOG(QString("avformat: %1.xx.xx").arg(libVersion.avformat));
+      
       success = checkLibraryVersions();
       if (success)
         // Everything worked. We can break the loop over all versions that we support.
@@ -1344,24 +1488,21 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
 
   if (success)
   {
-    error_list.clear();
     // Initialize libavformat and register all the muxers, demuxers and protocols.
     lib.av_register_all();
     // If needed, we would also have to register the network features (avformat_network_init)
+    LOG("Successfully loaded specific libraries.");
   }
 
   return success;
 }
 
-bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &error)
+bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QStringList &logging)
 {
   FFmpegVersionHandler handler;
-  if (!handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
-  {
-    error = handler.getErrors();
-    return false;
-  }
-  return true;
+  bool success = handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
+  logging = handler.getLog();
+  return success;
 }
 
 void FFmpegVersionHandler::enableLoggingWarning()
@@ -1369,188 +1510,201 @@ void FFmpegVersionHandler::enableLoggingWarning()
   lib.av_log_set_level(AV_LOG_WARNING);
 }
 
-RawFormat FFmpegVersionHandler::getRawFormat(AVPixelFormat pixelFormat)
+AVPixFmtDescriptorWrapper FFmpegVersionHandler::getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixFmt)
 {
-  if (convertAVPixelFormatYUV(pixelFormat).isValid())
-    return raw_YUV;
-  if (convertAVPixelFormatRGB(pixelFormat).isValid())
-    return raw_RGB;
-  return raw_Invalid;
+  return AVPixFmtDescriptorWrapper(lib.av_pix_fmt_desc_get(pixFmt), libVersion);
 }
 
-// Convert from the AVPixelFormat to the internal yuvPixelFormat
-yuvPixelFormat FFmpegVersionHandler::convertAVPixelFormatYUV(AVPixelFormat pixelFormat)
+yuvPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
 {
-  // YUV 4:2:0 formats
-  if (pixelFormat == AV_PIX_FMT_YUV420P)
-    return yuvPixelFormat(YUV_420, 8);
-  if (pixelFormat == AV_PIX_FMT_YUV420P16LE)
-    return yuvPixelFormat(YUV_420, 16);
-  if (pixelFormat == AV_PIX_FMT_YUV420P16BE)
-    return yuvPixelFormat(YUV_420, 16, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV420P9BE)
-    return yuvPixelFormat(YUV_420, 9, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV420P9LE)
-    return yuvPixelFormat(YUV_420, 9);
-  if (pixelFormat == AV_PIX_FMT_YUV420P10BE)
-    return yuvPixelFormat(YUV_420, 10, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV420P10LE)
-    return yuvPixelFormat(YUV_420, 10);
-  if (pixelFormat == AV_PIX_FMT_YUV420P12BE)
-    return yuvPixelFormat(YUV_420, 12, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV420P12LE)
-    return yuvPixelFormat(YUV_420, 12);
-  if (pixelFormat == AV_PIX_FMT_YUV420P14BE)
-    return yuvPixelFormat(YUV_420, 14, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV420P14LE)
-    return yuvPixelFormat(YUV_420, 14);
+  if (getRawFormat() == raw_RGB || !flagsSupported())
+    return yuvPixelFormat();
 
-  // YUV 4:2:2 formats
-  if (pixelFormat == AV_PIX_FMT_YUV422P)
-    return yuvPixelFormat(YUV_422, 8);
-  if (pixelFormat == AV_PIX_FMT_YUV422P16LE)
-    return yuvPixelFormat(YUV_422, 16);
-  if (pixelFormat == AV_PIX_FMT_YUV422P16BE)
-    return yuvPixelFormat(YUV_422, 16, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV422P10BE)
-    return yuvPixelFormat(YUV_422, 10, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV422P10LE)
-    return yuvPixelFormat(YUV_422, 10);
-  if (pixelFormat == AV_PIX_FMT_YUV422P9BE)
-    return yuvPixelFormat(YUV_422, 9, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV422P9LE)
-    return yuvPixelFormat(YUV_422, 9);
-  if (pixelFormat == AV_PIX_FMT_YUV422P12BE)
-    return yuvPixelFormat(YUV_422, 12, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV422P12LE)
-    return yuvPixelFormat(YUV_422, 12);
-  if (pixelFormat == AV_PIX_FMT_YUV422P14BE)
-    return yuvPixelFormat(YUV_422, 14, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV422P14LE)
-    return yuvPixelFormat(YUV_422, 14);
-
-  // YUV 4:4:4 formats
-  if (pixelFormat == AV_PIX_FMT_YUV444P)
-    return yuvPixelFormat(YUV_444, 8);
-  if (pixelFormat == AV_PIX_FMT_YUV444P16LE)
-    return yuvPixelFormat(YUV_444, 16);
-  if (pixelFormat == AV_PIX_FMT_YUV444P16BE)
-    return yuvPixelFormat(YUV_444, 16, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV444P9BE)
-    return yuvPixelFormat(YUV_444, 9, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV444P9LE)
-    return yuvPixelFormat(YUV_444, 9);
-  if (pixelFormat == AV_PIX_FMT_YUV444P10BE)
-    return yuvPixelFormat(YUV_444, 10, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV444P10LE)
-    return yuvPixelFormat(YUV_444, 10);
-  if (pixelFormat == AV_PIX_FMT_YUV444P12BE)
-    return yuvPixelFormat(YUV_444, 12, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV444P12LE)
-    return yuvPixelFormat(YUV_444, 12);
-  if (pixelFormat == AV_PIX_FMT_YUV444P14BE)
-    return yuvPixelFormat(YUV_444, 14, Order_YUV, true);
-  if (pixelFormat == AV_PIX_FMT_YUV444P14LE)
-    return yuvPixelFormat(YUV_444, 14);
-
-  return yuvPixelFormat();
-}
-
-rgbPixelFormat FFmpegVersionHandler::convertAVPixelFormatRGB(AVPixelFormat pixelFormat)
-{
-  if (pixelFormat == AV_PIX_FMT_RGB24)
-    return rgbPixelFormat(8, false, false);
-  if (pixelFormat == AV_PIX_FMT_BGR24)
-    return rgbPixelFormat(8, false, false, 2, 1, 0);
-  if (pixelFormat == AV_PIX_FMT_ARGB)
-    return rgbPixelFormat(8, false, true);
-  if (pixelFormat == AV_PIX_FMT_ABGR)
-    return rgbPixelFormat(8, false, true, 2, 1, 0);
-  if (pixelFormat == AV_PIX_FMT_RGB48LE)
-    return rgbPixelFormat(16, false, false);
+  YUVSubsamplingType subsampling;
+  if (nb_components == 1)
+    subsampling = YUV_400;
+  else if (log2_chroma_w == 0 && log2_chroma_h == 0)
+    subsampling = YUV_444;
+  else if (log2_chroma_w == 1 && log2_chroma_h == 0)
+    subsampling = YUV_422;
+  else if (log2_chroma_w == 1 && log2_chroma_h == 1)
+    subsampling = YUV_420;
+  else if (log2_chroma_w == 0 && log2_chroma_h == 1)
+    subsampling = YUV_440;
+  else if (log2_chroma_w == 2 && log2_chroma_h == 2)
+    subsampling = YUV_410;
+  else if (log2_chroma_w == 0 && log2_chroma_h == 2)
+    subsampling = YUV_411;
+  else
+    return yuvPixelFormat();
   
-  // Other formats are not yet supported
-  // Adding them should be straightforward (but also not trivial)
-  return rgbPixelFormat();
+  YUVPlaneOrder planeOrder;
+  if (nb_components == 1)
+    planeOrder = Order_YUV;
+  else if (nb_components == 3 && !flagHasAlphaPlane())
+    planeOrder = Order_YUV;
+  else if (nb_components == 4 && flagHasAlphaPlane())
+    planeOrder = Order_YUVA;
+  else
+    return yuvPixelFormat();
+    
+  bool bigEndian = flagIsBigEndian();
+
+  int bitsPerSample = comp[0].depth;
+  for (int i=1; i<nb_components; i++)
+    if (comp[i].depth != bitsPerSample)
+      // Varying bit depths for components is not supported
+      return yuvPixelFormat();
+  
+  if (flagIsBitWisePacked() || !flagIsPlanar())
+    // Maybe this could be supported but I don't think that any decoder actually uses this.
+    // If you encounter a format that does not work because of this check please let us know.
+    return yuvPixelFormat();
+
+  return yuvPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
 }
 
-// Convert from yuvPixelFormat to AVPixelFormat
-AVPixelFormat FFmpegVersionHandler::convertYUVAVPixelFormat(yuvPixelFormat fmt)
+rgbPixelFormat AVPixFmtDescriptorWrapper::getRGBPixelFormat()
 {
-  if (fmt.subsampling == YUV_420)
-  {
-    if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P16LE;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P16BE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P9BE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P9LE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P10BE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P10LE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P12BE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P12LE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P14BE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV420P14LE;
-  }
+  if (getRawFormat() == raw_YUV || !flagsSupported())
+    return rgbPixelFormat();
+
+  int bitsPerSample = comp[0].depth;
+  for (int i=1; i<nb_components; i++)
+    if (comp[i].depth != bitsPerSample)
+      // Varying bit depths for components is not supported
+      return rgbPixelFormat();
+
+  if (flagIsBitWisePacked() || !flagIsPlanar())
+    // Maybe this could be supported but I don't think that any decoder actually uses this.
+    // If you encounter a format that does not work because of this check please let us know.
+    return rgbPixelFormat();
+
+  // The only possible order of planes seems to be RGB(A)
+  return rgbPixelFormat(bitsPerSample, true, 0, 1, 2, flagHasAlphaPlane() ? 3 : -1);
+}
+
+bool AVPixFmtDescriptorWrapper::setValuesFromYUVPixelFormat(YUV_Internals::yuvPixelFormat fmt)
+{
+  if (fmt.planeOrder == Order_YVU || fmt.planeOrder == Order_YVUA)
+    return false;
+
   if (fmt.subsampling == YUV_422)
   {
-    if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P16LE;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P16BE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P10BE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P10LE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P9BE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P9LE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P12BE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P12LE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P14BE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV422P14LE;
+    log2_chroma_w = 1;
+    log2_chroma_h = 0;
   }
-  if (fmt.subsampling == YUV_444)
+  else if (fmt.subsampling == YUV_422)
   {
-    if (fmt.bitsPerSample == 8 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P16LE;
-    if (fmt.bitsPerSample == 16 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P16BE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P9BE;
-    if (fmt.bitsPerSample == 9 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P9LE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P10BE;
-    if (fmt.bitsPerSample == 10 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P10LE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P12BE;
-    if (fmt.bitsPerSample == 12 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P12LE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P14BE;
-    if (fmt.bitsPerSample == 14 && fmt.planeOrder == Order_YUV && !fmt.bigEndian)
-      return AV_PIX_FMT_YUV444P14LE;
+    log2_chroma_w = 1;
+    log2_chroma_h = 0;
+  }
+  else if (fmt.subsampling == YUV_420)
+  {
+    log2_chroma_w = 1;
+    log2_chroma_h = 1;
+  }
+  else if (fmt.subsampling == YUV_440)
+  {
+    log2_chroma_w = 0;
+    log2_chroma_h = 1;
+  }
+  else if (fmt.subsampling == YUV_410)
+  {
+    log2_chroma_w = 2;
+    log2_chroma_h = 2;
+  }
+  else if (fmt.subsampling == YUV_411)
+  {
+    log2_chroma_w = 0;
+    log2_chroma_h = 2;
+  }
+  else if (fmt.subsampling == YUV_400)
+    nb_components = 1;
+  else
+    return false;
+
+  nb_components = fmt.subsampling == YUV_400 ? 1 : 3;
+
+  if (fmt.bigEndian)
+    flags += (1 << 0);
+  if (fmt.planar)
+    flags += (1 << 4);
+  if (fmt.planeOrder == Order_YUVA)
+    // Has alpha channel
+    flags += (1 << 7);
+
+  for (int i=0; i<nb_components; i++)
+  {
+    comp[i].plane = i;
+    comp[i].step = (fmt.bitsPerSample > 8) ? 2 : 1;
+    comp[i].offset = 0;
+    comp[i].shift = 0;
+    comp[i].depth = fmt.bitsPerSample;
+  }
+  return true;
+}
+
+bool AVPixFmtDescriptorWrapper::flagsSupported()
+{
+  // We don't support any of these
+  if (flagIsPallette())
+    return false;
+  if (flagIsHWAcceleratedFormat())
+    return false;
+  if (flagIsIsPseudoPallette())
+    return false;
+  if (flagIsBayerPattern())
+    return false;
+  if (flagIsFloat())
+    return false;
+  return true;
+}
+
+bool AVPixFmtDescriptorWrapper::operator==(const AVPixFmtDescriptorWrapper &other)
+{
+  if (nb_components != other.nb_components)
+    return false;
+  if (log2_chroma_w != other.log2_chroma_w)
+    return false;
+  if (log2_chroma_h != other.log2_chroma_h)
+    return false;
+  if (flags != other.flags)
+    return false;
+
+  for (int i=0; i<nb_components; i++)
+  {
+    if (comp[i].plane != other.comp[i].plane)
+      return false;
+    if (comp[i].step != other.comp[i].step)
+      return false;
+    if (comp[i].offset != other.comp[i].offset)
+      return false;
+    if (comp[i].shift != other.comp[i].shift)
+      return false;
+    if (comp[i].depth != other.comp[i].depth)
+      return false;
+  }
+  return true;
+}
+
+AVPixelFormat FFmpegVersionHandler::getAVPixelFormatFromYUVPixelFormat(yuvPixelFormat pixFmt)
+{
+  AVPixFmtDescriptorWrapper wrapper;
+  wrapper.setValuesFromYUVPixelFormat(pixFmt);
+
+  // We will have to search through all pixel formats which the library knows and compare them to the 
+  // one we are looking for. Unfortunately there is no other more direct search function in libavutil.
+  AVPixFmtDescriptor *desc = lib.av_pix_fmt_desc_next(nullptr);
+  while (desc != nullptr)
+  {
+    AVPixFmtDescriptorWrapper descWrapper(desc, libVersion);
+
+    if (descWrapper == wrapper)
+      return lib.av_pix_fmt_desc_get_id(desc);
+
+    // Get the next descriptor
+    desc = lib.av_pix_fmt_desc_next(desc);
   }
 
   return AV_PIX_FMT_NONE;
@@ -1582,9 +1736,9 @@ void AVFormatContextWrapper::update()
     max_analyze_duration = src->max_analyze_duration;
     key = QString::fromLatin1((const char*)src->key, src->keylen);
     nb_programs = src->nb_programs;
-    video_codec_id = AVCodecSpecfier(libVer.avcodec, src->video_codec_id);
-    audio_codec_id = AVCodecSpecfier(libVer.avcodec, src->audio_codec_id);
-    subtitle_codec_id = AVCodecSpecfier(libVer.avcodec, src->subtitle_codec_id);
+    video_codec_id = src->video_codec_id;
+    audio_codec_id = src->audio_codec_id;
+    subtitle_codec_id = src->subtitle_codec_id;
     max_index_size = src->max_index_size;
     max_picture_buffer = src->max_picture_buffer;
     nb_chapters = src->nb_chapters;
@@ -1610,9 +1764,9 @@ void AVFormatContextWrapper::update()
     max_analyze_duration = src->max_analyze_duration;
     key = QString::fromLatin1((const char*)src->key, src->keylen);
     nb_programs = src->nb_programs;
-    video_codec_id = AVCodecSpecfier(libVer.avcodec, src->video_codec_id);
-    audio_codec_id = AVCodecSpecfier(libVer.avcodec, src->audio_codec_id);
-    subtitle_codec_id = AVCodecSpecfier(libVer.avcodec, src->subtitle_codec_id);
+    video_codec_id = src->video_codec_id;
+    audio_codec_id = src->audio_codec_id;
+    subtitle_codec_id = src->subtitle_codec_id;
     max_index_size = src->max_index_size;
     max_picture_buffer = src->max_picture_buffer;
     nb_chapters = src->nb_chapters;
@@ -1639,9 +1793,9 @@ void AVFormatContextWrapper::update()
     max_analyze_duration = src->max_analyze_duration;
     key = QString::fromLatin1((const char*)src->key, src->keylen);
     nb_programs = src->nb_programs;
-    video_codec_id = AVCodecSpecfier(libVer.avcodec, src->video_codec_id);
-    audio_codec_id = AVCodecSpecfier(libVer.avcodec, src->audio_codec_id);
-    subtitle_codec_id = AVCodecSpecfier(libVer.avcodec, src->subtitle_codec_id);
+    video_codec_id = src->video_codec_id;
+    audio_codec_id = src->audio_codec_id;
+    subtitle_codec_id = src->subtitle_codec_id;
     max_index_size = src->max_index_size;
     max_picture_buffer = src->max_picture_buffer;
     nb_chapters = src->nb_chapters;
@@ -1661,42 +1815,44 @@ int AVFormatContextWrapper::read_frame(FFmpegVersionHandler &ff, AVPacketWrapper
   return ff.lib.av_read_frame(ctx, pkt.get_packet());
 }
 
-QString AVFormatContextWrapper::getInfoText()
+QStringPairList AVFormatContextWrapper::getInfoText()
 {
-  if (ctx == nullptr)
-    return "Format context not initialized";
-  update();
+  QStringPairList info;
 
-  QString info;
+  if (ctx == nullptr)
+  {
+    info.append(QStringPair("Format context not initialized", ""));
+    return info;
+  }
+  update();
 
   if (ctx_flags != 0)
   {
-    info += QString("Flags: ");
+    QString flags;
     if (ctx_flags & 1)
-      info += QString("No-Header");
+      flags += QString("No-Header");
     if (ctx_flags & 2)
-      info += QString("Un-seekable");
-    info += QString("\n");
+      flags += QString("Un-seekable");
+    info.append(QStringPair("Flags", flags));
   }
 
   AVRational time_base;
   time_base.num = 1;
   time_base.den = AV_TIME_BASE;
 
-  info += QString("Number streams: %1\n").arg(nb_streams);
-  info += QString("File name: %1\n").arg(filename);
-  info += QString("Start time: %1 (%2)\n").arg(start_time).arg(timestampToString(start_time, time_base));
-  info += QString("Duration: %1 (%2)\n").arg(duration).arg(timestampToString(duration, time_base));
+  info.append(QStringPair("Number streams", QString::number(nb_streams)));
+  info.append(QStringPair("File name", filename));
+  info.append(QStringPair("Start time", QString("%1 (%2)").arg(start_time).arg(timestampToString(start_time, time_base))));
+  info.append(QStringPair("Duration", QString("%1 (%2)").arg(duration).arg(timestampToString(duration, time_base))));
   if (bit_rate > 0)
-    info += QString("Bitrate: %1\n").arg(bit_rate);
-  info += QString("Packet size: %1\n").arg(packet_size);
-  info += QString("Max delay: %1\n").arg(max_delay);
-  info += QString("Number programs: %1\n").arg(nb_programs);
-  info += QString("Number chapters: %1\n").arg(nb_chapters);
+    info.append(QStringPair("Bitrate", QString::number(bit_rate)));
+  info.append(QStringPair("Packet size", QString::number(packet_size)));
+  info.append(QStringPair("Max delay", QString::number(max_delay)));
+  info.append(QStringPair("Number programs", QString::number(nb_programs)));
+  info.append(QStringPair("Number chapters", QString::number(nb_chapters)));
 
   return info;
 }
-
 
 void AVCodecWrapper::update()
 {
@@ -1709,7 +1865,7 @@ void AVCodecWrapper::update()
     name = QString(src->name);
     long_name = QString(src->long_name);
     type = src->type;
-    id = AVCodecSpecfier(libVer.avcodec, src->id);
+    id = src->id;
     capabilities = src->capabilities;
     if (src->supported_framerates)
     {
@@ -1779,7 +1935,7 @@ void AVCodecContextWrapper::update()
     AVCodecContext_56 *src = reinterpret_cast<AVCodecContext_56*>(codec);
     codec_type = src->codec_type;
     codec_name = QString(src->codec_name);
-    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
+    codec_id = src->codec_id;
     codec_tag = src->codec_tag;
     stream_codec_tag = src->stream_codec_tag;
     bit_rate = src->bit_rate;
@@ -1863,7 +2019,7 @@ void AVCodecContextWrapper::update()
     AVCodecContext_57 *src = reinterpret_cast<AVCodecContext_57*>(codec);
     codec_type = src->codec_type;
     codec_name = QString(src->codec_name);
-    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
+    codec_id = src->codec_id;
     codec_tag = src->codec_tag;
     stream_codec_tag = src->stream_codec_tag;
     bit_rate = src->bit_rate;
@@ -1947,7 +2103,7 @@ void AVCodecContextWrapper::update()
     AVCodecContext_58 *src = reinterpret_cast<AVCodecContext_58*>(codec);
     codec_type = src->codec_type;
     codec_name = QString("Not supported in AVCodec >= 58");
-    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
+    codec_id = src->codec_id;
     codec_tag = src->codec_tag;
     stream_codec_tag = -1;
     bit_rate = src->bit_rate;
@@ -2093,61 +2249,67 @@ void AVStreamWrapper::update()
     assert(false);
 }
 
-
-QString AVStreamWrapper::getInfoText()
+QStringPairList AVStreamWrapper::getInfoText()
 {
-  if (str == nullptr)
-    return "Error - stream is null";
-  update();
+  QStringPairList info;
 
-  QString info;
-  info += QString("  Index: %1\n").arg(index);
-  info += QString("  ID: %1\n").arg(id);
-  info += QString("  Codec: %1\n").arg(codec.codec_id_string);
-  info += QString("  Time base: %1/%2\n").arg(time_base.num).arg(time_base.den);
-  info += QString("  Start Time: %1 (%2)\n").arg(start_time).arg(timestampToString(start_time, time_base));
-  info += QString("  Duration: %1 (%2)\n").arg(duration).arg(timestampToString(duration, time_base));
-  info += QString("  Number Frames: %1\n").arg(nb_frames);
+  if (str == nullptr)
+  {
+    info.append(QStringPair("Error stream is null", ""));
+    return info;
+  }
+  update();
+  
+  info.append(QStringPair("Index", QString::number(index)));
+  info.append(QStringPair("ID", QString::number(id)));
+  // TODO: This needs to be resolved differently
+  //info.append(QStringPair("Codec", codec.codec_id_string));
+  info.append(QStringPair("Time base", QString("%1/%2").arg(time_base.num).arg(time_base.den)));
+  info.append(QStringPair("Start Time", QString("%1 (%2)").arg(start_time).arg(timestampToString(start_time, time_base))));
+  info.append(QStringPair("Duration", QString("%1 (%2)").arg(duration).arg(timestampToString(duration, time_base))));
+  info.append(QStringPair("Number Frames", QString::number(nb_frames)));
 
   if (disposition != 0)
   {
-    info += QString("  Disposition: ");
+    QString dispText;
     if (disposition & 0x0001)
-      info += QString("Default ");
+      dispText += QString("Default ");
     if (disposition & 0x0002)
-      info += QString("Dub ");
+      dispText += QString("Dub ");
     if (disposition & 0x0004)
-      info += QString("Original ");
+      dispText += QString("Original ");
     if (disposition & 0x0008)
-      info += QString("Comment ");
+      dispText += QString("Comment ");
     if (disposition & 0x0010)
-      info += QString("Lyrics ");
+      dispText += QString("Lyrics ");
     if (disposition & 0x0020)
-      info += QString("Karaoke ");
+      dispText += QString("Karaoke ");
     if (disposition & 0x0040)
-      info += QString("Forced ");
+      dispText += QString("Forced ");
     if (disposition & 0x0080)
-      info += QString("Hearing_Imparied ");
+      dispText += QString("Hearing_Imparied ");
     if (disposition & 0x0100)
-      info += QString("Visual_Impaired ");
+      dispText += QString("Visual_Impaired ");
     if (disposition & 0x0200)
-      info += QString("Clean_Effects ");
+      dispText += QString("Clean_Effects ");
     if (disposition & 0x0400)
-      info += QString("Attached_Pic ");
+      dispText += QString("Attached_Pic ");
     if (disposition & 0x0800)
-      info += QString("Timed_Thumbnails ");
+      dispText += QString("Timed_Thumbnails ");
     if (disposition & 0x1000)
-      info += QString("Captions ");
+      dispText += QString("Captions ");
     if (disposition & 0x2000)
-      info += QString("Descriptions ");
+      dispText += QString("Descriptions ");
     if (disposition & 0x4000)
-      info += QString("Metadata ");
+      dispText += QString("Metadata ");
     if (disposition & 0x8000)
-      info += QString("Dependent ");
-    info += QString("\n"); 
+      dispText += QString("Dependent ");
+    info.append(QStringPair("Disposition", dispText));
   }
-  info += QString("  Sample Aspect Ratio: %1:%2\n").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den);
-  info += QString("  Average Frame Rate: %1/%2 (%3)\n").arg(avg_frame_rate.num).arg(avg_frame_rate.den).arg((double)avg_frame_rate.num/avg_frame_rate.den, 0, 'f', 2);
+
+  info.append(QStringPair("Sample Aspect Ratio", QString("%1:%2").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den)));
+  info.append(QStringPair("Average Frame Rate", QString("%1/%2 (%3)").arg(avg_frame_rate.num).arg(avg_frame_rate.den).arg((double)avg_frame_rate.num/avg_frame_rate.den, 0, 'f', 2)));
+
   info += codecpar.getInfoText();
   return info;
 }
@@ -2160,16 +2322,16 @@ AVMediaType AVStreamWrapper::getCodecType()
   return codecpar.getCodecType();
 }
 
-AVCodecSpecfier AVStreamWrapper::getCodecSpecifier()
+AVCodecID AVStreamWrapper::getCodecID()
 {
   update();
   if (str == nullptr)
-    return AVCodecSpecfier();
+    return AV_CODEC_ID_NONE;
   
   if (libVer.avformat <= 56 || !codecpar)
-    return codec.getCodecSpecifier();
+    return codec.getCodecID();
   else
-    return codecpar.getCodecSpecifier();
+    return codecpar.getCodecID();
 }
 
 AVRational AVStreamWrapper::get_time_base()
@@ -2205,30 +2367,33 @@ AVColorSpace AVStreamWrapper::get_colorspace()
   return codecpar.get_colorspace();
 }
 
-QString AVCodecParametersWrapper::getInfoText()
+QStringPairList AVCodecParametersWrapper::getInfoText()
 {
+  QStringPairList info;
+
   if (param == nullptr)
-    return "";
+  {
+    info.append(QStringPair("Codec parameters are nullptr", ""));
+    return info;
+  }
   update();
-
-  QString info;
-
+  
   QStringList codecTypes = QStringList() << "Unknown" << "Video" << "Audio" << "Data" << "Subtile" << "Attachement" << "NB";
-  info += QString("  Codec Type: %1\n").arg(codecTypes.at((int)codec_type + 1));
-  info += QString("  Codec ID: %1\n").arg((int)codec_id.getRawID());
-  info += QString("  Codec Tag: %1\n").arg(codec_tag);
-  info += QString("  Format: %1\n").arg(format);
-  info += QString("  Bitrate: %1\n").arg(bit_rate);
-  info += QString("  Bits per coded sample: %1\n").arg(bits_per_coded_sample);
-  info += QString("  Bits per Raw sample: %1\n").arg(bits_per_raw_sample);
-  info += QString("  Profile: %1\n").arg(profile);
-  info += QString("  Level: %1\n").arg(level);
-  info += QString("  Width/height: %1/%2\n").arg(width).arg(height);
-  info += QString("  Sample aspect ratio: %1:%2\n").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den);
+  info.append(QStringPair("Codec Type", codecTypes.at((int)codec_type + 1)));
+  info.append(QStringPair("Codec ID", QString::number((int)codec_id)));
+  info.append(QStringPair("Codec Tag", QString::number(codec_tag)));
+  info.append(QStringPair("Format", QString::number(format)));
+  info.append(QStringPair("Bitrate", QString::number(bit_rate)));
+  info.append(QStringPair("Bits per coded sample", QString::number(bits_per_coded_sample)));
+  info.append(QStringPair("Bits per Raw sample", QString::number(bits_per_raw_sample)));
+  info.append(QStringPair("Profile", QString::number(profile)));
+  info.append(QStringPair("Level", QString::number(level)));
+  info.append(QStringPair("Width/Height", QString("%1/%2").arg(width).arg(height)));
+  info.append(QStringPair("Sample aspect ratio", QString("%1:%2").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den)));
   QStringList fieldOrders = QStringList() << "Unknown" << "Progressive" << "Top coded_first, top displayed first" << "Bottom coded first, bottom displayed first" << "Top coded first, bottom displayed first" << "Bottom coded first, top displayed first";
-  info += QString("  Field Order: %1\n").arg(fieldOrders.at((int)codec_type));
+  info.append(QStringPair("Field Order", fieldOrders.at((int)codec_type)));
   QStringList colorRanges = QStringList() << "Unspecified" << "The normal 219*2^(n-8) MPEG YUV ranges" << "The normal 2^n-1 JPEG YUV ranges" << "Not part of ABI";
-  info += QString("  Color Range: %1\n").arg(colorRanges.at((int)color_range));
+  info.append(QStringPair("Color Range", colorRanges.at((int)color_range)));
   QStringList colorPrimaries = QStringList() 
     << "Reserved" 
     << "BT709 / ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B"
@@ -2244,7 +2409,7 @@ QString AVCodecParametersWrapper::getInfoText()
     << "SMPTE ST 431-2 (2011)"
     << "SMPTE ST 432-1 D65 (2010)"
     << "Not part of ABI";
-  info += QString("  Color Primaries: %1\n").arg(colorPrimaries.at((int)color_primaries));
+  info.append(QStringPair("Color Primaries", colorPrimaries.at((int)color_primaries)));
   QStringList colorTransfers = QStringList()
     << "Reseved"
     << "BT709 / ITU-R BT1361"
@@ -2266,7 +2431,7 @@ QString AVCodecParametersWrapper::getInfoText()
     << "SMPTE ST 428-1"
     << "ARIB STD-B67, known as Hybrid log-gamma"
     << "Not part of ABI";
-  info += QString("  Color Transfer: %1\n").arg(colorTransfers.at((int)color_trc));
+  info.append(QStringPair("Color Transfer", colorTransfers.at((int)color_trc)));
   QStringList colorSpaces = QStringList() 
     << "RGB - order of coefficients is actually GBR, also IEC 61966-2-1 (sRGB)"
     << "BT709 / ITU-R BT1361 / IEC 61966-2-4 xvYCC709 / SMPTE RP177 Annex B"
@@ -2281,7 +2446,7 @@ QString AVCodecParametersWrapper::getInfoText()
     << "ITU-R BT2020 constant luminance system"
     << "SMPTE 2085, Y'D'zD'x"
     << "Not part of ABI";
-  info += QString("  Color Space: %1\n").arg(colorSpaces.at((int)color_space));
+  info.append(QStringPair("Color Space", colorSpaces.at((int)color_space)));
   QStringList chromaLocations = QStringList()
     << "Unspecified"
     << "Left / MPEG-2/4 4:2:0, H.264 default for 4:2:0"
@@ -2291,8 +2456,8 @@ QString AVCodecParametersWrapper::getInfoText()
     << "Bottom Left"
     << "Bottom"
     << "Not part of ABI";
-  info += QString("  Chroma Location: %1\n").arg(chromaLocations.at((int)chroma_location));
-  info += QString("  Video Delay: %1\n").arg(video_delay);
+  info.append(QStringPair("Chroma Location", chromaLocations.at((int)chroma_location)));
+  info.append(QStringPair("Video Delay", QString::number(video_delay)));
 
   return info;
 }
@@ -2340,12 +2505,12 @@ void AVCodecParametersWrapper::setAVMediaType(AVMediaType type)
   }
 }
 
-void AVCodecParametersWrapper::setAVCodecSpecifier(AVCodecSpecfier id)
+void AVCodecParametersWrapper::setAVCodecID(AVCodecID id)
 {
   if (libVer.avformat == 57 || libVer.avformat == 58)
   {
     AVCodecParameters_57_58 *src = reinterpret_cast<AVCodecParameters_57_58*>(param);
-    src->codec_id = id.getCodecID(libVer.avcodec);
+    src->codec_id = id;
     codec_id = id;
   }
 }
@@ -2425,7 +2590,7 @@ void AVCodecParametersWrapper::update()
     AVCodecParameters_57_58 *src = reinterpret_cast<AVCodecParameters_57_58*>(param);
     
     codec_type = src->codec_type;
-    codec_id = AVCodecSpecfier(libVer.avcodec, src->codec_id);
+    codec_id = src->codec_id;
     codec_tag = src->codec_tag;
     extradata = src->extradata;
     extradata_size = src->extradata_size;
@@ -2639,6 +2804,33 @@ QString FFmpegVersionHandler::getLibVersionString() const
   return s;
 }
 
+AVCodecIDWrapper FFmpegVersionHandler::getCodecIDWrapper(AVCodecID id)
+{
+  QString codecName = lib.avcodec_get_name(id);
+  return AVCodecIDWrapper(id, codecName);
+}
+
+AVCodecID FFmpegVersionHandler::getCodecIDFromWrapper(AVCodecIDWrapper &wrapper)
+{
+  if (wrapper.codecID != AV_CODEC_ID_NONE)
+    return wrapper.codecID;
+
+  int codecID = 1;
+  QString codecName;
+  do
+  {
+    QString codecName = lib.avcodec_get_name((AVCodecID)codecID);
+    if (codecName == wrapper.codecName)
+    {
+      wrapper.codecID = (AVCodecID)codecID;
+      return wrapper.codecID;
+    }
+    codecID++;
+  } while (codecName != "unknown_codec");
+  
+  return AV_CODEC_ID_NONE;
+}
+
 bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCodecParametersWrapper &codecpar)
 {
   if (lib.newParametersAPIAvailable)
@@ -2649,7 +2841,10 @@ bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCod
       return false;
     int ret = lib.avcodec_parameters_to_context(decCtx.get_codec(), origin_par);
     if (ret < 0)
-      return setError(QString("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+    {
+      LOG(QString("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+      return false;
+    }
   }
   else
   {
@@ -2856,9 +3051,15 @@ void AVPacketWrapper::set_dts(int64_t d)
 
 packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
 {
+  if (packetFormat != packetFormatUnknown)
+    return packetFormat;
+
   QByteArray avpacketData = QByteArray::fromRawData((const char*)(get_data()), get_data_size());
   if (avpacketData.length() < 4)
-    return packetFormatUnknown;
+  {
+    packetFormat = packetFormatUnknown;
+    return packetFormat;
+  }
 
   // AVPacket data can be in one of two formats:
   // 1: The raw annexB format with start codes (0x00000001 or 0x000001)
@@ -2866,15 +3067,34 @@ packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
   // We will try to guess the format of the data from the data in this AVPacket.
   // This should always work unless a format is used which we did not encounter so far (which is not listed above)
   // Also I think this should be identical for all packets in a bitstream.
-  if (avpacketData.at(0) == (char)0 && avpacketData.at(1) == (char)0 && avpacketData.at(2) == (char)0 && avpacketData.at(3) == (char)1)
-    // A package length of 1 is not possible so this must be the raw NAL format.
-    return packetFormatRawNAL;
+  if (checkForRawNALFormat(avpacketData, false))
+    packetFormat = packetFormatRawNAL;
+  else if (checkForMp4Format(avpacketData))
+    packetFormat = packetFormatMP4;
+  // This might be an OBU (AV1) stream
+  else if (checkForObuFormat(avpacketData))
+    packetFormat = packetFormatOBU;
+  else if (checkForRawNALFormat(avpacketData, true))
+    packetFormat = packetFormatRawNAL;
+  return packetFormat;
+}
+
+bool AVPacketWrapper::checkForRawNALFormat(QByteArray &data, bool threeByteStartCode)
+{
+  if (threeByteStartCode && data.length() > 3 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
+    return true;
+  if (!threeByteStartCode && data.length() > 4 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 && data.at(3) == (char)1)
+    return true;
+  return false;
+}
+
+bool AVPacketWrapper::checkForMp4Format(QByteArray &data)
+{
   // Check the ISO mp4 format: Parse the whole data and check if the size bytes per Unit are correct.
   int posInData = 0;
-  bool isMP4Format = true;
-  while (posInData + 4 <= avpacketData.length())
+  while (posInData + 4 <= data.length())
   {
-    QByteArray firstBytes = avpacketData.mid(posInData, 4);
+    QByteArray firstBytes = data.mid(posInData, 4);
 
     int size = (unsigned char)firstBytes.at(3);
     size += (unsigned char)firstBytes.at(2) << 8;
@@ -2883,29 +3103,67 @@ packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
     posInData += 4;
 
     if (size < 0)
-    {
       // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
-      isMP4Format = false;
-      break;
-    }
-    if (posInData + size > avpacketData.length())
-    {
+      return false;
+    if (posInData + size > data.length())
       // Not enough data in the input array to read NAL unit.
-      isMP4Format = false;
-      break;
-    }
+      return false;
     posInData += size;
   }
-  if (isMP4Format)
-    return packetFormatMP4;
-  if (avpacketData.at(0) == (char)0 && avpacketData.at(1) == (char)0 && avpacketData.at(2) == (char)1)
-    // There is a 3 byte start code and this is not a mp4 formatted file. Looks like a raw NAL stream
-    return packetFormatRawNAL;
-  return packetFormatUnknown;
+  return true;
+}
+
+bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
+{
+  try
+  {
+    int posInData = 0;
+    while (posInData + 2 <= data.length())
+    {
+      parserCommon::sub_byte_reader reader(data, posInData);
+
+      QString bitsRead;
+      bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);
+      reader.readBits(4, bitsRead); // obu_type
+      bool obu_extension_flag = (reader.readBits(1, bitsRead) != 0);
+      bool obu_has_size_field = (reader.readBits(1, bitsRead) != 0);
+      bool obu_reserved_1bit = (reader.readBits(1, bitsRead) != 0);
+
+      if (obu_forbidden_bit || obu_reserved_1bit)
+        return false;
+      if (obu_extension_flag)
+      {
+        reader.readBits(3, bitsRead); // temporal_id
+        reader.readBits(2, bitsRead); // spatial_id
+        unsigned int extension_header_reserved_3bits = reader.readBits(3, bitsRead);
+        if (extension_header_reserved_3bits != 0)
+          return false;
+      }
+      unsigned int obu_size;
+      if (obu_has_size_field)
+      {
+        int bitCount;
+        obu_size = reader.readLeb128(bitsRead, bitCount);
+      }
+      else
+      {
+        obu_size = (data.size() - posInData) - 1 - (obu_extension_flag ? 1 : 0);
+      }
+      posInData += obu_size + reader.nrBytesRead();
+    }
+  }
+  catch(...)
+  {
+    return false;
+  }
+  return true;
 }
 
 void AVPacketWrapper::update()
 {
+  if (pkt == nullptr)
+    return;
+  
   if (libVer.avcodec == 56)
   {
     AVPacket_56 *src = reinterpret_cast<AVPacket_56*>(pkt);
@@ -3033,4 +3291,68 @@ void AVMotionVectorWrapper::update()
   }
   else
     assert(false);
+}
+
+AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descriptor, FFmpegLibraryVersion libVer) : fmtDescriptor(descriptor)
+{
+  if (libVer.avutil == 54)
+  {
+    AVPixFmtDescriptor_54 *src = reinterpret_cast<AVPixFmtDescriptor_54*>(descriptor);
+    name = QString(src->name);
+    nb_components = src->nb_components;
+    log2_chroma_w = src->log2_chroma_w;
+    log2_chroma_h = src->log2_chroma_h;
+    flags = src->flags;
+
+    for (int i=0; i<4; i++)
+    {
+      comp[i].plane = src->comp[i].plane;
+      comp[i].step = src->comp[i].step_minus1 + 1;
+      comp[i].offset = src->comp[i].offset_plus1 - 1;
+      comp[i].shift = src->comp[i].shift;
+      comp[i].depth = src->comp[i].depth_minus1 + 1;
+    }
+
+    aliases = QString(src->alias);
+  }
+  else if (libVer.avutil == 55)
+  {
+    AVPixFmtDescriptor_55 *src = reinterpret_cast<AVPixFmtDescriptor_55*>(descriptor);
+    name = QString(src->name);
+    nb_components = src->nb_components;
+    log2_chroma_w = src->log2_chroma_w;
+    log2_chroma_h = src->log2_chroma_h;
+    flags = src->flags;
+
+    for (int i=0; i<4; i++)
+    {
+      comp[i].plane = src->comp[i].plane;
+      comp[i].step = src->comp[i].step;
+      comp[i].offset = src->comp[i].offset;
+      comp[i].shift = src->comp[i].shift;
+      comp[i].depth = src->comp[i].depth;
+    }
+
+    aliases = QString(src->alias);
+  }
+  else if (libVer.avutil == 56)
+  {
+    AVPixFmtDescriptor_56 *src = reinterpret_cast<AVPixFmtDescriptor_56*>(descriptor);
+    name = QString(src->name);
+    nb_components = src->nb_components;
+    log2_chroma_w = src->log2_chroma_w;
+    log2_chroma_h = src->log2_chroma_h;
+    flags = src->flags;
+
+    for (int i=0; i<4; i++)
+    {
+      comp[i].plane = src->comp[i].plane;
+      comp[i].step = src->comp[i].step;
+      comp[i].offset = src->comp[i].offset;
+      comp[i].shift = src->comp[i].shift;
+      comp[i].depth = src->comp[i].depth;
+    }
+
+    aliases = QString(src->alias);
+  }
 }

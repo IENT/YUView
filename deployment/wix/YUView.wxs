@@ -22,7 +22,7 @@
                   Name="YUView"
                   Description="YUV Viewer and Analysis Tool"
                   Target="[#fil3E83ED7F7D6B84D78789778753FB9420]"
-                  WorkingDirectory="APPLICATIONROOTDIRECTORY"/>
+                  WorkingDirectory="APPLICATIONFOLDER"/>
         <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>
         <RegistryValue Root="HKCU" Key="Software\IENT\YUView" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
       </Component>

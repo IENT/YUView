@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>525</width>
-    <height>492</height>
+    <width>535</width>
+    <height>605</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,42 +25,58 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QCheckBox" name="checkBoxWatchFiles">
-         <property name="toolTip">
-          <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string>General</string>
          </property>
-         <property name="whatsThis">
-          <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
-         </property>
-         <property name="text">
-          <string>Watch open files for changes</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="checkBoxContinuePlaybackNewSelection">
-         <property name="toolTip">
-          <string>Should playback continue if a new sequence is selected from the playlist?</string>
-         </property>
-         <property name="whatsThis">
-          <string>Should playback continue if a new sequence is selected from the playlist?</string>
-         </property>
-         <property name="text">
-          <string>Continue playback when a new sequence is selected</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="checkBoxAskToSave">
-         <property name="text">
-          <string>Ask to save playlist on exit</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="checkBoxContinuePlaybackNewSelection">
+            <property name="toolTip">
+             <string>Should playback continue if a new sequence is selected from the playlist?</string>
+            </property>
+            <property name="whatsThis">
+             <string>Should playback continue if a new sequence is selected from the playlist?</string>
+            </property>
+            <property name="text">
+             <string>Continue playback when a new sequence is selected</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="checkBoxAskToSave">
+            <property name="text">
+             <string>Ask to save playlist on exit</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="checkBoxWatchFiles">
+            <property name="toolTip">
+             <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
+            </property>
+            <property name="whatsThis">
+             <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
+            </property>
+            <property name="text">
+             <string>Watch open files for changes</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QCheckBox" name="checkBoxSavePositionPerItem">
+            <property name="text">
+             <string>Restore position and zoom factor for each item in the playlist</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
@@ -756,7 +772,7 @@
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QLabel" name="label">
+           <widget class="QLabel" name="labelLibJEM">
             <property name="text">
              <string>libJEM</string>
             </property>
@@ -791,19 +807,51 @@
             </property>
            </widget>
           </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labellibDav1d">
+            <property name="text">
+             <string>libDav1d</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="lineEditLibDav1d"/>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButtonLibDav1dSelectFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QPushButton" name="pushButtonLibDav1dClearFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
        <item>
         <widget class="QGroupBox" name="groupBoxFFMpeg">
          <property name="toolTip">
-          <string>Specify the individual FFMpeg libraries to use. These will always be tried first.</string>
+          <string>Specify the individual FFmpeg libraries to use. These will always be tried first.</string>
          </property>
          <property name="whatsThis">
-          <string>Specify the individual FFMpeg libraries to use. These will always be tried first.</string>
+          <string>Specify the individual FFmpeg libraries to use. These will always be tried first.</string>
          </property>
          <property name="title">
-          <string>Specific FFMpeg Libraries</string>
+          <string>Specific FFmpeg Libraries</string>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
@@ -963,9 +1011,6 @@
  </customwidgets>
  <tabstops>
   <tabstop>tabWidget</tabstop>
-  <tabstop>checkBoxWatchFiles</tabstop>
-  <tabstop>checkBoxContinuePlaybackNewSelection</tabstop>
-  <tabstop>checkBoxAskToSave</tabstop>
   <tabstop>comboBoxTheme</tabstop>
   <tabstop>comboBoxSplitLineStyle</tabstop>
   <tabstop>comboBoxMouseMode</tabstop>

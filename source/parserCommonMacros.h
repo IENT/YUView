@@ -34,16 +34,19 @@
 #define READBITS_M(into,numBits,meanings) do { if (!reader.readBits(numBits, into, #into, meanings)) return false; } while(0)
 #define READBITS_M_E(into,numBits,meanings,type) do { unsigned int val; if (!reader.readBits(numBits, val, #into, meanings)) return false; into = (type)val; } while (0)
 #define READBITS_A(into,numBits,idx) do { if (!reader.readBits(numBits, into, #into, idx)) return false; } while(0)
+#define READBITS_A_M(into,numBits,idx,meanings) do { if (!reader.readBits(numBits, into, #into, idx, meanings)) return false; } while(0)
 #define READZEROBITS(numBits,name) do { if (!reader.readZeroBits(numBits, name)) return false; } while(0)
 #define IGNOREBITS(numBits) do { if (!reader.ignoreBits(numBits)) return false; } while(0)
 
 #define READFLAG(into) do { if (!reader.readFlag(into, #into)) return false; } while(0)
 #define READFLAG_M(into,meanings) do { if (!reader.readFlag(into, #into, meanings)) return false; } while(0)
 #define READFLAG_A(into,idx) do { if (!reader.readFlag(into, #into, idx)) return false; } while(0)
+#define READFLAG_A_M(into,idx,meanings) do { if (!reader.readFlag(into, #into, idx, meanings)) return false; } while(0)
 
 #define READUEV(into) do { if (!reader.readUEV(into, #into)) return false; } while(0)
 #define READUEV_M(into,meanings) do { if (!reader.readUEV(into, #into, meanings)) return false; } while(0)
 #define READUEV_A(into,idx) do { if (!reader.readUEV(into, #into, idx)) return false; } while(0)
+#define READUEV_A_M(into,idx,meanings) do { if (!reader.readUEV(into, #into, idx, meanings)) return false; } while(0)
 
 #define READSEV(into) do { if (!reader.readSEV(into, #into)) return false; } while(0)
 #define READSEV_A(into,idx) do { if (!reader.readSEV(into, #into, idx)) return false; } while(0)

@@ -50,33 +50,34 @@ namespace parserCommon
   {
   public:
     sub_byte_reader() {};
-    sub_byte_reader(const QByteArray &inArr) : byteArray(inArr) {}
+    sub_byte_reader(const QByteArray &inArr, unsigned int inArrOffset = 0) : byteArray(inArr), posInBuffer_bytes(inArrOffset), initialPosInBuffer(inArrOffset) {}
     
-    void set_input(const QByteArray &inArr) { byteArray = inArr; }
+    void set_input(const QByteArray &inArr, unsigned int inArrOffset = 0) { byteArray = inArr; posInBuffer_bytes = inArrOffset; initialPosInBuffer = inArrOffset; }
     
     // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
-    unsigned int readBits(int nrBits, QString *bitsRead=nullptr);
-    uint64_t     readBits64(int nrBits, QString *bitsRead=nullptr);
+    unsigned int readBits(int nrBits, QString &bitsRead);
+    uint64_t     readBits64(int nrBits, QString &bitsRead);
     QByteArray   readBytes(int nrBytes);
     // Read an UE(v) code from the array. If given, increase bit_count with every bit read.
-    unsigned int readUE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    unsigned int readUE_V(QString &bitsRead, int &bit_count);
     // Read an SE(v) code from the array
-    int readSE_V(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    int readSE_V(QString &bitsRead, int &bit_count);
     // Read an leb128 code from the array (as defined in AV1)
-    uint64_t readLeb128(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    uint64_t readLeb128(QString &bitsRead, int &bit_count);
     // REad an uvlc code from the array (as defined in AV1)
-    uint64_t readUVLC(QString *bitsRead=nullptr, int *bit_count=nullptr);
+    uint64_t readUVLC(QString &bitsRead, int &bit_count);
     // Read a NS code from the array (as defined in AV1)
-    int readNS(int maxVal, QString *bitsRead=nullptr, int *bit_count=nullptr);
+    int readNS(int maxVal, QString &bitsRead, int &bit_count);
     // Read a SU code from the array (as defined in AV1)
-    int readSU(int nrBits, QString *bitsRead=nullptr);
+    int readSU(int nrBits, QString &bitsRead);
 
     // Is there more RBSP data or are we at the end?
     bool more_rbsp_data();
+    bool payload_extension_present();
     // Will reading of the given number of bits succeed?
     bool testReadingBits(int nrBits);
     // How many full bytes were read/are left from the reader?
-    unsigned int nrBytesRead() { return (posInBuffer_bits == 0) ? posInBuffer_bytes : posInBuffer_bytes + 1; }
+    unsigned int nrBytesRead() { return posInBuffer_bytes - initialPosInBuffer + (posInBuffer_bits != 0 ? 1 : 0); }
     unsigned int nrBytesLeft() { return std::min((unsigned int)0, byteArray.size() - posInBuffer_bytes - 1); }
 
     void disableEmulationPrevention() { skipEmulationPrevention = false; }
@@ -93,6 +94,7 @@ namespace parserCommon
     unsigned int posInBuffer_bytes   {0}; // The byte position in the buffer
     unsigned int posInBuffer_bits    {0}; // The sub byte (bit) position in the buffer (0...7)
     unsigned int numEmuPrevZeroBytes {0}; // The number of emulation prevention three bytes that were found
+    unsigned int initialPosInBuffer  {0}; // The position that was given when creating the sub reader
   };
 
   /* This class provides the ability to write to a QByteArray on a bit basis. 
@@ -136,7 +138,7 @@ namespace parserCommon
     void setError(bool isError = true) { error = isError; }
     bool isError()                     { return error; }
 
-    QString getName(bool showStreamIndex) { return (showStreamIndex && streamIndex != -1) ? QString("Stream %1 - ").arg(streamIndex) + itemData[0] : itemData[0]; }
+    QString getName(bool showStreamIndex) const { QString r = (showStreamIndex && streamIndex != -1) ? QString("Stream %1 - ").arg(streamIndex) : ""; if (itemData.count() > 0) r += itemData[0]; return r; }
 
     QList<TreeItem*> childItems;
     QList<QString> itemData;
@@ -150,6 +152,8 @@ namespace parserCommon
     // This is set for the first layer items in case of AVPackets
     int streamIndex { -1 };
   };
+
+  typedef QString (*meaning_callback_function)(unsigned int);
 
   // This is a wrapper around the sub_byte_reader that adds the functionality to log the read symbold to TreeItems
   class reader_helper : protected parserCommon::sub_byte_reader
@@ -168,20 +172,23 @@ namespace parserCommon
     bool readBits(int numBits, uint64_t     &into, QString intoName, QString meaning = "");
     bool readBits(int numBits, unsigned int &into, QString intoName, QStringList meanings);
     bool readBits(int numBits, unsigned int &into, QString intoName, QMap<int,QString> meanings);
+    bool readBits(int numBits, unsigned int &into, QString intoName, meaning_callback_function pMeaning);
     bool readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx);
+    bool readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx, meaning_callback_function pMeaning);
     bool readBits(int numBits, QByteArray &into, QString intoName, int idx);
     bool readBits(int numBits, unsigned int &into, QMap<int, QString> intoNames);
     bool readZeroBits(int numBits, QString intoName);
     bool ignoreBits(int numBits);
 
     bool readFlag(bool &into, QString intoName, QString meaning = "");
-    bool readFlag(QList<bool> &into, QString intoName, int idx);
+    bool readFlag(QList<bool> &into, QString intoName, int idx, QString meaning = "");
     bool readFlag(bool &into, QString intoName, QStringList meanings);
     
-    bool readUEV( unsigned int &into, QString intoName, QStringList meanings = QStringList());
-    bool readUEV(QList<quint32> &into, QString intoName, int idx);
-    bool readSEV(          int &into, QString intoName, QStringList meanings = QStringList());
-    bool readSEV(    QList<int> into, QString intoName, int idx);
+    bool readUEV(unsigned int   &into, QString intoName, QStringList meanings = QStringList());
+    bool readUEV(unsigned int   &into, QString intoName, QString meaning);
+    bool readUEV(QList<quint32> &into, QString intoName, int idx, QString meaning = "");
+    bool readSEV(          int  &into, QString intoName, QStringList meanings = QStringList());
+    bool readSEV(    QList<int>  into, QString intoName, int idx);
     bool readLeb128(uint64_t &into, QString intoName);
     bool readUVLC(uint64_t &into, QString intoName);
     bool readNS(int &into, QString intoName, int maxVal);
@@ -200,12 +207,13 @@ namespace parserCommon
     TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
     // Some functions passed thourgh from the sub_byte_reader
-    bool          more_rbsp_data() { return sub_byte_reader::more_rbsp_data(); }
-    unsigned int  nrBytesRead()    { return sub_byte_reader::nrBytesRead();    }
-    unsigned int  nrBytesLeft()    { return sub_byte_reader::nrBytesLeft();    }
-    bool          testReadingBits(int nrBits) { return sub_byte_reader::testReadingBits(nrBits); }
-    void          disableEmulationPrevention() { sub_byte_reader::disableEmulationPrevention(); }
-    QByteArray    readBytes(int nrBytes) { return sub_byte_reader::readBytes(nrBytes); }
+    bool          more_rbsp_data()             { return sub_byte_reader::more_rbsp_data();             }
+    bool          payload_extension_present()  { return sub_byte_reader::payload_extension_present();  }
+    unsigned int  nrBytesRead()                { return sub_byte_reader::nrBytesRead();                }
+    unsigned int  nrBytesLeft()                { return sub_byte_reader::nrBytesLeft();                }
+    bool          testReadingBits(int nrBits)  { return sub_byte_reader::testReadingBits(nrBits);      }
+    void          disableEmulationPrevention() {        sub_byte_reader::disableEmulationPrevention(); }
+    QByteArray    readBytes(int nrBytes)       { return sub_byte_reader::readBytes(nrBytes);           }
   protected:
     // TODO: This is just too much. Replace by one function maybe ...
     /*
@@ -222,14 +230,14 @@ namespace parserCommon
         }
     }
     */
-    bool readBits_catch(unsigned int &into, int numBits, QString *code=nullptr);
-    bool readBits64_catch(uint64_t &into, int numBits, QString *code=nullptr);
-    bool readUEV_catch(unsigned int &into, int *bit_count, QString *code);
-    bool readSEV_catch(int &into, int *bit_count, QString *code);
-    bool readLeb128_catch(uint64_t &into, int *bit_count, QString *code);
-    bool readUVLC_catch(uint64_t &into, int *bit_count, QString *code);
-    bool readNS_catch(int &into, int maxVal, int *bit_count, QString *code);
-    bool readSU_catch(int &into, int numBits, QString *code);
+    bool readBits_catch(unsigned int &into, int numBits, QString &code);
+    bool readBits64_catch(uint64_t &into, int numBits, QString &code);
+    bool readUEV_catch(unsigned int &into, int &bit_count, QString &code);
+    bool readSEV_catch(int &into, int &bit_count, QString &code);
+    bool readLeb128_catch(uint64_t &into, int &bit_count, QString &code);
+    bool readUVLC_catch(uint64_t &into, int &bit_count, QString &code);
+    bool readNS_catch(int &into, int maxVal, int &bit_count, QString &code);
+    bool readSU_catch(int &into, int numBits, QString &code);
 
     QString getMeaningValue(QStringList meanings, unsigned int val);
     QString getMeaningValue(QMap<int,QString> meanings, int val);
@@ -265,7 +273,7 @@ namespace parserCommon
 
     // The root of the tree
     QScopedPointer<TreeItem> rootItem;
-    TreeItem *getRootItem() { return rootItem.get(); }
+    TreeItem *getRootItem() { return rootItem.data(); }
     bool isNull() { return rootItem.isNull(); }
 
     unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
@@ -290,13 +298,15 @@ namespace parserCommon
 
   public:
     FilterByStreamIndexProxyModel(QObject *parent) : QSortFilterProxyModel(parent) {};
-    void setShowVideoStreamOnly(bool showVideoOnly, int videoStreamIndex);
+
+    int filterStreamIndex() const { return streamIndex; }
+    void setFilterStreamIndex(int idx);
 
   protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
 
   private:
-    int filterStreamIndex { -1 };
+    int streamIndex { -1 };
   };
 }
 

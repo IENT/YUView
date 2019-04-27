@@ -42,7 +42,7 @@
 
 using namespace parserCommon;
 
-#define PARSERAVCFORMAT_DEBUG_OUTPUT 1
+#define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_AVFORMAT qDebug
@@ -56,6 +56,32 @@ parserAVFormat::parserAVFormat(QObject *parent) : parserBase(parent)
   startCode.append((char)0);
   startCode.append((char)0);
   startCode.append((char)1);
+}
+
+QList<QTreeWidgetItem*> parserAVFormat::getStreamInfo()
+{
+  // streamInfoAllStreams containse all the info for all streams.
+  // The first QStringPairList contains the general info, next all infos for each stream follows
+
+  QList<QTreeWidgetItem*> info;
+  if (streamInfoAllStreams.count() == 0)
+    return info;
+  
+  QStringPairList generalInfo = streamInfoAllStreams[0];
+  QTreeWidgetItem *general = new QTreeWidgetItem(QStringList() << "General");
+  for (QStringPair p : generalInfo)
+    new QTreeWidgetItem(general, QStringList() << p.first << p.second);
+  info.append(general);
+
+  for (int i=1; i<streamInfoAllStreams.count(); i++)
+  {
+    QTreeWidgetItem *streamInfo = new QTreeWidgetItem(QStringList() << QString("Stream %1").arg(i-1));
+    for (QStringPair p : streamInfoAllStreams[i])
+      new QTreeWidgetItem(streamInfo, QStringList() << p.first << p.second);
+    info.append(streamInfo);
+  }
+
+  return info;
 }
 
 bool parserAVFormat::parseExtradata(QByteArray &extradata)
@@ -348,7 +374,7 @@ bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
       else if (obuParser)
       {
         int obuID = 0;
-        // Colloect the types of NALs to create a good name later
+        // Colloect the types of OBus to create a good name later
         QStringList obuNames;
 
         const int MIN_OBU_SIZE = 2;
@@ -359,7 +385,7 @@ bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
           try
           {  
             int nrBytesRead = obuParser->parseAndAddOBU(obuID, avpacketData.mid(posInData), itemTree, obuStartEndPosFile, &obuTypeName);
-            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed OBU header %d bytes", nrBytesRead);
+            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
             posInData += nrBytesRead;
           }
           catch (...)
@@ -371,6 +397,12 @@ bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
           if (!obuTypeName.isEmpty())
             obuNames.append(obuTypeName);
           obuID++;
+
+          if (obuID > 200)
+          {
+            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket We encountered more than 200 OBUs in one packet. This is probably an error.");
+            return false;
+          }
         }
 
         specificDescription = " - OBUs:";
@@ -388,7 +420,7 @@ bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 
 bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser)
 {
-  reader_helper reader(hvcCData, root);
+  reader_helper reader(hvcCData, root, "hvcC");
   reader.disableEmulationPrevention();
 
   unsigned int reserved_4onebits, reserved_5onebits, reserver_6onebits;
@@ -448,7 +480,7 @@ bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QSco
 
 bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser)
 {
-  reader_sub_level(reader, QString("nal unit array %1").arg(arrayID));
+  reader_sub_level sub_level_adder(reader, QString("nal unit array %1").arg(arrayID));
 
   // The next 3 bytes contain info about the array
   READFLAG(array_completeness);
@@ -471,7 +503,7 @@ bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_he
 
 bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser)
 {
-  reader_sub_level(reader, QString("nal unit %1").arg(unitID));
+  reader_sub_level sub_level_adder(reader, QString("nal unit %1").arg(unitID));
 
   READBITS(nalUnitLength, 16);
 
@@ -479,7 +511,7 @@ bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper 
   QByteArray nalData = reader.readBytes(nalUnitLength);
 
   // Let the hevc annexB parser parse this
-  if (!annexBParser->parseAndAddNALUnit(unitID, nalData))
+  if (!annexBParser->parseAndAddNALUnit(unitID, nalData, reader.getCurrentItemTree()))
     return false;
 
   return true;
@@ -487,9 +519,15 @@ bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper 
 
 bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
-  // Open the file, get the codec which is used and create the needed parser
-  QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile(compressedFilePath));
-  codecID = ffmpegFile->getCodecSpecifier();
+  // Open the file but don't parse it yet.
+  QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile());
+  if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
+  {
+    emit backgroundParsingDone("Error opening the ffmpeg file.");
+    return false;
+  }
+
+  codecID = ffmpegFile->getVideoStreamCodecID();
   if (codecID.isAVC())
     annexBParser.reset(new parserAnnexBAVC());
   else if (codecID.isHEVC())
@@ -498,6 +536,11 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     annexBParser.reset(new parserAnnexBMpeg2());
   else if (codecID.isAV1())
     obuParser.reset(new parserAV1OBU());
+  else if (codecID.isNone())
+  {
+    emit backgroundParsingDone("Unknown codec ID " + codecID.getCodecName());
+    return false;
+  }
 
   int max_ts = ffmpegFile->getMaxTS();
   videoStreamIndex = ffmpegFile->getVideoStreamIndex();
@@ -513,8 +556,9 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   QStringPairList metadata = ffmpegFile->getMetadata();
   parseMetadata(metadata);
 
-  streamInfoText = ffmpegFile->getFileInfoAsText();
-  emit streamInfoTextUpdated();
+  // After opening the file, we can get information on it
+  streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  emit streamInfoUpdated();
 
   // Now iterate over all packets and send them to the parser
   AVPacketWrapper packet = ffmpegFile->getNextPacket(false, false);
@@ -530,11 +574,11 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
     if (!parseAVPacket(packetID, packet))
     {
-      DEBUG_AVFORMAT("parseAVPacket error parsing NAL %d", packetID);
+      DEBUG_AVFORMAT("parseAVPacket error parsing Packet %d", packetID);
     }
     else
     {
-      DEBUG_AVFORMAT("parseAVPacket NAL %d", packetID);
+      DEBUG_AVFORMAT("parseAVPacket Packet %d", packetID);
     }
 
     packetID++;
@@ -550,9 +594,9 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   // Seek back to the beginning of the stream.
   ffmpegFile->seekToDTS(0);
 
-  streamInfoText = ffmpegFile->getFileInfoAsText();
-  emit streamInfoTextUpdated();
-  emit backgroundParsingDone();
+  streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  emit streamInfoUpdated();
+  emit backgroundParsingDone("");
 
   return true;
 }

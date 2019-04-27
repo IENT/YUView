@@ -48,32 +48,49 @@
 #include <QThread>
 #include <QWidget>
 
+QString QDomElementYUView::findChildValue(const QString &tagName, QStringPairList &attributeList) const
+{
+  for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
+    if (n.isElement() && n.toElement().tagName() == tagName)
+    {
+      QDomNamedNodeMap attributes = n.toElement().attributes();
+      for (int i = 0; i < attributes.length(); i++)
+      {
+        QString name = attributes.item(i).nodeName();
+        QString val  = attributes.item(i).nodeValue();
+        attributeList.append(QStringPair(name, val));
+      }
+      return n.toElement().text();
+    }
+  return QString();
+}
+
 QString getInputFormatName(inputFormat i)
 {
   if (i == inputInvalid || i == input_NUM)
     return "";
-  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "FFMpeg";
+  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "FFmpeg";
   return l.at((int)i);
 }
 
 inputFormat getInputFormatFromName(QString name)
 {
-  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "FFMpeg";
+  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "FFmpeg";
   int idx = l.indexOf(name);
   return (idx < 0 || idx >= input_NUM) ? inputInvalid : (inputFormat)idx;
 }
 
 QString getDecoderEngineName(decoderEngine e)
 {
-  if (e == decoderEngineInvalid || e == decoderEngineNum)
+  if (e <= decoderEngineInvalid || e >= decoderEngineNum)
     return "";
-  QStringList l = QStringList() << "libDe265" << "HM" << "FFMpeg";
+  QStringList l = QStringList() << "libDe265" << "HM" << "Dav1d" << "FFmpeg";
   return l.at((int)e);
 }
 
 decoderEngine getDecoderEngineFromName(QString name)
 {
-  QStringList l = QStringList() << "libDe265" << "HM" << "FFMpeg";
+  QStringList l = QStringList() << "libDe265" << "HM" << "Dav1d" << "FFmpeg";
   int idx = l.indexOf(name);
   return (idx < 0 || idx >= decoderEngineNum) ? decoderEngineInvalid : (decoderEngine)idx;
 }

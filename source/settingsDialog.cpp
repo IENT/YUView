@@ -36,7 +36,9 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
+#include <QTextStream>
 #include "typedef.h"
+#include "decoderDav1d.h"
 #include "decoderHM.h"
 #include "decoderLibde265.h"
 #include "FFMpegLibrariesHandling.h"
@@ -57,8 +59,9 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 
   // "Generals" tab
   ui.checkBoxWatchFiles->setChecked(settings.value("WatchFiles", true).toBool());
-  ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection", false).toBool());
   ui.checkBoxAskToSave->setChecked(settings.value("AskToSaveOnExit", true).toBool());
+  ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection", false).toBool());
+  ui.checkBoxSavePositionPerItem->setChecked(settings.value("SavePositionAndZoomPerItem", false).toBool());
   // UI
   QString theme = settings.value("Theme", "Default").toString();
   int themeIdx = getThemeNameList().indexOf(theme);
@@ -130,11 +133,12 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
+  ui.lineEditLibDav1d->setText(settings.value("libDav1dFile", "").toString());
   ui.lineEditLibJEMFile->setText(settings.value("libJEMFile", "").toString());
-  ui.lineEditAVFormat->setText(settings.value("FFMpeg.avformat", "").toString());
-  ui.lineEditAVCodec->setText(settings.value("FFMpeg.avcodec", "").toString());
-  ui.lineEditAVUtil->setText(settings.value("FFMpeg.avutil", "").toString());
-  ui.lineEditSWResample->setText(settings.value("FFMpeg.swresample", "").toString());
+  ui.lineEditAVFormat->setText(settings.value("FFmpeg.avformat", "").toString());
+  ui.lineEditAVCodec->setText(settings.value("FFmpeg.avcodec", "").toString());
+  ui.lineEditAVUtil->setText(settings.value("FFmpeg.avutil", "").toString());
+  ui.lineEditSWResample->setText(settings.value("FFmpeg.swresample", "").toString());
   settings.endGroup();
 }
 
@@ -262,6 +266,18 @@ void SettingsDialog::on_pushButtonLibJEMSelectFile_clicked()
     ui.lineEditLibJEMFile->setText(newFiles[0]);*/
 }
 
+void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
+{
+  QStringList newFiles = getLibraryPath(ui.lineEditLibDav1d->text(), "Please select the libDav1d library file to use.");
+  if (newFiles.count() != 1)
+    return;
+  QString error;
+  if (!decoderDav1d::checkLibraryFile(newFiles[0], error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libDav1d library. Error: " + error);
+  else
+    ui.lineEditLibDav1d->setText(newFiles[0]);
+}
+
 void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 {
   QStringList newFiles = getLibraryPath(ui.lineEditAVFormat->text(), "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.", true);
@@ -292,9 +308,25 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
   }
 
   // Try to open ffmpeg using the four libraries
-  QStringList error;
-  if (!FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable ffmpeg avFormat library. Error: " + error.join(" "));
+  QStringList logList;
+  if (!FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, logList))
+  {
+    QMessageBox::StandardButton b = QMessageBox::question(this, "Error opening the library", "The selected file does not appear to be a usable ffmpeg avFormat library. \nWe have collected a more detailed log. Do you want to save it to disk?");
+    if (b == QMessageBox::Yes)
+    {
+      QString filePath = QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
+      QFile logFile(filePath);
+      logFile.open(QIODevice::WriteOnly);
+      if (logFile.isOpen())
+      {
+        QTextStream outputStream(&logFile);
+        for (auto l : logList)
+          outputStream << l << "\n";
+      }
+      else
+        QMessageBox::information(this, "Error opening file", "There was an error opening the log file " + filePath);
+    }
+  }
   else
   {
     ui.lineEditAVCodec->setText(avCodecLib);
@@ -311,8 +343,9 @@ void SettingsDialog::on_pushButtonSave_clicked()
 
   // "General" tab
   settings.setValue("WatchFiles", ui.checkBoxWatchFiles->isChecked());
-  settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
   settings.setValue("AskToSaveOnExit", ui.checkBoxAskToSave->isChecked());
+  settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
+  settings.setValue("SavePositionAndZoomPerItem", ui.checkBoxSavePositionPerItem->isChecked());
   // UI
   settings.setValue("Theme", ui.comboBoxTheme->currentText());
   settings.setValue("SplitViewLineStyle", ui.comboBoxSplitLineStyle->currentText());
@@ -352,11 +385,12 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
   settings.setValue("libJEMFile", ui.lineEditLibJEMFile->text());
+  settings.setValue("libDav1dFile", ui.lineEditLibDav1d->text());
   // FFMpeg files
-  settings.setValue("FFMpeg.avformat", ui.lineEditAVFormat->text());
-  settings.setValue("FFMpeg.avcodec", ui.lineEditAVCodec->text());
-  settings.setValue("FFMpeg.avutil", ui.lineEditAVUtil->text());
-  settings.setValue("FFMpeg.swresample", ui.lineEditSWResample->text());
+  settings.setValue("FFmpeg.avformat", ui.lineEditAVFormat->text());
+  settings.setValue("FFmpeg.avcodec", ui.lineEditAVCodec->text());
+  settings.setValue("FFmpeg.avutil", ui.lineEditAVUtil->text());
+  settings.setValue("FFmpeg.swresample", ui.lineEditSWResample->text());
   settings.endGroup();
   
   accept();

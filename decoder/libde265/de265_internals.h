@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-#include <libde265/de265-version.h>
+#include "de265-version.h"
 #include "de265.h"
 
 #if defined(_MSC_VER) && !defined(LIBDE265_STATIC_BUILD)

@@ -112,9 +112,7 @@ private:
   playlistItem *plItem;
 };
 
-PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) :
-  QTreeWidget(parent),
-  ignoreSlotSelectionChanged(false)
+PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
   setDragEnabled(true);
   setDropIndicatorShown(true);

@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,34 +30,5 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserBase.h"
-#include <assert.h>
+#include "FFMpegLibrariesTypes.h"
 
-using namespace parserCommon;
-
-#define PARSERBASE_DEBUG_OUTPUT 0
-#if PARSERBASE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_PARSER qDebug
-#else
-#define DEBUG_PARSER(fmt,...) ((void)0)
-#endif
-
-/// --------------- parserBase ---------------------
-
-parserBase::parserBase(QObject *parent) : QObject(parent)
-{
-  packetModel.reset(new PacketItemModel(parent));
-  streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
-  streamIndexFilter->setSourceModel(packetModel.data());
-}
-
-parserBase::~parserBase()
-{
-}
-
-void parserBase::enableModel()
-{
-  if (packetModel->isNull())
-    packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
-}

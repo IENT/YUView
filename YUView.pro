@@ -9,6 +9,7 @@ CONFIG += c++11
 SOURCES += \
     source/bitstreamAnalysisDialog.cpp \
     source/decoderBase.cpp \
+    source/decoderDav1d.cpp \
     source/decoderFFmpeg.cpp \
     source/decoderHM.cpp \
     source/decoderLibde265.cpp \
@@ -56,6 +57,7 @@ SOURCES += \
     source/typedef.cpp \
     source/updateHandler.cpp \
     source/videoCache.cpp \
+    source/videoCacheInfoWidget.cpp \
     source/videoHandler.cpp \
     source/videoHandlerDifference.cpp \
     source/videoHandlerRGB.cpp \
@@ -66,11 +68,12 @@ SOURCES += \
 HEADERS += \
     source/bitstreamAnalysisDialog.h \
     source/decoderBase.h \
+    source/decoderDav1d.h \
     source/decoderFFmpeg.h \
     source/decoderHM.h \
     source/decoderLibde265.h \
     source/FFMpegLibrariesHandling.h \
-    source/FFMpegLibrariesCommonDefs.h \
+    source/FFMpegLibrariesTypes.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceAnnexBFile.h \
@@ -117,12 +120,21 @@ HEADERS += \
     source/typedef.h \
     source/updateHandler.h \
     source/videoCache.h \
+    source/videoCacheInfoWidget.h \
     source/videoHandler.h \
     source/videoHandlerDifference.h \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
-    source/yuviewapp.h
+    source/yuviewapp.h \
+    decoder/libde265/de265.h \
+    decoder/libde265/de265_internals.h \
+    decoder/libde265/de265-version.h \
+    decoder/dav1d/common.h \
+    decoder/dav1d/data.h \
+    decoder/dav1d/dav1d.h \
+    decoder/dav1d/headers.h \
+    decoder/dav1d/picture.h
 
 FORMS += \
     ui/bitstreamAnalysisDialog.ui \
@@ -132,6 +144,7 @@ FORMS += \
     ui/playbackController.ui \
     ui/playlistItem.ui \
     ui/playlistItemCompressedFile.ui \
+    ui/playlistItemCompressedFile_logDialog.ui \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
     ui/playlistItemHEVCFile.ui \
@@ -152,8 +165,9 @@ RESOURCES += \
     docs/resources.qrc
 
 INCLUDEPATH += \
-    libde265 \
-    source
+    decoder/libde265 \
+    decoder/dav1d \
+    source/
 
 OTHER_FILES += \
     HACKING.md \

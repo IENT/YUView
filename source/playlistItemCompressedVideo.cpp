@@ -41,12 +41,14 @@
 #include "bitstreamAnalysisDialog.h"
 #include "decoderFFmpeg.h"
 #include "decoderHM.h"
+#include "decoderDav1d.h"
 #include "decoderLibde265.h"
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
 #include "videoHandlerYUV.h"
 #include "videoHandlerRGB.h"
 #include "mainwindow.h"
+#include "ui_playlistItemCompressedFile_logDialog.h"
 
 #define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
 #if COMPRESSED_VIDEO_DEBUG_OUTPUT
@@ -121,13 +123,15 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Start parsing of file");
     inputFileAnnexBParser->parseAnnexBFile(inputFileAnnexBLoading, mainWindow);
+    
     // Get the frame size and the pixel format
     frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size %dx%d", frameSize.width(), frameSize.height());
-    // Raw annexB files will always provide YUV data
     format_yuv = inputFileAnnexBParser->getPixelFormat();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo YUV format %s", format_yuv.getName().toStdString().c_str());
-    rawFormat = raw_YUV;
+    rawFormat = raw_YUV;  // Raw annexB files will always provide YUV data
+    frameRate = inputFileAnnexBParser->getFramerate();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %s", rateFPS);
   }
   else
   {
@@ -153,14 +157,19 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     }
     frameSize = inputFileFFmpegLoading->getSequenceSizeSamples();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size %dx%d", frameSize.width(), frameSize.height());
-    ffmpegCodec = inputFileFFmpegLoading->getCodecSpecifier();
-    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getName().toStdString().c_str());
-    possibleDecoders.append(decoderEngineFFMpeg);
+    frameRate = inputFileFFmpegLoading->getFramerate();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %s", rateFPS);
+    ffmpegCodec = inputFileFFmpegLoading->getVideoStreamCodecID();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getCodecName().toStdString().c_str());
+    if (!ffmpegCodec.isNone())
+      possibleDecoders.append(decoderEngineFFMpeg);
     if (ffmpegCodec.isHEVC())
     {
       possibleDecoders.append(decoderEngineLibde265);
       possibleDecoders.append(decoderEngineHM);
     }
+    if (ffmpegCodec.isAV1())
+      possibleDecoders.append(decoderEngineDav1d);
 
     if (cachingEnabled)
     {
@@ -287,7 +296,7 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   // Append all the properties of the HEVC file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
   d.appendProperiteChild("relativePath", relativePath);
-  d.appendProperiteChild("displayComponent", QString::number(loadingDecoder->getDecodeSignal()));
+  d.appendProperiteChild("displayComponent", QString::number(loadingDecoder ? loadingDecoder->getDecodeSignal() : -1));
 
   d.appendProperiteChild("inputFormat", getInputFormatName(inputFormatType));
   d.appendProperiteChild("decoder", getDecoderEngineName(decoderEngineType));
@@ -345,7 +354,7 @@ infoData playlistItemCompressedVideo::getInfo() const
   {
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
-    info.items.append(infoItem("Num POCs", QString::number(startEndFrame.second), "The number of pictures in the stream."));
+    info.items.append(infoItem("Num POCs", QString::number(startEndFrame.second - startEndFrame.first + 1), "The number of pictures in the stream."));
     if (decodingEnabled)
     {
       QStringList l = loadingDecoder->getLibraryPaths();
@@ -362,33 +371,44 @@ infoData playlistItemCompressedVideo::getInfo() const
   }
   info.items.append(infoItem("NAL units", "Bitstream Analysis", "Show a detailed list of all NAL units.", true, 0));
   if (decoderEngineType == decoderEngineFFMpeg)
-    info.items.append(infoItem("FFMpeg Log", "Show FFmpeg Log", "Show the log messages from FFmpeg.", true, 1));
+    info.items.append(infoItem("FFmpeg Log", "Show FFmpeg Log", "Show the log messages from FFmpeg.", true, 1));
 
   return info;
 }
 
 void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
 {
+  QWidget *mainWindow = MainWindow::getMainWindow();
   if (buttonID == 0)
   {
     // The button "Bitstream Analysis" was pressed.
-    QWidget *mainWindow = MainWindow::getMainWindow();
     bitstreamAnalysisDialog analyzer(mainWindow, plItemNameOrFileName, inputFormatType);
     analyzer.exec();
   }
   else if (buttonID == 1)
   {
     // The button "shof ffmpeg log" was pressed
-    QStringList log = decoderFFmpeg::getLogMessages();
-    QString msg;
-    for (QString l : log)
-      msg.append(l);
-    QDialog newDialog;
-    QPlainTextEdit *edit = new QPlainTextEdit();
-    edit->setPlainText(msg);
-    QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
-    verticalLayout->addWidget(edit);
-    newDialog.resize(QSize(1000, 900));
+    QDialog newDialog(mainWindow);
+    Ui::ffmpegLogDialog uiDialog;
+    uiDialog.setupUi(&newDialog);
+    
+    // Get the ffmpeg log
+    QStringList logFFmpeg = decoderFFmpeg::getLogMessages();
+    QString logFFmpegString;
+    for (QString l : logFFmpeg)
+      logFFmpegString.append(l);
+    uiDialog.ffmpegLogEdit->setPlainText(logFFmpegString);
+
+    // Get the loading log
+    if (inputFileFFmpegLoading)
+    {
+      QStringList logLoading = inputFileFFmpegLoading->getFFmpegLoadingLog();
+      QString logLoadingString;
+      for (QString l : logLoading)
+        logLoadingString.append(l + "\n");
+      uiDialog.libraryLogEdit->setPlainText(logLoadingString);
+    }
+        
     newDialog.exec();
   }
 }
@@ -400,7 +420,7 @@ itemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool lo
 
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
   auto videoState = video->needsLoading(frameIdxInternal, loadRawData);
-  if (videoState == LoadingNeeded && decodingOfFrameNotPossible && frameIdxInternal >= currentFrameIdx[0])
+  if (videoState == LoadingNeeded && decodingNotPossibleAfter >= 0 && frameIdxInternal >= decodingNotPossibleAfter && frameIdxInternal >= currentFrameIdx[0])
     // The decoder can not decode this frame. 
     return LoadingNotNeeded;
   if (videoState == LoadingNeeded || statSource.needsLoading(frameIdxInternal) == LoadingNeeded)
@@ -412,7 +432,7 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
 {
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  if (decodingOfFrameNotPossible)
+  if (decodingNotPossibleAfter >= 0 && frameIdxInternal >= decodingNotPossibleAfter)
   {
     infoText = "Decoding of the frame not possible:\n";
     infoText += "The frame could not be decoded. Possibly, the bitstream is corrupt or was cut at an invalid position.";
@@ -537,7 +557,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
           if (!dec->decodeFrames())
           {
             DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData The decoder did not switch to decoding frame mode. Error.");
-            decodingOfFrameNotPossible = true;
+            decodingNotPossibleAfter = frameIdxInternal;
             break;
           }
           // Pushing the data failed because the ffmpeg decoder wants us to read frames first.
@@ -554,8 +574,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
       }
       else if (isInputFormatTypeFFmpeg() && decoderEngineType != decoderEngineFFMpeg)
       {
-        // Get the next NAL unit and push it to the decoder
-        QByteArray data = caching ? inputFileFFmpegCaching->getNextNALUnit(repushData) : inputFileFFmpegLoading->getNextNALUnit(repushData);
+        // Get the next unit (NAL or OBU) form ffmepg and push it to the decoder
+        QByteArray data = caching ? inputFileFFmpegCaching->getNextUnit(repushData) : inputFileFFmpegLoading->getNextUnit(repushData);
         DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData retrived nal unit from file - size %d", data.size());
         repushData = !dec->pushData(data);
       }
@@ -585,12 +605,12 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     if (!dec->needsMoreData() && !dec->decodeFrames())
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData decoder neither needs more data nor can decode frames");
-      decodingOfFrameNotPossible = true;
+      decodingNotPossibleAfter = frameIdxInternal;
       break;
     }
   }
 
-  if (decodingOfFrameNotPossible)
+  if (decodingNotPossibleAfter >= 0 && frameIdxInternal >= decodingNotPossibleAfter)
   {
     // The specified frame (which is thoretically in the bitstream) can not be decoded.
     // Maybe the bitstream was cut at a position that it was not supposed to be cut at.
@@ -619,7 +639,7 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToDTS,
   decoderBase *dec = caching ? cachingDecoder.data() : loadingDecoder.data();
   dec->resetDecoder();
   repushData = false;
-  decodingOfFrameNotPossible = false;
+  decodingNotPossibleAfter = -1;
 
   // Retrieval of the raw metadata is only required if the the reader or the decoder is not ffmpeg
   const bool bothFFmpeg = (!isInputFormatTypeAnnexB() && decoderEngineType == decoderEngineFFMpeg);
@@ -744,6 +764,16 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
       cachingDecoder.reset(new decoderHM(displayComponent, true));
     }
   }
+  else if (decoderEngineType == decoderEngineDav1d)
+  {
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive dav1d decoder");
+    loadingDecoder.reset(new decoderDav1d(displayComponent));
+    if (cachingEnabled)
+    {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder caching interactive dav1d decoder");
+      cachingDecoder.reset(new decoderDav1d(displayComponent, true));
+    }
+  }
   else if (decoderEngineType == decoderEngineFFMpeg)
   {
     if (isInputFormatTypeAnnexB())
@@ -786,7 +816,9 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
     infoText = "There was an error allocating the new decoder: \n";
     infoText += loadingDecoder->decoderErrorString();
     infoText += "\n";
+    return false;
   }
+
   return true;
 }
 
@@ -855,10 +887,10 @@ ValuePairListSets playlistItemCompressedVideo::getPixelValues(const QPoint &pixe
 void playlistItemCompressedVideo::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
   QStringList ext;
-  ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "cgi" << "ivr" << "lvf"
+  ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "cgi" << "ivf" << "ivr" << "lvf"
       << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" << "mjpeg" << "mpg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" << "mvi" << "mxg" << "v" << "ogg" 
       << "mjpg" << "viv" << "webm" << "xmv" << "ts" << "mxf";
-  QString filtersString = "FFMpeg files (";
+  QString filtersString = "FFmpeg files (";
   for (QString e : ext)
     filtersString.append(QString("*.%1").arg(e));
   filtersString.append(")");

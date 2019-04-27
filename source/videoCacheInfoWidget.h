@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*
+*   
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -30,34 +30,57 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserBase.h"
-#include <assert.h>
+#ifndef VIDEOCACHEINFOWIDGET_H
+#define VIDEOCACHEINFOWIDGET_H
 
-using namespace parserCommon;
+#include <QWidget>
 
-#define PARSERBASE_DEBUG_OUTPUT 0
-#if PARSERBASE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_PARSER qDebug
-#else
-#define DEBUG_PARSER(fmt,...) ((void)0)
+#include "playlistTreeWidget.h"
+#include "videoCache.h"
+
+namespace videoCacheStatusWidgetNamespace
+{
+  class videoCacheStatusWidget : public QWidget
+  {
+    Q_OBJECT
+
+    public:
+    videoCacheStatusWidget(QWidget *parent) : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0) {}
+    // Override the paint event
+    virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
+    void updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
+    private:
+    // The floating point values (0 to 1) of the end positions of the blocks to draw
+    QList<float> relativeValsEnd;
+    unsigned int cacheLevelMB;
+    unsigned int cacheRateInBytesPerMs;
+    int64_t cacheLevelMaxMB;
+  };
+}
+
+class VideoCacheInfoWidget : public QWidget
+{
+  Q_OBJECT
+
+public:
+  VideoCacheInfoWidget(QWidget *parent = 0);
+
+  void setPlaylistAndCache(PlaylistTreeWidget *plist, videoCache *vCache) { playlist = plist; cache = vCache; };
+
+public slots:
+  void onUpdateCacheStatus();
+
+private slots:
+  void onGroupBoxToggled(bool on);
+
+private:
+  videoCacheStatusWidgetNamespace::videoCacheStatusWidget *statusWidget {nullptr};
+  QLabel *cachingInfoLabel {nullptr};
+
+  PlaylistTreeWidget *playlist {nullptr};
+  videoCache *cache {nullptr};
+
+  unsigned int cacheRateInBytesPerMs {0};
+};
+
 #endif
-
-/// --------------- parserBase ---------------------
-
-parserBase::parserBase(QObject *parent) : QObject(parent)
-{
-  packetModel.reset(new PacketItemModel(parent));
-  streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
-  streamIndexFilter->setSourceModel(packetModel.data());
-}
-
-parserBase::~parserBase()
-{
-}
-
-void parserBase::enableModel()
-{
-  if (packetModel->isNull())
-    packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
-}

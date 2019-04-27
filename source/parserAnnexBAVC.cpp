@@ -249,7 +249,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     // Add the POC of the slice
     specificDescription = parsingSuccess ? QString(" POC %1").arg(new_slice->globalPOC) : " ERR";
     if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("Slice(POC-%1)").arg(new_slice->globalPOC) : "Slice(ERR)";
+      *nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(new_slice->globalPOC) : "Slice(ERR)";
 
     if (parsingSuccess)
     {
@@ -272,13 +272,10 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
         // Update the end position
         curFrameFileStartEndPos.second = nalStartEndPosFile.second;
 
-      if (nal_avc.isRandomAccess())
+      if (new_slice->isRandomAccess() && new_slice->first_mb_in_slice == 0)
       {
-        if (new_slice->first_mb_in_slice == 0)
-        {
-          // This is the first slice of a random access point. Add it to the list.
-          nalUnitList.append(new_slice);
-        }
+        // This is the first slice of a random access point. Add it to the list.
+        nalUnitList.append(new_slice);
       }
     }
   }
@@ -645,6 +642,8 @@ bool parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
 
 bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(reader_helper &reader, int BitDepthY, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag)
 {
+  reader_sub_level s(reader, "vui_parameters()");
+  
   READFLAG(aspect_ratio_info_present_flag);
   if (aspect_ratio_info_present_flag) 
   {
@@ -742,6 +741,8 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(reader_helper &reade
       return reader.addErrorMessageChildItem("time_scale shall be greater than 0.");
     READFLAG(fixed_frame_rate_flag);
 
+    // TODO: This is definitely not correct. num_units_in_tick and time_scale just define the minimal
+    //       time interval that can be represented in the bitstream
     frameRate = (double)time_scale / (double)num_units_in_tick;
     if (frame_mbs_only_flag)
       frameRate /= 2.0;
@@ -1062,7 +1063,7 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     // 8.2.1.1 Decoding process for picture order count type 0
     // In: PicOrderCntMsb (of previous pic)
     // Out: TopFieldOrderCnt, BottomFieldOrderCnt
-    if (IdrPicFlag)
+    if (IdrPicFlag || (slice_type == SLICE_I && prev_pic.isNull()))
     {
       prevPicOrderCntMsb = 0;
       prevPicOrderCntLsb = 0;
@@ -1070,8 +1071,8 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     else
     {
       if (prev_pic.isNull())
-        return reader.addErrorMessageChildItem("This is not an IDR picture (IdrPicFlag not set) but there is no previous picture available. Can not calculate POC.");
-
+        return reader.addErrorMessageChildItem("This is not an IDR picture (IdrPicFlag not set) and not an I frame but there is no previous picture available. Can not calculate POC.");
+      
       if (first_mb_in_slice == 0)
       {
         // If the previous reference picture in decoding order included a memory_management_control_operation equal to 5, the following applies:
@@ -1119,8 +1120,8 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   }
   else
   {
-    if (!IdrPicFlag && prev_pic.isNull())
-      return reader.addErrorMessageChildItem("This is not an IDR picture (IdrPicFlag not set) but there is no previous picture available. Can not calculate POC.");
+    if (!IdrPicFlag && slice_type != SLICE_I && prev_pic.isNull())
+      return reader.addErrorMessageChildItem("This is not an IDR picture (IdrPicFlag not set) or an I frame but there is no previous picture available. Can not calculate POC.");
     
     int prevFrameNum = -1;
     if (!prev_pic.isNull())
@@ -1210,10 +1211,24 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   
   if (prev_pic.isNull())
   {
-    globalPOC = 0;
-    globalPOC_lastIDR = 0;
-    globalPOC_highestGlobalPOCLastGOP = 0;
-    DEBUG_AVC("POC - First pic - global POC %d", globalPOC);
+    if (slice_type == SLICE_I)
+    {
+      if (field_pic_flag && bottom_field_flag)
+        globalPOC = BottomFieldOrderCnt;
+      else
+        globalPOC = TopFieldOrderCnt;
+
+      globalPOC_highestGlobalPOCLastGOP = globalPOC;
+      globalPOC_lastIDR = 0;
+      DEBUG_AVC("POC - First pic non IDR but I - global POC %d", globalPOC);
+    }
+    else
+    {
+      globalPOC = 0;
+      globalPOC_lastIDR = 0;
+      globalPOC_highestGlobalPOCLastGOP = 0;
+      DEBUG_AVC("POC - First pic - global POC %d", globalPOC);
+    }
   }
   else
   {
@@ -1892,18 +1907,10 @@ bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(reade
         cc_count = (reader.nrBytesLeft() - 1) / 3;
     }
     
-    // TODO
-    // // Now should follow (cc_count * 24 bits of cc_data_pkts)
-    // // Just display the raw bytes of the payload
-    // for (int i = 0; i < cc_count; i++)
-    // {
-    //   QString code; 
-    //   int v = reader.readBits(24, &code, QString("cc_packet_data[%1]").arg(i), meaning);
-    //   QString meaning = getCCDataPacketMeaning(v);
-    //   cc_packet_data.append(v);
-    //   if (itemTree) 
-    //     new TreeItem(QString("cc_packet_data[%1]").arg(i), v, QString("u(v) -> u(%1)").arg(24),code, meaning, itemTree);
-    // }
+    // Now should follow (cc_count * 24 bits of cc_data_pkts)
+    // Just display the raw bytes of the payload
+    for (unsigned int i = 0; i < cc_count; i++)
+      READBITS_A_M(cc_packet_data, 24, i, &getCCDataPacketMeaning);
 
     READBITS(marker_bits, 8);
     // The ATSC marker_bits indicator should be 255
@@ -1920,12 +1927,12 @@ bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(reade
   return true;
 }
 
-QString parserAnnexBAVC::user_data_registered_itu_t_t35_sei::getCCDataPacketMeaning(int cc_packet_data)
+QString parserAnnexBAVC::user_data_registered_itu_t_t35_sei::getCCDataPacketMeaning(unsigned int cc_packet_data)
 {
   // Parse the 3 bytes as 608
-  int byte0 = (cc_packet_data >> 16) & 0xff;
-  int byte1 = (cc_packet_data >> 8) & 0xff;
-  int byte2 = cc_packet_data & 0xff;
+  unsigned int byte0 = (cc_packet_data >> 16) & 0xff;
+  unsigned int byte1 = (cc_packet_data >> 8) & 0xff;
+  unsigned int byte2 = cc_packet_data & 0xff;
     
   // Ignore if this flag is not set
   bool cc_valid = ((byte0 & 4) > 0);
@@ -2288,7 +2295,7 @@ int parserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray
 
   int nrZeroBytes = 0;
   int pos = 0;
-  while (nrBytes > 0)
+  while (nrBytes > 0 && pos < in.length())
   {
     char c = (char)in.at(pos);
 

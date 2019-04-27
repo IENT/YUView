@@ -35,6 +35,8 @@
 #include <QSettings>
 #include <QProgressDialog>
 
+#include "parserCommon.h"
+
 #define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -70,7 +72,7 @@ AVPacketWrapper fileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool vi
   return pkt;
 }
 
-QByteArray fileSourceFFmpegFile::getNextNALUnit(bool getLastDataAgain, uint64_t *pts)
+QByteArray fileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pts)
 {
   if (getLastDataAgain)
     return lastReturnArray;
@@ -148,6 +150,60 @@ QByteArray fileSourceFFmpegFile::getNextNALUnit(bool getLastDataAgain, uint64_t 
     if (posInData >= currentPacketData.size())
       currentPacketData.clear();
   }
+  else if (packetDataFormat == packetFormatOBU)
+  {
+    parserCommon::sub_byte_reader reader(currentPacketData, posInData);
+
+    try
+    {
+      QString bitsRead;
+      bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);
+      reader.readBits(4, bitsRead); // obu_type
+      bool obu_extension_flag = (reader.readBits(1, bitsRead) != 0);
+      bool obu_has_size_field = (reader.readBits(1, bitsRead) != 0);
+      bool obu_reserved_1bit = (reader.readBits(1, bitsRead) != 0);
+
+      if (obu_forbidden_bit || obu_reserved_1bit)
+      {
+        currentPacketData.clear();
+        return QByteArray();
+      }
+      if (obu_extension_flag)
+      {
+        reader.readBits(3, bitsRead); // temporal_id
+        reader.readBits(2, bitsRead); // spatial_id
+        unsigned int extension_header_reserved_3bits = reader.readBits(3, bitsRead);
+        if (extension_header_reserved_3bits != 0)
+        {
+          currentPacketData.clear();
+          return QByteArray();
+        }
+      }
+      if (obu_has_size_field)
+      {
+        int bitCount;
+        unsigned int obu_size = reader.readLeb128(bitsRead, bitCount);
+        unsigned int completeSize = obu_size + reader.nrBytesRead();
+        lastReturnArray = currentPacketData.mid(posInData, completeSize);
+        posInData += completeSize;
+        if (posInData >= currentPacketData.size())
+          currentPacketData.clear();
+      }
+      else
+      {
+        // The OBU is the remainder of the input
+        lastReturnArray = currentPacketData.mid(posInData);
+        posInData = currentPacketData.size();
+        currentPacketData.clear();
+      }
+    }
+    catch(...)
+    {
+      // The reader threw an exception
+      currentPacketData.clear();
+      return QByteArray();
+    }
+  }
 
   if (pts)
     *pts = pkt.get_pts();
@@ -175,6 +231,9 @@ QStringPairList fileSourceFFmpegFile::getMetadata()
 
 QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
 {
+  if (!isFileOpened)
+    return {};
+
   /* The SPS/PPS are somewhere else in containers:
    * In mp4-container (mkv also) PPS/SPS are stored separate from frame data in global headers. 
    * To access them from libav* APIs you need to look for extradata field in AVCodecContext of AVStream 
@@ -184,8 +243,8 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
   QList<QByteArray> retArray;
 
   // Since the FFmpeg developers don't want to make it too easy, the extradata is organized differently depending on the codec.
-  AVCodecSpecfier codec = video_stream.getCodecSpecifier();
-  if (codec.isHEVC())
+  AVCodecIDWrapper codecID = ff.getCodecIDWrapper(video_stream.getCodecID());
+  if (codecID.isHEVC())
   {
     if (extradata.at(0) == 1)
     {
@@ -223,7 +282,7 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
       }
     }
   }
-  else if (codec.isAVC())
+  else if (codecID.isAVC())
   {
     // Note: Actually we would only need this if we would feed the AVC bitstream to a different decoder then ffmpeg.
     //       So this function is so far not called (and not tested).
@@ -265,7 +324,7 @@ fileSourceFFmpegFile::~fileSourceFFmpegFile()
     pkt.free_packet();
 }
 
-bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow, fileSourceFFmpegFile *other)
+bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow, fileSourceFFmpegFile *other, bool parseFile)
 {
   // Check if the file exists
   fileInfo.setFile(filePath);
@@ -295,11 +354,14 @@ bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow
     nrFrames = other->nrFrames;
     keyFrameList = other->keyFrameList;
   }
-  else if (!scanBitstream(mainWindow))
-    return false;
-
-  // Seek back to the beginning
-  seekToDTS(0);
+  else if (parseFile)
+  {
+    if (!scanBitstream(mainWindow))
+      return false;
+    
+    // Seek back to the beginning
+    seekToDTS(0);
+  }
 
   return true;
 }
@@ -342,15 +404,22 @@ int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToF
 
 bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
 {
-  // Create the dialog
+  if (!isFileOpened)
+    return false;
+
+  // Create the dialog (if the given pointer is not null)
   int64_t maxPTS = getMaxTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
   int curPercentValue = 0;
-  QProgressDialog progress("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow);
-  progress.setMinimumDuration(1000);  // Show after 1s
-  progress.setAutoClose(false);
-  progress.setAutoReset(false);
-  progress.setWindowModality(Qt::WindowModal);
+  QScopedPointer<QProgressDialog> progress;
+  if (mainWindow != nullptr)
+  {
+    progress.reset(new QProgressDialog("Parsing (indexing) bitstream...", "Cancel", 0, 100, mainWindow));
+    progress->setMinimumDuration(1000);  // Show after 1s
+    progress->setAutoClose(false);
+    progress->setAutoReset(false);
+    progress->setWindowModality(Qt::WindowModal);
+  }
 
   nrFrames = 0;
   while (goToNextPacket(true))
@@ -360,13 +429,14 @@ bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
     if (pkt.get_flag_keyframe())
       keyFrameList.append(pictureIdx(nrFrames, pkt.get_dts()));
 
-    if (progress.wasCanceled())
+    if (progress && progress->wasCanceled())
       return false;
 
     int newPercentValue = pkt.get_pts() * 100 / maxPTS;
     if (newPercentValue != curPercentValue)
     {
-      progress.setValue(newPercentValue);
+      if (progress)
+        progress->setValue(newPercentValue);
       curPercentValue = newPercentValue;
     }
 
@@ -374,7 +444,7 @@ bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
   }
 
   DEBUG_FFMPEG("fileSourceFFmpegFile::scanBitstream: Scan done. Found %d frames and %d keyframes.", nrFrames, keyFrameList.length());
-  return !progress.wasCanceled();
+  return !progress->wasCanceled();
 }
 
 void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
@@ -414,11 +484,14 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
     frameRate = -1;
   else
     frameRate = avgFrameRate.num / double(avgFrameRate.den);
-  rawFormat = FFmpegVersionHandler::getRawFormat(video_stream.getCodec().get_pixel_format());
+
+  AVPixFmtDescriptorWrapper ffmpegPixFormat = ff.getAvPixFmtDescriptionFromAvPixelFormat(video_stream.getCodec().get_pixel_format());
+  rawFormat = ffmpegPixFormat.getRawFormat();
   if (rawFormat == raw_YUV)
-    pixelFormat_yuv = FFmpegVersionHandler::convertAVPixelFormatYUV(video_stream.getCodec().get_pixel_format());
+    pixelFormat_yuv = ffmpegPixFormat.getYUVPixelFormat();
   else if (rawFormat == raw_RGB)
-    pixelFormat_rgb = FFmpegVersionHandler::convertAVPixelFormatRGB(video_stream.getCodec().get_pixel_format());
+    pixelFormat_rgb = ffmpegPixFormat.getRGBPixelFormat();
+  
   duration = fmt_ctx.get_duration();
   timeBase = video_stream.get_time_base();
 
@@ -499,15 +572,14 @@ int64_t fileSourceFFmpegFile::getMaxTS()
   return duration / AV_TIME_BASE * timeBase.den / timeBase.num;
 }
 
-QString fileSourceFFmpegFile::getFileInfoAsText()
+QList<QStringPairList> fileSourceFFmpegFile::getFileInfoForAllStreams()
 {
-  QString info;
+  QList<QStringPairList> info;
 
   info += fmt_ctx.getInfoText();
   for(unsigned int i=0; i<fmt_ctx.get_nb_streams(); i++)
   {
     AVStreamWrapper s = fmt_ctx.get_stream(i);
-    info += QString("\nStream %1:\n").arg(i);
     info += s.getInfoText();
   }
 

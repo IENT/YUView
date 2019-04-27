@@ -44,7 +44,7 @@
 
 using namespace parserCommon;
 
-unsigned int sub_byte_reader::readBits(int nrBits, QString *bitsRead)
+unsigned int sub_byte_reader::readBits(int nrBits, QString &bitsRead)
 {
   int out = 0;
   int nrBitsRead = nrBits;
@@ -97,19 +97,18 @@ unsigned int sub_byte_reader::readBits(int nrBits, QString *bitsRead)
     posInBuffer_bits += readBits;
   }
 
-  if (bitsRead)
-    for (int i = nrBitsRead-1; i >= 0; i--)
-    {
-      if (out & (1 << i))
-        bitsRead->append("1");
-      else
-        bitsRead->append("0");
-    }
+  for (int i = nrBitsRead-1; i >= 0; i--)
+  {
+    if (out & (1 << i))
+      bitsRead.append("1");
+    else
+      bitsRead.append("0");
+  }
 
   return out;
 }
 
-uint64_t sub_byte_reader::readBits64(int nrBits, QString *bitsRead)
+uint64_t sub_byte_reader::readBits64(int nrBits, QString &bitsRead)
 {
   if (nrBits > 64)
     throw std::logic_error("Trying to read more than 64 bits at once from the bitstream.");
@@ -149,11 +148,10 @@ QByteArray sub_byte_reader::readBytes(int nrBytes)
   return retArray;
 }
 
-unsigned int sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
+unsigned int sub_byte_reader::readUE_V(QString &bitsRead, int &bit_count)
 {
   int readBit = readBits(1, bitsRead);
-  if (bit_count)
-    bit_count++;
+  bit_count++;
   if (readBit == 1)
     return 0;
 
@@ -170,13 +168,12 @@ unsigned int sub_byte_reader::readUE_V(QString *bitsRead, int *bit_count)
   // Add the exponentional part
   val += (1 << golLength)-1;
 
-  if (bit_count)
-    bit_count += 2 * golLength;
+  bit_count += 2 * golLength;
 
   return val;
 }
 
-int sub_byte_reader::readSE_V(QString *bitsRead, int *bit_count)
+int sub_byte_reader::readSE_V(QString &bitsRead, int &bit_count)
 {
   int val = readUE_V(bitsRead, bit_count);
   if (val%2 == 0) 
@@ -185,19 +182,16 @@ int sub_byte_reader::readSE_V(QString *bitsRead, int *bit_count)
     return (val+1)/2;
 }
 
-uint64_t sub_byte_reader::readLeb128(QString *bitsRead, int *bit_count)
+uint64_t sub_byte_reader::readLeb128(QString &bitsRead, int &bit_count)
 {
   // We will read full bytes (up to 8)
   // The highest bit indicates if we need to read another bit. The rest of the bits is added to the counter (shifted accordingly)
   // See the AV1 reading specification
   uint64_t value = 0;
-  if (bit_count)
-    *bit_count = 0;
   for (int i = 0; i < 8; i++)
   {
     int leb128_byte = readBits(8, bitsRead);
-    if (bit_count)
-      *bit_count += 8;
+    bit_count += 8;
     value |= ((leb128_byte & 0x7f) << (i*7));
     if (!(leb128_byte & 0x80))
       break;
@@ -205,14 +199,13 @@ uint64_t sub_byte_reader::readLeb128(QString *bitsRead, int *bit_count)
   return value;
 }
 
-uint64_t sub_byte_reader::readUVLC(QString *bitsRead, int *bit_count)
+uint64_t sub_byte_reader::readUVLC(QString &bitsRead, int &bit_count)
 {
   int leadingZeros = 0;
   while (1)
   {
     int done = readBits(1, bitsRead);
-    if (bit_count)
-      *bit_count += 1;
+    bit_count += 1;
     if (done)
       break;
     leadingZeros++;
@@ -223,7 +216,7 @@ uint64_t sub_byte_reader::readUVLC(QString *bitsRead, int *bit_count)
   return value + ((uint64_t)1 << leadingZeros) - 1;
 }
 
-int sub_byte_reader::readNS(int maxVal, QString *bitsRead, int *bit_count)
+int sub_byte_reader::readNS(int maxVal, QString &bitsRead, int &bit_count)
 {
   // FloorLog2
   int floorVal;
@@ -241,17 +234,15 @@ int sub_byte_reader::readNS(int maxVal, QString *bitsRead, int *bit_count)
   int w = floorVal + 1;
   int m = (1 << w) - maxVal;
   int v = readBits(w-1, bitsRead);
-  if (bit_count)
-    *bit_count += w-1;
+  bit_count += w-1;
   if (v < m)
     return v;
   int extra_bit = readBits(1, bitsRead);
-  if (bit_count)
-    *bit_count += 1;
+  bit_count++;
   return (v << 1) - m + extra_bit;
 }
 
-int sub_byte_reader::readSU(int nrBits, QString *bitsRead)
+int sub_byte_reader::readSU(int nrBits, QString &bitsRead)
 {
   int value = readBits(nrBits, bitsRead);
   int signMask = 1 << (nrBits - 1);
@@ -304,6 +295,17 @@ bool sub_byte_reader::more_rbsp_data()
   if (!terminatingBitFound)
     return true;
   return false;
+}
+
+/* Is there more data? If the current position in the sei_payload() syntax structure is not the position of the last (least significant, right-
+   most) bit that is equal to 1 that is less than 8 * payloadSize bits from the beginning of the syntax structure (i.e.,
+   the position of the payload_bit_equal_to_one syntax element), the return value of payload_extension_present( )
+   is equal to TRUE.
+ */
+bool sub_byte_reader::payload_extension_present()
+{
+  // TODO: What is the difference to this?
+  return more_rbsp_data();
 }
 
 bool sub_byte_reader::testReadingBits(int nrBits)
@@ -453,7 +455,7 @@ void reader_helper::removeLogSubLevel()
 bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, QString meaning)
 {
   QString code;
-  if (!readBits_catch(into, numBits, &code))
+  if (!readBits_catch(into, numBits, code))
     return false;
   if (currentTreeLevel)
     new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, meaning, currentTreeLevel);
@@ -463,7 +465,7 @@ bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, 
 bool reader_helper::readBits(int numBits, uint64_t &into, QString intoName, QString meaning)
 {
   QString code;
-  if (!readBits64_catch(into, numBits, &code))
+  if (!readBits64_catch(into, numBits, code))
     return false;
   if (currentTreeLevel)
     new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, meaning, currentTreeLevel);
@@ -473,7 +475,7 @@ bool reader_helper::readBits(int numBits, uint64_t &into, QString intoName, QStr
 bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, QStringList meanings)
 {
   QString code;
-  if (!readBits_catch(into, numBits, &code))
+  if (!readBits_catch(into, numBits, code))
     return false;
   if (currentTreeLevel)
     new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, getMeaningValue(meanings, into), currentTreeLevel);
@@ -483,10 +485,20 @@ bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, 
 bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, QMap<int,QString> meanings)
 {
   QString code;
-  if (!readBits_catch(into, numBits, &code))
+  if (!readBits_catch(into, numBits, code))
     return false;
   if (currentTreeLevel)
     new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, getMeaningValue(meanings, into), currentTreeLevel);
+  return true;
+}
+
+bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, meaning_callback_function pMeaning)
+{
+  QString code;
+  if (!readBits_catch(into, numBits, code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, pMeaning(into), currentTreeLevel);
   return true;
 }
 
@@ -494,7 +506,7 @@ bool reader_helper::readBits(int numBits, QList<unsigned int> &into, QString int
 {
   QString code;
   unsigned int val;
-  if (!readBits_catch(val, numBits, &code))
+  if (!readBits_catch(val, numBits, code))
     return false;
   into.append(val);
   if (idx >= 0)
@@ -504,12 +516,26 @@ bool reader_helper::readBits(int numBits, QList<unsigned int> &into, QString int
   return true;
 }
 
+bool reader_helper::readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx, meaning_callback_function pMeaning)
+{
+  QString code;
+  unsigned int val;
+  if (!readBits_catch(val, numBits, code))
+    return false;
+  into.append(val);
+  if (idx >= 0)
+    intoName += QString("[%1]").arg(idx);
+  if (currentTreeLevel)
+    new TreeItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code, pMeaning(val), currentTreeLevel);
+  return true;
+}
+
 bool reader_helper::readBits(int numBits, QByteArray &into, QString intoName, int idx)
 {
   assert(numBits <= 8);
   QString code;
   unsigned int val;
-  if (!readBits_catch(val, numBits, &code))
+  if (!readBits_catch(val, numBits, code))
     return false;
   into.append(val);
   if (idx >= 0)
@@ -522,7 +548,7 @@ bool reader_helper::readBits(int numBits, QByteArray &into, QString intoName, in
 bool reader_helper::readBits(int numBits, unsigned int &into, QMap<int, QString> intoNames)
 {
   QString code;
-  if (!readBits_catch(into, numBits, &code))
+  if (!readBits_catch(into, numBits, code))
     return false;
   if (currentTreeLevel)    
     new TreeItem(getMeaningValue(intoNames, into), into, QString("u(v) -> u(%1)").arg(numBits), code, currentTreeLevel);
@@ -537,7 +563,7 @@ bool reader_helper::readZeroBits(int numBits, QString intoName)
   while (numBits > 0)
   {
     unsigned int into;
-    if (!readBits_catch(into, 1, &code))
+    if (!readBits_catch(into, 1, code))
       return false;
     if (into != 0)
       allZero = false;
@@ -545,7 +571,7 @@ bool reader_helper::readZeroBits(int numBits, QString intoName)
   }
   if (currentTreeLevel)
   {
-    new TreeItem(intoName, allZero ? "0" : "Not 0", QString("u(v) -> u(%1)").arg(bitsToRead), code, currentTreeLevel);
+    new TreeItem(intoName, allZero ? QString("0") : QString("Not 0"), QString("u(v) -> u(%1)").arg(bitsToRead), code, currentTreeLevel);
     if (!allZero)
       addErrorMessageChildItem("The zero bits " + intoName + " must be zero");
   }
@@ -555,7 +581,8 @@ bool reader_helper::readZeroBits(int numBits, QString intoName)
 bool reader_helper::ignoreBits(int numBits)
 {
   unsigned int into;
-  if (!readBits_catch(into, numBits))
+  QString code;
+  if (!readBits_catch(into, numBits, code))
     return false;
   return true;
 }
@@ -564,7 +591,7 @@ bool reader_helper::readFlag(bool &into, QString intoName, QString meaning)
 {
   QString code;
   unsigned int read_val;
-  if (!readBits_catch(read_val, 1, &code))
+  if (!readBits_catch(read_val, 1, code))
     return false;
   into = (read_val != 0);
   if (currentTreeLevel)
@@ -572,18 +599,18 @@ bool reader_helper::readFlag(bool &into, QString intoName, QString meaning)
   return true;
 }
 
-bool reader_helper::readFlag(QList<bool> &into, QString intoName, int idx)
+bool reader_helper::readFlag(QList<bool> &into, QString intoName, int idx, QString meaning)
 {
   QString code;
   unsigned int read_val;
-  if (!readBits_catch(read_val, 1, &code))
+  if (!readBits_catch(read_val, 1, code))
     return false;
   bool val = (read_val != 0);
   into.append(val);
   if (idx >= 0)
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
-    new TreeItem(intoName, val, "u(1)", code, currentTreeLevel);
+    new TreeItem(intoName, val, "u(1)", code, meaning, currentTreeLevel);
   return true;
 }
 
@@ -591,7 +618,7 @@ bool reader_helper::readFlag(bool &into, QString intoName, QStringList meanings)
 {
   QString code;
   unsigned int read_val;
-  if (!readBits_catch(read_val, 1, &code))
+  if (!readBits_catch(read_val, 1, code))
     return false;
   into = (read_val != 0);
   if (currentTreeLevel)
@@ -602,34 +629,45 @@ bool reader_helper::readFlag(bool &into, QString intoName, QStringList meanings)
 bool reader_helper::readUEV(unsigned int &into, QString intoName, QStringList meanings)
 {
   QString code;
-  int bit_count;
-  if (!readUEV_catch(into, &bit_count, &code))
+  int bit_count = 0;
+  if (!readUEV_catch(into, bit_count, code))
     return false;
   if (currentTreeLevel)
     new TreeItem(intoName, into, QString("ue(v) -> ue(%1)").arg(bit_count), code, getMeaningValue(meanings, into), currentTreeLevel);
   return true;
 }
 
-bool reader_helper::readUEV(QList<quint32> &into, QString intoName, int idx)
+bool reader_helper::readUEV(unsigned int &into, QString intoName, QString meaning)
 {
   QString code;
-  int bit_count;
+  int bit_count = 0;
+  if (!readUEV_catch(into, bit_count, code))
+    return false;
+  if (currentTreeLevel)
+    new TreeItem(intoName, into, QString("ue(v) -> ue(%1)").arg(bit_count), code, meaning, currentTreeLevel);
+  return true;
+}
+
+bool reader_helper::readUEV(QList<quint32> &into, QString intoName, int idx, QString meaning)
+{
+  QString code;
+  int bit_count = 0;
   unsigned int val;
-  if (!readUEV_catch(val, &bit_count, &code))
+  if (!readUEV_catch(val, bit_count, code))
     return false;
   into.append(val);
   if (idx >= 0)
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
-    new TreeItem(intoName, val, QString("ue(v) -> ue(%1)").arg(bit_count), code, currentTreeLevel);
+    new TreeItem(intoName, val, QString("ue(v) -> ue(%1)").arg(bit_count), code, meaning, currentTreeLevel);
   return true;
 }
 
 bool reader_helper::readSEV(int &into, QString intoName, QStringList meanings)
 {
   QString code;
-  int bit_count;
-  if (!readSEV_catch(into, &bit_count, &code))
+  int bit_count = 0;
+  if (!readSEV_catch(into, bit_count, code))
     return false;
   if (currentTreeLevel)
     new TreeItem(intoName, into, QString("se(v) -> se(%1)").arg(bit_count), code, getMeaningValue(meanings, (unsigned int)into), currentTreeLevel);
@@ -639,9 +677,9 @@ bool reader_helper::readSEV(int &into, QString intoName, QStringList meanings)
 bool reader_helper::readSEV(QList<int> into, QString intoName, int idx)
 {
   QString code;
-  int bit_count;
+  int bit_count = 0;
   unsigned int val;
-  if (!readUEV_catch(val, &bit_count, &code))
+  if (!readUEV_catch(val, bit_count, code))
     return false;
   into.append(val);
   if (idx >= 0)
@@ -654,8 +692,8 @@ bool reader_helper::readSEV(QList<int> into, QString intoName, int idx)
 bool reader_helper::readLeb128(uint64_t &into, QString intoName)
 {
   QString code;
-  int bit_count;
-  if (!readLeb128_catch(into, &bit_count, &code))
+  int bit_count = 0;
+  if (!readLeb128_catch(into, bit_count, code))
     return false;
   if (currentTreeLevel)
     new TreeItem(intoName, into, QString("leb128(v) -> leb128(%1)").arg(bit_count), code, currentTreeLevel);
@@ -665,8 +703,8 @@ bool reader_helper::readLeb128(uint64_t &into, QString intoName)
 bool reader_helper::readUVLC(uint64_t &into, QString intoName)
 {
   QString code;
-  int bit_count;
-  if (!readUVLC_catch(into, &bit_count, &code))
+  int bit_count = 0;
+  if (!readUVLC_catch(into, bit_count, code))
     return false;
   if (currentTreeLevel)
     new TreeItem(intoName, into, QString("leb128(v) -> leb128(%1)").arg(bit_count), code, currentTreeLevel);
@@ -676,8 +714,8 @@ bool reader_helper::readUVLC(uint64_t &into, QString intoName)
 bool reader_helper::readNS(int &into, QString intoName, int maxVal)
 {
   QString code;
-  int bit_count;
-  if (!readNS_catch(into, maxVal, &bit_count, &code))
+  int bit_count = 0;
+  if (!readNS_catch(into, maxVal, bit_count, code))
     return false;
   if (currentTreeLevel)
     new TreeItem(intoName, into, QString("ns(%1)").arg(bit_count), code, currentTreeLevel);
@@ -687,7 +725,7 @@ bool reader_helper::readNS(int &into, QString intoName, int maxVal)
 bool reader_helper::readSU(int &into, QString intoName, int nrBits)
 {
   QString code;
-  if (!readSU_catch(into, nrBits, &code))
+  if (!readSU_catch(into, nrBits, code))
     return false;
   if (currentTreeLevel)
     new TreeItem(intoName, into, QString("su(%1)").arg(nrBits), code, currentTreeLevel);
@@ -728,7 +766,7 @@ bool reader_helper::addErrorMessageChildItem(QString errorMessage, TreeItem *ite
   return false;
 }
 
-bool reader_helper::readBits_catch(unsigned int &into, int numBits, QString *code)
+bool reader_helper::readBits_catch(unsigned int &into, int numBits, QString &code)
 {
   try
   {
@@ -742,7 +780,7 @@ bool reader_helper::readBits_catch(unsigned int &into, int numBits, QString *cod
   return true;
 }
 
-bool reader_helper::readBits64_catch(uint64_t &into, int numBits, QString *code)
+bool reader_helper::readBits64_catch(uint64_t &into, int numBits, QString &code)
 {
   try
   {
@@ -756,7 +794,7 @@ bool reader_helper::readBits64_catch(uint64_t &into, int numBits, QString *code)
   return true;
 }
 
-bool reader_helper::readUEV_catch(unsigned int &into, int *bit_count, QString *code)
+bool reader_helper::readUEV_catch(unsigned int &into, int &bit_count, QString &code)
 {
   try
   {
@@ -770,7 +808,7 @@ bool reader_helper::readUEV_catch(unsigned int &into, int *bit_count, QString *c
   return true;
 }
 
-bool reader_helper::readSEV_catch(int &into, int *bit_count, QString *code)
+bool reader_helper::readSEV_catch(int &into, int &bit_count, QString &code)
 {
   try
   {
@@ -784,7 +822,7 @@ bool reader_helper::readSEV_catch(int &into, int *bit_count, QString *code)
   return true;
 }
 
-bool reader_helper::readLeb128_catch(uint64_t &into, int *bit_count, QString *code)
+bool reader_helper::readLeb128_catch(uint64_t &into, int &bit_count, QString &code)
 {
   try
   {
@@ -798,7 +836,7 @@ bool reader_helper::readLeb128_catch(uint64_t &into, int *bit_count, QString *co
   return true;
 }
 
-bool reader_helper::readUVLC_catch(uint64_t &into, int *bit_count, QString *code)
+bool reader_helper::readUVLC_catch(uint64_t &into, int &bit_count, QString &code)
 {
   try
   {
@@ -812,7 +850,7 @@ bool reader_helper::readUVLC_catch(uint64_t &into, int *bit_count, QString *code
   return true;
 }
 
-bool reader_helper::readNS_catch(int &into, int maxVal, int *bit_count, QString *code)
+bool reader_helper::readNS_catch(int &into, int maxVal, int &bit_count, QString &code)
 {
   try
   {
@@ -826,7 +864,7 @@ bool reader_helper::readNS_catch(int &into, int maxVal, int *bit_count, QString 
   return true;
 }
 
-bool reader_helper::readSU_catch(int &into, int numBits, QString *code)
+bool reader_helper::readSU_catch(int &into, int numBits, QString &code)
 {
   try
   {
@@ -933,14 +971,12 @@ QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &paren
     return QModelIndex();
 
   TreeItem *parentItem;
-
   if (!parent.isValid())
     parentItem = rootItem.data();
   else
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
 
-  if (parentItem == nullptr)
-    return QModelIndex();
+  Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::index", "pointer to parent is null. This must never happen");
 
   TreeItem *childItem = parentItem->childItems.value(row, nullptr);
   if (childItem)
@@ -984,7 +1020,8 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
 
 void PacketItemModel::setNewNumberModelItems(unsigned int n)
 {
-  unsigned int nrAddItems = nrShowChildItems - n;
+  Q_ASSERT_X(n >= nrShowChildItems, "PacketItemModel::setNewNumberModelItems", "Setting a smaller number of items.");
+  unsigned int nrAddItems = n - nrShowChildItems;
   int lastIndex = nrShowChildItems;
   beginInsertRows(QModelIndex(), lastIndex, lastIndex+nrAddItems);
   nrShowChildItems = n;
@@ -1006,47 +1043,49 @@ void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
     return;
 
   showVideoOnly = videoOnly;
-  //emit dataChanged(QModelIndex(), QModelIndex());
+  emit dataChanged(QModelIndex(), QModelIndex());
 }
 
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------
 
-bool FilterByStreamIndexProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
+bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex &sourceParent) const
 {
-  DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow row %d -> accept", sourceRow);
-  Q_UNUSED(sourceRow);
-  return true;
-
-  if (filterStreamIndex == -1)
+  if (streamIndex == -1)
   {
-    DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow %d - accepting all", sourceRow);
+    DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow %d - accepting all", row);
     return true;
   }
 
-  TreeItem *p = static_cast<TreeItem*>(sourceParent.internalPointer());
-  if (p != nullptr)
+  TreeItem *parentItem;
+  if (!sourceParent.isValid())
   {
-    DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d filter %d", p->getStreamIndex(), filterStreamIndex);
-    return p->getStreamIndex() == filterStreamIndex;
-  }
-
-  DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> accept");
-  return true;
-}
-
-void FilterByStreamIndexProxyModel::setShowVideoStreamOnly(bool showVideoOnly, int videoStreamIndex)
-{
-  if (showVideoOnly && filterStreamIndex == -1 && videoStreamIndex != -1)
-  {
-    // Enable filtering
-    DEBUG_PARSER("FilterByStreamIndexProxyModel::setShowVideoStreamOnly enable filter stream %d", videoStreamIndex);
-    filterStreamIndex = videoStreamIndex;
+    // Get the root item
+    QAbstractItemModel *s = sourceModel();
+    PacketItemModel *p = static_cast<PacketItemModel*>(s);
+    if (p == nullptr)
+    {
+      DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow Unable to get root item");  
+      return false;
+    }
+    parentItem = p->getRootItem();
   }
   else
+    parentItem = static_cast<TreeItem*>(sourceParent.internalPointer());
+  Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::index", "pointer to parent is null. This must never happen");
+
+  TreeItem *childItem = parentItem->childItems.value(row, nullptr);
+  if (childItem != nullptr)
   {
-    // Disable filtering
-    DEBUG_PARSER("FilterByStreamIndexProxyModel::setShowVideoStreamOnly disable filter");
-    filterStreamIndex = -1;
+    DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d filter %d", childItem->getStreamIndex(), filterStreamIndex);
+    return childItem->getStreamIndex() == streamIndex;
   }
-  emit dataChanged(QModelIndex(), QModelIndex());
+
+  DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> reject");
+  return false;
+}
+
+void FilterByStreamIndexProxyModel::setFilterStreamIndex(int idx)
+{
+  streamIndex = idx;
+  invalidateFilter();
 }

@@ -52,10 +52,10 @@ public:
 
 private slots:
   void updateParserItemModel(unsigned int nalModelUpdated);
-  void updateStreamInfoText();
-  void backgroundParsingDone();
+  void updateStreamInfo();
+  void backgroundParsingDone(QString error);
   void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
-  void showVideoStreamOnlyCheckBoxToggled(bool state) { parser->setShowVideoStreamOnly(state); }
+  void showVideoStreamOnlyCheckBoxToggled(bool state);
   
 private:
   
@@ -65,6 +65,8 @@ private:
   QFuture<void> backgroundParserFuture;
   void backgroundParsingFunction();
   QString compressedFilePath;
+
+  bool showVideoStreamOnly {false};
 
   // We create the status bar manually because the QtDesigner does not support status bars in dialogs
   QStatusBar *statusBar;

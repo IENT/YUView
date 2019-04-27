@@ -154,7 +154,7 @@ bool parserAV1OBU::obu_unit::parse_obu_header(const QByteArray &header_data, uns
   return true;
 }
 
-bool parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile, QString *obuTypeName)
+unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile, QString *obuTypeName)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active). 
   // We don't set data (a name) for this item yet. 
@@ -169,7 +169,7 @@ bool parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, 
   // Read the OBU header
   obu_unit obu(obuStartEndPosFile, obuID);
   unsigned int nrBytesHeader;
-  if (obu.parse_obu_header(data, nrBytesHeader, obuRoot))
+  if (!obu.parse_obu_header(data, nrBytesHeader, obuRoot))
     return false;
 
   // Get the payload of the OBU
@@ -204,8 +204,7 @@ bool parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, 
     // Set a useful name of the TreeItem (the root for this NAL)
     obuRoot->itemData.append(QString("OBU %1: %2").arg(obu.obu_idx).arg(obu_type_toString.value(obu.obu_type)) + specificDescription);
 
-  //return nrBytesHeader + obu.obu_size;
-  return parsingSuccess;
+  return nrBytesHeader + (int)obu.obu_size;
 }
 
 bool parserAV1OBU::sequence_header::parse_sequence_header(const QByteArray &sequenceHeaderData, TreeItem *root)
@@ -1056,7 +1055,7 @@ bool parserAV1OBU::frame_header::parse_superres_params(reader_helper &reader, QS
   FrameWidth =  (UpscaledWidth * SUPERRES_NUM + (SuperresDenom / 2)) / SuperresDenom;
   LOGVAL(FrameWidth);
 
-  return false;
+  return true;
 }
 
 void parserAV1OBU::frame_header::compute_image_size()
@@ -1390,6 +1389,9 @@ bool parserAV1OBU::frame_header::tile_info_struct::parse_tile_info(int MiCols, i
   }
   else
     context_update_tile_id = 0;
+
+  LOGVAL(TileColsLog2);
+  LOGVAL(TileRowsLog2);
 
   return true;
 }

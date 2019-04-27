@@ -50,7 +50,7 @@ public:
 
   // Load the ffmpeg libraries and try to open the file. The fileSource will install a watcher for the file.
   // Return false if anything goes wrong.
-  bool openFile(const QString &filePath, QWidget *mainWindow=nullptr, fileSourceFFmpegFile *other=nullptr);
+  bool openFile(const QString &filePath, QWidget *mainWindow=nullptr, fileSourceFFmpegFile *other=nullptr, bool parseFile=true);
   
   // Is the file at the end?
   // TODO: How do we do this?
@@ -66,12 +66,15 @@ public:
   YUV_Internals::yuvPixelFormat getPixelFormatYUV() const { return pixelFormat_yuv; }
   RGB_Internals::rgbPixelFormat getPixelFormatRGB() const { return pixelFormat_rgb; }
 
+  /* Get data from the file source. You can either retrive full AVPackets or single units 
+   * from the bitstream using these functions. The important thing is to not mix calls to these functions.
+   */
   // Get the next NAL unit (everything excluding the start code) or the next packet.
-  // Do not mix calls to these two functions when reading a file.
-  QByteArray getNextNALUnit(bool getLastDataAgain=false, uint64_t *pts=nullptr);
+  QByteArray getNextUnit(bool getLastDataAgain=false, uint64_t *pts=nullptr);
   // Return the next packet (unless getLastPackage is set in which case we return the current packet)
   AVPacketWrapper getNextPacket(bool getLastPackage=false, bool videoPacket=true);
   // Return the raw extradata/metadata (in avformat format containing the parameter sets)
+  
   QByteArray getExtradata();
   QStringPairList getMetadata();
   // Return a list containing the raw data of all parameter set NAL units
@@ -86,17 +89,19 @@ public:
 
   // Get information on the video stream
   int getNumberFrames() const { return nrFrames; }
-  AVCodecSpecfier getCodecSpecifier() { return video_stream.getCodecSpecifier(); }
+  AVCodecIDWrapper getVideoStreamCodecID() { return ff.getCodecIDWrapper(video_stream.getCodecID()); }
   AVCodecParametersWrapper getVideoCodecPar() { return video_stream.get_codecpar(); }
 
   // Get more general information about the streams
   unsigned int getNumberOfStreams() { return fmt_ctx ? fmt_ctx.get_nb_streams() : 0; }
   int getVideoStreamIndex() { return video_stream.get_index(); }
-  QString getFileInfoAsText();
+  QList<QStringPairList> getFileInfoForAllStreams();
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
   int getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const;
+
+  QStringList getFFmpegLoadingLog() const { return ff.getLog(); }
   
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }

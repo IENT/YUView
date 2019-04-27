@@ -58,17 +58,18 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
   
   parser->enableModel();
 
-  ui.dataTreeView->setModel(parser->getPacketItemModel());
+  ui.streamInfoTreeWidget->setColumnWidth(0, 300);
 
+  ui.dataTreeView->setModel(parser->getPacketItemModel());
   ui.dataTreeView->setColumnWidth(0, 600);
   ui.dataTreeView->setColumnWidth(1, 100);
   ui.dataTreeView->setColumnWidth(2, 120);
 
   compressedFilePath = fileName;
 
-  connect(parser.get(), &parserBase::nalModelUpdated, this, &bitstreamAnalysisDialog::updateParserItemModel);
-  connect(parser.get(), &parserBase::streamInfoTextUpdated, this, &bitstreamAnalysisDialog::updateStreamInfoText);
-  connect(parser.get(), &parserBase::backgroundParsingDone, this, &bitstreamAnalysisDialog::backgroundParsingDone);
+  connect(parser.data(), &parserBase::nalModelUpdated, this, &bitstreamAnalysisDialog::updateParserItemModel);
+  connect(parser.data(), &parserBase::streamInfoUpdated, this, &bitstreamAnalysisDialog::updateStreamInfo);
+  connect(parser.data(), &parserBase::backgroundParsingDone, this, &bitstreamAnalysisDialog::backgroundParsingDone);
   
   connect(ui.showVideoStreamOnlyCheckBox, &QCheckBox::toggled, this, &bitstreamAnalysisDialog::showVideoStreamOnlyCheckBoxToggled);
   connect(ui.colorCodeStreamsCheckBox, &QCheckBox::toggled, this, &bitstreamAnalysisDialog::colorCodeStreamsCheckBoxToggled);
@@ -77,7 +78,7 @@ bitstreamAnalysisDialog::bitstreamAnalysisDialog(QWidget *parent, QString fileNa
   statusBar->showMessage("Parsing file ...");
   backgroundParserFuture = QtConcurrent::run(this, &bitstreamAnalysisDialog::backgroundParsingFunction);
 
-  updateStreamInfoText();
+  updateStreamInfo();
 }
 
 bitstreamAnalysisDialog::~bitstreamAnalysisDialog()
@@ -97,14 +98,32 @@ void bitstreamAnalysisDialog::updateParserItemModel(unsigned int newNumberItems)
   statusBar->showMessage(QString("Parsing file (%1%)").arg(parser->getParsingProgressPercent()));
 }
 
-void bitstreamAnalysisDialog::updateStreamInfoText()
+void bitstreamAnalysisDialog::updateStreamInfo()
 {
-  ui.streamInfoText->document()->setPlainText(parser->getStreamInfoText());
+  ui.streamInfoTreeWidget->clear();
+  ui.streamInfoTreeWidget->addTopLevelItems(parser->getStreamInfo());
+  ui.streamInfoTreeWidget->expandAll();
+  ui.showVideoStreamOnlyCheckBox->setEnabled(parser->getNrStreams() > 1);
 }
 
-void bitstreamAnalysisDialog::backgroundParsingDone()
+void bitstreamAnalysisDialog::backgroundParsingDone(QString error)
 {
-  statusBar->showMessage("Parsing done.");
+  if (error.isEmpty())
+    statusBar->showMessage("Parsing done.");
+  else
+    statusBar->showMessage("Error parsing the file: " + error);
+}
+
+void bitstreamAnalysisDialog::showVideoStreamOnlyCheckBoxToggled(bool state)
+{
+  if (showVideoStreamOnly != state)
+  {
+    showVideoStreamOnly = state;
+    if (showVideoStreamOnly)
+      parser->setFilterStreamIndex(parser->getVideoStreamIndex());
+    else
+      parser->setFilterStreamIndex(-1);
+  }
 }
 
 void bitstreamAnalysisDialog::backgroundParsingFunction()

@@ -46,7 +46,7 @@ class parserAnnexBHEVC : public parserAnnexB
   Q_OBJECT
   
 public:
-  parserAnnexBHEVC(QObject *parent = nullptr) : parserAnnexB(parent) {}
+  parserAnnexBHEVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); }
   ~parserAnnexBHEVC() {};
 
   // Get some properties
@@ -159,13 +159,16 @@ protected:
   // E.2.3 Sub-layer HRD parameters syntax
   struct sub_layer_hrd_parameters
   {
-    bool parse_sub_layer_hrd_parameters(parserCommon::reader_helper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag);
+    bool parse_sub_layer_hrd_parameters(parserCommon::reader_helper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, bool SubPicHrdFlag, unsigned int bit_rate_scale, unsigned int cpb_size_scale, unsigned int cpb_size_du_scale);
 
     QList<unsigned int> bit_rate_value_minus1;
     QList<unsigned int> cpb_size_value_minus1;
     QList<unsigned int> cpb_size_du_value_minus1;
     QList<unsigned int> bit_rate_du_value_minus1;
     QList<bool> cbr_flag;
+
+    QList<unsigned int> BitRate;
+    QList<unsigned int> CpbSize;
   };
 
   // E.2.2 HRD parameters syntax
@@ -188,6 +191,9 @@ protected:
     unsigned int initial_cpb_removal_delay_length_minus1 {23};
     unsigned int au_cpb_removal_delay_length_minus1      {23};
     unsigned int dpb_output_delay_length_minus1          {23};
+
+    bool SubPicHrdPreferredFlag;
+    bool SubPicHrdFlag;
 
     bool fixed_pic_rate_general_flag[8]    = {0, 0, 0, 0, 0, 0, 0, 0};
     bool fixed_pic_rate_within_cvs_flag[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -628,7 +634,7 @@ protected:
   struct user_data_sei : sei
   {
     user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    sei_parsing_return_t parse_user_data_sei(QByteArray &sliceHeaderData, parserCommon::TreeItem *root);
+    sei_parsing_return_t parse_user_data_sei(QByteArray &sei_data, parserCommon::TreeItem *root);
 
     QString user_data_UUID;
     QString user_data_message;
@@ -655,6 +661,42 @@ protected:
     bool parse_internal(const vps_map &active_VPS_list);
     bool parse_vps_id();
     bool is_reparse_needed(const vps_map &active_VPS_list) { return !active_VPS_list.contains(active_video_parameter_set_id); }
+    parserCommon::reader_helper reader;
+  };
+
+  class buffering_period_sei : public sei
+  {
+  public:
+    buffering_period_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced VPS was not found (yet).
+    // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
+    sei_parsing_return_t parse_buffering_period_sei(QByteArray &sliceHeaderData, const sps_map &active_SPS_list, parserCommon::TreeItem *root);
+    sei_parsing_return_t reparse_buffering_period_sei(const sps_map &active_SPS_list) { return parse_internal(active_SPS_list) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
+
+    unsigned int bp_seq_parameter_set_id;
+    bool irap_cpb_params_present_flag {false};
+    unsigned int cpb_delay_offset;
+    unsigned int dpb_delay_offset;
+    bool concatenation_flag;
+    unsigned int au_cpb_removal_delay_delta_minus1;
+    
+    QList<unsigned int> nal_initial_cpb_removal_delay;
+    QList<unsigned int> nal_initial_cpb_removal_offset;
+    QList<unsigned int> nal_initial_alt_cpb_removal_delay;
+    QList<unsigned int> nal_initial_alt_cpb_removal_offset;
+
+    QList<unsigned int> vcl_initial_cpb_removal_delay;
+    QList<unsigned int> vcl_initial_cpb_removal_offset;
+    QList<unsigned int> vcl_initial_alt_cpb_removal_delay;
+    QList<unsigned int> vcl_initial_alt_cpb_removal_offset;
+
+    bool use_alt_cpb_params_flag;
+
+  private:
+    // These are used internally when parsing of the SEI must be prosponed until the SPS is received.
+    bool parse_internal(const sps_map &active_SPS_list);
+    bool parse_sps_id();
+    bool is_reparse_needed(const sps_map &active_SPS_list) { return !active_SPS_list.contains(bp_seq_parameter_set_id); }
     parserCommon::reader_helper reader;
   };
 
@@ -722,6 +764,13 @@ protected:
   // It is allowed that units (like SEI messages) sent before the parameter sets but still refer to the 
   // parameter sets. Here we keep a list of seis that need to be parsed after the parameter sets were recieved.
   QList<QSharedPointer<sei>> reparse_sei;
+
+  // For every frame, we save the file position where the NAL unit of the first slice starts and where the NAL of the last slice ends.
+  // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
+  QUint64Pair curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+  // The POC of the current frame. We save this we encounter a NAL from the next POC; then we add it.
+  int curFramePOC {-1};
+  bool curFrameIsRandomAccess {false};
 };
 
 #endif //PARSERANNEXBHEVC_H

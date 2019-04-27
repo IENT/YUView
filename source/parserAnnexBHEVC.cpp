@@ -358,12 +358,17 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     {
       auto sei = reparse_sei.front();
       reparse_sei.pop_front();
-      if (sei->payloadType == 1)
+      if (sei->payloadType == 0)
+      {
+        auto buffering_period = sei.dynamicCast<buffering_period_sei>();
+        buffering_period->reparse_buffering_period_sei(active_SPS_list);
+      }
+      else if (sei->payloadType == 1)
       {
         auto pic_timing = sei.dynamicCast<pic_timing_sei>();
         pic_timing->reparse_pic_timing_sei(active_VPS_list, active_SPS_list);
       }
-      if (sei->payloadType == 129)
+      else if (sei->payloadType == 129)
       {
         auto active_param_set_sei = sei.dynamicCast<active_parameter_sets_sei>();
         active_param_set_sei->reparse_active_parameter_sets_sei(active_VPS_list);
@@ -504,7 +509,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
 
     specificDescription = parsingSuccess ? QString(" POC %1").arg(POC) : " POC ERR";
     if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("Slice(POC-%1)").arg(POC) : "Slice(ERR)";
+      *nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(POC) : "Slice(ERR)";
   }
   else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
   {
@@ -532,7 +537,13 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
       parsingSuccess = true;
       sei_parsing_return_t result;
       QSharedPointer<sei> reparse;
-      if (new_sei->payloadType == 1)
+      if (new_sei->payloadType == 0)
+      {
+        auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
+        result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, active_SPS_list, message_tree);
+        reparse = new_buffering_period_sei;
+      }
+      else if (new_sei->payloadType == 1)
       {
         auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
         result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, active_VPS_list, active_SPS_list, message_tree);
@@ -635,7 +646,14 @@ bool parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(reader_helpe
       READFLAG(general_reserved_zero_bit);
   }
 
-  READBITS(general_level_idc, 8);
+  QString (*general_level_idc_meaning)(unsigned int) = [](unsigned int idc)
+  {
+    if (idc % 30 == 0)
+      return QString("Level %1").arg(idc / 30);
+    else
+      return QString("Level %1").arg(double(idc) / 30, -1, 'f', 1);
+  };
+  READBITS_M(general_level_idc, 8, general_level_idc_meaning);
 
   for(int i = 0; i < maxNumSubLayersMinus1; i++)
   {
@@ -699,7 +717,7 @@ bool parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(reader_helpe
   return true;
 }
 
-bool parserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(reader_helper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag)
+bool parserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(reader_helper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, bool SubPicHrdFlag, unsigned int bit_rate_scale, unsigned int cpb_size_scale, unsigned int cpb_size_du_scale)
 {
   Q_UNUSED(subLayerId);
   reader_sub_level s(reader, "sub_layer_hrd_parameters()");
@@ -709,14 +727,57 @@ bool parserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(
 
   for(int i = 0; i <= CpbCnt; i++)
   {
-    READUEV_A(bit_rate_value_minus1, i);
-    READUEV_A(cpb_size_value_minus1, i);
+    READUEV_A_M(bit_rate_value_minus1, i, "(together with bit_rate_scale) specifies the maximum input bit rate for the i-th CPB when the CPB operates at the access unit level.");
+    if (bit_rate_value_minus1[i] > 4294967294)
+      return reader.addErrorMessageChildItem("bit_rate_value_minus1[i] shall be in the range of 0 to 2 32 - 2, inclusive.");
+    if (i > 0 && bit_rate_value_minus1[i] <= bit_rate_value_minus1[i-1])
+      return reader.addErrorMessageChildItem("For any i > 0, bit_rate_value_minus1[i] shall be greater than bit_rate_value_minus1[i-1].");
+    if (!SubPicHrdFlag)
+    {
+      int value = (bit_rate_value_minus1[i] + 1) * (1 << (6 + bit_rate_scale));
+      BitRate.append(value);
+      LOGVAL(BitRate[i]);
+    }
+
+    READUEV_A_M(cpb_size_value_minus1, i, "Is used together with cpb_size_scale to specify the i-th CPB size when the CPB operates at the access unit level.");
+    if (cpb_size_value_minus1[i] > 4294967294)
+      return reader.addErrorMessageChildItem("bit_rate_value_minus1[i] shall be in the range of 0 to 2 32 - 2, inclusive.");
+    if (i > 0 && cpb_size_value_minus1[i] > cpb_size_value_minus1[i-1])
+      return reader.addErrorMessageChildItem("For any i greater than 0, cpb_size_value_minus1[i] shall be less than or equal to cpb_size_value_minus1[i-1].");
+    if (!SubPicHrdFlag)
+    {
+      int value = (cpb_size_value_minus1[i] + 1) * (1 << (4 + cpb_size_scale));
+      CpbSize.append(value);
+      LOGVAL(CpbSize[i]);
+    }
+
     if (sub_pic_hrd_params_present_flag)
     {
-      READUEV_A(cpb_size_du_value_minus1, i);
-      READUEV_A(bit_rate_du_value_minus1, i);
+      READUEV_A_M(cpb_size_du_value_minus1, i, "Is used together with cpb_size_du_scale to specify the i-th CPB size when the CPB operates at sub-picture level.");
+      if (cpb_size_du_value_minus1[i] > 4294967294)
+        return reader.addErrorMessageChildItem("cpb_size_du_value_minus1[ i ] shall be in the range of 0 to 2 32 - 2, inclusive.");
+      if (i > 0 && cpb_size_du_value_minus1[i] > cpb_size_du_value_minus1[i-1])
+        return reader.addErrorMessageChildItem("For any i greater than 0, cpb_size_du_value_minus1[i] shall be less than or equal to cpb_size_du_value_minus1[i-1].");
+      if (SubPicHrdFlag)
+      {
+        int value = (cpb_size_du_value_minus1[i] + 1) * (1 << (4 + cpb_size_du_scale));
+        CpbSize.append(value);
+        LOGVAL(CpbSize[i]);
+      }
+    
+      READUEV_A_M(bit_rate_du_value_minus1, i, "(together with bit_rate_scale) specifies the maximum input bit rate for the i-th CPB when the CPB operates at the sub-picture level.");
+      if (bit_rate_du_value_minus1[i] > 4294967294)
+        return reader.addErrorMessageChildItem("bit_rate_du_value_minus1[ i ] shall be in the range of 0 to 2 32 - 2, inclusive.");
+      if (i > 0 && bit_rate_du_value_minus1[i] <= bit_rate_du_value_minus1[i-1])
+        return reader.addErrorMessageChildItem("For any i > 0, bit_rate_du_value_minus1[i] shall be greater than bit_rate_du_value_minus1[i-1].");
+      if (SubPicHrdFlag)
+      {
+        int value = (bit_rate_du_value_minus1[i] + 1) * (1 << (6 + bit_rate_scale));
+        BitRate.append(value);
+        LOGVAL(BitRate[i]);
+      }
     }
-    READFLAG_A(cbr_flag, i);
+    READFLAG_A_M(cbr_flag, i, "False specifies that to decode this CVS by the HRD using the i-th CPB specification, the hypothetical stream scheduler (HSS) operates in an intermittent bit rate mode. True specifies that the HSS operates in a constant bit rate (CBR) mode.");
   }
   return true;
 }
@@ -734,54 +795,61 @@ bool parserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(reader_helper &reade
 
     if(nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
     {
-      READFLAG(sub_pic_hrd_params_present_flag);
+      READFLAG_M(sub_pic_hrd_params_present_flag, "Can the HRD operate at access unit or sub-picture level (true) or only at access unit level (false)");
       if (sub_pic_hrd_params_present_flag)
       {
-        READBITS(tick_divisor_minus2, 8);
-        READBITS(du_cpb_removal_delay_increment_length_minus1, 5);
+        READBITS_M(tick_divisor_minus2, 8, "Specifies the clock sub-tick. A clock sub-tick is the minimum interval of time that can be represented in the coded data when sub_pic_hrd_params_present_flag is equal to 1");
+        READBITS_M(du_cpb_removal_delay_increment_length_minus1, 5, "Specifies the length, in bits, of some coded symbols");
         READFLAG(sub_pic_cpb_params_in_pic_timing_sei_flag);
         READBITS(dpb_output_delay_du_length_minus1, 5);
       }
-      READBITS(bit_rate_scale, 4);
-      READBITS(cpb_size_scale, 4);
+      READBITS_M(bit_rate_scale, 4, "(together with bit_rate_value_minus1[i]) specifies the maximum input bit rate of the i-th CPB.");
+      READBITS_M(cpb_size_scale, 4, "(together with cpb_size_value_minus1[i]) specifies the CPB size of the i-th CPB when the CPB operates at the access unit level.");
       if(sub_pic_hrd_params_present_flag)
-        READBITS(cpb_size_du_scale, 4);
-      READBITS(initial_cpb_removal_delay_length_minus1, 5);
-      READBITS(au_cpb_removal_delay_length_minus1, 5);
-      READBITS(dpb_output_delay_length_minus1, 5);
+        READBITS_M(cpb_size_du_scale, 4, "(together with cpb_size_du_value_minus1[ i ]) specifies the CPB size of the i-th CPB when the CPB operates at sub-picture level.");
+      READBITS_M(initial_cpb_removal_delay_length_minus1, 5, "Specifies the length, in bits, of some coded symbols");
+      READBITS_M(au_cpb_removal_delay_length_minus1, 5, "Specifies the length, in bits, of some coded symbols");
+      READBITS_M(dpb_output_delay_length_minus1, 5, "Specifies the length, in bits, of some coded symbols");
     }
   }
+
+  SubPicHrdPreferredFlag = false;
+  SubPicHrdFlag = (SubPicHrdPreferredFlag && sub_pic_hrd_params_present_flag);
+  LOGVAL(SubPicHrdPreferredFlag);
+  LOGVAL(SubPicHrdFlag);
 
   if (maxNumSubLayersMinus1 >= 8)
     return reader.addErrorMessageChildItem("The value of maxNumSubLayersMinus1 must be in the range of 0 to 7");
 
   for(int i = 0; i <= maxNumSubLayersMinus1; i++)
   {
-    READFLAG(fixed_pic_rate_general_flag[i]);
+    READFLAG_M(fixed_pic_rate_general_flag[i], "Equal to 1 indicates that, when HighestTid is equal to i, the temporal distance between the HRD output times of consecutive pictures in output order is constrained as specified by the following syntax elements.");
     if (!fixed_pic_rate_general_flag[i])
-    {
-      READFLAG(fixed_pic_rate_within_cvs_flag[i]);
-    }
+      READFLAG_M(fixed_pic_rate_within_cvs_flag[i], "equal to 1 indicates that, when HighestTid is equal to i, the temporal distance between the HRD output times of consecutive pictures in output order is constrained as specified by the following syntax elements.");
     else
-    {
       fixed_pic_rate_within_cvs_flag[i] = 1;
-    }
     if (fixed_pic_rate_within_cvs_flag[i])
     {
-      READUEV(elemental_duration_in_tc_minus1[i]);
+      READUEV_M(elemental_duration_in_tc_minus1[i], "Specifies, when HighestTid is equal to i, the temporal distance, in clock ticks, between the elemental units that specify the HRD output times of consecutive pictures in output order");
+      if (elemental_duration_in_tc_minus1[i] > 2047)
+        return reader.addErrorMessageChildItem("The value of elemental_duration_in_tc_minus1[i] shall be in the range of 0 to 2047, inclusive.");
       low_delay_hrd_flag[i] = false;
     }
     else
-      READFLAG(low_delay_hrd_flag[i]);
+      READFLAG_M(low_delay_hrd_flag[i], "Specifies the HRD operational mode");
     cpb_cnt_minus1[i] = 0;
     if (!low_delay_hrd_flag[i])
-      READUEV(cpb_cnt_minus1[i]);
+    {
+      READUEV_M(cpb_cnt_minus1[i], "Specifies the number of alternative CPB specifications in the bitstream of the CVS when HighestTid is equal to i.");
+      if (cpb_cnt_minus1[i] > 31)
+        return reader.addErrorMessageChildItem("The value of cpb_cnt_minus1[i] shall be in the range of 0 to 31, inclusive.");
+    }
 
     if(nal_hrd_parameters_present_flag)
-      if (!nal_sub_hrd[i].parse_sub_layer_hrd_parameters(reader, i, cpb_cnt_minus1[i], sub_pic_hrd_params_present_flag))
+      if (!nal_sub_hrd[i].parse_sub_layer_hrd_parameters(reader, i, cpb_cnt_minus1[i], sub_pic_hrd_params_present_flag, SubPicHrdFlag, bit_rate_scale, cpb_size_scale, cpb_size_du_scale))
         return false;
     if(vcl_hrd_parameters_present_flag)
-      if (!vcl_sub_hrd[i].parse_sub_layer_hrd_parameters(reader, i, cpb_cnt_minus1[i], sub_pic_hrd_params_present_flag))
+      if (!vcl_sub_hrd[i].parse_sub_layer_hrd_parameters(reader, i, cpb_cnt_minus1[i], sub_pic_hrd_params_present_flag, SubPicHrdFlag, bit_rate_scale, cpb_size_scale, cpb_size_du_scale))
         return false;
   }
   
@@ -1201,7 +1269,7 @@ bool parserAnnexBHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeIt
   // This could be added and is definitely interesting.
   // ... later
 
-  return false;
+  return true;
 }
 
 bool parserAnnexBHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
@@ -1567,7 +1635,8 @@ bool parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
     for (unsigned int i=0; i < actPPS->num_extra_slice_header_bits; i++)
       READFLAG_A(slice_reserved_flag, i);
 
-    READUEV(slice_type); // Max 3 bits read. 0-B 1-P 2-I
+    QStringList slice_type_meaning = QStringList() << "B-Slice" << "P-Slice" << "I-Slice";
+    READUEV_M(slice_type, slice_type_meaning); // Max 3 bits read. 0-B 1-P 2-I
     if (actPPS->output_flag_present_flag) 
       READFLAG(pic_output_flag);
 
@@ -1740,9 +1809,10 @@ bool parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
   int MaxPicOrderCntLsb = 1 << (actSPS->log2_max_pic_order_cnt_lsb_minus4 + 4);
   LOGVAL(MaxPicOrderCntLsb);
 
-  // The variable NoRaslOutputFlag is specified as follows:
+  // If the current picture is an IDR picture, a BLA picture, the first picture in the bitstream in decoding order, or the first
+  // picture that follows an end of sequence NAL unit in decoding order, the variable NoRaslOutputFlag is set equal to 1.
   NoRaslOutputFlag = false;
-  if (nal_type == IDR_W_RADL || nal_type == BLA_W_LP)
+  if (nal_type == IDR_W_RADL || nal_type == IDR_N_LP || nal_type == BLA_W_LP)
     NoRaslOutputFlag = true;
   else if (bFirstAUInDecodingOrder) 
   {
@@ -2103,15 +2173,15 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::sei::parser_sei_bytes(QByte
   return SEI_PARSING_OK;
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
+parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sei_data, TreeItem *root)
 {
-  user_data_UUID = sliceHeaderData.mid(0, 16).toHex();
-  user_data_message = sliceHeaderData.mid(16);
+  user_data_UUID = sei_data.mid(0, 16).toHex();
+  user_data_message = sei_data.mid(16);
 
   if (!root)
     return SEI_PARSING_OK;
 
-  if (sliceHeaderData.mid(16, 4) == "x265")
+  if (sei_data.mid(16, 4) == "x265")
   {
     // This seems to be x264 user data. These contain the encoder settings which might be useful
     // Create a new TreeItem root for the item
@@ -2206,6 +2276,93 @@ bool parserAnnexBHEVC::active_parameter_sets_sei::parse_internal(const vps_map &
   return true;
 }
 
+parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
+{
+  reader.init(data, root, "buffering period");
+  if (!parse_sps_id())
+    return SEI_PARSING_ERROR;
+  if (is_reparse_needed(active_SPS_list))
+    return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
+  if (!parse_internal(active_SPS_list))
+    return SEI_PARSING_ERROR;
+  return SEI_PARSING_OK;
+}
+
+bool parserAnnexBHEVC::buffering_period_sei::parse_sps_id()
+{
+  READUEV(bp_seq_parameter_set_id);
+  if (bp_seq_parameter_set_id > 15)
+    return reader.addErrorMessageChildItem("The value of bp_seq_parameter_set_id shall be in the range of 0 to 15, inclusive.");
+  return true;
+}
+
+bool parserAnnexBHEVC::buffering_period_sei::parse_internal(const sps_map &active_SPS_list)
+{
+  if (is_reparse_needed(active_SPS_list))
+    return false;
+
+  if (!active_SPS_list.contains(bp_seq_parameter_set_id))
+    return reader.addErrorMessageChildItem("The signaled SPS was not found in the bitstream.");
+  QSharedPointer<sps> actSPS = active_SPS_list.value(bp_seq_parameter_set_id);
+
+  // Get the hrd parameters. TODO: It this really always correct?
+  hrd_parameters hrd;
+  if (actSPS->vui_parameters_present_flag && actSPS->sps_vui_parameters.vui_hrd_parameters_present_flag)
+    hrd = actSPS->sps_vui_parameters.vui_hrd_parameters;
+  else
+    return reader.addErrorMessageChildItem("Could not found the needed HRD parameters.");
+
+  if (!hrd.sub_pic_hrd_params_present_flag)
+    READFLAG(irap_cpb_params_present_flag);
+  if (irap_cpb_params_present_flag)
+  {
+    int nrBits = hrd.au_cpb_removal_delay_length_minus1 + 1;
+    READBITS(cpb_delay_offset, nrBits);
+    nrBits = hrd.dpb_output_delay_length_minus1 + 1;
+    READBITS(dpb_delay_offset, nrBits);
+  }
+  READFLAG(concatenation_flag);
+  int nrBits = hrd.au_cpb_removal_delay_length_minus1 + 1;
+  READBITS(au_cpb_removal_delay_delta_minus1, nrBits);
+
+  bool NalHrdBpPresentFlag = hrd.nal_hrd_parameters_present_flag;
+  // TODO: Really not sure if this is correct
+  int CpbCnt = hrd.cpb_cnt_minus1[0] + 1;
+  if (NalHrdBpPresentFlag)
+  {
+    for (int i=0; i<CpbCnt; i++)
+    {
+      const int nrBits = hrd.initial_cpb_removal_delay_length_minus1 + 1;
+      READBITS_A(nal_initial_cpb_removal_delay, nrBits, i);
+      READBITS_A(nal_initial_cpb_removal_offset, nrBits, i);
+      if (hrd.sub_pic_hrd_params_present_flag || irap_cpb_params_present_flag)
+      {
+        READBITS_A(nal_initial_alt_cpb_removal_delay, nrBits, i);
+        READBITS_A(nal_initial_alt_cpb_removal_offset, nrBits, i);
+      }
+    }
+  }
+  bool VclHrdBpPresentFlag = hrd.vcl_hrd_parameters_present_flag;
+  if (VclHrdBpPresentFlag)
+  {
+    for (int i=0; i<CpbCnt; i++)
+    {
+      const int nrBits = hrd.initial_cpb_removal_delay_length_minus1 + 1;
+      READBITS_A(vcl_initial_cpb_removal_delay, nrBits, i);
+      READBITS_A(vcl_initial_cpb_removal_offset, nrBits, i);
+      if (hrd.sub_pic_hrd_params_present_flag || irap_cpb_params_present_flag)
+      {
+        READBITS_A(vcl_initial_alt_cpb_removal_delay, nrBits, i);
+        READBITS_A(vcl_initial_alt_cpb_removal_offset, nrBits, i);
+      }
+    }
+  }
+  if (reader.payload_extension_present())
+    READFLAG(use_alt_cpb_params_flag);
+
+  return true;
+}
+
 parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &active_VPS_list, const sps_map &active_SPS_list, TreeItem *root)
 {
   rootItem = root;
@@ -2260,7 +2417,7 @@ bool parserAnnexBHEVC::pic_timing_sei::parse_internal(const vps_map &active_VPS_
     READFLAG(duplicate_flag);
   }
 
-  // Get the hrd parameters. It this really always correct?
+  // Get the hrd parameters. TODO: It this really always correct?
   hrd_parameters hrd;
   if (actSPS->vui_parameters_present_flag && actSPS->sps_vui_parameters.vui_hrd_parameters_present_flag)
     hrd = actSPS->sps_vui_parameters.vui_hrd_parameters;

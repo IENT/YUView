@@ -153,7 +153,9 @@
   <tabstop>rgbOrderComboBox</tabstop>
   <tabstop>bitDepthSpinBox</tabstop>
   <tabstop>planarCheckBox</tabstop>
-  <tabstop>alphaChannelCheckBox</tabstop>
+  <tabstop>alphaChannelGroupBox</tabstop>
+  <tabstop>afterRGBRadioButton</tabstop>
+  <tabstop>beforeRGBRadioButton</tabstop>
  </tabstops>
  <resources/>
  <connections>
