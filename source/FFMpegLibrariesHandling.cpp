@@ -1361,6 +1361,13 @@ int FFmpegVersionHandler::seek_frame(AVFormatContextWrapper & fmt, int stream_id
   return ret;
 }
 
+int FFmpegVersionHandler::seek_beginning(AVFormatContextWrapper & fmt)
+{
+  // This is "borrowed" from the ffmpeg sources (https://ffmpeg.org/doxygen/4.0/ffmpeg_8c_source.html seek_to_start)
+  int ret = lib.av_seek_frame(fmt.get_format_ctx(), -1, fmt.get_start_time(), 0);
+  return ret;
+}
+
 bool FFmpegVersionHandler::checkLibraryVersions()
 {
   // Get the version number of the opened libraries and check them against the

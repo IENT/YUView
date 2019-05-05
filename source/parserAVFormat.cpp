@@ -521,7 +521,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
   // Open the file but don't parse it yet.
   QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile());
-  if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
+ if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
   {
     emit backgroundParsingDone("Error opening the ffmpeg file.");
     return false;
@@ -546,7 +546,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   videoStreamIndex = ffmpegFile->getVideoStreamIndex();
 
   // Seek to the beginning of the stream.
-  ffmpegFile->seekToDTS(0);
+  ffmpegFile->seekFileToBeginning();
 
   // First get the extradata and push it to the parser
   QByteArray extradata = ffmpegFile->getExtradata();
@@ -592,7 +592,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   }
 
   // Seek back to the beginning of the stream.
-  ffmpegFile->seekToDTS(0);
+  ffmpegFile->seekFileToBeginning();
 
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   emit streamInfoUpdated();
