@@ -267,7 +267,7 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
   return true;
 }
 
-bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
+bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
 {
   if (!packetModel->isNull())
   {
@@ -564,21 +564,24 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   AVPacketWrapper packet = ffmpegFile->getNextPacket(false, false);
   int64_t start_ts = packet.get_dts();
 
-  int packetID = 0;
-  while (!ffmpegFile->atEnd())
+  unsigned int packetID = 0;
+  unsigned int videoFrameCounter = 0;
+  bool abortParsing = false;
+  while (!ffmpegFile->atEnd() && !abortParsing)
   {
-    if (cancelBackgroundParser)
-      return false;
     if (packet.is_video_packet)
+    {
       progressPercentValue = clip((int)((packet.get_dts() - start_ts) * 100 / max_ts), 0, 100);
+      videoFrameCounter++;
+    }
 
     if (!parseAVPacket(packetID, packet))
     {
-      DEBUG_AVFORMAT("parseAVPacket error parsing Packet %d", packetID);
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket error parsing Packet %d", packetID);
     }
     else
     {
-      DEBUG_AVFORMAT("parseAVPacket Packet %d", packetID);
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Packet %d", packetID);
     }
 
     packetID++;
@@ -589,6 +592,17 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     
     if (!packetModel->isNull())
       emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
+
+    if (cancelBackgroundParser)
+    {
+      abortParsing = true;
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Abort parsing by user request");
+    }
+    if (parsingLimitEnabled && videoFrameCounter > PARSER_FILE_FRAME_NR_LIMIT)
+    {
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Abort parsing because frame limit was reached.");
+      abortParsing = true;
+    }
   }
 
   // Seek back to the beginning of the stream.
@@ -598,5 +612,5 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 
-  return true;
+  return !cancelBackgroundParser;
 }

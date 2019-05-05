@@ -58,8 +58,10 @@ private slots:
   void updateParserItemModel(unsigned int nalModelUpdated);
   void updateStreamInfo();
   void backgroundParsingDone(QString error);
-  void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
+
   void showVideoStreamOnlyCheckBoxToggled(bool state);
+  void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
+  void parseEntireBitstreamCheckBoxToggled(bool state) { Q_UNUSED(state); restartParsingOfCurrentItem(); }
 
 protected:
   void hideEvent(QHideEvent *event) override;
@@ -75,7 +77,7 @@ private:
   // Tell the parser to stop and block until it stops. Then delete the parser.
   void stopAndDeleteParser();
 
-  void startParsingOfCurrentItem();
+  void restartParsingOfCurrentItem();
 
   QScopedPointer<parserBase> parser;
   QFuture<void> backgroundParserFuture;

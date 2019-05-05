@@ -56,6 +56,7 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
 
   connect(ui.showVideoStreamOnlyCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::showVideoStreamOnlyCheckBoxToggled);
   connect(ui.colorCodeStreamsCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::colorCodeStreamsCheckBoxToggled);
+  connect(ui.parseEntireFileCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::parseEntireBitstreamCheckBoxToggled);
 
   currentSelectedItemsChanged(nullptr, nullptr, false);
 }
@@ -110,14 +111,14 @@ void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)
 
 void BitstreamAnalysisWidget::stopAndDeleteParser()
 {
-  // If the background thread is still working, abort it.
   if (backgroundParserFuture.isRunning())
   {
-    // signal to background thread that we want to cancel the processing
+    DEBUG_ANALYSIS("BitstreamAnalysisWidget::stopAndDeleteParser stopping parser");
     parser->setAbortParsing();
     backgroundParserFuture.waitForFinished();
   }
   parser.reset();
+  DEBUG_ANALYSIS("BitstreamAnalysisWidget::stopAndDeleteParser parser stopped and deleted");
 }
 
 void BitstreamAnalysisWidget::backgroundParsingFunction()
@@ -138,14 +139,19 @@ void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, p
   ui.tabStreamInfo->setEnabled(isBitstream);
   ui.tabPacketAnalysis->setEnabled(isBitstream);
 
-  if (isVisible())
-    startParsingOfCurrentItem();
+  restartParsingOfCurrentItem();
 }
 
-void BitstreamAnalysisWidget::startParsingOfCurrentItem()
+void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
 {
+  if (!isVisible())
+  {
+    DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem not visible - abort");
+    return;
+  }
   if (currentCompressedVideo.isNull())
   {
+    DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem no compressed video - abort");
     updateParsingStatusText(-1);
     return;
   }
@@ -161,6 +167,7 @@ void BitstreamAnalysisWidget::startParsingOfCurrentItem()
   else if (inputFormatType == inputLibavformat)
     parser.reset(new parserAVFormat(this));
   parser->enableModel();
+  parser->setParsingLimitEnabled(!ui.parseEntireFileCheckBox->isChecked());
 
   connect(parser.data(), &parserBase::nalModelUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
   connect(parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
@@ -178,6 +185,7 @@ void BitstreamAnalysisWidget::startParsingOfCurrentItem()
   // Start the background parsing thread
   updateParsingStatusText(0);
   backgroundParserFuture = QtConcurrent::run(this, &BitstreamAnalysisWidget::backgroundParsingFunction);
+  DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem new parser created and started");
 }
 
 void BitstreamAnalysisWidget::hideEvent(QHideEvent *event)
@@ -190,6 +198,6 @@ void BitstreamAnalysisWidget::hideEvent(QHideEvent *event)
 void BitstreamAnalysisWidget::showEvent(QShowEvent *event)
 {
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::showEvent");
-  startParsingOfCurrentItem();
+  restartParsingOfCurrentItem();
   QWidget::showEvent(event);
 }

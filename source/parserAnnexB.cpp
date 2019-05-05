@@ -132,11 +132,10 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   QByteArray nalData;
   int nalID = 0;
   QUint64Pair nalStartEndPosFile;
-  while (!file->atEnd())
+  bool abortParsing = false;
+  while (!file->atEnd() && !abortParsing)
   {
     // Update the progress dialog
-    if (cancelBackgroundParser)
-      return false;
     int64_t pos = file->pos();
     progressPercentValue = clip((int)(pos * 100 / stream_info.file_size), 0, 100);
 
@@ -145,7 +144,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
       nalData = file->getNextNALUnit(false, &nalStartEndPosFile);
       if (!parseAndAddNALUnit(nalID, nalData, nullptr, nalStartEndPosFile))
       {
-        DEBUG_ANNEXB("parseAndAddNALUnit Error parsing NAL %d", nalID);
+        DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Error parsing NAL %d", nalID);
       }
     }
     catch (const std::exception &exc)
@@ -153,11 +152,11 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
       Q_UNUSED(exc);
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_ANNEXB("parseAndAddNALUnit Exception thrown parsing NAL %d - %s", nalID, exc.what());
+      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Exception thrown parsing NAL %d - %s", nalID, exc.what());
     }
     catch (...)
     {
-      DEBUG_ANNEXB("parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
+      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
     }
 
     nalID++;
@@ -178,11 +177,22 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
 
     if (!packetModel->isNull())
       emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
+
+    if (cancelBackgroundParser)
+    {
+      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Abort parsing by user request.");
+      abortParsing = true;
+    }
+    if (parsingLimitEnabled && frameList.size() > PARSER_FILE_FRAME_NR_LIMIT)
+    {
+      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Abort parsing because frame limit was reached.");
+      abortParsing = true;
+    }
   }
 
   // We are done.
   parseAndAddNALUnit(-1, QByteArray());
-  DEBUG_ANNEXB("parseAndAddNALUnit Parsing done. Found %d POCs.", POCList.length());
+  DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Parsing done. Found %d POCs.", POCList.length());
 
   stream_info.parsing = false;
   stream_info.nr_nal_units = nalID;
@@ -190,7 +200,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 
-  return true;
+  return !cancelBackgroundParser;
 }
 
 bool parserAnnexB::runParsingOfFile(QString compressedFilePath)

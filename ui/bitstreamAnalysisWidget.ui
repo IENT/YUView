@@ -80,7 +80,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="ParseEntireFileCheckBox">
+          <widget class="QCheckBox" name="parseEntireFileCheckBox">
            <property name="toolTip">
             <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
            </property>
