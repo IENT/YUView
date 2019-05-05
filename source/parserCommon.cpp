@@ -1077,7 +1077,7 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
   if (childItem != nullptr)
   {
     DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d filter %d", childItem->getStreamIndex(), filterStreamIndex);
-    return childItem->getStreamIndex() == streamIndex;
+    return childItem->getStreamIndex() == streamIndex || childItem->getStreamIndex() == -1;
   }
 
   DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> reject");
