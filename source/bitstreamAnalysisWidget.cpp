@@ -106,7 +106,10 @@ void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)
   else if (progressValue < 100)
     ui.parsingStatusText->setText(QString("Parsing file (%1%)").arg(progressValue));
   else
-    ui.parsingStatusText->setText("Parsing done.");
+  {
+    const bool parsingLimitSet = !ui.parseEntireFileCheckBox->isChecked();
+    ui.parsingStatusText->setText(parsingLimitSet ? "Partial parsing done. Enable full parsing if needed." : "Parsing done.");
+  }
 }
 
 void BitstreamAnalysisWidget::stopAndDeleteParser()
@@ -167,7 +170,8 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   else if (inputFormatType == inputLibavformat)
     parser.reset(new parserAVFormat(this));
   parser->enableModel();
-  parser->setParsingLimitEnabled(!ui.parseEntireFileCheckBox->isChecked());
+  const bool parsingLimitSet = !ui.parseEntireFileCheckBox->isChecked();
+  parser->setParsingLimitEnabled(parsingLimitSet);
 
   connect(parser.data(), &parserBase::nalModelUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
   connect(parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
