@@ -567,6 +567,8 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   unsigned int packetID = 0;
   unsigned int videoFrameCounter = 0;
   bool abortParsing = false;
+  QElapsedTimer signalEmitTimer;
+  signalEmitTimer.start();
   while (!ffmpegFile->atEnd() && !abortParsing)
   {
     if (packet.is_video_packet)
@@ -590,8 +592,11 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     // For signal slot debugging purposes, sleep
     // QThread::msleep(200);
     
-    if (!packetModel->isNull())
+    if (signalEmitTimer.elapsed() > 1000 && packetModel)
+    {
+      signalEmitTimer.start();
       emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
+    }
 
     if (cancelBackgroundParser)
     {
@@ -607,6 +612,9 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
   // Seek back to the beginning of the stream.
   ffmpegFile->seekFileToBeginning();
+
+  if (packetModel)
+    emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
 
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   emit streamInfoUpdated();

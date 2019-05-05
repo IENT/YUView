@@ -133,6 +133,8 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   int nalID = 0;
   QUint64Pair nalStartEndPosFile;
   bool abortParsing = false;
+  QElapsedTimer signalEmitTimer;
+  signalEmitTimer.start();
   while (!file->atEnd() && !abortParsing)
   {
     // Update the progress dialog
@@ -175,8 +177,11 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
       }
     }
 
-    if (!packetModel->isNull())
+    if (signalEmitTimer.elapsed() > 1000 && packetModel)
+    {
+      signalEmitTimer.start();
       emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
+    }
 
     if (cancelBackgroundParser)
     {
@@ -193,6 +198,9 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   // We are done.
   parseAndAddNALUnit(-1, QByteArray());
   DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Parsing done. Found %d POCs.", POCList.length());
+
+  if (packetModel)
+    emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
 
   stream_info.parsing = false;
   stream_info.nr_nal_units = nalID;
