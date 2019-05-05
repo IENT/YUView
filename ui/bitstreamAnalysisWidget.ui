@@ -52,6 +52,12 @@
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
           <widget class="QCheckBox" name="showVideoStreamOnlyCheckBox">
+           <property name="toolTip">
+            <string>Hide all packets that don't belong to the video stream</string>
+           </property>
+           <property name="whatsThis">
+            <string>Hide all packets that don't belong to the video stream</string>
+           </property>
            <property name="text">
             <string>Show only video stream</string>
            </property>
@@ -59,11 +65,33 @@
          </item>
          <item>
           <widget class="QCheckBox" name="colorCodeStreamsCheckBox">
+           <property name="toolTip">
+            <string>Color code the packets by their stream index</string>
+           </property>
+           <property name="whatsThis">
+            <string>Color code the packets by their stream index</string>
+           </property>
            <property name="text">
             <string>Color Code Streams</string>
            </property>
            <property name="checked">
             <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="ParseEntireFileCheckBox">
+           <property name="toolTip">
+            <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
+           </property>
+           <property name="statusTip">
+            <string/>
+           </property>
+           <property name="whatsThis">
+            <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
+           </property>
+           <property name="text">
+            <string>Parse Entire Bitstream</string>
            </property>
           </widget>
          </item>

@@ -51,7 +51,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="splitViewWidget" name="displaySplitView">
        <attribute name="title">
@@ -244,7 +244,7 @@
        <x>0</x>
        <y>0</y>
        <width>268</width>
-       <height>117</height>
+       <height>135</height>
       </rect>
      </property>
     </widget>
