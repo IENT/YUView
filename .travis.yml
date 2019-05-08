@@ -21,6 +21,9 @@ before_install:
   # On linux also get a newer g++. The old one won't work.
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
+  # On linux, also get the linuxdeployqt tool to build the Appimage
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then wget https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then chmod a+x linuxdeployqt-6-x86_64.AppImage; fi
   
 install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install qt5; fi
@@ -34,12 +37,13 @@ script:
   # Run qmake and make
   - qmake -config release
   - make
+  # Just for debugging
   - ls -alh
   - ls -alh build
   - ls -alh build/release
 
 after_success:
-  # mac specific deployment
+  # Mac: build an "app" file
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then /usr/local/opt/qt5/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2; fi
   # check what YUView is linking against
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then otool -L build/release/YUView.app/Contents/MacOs/YUView; fi
@@ -50,6 +54,9 @@ after_success:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then zip -r ../../YUView-MacOs.zip YUView.app; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd ../..; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" AND ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh; fi
+  # Linux: Build the Appimage
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then make INSTALL_ROOT=appdir install; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then ./linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage; fi
 
 before_deploy:
   # not needed?
