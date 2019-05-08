@@ -531,6 +531,7 @@ public:
   unsigned int get_nb_streams() { update(); return nb_streams; }
   AVStreamWrapper get_stream(int idx) { update(); return streams[idx]; }
   AVInputFormatWrapper get_input_format() { update(); return iformat; }
+  int64_t get_start_time() { update(); return start_time; }
   int64_t get_duration() { update(); return duration; }
   AVFormatContext *get_format_ctx() { return ctx; }
   AVDictionaryWrapper get_metadata() { update(); return metadata; }
@@ -838,6 +839,7 @@ public:
 
   // Seek to a specific frame
   int seek_frame(AVFormatContextWrapper &fmt, int stream_idx, int dts);
+  int seek_beginning(AVFormatContextWrapper & fmt);
 
   // All the function pointers of the ffmpeg library
   FFmpegLibraryFunctions lib;

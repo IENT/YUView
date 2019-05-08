@@ -64,7 +64,7 @@ private:
 
   bool parseExtradata(QByteArray &extradata);
   bool parseMetadata(QStringPairList &metadata);
-  bool parseAVPacket(int packetID, AVPacketWrapper &packet);
+  bool parseAVPacket(unsigned int packetID, AVPacketWrapper &packet);
 
   struct hvcC_nalUnit
   {

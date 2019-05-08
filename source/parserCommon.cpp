@@ -1023,7 +1023,7 @@ void PacketItemModel::setNewNumberModelItems(unsigned int n)
   Q_ASSERT_X(n >= nrShowChildItems, "PacketItemModel::setNewNumberModelItems", "Setting a smaller number of items.");
   unsigned int nrAddItems = n - nrShowChildItems;
   int lastIndex = nrShowChildItems;
-  beginInsertRows(QModelIndex(), lastIndex, lastIndex+nrAddItems);
+  beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
   nrShowChildItems = n;
   endInsertRows();
 }
@@ -1077,7 +1077,7 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
   if (childItem != nullptr)
   {
     DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d filter %d", childItem->getStreamIndex(), filterStreamIndex);
-    return childItem->getStreamIndex() == streamIndex;
+    return childItem->getStreamIndex() == streamIndex || childItem->getStreamIndex() == -1;
   }
 
   DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> reject");

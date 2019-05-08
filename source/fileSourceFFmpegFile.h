@@ -85,6 +85,7 @@ public:
   bool isFileChanged() { bool b = fileChanged; fileChanged = false; return b; }
 
   bool seekToDTS(int64_t dts);
+  bool seekFileToBeginning();
   int64_t getMaxTS();
 
   // Get information on the video stream

@@ -102,16 +102,18 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, QUint64Pa
   {
     nextStartCodePos = fileBuffer.indexOf(startCode, posInBuffer + 3);
 
-    if (nextStartCodePos == -1)
+    if (nextStartCodePos == -1 || nextStartCodePos > fileBufferSize)
     {
       // No start code found ... append all data in the current buffer.
-      lastReturnArray += fileBuffer.mid(posInBuffer);
+      lastReturnArray += fileBuffer.mid(posInBuffer, fileBufferSize - posInBuffer);
       DEBUG_ANNEXBFILE("fileSourceHEVCAnnexBFile::getNextNALUnit no start code found - ret size %d", retArray.size());
 
       if (fileBufferSize < BUFFER_SIZE)
       {
         // We are out of file and could not find a next position
         posInBuffer = BUFFER_SIZE;
+        if (startEndPosInFile)
+          startEndPosInFile->second = bufferStartPosInFile + fileBufferSize - 1;
         return lastReturnArray;
       }
 
