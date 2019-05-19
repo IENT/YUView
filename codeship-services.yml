@@ -21,3 +21,15 @@ yuview-ubuntu-18.04:
     dockerfile: codeshipDockerfileUbuntu
   volumes:
     - ./:/YUView
+
+yuview-arch:
+  cached: true
+  default_cache_branch: "development"
+  build:
+    args:
+      LINUX_DOCKER_TAG: "arch/base:latest"
+      LINUX_SHORT_NAME: "arch"
+    context: deployment
+    dockerfile: codeshipDockerfileArch
+  volumes:
+    - ./:/YUView
