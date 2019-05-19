@@ -1,4 +1,4 @@
-YUView-ubuntu-16.04:
+yuview-ubuntu-16.04:
   cached: true
   default_cache_branch: "development"
   build:
@@ -10,7 +10,7 @@ YUView-ubuntu-16.04:
   volumes:
     - ./:/YUView
 
-YUView-ubuntu-18.04:
+yuview-ubuntu-18.04:
   cached: true
   default_cache_branch: "development"
   build:
