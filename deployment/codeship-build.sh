@@ -22,5 +22,5 @@ popd
 
 mkdir -p ${BUILD_FOLDER}
 cd ${BUILD_FOLDER}
-qmake
+qmake ${SOURCE_FOLDER}
 make -j$(nproc)
