@@ -6,5 +6,5 @@ ENV LINUX_SHORT_NAME ${LINUX_SHORT_NAME}
 ARG YUVIEW_DAILY_TAG=0
 ENV YUVIEW_DAILY_TAG ${YUVIEW_DAILY_TAG}
 
-ADD buildContainer.sh /codeshipBuildContainerUbuntu.sh
+ADD codeshipBuildContainerUbuntu.sh /codeshipBuildContainerUbuntu.sh
 RUN /codeshipBuildContainerUbuntu.sh
