@@ -25,6 +25,6 @@ echo "Makedir ${BUILD_FOLDER}"
 mkdir -p ${BUILD_FOLDER}
 echo "cd ${BUILD_FOLDER}"
 cd ${BUILD_FOLDER}
-echo "qmake ${BUILD_FOLDER}"
-qmake ${SOURCE_FOLDER}
+echo "qmake ${SOURCE_FOLDER}/YUView.pro"
+qmake ${SOURCE_FOLDER}/YUView.pro
 make -j$(nproc)
