@@ -21,7 +21,10 @@ echo "  LINUX_SHORT_NAME        ${LINUX_SHORT_NAME}"
 
 popd
 
+echo "Makedir ${BUILD_FOLDER}"
 mkdir -p ${BUILD_FOLDER}
+echo "cd ${BUILD_FOLDER}"
 cd ${BUILD_FOLDER}
+echo "qmake ${BUILD_FOLDER}"
 qmake ${SOURCE_FOLDER}
 make -j$(nproc)
