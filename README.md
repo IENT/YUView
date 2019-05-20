@@ -6,7 +6,7 @@ YUView is a QT based, cross-platform YUV player with an advanced analytic toolse
 
 Master branch | Development branch
 ------------ | -------------
-[![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=master)](https://travis-ci.org/IENT/YUView) [![Appveyor build status](https://ci.appveyor.com/api/projects/status/s87bwbu95cat9di0?branch=master&svg=true)](https://ci.appveyor.com/project/aachenmax/yuview/branch/master) | [![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=development)](https://travis-ci.org/IENT/YUView) [![Build Status](https://ci.appveyor.com/api/projects/status/s87bwbu95cat9di0?branch=development&svg=true)](https://ci.appveyor.com/project/aachenmax/yuview/branch/development)
+[![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=master)](https://travis-ci.org/IENT/YUView) [![Appveyor build status](https://ci.appveyor.com/api/projects/status/s87bwbu95cat9di0?branch=master&svg=true)](https://ci.appveyor.com/project/aachenmax/yuview/branch/master) [![Codeship Status](https://app.codeship.com/projects/0527b270-5bb7-0137-0dd0-2e547607d91e/status?branch=master)](https://app.codeship.com/projects/342701) | [![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=development)](https://travis-ci.org/IENT/YUView) [![Build Status](https://ci.appveyor.com/api/projects/status/s87bwbu95cat9di0?branch=development&svg=true)](https://ci.appveyor.com/project/aachenmax/yuview/branch/development) [![Codeship Status](https://app.codeship.com/projects/0527b270-5bb7-0137-0dd0-2e547607d91e/status?branch=development)](https://app.codeship.com/projects/342701)
 
 ## Description
 
