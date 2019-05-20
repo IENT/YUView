@@ -1,0 +1,10 @@
+ARG LINUX_DOCKER_TAG=ubuntu:16.04
+FROM ${LINUX_DOCKER_TAG}
+
+ARG LINUX_SHORT_NAME=ubuntu16.04
+ENV LINUX_SHORT_NAME ${LINUX_SHORT_NAME}
+ARG YUVIEW_DAILY_TAG=0
+ENV YUVIEW_DAILY_TAG ${YUVIEW_DAILY_TAG}
+
+ADD codeshipBuildContainerUbuntu.sh /codeshipBuildContainerUbuntu.sh
+RUN /codeshipBuildContainerUbuntu.sh

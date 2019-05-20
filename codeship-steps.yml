@@ -1,0 +1,31 @@
+- name: "YUView"
+  type: "parallel"
+  steps:
+
+  - name: "YUView Ubuntu 16.04"
+    type: "serial"
+    steps:
+    - name: "Build YUView"
+      service: yuview-ubuntu-16.04
+      command: /YUView/deployment/codeship-build.sh
+
+  - name: "YUView Ubuntu 18.04"
+    type: "serial"
+    steps:
+    - name: "Build YUView"
+      service: yuview-ubuntu-18.04
+      command: /YUView/deployment/codeship-build.sh
+
+#  - name: "YUView Ubuntu 19.04"
+#    type: "serial"
+#    steps:
+#    - name: "Build YUView"
+#      service: yuview-ubuntu-19.04
+#      command: /YUView/deployment/codeship-build.sh
+
+#  - name: "YUView Arch"
+#    type: "serial"
+#    steps:
+#    - name: "Build YUView"
+#      service: yuview-arch
+#      command: /YUView/deployment/codeship-build.sh
