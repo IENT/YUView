@@ -22,17 +22,17 @@ yuview-ubuntu-18.04:
   volumes:
     - ./:/YUView
 
-yuview-ubuntu-19.04:
-  cached: true
-  default_cache_branch: "development"
-  build:
-    args:
-      LINUX_DOCKER_TAG: "ubuntu:19.04"
-      LINUX_SHORT_NAME: "ubuntu19.04"
-    context: deployment
-    dockerfile: codeshipDockerfileUbuntu
-  volumes:
-    - ./:/YUView
+#yuview-ubuntu-19.04:
+#  cached: true
+#  default_cache_branch: "development"
+#  build:
+#    args:
+#      LINUX_DOCKER_TAG: "ubuntu:19.04"
+#      LINUX_SHORT_NAME: "ubuntu19.04"
+#    context: deployment
+#    dockerfile: codeshipDockerfileUbuntu
+#  volumes:
+#    - ./:/YUView
 
 #yuview-arch:
 #  cached: true
