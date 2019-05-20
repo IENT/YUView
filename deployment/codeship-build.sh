@@ -12,6 +12,7 @@ pushd ${SOURCE_FOLDER}
 : "${CI_TAG:=$(git rev-parse --short HEAD)}"
 
 echo "Common variables:"
+echo "  SOURCE_FOLDER:          ${SOURCE_FOLDER}"
 echo "  BUILD_FOLDER:           ${BUILD_FOLDER}"
 echo "  CI_BRANCH:              ${CI_BRANCH}"
 echo "  CI_COMMIT_DESCRIPTION:  ${CI_COMMIT_DESCRIPTION}"
