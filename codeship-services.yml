@@ -27,7 +27,7 @@ yuview-arch:
   default_cache_branch: "development"
   build:
     args:
-      LINUX_DOCKER_TAG: "arch/base:latest"
+      LINUX_DOCKER_TAG: "archlinux/base"
       LINUX_SHORT_NAME: "arch"
     context: deployment
     dockerfile: codeshipDockerfileArch

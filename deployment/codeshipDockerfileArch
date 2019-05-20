@@ -1,4 +1,4 @@
-ARG LINUX_DOCKER_TAG=arch/base:latest
+ARG LINUX_DOCKER_TAG=archlinux/base
 FROM ${LINUX_DOCKER_TAG}
 
 ARG LINUX_SHORT_NAME=arch
