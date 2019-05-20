@@ -3,6 +3,6 @@
 set -e
 
 pacman -Syu --noconfirm
-pacman -S base-devel
-pacman -S git
-pacman -S qt5
+pacman -S base-devel --noconfirm
+pacman -S git --noconfirm
+pacman -S qt5 --noconfirm
