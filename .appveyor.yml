@@ -41,9 +41,9 @@ after_build:
   # copy the OpenSSL library
   - copy C:\projects\Qt\openSSL\*.dll .
   # copy the modified libde265 library + license
-  - mkdir libde265
-  - copy C:\projects\libde265.dll libde265
-  - copy ..\decoder\libde265\LICENCE.TXT libde265
+  - mkdir decoder
+  - copy C:\projects\libde265.dll decoder
+  - copy ..\decoder\libde265\LICENCE.TXT decoder
   - copy ..\LICENSE.GPL3 .
   # delete junk that is not needed
   - del /F /Q vcredist*

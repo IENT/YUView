@@ -38,7 +38,6 @@
 #include "parserAnnexB.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
-#include "bitstreamAnalysisDialog.h"
 #include "ui_playlistItemCompressedFile.h"
 
 class videoHandler;
@@ -104,6 +103,8 @@ public:
   // We only have one caching decoder so it is better if only one thread caches frames from this item.
   // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.
   virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
+
+  inputFormat getInputFormat() const { return inputFormatType; }
   
 protected:
   // Override from playlistItemIndexed. The readerEngine can tell us how many frames there are in the sequence.
@@ -174,7 +175,7 @@ protected:
 
   // If the bitstream is invalid (for example it was cut at a position that it should not be cut at), we
   // might be unable to decode some of the frames at the end of the sequence.
-  bool decodingOfFrameNotPossible {false};
+  int decodingNotPossibleAfter { -1 };
 
 private slots:
   // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the videoHandler if the frame that is

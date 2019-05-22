@@ -6,5 +6,5 @@ GenericName=YUV Video Player
 X-KDE-StartupNotify=true
 Icon=IENT-YUView-64
 Terminal=false
-Categories=AudioVideo
-MimeType=application/vnd.ient.yuview.yuvfile
+Categories=AudioVideo;
+MimeType=application/vnd.ient.yuview.yuvfile;

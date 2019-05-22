@@ -231,6 +231,9 @@ QStringPairList fileSourceFFmpegFile::getMetadata()
 
 QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
 {
+  if (!isFileOpened)
+    return {};
+
   /* The SPS/PPS are somewhere else in containers:
    * In mp4-container (mkv also) PPS/SPS are stored separate from frame data in global headers. 
    * To access them from libav* APIs you need to look for extradata field in AVCodecContext of AVStream 
@@ -356,8 +359,7 @@ bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow
     if (!scanBitstream(mainWindow))
       return false;
     
-    // Seek back to the beginning
-    seekToDTS(0);
+    seekFileToBeginning();
   }
 
   return true;
@@ -401,6 +403,9 @@ int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToF
 
 bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
 {
+  if (!isFileOpened)
+    return false;
+
   // Create the dialog (if the given pointer is not null)
   int64_t maxPTS = getMaxTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
@@ -553,6 +558,25 @@ bool fileSourceFFmpegFile::seekToDTS(int64_t dts)
   endOfFile = false;
 
   DEBUG_FFMPEG("FFmpegLibraries::seekToDTS Successfully seeked to DTS %d", (int)dts);
+  return true;
+}
+
+bool fileSourceFFmpegFile::seekFileToBeginning()
+{
+  if (!isFileOpened)
+    return false;
+
+  int ret = ff.seek_beginning(fmt_ctx);
+  if (ret != 0)
+  {
+    DEBUG_FFMPEG("FFmpegLibraries::seekToBeginning Error. Return Code %d", ret);
+    return false;
+  }
+
+  // We seeked somewhere, so we are not at the end of the file anymore.
+  endOfFile = false;
+
+  DEBUG_FFMPEG("FFmpegLibraries::seekToBeginning Successfull.");
   return true;
 }
 

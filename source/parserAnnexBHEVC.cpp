@@ -2173,15 +2173,15 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::sei::parser_sei_bytes(QByte
   return SEI_PARSING_OK;
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
+parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sei_data, TreeItem *root)
 {
-  user_data_UUID = sliceHeaderData.mid(0, 16).toHex();
-  user_data_message = sliceHeaderData.mid(16);
+  user_data_UUID = sei_data.mid(0, 16).toHex();
+  user_data_message = sei_data.mid(16);
 
   if (!root)
     return SEI_PARSING_OK;
 
-  if (sliceHeaderData.mid(16, 4) == "x265")
+  if (sei_data.mid(16, 4) == "x265")
   {
     // This seems to be x264 user data. These contain the encoder settings which might be useful
     // Create a new TreeItem root for the item

@@ -81,7 +81,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray ex
   for (int i=0; i<AV_INPUT_BUFFER_PADDING_SIZE; i++)
     avPacketPaddingData.append((char)0);
 
-  DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
+  DEBUG_FFMPEG("Created new FFmpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
 
 decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder) :
@@ -102,7 +102,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
   flushing = false;
   internalsSupported = true;
 
-  DEBUG_FFMPEG("Created new FFMpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
+  DEBUG_FFMPEG("Created new FFmpeg decoder - codec %s%s", ff.getCodecName(codec), cachingDecoder ? " - caching" : "");
 }
 
 decoderFFmpeg::~decoderFFmpeg()

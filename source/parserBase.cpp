@@ -48,22 +48,12 @@ using namespace parserCommon;
 parserBase::parserBase(QObject *parent) : QObject(parent)
 {
   packetModel.reset(new PacketItemModel(parent));
+  streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
+  streamIndexFilter->setSourceModel(packetModel.data());
 }
 
 parserBase::~parserBase()
 {
-}
-
-QAbstractItemModel *parserBase::getFilteredPacketItemModel()
-{
-  // We create the filter proxy model on demand and not in the constructor because the video stream index is not known yet in the constructor
-  if (!streamIndexFilter)
-  {
-    int videoStreamIndex = getVideoStreamIndex();
-    streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent(), videoStreamIndex));
-    streamIndexFilter->setSourceModel(packetModel.data());
-  }
-  return streamIndexFilter.data();
 }
 
 void parserBase::enableModel()

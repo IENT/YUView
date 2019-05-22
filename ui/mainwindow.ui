@@ -49,7 +49,21 @@
      <number>0</number>
     </property>
     <item row="0" column="0">
-     <widget class="splitViewWidget" name="displaySplitView" native="true"/>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="splitViewWidget" name="displaySplitView">
+       <attribute name="title">
+        <string>Item View</string>
+       </attribute>
+      </widget>
+      <widget class="BitstreamAnalysisWidget" name="bitstreamAnalysis">
+       <attribute name="title">
+        <string>Bitstream Analysis</string>
+       </attribute>
+      </widget>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -230,7 +244,7 @@
        <x>0</x>
        <y>0</y>
        <width>268</width>
-       <height>117</height>
+       <height>135</height>
       </rect>
      </property>
     </widget>
@@ -316,6 +330,12 @@
    <class>VideoCacheInfoWidget</class>
    <extends>QWidget</extends>
    <header>videoCacheInfoWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>BitstreamAnalysisWidget</class>
+   <extends>QWidget</extends>
+   <header>bitstreamAnalysisWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
