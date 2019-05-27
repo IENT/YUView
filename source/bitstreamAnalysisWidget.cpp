@@ -152,14 +152,16 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
     DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem not visible - abort");
     return;
   }
+
+  stopAndDeleteParser();
+  
   if (currentCompressedVideo.isNull())
   {
     DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem no compressed video - abort");
     updateParsingStatusText(-1);
+    parser.reset();
     return;
   }
-
-  stopAndDeleteParser();
 
   // Setup a new parser
   inputFormat inputFormatType = currentCompressedVideo->getInputFormat();
