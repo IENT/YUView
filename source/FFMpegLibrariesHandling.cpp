@@ -1364,6 +1364,7 @@ int FFmpegVersionHandler::seek_frame(AVFormatContextWrapper & fmt, int stream_id
 int FFmpegVersionHandler::seek_beginning(AVFormatContextWrapper & fmt)
 {
   // This is "borrowed" from the ffmpeg sources (https://ffmpeg.org/doxygen/4.0/ffmpeg_8c_source.html seek_to_start)
+  LOG(QString("seek_beginning time %1").arg(fmt.get_start_time()));
   int ret = lib.av_seek_frame(fmt.get_format_ctx(), -1, fmt.get_start_time(), 0);
   return ret;
 }

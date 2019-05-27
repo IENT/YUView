@@ -545,8 +545,8 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   int max_ts = ffmpegFile->getMaxTS();
   videoStreamIndex = ffmpegFile->getVideoStreamIndex();
 
-  // Seek to the beginning of the stream.
-  ffmpegFile->seekFileToBeginning();
+  // Don't seek to the beginning here. This causes more problems then it solves.
+  // ffmpegFile->seekFileToBeginning();
 
   // First get the extradata and push it to the parser
   QByteArray extradata = ffmpegFile->getExtradata();
