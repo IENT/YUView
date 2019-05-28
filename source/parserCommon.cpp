@@ -31,6 +31,7 @@
 */
 
 #include "parserCommon.h"
+#include <assert.h>
 
 #include <QString>
 
