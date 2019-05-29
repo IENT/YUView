@@ -1686,7 +1686,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 // Load the raw YUV data for the given frame index into currentFrameRawData.
 bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 {
-  if (currentFrameRawData_frameIdx == frameIndex)
+  if (currentFrameRawData_frameIdx == frameIndex && cacheValid)
     // Buffer already up to date
     return true;
 
