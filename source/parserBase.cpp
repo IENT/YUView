@@ -31,7 +31,6 @@
 */
 
 #include "parserBase.h"
-#include <assert.h>
 
 using namespace parserCommon;
 

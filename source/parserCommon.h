@@ -39,6 +39,7 @@
 #include <QList>
 #include <QSortFilterProxyModel>
 #include <QString>
+#include <assert.h>
 
 namespace parserCommon 
 {
