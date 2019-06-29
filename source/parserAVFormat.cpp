@@ -586,6 +586,12 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
       DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Packet %d", packetID);
     }
 
+    const int streamIdx = packet.get_stream_index();
+    if (streamIdx >= 0)
+    {
+      bitrateData[streamIdx][packetID] = packet.get_data_size();
+    }
+
     packetID++;
     packet = ffmpegFile->getNextPacket(false, false);
     
@@ -615,6 +621,8 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
   if (packetModel)
     emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
+
+  emit bitrateDataUpdated();
 
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   emit streamInfoUpdated();

@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="analysisTab">
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tabStreamInfo">
       <attribute name="title">
@@ -115,6 +115,16 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="tabBitrateGraphicsView">
+      <attribute name="title">
+       <string>Bitrate Plot</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QChartView" name="bitrateGraphicsView"/>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item>
@@ -130,6 +140,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QChartView</class>
+   <extends>QGraphicsView</extends>
+   <header>QtCharts/QtCharts</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

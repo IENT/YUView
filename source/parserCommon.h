@@ -37,11 +37,14 @@
 #include <QBrush>
 #include <QByteArray>
 #include <QList>
+#include <QMap>
 #include <QSortFilterProxyModel>
 #include <QString>
 
 namespace parserCommon 
 {
+  using bitstreamMapPerStreamAndPoc_t = QMap<unsigned int, QMap<unsigned int, uint64_t>>;
+
   /* This class provides the ability to read a byte array bit wise. Reading of ue(v) symbols is also supported.
     * This class can "read out" the emulation prevention bytes. This is enabled by default but can be disabled
     * if needed.

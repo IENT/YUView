@@ -74,9 +74,12 @@ public:
   void setFilterStreamIndex(int streamIndex) { streamIndexFilter->setFilterStreamIndex(streamIndex); }
   void setParsingLimitEnabled(bool limitEnabled) { parsingLimitEnabled = limitEnabled; }
 
+  parserCommon::bitstreamMapPerStreamAndPoc_t getbitrateData() { return bitrateData; }
+
 signals:
   // An item was added to the nal model. This is emitted whenever a NAL unit or an AVPacket is parsed.
   void nalModelUpdated(unsigned int newNumberItems);
+  void bitrateDataUpdated();
   void backgroundParsingDone(QString error);
   
   // Signal that the getStreamInfo() function will now return an updated info
@@ -90,6 +93,8 @@ protected:
   bool cancelBackgroundParser {false};
   int  progressPercentValue   {0};
   bool parsingLimitEnabled    {true};
+
+  parserCommon::bitstreamMapPerStreamAndPoc_t bitrateData;
 };
 
 #endif // PARSERBASEE_H

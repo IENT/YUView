@@ -1,4 +1,4 @@
-QT += gui opengl xml concurrent network
+QT += gui opengl xml concurrent network charts
 
 TARGET = YUView
 TEMPLATE = app
