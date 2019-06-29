@@ -39,6 +39,11 @@
 
 #include "parserCommon.h"
 
+// If the file parsing limit is enabled (setParsingLimitEnabled) parsing will be aborted after
+// 500 frames have been parsed. This should be enough in most situations and full parsing can be
+// enabled manually if needed.
+#define PARSER_FILE_FRAME_NR_LIMIT 500
+
 /* Abstract base class that prvides features which are common to all parsers
  */
 class parserBase : public QObject
@@ -49,10 +54,7 @@ public:
   parserBase(QObject *parent);
   virtual ~parserBase() = 0;
 
-  // Get a pointer to the nal unit model. The model is only filled if you call enableModel() first.
-  //QAbstractItemModel *getPacketItemModel() { return packetModel.data(); }
-  QAbstractItemModel *getPacketItemModel() { return packetModel.data(); }
-  QAbstractItemModel *getFilteredPacketItemModel();
+  QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
   
   void setNewNumberModelItems(unsigned int n) { packetModel->setNewNumberModelItems(n); }
   void enableModel();
@@ -69,6 +71,8 @@ public:
   virtual int getVideoStreamIndex() { return -1; }
 
   void setStreamColorCoding(bool colorCoding) { packetModel->setUseColorCoding(colorCoding); }
+  void setFilterStreamIndex(int streamIndex) { streamIndexFilter->setFilterStreamIndex(streamIndex); }
+  void setParsingLimitEnabled(bool limitEnabled) { parsingLimitEnabled = limitEnabled; }
 
 signals:
   // An item was added to the nal model. This is emitted whenever a NAL unit or an AVPacket is parsed.
@@ -85,6 +89,7 @@ protected:
   // If this variable is set (from an external thread), the parsing process should cancel immediately
   bool cancelBackgroundParser {false};
   int  progressPercentValue   {0};
+  bool parsingLimitEnabled    {true};
 };
 
 #endif // PARSERBASEE_H

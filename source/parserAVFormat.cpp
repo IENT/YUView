@@ -267,7 +267,7 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
   return true;
 }
 
-bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
+bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
 {
   if (!packetModel->isNull())
   {
@@ -521,7 +521,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
   // Open the file but don't parse it yet.
   QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile());
-  if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
+ if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
   {
     emit backgroundParsingDone("Error opening the ffmpeg file.");
     return false;
@@ -536,7 +536,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     annexBParser.reset(new parserAnnexBMpeg2());
   else if (codecID.isAV1())
     obuParser.reset(new parserAV1OBU());
-  else
+  else if (codecID.isNone())
   {
     emit backgroundParsingDone("Unknown codec ID " + codecID.getCodecName());
     return false;
@@ -545,8 +545,8 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   int max_ts = ffmpegFile->getMaxTS();
   videoStreamIndex = ffmpegFile->getVideoStreamIndex();
 
-  // Seek to the beginning of the stream.
-  ffmpegFile->seekToDTS(0);
+  // Don't seek to the beginning here. This causes more problems then it solves.
+  // ffmpegFile->seekFileToBeginning();
 
   // First get the extradata and push it to the parser
   QByteArray extradata = ffmpegFile->getExtradata();
@@ -564,21 +564,26 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   AVPacketWrapper packet = ffmpegFile->getNextPacket(false, false);
   int64_t start_ts = packet.get_dts();
 
-  int packetID = 0;
-  while (!ffmpegFile->atEnd())
+  unsigned int packetID = 0;
+  unsigned int videoFrameCounter = 0;
+  bool abortParsing = false;
+  QElapsedTimer signalEmitTimer;
+  signalEmitTimer.start();
+  while (!ffmpegFile->atEnd() && !abortParsing)
   {
-    if (cancelBackgroundParser)
-      return false;
     if (packet.is_video_packet)
+    {
       progressPercentValue = clip((int)((packet.get_dts() - start_ts) * 100 / max_ts), 0, 100);
+      videoFrameCounter++;
+    }
 
     if (!parseAVPacket(packetID, packet))
     {
-      DEBUG_AVFORMAT("parseAVPacket error parsing Packet %d", packetID);
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket error parsing Packet %d", packetID);
     }
     else
     {
-      DEBUG_AVFORMAT("parseAVPacket Packet %d", packetID);
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Packet %d", packetID);
     }
 
     packetID++;
@@ -587,16 +592,33 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     // For signal slot debugging purposes, sleep
     // QThread::msleep(200);
     
-    if (!packetModel->isNull())
+    if (signalEmitTimer.elapsed() > 1000 && packetModel)
+    {
+      signalEmitTimer.start();
       emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
+    }
+
+    if (cancelBackgroundParser)
+    {
+      abortParsing = true;
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Abort parsing by user request");
+    }
+    if (parsingLimitEnabled && videoFrameCounter > PARSER_FILE_FRAME_NR_LIMIT)
+    {
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Abort parsing because frame limit was reached.");
+      abortParsing = true;
+    }
   }
 
   // Seek back to the beginning of the stream.
-  ffmpegFile->seekToDTS(0);
+  ffmpegFile->seekFileToBeginning();
+
+  if (packetModel)
+    emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
 
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 
-  return true;
+  return !cancelBackgroundParser;
 }

@@ -135,10 +135,10 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
   ui.lineEditLibDav1d->setText(settings.value("libDav1dFile", "").toString());
   ui.lineEditLibJEMFile->setText(settings.value("libJEMFile", "").toString());
-  ui.lineEditAVFormat->setText(settings.value("FFMpeg.avformat", "").toString());
-  ui.lineEditAVCodec->setText(settings.value("FFMpeg.avcodec", "").toString());
-  ui.lineEditAVUtil->setText(settings.value("FFMpeg.avutil", "").toString());
-  ui.lineEditSWResample->setText(settings.value("FFMpeg.swresample", "").toString());
+  ui.lineEditAVFormat->setText(settings.value("FFmpeg.avformat", "").toString());
+  ui.lineEditAVCodec->setText(settings.value("FFmpeg.avcodec", "").toString());
+  ui.lineEditAVUtil->setText(settings.value("FFmpeg.avutil", "").toString());
+  ui.lineEditSWResample->setText(settings.value("FFmpeg.swresample", "").toString());
   settings.endGroup();
 }
 
@@ -387,10 +387,10 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("libJEMFile", ui.lineEditLibJEMFile->text());
   settings.setValue("libDav1dFile", ui.lineEditLibDav1d->text());
   // FFMpeg files
-  settings.setValue("FFMpeg.avformat", ui.lineEditAVFormat->text());
-  settings.setValue("FFMpeg.avcodec", ui.lineEditAVCodec->text());
-  settings.setValue("FFMpeg.avutil", ui.lineEditAVUtil->text());
-  settings.setValue("FFMpeg.swresample", ui.lineEditSWResample->text());
+  settings.setValue("FFmpeg.avformat", ui.lineEditAVFormat->text());
+  settings.setValue("FFmpeg.avcodec", ui.lineEditAVCodec->text());
+  settings.setValue("FFmpeg.avutil", ui.lineEditAVUtil->text());
+  settings.setValue("FFmpeg.swresample", ui.lineEditSWResample->text());
   settings.endGroup();
   
   accept();

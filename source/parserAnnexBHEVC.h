@@ -634,7 +634,7 @@ protected:
   struct user_data_sei : sei
   {
     user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    sei_parsing_return_t parse_user_data_sei(QByteArray &sliceHeaderData, parserCommon::TreeItem *root);
+    sei_parsing_return_t parse_user_data_sei(QByteArray &sei_data, parserCommon::TreeItem *root);
 
     QString user_data_UUID;
     QString user_data_message;

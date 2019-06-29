@@ -845,13 +845,13 @@
        <item>
         <widget class="QGroupBox" name="groupBoxFFMpeg">
          <property name="toolTip">
-          <string>Specify the individual FFMpeg libraries to use. These will always be tried first.</string>
+          <string>Specify the individual FFmpeg libraries to use. These will always be tried first.</string>
          </property>
          <property name="whatsThis">
-          <string>Specify the individual FFMpeg libraries to use. These will always be tried first.</string>
+          <string>Specify the individual FFmpeg libraries to use. These will always be tried first.</string>
          </property>
          <property name="title">
-          <string>Specific FFMpeg Libraries</string>
+          <string>Specific FFmpeg Libraries</string>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>

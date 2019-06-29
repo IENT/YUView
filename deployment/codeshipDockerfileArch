@@ -1,0 +1,10 @@
+ARG LINUX_DOCKER_TAG=archlinux/base
+FROM ${LINUX_DOCKER_TAG}
+
+ARG LINUX_SHORT_NAME=arch
+ENV LINUX_SHORT_NAME ${LINUX_SHORT_NAME}
+ARG YUVIEW_DAILY_TAG=0
+ENV YUVIEW_DAILY_TAG ${YUVIEW_DAILY_TAG}
+
+ADD codeshipBuildContainerArch.sh /codeshipBuildContainerArch.sh
+RUN /codeshipBuildContainerArch.sh

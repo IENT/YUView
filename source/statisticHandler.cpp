@@ -44,6 +44,17 @@
 #define DEBUG_STAT(fmt,...) ((void)0)
 #endif
 
+QPoint getPolygonCenter(const QPolygon& polygon)
+{
+  QPoint p = QPoint(0, 0);
+  for (int k = 0; k < polygon.count(); k++)
+  {
+    p += polygon.point(k);
+  }
+  p /= polygon.count();
+  return p;
+}
+
 statisticHandler::statisticHandler()
 {
   statsCacheFrameIdx = -1;
@@ -240,21 +251,6 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
     }
   }
 
-  // Step three: Draw the values of the block types
-  if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
-  {
-    // For every point, draw only one block of values. So for every point, we check if there are also other
-    // text entries for the same point and then we draw all of them
-    QPoint lineOffset =  QPoint(int(maxLineWidth/2), int(maxLineWidth/2));
-    for (int i = 0; i < drawStatPoints.count(); i++)
-    {
-      QString txt = drawStatTexts[i].join("\n");
-      QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
-      textRect.moveTopLeft(drawStatPoints[i] + QPoint(3,1) + lineOffset);
-      painter->drawText(textRect, Qt::AlignLeft, txt);
-    }
-  }
-
   // Draw all the polygon value types. Also, if the zoom factor is larger than STATISTICS_DRAW_VALUES_ZOOM,
   // also save a list of all the values of the blocks and their position in order to draw the values in the next step.
   // QList<QPoint> drawStatPoints;       // The positions of each value
@@ -319,27 +315,39 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
         // Todo: draw text for polygon statistics
         // // Save the position/text in order to draw the values later
-        // if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
-        // {
-        //   QString valTxt  = statsTypeList[i].getValueTxt(value);
-        //   if (!statsTypeList[i].valMap.contains(value) && statsTypeList[i].scaleValueToBlockSize)
-        //     valTxt = QString("%1").arg(float(value) / (boundingRect.size[0] * boundingRect.size[1]));
+         if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
+         {
+            QString valTxt  = statsTypeList[i].getValueTxt(value);
+            QString typeTxt = statsTypeList[i].typeName;
+            QString statTxt = moreThanOneBlockStatRendered ? typeTxt + ":" + valTxt : valTxt;
 
-        //   QString typeTxt = statsTypeList[i].typeName;
-        //   QString statTxt = moreThanOneBlockStatRendered ? typeTxt + ":" + valTxt : valTxt;
-
-        //   int i = drawStatPoints.indexOf(displayBoundingRect.topLeft());
-        //   if (i == -1)
-        //   {
-        //     // No value for this point yet. Append it and start a new QStringList
-        //     drawStatPoints.append(displayBoundingRect.topLeft());
-        //     drawStatTexts.append(QStringList(statTxt));
-        //   }
-        //   else
-        //     // There is already a value for this point. Just append the text.
-        //     drawStatTexts[i].append(statTxt);
-        // }
+           int i = drawStatPoints.indexOf(getPolygonCenter(displayPolygon));
+           if (i == -1)
+           {
+             // No value for this point yet. Append it and start a new QStringList
+             drawStatPoints.append(getPolygonCenter(displayPolygon));
+             drawStatTexts.append(QStringList(statTxt));
+           }
+           else
+             // There is already a value for this point. Just append the text.
+             drawStatTexts[i].append(statTxt);
+         }
       }
+    }
+  }
+  
+  // Step three: Draw the values of the block types
+  if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
+  {
+    // For every point, draw only one block of values. So for every point, we check if there are also other
+    // text entries for the same point and then we draw all of them
+    QPoint lineOffset =  QPoint(int(maxLineWidth/2), int(maxLineWidth/2));
+    for (int i = 0; i < drawStatPoints.count(); i++)
+    {
+      QString txt = drawStatTexts[i].join("\n");
+      QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+      textRect.moveTopLeft(drawStatPoints[i] + QPoint(3,1) + lineOffset);
+      painter->drawText(textRect, Qt::AlignLeft, txt);
     }
   }
 

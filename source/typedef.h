@@ -229,6 +229,7 @@ typedef QPair<QString, QString> QStringPair;
 typedef QList<QStringPair> QStringPairList;
 // A index range is just a QPair of integers (minimum and maximum)
 typedef QPair<int,int> indexRange;
+typedef QPair<int,int> QIntPair;
 // A list of value pair lists, where every list has a string (title)
 class ValuePairListSets : public QList<QPair<QString, QStringPairList> >
 {

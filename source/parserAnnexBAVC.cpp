@@ -642,6 +642,8 @@ bool parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
 
 bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(reader_helper &reader, int BitDepthY, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag)
 {
+  reader_sub_level s(reader, "vui_parameters()");
+  
   READFLAG(aspect_ratio_info_present_flag);
   if (aspect_ratio_info_present_flag) 
   {

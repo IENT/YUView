@@ -1212,10 +1212,10 @@ bool FFmpegVersionHandler::loadFFmpegLibraries()
   // First try the specific FFMpeg libraries (if set)
   QSettings settings;
   settings.beginGroup("Decoders");
-  QString avFormatLib = settings.value("FFMpeg.avformat", "").toString();
-  QString avCodecLib = settings.value("FFMpeg.avcodec", "").toString();
-  QString avUtilLib = settings.value("FFMpeg.avutil", "").toString();
-  QString swResampleLib = settings.value("FFMpeg.swresample", "").toString();
+  QString avFormatLib = settings.value("FFmpeg.avformat", "").toString();
+  QString avCodecLib = settings.value("FFmpeg.avcodec", "").toString();
+  QString avUtilLib = settings.value("FFmpeg.avutil", "").toString();
+  QString swResampleLib = settings.value("FFmpeg.swresample", "").toString();
   if (!avFormatLib.isEmpty() && !avCodecLib.isEmpty() && !avUtilLib.isEmpty() && !swResampleLib.isEmpty())
   {
     LOG("Trying to load the libraries specified in the settings.");
@@ -1358,6 +1358,14 @@ AVDictionaryWrapper FFmpegVersionHandler::get_metadata(AVFrameWrapper &frame)
 int FFmpegVersionHandler::seek_frame(AVFormatContextWrapper & fmt, int stream_idx, int dts)
 {
   int ret = lib.av_seek_frame(fmt.get_format_ctx(), stream_idx, dts, AVSEEK_FLAG_BACKWARD);
+  return ret;
+}
+
+int FFmpegVersionHandler::seek_beginning(AVFormatContextWrapper & fmt)
+{
+  // This is "borrowed" from the ffmpeg sources (https://ffmpeg.org/doxygen/4.0/ffmpeg_8c_source.html seek_to_start)
+  LOG(QString("seek_beginning time %1").arg(fmt.get_start_time()));
+  int ret = lib.av_seek_frame(fmt.get_format_ctx(), -1, fmt.get_start_time(), 0);
   return ret;
 }
 
@@ -3161,6 +3169,9 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
 
 void AVPacketWrapper::update()
 {
+  if (pkt == nullptr)
+    return;
+  
   if (libVer.avcodec == 56)
   {
     AVPacket_56 *src = reinterpret_cast<AVPacket_56*>(pkt);

@@ -95,6 +95,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.playbackController, &PlaybackController::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.propertiesWidget, &PropertiesWidget::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.displaySplitView, &splitViewWidget::currentSelectedItemsChanged);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.bitstreamAnalysis, &BitstreamAnalysisWidget::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, this, &MainWindow::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemChanged, ui.playbackController, &PlaybackController::selectionPropertiesChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, ui.propertiesWidget, &PropertiesWidget::itemAboutToBeDeleted);

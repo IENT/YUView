@@ -111,8 +111,10 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
       << searchPath
       << QDir::currentPath() + "/%1"
       << QDir::currentPath() + "/decoder/%1"
+      << QDir::currentPath() + "/libde265/%1"                       // for legacy installations before the decoders were moved to the "decoders" folder
       << QCoreApplication::applicationDirPath() + "/%1"
       << QCoreApplication::applicationDirPath() + "/decoder/%1"
+      << QCoreApplication::applicationDirPath() + "/libde265/%1"
       << "%1"; // Try the system directories.
 
     for (auto &libName : libNames)

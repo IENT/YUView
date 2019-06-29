@@ -33,6 +33,7 @@
 #include "parserCommon.h"
 
 #include <QString>
+#include <assert.h>
 
 #define PARSERCOMMON_DEBUG_OUTPUT 0
 #if PARSERCOMMON_DEBUG_OUTPUT && !NDEBUG
@@ -1021,9 +1022,9 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
 void PacketItemModel::setNewNumberModelItems(unsigned int n)
 {
   Q_ASSERT_X(n >= nrShowChildItems, "PacketItemModel::setNewNumberModelItems", "Setting a smaller number of items.");
-  unsigned int nrAddItems = nrShowChildItems - n;
+  unsigned int nrAddItems = n - nrShowChildItems;
   int lastIndex = nrShowChildItems;
-  beginInsertRows(QModelIndex(), lastIndex, lastIndex+nrAddItems);
+  beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
   nrShowChildItems = n;
   endInsertRows();
 }
@@ -1050,7 +1051,7 @@ void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
 
 bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex &sourceParent) const
 {
-  if (filterStreamIndex == -1)
+  if (streamIndex == -1)
   {
     DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow %d - accepting all", row);
     return true;
@@ -1077,9 +1078,15 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
   if (childItem != nullptr)
   {
     DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d filter %d", childItem->getStreamIndex(), filterStreamIndex);
-    return childItem->getStreamIndex() == filterStreamIndex;
+    return childItem->getStreamIndex() == streamIndex || childItem->getStreamIndex() == -1;
   }
 
   DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> reject");
   return false;
+}
+
+void FilterByStreamIndexProxyModel::setFilterStreamIndex(int idx)
+{
+  streamIndex = idx;
+  invalidateFilter();
 }

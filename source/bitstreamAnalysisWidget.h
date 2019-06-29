@@ -33,43 +33,60 @@
 #ifndef BITSTREAMANALYSISDIALOG_H
 #define BITSTREAMANALYSISDIALOG_H
 
-#include <QDialog>
+#include <QWidget>
 #include <QtConcurrent>
-#include <QStatusBar>
 
-#include "ui_bitstreamAnalysisDialog.h"
+#include "ui_bitstreamAnalysisWidget.h"
 
-#include "typedef.h"
 #include "parserBase.h"
+#include "playlistItem.h"
+#include "playlistItemCompressedVideo.h"
+#include "typedef.h"
 
-class bitstreamAnalysisDialog : public QDialog
+class BitstreamAnalysisWidget : public QWidget
 {
   Q_OBJECT
 
 public:
-  bitstreamAnalysisDialog(QWidget *parent, QString fileName, inputFormat inputFormatType);
-  ~bitstreamAnalysisDialog();
+  BitstreamAnalysisWidget(QWidget *parent = nullptr);
+  ~BitstreamAnalysisWidget() { stopAndDeleteParser(); }
+
+public slots:
+  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
 
 private slots:
   void updateParserItemModel(unsigned int nalModelUpdated);
   void updateStreamInfo();
   void backgroundParsingDone(QString error);
-  void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
+
   void showVideoStreamOnlyCheckBoxToggled(bool state);
+  void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
+  void parseEntireBitstreamCheckBoxToggled(bool state) { Q_UNUSED(state); restartParsingOfCurrentItem(); }
+
+protected:
+  void hideEvent(QHideEvent *event) override;
+  void showEvent(QShowEvent *event) override;
   
 private:
   
-  Ui::bitstreamAnalysisDialog ui;
+  Ui::bitstreamAnalysisWidget ui;
+
+  // -1: No Item selected, 0-99: parsing in progress, 100: parsing done
+  void updateParsingStatusText(int progressValue);
+
+  // Tell the parser to stop and block until it stops. Then delete the parser.
+  void stopAndDeleteParser();
+
+  void restartParsingOfCurrentItem();
 
   QScopedPointer<parserBase> parser;
   QFuture<void> backgroundParserFuture;
   void backgroundParsingFunction();
   QString compressedFilePath;
 
-  bool showVideoStreamOnly {false};
+  QPointer<playlistItemCompressedVideo> currentCompressedVideo;
 
-  // We create the status bar manually because the QtDesigner does not support status bars in dialogs
-  QStatusBar *statusBar;
+  bool showVideoStreamOnly {false};
 };
 
 #endif // BITSTREAMANALYSISDIALOG_H
