@@ -352,6 +352,11 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     if (nalTypeName)
       *nalTypeName = parsingSuccess ? QString("SEI(#%1)").arg(sei_count) : "SEI(ERR)";
   }
+  else if (nal_avc.nal_unit_type == FILLER)
+  {
+    if (nalTypeName)
+      *nalTypeName = "FILLER";
+  }
 
   if (nalRoot)
   {
