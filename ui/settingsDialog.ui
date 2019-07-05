@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>535</width>
-    <height>603</height>
+    <height>632</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -90,7 +90,7 @@
          <property name="title">
           <string>UI</string>
          </property>
-         <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,1">
+         <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0">
           <item row="3" column="1">
            <layout class="QHBoxLayout" name="horizontalLayoutBackgroundColor" stretch="1,0">
             <property name="spacing">
@@ -288,6 +288,43 @@
           </item>
           <item row="5" column="1">
            <widget class="QCheckBox" name="checkBoxPlaybackControlFullScreen">
+            <property name="palette">
+             <palette>
+              <active>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </active>
+              <inactive>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </inactive>
+              <disabled>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>190</red>
+                  <green>190</green>
+                  <blue>190</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
+             </palette>
+            </property>
             <property name="toolTip">
              <string>Show the playback control (the navigation panel at the bottom) also in full screen mode.</string>
             </property>
@@ -295,12 +332,18 @@
              <string>Show the playback control (the navigation panel at the bottom) also in full screen mode.</string>
             </property>
             <property name="text">
-             <string/>
+             <string>invisibleText</string>
             </property>
            </widget>
           </item>
           <item row="6" column="0">
            <widget class="QLabel" name="labelShowFilePathSplitView">
+            <property name="toolTip">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
+            <property name="whatsThis">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
             <property name="text">
              <string>Show file path in split view</string>
             </property>
@@ -308,8 +351,51 @@
           </item>
           <item row="6" column="1">
            <widget class="QCheckBox" name="checkBoxShowFilePathSplitMode">
+            <property name="palette">
+             <palette>
+              <active>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </active>
+              <inactive>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </inactive>
+              <disabled>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>190</red>
+                  <green>190</green>
+                  <blue>190</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
+             </palette>
+            </property>
+            <property name="toolTip">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
+            <property name="whatsThis">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
             <property name="text">
-             <string/>
+             <string>invisibleText</string>
             </property>
            </widget>
           </item>
