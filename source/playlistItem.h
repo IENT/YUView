@@ -90,8 +90,8 @@ public:
   // know how to load/save themselves.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const = 0;
   
-  // Is the item indexed by a frame index?
   virtual bool isIndexedByFrame() { return type == playlistItem_Indexed; }
+  virtual bool isFileSource() const { return false; }
 
   // Get the size of the item (in pixels). The default implementation will return
   // the size when the infoText is drawn. In your inherited calss, you should return this

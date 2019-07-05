@@ -55,6 +55,8 @@ public:
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
+  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
+
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return (rawFormat == raw_YUV) ? "YUV File Properties" : "RGB File Properties"; }
 
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing failed.

@@ -55,6 +55,8 @@ public:
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
+  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
+
   /* Get the title of the properties panel. The child class has to overload this.
    * This can be different depending on the type of playlistItem.
    * For example a playlistItemYUVFile will return "YUV File properties".

@@ -257,7 +257,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   if (splitting)
   {
     QStringPair itemNamesToDraw = determineItemNamesToDraw(item[0], item[1]);
-    const bool drawItemNames = (drawItemPathAndNameEnabled && !itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty());
+    const bool drawItemNames = (drawItemPathAndNameEnabled && 
+                                item[0] != nullptr && item[1] != nullptr &&
+                                !itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty() &&
+                                item[0]->isFileSource() && item[1]->isFileSource());
 
     // Draw two items (or less, if less items are selected)
     if (item[0])

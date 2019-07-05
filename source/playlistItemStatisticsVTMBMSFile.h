@@ -50,6 +50,8 @@ public:
   */
   playlistItemStatisticsVTMBMSFile(const QString &itemNameOrFileName);
 
+  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
+
   // ------ Statistics ----
 
   // Does the playlistItem provide statistics? If yes, the following functions can be
