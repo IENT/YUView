@@ -320,6 +320,7 @@ protected:
 
   QStringPair determineItemNamesToDraw(playlistItem *item1, playlistItem *item2);
   void drawItemPathAndName(QPainter *painter, int posX, int width, QString path);
+  bool drawItemPathAndNameEnabled {true};
 
   // Everything related to drawing tests
   QPointer<QProgressDialog> testProgressDialog;

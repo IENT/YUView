@@ -123,8 +123,11 @@ void splitViewWidget::updateSettings()
   else
     mouseMode = MOUSE_LEFT_MOVE;
 
-  // Load zoom box background color
   zoomBoxBackgroundColor = settings.value("Background/Color").value<QColor>();
+  drawItemPathAndNameEnabled = settings.value("ShowFilePathInSplitMode", true).toBool();
+
+  // Something about how we draw might have been changed
+  update();
 }
 
 void splitViewWidget::paintEvent(QPaintEvent *paint_event)
@@ -254,7 +257,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   if (splitting)
   {
     QStringPair itemNamesToDraw = determineItemNamesToDraw(item[0], item[1]);
-    const bool itemNameDrawingEnabled = (!itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty());
+    const bool drawItemNames = (drawItemPathAndNameEnabled && !itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty());
 
     // Draw two items (or less, if less items are selected)
     if (item[0])
@@ -303,7 +306,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       if (drawingLoadingMessage[0])
         drawLoadingMessage(&painter, QPoint(xSplit / 2, drawArea_botR.y() / 2));
 
-      if (itemNameDrawingEnabled)
+      if (drawItemNames)
         drawItemPathAndName(&painter, 0, xSplit, itemNamesToDraw.first);
     }
     if (item[1])
@@ -354,7 +357,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       if (drawingLoadingMessage[1])
         drawLoadingMessage(&painter, QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2));
 
-      if (itemNameDrawingEnabled)
+      if (drawItemNames)
         drawItemPathAndName(&painter, xSplit, drawArea_botR.x() - xSplit, itemNamesToDraw.second);
     }
 

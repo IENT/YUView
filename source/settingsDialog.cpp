@@ -85,6 +85,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.frameBackgroundColor->setPlainColor(backgroundColor);
   ui.frameGridLineColor->setPlainColor(gridLineColor);
   ui.checkBoxPlaybackControlFullScreen->setChecked(settings.value("ShowPlaybackControlFullScreen", false).toBool());
+  ui.checkBoxShowFilePathSplitMode->setChecked(settings.value("ShowFilePathInSplitMode", true).toBool());
   // Updates settings
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
@@ -353,6 +354,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("Background/Color", ui.frameBackgroundColor->getPlainColor());
   settings.setValue("OverlayGrid/Color", ui.frameGridLineColor->getPlainColor());
   settings.setValue("ShowPlaybackControlFullScreen", ui.checkBoxPlaybackControlFullScreen->isChecked());
+  settings.setValue("ShowFilePathInSplitMode", ui.checkBoxShowFilePathSplitMode->isChecked());
   // Update settings
   settings.beginGroup("updates");
   settings.setValue("checkForUpdates", ui.groupBoxUpdates->isChecked());
