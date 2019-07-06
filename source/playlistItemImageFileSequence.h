@@ -52,6 +52,8 @@ public:
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
+  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
+
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Image Sequence Properties"; }
 
   // Create a new playlistItemImageFileSequence from the playlist file entry. Return nullptr if parsing failed.
