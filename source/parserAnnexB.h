@@ -34,7 +34,6 @@
 #define PARSERANNEXB_H
 
 #include <QList>
-#include <QAbstractItemModel>
 #include "videoHandlerYUV.h"
 #include "parserBase.h"
 #include "fileSourceAnnexBFile.h"
