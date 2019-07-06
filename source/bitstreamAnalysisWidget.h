@@ -56,7 +56,7 @@ public slots:
 
 private slots:
   void updateParserItemModel(unsigned int nalModelUpdated);
-  void updateBitrateDisplay();
+  //void updateBitrateDisplay();
   void updateStreamInfo();
   void backgroundParsingDone(QString error);
 

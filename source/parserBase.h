@@ -55,6 +55,7 @@ public:
   virtual ~parserBase() = 0;
 
   QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
+  QAbstractItemModel *getBitrateItemModel() { return bitrateItemModel.data(); }
   
   void setNewNumberModelItems(unsigned int n) { packetModel->setNewNumberModelItems(n); }
   void enableModel();
@@ -88,6 +89,7 @@ signals:
 protected:
   QScopedPointer<parserCommon::PacketItemModel> packetModel;
   QScopedPointer<parserCommon::FilterByStreamIndexProxyModel> streamIndexFilter;
+  QScopedPointer<parserCommon::BitrateItemModel> bitrateItemModel;
 
   // If this variable is set (from an external thread), the parsing process should cancel immediately
   bool cancelBackgroundParser {false};

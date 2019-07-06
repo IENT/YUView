@@ -34,6 +34,8 @@
 
 #include <QString>
 #include <assert.h>
+#include <stdlib.h>
+#include <time.h>  
 
 #define PARSERCOMMON_DEBUG_OUTPUT 0
 #if PARSERCOMMON_DEBUG_OUTPUT && !NDEBUG
@@ -1045,6 +1047,60 @@ void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
 
   showVideoOnly = videoOnly;
   emit dataChanged(QModelIndex(), QModelIndex());
+}
+
+/// ------------------- BitrateItemModel -----------------------------
+
+BitrateItemModel::BitrateItemModel(QObject *parent) : QAbstractTableModel(parent)
+{
+  srand (time(NULL));
+  for(int i=0; i<500; i++)
+  {
+    bitrateData.push_back((int)(rand() % 100));
+  }
+}
+
+BitrateItemModel::~BitrateItemModel()
+{
+}
+
+int BitrateItemModel::rowCount(const QModelIndex &parent) const
+{
+  return bitrateData.size();
+}
+
+int BitrateItemModel::columnCount(const QModelIndex &parent) const
+{ 
+  Q_UNUSED(parent); 
+  return 2;
+}
+    
+QVariant BitrateItemModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+  if (role != Qt::DisplayRole)
+    return QVariant();
+
+  if (orientation == Qt::Horizontal) 
+  {
+    if (section == 0)
+      return "x";
+    else
+      return "y";
+  } else 
+    return QString("%1").arg(section + 1);
+}
+
+QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
+{
+  if (role == Qt::DisplayRole)
+  {
+    if (index.column() == 0)
+      return index.row();
+    else if (index.column() == 1)
+      return bitrateData[index.row()];
+  }
+
+  return QVariant();
 }
 
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------
