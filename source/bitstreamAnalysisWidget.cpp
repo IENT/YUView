@@ -57,7 +57,7 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
   connect(ui.showVideoStreamOnlyCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::showVideoStreamOnlyCheckBoxToggled);
   connect(ui.colorCodeStreamsCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::colorCodeStreamsCheckBoxToggled);
   connect(ui.parseEntireFileCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::parseEntireBitstreamCheckBoxToggled);
-  connect(ui.bitrateViewScrollBar, &QAbstractSlider::valueChanged, this, &BitstreamAnalysisWidget::sliderValueChanged);
+  connect(ui.bitrateViewScrollBar, &QAbstractSlider::valueChanged, this, &BitstreamAnalysisWidget::scrollBarValueChanged);
 
   ui.bitrateGraphicsView->chart()->setAnimationOptions(QChart::SeriesAnimations	);
   ui.bitrateGraphicsView->chart()->setTitle("Bitrate over time");
@@ -223,7 +223,7 @@ void BitstreamAnalysisWidget::updateScrollBarRange()
   auto model = parser->getBitrateItemModel();
   const int nrXValuesToShow = (int)(width() / ZOOM_PIXEL_PER_PLOT_X / bitratePlotZoomFactor);
   ui.bitrateViewScrollBar->setMinimum(0);
-  ui.bitrateViewScrollBar->setMaximum(model->rowCount());
+  ui.bitrateViewScrollBar->setMaximum(model->rowCount() - nrXValuesToShow);
   ui.bitrateGraphicsView->chart()->axisX()->setRange(0, nrXValuesToShow);
   ui.bitrateGraphicsView->chart()->axisY()->setRange(0, model->getMaximumBitrateValue());
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::updateScrollBarRange slider max %d range %d-%d", model->rowCount(), 0, nrXValuesToShow);
@@ -243,11 +243,11 @@ void BitstreamAnalysisWidget::showEvent(QShowEvent *event)
   QWidget::showEvent(event);
 }
 
-void BitstreamAnalysisWidget::sliderValueChanged(int value)
+void BitstreamAnalysisWidget::scrollBarValueChanged(int value)
 {
   const int nrXValuesToShow = (int)(width() / ZOOM_PIXEL_PER_PLOT_X / bitratePlotZoomFactor);
   ui.bitrateGraphicsView->chart()->axisX()->setRange(value, value + nrXValuesToShow);
-  DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem slider max %d range %d-%d", parser->getBitrateItemModel()->rowCount(), value, value + nrXValuesToShow);
+  DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem scroll bar max %d range %d-%d", parser->getBitrateItemModel()->rowCount(), value, value + nrXValuesToShow);
 }
 
 // void BitstreamAnalysisWidget::updateBitrateDisplay()

@@ -65,7 +65,7 @@ private slots:
   void showVideoStreamOnlyCheckBoxToggled(bool state);
   void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
   void parseEntireBitstreamCheckBoxToggled(bool state) { Q_UNUSED(state); restartParsingOfCurrentItem(); }
-  void sliderValueChanged(int value);
+  void scrollBarValueChanged(int value);
 
 protected:
   void hideEvent(QHideEvent *event) override;
