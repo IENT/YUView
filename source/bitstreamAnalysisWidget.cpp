@@ -57,9 +57,11 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
   connect(ui.showVideoStreamOnlyCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::showVideoStreamOnlyCheckBoxToggled);
   connect(ui.colorCodeStreamsCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::colorCodeStreamsCheckBoxToggled);
   connect(ui.parseEntireFileCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::parseEntireBitstreamCheckBoxToggled);
+  connect(ui.bitrateViewScrollBar, &QAbstractSlider::valueChanged, this, &BitstreamAnalysisWidget::sliderValueChanged);
 
-  ui.bitrateGraphicsView->chart()->setAnimationOptions(QChart::AllAnimations);
+  ui.bitrateGraphicsView->chart()->setAnimationOptions(QChart::SeriesAnimations	);
   ui.bitrateGraphicsView->chart()->setTitle("Bitrate over time");
+  ui.bitrateGraphicsView->setRubberBand(QChartView::HorizontalRubberBand);
 
   currentSelectedItemsChanged(nullptr, nullptr, false);
 }
@@ -157,6 +159,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   }
 
   stopAndDeleteParser();
+  ui.bitrateGraphicsView->chart()->removeAllSeries();
   
   if (currentCompressedVideo.isNull())
   {
@@ -192,6 +195,8 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
 
   updateStreamInfo();
 
+  auto model = parser->getBitrateItemModel();
+
   // Test: Set the model to show in the chart view
   QLineSeries *series = new QLineSeries;
   series->setName("Line 1 Test");
@@ -199,9 +204,17 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   mapper->setXColumn(0);
   mapper->setYColumn(1);
   mapper->setSeries(series);
-  mapper->setModel(parser->getBitrateItemModel());
+  mapper->setModel(model);
   ui.bitrateGraphicsView->chart()->addSeries(series);
   ui.bitrateGraphicsView->chart()->createDefaultAxes();
+
+  // Scale the horizontal scroll bar
+  bitratePlotZoomFactor = 1.0;
+  const int nrXValuesToShow = (int)(width() / ZOOM_PIXEL_PER_PLOT_X / bitratePlotZoomFactor);
+  ui.bitrateViewScrollBar->setMinimum(0);
+  ui.bitrateViewScrollBar->setMaximum(model->rowCount());
+  ui.bitrateGraphicsView->chart()->axisX()->setRange(0, nrXValuesToShow);
+  DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem slider max %d range %d-%d", model->rowCount(), 0, nrXValuesToShow);
   
   // Start the background parsing thread
   updateParsingStatusText(0);
@@ -221,6 +234,13 @@ void BitstreamAnalysisWidget::showEvent(QShowEvent *event)
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::showEvent");
   restartParsingOfCurrentItem();
   QWidget::showEvent(event);
+}
+
+void BitstreamAnalysisWidget::sliderValueChanged(int value)
+{
+  const int nrXValuesToShow = (int)(width() / ZOOM_PIXEL_PER_PLOT_X / bitratePlotZoomFactor);
+  ui.bitrateGraphicsView->chart()->axisX()->setRange(value, value + nrXValuesToShow);
+  DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem slider max %d range %d-%d", parser->getBitrateItemModel()->rowCount(), value, value + nrXValuesToShow);
 }
 
 // void BitstreamAnalysisWidget::updateBitrateDisplay()
