@@ -66,10 +66,12 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
   currentSelectedItemsChanged(nullptr, nullptr, false);
 }
 
-void BitstreamAnalysisWidget::updateParserItemModel(unsigned int newNumberItems)
+void BitstreamAnalysisWidget::updateParserItemModel()
 {
-  parser->setNewNumberModelItems(newNumberItems);
+  parser->updateNumberModelItems();
   updateParsingStatusText(parser->getParsingProgressPercent());
+
+  updateScrollBarRange();
 }
 
 void BitstreamAnalysisWidget::updateStreamInfo()
@@ -181,7 +183,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   const bool parsingLimitSet = !ui.parseEntireFileCheckBox->isChecked();
   parser->setParsingLimitEnabled(parsingLimitSet);
 
-  connect(parser.data(), &parserBase::nalModelUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
+  connect(parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
   //connect(parser.data(), &parserBase::bitrateDataUpdated, this, &BitstreamAnalysisWidget::updateBitrateDisplay);
   connect(parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
   connect(parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
@@ -195,8 +197,6 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
 
   updateStreamInfo();
 
-  auto model = parser->getBitrateItemModel();
-
   // Test: Set the model to show in the chart view
   QLineSeries *series = new QLineSeries;
   series->setName("Line 1 Test");
@@ -204,22 +204,29 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   mapper->setXColumn(0);
   mapper->setYColumn(1);
   mapper->setSeries(series);
-  mapper->setModel(model);
+  mapper->setModel(parser->getBitrateItemModel());
   ui.bitrateGraphicsView->chart()->addSeries(series);
   ui.bitrateGraphicsView->chart()->createDefaultAxes();
 
   // Scale the horizontal scroll bar
   bitratePlotZoomFactor = 1.0;
-  const int nrXValuesToShow = (int)(width() / ZOOM_PIXEL_PER_PLOT_X / bitratePlotZoomFactor);
-  ui.bitrateViewScrollBar->setMinimum(0);
-  ui.bitrateViewScrollBar->setMaximum(model->rowCount());
-  ui.bitrateGraphicsView->chart()->axisX()->setRange(0, nrXValuesToShow);
-  DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem slider max %d range %d-%d", model->rowCount(), 0, nrXValuesToShow);
+  updateScrollBarRange();
   
   // Start the background parsing thread
   updateParsingStatusText(0);
   backgroundParserFuture = QtConcurrent::run(this, &BitstreamAnalysisWidget::backgroundParsingFunction);
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem new parser created and started");
+}
+
+void BitstreamAnalysisWidget::updateScrollBarRange()
+{
+  auto model = parser->getBitrateItemModel();
+  const int nrXValuesToShow = (int)(width() / ZOOM_PIXEL_PER_PLOT_X / bitratePlotZoomFactor);
+  ui.bitrateViewScrollBar->setMinimum(0);
+  ui.bitrateViewScrollBar->setMaximum(model->rowCount());
+  ui.bitrateGraphicsView->chart()->axisX()->setRange(0, nrXValuesToShow);
+  ui.bitrateGraphicsView->chart()->axisY()->setRange(0, model->getMaximumBitrateValue());
+  DEBUG_ANALYSIS("BitstreamAnalysisWidget::updateScrollBarRange slider max %d range %d-%d", model->rowCount(), 0, nrXValuesToShow);
 }
 
 void BitstreamAnalysisWidget::hideEvent(QHideEvent *event)

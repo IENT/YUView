@@ -1021,9 +1021,10 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
   return (p == nullptr) ? 0 : p->childItems.count();
 }
 
-void PacketItemModel::setNewNumberModelItems(unsigned int n)
+void PacketItemModel::updateNumberModelItems()
 {
-  Q_ASSERT_X(n >= nrShowChildItems, "PacketItemModel::setNewNumberModelItems", "Setting a smaller number of items.");
+  auto n = getNumberFirstLevelChildren();
+  Q_ASSERT_X(n >= nrShowChildItems, "PacketItemModel::updateNumberModelItems", "Setting a smaller number of items.");
   unsigned int nrAddItems = n - nrShowChildItems;
   int lastIndex = nrShowChildItems;
   beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
@@ -1066,7 +1067,8 @@ BitrateItemModel::~BitrateItemModel()
 
 int BitrateItemModel::rowCount(const QModelIndex &parent) const
 {
-  return bitrateData.size();
+  Q_UNUSED(parent);
+  return nrRatePoints;
 }
 
 int BitrateItemModel::columnCount(const QModelIndex &parent) const
@@ -1101,6 +1103,26 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
   }
 
   return QVariant();
+}
+
+void BitrateItemModel::updateNumberModelItems()
+{
+  auto n = (unsigned int)bitrateData.count();
+  Q_ASSERT_X(n >= nrRatePoints, "PacketItemModel::updateNumberModelItems", "Setting a smaller number of items.");
+  unsigned int nrAddItems = n - nrRatePoints;
+  int lastIndex = nrRatePoints;
+  beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
+  nrRatePoints = n;
+  endInsertRows();
+}
+
+int BitrateItemModel::getMaximumBitrateValue()
+{
+  int m = 0;
+  for (int i : bitrateData)
+    if (i > m)
+      m = i;
+  return m;
 }
 
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------

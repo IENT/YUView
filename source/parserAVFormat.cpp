@@ -601,7 +601,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     if (signalEmitTimer.elapsed() > 1000 && packetModel)
     {
       signalEmitTimer.start();
-      emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
+      emit modelDataUpdated();
     }
 
     if (cancelBackgroundParser)
@@ -620,9 +620,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   ffmpegFile->seekFileToBeginning();
 
   if (packetModel)
-    emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
-
-  emit bitrateDataUpdated();
+    emit modelDataUpdated();
 
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   emit streamInfoUpdated();

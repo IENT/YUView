@@ -57,7 +57,7 @@ public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
 
 private slots:
-  void updateParserItemModel(unsigned int nalModelUpdated);
+  void updateParserItemModel();
   //void updateBitrateDisplay();
   void updateStreamInfo();
   void backgroundParsingDone(QString error);
@@ -92,6 +92,8 @@ private:
 
   bool showVideoStreamOnly {false};
   double bitratePlotZoomFactor {1.0};
+
+  void updateScrollBarRange();
 };
 
 #endif // BITSTREAMANALYSISDIALOG_H

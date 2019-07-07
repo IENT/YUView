@@ -55,9 +55,9 @@ public:
   virtual ~parserBase() = 0;
 
   QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
-  QAbstractItemModel *getBitrateItemModel() { return bitrateItemModel.data(); }
+  parserCommon::BitrateItemModel *getBitrateItemModel() { return bitrateItemModel.data(); }
   
-  void setNewNumberModelItems(unsigned int n) { packetModel->setNewNumberModelItems(n); }
+  void updateNumberModelItems();
   void enableModel();
 
   // Get info about the stream organized in a tree
@@ -78,9 +78,9 @@ public:
   parserCommon::bitstreamMapPerStreamAndPoc_t getbitrateData() { return bitrateData; }
 
 signals:
-  // An item was added to the nal model. This is emitted whenever a NAL unit or an AVPacket is parsed.
-  void nalModelUpdated(unsigned int newNumberItems);
-  void bitrateDataUpdated();
+  // Some data was updated and the models can be updated to reflec this. This is called regularly
+  // but not for every packet/Nal unit that is parsed.
+  void modelDataUpdated();
   void backgroundParsingDone(QString error);
   
   // Signal that the getStreamInfo() function will now return an updated info

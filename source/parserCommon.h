@@ -279,16 +279,17 @@ namespace parserCommon
     TreeItem *getRootItem() { return rootItem.data(); }
     bool isNull() { return rootItem.isNull(); }
 
-    unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
     void setUseColorCoding(bool colorCoding);
     void setShowVideoStreamOnly(bool showVideoOnly);
 
-    void setNewNumberModelItems(unsigned int);
+    void updateNumberModelItems();
   private:
     // This is the current number of first level child items which we show right now.
     // The brackground parser will add more items and it will notify the bitstreamAnalysisWindow
     // about them. The bitstream analysis window will then update this count and the view to show the new items.
     unsigned int nrShowChildItems {0};
+
+    unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
 
     static QList<QColor> streamIndexColors;
     bool useColorCoding { true };
@@ -306,7 +307,14 @@ namespace parserCommon
     virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+
+    void updateNumberModelItems();
+    int  getMaximumBitrateValue();
   private:
+    // The current number of bitrate points that we show.
+    // The background parser will add more data to "bitrateData" and perio
+    unsigned int nrRatePoints {0};
+
     QList<int> bitrateData;
   };
 

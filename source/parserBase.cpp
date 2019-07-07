@@ -62,3 +62,9 @@ void parserBase::enableModel()
   if (packetModel->isNull())
     packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
 }
+
+void parserBase::updateNumberModelItems()
+{ 
+  packetModel->updateNumberModelItems();
+  bitrateItemModel->updateNumberModelItems();
+}
