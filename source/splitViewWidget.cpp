@@ -1994,19 +1994,35 @@ QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playl
   QStringPair ret = QStringPair(*it1, *it2);
   --it1;
   --it2;
-  while (it1 != name1.constBegin() && it2 != name2.constBegin())
+  bool foundDiff = false;
+
+  while (it1 != name1.constBegin() - 1 && it2 != name2.constBegin() - 1)
   {
     ret.first = *it1 + sep + ret.first;
     ret.second = *it2 + sep + ret.second;
     if (*it1 != *it2)
     {
-      ret.first = QString("..") + sep + ret.first;
-      ret.second = QString("..") + sep + ret.second;
+      foundDiff = true;
       break;
     }
     
     --it1;
     --it2;
+  }
+
+  if(!foundDiff)
+  {
+    while (it1 != name1.constBegin() - 1)
+    {
+      ret.first = *it1 + sep + ret.first;
+      --it1;
+    }
+
+    while (it2 != name2.constBegin() - 1)
+    {
+      ret.second = *it2 + sep + ret.second;
+      --it2;
+    }
   }
 
   return ret;
