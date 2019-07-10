@@ -2024,10 +2024,10 @@ void splitViewWidget::drawItemPathAndName(QPainter *painter, int posX, int width
   QFont valueFont = QFont(SPLITVIEWWIDGET_SPLITPATH_FONT, SPLITVIEWWIDGET_SPLITPATH_FONTSIZE);
   QFontMetrics metrics(valueFont);
   
-  QString currentLine = pathSplit[0];
-  if (pathSplit.size() > 1)
+  QString currentLine = "";
+  if (pathSplit.size() > 0)
   {
-    for (auto it = pathSplit.begin() + 1; it != pathSplit.end(); it++)
+    for (auto it = pathSplit.begin(); it != pathSplit.end(); it++)
     {
       const bool isLast = (it == pathSplit.end() - 1);
       if (currentLine.isEmpty())
