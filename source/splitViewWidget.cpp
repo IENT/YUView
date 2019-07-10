@@ -1992,8 +1992,8 @@ QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playl
     return QStringPair(*it1, *it2);
 
   QStringPair ret = QStringPair(*it1, *it2);
-  it1--;
-  it2--;
+  --it1;
+  --it2;
   while (it1 != name1.constBegin() && it2 != name2.constBegin())
   {
     ret.first = *it1 + sep + ret.first;
@@ -2005,8 +2005,8 @@ QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playl
       break;
     }
     
-    it1--;
-    it2--;
+    --it1;
+    --it2;
   }
 
   return ret;
