@@ -1992,21 +1992,37 @@ QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playl
     return QStringPair(*it1, *it2);
 
   QStringPair ret = QStringPair(*it1, *it2);
-  it1--;
-  it2--;
-  while (it1 != name1.constBegin() && it2 != name2.constBegin())
+  --it1;
+  --it2;
+  bool foundDiff = false;
+
+  while (it1 != name1.constBegin() - 1 && it2 != name2.constBegin() - 1)
   {
     ret.first = *it1 + sep + ret.first;
     ret.second = *it2 + sep + ret.second;
     if (*it1 != *it2)
     {
-      ret.first = QString("..") + sep + ret.first;
-      ret.second = QString("..") + sep + ret.second;
+      foundDiff = true;
       break;
     }
     
-    it1--;
-    it2--;
+    --it1;
+    --it2;
+  }
+
+  if(!foundDiff)
+  {
+    while (it1 != name1.constBegin() - 1)
+    {
+      ret.first = *it1 + sep + ret.first;
+      --it1;
+    }
+
+    while (it2 != name2.constBegin() - 1)
+    {
+      ret.second = *it2 + sep + ret.second;
+      --it2;
+    }
   }
 
   return ret;
@@ -2024,10 +2040,10 @@ void splitViewWidget::drawItemPathAndName(QPainter *painter, int posX, int width
   QFont valueFont = QFont(SPLITVIEWWIDGET_SPLITPATH_FONT, SPLITVIEWWIDGET_SPLITPATH_FONTSIZE);
   QFontMetrics metrics(valueFont);
   
-  QString currentLine = pathSplit[0];
-  if (pathSplit.size() > 1)
+  QString currentLine = "";
+  if (pathSplit.size() > 0)
   {
-    for (auto it = pathSplit.begin() + 1; it != pathSplit.end(); it++)
+    for (auto it = pathSplit.begin(); it != pathSplit.end(); it++)
     {
       const bool isLast = (it == pathSplit.end() - 1);
       if (currentLine.isEmpty())
