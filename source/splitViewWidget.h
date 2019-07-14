@@ -58,6 +58,11 @@
 // The font and the font size of the "loading..." message
 #define SPLITVIEWWIDGET_LOADING_FONT "helvetica"
 #define SPLITVIEWWIDGET_LOADING_FONTSIZE 10
+// The font and the font size when drawing the item path in split view mode
+#define SPLITVIEWWIDGET_SPLITPATH_FONT "helvetica"
+#define SPLITVIEWWIDGET_SPLITPATH_FONTSIZE 10
+#define SPLITVIEWWIDGET_SPLITPATH_PADDING 20
+#define SPLITVIEWWIDGET_SPLITPATH_TOP_OFFSET 10
 // The font and the font size when drawing the pixel values
 #define SPLITVIEWWIDGET_PIXEL_VALUES_FONT "helvetica"
 #define SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE 10
@@ -313,7 +318,11 @@ protected:
   // A pointer to the parent widget (the main widget) for message boxes.
   QWidget *parentWidget;
 
-  // 
+  QStringPair determineItemNamesToDraw(playlistItem *item1, playlistItem *item2);
+  void drawItemPathAndName(QPainter *painter, int posX, int width, QString path);
+  bool drawItemPathAndNameEnabled {true};
+
+  // Everything related to drawing tests
   QPointer<QProgressDialog> testProgressDialog;
   int testLoopCount;                            //< Set before the test starts. Count down to 0. Then the test is over.
   bool testMode {false};                                //< Set to true when the test is running

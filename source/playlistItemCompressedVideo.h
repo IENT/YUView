@@ -65,6 +65,8 @@ public:
   // Create a new playlistItemHEVCFile from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemCompressedVideo *newPlaylistItemCompressedVideo(const QDomElementYUView &root, const QString &playlistFilePath);
 
+  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
+
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
   virtual void infoListButtonPressed(int buttonID) Q_DECL_OVERRIDE;
