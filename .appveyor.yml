@@ -57,10 +57,12 @@ after_build:
   - createWIXInstaller.bat
   - copy bin\Release\YUViewSetup.msi C:\projects\YUView
   - cd C:\projects\YUView
+  - echo --- Environment variables ----
   - echo Repo branch %APPVEYOR_REPO_BRANCH%
   - echo PR number %APPVEYOR_PULL_REQUEST_NUMBER%
   - echo Repo name %APPVEYOR_REPO_NAME%
-  - IF "%APPVEYOR_REPO_BRANCH%" == "master" (CALL deployment\deploy_to_github.bat)
+  - ps: if($env:APPVEYOR_REPO_NAME -eq 'IENT/YUView' -and $env:APPVEYOR_PULL_REQUEST_NUMBER -eq '' -and $env:APPVEYOR_REPO_BRANCH -eq 'master') {
+      invoke 'deployment\deploy_to_github.bat'}
  
 artifacts:
   # also collect the artifacts here
