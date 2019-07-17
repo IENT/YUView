@@ -295,6 +295,21 @@ namespace parserCommon
     bool showVideoOnly  { false };
   };
 
+  class BitrateItemModel : public QAbstractTableModel
+  {
+  public:
+    BitrateItemModel(QObject *parent);
+    ~BitrateItemModel();
+    
+    // The functions that must be overridden from the QAbstractTableModel
+    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+  private:
+    QList<int> bitrateData;
+  };
+
   class FilterByStreamIndexProxyModel : public QSortFilterProxyModel
   {
     Q_OBJECT

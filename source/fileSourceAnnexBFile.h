@@ -33,7 +33,6 @@
 #ifndef FILESOURCEANNEXBFILE_H
 #define FILESOURCEANNEXBFILE_H
 
-#include <QAbstractItemModel>
 #include "fileSource.h"
 #include "videoHandlerYUV.h"
 

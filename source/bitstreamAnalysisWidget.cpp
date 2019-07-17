@@ -180,7 +180,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   parser->setParsingLimitEnabled(parsingLimitSet);
 
   connect(parser.data(), &parserBase::nalModelUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
-  connect(parser.data(), &parserBase::bitrateDataUpdated, this, &BitstreamAnalysisWidget::updateBitrateDisplay);
+  //connect(parser.data(), &parserBase::bitrateDataUpdated, this, &BitstreamAnalysisWidget::updateBitrateDisplay);
   connect(parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
   connect(parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
 
@@ -192,6 +192,17 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   ui.dataTreeView->setColumnWidth(2, 120);
 
   updateStreamInfo();
+
+  // Test: Set the model to show in the chart view
+  QLineSeries *series = new QLineSeries;
+  series->setName("Line 1 Test");
+  QVXYModelMapper *mapper = new QVXYModelMapper(this);
+  mapper->setXColumn(0);
+  mapper->setYColumn(1);
+  mapper->setSeries(series);
+  mapper->setModel(parser->getBitrateItemModel());
+  ui.bitrateGraphicsView->chart()->addSeries(series);
+  ui.bitrateGraphicsView->chart()->createDefaultAxes();
   
   // Start the background parsing thread
   updateParsingStatusText(0);

@@ -102,7 +102,7 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, QUint64Pa
   {
     nextStartCodePos = fileBuffer.indexOf(startCode, posInBuffer + 3);
 
-    if (nextStartCodePos == -1 || nextStartCodePos > fileBufferSize)
+    if (nextStartCodePos < 0 || (uint64_t)nextStartCodePos > fileBufferSize)
     {
       // No start code found ... append all data in the current buffer.
       lastReturnArray += fileBuffer.mid(posInBuffer, fileBufferSize - posInBuffer);
