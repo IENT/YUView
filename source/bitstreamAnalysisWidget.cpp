@@ -267,90 +267,90 @@ void BitstreamAnalysisWidget::onAxisRangeChanged(const QString &minStr, const QS
   
 }
 
-void BitstreamAnalysisWidget::updateBitrateDisplay()
-{
-  if (parser->getNrStreams() == 0)
-    return;
+// void BitstreamAnalysisWidget::updateBitrateDisplay()
+// {
+//   if (parser->getNrStreams() == 0)
+//     return;
 
-  // Add the new data
+//   // Add the new data
   
-  QBarSeries* series = new QBarSeries(ui.bitrateGraphicsView);
-  series->setName(QString("bitrate TEST"));
+//   QBarSeries* series = new QBarSeries(ui.bitrateGraphicsView);
+//   series->setName(QString("bitrate TEST"));
 
-  auto bitrateData = parser->getbitrateData();
+//   auto bitrateData = parser->getbitrateData();
 
-  unsigned int xMax = 0;
-  unsigned int yMax = 0;
+//   unsigned int xMax = 0;
+//   unsigned int yMax = 0;
 
-  // TODO: How do we plot multiple streams at once?
-  //       I think we need a selector to select individual streams
-  for (unsigned int streamIdx = 0; streamIdx < 1; streamIdx++)
-  {
-    /*QAbstractSeries *series = seriesList[0];
-    QBarSeries *barSeries = dynamic_cast<QBarSeries*>(series);
-    if (!barSeries)
-      return;*/
+//   // TODO: How do we plot multiple streams at once?
+//   //       I think we need a selector to select individual streams
+//   for (unsigned int streamIdx = 0; streamIdx < 1; streamIdx++)
+//   {
+//     /*QAbstractSeries *series = seriesList[0];
+//     QBarSeries *barSeries = dynamic_cast<QBarSeries*>(series);
+//     if (!barSeries)
+//       return;*/
 
-    auto streamData = bitrateData[streamIdx];
+//     auto streamData = bitrateData[streamIdx];
 
-    auto it = streamData.constBegin();
-    unsigned int i = 0;
-    QBarSet *set = new QBarSet("Bitrate test");
-    //while (it != streamData.constEnd())
-    //{
-    //  // Append a QBarSet for each entry
-    //  set->append(it.value());
-    //  if (it.value() > yMax)
-    //    yMax = it.value();
+//     auto it = streamData.constBegin();
+//     unsigned int i = 0;
+//     QBarSet *set = new QBarSet("Bitrate test");
+//     //while (it != streamData.constEnd())
+//     //{
+//     //  // Append a QBarSet for each entry
+//     //  set->append(it.value());
+//     //  if (it.value() > yMax)
+//     //    yMax = it.value();
 
-    ////  if (!axisRangeInitialized)
-    ////  {
-    ////    rangeAxisX.first = s.startTime;
-    ////    rangeAxisX.second = s.endTime;
-    ////    rangeAxisY.second = s.bytes;
-    ////  }
+//     ////  if (!axisRangeInitialized)
+//     ////  {
+//     ////    rangeAxisX.first = s.startTime;
+//     ////    rangeAxisX.second = s.endTime;
+//     ////    rangeAxisY.second = s.bytes;
+//     ////  }
 
-    ////  if (s.startTime < rangeAxisX.first)
-    ////    rangeAxisX.first = s.startTime;
-    ////  if (s.endTime > rangeAxisX.second)
-    ////    rangeAxisX.second = s.endTime;
-    ////  if ((qint64)s.bytes > rangeAxisY.second)
-    ////    rangeAxisY.second = s.bytes;
+//     ////  if (s.startTime < rangeAxisX.first)
+//     ////    rangeAxisX.first = s.startTime;
+//     ////  if (s.endTime > rangeAxisX.second)
+//     ////    rangeAxisX.second = s.endTime;
+//     ////  if ((qint64)s.bytes > rangeAxisY.second)
+//     ////    rangeAxisY.second = s.bytes;
 
-    ////  axisRangeInitialized = true;
+//     ////  axisRangeInitialized = true;
 
-    //  DEBUG_ANALYSIS("bitstreamAnalysisDialog::updateBitrateDisplay add bar at %d %d", it.key(), (unsigned int)it.value());
-    //  it++;
-    //  i++;
-    ////  addedSegmentsPerStream[streamIdx]++;
-    //}
+//     //  DEBUG_ANALYSIS("bitstreamAnalysisDialog::updateBitrateDisplay add bar at %d %d", it.key(), (unsigned int)it.value());
+//     //  it++;
+//     //  i++;
+//     ////  addedSegmentsPerStream[streamIdx]++;
+//     //}
 
-    for (int i = 0; i < 200; i++)
-    {
-      set->append(i);
-    }
-    yMax = 200;
+//     for (int i = 0; i < 200; i++)
+//     {
+//       set->append(i);
+//     }
+//     yMax = 200;
 
-    xMax = i;
+//     xMax = i;
 
-    DEBUG_ANALYSIS("bitstreamAnalysisDialog::updateBitrateDisplay Add sets");
-    series->append(set);
-    DEBUG_ANALYSIS("bitstreamAnalysisDialog::updateBitrateDisplay Add sets - Done");
-  }
+//     DEBUG_ANALYSIS("bitstreamAnalysisDialog::updateBitrateDisplay Add sets");
+//     series->append(set);
+//     DEBUG_ANALYSIS("bitstreamAnalysisDialog::updateBitrateDisplay Add sets - Done");
+//   }
 
-  ui.bitrateGraphicsView->chart()->addSeries(series);
+//   ui.bitrateGraphicsView->chart()->addSeries(series);
 
-  ui.bitrateGraphicsView->chart()->createDefaultAxes();
-  ui.bitrateGraphicsView->chart()->axes(Qt::Horizontal).first()->setRange(0, xMax * 2);
-  ui.bitrateGraphicsView->chart()->zoom(5.0);
-  ui.bitrateGraphicsView->chart()->axes(Qt::Vertical).first()->setRange(0, yMax * 2);
+//   ui.bitrateGraphicsView->chart()->createDefaultAxes();
+//   ui.bitrateGraphicsView->chart()->axes(Qt::Horizontal).first()->setRange(0, xMax * 2);
+//   ui.bitrateGraphicsView->chart()->zoom(5.0);
+//   ui.bitrateGraphicsView->chart()->axes(Qt::Vertical).first()->setRange(0, yMax * 2);
 
-  ui.bitrateGraphicsView->setRubberBand(QChartView::HorizontalRubberBand);
+//   ui.bitrateGraphicsView->setRubberBand(QChartView::HorizontalRubberBand);
 
-  auto *abstractAxis = ui.bitrateGraphicsView->chart()->axisX();
-  auto *barCategoryAxis = dynamic_cast<QBarCategoryAxis*>(abstractAxis);
-  connect(barCategoryAxis, &QBarCategoryAxis::rangeChanged, this, &BitstreamAnalysisWidget::onAxisRangeChanged);
+//   auto *abstractAxis = ui.bitrateGraphicsView->chart()->axisX();
+//   auto *barCategoryAxis = dynamic_cast<QBarCategoryAxis*>(abstractAxis);
+//   connect(barCategoryAxis, &QBarCategoryAxis::rangeChanged, this, &BitstreamAnalysisWidget::onAxisRangeChanged);
 
-  //DEBUG_ANALYSIS("bitstreamAnalysisDialog::updateBitrateDisplay axis limits (%d, %d) (%d, %d)", rangeAxisX.first, rangeAxisX.second, rangeAxisY.first, rangeAxisY.second);
-  //DEBUG_ANALYSIS("bitstreamAnalysisDialog::updateBitrateDisplay new segment count %d", barSeries->count());
-}
+//   //DEBUG_ANALYSIS("bitstreamAnalysisDialog::updateBitrateDisplay axis limits (%d, %d) (%d, %d)", rangeAxisX.first, rangeAxisX.second, rangeAxisY.first, rangeAxisY.second);
+//   //DEBUG_ANALYSIS("bitstreamAnalysisDialog::updateBitrateDisplay new segment count %d", barSeries->count());
+// }
