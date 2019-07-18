@@ -269,151 +269,153 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
 
 bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
 {
-  if (!packetModel->isNull())
+  if (packetModel->isNull())
+    return true;
+
+  // Use the given tree item. If it is not set, use the nalUnitMode (if active).
+  // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
+  // yet. We want to parse the item and then set a good description.
+  QString specificDescription;
+  TreeItem *itemTree = new TreeItem(packetModel->getRootItem());
+
+  int posInData = 0;
+  QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.get_data()), packet.get_data_size());
+  
+  // Log all the packet info
+  new TreeItem("stream_index", packet.get_stream_index(), itemTree);
+  new TreeItem("pts", packet.get_pts(), itemTree);
+  new TreeItem("dts", packet.get_dts(), itemTree);
+  new TreeItem("duration", packet.get_duration(), itemTree);
+  new TreeItem("flag_keyframe", packet.get_flag_keyframe(), itemTree);
+  new TreeItem("flag_corrupt", packet.get_flag_corrupt(), itemTree);
+  new TreeItem("flag_discard", packet.get_flag_discard(), itemTree);
+  new TreeItem("data_size", packet.get_data_size(), itemTree);
+
+  itemTree->setStreamIndex(packet.get_stream_index());
+
+  if (packet.is_video_packet)
   {
-    // Use the given tree item. If it is not set, use the nalUnitMode (if active).
-    // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
-    // yet. We want to parse the item and then set a good description.
-    QString specificDescription;
-    TreeItem *itemTree = new TreeItem(packetModel->getRootItem());
-
-    int posInData = 0;
-    QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.get_data()), packet.get_data_size());
-    
-    // Log all the packet info
-    new TreeItem("stream_index", packet.get_stream_index(), itemTree);
-    new TreeItem("pts", packet.get_pts(), itemTree);
-    new TreeItem("dts", packet.get_dts(), itemTree);
-    new TreeItem("duration", packet.get_duration(), itemTree);
-    new TreeItem("flag_keyframe", packet.get_flag_keyframe(), itemTree);
-    new TreeItem("flag_corrupt", packet.get_flag_corrupt(), itemTree);
-    new TreeItem("flag_discard", packet.get_flag_discard(), itemTree);
-    new TreeItem("data_size", packet.get_data_size(), itemTree);
-
-    itemTree->setStreamIndex(packet.get_stream_index());
-
-    if (packet.is_video_packet)
+    if (annexBParser)
     {
-      if (annexBParser)
+      // Colloect the types of NALs to create a good name later
+      QStringList nalNames;
+
+      int nalID = 0;
+      packetDataFormat_t packetFormat = packet.guessDataFormatFromData();
+      const int MIN_NAL_SIZE = 3;
+      while (posInData + MIN_NAL_SIZE <= avpacketData.length())
       {
-        // Colloect the types of NALs to create a good name later
-        QStringList nalNames;
+        QByteArray firstBytes = avpacketData.mid(posInData, 4);
 
-        int nalID = 0;
-        packetDataFormat_t packetFormat = packet.guessDataFormatFromData();
-        const int MIN_NAL_SIZE = 3;
-        while (posInData + MIN_NAL_SIZE <= avpacketData.length())
+        QByteArray nalData;
+        if (packetFormat == packetFormatRawNAL)
         {
-          QByteArray firstBytes = avpacketData.mid(posInData, 4);
+          int offset;
+          if (firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
+            offset = 4;
+          else if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)1)
+            offset = 3;
+          else
+            return reader_helper::addErrorMessageChildItem("Start code could not be found.", itemTree);
 
-          QByteArray nalData;
-          if (packetFormat == packetFormatRawNAL)
+          // Look for the next start code (or the end of the file)
+          int nextStartCodePos = avpacketData.indexOf(startCode, posInData + 3);
+
+          if (nextStartCodePos == -1)
           {
-            int offset;
-            if (firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
-              offset = 4;
-            else if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)1)
-              offset = 3;
-            else
-              return reader_helper::addErrorMessageChildItem("Start code could not be found.", itemTree);
-
-            // Look for the next start code (or the end of the file)
-            int nextStartCodePos = avpacketData.indexOf(startCode, posInData + 3);
-
-            if (nextStartCodePos == -1)
-            {
-              nalData = avpacketData.mid(posInData + offset);
-              posInData = avpacketData.length() + 1;
-              DEBUG_AVFORMAT("parserAVFormat::parseAVPacket start code -1 - NAL from %d to %d", posInData + offset, avpacketData.length());
-            }
-            else
-            {
-              const int size = nextStartCodePos - posInData - offset;
-              nalData = avpacketData.mid(posInData + offset, size);
-              posInData += 3 + size;
-              DEBUG_AVFORMAT("parserAVFormat::parseAVPacket start code %d - NAL from %d to %d", nextStartCodePos, posInData + offset, nextStartCodePos);
-            }
+            nalData = avpacketData.mid(posInData + offset);
+            posInData = avpacketData.length() + 1;
+            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket start code -1 - NAL from %d to %d", posInData + offset, avpacketData.length());
           }
           else
           {
-            int size = (unsigned char)firstBytes.at(3);
-            size += (unsigned char)firstBytes.at(2) << 8;
-            size += (unsigned char)firstBytes.at(1) << 16;
-            size += (unsigned char)firstBytes.at(0) << 24;
-            posInData += 4;
-
-            if (size < 0)
-              // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
-              return reader_helper::addErrorMessageChildItem("Invalid size indicator in packet.", itemTree);
-            if (posInData + size > avpacketData.length())
-              return reader_helper::addErrorMessageChildItem("Not enough data in the input array to read NAL unit.", itemTree);
-
-            nalData = avpacketData.mid(posInData, size);
-            posInData += size;
-            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket NAL from %d to %d", posInData, posInData + size);
+            const int size = nextStartCodePos - posInData - offset;
+            nalData = avpacketData.mid(posInData + offset, size);
+            posInData += 3 + size;
+            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket start code %d - NAL from %d to %d", nextStartCodePos, posInData + offset, nextStartCodePos);
           }
-
-          // Parse the NAL data
-          QString nalTypeName;
-          QUint64Pair nalStartEndPosFile; // Not used
-          if (!annexBParser->parseAndAddNALUnit(nalID, nalData, itemTree, nalStartEndPosFile, &nalTypeName))
-            itemTree->setError();
-          if (!nalTypeName.isEmpty())
-            nalNames.append(nalTypeName);
-          nalID++;
         }
-
-        // Create a good detailed and compact description of the AVpacket
-        if (codecID.isMpeg2())
-          specificDescription = " - ";    // In mpeg2 there is no concept of NAL units
         else
-          specificDescription = " - NALs:";
-        for (QString n : nalNames)
-          specificDescription += (" " + n);
-      }
-      else if (obuParser)
-      {
-        int obuID = 0;
-        // Colloect the types of OBus to create a good name later
-        QStringList obuNames;
-
-        const int MIN_OBU_SIZE = 2;
-        while (posInData + MIN_OBU_SIZE <= avpacketData.length())
         {
-          QString obuTypeName;
-          QUint64Pair obuStartEndPosFile; // Not used
-          try
-          {  
-            int nrBytesRead = obuParser->parseAndAddOBU(obuID, avpacketData.mid(posInData), itemTree, obuStartEndPosFile, &obuTypeName);
-            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
-            posInData += nrBytesRead;
-          }
-          catch (...)
-          {
-            // Catch exceptions and just return
-            break;
-          }
+          int size = (unsigned char)firstBytes.at(3);
+          size += (unsigned char)firstBytes.at(2) << 8;
+          size += (unsigned char)firstBytes.at(1) << 16;
+          size += (unsigned char)firstBytes.at(0) << 24;
+          posInData += 4;
 
-          if (!obuTypeName.isEmpty())
-            obuNames.append(obuTypeName);
-          obuID++;
+          if (size < 0)
+            // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
+            return reader_helper::addErrorMessageChildItem("Invalid size indicator in packet.", itemTree);
+          if (posInData + size > avpacketData.length())
+            return reader_helper::addErrorMessageChildItem("Not enough data in the input array to read NAL unit.", itemTree);
 
-          if (obuID > 200)
-          {
-            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket We encountered more than 200 OBUs in one packet. This is probably an error.");
-            return false;
-          }
+          nalData = avpacketData.mid(posInData, size);
+          posInData += size;
+          DEBUG_AVFORMAT("parserAVFormat::parseAVPacket NAL from %d to %d", posInData, posInData + size);
         }
 
-        specificDescription = " - OBUs:";
-        for (QString n : obuNames)
-          specificDescription += (" " + n);
+        // Parse the NAL data
+        QString nalTypeName;
+        QUint64Pair nalStartEndPosFile; // Not used
+        if (!annexBParser->parseAndAddNALUnit(nalID, nalData, itemTree, nalStartEndPosFile, &nalTypeName))
+          itemTree->setError();
+        if (!nalTypeName.isEmpty())
+          nalNames.append(nalTypeName);
+        nalID++;
       }
-    }
 
-    // Set a useful name of the TreeItem (the root for this NAL)
-    itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": "") + specificDescription);
+      // Create a good detailed and compact description of the AVpacket
+      if (codecID.isMpeg2())
+        specificDescription = " - ";    // In mpeg2 there is no concept of NAL units
+      else
+        specificDescription = " - NALs:";
+      for (QString n : nalNames)
+        specificDescription += (" " + n);
+    }
+    else if (obuParser)
+    {
+      int obuID = 0;
+      // Colloect the types of OBus to create a good name later
+      QStringList obuNames;
+
+      const int MIN_OBU_SIZE = 2;
+      while (posInData + MIN_OBU_SIZE <= avpacketData.length())
+      {
+        QString obuTypeName;
+        QUint64Pair obuStartEndPosFile; // Not used
+        try
+        {  
+          int nrBytesRead = obuParser->parseAndAddOBU(obuID, avpacketData.mid(posInData), itemTree, obuStartEndPosFile, &obuTypeName);
+          DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
+          posInData += nrBytesRead;
+        }
+        catch (...)
+        {
+          // Catch exceptions and just return
+          break;
+        }
+
+        if (!obuTypeName.isEmpty())
+          obuNames.append(obuTypeName);
+        obuID++;
+
+        if (obuID > 200)
+        {
+          DEBUG_AVFORMAT("parserAVFormat::parseAVPacket We encountered more than 200 OBUs in one packet. This is probably an error.");
+          return false;
+        }
+      }
+
+      specificDescription = " - OBUs:";
+      for (QString n : obuNames)
+        specificDescription += (" " + n);
+    }
   }
+  else
+    bitrateItemModel->addBitratePoint(packet.get_pts(), packet.get_dts(), packet.get_data_size());
+
+  // Set a useful name of the TreeItem (the root for this NAL)
+  itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": "") + specificDescription);
 
   return true;
 }

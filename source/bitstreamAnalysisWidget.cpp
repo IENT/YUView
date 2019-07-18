@@ -37,7 +37,7 @@
 #include "parserAnnexBMpeg2.h"
 #include "parserAVFormat.h"
 
-#define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 1
+#define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 0
 #if BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_ANALYSIS qDebug

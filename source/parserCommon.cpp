@@ -32,17 +32,25 @@
 
 #include "parserCommon.h"
 
+#include <QDebug>
 #include <QString>
 #include <assert.h>
 #include <stdlib.h>
 #include <time.h>  
 
 #define PARSERCOMMON_DEBUG_OUTPUT 0
+#define PARSERCOMMON_DEBUG_FILTER_OUTPUT 0
+
 #if PARSERCOMMON_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
 #define DEBUG_PARSER qDebug
 #else
 #define DEBUG_PARSER(fmt,...) ((void)0)
+#endif
+
+#if PARSERCOMMON_DEBUG_FILTER_OUTPUT && !NDEBUG
+#define DEBUG_FILTER qDebug
+#else
+#define DEBUG_FILTER(fmt,...) ((void)0)
 #endif
 
 using namespace parserCommon;
@@ -1054,11 +1062,6 @@ void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
 
 BitrateItemModel::BitrateItemModel(QObject *parent) : QAbstractTableModel(parent)
 {
-  srand (time(NULL));
-  for(int i=0; i<500; i++)
-  {
-    bitrateData.push_back((int)(rand() % 100));
-  }
 }
 
 BitrateItemModel::~BitrateItemModel()
@@ -1096,10 +1099,13 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
 {
   if (role == Qt::DisplayRole)
   {
+    unsigned int retVal;
     if (index.column() == 0)
-      return index.row();
+      retVal = bitrateData[index.row()].pts;
     else if (index.column() == 1)
-      return bitrateData[index.row()];
+      retVal = bitrateData[index.row()].bitrate;
+    qDebug("data index %d-%d v %d", index.row(), index.column(), retVal);
+    return retVal;
   }
 
   return QVariant();
@@ -1116,13 +1122,25 @@ void BitrateItemModel::updateNumberModelItems()
   endInsertRows();
 }
 
-int BitrateItemModel::getMaximumBitrateValue()
+unsigned int BitrateItemModel::getMaximumBitrateValue()
 {
-  int m = 0;
-  for (int i : bitrateData)
-    if (i > m)
-      m = i;
-  return m;
+  unsigned int b = 0;
+  for (auto i : bitrateData)
+    if (i.bitrate > b)
+      b = i.bitrate;
+  return b;
+}
+
+void BitrateItemModel::addBitratePoint(unsigned int pts, unsigned int dts, unsigned int bitrate)
+{
+  bitrateEntry e;
+  e.pts = pts;
+  e.dts = dts;
+  e.bitrate = bitrate;
+
+  DEBUG_PARSER("addBitratePoint pts %d dts %d rate %d", pts, dts, bitrate);
+  
+  bitrateData.append(e);
 }
 
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------
@@ -1131,7 +1149,7 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
 {
   if (streamIndex == -1)
   {
-    DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow %d - accepting all", row);
+    DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow %d - accepting all", row);
     return true;
   }
 
@@ -1143,7 +1161,7 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
     PacketItemModel *p = static_cast<PacketItemModel*>(s);
     if (p == nullptr)
     {
-      DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow Unable to get root item");  
+      DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow Unable to get root item");  
       return false;
     }
     parentItem = p->getRootItem();
@@ -1155,11 +1173,11 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
   TreeItem *childItem = parentItem->childItems.value(row, nullptr);
   if (childItem != nullptr)
   {
-    DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d filter %d", childItem->getStreamIndex(), filterStreamIndex);
+    DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d", childItem->getStreamIndex());
     return childItem->getStreamIndex() == streamIndex || childItem->getStreamIndex() == -1;
   }
 
-  DEBUG_PARSER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> reject");
+  DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> reject");
   return false;
 }
 

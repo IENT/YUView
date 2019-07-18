@@ -309,13 +309,22 @@ namespace parserCommon
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
 
     void updateNumberModelItems();
-    int  getMaximumBitrateValue();
+    unsigned int getMaximumBitrateValue();
+
+    void addBitratePoint(unsigned int pts, unsigned int dts, unsigned int bitrate);
   private:
     // The current number of bitrate points that we show.
     // The background parser will add more data to "bitrateData" and perio
     unsigned int nrRatePoints {0};
 
-    QList<int> bitrateData;
+    struct bitrateEntry
+    {
+      unsigned int dts {0};
+      unsigned int pts {0};
+      unsigned int bitrate {0};
+    };
+
+    QList<bitrateEntry> bitrateData;
   };
 
   class FilterByStreamIndexProxyModel : public QSortFilterProxyModel
