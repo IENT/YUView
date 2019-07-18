@@ -65,7 +65,8 @@ private slots:
   void showVideoStreamOnlyCheckBoxToggled(bool state);
   void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
   void parseEntireBitstreamCheckBoxToggled(bool state) { Q_UNUSED(state); restartParsingOfCurrentItem(); }
-  void scrollBarValueChanged(int value);
+  void onAxisRangeChanged(const QString &min, const QString &max);
+  void onScrollBarValueChanged(int val);
 
 protected:
   void hideEvent(QHideEvent *event) override;
@@ -91,9 +92,10 @@ private:
   QPointer<playlistItemCompressedVideo> currentCompressedVideo;
 
   bool showVideoStreamOnly {false};
-  double bitratePlotZoomFactor {1.0};
-
+  bool scrolling {false};
+  int  previousScrollValue {0};
   void updateScrollBarRange();
+  double bitratePlotZoomFactor {0};
 };
 
 #endif // BITSTREAMANALYSISDIALOG_H
