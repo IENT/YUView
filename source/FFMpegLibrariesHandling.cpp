@@ -3132,7 +3132,10 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
 
       QString bitsRead;
       bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);
-      reader.readBits(4, bitsRead); // obu_type
+      unsigned int obu_type = reader.readBits(4, bitsRead); // obu_type
+      if (obu_type == 0 || (obu_type >= 9 && obu_type <= 14))
+        // RESERVED obu types should not occur (highly unlikely)
+        return false;
       bool obu_extension_flag = (reader.readBits(1, bitsRead) != 0);
       bool obu_has_size_field = (reader.readBits(1, bitsRead) != 0);
       bool obu_reserved_1bit = (reader.readBits(1, bitsRead) != 0);
