@@ -81,7 +81,7 @@ private:
   struct nal_unit_mpeg2 : nal_unit
   {
     nal_unit_mpeg2(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx) {}
-    nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src) : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx) { interprete_start_code(nal_src->nal_unit_type); }
+    nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src);
     virtual ~nal_unit_mpeg2() {}
 
     // Parse the parameter set from the given data bytes. If a parserCommon::TreeItem pointer is provided, the values will be added to the tree as well.
@@ -91,7 +91,7 @@ private:
     virtual bool isParameterSet() const override { return nal_unit_type == SEQUENCE_HEADER; }
 
     QStringList get_start_code_meanings();
-    QString interprete_start_code(int start_code);
+    void interpreteStartCodeValue();
 
     nal_unit_type_enum nal_unit_type {UNSPECIFIED};
     unsigned int slice_id {0};         // in case of SLICE
