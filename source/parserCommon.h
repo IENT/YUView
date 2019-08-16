@@ -41,10 +41,10 @@
 #include <QSortFilterProxyModel>
 #include <QString>
 
+#include "typedef.h"
+
 namespace parserCommon 
 {
-  using bitstreamMapPerStreamAndPoc_t = QMap<unsigned int, QMap<unsigned int, uint64_t>>;
-
   /* This class provides the ability to read a byte array bit wise. Reading of ue(v) symbols is also supported.
     * This class can "read out" the emulation prevention bytes. This is enabled by default but can be disabled
     * if needed.
@@ -310,8 +310,9 @@ namespace parserCommon
 
     void updateNumberModelItems();
     unsigned int getMaximumBitrateValue();
+    RangeInt getXRange() { return ptsRange; }
 
-    void addBitratePoint(unsigned int pts, unsigned int dts, unsigned int bitrate);
+    void addBitratePoint(unsigned int streamIndex, int pts, int dts, unsigned int bitrate);
   private:
     // The current number of bitrate points that we show.
     // The background parser will add more data to "bitrateData" and perio
@@ -319,12 +320,14 @@ namespace parserCommon
 
     struct bitrateEntry
     {
-      unsigned int dts {0};
-      unsigned int pts {0};
+      int dts {0};
+      int pts {0};
       unsigned int bitrate {0};
     };
 
-    QList<bitrateEntry> bitrateData;
+    QMap<unsigned int, QList<bitrateEntry>> bitratePerStreamData;
+    RangeInt dtsRange;
+    RangeInt ptsRange;
   };
 
   class FilterByStreamIndexProxyModel : public QSortFilterProxyModel

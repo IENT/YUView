@@ -1062,6 +1062,10 @@ void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
 
 BitrateItemModel::BitrateItemModel(QObject *parent) : QAbstractTableModel(parent)
 {
+  dtsRange.min = INT_MAX;
+  dtsRange.max = INT_MIN;
+  ptsRange.min = INT_MAX;
+  ptsRange.max = INT_MIN;
 }
 
 BitrateItemModel::~BitrateItemModel()
@@ -1101,9 +1105,9 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
   {
     unsigned int retVal;
     if (index.column() == 0)
-      retVal = bitrateData[index.row()].pts;
+      retVal = bitratePerStreamData[0][index.row()].pts;
     else if (index.column() == 1)
-      retVal = bitrateData[index.row()].bitrate;
+      retVal = bitratePerStreamData[0][index.row()].bitrate;
     qDebug("data index %d-%d v %d", index.row(), index.column(), retVal);
     return retVal;
   }
@@ -1113,7 +1117,7 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
 
 void BitrateItemModel::updateNumberModelItems()
 {
-  auto n = (unsigned int)bitrateData.count();
+  auto n = (unsigned int)bitratePerStreamData[0].count();
   Q_ASSERT_X(n >= nrRatePoints, "PacketItemModel::updateNumberModelItems", "Setting a smaller number of items.");
   unsigned int nrAddItems = n - nrRatePoints;
   int lastIndex = nrRatePoints;
@@ -1125,22 +1129,27 @@ void BitrateItemModel::updateNumberModelItems()
 unsigned int BitrateItemModel::getMaximumBitrateValue()
 {
   unsigned int b = 0;
-  for (auto i : bitrateData)
+  for (auto i : bitratePerStreamData[0])
     if (i.bitrate > b)
       b = i.bitrate;
   return b;
 }
 
-void BitrateItemModel::addBitratePoint(unsigned int pts, unsigned int dts, unsigned int bitrate)
+void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dts, unsigned int bitrate)
 {
   bitrateEntry e;
   e.pts = pts;
   e.dts = dts;
   e.bitrate = bitrate;
 
-  DEBUG_PARSER("addBitratePoint pts %d dts %d rate %d", pts, dts, bitrate);
+  dtsRange.min = qMin(dtsRange.min, dts);
+  dtsRange.max = qMax(dtsRange.max, dts);
+  ptsRange.min = qMin(ptsRange.min, dts);
+  ptsRange.max = qMax(ptsRange.max, dts);
+
+  DEBUG_PARSER("addBitratePoint streamIndex %d pts %d dts %d rate %d", streamIndex, pts, dts, bitrate);
   
-  bitrateData.append(e);
+  bitratePerStreamData[streamIndex].append(e);
 }
 
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------

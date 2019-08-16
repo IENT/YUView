@@ -356,7 +356,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
   if (auDelimiterDetector.isStartOfNewAU(nal_avc, curFramePOC))
   {
     DEBUG_AVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
-    bitrateItemModel->addBitratePoint(curFramePOC, counterAU, sizeCurrentAU);
+    bitrateItemModel->addBitratePoint(0, curFramePOC, counterAU, sizeCurrentAU);
     sizeCurrentAU = 0;
     counterAU++;
   }

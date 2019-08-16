@@ -37,7 +37,7 @@
 #include "parserAnnexBMpeg2.h"
 #include "parserAVFormat.h"
 
-#define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 0
+#define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 1
 #if BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_ANALYSIS qDebug
@@ -184,7 +184,6 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   parser->setParsingLimitEnabled(parsingLimitSet);
 
   connect(parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
-  //connect(parser.data(), &parserBase::bitrateDataUpdated, this, &BitstreamAnalysisWidget::updateBitrateDisplay);
   connect(parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
   connect(parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
 
@@ -222,7 +221,8 @@ void BitstreamAnalysisWidget::updateScrollBarRange()
 {
   auto model = parser->getBitrateItemModel();
   const int nrXValuesToShow = (int)(width() / ZOOM_PIXEL_PER_PLOT_X / bitratePlotZoomFactor);
-  ui.bitrateGraphicsViewHorizontalScrollBar->setMinimum(0);
+  auto xRange = model->getXRange();
+  ui.bitrateGraphicsViewHorizontalScrollBar->setMinimum(xRange.min);
   ui.bitrateGraphicsViewHorizontalScrollBar->setMaximum(model->rowCount() - nrXValuesToShow);
   ui.bitrateGraphicsView->chart()->axisX()->setRange(0, nrXValuesToShow);
   ui.bitrateGraphicsView->chart()->axisY()->setRange(0, model->getMaximumBitrateValue());

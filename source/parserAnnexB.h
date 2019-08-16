@@ -105,7 +105,7 @@ protected:
     // Parse the header from the given data bytes. If a parserCommon::TreeItem pointer is provided, the values will be added to the tree as well.
     virtual bool parse_nal_unit_header(const QByteArray &header_data, parserCommon::TreeItem *root) = 0;
 
-    /// Pointer to the first byte of the start code of the NAL unit
+    // Pointer to the first byte of the start code of the NAL unit
     QUint64Pair filePosStartEnd;
 
     // The index of the nal within the bitstream

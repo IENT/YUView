@@ -412,7 +412,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
     }
   }
   else
-    bitrateItemModel->addBitratePoint(packet.get_pts(), packet.get_dts(), packet.get_data_size());
+    bitrateItemModel->addBitratePoint(packet.get_stream_index(), packet.get_pts(), packet.get_dts(), packet.get_data_size());
 
   // Set a useful name of the TreeItem (the root for this NAL)
   itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": "") + specificDescription);
@@ -586,12 +586,6 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     else
     {
       DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Packet %d", packetID);
-    }
-
-    const int streamIdx = packet.get_stream_index();
-    if (streamIdx >= 0)
-    {
-      bitrateData[streamIdx][packetID] = packet.get_data_size();
     }
 
     packetID++;

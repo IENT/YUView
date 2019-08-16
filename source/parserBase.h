@@ -75,8 +75,6 @@ public:
   void setFilterStreamIndex(int streamIndex) { streamIndexFilter->setFilterStreamIndex(streamIndex); }
   void setParsingLimitEnabled(bool limitEnabled) { parsingLimitEnabled = limitEnabled; }
 
-  parserCommon::bitstreamMapPerStreamAndPoc_t getbitrateData() { return bitrateData; }
-
 signals:
   // Some data was updated and the models can be updated to reflec this. This is called regularly
   // but not for every packet/Nal unit that is parsed.
@@ -95,8 +93,6 @@ protected:
   bool cancelBackgroundParser {false};
   int  progressPercentValue   {0};
   bool parsingLimitEnabled    {true};
-
-  parserCommon::bitstreamMapPerStreamAndPoc_t bitrateData;
 };
 
 #endif // PARSERBASEE_H
