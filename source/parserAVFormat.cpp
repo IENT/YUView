@@ -279,12 +279,46 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
 
     int posInData = 0;
     QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.get_data()), packet.get_data_size());
+
+    AVRational timeBase = timeBaseAllStreams[packet.get_stream_index()];
+
+    auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> QString
+    {
+      QString str = QString("%1 (").arg(timestamp);
+      if (timestamp < 0)
+      {
+        str += "-";
+        timestamp = -timestamp;
+      }
+      
+      int64_t time = std::abs(timestamp) * 1000 / timebase.num / timebase.den;
+      
+      int64_t hours = time / 1000 / 60 / 60;
+      time -= hours * 60 * 60 * 1000;
+      qint64 minutes = time / 1000 / 60;
+      time -= minutes * 60 * 1000;
+      qint64 seconds = time / 1000;
+      qint64 milliseconds = time - seconds;
+
+      if (hours > 0)
+        str += QString("%1:").arg(hours);
+      if (hours > 0 || minutes > 0)
+        str += QString("%1:").arg(minutes, 2, 10, QChar('0'));
+      str += QString("%1.").arg(seconds, 2, 10, QChar('0'));
+      if (milliseconds < 100)
+        str += "0";
+      if (milliseconds < 10)
+        str += "0";
+      str += QString("%1)").arg(milliseconds);
+
+      return str;
+    };
     
     // Log all the packet info
     new TreeItem("stream_index", packet.get_stream_index(), itemTree);
-    new TreeItem("pts", packet.get_pts(), itemTree);
-    new TreeItem("dts", packet.get_dts(), itemTree);
-    new TreeItem("duration", packet.get_duration(), itemTree);
+    new TreeItem("pts", formatTimestamp(packet.get_pts(), timeBase), itemTree);
+    new TreeItem("dts", formatTimestamp(packet.get_dts(), timeBase), itemTree);
+    new TreeItem("duration", formatTimestamp(packet.get_duration(), timeBase), itemTree);
     new TreeItem("flag_keyframe", packet.get_flag_keyframe(), itemTree);
     new TreeItem("flag_corrupt", packet.get_flag_corrupt(), itemTree);
     new TreeItem("flag_discard", packet.get_flag_discard(), itemTree);
@@ -558,6 +592,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
   // After opening the file, we can get information on it
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  timeBaseAllStreams = ffmpegFile->getTimeBaseAllStreams();
   emit streamInfoUpdated();
 
   // Now iterate over all packets and send them to the parser
