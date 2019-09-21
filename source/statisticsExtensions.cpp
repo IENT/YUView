@@ -34,9 +34,10 @@
 
 #include <cmath>
 #include "typedef.h"
+#include <random>
 
 // All types that are supported by the getColor() function.
-QStringList colorMapper::supportedComplexTypes = QStringList() << "jet" << "heat" << "hsv" << "hot" << "cool" << "spring" << "summer" << "autumn" << "winter" << "gray" << "bone" << "copper" << "pink" << "lines" << "col3_gblr" << "col3_gwr" << "col3_bblr" << "col3_bwr" << "col3_bblg" << "col3_bwg";
+QStringList colorMapper::supportedComplexTypes = QStringList() << "jet" << "heat" << "hsv" << "shuffle" << "hot" << "cool" << "spring" << "summer" << "autumn" << "winter" << "gray" << "bone" << "copper" << "pink" << "lines" << "col3_gblr" << "col3_gwr" << "col3_bblr" << "col3_bwr" << "col3_bblg" << "col3_bwg";
 
 // ---------- StatisticsType -----------
 
@@ -506,6 +507,40 @@ QColor colorMapper::getColor(float value)
     }
     else if (complexType == "hsv")
     {
+      // h = x, s = 1, v = 1
+      if (x >= 1.0)
+        x = 0.0;
+      x = x * 6.0f;
+      int I = (int) x;   /* should be in the range 0..5 */
+      float F = x - I;     /* fractional part */
+
+      float N = (1.0f - 1.0f * F);
+      float K = (1.0f - 1.0f * (1 - F));
+
+      if (I == 0) { r = 1; g = K; b = 0; }
+      if (I == 1) { r = N; g = 1.0; b = 0; }
+      if (I == 2) { r = 0; g = 1.0; b = K; }
+      if (I == 3) { r = 0; g = N; b = 1.0; }
+      if (I == 4) { r = K; g = 0; b = 1.0; }
+      if (I == 5) { r = 1.0; g = 0; b = N; }
+    }
+    else if (complexType == "shuffle")
+    {
+      int rangeSize = rangeMax - rangeMin;
+      // randomly remap the x value, but always with the same random seed
+      unsigned seed = 42;
+      std::vector<int> randomMap;
+      for (int val = 0; val < rangeSize; ++val) {
+        randomMap.push_back(val);
+      }
+      shuffle (randomMap.begin(), randomMap.end(), std::default_random_engine(seed));
+
+      int valueInt = (int) (value - rangeMin);
+      float rem = value - valueInt;
+      float valueMapped = randomMap[valueInt] + rem;
+
+      float x = valueMapped / (rangeMax-rangeMin);
+
       // h = x, s = 1, v = 1
       if (x >= 1.0)
         x = 0.0;
