@@ -603,3 +603,16 @@ QList<QStringPairList> fileSourceFFmpegFile::getFileInfoForAllStreams()
 
   return info;
 }
+
+QList<AVRational> fileSourceFFmpegFile::getTimeBaseAllStreams()
+{
+  QList<AVRational> timeBaseList;
+
+  for (unsigned int i = 0; i < fmt_ctx.get_nb_streams(); i++)
+  {
+    AVStreamWrapper s = fmt_ctx.get_stream(i);
+    timeBaseList.append(s.get_time_base());
+  }
+
+  return timeBaseList;
+}

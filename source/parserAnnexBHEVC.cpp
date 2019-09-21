@@ -590,6 +590,11 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
     if (nalTypeName)
       *nalTypeName = QString("SEI(#%1)").arg(sei_count);
   }
+  else if (nal_hevc.nal_type == FD_NUT)
+  {
+    if (nalTypeName)
+      *nalTypeName = "FILLER";
+  }
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)

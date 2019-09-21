@@ -126,6 +126,7 @@ private:
   // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
   // we update this list while parsing the file.
   QList<QStringPairList> streamInfoAllStreams;
+  QList<AVRational> timeBaseAllStreams;
 
   int videoStreamIndex { -1 };
 };

@@ -97,6 +97,7 @@ public:
   unsigned int getNumberOfStreams() { return fmt_ctx ? fmt_ctx.get_nb_streams() : 0; }
   int getVideoStreamIndex() { return video_stream.get_index(); }
   QList<QStringPairList> getFileInfoForAllStreams();
+  QList<AVRational> getTimeBaseAllStreams();
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
