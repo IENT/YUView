@@ -219,13 +219,14 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
 
 void BitstreamAnalysisWidget::updateScrollBarRange()
 {
+  const double YAxisMaxBitrateValueScale = 1.05;
   auto model = parser->getBitrateItemModel();
   const int nrXValuesToShow = (int)(width() / ZOOM_PIXEL_PER_PLOT_X / bitratePlotZoomFactor);
   auto xRange = model->getXRange();
   ui.bitrateGraphicsViewHorizontalScrollBar->setMinimum(xRange.min);
   ui.bitrateGraphicsViewHorizontalScrollBar->setMaximum(model->rowCount() - nrXValuesToShow);
   ui.bitrateGraphicsView->chart()->axisX()->setRange(0, nrXValuesToShow);
-  ui.bitrateGraphicsView->chart()->axisY()->setRange(0, model->getMaximumBitrateValue());
+  ui.bitrateGraphicsView->chart()->axisY()->setRange(0, unsigned(model->getMaximumBitrateValue() * YAxisMaxBitrateValueScale));
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::updateScrollBarRange slider max %d range %d-%d", model->rowCount(), 0, nrXValuesToShow);
 }
 

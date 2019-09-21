@@ -593,6 +593,7 @@ protected:
   auDelimiterDetector_t auDelimiterDetector;
 
   unsigned int sizeCurrentAU {0};
+  int lastFramePOC{-1};
   unsigned int counterAU {0};
 };
 

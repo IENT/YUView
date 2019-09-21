@@ -1132,6 +1132,8 @@ unsigned int BitrateItemModel::getMaximumBitrateValue()
   for (auto i : bitratePerStreamData[0])
     if (i.bitrate > b)
       b = i.bitrate;
+
+  DEBUG_PARSER("BitrateItemModel::getMaximumBitrateValue Return max bitrate: %d", b);
   return b;
 }
 
@@ -1149,7 +1151,21 @@ void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dt
 
   DEBUG_PARSER("addBitratePoint streamIndex %d pts %d dts %d rate %d", streamIndex, pts, dts, bitrate);
   
-  bitratePerStreamData[streamIndex].append(e);
+  if (bitratePerStreamData[streamIndex].isEmpty())
+  {
+    bitratePerStreamData[streamIndex].append(e);
+  }
+  else
+  {
+    for (int i = 0; i < bitratePerStreamData[streamIndex].size(); i++)
+    {
+      if (e.pts > bitratePerStreamData[streamIndex][i].pts)
+      {
+        bitratePerStreamData[streamIndex].insert(i, e);
+        break;
+      }
+    }
+  }
 }
 
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------
