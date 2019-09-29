@@ -43,8 +43,6 @@
 #include "playlistItemCompressedVideo.h"
 #include "typedef.h"
 
-#define ZOOM_PIXEL_PER_PLOT_X 20
-
 class BitstreamAnalysisWidget : public QWidget
 {
   Q_OBJECT
@@ -58,7 +56,6 @@ public slots:
 
 private slots:
   void updateParserItemModel();
-  //void updateBitrateDisplay();
   void updateStreamInfo();
   void backgroundParsingDone(QString error);
 
@@ -90,10 +87,6 @@ private:
   QPointer<playlistItemCompressedVideo> currentCompressedVideo;
 
   bool showVideoStreamOnly {false};
-  bool scrolling {false};
-  int  previousScrollValue {0};
-  void updateScrollBarRange();
-  double bitratePlotZoomFactor {0};
 };
 
 #endif // BITSTREAMANALYSISDIALOG_H

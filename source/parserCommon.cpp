@@ -32,7 +32,6 @@
 
 #include "parserCommon.h"
 
-#include <QDebug>
 #include <QString>
 #include <assert.h>
 #include <stdlib.h>
@@ -42,12 +41,14 @@
 #define PARSERCOMMON_DEBUG_FILTER_OUTPUT 0
 
 #if PARSERCOMMON_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
 #define DEBUG_PARSER qDebug
 #else
 #define DEBUG_PARSER(fmt,...) ((void)0)
 #endif
 
 #if PARSERCOMMON_DEBUG_FILTER_OUTPUT && !NDEBUG
+#include <QDebug>
 #define DEBUG_FILTER qDebug
 #else
 #define DEBUG_FILTER(fmt,...) ((void)0)
