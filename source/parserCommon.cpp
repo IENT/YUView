@@ -1080,35 +1080,47 @@ int BitrateItemModel::rowCount(const QModelIndex &parent) const
 
 int BitrateItemModel::columnCount(const QModelIndex &parent) const
 { 
-  Q_UNUSED(parent); 
-  return 2;
+  Q_UNUSED(parent);
+  return 2 + 1;
 }
-    
+
 QVariant BitrateItemModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
   if (role != Qt::DisplayRole)
-    return QVariant();
+    return {};
 
-  if (orientation == Qt::Horizontal) 
+  if (orientation == Qt::Horizontal)
   {
-    if (section == 0)
-      return "x";
-    else
-      return "y";
-  } else 
-    return QString("%1").arg(section + 1);
+    if (section == 1)
+      return "Average";
+    if (section == 2)
+      return "Bitrate";
+  } 
+  return {};
 }
 
 QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
 {
   if (role == Qt::DisplayRole)
   {
-    unsigned int retVal;
+    int retVal = 0;
     if (index.column() == 0)
-      retVal = bitratePerStreamData[0][index.row()].pts;
-    else if (index.column() == 1)
+      retVal = index.row();
+    if (index.column() == 1)
+    {
+      const int averageRange = 10;
+      unsigned averageBitrate = 0;
+      unsigned start = qMax(0, index.row() - averageRange);
+      unsigned end = qMin(index.row() + averageRange, bitratePerStreamData[0].size());
+      for (unsigned i = start; i < end; i++)
+      {
+        averageBitrate += bitratePerStreamData[0][i].bitrate;
+      }
+      retVal = averageBitrate / (end - start);
+    }
+    if (index.column() == 2)
       retVal = bitratePerStreamData[0][index.row()].bitrate;
-    qDebug("data index %d-%d v %d", index.row(), index.column(), retVal);
+
     return retVal;
   }
 
@@ -1126,17 +1138,6 @@ void BitrateItemModel::updateNumberModelItems()
   endInsertRows();
 }
 
-unsigned int BitrateItemModel::getMaximumBitrateValue()
-{
-  unsigned int b = 0;
-  for (auto i : bitratePerStreamData[0])
-    if (i.bitrate > b)
-      b = i.bitrate;
-
-  DEBUG_PARSER("BitrateItemModel::getMaximumBitrateValue Return max bitrate: %d", b);
-  return b;
-}
-
 void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dts, unsigned int bitrate)
 {
   bitrateEntry e;
@@ -1148,6 +1149,11 @@ void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dt
   dtsRange.max = qMax(dtsRange.max, dts);
   ptsRange.min = qMin(ptsRange.min, dts);
   ptsRange.max = qMax(ptsRange.max, dts);
+
+  if (bitrate > maxYValue)
+  {
+    maxYValue = bitrate;
+  }
 
   DEBUG_PARSER("addBitratePoint streamIndex %d pts %d dts %d rate %d", streamIndex, pts, dts, bitrate);
   

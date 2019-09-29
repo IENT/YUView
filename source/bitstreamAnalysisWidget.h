@@ -65,8 +65,6 @@ private slots:
   void showVideoStreamOnlyCheckBoxToggled(bool state);
   void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
   void parseEntireBitstreamCheckBoxToggled(bool state) { Q_UNUSED(state); restartParsingOfCurrentItem(); }
-  void onAxisRangeChanged(const QString &min, const QString &max);
-  void onScrollBarValueChanged(int val);
 
 protected:
   void hideEvent(QHideEvent *event) override;

@@ -299,9 +299,11 @@ namespace parserCommon
 
   class BitrateItemModel : public QAbstractTableModel
   {
+    Q_OBJECT
+
   public:
-    BitrateItemModel(QObject *parent);
-    ~BitrateItemModel();
+    explicit BitrateItemModel(QObject *parent = nullptr);
+    virtual ~BitrateItemModel();
     
     // The functions that must be overridden from the QAbstractTableModel
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
@@ -309,14 +311,15 @@ namespace parserCommon
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
 
+    double getMaximumBitrateValue() { return this->maxYValue; }
+
     void updateNumberModelItems();
-    unsigned int getMaximumBitrateValue();
     RangeInt getXRange() { return ptsRange; }
 
     void addBitratePoint(unsigned int streamIndex, int pts, int dts, unsigned int bitrate);
   private:
     // The current number of bitrate points that we show.
-    // The background parser will add more data to "bitrateData" and perio
+    // The background parser will add more data to "bitrateData" and periodically update the model
     unsigned int nrRatePoints {0};
 
     struct bitrateEntry
@@ -329,6 +332,8 @@ namespace parserCommon
     QMap<unsigned int, QList<bitrateEntry>> bitratePerStreamData;
     RangeInt dtsRange;
     RangeInt ptsRange;
+
+    double maxYValue {0};
   };
 
   class FilterByStreamIndexProxyModel : public QSortFilterProxyModel

@@ -121,14 +121,7 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <widget class="QChartView" name="bitrateGraphicsView"/>
-       </item>
-       <item>
-        <widget class="QScrollBar" name="bitrateGraphicsViewHorizontalScrollBar">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
+        <widget class="BitrateBarChart" name="bitrateBarChart" native="true"/>
        </item>
       </layout>
      </widget>
@@ -149,9 +142,10 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>QChartView</class>
-   <extends>QGraphicsView</extends>
-   <header>QtCharts/QtCharts</header>
+   <class>BitrateBarChart</class>
+   <extends>QWidget</extends>
+   <header>bitstreamAnalysisBitratePlot.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>
