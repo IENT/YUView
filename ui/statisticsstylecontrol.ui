@@ -91,6 +91,11 @@
           </item>
           <item>
            <property name="text">
+            <string>shuffle</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
             <string>hot</string>
            </property>
           </item>

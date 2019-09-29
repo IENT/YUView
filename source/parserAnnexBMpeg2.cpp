@@ -40,6 +40,15 @@ const QStringList parserAnnexBMpeg2::nal_unit_type_toString = QStringList()
   << "UNSPECIFIED" << "PICTURE" << "SLICE" << "USER_DATA" << "SEQUENCE_HEADER" << "SEQUENCE_ERROR" << "EXTENSION_START" << "SEQUENCE_END"
   << "GROUP_START" << "SYSTEM_START_CODE" << "RESERVED";
 
+parserAnnexBMpeg2::nal_unit_mpeg2::nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src) 
+  : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx)
+{
+  nal_unit_type = nal_src->nal_unit_type;
+  slice_id = nal_src->slice_id;
+  system_start_codes = nal_src->system_start_codes;
+  start_code_value = nal_src->start_code_value;  
+}
+
 bool parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
@@ -49,6 +58,7 @@ bool parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &
     return reader.addErrorMessageChildItem("The header code must be one byte only.");
 
   READBITS_M(start_code_value, 8, get_start_code_meanings());
+  interpreteStartCodeValue();
 
   return true;
 }
@@ -81,62 +91,36 @@ QStringList parserAnnexBMpeg2::nal_unit_mpeg2::get_start_code_meanings()
   return meanings;
 }
 
-QString parserAnnexBMpeg2::nal_unit_mpeg2::interprete_start_code(int start_code)
+void parserAnnexBMpeg2::nal_unit_mpeg2::interpreteStartCodeValue()
 {
-  if (start_code == 0)
-  {
+  if (start_code_value == 0)
     nal_unit_type = PICTURE;
-    return "picture_start_code";
-  }
-  else if (start_code >= 0x01 && start_code <= 0xaf)
+  else if (start_code_value >= 0x01 && start_code_value <= 0xaf)
   {
     nal_unit_type = SLICE;
-    slice_id = start_code - 1;
-    return "slice_start_code";
+    slice_id = start_code_value - 1;
   }
-  else if (start_code == 0xb0 || start_code == 0xb1 || start_code == 0xb6)
-  {
+  else if (start_code_value == 0xb0 || start_code_value == 0xb1 || start_code_value == 0xb6)
     nal_unit_type = RESERVED;
-    return "reserved";
-  }
-  else if (start_code == 0xb2)
-  {
+  else if (start_code_value == 0xb2)
     nal_unit_type = USER_DATA;
-    return "user_data_start_code";
-  }
-  else if (start_code == 0xb3)
-  {
+  else if (start_code_value == 0xb3)
     nal_unit_type = SEQUENCE_HEADER;
-    return "sequence_header_code";
-  }
-  else if (start_code == 0xb4)
-  {
+  else if (start_code_value == 0xb4)
     nal_unit_type = SEQUENCE_ERROR;
-    return "sequence_error_code";
-  }
-  else if (start_code == 0xb5)
-  {
+  else if (start_code_value == 0xb5)
     nal_unit_type = EXTENSION_START;
-    return "extension_start_code";
-  }
-  else if (start_code == 0xb7)
-  {
+  else if (start_code_value == 0xb7)
     nal_unit_type = SEQUENCE_END;
-    return "sequence_end_code";
-  }
-  else if (start_code == 0xb8)
-  {
+  else if (start_code_value == 0xb8)
     nal_unit_type = GROUP_START;
-    return "group_start_code";
-  }
-  else if (start_code >= 0xb9)
+  else if (start_code_value >= 0xb9)
   {
     nal_unit_type = SYSTEM_START_CODE;
-    system_start_codes = start_code - 0xb9;
-    return "system start codes";
+    system_start_codes = start_code_value - 0xb9;
   }
-  
-  return "";
+  else
+    nal_unit_type = UNSPECIFIED;
 }
 
 bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
@@ -148,10 +132,21 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
   else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 && data.at(3) == (char)1)
     skip = 4;
   else
-    // No NAL header found
-    skip = 0;
+  {
+    // No NAL header found. Skip everything up to the first NAL unit header
+    QByteArray startCode;
+    startCode.append((char)0);
+    startCode.append((char)0);
+    startCode.append((char)1);
+    skip = data.indexOf(startCode);
+    if (skip >= 0)
+      skip += 3;
+    if (skip == -1)
+      // No start code found in the whole data. Try to start reading with a header.
+      skip = 0;
+  }
 
-  // Read ony byte (the NAL header) (technically there is no NAL in mpeg2 but it works pretty similarly)
+  // Read one byte (the NAL header) (technically there is no NAL in mpeg2 but it works pretty similarly)
   QByteArray nalHeaderBytes = data.mid(skip, 1);
   QByteArray payload = data.mid(skip + 1);
 

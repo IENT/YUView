@@ -38,7 +38,6 @@
 #include "parserAnnexB.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
-#include "bitstreamAnalysisDialog.h"
 #include "ui_playlistItemCompressedFile.h"
 
 class videoHandler;
@@ -65,6 +64,8 @@ public:
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemHEVCFile from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemCompressedVideo *newPlaylistItemCompressedVideo(const QDomElementYUView &root, const QString &playlistFilePath);
+
+  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
@@ -104,6 +105,8 @@ public:
   // We only have one caching decoder so it is better if only one thread caches frames from this item.
   // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.
   virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
+
+  inputFormat getInputFormat() const { return inputFormatType; }
   
 protected:
   // Override from playlistItemIndexed. The readerEngine can tell us how many frames there are in the sequence.

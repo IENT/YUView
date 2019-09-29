@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>bitstreamAnalysisDialog</class>
- <widget class="QDialog" name="bitstreamAnalysisDialog">
+ <class>bitstreamAnalysisWidget</class>
+ <widget class="QWidget" name="bitstreamAnalysisWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1576</width>
-    <height>1182</height>
+    <width>468</width>
+    <height>381</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QTabWidget" name="tabWidget">
+    <widget class="QTabWidget" name="analysisTab">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tabStreamInfo">
       <attribute name="title">
@@ -52,6 +52,12 @@
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
           <widget class="QCheckBox" name="showVideoStreamOnlyCheckBox">
+           <property name="toolTip">
+            <string>Hide all packets that don't belong to the video stream</string>
+           </property>
+           <property name="whatsThis">
+            <string>Hide all packets that don't belong to the video stream</string>
+           </property>
            <property name="text">
             <string>Show only video stream</string>
            </property>
@@ -59,11 +65,33 @@
          </item>
          <item>
           <widget class="QCheckBox" name="colorCodeStreamsCheckBox">
+           <property name="toolTip">
+            <string>Color code the packets by their stream index</string>
+           </property>
+           <property name="whatsThis">
+            <string>Color code the packets by their stream index</string>
+           </property>
            <property name="text">
             <string>Color Code Streams</string>
            </property>
            <property name="checked">
             <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="parseEntireFileCheckBox">
+           <property name="toolTip">
+            <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
+           </property>
+           <property name="statusTip">
+            <string/>
+           </property>
+           <property name="whatsThis">
+            <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
+           </property>
+           <property name="text">
+            <string>Parse Entire Bitstream</string>
            </property>
           </widget>
          </item>
@@ -88,6 +116,17 @@
       </layout>
      </widget>
     </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1">
+     <item>
+      <widget class="QLabel" name="parsingStatusText">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

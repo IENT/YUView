@@ -267,7 +267,7 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
   return true;
 }
 
-bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
+bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
 {
   if (!packetModel->isNull())
   {
@@ -279,12 +279,46 @@ bool parserAVFormat::parseAVPacket(int packetID, AVPacketWrapper &packet)
 
     int posInData = 0;
     QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.get_data()), packet.get_data_size());
+
+    AVRational timeBase = timeBaseAllStreams[packet.get_stream_index()];
+
+    auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> QString
+    {
+      QString str = QString("%1 (").arg(timestamp);
+      if (timestamp < 0)
+      {
+        str += "-";
+        timestamp = -timestamp;
+      }
+      
+      int64_t time = std::abs(timestamp) * 1000 / timebase.num / timebase.den;
+      
+      int64_t hours = time / 1000 / 60 / 60;
+      time -= hours * 60 * 60 * 1000;
+      qint64 minutes = time / 1000 / 60;
+      time -= minutes * 60 * 1000;
+      qint64 seconds = time / 1000;
+      qint64 milliseconds = time - seconds;
+
+      if (hours > 0)
+        str += QString("%1:").arg(hours);
+      if (hours > 0 || minutes > 0)
+        str += QString("%1:").arg(minutes, 2, 10, QChar('0'));
+      str += QString("%1.").arg(seconds, 2, 10, QChar('0'));
+      if (milliseconds < 100)
+        str += "0";
+      if (milliseconds < 10)
+        str += "0";
+      str += QString("%1)").arg(milliseconds);
+
+      return str;
+    };
     
     // Log all the packet info
     new TreeItem("stream_index", packet.get_stream_index(), itemTree);
-    new TreeItem("pts", packet.get_pts(), itemTree);
-    new TreeItem("dts", packet.get_dts(), itemTree);
-    new TreeItem("duration", packet.get_duration(), itemTree);
+    new TreeItem("pts", formatTimestamp(packet.get_pts(), timeBase), itemTree);
+    new TreeItem("dts", formatTimestamp(packet.get_dts(), timeBase), itemTree);
+    new TreeItem("duration", formatTimestamp(packet.get_duration(), timeBase), itemTree);
     new TreeItem("flag_keyframe", packet.get_flag_keyframe(), itemTree);
     new TreeItem("flag_corrupt", packet.get_flag_corrupt(), itemTree);
     new TreeItem("flag_discard", packet.get_flag_discard(), itemTree);
@@ -521,7 +555,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
   // Open the file but don't parse it yet.
   QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile());
-  if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
+ if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
   {
     emit backgroundParsingDone("Error opening the ffmpeg file.");
     return false;
@@ -545,8 +579,8 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   int max_ts = ffmpegFile->getMaxTS();
   videoStreamIndex = ffmpegFile->getVideoStreamIndex();
 
-  // Seek to the beginning of the stream.
-  ffmpegFile->seekToDTS(0);
+  // Don't seek to the beginning here. This causes more problems then it solves.
+  // ffmpegFile->seekFileToBeginning();
 
   // First get the extradata and push it to the parser
   QByteArray extradata = ffmpegFile->getExtradata();
@@ -558,27 +592,33 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
   // After opening the file, we can get information on it
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  timeBaseAllStreams = ffmpegFile->getTimeBaseAllStreams();
   emit streamInfoUpdated();
 
   // Now iterate over all packets and send them to the parser
   AVPacketWrapper packet = ffmpegFile->getNextPacket(false, false);
   int64_t start_ts = packet.get_dts();
 
-  int packetID = 0;
-  while (!ffmpegFile->atEnd())
+  unsigned int packetID = 0;
+  unsigned int videoFrameCounter = 0;
+  bool abortParsing = false;
+  QElapsedTimer signalEmitTimer;
+  signalEmitTimer.start();
+  while (!ffmpegFile->atEnd() && !abortParsing)
   {
-    if (cancelBackgroundParser)
-      return false;
     if (packet.is_video_packet)
+    {
       progressPercentValue = clip((int)((packet.get_dts() - start_ts) * 100 / max_ts), 0, 100);
+      videoFrameCounter++;
+    }
 
     if (!parseAVPacket(packetID, packet))
     {
-      DEBUG_AVFORMAT("parseAVPacket error parsing Packet %d", packetID);
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket error parsing Packet %d", packetID);
     }
     else
     {
-      DEBUG_AVFORMAT("parseAVPacket Packet %d", packetID);
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Packet %d", packetID);
     }
 
     packetID++;
@@ -587,16 +627,33 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     // For signal slot debugging purposes, sleep
     // QThread::msleep(200);
     
-    if (!packetModel->isNull())
+    if (signalEmitTimer.elapsed() > 1000 && packetModel)
+    {
+      signalEmitTimer.start();
       emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
+    }
+
+    if (cancelBackgroundParser)
+    {
+      abortParsing = true;
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Abort parsing by user request");
+    }
+    if (parsingLimitEnabled && videoFrameCounter > PARSER_FILE_FRAME_NR_LIMIT)
+    {
+      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Abort parsing because frame limit was reached.");
+      abortParsing = true;
+    }
   }
 
   // Seek back to the beginning of the stream.
-  ffmpegFile->seekToDTS(0);
+  ffmpegFile->seekFileToBeginning();
+
+  if (packetModel)
+    emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
 
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 
-  return true;
+  return !cancelBackgroundParser;
 }

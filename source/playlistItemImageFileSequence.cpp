@@ -34,6 +34,7 @@
 
 #include <QImageReader>
 #include <QSettings>
+#include <QUrl>
 #include "fileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)

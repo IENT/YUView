@@ -38,7 +38,6 @@
 
 #include <inttypes.h>
 
-#include "bitstreamAnalysisDialog.h"
 #include "decoderFFmpeg.h"
 #include "decoderHM.h"
 #include "decoderDav1d.h"
@@ -369,9 +368,8 @@ infoData playlistItemCompressedVideo::getInfo() const
       info.items.append(infoItem("Stat Parsing", loadingDecoder->statisticsEnabled() ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
     }
   }
-  info.items.append(infoItem("NAL units", "Bitstream Analysis", "Show a detailed list of all NAL units.", true, 0));
   if (decoderEngineType == decoderEngineFFMpeg)
-    info.items.append(infoItem("FFmpeg Log", "Show FFmpeg Log", "Show the log messages from FFmpeg.", true, 1));
+    info.items.append(infoItem("FFMpeg Log", "Show FFmpeg Log", "Show the log messages from FFmpeg.", true, 0));
 
   return info;
 }
@@ -380,12 +378,6 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
 {
   QWidget *mainWindow = MainWindow::getMainWindow();
   if (buttonID == 0)
-  {
-    // The button "Bitstream Analysis" was pressed.
-    bitstreamAnalysisDialog analyzer(mainWindow, plItemNameOrFileName, inputFormatType);
-    analyzer.exec();
-  }
-  else if (buttonID == 1)
   {
     // The button "shof ffmpeg log" was pressed
     QDialog newDialog(mainWindow);

@@ -359,8 +359,7 @@ bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow
     if (!scanBitstream(mainWindow))
       return false;
     
-    // Seek back to the beginning
-    seekToDTS(0);
+    seekFileToBeginning();
   }
 
   return true;
@@ -562,6 +561,25 @@ bool fileSourceFFmpegFile::seekToDTS(int64_t dts)
   return true;
 }
 
+bool fileSourceFFmpegFile::seekFileToBeginning()
+{
+  if (!isFileOpened)
+    return false;
+
+  int ret = ff.seek_beginning(fmt_ctx);
+  if (ret != 0)
+  {
+    DEBUG_FFMPEG("FFmpegLibraries::seekToBeginning Error. Return Code %d", ret);
+    return false;
+  }
+
+  // We seeked somewhere, so we are not at the end of the file anymore.
+  endOfFile = false;
+
+  DEBUG_FFMPEG("FFmpegLibraries::seekToBeginning Successfull.");
+  return true;
+}
+
 int64_t fileSourceFFmpegFile::getMaxTS() 
 { 
   if (!isFileOpened)
@@ -584,4 +602,17 @@ QList<QStringPairList> fileSourceFFmpegFile::getFileInfoForAllStreams()
   }
 
   return info;
+}
+
+QList<AVRational> fileSourceFFmpegFile::getTimeBaseAllStreams()
+{
+  QList<AVRational> timeBaseList;
+
+  for (unsigned int i = 0; i < fmt_ctx.get_nb_streams(); i++)
+  {
+    AVStreamWrapper s = fmt_ctx.get_stream(i);
+    timeBaseList.append(s.get_time_base());
+  }
+
+  return timeBaseList;
 }

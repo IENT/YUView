@@ -123,8 +123,11 @@ void splitViewWidget::updateSettings()
   else
     mouseMode = MOUSE_LEFT_MOVE;
 
-  // Load zoom box background color
   zoomBoxBackgroundColor = settings.value("Background/Color").value<QColor>();
+  drawItemPathAndNameEnabled = settings.value("ShowFilePathInSplitMode", true).toBool();
+
+  // Something about how we draw might have been changed
+  update();
 }
 
 void splitViewWidget::paintEvent(QPaintEvent *paint_event)
@@ -253,6 +256,12 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
   if (splitting)
   {
+    QStringPair itemNamesToDraw = determineItemNamesToDraw(item[0], item[1]);
+    const bool drawItemNames = (drawItemPathAndNameEnabled && 
+                                item[0] != nullptr && item[1] != nullptr &&
+                                !itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty() &&
+                                item[0]->isFileSource() && item[1]->isFileSource());
+
     // Draw two items (or less, if less items are selected)
     if (item[0])
     {
@@ -299,6 +308,9 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       drawingLoadingMessage[0] = (!playing && item[0]->isLoading());
       if (drawingLoadingMessage[0])
         drawLoadingMessage(&painter, QPoint(xSplit / 2, drawArea_botR.y() / 2));
+
+      if (drawItemNames)
+        drawItemPathAndName(&painter, 0, xSplit, itemNamesToDraw.first);
     }
     if (item[1])
     {
@@ -347,6 +359,9 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       drawingLoadingMessage[1] = (!playing && item[1]->isLoading());
       if (drawingLoadingMessage[1])
         drawLoadingMessage(&painter, QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2));
+
+      if (drawItemNames)
+        drawItemPathAndName(&painter, xSplit, drawArea_botR.x() - xSplit, itemNamesToDraw.second);
     }
 
     // Disable clipping
@@ -803,11 +818,9 @@ void splitViewWidget::drawLoadingMessage(QPainter *painter, const QPoint &pos)
   QFont valueFont = QFont(SPLITVIEWWIDGET_LOADING_FONT, SPLITVIEWWIDGET_LOADING_FONTSIZE);
   painter->setFont(valueFont);
 
-  // Draw the message at centerPoints[0]
+  // Create the QRect to draw to
   QFontMetrics metrics(painter->font());
   QSize textSize = metrics.size(0, SPLITVIEWWIDGET_LOADING_TEXT);
-
-  // Create the QRect to draw to
   QRect textRect;
   textRect.setSize(textSize);
   textRect.moveCenter(pos);
@@ -1959,6 +1972,126 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
   }
 
   return false;
+}
+
+QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playlistItem *item2)
+{
+  if (item1 == nullptr || item2 == nullptr)
+    return QStringPair();
+
+  auto sep = QDir::separator();
+  auto name1 = item1->getName().split(sep);
+  auto name2 = item2->getName().split(sep);
+  if (name1.empty() || name2.empty())
+    return QStringPair();
+
+  auto it1 = name1.constEnd() - 1;
+  auto it2 = name2.constEnd() - 1;
+  
+  if (*it1 != *it2)
+    return QStringPair(*it1, *it2);
+
+  QStringPair ret = QStringPair(*it1, *it2);
+  --it1;
+  --it2;
+  bool foundDiff = false;
+
+  while (it1 != name1.constBegin() - 1 && it2 != name2.constBegin() - 1)
+  {
+    ret.first = *it1 + sep + ret.first;
+    ret.second = *it2 + sep + ret.second;
+    if (*it1 != *it2)
+    {
+      foundDiff = true;
+      break;
+    }
+    
+    --it1;
+    --it2;
+  }
+
+  if(!foundDiff)
+  {
+    while (it1 != name1.constBegin() - 1)
+    {
+      ret.first = *it1 + sep + ret.first;
+      --it1;
+    }
+
+    while (it2 != name2.constBegin() - 1)
+    {
+      ret.second = *it2 + sep + ret.second;
+      --it2;
+    }
+  }
+
+  return ret;
+}
+
+void splitViewWidget::drawItemPathAndName(QPainter *painter, int posX, int width, QString path)
+{
+  DEBUG_LOAD_DRAW("splitViewWidget::drawItemPathAndName");
+  QString drawString;
+
+  auto sep = QDir::separator();
+  auto pathSplit = path.split(sep);
+
+  // The metrics for evaluating the width of the rendered text
+  QFont valueFont = QFont(SPLITVIEWWIDGET_SPLITPATH_FONT, SPLITVIEWWIDGET_SPLITPATH_FONTSIZE);
+  QFontMetrics metrics(valueFont);
+  
+  QString currentLine = "";
+  if (pathSplit.size() > 0)
+  {
+    for (auto it = pathSplit.begin(); it != pathSplit.end(); it++)
+    {
+      const bool isLast = (it == pathSplit.end() - 1);
+      if (currentLine.isEmpty())
+      {
+        currentLine = *it;
+        if (!isLast)
+          currentLine += sep;
+      }
+      else
+      {
+        // Will the part fit into the the current line?
+        QString lineTemp = currentLine + *it;
+        if (!isLast)
+          lineTemp += sep;
+        QSize textSize = metrics.size(0, lineTemp);
+        if (textSize.width() > width - SPLITVIEWWIDGET_SPLITPATH_PADDING)
+        {
+          // This won't fit. Put it to the next line
+          drawString += currentLine + "\n";
+          currentLine = *it;
+          if (!isLast)
+            currentLine += sep;
+        }
+        else
+          currentLine = lineTemp;
+      }
+    }
+  }
+  if (!currentLine.isEmpty())
+    drawString += currentLine;
+
+  // Create the QRect to draw to
+  QSize textSize = metrics.size(0, drawString);
+  QRect textRect;
+  textRect.setSize(textSize);
+  textRect.moveCenter(QPoint(posX + width / 2, 0));
+  textRect.moveTop(SPLITVIEWWIDGET_SPLITPATH_TOP_OFFSET);
+
+  // Draw a rectangle around the text in white with a black border
+  QRect boxRect = textRect + QMargins(5, 5, 5, 5);
+  painter->setPen(QPen(Qt::black, 1));
+  painter->fillRect(boxRect,Qt::white);
+  painter->drawRect(boxRect);
+
+  // Draw the text
+  painter->drawText(textRect, Qt::AlignCenter, drawString);
+
+  return;
 }
 
 void splitViewWidget::testDrawingSpeed()

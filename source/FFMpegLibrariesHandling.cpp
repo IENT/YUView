@@ -1361,6 +1361,14 @@ int FFmpegVersionHandler::seek_frame(AVFormatContextWrapper & fmt, int stream_id
   return ret;
 }
 
+int FFmpegVersionHandler::seek_beginning(AVFormatContextWrapper & fmt)
+{
+  // This is "borrowed" from the ffmpeg sources (https://ffmpeg.org/doxygen/4.0/ffmpeg_8c_source.html seek_to_start)
+  LOG(QString("seek_beginning time %1").arg(fmt.get_start_time()));
+  int ret = lib.av_seek_frame(fmt.get_format_ctx(), -1, fmt.get_start_time(), 0);
+  return ret;
+}
+
 bool FFmpegVersionHandler::checkLibraryVersions()
 {
   // Get the version number of the opened libraries and check them against the
@@ -3124,7 +3132,10 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
 
       QString bitsRead;
       bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);
-      reader.readBits(4, bitsRead); // obu_type
+      unsigned int obu_type = reader.readBits(4, bitsRead); // obu_type
+      if (obu_type == 0 || (obu_type >= 9 && obu_type <= 14))
+        // RESERVED obu types should not occur (highly unlikely)
+        return false;
       bool obu_extension_flag = (reader.readBits(1, bitsRead) != 0);
       bool obu_has_size_field = (reader.readBits(1, bitsRead) != 0);
       bool obu_reserved_1bit = (reader.readBits(1, bitsRead) != 0);
