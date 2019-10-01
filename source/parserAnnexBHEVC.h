@@ -71,7 +71,8 @@ protected:
     RSV_VCL_N10,    RSV_VCL_N12, RSV_VCL_N14,    RSV_VCL_R11,    RSV_VCL_R13, RSV_VCL_R15, BLA_W_LP,   BLA_W_RADL, BLA_N_LP,   IDR_W_RADL,
     IDR_N_LP,       CRA_NUT,     RSV_IRAP_VCL22, RSV_IRAP_VCL23, RSV_VCL24,   RSV_VCL25,   RSV_VCL26,  RSV_VCL27,  RSV_VCL28,  RSV_VCL29,
     RSV_VCL30,      RSV_VCL31,   VPS_NUT,        SPS_NUT,        PPS_NUT,     AUD_NUT,     EOS_NUT,    EOB_NUT,    FD_NUT,     PREFIX_SEI_NUT,
-    SUFFIX_SEI_NUT, RSV_NVCL41,  RSV_NVCL42,     RSV_NVCL43,     RSV_NVCL44,  RSV_NVCL45,  RSV_NVCL46, RSV_NVCL47, UNSPECIFIED
+    SUFFIX_SEI_NUT, RSV_NVCL41,  RSV_NVCL42,     RSV_NVCL43,     RSV_NVCL44,  RSV_NVCL45,  RSV_NVCL46, RSV_NVCL47, UNSPEC48,   UNSPEC49,
+    UNSPEC50,       UNSPEC51,    UNSPEC52,       UNSPEC53,       UNSPEC54,    UNSPEC55,    UNSPECIFIED
   };
   static const QStringList nal_unit_type_toString;
 
@@ -771,6 +772,17 @@ protected:
   // The POC of the current frame. We save this we encounter a NAL from the next POC; then we add it.
   int curFramePOC {-1};
   bool curFrameIsRandomAccess {false};
+
+  struct auDelimiterDetector_t
+  {
+    bool isStartOfNewAU(nal_unit_hevc &nal, bool first_slice_segment_in_pic_flag);
+    bool primary_coded_picture_in_au_encountered {false};
+  };
+  auDelimiterDetector_t auDelimiterDetector;
+
+  unsigned int sizeCurrentAU {0};
+  int lastFramePOC {-1};
+  unsigned int counterAU {0};
 };
 
 #endif //PARSERANNEXBHEVC_H

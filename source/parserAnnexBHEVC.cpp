@@ -351,6 +351,8 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
   if (!nal_hevc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
     return false;
 
+  bool first_slice_segment_in_pic_flag = false;
+
   if (nal_hevc.isSlice())
   {
     // Reparse the SEI messages that we could not parse so far. This is a slice so all parameter sets should be available now.
@@ -449,6 +451,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
         maxPOCCount = POC;
       new_slice->globalPOC = POC;
     
+      first_slice_segment_in_pic_flag = new_slice->first_slice_segment_in_pic_flag;
       if (new_slice->first_slice_segment_in_pic_flag)
         lastFirstSliceSegmentInPic = new_slice;
 
@@ -596,13 +599,23 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
       *nalTypeName = "FILLER";
   }
 
+  if (auDelimiterDetector.isStartOfNewAU(nal_hevc, first_slice_segment_in_pic_flag))
+  {
+    DEBUG_HEVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
+    bitrateItemModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+    sizeCurrentAU = 0;
+    counterAU++;
+  }
+  if (lastFramePOC != curFramePOC)
+    lastFramePOC = curFramePOC;
+  sizeCurrentAU += data.size();
+
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
 
   return true;
 }
-
 
 bool parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(reader_helper &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
 {
@@ -2546,4 +2559,34 @@ QStringList parserAnnexBHEVC::get_matrix_coefficients_meaning()
     << "Rec. ITU-R BT.2100-0 ICTCP"
     << "For future use by ITU-T | ISO/IEC";
   return matrix_coefficients_meaning;
+}
+
+bool parserAnnexBHEVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_hevc &nal, bool first_slice_segment_in_pic_flag)
+{
+  bool isStart = false;
+  if (primary_coded_picture_in_au_encountered)
+  {
+    if (nal.nal_type == AUD_NUT && nal.nuh_layer_id == 0)
+      isStart = true;
+
+    if (nal.nuh_layer_id == 0 && (nal.nal_type == VPS_NUT || nal.nal_type == SPS_NUT || nal.nal_type == PPS_NUT || nal.nal_type == PREFIX_SEI_NUT))
+      isStart = true;
+
+    if (nal.nal_type == PREFIX_SEI_NUT && nal.nuh_layer_id == 0)
+      isStart = true;
+
+    if (nal.nuh_layer_id == 0 && (nal.nal_type == RSV_NVCL41 || nal.nal_type == RSV_NVCL42 || nal.nal_type == RSV_NVCL43 || nal.nal_type == RSV_NVCL44))
+      isStart = true;
+
+    if (nal.nuh_layer_id == 0 && (nal.nal_type >= UNSPEC48 && nal.nal_type <= UNSPEC55))
+      isStart = true;
+
+    if (nal.isSlice() && first_slice_segment_in_pic_flag)
+      isStart = true;
+  }
+
+  if (nal.isSlice())
+    primary_coded_picture_in_au_encountered = true;
+
+  return isStart;
 }
