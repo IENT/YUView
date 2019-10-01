@@ -13,7 +13,7 @@ apt-get install -yq build-essential git software-properties-common
 
 if [ "$LINUX_SHORT_NAME" == "ubuntu16.04" ]
 then
-  add-apt-repository ppa:beineri/opt-qt-5.12.0-bionic -y
+  add-apt-repository ppa:beineri/opt-qt-5.12.3-xenial -y
   apt-get update -qq
   apt-get install -qq qt512base qt512charts-no-lgpl
   source /opt/qt512/bin/qt512-env.sh

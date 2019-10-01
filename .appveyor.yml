@@ -35,6 +35,7 @@ install:
   - cd QtCharts
   - nmake install
   - ps: $env:path="C:\projects\QtCharts;$($env:path)"
+  - cd C:\projects
   # Download libde265_internals (needed later to pack the installer)
   - curl -L -o libde265.dll https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll
 
