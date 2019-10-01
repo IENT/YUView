@@ -15,6 +15,7 @@ branches:
 
 before_install:
   - eval "${MATRIX_EVAL}"
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository ppa:beineri/opt-qt-5.12.0-bionic -y; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
   # On linux, also get the linuxdeployqt tool to build the Appimage
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then wget https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage; fi
@@ -36,7 +37,7 @@ install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd $TRAVIS_BUILD_DIR; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export PATH=/Users/travis/build/Qt/bin:$PATH; fi
   # ---- Linux -----
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt5-default libqt5charts5 libqt5charts5-dev; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt512base qt512charts-no-lgpl; source /opt/qt511/bin/qt511-env.sh; fi
   
 script:
   # Run qmake and make
