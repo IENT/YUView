@@ -10,17 +10,30 @@ environment:
 branches:
   except:
     - gh-pages
+
+#init:
+#  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   
 install:
   - '"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64'
   - cd C:\projects
-  - git clone https://github.com/ChristianFeldmann/Qt5-YUView-MT Qt --depth 1
-  - set QTDIR=C:\projects\Qt\5.11-release
-  - set PATH=%PATH%;%QTDIR%\bin
+  # Get the precompiled openSSL libraries
+  - curl -L -o openSSL.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1/openSSL_1_1_1_stable.zip
+  - 7z x openSSL.zip
+  - ps: $env:path="C:\projects\openSSL;$($env:path)"
+  # Get Qt and add it to the path
+  - curl -L -o Qt.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qt-5.13.1.zip
+  - 7z x Qt.zip
+  - ps: $env:path="C:\projects\Qt;C:\projects\Qt\bin;$($env:path)"
+  # Get Qt Tools and add the path to it
+  - curl -L -o QtTools.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/Qt-5.13.1-Tools.zip
+  - 7z x QtTools.zip
+  - ps: $env:path="C:\projects\Qttools\bin;$($env:path)"
   # Download libde265_internals (needed later to pack the installer)
   - curl -L -o libde265.dll https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll
 
 build_script:
+  - cd C:\projects\YUView
   # activate the automatic update feature
   - cd C:\projects\YUView
   - C:\msys64\usr\bin\sed.exe -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" source/typedef.h
@@ -39,7 +52,7 @@ after_build:
   - copy ..\build\release\YUView.exe .
   - windeployqt --release --dir C:\projects\YUView\deploy YUView.exe
   # copy the OpenSSL library
-  - copy C:\projects\Qt\openSSL\*.dll .
+  - copy C:\projects\openSSL\*.dll .
   # copy the modified libde265 library + license
   - mkdir decoder
   - copy C:\projects\libde265.dll decoder
@@ -103,3 +116,5 @@ artifacts:
 #    # push the finished stuff
 #    - git push
 
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

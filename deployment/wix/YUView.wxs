@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Product Id="*" Name="YUView" Language="1033" Version="2.1" Manufacturer="IENT RWTH Aachen University" UpgradeCode="07fd1dd5-9b1e-453d-974b-4ff7919a49c7">
-    <Package InstallerVersion="200" Compressed="yes" Platform="x64" InstallScope="perMachine" />
+    <Package InstallerVersion="301" Compressed="yes" Platform="x64" InstallScope="perMachine" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
@@ -27,10 +27,16 @@
         <RegistryValue Root="HKCU" Key="Software\IENT\YUView" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
       </Component>
     </DirectoryRef>
+    <DirectoryRef Id="TARGETDIR">
+      <Merge Id="VCRedist" SourceFile="Microsoft_VC140_CRT_x64.msm" DiskId="1" Language="0"/>
+    </DirectoryRef>
 
     <Feature Id='ProductFeature' Title='YUView' Level='1'>
       <ComponentGroupRef Id="YUViewComponents" />
       <ComponentRef Id="ApplicationShortcut" />
+    </Feature>
+    <Feature Id="VCRedist" Title="Visual C++ 14.0 Runtime" AllowAdvertise="no" Display="hidden" Level="1">
+      <MergeRef Id="VCRedist"/>
     </Feature>
     
     <WixVariable Id="WixUILicenseRtf" Value="YUViewLicense.rtf" />
