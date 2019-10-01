@@ -25,17 +25,21 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then chmod a+x linuxdeployqt-6-x86_64.AppImage; fi
   
 install:
+    # ---- MacOS -----
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd /Users/travis/build; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qt-5.13.1_mac.zip -o Qt.zip; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip -q -a Qt.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd $TRAVIS_BUILD_DIR; fi
+  # Install QtCharts. This must be done in the same folder as it was built in (see YUViewQt repo)
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then mkdir -p /Users/travis/build/ChristianFeldmann/YUViewQt; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd /Users/travis/build/ChristianFeldmann/YUViewQt; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_mac.zip -o QtCharts.zip; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip -q -a QtCharts.zip; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ls -l; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd QtCharts; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then make install; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd ..; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd $TRAVIS_BUILD_DIR; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export PATH=/Users/travis/build/Qt/bin:$PATH; fi
+  # ---- Linux -----
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh; fi
   # On linux, install the new g++ version
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq g++-8; fi

@@ -21,14 +21,18 @@ install:
   - curl -L -o openSSL.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1/openSSL_1_1_1_stable.zip
   - 7z x openSSL.zip
   - ps: $env:path="C:\projects\openSSL;$($env:path)"
-  # Get Qt and add it to the path
+  # Get Qt and add it to the oath
   - curl -L -o Qt.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qt-5.13.1.zip
   - 7z x Qt.zip
   - ps: $env:path="C:\projects\Qt;C:\projects\Qt\bin;$($env:path)"
-  # Get Qt Tools and add the path to it
+  # Get Qt Tools and add it to the path
   - curl -L -o QtTools.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/Qt-5.13.1-Tools.zip
   - 7z x QtTools.zip
   - ps: $env:path="C:\projects\Qttools\bin;$($env:path)"
+  # Get QtCharts and add it to the path
+  - curl -L -o QtCharts.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/Qt-5.13.1-Charts.zip
+  - 7z x QtCharts.zip
+  - ps: $env:path="C:\projects\QtCharts\bin;$($env:path)"
   # Download libde265_internals (needed later to pack the installer)
   - curl -L -o libde265.dll https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll
 
