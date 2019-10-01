@@ -1,3 +1,5 @@
+REM Get the windows runtime merge module
+copy "C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC140_CRT_x64.msm" .
 REM Harvest all files in the deploy direcotry
 "%WIX%\bin\heat.exe" dir "..\..\deploy" -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
 REM Compile the wxs file of the harvested files and the YUView.wxs file into objects
