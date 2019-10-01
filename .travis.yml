@@ -37,7 +37,7 @@ install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd $TRAVIS_BUILD_DIR; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export PATH=/Users/travis/build/Qt/bin:$PATH; fi
   # ---- Linux -----
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt512base qt512charts-no-lgpl; source /opt/qt511/bin/qt511-env.sh; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt512base qt512charts-no-lgpl; source /opt/qt512/bin/qt512-env.sh; fi
   
 script:
   # Run qmake and make
