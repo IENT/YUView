@@ -32,7 +32,7 @@ install:
   # Get QtCharts and add it to the path
   - curl -L -o QtCharts.zip https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/Qt-5.13.1-Charts.zip
   - 7z x QtCharts.zip
-  - ps: $env:path="C:\projects\QtCharts\bin;$($env:path)"
+  - ps: $env:path="C:\projects\QtCharts;$($env:path)"
   # Download libde265_internals (needed later to pack the installer)
   - curl -L -o libde265.dll https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll
 

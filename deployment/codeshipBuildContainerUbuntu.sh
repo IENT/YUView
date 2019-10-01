@@ -11,4 +11,6 @@ apt-get dist-upgrade -yq
 
 apt-get install -yq build-essential \
                     git \
-                    qt5-default
+                    qt5-default \
+                    libqt5charts5 \
+                    libqt5charts5-dev

@@ -5,7 +5,7 @@ os:
   - osx
 dist:
   # Request Ubuntu 14 as linux
-  - trusty
+  - bionic
 compiler: 
   - gcc
 
@@ -15,10 +15,6 @@ branches:
 
 before_install:
   - eval "${MATRIX_EVAL}"
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository ppa:forkotov02/opt-qt-5.11.1-trusty -y; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
-  # On linux also get a newer g++. The old one won't work.
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
   # On linux, also get the linuxdeployqt tool to build the Appimage
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then wget https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage; fi
@@ -40,11 +36,8 @@ install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd $TRAVIS_BUILD_DIR; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export PATH=/Users/travis/build/Qt/bin:$PATH; fi
   # ---- Linux -----
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh; fi
-  # On linux, install the new g++ version
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq g++-8; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90; fi
-
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt5-default libqt5charts5 libqt5charts5-dev; fi
+  
 script:
   # Run qmake and make
   - qmake -config release
