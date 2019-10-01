@@ -26,10 +26,10 @@ before_install:
   
 install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd /Users/travis/build; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.12.3/Qt-5.12.3_mac.zip -o Qt.zip; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qt-5.13.1_mac.zip -o Qt.zip; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip -q -a Qt.zip; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd $TRAVIS_BUILD_DIR; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.12.3/QtCharts-5.12.3_mac.zip -o QtCharts.zip; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_mac.zip -o QtCharts.zip; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip -q -a QtCharts.zip; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ls -l; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd QtCharts; fi
