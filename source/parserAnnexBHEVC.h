@@ -59,7 +59,7 @@ public:
   QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE;
   QPair<int,int> getSampleAspectRatio() Q_DECL_OVERRIDE;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class

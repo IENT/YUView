@@ -123,7 +123,7 @@ void parserAnnexBMpeg2::nal_unit_mpeg2::interpreteStartCodeValue()
     nal_unit_type = UNSPECIFIED;
 }
 
-bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   // Skip the NAL unit header
   int skip = 0;

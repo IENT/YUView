@@ -132,7 +132,7 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   if (nalID == -1 && data.isEmpty())
   {
@@ -361,7 +361,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
   if (auDelimiterDetector.isStartOfNewAU(nal_avc, curFramePOC))
   {
     DEBUG_AVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
-    bitrateItemModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+    bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
     sizeCurrentAU = 0;
     counterAU++;
   }

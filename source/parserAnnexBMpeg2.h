@@ -48,7 +48,7 @@ public:
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
   // TODO: Reading from raw mpeg2 streams not supported (yet? Is this even defined / possible?)
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE { Q_UNUSED(iFrameNr); Q_UNUSED(filePos); return QList<QByteArray>(); }

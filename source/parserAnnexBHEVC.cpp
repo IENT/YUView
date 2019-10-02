@@ -306,7 +306,7 @@ QPair<int,int> parserAnnexBHEVC::getSampleAspectRatio()
   return QPair<int,int>(1,1);
 }
 
-bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   if (nalID == -1 && data.isEmpty())
   {
@@ -612,7 +612,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
   if (auDelimiterDetector.isStartOfNewAU(nal_hevc, first_slice_segment_in_pic_flag))
   {
     DEBUG_HEVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
-    bitrateItemModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+    bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
     sizeCurrentAU = 0;
     counterAU++;
   }

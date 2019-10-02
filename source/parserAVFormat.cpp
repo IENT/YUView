@@ -160,7 +160,7 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 
       TreeItem *subTree = sps_size_reader.getCurrentItemTree();
       QByteArray rawNAL = extradata.mid(pos+2, sps_size);
-      if (!annexBParser->parseAndAddNALUnit(nalID, rawNAL, subTree))
+      if (!annexBParser->parseAndAddNALUnit(nalID, rawNAL, this->bitrateItemModel.data(), subTree))
         subTree->setError();
       nalID++;
       pos += sps_size + 2;
@@ -177,7 +177,7 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 
       TreeItem *subTree = pps_size_reader.getCurrentItemTree();
       QByteArray rawNAL = extradata.mid(pos+2, pps_size);
-      if (!annexBParser->parseAndAddNALUnit(nalID, rawNAL, subTree))
+      if (!annexBParser->parseAndAddNALUnit(nalID, rawNAL, this->bitrateItemModel.data(), subTree))
         subTree->setError();
       nalID++;
       pos += pps_size + 2;
@@ -197,7 +197,7 @@ bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
     // The extradata is using the hvcC format
     TreeItem *extradataRoot = new TreeItem("Extradata (HEVC hvcC format)", packetModel->getRootItem());
     hvcC h;
-    if (!h.parse_hvcC(extradata, extradataRoot, annexBParser))
+    if (!h.parse_hvcC(extradata, extradataRoot, annexBParser, this->bitrateItemModel.data()))
       return false;
   }
   else if (extradata.at(0) == 0)
@@ -219,7 +219,7 @@ bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
       int length = nextStartCode - posInData;
       QByteArray nalData = (nextStartCode >= 0) ? extradata.mid(posInData, length) : extradata.mid(posInData);
       // Let the hevc annexB parser parse this
-      if (!annexBParser->parseAndAddNALUnit(nalID, nalData, extradataRoot))
+      if (!annexBParser->parseAndAddNALUnit(nalID, nalData, this->bitrateItemModel.data(), extradataRoot))
         extradataRoot->setError();
       nalID++;
       posInData = nextStartCode + 3;
@@ -255,7 +255,7 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
       int length = nextStartCode - posInData;
       QByteArray nalData = (nextStartCode >= 0) ? extradata.mid(posInData, length) : extradata.mid(posInData);
       // Let the hevc annexB parser parse this
-      if (!annexBParser->parseAndAddNALUnit(nalID, nalData, extradataRoot))
+      if (!annexBParser->parseAndAddNALUnit(nalID, nalData, this->bitrateItemModel.data(), extradataRoot))
         extradataRoot->setError();
       nalID++;
       posInData = nextStartCode + 3;
@@ -391,7 +391,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
         // Parse the NAL data
         QString nalTypeName;
         QUint64Pair nalStartEndPosFile; // Not used
-        if (!annexBParser->parseAndAddNALUnit(nalID, nalData, itemTree, nalStartEndPosFile, &nalTypeName))
+        if (!annexBParser->parseAndAddNALUnit(nalID, nalData, this->bitrateItemModel.data(), itemTree, nalStartEndPosFile, &nalTypeName))
           itemTree->setError();
         if (!nalTypeName.isEmpty())
           nalNames.append(nalTypeName);
@@ -454,7 +454,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
   return true;
 }
 
-bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser)
+bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser, BitrateItemModel *bitrateModel)
 {
   reader_helper reader(hvcCData, root, "hvcC");
   reader.disableEmulationPrevention();
@@ -507,14 +507,14 @@ bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QSco
   for (unsigned int i = 0; i < numOfArrays; i++)
   {
     hvcC_naluArray a;
-    if (!a.parse_hvcC_naluArray(i, reader, annexBParser))
+    if (!a.parse_hvcC_naluArray(i, reader, annexBParser, bitrateModel))
       return false;
     naluArrayList.append(a);
   }
   return true;
 }
 
-bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser)
+bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitrateItemModel *bitrateModel)
 {
   reader_sub_level sub_level_adder(reader, QString("nal unit array %1").arg(arrayID));
 
@@ -529,7 +529,7 @@ bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_he
   for (unsigned int i = 0; i < numNalus; i++)
   {
     hvcC_nalUnit nal;
-    if (!nal.parse_hvcC_nalUnit(i, reader, annexBParser))
+    if (!nal.parse_hvcC_nalUnit(i, reader, annexBParser, bitrateModel))
       return false;
     nalList.append(nal);
   }
@@ -537,7 +537,7 @@ bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_he
   return true;
 }
 
-bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser)
+bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitrateItemModel *bitrateModel)
 {
   reader_sub_level sub_level_adder(reader, QString("nal unit %1").arg(unitID));
 
@@ -547,7 +547,7 @@ bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper 
   QByteArray nalData = reader.readBytes(nalUnitLength);
 
   // Let the hevc annexB parser parse this
-  if (!annexBParser->parseAndAddNALUnit(unitID, nalData, reader.getCurrentItemTree()))
+  if (!annexBParser->parseAndAddNALUnit(unitID, nalData, bitrateModel, reader.getCurrentItemTree()))
     return false;
 
   return true;

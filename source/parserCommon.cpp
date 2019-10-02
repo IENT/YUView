@@ -1109,6 +1109,7 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
       retVal = index.row();
     if (index.column() == 1)
     {
+      QMutexLocker locker(&this->bitratePerStreamDataMutex);
       const int averageRange = 10;
       unsigned averageBitrate = 0;
       unsigned start = qMax(0, index.row() - averageRange);
@@ -1120,7 +1121,10 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
       retVal = averageBitrate / (end - start);
     }
     if (index.column() == 2)
+    {
+      QMutexLocker locker(&this->bitratePerStreamDataMutex);
       retVal = bitratePerStreamData[0][index.row()].bitrate;
+    }
 
     return retVal;
   }
@@ -1130,12 +1134,17 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
 
 void BitrateItemModel::updateNumberModelItems()
 {
-  auto n = (unsigned int)bitratePerStreamData[0].count();
-  Q_ASSERT_X(n >= nrRatePoints, "PacketItemModel::updateNumberModelItems", "Setting a smaller number of items.");
-  unsigned int nrAddItems = n - nrRatePoints;
+  unsigned newCount;
+  {
+    QMutexLocker locker(&this->bitratePerStreamDataMutex);
+    newCount = unsigned(bitratePerStreamData[0].count());
+  }
+  
+  Q_ASSERT_X(newCount >= nrRatePoints, "PacketItemModel::updateNumberModelItems", "Setting a smaller number of items.");
+  unsigned int nrAddItems = newCount - nrRatePoints;
   int lastIndex = nrRatePoints;
   beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
-  nrRatePoints = n;
+  nrRatePoints = newCount;
   endInsertRows();
 }
 
@@ -1158,6 +1167,8 @@ void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dt
 
   DEBUG_PARSER("addBitratePoint streamIndex %d pts %d dts %d rate %d", streamIndex, pts, dts, bitrate);
   
+  // Keep the list sorted
+  QMutexLocker locker(&this->bitratePerStreamDataMutex);
   if (bitratePerStreamData[streamIndex].isEmpty())
   {
     bitratePerStreamData[streamIndex].append(e);
@@ -1166,10 +1177,22 @@ void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dt
   {
     for (int i = 0; i < bitratePerStreamData[streamIndex].size(); i++)
     {
-      if (e.pts > bitratePerStreamData[streamIndex][i].pts)
+      const bool hasNextItem = (i < bitratePerStreamData[streamIndex].size() - 1);
+      if (hasNextItem)
       {
-        bitratePerStreamData[streamIndex].insert(i, e);
-        break;
+        if (e.pts > bitratePerStreamData[streamIndex][i].pts && e.pts < bitratePerStreamData[streamIndex][i + 1].pts)
+        {
+          bitratePerStreamData[streamIndex].insert(i + 1, e);
+          return;
+        }
+      }
+      else
+      {
+        if (e.pts > bitratePerStreamData[streamIndex][i].pts)
+          bitratePerStreamData[streamIndex].append(e);
+        else
+          bitratePerStreamData[streamIndex].insert(i, e);
+        return;
       }
     }
   }

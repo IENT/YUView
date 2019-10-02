@@ -144,7 +144,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
     try
     {
       nalData = file->getNextNALUnit(false, &nalStartEndPosFile);
-      if (!parseAndAddNALUnit(nalID, nalData, nullptr, nalStartEndPosFile))
+      if (!parseAndAddNALUnit(nalID, nalData, this->bitrateItemModel.data(), nullptr, nalStartEndPosFile))
       {
         DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Error parsing NAL %d", nalID);
       }
@@ -196,7 +196,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   }
 
   // We are done.
-  parseAndAddNALUnit(-1, QByteArray());
+  parseAndAddNALUnit(-1, QByteArray(), this->bitrateItemModel.data());
   DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Parsing done. Found %d POCs.", POCList.length());
 
   if (packetModel)

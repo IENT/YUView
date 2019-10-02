@@ -38,6 +38,7 @@
 #include <QByteArray>
 #include <QList>
 #include <QMap>
+#include <QMutex>
 #include <QSortFilterProxyModel>
 #include <QString>
 
@@ -330,6 +331,7 @@ namespace parserCommon
     };
 
     QMap<unsigned int, QList<bitrateEntry>> bitratePerStreamData;
+    mutable QMutex bitratePerStreamDataMutex;
     RangeInt dtsRange;
     RangeInt ptsRange;
 

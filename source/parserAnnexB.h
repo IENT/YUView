@@ -62,7 +62,7 @@ public:
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
   // It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).
   // When there are no more NAL units in the file (the file ends), call this function one last time with empty data and a nalID of -1.
-  virtual bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) = 0;
+  virtual bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) = 0;
   
   // Get some format properties
   virtual double getFramerate() const = 0;
