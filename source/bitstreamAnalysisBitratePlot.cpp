@@ -54,9 +54,7 @@ void BitrateBarChartCallout::setChart(QtCharts::QChart *chart)
 QRectF BitrateBarChartCallout::boundingRect() const
 {
   if (this->parentItem() == nullptr || this->chart == nullptr)
-  {
     return {};
-  }
 
   QPointF anchor = mapFromParent(this->chart->mapToPosition(this->anchor));
   QRectF rect;
@@ -70,9 +68,9 @@ QRectF BitrateBarChartCallout::boundingRect() const
 void BitrateBarChartCallout::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
   Q_UNUSED(option)
-    Q_UNUSED(widget)
+  Q_UNUSED(widget)
 
-    painter->setBrush(QColor(255, 255, 255));
+  painter->setBrush(QColor(255, 255, 255));
   painter->drawRect(this->rect);
   painter->drawText(this->textRect, this->text);
 }
@@ -99,6 +97,9 @@ BitrateBarChart::BitrateBarChart(QWidget *parent)
   this->chartView->setMinimumSize(640, 480);
   mainLayout->addWidget(this->chartView);
 
+  this->chartView->setChart(&this->chart);
+  this->currentTooltip.setChart(&this->chart);
+
   this->scrollBar = new QScrollBar(Qt::Horizontal, this);
   mainLayout->addWidget(this->scrollBar);
   connect(this->scrollBar, &QAbstractSlider::valueChanged, this, &BitrateBarChart::onScrollBarValueChanged);
@@ -106,15 +107,43 @@ BitrateBarChart::BitrateBarChart(QWidget *parent)
 
 void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
 {
-  if (model == nullptr)
-  {
-    return;
-  }
   this->model = model;
+  
+  // Clear the current chart
+  this->chart.removeAllSeries();
+  if (!this->barMapper.isNull())
+  {
+    delete this->barMapper;
+    this->barMapper.clear();
+  }
+  if (!this->lineModelMapper.isNull())
+  {
+    delete this->lineModelMapper;
+    this->lineModelMapper.clear();
+  }
+  if (!this->axisX.isNull())
+  {
+    this->chart.removeAxis(this->axisX);
+    delete this->axisX;
+    this->axisX.clear();
+  }
+  if (!this->axisY.isNull())
+  {
+    this->chart.removeAxis(this->axisY);
+    delete this->axisY;
+    this->axisY.clear();
+  }
+
+  if (model == nullptr)
+    return;
+
+  Q_ASSERT(this->barMapper.isNull());
+  Q_ASSERT(this->lineModelMapper.isNull());
+  Q_ASSERT(this->axisX.isNull());
+  Q_ASSERT(this->axisY.isNull());
 
   QStackedBarSeries *barSeries = new QStackedBarSeries;
-  this->chart = new QChart;
-  this->chart->setAnimationOptions(QChart::NoAnimation);
+  this->chart.setAnimationOptions(QChart::NoAnimation);
 
   this->updateScrollBarRange();
 
@@ -124,7 +153,7 @@ void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
   this->barMapper->setRowCount(model->rowCount());
   this->barMapper->setSeries(barSeries);
   this->barMapper->setModel(model);
-  this->chart->addSeries(barSeries);
+  this->chart.addSeries(barSeries);
 
   QLineSeries *lineSeries = new QLineSeries;
   lineSeries->setName("Average");
@@ -133,21 +162,18 @@ void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
   this->lineModelMapper->setYColumn(1);
   this->lineModelMapper->setSeries(lineSeries);
   this->lineModelMapper->setModel(model);
-  chart->addSeries(lineSeries);
+  this->chart.addSeries(lineSeries);
 
   this->axisX = new QValueAxis();
   this->axisX->setLabelFormat("%.0f");
   this->axisY = new QValueAxis();
-  this->chart->addAxis(this->axisX, Qt::AlignBottom);
-  this->chart->addAxis(this->axisY, Qt::AlignLeft);
+  this->chart.addAxis(this->axisX, Qt::AlignBottom);
+  this->chart.addAxis(this->axisY, Qt::AlignLeft);
   barSeries->attachAxis(this->axisX);
   lineSeries->attachAxis(this->axisX);
   barSeries->attachAxis(this->axisY);
   lineSeries->attachAxis(this->axisY);
   connect(barSeries, &QAbstractBarSeries::hovered, this, &BitrateBarChart::tooltip);
-
-  this->chartView->setChart(this->chart);
-  this->currentTooltip.setChart(this->chart.data());
 
   this->onScrollBarValueChanged(0);
 
@@ -171,9 +197,7 @@ void BitrateBarChart::tooltip(bool status, int index, QBarSet *barset)
     this->currentTooltip.show();
   }
   else
-  {
     this->currentTooltip.hide();
-  }
 }
 
 void BitrateBarChart::onRowsInserted(const QModelIndex &parent, int first, int last)
@@ -199,12 +223,10 @@ void BitrateBarChart::resizeEvent(QResizeEvent *event)
 
 void BitrateBarChart::updateAxis()
 {
-  if (this->chart.isNull())
-  {
+  if (this->axisX.isNull())
     return;
-  }
 
-  const auto plotWidth = this->chart->plotArea().width();
+  const auto plotWidth = this->chart.plotArea().width();
   double barsVisible = plotWidth / 100 * this->barsPerWidthOf100Pixels;
 
   auto currentScrollBarValue = this->scrollBar->value();
@@ -218,20 +240,16 @@ void BitrateBarChart::updateAxis()
 
 void BitrateBarChart::updateScrollBarRange()
 {
-  if (this->barMapper.isNull() || this->chart.isNull())
-  {
+  if (this->barMapper.isNull())
     return;
-  }
 
-  const auto plotWidth = this->chart->plotArea().width();
+  const auto plotWidth = this->chart.plotArea().width();
   const double barsVisible = plotWidth / 100 * this->barsPerWidthOf100Pixels;
 
   auto nrRows = this->barMapper->model()->rowCount();
   auto maxValue = scrollBarScale * nrRows - int(barsVisible * scrollBarScale);
   if (maxValue <= 0)
-  {
     this->scrollBar->setEnabled(false);
-  }
   else
   {
     QSignalBlocker scrollBarSignalBlocker(this->scrollBar);

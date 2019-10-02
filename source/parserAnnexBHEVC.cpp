@@ -595,8 +595,18 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *
   }
   else if (nal_hevc.nal_type == FD_NUT)
   {
+    specificDescription = "Filler";
     if (nalTypeName)
       *nalTypeName = "FILLER";
+  }
+  else if (nal_hevc.nal_type == UNSPEC62 || nal_hevc.nal_type == UNSPEC63)
+  {
+    // Dolby vision EL or metadata
+    // Technically this is not a specific NAL unit type but dolby vision uses a different
+    // seperator that makes the DV metadata and EL data appear to be NAL unit type 62 and 63.
+    specificDescription = "Dolby Vision";
+    if (nalTypeName)
+      *nalTypeName = "Dolby Vision";
   }
 
   if (auDelimiterDetector.isStartOfNewAU(nal_hevc, first_slice_segment_in_pic_flag))

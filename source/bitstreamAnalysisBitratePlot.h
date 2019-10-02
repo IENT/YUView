@@ -85,7 +85,8 @@ private:
   QPointer<QtCharts::QVXYModelMapper> lineModelMapper;
   QPointer<QtCharts::QValueAxis> axisX;
   QPointer<QtCharts::QValueAxis> axisY;
-  QPointer<QtCharts::QChart> chart;
+  
+  QtCharts::QChart chart;
 
   parserCommon::BitrateItemModel *model{ nullptr };
 
@@ -97,6 +98,6 @@ protected:
   void updateAxis();
   void updateScrollBarRange();
 
-  double barsPerWidthOf100Pixels{ 2.0 };
+  double barsPerWidthOf100Pixels{ 4.0 };
   double maxYValue{ 0 };
 };

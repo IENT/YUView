@@ -141,6 +141,7 @@ void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, p
   const bool isBitstream = !currentCompressedVideo.isNull();
   ui.tabStreamInfo->setEnabled(isBitstream);
   ui.tabPacketAnalysis->setEnabled(isBitstream);
+  ui.tabBitrateGraphicsView->setEnabled(isBitstream);
 
   restartParsingOfCurrentItem();
 }
@@ -159,6 +160,9 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   {
     DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem no compressed video - abort");
     updateParsingStatusText(-1);
+    ui.streamInfoTreeWidget->clear();
+    ui.dataTreeView->setModel(nullptr);
+    ui.bitrateBarChart->setModel(nullptr);
     parser.reset();
     return;
   }
