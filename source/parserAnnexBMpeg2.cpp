@@ -182,6 +182,12 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
   {
     auto new_picture_header = QSharedPointer<picture_header>(new picture_header(nal_mpeg2));
     parsingSuccess = new_picture_header->parse_picture_header(payload, nalRoot);
+    if (parsingSuccess)
+    {
+      if (new_picture_header->temporal_reference == 0)
+        pocOffset = lastFramePOC;
+      curFramePOC = pocOffset + new_picture_header->temporal_reference;
+    }
 
     specificDescription = parsingSuccess ? " Picture Header" : " Picture Header (Error)";
     if (nalTypeName)
@@ -245,6 +251,17 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
       specificDescription = QString(" Extension");
     }
   }
+
+  const bool isStartOfNewAU = (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER || nal_mpeg2.nal_unit_type == PICTURE);
+  if (isStartOfNewAU && lastFramePOC >= 0)
+  {
+    bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+    sizeCurrentAU = 0;
+    counterAU++;
+  }
+  if (lastFramePOC != curFramePOC)
+    lastFramePOC = curFramePOC;
+  sizeCurrentAU += data.size();
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)

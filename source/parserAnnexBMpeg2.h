@@ -225,6 +225,12 @@ private:
   // We will keep a pointer to the first sequence extension to be able to retrive some data
   QSharedPointer<sequence_extension> first_sequence_extension;
   QSharedPointer<sequence_header> first_sequence_header;
+
+  unsigned int sizeCurrentAU{ 0 };
+  int pocOffset{ 0 };
+  int curFramePOC{ -1 };
+  int lastFramePOC{ -1 };
+  unsigned int counterAU{ 0 };
 };
 
 #endif // PARSERANNEXBMPEG2_H
