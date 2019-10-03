@@ -1035,6 +1035,9 @@ void PacketItemModel::updateNumberModelItems()
   auto n = getNumberFirstLevelChildren();
   Q_ASSERT_X(n >= nrShowChildItems, "PacketItemModel::updateNumberModelItems", "Setting a smaller number of items.");
   unsigned int nrAddItems = n - nrShowChildItems;
+  if (nrAddItems == 0)
+    return;
+
   int lastIndex = nrShowChildItems;
   beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
   nrShowChildItems = n;

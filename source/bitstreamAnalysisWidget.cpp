@@ -114,6 +114,10 @@ void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)
 
 void BitstreamAnalysisWidget::stopAndDeleteParser()
 {
+  disconnect(parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
+  disconnect(parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
+  disconnect(parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
+
   if (backgroundParserFuture.isRunning())
   {
     DEBUG_ANALYSIS("BitstreamAnalysisWidget::stopAndDeleteParser stopping parser");

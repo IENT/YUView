@@ -98,6 +98,6 @@ protected:
   void updateAxis();
   void updateScrollBarRange();
 
-  double barsPerWidthOf100Pixels{ 4.0 };
+  double barsPerWidthOf100Pixels{ 8.0 };
   double maxYValue{ 0 };
 };

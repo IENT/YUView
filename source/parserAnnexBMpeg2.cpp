@@ -185,7 +185,10 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
     if (parsingSuccess)
     {
       if (new_picture_header->temporal_reference == 0)
-        pocOffset = lastFramePOC;
+      {
+        if (lastFramePOC >= 0)
+          pocOffset = lastFramePOC + 1;
+      }
       curFramePOC = pocOffset + new_picture_header->temporal_reference;
     }
 
@@ -252,7 +255,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
     }
   }
 
-  const bool isStartOfNewAU = (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER || nal_mpeg2.nal_unit_type == PICTURE);
+  const bool isStartOfNewAU = (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER || (nal_mpeg2.nal_unit_type == PICTURE && !lastAUStartBySequenceHeader));
   if (isStartOfNewAU && lastFramePOC >= 0)
   {
     bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
@@ -262,7 +265,11 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
   if (lastFramePOC != curFramePOC)
     lastFramePOC = curFramePOC;
   sizeCurrentAU += data.size();
-
+  if (nal_mpeg2.nal_unit_type == PICTURE && lastAUStartBySequenceHeader)
+    lastAUStartBySequenceHeader = false;
+  if (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER)
+    lastAUStartBySequenceHeader = true;
+  
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_mpeg2.nal_idx).arg(nal_unit_type_toString.value(nal_mpeg2.nal_unit_type)) + specificDescription);

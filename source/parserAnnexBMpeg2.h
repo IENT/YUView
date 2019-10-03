@@ -231,6 +231,7 @@ private:
   int curFramePOC{ -1 };
   int lastFramePOC{ -1 };
   unsigned int counterAU{ 0 };
+  bool lastAUStartBySequenceHeader{ false };
 };
 
 #endif // PARSERANNEXBMPEG2_H

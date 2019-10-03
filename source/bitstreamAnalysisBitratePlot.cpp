@@ -143,6 +143,7 @@ void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
   Q_ASSERT(this->axisY.isNull());
 
   QStackedBarSeries *barSeries = new QStackedBarSeries;
+  barSeries->setBarWidth(1.0);
   this->chart.setAnimationOptions(QChart::NoAnimation);
 
   this->updateScrollBarRange();
@@ -234,7 +235,7 @@ void BitrateBarChart::updateAxis()
   this->axisX->setRange(v - 0.5, v + barsVisible - 0.5);
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
   this->axisX->setTickType(QValueAxis::TicksDynamic);
-  this->axisX->setTickInterval(1.0);
+  this->axisX->setTickInterval(5.0);
 #endif
 }
 
