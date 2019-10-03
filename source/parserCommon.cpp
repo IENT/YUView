@@ -1142,6 +1142,10 @@ void BitrateItemModel::updateNumberModelItems()
   
   Q_ASSERT_X(newCount >= nrRatePoints, "PacketItemModel::updateNumberModelItems", "Setting a smaller number of items.");
   unsigned int nrAddItems = newCount - nrRatePoints;
+
+  if (nrAddItems == 0)
+    return;
+
   int lastIndex = nrRatePoints;
   beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
   nrRatePoints = newCount;
