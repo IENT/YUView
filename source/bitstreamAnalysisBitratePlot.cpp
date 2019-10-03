@@ -193,9 +193,13 @@ void BitrateBarChart::tooltip(bool status, int index, QBarSet *barset)
 
   if (status)
   {
-    this->currentTooltip.setTextAndAnchor(QString("idx: %1").arg(index), QPointF(double(index), 3));
-    this->currentTooltip.setZValue(11);
-    this->currentTooltip.show();
+    if (model != nullptr)
+    {
+      QString itemInfoText = model->getItemInfoText(index);
+      this->currentTooltip.setTextAndAnchor(itemInfoText, QPointF(double(index), 3));
+      this->currentTooltip.setZValue(11);
+      this->currentTooltip.show();
+    }
   }
   else
     this->currentTooltip.hide();

@@ -1135,6 +1135,18 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
   return QVariant();
 }
 
+QString BitrateItemModel::getItemInfoText(int index)
+{
+  QString text;
+  if (index >= 0 && index < bitratePerStreamData[0].count())
+  {
+    text += QString("PTS: %1\n").arg(bitratePerStreamData[0][index].pts);
+    text += QString("DTS: %1\n").arg(bitratePerStreamData[0][index].dts);
+    text += QString("Bitrate: %1").arg(bitratePerStreamData[0][index].bitrate);
+  }
+  return text;
+}
+
 void BitrateItemModel::updateNumberModelItems()
 {
   unsigned newCount;
