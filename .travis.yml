@@ -4,15 +4,13 @@ matrix:
   include:
     - os: osx
       env: 
-        - OUTPUT_ZIP_FILE=QtTools-5.13.1_mac.zip
-        - QT_FILE=Qtbase-5.13.1_mac.zip
+        - OUTPUT_ZIP_FILE=YUView_mac.zip
     - os: windows
       env: 
-        - OUTPUT_ZIP_FILE=QtTools-5.13.1_win.zip
-        - QT_FILE=Qtbase-5.13.1_win.zip
+        - OUTPUT_ZIP_FILE=YUView_win.zip
     - os: linux
       env:
-        - 
+        - OUTPUT_ZIP_FILE=App.app
       dist:
         - trusty
 compiler: 
@@ -65,7 +63,7 @@ install:
       ls -l
     fi
   - |
-    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh
       sudo apt-get install -qq g++-8
       sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
@@ -75,7 +73,7 @@ script:
   - cd $TRAVIS_BUILD_DIR
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      buildWindows.bat
+      ./buildWindows.bat
     else
       qmake -config release
       make -j 2
