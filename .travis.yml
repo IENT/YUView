@@ -1,11 +1,20 @@
 language: cpp
 
-os:
-  - linux
-  - osx
-dist:
-  # Request Ubuntu 14 as linux
-  - trusty
+matrix:
+  include:
+    - os: osx
+      env: 
+        - OUTPUT_ZIP_FILE=QtTools-5.13.1_mac.zip
+        - QT_FILE=Qtbase-5.13.1_mac.zip
+    - os: windows
+      env: 
+        - OUTPUT_ZIP_FILE=QtTools-5.13.1_win.zip
+        - QT_FILE=Qtbase-5.13.1_win.zip
+    - os: linux
+      env:
+        - 
+      dist:
+        - trusty
 compiler: 
   - gcc
 
@@ -15,37 +24,62 @@ branches:
 
 before_install:
   - eval "${MATRIX_EVAL}"
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository ppa:forkotov02/opt-qt-5.11.1-trusty -y; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
-  # On linux also get a newer g++. The old one won't work.
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; fi
-  # On linux, also get the linuxdeployqt tool to build the Appimage
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then wget https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then chmod a+x linuxdeployqt-6-x86_64.AppImage; fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      sudo add-apt-repository ppa:forkotov02/opt-qt-5.11.1-trusty -y
+      sudo apt-get update -qq
+      # On linux also get a newer g++. The old one won't work.
+      sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+      then sudo apt-get update -qq
+      # On linux, also get the linuxdeployqt tool to build the Appimage
+      wget https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage
+      chmod a+x linuxdeployqt-6-x86_64.AppImage
+    fi
   
 install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd /Users/travis/build; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qt-5.13.1_mac.zip -o Qt.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip -q -a Qt.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd $TRAVIS_BUILD_DIR; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_mac.zip -o QtCharts.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then unzip -q -a QtCharts.zip; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ls -l; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd QtCharts; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then make install; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd ..; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export PATH=/Users/travis/build/Qt/bin:$PATH; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh; fi
-  # On linux, install the new g++ version
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -qq g++-8; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90; fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      cd /Users/travis/build
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qt-5.13.1_mac.zip -o Qt.zip
+      unzip -q -a Qt.zip
+      cd $TRAVIS_BUILD_DIR
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_mac.zip -o QtCharts.zip
+      unzip -q -a QtCharts.zip
+      ls -l
+      cd QtCharts
+      make install
+      cd ..
+      export PATH=/Users/travis/build/Qt/bin:$PATH
+    fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      cd /c/Users/travis/build
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qt-5.13.1_win.zip -o Qt.zip
+      unzip -q -a Qt.zip
+      cd $TRAVIS_BUILD_DIR
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_win.zip -o QtCharts.zip
+      unzip -q -a QtCharts.zip
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/Qt-5.13.1-Tools.zip -o QtTools.zip
+      unzip -q -a QtTools.zip
+      curl -L -o libde265.dll https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll
+      ls -l
+    fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh
+      sudo apt-get install -qq g++-8
+      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
+    fi
 
 script:
-  # Run qmake and make
-  - qmake -config release
-  - make
-  # Just for debugging
+  - cd $TRAVIS_BUILD_DIR
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      buildWindows.bat
+    else
+      qmake -config release
+      make -j 2
+    fi
   - ls -alh
   - ls -alh build
   - ls -alh build/release
