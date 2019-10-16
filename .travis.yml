@@ -41,7 +41,12 @@ install:
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qtbase-5.13.1_mac.zip -o Qt.zip
       unzip -q -a Qt.zip
       cd $TRAVIS_BUILD_DIR
-      curl -L  https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_mac.zip -o QtCharts.zip
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/QtTools-5.13.1_mac.zip -o QtTools.zip
+      unzip -q -a QtTools.zip
+      cd QtTools
+      make install
+      cd ..
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_mac.zip -o QtCharts.zip
       unzip -q -a QtCharts.zip
       ls -l
       cd QtCharts
