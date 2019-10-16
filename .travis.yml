@@ -37,22 +37,28 @@ before_install:
 install:
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      # Qt Base
       cd /Users/travis/build
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qtbase-5.13.1_mac.zip -o Qt.zip
       unzip -q -a Qt.zip
       cd $TRAVIS_BUILD_DIR
+      cd ..
+      export PATH=/Users/travis/build/Qt/bin:$PATH
+      # QtTools 
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/QtTools-5.13.1_mac.zip -o QtTools.zip
       unzip -q -a QtTools.zip
       cd QtTools
       make install
       cd ..
+      # QtCharts
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_mac.zip -o QtCharts.zip
       unzip -q -a QtCharts.zip
       ls -l
       cd QtCharts
       make install
       cd ..
-      export PATH=/Users/travis/build/Qt/bin:$PATH
+      # libde265
+      curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dylib -o libde265-internals.dylib
     fi
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
@@ -60,6 +66,7 @@ install:
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qtbase-5.13.1_win.zip -o Qt.zip
       unzip -q -a Qt.zip
       cd $TRAVIS_BUILD_DIR
+      cd ..
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_win.zip -o QtCharts.zip
       unzip -q -a QtCharts.zip
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/QtTools-5.13.1_win.zip -o QtTools.zip
@@ -83,26 +90,27 @@ script:
       qmake -config release
       make -j 2
     fi
-  - ls -alh
-  - ls -alh build
-  - ls -alh build/release
 
 after_success:
-  # Mac: build an "app" file
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then /usr/local/opt/qt5/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2; fi
-  # check what YUView is linking against
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then otool -L build/release/YUView.app/Contents/MacOs/YUView; fi
-  # copy the libde265 library
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cp libde265/libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.; fi
-  # prepare zip package
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd build/release; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then zip -r ../../YUView-MacOs.zip YUView.app; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cd ../..; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" AND ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh; fi
-  # Linux: Build the Appimage
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then make INSTALL_ROOT=appdir install; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then ./linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage; fi
-
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      # Mac: build an "app" file
+      $TRAVIS_BUILD_DIR/../Qttools/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2
+      # check what YUView is linking against
+      otool -L build/release/YUView.app/Contents/MacOs/YUView
+      # copy the libde265 library
+      cp $TRAVIS_BUILD_DIR/../libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.
+      cd build/release
+      # Zip
+      zip -r ../../YUView-MacOs.zip YUView.app
+      if [ ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh; fi
+    fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      make INSTALL_ROOT=appdir install
+      ./linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage
+    fi
+  
 before_deploy:
   # not needed?
 deploy:
