@@ -38,10 +38,10 @@ install:
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       cd /Users/travis/build
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qt-5.13.1_mac.zip -o Qt.zip
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qtbase-5.13.1_mac.zip -o Qt.zip
       unzip -q -a Qt.zip
       cd $TRAVIS_BUILD_DIR
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_mac.zip -o QtCharts.zip
+      curl -L  https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_mac.zip -o QtCharts.zip
       unzip -q -a QtCharts.zip
       ls -l
       cd QtCharts
@@ -52,12 +52,12 @@ install:
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       cd /c/Users/travis/build
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qt-5.13.1_win.zip -o Qt.zip
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qtbase-5.13.1_win.zip -o Qt.zip
       unzip -q -a Qt.zip
       cd $TRAVIS_BUILD_DIR
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_win.zip -o QtCharts.zip
       unzip -q -a QtCharts.zip
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/Qt-5.13.1-Tools.zip -o QtTools.zip
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/QtTools-5.13.1_win.zip -o QtTools.zip
       unzip -q -a QtTools.zip
       curl -L -o libde265.dll https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll
       ls -l
