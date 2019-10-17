@@ -100,7 +100,6 @@ after_success:
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       # Mac: build an "app" file
-      set
       otool -L $TRAVIS_BUILD_DIR/../Qttools/bin/macdeployqt
       $TRAVIS_BUILD_DIR/../Qttools/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2
       # check what YUView is linking against
@@ -123,7 +122,7 @@ after_success:
       mkdir deploy
       cd deploy
       cp ../build/release/YUView.exe .
-      $TRAVIS_BUILD_DIR/../Qttools/bin/windeployqt.exe --release --dir /c/projects/YUView/deploy YUView.exe
+      $TRAVIS_BUILD_DIR/../Qttools/bin/windeployqt.exe --release --dir $TRAVIS_BUILD_DIR/deploy YUView.exe
       # Copy libraries and other misc files
       cp $TRAVIS_BUILD_DIR/../openSSL/*.dll .
       mkdir decoder
@@ -133,14 +132,14 @@ after_success:
       # Run the versioning tool
       cd $TRAVIS_BUILD_DIR
       python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
-      ll -l deploy
+      ls -l deploy
       # Package the installer and the zip file
       7z a $TRAVIS_BUILD_DIR/../YUView-Win.zip ./deploy/
       cd deployment/wix
       ./createWIXInstaller.bat
-      ls -l bin/Release
+      ls -l
     fi
-  - ls -l
+  - ls -l $TRAVIS_BUILD_DIR
   - ls -l $TRAVIS_BUILD_DIR/..
   
 before_deploy:
