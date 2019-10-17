@@ -95,9 +95,11 @@ script:
     fi
 
 after_success:
+  - cd $TRAVIS_BUILD_DIR
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       # Mac: build an "app" file
+      otool -L $TRAVIS_BUILD_DIR/../Qttools/bin/macdeployqt
       $TRAVIS_BUILD_DIR/../Qttools/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2
       # check what YUView is linking against
       otool -L build/release/YUView.app/Contents/MacOs/YUView
@@ -115,12 +117,11 @@ after_success:
     fi
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      cd $TRAVIS_BUILD_DIR
       # create temporary folder for preparing the deployment package
       mkdir deploy
       cd deploy
-      cp ..\build\release\YUView.exe .
-      $TRAVIS_BUILD_DIR/../Qttools/bin/windeployqt.exe --release --dir C:\projects\YUView\deploy YUView.exe
+      cp ../build/release/YUView.exe .
+      $TRAVIS_BUILD_DIR/../Qttools/bin/windeployqt.exe --release --dir /c/projects/YUView/deploy YUView.exe
       # Copy libraries and other misc files
       cp $TRAVIS_BUILD_DIR/../openSSL/*.dll .
       mkdir decoder
@@ -129,7 +130,7 @@ after_success:
       cp ../LICENSE.GPL3 .
       # Run the versioning tool
       cd $TRAVIS_BUILD_DIR
-      python deployment\versioning.py -d deploy -o deploy\versioninfo.txt
+      python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
       ll -l deploy
       # Package the installer and the zip file
       zip -r $TRAVIS_BUILD_DIR/../YUView-Win.zip ./deploy/*
