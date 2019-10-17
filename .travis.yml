@@ -9,10 +9,9 @@ matrix:
       env: 
         - OUTPUT_ZIP_FILE=YUView_win.zip
     - os: linux
+      dist: trusty
       env:
         - OUTPUT_ZIP_FILE=App.app
-      dist:
-        - trusty
 compiler: 
   - gcc
 
@@ -32,6 +31,10 @@ before_install:
       # On linux, also get the linuxdeployqt tool to build the Appimage
       wget https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage
       chmod a+x linuxdeployqt-6-x86_64.AppImage
+    fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      choco install wixtoolset
     fi
   
 install:
@@ -134,7 +137,7 @@ after_success:
       python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
       ls -l deploy
       # Package the installer and the zip file
-      7z a $TRAVIS_BUILD_DIR/../YUView-Win.zip ./deploy/
+      7z a $TRAVIS_BUILD_DIR/../YUView-Win.zip ./deploy/*
       cd deployment/wix
       ./createWIXInstaller.bat
       ls -l
