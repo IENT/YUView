@@ -105,7 +105,7 @@ after_success:
       cp $TRAVIS_BUILD_DIR/../libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.
       cd build/release
       # Zip
-      zip -r ../../YUView-MacOs.zip YUView.app
+      zip -r $TRAVIS_BUILD_DIR/../YUView-MacOs.zip YUView.app
       if [ ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh; fi
     fi
   - |
@@ -119,8 +119,8 @@ after_success:
       # create temporary folder for preparing the deployment package
       mkdir deploy
       cd deploy
-      copy ..\build\release\YUView.exe .
-      windeployqt --release --dir C:\projects\YUView\deploy YUView.exe
+      cp ..\build\release\YUView.exe .
+      $TRAVIS_BUILD_DIR/../Qttools/bin/windeployqt.exe --release --dir C:\projects\YUView\deploy YUView.exe
       # Copy libraries and other misc files
       cp $TRAVIS_BUILD_DIR/../openSSL/*.dll .
       mkdir decoder
@@ -138,6 +138,7 @@ after_success:
       ls -l bin/Release
     fi
   - ls -l
+  - ls -l $TRAVIS_BUILD_DIR/..
   
 before_deploy:
   # not needed?
