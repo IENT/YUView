@@ -67,6 +67,7 @@ install:
       unzip -q -a Qt.zip
       cd $TRAVIS_BUILD_DIR
       cd ..
+      export PATH=/c/Users/travis/build/Qt/bin:$PATH
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_win.zip -o QtCharts.zip
       unzip -q -a QtCharts.zip
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/QtTools-5.13.1_win.zip -o QtTools.zip
@@ -99,6 +100,7 @@ after_success:
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       # Mac: build an "app" file
+      set
       otool -L $TRAVIS_BUILD_DIR/../Qttools/bin/macdeployqt
       $TRAVIS_BUILD_DIR/../Qttools/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2
       # check what YUView is linking against
@@ -133,7 +135,7 @@ after_success:
       python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
       ll -l deploy
       # Package the installer and the zip file
-      zip -r $TRAVIS_BUILD_DIR/../YUView-Win.zip ./deploy/*
+      7z a $TRAVIS_BUILD_DIR/../YUView-Win.zip ./deploy/
       cd deployment/wix
       ./createWIXInstaller.bat
       ls -l bin/Release
