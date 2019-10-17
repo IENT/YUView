@@ -71,7 +71,10 @@ install:
       unzip -q -a QtCharts.zip
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/QtTools-5.13.1_win.zip -o QtTools.zip
       unzip -q -a QtTools.zip
-      curl -L -o libde265.dll https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll
+      curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
+      curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1/openSSL_1_1_1_stable_win.zip -o openSSL.zip
+      unzip -q -a openSSL.zip
       ls -l
     fi
   - |
@@ -110,6 +113,31 @@ after_success:
       make INSTALL_ROOT=appdir install
       ./linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage
     fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      cd $TRAVIS_BUILD_DIR
+      # create temporary folder for preparing the deployment package
+      mkdir deploy
+      cd deploy
+      copy ..\build\release\YUView.exe .
+      windeployqt --release --dir C:\projects\YUView\deploy YUView.exe
+      # Copy libraries and other misc files
+      cp $TRAVIS_BUILD_DIR/../openSSL/*.dll .
+      mkdir decoder
+      cp $TRAVIS_BUILD_DIR/../libde265.dll decoder
+      cp $TRAVIS_BUILD_DIR/../libde265License.txt decoder
+      cp ../LICENSE.GPL3 .
+      # Run the versioning tool
+      cd $TRAVIS_BUILD_DIR
+      python deployment\versioning.py -d deploy -o deploy\versioninfo.txt
+      ll -l deploy
+      # Package the installer and the zip file
+      zip -r $TRAVIS_BUILD_DIR/../YUView-Win.zip ./deploy/*
+      cd deployment/wix
+      ./createWIXInstaller.bat
+      ls -l bin/Release
+    fi
+  - ls -l
   
 before_deploy:
   # not needed?
