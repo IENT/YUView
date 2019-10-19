@@ -32,11 +32,6 @@ before_install:
       wget https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage
       chmod a+x linuxdeployqt-6-x86_64.AppImage
     fi
-  - |
-    if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      choco install dotnet4.5
-      choco install wixtoolset
-    fi
   
 install:
   - |
@@ -80,6 +75,12 @@ install:
       curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1/openSSL_1_1_1_stable_win.zip -o openSSL.zip
       unzip -q -a openSSL.zip
+      mkdir wix311
+      cd wix311
+      curl -L https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip -o wix.zip
+      unzip -q -a wix.zip
+      cd ..
+      export PATH=/c/Users/travis/build/wix311:$PATH
       ls -l
     fi
   - |
