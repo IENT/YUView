@@ -11,7 +11,7 @@ matrix:
     - os: linux
       dist: trusty
       env:
-        - OUTPUT_ZIP_FILE=App.app
+        - OUTPUT_ZIP_FILE=YUView.AppImage
 compiler: 
   - gcc
 
@@ -34,6 +34,7 @@ before_install:
     fi
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      choco install dotnet4.5
       choco install wixtoolset
     fi
   
@@ -103,10 +104,12 @@ after_success:
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       # Mac: build an "app" file
-      otool -L $TRAVIS_BUILD_DIR/../Qttools/bin/macdeployqt
-      $TRAVIS_BUILD_DIR/../Qttools/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2
+      cd $TRAVIS_BUILD_DIR/../Qttools/bin
+      otool -L macdeployqt
+      echo ------------------------------------
+      ./macdeployqt build/release/YUView.app -always-overwrite -verbose=2
       # check what YUView is linking against
-      otool -L build/release/YUView.app/Contents/MacOs/YUView
+      otool -L $TRAVIS_BUILD_DIR/build/release/YUView.app/Contents/MacOs/YUView
       # copy the libde265 library
       cp $TRAVIS_BUILD_DIR/../libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.
       cd build/release
@@ -117,7 +120,8 @@ after_success:
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       make INSTALL_ROOT=appdir install
-      ./linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage
+      ./linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -verbose=2
+      mv YUView-*.AppImage YUView.AppImage
     fi
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
