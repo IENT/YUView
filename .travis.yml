@@ -108,8 +108,11 @@ after_success:
       cd $TRAVIS_BUILD_DIR/../Qttools/bin
       otool -L macdeployqt
       echo ------------------------------------
+      otool -l macdeployqt
+      echo ------------------------------------
       ./macdeployqt build/release/YUView.app -always-overwrite -verbose=2
       # check what YUView is linking against
+      echo ------------------------------------
       otool -L $TRAVIS_BUILD_DIR/build/release/YUView.app/Contents/MacOs/YUView
       # copy the libde265 library
       cp $TRAVIS_BUILD_DIR/../libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.
