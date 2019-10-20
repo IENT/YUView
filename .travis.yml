@@ -48,9 +48,6 @@ install:
       cd /Users/travis/build/ChristianFeldmann/YUViewQt
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/QtTools-5.13.1_mac.zip -o QtTools.zip
       unzip -q -a QtTools.zip
-      cd QtTools
-      make install
-      cd ..
       # QtCharts
       cd $TRAVIS_BUILD_DIR
       cd ..
@@ -108,12 +105,7 @@ after_success:
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       # Mac: build an "app" file
-      which macdeployqt
-      otool -L macdeployqt
-      echo ------------------------------------
-      otool -l macdeployqt
-      echo ------------------------------------
-      macdeployqt build/release/YUView.app -always-overwrite -verbose=2
+      /Users/travis/build/ChristianFeldmann/YUViewQt/Qttools/bin/macdeployqt build/release/YUView.app -always-overwrite -verbose=2
       # check what YUView is linking against
       echo ------------------------------------
       otool -L $TRAVIS_BUILD_DIR/build/release/YUView.app/Contents/MacOs/YUView
@@ -156,6 +148,8 @@ after_success:
       $TRAVIS_BUILD_DIR/../wix311/candle.exe -dConfiguration=Release -dOutDir=bin/Release -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release -arch x64 harvestedDirectory.wxs
       $TRAVIS_BUILD_DIR/../wix311/Light.exe -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "C:\Users\travis\build\IENT\wix311\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
       ls -l
+      ls -l bin
+      ls -l bin/Release
     fi
   - ls -l $TRAVIS_BUILD_DIR
   - ls -l $TRAVIS_BUILD_DIR/..
