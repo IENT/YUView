@@ -148,9 +148,9 @@ after_success:
       cd deployment/wix
       cp /c/Program\ Files\ \(x86\)/Common\ Files/Merge\ Modules/Microsoft_VC140_CRT_x64.msm .
       $TRAVIS_BUILD_DIR/../wix311/heat.exe dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
-      $TRAVIS_BUILD_DIR/../wix311/candle.exe -dConfiguration=Release -dOutDir=bin/Release -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release -arch x64 -ext "C:\Users\travis\build\wix311\WixUIExtension.dll" YUView.wxs
+      $TRAVIS_BUILD_DIR/../wix311/candle.exe -dConfiguration=Release -dOutDir=bin/Release -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release -arch x64 -ext "C:\Users\travis\build\IENT\wix311\WixUIExtension.dll" YUView.wxs
       $TRAVIS_BUILD_DIR/../wix311/candle.exe -dConfiguration=Release -dOutDir=bin\Release\ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj\Release\ -arch x64 harvestedDirectory.wxs
-      $TRAVIS_BUILD_DIR/../wix311/Light.exe -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "C:\Users\travis\build\wix311\WixUIExtension.dll" -contentsfile obj\Release\YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
+      $TRAVIS_BUILD_DIR/../wix311/Light.exe -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "C:\Users\travis\build\IENT\wix311\WixUIExtension.dll" -contentsfile obj\Release\YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
       ls -l
     fi
   - ls -l $TRAVIS_BUILD_DIR
