@@ -49,7 +49,7 @@ install:
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtTools-5.13.1/QtTools-5.13.1_mac.zip -o QtTools.zip
       unzip -q -a QtTools.zip
       cd Qttools
-      make install
+      make install VERBOSE=1
       # QtCharts
       cd $TRAVIS_BUILD_DIR
       cd ..
