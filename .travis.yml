@@ -110,8 +110,7 @@ after_success:
       cp $TRAVIS_BUILD_DIR/../libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.
       cd build/release
       # Zip
-      zip -r $TRAVIS_BUILD_DIR/../YUView-MacOs.zip YUView.app
-      cp YUView.app $TRAVIS_BUILD_DIR/release_files
+      zip -r $TRAVIS_BUILD_DIR/release_files/YUView-MacOs.zip YUView.app
       if [ ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh; fi
     fi
   - |
