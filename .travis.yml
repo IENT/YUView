@@ -89,7 +89,7 @@ script:
   - cd $TRAVIS_BUILD_DIR
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      ./buildWindows.bat
+      ./deployment/buildWindows.bat
     else
       qmake -config release
       make -j 2
