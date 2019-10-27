@@ -111,7 +111,6 @@ after_success:
       cd build/release
       # Zip
       zip -r $TRAVIS_BUILD_DIR/release_files/YUView-MacOs.zip YUView.app
-      if [ ${TRAVIS_BRANCH} = "master" ]; then ./deployment/deploy_to_github.sh; fi
     fi
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
