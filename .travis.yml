@@ -71,7 +71,6 @@ install:
   # Libde265
   - curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/$LIBDE265_REMOTE -o $LIBDE265_LOCAL
   - curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
-
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       # OpenSSL
@@ -88,7 +87,7 @@ install:
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       # On linux, also get the linuxdeployqt tool to build the Appimage
-      wget https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage
+      curl -L https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
       chmod a+x linuxdeployqt-6-x86_64.AppImage
     fi
 
@@ -122,7 +121,7 @@ after_success:
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       make INSTALL_ROOT=appdir install
-      ./linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -verbose=2
+      $TRAVIS_BUILD_DIR/../linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -verbose=2
       mv YUView-*.AppImage YUView.AppImage
       cp YUView.AppImage $TRAVIS_BUILD_DIR/release_files
     fi
