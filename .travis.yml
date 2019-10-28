@@ -8,6 +8,7 @@ matrix:
         - QT_FILE=Qtbase-5.13.1_mac.zip
         - QT_DEPLOY=MacDeployQt-5.13.1.zip
         - QT_CHARTS=QtCharts-5.13.1_mac.zip
+        - QT_CHARTS_BUILD_DIR=/Users/travis/build/ChristianFeldmann/YUViewQt
         - LIBDE265_REMOTE=libde265.dylib
         - LIBDE265_LOCAL=libde265-internals.dylib
     - os: windows
@@ -16,6 +17,7 @@ matrix:
         - QT_FILE=Qtbase-5.13.1_win.zip
         - QT_DEPLOY=WinDeployQt-5.13.1_win.zip
         - QT_CHARTS=QtCharts-5.13.1_win.zip
+        - QT_CHARTS_BUILD_DIR=/c/Users/travis/build/ChristianFeldmann/YUViewQt
         - LIBDE265_REMOTE=libde265.dll
         - LIBDE265_LOCAL=libde265.dll
     - os: linux
@@ -24,6 +26,7 @@ matrix:
         - QT_INSTALL_DIR=/home/travis/build
         - QT_FILE=Qtbase-5.13.1_ubuntu_trusty.zip
         - QT_CHARTS=QtCharts-5.13.1_ubuntu_trusty.zip
+        - QT_CHARTS_BUILD_DIR=/home/travis/build/ChristianFeldmann/YUViewQt
         - LIBDE265_REMOTE=libde265.so
         - LIBDE265_LOCAL=libde265-internals.so
 
@@ -60,14 +63,16 @@ install:
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cp Qttools/bin/macdeployqt /Users/travis/build/Qt/bin/macdeployqt; strip /Users/travis/build/Qt/bin/macdeployqt; fi
   # QtCharts
+  - cd $QT_CHARTS_BUILD_DIR
   - curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/$QT_CHARTS -o QtCharts.zip
   - unzip -q -a QtCharts.zip
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" || "$TRAVIS_OS_NAME" == "linux" ]]; then
+      cd 
       cd QtCharts
       make install
-      cd ..
     fi
+  - cd $TRAVIS_BUILD_DIR/..
   # Libde265
   - curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/$LIBDE265_REMOTE -o $LIBDE265_LOCAL
   - curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
