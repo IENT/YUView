@@ -69,7 +69,7 @@ install:
   - unzip -q -a QtCharts.zip
   - cd QtCharts
   - if [[ "$TRAVIS_OS_NAME" == "osx" || "$TRAVIS_OS_NAME" == "linux" ]]; then make install; fi
-  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then ./deployment/installWindows.bat; fi
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then $TRAVIS_BUILD_DIR/deployment/installWindows.bat; fi
   - cd $TRAVIS_BUILD_DIR/..
   # Libde265
   - curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/$LIBDE265_REMOTE -o $LIBDE265_LOCAL
