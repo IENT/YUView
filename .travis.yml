@@ -63,6 +63,7 @@ install:
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cp Qttools/bin/macdeployqt /Users/travis/build/Qt/bin/macdeployqt; strip /Users/travis/build/Qt/bin/macdeployqt; fi
   # QtCharts
+  - mkdir -p $QT_CHARTS_BUILD_DIR
   - cd $QT_CHARTS_BUILD_DIR
   - curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/$QT_CHARTS -o QtCharts.zip
   - unzip -q -a QtCharts.zip
