@@ -3,9 +3,30 @@ language: cpp
 matrix:
   include:
     - os: osx
+      env:
+        - QT_INSTALL_DIR=/Users/travis/build
+        - QT_FILE=Qtbase-5.13.1_mac.zip
+        - QT_DEPLOY=MacDeployQt-5.13.1.zip
+        - QT_CHARTS=QtCharts-5.13.1_mac.zip
+        - LIBDE265_REMOTE=libde265.dylib
+        - LIBDE265_LOCAL=libde265-internals.dylib
     - os: windows
+      env:
+        - QT_INSTALL_DIR=/c/Users/travis/build
+        - QT_FILE=Qtbase-5.13.1_win.zip
+        - QT_DEPLOY=WinDeployQt-5.13.1_win.zip
+        - QT_CHARTS=QtCharts-5.13.1_win.zip
+        - LIBDE265_REMOTE=libde265.dll
+        - LIBDE265_LOCAL=libde265.dll
     - os: linux
       dist: trusty
+      env:
+        - QT_INSTALL_DIR=/home/travis/build
+        - QT_FILE=Qtbase-5.13.1_ubuntu_trusty.zip
+        - QT_CHARTS=QtCharts-5.13.1_ubuntu_trusty.zip
+        - LIBDE265_REMOTE=libde265.so
+        - LIBDE265_LOCAL=libde265-internals.so
+
 compiler: 
   - gcc
 
@@ -17,60 +38,45 @@ before_install:
   - eval "${MATRIX_EVAL}"
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      sudo add-apt-repository ppa:forkotov02/opt-qt-5.11.1-trusty -y
-      sudo apt-get update -qq
       # On linux also get a newer g++. The old one won't work.
       sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
       sudo apt-get update -qq
-      # On linux, also get the linuxdeployqt tool to build the Appimage
-      wget https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage
-      chmod a+x linuxdeployqt-6-x86_64.AppImage
+      sudo apt-get install -qq g++-8
+      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
     fi
   
 install:
+  # Qt Base
+  - cd $QT_INSTALL_DIR
+  - curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/$QT_FILE -o Qt.zip
+  - unzip -q -a Qt.zip
+  - export PATH=$QT_INSTALL_DIR/Qt/bin:$PATH
+  - cd $TRAVIS_BUILD_DIR/..
   - |
-    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      # Qt Base
-      cd /Users/travis/build
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qtbase-5.13.1_mac.zip -o Qt.zip
-      unzip -q -a Qt.zip
-      cd $TRAVIS_BUILD_DIR
-      cd ..
-      export PATH=/Users/travis/build/Qt/bin:$PATH
-      # QtTools. In order to make installation work, we have to extract it into the exact same folder as it was build in:
-      mkdir -p /Users/travis/build/ChristianFeldmann/YUViewQt
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.13.1/MacDeployQt-5.13.1.zip -o MacDeployQt.zip
+    if [[ "$TRAVIS_OS_NAME" == "osx" || "$TRAVIS_OS_NAME" == "windows" ]]; then
+      # The deploy tool
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.13.1/$QT_DEPLOY -o MacDeployQt.zip
       unzip -q -a MacDeployQt.zip
-      cp Qttools/bin/macdeployqt /Users/travis/build/Qt/bin/macdeployqt
-      strip /Users/travis/build/Qt/bin/macdeployqt
-      # QtCharts
-      cd $TRAVIS_BUILD_DIR
-      cd ..
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_mac.zip -o QtCharts.zip
-      unzip -q -a QtCharts.zip
-      ls -l
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cp Qttools/bin/macdeployqt /Users/travis/build/Qt/bin/macdeployqt; strip /Users/travis/build/Qt/bin/macdeployqt; fi
+  # QtCharts
+  - curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/$QT_CHARTS -o QtCharts.zip
+  - unzip -q -a QtCharts.zip
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" || "$TRAVIS_OS_NAME" == "linux" ]]; then
       cd QtCharts
       make install
       cd ..
-      # libde265
-      curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dylib -o libde265-internals.dylib
     fi
+  # Libde265
+  - curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/$LIBDE265_REMOTE -o $LIBDE265_LOCAL
+  - curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      cd /c/Users/travis/build
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/Qtbase-5.13.1_win.zip -o Qt.zip
-      unzip -q -a Qt.zip
-      cd $TRAVIS_BUILD_DIR
-      cd ..
-      export PATH=/c/Users/travis/build/Qt/bin:$PATH
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/QtCharts-5.13.1_win.zip -o QtCharts.zip
-      unzip -q -a QtCharts.zip
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.13.1/WinDeployQt-5.13.1_win.zip -o WinDeployQt.zip
-      unzip -q -a WinDeployQt.zip
-      curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
-      curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+      # OpenSSL
       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1/openSSL_1_1_1_stable_win.zip -o openSSL.zip
       unzip -q -a openSSL.zip
+      # Wix
       mkdir wix311
       cd wix311
       curl -L https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip -o wix.zip
@@ -80,9 +86,9 @@ install:
     fi
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      sudo apt-get install -qq qt511base; source /opt/qt511/bin/qt511-env.sh
-      sudo apt-get install -qq g++-8
-      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
+      # On linux, also get the linuxdeployqt tool to build the Appimage
+      curl -L https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
+      chmod a+x linuxdeployqt-6-x86_64.AppImage
     fi
 
 script:
@@ -115,7 +121,7 @@ after_success:
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       make INSTALL_ROOT=appdir install
-      ./linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -verbose=2
+      $TRAVIS_BUILD_DIR/../linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -verbose=2
       mv YUView-*.AppImage YUView.AppImage
       cp YUView.AppImage $TRAVIS_BUILD_DIR/release_files
     fi
