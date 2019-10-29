@@ -55,8 +55,9 @@ public:
   virtual ~parserBase() = 0;
 
   QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
+  parserCommon::BitrateItemModel *getBitrateItemModel() { return bitrateItemModel.data(); }
   
-  void setNewNumberModelItems(unsigned int n) { packetModel->setNewNumberModelItems(n); }
+  void updateNumberModelItems();
   void enableModel();
 
   // Get info about the stream organized in a tree
@@ -75,8 +76,9 @@ public:
   void setParsingLimitEnabled(bool limitEnabled) { parsingLimitEnabled = limitEnabled; }
 
 signals:
-  // An item was added to the nal model. This is emitted whenever a NAL unit or an AVPacket is parsed.
-  void nalModelUpdated(unsigned int newNumberItems);
+  // Some data was updated and the models can be updated to reflec this. This is called regularly
+  // but not for every packet/Nal unit that is parsed.
+  void modelDataUpdated();
   void backgroundParsingDone(QString error);
   
   // Signal that the getStreamInfo() function will now return an updated info
@@ -85,6 +87,7 @@ signals:
 protected:
   QScopedPointer<parserCommon::PacketItemModel> packetModel;
   QScopedPointer<parserCommon::FilterByStreamIndexProxyModel> streamIndexFilter;
+  QScopedPointer<parserCommon::BitrateItemModel> bitrateItemModel;
 
   // If this variable is set (from an external thread), the parsing process should cancel immediately
   bool cancelBackgroundParser {false};

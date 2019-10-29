@@ -68,14 +68,14 @@ private:
 
   struct hvcC_nalUnit
   {
-    bool parse_hvcC_nalUnit(int unitID, parserCommon::reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser);
+    bool parse_hvcC_nalUnit(int unitID, parserCommon::reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser, parserCommon::BitrateItemModel *bitrateModel);
 
     unsigned int nalUnitLength;
   };
 
   struct hvcC_naluArray
   {
-    bool parse_hvcC_naluArray(int arrayID, parserCommon::reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser);
+    bool parse_hvcC_naluArray(int arrayID, parserCommon::reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser, parserCommon::BitrateItemModel *bitrateModel);
 
     bool array_completeness;
     bool reserved_flag_false;
@@ -86,7 +86,7 @@ private:
 
   struct hvcC
   {
-    bool parse_hvcC(QByteArray &hvcCData, parserCommon::TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser);
+    bool parse_hvcC(QByteArray &hvcCData, parserCommon::TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser, parserCommon::BitrateItemModel *bitrateModel);
 
     unsigned int configurationVersion;
     unsigned int general_profile_space;

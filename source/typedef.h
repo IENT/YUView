@@ -78,6 +78,9 @@ decoderEngine getDecoderEngineFromName(QString name);
 #define INT_MAX 2147483647
 #endif
 #define INT_INVALID -1
+#ifndef INT_MIN
+#define INT_MIN (-2147483647 - 1)
+#endif
 
 // Convenience macro definitions which can be used in if clauses:
 // if (is_Q_OS_MAC) ...
@@ -230,8 +233,16 @@ typedef QList<QStringPair> QStringPairList;
 // A index range is just a QPair of integers (minimum and maximum)
 typedef QPair<int,int> indexRange;
 typedef QPair<int,int> QIntPair;
+typedef QPair<unsigned int, unsigned int> QUIntPair;
+
+struct RangeInt
+{
+  int min;
+  int max;
+};
+
 // A list of value pair lists, where every list has a string (title)
-class ValuePairListSets : public QList<QPair<QString, QStringPairList> >
+class ValuePairListSets : public QList<QPair<QString, QStringPairList>>
 {
 public:
   // Create an empty list

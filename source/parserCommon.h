@@ -37,8 +37,12 @@
 #include <QBrush>
 #include <QByteArray>
 #include <QList>
+#include <QMap>
+#include <QMutex>
 #include <QSortFilterProxyModel>
 #include <QString>
+
+#include "typedef.h"
 
 namespace parserCommon 
 {
@@ -277,20 +281,62 @@ namespace parserCommon
     TreeItem *getRootItem() { return rootItem.data(); }
     bool isNull() { return rootItem.isNull(); }
 
-    unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
     void setUseColorCoding(bool colorCoding);
     void setShowVideoStreamOnly(bool showVideoOnly);
 
-    void setNewNumberModelItems(unsigned int);
+    void updateNumberModelItems();
   private:
     // This is the current number of first level child items which we show right now.
     // The brackground parser will add more items and it will notify the bitstreamAnalysisWindow
     // about them. The bitstream analysis window will then update this count and the view to show the new items.
     unsigned int nrShowChildItems {0};
 
+    unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
+
     static QList<QColor> streamIndexColors;
     bool useColorCoding { true };
     bool showVideoOnly  { false };
+  };
+
+  class BitrateItemModel : public QAbstractTableModel
+  {
+    Q_OBJECT
+
+  public:
+    explicit BitrateItemModel(QObject *parent = nullptr);
+    virtual ~BitrateItemModel();
+    
+    // The functions that must be overridden from the QAbstractTableModel
+    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+
+    double getMaximumBitrateValue() { return this->maxYValue; }
+    QString getItemInfoText(int index);
+
+    void updateNumberModelItems();
+    RangeInt getXRange() { return ptsRange; }
+
+    void addBitratePoint(unsigned int streamIndex, int pts, int dts, unsigned int bitrate);
+  private:
+    // The current number of bitrate points that we show.
+    // The background parser will add more data to "bitrateData" and periodically update the model
+    unsigned int nrRatePoints {0};
+
+    struct bitrateEntry
+    {
+      int dts {0};
+      int pts {0};
+      unsigned int bitrate {0};
+    };
+
+    QMap<unsigned int, QList<bitrateEntry>> bitratePerStreamData;
+    mutable QMutex bitratePerStreamDataMutex;
+    RangeInt dtsRange;
+    RangeInt ptsRange;
+
+    double maxYValue {0};
   };
 
   class FilterByStreamIndexProxyModel : public QSortFilterProxyModel

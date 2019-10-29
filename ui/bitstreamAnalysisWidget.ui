@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>468</width>
+    <width>585</width>
     <height>381</height>
    </rect>
   </property>
@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="analysisTab">
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tabStreamInfo">
       <attribute name="title">
@@ -115,6 +115,16 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="tabBitrateGraphicsView">
+      <attribute name="title">
+       <string>Bitrate Plot</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="BitrateBarChart" name="bitrateBarChart" native="true"/>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item>
@@ -130,6 +140,14 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>BitrateBarChart</class>
+   <extends>QWidget</extends>
+   <header>bitstreamAnalysisBitratePlot.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

@@ -55,7 +55,7 @@ public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
 
 private slots:
-  void updateParserItemModel(unsigned int nalModelUpdated);
+  void updateParserItemModel();
   void updateStreamInfo();
   void backgroundParsingDone(QString error);
 

@@ -144,7 +144,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
     try
     {
       nalData = file->getNextNALUnit(false, &nalStartEndPosFile);
-      if (!parseAndAddNALUnit(nalID, nalData, nullptr, nalStartEndPosFile))
+      if (!parseAndAddNALUnit(nalID, nalData, this->bitrateItemModel.data(), nullptr, nalStartEndPosFile))
       {
         DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Error parsing NAL %d", nalID);
       }
@@ -180,7 +180,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
     if (signalEmitTimer.elapsed() > 1000 && packetModel)
     {
       signalEmitTimer.start();
-      emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
+      emit modelDataUpdated();
     }
 
     if (cancelBackgroundParser)
@@ -196,11 +196,11 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   }
 
   // We are done.
-  parseAndAddNALUnit(-1, QByteArray());
+  parseAndAddNALUnit(-1, QByteArray(), this->bitrateItemModel.data());
   DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Parsing done. Found %d POCs.", POCList.length());
 
   if (packetModel)
-    emit nalModelUpdated(packetModel->getNumberFirstLevelChildren());
+    emit modelDataUpdated();
 
   stream_info.parsing = false;
   stream_info.nr_nal_units = nalID;

@@ -48,6 +48,7 @@ using namespace parserCommon;
 parserBase::parserBase(QObject *parent) : QObject(parent)
 {
   packetModel.reset(new PacketItemModel(parent));
+  bitrateItemModel.reset(new BitrateItemModel(parent));
   streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
   streamIndexFilter->setSourceModel(packetModel.data());
 }
@@ -60,4 +61,10 @@ void parserBase::enableModel()
 {
   if (packetModel->isNull())
     packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
+}
+
+void parserBase::updateNumberModelItems()
+{ 
+  packetModel->updateNumberModelItems();
+  bitrateItemModel->updateNumberModelItems();
 }

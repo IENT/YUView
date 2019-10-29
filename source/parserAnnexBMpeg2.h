@@ -48,7 +48,7 @@ public:
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
   // TODO: Reading from raw mpeg2 streams not supported (yet? Is this even defined / possible?)
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE { Q_UNUSED(iFrameNr); Q_UNUSED(filePos); return QList<QByteArray>(); }
@@ -225,6 +225,13 @@ private:
   // We will keep a pointer to the first sequence extension to be able to retrive some data
   QSharedPointer<sequence_extension> first_sequence_extension;
   QSharedPointer<sequence_header> first_sequence_header;
+
+  unsigned int sizeCurrentAU{ 0 };
+  int pocOffset{ 0 };
+  int curFramePOC{ -1 };
+  int lastFramePOC{ -1 };
+  unsigned int counterAU{ 0 };
+  bool lastAUStartBySequenceHeader{ false };
 };
 
 #endif // PARSERANNEXBMPEG2_H

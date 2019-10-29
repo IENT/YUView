@@ -132,7 +132,7 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   if (nalID == -1 && data.isEmpty())
   {
@@ -357,6 +357,17 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *p
     if (nalTypeName)
       *nalTypeName = "FILLER";
   }
+
+  if (auDelimiterDetector.isStartOfNewAU(nal_avc, curFramePOC))
+  {
+    DEBUG_AVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
+    bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+    sizeCurrentAU = 0;
+    counterAU++;
+  }
+  if (lastFramePOC != curFramePOC)
+    lastFramePOC = curFramePOC;
+  sizeCurrentAU += data.size();
 
   if (nalRoot)
   {
@@ -2320,4 +2331,34 @@ int parserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray
   }
 
   return pos;
+}
+
+bool parserAnnexBAVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_avc &nal_avc, int curFramePOC)
+{
+  // TODO: This is not complete. Check and finish.
+  if (nal_avc.nal_unit_type == AUD)
+    return true;
+  
+  const bool isSlice = (nal_avc.nal_unit_type == CODED_SLICE_NON_IDR || nal_avc.nal_unit_type == CODED_SLICE_IDR);
+  const bool isLastSlice = (lastNalType == CODED_SLICE_NON_IDR || lastNalType == CODED_SLICE_IDR);
+  if (isSlice && lastNalSlicePoc != -1 && lastNalSlicePoc != curFramePOC)
+  {
+    lastNalSlicePoc = curFramePOC;
+    lastNalType = nal_avc.nal_unit_type;
+    return true;
+  }
+  
+  const bool isParameterSet = (nal_avc.nal_unit_type == SEI || 
+                               nal_avc.nal_unit_type == SPS ||
+                               nal_avc.nal_unit_type == PPS);
+  if (isParameterSet && isLastSlice)
+  {
+    lastNalSlicePoc = curFramePOC;
+    lastNalType = nal_avc.nal_unit_type;
+    return true;
+  }
+
+  lastNalSlicePoc = curFramePOC;
+  lastNalType = nal_avc.nal_unit_type;
+  return false;
 }

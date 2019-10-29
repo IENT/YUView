@@ -92,7 +92,7 @@ protected:
     // Parse the header the given data bytes.
     bool parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, parserCommon::TreeItem *root);
 
-    /// Pointer to the first byte of the start code of the NAL unit
+    // Pointer to the first byte of the start code of the NAL unit
     QUint64Pair filePosStartEnd;
 
     // The index of the obu within the bitstream

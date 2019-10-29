@@ -123,7 +123,7 @@ void parserAnnexBMpeg2::nal_unit_mpeg2::interpreteStartCodeValue()
     nal_unit_type = UNSPECIFIED;
 }
 
-bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   // Skip the NAL unit header
   int skip = 0;
@@ -182,6 +182,15 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
   {
     auto new_picture_header = QSharedPointer<picture_header>(new picture_header(nal_mpeg2));
     parsingSuccess = new_picture_header->parse_picture_header(payload, nalRoot);
+    if (parsingSuccess)
+    {
+      if (new_picture_header->temporal_reference == 0)
+      {
+        if (lastFramePOC >= 0)
+          pocOffset = lastFramePOC + 1;
+      }
+      curFramePOC = pocOffset + new_picture_header->temporal_reference;
+    }
 
     specificDescription = parsingSuccess ? " Picture Header" : " Picture Header (Error)";
     if (nalTypeName)
@@ -246,6 +255,21 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, TreeItem 
     }
   }
 
+  const bool isStartOfNewAU = (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER || (nal_mpeg2.nal_unit_type == PICTURE && !lastAUStartBySequenceHeader));
+  if (isStartOfNewAU && lastFramePOC >= 0)
+  {
+    bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+    sizeCurrentAU = 0;
+    counterAU++;
+  }
+  if (lastFramePOC != curFramePOC)
+    lastFramePOC = curFramePOC;
+  sizeCurrentAU += data.size();
+  if (nal_mpeg2.nal_unit_type == PICTURE && lastAUStartBySequenceHeader)
+    lastAUStartBySequenceHeader = false;
+  if (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER)
+    lastAUStartBySequenceHeader = true;
+  
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_mpeg2.nal_idx).arg(nal_unit_type_toString.value(nal_mpeg2.nal_unit_type)) + specificDescription);

@@ -61,9 +61,9 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
   currentSelectedItemsChanged(nullptr, nullptr, false);
 }
 
-void BitstreamAnalysisWidget::updateParserItemModel(unsigned int newNumberItems)
+void BitstreamAnalysisWidget::updateParserItemModel()
 {
-  parser->setNewNumberModelItems(newNumberItems);
+  parser->updateNumberModelItems();
   updateParsingStatusText(parser->getParsingProgressPercent());
 }
 
@@ -114,6 +114,10 @@ void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)
 
 void BitstreamAnalysisWidget::stopAndDeleteParser()
 {
+  disconnect(parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
+  disconnect(parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
+  disconnect(parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
+
   if (backgroundParserFuture.isRunning())
   {
     DEBUG_ANALYSIS("BitstreamAnalysisWidget::stopAndDeleteParser stopping parser");
@@ -141,6 +145,7 @@ void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, p
   const bool isBitstream = !currentCompressedVideo.isNull();
   ui.tabStreamInfo->setEnabled(isBitstream);
   ui.tabPacketAnalysis->setEnabled(isBitstream);
+  ui.tabBitrateGraphicsView->setEnabled(isBitstream);
 
   restartParsingOfCurrentItem();
 }
@@ -159,6 +164,9 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   {
     DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem no compressed video - abort");
     updateParsingStatusText(-1);
+    ui.streamInfoTreeWidget->clear();
+    ui.dataTreeView->setModel(nullptr);
+    ui.bitrateBarChart->setModel(nullptr);
     parser.reset();
     return;
   }
@@ -175,7 +183,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   const bool parsingLimitSet = !ui.parseEntireFileCheckBox->isChecked();
   parser->setParsingLimitEnabled(parsingLimitSet);
 
-  connect(parser.data(), &parserBase::nalModelUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
+  connect(parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
   connect(parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
   connect(parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
 
@@ -185,9 +193,10 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   ui.dataTreeView->setColumnWidth(0, 600);
   ui.dataTreeView->setColumnWidth(1, 100);
   ui.dataTreeView->setColumnWidth(2, 120);
+  ui.bitrateBarChart->setModel(parser->getBitrateItemModel());
 
   updateStreamInfo();
-  
+
   // Start the background parsing thread
   updateParsingStatusText(0);
   backgroundParserFuture = QtConcurrent::run(this, &BitstreamAnalysisWidget::backgroundParsingFunction);
