@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 set -e
 
@@ -16,7 +16,10 @@ then
   add-apt-repository ppa:beineri/opt-qt-5.12.3-xenial -y
   apt-get update -qq
   apt-get install -qq qt512base qt512charts-no-lgpl
-  /opt/qt512/bin/qt512-env.sh
+  echo 'export QTDIR=$QT_BASE_DIR' >> ~/.bashrc
+  echo 'export PATH=$QT_BASE_DIR/bin:$PATH' >> ~/.bashrc
+  echo 'export LD_LIBRARY_PATH=$QT_BASE_DIR/lib/x86_64-linux-gnu:$QT_BASE_DIR/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+  echo 'export PKG_CONFIG_PATH=$QT_BASE_DIR/lib/pkgconfig:$PKG_CONFIG_PATH' >> ~/.bashrc
 else
   apt-get install -yq qt5-default \
                       libqt5charts5 \
