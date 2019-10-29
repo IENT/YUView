@@ -58,8 +58,8 @@ install:
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" || "$TRAVIS_OS_NAME" == "windows" ]]; then
       # The deploy tool
-      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.13.1/$QT_DEPLOY -o MacDeployQt.zip
-      unzip -q -a MacDeployQt.zip
+      curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.13.1/$QT_DEPLOY -o deployQt.zip
+      unzip -q -a deployQt.zip
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cp Qttools/bin/macdeployqt /Users/travis/build/Qt/bin/macdeployqt; strip /Users/travis/build/Qt/bin/macdeployqt; fi
   # QtCharts
