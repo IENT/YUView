@@ -18,11 +18,16 @@ echo "  CI_BRANCH:              ${CI_BRANCH}"
 echo "  CI_COMMIT_DESCRIPTION:  ${CI_COMMIT_DESCRIPTION}"
 echo "  CI_TAG:                 ${CI_TAG}"
 echo "  LINUX_SHORT_NAME        ${LINUX_SHORT_NAME}"
-echo "  PATH                    ${PATH}"
 
 popd
 
-cat ~/.bashrc
+if [ "$LINUX_SHORT_NAME" == "ubuntu16.04" ]
+then
+  export QTDIR=/opt/qt512
+  export PATH=/opt/qt512/bin:$PATH
+  export LD_LIBRARY_PATH=/opt/qt512/lib/x86_64-linux-gnu:/opt/qt512/lib:$LD_LIBRARY_PATH
+  export PKG_CONFIG_PATH=/opt/qt512/lib/pkgconfig:$PKG_CONFIG_PATH
+fi
 
 mkdir -p ${BUILD_FOLDER}
 cd ${BUILD_FOLDER}
