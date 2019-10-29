@@ -16,7 +16,7 @@ then
   add-apt-repository ppa:beineri/opt-qt-5.12.3-xenial -y
   apt-get update -qq
   apt-get install -qq qt512base qt512charts-no-lgpl
-  source /opt/qt512/bin/qt512-env.sh
+  /opt/qt512/bin/qt512-env.sh
 else
   apt-get install -yq qt5-default \
                       libqt5charts5 \
