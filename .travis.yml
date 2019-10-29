@@ -29,6 +29,15 @@ matrix:
         - QT_CHARTS_BUILD_DIR=/home/travis/build/ChristianFeldmann/YUViewQt
         - LIBDE265_REMOTE=libde265.so
         - LIBDE265_LOCAL=libde265-internals.so
+    - os: linux
+      dist: xenial
+      env:
+        - QT_INSTALL_DIR=/home/travis/build
+        - QT_FILE=Qtbase-5.13.1_ubuntu_trusty.zip
+        - QT_CHARTS=QtCharts-5.13.1_ubuntu_trusty.zip
+        - QT_CHARTS_BUILD_DIR=/home/travis/build/ChristianFeldmann/YUViewQt
+        - LIBDE265_REMOTE=libde265.so
+        - LIBDE265_LOCAL=libde265-internals.so
 
 compiler: 
   - gcc
