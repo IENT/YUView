@@ -18,8 +18,11 @@ echo "  CI_BRANCH:              ${CI_BRANCH}"
 echo "  CI_COMMIT_DESCRIPTION:  ${CI_COMMIT_DESCRIPTION}"
 echo "  CI_TAG:                 ${CI_TAG}"
 echo "  LINUX_SHORT_NAME        ${LINUX_SHORT_NAME}"
+echo "  PATH                    ${PATH}"
 
 popd
+
+cat ~/.bashrc
 
 mkdir -p ${BUILD_FOLDER}
 cd ${BUILD_FOLDER}
