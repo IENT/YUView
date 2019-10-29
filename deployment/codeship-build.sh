@@ -27,7 +27,7 @@ then
   export PATH=/opt/qt512/bin:$PATH
   export LD_LIBRARY_PATH=/opt/qt512/lib/x86_64-linux-gnu:/opt/qt512/lib
   export PKG_CONFIG_PATH=/opt/qt512/lib/pkgconfig
-  ln -s /usr/lib/x86_64-linux-gnu/mesa/libGL.so.1 /usr/lib/libGL.so
+  ln -s /usr/lib/x86_64-linux-gnu/mesa/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so
 fi
 
 mkdir -p ${BUILD_FOLDER}
