@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tabGeneral">
       <attribute name="title">
@@ -760,16 +760,84 @@
           <string>Specify individual decoder libraries to use for HEVC files. These will always be tried first.</string>
          </property>
          <property name="title">
-          <string>Specific HEVC Decoder Libraries</string>
+          <string>Specific Decoder Libraries</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="2">
-           <widget class="QPushButton" name="pushButtonLibde265SelectFile">
+          <item row="3" column="3">
+           <widget class="QPushButton" name="pushButtonLibDav1dClearFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelLibHM">
+            <property name="toolTip">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string>libHM</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButtonLibDav1dSelectFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelLibde265">
             <property name="toolTip">
              <string>Specify a libde265 library file. These will always be tried first.</string>
             </property>
             <property name="whatsThis">
              <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string>libde265</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="lineEditLibHMFile">
+            <property name="toolTip">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelLibJEM">
+            <property name="text">
+             <string>libJEM</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="pushButtonlibHMSelectFile">
+            <property name="toolTip">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libHM library file. These will always be tried first.</string>
             </property>
             <property name="text">
              <string/>
@@ -791,99 +859,8 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="lineEditLibHMFile">
-            <property name="toolTip">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelLibHM">
-            <property name="toolTip">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="text">
-             <string>libHM</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QPushButton" name="pushButtonLibde265ClearFile">
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QPushButton" name="pushButtonlibHMSelectFile">
-            <property name="toolTip">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="lineEditLibde265File">
-            <property name="toolTip">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelLibde265">
-            <property name="toolTip">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="text">
-             <string>libde265</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="labelLibJEM">
-            <property name="text">
-             <string>libJEM</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="lineEditLibJEMFile">
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="lineEditLibDav1d"/>
           </item>
           <item row="2" column="2">
            <widget class="QPushButton" name="pushButtonLibJEMSelectFile">
@@ -914,11 +891,14 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="1">
-           <widget class="QLineEdit" name="lineEditLibDav1d"/>
-          </item>
-          <item row="3" column="2">
-           <widget class="QPushButton" name="pushButtonLibDav1dSelectFile">
+          <item row="0" column="2">
+           <widget class="QPushButton" name="pushButtonLibde265SelectFile">
+            <property name="toolTip">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -928,8 +908,60 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="3">
-           <widget class="QPushButton" name="pushButtonLibDav1dClearFile">
+          <item row="0" column="3">
+           <widget class="QPushButton" name="pushButtonLibde265ClearFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="lineEditLibJEMFile">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="lineEditLibde265File">
+            <property name="toolTip">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="labelLibVTM">
+            <property name="text">
+             <string>libVTM</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QLineEdit" name="lineEditLibVTMFile"/>
+          </item>
+          <item row="4" column="2">
+           <widget class="QPushButton" name="pushButtonLibVTMSelectFile">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="3">
+           <widget class="QPushButton" name="pushButtonLibVTMClearFile">
             <property name="text">
              <string/>
             </property>

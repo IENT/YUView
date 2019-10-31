@@ -41,6 +41,7 @@
 #include "decoderDav1d.h"
 #include "decoderHM.h"
 #include "decoderLibde265.h"
+#include "decoderVTM.h"
 #include "FFMpegLibrariesHandling.h"
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
@@ -277,6 +278,18 @@ void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libDav1d library. Error: " + error);
   else
     ui.lineEditLibDav1d->setText(newFiles[0]);
+}
+
+void SettingsDialog::on_pushButtonLibVTMSelectFile_clicked()
+{
+  QStringList newFiles = getLibraryPath(ui.lineEditLibVTMFile->text(), "Please select the libVTMDecoder library file to use.");
+  if (newFiles.count() != 1)
+    return;
+  QString error;
+  if (!decoderVTM::checkLibraryFile(newFiles[0], error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libVTMDecoder library. Error: " + error);
+  else
+    ui.lineEditLibVTMFile->setText(newFiles[0]);
 }
 
 void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
