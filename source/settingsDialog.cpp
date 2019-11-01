@@ -137,7 +137,6 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
   ui.lineEditLibDav1d->setText(settings.value("libDav1dFile", "").toString());
   ui.lineEditLibVTMFile->setText(settings.value("libVTMFile", "").toString());
-  ui.lineEditLibJEMFile->setText(settings.value("libJEMFile", "").toString());
   ui.lineEditAVFormat->setText(settings.value("FFmpeg.avformat", "").toString());
   ui.lineEditAVCodec->setText(settings.value("FFmpeg.avcodec", "").toString());
   ui.lineEditAVUtil->setText(settings.value("FFmpeg.avutil", "").toString());
@@ -254,19 +253,6 @@ void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libHMDecoder library. Error: " + error);
   else
     ui.lineEditLibHMFile->setText(newFiles[0]);
-}
-
-void SettingsDialog::on_pushButtonLibJEMSelectFile_clicked()
-{
-  QStringList newFiles = getLibraryPath(ui.lineEditLibJEMFile->text(), "Please select the libJEMDecoder library file to use.");
-  if (newFiles.count() != 1)
-    return;
-  QString error;
-  // TODO
-  /*if (!hevcNextGenDecoderJEM::checkLibraryFile(newFiles[0], error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libJEMDecoder library. Error: " + error);
-  else
-    ui.lineEditLibJEMFile->setText(newFiles[0]);*/
 }
 
 void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
@@ -400,7 +386,6 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // Raw coded video files
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
-  settings.setValue("libJEMFile", ui.lineEditLibJEMFile->text());
   settings.setValue("libDav1dFile", ui.lineEditLibDav1d->text());
   settings.setValue("libVTMFile", ui.lineEditLibVTMFile->text());
   // FFMpeg files

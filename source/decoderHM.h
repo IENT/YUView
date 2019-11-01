@@ -97,7 +97,7 @@ public:
 
 private:
   // A private constructor that creates an uninitialized decoder library.
-  // Used by checkLibraryFile to check if a file can be used as a hevcNextGenDecoderJEM.
+  // Used by checkLibraryFile to check if a file can be used as a this decoder.
   decoderHM() {};
 
   // Return the possible names of the HM library

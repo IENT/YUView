@@ -45,7 +45,7 @@ class videoHandler;
 /* This playlist item encapsulates all compressed video sequences. 
  * We can read the data from a plain binary file (we support various raw annexB formats) or we can use
  * ffmpeg to read from a container.
- * For decoding, we can use libde265, HM, JEM or ffmpeg.
+ * For decoding, a range of different decoders is available.
 */
 class playlistItemCompressedVideo : public playlistItemWithVideo
 {
