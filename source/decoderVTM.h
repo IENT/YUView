@@ -63,8 +63,8 @@ struct decoderVTM_Functions
   int                    (*libVTMDec_get_internal_bit_depth) (libVTMDec_picture *pic, libVTMDec_ColorComponent c);
 
   // Internals
-  unsigned int            (*libVTMDec_get_internal_type_number)          ();
-  char                   *(*libVTMDec_get_internal_type_name)            (unsigned int idx);
+  /*unsigned int            (*libVTMDec_get_internal_type_number)          ();
+  char                   *(*libVTMDec_get_internal_type_name)            (unsigned int idx);*/
 };
 
 // This class wraps the HM decoder library in a demand-load fashion.

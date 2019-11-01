@@ -44,6 +44,7 @@
 #include "decoderLibde265.h"
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
+#include "parserAnnexBVVC.h"
 #include "videoHandlerYUV.h"
 #include "videoHandlerRGB.h"
 #include "mainwindow.h"
@@ -80,8 +81,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     QString ext = QFileInfo(compressedFilePath).suffix();
     if (ext == "hevc" || ext == "h265" || ext == "265")
-      // We will try to open this as a raw annexB file
       inputFormatType = inputAnnexBHEVC;
+    else if (ext == "vvc" || ext == "h266" || ext == "266")
+      inputFormatType = inputAnnexBVVC;
     else if (ext == "avc" || ext == "h264" || ext == "264")
       inputFormatType = inputAnnexBAVC;
     else
@@ -111,6 +113,12 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       possibleDecoders.append(decoderEngineLibde265);
       possibleDecoders.append(decoderEngineHM);
       possibleDecoders.append(decoderEngineFFMpeg);
+    }
+    else if (inputFormatType == inputAnnexBVVC)
+    {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is VVC");
+      inputFileAnnexBParser.reset(new parserAnnexBVVC());
+      possibleDecoders.append(decoderEngineVTM);
     }
     else if (inputFormatType == inputAnnexBAVC)
     {

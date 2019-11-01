@@ -127,8 +127,8 @@ void decoderVTM::resolveLibraryFunctionPointers()
   if (!resolve(libVTMDec_get_chroma_format, "libVTMDec_get_chroma_format")) return;
   if (!resolve(libVTMDec_get_internal_bit_depth, "libVTMDec_get_internal_bit_depth")) return;
   
-  if (!resolve(libVTMDec_get_internal_type_number, "libVTMDec_get_internal_type_number")) return;
-  if (!resolve(libVTMDec_get_internal_type_name, "libVTMDec_get_internal_type_name")) return;
+  /*if (!resolve(libVTMDec_get_internal_type_number, "libVTMDec_get_internal_type_number")) return;
+  if (!resolve(libVTMDec_get_internal_type_name, "libVTMDec_get_internal_type_name")) return;*/
   /*if (!resolve(libVTMDec_get_internal_type, "libVTMDec_get_internal_type")) return;
   if (!resolve(libVTMDec_get_internal_type_max, "libVTMDec_get_internal_type_max")) return;
   if (!resolve(libVTMDec_get_internal_type_vector_scaling, "libVTMDec_get_internal_type_vector_scaling")) return;
@@ -465,7 +465,7 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
 void decoderVTM::fillStatisticList(statisticHandler &statSource) const
 {
   // Ask the decoder how many internals types there are
-  unsigned int nrTypes = libVTMDec_get_internal_type_number();
+  // unsigned int nrTypes = libVTMDec_get_internal_type_number();
 
   //for (unsigned int i = 0; i < nrTypes; i++)
   //{

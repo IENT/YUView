@@ -137,7 +137,7 @@ protected:
   
   // Which type is the input?
   inputFormat inputFormatType;
-  bool isInputFormatTypeAnnexB() const { return inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBAVC; }
+  bool isInputFormatTypeAnnexB() const { return inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBVVC || inputFormatType == inputAnnexBAVC; }
   bool isInputFormatTypeFFmpeg() const { return inputFormatType == inputLibavformat; }
   AVCodecIDWrapper ffmpegCodec;
 

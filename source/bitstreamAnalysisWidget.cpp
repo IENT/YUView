@@ -34,6 +34,7 @@
 
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
+#include "parserAnnexBVVC.h"
 #include "parserAnnexBMpeg2.h"
 #include "parserAVFormat.h"
 
@@ -175,6 +176,8 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   inputFormat inputFormatType = currentCompressedVideo->getInputFormat();
   if (inputFormatType == inputAnnexBHEVC)
     parser.reset(new parserAnnexBHEVC(this));
+  if (inputFormatType == inputAnnexBVVC)
+    parser.reset(new parserAnnexBVVC(this));
   else if (inputFormatType == inputAnnexBAVC)
     parser.reset(new parserAnnexBAVC(this));
   else if (inputFormatType == inputLibavformat)

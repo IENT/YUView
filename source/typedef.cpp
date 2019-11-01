@@ -84,13 +84,13 @@ QString getDecoderEngineName(decoderEngine e)
 {
   if (e <= decoderEngineInvalid || e >= decoderEngineNum)
     return "";
-  QStringList l = QStringList() << "libDe265" << "HM" << "Dav1d" << "FFmpeg";
+  QStringList l = QStringList() << "libDe265" << "HM" << "VTM" << "Dav1d" << "FFmpeg";
   return l.at((int)e);
 }
 
 decoderEngine getDecoderEngineFromName(QString name)
 {
-  QStringList l = QStringList() << "libDe265" << "HM" << "Dav1d" << "FFmpeg";
+  QStringList l = QStringList() << "libDe265" << "HM" << "VTM" << "Dav1d" << "FFmpeg";
   int idx = l.indexOf(name);
   return (idx < 0 || idx >= decoderEngineNum) ? decoderEngineInvalid : (decoderEngine)idx;
 }

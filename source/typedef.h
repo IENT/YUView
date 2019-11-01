@@ -52,10 +52,11 @@ typedef enum
 
 typedef enum
 {
-  inputInvalid = -1,  // We don't know how to open the input
-  inputAnnexBHEVC,    // This is a raw HEVC annex B file
-  inputAnnexBAVC,     // This is a raw AVC annex B file
-  inputLibavformat,   // This is a container file which we will read using libavformat
+  inputInvalid = -1,
+  inputAnnexBHEVC,    // Raw HEVC annex B file
+  inputAnnexBAVC,     // Raw AVC annex B file
+  inputAnnexBVVC,     // Raw VVC annex B file
+  inputLibavformat,   // This is some sort of container file which we will read using libavformat
   input_NUM
 } inputFormat;
 QString getInputFormatName(inputFormat i);
@@ -66,6 +67,7 @@ typedef enum
   decoderEngineInvalid = -1,  // invalid value
   decoderEngineLibde265,      // The libde265 decoder
   decoderEngineHM,            // The HM reference software decoder
+  decoderEngineVTM,           // The VTM reference software decoder
   decoderEngineDav1d,         // The dav1d AV1 decoder
   decoderEngineFFMpeg,        // The FFMpeg decoder
   decoderEngineNum

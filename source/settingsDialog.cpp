@@ -136,6 +136,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
   ui.lineEditLibDav1d->setText(settings.value("libDav1dFile", "").toString());
+  ui.lineEditLibVTMFile->setText(settings.value("libVTMFile", "").toString());
   ui.lineEditLibJEMFile->setText(settings.value("libJEMFile", "").toString());
   ui.lineEditAVFormat->setText(settings.value("FFmpeg.avformat", "").toString());
   ui.lineEditAVCodec->setText(settings.value("FFmpeg.avcodec", "").toString());
@@ -401,6 +402,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
   settings.setValue("libJEMFile", ui.lineEditLibJEMFile->text());
   settings.setValue("libDav1dFile", ui.lineEditLibDav1d->text());
+  settings.setValue("libVTMFile", ui.lineEditLibVTMFile->text());
   // FFMpeg files
   settings.setValue("FFmpeg.avformat", ui.lineEditAVFormat->text());
   settings.setValue("FFmpeg.avcodec", ui.lineEditAVCodec->text());
