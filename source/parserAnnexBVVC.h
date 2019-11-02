@@ -69,18 +69,17 @@ protected:
   struct nal_unit_vvc : nal_unit
   {
     nal_unit_vvc(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx) {}
-    nal_unit_vvc(QSharedPointer<nal_unit_vvc> nal_src) : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_unit_type = nal_src->nal_unit_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+    nal_unit_vvc(QSharedPointer<nal_unit_vvc> nal_src) : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_unit_type_id = nal_src->nal_unit_type_id; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
     virtual ~nal_unit_vvc() {}
 
     virtual QByteArray getNALHeader() const override;
     virtual bool isParameterSet() const override { return false; }  // We don't know yet
     bool parse_nal_unit_header(const QByteArray &parameterSetData, parserCommon::TreeItem *root) override;
 
-    bool isAUDelimiter() { return nal_unit_type == 20; }
+    bool isAUDelimiter() { return nal_unit_type_id == 19; }
 
     // The information of the NAL unit header
     unsigned int nuh_layer_id;
-    unsigned int nal_unit_type;
     unsigned int nuh_temporal_id_plus1;
   };
 

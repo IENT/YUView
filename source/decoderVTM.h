@@ -111,7 +111,7 @@ private:
 
   // Try to get the next picture from the decoder and save it in currentHMPic
   bool getNextFrameFromDecoder();
-  libVTMDec_picture *currentHMPic {nullptr};
+  libVTMDec_picture *currentVTMPic {nullptr};
 
   // When pushing data, we will try to retrive a frame to check if this is possible.
   // If this is true, a frame is waiting from that step and decodeNextFrame will not actually retrive a new frame.

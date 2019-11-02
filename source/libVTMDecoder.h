@@ -231,11 +231,12 @@ extern "C" {
    */
   VTM_DEC_API libVTMDec_ChromaFormat libVTMDec_get_chroma_format(libVTMDec_picture *pic);
 
-  /** Get the bit depth which is used internally for the given color component.
+  /** Get the bit depth which is used for the given picture and given color component.
    * \param c The color component
+   * \param pic The picture to get the bit depth from
    * \return The internal bit depth
    */
-  VTM_DEC_API int libVTMDec_get_internal_bit_depth(libVTMDec_ColorComponent c);
+  VTM_DEC_API int libVTMDec_get_internal_bit_depth(libVTMDec_picture *pic, libVTMDec_ColorComponent c);
 
   /** This struct is used to retrive internal coding data for a picture.
    * A block is defined by its position within an image (x,y) and its size (w,h).

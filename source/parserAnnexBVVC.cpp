@@ -122,14 +122,26 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
   {
     DEBUG_VVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
     bitrateModel->addBitratePoint(0, counterAU, counterAU, sizeCurrentAU);
+
+    if (counterAU > 0)
+    {
+      const bool curFrameIsRandomAccess = (counterAU == 1);
+      if (!addFrameToList(counterAU, curFrameFileStartEndPos, curFrameIsRandomAccess))
+        return reader_helper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
+      DEBUG_VVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, counterAU, curFrameIsRandomAccess ? " - ra" : "");
+    }
+    curFrameFileStartEndPos = nalStartEndPosFile;
     sizeCurrentAU = 0;
     counterAU++;
   }
+  else
+    curFrameFileStartEndPos.second = nalStartEndPosFile.second;
+
   sizeCurrentAU += data.size();
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_vvc.nal_idx).arg(nal_vvc.nal_unit_type) + specificDescription);
+    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_vvc.nal_idx).arg(nal_vvc.nal_unit_type_id) + specificDescription);
 
   return true;
 }
@@ -147,7 +159,8 @@ bool parserAnnexBVVC::nal_unit_vvc::parse_nal_unit_header(const QByteArray &para
   reader_helper reader(parameterSetData, root, "nal_unit_header()");
 
   READZEROBITS(1, "forbidden_zero_bit");
-
+  READZEROBITS(1, "nuh_reserved_zero_bit");
+  READBITS(nuh_layer_id, 6);
   // Read nal unit type
   QStringList nal_unit_type_id_meaning = QStringList()
     << "Unknown"
@@ -199,8 +212,7 @@ bool parserAnnexBVVC::nal_unit_vvc::parse_nal_unit_header(const QByteArray &para
     << "Unknown"
     << "Unknown"
     << "Unspecified";
-  READBITS_M(nal_unit_type_id, 6, nal_unit_type_id_meaning);
-  READBITS(nuh_layer_id, 6);
+  READBITS_M(nal_unit_type_id, 5, nal_unit_type_id_meaning);
   READBITS(nuh_temporal_id_plus1, 3);
 
   return true;

@@ -39,7 +39,7 @@
 #include "typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERVTM_DEBUG_OUTPUT 0
+#define DECODERVTM_DEBUG_OUTPUT 1
 #if DECODERVTM_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERVTM_DEBUG_OUTPUT == 1
@@ -82,7 +82,7 @@ decoderVTM::decoderVTM(int signalID, bool cachingDecoder) :
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");
-  loadDecoderLibrary(settings.value("libHMFile", "").toString());
+  loadDecoderLibrary(settings.value("libVTMFile", "").toString());
   settings.endGroup();
 
   if (decoderState != decoderError)
@@ -102,8 +102,8 @@ QStringList decoderVTM::getLibraryNames()
   // On windows and linux ommitting the extension works
   QStringList names = 
     is_Q_OS_MAC ?
-    QStringList() << "libHMDecoder.dylib" :
-    QStringList() << "libHMDecoder";
+    QStringList() << "libVTMDecoder.dylib" :
+    QStringList() << "libVTMDecoder";
 
   return names;
 }
@@ -143,7 +143,7 @@ void decoderVTM::resolveLibraryFunctionPointers()
   
   // TODO: could we somehow get the prediction/residual signal?
   // I don't think this is possible without changes to the reference decoder.
-  DEBUG_DECVTM("decoderHM::loadDecoderLibrary - prediction/residual internals found");
+  DEBUG_DECVTM("decoderVTM::loadDecoderLibrary - prediction/residual internals found");
 }
 
 template <typename T> T decoderVTM::resolve(T &fun, const char *symbol, bool optional)
@@ -152,7 +152,7 @@ template <typename T> T decoderVTM::resolve(T &fun, const char *symbol, bool opt
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
+      setError(QStringLiteral("Error loading the VTM decoder library: Can't find function %1.").arg(symbol));
     return nullptr;
   }
 
@@ -178,7 +178,7 @@ void decoderVTM::allocateNewDecoder()
   if (decoder != nullptr)
     return;
 
-  DEBUG_DECVTM("hevcDecoderHM::allocateNewDecoder - decodeSignal %d", decodeSignal);
+  DEBUG_DECVTM("decoderVTM::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
   // Create new decoder object
   decoder = libVTMDec_new_decoder();
@@ -192,13 +192,13 @@ bool decoderVTM::decodeNextFrame()
 {
   if (decoderState != decoderRetrieveFrames)
   {
-    DEBUG_DECVTM("decoderHM::decodeNextFrame: Wrong decoder state.");
+    DEBUG_DECVTM("decoderVTM::decodeNextFrame: Wrong decoder state.");
     return false;
   }
 
-  if (currentHMPic == nullptr)
+  if (currentVTMPic == nullptr)
   {
-    DEBUG_DECVTM("decoderHM::decodeNextFrame: No frame available.");
+    DEBUG_DECVTM("decoderVTM::decodeNextFrame: No frame available.");
     return false;
   }
 
@@ -213,25 +213,25 @@ bool decoderVTM::decodeNextFrame()
 
 bool decoderVTM::getNextFrameFromDecoder()
 {
-  DEBUG_DECVTM("decoderHM::getNextFrameFromDecoder");
+  DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder");
 
-  currentHMPic = libVTMDec_get_picture(decoder);
-  if (currentHMPic == nullptr)
+  currentVTMPic = libVTMDec_get_picture(decoder);
+  if (currentVTMPic == nullptr)
   {
     decoderState = decoderNeedsMoreData;
     return false;
   }
 
   // Check the validity of the picture
-  QSize picSize = QSize(libVTMDec_get_picture_width(currentHMPic, LIBVTMDEC_LUMA), libVTMDec_get_picture_height(currentHMPic, LIBVTMDEC_LUMA));
+  QSize picSize = QSize(libVTMDec_get_picture_width(currentVTMPic, LIBVTMDEC_LUMA), libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
   if (!picSize.isValid())
-    DEBUG_DECVTM("decoderHM::getNextFrameFromDecoder got invalid size");
-  auto subsampling = convertFromInternalSubsampling(libVTMDec_get_chroma_format(currentHMPic));
+    DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
+  auto subsampling = convertFromInternalSubsampling(libVTMDec_get_chroma_format(currentVTMPic));
   if (subsampling == YUV_NUM_SUBSAMPLINGS)
-    DEBUG_DECVTM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
-  int bitDepth = libVTMDec_get_internal_bit_depth(currentHMPic, LIBVTMDEC_LUMA);
+    DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
+  int bitDepth = libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
-    DEBUG_DECVTM("decoderHM::getNextFrameFromDecoder got invalid bit depth");
+    DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
 
   if (!frameSize.isValid() && !formatYUV.isValid())
   {
@@ -258,7 +258,7 @@ bool decoderVTM::pushData(QByteArray &data)
 {
   if (decoderState != decoderNeedsMoreData)
   {
-    DEBUG_DECVTM("decoderHM::pushData: Wrong decoder state.");
+    DEBUG_DECVTM("decoderVTM::pushData: Wrong decoder state.");
     return false;
   }
 
@@ -273,7 +273,7 @@ bool decoderVTM::pushData(QByteArray &data)
   libVTMDec_error err = libVTMDec_push_nal_unit(decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
   if (err != LIBVTMDEC_OK)
     return setErrorB(QString("Error pushing data to decoder (libVTMDec_push_nal_unit) length %1").arg(data.length()));
-  DEBUG_DECVTM("decoderHM::pushData pushed NAL length %d%s%s", data.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+  DEBUG_DECVTM("decoderVTM::pushData pushed NAL length %d%s%s", data.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
 
   if (checkOutputPictures && getNextFrameFromDecoder())
   {
@@ -290,23 +290,23 @@ bool decoderVTM::pushData(QByteArray &data)
 
 QByteArray decoderVTM::getRawFrameData()
 {
-  if (currentHMPic == nullptr)
+  if (currentVTMPic == nullptr)
     return QByteArray();
   if (decoderState != decoderRetrieveFrames)
   {
-    DEBUG_DECVTM("decoderHM::getRawFrameData: Wrong decoder state.");
+    DEBUG_DECVTM("decoderVTM::getRawFrameData: Wrong decoder state.");
     return QByteArray();
   }
 
   if (currentOutputBuffer.isEmpty())
   {
     // Put image data into buffer
-    copyImgToByteArray(currentHMPic, currentOutputBuffer);
-    DEBUG_DECVTM("decoderHM::getRawFrameData copied frame to buffer");
+    copyImgToByteArray(currentVTMPic, currentOutputBuffer);
+    DEBUG_DECVTM("decoderVTM::getRawFrameData copied frame to buffer");
 
     if (retrieveStatistics)
       // Get the statistics from the image and put them into the statistics cache
-      cacheStatistics(currentHMPic);
+      cacheStatistics(currentVTMPic);
   }
 
   return currentOutputBuffer;
@@ -337,13 +337,13 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
   int outSizeCr = (nrPlanes == 1) ? 0 : (libVTMDec_get_picture_width(src, LIBVTMDEC_CHROMA_V) * libVTMDec_get_picture_height(src, LIBVTMDEC_CHROMA_V));
   // How many bytes do we need in the output buffer?
   int nrBytesOutput = (outSizeY + outSizeCb + outSizeCr) * (outputTwoByte ? 2 : 1);
-  DEBUG_DECVTM("decoderHM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
+  DEBUG_DECVTM("decoderVTM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
 
   // Is the output big enough?
   if (dst.capacity() < nrBytesOutput)
     dst.resize(nrBytesOutput);
 
-  // The source (from HM) is always short (16bit). The destination is a QByteArray so
+  // The source (from VTM) is always short (16bit). The destination is a QByteArray so
   // we have to cast it right.
   for (int c = 0; c < nrPlanes; c++)
   {
@@ -402,7 +402,7 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
   if (!internalsSupported)
     return;
 
-  DEBUG_DECVTM("decoderHM::cacheStatistics POC %d", libVTMDec_get_POC(img));
+  DEBUG_DECVTM("decoderVTM::cacheStatistics POC %d", libVTMDec_get_POC(img));
 
   // Clear the local statistics cache
   curPOCStats.clear();
@@ -555,7 +555,7 @@ void decoderVTM::fillStatisticList(statisticHandler &statSource) const
 
 QString decoderVTM::getDecoderName() const
 {
-  return (decoderState == decoderError) ? "HM" : libVTMDec_get_version();
+  return (decoderState == decoderError) ? "VTM" : libVTMDec_get_version();
 }
 
 bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)
