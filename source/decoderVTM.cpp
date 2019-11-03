@@ -322,14 +322,8 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
   libVTMDec_ChromaFormat fmt = libVTMDec_get_chroma_format(src);
   int nrPlanes = (fmt == LIBVTMDEC_CHROMA_400) ? 1 : 3;
 
-  // Is the output going to be 8 or 16 bit?
-  bool outputTwoByte = false;
-  for (int c = 0; c < nrPlanes; c++)
-  {
-    libVTMDec_ColorComponent component = (c == 0) ? LIBVTMDEC_LUMA : (c == 1) ? LIBVTMDEC_CHROMA_U : LIBVTMDEC_CHROMA_V;
-    if (libVTMDec_get_internal_bit_depth(src, component) > 8)
-      outputTwoByte = true;
-  }
+  // VTM always uses 16 bit as the return array
+  bool outputTwoByte = (libVTMDec_get_internal_bit_depth(src, LIBVTMDEC_LUMA) > 8);
 
   // How many samples are in each component?
   int outSizeY = libVTMDec_get_picture_width(src, LIBVTMDEC_LUMA) * libVTMDec_get_picture_height(src, LIBVTMDEC_LUMA);
@@ -378,6 +372,7 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
     }
     else
     {
+      // Output is one byte per pixel but VTM internally always saves everything in two bytes per pixel
       unsigned char * restrict d = (unsigned char*)dst.data();
       if (c > 0)
         d += outSizeY;

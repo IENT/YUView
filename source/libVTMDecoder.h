@@ -212,7 +212,7 @@ extern "C" {
    * \param c The color component to access. Note that the width and stride may be different for the chroma components.
    * \return A pointer to the values as short. For 8-bit output, the upper 8 bit are zero and can be ignored.
    */
-  VTM_DEC_API short *libVTMDec_get_image_plane(libVTMDec_picture *pic, libVTMDec_ColorComponent c);
+  VTM_DEC_API const int16_t *libVTMDec_get_image_plane(libVTMDec_picture *pic, libVTMDec_ColorComponent c);
 
   /** The YUV subsampling types
   */
