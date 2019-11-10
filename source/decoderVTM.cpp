@@ -39,7 +39,7 @@
 #include "typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERVTM_DEBUG_OUTPUT 1
+#define DECODERVTM_DEBUG_OUTPUT 0
 #if DECODERVTM_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERVTM_DEBUG_OUTPUT == 1
@@ -232,6 +232,7 @@ bool decoderVTM::getNextFrameFromDecoder()
   int bitDepth = libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
+  int poc = libVTMDec_get_POC(currentVTMPic);
 
   if (!frameSize.isValid() && !formatYUV.isValid())
   {
@@ -250,7 +251,8 @@ bool decoderVTM::getNextFrameFromDecoder()
       return setErrorB("Recieved a frame with different bit depth");
   }
   
-  DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame");
+  DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame wit POC %d", poc);
+  currentOutputBuffer.clear();
   return true;
 }
 
@@ -264,7 +266,7 @@ bool decoderVTM::pushData(QByteArray &data)
 
   bool endOfFile = (data.length() == 0);
   if (endOfFile)
-    DEBUG_DECVTM("decoderFFmpeg::pushData: Recieved empty packet. Setting EOF.");
+    DEBUG_DECVTM("decoderVTM::pushData: Recieved empty packet. Setting EOF.");
 
   // Push the data of the NAL unit. The function libVTMDec_push_nal_unit can handle data 
   // with a start code and without.

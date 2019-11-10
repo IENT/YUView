@@ -51,7 +51,7 @@
 #include "mainwindow.h"
 #include "ui_playlistItemCompressedFile_logDialog.h"
 
-#define COMPRESSED_VIDEO_DEBUG_OUTPUT 1
+#define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
 #if COMPRESSED_VIDEO_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_COMPRESSED qDebug
