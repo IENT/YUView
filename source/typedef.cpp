@@ -69,13 +69,13 @@ QString getInputFormatName(inputFormat i)
 {
   if (i == inputInvalid || i == input_NUM)
     return "";
-  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "FFmpeg";
+  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "inputAnnexBVVC" << "FFmpeg";
   return l.at((int)i);
 }
 
 inputFormat getInputFormatFromName(QString name)
 {
-  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "FFmpeg";
+  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "inputAnnexBVVC" << "FFmpeg";
   int idx = l.indexOf(name);
   return (idx < 0 || idx >= input_NUM) ? inputInvalid : (inputFormat)idx;
 }
