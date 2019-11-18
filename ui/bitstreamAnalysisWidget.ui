@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="analysisTab">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabStreamInfo">
       <attribute name="title">
@@ -51,15 +51,12 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
-          <widget class="QCheckBox" name="showVideoStreamOnlyCheckBox">
+          <widget class="QComboBox" name="showStreamComboBox">
            <property name="toolTip">
-            <string>Hide all packets that don't belong to the video stream</string>
+            <string>Filter packets by stream.</string>
            </property>
            <property name="whatsThis">
-            <string>Hide all packets that don't belong to the video stream</string>
-           </property>
-           <property name="text">
-            <string>Show only video stream</string>
+            <string>Filter packets by stream.</string>
            </property>
           </widget>
          </item>

@@ -2322,6 +2322,12 @@ QStringPairList AVStreamWrapper::getInfoText()
   return info;
 }
 
+QString AVStreamWrapper::getCodecTypeName()
+{
+  AVMediaType type = codecpar.getCodecType();
+  return getAVMediaTypeName(type);
+}
+
 AVMediaType AVStreamWrapper::getCodecType()
 {
   update();

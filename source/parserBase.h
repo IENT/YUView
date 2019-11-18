@@ -70,6 +70,7 @@ public:
   void setAbortParsing() { cancelBackgroundParser = true; }
 
   virtual int getVideoStreamIndex() { return -1; }
+  virtual QString getShortStreamDescription(int streamIndex) const = 0;
 
   void setStreamColorCoding(bool colorCoding) { packetModel->setUseColorCoding(colorCoding); }
   void setFilterStreamIndex(int streamIndex) { streamIndexFilter->setFilterStreamIndex(streamIndex); }

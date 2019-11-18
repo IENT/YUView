@@ -54,7 +54,7 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
 
   updateParsingStatusText(-1);
 
-  connect(ui.showVideoStreamOnlyCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::showVideoStreamOnlyCheckBoxToggled);
+  connect(ui.showStreamComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &BitstreamAnalysisWidget::showOnlyStreamComboBoxItemChanged);
   connect(ui.colorCodeStreamsCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::colorCodeStreamsCheckBoxToggled);
   connect(ui.parseEntireFileCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::parseEntireBitstreamCheckBoxToggled);
 
@@ -63,7 +63,7 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
 
 void BitstreamAnalysisWidget::updateParserItemModel()
 {
-  parser->updateNumberModelItems();
+  this->parser->updateNumberModelItems();
   updateParsingStatusText(parser->getParsingProgressPercent());
 }
 
@@ -72,7 +72,17 @@ void BitstreamAnalysisWidget::updateStreamInfo()
   ui.streamInfoTreeWidget->clear();
   ui.streamInfoTreeWidget->addTopLevelItems(parser->getStreamInfo());
   ui.streamInfoTreeWidget->expandAll();
-  ui.showVideoStreamOnlyCheckBox->setEnabled(parser->getNrStreams() > 1);
+
+  if (ui.showStreamComboBox->count() + 1 != parser->getNrStreams())
+  {
+    ui.showStreamComboBox->clear();
+    ui.showStreamComboBox->addItem("Show all streams");
+    for (unsigned int i = 0; i < parser->getNrStreams(); i++)
+    {
+      QString info = parser->getShortStreamDescription(i);
+      ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) + info);
+    }
+  }
 }
 
 void BitstreamAnalysisWidget::backgroundParsingDone(QString error)
@@ -84,18 +94,15 @@ void BitstreamAnalysisWidget::backgroundParsingDone(QString error)
   updateParsingStatusText(100);
 }
 
-void BitstreamAnalysisWidget::showVideoStreamOnlyCheckBoxToggled(bool state)
+void BitstreamAnalysisWidget::showOnlyStreamComboBoxItemChanged(int index)
 {
   if (!parser)
     return;
 
-  if (showVideoStreamOnly != state)
+  if (showOnlyStream != index - 1)
   {
-    showVideoStreamOnly = state;
-    if (showVideoStreamOnly)
-      parser->setFilterStreamIndex(parser->getVideoStreamIndex());
-    else
-      parser->setFilterStreamIndex(-1);
+    showOnlyStream = index - 1;
+    parser->setFilterStreamIndex(showOnlyStream);
   }
 }
 

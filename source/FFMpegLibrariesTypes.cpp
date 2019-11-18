@@ -32,3 +32,10 @@
 
 #include "FFMpegLibrariesTypes.h"
 
+QString FFmpeg::getAVMediaTypeName(AVMediaType type)
+{
+    QStringList names = QStringList() << "Unknown" << "Video" << "Audio" << "Data" << "Subtitle" << "Attachment" << "NB";
+    if (type > AVMEDIA_TYPE_NB)
+        return {};
+    return names[type + 1];
+}

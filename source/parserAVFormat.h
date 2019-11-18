@@ -53,6 +53,7 @@ public:
 
   QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE;
   unsigned int getNrStreams() Q_DECL_OVERRIDE { return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1; }
+  QString getShortStreamDescription(int streamIndex) const override;
   
   // This function can run in a separate thread
   bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
@@ -127,6 +128,7 @@ private:
   // we update this list while parsing the file.
   QList<QStringPairList> streamInfoAllStreams;
   QList<AVRational> timeBaseAllStreams;
+  QList<QString> shortStreamInfoAllStreams;
 
   int videoStreamIndex { -1 };
 };

@@ -627,3 +627,24 @@ QList<AVRational> fileSourceFFmpegFile::getTimeBaseAllStreams()
 
   return timeBaseList;
 }
+
+QList<QString> fileSourceFFmpegFile::getShortStreamDescriptionAllStreams()
+{
+  QList<QString> descriptions;
+
+  for (unsigned int i = 0; i < fmt_ctx.get_nb_streams(); i++)
+  {
+    QString description;
+    AVStreamWrapper s = fmt_ctx.get_stream(i);
+    description = s.getCodecTypeName();
+    
+    AVCodecIDWrapper codecID = ff.getCodecIDWrapper(s.getCodecID());
+    description += " " + codecID.getCodecName();
+
+    description += QString(" (%1x%2)").arg(s.get_frame_width()).arg(s.get_frame_height());
+
+    descriptions.append(description);
+  }
+
+  return descriptions;
+}

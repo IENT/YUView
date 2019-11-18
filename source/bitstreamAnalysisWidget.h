@@ -59,8 +59,8 @@ private slots:
   void updateStreamInfo();
   void backgroundParsingDone(QString error);
 
-  void showVideoStreamOnlyCheckBoxToggled(bool state);
-  void colorCodeStreamsCheckBoxToggled(bool state) { parser->setStreamColorCoding(state); }
+  void showOnlyStreamComboBoxItemChanged(int index);
+  void colorCodeStreamsCheckBoxToggled(bool state) { this->parser->setStreamColorCoding(state); }
   void parseEntireBitstreamCheckBoxToggled(bool state) { Q_UNUSED(state); restartParsingOfCurrentItem(); }
 
 protected:
@@ -86,7 +86,8 @@ private:
 
   QPointer<playlistItemCompressedVideo> currentCompressedVideo;
 
-  bool showVideoStreamOnly {false};
+  // -1: Show all streams. Otherwise only show the given stream index.
+  int showOnlyStream {-1};
 };
 
 #endif // BITSTREAMANALYSISDIALOG_H

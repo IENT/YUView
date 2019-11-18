@@ -393,6 +393,7 @@ public:
   QStringPairList getInfoText();
 
   AVMediaType getCodecType();
+  QString getCodecTypeName();
   AVCodecID getCodecID();
   AVCodecContextWrapper &getCodec() { update(); return codec; };
   AVRational get_avg_frame_rate()   { update(); return avg_frame_rate; }

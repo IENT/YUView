@@ -84,6 +84,13 @@ QList<QTreeWidgetItem*> parserAVFormat::getStreamInfo()
   return info;
 }
 
+QString parserAVFormat::getShortStreamDescription(int streamIndex) const
+{
+  if (streamIndex >= shortStreamInfoAllStreams.count())
+    return {};
+  return shortStreamInfoAllStreams[streamIndex];
+}
+
 bool parserAVFormat::parseExtradata(QByteArray &extradata)
 {
   if (extradata.isEmpty())
@@ -595,6 +602,8 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   // After opening the file, we can get information on it
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   timeBaseAllStreams = ffmpegFile->getTimeBaseAllStreams();
+  shortStreamInfoAllStreams = ffmpegFile->getShortStreamDescriptionAllStreams();
+
   emit streamInfoUpdated();
 
   // Now iterate over all packets and send them to the parser
