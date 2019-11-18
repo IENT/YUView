@@ -590,6 +590,17 @@ int64_t fileSourceFFmpegFile::getMaxTS()
   return duration / AV_TIME_BASE * timeBase.den / timeBase.num;
 }
 
+indexRange fileSourceFFmpegFile::getDecodableFrameLimits() const
+{
+  if (this->keyFrameList.isEmpty() || nrFrames == 0)
+    return {};
+
+  indexRange range;
+  range.first = this->keyFrameList.at(0).frame;
+  range.second = nrFrames;
+  return range;
+}
+
 QList<QStringPairList> fileSourceFFmpegFile::getFileInfoForAllStreams()
 {
   QList<QStringPairList> info;

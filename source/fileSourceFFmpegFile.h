@@ -89,7 +89,8 @@ public:
   int64_t getMaxTS();
 
   // Get information on the video stream
-  int getNumberFrames() const { return nrFrames; }
+  indexRange getDecodableFrameLimits() const;
+  
   AVCodecIDWrapper getVideoStreamCodecID() { return ff.getCodecIDWrapper(video_stream.getCodecID()); }
   AVCodecParametersWrapper getVideoCodecPar() { return video_stream.get_codecpar(); }
 

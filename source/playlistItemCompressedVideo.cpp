@@ -130,7 +130,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo YUV format %s", format_yuv.getName().toStdString().c_str());
     rawFormat = raw_YUV;  // Raw annexB files will always provide YUV data
     frameRate = inputFileAnnexBParser->getFramerate();
-    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %s", rateFPS);
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %s", frameRate);
   }
   else
   {
@@ -157,7 +157,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     frameSize = inputFileFFmpegLoading->getSequenceSizeSamples();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size %dx%d", frameSize.width(), frameSize.height());
     frameRate = inputFileFFmpegLoading->getFramerate();
-    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %s", rateFPS);
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %f", frameRate);
     ffmpegCodec = inputFileFFmpegLoading->getVideoStreamCodecID();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getCodecName().toStdString().c_str());
     if (!ffmpegCodec.isNone())
@@ -860,7 +860,7 @@ indexRange playlistItemCompressedVideo::getStartEndFrameLimits() const
     if (isInputFormatTypeAnnexB())
       return indexRange(0, inputFileAnnexBParser->getNumberPOCs() - 1);
     else
-      return indexRange(0, inputFileFFmpegLoading->getNumberFrames() - 1);
+      return inputFileFFmpegLoading->getDecodableFrameLimits();
   }  
 }
 
