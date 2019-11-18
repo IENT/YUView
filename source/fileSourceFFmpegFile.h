@@ -125,6 +125,20 @@ protected:
   AVStreamWrapper video_stream;
   double frameRate {-1};
   QSize frameSize;
+
+  struct streamIndices_t
+  {
+    int video {-1};
+    QList<int> audio;
+
+    struct subtitle_t
+    {
+      QList<int> dvb;
+      QList<int> other;
+    };
+    subtitle_t subtitle;
+  };
+  streamIndices_t streamIndices;
   
   RawFormat rawFormat {raw_Invalid};
   YUV_Internals::yuvPixelFormat pixelFormat_yuv;

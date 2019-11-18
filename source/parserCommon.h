@@ -244,8 +244,8 @@ namespace parserCommon
     bool readNS_catch(int &into, int maxVal, int &bit_count, QString &code);
     bool readSU_catch(int &into, int numBits, QString &code);
 
-    QString getMeaningValue(QStringList meanings, unsigned int val);
-    QString getMeaningValue(QMap<int,QString> meanings, int val);
+    QString getMeaningValue(QStringList &meanings, unsigned int val);
+    QString getMeaningValue(QMap<int,QString> &meanings, int val);
 
     QList<TreeItem*> itemHierarchy;
     TreeItem *currentTreeLevel { nullptr };

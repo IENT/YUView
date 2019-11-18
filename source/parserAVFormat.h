@@ -121,6 +121,8 @@ private:
   bool parseExtradata_hevc(QByteArray &extradata);
   bool parseExtradata_mpeg2(QByteArray &extradata);
 
+  int parseDVBSubtitlePacket(int segmentID, QByteArray data, parserCommon::TreeItem *parent, QString *segmentTypeName);
+
   // The start code pattern to look for in case of a raw format
   QByteArray startCode;
 

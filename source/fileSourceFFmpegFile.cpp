@@ -460,15 +460,25 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   // What is the input format?
   AVInputFormatWrapper inp_format = fmt_ctx.get_input_format();
 
-  // Get the first video stream
-  for(unsigned int idx=0; idx < fmt_ctx.get_nb_streams(); idx++)
+  // Iterate through all streams
+  for (unsigned int idx=0; idx < fmt_ctx.get_nb_streams(); idx++)
   {
     AVStreamWrapper stream = fmt_ctx.get_stream(idx);
     AVMediaType streamType =  stream.getCodecType();
-    if(streamType == AVMEDIA_TYPE_VIDEO)
+    AVCodecIDWrapper codeID = ff.getCodecIDWrapper(stream.getCodecID());
+    if (streamType == AVMEDIA_TYPE_VIDEO)
     {
       video_stream = stream;
-      break;
+      streamIndices.video = idx;
+    }
+    else if (streamType == AVMEDIA_TYPE_AUDIO)
+      streamIndices.audio.append(idx);
+    else if (streamType == AVMEDIA_TYPE_SUBTITLE)
+    {
+      if (codeID.getCodecName() == "dvb_subtitle")
+        streamIndices.subtitle.dvb.append(idx);
+      else
+        streamIndices.subtitle.other.append(idx);
     }
   }
   if(!video_stream)
@@ -521,7 +531,9 @@ bool fileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
       pkt.unref_packet(ff);
   
     ret = fmt_ctx.read_frame(ff, pkt);
-    pkt.is_video_packet = (pkt.get_stream_index() == video_stream.get_index());
+    pkt.is_video_packet = (pkt.get_stream_index() == streamIndices.video);
+    pkt.is_audio_packet = (streamIndices.audio.contains(pkt.get_stream_index()));
+    pkt.is_dvb_subtitle_packet = (streamIndices.subtitle.dvb.contains(pkt.get_stream_index()));
   }
   while (ret == 0 && videoPacketsOnly && !pkt.is_video_packet);
   
@@ -609,7 +621,8 @@ QList<QStringPairList> fileSourceFFmpegFile::getFileInfoForAllStreams()
   for(unsigned int i=0; i<fmt_ctx.get_nb_streams(); i++)
   {
     AVStreamWrapper s = fmt_ctx.get_stream(i);
-    info += s.getInfoText();
+    AVCodecIDWrapper codecIdWrapper = ff.getCodecIDWrapper(s.getCodecID());
+    info += s.getInfoText(codecIdWrapper);
   }
 
   return info;

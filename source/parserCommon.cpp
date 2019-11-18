@@ -890,7 +890,7 @@ bool reader_helper::readSU_catch(int &into, int numBits, QString &code)
   return true;
 }
 
-QString reader_helper::getMeaningValue(QStringList meanings, unsigned int val)
+QString reader_helper::getMeaningValue(QStringList &meanings, unsigned int val)
 {
   if (val < (unsigned int)meanings.length())
     return meanings.at(val);
@@ -899,7 +899,7 @@ QString reader_helper::getMeaningValue(QStringList meanings, unsigned int val)
   return "";
 }
 
-QString reader_helper::getMeaningValue(QMap<int,QString> meanings, int val)
+QString reader_helper::getMeaningValue(QMap<int,QString> &meanings, int val)
 {
   if (meanings.contains(val))
     return meanings.value(val);

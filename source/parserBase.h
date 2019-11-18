@@ -30,8 +30,8 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PARSERBASEE_H
-#define PARSERBASEE_H
+#ifndef PARSERBASE_H
+#define PARSERBASE_H
 
 #include <QAbstractItemModel>
 #include <QString>
@@ -96,4 +96,4 @@ protected:
   bool parsingLimitEnabled    {true};
 };
 
-#endif // PARSERBASEE_H
+#endif // PARSERBASE_H
