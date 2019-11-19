@@ -332,6 +332,8 @@ bool sub_byte_reader::testReadingBits(int nrBits)
 bool sub_byte_reader::gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
+  if (posInBuffer_bytes >= byteArray.length())
+    throw std::out_of_range("Reading out of bounds");
   if (byteArray[posInBuffer_bytes] == (char)0)
     numEmuPrevZeroBytes++;
 
