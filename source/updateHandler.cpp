@@ -47,6 +47,8 @@
 
 #ifdef Q_OS_WIN
 #include <windows.h>
+#pragma comment(lib, "Shell32.lib")    
+#include <ShellAPI.h> // without space also
 #endif
 
 #define UPDATER_DEBUG_OUTPUT 0
