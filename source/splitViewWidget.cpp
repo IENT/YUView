@@ -1182,6 +1182,14 @@ bool splitViewWidget::event(QEvent *event)
 
     return true;
   }
+  else if (event->type() == QEvent::NativeGesture)
+  {
+    // TODO #195 - For pinching on mac this would have to be added here...
+    // QNativeGestureEvent
+
+    // return true;
+  }
+
   return QWidget::event(event);
 }
 
