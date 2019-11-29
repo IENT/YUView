@@ -261,7 +261,7 @@ void MainWindow::createMenusAndActions()
   helpMenu->addAction("Check for new version", this, SLOT(checkForNewVersion()));
   QMenu *downloadsMenu = helpMenu->addMenu("Downloads");
   downloadsMenu->addAction("libHMDecoder", this, SLOT(openHMWebsize()));
-  downloadsMenu->addAction("libJEMDecoder", this, SLOT(openJEMWebsize()));
+  downloadsMenu->addAction("libVTMDecoder", this, SLOT(openVTMWebsize()));
   helpMenu->addSeparator();
   helpMenu->addAction("Performance Tests", this, SLOT(performanceTest()));
   helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));

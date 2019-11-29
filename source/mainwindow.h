@@ -102,7 +102,7 @@ private slots:
   // Some slots for the actions.
   void openProjectWebsite() { QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); }
   void openHMWebsize()      { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libHM/releases")); }
-  void openJEMWebsize()     { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libJEM/releases")); }
+  void openVTMWebsize()     { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/VTM/releases")); }
   void checkForNewVersion() { updater->startCheckForNewVersion(); }
   void performanceTest();
 

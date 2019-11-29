@@ -41,6 +41,7 @@
 #include "decoderDav1d.h"
 #include "decoderHM.h"
 #include "decoderLibde265.h"
+#include "decoderVTM.h"
 #include "FFMpegLibrariesHandling.h"
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
@@ -135,7 +136,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
   ui.lineEditLibDav1d->setText(settings.value("libDav1dFile", "").toString());
-  ui.lineEditLibJEMFile->setText(settings.value("libJEMFile", "").toString());
+  ui.lineEditLibVTMFile->setText(settings.value("libVTMFile", "").toString());
   ui.lineEditAVFormat->setText(settings.value("FFmpeg.avformat", "").toString());
   ui.lineEditAVCodec->setText(settings.value("FFmpeg.avcodec", "").toString());
   ui.lineEditAVUtil->setText(settings.value("FFmpeg.avutil", "").toString());
@@ -254,19 +255,6 @@ void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
     ui.lineEditLibHMFile->setText(newFiles[0]);
 }
 
-void SettingsDialog::on_pushButtonLibJEMSelectFile_clicked()
-{
-  QStringList newFiles = getLibraryPath(ui.lineEditLibJEMFile->text(), "Please select the libJEMDecoder library file to use.");
-  if (newFiles.count() != 1)
-    return;
-  QString error;
-  // TODO
-  /*if (!hevcNextGenDecoderJEM::checkLibraryFile(newFiles[0], error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libJEMDecoder library. Error: " + error);
-  else
-    ui.lineEditLibJEMFile->setText(newFiles[0]);*/
-}
-
 void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
 {
   QStringList newFiles = getLibraryPath(ui.lineEditLibDav1d->text(), "Please select the libDav1d library file to use.");
@@ -277,6 +265,18 @@ void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libDav1d library. Error: " + error);
   else
     ui.lineEditLibDav1d->setText(newFiles[0]);
+}
+
+void SettingsDialog::on_pushButtonLibVTMSelectFile_clicked()
+{
+  QStringList newFiles = getLibraryPath(ui.lineEditLibVTMFile->text(), "Please select the libVTMDecoder library file to use.");
+  if (newFiles.count() != 1)
+    return;
+  QString error;
+  if (!decoderVTM::checkLibraryFile(newFiles[0], error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libVTMDecoder library. Error: " + error);
+  else
+    ui.lineEditLibVTMFile->setText(newFiles[0]);
 }
 
 void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
@@ -386,8 +386,8 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // Raw coded video files
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
-  settings.setValue("libJEMFile", ui.lineEditLibJEMFile->text());
   settings.setValue("libDav1dFile", ui.lineEditLibDav1d->text());
+  settings.setValue("libVTMFile", ui.lineEditLibVTMFile->text());
   // FFMpeg files
   settings.setValue("FFmpeg.avformat", ui.lineEditAVFormat->text());
   settings.setValue("FFmpeg.avcodec", ui.lineEditAVCodec->text());

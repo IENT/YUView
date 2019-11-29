@@ -760,28 +760,17 @@
           <string>Specify individual decoder libraries to use for HEVC files. These will always be tried first.</string>
          </property>
          <property name="title">
-          <string>Specific HEVC Decoder Libraries</string>
+          <string>Specific Decoder Libraries</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="2">
-           <widget class="QPushButton" name="pushButtonLibde265SelectFile">
+          <item row="3" column="3">
+           <widget class="QPushButton" name="pushButtonLibVTMClearFile">
             <property name="toolTip">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
+             <string>Remove the libVTM path.</string>
             </property>
             <property name="whatsThis">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
+             <string>Remove the libVTM path.</string>
             </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <widget class="QPushButton" name="pushButtonlibHMClearFile">
             <property name="text">
              <string/>
             </property>
@@ -804,27 +793,43 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelLibHM">
+          <item row="2" column="2">
+           <widget class="QPushButton" name="pushButtonLibDav1dSelectFile">
             <property name="toolTip">
-             <string>Specify a libHM library file. These will always be tried first.</string>
+             <string>Specify a libDav1d library file. These will always be tried first.</string>
             </property>
             <property name="whatsThis">
-             <string>Specify a libHM library file. These will always be tried first.</string>
+             <string>Specify a libDav1d library file. These will always be tried first.</string>
             </property>
-            <property name="text">
-             <string>libHM</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QPushButton" name="pushButtonLibde265ClearFile">
             <property name="text">
              <string/>
             </property>
             <property name="icon">
              <iconset resource="../images/images.qrc">
-              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="lineEditLibVTMFile">
+            <property name="toolTip">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelLibde265">
+            <property name="toolTip">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string>libde265</string>
             </property>
            </widget>
           </item>
@@ -835,6 +840,57 @@
             </property>
             <property name="whatsThis">
              <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButtonLibVTMSelectFile">
+            <property name="toolTip">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="lineEditLibDav1d">
+            <property name="toolTip">
+             <string>Specify a libDav1d library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libDav1d library file. These will always be tried first.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labellibDav1d">
+            <property name="text">
+             <string>libDav1d</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="pushButtonLibde265SelectFile">
+            <property name="toolTip">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
             </property>
             <property name="text">
              <string/>
@@ -858,46 +914,21 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelLibde265">
-            <property name="toolTip">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labelLibVTM">
             <property name="text">
-             <string>libde265</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="labelLibJEM">
-            <property name="text">
-             <string>libJEM</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="lineEditLibJEMFile">
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QPushButton" name="pushButtonLibJEMSelectFile">
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+             <string>libVTM</string>
             </property>
            </widget>
           </item>
           <item row="2" column="3">
-           <widget class="QPushButton" name="pushButtonLibJEMClearFile">
+           <widget class="QPushButton" name="pushButtonLibDav1dClearFile">
+            <property name="toolTip">
+             <string>Remove the libDav1d path.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the libDav1d path.</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -907,29 +938,44 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="labellibDav1d">
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelLibHM">
+            <property name="toolTip">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
             <property name="text">
-             <string>libDav1d</string>
+             <string>libHM</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="1">
-           <widget class="QLineEdit" name="lineEditLibDav1d"/>
-          </item>
-          <item row="3" column="2">
-           <widget class="QPushButton" name="pushButtonLibDav1dSelectFile">
+          <item row="0" column="3">
+           <widget class="QPushButton" name="pushButtonLibde265ClearFile">
+            <property name="toolTip">
+             <string>Remove the libde265 path.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the libde265 path.</string>
+            </property>
             <property name="text">
              <string/>
             </property>
             <property name="icon">
              <iconset resource="../images/images.qrc">
-              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
             </property>
            </widget>
           </item>
-          <item row="3" column="3">
-           <widget class="QPushButton" name="pushButtonLibDav1dClearFile">
+          <item row="1" column="3">
+           <widget class="QPushButton" name="pushButtonlibHMClearFile">
+            <property name="toolTip">
+             <string>Remove the libHM path.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the libHM path.</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -986,6 +1032,12 @@
             </item>
             <item row="5" column="1">
              <widget class="QLineEdit" name="lineEditAVFormat">
+              <property name="toolTip">
+               <string>The libAVFormat library to use.</string>
+              </property>
+              <property name="whatsThis">
+               <string>The libAVFormat library to use.</string>
+              </property>
               <property name="readOnly">
                <bool>true</bool>
               </property>
@@ -993,6 +1045,12 @@
             </item>
             <item row="4" column="1">
              <widget class="QLineEdit" name="lineEditAVCodec">
+              <property name="toolTip">
+               <string>The libAVCodec library to use.</string>
+              </property>
+              <property name="whatsThis">
+               <string>The libAVCodec library to use.</string>
+              </property>
               <property name="readOnly">
                <bool>true</bool>
               </property>
@@ -1000,6 +1058,12 @@
             </item>
             <item row="2" column="1">
              <widget class="QLineEdit" name="lineEditSWResample">
+              <property name="toolTip">
+               <string>The libSWResample library to use.</string>
+              </property>
+              <property name="whatsThis">
+               <string>The libSWResample library to use.</string>
+              </property>
               <property name="readOnly">
                <bool>true</bool>
               </property>
@@ -1007,6 +1071,12 @@
             </item>
             <item row="1" column="1">
              <widget class="QLineEdit" name="lineEditAVUtil">
+              <property name="toolTip">
+               <string>The libAVUtil library to use.</string>
+              </property>
+              <property name="whatsThis">
+               <string>The libAVUtil library to use.</string>
+              </property>
               <property name="readOnly">
                <bool>true</bool>
               </property>
@@ -1021,6 +1091,12 @@
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Specify the 4 required ffmpeg library files. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify the 4 required ffmpeg library files. These will always be tried first.</string>
             </property>
             <property name="text">
              <string/>
@@ -1038,6 +1114,12 @@
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Remove the ffmpeg library paths.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the ffmpeg library paths.</string>
             </property>
             <property name="text">
              <string/>
@@ -1135,9 +1217,6 @@
   <tabstop>lineEditLibHMFile</tabstop>
   <tabstop>pushButtonlibHMSelectFile</tabstop>
   <tabstop>pushButtonlibHMClearFile</tabstop>
-  <tabstop>lineEditLibJEMFile</tabstop>
-  <tabstop>pushButtonLibJEMSelectFile</tabstop>
-  <tabstop>pushButtonLibJEMClearFile</tabstop>
   <tabstop>lineEditAVUtil</tabstop>
   <tabstop>lineEditSWResample</tabstop>
   <tabstop>lineEditAVCodec</tabstop>

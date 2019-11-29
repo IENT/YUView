@@ -40,10 +40,12 @@
 
 #include "decoderFFmpeg.h"
 #include "decoderHM.h"
+#include "decoderVTM.h"
 #include "decoderDav1d.h"
 #include "decoderLibde265.h"
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
+#include "parserAnnexBVVC.h"
 #include "videoHandlerYUV.h"
 #include "videoHandlerRGB.h"
 #include "mainwindow.h"
@@ -80,8 +82,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     QString ext = QFileInfo(compressedFilePath).suffix();
     if (ext == "hevc" || ext == "h265" || ext == "265")
-      // We will try to open this as a raw annexB file
       inputFormatType = inputAnnexBHEVC;
+    else if (ext == "vvc" || ext == "h266" || ext == "266")
+      inputFormatType = inputAnnexBVVC;
     else if (ext == "avc" || ext == "h264" || ext == "264")
       inputFormatType = inputAnnexBAVC;
     else
@@ -112,6 +115,12 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       possibleDecoders.append(decoderEngineHM);
       possibleDecoders.append(decoderEngineFFMpeg);
     }
+    else if (inputFormatType == inputAnnexBVVC)
+    {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is VVC");
+      inputFileAnnexBParser.reset(new parserAnnexBVVC());
+      possibleDecoders.append(decoderEngineVTM);
+    }
     else if (inputFormatType == inputAnnexBAVC)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is AVC");
@@ -130,7 +139,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo YUV format %s", format_yuv.getName().toStdString().c_str());
     rawFormat = raw_YUV;  // Raw annexB files will always provide YUV data
     frameRate = inputFileAnnexBParser->getFramerate();
-    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %s", frameRate);
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %f", frameRate);
   }
   else
   {
@@ -756,6 +765,16 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
       cachingDecoder.reset(new decoderHM(displayComponent, true));
     }
   }
+  else if (decoderEngineType == decoderEngineVTM)
+  {
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive VTM decoder");
+    loadingDecoder.reset(new decoderVTM(displayComponent));
+    if (cachingEnabled)
+    {
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder caching interactive VTM decoder");
+      cachingDecoder.reset(new decoderVTM(displayComponent, true));
+    }
+  }
   else if (decoderEngineType == decoderEngineDav1d)
   {
     DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive dav1d decoder");
@@ -879,9 +898,11 @@ ValuePairListSets playlistItemCompressedVideo::getPixelValues(const QPoint &pixe
 void playlistItemCompressedVideo::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
   QStringList ext;
-  ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "cgi" << "ivf" << "ivr" << "lvf"
-      << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" << "mjpeg" << "mpg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" << "mvi" << "mxg" << "v" << "ogg" 
-      << "mjpg" << "viv" << "webm" << "xmv" << "ts" << "mxf";
+  ext << "hevc" << "h265" << "265" << "avc" << "h264" << "264" << "vvc" << "h266" << "266" << "avi" 
+      << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" 
+      << "cgi" << "ivf" << "ivr" << "lvf" << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" 
+      << "mjpeg" << "mpg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" 
+      << "mvi" << "mxg" << "v" << "ogg" << "mjpg" << "viv" << "webm" << "xmv" << "ts" << "mxf";
   QString filtersString = "FFmpeg files (";
   for (QString e : ext)
     filtersString.append(QString("*.%1").arg(e));

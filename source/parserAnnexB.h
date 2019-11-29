@@ -40,7 +40,7 @@
 
 using namespace YUV_Internals;
 
-/* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, JEM) that we can parse.
+/* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, VVC) that we can parse.
 */
 class parserAnnexB : public parserBase
 {

@@ -231,8 +231,7 @@ bool fileSourceAnnexBFile::seek(int64_t pos)
   posInBuffer = 0;
 
   if (pos == 0)
-    // When seeking to the beginning, discard all bytes until we find a start code
-    getNextNALUnit();
+    seekToFirstNAL();
   else
   {
     // Check if we are at a start code position (001 or 0001)

@@ -30,55 +30,49 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DECODERHM_H
-#define DECODERHM_H
+#ifndef DECODERVTM_H
+#define DECODERVTM_H
 
 #include "decoderBase.h"
 #include "fileInfoWidget.h"
-#include "libHMDecoder.h"
+#include "libVTMDecoder.h"
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 #include <QLibrary>
 
-struct decoderHM_Functions
+struct decoderVTM_Functions
 {
-  decoderHM_Functions();
+  decoderVTM_Functions();
 
   // General functions
-  const char            *(*libHMDec_get_version)            (void);
-  libHMDec_context      *(*libHMDec_new_decoder)            (void);
-  libHMDec_error         (*libHMDec_free_decoder)           (libHMDec_context*);
-  void                   (*libHMDec_set_SEI_Check)          (libHMDec_context*, bool check_hash);
-  void                   (*libHMDec_set_max_temporal_layer) (libHMDec_context*, int max_layer);
-  libHMDec_error         (*libHMDec_push_nal_unit)          (libHMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
+  const char            *(*libVTMDec_get_version)            (void);
+  libVTMDec_context     *(*libVTMDec_new_decoder)            (void);
+  libVTMDec_error        (*libVTMDec_free_decoder)           (libVTMDec_context*);
+  void                   (*libVTMDec_set_SEI_Check)          (libVTMDec_context*, bool check_hash);
+  void                   (*libVTMDec_set_max_temporal_layer) (libVTMDec_context*, int max_layer);
+  libVTMDec_error        (*libVTMDec_push_nal_unit)          (libVTMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
 
   // Get a picture and retrive information on the picture
-  libHMDec_picture     *(*libHMDec_get_picture)            (libHMDec_context*);
-  int                   (*libHMDEC_get_POC)                (libHMDec_picture *pic);
-  int                   (*libHMDEC_get_picture_width)      (libHMDec_picture *pic, libHMDec_ColorComponent c);
-  int                   (*libHMDEC_get_picture_height)     (libHMDec_picture *pic, libHMDec_ColorComponent c);
-  int                   (*libHMDEC_get_picture_stride)     (libHMDec_picture *pic, libHMDec_ColorComponent c);
-  short                *(*libHMDEC_get_image_plane)        (libHMDec_picture *pic, libHMDec_ColorComponent c);
-  libHMDec_ChromaFormat (*libHMDEC_get_chroma_format)      (libHMDec_picture *pic);
-  int                   (*libHMDEC_get_internal_bit_depth) (libHMDec_picture *pic, libHMDec_ColorComponent c);
+  libVTMDec_picture     *(*libVTMDec_get_picture)            (libVTMDec_context*);
+  int                    (*libVTMDec_get_POC)                (libVTMDec_picture *pic);
+  int                    (*libVTMDec_get_picture_width)      (libVTMDec_picture *pic, libVTMDec_ColorComponent c);
+  int                    (*libVTMDec_get_picture_height)     (libVTMDec_picture *pic, libVTMDec_ColorComponent c);
+  int                    (*libVTMDec_get_picture_stride)     (libVTMDec_picture *pic, libVTMDec_ColorComponent c);
+  short                 *(*libVTMDec_get_image_plane)        (libVTMDec_picture *pic, libVTMDec_ColorComponent c);
+  libVTMDec_ChromaFormat (*libVTMDec_get_chroma_format)      (libVTMDec_picture *pic);
+  int                    (*libVTMDec_get_internal_bit_depth) (libVTMDec_picture *pic, libVTMDec_ColorComponent c);
 
   // Internals
-  unsigned int            (*libHMDEC_get_internal_type_number)          ();
-  char                   *(*libHMDEC_get_internal_type_name)            (unsigned int idx);
-  libHMDec_InternalsType  (*libHMDEC_get_internal_type)                 (unsigned int idx);
-  unsigned int            (*libHMDEC_get_internal_type_max)             (unsigned int idx);
-  unsigned int            (*libHMDEC_get_internal_type_vector_scaling)  (unsigned int idx);
-  char                   *(*libHMDEC_get_internal_type_description)     (unsigned int idx);
-  libHMDec_BlockValue    *(*libHMDEC_get_internal_info)                 (libHMDec_context*, libHMDec_picture *pic, unsigned int typeIdx, unsigned int &nrValues, bool &callAgain);
-  libHMDec_error          (*libHMDEC_clear_internal_info)               (libHMDec_context *decCtx);
+  /*unsigned int            (*libVTMDec_get_internal_type_number)          ();
+  char                   *(*libVTMDec_get_internal_type_name)            (unsigned int idx);*/
 };
 
 // This class wraps the HM decoder library in a demand-load fashion.
-class decoderHM : public decoderBaseSingleLib, decoderHM_Functions
+class decoderVTM : public decoderBaseSingleLib, decoderVTM_Functions
 {
 public:
-  decoderHM(int signalID, bool cachingDecoder=false);
-  ~decoderHM();
+  decoderVTM(int signalID, bool cachingDecoder=false);
+  ~decoderVTM();
 
   void resetDecoder() Q_DECL_OVERRIDE;
 
@@ -97,8 +91,8 @@ public:
 
 private:
   // A private constructor that creates an uninitialized decoder library.
-  // Used by checkLibraryFile to check if a file can be used as a this decoder.
-  decoderHM() {};
+  // Used by checkLibraryFile to check if a file can be used as this type of decoder.
+  decoderVTM() {};
 
   // Return the possible names of the HM library
   QStringList getLibraryNames() Q_DECL_OVERRIDE;
@@ -113,24 +107,24 @@ private:
 
   void allocateNewDecoder();
 
-  libHMDec_context* decoder {nullptr};
+  libVTMDec_context* decoder {nullptr};
 
   // Try to get the next picture from the decoder and save it in currentHMPic
   bool getNextFrameFromDecoder();
-  libHMDec_picture *currentHMPic {nullptr};
+  libVTMDec_picture *currentVTMPic {nullptr};
 
   // When pushing data, we will try to retrive a frame to check if this is possible.
   // If this is true, a frame is waiting from that step and decodeNextFrame will not actually retrive a new frame.
   bool decodedFrameWaiting {false};
 
   // Statistics caching
-  void cacheStatistics(libHMDec_picture *pic);
+  void cacheStatistics(libVTMDec_picture *pic);
 
   bool internalsSupported {false};
   int nrSignals { 0 };
 
   // Convert from libde265 types to YUView types
-  YUVSubsamplingType convertFromInternalSubsampling(libHMDec_ChromaFormat fmt);
+  YUVSubsamplingType convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt);
 
   // Add the statistics supported by the HM decoder
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
@@ -139,11 +133,11 @@ private:
   // without invoking the copy operation from the hm image buffer to the QByteArray again.
 #if SSE_CONVERSION
   byteArrayAligned currentOutputBuffer;
-  void copyImgToByteArray(libHMDec_picture *src, byteArrayAligned &dst);
+  void copyImgToByteArray(libVTMDec_picture *src, byteArrayAligned &dst);
 #else
   QByteArray currentOutputBuffer;
-  void copyImgToByteArray(libHMDec_picture *src, QByteArray &dst);   // Copy the raw data from the de265_image source *src to the byte array
+  void copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst);   // Copy the raw data from the de265_image source *src to the byte array
 #endif  
 };
 
-#endif // DECODERHM_H
+#endif // DECODERVTM_H
