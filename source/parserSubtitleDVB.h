@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*
+*   
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -30,14 +30,17 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "FFMpegLibrariesTypes.h"
+#ifndef PARSERSUBTITLEDVB_H
+#define PARSERSUBTITLEDVB_H
 
-#include <QStringList>
+#include "parserCommon.h"
 
-QString FFmpeg::getAVMediaTypeName(AVMediaType type)
+#include <QByteArray>
+#include <QString>
+
+namespace subtitle_dvb
 {
-    QStringList names = QStringList() << "Unknown" << "Video" << "Audio" << "Data" << "Subtitle" << "Attachment" << "NB";
-    if (type > AVMEDIA_TYPE_NB)
-        return {};
-    return names[type + 1];
+    int parseDVBSubtitleSegment(int segmentID, QByteArray data, parserCommon::TreeItem *parent, QString *segmentTypeName);
 }
+
+#endif // PARSERSUBTITLEDVB_H

@@ -89,7 +89,8 @@ public:
   int64_t getMaxTS();
 
   // Get information on the video stream
-  int getNumberFrames() const { return nrFrames; }
+  indexRange getDecodableFrameLimits() const;
+  
   AVCodecIDWrapper getVideoStreamCodecID() { return ff.getCodecIDWrapper(video_stream.getCodecID()); }
   AVCodecParametersWrapper getVideoCodecPar() { return video_stream.get_codecpar(); }
 
@@ -98,6 +99,7 @@ public:
   int getVideoStreamIndex() { return video_stream.get_index(); }
   QList<QStringPairList> getFileInfoForAllStreams();
   QList<AVRational> getTimeBaseAllStreams();
+  QList<QString> getShortStreamDescriptionAllStreams();
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
@@ -123,6 +125,20 @@ protected:
   AVStreamWrapper video_stream;
   double frameRate {-1};
   QSize frameSize;
+
+  struct streamIndices_t
+  {
+    int video {-1};
+    QList<int> audio;
+
+    struct subtitle_t
+    {
+      QList<int> dvb;
+      QList<int> other;
+    };
+    subtitle_t subtitle;
+  };
+  streamIndices_t streamIndices;
   
   RawFormat rawFormat {raw_Invalid};
   YUV_Internals::yuvPixelFormat pixelFormat_yuv;

@@ -43,6 +43,17 @@
 #define DEBUG_ANNEXB(fmt,...) ((void)0)
 #endif
 
+QString parserAnnexB::getShortStreamDescription(int streamIndex) const
+{
+  Q_UNUSED(streamIndex);
+
+  QString info = "Video";
+  QSize frameSize = this->getSequenceSizeSamples();
+  if (frameSize.isValid())
+    info += QString(" (%1x%2)").arg(frameSize.width()).arg(frameSize.height());
+  return info;
+}
+
 bool parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool randomAccessPoint)
 {
   if (POCList.contains(poc))

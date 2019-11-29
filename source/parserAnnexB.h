@@ -58,6 +58,7 @@ public:
 
   QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE { return stream_info.getStreamInfo(); }
   unsigned int getNrStreams() Q_DECL_OVERRIDE { return 1; }
+  QString getShortStreamDescription(int streamIndex) const override;
 
   // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
   // It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).

@@ -1280,13 +1280,6 @@ bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
     LOG(QStringLiteral("Error opening file (avformat_find_stream_info). Ret code %1").arg(ret));
     return false;
   }
-  
-  // Get the codec id string using avcodec_get_name for each stream
-  for(unsigned int idx=0; idx < fmt.get_nb_streams(); idx++)
-  {
-    AVStreamWrapper stream = fmt.get_stream(idx);
-    stream.codecIDWrapper = getCodecIDWrapper(stream.getCodecID());
-  }
 
   return true;
 }
@@ -2257,7 +2250,7 @@ void AVStreamWrapper::update()
     assert(false);
 }
 
-QStringPairList AVStreamWrapper::getInfoText()
+QStringPairList AVStreamWrapper::getInfoText(AVCodecIDWrapper &codecIdWrapper)
 {
   QStringPairList info;
 
@@ -2270,8 +2263,10 @@ QStringPairList AVStreamWrapper::getInfoText()
   
   info.append(QStringPair("Index", QString::number(index)));
   info.append(QStringPair("ID", QString::number(id)));
-  // TODO: This needs to be resolved differently
-  //info.append(QStringPair("Codec", codec.codec_id_string));
+  
+  info.append(QStringPair("Codec Type", getCodecTypeName()));
+  info.append(QStringPair("Codec ID", QString::number((int)getCodecID())));
+  info.append(QStringPair("Codec Name", codecIdWrapper.getCodecName()));
   info.append(QStringPair("Time base", QString("%1/%2").arg(time_base.num).arg(time_base.den)));
   info.append(QStringPair("Start Time", QString("%1 (%2)").arg(start_time).arg(timestampToString(start_time, time_base))));
   info.append(QStringPair("Duration", QString("%1 (%2)").arg(duration).arg(timestampToString(duration, time_base))));
@@ -2320,6 +2315,12 @@ QStringPairList AVStreamWrapper::getInfoText()
 
   info += codecpar.getInfoText();
   return info;
+}
+
+QString AVStreamWrapper::getCodecTypeName()
+{
+  AVMediaType type = codecpar.getCodecType();
+  return getAVMediaTypeName(type);
 }
 
 AVMediaType AVStreamWrapper::getCodecType()
@@ -2386,9 +2387,6 @@ QStringPairList AVCodecParametersWrapper::getInfoText()
   }
   update();
   
-  QStringList codecTypes = QStringList() << "Unknown" << "Video" << "Audio" << "Data" << "Subtile" << "Attachement" << "NB";
-  info.append(QStringPair("Codec Type", codecTypes.at((int)codec_type + 1)));
-  info.append(QStringPair("Codec ID", QString::number((int)codec_id)));
   info.append(QStringPair("Codec Tag", QString::number(codec_tag)));
   info.append(QStringPair("Format", QString::number(format)));
   info.append(QStringPair("Bitrate", QString::number(bit_rate)));
@@ -2399,9 +2397,9 @@ QStringPairList AVCodecParametersWrapper::getInfoText()
   info.append(QStringPair("Width/Height", QString("%1/%2").arg(width).arg(height)));
   info.append(QStringPair("Sample aspect ratio", QString("%1:%2").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den)));
   QStringList fieldOrders = QStringList() << "Unknown" << "Progressive" << "Top coded_first, top displayed first" << "Bottom coded first, bottom displayed first" << "Top coded first, bottom displayed first" << "Bottom coded first, top displayed first";
-  info.append(QStringPair("Field Order", fieldOrders.at((int)codec_type)));
+  info.append(QStringPair("Field Order", fieldOrders.at(clip((int)codec_type, 0, fieldOrders.count()))));
   QStringList colorRanges = QStringList() << "Unspecified" << "The normal 219*2^(n-8) MPEG YUV ranges" << "The normal 2^n-1 JPEG YUV ranges" << "Not part of ABI";
-  info.append(QStringPair("Color Range", colorRanges.at((int)color_range)));
+  info.append(QStringPair("Color Range", colorRanges.at(clip((int)color_range, 0, colorRanges.count()))));
   QStringList colorPrimaries = QStringList() 
     << "Reserved" 
     << "BT709 / ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B"

@@ -155,6 +155,8 @@ namespace FFmpeg
     AVMEDIA_TYPE_NB
   };
 
+  QString getAVMediaTypeName(AVMediaType type);
+
   enum AVFrameSideDataType 
   {
     AV_FRAME_DATA_PANSCAN,

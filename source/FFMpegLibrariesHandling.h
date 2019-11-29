@@ -390,9 +390,10 @@ public:
   AVStreamWrapper() { str = nullptr; }
   AVStreamWrapper(AVStream *src_str, FFmpegLibraryVersion v) { str = src_str; libVer = v; update(); }
   explicit operator bool() const { return str != nullptr; };
-  QStringPairList getInfoText();
+  QStringPairList getInfoText(AVCodecIDWrapper &codecIdWrapper);
 
   AVMediaType getCodecType();
+  QString getCodecTypeName();
   AVCodecID getCodecID();
   AVCodecContextWrapper &getCodec() { update(); return codec; };
   AVRational get_avg_frame_rate()   { update(); return avg_frame_rate; }
@@ -403,9 +404,6 @@ public:
   int get_index() { update(); return index; }
 
   AVCodecParametersWrapper get_codecpar() { update(); return codecpar; }
-
-  // This is set when the file is opened (in FFmpegVersionHandler::open_input)
-  AVCodecIDWrapper codecIDWrapper;
 
 private:
   void update();
@@ -472,7 +470,9 @@ public:
   int      get_data_size()     { update(); return size; }
 
   // This is not part of the AVPacket but is set by fileSourceFFmpegFile when reading an AVPacket
-  bool     is_video_packet;
+  bool     is_video_packet {false};
+  bool     is_audio_packet {false};
+  bool     is_dvb_subtitle_packet {false};
   
   // Guess the format. The actual guessing is only performed if the packetFormat is not set yet.
   packetDataFormat_t guessDataFormatFromData();

@@ -37,6 +37,7 @@
 #include "parserAnnexBHEVC.h"
 #include "parserAnnexBMpeg2.h"
 #include "parserCommonMacros.h"
+#include "parserSubtitleDVB.h"
 
 #include <QThread>
 
@@ -82,6 +83,13 @@ QList<QTreeWidgetItem*> parserAVFormat::getStreamInfo()
   }
 
   return info;
+}
+
+QString parserAVFormat::getShortStreamDescription(int streamIndex) const
+{
+  if (streamIndex >= shortStreamInfoAllStreams.count())
+    return {};
+  return shortStreamInfoAllStreams[streamIndex];
 }
 
 bool parserAVFormat::parseExtradata(QByteArray &extradata)
@@ -445,6 +453,38 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
         specificDescription += (" " + n);
     }
   }
+  else if (packet.is_dvb_subtitle_packet)
+  {
+    QStringList segmentNames;
+    int segmentID = 0;
+
+    const int MIN_DVB_SEGMENT_SIZE = 6;
+    while (posInData + MIN_DVB_SEGMENT_SIZE <= avpacketData.length())
+    {
+      QString segmentTypeName;
+      try
+      {  
+        int nrBytesRead = subtitle_dvb::parseDVBSubtitleSegment(segmentID, avpacketData.mid(posInData), itemTree, &segmentTypeName);
+        DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
+        posInData += nrBytesRead;
+      }
+      catch (...)
+      {
+        // Catch exceptions and just return
+        break;
+      }
+
+      if (!segmentTypeName.isEmpty())
+        segmentNames.append(segmentTypeName);
+      segmentID++;
+
+      if (segmentID > 200)
+      {
+        DEBUG_AVFORMAT("parserAVFormat::parseAVPacket We encountered more than 200 DVB segments in one packet. This is probably an error.");
+        return false;
+      }
+    }
+  }
   else
     bitrateItemModel->addBitratePoint(packet.get_stream_index(), packet.get_pts(), packet.get_dts(), packet.get_data_size());
 
@@ -595,6 +635,8 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   // After opening the file, we can get information on it
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   timeBaseAllStreams = ffmpegFile->getTimeBaseAllStreams();
+  shortStreamInfoAllStreams = ffmpegFile->getShortStreamDescriptionAllStreams();
+
   emit streamInfoUpdated();
 
   // Now iterate over all packets and send them to the parser

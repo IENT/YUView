@@ -332,6 +332,8 @@ bool sub_byte_reader::testReadingBits(int nrBits)
 bool sub_byte_reader::gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
+  if (posInBuffer_bytes >= byteArray.length())
+    throw std::out_of_range("Reading out of bounds");
   if (byteArray[posInBuffer_bytes] == (char)0)
     numEmuPrevZeroBytes++;
 
@@ -890,7 +892,7 @@ bool reader_helper::readSU_catch(int &into, int numBits, QString &code)
   return true;
 }
 
-QString reader_helper::getMeaningValue(QStringList meanings, unsigned int val)
+QString reader_helper::getMeaningValue(QStringList &meanings, unsigned int val)
 {
   if (val < (unsigned int)meanings.length())
     return meanings.at(val);
@@ -899,7 +901,7 @@ QString reader_helper::getMeaningValue(QStringList meanings, unsigned int val)
   return "";
 }
 
-QString reader_helper::getMeaningValue(QMap<int,QString> meanings, int val)
+QString reader_helper::getMeaningValue(QMap<int,QString> &meanings, int val)
 {
   if (meanings.contains(val))
     return meanings.value(val);

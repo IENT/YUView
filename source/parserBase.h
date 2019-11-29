@@ -30,8 +30,8 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PARSERBASEE_H
-#define PARSERBASEE_H
+#ifndef PARSERBASE_H
+#define PARSERBASE_H
 
 #include <QAbstractItemModel>
 #include <QString>
@@ -70,6 +70,7 @@ public:
   void setAbortParsing() { cancelBackgroundParser = true; }
 
   virtual int getVideoStreamIndex() { return -1; }
+  virtual QString getShortStreamDescription(int streamIndex) const = 0;
 
   void setStreamColorCoding(bool colorCoding) { packetModel->setUseColorCoding(colorCoding); }
   void setFilterStreamIndex(int streamIndex) { streamIndexFilter->setFilterStreamIndex(streamIndex); }
@@ -95,4 +96,4 @@ protected:
   bool parsingLimitEnabled    {true};
 };
 
-#endif // PARSERBASEE_H
+#endif // PARSERBASE_H
