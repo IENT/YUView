@@ -33,6 +33,7 @@
 #include "parserAnnexBAVC.h"
 
 #include <cmath>
+
 #include "parserCommonMacros.h"
 
 using namespace parserCommon;
