@@ -96,11 +96,13 @@ install:
 
 script:
   - cd $TRAVIS_BUILD_DIR
+  - mkdir build
+  - cd build
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       ./deployment/buildWindows.bat
     else
-      qmake -config release
+      qmake ..
       make -j 2
     fi
 
