@@ -1,7 +1,7 @@
 TEMPLATE = subdirs
 SUBDIRS = YUViewLib YUViewApp
 
-YUViewApp.subdir = src/YUViewApp
-YUViewLib.subdir = src/YUViewLib
+YUViewApp.subdir = YUViewApp
+YUViewLib.subdir = YUViewLib
 
-YUViewYpp.depends = YUViewLib
+YUViewApp.depends = YUViewLib

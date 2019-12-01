@@ -35,7 +35,7 @@
 #include <QImageReader>
 #include <QSettings>
 #include <QUrl>
-#include "fileSource/fileSource.h"
+#include "filesource/fileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
   : playlistItemWithVideo(rawFilePath, playlistItem_Indexed)

@@ -851,7 +851,7 @@
   <customwidget>
    <class>showColorWidget</class>
    <extends>QFrame</extends>
-   <header>showColorFrame.h</header>
+   <header>ui/showColorFrame.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

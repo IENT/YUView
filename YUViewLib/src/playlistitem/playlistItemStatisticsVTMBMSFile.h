@@ -30,16 +30,18 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMSTATISTICSCSVFILE_H
-#define PLAYLISTITEMSTATISTICSCSVFILE_H
+#ifndef PLAYLISTITEMSTATISTICSVTMBMSFILE_H
+#define PLAYLISTITEMSTATISTICSVTMBMSFILE_H
 
 #include <QBasicTimer>
 #include <QFuture>
-#include "fileSource/fileSource.h"
+#include <QRegularExpression>
+
+#include "filesource/fileSource.h"
 #include "playlistItemStatisticsFile.h"
 #include "statistics/statisticHandler.h"
 
-class playlistItemStatisticsCSVFile : public playlistItemStatisticsFile
+class playlistItemStatisticsVTMBMSFile : public playlistItemStatisticsFile
 {
   Q_OBJECT
 
@@ -47,7 +49,7 @@ public:
 
   /*
   */
-  playlistItemStatisticsCSVFile(const QString &itemNameOrFileName);
+  playlistItemStatisticsVTMBMSFile(const QString &itemNameOrFileName);
 
   bool isFileSource() const Q_DECL_OVERRIDE { return true; };
 
@@ -56,8 +58,9 @@ public:
   // Does the playlistItem provide statistics? If yes, the following functions can be
   // used to access it
 
+
   // Create a new playlistItemStatisticsFile from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemStatisticsCSVFile *newplaylistItemStatisticsCSVFile(const QDomElementYUView &root, const QString &playlistFilePath);
+  static playlistItemStatisticsVTMBMSFile *newplaylistItemStatisticsVTMBMSFile(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -72,20 +75,18 @@ public slots:
 
 private:
 
-  QString getPlaylistTag() const Q_DECL_OVERRIDE { return "playlistItemStatisticsCSVFile"; }
+  QString getPlaylistTag() const Q_DECL_OVERRIDE { return "playlistItemStatisticsVTMBMSFile"; }
 
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();
   
-  QStringList parseCSVLine(const QString &line, char delimiter) const;
-
-  // A list of file positions where each POC/type starts
-  QMap<int, QMap<int, qint64> > pocTypeStartList;
+  // A list of file positions where each POC starts
+  QMap<int, qint64> pocStartList;
 
   // --------------- background parsing ---------------
   //! Parser the whole file and get the positions where a new POC/type starts. Save this position in p_pocTypeStartList.
   //! This is performed in the background using a QFuture.
-  void readFrameAndTypePositionsFromFile();
+  void readFramePositionsFromFile();
 };
 
-#endif // PLAYLISTITEMSTATISTICSCSVFILE_H
+#endif // PLAYLISTITEMSTATISTICSVTMBMSFILE_H
