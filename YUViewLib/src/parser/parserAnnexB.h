@@ -37,7 +37,7 @@
 
 #include "video/videoHandlerYUV.h"
 #include "parserBase.h"
-#include "fileSource/fileSourceAnnexBFile.h"
+#include "filesource/fileSourceAnnexBFile.h"
 
 using namespace YUV_Internals;
 

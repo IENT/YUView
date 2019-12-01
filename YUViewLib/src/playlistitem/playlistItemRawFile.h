@@ -36,7 +36,7 @@
 #include <QFuture>
 #include <QString>
 
-#include "fileSource/fileSource.h"
+#include "filesource/fileSource.h"
 #include "playlistItemWithVideo.h"
 #include "common/typedef.h"
 

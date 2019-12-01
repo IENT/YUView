@@ -36,7 +36,7 @@
 #include <QPainter>
 #include <QSettings>
 #include <QUrl>
-#include "fileSource/fileSource.h"
+#include "filesource/fileSource.h"
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
 

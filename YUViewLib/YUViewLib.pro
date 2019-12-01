@@ -1,19 +1,19 @@
 QT += gui opengl xml concurrent network charts
 
-TARGET = YUView
-TEMPLATE = app
+TEMPLATE = lib
+CONFIG += staticlib
 CONFIG += c++11
 
-SOURCES += $$files(*.cpp, false)
-HEADERS += $$files(*.h, false)
+SOURCES += $$files(src/*.cpp, true)
+HEADERS += $$files(src/*.h, true)
 
-INCLUDEPATH += ../YUViewLib
-CONFIG(release, debug|release) {
-  LIBS += -L../YUViewLib/release -lYUViewLib
-}
-CONFIG(debug, debug|release) {
-  LIBS += -L../YUViewLib/debug -lYUViewLib
-}
+FORMS += $$files(ui/*.ui, false)
+
+INCLUDEPATH += src/
+
+RESOURCES += \
+    images/images.qrc \
+    docs/resources.qrc
 
 unix:!mac {
 	isEmpty(PREFIX) {
@@ -53,8 +53,6 @@ contains(QT_ARCH, x86_32|i386) {
 
 macx {
     QMAKE_MAC_SDK = macosx
-
-    ICON = images/YUView.icns
     QMAKE_INFO_PLIST = Info.plist
     SVNN = $$system("git describe --tags")
 }
@@ -71,7 +69,6 @@ win32-g++ {
     QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
 }
 win32 {
-    RC_FILE += images/WindowsAppIcon.rc
     SVNN = $$system("git describe --tags")
     DEFINES += NOMINMAX
 }

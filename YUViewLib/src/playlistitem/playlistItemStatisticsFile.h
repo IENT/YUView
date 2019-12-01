@@ -35,7 +35,7 @@
 
 #include <QBasicTimer>
 #include <QFuture>
-#include "fileSource/fileSource.h"
+#include "filesource/fileSource.h"
 #include "playlistItem.h"
 #include "statistics/statisticHandler.h"
 

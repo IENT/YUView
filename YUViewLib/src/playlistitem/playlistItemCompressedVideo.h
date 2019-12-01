@@ -34,7 +34,7 @@
 #define PLAYLISTITEMCOMPRESSEDVIDEO_H
 
 #include "decoder/decoderBase.h"
-#include "fileSource/fileSourceFFmpegFile.h"
+#include "filesource/fileSourceFFmpegFile.h"
 #include "parser/parserAnnexB.h"
 #include "playlistItemWithVideo.h"
 #include "statistics/statisticHandler.h"

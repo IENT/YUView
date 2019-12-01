@@ -141,7 +141,7 @@
   <customwidget>
    <class>BitrateBarChart</class>
    <extends>QWidget</extends>
-   <header>bitstreamAnalysisBitratePlot.h</header>
+   <header>ui/bitstreamAnalysisBitratePlot.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

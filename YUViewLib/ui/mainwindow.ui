@@ -300,42 +300,42 @@
   <customwidget>
    <class>PlaylistTreeWidget</class>
    <extends>QTreeWidget</extends>
-   <header>playlistTreeWidget.h</header>
+   <header>ui/playlistTreeWidget.h</header>
   </customwidget>
   <customwidget>
    <class>splitViewWidget</class>
    <extends>QWidget</extends>
-   <header>splitViewWidget.h</header>
+   <header>ui/splitViewWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PlaybackController</class>
    <extends>QWidget</extends>
-   <header>playbackController.h</header>
+   <header>ui/playbackController.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>FileInfoWidget</class>
    <extends>QWidget</extends>
-   <header>fileInfoWidget.h</header>
+   <header>ui/fileInfoWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PropertiesWidget</class>
    <extends>QWidget</extends>
-   <header>propertiesWidget.h</header>
+   <header>ui/propertiesWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>VideoCacheInfoWidget</class>
    <extends>QWidget</extends>
-   <header>videoCacheInfoWidget.h</header>
+   <header>ui/videoCacheInfoWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>BitstreamAnalysisWidget</class>
    <extends>QWidget</extends>
-   <header>bitstreamAnalysisWidget.h</header>
+   <header>ui/bitstreamAnalysisWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
