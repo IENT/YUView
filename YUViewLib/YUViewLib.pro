@@ -51,35 +51,26 @@ contains(QT_ARCH, x86_32|i386) {
     warning("You are building for a 32 bit system. This is untested and not supported.")
 }
 
-macx {
-    QMAKE_MAC_SDK = macosx
-    QMAKE_INFO_PLIST = Info.plist
-    SVNN = $$system("git describe --tags")
-}
-
-linux {
-    SVNN = $$system("git describe --tags")
-}
-win32-msvc* {
-    message("MSVC Compiler detected.")
-}
-win32-g++ {
-    message("MinGW Compiler detected.")
-    QMAKE_FLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
-    QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
-}
-win32 {
-    SVNN = $$system("git describe --tags")
-    DEFINES += NOMINMAX
-}
-
+SVNN = $$system("git describe --tags")
 LASTHASH = $$system("git rev-parse HEAD")
 isEmpty(LASTHASH) {
     LASTHASH = 0
 }
-
 isEmpty(SVNN) {
     SVNN = 0
 }
+
+macx {
+    QMAKE_MAC_SDK = macosx
+    QMAKE_INFO_PLIST = Info.plist
+}
+win32-g++ {
+    QMAKE_FLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
+    QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
+}
+win32 {
+    DEFINES += NOMINMAX
+}
+
 VERSTR = '\\"$${SVNN}\\"'
 DEFINES += YUVIEW_VERSION=$${VERSTR}
