@@ -3,6 +3,7 @@ QT += gui opengl xml concurrent network charts
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += c++11
+CONFIG -= debug_and_release
 
 SOURCES += $$files(src/*.cpp, true)
 HEADERS += $$files(src/*.h, true)

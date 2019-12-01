@@ -3,6 +3,7 @@ QT += gui opengl xml concurrent network charts
 TARGET = YUView
 TEMPLATE = app
 CONFIG += c++11
+CONFIG -= debug_and_release
 
 SOURCES += $$files(src/*.cpp, false)
 HEADERS += $$files(src/*.h, false)
