@@ -819,7 +819,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
   if (srcPixelFormat.planar)
     offsetToNextValue = 1;
 
-  rgba_t value {-1, -1, -1, -1};
+  rgba_t value {0, 0, 0, 0};
 
   if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
   {
