@@ -52,6 +52,7 @@ namespace RGB_Internals
     bool operator!=(const QString &a) const { return getName() != a; }
     bool isValid() const { return bitsPerValue > 0 && posR != posG && posR != posB && posG != posB; }
     int  nrChannels() const { return posA == -1 ? 3 : 4; }
+    bool hasAlphaChannel() const { return posA != -1; }
     // Get a name representation of this item (this will be unique for the set parameters)
     QString getName() const;
     void setFromName(const QString &name);
@@ -173,7 +174,11 @@ protected:
   bool componentInvert[3];
 
   // Get the RGB values for the given pixel.
-  virtual void getPixelValue(const QPoint &pixelPos, unsigned int &R, unsigned int &G, unsigned int &B);
+  struct rgba_t
+  {
+    unsigned int R, G, B, A;
+  };
+  virtual rgba_t getPixelValue(const QPoint &pixelPos) const;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawRGBData and currentFrame)
   // will not be modified.

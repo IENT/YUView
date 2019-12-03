@@ -293,13 +293,14 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int fram
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
       return QStringPairList();
 
-    unsigned int R0,G0,B0, R1, G1, B1;
-    getPixelValue(pixelPos, R0, G0, B0);
-    rgbItem2->getPixelValue(pixelPos, R1, G1, B1);
+    rgba_t valueThis = getPixelValue(pixelPos);
+    rgba_t valueOther = rgbItem2->getPixelValue(pixelPos);
 
-    values.append(QStringPair("R", QString::number((int)R0-(int)R1)));
-    values.append(QStringPair("G", QString::number((int)G0-(int)G1)));
-    values.append(QStringPair("B", QString::number((int)B0-(int)B1)));
+    values.append(QStringPair("R", QString::number(int(valueThis.R) - int(valueOther.R))));
+    values.append(QStringPair("G", QString::number(int(valueThis.G) - int(valueOther.G))));
+    values.append(QStringPair("B", QString::number(int(valueThis.B) - int(valueOther.B))));
+    if (srcPixelFormat.hasAlphaChannel())
+      values.append(QStringPair("A", QString::number(int(valueThis.A) - int(valueOther.A))));
   }
   else
   {
@@ -312,12 +313,13 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int fram
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
       return QStringPairList();
 
-    unsigned int R,G,B;
-    getPixelValue(pixelPos, R, G, B);
+    rgba_t value = getPixelValue(pixelPos);
 
-    values.append(QStringPair("R", QString::number(R)));
-    values.append(QStringPair("G", QString::number(G)));
-    values.append(QStringPair("B", QString::number(B)));
+    values.append(QStringPair("R", QString::number(value.R)));
+    values.append(QStringPair("G", QString::number(value.G)));
+    values.append(QStringPair("B", QString::number(value.B)));
+    if (srcPixelFormat.hasAlphaChannel())
+      values.append(QStringPair("A", QString::number(value.A)));
   }
 
   return values;
@@ -807,7 +809,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
     Q_ASSERT_X(false, "videoHandlerRGB::convertSourceToRGB888", "Unsupported display mode.");
 }
 
-void videoHandlerRGB::getPixelValue(const QPoint &pixelPos, unsigned int &R, unsigned int &G, unsigned int &B)
+videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) const
 {
   const unsigned int offsetCoordinate = frameSize.width() * pixelPos.y() + pixelPos.x();
 
@@ -817,50 +819,66 @@ void videoHandlerRGB::getPixelValue(const QPoint &pixelPos, unsigned int &R, uns
   if (srcPixelFormat.planar)
     offsetToNextValue = 1;
 
+  rgba_t value {-1, -1, -1, -1};
+
   if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
   {
     // First get the pointer to the first value of each channel.
-    unsigned short *srcR, *srcG, *srcB;
+    unsigned short *srcR, *srcG, *srcB, *srcA;
     if (srcPixelFormat.planar)
     {
       srcR = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
       srcG = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
       srcB = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+      if (srcPixelFormat.hasAlphaChannel())
+        srcB = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posA * frameSize.width() * frameSize.height());
     }
     else
     {
       srcR = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posR;
       srcG = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posG;
       srcB = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posB;
+      if (srcPixelFormat.hasAlphaChannel())
+        srcB = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posA;
     }
 
-    R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
-    G = (unsigned int)(*(srcG + offsetToNextValue * offsetCoordinate));
-    B = (unsigned int)(*(srcB + offsetToNextValue * offsetCoordinate));
+    value.R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
+    value.G = (unsigned int)(*(srcG + offsetToNextValue * offsetCoordinate));
+    value.B = (unsigned int)(*(srcB + offsetToNextValue * offsetCoordinate));
+    if (srcPixelFormat.hasAlphaChannel())
+      value.A = (unsigned int)(*(srcA + offsetToNextValue * offsetCoordinate));
   }
   else if (srcPixelFormat.bitsPerValue == 8)
   {
     // First get the pointer to the first value of each channel.
-    unsigned char *srcR, *srcG, *srcB;
+    unsigned char *srcR, *srcG, *srcB, *srcA;
     if (srcPixelFormat.planar)
     {
       srcR = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
       srcG = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
       srcB = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+      if (srcPixelFormat.hasAlphaChannel())
+        srcA = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posA * frameSize.width() * frameSize.height());
     }
     else
     {
       srcR = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posR;
       srcG = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posG;
       srcB = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posB;
+      if (srcPixelFormat.hasAlphaChannel())
+        srcA = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posB;
     }
 
-    R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
-    G = (unsigned int)(*(srcG + offsetToNextValue * offsetCoordinate));
-    B = (unsigned int)(*(srcB + offsetToNextValue * offsetCoordinate));
+    value.R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
+    value.G = (unsigned int)(*(srcG + offsetToNextValue * offsetCoordinate));
+    value.B = (unsigned int)(*(srcB + offsetToNextValue * offsetCoordinate));
+    if (srcPixelFormat.hasAlphaChannel())
+      value.A = (unsigned int)(*(srcA + offsetToNextValue * offsetCoordinate));
   }
   else
     Q_ASSERT_X(false, "videoHandlerRGB::getPixelValue", "No RGB format with less than 8 or more than 16 bits supported yet.");
+
+  return value;
 }
 
 void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo)
@@ -982,25 +1000,27 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
       QString valText;
       if (rgbItem2 != nullptr)
       {
-        unsigned int R0, G0, B0, R1, G1, B1;
-        getPixelValue(QPoint(x,y), R0, G0, B0);
-        rgbItem2->getPixelValue(QPoint(x,y), R1, G1, B1);
+        rgba_t valueThis = getPixelValue(QPoint(x,y));
+        rgba_t valueOther = rgbItem2->getPixelValue(QPoint(x,y));
 
-        int DR = (int)R0-R1;
-        int DG = (int)G0-G1;
-        int DB = (int)B0-B1;
+        int DR = int(valueThis.R) - int(valueOther.R);
+        int DG = int(valueThis.G) - int(valueOther.G);
+        int DB = int(valueThis.B) - int(valueOther.B);
+        int DA = int(valueThis.A) - int(valueOther.A);
         if (markDifference)
-          painter->setPen((DR == 0 && DG == 0 && DB == 0) ? Qt::white : Qt::black);
+          painter->setPen((DR == 0 && DG == 0 && DB == 0 && DA == 0) ? Qt::white : Qt::black);
         else
           painter->setPen((DR < 0 && DG < 0 && DB < 0) ? Qt::white : Qt::black);
-        valText = QString("R%1\nG%2\nB%3").arg(DR).arg(DG).arg(DB);
+        if (srcPixelFormat.hasAlphaChannel())
+          valText = QString("R%1\nG%2\nB%3\nA%4").arg(DR).arg(DG).arg(DB).arg(DA);
+        else
+          valText = QString("R%1\nG%2\nB%3").arg(DR).arg(DG).arg(DB);
       }
       else
       {
-        unsigned int R, G, B;
-        getPixelValue(QPoint(x, y), R, G, B);
-        valText = QString("R%1\nG%2\nB%3").arg(R).arg(G).arg(B);
-        painter->setPen((R < drawWhitLevel && G < drawWhitLevel && B < drawWhitLevel) ? Qt::white : Qt::black);
+        rgba_t value = getPixelValue(QPoint(x, y));
+        valText = QString("R%1\nG%2\nB%3\nA%4").arg(value.R).arg(value.G).arg(value.B).arg(value.A);
+        painter->setPen((value.R < drawWhitLevel && value.G < drawWhitLevel && value.B < drawWhitLevel) ? Qt::white : Qt::black);
       }
 
       painter->drawText(pixelRect, Qt::AlignCenter, valText);
