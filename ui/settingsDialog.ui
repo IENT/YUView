@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabGeneral">
       <attribute name="title">
@@ -30,6 +30,13 @@
           <string>General</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
+          <item row="4" column="0">
+           <widget class="QCheckBox" name="checkBoxSavePositionPerItem">
+            <property name="text">
+             <string>Restore position and zoom factor for each item in the playlist</string>
+            </property>
+           </widget>
+          </item>
           <item row="3" column="0">
            <widget class="QCheckBox" name="checkBoxContinuePlaybackNewSelection">
             <property name="toolTip">
@@ -40,16 +47,6 @@
             </property>
             <property name="text">
              <string>Continue playback when a new sequence is selected</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QCheckBox" name="checkBoxAskToSave">
-            <property name="text">
-             <string>Ask to save playlist on exit</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -69,10 +66,23 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="0">
-           <widget class="QCheckBox" name="checkBoxSavePositionPerItem">
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="checkBoxAskToSave">
             <property name="text">
-             <string>Restore position and zoom factor for each item in the playlist</string>
+             <string>Ask to save playlist on exit</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QCheckBox" name="checkBoxHexPixel">
+            <property name="toolTip">
+             <string>hex value for pixel</string>
+            </property>
+            <property name="text">
+             <string>hex output in pixel value</string>
             </property>
            </widget>
           </item>
@@ -311,7 +321,7 @@
           <string>If activated, YUView will try to check for updates every time you start YUView.</string>
          </property>
          <property name="title">
-          <string>Check for updates</string>
+          <string>Chec&amp;k for updates</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -388,7 +398,7 @@
           <string>If activated, YUView will cache items from the playlist in system memory. The RGB output images are cached to optimize playback speed.</string>
          </property>
          <property name="title">
-          <string>Caching of video data</string>
+          <string>Caching of &amp;video data</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
