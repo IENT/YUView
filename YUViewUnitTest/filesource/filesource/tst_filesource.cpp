@@ -1,6 +1,6 @@
 #include <QtTest>
 
-// add necessary includes here
+#include <filesource/fileSource.h>
 
 class YUViewTest : public QObject
 {
@@ -17,7 +17,7 @@ private slots:
 
 YUViewTest::YUViewTest()
 {
-
+    
 }
 
 YUViewTest::~YUViewTest()
@@ -30,6 +30,6 @@ void YUViewTest::test_case1()
 
 }
 
-QTEST_APPLESS_MAIN(YUViewTest)
+QTEST_MAIN(YUViewTest)
 
-#include "tst_yuviewtest.moc"
+#include "tst_filesource.moc"

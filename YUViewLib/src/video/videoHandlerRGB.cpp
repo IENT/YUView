@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "ui/fileInfoWidget.h"
+#include "common/fileInfo.h"
 
 using namespace RGB_Internals;
 

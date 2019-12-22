@@ -35,7 +35,7 @@
 
 #include <QDir>
 #include <QTreeWidgetItem>
-#include "ui/fileInfoWidget.h"
+#include "common/fileInfo.h"
 #include "common/typedef.h"
 
 #include "ui_playlistItem.h"

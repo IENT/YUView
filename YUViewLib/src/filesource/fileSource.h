@@ -40,7 +40,7 @@
 #include <QMutexLocker>
 #include <QString>
 
-#include "ui/fileInfoWidget.h"
+#include "common/fileInfo.h"
 
 /* The fileSource class provides functions for accessing files. Besides the reading of
  * certain blocks of the file, it also directly provides information on the file for the
