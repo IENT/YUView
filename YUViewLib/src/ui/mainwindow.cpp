@@ -47,6 +47,9 @@
 
 MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindow(parent)
 {
+  Q_INIT_RESOURCE(images);
+  Q_INIT_RESOURCE(docs);
+
   QSettings settings;
   qRegisterMetaType<indexRange>("indexRange");
 
