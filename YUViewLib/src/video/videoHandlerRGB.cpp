@@ -831,7 +831,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
       srcG = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
       srcB = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
       if (srcPixelFormat.hasAlphaChannel())
-        srcB = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posA * frameSize.width() * frameSize.height());
+        srcA = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posA * frameSize.width() * frameSize.height());
     }
     else
     {
@@ -839,7 +839,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
       srcG = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posG;
       srcB = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posB;
       if (srcPixelFormat.hasAlphaChannel())
-        srcB = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posA;
+        srcA = (unsigned short*)currentFrameRawData.data() + srcPixelFormat.posA;
     }
 
     value.R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
@@ -866,7 +866,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
       srcG = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posG;
       srcB = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posB;
       if (srcPixelFormat.hasAlphaChannel())
-        srcA = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posB;
+        srcA = (unsigned char*)currentFrameRawData.data() + srcPixelFormat.posA;
     }
 
     value.R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
