@@ -75,7 +75,13 @@ public:
 
   // Guess the format (width, height, frameTate...) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
-  void formatFromFilename(QSize &frameSize, int &frameRate, int &bitDepth) const;
+  struct fileFormat_t
+  {
+    QSize frameSize;
+    int frameRate;
+    int bitDepth;
+  };
+  static fileFormat_t formatFromFilename(QFileInfo fileInfo);
 
   // Get the file size in bytes
   int64_t getFileSize() const { return !isFileOpened ? -1 : fileInfo.size(); }
