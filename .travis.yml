@@ -104,6 +104,7 @@ script:
     else
       qmake ..
       make -j 2
+      make check
     fi
 
 after_success:
