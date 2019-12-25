@@ -1360,7 +1360,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx,
         drawWhite =
             (mathParameters[Luma].invert) ? (Y > whiteLimit) : (Y < whiteLimit);
       }
-
+      Y &= 0xffff;
       // Set the pen
       painter->setPen(drawWhite ? Qt::white : Qt::black);
 
