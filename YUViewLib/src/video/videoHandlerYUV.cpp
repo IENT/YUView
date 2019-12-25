@@ -1269,15 +1269,16 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
       // Set the pen
       painter->setPen(drawWhite ? Qt::white : Qt::black);
 
+      const int argBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
       if (chromaPresent && (x-chromaOffsetFullX) % subsamplingX == 0 && (y-chromaOffsetFullY) % subsamplingY == 0)
       {
         QString valText;
         if (chromaOffsetHalfX || chromaOffsetHalfY)
           // We will only draw the Y value at the center of this pixel
-          valText = QString("Y%1").arg(Y);
+          valText = QString("Y%1").arg(Y, 0, argBase);
         else
           // We also draw the U and V value at this position
-          valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
+          valText = QString("Y%1\nU%2\nV%3").arg(Y, 0, argBase).arg(U, 0, argBase).arg(V, 0, argBase);
         // Draw
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
 
@@ -1299,7 +1300,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
       else
       {
         // We only draw the luma value for this pixel
-        QString valText = QString("Y%1").arg(Y);
+        QString valText = QString("Y%1").arg(Y, 0, argBase);
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
       }
     }
