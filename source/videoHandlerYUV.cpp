@@ -1396,7 +1396,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx,
         }
       } else {
         // We only draw the luma value for this pixel
-        QString valText = QString("Y%1").arg(Y, yuvHex ? 16 : 10);
+        QString valText = QString("Y%1").arg(Y, 0, yuvHex ? 16 : 10);
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
       }
     }
