@@ -74,7 +74,7 @@ void BitstreamAnalysisWidget::updateStreamInfo()
   ui.streamInfoTreeWidget->addTopLevelItems(parser->getStreamInfo());
   ui.streamInfoTreeWidget->expandAll();
 
-  if (ui.showStreamComboBox->count() + 1 != parser->getNrStreams())
+  if (ui.showStreamComboBox->count() + 1 != int(parser->getNrStreams()))
   {
     ui.showStreamComboBox->clear();
     ui.showStreamComboBox->addItem("Show all streams");

@@ -447,7 +447,7 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
     }
     const size_t widthInBytes = width * nrBytesPerSample;
 
-    uint8_t* img_c;
+    uint8_t* img_c = nullptr;
     if (decodeSignal == 0)
       img_c = curPicture.getData(c);
     else if (decodeSignal == 1)
@@ -821,6 +821,9 @@ void decoderDav1d::parseBlockRecursive(Av1Block *blockData, int x, int y, BlockL
         // This should not happen here
         return;
       }
+      break;
+    default:
+      return;
     }
   }
 }
