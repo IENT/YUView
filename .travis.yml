@@ -96,12 +96,15 @@ install:
 
 script:
   - cd $TRAVIS_BUILD_DIR
+  - mkdir build
+  - cd build
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      ./deployment/buildWindows.bat
+      $TRAVIS_BUILD_DIR/deployment/buildWindows.bat
     else
-      qmake -config release
+      qmake ..
       make -j 2
+      make check
     fi
 
 after_success:
@@ -109,22 +112,26 @@ after_success:
   - mkdir release_files
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      ls -l $TRAVIS_BUILD_DIR
+      ls -l $TRAVIS_BUILD_DIR/build
+      ls -l $TRAVIS_BUILD_DIR/build/YUViewApp
       # Mac: build an "app" file
       which macdeployqt
-      macdeployqt build/release/YUView.app -always-overwrite -verbose=2
+      macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
       # check what YUView is linking against
       echo ------------------------------------
-      otool -L $TRAVIS_BUILD_DIR/build/release/YUView.app/Contents/MacOs/YUView
+      otool -L $TRAVIS_BUILD_DIR/build/YUViewApp/YUView.app/Contents/MacOs/YUView
       # copy the libde265 library
-      cp $TRAVIS_BUILD_DIR/../libde265-internals.dylib build/release/YUView.app/Contents/MacOS/.
-      cd build/release
+      cp $TRAVIS_BUILD_DIR/../libde265-internals.dylib build/YUViewApp/YUView.app/Contents/MacOS/.
+      cd build/YUViewApp
       # Zip
       zip -r $TRAVIS_BUILD_DIR/release_files/YUView-MacOs.zip YUView.app
     fi
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      cd build
       make INSTALL_ROOT=appdir install
-      $TRAVIS_BUILD_DIR/../linuxdeployqt-6-x86_64.AppImage appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -verbose=2
+      $TRAVIS_BUILD_DIR/../linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -verbose=2
       mv YUView-*.AppImage YUView.AppImage
       cp YUView.AppImage $TRAVIS_BUILD_DIR/release_files
     fi
@@ -133,7 +140,7 @@ after_success:
       # create temporary folder for preparing the deployment package
       mkdir deploy
       cd deploy
-      cp ../build/release/YUView.exe .
+      cp ../build/YUViewApp/YUView.exe .
       $TRAVIS_BUILD_DIR/../Qttools/bin/windeployqt.exe --release --dir $TRAVIS_BUILD_DIR/deploy YUView.exe
       # Copy libraries and other misc files
       cp $TRAVIS_BUILD_DIR/../openSSL/*.dll .
