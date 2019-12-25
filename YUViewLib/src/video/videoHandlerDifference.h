@@ -35,7 +35,7 @@
 
 #include <QPointer>
 
-#include "ui/fileInfoWidget.h"
+#include "common/fileInfo.h"
 #include "videoHandler.h"
 #include "videoHandlerYUV.h"
 

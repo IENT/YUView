@@ -45,7 +45,7 @@
     <WixVariable Id="WixUINewIco" Value="YUViewIco.bmp" />
     <UIRef Id="WixUI_Minimal" />
 
-    <Icon Id="YUView.ico" SourceFile="..\..\images\YUView.ico"/>
+    <Icon Id="YUView.ico" SourceFile="..\..\YUViewApp\images\YUView.ico"/>
     <Property Id="ARPPRODUCTICON" Value="YUView.ico" />
 
   </Product>

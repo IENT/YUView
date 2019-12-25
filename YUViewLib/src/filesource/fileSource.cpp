@@ -140,12 +140,12 @@ QList<infoItem> fileSource::getFileInfoList() const
   return infoList;
 }
 
-void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDepth) const
+fileSource::fileFormat_t fileSource::formatFromFilename(QFileInfo fileInfo)
 {
-  // preset return values first
-  frameSize = QSize();
-  frameRate = -1;
-  bitDepth = -1;
+  fileSource::fileFormat_t format;
+  format.frameSize = QSize();
+  format.frameRate = -1;
+  format.bitDepth = -1;
 
   // We are going to check two strings (one after the other) for indicators on the frames size, fps and bit depth.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -154,7 +154,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
   // The full name of the file
   QString fileName = fileInfo.fileName();
   if (fileName.isEmpty())
-    return;
+    return format;
   checkStrings.append(fileName);
 
   // The name of the folder that the file is in
@@ -164,14 +164,14 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
   for (auto const &name : checkStrings)
   {
     // First, we will try to get a frame size from the name
-    if (!frameSize.isValid())
+    if (!format.frameSize.isValid())
     {
       // The regular expressions to match. They are sorted from most detailed to least so that the most
       // detailed ones are tested first.
       QStringList regExprList;
-      regExprList << "([0-9]+)x([0-9]+)_([0-9]+)(?:Hz)?_([0-9]+)b?[\\._]";    // Something_2160x1440_60_8_more.yuv or Something_2160x1440_60_8b.yuv or Something_2160x1440_60Hz_8_more.yuv
-      regExprList << "([0-9]+)x([0-9]+)_([0-9]+)(?:Hz)?[\\._]";               // Something_2160x1440_60_more.yuv or Something_2160x1440_60.yuv
-      regExprList << "([0-9]+)x([0-9]+)[\\._]";                               // Something_2160x1440_more.yuv or Something_2160x1440.yuv
+      regExprList << "([0-9]+)(?:x|X|\\*)([0-9]+)_([0-9]+)(?:Hz)?_([0-9]+)b?[\\._]";    // Something_2160x1440_60_8_more.yuv or Something_2160x1440_60_8b.yuv or Something_2160x1440_60Hz_8_more.yuv
+      regExprList << "([0-9]+)(?:x|X|\\*)([0-9]+)_([0-9]+)(?:Hz)?[\\._]";               // Something_2160x1440_60_more.yuv or Something_2160x1440_60.yuv
+      regExprList << "([0-9]+)(?:x|X|\\*)([0-9]+)[\\._]";                               // Something_2160x1440_more.yuv or Something_2160x1440.yuv
 
       for (QString regExpStr : regExprList)
       {
@@ -180,15 +180,15 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
         {
           QString widthString = exp.cap(1);
           QString heightString = exp.cap(2);
-          frameSize = QSize(widthString.toInt(), heightString.toInt());
+          format.frameSize = QSize(widthString.toInt(), heightString.toInt());
 
           QString rateString = exp.cap(3);
           if (!rateString.isEmpty())
-            frameRate = rateString.toDouble();
+            format.frameRate = rateString.toDouble();
 
           QString bitDepthString = exp.cap(4);
           if (!bitDepthString.isEmpty())
-            bitDepth = bitDepthString.toInt();
+            format.bitDepth = bitDepthString.toInt();
 
           // Don't check the following expressions
           break;
@@ -196,7 +196,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
       }
     }
 
-    if (!frameSize.isValid())
+    if (!format.frameSize.isValid())
     {
       // try resolution indicators with framerate: "1080p50", "720p24" ...
       QRegExp rx1080p("1080p([0-9]+)");
@@ -204,61 +204,61 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
 
       if (rx1080p.indexIn(name) > -1)
       {
-        frameSize = QSize(1920, 1080);
+        format.frameSize = QSize(1920, 1080);
         QString frameRateString = rx1080p.cap(1);
-        frameRate = frameRateString.toInt();
+        format.frameRate = frameRateString.toInt();
       }
       else if (rx720p.indexIn(name) > -1)
       {
-        frameSize = QSize(1280, 720);
+        format.frameSize = QSize(1280, 720);
         QString frameRateString = rx720p.cap(1);
-        frameRate = frameRateString.toInt();
+        format.frameRate = frameRateString.toInt();
       }
     }
 
-    if (!frameSize.isValid())
+    if (!format.frameSize.isValid())
     {
       // try to find resolution indicators (e.g. 'cif', 'hd') in file name
       if (name.contains("_cif", Qt::CaseInsensitive))
-        frameSize = QSize(352, 288);
+        format.frameSize = QSize(352, 288);
       else if (name.contains("_qcif", Qt::CaseInsensitive))
-        frameSize = QSize(176, 144);
+        format.frameSize = QSize(176, 144);
       else if (name.contains("_4cif", Qt::CaseInsensitive))
-        frameSize = QSize(704, 576);
+        format.frameSize = QSize(704, 576);
       else if (name.contains("UHD", Qt::CaseSensitive))
-        frameSize = QSize(3840, 2160);
+        format.frameSize = QSize(3840, 2160);
       else if (name.contains("HD", Qt::CaseSensitive))
-        frameSize = QSize(1920, 1080);
+        format.frameSize = QSize(1920, 1080);
       else if (name.contains("1080p", Qt::CaseSensitive))
-        frameSize = QSize(1920, 1080);
+        format.frameSize = QSize(1920, 1080);
       else if (name.contains("720p", Qt::CaseSensitive))
-        frameSize = QSize(1280, 720);
+        format.frameSize = QSize(1280, 720);
     }
 
     // Second, if we were able to get a frame size but no frame rate, we will try to get a frame rate.
-    if (frameSize.isValid() && frameRate == -1)
+    if (format.frameSize.isValid() && format.frameRate == -1)
     {
       // Look for: 24fps, 50fps, 24FPS, 50FPS
       QRegExp rxFPS("([0-9]+)fps", Qt::CaseInsensitive);
       if (rxFPS.indexIn(name) > -1)
       {
         QString frameRateString = rxFPS.cap(1);
-        frameRate = frameRateString.toInt();
+        format.frameRate = frameRateString.toInt();
       }
     }
-    if (frameSize.isValid() && frameRate == -1)
+    if (format.frameSize.isValid() && format.frameRate == -1)
     {
       // Look for: 24Hz, 50Hz, 24HZ, 50HZ
       QRegExp rxHZ("([0-9]+)HZ", Qt::CaseInsensitive);
       if (rxHZ.indexIn(name) > -1)
       {
         QString frameRateString = rxHZ.cap(1);
-        frameRate = frameRateString.toInt();
+        format.frameRate = frameRateString.toInt();
       }
     }
 
     // Third, if we were able to get a frame size but no bit depth, we try to get a bit depth.
-    if (frameSize.isValid() && bitDepth == -1)
+    if (format.frameSize.isValid() && format.bitDepth == -1)
     {
       // Look for: 10bit, 10BIT, 10-bit, 10-BIT
       QList<int> bitDepths = QList<int>() << 8 << 9 << 10 << 12 << 16;
@@ -267,12 +267,14 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
         if (name.contains(QString("%1bit").arg(bd), Qt::CaseInsensitive) || name.contains(QString("%1-bit").arg(bd), Qt::CaseInsensitive))
         {
           // That looks like a bit depth indicator
-          bitDepth = bd;
+          format.bitDepth = bd;
           break;
         }
       }
     }
   }
+
+  return format;
 }
 
 // If you are loading a playlist and you have an absolute path and a relative path, this function will return

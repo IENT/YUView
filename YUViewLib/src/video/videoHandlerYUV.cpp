@@ -38,7 +38,7 @@
 #include <QDir>
 #include <QPainter>
 
-#include "ui/fileInfoWidget.h"
+#include "common/fileInfo.h"
 
 using namespace YUV_Internals;
 
@@ -1071,16 +1071,15 @@ QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int fram
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
       return QStringPairList();
 
-    unsigned int Y0, U0, V0, Y1, U1, V1;
-    getPixelValue(pixelPos, Y0, U0, V0);
-    yuvItem2->getPixelValue(pixelPos, Y1, U1, V1);
+    const yuv_t thisValue = getPixelValue(pixelPos);
+    const yuv_t otherValue = yuvItem2->getPixelValue(pixelPos);
 
     // Append the values to the list
-    values.append(QStringPair("Y", QString::number((int)Y0-(int)Y1)));
+    values.append(QStringPair("Y", QString::number(int(thisValue.Y) - int(otherValue.Y))));
     if (srcPixelFormat.subsampling != YUV_400)
     {
-      values.append(QStringPair("U", QString::number((int)U0-(int)U1)));
-      values.append(QStringPair("V", QString::number((int)V0-(int)V1)));
+      values.append(QStringPair("U", QString::number(int(thisValue.U) - int(otherValue.U))));
+      values.append(QStringPair("V", QString::number(int(thisValue.V) - int(otherValue.V))));
     }
   }
   else
@@ -1095,8 +1094,7 @@ QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int fram
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
       return QStringPairList();
 
-    unsigned int Y,U,V;
-    getPixelValue(pixelPos, Y, U, V);
+    const yuv_t value = getPixelValue(pixelPos);
 
     if (showPixelValuesAsDiff)
     {
@@ -1104,21 +1102,21 @@ QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int fram
       const int differenceZeroValue = 1 << (srcPixelFormat.bitsPerSample - 1);
 
       // Append the values to the list
-      values.append(QStringPair("Y", QString::number(int(Y)-differenceZeroValue)));
+      values.append(QStringPair("Y", QString::number(int(value.Y)-differenceZeroValue)));
       if (srcPixelFormat.subsampling != YUV_400)
       {
-        values.append(QStringPair("U", QString::number(int(U)-differenceZeroValue)));
-        values.append(QStringPair("V", QString::number(int(V)-differenceZeroValue)));
+        values.append(QStringPair("U", QString::number(int(value.U)-differenceZeroValue)));
+        values.append(QStringPair("V", QString::number(int(value.V)-differenceZeroValue)));
       }
     }
     else
     {
       // Append the values to the list
-      values.append(QStringPair("Y", QString::number(Y)));
+      values.append(QStringPair("Y", QString::number(value.Y)));
       if (srcPixelFormat.subsampling != YUV_400)
       {
-        values.append(QStringPair("U", QString::number(U)));
-        values.append(QStringPair("V", QString::number(V)));
+        values.append(QStringPair("U", QString::number(value.U)));
+        values.append(QStringPair("V", QString::number(value.V)));
       }
     }
   }
@@ -1224,25 +1222,26 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
       bool drawWhite;
       if (useDiffValues)
       {
-        unsigned int Y0, U0, V0, Y1, U1, V1;
-        getPixelValue(QPoint(x,y), Y0, U0, V0);
-        yuvItem2->getPixelValue(QPoint(x,y), Y1, U1, V1);
+        yuv_t thisValue = getPixelValue(QPoint(x,y));
+        yuv_t otherValue = yuvItem2->getPixelValue(QPoint(x,y));
 
         // Do we have to scale one of the values (bit depth different)
         if (bitDepthScaling[0])
         {
-          Y0 = Y0 << depthScale;
-          U0 = U0 << depthScale;
-          V0 = V0 << depthScale;
+          thisValue.Y = thisValue.Y << depthScale;
+          thisValue.U = thisValue.U << depthScale;
+          thisValue.V = thisValue.V << depthScale;
         }
         else if (bitDepthScaling[1])
         {
-          Y1 = Y1 << depthScale;
-          U1 = U1 << depthScale;
-          V1 = V1 << depthScale;
+          otherValue.Y = otherValue.Y << depthScale;
+          otherValue.U = otherValue.U << depthScale;
+          otherValue.V = otherValue.V << depthScale;
         }
 
-        Y = Y0-Y1; U = U0-U1; V = V0-V1;
+        Y = thisValue.Y - otherValue.Y; 
+        U = thisValue.U - otherValue.U; 
+        V = thisValue.V - otherValue.V;
 
         if (markDifference)
           drawWhite = (Y == 0);
@@ -1251,19 +1250,19 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
       }
       else if (showPixelValuesAsDiff)
       {
-        unsigned int Yu,Uu,Vu;
-        getPixelValue(QPoint(x,y), Yu, Uu, Vu);
-        Y = Yu - differenceZeroValue;
-        U = Uu - differenceZeroValue;
-        V = Vu - differenceZeroValue;
+        yuv_t value = getPixelValue(QPoint(x,y));
+        Y = value.Y - differenceZeroValue;
+        U = value.U - differenceZeroValue;
+        V = value.V - differenceZeroValue;
 
         drawWhite = (mathParameters[Luma].invert) ? (Y > 0) : (Y < 0);
       }
       else
       {
-        unsigned int Yu,Uu,Vu;
-        getPixelValue(QPoint(x,y), Yu, Uu, Vu);
-        Y = Yu; U = Uu; V = Vu;
+        yuv_t value = getPixelValue(QPoint(x,y));
+        Y = int(value.Y); 
+        U = int(value.U); 
+        V = int(value.V);
         drawWhite = (mathParameters[Luma].invert) ? (Y > whiteLimit) : (Y < whiteLimit);
       }
 
@@ -3195,12 +3194,13 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
   DEBUG_YUV("videoHandlerYUV::convertYUVToImage Done");
 }
 
-void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V)
+videoHandlerYUV::yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
 {
   const yuvPixelFormat format = srcPixelFormat;
-
   const int w = frameSize.width();
   const int h = frameSize.height();
+
+  yuv_t value = {0, 0, 0};
 
   if (format.planar)
   {
@@ -3215,10 +3215,8 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
     // Luma first
     const unsigned char * restrict srcY = (unsigned char*)currentFrameRawData.data();
     const unsigned int offsetCoordinateY  = w * pixelPos.y() + pixelPos.x();
-    Y = getValueFromSource(srcY, offsetCoordinateY,  format.bitsPerSample, format.bigEndian);
+    value.Y = getValueFromSource(srcY, offsetCoordinateY,  format.bitsPerSample, format.bigEndian);
 
-    U = 0;
-    V = 0;
     if (format.subsampling != YUV_400)
     {
       // Now Chroma
@@ -3231,8 +3229,8 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
         const unsigned int mult = hasAlpha ? 3 : 2;
         const unsigned int offsetCoordinateUV = ((w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) + pixelPos.x() / format.getSubsamplingHor()) * mult;
 
-        U = getValueFromSource(srcUVA, offsetCoordinateUV + (uFirst ? 0 : 1), format.bitsPerSample, format.bigEndian);
-        V = getValueFromSource(srcUVA, offsetCoordinateUV + (uFirst ? 1 : 0), format.bitsPerSample, format.bigEndian);
+        value.U = getValueFromSource(srcUVA, offsetCoordinateUV + (uFirst ? 0 : 1), format.bitsPerSample, format.bigEndian);
+        value.V = getValueFromSource(srcUVA, offsetCoordinateUV + (uFirst ? 1 : 0), format.bitsPerSample, format.bigEndian);
       }
       else
       {
@@ -3242,8 +3240,8 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
         // Get the YUV data from the currentFrameRawData
         const unsigned int offsetCoordinateUV = (w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) + pixelPos.x() / format.getSubsamplingHor();
         
-        U = getValueFromSource(srcU, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
-        V = getValueFromSource(srcV, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
+        value.U = getValueFromSource(srcU, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
+        value.V = getValueFromSource(srcV, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
       }
     }
   }
@@ -3262,9 +3260,9 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
       const unsigned int offsetCoordinate4Block = (w * 2 * pixelPos.y() + (pixelPos.x() / 2 * 4)) * (format.bitsPerSample > 8 ? 2 : 1);
       const unsigned char * restrict src = (unsigned char*)currentFrameRawData.data() + offsetCoordinate4Block;
 
-      Y = getValueFromSource(src, (pixelPos.x() % 2 == 0) ? oY : oY + 2,  format.bitsPerSample, format.bigEndian);
-      U = getValueFromSource(src, oU, format.bitsPerSample, format.bigEndian);
-      V = getValueFromSource(src, oV, format.bitsPerSample, format.bigEndian);
+      value.Y = getValueFromSource(src, (pixelPos.x() % 2 == 0) ? oY : oY + 2,  format.bitsPerSample, format.bigEndian);
+      value.U = getValueFromSource(src, oU, format.bitsPerSample, format.bigEndian);
+      value.V = getValueFromSource(src, oV, format.bitsPerSample, format.bigEndian);
     }
     else if (format.subsampling == YUV_444)
     {
@@ -3279,11 +3277,13 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
       const int offsetSrc = (w * pixelPos.y() + pixelPos.x()) * offsetNext;
       const unsigned char * restrict src = (unsigned char*)currentFrameRawData.data() + offsetSrc;
 
-      Y = getValueFromSource(src, oY, format.bitsPerSample, format.bigEndian);
-      U = getValueFromSource(src, oU, format.bitsPerSample, format.bigEndian);
-      V = getValueFromSource(src, oV, format.bitsPerSample, format.bigEndian);
+      value.Y = getValueFromSource(src, oY, format.bitsPerSample, format.bigEndian);
+      value.U = getValueFromSource(src, oU, format.bitsPerSample, format.bigEndian);
+      value.V = getValueFromSource(src, oV, format.bitsPerSample, format.bigEndian);
     }
   }
+  
+  return value;
 }
 
 // This is a specialized function that can convert 8-bit YUV 4:2:0 to RGB888 using NearestNeighborInterpolation.

@@ -356,19 +356,17 @@ bool playlistItemRawFile::parseY4MFile()
 void playlistItemRawFile::setFormatFromFileName()
 {
   // Try to extract info on the width/height/rate/bitDepth from the file name
-  QSize frameSize;
-  int rate, bitDepth;
-  dataSource.formatFromFilename(frameSize, rate, bitDepth);
+  auto fileFormat = fileSource::formatFromFilename(dataSource.getFileInfo());
 
-  if(frameSize.isValid())
+  if(fileFormat.frameSize.isValid())
   {
-    video->setFrameSize(frameSize);
+    video->setFrameSize(fileFormat.frameSize);
 
     // We were able to extract width and height from the file name using
     // regular expressions. Try to get the pixel format by checking with the file size.
-    video->setFormatFromSizeAndName(frameSize, bitDepth, dataSource.getFileSize(), dataSource.getFileInfo());
-    if (rate != -1)
-      frameRate = rate;
+    video->setFormatFromSizeAndName(fileFormat.frameSize, fileFormat.bitDepth, dataSource.getFileSize(), dataSource.getFileInfo());
+    if (fileFormat.frameRate != -1)
+      frameRate = fileFormat.frameRate;
   }
 }
 

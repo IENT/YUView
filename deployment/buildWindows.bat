@@ -7,3 +7,4 @@ echo Qmake
 C:\Users\travis\build\Qt\bin\qmake.exe ..
 echo Start Build
 nmake
+nmake check

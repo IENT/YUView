@@ -294,8 +294,11 @@ protected:
   // A static list of preset YUV formats. These are the formats that are shown in the YUV format selection comboBox.
   YUV_Internals::YUVFormatList yuvPresetsList;
 
-  // Get the YUV values for the given pixel.
-  virtual void getPixelValue(const QPoint &pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V);
+  struct yuv_t
+  {
+    unsigned int Y, U, V;
+  };
+  virtual yuv_t getPixelValue(const QPoint &pixelPos) const;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawYUVData and currentFrame)
   // will not be modified.

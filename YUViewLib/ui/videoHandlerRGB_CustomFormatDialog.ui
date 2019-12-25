@@ -81,6 +81,9 @@
        <property name="minimum">
         <number>1</number>
        </property>
+       <property name="value">
+        <number>8</number>
+       </property>
       </widget>
      </item>
     </layout>
@@ -103,11 +106,17 @@
      <property name="checkable">
       <bool>true</bool>
      </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <widget class="QRadioButton" name="afterRGBRadioButton">
         <property name="text">
          <string>After RGB data (e.g. RGBA)</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -117,7 +126,7 @@
          <string>Before RGB data (e.g. ARGB)</string>
         </property>
         <property name="checked">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
        </widget>
       </item>

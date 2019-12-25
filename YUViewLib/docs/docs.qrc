@@ -1,6 +1,6 @@
 <RCC>
     <qresource prefix="/">
-        <file alias="about.html">about.html</file>
+        <file>about.html</file>
         <file>help.html</file>
         <file>about_IENTLogo.png</file>
         <file>help_MainWindow.png</file>
