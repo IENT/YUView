@@ -243,6 +243,7 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
       bool drawWhite = false;
       QRgb pixVal;
       QString valText;
+      const int argBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
       if (item2 != nullptr)
       {
         QRgb pixel1 = getPixelVal(x, y);
@@ -262,13 +263,13 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
           drawWhite = (dR == 0 && dG == 0 && dB == 0);
         else
           drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
-        valText = QString("R%1\nG%2\nB%3").arg(dR).arg(dG).arg(dB);
+        valText = QString("R%1\nG%2\nB%3").arg(dR, 0, argBase).arg(dG, 0, argBase).arg(dB, 0, argBase);
       }
       else
       {
         pixVal = getPixelVal(x, y);
         drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
-        valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal)).arg(qGreen(pixVal)).arg(qBlue(pixVal));
+        valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal), 0, argBase).arg(qGreen(pixVal), 0, argBase).arg(qBlue(pixVal), 0, argBase);
       }
       
       painter->setPen(drawWhite ? Qt::white : Qt::black);

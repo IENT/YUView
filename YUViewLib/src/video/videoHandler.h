@@ -36,7 +36,6 @@
 #include <QBasicTimer>
 #include <QFileInfo>
 #include <QMutex>
-#include <QSettings>
 
 #include "video/frameHandler.h"
 
@@ -187,8 +186,6 @@ protected:
   // signalItemChanged with 'recache' set to true. The video cache will stop, clear the cache of this item and recache everything.
   // Until then, however, the items that are in the cache (or are being put into the cache by the still running threads) are invalid.
   bool cacheValid;
-
-  QSettings settings;
 
 private slots:
   // Override the slotVideoControlChanged slot. For a videoHandler, also the number of frames might have changed.

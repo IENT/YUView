@@ -998,6 +998,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
 
       // Get the text to show
       QString valText;
+      const int argBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
       if (rgbItem2 != nullptr)
       {
         rgba_t valueThis = getPixelValue(QPoint(x,y));
@@ -1012,14 +1013,17 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
         else
           painter->setPen((DR < 0 && DG < 0 && DB < 0) ? Qt::white : Qt::black);
         if (srcPixelFormat.hasAlphaChannel())
-          valText = QString("R%1\nG%2\nB%3\nA%4").arg(DR).arg(DG).arg(DB).arg(DA);
+          valText = QString("R%1\nG%2\nB%3\nA%4").arg(DR, 0, argBase).arg(DG, 0, argBase).arg(DB, 0, argBase).arg(DA, 0, argBase);
         else
-          valText = QString("R%1\nG%2\nB%3").arg(DR).arg(DG).arg(DB);
+          valText = QString("R%1\nG%2\nB%3").arg(DR, 0, argBase).arg(DG, 0, argBase).arg(DB, 0, argBase);
       }
       else
       {
         rgba_t value = getPixelValue(QPoint(x, y));
-        valText = QString("R%1\nG%2\nB%3\nA%4").arg(value.R).arg(value.G).arg(value.B).arg(value.A);
+        if (srcPixelFormat.hasAlphaChannel())
+          valText = QString("R%1\nG%2\nB%3\nA%4").arg(value.R, 0, argBase).arg(value.G, 0, argBase).arg(value.B, 0, argBase).arg(value.A, 0, argBase);
+        else
+          valText = QString("R%1\nG%2\nB%3").arg(value.R, 0, argBase).arg(value.G, 0, argBase).arg(value.B, 0, argBase);
         painter->setPen((value.R < drawWhitLevel && value.G < drawWhitLevel && value.B < drawWhitLevel) ? Qt::white : Qt::black);
       }
 
