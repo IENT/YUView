@@ -90,7 +90,7 @@ install:
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       # On linux, also get the linuxdeployqt tool to build the Appimage
-      curl -L https://github.com/probonopd/linuxdeployqt/releases/download/6/linuxdeployqt-6-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
+      curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
       chmod a+x linuxdeployqt-6-x86_64.AppImage
     fi
 
