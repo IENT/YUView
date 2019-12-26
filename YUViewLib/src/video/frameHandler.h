@@ -35,6 +35,7 @@
 
 #include <QImage>
 #include <QObject>
+#include <QSettings>
 
 #include "common/typedef.h"
 
@@ -117,6 +118,8 @@ protected:
 
   // When slotVideoControlChanged is called, update the controls and return the new selected size
   QSize getNewSizeFromControls();
+
+  QSettings settings;
 
 private:
 

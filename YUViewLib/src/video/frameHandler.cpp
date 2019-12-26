@@ -243,6 +243,7 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
       bool drawWhite = false;
       QRgb pixVal;
       QString valText;
+      const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
       if (item2 != nullptr)
       {
         QRgb pixel1 = getPixelVal(x, y);
@@ -252,23 +253,27 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
         int dG = int(qGreen(pixel1)) - int(qGreen(pixel2));
         int dB = int(qBlue(pixel1)) - int(qBlue(pixel2));
 
-        int r = clip(128 + dR, 0, 255);
-        int g = clip(128 + dG, 0, 255);
-        int b = clip(128 + dB, 0, 255);
-
-        pixVal = qRgb(r,g,b);
+        const QString RString = ((dR < 0) ? "-" : "") + QString::number(std::abs(dR), formatBase);
+        const QString GString = ((dG < 0) ? "-" : "") + QString::number(std::abs(dG), formatBase);
+        const QString BString = ((dB < 0) ? "-" : "") + QString::number(std::abs(dB), formatBase);
 
         if (markDifference)
           drawWhite = (dR == 0 && dG == 0 && dB == 0);
         else
+        {
+          int r = clip(128 + dR, 0, 255);
+          int g = clip(128 + dG, 0, 255);
+          int b = clip(128 + dB, 0, 255);
+          pixVal = qRgb(r,g,b);
           drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
-        valText = QString("R%1\nG%2\nB%3").arg(dR).arg(dG).arg(dB);
+        }
+        valText = QString("R%1\nG%2\nB%3").arg(RString, GString, BString);
       }
       else
       {
         pixVal = getPixelVal(x, y);
         drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
-        valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal)).arg(qGreen(pixVal)).arg(qBlue(pixVal));
+        valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal), 0, formatBase).arg(qGreen(pixVal), 0, formatBase).arg(qBlue(pixVal), 0, formatBase);
       }
       
       painter->setPen(drawWhite ? Qt::white : Qt::black);

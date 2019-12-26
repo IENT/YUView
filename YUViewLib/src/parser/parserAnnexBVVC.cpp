@@ -64,6 +64,8 @@ yuvPixelFormat parserAnnexBVVC::getPixelFormat() const
 
 QList<QByteArray> parserAnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
+  Q_UNUSED(iFrameNr);
+  Q_UNUSED(filePos);
   return {};
 }
 
@@ -84,6 +86,8 @@ QPair<int,int> parserAnnexBVVC::getSampleAspectRatio()
 
 bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
+  Q_UNUSED(nalTypeName);
+  
   if (nalID == -1 && data.isEmpty())
   {
     return false;
