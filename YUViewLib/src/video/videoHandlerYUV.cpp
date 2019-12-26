@@ -1048,17 +1048,13 @@ QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int fram
 {
   QStringPairList values;
 
+  const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
   if (item2 != nullptr)
   {
     videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
     if (yuvItem2 == nullptr)
       // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
       // Call the base class comparison function to compare the items using the RGB values.
-      return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
-
-    if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
-      // The two items have different bit depths. Compare RGB values instead.
-      // TODO: Or should we do this in the YUV domain somehow?
       return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
     // Do not get the pixel values if the buffer for the raw YUV values is out of date.
@@ -1071,15 +1067,44 @@ QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int fram
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
       return QStringPairList();
 
-    const yuv_t thisValue = getPixelValue(pixelPos);
-    const yuv_t otherValue = yuvItem2->getPixelValue(pixelPos);
+    yuv_t thisValue = getPixelValue(pixelPos);
+    yuv_t otherValue = yuvItem2->getPixelValue(pixelPos);
 
-    // Append the values to the list
-    values.append(QStringPair("Y", QString::number(int(thisValue.Y) - int(otherValue.Y))));
+    // For difference items, we support difference bit depths for the two items.
+    // If the bit depth is different, we scale to value with the lower bit depth to the higher bit depth and calculate the difference there.
+    // These values are only needed for difference values
+    const int bps_in[2] = {srcPixelFormat.bitsPerSample, yuvItem2->srcPixelFormat.bitsPerSample};
+    const int bps_out = std::max(bps_in[0], bps_in[1]);
+    // Which of the two input values has to be scaled up? Only one of these (or neither) can be set.
+    const bool bitDepthScaling[2] = {bps_in[0] != bps_out, bps_in[1] != bps_out};
+    // Scale the input up by this many bits
+    const int depthScale = bps_out - (bitDepthScaling[0] ? bps_in[0] : bps_in[1]);
+
+    if (bitDepthScaling[0])
+    {
+      thisValue.Y = thisValue.Y << depthScale;
+      thisValue.U = thisValue.U << depthScale;
+      thisValue.V = thisValue.V << depthScale;
+    }
+    else if (bitDepthScaling[1])
+    {
+      otherValue.Y = otherValue.Y << depthScale;
+      otherValue.U = otherValue.U << depthScale;
+      otherValue.V = otherValue.V << depthScale;
+    }
+
+    const int Y = int(thisValue.Y) - int(otherValue.Y);
+    const QString YString = ((Y < 0) ? "-" : "") + QString::number(std::abs(Y), formatBase);
+    values.append(QStringPair("Y", YString));
+
     if (srcPixelFormat.subsampling != YUV_400)
     {
-      values.append(QStringPair("U", QString::number(int(thisValue.U) - int(otherValue.U))));
-      values.append(QStringPair("V", QString::number(int(thisValue.V) - int(otherValue.V))));
+      const int U = int(thisValue.U) - int(otherValue.U);
+      const int V = int(thisValue.V) - int(otherValue.V);
+      const QString UString = ((U < 0) ? "-" : "") + QString::number(std::abs(U), formatBase);
+      const QString VString = ((V < 0) ? "-" : "") + QString::number(std::abs(V), formatBase);
+      values.append(QStringPair("U", UString));
+      values.append(QStringPair("V", VString));
     }
   }
   else
@@ -1101,22 +1126,27 @@ QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int fram
       // If 'showPixelValuesAsDiff' is set, this is the zero value
       const int differenceZeroValue = 1 << (srcPixelFormat.bitsPerSample - 1);
 
-      // Append the values to the list
-      values.append(QStringPair("Y", QString::number(int(value.Y)-differenceZeroValue)));
+      const int Y = int(value.Y) - differenceZeroValue;
+      const QString YString = ((Y < 0) ? "-" : "") + QString::number(std::abs(Y), formatBase);
+      values.append(QStringPair("Y", YString));
+
       if (srcPixelFormat.subsampling != YUV_400)
       {
-        values.append(QStringPair("U", QString::number(int(value.U)-differenceZeroValue)));
-        values.append(QStringPair("V", QString::number(int(value.V)-differenceZeroValue)));
+        const int U = int(value.U) - differenceZeroValue;
+        const int V = int(value.V) - differenceZeroValue;
+        const QString UString = ((U < 0) ? "-" : "") + QString::number(std::abs(U), formatBase);
+        const QString VString = ((V < 0) ? "-" : "") + QString::number(std::abs(V), formatBase);
+        values.append(QStringPair("U", UString));
+        values.append(QStringPair("V", VString));
       }
     }
     else
     {
-      // Append the values to the list
-      values.append(QStringPair("Y", QString::number(value.Y)));
+      values.append(QStringPair("Y", QString::number(value.Y, formatBase)));
       if (srcPixelFormat.subsampling != YUV_400)
       {
-        values.append(QStringPair("U", QString::number(value.U)));
-        values.append(QStringPair("V", QString::number(value.V)));
+        values.append(QStringPair("U", QString::number(value.U, formatBase)));
+        values.append(QStringPair("V", QString::number(value.V, formatBase)));
       }
     }
   }
@@ -1239,9 +1269,9 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
           otherValue.V = otherValue.V << depthScale;
         }
 
-        Y = thisValue.Y - otherValue.Y; 
-        U = thisValue.U - otherValue.U; 
-        V = thisValue.V - otherValue.V;
+        Y = int(thisValue.Y) - int(otherValue.Y);
+        U = int(thisValue.U) - int(otherValue.U);
+        V = int(thisValue.V) - int(otherValue.V);
 
         if (markDifference)
           drawWhite = (Y == 0);
@@ -1266,26 +1296,28 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
         drawWhite = (mathParameters[Luma].invert) ? (Y > whiteLimit) : (Y < whiteLimit);
       }
 
-      // Set the pen
+      const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
+      const QString YString = ((Y < 0) ? "-" : "") + QString::number(std::abs(Y), formatBase);
+      const QString UString = ((U < 0) ? "-" : "") + QString::number(std::abs(U), formatBase);
+      const QString VString = ((V < 0) ? "-" : "") + QString::number(std::abs(V), formatBase);
+
       painter->setPen(drawWhite ? Qt::white : Qt::black);
 
-      const int argBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
       if (chromaPresent && (x-chromaOffsetFullX) % subsamplingX == 0 && (y-chromaOffsetFullY) % subsamplingY == 0)
       {
         QString valText;
         if (chromaOffsetHalfX || chromaOffsetHalfY)
           // We will only draw the Y value at the center of this pixel
-          valText = QString("Y%1").arg(Y, 0, argBase);
+          valText = QString("Y%1").arg(YString);
         else
           // We also draw the U and V value at this position
-          valText = QString("Y%1\nU%2\nV%3").arg(Y, 0, argBase).arg(U, 0, argBase).arg(V, 0, argBase);
-        // Draw
+          valText = QString("Y%1\nU%2\nV%3").arg(YString, VString, VString);
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
 
         if (chromaOffsetHalfX || chromaOffsetHalfY)
         {
           // Draw the U and V values shifted half a pixel right and/or down
-          valText = QString("U%1\nV%2").arg(U).arg(V);
+          valText = QString("U%1\nV%2").arg(UString, VString);
 
           // Move the QRect by half a pixel
           if (chromaOffsetHalfX)
@@ -1293,14 +1325,13 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
           if (chromaOffsetHalfY)
             pixelRect.translate(0, zoomFactor/2);
 
-          // Draw
           painter->drawText(pixelRect, Qt::AlignCenter, valText);
         }
       }
       else
       {
         // We only draw the luma value for this pixel
-        QString valText = QString("Y%1").arg(Y, 0, argBase);
+        QString valText = QString("Y%1").arg(YString);
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
       }
     }
