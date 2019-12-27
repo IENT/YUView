@@ -44,9 +44,9 @@ int main(int argc, char *argv[])
   QCoreApplication::setAttribute(Qt::AA_SynthesizeMouseForUnhandledTouchEvents,false);
   QCoreApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents,false);
 
-  YUViewApplication app(argc, argv);
-
   qRegisterMetaType<recacheIndicator>("recacheIndicator");
+  
+  YUViewApplication app(argc, argv);
 
   return app.returnCode;
 }
