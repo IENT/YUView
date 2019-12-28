@@ -30,37 +30,48 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILEINFO_H
-#define FILEINFO_H
+#include "YUViewDomElement.h"
 
-#include <QList>
-#include <QString>
+QString YUViewDomElement::findChildValue(const QString &tagName) const 
+{ 
+    QStringPairList b; 
+    return findChildValue(tagName, b); 
+}
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the fileInfoWidget.
- * For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]
- * Another option is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for the 
- * corresponding playlist item is called.
- */
-struct infoItem
+QString YUViewDomElement::findChildValue(const QString &tagName, QStringPairList &attributeList) const
 {
-  infoItem(const QString &name, const QString &text, const QString &toolTip=QString(), bool button=false, int buttonID=-1) 
-    : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip) 
-  {}
-  QString name;
-  QString text;
-  bool button;
-  int buttonID;
-  QString toolTip;
+  for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
+    if (n.isElement() && n.toElement().tagName() == tagName)
+    {
+      QDomNamedNodeMap attributes = n.toElement().attributes();
+      for (int i = 0; i < attributes.length(); i++)
+      {
+        QString name = attributes.item(i).nodeName();
+        QString val  = attributes.item(i).nodeValue();
+        attributeList.append(QStringPair(name, val));
+      }
+      return n.toElement().text();
+    }
+  return QString();
+}
+
+int YUViewDomElement::findChildValueInt(const QString &tagName, int defaultValue) const 
+{ 
+  QString r = findChildValue(tagName); 
+  return r.isEmpty() ? defaultValue : r.toInt(); 
 };
 
-struct infoData
-{
-  explicit infoData(const QString &title = QString()) : title(title) {}
-  bool isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString title;
-  QList<infoItem> items;
+double YUViewDomElement::findChildValueDouble(const QString &tagName, double defaultValue) const 
+{ 
+  QString r = findChildValue(tagName); 
+  return r.isEmpty() ? defaultValue : r.toDouble(); 
 };
-Q_DECLARE_METATYPE(infoData)
 
-#endif // FILEINFO_H
+void YUViewDomElement::appendProperiteChild(const QString &type, const QString &name, const QStringPairList &attributes)
+{
+  QDomElement newChild = ownerDocument().createElement(type);
+  newChild.appendChild(ownerDocument().createTextNode(name));
+  for (int i = 0; i < attributes.length(); i++)
+    newChild.setAttribute(attributes[i].first, attributes[i].second);
+  appendChild(newChild);
+}

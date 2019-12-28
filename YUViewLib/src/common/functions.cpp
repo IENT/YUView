@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "typedef.h"
+#include "functions.h"
 
 #ifdef Q_OS_MAC
 #include <sys/types.h>
@@ -40,32 +40,12 @@
 #elif defined(Q_OS_WIN32)
 #include <windows.h>
 #endif
-#include <QApplication>
-#include <QColor>
+
 #include <QIcon>
-#include <QLayout>
 #include <QSettings>
 #include <QThread>
-#include <QWidget>
 
-QString QDomElementYUView::findChildValue(const QString &tagName, QStringPairList &attributeList) const
-{
-  for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
-    if (n.isElement() && n.toElement().tagName() == tagName)
-    {
-      QDomNamedNodeMap attributes = n.toElement().attributes();
-      for (int i = 0; i < attributes.length(); i++)
-      {
-        QString name = attributes.item(i).nodeName();
-        QString val  = attributes.item(i).nodeValue();
-        attributeList.append(QStringPair(name, val));
-      }
-      return n.toElement().text();
-    }
-  return QString();
-}
-
-QString getInputFormatName(inputFormat i)
+QString functions::getInputFormatName(inputFormat i)
 {
   if (i == inputInvalid || i == input_NUM)
     return "";
@@ -73,14 +53,14 @@ QString getInputFormatName(inputFormat i)
   return l.at((int)i);
 }
 
-inputFormat getInputFormatFromName(QString name)
+inputFormat functions::getInputFormatFromName(QString name)
 {
   QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "inputAnnexBVVC" << "FFmpeg";
   int idx = l.indexOf(name);
   return (idx < 0 || idx >= input_NUM) ? inputInvalid : (inputFormat)idx;
 }
 
-QString getDecoderEngineName(decoderEngine e)
+QString functions::getDecoderEngineName(decoderEngine e)
 {
   if (e <= decoderEngineInvalid || e >= decoderEngineNum)
     return "";
@@ -88,48 +68,21 @@ QString getDecoderEngineName(decoderEngine e)
   return l.at((int)e);
 }
 
-decoderEngine getDecoderEngineFromName(QString name)
+decoderEngine functions::getDecoderEngineFromName(QString name)
 {
   QStringList l = QStringList() << "libDe265" << "HM" << "VTM" << "Dav1d" << "FFmpeg";
   int idx = l.indexOf(name);
   return (idx < 0 || idx >= decoderEngineNum) ? decoderEngineInvalid : (decoderEngine)idx;
 }
 
-static void unparentWidgets(QLayout *layout)
-{
-  const int n = layout->count();
-  for (int i = 0; i < n; ++i) {
-    QLayoutItem *item = layout->itemAt(i);
-    if (item->widget()) item->widget()->setParent(0);
-    else if (item->layout()) unparentWidgets(item->layout());
-  }
-}
-
-// See also http://stackoverflow.com/q/40497358/1329652
-void setupUi(void *ui, void(*setupUi)(void *ui, QWidget *widget))
-{
-  QWidget widget;
-  setupUi(ui, &widget);
-  QLayout *wrapperLayout = widget.layout();
-  Q_ASSERT(wrapperLayout);
-  QObjectList const wrapperChildren = wrapperLayout->children();
-  Q_ASSERT(wrapperChildren.size() == 1);
-  QLayout *topLayout = qobject_cast<QLayout *>(wrapperChildren.first());
-  Q_ASSERT(topLayout);
-  topLayout->setParent(0);
-  delete wrapperLayout;
-  unparentWidgets(topLayout);
-  Q_ASSERT(widget.findChildren<QObject*>().isEmpty());
-}
-
-QImage::Format pixmapImageFormat()
+QImage::Format functions::pixmapImageFormat()
 {
   static auto const format = QPixmap(1,1).toImage().format();
   Q_ASSERT(format != QImage::Format_Invalid);
   return format;
 }
 
-unsigned int getOptimalThreadCount()
+unsigned int functions::getOptimalThreadCount()
 {
   int nrThreads = QThread::idealThreadCount() - 1;
   if (nrThreads > 0)
@@ -138,7 +91,7 @@ unsigned int getOptimalThreadCount()
     return 1;
 }
 
-unsigned int systemMemorySizeInMB()
+unsigned int functions::systemMemorySizeInMB()
 {
   static unsigned int memorySizeInMB;
   if (!memorySizeInMB)
@@ -168,7 +121,7 @@ unsigned int systemMemorySizeInMB()
   return memorySizeInMB;
 }
 
-QIcon convertIcon(QString iconPath)
+QIcon functions::convertIcon(QString iconPath)
 {
   QSettings settings;
   QString themeName = settings.value("Theme", "Default").toString();
@@ -219,7 +172,7 @@ QIcon convertIcon(QString iconPath)
   return outIcon;
 }
 
-QPixmap convertPixmap(QString pixmapPath)
+QPixmap functions::convertPixmap(QString pixmapPath)
 {
   QSettings settings;
   QString themeName = settings.value("Theme", "Default").toString();
@@ -253,7 +206,7 @@ QPixmap convertPixmap(QString pixmapPath)
   return QPixmap::fromImage(active);
 }
 
-QStringList getThemeNameList()
+QStringList functions::getThemeNameList()
 {
   QStringList ret;
   ret.append("Default");
@@ -262,14 +215,14 @@ QStringList getThemeNameList()
   return ret;
 }
 
-QString getThemeFileName(QString themeName)
+QString functions::getThemeFileName(QString themeName)
 {
   if (themeName == "Simple Dark/Blue" || themeName == "Simple Dark/Orange")
     return ":YUViewSimple.qss";
   return "";
 }
 
-QStringList getThemeColors(QString themeName)
+QStringList functions::getThemeColors(QString themeName)
 {
   if (themeName == "Simple Dark/Blue")
     return QStringList() << "#262626" << "#E0E0E0" << "#808080" << "#3daee9";
@@ -278,7 +231,7 @@ QStringList getThemeColors(QString themeName)
   return QStringList();
 }
 
-QString pixelFormatToString(QImage::Format f)
+QString functions::pixelFormatToString(QImage::Format f)
 {
   if (f == QImage::Format_Invalid)
     return "Format_Invalid";

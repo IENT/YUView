@@ -39,6 +39,8 @@
 #include <QPainter>
 #include <QPointer>
 
+#include "common/functions.h"
+
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG
 #include <QDebug>
@@ -52,7 +54,7 @@
 playlistItemOverlay::playlistItemOverlay() :
   playlistItemContainer("Overlay Item")
 {
-  setIcon(0, convertIcon(":img_overlay.png"));
+  setIcon(0, functions::convertIcon(":img_overlay.png"));
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
@@ -407,7 +409,7 @@ void playlistItemOverlay::createPropertiesWidget()
 
 void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemOverlay");
+  YUViewDomElement d = root.ownerDocument().createElement("playlistItemOverlay");
 
   // Append the playlist item properties
   playlistItem::appendPropertiesToPlaylist(d);
@@ -435,7 +437,7 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDi
   root.appendChild(d);
 }
 
-playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const QDomElementYUView &root, const QString &filePath)
+playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const YUViewDomElement &root, const QString &filePath)
 {
   Q_UNUSED(filePath);
 

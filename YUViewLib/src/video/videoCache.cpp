@@ -39,6 +39,7 @@
 #include <QSettings>
 #include <QThread>
 
+#include "common/functions.h"
 #include "ui/playbackController.h"
 #include "playlistitem/playlistItem.h"
 
@@ -283,7 +284,7 @@ void videoCache::updateSettings()
   cacheLevelMax = (int64_t)settings.value("ThresholdValueMB", 49).toUInt() * 1000 * 1000;
 
   // See if the user changed the number of threads
-  int targetNrThreads = getOptimalThreadCount();
+  int targetNrThreads = functions::getOptimalThreadCount();
   if (settings.value("SetNrThreads", false).toBool())
     targetNrThreads = settings.value("NrThreads", targetNrThreads).toInt();
   if (targetNrThreads <= 0)

@@ -586,7 +586,7 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
   return;
 }
 
-playlistItemStatisticsVTMBMSFile *playlistItemStatisticsVTMBMSFile::newplaylistItemStatisticsVTMBMSFile(const QDomElementYUView &root, const QString &playlistFilePath)
+playlistItemStatisticsVTMBMSFile *playlistItemStatisticsVTMBMSFile::newplaylistItemStatisticsVTMBMSFile(const YUViewDomElement &root, const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemStatisticsFile
   QString absolutePath = root.findChildValue("absolutePath");

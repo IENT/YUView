@@ -38,6 +38,8 @@
 
 #include <inttypes.h>
 
+#include "common/functions.h"
+#include "common/YUViewDomElement.h"
 #include "decoder/decoderFFmpeg.h"
 #include "decoder/decoderHM.h"
 #include "decoder/decoderVTM.h"
@@ -71,7 +73,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 {
   // Set the properties of the playlistItem
   // TODO: should this change with the type of video?
-  setIcon(0, convertIcon(":img_videoHEVC.png"));
+  setIcon(0, functions::convertIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   // An compressed file can be cached if nothing goes wrong
@@ -296,7 +298,7 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath(plItemNameOrFileName);
 
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemCompressedVideo");
+  YUViewDomElement d = root.ownerDocument().createElement("playlistItemCompressedVideo");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -306,13 +308,13 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   d.appendProperiteChild("relativePath", relativePath);
   d.appendProperiteChild("displayComponent", QString::number(loadingDecoder ? loadingDecoder->getDecodeSignal() : -1));
 
-  d.appendProperiteChild("inputFormat", getInputFormatName(inputFormatType));
-  d.appendProperiteChild("decoder", getDecoderEngineName(decoderEngineType));
+  d.appendProperiteChild("inputFormat", functions::getInputFormatName(inputFormatType));
+  d.appendProperiteChild("decoder", functions::getDecoderEngineName(decoderEngineType));
   
   root.appendChild(d);
 }
 
-playlistItemCompressedVideo *playlistItemCompressedVideo::newPlaylistItemCompressedVideo(const QDomElementYUView &root, const QString &playlistFilePath)
+playlistItemCompressedVideo *playlistItemCompressedVideo::newPlaylistItemCompressedVideo(const YUViewDomElement &root, const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemRawCodedVideo
   QString absolutePath = root.findChildValue("absolutePath");
@@ -324,11 +326,11 @@ playlistItemCompressedVideo *playlistItemCompressedVideo::newPlaylistItemCompres
   if (filePath.isEmpty())
     return nullptr;
 
-  inputFormat input = getInputFormatFromName(root.findChildValue("inputFormat"));
+  inputFormat input = functions::getInputFormatFromName(root.findChildValue("inputFormat"));
   if (input == inputInvalid)
     input = inputAnnexBHEVC;
   
-  decoderEngine decoder = getDecoderEngineFromName(root.findChildValue("decoder"));
+  decoderEngine decoder = functions::getDecoderEngineFromName(root.findChildValue("decoder"));
   if (decoder == decoderEngineInvalid)
     decoder = decoderEngineLibde265;
   
@@ -348,7 +350,7 @@ infoData playlistItemCompressedVideo::getInfo() const
   // At first append the file information part (path, date created, file size...)
   // info.items.append(loadingDecoder->getFileInfoList());
 
-  info.items.append(infoItem("Reader", getInputFormatName(inputFormatType)));
+  info.items.append(infoItem("Reader", functions::getInputFormatName(inputFormatType)));
   if (inputFileFFmpegLoading)
   {
     QStringList l = inputFileFFmpegLoading->getLibraryPaths();
@@ -729,7 +731,7 @@ void playlistItemCompressedVideo::createPropertiesWidget()
   // Add decoders we can use
   for (decoderEngine e : possibleDecoders)
   {
-    QString decoderTypeName = getDecoderEngineName(e);
+    QString decoderTypeName = functions::getDecoderEngineName(e);
     ui.comboBoxDecoder->addItem(decoderTypeName);
   }
   ui.comboBoxDecoder->setCurrentIndex(possibleDecoders.indexOf(decoderEngineType));

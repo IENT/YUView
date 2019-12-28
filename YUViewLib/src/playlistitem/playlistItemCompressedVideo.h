@@ -63,7 +63,7 @@ public:
   // Save the compressed file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemHEVCFile from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemCompressedVideo *newPlaylistItemCompressedVideo(const QDomElementYUView &root, const QString &playlistFilePath);
+  static playlistItemCompressedVideo *newPlaylistItemCompressedVideo(const YUViewDomElement &root, const QString &playlistFilePath);
 
   bool isFileSource() const Q_DECL_OVERRIDE { return true; };
 

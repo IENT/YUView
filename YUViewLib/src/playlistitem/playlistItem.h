@@ -36,7 +36,9 @@
 #include <QDir>
 #include <QTreeWidgetItem>
 #include "common/fileInfo.h"
+#include "common/saveUi.h"
 #include "common/typedef.h"
+#include "common/YUViewDomElement.h"
 
 #include "ui_playlistItem.h"
 
@@ -258,9 +260,9 @@ protected:
   bool itemTaggedForDeletion {false};
 
   // When saving the playlist, append the properties of the playlist item (the id)
-  void appendPropertiesToPlaylist(QDomElementYUView &d) const;
+  void appendPropertiesToPlaylist(YUViewDomElement &d) const;
   // Load the properties (the playlist ID)
-  static void loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItem *newItem);
+  static void loadPropertiesFromPlaylist(const YUViewDomElement &root, playlistItem *newItem);
 
   // What is the (current) type of the item?
   playlistItemType type;

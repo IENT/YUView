@@ -40,6 +40,7 @@
 #include <QPointer>
 #include <QTimer>
 
+#include "common/saveUi.h"
 #include "common/typedef.h"
 
 #include "ui_splitViewWidgetControls.h"

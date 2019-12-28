@@ -40,6 +40,7 @@
 #include <QStringList>
 #include <QTextBrowser>
 
+#include "common/functions.h"
 #include "mainwindow_performanceTestDialog.h"
 #include "playlistitem/playlistItems.h"
 #include "settingsDialog.h"
@@ -590,7 +591,7 @@ void MainWindow::updateSettings()
   // Set the right theme
   QSettings settings;
   QString themeName = settings.value("Theme", "Default").toString();
-  QString themeFile = getThemeFileName(themeName);
+  QString themeFile = functions::getThemeFileName(themeName);
 
   QString styleSheet;
   if (!themeFile.isEmpty())
@@ -604,7 +605,7 @@ void MainWindow::updateSettings()
       styleSheet = ts.readAll();
 
       // Now replace the placeholder color values with the real values
-      QStringList colors = getThemeColors(themeName);
+      QStringList colors = functions::getThemeColors(themeName);
       if (colors.count() == 4)
       {
         styleSheet.replace("#backgroundColor", colors[0]);
@@ -794,9 +795,9 @@ void MainWindow::performanceTest()
       info.append(QString("YUVIEW_HASH %1\n").arg(YUVIEW_HASH));
       info.append(QString("VERSION_CHECK %1\n").arg(VERSION_CHECK));
       info.append(QString("UPDATE_FEATURE_ENABLE %1\n").arg(UPDATE_FEATURE_ENABLE));
-      info.append(QString("pixmapImageFormat %1\n").arg(pixelFormatToString(pixmapImageFormat())));
-      info.append(QString("getOptimalThreadCount %1\n").arg(getOptimalThreadCount()));
-      info.append(QString("systemMemorySizeInMB %1\n").arg(systemMemorySizeInMB()));
+      info.append(QString("pixmapImageFormat %1\n").arg(functions::pixelFormatToString(functions::pixmapImageFormat())));
+      info.append(QString("getOptimalThreadCount %1\n").arg(functions::getOptimalThreadCount()));
+      info.append(QString("systemMemorySizeInMB %1\n").arg(functions::systemMemorySizeInMB()));
 
       QMessageBox::information(this, "Internal Info", info);
     }

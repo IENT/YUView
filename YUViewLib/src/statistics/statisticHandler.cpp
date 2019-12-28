@@ -36,6 +36,8 @@
 #include <QPainter>
 #include <QtMath>
 
+#include "common/functions.h"
+
 // Activate this if you want to know when what is loaded.
 #define STATISTICS_DEBUG_LOADING 0
 #if STATISTICS_DEBUG_LOADING && !NDEBUG
@@ -1050,7 +1052,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     itemOpacitySliders[0].append(opacitySlider);
 
     // Append the change style buttons
-    QPushButton *pushButton = new QPushButton(convertIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
+    QPushButton *pushButton = new QPushButton(functions::convertIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
     ui.gridLayout->addWidget(pushButton,row+2,2);
     connect(pushButton, &QPushButton::released, this, [=]{ onStyleButtonClicked(row); });
     itemStyleButtons[0].append(pushButton);
@@ -1098,7 +1100,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       itemOpacitySliders[1].append(opacitySlider);
 
       // Append the change style buttons
-      QPushButton *pushButton = new QPushButton(convertIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
+      QPushButton *pushButton = new QPushButton(functions::convertIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
       ui2.gridLayout->addWidget(pushButton,row+2,2);
       connect(pushButton, &QPushButton::released, this, [=]{ onStyleButtonClicked(row); });
       itemStyleButtons[1].append(pushButton);
@@ -1198,13 +1200,13 @@ void statisticHandler::deleteSecondaryStatisticsHandlerControls()
   itemStyleButtons[1].clear();
 }
 
-void statisticHandler::savePlaylist(QDomElementYUView &root) const
+void statisticHandler::savePlaylist(YUViewDomElement &root) const
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
     statsTypeList[row].savePlaylist(root);
 }
 
-void statisticHandler::loadPlaylist(const QDomElementYUView &root)
+void statisticHandler::loadPlaylist(const YUViewDomElement &root)
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
     statsTypeList[row].loadPlaylist(root);
@@ -1214,9 +1216,9 @@ void statisticHandler::updateSettings()
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
-    itemStyleButtons[0][row]->setIcon(convertIcon(":img_edit.png"));
+    itemStyleButtons[0][row]->setIcon(functions::convertIcon(":img_edit.png"));
     if (secondaryControlsWidget)
-      itemStyleButtons[1][row]->setIcon(convertIcon(":img_edit.png"));
+      itemStyleButtons[1][row]->setIcon(functions::convertIcon(":img_edit.png"));
   }
 }
 

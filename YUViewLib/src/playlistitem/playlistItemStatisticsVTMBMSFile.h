@@ -60,7 +60,7 @@ public:
 
 
   // Create a new playlistItemStatisticsFile from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemStatisticsVTMBMSFile *newplaylistItemStatisticsVTMBMSFile(const QDomElementYUView &root, const QString &playlistFilePath);
+  static playlistItemStatisticsVTMBMSFile *newplaylistItemStatisticsVTMBMSFile(const YUViewDomElement &root, const QString &playlistFilePath);
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);

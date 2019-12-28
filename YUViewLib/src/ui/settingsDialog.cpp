@@ -38,6 +38,7 @@
 #include <QSettings>
 #include <QTextStream>
 
+#include "common/functions.h"
 #include "common/typedef.h"
 #include "decoder/decoderDav1d.h"
 #include "decoder/decoderHM.h"
@@ -53,8 +54,8 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.setupUi(this);
 
   // Set the minimum and maximum values for memory
-  ui.labelMaxMb->setText(QString("%1 MB").arg(systemMemorySizeInMB()));
-  ui.labelMinMB->setText(QString("%1 MB").arg(systemMemorySizeInMB() / 100));
+  ui.labelMaxMb->setText(QString("%1 MB").arg(functions::systemMemorySizeInMB()));
+  ui.labelMinMB->setText(QString("%1 MB").arg(functions::systemMemorySizeInMB() / 100));
 
   // --- Load the current settings from the QSettings ---
   QSettings settings;
@@ -66,10 +67,10 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.checkBoxSavePositionPerItem->setChecked(settings.value("SavePositionAndZoomPerItem", false).toBool());
   // UI
   QString theme = settings.value("Theme", "Default").toString();
-  int themeIdx = getThemeNameList().indexOf(theme);
+  int themeIdx = functions::getThemeNameList().indexOf(theme);
   if (themeIdx < 0)
     themeIdx = 0;
-  ui.comboBoxTheme->addItems(getThemeNameList());
+  ui.comboBoxTheme->addItems(functions::getThemeNameList());
   ui.comboBoxTheme->setCurrentIndex(themeIdx);
   // Central view settings
   QString splittingStyleString = settings.value("SplitViewLineStyle", "Solid Line").toString();
@@ -115,9 +116,9 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.sliderThreshold->setValue(settings.value("ThresholdValue", 49).toInt());
   ui.checkBoxNrThreads->setChecked(settings.value("SetNrThreads", false).toBool());
   if (ui.checkBoxNrThreads->isChecked())
-    ui.spinBoxNrThreads->setValue(settings.value("NrThreads", getOptimalThreadCount()).toInt());
+    ui.spinBoxNrThreads->setValue(settings.value("NrThreads", functions::getOptimalThreadCount()).toInt());
   else
-    ui.spinBoxNrThreads->setValue(getOptimalThreadCount());
+    ui.spinBoxNrThreads->setValue(functions::getOptimalThreadCount());
   ui.spinBoxNrThreads->setEnabled(ui.checkBoxNrThreads->isChecked());
   // Playback
   ui.checkBoxPausPlaybackForCaching->setChecked(settings.value("PlaybackPauseCaching", true).toBool());
@@ -132,7 +133,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.lineEditDecoderPath->setText(settings.value("SearchPath", "").toString());
 
   for (int i=0; i<decoderEngineNum; i++)
-    ui.comboBoxDefaultDecoder->addItem(getDecoderEngineName((decoderEngine)i));
+    ui.comboBoxDefaultDecoder->addItem(functions::getDecoderEngineName((decoderEngine)i));
   ui.comboBoxDefaultDecoder->setCurrentIndex(settings.value("DefaultDecoder", 0).toInt());
 
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
@@ -151,7 +152,7 @@ unsigned int SettingsDialog::getCacheSizeInMB() const
   unsigned int useMem = 0;
   // update video cache
   if (ui.groupBoxCaching->isChecked())
-    useMem = systemMemorySizeInMB() * (ui.sliderThreshold->value()+1) / 100;
+    useMem = functions::systemMemorySizeInMB() * (ui.sliderThreshold->value()+1) / 100;
 
   return std::max(useMem, MIN_CACHE_SIZE_IN_MB);
 }
@@ -160,7 +161,7 @@ void SettingsDialog::on_checkBoxNrThreads_stateChanged(int newState)
 {
   ui.spinBoxNrThreads->setEnabled(newState);
   if (newState == Qt::Unchecked)
-    ui.spinBoxNrThreads->setValue(getOptimalThreadCount());
+    ui.spinBoxNrThreads->setValue(functions::getOptimalThreadCount());
 }
 
 void SettingsDialog::on_checkBoxEnablePlaybackCaching_stateChanged(int state)
@@ -403,5 +404,5 @@ void SettingsDialog::on_pushButtonSave_clicked()
 
 void SettingsDialog::on_sliderThreshold_valueChanged(int value)
 {
-  ui.labelThreshold->setText(QString("Threshold (%1 MB)").arg(systemMemorySizeInMB() * (value+1) / 100));
+  ui.labelThreshold->setText(QString("Threshold (%1 MB)").arg(functions::systemMemorySizeInMB() * (value+1) / 100));
 }

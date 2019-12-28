@@ -34,6 +34,7 @@
 
 #include <QPainter>
 
+#include "common/functions.h"
 #include "common/fileInfo.h"
 
 using namespace RGB_Internals;
@@ -592,7 +593,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
     outputImage = QImage(curFrameSize, QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
-    QImage::Format f = platformImageFormat();
+    QImage::Format f = functions::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied)
       outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
     if (f == QImage::Format_ARGB32)
@@ -610,7 +611,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of the
     // RGBA formats.
-    QImage::Format f = platformImageFormat();
+    QImage::Format f = functions::platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 && f != QImage::Format_RGB32)
       outputImage = outputImage.convertToFormat(f);
   }
@@ -1087,7 +1088,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
     outputImage = QImage(frameSize, QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
-    QImage::Format f = platformImageFormat();
+    QImage::Format f = functions::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied)
       outputImage = QImage(frameSize, QImage::Format_ARGB32_Premultiplied);
     if (f == QImage::Format_ARGB32)
@@ -1274,7 +1275,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of the
     // RGBA formats.
-    QImage::Format f = platformImageFormat();
+    QImage::Format f = functions::platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 && f != QImage::Format_RGB32)
       return outputImage.convertToFormat(f);
   }

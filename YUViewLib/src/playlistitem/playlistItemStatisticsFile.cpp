@@ -37,6 +37,8 @@
 #include <QDebug>
 #include <QTime>
 #include <QUrl>
+
+#include "common/functions.h"
 #include "statistics/statisticsExtensions.h"
 
 // The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB
@@ -56,7 +58,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   isStatisticsLoading = false;
 
   // Set statistics icon
-  setIcon(0, convertIcon(":img_stats.png"));
+  setIcon(0, functions::convertIcon(":img_stats.png"));
 
   file.openFile(itemNameOrFileName);
   if (!file.isOk())
@@ -162,7 +164,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath(file.getAbsoluteFilePath());
 
-  QDomElementYUView d = root.ownerDocument().createElement(getPlaylistTag());
+  YUViewDomElement d = root.ownerDocument().createElement(getPlaylistTag());
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);

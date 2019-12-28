@@ -37,6 +37,8 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
+#include "common/functions.h"
+
 using namespace YUV_Internals;
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -56,7 +58,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   isY4MFile = false;
 
   // Set the properties of the playlistItem
-  setIcon(0, convertIcon(":img_video.png"));
+  setIcon(0, functions::convertIcon(":img_video.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   dataSource.openFile(rawFilePath);
@@ -401,7 +403,7 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath(dataSource.getAbsoluteFilePath());
 
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemRawFile");
+  YUViewDomElement d = root.ownerDocument().createElement("playlistItemRawFile");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -426,7 +428,7 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
 
 /* Parse the playlist and return a new playlistItemRawFile.
 */
-playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomElementYUView &root, const QString &playlistFilePath)
+playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const YUViewDomElement &root, const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemRawFile
   QString absolutePath = root.findChildValue("absolutePath");
