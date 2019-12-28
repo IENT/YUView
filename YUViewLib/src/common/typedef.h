@@ -51,30 +51,28 @@ namespace YUView
     raw_YUV,
     raw_RGB
   } RawFormat;
-  Q_ENUM_NS(RawFormat);
-  
+
+  typedef enum
+  {
+    inputInvalid = -1,
+    inputAnnexBHEVC,    // Raw HEVC annex B file
+    inputAnnexBAVC,     // Raw AVC annex B file
+    inputAnnexBVVC,     // Raw VVC annex B file
+    inputLibavformat,   // This is some sort of container file which we will read using libavformat
+    input_NUM
+  } inputFormat;
+
+  typedef enum
+  {
+    decoderEngineInvalid = -1,  // invalid value
+    decoderEngineLibde265,      // The libde265 decoder
+    decoderEngineHM,            // The HM reference software decoder
+    decoderEngineVTM,           // The VTM reference software decoder
+    decoderEngineDav1d,         // The dav1d AV1 decoder
+    decoderEngineFFMpeg,        // The FFMpeg decoder
+    decoderEngineNum
+  } decoderEngine;
 }
-
-typedef enum
-{
-  inputInvalid = -1,
-  inputAnnexBHEVC,    // Raw HEVC annex B file
-  inputAnnexBAVC,     // Raw AVC annex B file
-  inputAnnexBVVC,     // Raw VVC annex B file
-  inputLibavformat,   // This is some sort of container file which we will read using libavformat
-  input_NUM
-} inputFormat;
-
-typedef enum
-{
-  decoderEngineInvalid = -1,  // invalid value
-  decoderEngineLibde265,      // The libde265 decoder
-  decoderEngineHM,            // The HM reference software decoder
-  decoderEngineVTM,           // The VTM reference software decoder
-  decoderEngineDav1d,         // The dav1d AV1 decoder
-  decoderEngineFFMpeg,        // The FFMpeg decoder
-  decoderEngineNum
-} decoderEngine;
 
 // Maximum possible value for int
 #ifndef INT_MAX

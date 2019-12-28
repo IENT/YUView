@@ -45,17 +45,29 @@
 #include <QSettings>
 #include <QThread>
 
+using namespace YUView;
+
+bool functions::isInputFormatTypeAnnexB(inputFormat format) 
+{ 
+    return format == inputAnnexBHEVC || format == inputAnnexBVVC || format == inputAnnexBAVC; 
+}
+
+bool functions::isInputFormatTypeFFmpeg(inputFormat format) 
+{ 
+    return format == inputLibavformat; 
+}
+
 QString functions::getInputFormatName(inputFormat i)
 {
   if (i == inputInvalid || i == input_NUM)
     return "";
-  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "inputAnnexBVVC" << "FFmpeg";
+  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "annexBVVC" << "FFmpeg";
   return l.at((int)i);
 }
 
 inputFormat functions::getInputFormatFromName(QString name)
 {
-  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "inputAnnexBVVC" << "FFmpeg";
+  QStringList l = QStringList() << "annexBHEVC" << "annexBAVC" << "annexBVVC" << "FFmpeg";
   int idx = l.indexOf(name);
   return (idx < 0 || idx >= input_NUM) ? inputInvalid : (inputFormat)idx;
 }

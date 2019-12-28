@@ -40,11 +40,14 @@
 namespace functions
 {
 
-QString getInputFormatName(inputFormat i);
-inputFormat getInputFormatFromName(QString name);
+QString getInputFormatName(YUView::inputFormat i);
+YUView::inputFormat getInputFormatFromName(QString name);
 
-QString getDecoderEngineName(decoderEngine e);
-decoderEngine getDecoderEngineFromName(QString name);
+QString getDecoderEngineName(YUView::decoderEngine e);
+YUView::decoderEngine getDecoderEngineFromName(QString name);
+
+bool isInputFormatTypeAnnexB(YUView::inputFormat format);
+bool isInputFormatTypeFFmpeg(YUView::inputFormat format);
 
 // An image format used internally by QPixmap. On a raster paint backend, the pixmap
 // is backed by an image, and this returns the format of the internal QImage buffer.
