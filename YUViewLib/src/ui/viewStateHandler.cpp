@@ -134,7 +134,7 @@ void viewStateHandler::savePlaylist(QDomElement &root)
     if (playbackStateFrameIdx(i) != -1)
     {
       // Create a new entry for this slot
-      QDomElementYUView state = root.ownerDocument().createElement(QString("slot%1").arg(i));
+      YUViewDomElement state = root.ownerDocument().createElement(QString("slot%1").arg(i));
       root.appendChild(state);
 
       // Append the frame index
@@ -158,7 +158,7 @@ void viewStateHandler::savePlaylist(QDomElement &root)
   }
 
   // Finally, save the current state
-  QDomElementYUView state = root.ownerDocument().createElement(QString("current"));
+  YUViewDomElement state = root.ownerDocument().createElement(QString("current"));
   root.appendChild(state);
   
   // Append the frame index
@@ -194,7 +194,7 @@ void viewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
   QDomNode n = viewStateNode.firstChild();
   while (!n.isNull()) 
   {
-    QDomElementYUView elem = n.toElement();
+    YUViewDomElement elem = n.toElement();
     if (!n.isElement())
     {
       n = n.nextSibling();

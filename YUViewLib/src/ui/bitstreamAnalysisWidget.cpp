@@ -46,6 +46,8 @@
 #define DEBUG_ANALYSIS(fmt,...) ((void)0)
 #endif
 
+using namespace YUView;
+
 BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
   QWidget(parent)
 {

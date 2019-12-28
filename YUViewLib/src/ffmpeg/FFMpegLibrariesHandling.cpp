@@ -48,6 +48,7 @@
 #define LOG(x) log(__func__, x)
 #endif
 
+using namespace YUView;
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 

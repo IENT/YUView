@@ -35,6 +35,7 @@
 #include <QSettings>
 
 #include "playlistitem/playlistItem.h"
+#include "common/functions.h"
 #include "common/typedef.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -377,12 +378,12 @@ void PlaybackController::updateSettings()
   waitForCachingOfItem = caching && wait;
 
   // Load the icons for the buttons
-  iconPlay = convertIcon(":img_play.png");
-  iconStop = convertIcon(":img_stop.png");
-  iconPause = convertIcon(":img_pause.png");
-  iconRepeatOff = convertIcon(":img_repeat.png");
-  iconRepeatAll = convertIcon(":img_repeat_on.png");
-  iconRepeatOne = convertIcon(":img_repeat_one.png");
+  iconPlay = functions::convertIcon(":img_play.png");
+  iconStop = functions::convertIcon(":img_stop.png");
+  iconPause = functions::convertIcon(":img_pause.png");
+  iconRepeatOff = functions::convertIcon(":img_repeat.png");
+  iconRepeatAll = functions::convertIcon(":img_repeat_on.png");
+  iconRepeatOne = functions::convertIcon(":img_repeat_one.png");
 
   // Set button icons
   if (playing())

@@ -35,13 +35,15 @@
 #include <QImageReader>
 #include <QSettings>
 #include <QUrl>
+
+#include "common/functions.h"
 #include "filesource/fileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
   : playlistItemWithVideo(rawFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
-  setIcon(0, convertIcon(":img_television.png"));
+  setIcon(0, functions::convertIcon(":img_television.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   loadPlaylistFrameMissing = false;
@@ -176,7 +178,7 @@ infoData playlistItemImageFileSequence::getInfo() const
 
 void playlistItemImageFileSequence::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemImageFileSequence");
+  YUViewDomElement d = root.ownerDocument().createElement("playlistItemImageFileSequence");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -199,7 +201,7 @@ void playlistItemImageFileSequence::savePlaylist(QDomElement &root, const QDir &
 
 /* Parse the playlist and return a new playlistItemRawFile.
 */
-playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemImageFileSequence(const QDomElementYUView &root, const QString &playlistFilePath)
+playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemImageFileSequence(const YUViewDomElement &root, const QString &playlistFilePath)
 {
   playlistItemImageFileSequence *newSequence = new playlistItemImageFileSequence();
 

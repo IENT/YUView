@@ -525,7 +525,7 @@ QStringList playlistItemStatisticsCSVFile::parseCSVLine(const QString &srcLine, 
   return line.split(delimiter);
 }
 
-playlistItemStatisticsCSVFile *playlistItemStatisticsCSVFile::newplaylistItemStatisticsCSVFile(const QDomElementYUView &root, const QString &playlistFilePath)
+playlistItemStatisticsCSVFile *playlistItemStatisticsCSVFile::newplaylistItemStatisticsCSVFile(const YUViewDomElement &root, const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemStatisticsFile
   QString absolutePath = root.findChildValue("absolutePath");

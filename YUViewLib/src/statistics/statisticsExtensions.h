@@ -37,7 +37,7 @@
 #include <QMap>
 #include <QPen>
 
-class QDomElementYUView;
+class YUViewDomElement;
 
 /* This class knows how to map values to color.
  * There are 3 types of mapping:
@@ -102,8 +102,8 @@ public:
   void setInitialState();
 
   // Load/Save status of statistics from playlist file
-  void savePlaylist(QDomElementYUView &root) const;
-  void loadPlaylist(const QDomElementYUView &root);
+  void savePlaylist(YUViewDomElement &root) const;
+  void loadPlaylist(const YUViewDomElement &root);
 
   // Every statistics type has an ID, a name and possibly a description
   int typeID;

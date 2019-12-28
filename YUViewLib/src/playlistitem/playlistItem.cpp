@@ -116,7 +116,7 @@ void playlistItem::setType(playlistItemType newType)
 }
 
 // For an indexed item we save the start/end, sampling and frame rate to the playlist
-void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d) const
+void playlistItem::appendPropertiesToPlaylist(YUViewDomElement &d) const
 {
   // Append the playlist item properties
   d.appendProperiteChild("id", QString::number(id));
@@ -140,7 +140,7 @@ void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d) const
 }
 
 // Load the start/end frame, sampling and frame rate from playlist
-void playlistItem::loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItem *newItem)
+void playlistItem::loadPropertiesFromPlaylist(const YUViewDomElement &root, playlistItem *newItem)
 {
   newItem->playlistID = root.findChildValue("id").toInt();
 

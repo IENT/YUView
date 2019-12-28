@@ -36,6 +36,7 @@
 #include <random>
 
 #include "common/typedef.h"
+#include "common/YUViewDomElement.h"
 
 // All types that are supported by the getColor() function.
 QStringList colorMapper::supportedComplexTypes = QStringList() << "jet" << "heat" << "hsv" << "shuffle" << "hot" << "cool" << "spring" << "summer" << "autumn" << "winter" << "gray" << "bone" << "copper" << "pink" << "lines" << "col3_gblr" << "col3_gwr" << "col3_bblr" << "col3_bwr" << "col3_bblg" << "col3_bwg";
@@ -167,7 +168,7 @@ QPen convertStringToPen(const QString &str)
 
 /* Save all the settings of the statistics type that have changed from the initial state
 */
-void StatisticsType::savePlaylist(QDomElementYUView &root) const
+void StatisticsType::savePlaylist(YUViewDomElement &root) const
 {
   bool statChanged = (init.render != render || init.alphaFactor != alphaFactor ||
     init.renderValueData != renderValueData || init.scaleValueToBlockSize != scaleValueToBlockSize || init.colMapper != colMapper ||
@@ -242,7 +243,7 @@ void StatisticsType::savePlaylist(QDomElementYUView &root) const
   root.appendChild(newChild);
 }
 
-void StatisticsType::loadPlaylist(const QDomElementYUView &root)
+void StatisticsType::loadPlaylist(const YUViewDomElement &root)
 {
   QStringPairList attributes;
   QString statItemName = root.findChildValue(QString("statType%1").arg(typeID), attributes);

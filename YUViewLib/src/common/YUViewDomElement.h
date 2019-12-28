@@ -30,37 +30,28 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILEINFO_H
-#define FILEINFO_H
+#ifndef YUVIEWDOMELEMENT_H
+#define YUVIEWDOMELEMENT_H
 
-#include <QList>
-#include <QString>
+#include <QDomElement>
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the fileInfoWidget.
- * For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]
- * Another option is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for the 
- * corresponding playlist item is called.
+#include "typedef.h"
+
+/* Identical to a QDomElement, but we add some convenience functions (findChildValue and appendProperiteChild)
+ * for putting values into the playlist and reading them from the playlist.
+ * Includes various convenience functions for searching for items and appending new items.
  */
-struct infoItem
+class YUViewDomElement : public QDomElement
 {
-  infoItem(const QString &name, const QString &text, const QString &toolTip=QString(), bool button=false, int buttonID=-1) 
-    : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip) 
-  {}
-  QString name;
-  QString text;
-  bool button;
-  int buttonID;
-  QString toolTip;
+public:
+  YUViewDomElement(const QDomElement &a) : QDomElement(a) {}
+  
+  QString findChildValue(const QString &tagName) const;
+  QString findChildValue(const QString &tagName, QStringPairList &attributeList) const;
+  int findChildValueInt(const QString &tagName, int defaultValue) const;
+  double findChildValueDouble(const QString &tagName, double defaultValue) const;
+  
+  void appendProperiteChild(const QString &type, const QString &name, const QStringPairList &attributes=QStringPairList());
 };
 
-struct infoData
-{
-  explicit infoData(const QString &title = QString()) : title(title) {}
-  bool isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString title;
-  QList<infoItem> items;
-};
-Q_DECLARE_METATYPE(infoData)
-
-#endif // FILEINFO_H
+#endif // YUVIEWDOMELEMENT_H

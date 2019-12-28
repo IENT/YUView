@@ -34,6 +34,7 @@
 
 #include <QPainter>
 
+#include "common/functions.h"
 #include "playlistitem/playlistItem.h"
 
 // ------ Initialize the static list of frame size presets ----------
@@ -290,7 +291,7 @@ QImage frameHandler::calculateDifference(frameHandler *item2, const int frameIdx
   int width  = qMin(frameSize.width(), item2->frameSize.width());
   int height = qMin(frameSize.height(), item2->frameSize.height());
 
-  QImage diffImg(width, height, platformImageFormat());
+  QImage diffImg(width, height, functions::platformImageFormat());
 
   // Also calculate the MSE while we're at it (R,G,B)
   int64_t mseAdd[3] = {0, 0, 0};

@@ -58,12 +58,12 @@ public:
   * addPropertiesWidget to add the custom properties panel.
   * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
   */
-  playlistItemCompressedVideo(const QString &fileName, int displayComponent=0, inputFormat input = inputInvalid, decoderEngine decoder = decoderEngineInvalid);
+  playlistItemCompressedVideo(const QString &fileName, int displayComponent=0, YUView::inputFormat input = YUView::inputInvalid, YUView::decoderEngine decoder = YUView::decoderEngineInvalid);
 
   // Save the compressed file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemHEVCFile from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemCompressedVideo *newPlaylistItemCompressedVideo(const QDomElementYUView &root, const QString &playlistFilePath);
+  static playlistItemCompressedVideo *newPlaylistItemCompressedVideo(const YUViewDomElement &root, const QString &playlistFilePath);
 
   bool isFileSource() const Q_DECL_OVERRIDE { return true; };
 
@@ -106,7 +106,7 @@ public:
   // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.
   virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
 
-  inputFormat getInputFormat() const { return inputFormatType; }
+  YUView::inputFormat getInputFormat() const { return inputFormatType; }
   
 protected:
   // Override from playlistItemIndexed. The readerEngine can tell us how many frames there are in the sequence.
@@ -120,9 +120,9 @@ protected:
   QScopedPointer<decoderBase> cachingDecoder;
 
   // When opening the file, we will fill this list with the possible decoders
-  QList<decoderEngine> possibleDecoders;
+  QList<YUView::decoderEngine> possibleDecoders;
   // The actual type of the decoder
-  decoderEngine decoderEngineType;
+  YUView::decoderEngine decoderEngineType;
   // Delete existing decoders and allocate decoders for the type "decoderEngineType"
   bool allocateDecoder(int displayComponent = 0);
 
@@ -136,9 +136,7 @@ protected:
   int readAnnexBFrameCounterCodingOrder { -1 };
   
   // Which type is the input?
-  inputFormat inputFormatType;
-  bool isInputFormatTypeAnnexB() const { return inputFormatType == inputAnnexBHEVC || inputFormatType == inputAnnexBVVC || inputFormatType == inputAnnexBAVC; }
-  bool isInputFormatTypeFFmpeg() const { return inputFormatType == inputLibavformat; }
+  YUView::inputFormat inputFormatType;
   AVCodecIDWrapper ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can

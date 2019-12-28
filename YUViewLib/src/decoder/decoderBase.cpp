@@ -35,6 +35,8 @@
 #include <QDir>
 #include <QSettings>
 
+using namespace YUView;
+
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define DECODERBASE_DEBUG_OUTPUT 0
 #if DECODERBASE_DEBUG_OUTPUT && !NDEBUG

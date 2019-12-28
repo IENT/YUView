@@ -39,6 +39,8 @@
 
 #include "common/typedef.h"
 
+using namespace YUView;
+
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define DECODERLIBD265_DEBUG_OUTPUT 0
 #if DECODERLIBD265_DEBUG_OUTPUT && !NDEBUG

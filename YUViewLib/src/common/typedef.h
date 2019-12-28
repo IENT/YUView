@@ -35,45 +35,44 @@
 
 #include <cassert>
 #include <cstring>
-#include <QDomElement>
-#include <QImage>
 #include <QLabel>
 #include <QList>
 #include <QPair>
 #include <QRect>
 #include <QString>
 
-typedef enum
+namespace YUView
 {
-  raw_Invalid,
-  raw_YUV,
-  raw_RGB
-} RawFormat;
+  Q_NAMESPACE;
 
-typedef enum
-{
-  inputInvalid = -1,
-  inputAnnexBHEVC,    // Raw HEVC annex B file
-  inputAnnexBAVC,     // Raw AVC annex B file
-  inputAnnexBVVC,     // Raw VVC annex B file
-  inputLibavformat,   // This is some sort of container file which we will read using libavformat
-  input_NUM
-} inputFormat;
-QString getInputFormatName(inputFormat i);
-inputFormat getInputFormatFromName(QString name);
+  typedef enum
+  {
+    raw_Invalid,
+    raw_YUV,
+    raw_RGB
+  } RawFormat;
 
-typedef enum
-{
-  decoderEngineInvalid = -1,  // invalid value
-  decoderEngineLibde265,      // The libde265 decoder
-  decoderEngineHM,            // The HM reference software decoder
-  decoderEngineVTM,           // The VTM reference software decoder
-  decoderEngineDav1d,         // The dav1d AV1 decoder
-  decoderEngineFFMpeg,        // The FFMpeg decoder
-  decoderEngineNum
-} decoderEngine;
-QString getDecoderEngineName(decoderEngine e);
-decoderEngine getDecoderEngineFromName(QString name);
+  typedef enum
+  {
+    inputInvalid = -1,
+    inputAnnexBHEVC,    // Raw HEVC annex B file
+    inputAnnexBAVC,     // Raw AVC annex B file
+    inputAnnexBVVC,     // Raw VVC annex B file
+    inputLibavformat,   // This is some sort of container file which we will read using libavformat
+    input_NUM
+  } inputFormat;
+
+  typedef enum
+  {
+    decoderEngineInvalid = -1,  // invalid value
+    decoderEngineLibde265,      // The libde265 decoder
+    decoderEngineHM,            // The HM reference software decoder
+    decoderEngineVTM,           // The VTM reference software decoder
+    decoderEngineDav1d,         // The dav1d AV1 decoder
+    decoderEngineFFMpeg,        // The FFMpeg decoder
+    decoderEngineNum
+  } decoderEngine;
+}
 
 // Maximum possible value for int
 #ifndef INT_MAX
@@ -113,12 +112,9 @@ enum { is_Q_OS_LINUX = 0 };
 // Do not activate. This is not supported right now.
 #define SSE_CONVERSION 0
 #if SSE_CONVERSION
-#define HAVE_SSE4_1 1
 
-// Alternate method for SSE Conversion, Testing only
-#if SSE_CONVERSION
-#define SSE_CONVERSION_420_ALT 1
-#endif
+#define HAVE_SSE4_1 1
+#define SSE_CONVERSION_420_ALT 1  // Alternate method for SSE Conversion, Testing only
 
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
@@ -191,7 +187,7 @@ private:
   char* _data;
   int   _size;
 };
-#endif
+#endif // SSE_CONVERSION
 
 // The default frame rate that will be used when we could not guess it.
 #define DEFAULT_FRAMERATE 20.0
@@ -232,8 +228,7 @@ template <typename T> inline T clip(const T n, const T lower, const T upper) { r
 typedef QPair<uint64_t, uint64_t> QUint64Pair;
 typedef QPair<QString, QString> QStringPair;
 typedef QList<QStringPair> QStringPairList;
-// A index range is just a QPair of integers (minimum and maximum)
-typedef QPair<int,int> indexRange;
+typedef QPair<int,int> indexRange;  // QPair of integers (minimum and maximum)
 typedef QPair<int,int> QIntPair;
 typedef QPair<unsigned int, unsigned int> QUIntPair;
 
@@ -272,69 +267,6 @@ Q_DECL_CONSTEXPR inline QPoint centerRoundTL(const QRect & r) Q_DECL_NOTHROW
   return QPoint(int((int64_t(r.left())+r.right()-1)/2), int((int64_t(r.top())+r.bottom()-1)/2));
 }
 
-// Identical to a QDomElement, but we add some convenience functions (findChildValue and appendProperiteChild)
-// for putting values into the playlist and reading them from the playlist.
-class QDomElementYUView : public QDomElement
-{
-public:
-  // Copy constructor so we can initialize from a QDomElement
-  QDomElementYUView(const QDomElement &a) : QDomElement(a) {}
-  // Look through all the child items. If one child element exists with the given tagName, return it's text node.
-  // All attributes of the child (if found) are appended to attributes.
-  QString findChildValue(const QString &tagName) const { QStringPairList b; return findChildValue(tagName, b); }
-  QString findChildValue(const QString &tagName, QStringPairList &attributeList) const;
-  // Some convenient find functions that do casting and can return a default value if the key was not found
-  int findChildValueInt(const QString &tagName, int defaultValue) const { QString r = findChildValue(tagName); return r.isEmpty() ? defaultValue : r.toInt(); };
-  double findChildValueDouble(const QString &tagName, double defaultValue) const { QString r = findChildValue(tagName); return r.isEmpty() ? defaultValue : r.toDouble(); };
-  // Append a new child to this element with the given type, and name (as text node).
-  // All QString pairs in ValuePairList are appended as attributes.
-  void appendProperiteChild(const QString &type, const QString &name, const QStringPairList &attributes=QStringPairList())
-  {
-    QDomElement newChild = ownerDocument().createElement(type);
-    newChild.appendChild(ownerDocument().createTextNode(name));
-    for (int i = 0; i < attributes.length(); i++)
-      newChild.setAttribute(attributes[i].first, attributes[i].second);
-    appendChild(newChild);
-  }
-};
-
-class QWidget;
-class QLayout;
-void setupUi(void *ui, void(*setupUi)(void *ui, QWidget *widget));
-
-// A safe wrapper around Ui::Form class, for delayed initialization
-// and in support of widget-less setupUi.
-// The Ui::Form is zeroed out as a way of catching null pointer dereferences
-// before the Ui has been set up.
-template <class Ui> class SafeUi : public Ui {
-  bool m_created;
-  static void setup_ui_helper(void *ui, QWidget *widget)
-  {
-    reinterpret_cast<SafeUi*>(ui)->setupUi(widget);
-  }
-public:
-  SafeUi() { clear(); }
-  void setupUi(QWidget *widget)
-  {
-    Q_ASSERT(!m_created);
-    Ui::setupUi(widget);
-    m_created = true;
-  }
-  void setupUi()
-  {
-    Q_ASSERT(!m_created);
-    ::setupUi(static_cast<void*>(this), &SafeUi::setup_ui_helper);
-    this->wrapperLayout = NULL; // The wrapper was deleted, don't leave a dangling pointer.
-    m_created = true;
-  }
-  void clear()
-  {
-    memset(static_cast<Ui*>(this), 0, sizeof(Ui));
-    m_created = false;
-  }
-  bool created() const { return m_created; }
-};
-
 // A label that emits a 'clicked' signal when clicked.
 class QLabelClickable : public QLabel
 {
@@ -361,59 +293,6 @@ private:
   bool pressed;
 };
 
-// An image format used internally by QPixmap. On a raster paint backend, the pixmap
-// is backed by an image, and this returns the format of the internal QImage buffer.
-// This will always return the same result as the platformImageFormat when the default
-// raster backend is used.
-// It is faster to call platformImageFormat instead. It will call this function as
-// a fall back.
-// This function is thread-safe.
-QImage::Format pixmapImageFormat();
-
-// Convert the QImage::Format to string
-QString pixelFormatToString(QImage::Format f);
-
-// The platform-specific screen-compatible image format. Using a QImage of this format
-// is fast when drawing on a widget.
-// This function is thread-safe.
-inline QImage::Format platformImageFormat()
-{
-  // see https://code.woboq.org/qt5/qtbase/src/gui/image/qpixmap_raster.cpp.html#97
-  // see https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN21QRasterPlatformPixmap18systemOpaqueFormatEv
-  if (is_Q_OS_MAC)
-    // https://code.woboq.org/qt5/qtbase/src/plugins/platforms/cocoa/qcocoaintegration.mm.html#117
-    // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN12QCocoaScreen14updateGeometryEv
-    // Qt Docs: The image is stored using a 32-bit RGB format (0xffRRGGBB).
-    return QImage::Format_RGB32;
-  if (is_Q_OS_WIN)
-    // https://code.woboq.org/qt5/qtbase/src/plugins/platforms/windows/qwindowsscreen.cpp.html#59
-    // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN18QWindowsScreenDataC1Ev
-    // Qt Docs:
-    // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB), i.e. the red, green, and blue channels 
-    // are multiplied by the alpha component divided by 255. (If RR, GG, or BB has a higher value than the alpha channel, 
-    // the results are undefined.) Certain operations (such as image composition using alpha blending) are faster using 
-    // premultiplied ARGB32 than with plain ARGB32.
-    return QImage::Format_ARGB32_Premultiplied;
-  // Fall back on Linux and other platforms.
-  return pixmapImageFormat();
-}
-
-inline int bytesPerPixel(QPixelFormat format)
-{
-  auto const bits = format.bitsPerPixel();
-  return (bits >= 1) ? ((bits + 7) / 8) : 0;
-}
-
-inline int bytesPerPixel(QImage::Format format) { return bytesPerPixel(QImage::toPixelFormat(format)); }
-
-// Get the optimal thread count (QThread::optimalThreadCount()-1) or at least 1
-// so that one thread is "reserved" for the main GUI. I don't know if this is optimal.
-unsigned int getOptimalThreadCount();
-
-// Returns the size of system memory in megabytes.
-// This function is thread safe and inexpensive to call.
-unsigned int systemMemorySizeInMB();
-
 // When asking the playlist item if it needs loading, there are some states that the item can return
 enum itemLoadingState
 {
@@ -429,21 +308,6 @@ enum recacheIndicator
   RECACHE_UPDATE  // Only rethink what to cache next. Some frames in the item might have become useless in the cache.
 };
 Q_DECLARE_METATYPE(recacheIndicator)
-
-// ---------- Themes
-
-// These are the names of the supported themes
-QStringList getThemeNameList();
-// Get the name of the theme in the resource file that we will load
-QString getThemeFileName(QString themeName);
-// For the given theme, return the primary colors to replace.
-// In the qss file, we can use tags, which will be replaced by these colors. The tags are:
-// #backgroundColor, #activeColor, #inactiveColor, #highlightColor
-// The values to replace them by are returned in this order.
-QStringList getThemeColors(QString themeName);
-// Return the icon/pixmap from the given file path (inverted if necessary)
-QIcon convertIcon(QString iconPath);
-QPixmap convertPixmap(QString pixmapPath);
 
 #if QT_VERSION <= 0x050700
 // copied from newer version of qglobal.h 

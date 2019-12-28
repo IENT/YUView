@@ -39,6 +39,7 @@
 #include <QPainter>
 
 #include "common/fileInfo.h"
+#include "common/functions.h"
 
 using namespace YUV_Internals;
 
@@ -3173,10 +3174,10 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
   // Internally, this is how QImage allocates the number of bytes per line (with depth = 32):
   // const int bytes_per_line = ((width * depth + 31) >> 5) << 2; // bytes per scanline (must be multiple of 4)
   if (is_Q_OS_WIN || is_Q_OS_MAC)
-    outputImage = QImage(curFrameSize, platformImageFormat());
+    outputImage = QImage(curFrameSize, functions::platformImageFormat());
   else if (is_Q_OS_LINUX)
   {
-    QImage::Format f = platformImageFormat();
+    QImage::Format f = functions::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied || f == QImage::Format_ARGB32)
       outputImage = QImage(curFrameSize, f);
     else
@@ -3218,7 +3219,7 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of the
     // RGBA formats.
-    QImage::Format f = platformImageFormat();
+    QImage::Format f = functions::platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 && f != QImage::Format_RGB32)
       outputImage = outputImage.convertToFormat(f);
   }
@@ -3826,7 +3827,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
     outputImage = QImage(QSize(w_out, h_out), QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
-    QImage::Format f = platformImageFormat();
+    QImage::Format f = functions::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied)
       outputImage = QImage(QSize(w_out, h_out), QImage::Format_ARGB32_Premultiplied);
     if (f == QImage::Format_ARGB32)
@@ -3859,10 +3860,10 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of the
     // RGBA formats.
-    QImage::Format f = platformImageFormat();
+    auto f = functions::platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 && f != QImage::Format_RGB32)
       return outputImage.convertToFormat(f);
-  }  
+  }
 
   // we have a yuv differance available
   is_YUV_diff = true;

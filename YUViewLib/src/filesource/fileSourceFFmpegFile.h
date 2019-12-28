@@ -62,7 +62,7 @@ public:
   // Get properties of the bitstream
   double getFramerate() const { return frameRate; }
   QSize getSequenceSizeSamples() const { return frameSize; }
-  RawFormat getRawFormat() const { return rawFormat; }
+  YUView::RawFormat getRawFormat() const { return rawFormat; }
   YUV_Internals::yuvPixelFormat getPixelFormatYUV() const { return pixelFormat_yuv; }
   RGB_Internals::rgbPixelFormat getPixelFormatRGB() const { return pixelFormat_rgb; }
 
@@ -140,7 +140,7 @@ protected:
   };
   streamIndices_t streamIndices;
   
-  RawFormat rawFormat {raw_Invalid};
+  YUView::RawFormat rawFormat {YUView::raw_Invalid};
   YUV_Internals::yuvPixelFormat pixelFormat_yuv;
   RGB_Internals::rgbPixelFormat pixelFormat_rgb;
   YUV_Internals::ColorConversion colorConversionType {YUV_Internals::ColorConversion::BT709_LimitedRange};

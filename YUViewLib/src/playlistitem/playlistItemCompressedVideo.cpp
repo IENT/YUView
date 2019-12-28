@@ -38,6 +38,8 @@
 
 #include <inttypes.h>
 
+#include "common/functions.h"
+#include "common/YUViewDomElement.h"
 #include "decoder/decoderFFmpeg.h"
 #include "decoder/decoderHM.h"
 #include "decoder/decoderVTM.h"
@@ -50,6 +52,9 @@
 #include "video/videoHandlerRGB.h"
 #include "ui/mainwindow.h"
 #include "ui_playlistItemCompressedFile_logDialog.h"
+
+using namespace YUView;
+using namespace functions;
 
 #define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
 #if COMPRESSED_VIDEO_DEBUG_OUTPUT
@@ -71,7 +76,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 {
   // Set the properties of the playlistItem
   // TODO: should this change with the type of video?
-  setIcon(0, convertIcon(":img_videoHEVC.png"));
+  setIcon(0, functions::convertIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   // An compressed file can be cached if nothing goes wrong
@@ -98,7 +103,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   YUV_Internals::yuvPixelFormat format_yuv;
   RGB_Internals::rgbPixelFormat format_rgb;
   QWidget *mainWindow = MainWindow::getMainWindow();
-  if (isInputFormatTypeAnnexB())
+  if (isInputFormatTypeAnnexB(inputFormatType))
   {
     // Open file
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Open annexB file");
@@ -296,7 +301,7 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath(plItemNameOrFileName);
 
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemCompressedVideo");
+  YUViewDomElement d = root.ownerDocument().createElement("playlistItemCompressedVideo");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -306,13 +311,13 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   d.appendProperiteChild("relativePath", relativePath);
   d.appendProperiteChild("displayComponent", QString::number(loadingDecoder ? loadingDecoder->getDecodeSignal() : -1));
 
-  d.appendProperiteChild("inputFormat", getInputFormatName(inputFormatType));
-  d.appendProperiteChild("decoder", getDecoderEngineName(decoderEngineType));
+  d.appendProperiteChild("inputFormat", functions::getInputFormatName(inputFormatType));
+  d.appendProperiteChild("decoder", functions::getDecoderEngineName(decoderEngineType));
   
   root.appendChild(d);
 }
 
-playlistItemCompressedVideo *playlistItemCompressedVideo::newPlaylistItemCompressedVideo(const QDomElementYUView &root, const QString &playlistFilePath)
+playlistItemCompressedVideo *playlistItemCompressedVideo::newPlaylistItemCompressedVideo(const YUViewDomElement &root, const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemRawCodedVideo
   QString absolutePath = root.findChildValue("absolutePath");
@@ -324,11 +329,11 @@ playlistItemCompressedVideo *playlistItemCompressedVideo::newPlaylistItemCompres
   if (filePath.isEmpty())
     return nullptr;
 
-  inputFormat input = getInputFormatFromName(root.findChildValue("inputFormat"));
+  inputFormat input = functions::getInputFormatFromName(root.findChildValue("inputFormat"));
   if (input == inputInvalid)
     input = inputAnnexBHEVC;
   
-  decoderEngine decoder = getDecoderEngineFromName(root.findChildValue("decoder"));
+  decoderEngine decoder = functions::getDecoderEngineFromName(root.findChildValue("decoder"));
   if (decoder == decoderEngineInvalid)
     decoder = decoderEngineLibde265;
   
@@ -348,7 +353,7 @@ infoData playlistItemCompressedVideo::getInfo() const
   // At first append the file information part (path, date created, file size...)
   // info.items.append(loadingDecoder->getFileInfoList());
 
-  info.items.append(infoItem("Reader", getInputFormatName(inputFormatType)));
+  info.items.append(infoItem("Reader", functions::getInputFormatName(inputFormatType)));
   if (inputFileFFmpegLoading)
   {
     QStringList l = inputFileFFmpegLoading->getLibraryPaths();
@@ -493,7 +498,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     int seekToFrame = -1;
     int seekToAnnexBFrameCount = -1;
     int seekToDTS = -1;
-    if (isInputFormatTypeAnnexB())
+    if (isInputFormatTypeAnnexB(inputFormatType))
       seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdxInternal, seekToAnnexBFrameCount);
     else
     {
@@ -525,7 +530,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     while (dec->needsMoreData())
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData decoder needs more data");
-      if (isInputFormatTypeFFmpeg() && decoderEngineType == decoderEngineFFMpeg)
+      if (isInputFormatTypeFFmpeg(inputFormatType) && decoderEngineType == decoderEngineFFMpeg)
       {
         // In this scenario, we can read and push AVPackets
         // from the FFmpeg file and pass them to the FFmpeg decoder directly.
@@ -544,7 +549,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
           repushData = true;
         }
       }
-      else if (isInputFormatTypeAnnexB() && decoderEngineType == decoderEngineFFMpeg)
+      else if (isInputFormatTypeAnnexB(inputFormatType) && decoderEngineType == decoderEngineFFMpeg)
       {
         // We are reading from a raw annexB file and use ffmpeg for decoding
         // Get the data of the next frame (which might be multiple NAL units)
@@ -567,13 +572,13 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
         else
           readAnnexBFrameCounterCodingOrder++;
       }
-      else if (isInputFormatTypeAnnexB() && decoderEngineType != decoderEngineFFMpeg)
+      else if (isInputFormatTypeAnnexB(inputFormatType) && decoderEngineType != decoderEngineFFMpeg)
       {
         QByteArray data = caching ? inputFileAnnexBCaching->getNextNALUnit(repushData) : inputFileAnnexBLoading->getNextNALUnit(repushData);
         DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData retrived nal unit from file - size %d", data.size());
         repushData = !dec->pushData(data);
       }
-      else if (isInputFormatTypeFFmpeg() && decoderEngineType != decoderEngineFFMpeg)
+      else if (isInputFormatTypeFFmpeg(inputFormatType) && decoderEngineType != decoderEngineFFMpeg)
       {
         // Get the next unit (NAL or OBU) form ffmepg and push it to the decoder
         QByteArray data = caching ? inputFileFFmpegCaching->getNextUnit(repushData) : inputFileFFmpegLoading->getNextUnit(repushData);
@@ -643,11 +648,11 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToDTS,
   decodingNotPossibleAfter = -1;
 
   // Retrieval of the raw metadata is only required if the the reader or the decoder is not ffmpeg
-  const bool bothFFmpeg = (!isInputFormatTypeAnnexB() && decoderEngineType == decoderEngineFFMpeg);
+  const bool bothFFmpeg = (!isInputFormatTypeAnnexB(inputFormatType) && decoderEngineType == decoderEngineFFMpeg);
   const bool decFFmpeg = (decoderEngineType == decoderEngineFFMpeg);
   
   QByteArrayList parametersets;
-  if (isInputFormatTypeAnnexB())
+  if (isInputFormatTypeAnnexB(inputFormatType))
   {
     uint64_t filePos = 0;
     if (!bothFFmpeg)
@@ -729,7 +734,7 @@ void playlistItemCompressedVideo::createPropertiesWidget()
   // Add decoders we can use
   for (decoderEngine e : possibleDecoders)
   {
-    QString decoderTypeName = getDecoderEngineName(e);
+    QString decoderTypeName = functions::getDecoderEngineName(e);
     ui.comboBoxDecoder->addItem(decoderTypeName);
   }
   ui.comboBoxDecoder->setCurrentIndex(possibleDecoders.indexOf(decoderEngineType));
@@ -787,7 +792,7 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
   }
   else if (decoderEngineType == decoderEngineFFMpeg)
   {
-    if (isInputFormatTypeAnnexB())
+    if (isInputFormatTypeAnnexB(inputFormatType))
     {
       QSize frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
       QByteArray extradata = inputFileAnnexBParser->getExtradata();
@@ -876,7 +881,7 @@ indexRange playlistItemCompressedVideo::getStartEndFrameLimits() const
     return indexRange(0, 0);
   else
   {
-    if (isInputFormatTypeAnnexB())
+    if (isInputFormatTypeAnnexB(inputFormatType))
       return indexRange(0, inputFileAnnexBParser->getNumberPOCs() - 1);
     else
       return inputFileFFmpegLoading->getDecodableFrameLimits();

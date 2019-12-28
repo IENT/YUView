@@ -64,7 +64,7 @@ public:
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemDifference from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemDifference *newPlaylistItemDifference(const QDomElementYUView &stringElement);
+  static playlistItemDifference *newPlaylistItemDifference(const YUViewDomElement &stringElement);
 
   // Get the pixel values from A, B and the difference.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;

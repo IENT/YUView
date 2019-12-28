@@ -706,7 +706,7 @@ public:
   AVPixFmtDescriptorWrapper() {};
   AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, FFmpegLibraryVersion libVer);
 
-  RawFormat getRawFormat() { return flagIsRGB() ? raw_RGB : raw_YUV; }
+  YUView::RawFormat getRawFormat() { return flagIsRGB() ? YUView::raw_RGB : YUView::raw_YUV; }
   YUV_Internals::yuvPixelFormat getYUVPixelFormat();
   RGB_Internals::rgbPixelFormat getRGBPixelFormat();
 

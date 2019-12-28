@@ -36,6 +36,8 @@
 #include <QPainter>
 #include <QSettings>
 #include <QUrl>
+
+#include "common/functions.h"
 #include "filesource/fileSource.h"
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
@@ -45,7 +47,7 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath)
   needToLoadImage(true), imageLoading(false)
 {
   // Set the properties of the playlistItem
-  setIcon(0, convertIcon(":img_television.png"));
+  setIcon(0, functions::convertIcon(":img_television.png"));
   // Nothing can be dropped onto an image file
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
@@ -85,7 +87,7 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlist
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath(plItemNameOrFileName);
 
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemImageFile");
+  YUViewDomElement d = root.ownerDocument().createElement("playlistItemImageFile");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -99,7 +101,7 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlist
 
 /* Parse the playlist and return a new playlistItemImageFile.
 */
-playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(const QDomElementYUView &root, const QString &playlistFilePath)
+playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(const YUViewDomElement &root, const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemImageFile
   QString absolutePath = root.findChildValue("absolutePath");

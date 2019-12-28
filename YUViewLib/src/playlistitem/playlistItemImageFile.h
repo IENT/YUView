@@ -59,7 +59,7 @@ public:
   // Overload from playlistItem. Save the text item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemText from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemImageFile *newplaylistItemImageFile(const QDomElementYUView &root, const QString &playlistFilePath);
+  static playlistItemImageFile *newplaylistItemImageFile(const YUViewDomElement &root, const QString &playlistFilePath);
     
   // Return the RGB values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;

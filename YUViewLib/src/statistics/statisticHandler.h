@@ -38,6 +38,7 @@
 #include <QMutex>
 #include "statisticsExtensions.h"
 #include "ui/statisticsstylecontrol.h"
+#include "common/saveUi.h"
 #include "common/typedef.h"
 
 #include "ui_statisticHandler.h"
@@ -106,8 +107,8 @@ public:
   void clearStatTypes();
 
   // Load/Save status of statistics from playlist file
-  void savePlaylist(QDomElementYUView &root) const;
-  void loadPlaylist(const QDomElementYUView &root);
+  void savePlaylist(YUViewDomElement &root) const;
+  void loadPlaylist(const YUViewDomElement &root);
 
   QHash<int, statisticsData> statsCache; // cache of the statistics for the current POC [statsTypeID]
   int statsCacheFrameIdx;

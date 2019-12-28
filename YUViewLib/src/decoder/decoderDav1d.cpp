@@ -40,6 +40,8 @@
 
 #include "common/typedef.h"
 
+using namespace YUView;
+
 // Debug the decoder (0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define DECODERDAV1D_DEBUG_OUTPUT 0
 #if DECODERDAV1D_DEBUG_OUTPUT && !NDEBUG

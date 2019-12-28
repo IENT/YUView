@@ -57,7 +57,7 @@ public:
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Image Sequence Properties"; }
 
   // Create a new playlistItemImageFileSequence from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemImageFileSequence *newplaylistItemImageFileSequence(const QDomElementYUView &root, const QString &playlistFilePath);
+  static playlistItemImageFileSequence *newplaylistItemImageFileSequence(const YUViewDomElement &root, const QString &playlistFilePath);
 
   // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }

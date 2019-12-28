@@ -58,10 +58,10 @@ public:
 
   bool isFileSource() const Q_DECL_OVERRIDE { return true; };
 
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return (rawFormat == raw_YUV) ? "YUV File Properties" : "RGB File Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return (rawFormat == YUView::raw_YUV) ? "YUV File Properties" : "RGB File Properties"; }
 
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemRawFile *newplaylistItemRawFile(const QDomElementYUView &root, const QString &playlistFilePath);
+  static playlistItemRawFile *newplaylistItemRawFile(const YUViewDomElement &root, const QString &playlistFilePath);
 
   // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }

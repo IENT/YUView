@@ -84,12 +84,12 @@ protected:
   QScopedPointer<videoHandler> video;
 
   // The videoHandler can be a videoHandlerRGB or a videoHandlerYUV
-  RawFormat rawFormat;
+  YUView::RawFormat rawFormat;
   // Get a raw pointer to either version of the videoHandler
-  videoHandlerYUV *getYUVVideo() { assert(rawFormat == raw_YUV); return dynamic_cast<videoHandlerYUV*>(video.data()); }
-  videoHandlerRGB *getRGBVideo() { assert(rawFormat == raw_RGB); return dynamic_cast<videoHandlerRGB*>(video.data()); }
-  const videoHandlerYUV *getYUVVideo() const { assert(rawFormat == raw_YUV); return dynamic_cast<const videoHandlerYUV*>(video.data()); }
-  const videoHandlerRGB *getRGBVideo() const { assert(rawFormat == raw_RGB); return dynamic_cast<const videoHandlerRGB*>(video.data()); }
+  videoHandlerYUV *getYUVVideo() { assert(rawFormat == YUView::raw_YUV); return dynamic_cast<videoHandlerYUV*>(video.data()); }
+  videoHandlerRGB *getRGBVideo() { assert(rawFormat == YUView::raw_RGB); return dynamic_cast<videoHandlerRGB*>(video.data()); }
+  const videoHandlerYUV *getYUVVideo() const { assert(rawFormat == YUView::raw_YUV); return dynamic_cast<const videoHandlerYUV*>(video.data()); }
+  const videoHandlerRGB *getRGBVideo() const { assert(rawFormat == YUView::raw_RGB); return dynamic_cast<const videoHandlerRGB*>(video.data()); }
 
   // Connect the basic signals from the video
   void connectVideo();

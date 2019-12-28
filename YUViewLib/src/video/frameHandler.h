@@ -37,6 +37,7 @@
 #include <QObject>
 #include <QSettings>
 
+#include "common/saveUi.h"
 #include "common/typedef.h"
 
 #include "ui_frameHandler.h"

@@ -34,6 +34,8 @@
 
 #include <QPainter>
 
+#include "common/functions.h"
+
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMDIFFERENCE_DEBUG_LOADING 0
 #if PLAYLISTITEMDIFFERENCE_DEBUG_LOADING && !NDEBUG
@@ -47,7 +49,7 @@
 playlistItemDifference::playlistItemDifference()
   : playlistItemContainer("Difference Item")
 {
-  setIcon(0, convertIcon(":img_difference.png"));
+  setIcon(0, functions::convertIcon(":img_difference.png"));
   // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
@@ -166,7 +168,7 @@ void playlistItemDifference::createPropertiesWidget()
 
 void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemDifference");
+  YUViewDomElement d = root.ownerDocument().createElement("playlistItemDifference");
 
   // Append the indexed item's properties
   playlistItem::appendPropertiesToPlaylist(d);
@@ -176,7 +178,7 @@ void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlis
   root.appendChild(d);
 }
 
-playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(const QDomElementYUView &root)
+playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(const YUViewDomElement &root)
 {
   playlistItemDifference *newDiff = new playlistItemDifference();
 

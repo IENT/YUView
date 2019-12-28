@@ -36,6 +36,8 @@
 #include <QFontDialog>
 #include <QPainter>
 
+#include "common/functions.h"
+
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMTEXT_DEBUG 0
 #if PLAYLISTITEMTEXT_DEBUG && !NDEBUG
@@ -48,7 +50,7 @@ playlistItemText::playlistItemText(const QString &initialText)
   : playlistItem(QString("Text: \"%1\"").arg(initialText), playlistItem_Static)
 {
   // Set the properties of the playlistItem
-  setIcon(0, convertIcon(":img_text.png"));
+  setIcon(0, functions::convertIcon(":img_text.png"));
   // Nothing can be dropped onto a text item
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
@@ -172,7 +174,7 @@ void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir) 
 {
   Q_UNUSED(playlistDir);
 
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemText");
+  YUViewDomElement d = root.ownerDocument().createElement("playlistItemText");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -186,7 +188,7 @@ void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir) 
   root.appendChild(d);
 }
 
-playlistItemText *playlistItemText::newplaylistItemText(const QDomElementYUView &root)
+playlistItemText *playlistItemText::newplaylistItemText(const YUViewDomElement &root)
 {
   // Get the text and create a new playlistItemText
   QString text = root.findChildValue("text");
