@@ -71,7 +71,7 @@ public:
   // Call decodeNextFrame to advance to the next frame. When the function returns false, more data is probably needed.
   virtual bool decodeNextFrame() = 0;
   virtual QByteArray getRawFrameData() = 0;
-  RawFormat getRawFormat() const { return rawFormat; }
+  YUView::RawFormat getRawFormat() const { return rawFormat; }
   YUV_Internals::yuvPixelFormat getYUVPixelFormat() const { return formatYUV; }
   RGB_Internals::rgbPixelFormat getRGBPixelFormat() const { return formatRGB; }
   QSize getFrameSize() { return frameSize; }
@@ -125,7 +125,7 @@ protected:
   QSize frameSize;
 
   // Some decoders are able to handel both YUV and RGB output
-  RawFormat rawFormat;
+  YUView::RawFormat rawFormat;
   YUV_Internals::yuvPixelFormat formatYUV;
   RGB_Internals::rgbPixelFormat formatRGB;
   

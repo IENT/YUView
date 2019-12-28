@@ -41,12 +41,19 @@
 #include <QRect>
 #include <QString>
 
-typedef enum
+namespace YUView
 {
-  raw_Invalid,
-  raw_YUV,
-  raw_RGB
-} RawFormat;
+  Q_NAMESPACE;
+
+  typedef enum
+  {
+    raw_Invalid,
+    raw_YUV,
+    raw_RGB
+  } RawFormat;
+  Q_ENUM_NS(RawFormat);
+  
+}
 
 typedef enum
 {

@@ -53,6 +53,8 @@
 #include "ui/mainwindow.h"
 #include "ui_playlistItemCompressedFile_logDialog.h"
 
+using namespace YUView;
+
 #define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
 #if COMPRESSED_VIDEO_DEBUG_OUTPUT
 #include <QDebug>

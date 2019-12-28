@@ -45,6 +45,7 @@
 #define DEBUG_FFMPEG(fmt,...) ((void)0)
 #endif
 
+using namespace YUView;
 using namespace YUV_Internals;
 
 fileSourceFFmpegFile::fileSourceFFmpegFile()

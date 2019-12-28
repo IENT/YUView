@@ -39,6 +39,7 @@
 
 #include "common/functions.h"
 
+using namespace YUView;
 using namespace YUV_Internals;
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
