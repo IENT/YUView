@@ -972,7 +972,13 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
   else if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
   {
     if (index.column() == 0)
-      return QVariant(item->getName(!showVideoOnly));
+    {
+      const auto streamIndex = item->getStreamIndex(false);
+      const QString data = item->getItemData(0);
+      if (streamIndex >= 0)
+        return QVariant(QString("Stream %1 - ").arg(streamIndex) + data);
+      return QVariant(data);
+    }
     else
       return QVariant(item->getItemData(index.column()));
   }
@@ -992,7 +998,7 @@ QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &paren
 
   Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::index", "pointer to parent is null. This must never happen");
 
-  TreeItemNew *childItem = parentItem->getChildItem(row);
+  TreeItem *childItem = parentItem->getChildItem(row);
   if (childItem)
     return createIndex(row, column, childItem);
   else
@@ -1004,8 +1010,8 @@ QModelIndex PacketItemModel::parent(const QModelIndex &index) const
   if (!index.isValid())
     return QModelIndex();
 
-  TreeItemNew *childItem = static_cast<TreeItemNew*>(index.internalPointer());
-  TreeItemNew *parentItem = childItem->getParentItem();
+  TreeItem *childItem = static_cast<TreeItem*>(index.internalPointer());
+  TreeItem *parentItem = childItem->getParentItem();
 
   if (parentItem == rootItem.data())
     return QModelIndex();
@@ -1013,7 +1019,7 @@ QModelIndex PacketItemModel::parent(const QModelIndex &index) const
   // Get the row of the item in the list of children of the parent item
   int row = 0;
   if (parentItem)
-    row = parentItem->getParentItem()->getIndexOfChildItem(const_cast<TreeItemNew*>(parentItem));
+    row = parentItem->getParentItem()->getIndexOfChildItem(const_cast<TreeItem*>(parentItem));
 
   return createIndex(row, 0, parentItem);
 }
@@ -1025,10 +1031,10 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
 
   if (!parent.isValid())
   {
-    TreeItemNew *p = rootItem.data();
+    TreeItem *p = rootItem.data();
     return (p == nullptr) ? 0 : nrShowChildItems;
   }
-  TreeItemNew *p = static_cast<TreeItemNew*>(parent.internalPointer());
+  TreeItem *p = static_cast<TreeItem*>(parent.internalPointer());
   return (p == nullptr) ? 0 : p->getNrChildItems();
 }
 
@@ -1229,7 +1235,7 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
     return true;
   }
 
-  TreeItemNew *parentItem;
+  TreeItem *parentItem;
   if (!sourceParent.isValid())
   {
     // Get the root item
@@ -1243,10 +1249,10 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
     parentItem = p->getRootItem();
   }
   else
-    parentItem = static_cast<TreeItemNew*>(sourceParent.internalPointer());
+    parentItem = static_cast<TreeItem*>(sourceParent.internalPointer());
   Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::index", "pointer to parent is null. This must never happen");
 
-  TreeItemNew *childItem = parentItem->getChildItem(row);
+  TreeItem *childItem = parentItem->getChildItem(row);
   if (childItem != nullptr)
   {
     DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d", childItem->getStreamIndex());
