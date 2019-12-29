@@ -145,7 +145,7 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_vvc.nal_idx).arg(nal_vvc.nal_unit_type_id) + specificDescription);
+    nalRoot->appendItemData(QString("NAL %1: %2").arg(nal_vvc.nal_idx).arg(nal_vvc.nal_unit_type_id) + specificDescription);
 
   return true;
 }

@@ -533,7 +533,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
       sei_data.remove(0, nrBytes);
 
       if (message_tree)
-        message_tree->itemData[0] = QString("sei_message %1 - %2").arg(sei_count).arg(new_sei->payloadTypeName);
+        message_tree->setItemData(QString("sei_message %1 - %2").arg(sei_count).arg(new_sei->payloadTypeName), 0);
 
       QByteArray sub_sei_data = sei_data.mid(0, new_sei->payloadSize);
 
@@ -622,7 +622,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
+    nalRoot->appendItemData(QString("NAL %1: %2").arg(nal_hevc.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
 
   return true;
 }

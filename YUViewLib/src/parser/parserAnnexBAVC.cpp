@@ -298,7 +298,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
       sei_data.remove(0, nrBytes);
 
       if (message_tree)
-        message_tree->itemData[0] = QString("sei_message %1 - %2").arg(sei_count).arg(new_sei->payloadTypeName);
+        message_tree->setItemData(QString("sei_message %1 - %2").arg(sei_count).arg(new_sei->payloadTypeName), 0);
 
       // The real number of bytes to read from the bitstream may be higher than the indicated payload size (emulation prevention)
       int realPayloadSize = determineRealNumberOfBytesSEIEmulationPrevention(sei_data, new_sei->payloadSize);
@@ -373,7 +373,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
   if (nalRoot)
   {
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_avc.nal_idx).arg(nal_unit_type_toString.value(nal_avc.nal_unit_type)) + specificDescription);
+    nalRoot->appendItemData(QString("NAL %1: %2").arg(nal_avc.nal_idx).arg(nal_unit_type_toString.value(nal_avc.nal_unit_type)) + specificDescription);
     nalRoot->setError(!parsingSuccess);
   }
 

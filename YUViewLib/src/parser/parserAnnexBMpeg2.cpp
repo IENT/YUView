@@ -224,7 +224,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
       return false;
 
     if (message_tree)
-      message_tree->itemData[0] = new_extension->get_extension_function_name();
+      message_tree->setItemData(new_extension->get_extension_function_name(), 0);
 
     if (new_extension->extension_type == EXT_SEQUENCE)
     {
@@ -272,7 +272,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
   
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_mpeg2.nal_idx).arg(nal_unit_type_toString.value(nal_mpeg2.nal_unit_type)) + specificDescription);
+    nalRoot->appendItemData(QString("NAL %1: %2").arg(nal_mpeg2.nal_idx).arg(nal_unit_type_toString.value(nal_mpeg2.nal_unit_type)) + specificDescription);
 
   return parsingSuccess;
 }

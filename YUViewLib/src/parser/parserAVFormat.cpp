@@ -488,7 +488,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
     bitrateItemModel->addBitratePoint(packet.get_stream_index(), packet.get_pts(), packet.get_dts(), packet.get_data_size());
 
   // Set a useful name of the TreeItem (the root for this NAL)
-  itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": "") + specificDescription);
+  itemTree->appendItemData(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": "") + specificDescription);
 
   return true;
 }

@@ -203,7 +203,7 @@ unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *
 
   if (obuRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
-    obuRoot->itemData.append(QString("OBU %1: %2").arg(obu.obu_idx).arg(obu_type_toString.value(obu.obu_type)) + specificDescription);
+    obuRoot->appendItemData(QString("OBU %1: %2").arg(obu.obu_idx).arg(obu_type_toString.value(obu.obu_type)) + specificDescription);
 
   return nrBytesHeader + (int)obu.obu_size;
 }

@@ -118,8 +118,33 @@ namespace parserCommon
     int posInByte;        // The bit position in the current byte
   };
 
+  class TreeItemNew
+  {
+  public:
+    bool isError() const { return error; }
+    void setError(bool isError = true) { error = isError; }
+
+    int getStreamIndex() const { if (streamIndex >= 0) return streamIndex; if (parentItem) return parentItem->getStreamIndex(); return -1; }
+    void setStreamIndex(int idx) { streamIndex = idx; }
+
+    TreeItemNew *getParentItem() const { return parentItem; }
+
+    TreeItemNew *getChildItem(int index) { return childItems.value(index, nullptr); }
+    int getIndexOfChildItem(TreeItemNew *item) { return childItems.indexOf(item); }
+    unsigned int getNrChildItems() { return childItems.size(); }
+
+    virtual QString getName(bool showStreamIndex) const = 0;
+    virtual QString getItemData(int column) const = 0;
+
+  protected:
+    QList<TreeItemNew*> childItems;
+    bool error {false};
+    int streamIndex { -1 };
+    TreeItemNew *parentItem { nullptr };
+  };
+
   // The tree item is used to feed the tree view. Each NAL unit can return a representation using TreeItems
-  class TreeItem
+  class TreeItem : public TreeItemNew
   {
   public:
     // Some useful constructors of new Tree items. You must at least specify a parent. The new item is atomatically added as a child 
@@ -140,22 +165,14 @@ namespace parserCommon
     TreeItem(const QString &name, QString      val, const QString &coding, const QString &code, QString meaning, TreeItem *parent, bool isError=false) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; itemData.append(meaning); setError(isError); }
 
     ~TreeItem() { qDeleteAll(childItems); }
-    void setError(bool isError = true) { error = isError; }
-    bool isError()                     { return error; }
-
-    QString getName(bool showStreamIndex) const { QString r = (showStreamIndex && streamIndex != -1) ? QString("Stream %1 - ").arg(streamIndex) : ""; if (itemData.count() > 0) r += itemData[0]; return r; }
-
-    QList<TreeItem*> childItems;
-    QList<QString> itemData;
-    TreeItem *parentItem { nullptr };
-
-    int getStreamIndex() { if (streamIndex >= 0) return streamIndex; if (parentItem) return parentItem->getStreamIndex(); return -1; }
-    void setStreamIndex(int idx) { streamIndex = idx; }
-
+    
+    virtual QString getName(bool showStreamIndex) const override { QString r = (showStreamIndex && streamIndex != -1) ? QString("Stream %1 - ").arg(streamIndex) : ""; if (itemData.count() > 0) r += itemData[0]; return r; }
+    virtual QString getItemData(int column) const override { return itemData.value(column, QString()); }
+    void setItemData(QString s, int idx) { itemData[idx] = s; }
+    void appendItemData(QString s) { itemData.append(s); }
+    
   private:
-    bool error { false };
-    // This is set for the first layer items in case of AVPackets
-    int streamIndex { -1 };
+    QList<QString> itemData;
   };
 
   typedef QString (*meaning_callback_function)(unsigned int);
@@ -291,7 +308,7 @@ namespace parserCommon
     // about them. The bitstream analysis window will then update this count and the view to show the new items.
     unsigned int nrShowChildItems {0};
 
-    unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
+    unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->getNrChildItems(); }
 
     static QList<QColor> streamIndexColors;
     bool useColorCoding { true };
