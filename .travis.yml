@@ -129,9 +129,10 @@ after_success:
     fi
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      find / -name "libxcb*"
       cd build
       make INSTALL_ROOT=appdir install
-      $TRAVIS_BUILD_DIR/../linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -verbose=2
+      $TRAVIS_BUILD_DIR/../linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=3
       mv YUView-*.AppImage YUView.AppImage
       cp YUView.AppImage $TRAVIS_BUILD_DIR/release_files
     fi
