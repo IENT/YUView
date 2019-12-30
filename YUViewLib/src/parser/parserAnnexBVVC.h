@@ -59,7 +59,7 @@ public:
   QPair<int,int> getProfileLevel() override;
   QPair<int,int> getSampleAspectRatio() override;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, QSharedPointer<parserCommon::TreeItem> parent={}, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -74,7 +74,7 @@ protected:
 
     virtual QByteArray getNALHeader() const override;
     virtual bool isParameterSet() const override { return false; }  // We don't know yet
-    bool parse_nal_unit_header(const QByteArray &parameterSetData, parserCommon::TreeItem *root) override;
+    bool parse_nal_unit_header(const QByteArray &parameterSetData, QSharedPointer<parserCommon::TreeItem> root) override;
 
     bool isAUDelimiter() { return nal_unit_type_id == 19; }
 

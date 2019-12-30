@@ -95,7 +95,7 @@ parserAV1OBU::obu_unit::obu_unit(QSharedPointer<obu_unit> obu_src)
   obu_size = obu_src->obu_size;
 }
 
-bool parserAV1OBU::obu_unit::parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, TreeItem *root)
+bool parserAV1OBU::obu_unit::parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, QSharedPointer<parserCommon::TreeItem> root)
 {
   // Create a sub byte parser to access the bits
   reader_helper reader(header_data, root, "obu_header()");
@@ -155,17 +155,17 @@ bool parserAV1OBU::obu_unit::parse_obu_header(const QByteArray &header_data, uns
   return true;
 }
 
-unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile, QString *obuTypeName)
+unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, QSharedPointer<parserCommon::TreeItem> parent, QUint64Pair obuStartEndPosFile, QString *obuTypeName)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active). 
   // We don't set data (a name) for this item yet. 
   // We want to parse the item and then set a good description.
   QString specificDescription;
-  TreeItem *obuRoot = nullptr;
+  QSharedPointer<TreeItem> obuRoot;
   if (parent)
-    obuRoot = new TreeItem(parent);
+    obuRoot = parent->newChildItem();
   else if (!packetModel->isNull())
-    obuRoot = new TreeItem(packetModel->getRootItem());
+    obuRoot = packetModel->getRootItem()->newChildItem();
 
   // Read the OBU header
   obu_unit obu(obuStartEndPosFile, obuID);
@@ -208,7 +208,7 @@ unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *
   return nrBytesHeader + (int)obu.obu_size;
 }
 
-bool parserAV1OBU::sequence_header::parse_sequence_header(const QByteArray &sequenceHeaderData, TreeItem *root)
+bool parserAV1OBU::sequence_header::parse_sequence_header(const QByteArray &sequenceHeaderData, QSharedPointer<parserCommon::TreeItem> root)
 {
   obuPayload = sequenceHeaderData;
   reader_helper reader(sequenceHeaderData, root, "sequence_header_obu()");
@@ -644,7 +644,7 @@ bool parserAV1OBU::sequence_header::color_config_struct::parse_color_config(read
   return true;
 }
 
-bool parserAV1OBU::frame_header::parse_frame_header(const QByteArray &frameHeaderData, TreeItem *root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
+bool parserAV1OBU::frame_header::parse_frame_header(const QByteArray &frameHeaderData, QSharedPointer<parserCommon::TreeItem> root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
 {
   obuPayload = frameHeaderData;
   reader_helper reader(frameHeaderData, root, "frame_header_obu()");

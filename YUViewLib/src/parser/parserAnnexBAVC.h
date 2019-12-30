@@ -54,7 +54,7 @@ public:
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, QSharedPointer<parserCommon::TreeItem> parent={}, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
   QByteArray getExtradata() Q_DECL_OVERRIDE;
@@ -103,7 +103,7 @@ protected:
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a parserCommon::TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parse_nal_unit_header(const QByteArray &header_byte, parserCommon::TreeItem *root) Q_DECL_OVERRIDE;
+    bool parse_nal_unit_header(const QByteArray &header_byte, QSharedPointer<parserCommon::TreeItem> root) Q_DECL_OVERRIDE;
 
     bool isSlice()        { return nal_unit_type >= CODED_SLICE_NON_IDR && nal_unit_type <= CODED_SLICE_IDR; }
     virtual QByteArray getNALHeader() const override;
@@ -118,7 +118,7 @@ protected:
   struct sps : nal_unit_avc
   {
     sps(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
-    bool parse_sps(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool parse_sps(const QByteArray &parameterSetData, QSharedPointer<parserCommon::TreeItem> root);
 
     unsigned int profile_idc;
     bool constraint_set0_flag;
@@ -265,7 +265,7 @@ protected:
   struct pps : nal_unit_avc
   {
     pps(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
-    bool parse_pps(const QByteArray &parameterSetData, parserCommon::TreeItem *root, const sps_map &active_SPS_list);
+    bool parse_pps(const QByteArray &parameterSetData, QSharedPointer<parserCommon::TreeItem> root, const sps_map &active_SPS_list);
 
     unsigned int pic_parameter_set_id;
     unsigned int seq_parameter_set_id;
@@ -310,7 +310,7 @@ protected:
   struct slice_header : nal_unit_avc
   {
     slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
-    bool parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, parserCommon::TreeItem *root);
+    bool parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, QSharedPointer<parserCommon::TreeItem> root);
     bool isRandomAccess() { return (nal_unit_type == CODED_SLICE_IDR || slice_type == SLICE_I); }
 
     enum slice_type_enum
@@ -445,9 +445,9 @@ protected:
     sei(const nal_unit_avc &nal) : nal_unit_avc(nal) {}
     sei(QSharedPointer<sei> sei_src) : nal_unit_avc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; payloadTypeName = sei_src->payloadTypeName; }
     // Parse SEI header (type, length) and return how many bytes were read
-    int parse_sei_header(QByteArray &sliceHeaderData, parserCommon::TreeItem *root);
+    int parse_sei_header(QByteArray &sliceHeaderData, QSharedPointer<parserCommon::TreeItem> root);
     // If parsing of a special SEI is not implemented, this function can just parse/show the raw bytes.
-    sei_parsing_return_t parser_sei_bytes(QByteArray &data, parserCommon::TreeItem *root);
+    sei_parsing_return_t parser_sei_bytes(QByteArray &data, QSharedPointer<parserCommon::TreeItem> root);
 
     int payloadType;
     int last_payload_type_byte;
@@ -462,7 +462,7 @@ protected:
     buffering_period_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
     // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced SPS was not found (yet).
     // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
-    sei_parsing_return_t parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, parserCommon::TreeItem *root);
+    sei_parsing_return_t parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, QSharedPointer<parserCommon::TreeItem> root);
     void reparse_buffering_period_sei(const sps_map &active_SPS_list) { parse(active_SPS_list, true); }
 
     unsigned int seq_parameter_set_id;
@@ -472,7 +472,7 @@ protected:
   private:
     // These are used internally when parsing of the SEI must be prosponed until the SPS is received.
     bool parse(const sps_map &active_SPS_list, bool reparse);
-    parserCommon::TreeItem *itemTree;
+    QSharedPointer<parserCommon::TreeItem> itemTree;
     QByteArray sei_data_storage;
   };
 
@@ -482,7 +482,7 @@ protected:
     pic_timing_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
     // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced SPS was not found (yet).
     // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
-    sei_parsing_return_t parse_pic_timing_sei(QByteArray &data, const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, parserCommon::TreeItem *root);
+    sei_parsing_return_t parse_pic_timing_sei(QByteArray &data, const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, QSharedPointer<parserCommon::TreeItem> root);
     void reparse_pic_timing_sei(const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag) { parse(active_SPS_list, CpbDpbDelaysPresentFlag, true); }
 
     unsigned int cpb_removal_delay;
@@ -508,7 +508,7 @@ protected:
   private:
     // These are used internally when parsing of the SEI must be prosponed until the SPS is received.
     bool parse(const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, bool reparse);
-    parserCommon::TreeItem *itemTree;
+    QSharedPointer<parserCommon::TreeItem> itemTree;
     QByteArray sei_data_storage;
   };
 
@@ -516,7 +516,7 @@ protected:
   {
   public:
     user_data_registered_itu_t_t35_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    sei_parsing_return_t parse_user_data_registered_itu_t_t35(QByteArray &data, parserCommon::TreeItem *root) { return parse_internal(data, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
+    sei_parsing_return_t parse_user_data_registered_itu_t_t35(QByteArray &data, QSharedPointer<parserCommon::TreeItem> root) { return parse_internal(data, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     unsigned int itu_t_t35_country_code;
     unsigned int itu_t_t35_country_code_extension_byte;
@@ -536,7 +536,7 @@ protected:
     QList<unsigned int> ATSC_reserved_user_data;
 
   private:
-    bool parse_internal(QByteArray &data, parserCommon::TreeItem *root);
+    bool parse_internal(QByteArray &data, QSharedPointer<parserCommon::TreeItem> root);
     bool parse_ATSC1_data(parserCommon::reader_helper &reader);
 
     static QString getCCDataPacketMeaning(unsigned int cc_packet_data);
@@ -547,12 +547,12 @@ protected:
   {
   public:
     user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    sei_parsing_return_t parse_user_data_sei(QByteArray &sliceHeaderData, parserCommon::TreeItem *root) { return parse_internal(sliceHeaderData, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
+    sei_parsing_return_t parse_user_data_sei(QByteArray &sliceHeaderData, QSharedPointer<parserCommon::TreeItem> root) { return parse_internal(sliceHeaderData, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     QString user_data_UUID;
     QString user_data_message;
   private:
-    bool parse_internal(QByteArray &sliceHeaderData, parserCommon::TreeItem *root);
+    bool parse_internal(QByteArray &sliceHeaderData, QSharedPointer<parserCommon::TreeItem> root);
   };
 
   static bool read_scaling_list(parserCommon::reader_helper &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag);

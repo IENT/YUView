@@ -46,7 +46,7 @@ public:
     parserAV1OBU(QObject *parent = nullptr);
     ~parserAV1OBU() {}
 
-    unsigned int parseAndAddOBU(int obuID, QByteArray data, parserCommon::TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
+    unsigned int parseAndAddOBU(int obuID, QByteArray data, QSharedPointer<parserCommon::TreeItem> parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
 
     // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
     // When parsing of raw OBU files is added, we will need this.
@@ -91,7 +91,7 @@ protected:
     virtual ~obu_unit() {} // This class is meant to be derived from.
 
     // Parse the header the given data bytes.
-    bool parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, parserCommon::TreeItem *root);
+    bool parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, QSharedPointer<parserCommon::TreeItem> root);
 
     // Pointer to the first byte of the start code of the NAL unit
     QUint64Pair filePosStartEnd;
@@ -122,7 +122,7 @@ protected:
   struct sequence_header : obu_unit
   {
     sequence_header(const obu_unit &obu) : obu_unit(obu) {};
-    bool parse_sequence_header(const QByteArray &sequenceHeaderData, parserCommon::TreeItem *root);
+    bool parse_sequence_header(const QByteArray &sequenceHeaderData, QSharedPointer<parserCommon::TreeItem> root);
 
     unsigned int seq_profile;
     bool still_picture;
@@ -319,7 +319,7 @@ protected:
   struct frame_header : obu_unit
   {
     frame_header(const obu_unit &obu) : obu_unit(obu) {};
-    bool parse_frame_header(const QByteArray &sequenceHeaderData, parserCommon::TreeItem *root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
+    bool parse_frame_header(const QByteArray &sequenceHeaderData, QSharedPointer<parserCommon::TreeItem> root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
 
     bool parse_uncompressed_header(parserCommon::reader_helper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
     void mark_ref_frames(int idLen, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);

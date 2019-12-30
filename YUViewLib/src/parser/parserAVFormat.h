@@ -87,7 +87,7 @@ private:
 
   struct hvcC
   {
-    bool parse_hvcC(QByteArray &hvcCData, parserCommon::TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser, parserCommon::BitrateItemModel *bitrateModel);
+    bool parse_hvcC(QByteArray &hvcCData, QSharedPointer<parserCommon::TreeItem> root, QScopedPointer<parserAnnexB> &annexBParser, parserCommon::BitrateItemModel *bitrateModel);
 
     unsigned int configurationVersion;
     unsigned int general_profile_space;

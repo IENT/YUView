@@ -133,7 +133,7 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, QSharedPointer<parserCommon::TreeItem> parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   if (nalID == -1 && data.isEmpty())
   {
@@ -167,11 +167,11 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
   // We don't set data (a name) for this item yet. 
   // We want to parse the item and then set a good description.
   QString specificDescription;
-  TreeItem *nalRoot = nullptr;
+  QSharedPointer<TreeItem> nalRoot;
   if (parent)
-    nalRoot = new TreeItem(parent);
+    nalRoot = parent->newChildItem();
   else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = packetModel->getRootItem()->newChildItem();
 
   // Create a nal_unit and read the header
   nal_unit_avc nal_avc(nalStartEndPosFile, nalID);
@@ -289,7 +289,9 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
     int sei_count = 0;
     while(!sei_data.isEmpty())
     {
-      TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
+      QSharedPointer<TreeItem> message_tree;
+      if (nalRoot)
+        message_tree = nalRoot->newChildItem();
       
       // Parse the SEI header and remove it from the data array
       int nrBytes = new_sei->parse_sei_header(sei_data, message_tree);
@@ -387,7 +389,7 @@ const QStringList parserAnnexBAVC::nal_unit_type_toString = QStringList()
 << "RESERVED_22" << "RESERVED_23" << "UNSPCIFIED_24" << "UNSPCIFIED_25" << "UNSPCIFIED_26" << "UNSPCIFIED_27" << "UNSPCIFIED_28" << "UNSPCIFIED_29" 
 << "UNSPCIFIED_30" << "UNSPCIFIED_31";
 
-bool parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
+bool parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &header_byte, QSharedPointer<TreeItem> root)
 {
   // Create a sub byte parser to access the bits
   reader_helper reader(header_byte, root, "nal_unit_header()");
@@ -450,7 +452,7 @@ bool parserAnnexBAVC::read_scaling_list(reader_helper &reader, int *scalingList,
   return true;
 }
 
-bool parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
+bool parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, QSharedPointer<TreeItem> root)
 {
   nalPayload = parameterSetData;
   reader_helper reader(parameterSetData, root, "seq_parameter_set_rbsp()");
@@ -830,7 +832,7 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_h
   return true;
 }
 
-bool parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list)
+bool parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, QSharedPointer<TreeItem> root, const sps_map &active_SPS_list)
 {
   nalPayload = parameterSetData;
   reader_helper reader(parameterSetData, root, "pic_parameter_set_rbsp()");
@@ -935,7 +937,7 @@ bool parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIte
   return true;
 }
 
-bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
+bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, QSharedPointer<TreeItem> root)
 {
   reader_helper reader(sliceHeaderData, root, "slice_header()");
 
@@ -1487,7 +1489,7 @@ QByteArray parserAnnexBAVC::nal_unit_avc::getNALHeader() const
   return QByteArray(c, 1);
 }
 
-int parserAnnexBAVC::sei::parse_sei_header(QByteArray &sliceHeaderData, TreeItem *root)
+int parserAnnexBAVC::sei::parse_sei_header(QByteArray &sliceHeaderData, QSharedPointer<TreeItem> root)
 {
   reader_helper reader(sliceHeaderData, root, "sei_message()");
 
@@ -1640,13 +1642,12 @@ int parserAnnexBAVC::sei::parse_sei_header(QByteArray &sliceHeaderData, TreeItem
   return reader.nrBytesRead();
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBAVC::sei::parser_sei_bytes(QByteArray &data, TreeItem *root)
+parserAnnexB::sei_parsing_return_t parserAnnexBAVC::sei::parser_sei_bytes(QByteArray &data, QSharedPointer<TreeItem> root)
 {
-  if (root == nullptr)
+  if (!root)
     return SEI_PARSING_OK;
 
-  // Create a new TreeItem root for the item
-  TreeItem *const itemTree = new TreeItem("raw_bytes()", root);
+  auto itemTree = root->newChildItem("raw_bytes()");
 
   for (int i=0; i<data.length(); i++)
   {
@@ -1658,16 +1659,17 @@ parserAnnexB::sei_parsing_return_t parserAnnexBAVC::sei::parser_sei_bytes(QByteA
       else
         binary.append("0");
 
-    new TreeItem(QString("data[%1]").arg(i), c, QString("u(8)"), binary, itemTree);
+    itemTree->newChildItem(QString("data[%1]").arg(i), c, QString("u(8)"), binary);
   }
 
   return SEI_PARSING_OK;
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
+parserAnnexB::sei_parsing_return_t parserAnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, QSharedPointer<TreeItem> root)
 {
   // Create a new TreeItem root for the item
-  itemTree = root ? new TreeItem("buffering_period()", root) : nullptr;
+  if (root)
+    root->newChildItem("buffering_period()");
   sei_data_storage = data;
   if (!parse(active_SPS_list, false))
     return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
@@ -1713,10 +1715,11 @@ bool parserAnnexBAVC::buffering_period_sei::parse(const sps_map &active_SPS_list
   return true;
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &data, const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
+parserAnnexB::sei_parsing_return_t parserAnnexBAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &data, const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, QSharedPointer<TreeItem> root)
 {
   // Create a new TreeItem root for the item
-  itemTree = root ? new TreeItem("pic_timing()", root) : nullptr;
+  if (root)
+    root->newChildItem("pic_timing()");
   sei_data_storage = data;
   if (!parse(active_SPS_list, CpbDpbDelaysPresentFlag, false))
     return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
@@ -1838,7 +1841,7 @@ bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool
   return true;
 }
 
-bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_internal(QByteArray &data, TreeItem * root)
+bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_internal(QByteArray &data, QSharedPointer<TreeItem> root)
 {
   reader_helper reader(data, root, "user_data_registered_itu_t_t35()");
 
@@ -2078,7 +2081,7 @@ bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::checkByteParity(int va
   return nrOneBits % 2 == 1;
 }
 
-bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData, TreeItem *root)
+bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData, QSharedPointer<TreeItem> root)
 {
   user_data_UUID = sliceHeaderData.mid(0, 16).toHex();
   user_data_message = sliceHeaderData.mid(16);
@@ -2090,8 +2093,8 @@ bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData,
   {
     // Create a new TreeItem root for the item
     // The macros will use this variable to add all the parsed variables
-    TreeItem *const itemTree = new TreeItem("x264 user data", root);
-    new TreeItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578", itemTree);
+    auto itemTree = root->newChildItem("x264 user data");
+    itemTree->newChildItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578");
 
     // This seems to be x264 user data. These contain the encoder settings which might be useful
     QStringList list = user_data_message.split(QRegExp("[\r\n\t ]+"), QString::SkipEmptyParts);
@@ -2104,7 +2107,7 @@ bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData,
         QStringList option = val.split("=");
         if (option.length() == 2)
         {
-          new TreeItem(option[0], option[1], "", "", "", itemTree);
+          itemTree->newChildItem(option[0], option[1]);
         }
       }
       else
@@ -2112,14 +2115,14 @@ bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData,
         if (val == "-")
         {
           if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
-            new TreeItem("Info", aggregate_string, "", "", "", itemTree);
+            itemTree->newChildItem("Info", aggregate_string);
           aggregate_string = "";
         }
         else if (val == "options:")
         {
           options = true;
           if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
-            new TreeItem("Info", aggregate_string, "", "", "", itemTree);
+            itemTree->newChildItem("Info", aggregate_string);
         }
         else
           aggregate_string += " " + val;
@@ -2129,8 +2132,9 @@ bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData,
   else
   {
     // Just log the data as a string
-    TreeItem *const itemTree = new TreeItem("custom user data", root);
-    new TreeItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578", itemTree);
+    auto itemTree = root->newChildItem("custom user data");
+    itemTree->newChildItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578");
+    itemTree->newChildItem("User Data", QString(user_data_message), "", "", "");
   }
 
   return true;

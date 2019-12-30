@@ -122,45 +122,42 @@ namespace parserCommon
   class TreeItem
   {
   public:
-    // Some useful constructors of new Tree items. You must at least specify a parent. The new item is atomatically added as a child 
-    // of the parent.
-    TreeItem(TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); }
-    TreeItem(QList<QString> &data, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData = data; }
-    TreeItem(const QString &name, TreeItem *parent)  { parentItem = parent; if (parent) parent->childItems.append(this); itemData.append(name); }
-    TreeItem(const QString &name, int          val, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val); }
-    TreeItem(const QString &name, QString      val, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val; }
-    TreeItem(const QString &name, int          val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, unsigned int val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, uint64_t     val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, int64_t      val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, bool         val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
-    TreeItem(const QString &name, double       val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, QString      val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; }
-    TreeItem(const QString &name, int          val, const QString &coding, const QString &code, QString meaning, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; itemData.append(meaning); }
-    TreeItem(const QString &name, QString      val, const QString &coding, const QString &code, QString meaning, TreeItem *parent, bool isError=false) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; itemData.append(meaning); setError(isError); }
+    TreeItem() = delete;
+    TreeItem(TreeItem *parent) { this->parentItem = parent; }
 
-    ~TreeItem() { qDeleteAll(childItems); }
-    
-    virtual QString getItemData(int column) const { return itemData.value(column, QString()); }
-    void setItemData(QString s, int idx) { itemData[idx] = s; }
+    QSharedPointer<TreeItem> newChildItem(QString name = {});
+    template<typename T>
+    QSharedPointer<TreeItem> newChildItem(QString name, T val, const QString &coding = {}, const QString &code = {}, const QString &meaning = {})
+    {
+      auto newItem = QSharedPointer<TreeItem>::create(this);
+      childItems.append(newItem);
+      newItem->itemData << name << QString("%1").arg(val) << coding << code << meaning;
+      return newItem;
+    }
+    static QSharedPointer<TreeItem> newRootItem();
+    // Create a new child error item and return false
+    bool newErrorItem(QString msg);
+
+    QString getItemData(int column) const { return itemData.value(column, QString()); }
+    void setItemData(QString s, int idx);
     void appendItemData(QString s) { itemData.append(s); }
 
     bool isError() const { return error; }
     void setError(bool isError = true) { error = isError; }
 
-    int getStreamIndex(bool checkParent = true) const { if (streamIndex >= 0) return streamIndex; if (checkParent && parentItem) return parentItem->getStreamIndex(); return -1; }
+    int getStreamIndex(bool checkParent = true) const;
     void setStreamIndex(int idx) { streamIndex = idx; }
 
     TreeItem *getParentItem() const { return parentItem; }
 
-    TreeItem *getChildItem(int index) { return childItems.value(index, nullptr); }
-    int getIndexOfChildItem(TreeItem *item) { return childItems.indexOf(item); }
+    QSharedPointer<TreeItem> getChildItem(int index);
+    int getIndexOfChildItem(TreeItem *item);
     unsigned int getNrChildItems() { return childItems.size(); }
 
   private:
-    QList<TreeItem*> childItems;
+    QList<QSharedPointer<TreeItem>> childItems;
     QList<QString> itemData;
-    bool error {false};
+    bool error { false };
     int streamIndex { -1 };
     TreeItem *parentItem { nullptr };
   };
@@ -172,9 +169,9 @@ namespace parserCommon
   {
   public:
     reader_helper() : sub_byte_reader() {};
-    reader_helper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "") : sub_byte_reader(inArr) { init(inArr, item, new_sub_item_name); }
+    reader_helper(const QByteArray &inArr, QSharedPointer<parserCommon::TreeItem> item, QString new_sub_item_name = "") : sub_byte_reader(inArr) { init(inArr, item, new_sub_item_name); }
 
-    void init(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "");
+    void init(const QByteArray &inArr, QSharedPointer<parserCommon::TreeItem> item, QString new_sub_item_name = "");
 
     // Add another hierarchical log level to the tree or go back up. Don't call these directly but use the reader_sub_level wrapper.
     void addLogSubLevel(QString name);
@@ -214,9 +211,9 @@ namespace parserCommon
     void logInfo(QString info);
 
     bool addErrorMessageChildItem(QString msg) { return addErrorMessageChildItem(msg, currentTreeLevel); }
-    static bool addErrorMessageChildItem(QString msg, TreeItem *item);
+    static bool addErrorMessageChildItem(QString msg, QSharedPointer<parserCommon::TreeItem> item);
 
-    TreeItem *getCurrentItemTree() { return currentTreeLevel; }
+    QSharedPointer<parserCommon::TreeItem> getCurrentItemTree() { return currentTreeLevel; }
 
     // Some functions passed thourgh from the sub_byte_reader
     bool          more_rbsp_data()             { return sub_byte_reader::more_rbsp_data();             }
@@ -254,8 +251,8 @@ namespace parserCommon
     QString getMeaningValue(QStringList &meanings, unsigned int val);
     QString getMeaningValue(QMap<int,QString> &meanings, int val);
 
-    QList<TreeItem*> itemHierarchy;
-    TreeItem *currentTreeLevel { nullptr };
+    QList<QSharedPointer<parserCommon::TreeItem>> itemHierarchy;
+    QSharedPointer<parserCommon::TreeItem> currentTreeLevel;
   };
 
   // A simple wrapper for reader_helper.addLogSubLevel / reader_helper->removeLogSubLevel
@@ -283,10 +280,9 @@ namespace parserCommon
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 5; }
 
-    // The root of the tree
-    QScopedPointer<TreeItem> rootItem;
-    TreeItem *getRootItem() { return rootItem.data(); }
+    QSharedPointer<TreeItem> getRootItem() { return rootItem; }
     bool isNull() { return rootItem.isNull(); }
+    void createNewRootItem();
 
     void setUseColorCoding(bool colorCoding);
     void setShowVideoStreamOnly(bool showVideoOnly);
@@ -303,6 +299,7 @@ namespace parserCommon
     static QList<QColor> streamIndexColors;
     bool useColorCoding { true };
     bool showVideoOnly  { false };
+    QSharedPointer<TreeItem> rootItem;
   };
 
   class BitrateItemModel : public QAbstractTableModel

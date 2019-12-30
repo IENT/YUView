@@ -49,7 +49,7 @@ parserAnnexBMpeg2::nal_unit_mpeg2::nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2>
   start_code_value = nal_src->start_code_value;  
 }
 
-bool parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
+bool parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &header_byte, QSharedPointer<parserCommon::TreeItem> root)
 {
   // Create a sub byte parser to access the bits
   reader_helper reader(header_byte, root, "header_code()");
@@ -123,7 +123,7 @@ void parserAnnexBMpeg2::nal_unit_mpeg2::interpreteStartCodeValue()
     nal_unit_type = UNSPECIFIED;
 }
 
-bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, QSharedPointer<parserCommon::TreeItem> parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   // Skip the NAL unit header
   int skip = 0;
@@ -154,11 +154,11 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
   // We don't set data (a name) for this item yet. 
   // We want to parse the item and then set a good description.
   QString specificDescription;
-  TreeItem *nalRoot = nullptr;
+  QSharedPointer<TreeItem> nalRoot;
   if (parent)
-    nalRoot = new TreeItem(parent);
+    nalRoot = parent->newChildItem();
   else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = packetModel->getRootItem()->newChildItem();
 
   // Create a nal_unit and read the header
   nal_unit_mpeg2 nal_mpeg2(nalStartEndPosFile, nalID);
@@ -216,7 +216,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
   }
   else if (nal_mpeg2.nal_unit_type == EXTENSION_START)
   {
-    TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
+    auto message_tree = nalRoot->newChildItem();
 
     // An extension
     auto new_extension = QSharedPointer<nal_extension>(new nal_extension(nal_mpeg2));
@@ -277,7 +277,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
   return parsingSuccess;
 }
 
-bool parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray & parameterSetData, TreeItem * root)
+bool parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray & parameterSetData, QSharedPointer<parserCommon::TreeItem> root)
 {
   nalPayload = parameterSetData;
   reader_helper reader(parameterSetData, root, "sequence_header()");
@@ -325,7 +325,7 @@ bool parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray 
   return true;
 }
 
-bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, TreeItem * root)
+bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, QSharedPointer<parserCommon::TreeItem> root)
 {
   nalPayload = parameterSetData;
   reader_helper reader(parameterSetData, root, "picture_header");
@@ -363,7 +363,7 @@ bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & 
   return true;
 }
 
-bool parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header(const QByteArray & parameterSetData, TreeItem * root)
+bool parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header(const QByteArray & parameterSetData, QSharedPointer<parserCommon::TreeItem> root)
 {
   nalPayload = parameterSetData;
   reader_helper reader(parameterSetData, root, "group_of_pictures_header()");
@@ -375,13 +375,15 @@ bool parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header
   return true;
 }
 
-bool parserAnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterSetData, TreeItem * root)
+bool parserAnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterSetData, QSharedPointer<parserCommon::TreeItem> root)
 {
   nalPayload = parameterSetData;
+  if (!root)
+    return true;
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("user_data()", root) : nullptr;
+  auto itemTree = root->newChildItem("user_data()");
 
   if (itemTree)
   {
@@ -392,13 +394,13 @@ bool parserAnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterS
       QString code;
       for (int i = 7; i >= 0; i--)
         code += (c & (1 << i)) ? "1" : "0";
-       new TreeItem(QString("byte[%1]").arg(i++), c, QString("u(v) -> u(8)"), code, itemTree);
+      itemTree->newChildItem(QString("byte[%1]").arg(i++), c, QString("u(v) -> u(8)"), code);
     }
   }
   return true;
 }
 
-bool parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & extension_payload, TreeItem * itemTree)
+bool parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & extension_payload, QSharedPointer<parserCommon::TreeItem> itemTree)
 {
   reader_helper reader(extension_payload, itemTree);
 
@@ -468,7 +470,7 @@ QString parserAnnexBMpeg2::nal_extension::get_extension_function_name()
   }
 }
 
-bool parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem *root)
+bool parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, QSharedPointer<parserCommon::TreeItem> root)
 {
   nalPayload = parameterSetData;
   reader_helper reader(parameterSetData, root);
@@ -512,7 +514,7 @@ bool parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByte
   return true;
 }
 
-bool parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, TreeItem *itemTree)
+bool parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, QSharedPointer<parserCommon::TreeItem> itemTree)
 {
   nalPayload = parameterSetData;
   reader_helper reader(parameterSetData, itemTree);

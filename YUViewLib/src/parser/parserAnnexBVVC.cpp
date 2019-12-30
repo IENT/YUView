@@ -84,7 +84,7 @@ QPair<int,int> parserAnnexBVVC::getSampleAspectRatio()
   return QPair<int,int>(1,1);
 }
 
-bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, QSharedPointer<parserCommon::TreeItem> parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   Q_UNUSED(nalTypeName);
   
@@ -111,11 +111,11 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
   QString specificDescription;
-  TreeItem *nalRoot = nullptr;
+  QSharedPointer<TreeItem> nalRoot;
   if (parent)
-    nalRoot = new TreeItem(parent);
+    nalRoot = parent->newChildItem();
   else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = packetModel->getRootItem()->newChildItem();
 
   // Create a nal_unit and read the header
   nal_unit_vvc nal_vvc(nalStartEndPosFile, nalID);
@@ -157,7 +157,7 @@ QByteArray parserAnnexBVVC::nal_unit_vvc::getNALHeader() const
   return QByteArray(c, 2);
 }
 
-bool parserAnnexBVVC::nal_unit_vvc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+bool parserAnnexBVVC::nal_unit_vvc::parse_nal_unit_header(const QByteArray &parameterSetData, QSharedPointer<parserCommon::TreeItem> root)
 {
   // Create a sub byte parser to access the bits
   reader_helper reader(parameterSetData, root, "nal_unit_header()");

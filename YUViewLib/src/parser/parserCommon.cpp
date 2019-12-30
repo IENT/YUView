@@ -432,9 +432,71 @@ QByteArray sub_byte_writer::getByteArray()
   return byteArray;
 }
 
+/// --------------- TreeItem --------------------------
+
+QSharedPointer<TreeItem> TreeItem::newChildItem(QString name)
+{
+  auto newItem = QSharedPointer<TreeItem>::create(this);
+  childItems.append(newItem);
+  if (!name.isEmpty())
+    newItem->setItemData(name, 0);
+  return newItem;
+}
+
+bool TreeItem::newErrorItem(QString msg)
+{
+  auto newItem = newChildItem("Error", "", "", "", msg);
+  newItem->setError(true);
+  childItems.append(newItem);
+  return false;
+}
+
+QSharedPointer<TreeItem> TreeItem::newRootItem()
+{
+  auto newItem = QSharedPointer<TreeItem>::create(nullptr);
+  return newItem;
+}
+
+void TreeItem::setItemData(QString s, int idx) 
+{
+  if (idx < 0)
+    return;
+
+  while(itemData.count() <= idx)
+    itemData.append("");
+
+  itemData[idx] = s; 
+}
+
+int TreeItem::getStreamIndex(bool checkParent) const
+{ 
+  if (streamIndex >= 0) 
+    return streamIndex; 
+  if (checkParent && parentItem) 
+    return parentItem->getStreamIndex();
+  return -1; 
+}
+
+QSharedPointer<TreeItem> TreeItem::getChildItem(int index)
+{
+  if (index < childItems.count())
+    return childItems[index];
+  return {};
+}
+
+int TreeItem::getIndexOfChildItem(TreeItem *item)
+{
+  for (int i=0; i<childItems.count(); i++)
+  {
+    if (childItems[i].data() == item)
+      return i;
+  }
+  return -1;
+}
+
 /// --------------- reader_helper ---------------------
 
-void reader_helper::init(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name)
+void reader_helper::init(const QByteArray &inArr, QSharedPointer<parserCommon::TreeItem> item, QString new_sub_item_name)
 {
   set_input(inArr);
   if (item)
@@ -442,7 +504,7 @@ void reader_helper::init(const QByteArray &inArr, TreeItem *item, QString new_su
     if (new_sub_item_name.isEmpty())
       currentTreeLevel = item;
     else
-      currentTreeLevel = new TreeItem(new_sub_item_name, item);
+      currentTreeLevel = item->newChildItem(new_sub_item_name);
   }
   itemHierarchy.append(currentTreeLevel);
 }
@@ -450,9 +512,9 @@ void reader_helper::init(const QByteArray &inArr, TreeItem *item, QString new_su
 void reader_helper::addLogSubLevel(const QString name)
 {
   assert(!name.isEmpty());
-  if (itemHierarchy.last() == nullptr)
+  if (itemHierarchy.last().isNull())
     return;
-  currentTreeLevel = new TreeItem(name, itemHierarchy.last());
+  currentTreeLevel = itemHierarchy.last()->newChildItem(name);
   itemHierarchy.append(currentTreeLevel);
 }
 
@@ -472,7 +534,7 @@ bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, 
   if (!readBits_catch(into, numBits, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, meaning, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, meaning);
   return true;
 }
 
@@ -482,7 +544,7 @@ bool reader_helper::readBits(int numBits, uint64_t &into, QString intoName, QStr
   if (!readBits64_catch(into, numBits, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, meaning, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, meaning);
   return true;
 }
 
@@ -492,7 +554,7 @@ bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, 
   if (!readBits_catch(into, numBits, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, getMeaningValue(meanings, into), currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, getMeaningValue(meanings, into));
   return true;
 }
 
@@ -502,7 +564,7 @@ bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, 
   if (!readBits_catch(into, numBits, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, getMeaningValue(meanings, into), currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, getMeaningValue(meanings, into));
   return true;
 }
 
@@ -512,7 +574,7 @@ bool reader_helper::readBits(int numBits, unsigned int &into, QString intoName, 
   if (!readBits_catch(into, numBits, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, pMeaning(into), currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("u(v) -> u(%1)").arg(numBits), code, pMeaning(into));
   return true;
 }
 
@@ -526,7 +588,7 @@ bool reader_helper::readBits(int numBits, QList<unsigned int> &into, QString int
   if (idx >= 0)
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
-    new TreeItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code);
   return true;
 }
 
@@ -540,7 +602,7 @@ bool reader_helper::readBits(int numBits, QList<unsigned int> &into, QString int
   if (idx >= 0)
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
-    new TreeItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code, pMeaning(val), currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code, pMeaning(val));
   return true;
 }
 
@@ -555,7 +617,7 @@ bool reader_helper::readBits(int numBits, QByteArray &into, QString intoName, in
   if (idx >= 0)
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
-    new TreeItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, val, QString("u(v) -> u(%1)").arg(numBits), code);
   return true;
 }
 
@@ -564,8 +626,8 @@ bool reader_helper::readBits(int numBits, unsigned int &into, QMap<int, QString>
   QString code;
   if (!readBits_catch(into, numBits, code))
     return false;
-  if (currentTreeLevel)    
-    new TreeItem(getMeaningValue(intoNames, into), into, QString("u(v) -> u(%1)").arg(numBits), code, currentTreeLevel);
+  if (currentTreeLevel)
+    currentTreeLevel->newChildItem(getMeaningValue(intoNames, into), into, QString("u(v) -> u(%1)").arg(numBits), code);
   return true;
 }
 
@@ -585,7 +647,7 @@ bool reader_helper::readZeroBits(int numBits, QString intoName)
   }
   if (currentTreeLevel)
   {
-    new TreeItem(intoName, allZero ? QString("0") : QString("Not 0"), QString("u(v) -> u(%1)").arg(bitsToRead), code, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, allZero ? QString("0") : QString("Not 0"), QString("u(v) -> u(%1)").arg(bitsToRead), code);
     if (!allZero)
       addErrorMessageChildItem("The zero bits " + intoName + " must be zero");
   }
@@ -609,7 +671,7 @@ bool reader_helper::readFlag(bool &into, QString intoName, QString meaning)
     return false;
   into = (read_val != 0);
   if (currentTreeLevel)
-    new TreeItem(intoName, into, "u(1)", code, meaning, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, "u(1)", code, meaning);
   return true;
 }
 
@@ -624,7 +686,7 @@ bool reader_helper::readFlag(QList<bool> &into, QString intoName, int idx, QStri
   if (idx >= 0)
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
-    new TreeItem(intoName, val, "u(1)", code, meaning, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, val, "u(1)", code, meaning);
   return true;
 }
 
@@ -636,7 +698,7 @@ bool reader_helper::readFlag(bool &into, QString intoName, QStringList meanings)
     return false;
   into = (read_val != 0);
   if (currentTreeLevel)
-    new TreeItem(intoName, into, "u(1)", code, getMeaningValue(meanings, read_val), currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, "u(1)", code, getMeaningValue(meanings, read_val));
   return true;
 }
 
@@ -647,7 +709,7 @@ bool reader_helper::readUEV(unsigned int &into, QString intoName, QStringList me
   if (!readUEV_catch(into, bit_count, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("ue(v) -> ue(%1)").arg(bit_count), code, getMeaningValue(meanings, into), currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("ue(v) -> ue(%1)").arg(bit_count), code, getMeaningValue(meanings, into));
   return true;
 }
 
@@ -658,7 +720,7 @@ bool reader_helper::readUEV(unsigned int &into, QString intoName, QString meanin
   if (!readUEV_catch(into, bit_count, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("ue(v) -> ue(%1)").arg(bit_count), code, meaning, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("ue(v) -> ue(%1)").arg(bit_count), code, meaning);
   return true;
 }
 
@@ -673,7 +735,7 @@ bool reader_helper::readUEV(QList<quint32> &into, QString intoName, int idx, QSt
   if (idx >= 0)
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
-    new TreeItem(intoName, val, QString("ue(v) -> ue(%1)").arg(bit_count), code, meaning, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, val, QString("ue(v) -> ue(%1)").arg(bit_count), code, meaning);
   return true;
 }
 
@@ -684,7 +746,7 @@ bool reader_helper::readSEV(int &into, QString intoName, QStringList meanings)
   if (!readSEV_catch(into, bit_count, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("se(v) -> se(%1)").arg(bit_count), code, getMeaningValue(meanings, (unsigned int)into), currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("se(v) -> se(%1)").arg(bit_count), code, getMeaningValue(meanings, (unsigned int)into));
   return true;
 }
 
@@ -699,7 +761,7 @@ bool reader_helper::readSEV(QList<int> into, QString intoName, int idx)
   if (idx >= 0)
     intoName += QString("[%1]").arg(idx);
   if (currentTreeLevel)
-    new TreeItem(intoName, val, QString("se(v) -> se(%1)").arg(bit_count), code, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, val, QString("se(v) -> se(%1)").arg(bit_count), code);
   return true;
 }
 
@@ -710,7 +772,7 @@ bool reader_helper::readLeb128(uint64_t &into, QString intoName)
   if (!readLeb128_catch(into, bit_count, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("leb128(v) -> leb128(%1)").arg(bit_count), code, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("leb128(v) -> leb128(%1)").arg(bit_count), code);
   return true;
 }
 
@@ -721,7 +783,7 @@ bool reader_helper::readUVLC(uint64_t &into, QString intoName)
   if (!readUVLC_catch(into, bit_count, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("leb128(v) -> leb128(%1)").arg(bit_count), code, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("leb128(v) -> leb128(%1)").arg(bit_count), code);
   return true;
 }
 
@@ -732,7 +794,7 @@ bool reader_helper::readNS(int &into, QString intoName, int maxVal)
   if (!readNS_catch(into, maxVal, bit_count, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("ns(%1)").arg(bit_count), code, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("ns(%1)").arg(bit_count), code);
   return true;
 }
 
@@ -742,41 +804,38 @@ bool reader_helper::readSU(int &into, QString intoName, int nrBits)
   if (!readSU_catch(into, nrBits, code))
     return false;
   if (currentTreeLevel)
-    new TreeItem(intoName, into, QString("su(%1)").arg(nrBits), code, currentTreeLevel);
+    currentTreeLevel->newChildItem(intoName, into, QString("su(%1)").arg(nrBits), code);
   return true;
 }
 
 void reader_helper::logValue(int value, QString valueName, QString meaning)
 {
   if (currentTreeLevel)
-    new TreeItem(valueName, value, "calc", meaning, currentTreeLevel);
+    currentTreeLevel->newChildItem(valueName, value, "calc", meaning);
 }
 
 void reader_helper::logValue(int value, QString valueName, QString coding, QString code, QString meaning)
 {
   if (currentTreeLevel)
-    new TreeItem(valueName, value, coding, code, meaning, currentTreeLevel);
+    currentTreeLevel->newChildItem(valueName, value, coding, code, meaning);
 }
 
 void reader_helper::logValue(QString value, QString valueName, QString meaning)
 {
   if (currentTreeLevel)
-    new TreeItem(valueName, value, "calc", meaning, currentTreeLevel);
+    currentTreeLevel->newChildItem(valueName, value, "calc", meaning);
 }
 
 void reader_helper::logInfo(QString info)
 {
   if (currentTreeLevel)
-    new TreeItem(info, currentTreeLevel);
+    currentTreeLevel->newChildItem(info);
 }
 
-bool reader_helper::addErrorMessageChildItem(QString errorMessage, TreeItem *item)
+bool reader_helper::addErrorMessageChildItem(QString errorMessage, QSharedPointer<parserCommon::TreeItem> item)
 {
   if (item)
-  {
-    new TreeItem("Error", "", "", "", errorMessage, item, true);
-    item->setError();
-  }
+    item->newErrorItem(errorMessage);
   return false;
 }
 
@@ -989,7 +1048,7 @@ QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &paren
 {
   if (!hasIndex(row, column, parent))
     return QModelIndex();
-
+  
   TreeItem *parentItem;
   if (!parent.isValid())
     parentItem = rootItem.data();
@@ -998,7 +1057,8 @@ QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &paren
 
   Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::index", "pointer to parent is null. This must never happen");
 
-  TreeItem *childItem = parentItem->getChildItem(row);
+  TreeItem *childItem = parentItem->getChildItem(row).data();
+  Q_ASSERT_X(childItem != nullptr, "PacketItemModel::index", "pointer to child is nullpts");
   if (childItem)
     return createIndex(row, column, childItem);
   else
@@ -1011,7 +1071,9 @@ QModelIndex PacketItemModel::parent(const QModelIndex &index) const
     return QModelIndex();
 
   TreeItem *childItem = static_cast<TreeItem*>(index.internalPointer());
+  Q_ASSERT_X(childItem != nullptr, "PacketItemModel::parent", "pointer to child is nullpts");
   TreeItem *parentItem = childItem->getParentItem();
+  Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::parent", "pointer to parent is nullpts");
 
   if (parentItem == rootItem.data())
     return QModelIndex();
@@ -1036,6 +1098,19 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
   }
   TreeItem *p = static_cast<TreeItem*>(parent.internalPointer());
   return (p == nullptr) ? 0 : p->getNrChildItems();
+}
+
+void PacketItemModel::createNewRootItem()
+{
+  if (rootItem.isNull())
+  {
+    rootItem = TreeItem::newRootItem();
+    rootItem->appendItemData("Name");
+    rootItem->appendItemData("Value");
+    rootItem->appendItemData("Coding");
+    rootItem->appendItemData("Code");
+    rootItem->appendItemData("Meaning");
+  }
 }
 
 void PacketItemModel::updateNumberModelItems()
@@ -1246,13 +1321,13 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
       DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow Unable to get root item");  
       return false;
     }
-    parentItem = p->getRootItem();
+    parentItem = p->getRootItem().data();
   }
   else
     parentItem = static_cast<TreeItem*>(sourceParent.internalPointer());
   Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::index", "pointer to parent is null. This must never happen");
 
-  TreeItem *childItem = parentItem->getChildItem(row);
+  TreeItem *childItem = parentItem->getChildItem(row).data();
   if (childItem != nullptr)
   {
     DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d", childItem->getStreamIndex());

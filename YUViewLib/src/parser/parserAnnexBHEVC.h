@@ -59,7 +59,7 @@ public:
   QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE;
   QPair<int,int> getSampleAspectRatio() Q_DECL_OVERRIDE;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, QSharedPointer<parserCommon::TreeItem> parent={}, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -89,7 +89,7 @@ protected:
     virtual bool isParameterSet() const override { return nal_type == VPS_NUT || nal_type == SPS_NUT || nal_type == PPS_NUT; }
 
     // Parse the parameter set from the given data bytes. If a parserCommon::TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parse_nal_unit_header(const QByteArray &parameterSetData, parserCommon::TreeItem *root) Q_DECL_OVERRIDE;
+    bool parse_nal_unit_header(const QByteArray &parameterSetData, QSharedPointer<parserCommon::TreeItem> root) Q_DECL_OVERRIDE;
 
     bool isIRAP();
     bool isSLNR();
@@ -337,7 +337,7 @@ protected:
   {
     vps(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
 
-    bool parse_vps(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool parse_vps(const QByteArray &parameterSetData, QSharedPointer<parserCommon::TreeItem> root);
 
     unsigned int vps_video_parameter_set_id;     /// vps ID
     bool vps_base_layer_internal_flag;
@@ -377,7 +377,7 @@ protected:
   struct sps : nal_unit_hevc
   {
     sps(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
-    bool parse_sps(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool parse_sps(const QByteArray &parameterSetData, QSharedPointer<parserCommon::TreeItem> root);
 
     unsigned int sps_video_parameter_set_id;
     unsigned int sps_max_sub_layers_minus1;
@@ -475,7 +475,7 @@ protected:
   struct pps : nal_unit_hevc
   {
     pps(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
-    bool parse_pps(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool parse_pps(const QByteArray &parameterSetData, QSharedPointer<parserCommon::TreeItem> root);
 
     unsigned int pps_pic_parameter_set_id;
     unsigned int pps_seq_parameter_set_id;
@@ -539,7 +539,7 @@ protected:
   struct slice : nal_unit_hevc
   {
     slice(const nal_unit_hevc &nal);
-    bool parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, parserCommon::TreeItem *root);
+    bool parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, QSharedPointer<parserCommon::TreeItem> root);
     virtual int getPOC() const override { return PicOrderCntVal; }
 
     bool first_slice_segment_in_pic_flag;
@@ -622,9 +622,9 @@ protected:
     sei(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
     sei(QSharedPointer<sei> sei_src) : nal_unit_hevc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; payloadTypeName = sei_src->payloadTypeName; }
     // Parse the SEI and return how many bytes were read. -1 if an error occured.
-    int parse_sei_header(const QByteArray &sliceHeaderData, parserCommon::TreeItem *root);
+    int parse_sei_header(const QByteArray &sliceHeaderData, QSharedPointer<parserCommon::TreeItem> root);
     // If parsing of a special SEI is not implemented, this function can just parse/show the raw bytes.
-    sei_parsing_return_t parser_sei_bytes(QByteArray &data, parserCommon::TreeItem *root);
+    sei_parsing_return_t parser_sei_bytes(QByteArray &data, QSharedPointer<parserCommon::TreeItem> root);
 
     int payloadType;
     int last_payload_type_byte;
@@ -636,7 +636,7 @@ protected:
   struct user_data_sei : sei
   {
     user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    sei_parsing_return_t parse_user_data_sei(QByteArray &sei_data, parserCommon::TreeItem *root);
+    sei_parsing_return_t parse_user_data_sei(QByteArray &sei_data, QSharedPointer<parserCommon::TreeItem> root);
 
     QString user_data_UUID;
     QString user_data_message;
@@ -648,7 +648,7 @@ protected:
     active_parameter_sets_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
     // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced VPS was not found (yet).
     // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
-    sei_parsing_return_t parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &active_VPS_list, parserCommon::TreeItem *root);
+    sei_parsing_return_t parse_active_parameter_sets_sei(QByteArray &sliceHeaderData, const vps_map &active_VPS_list, QSharedPointer<parserCommon::TreeItem> root);
     sei_parsing_return_t reparse_active_parameter_sets_sei(const vps_map &active_VPS_list) { return parse_internal(active_VPS_list) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     unsigned int active_video_parameter_set_id;
@@ -672,7 +672,7 @@ protected:
     buffering_period_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
     // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced VPS was not found (yet).
     // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
-    sei_parsing_return_t parse_buffering_period_sei(QByteArray &sliceHeaderData, const sps_map &active_SPS_list, parserCommon::TreeItem *root);
+    sei_parsing_return_t parse_buffering_period_sei(QByteArray &sliceHeaderData, const sps_map &active_SPS_list, QSharedPointer<parserCommon::TreeItem> root);
     sei_parsing_return_t reparse_buffering_period_sei(const sps_map &active_SPS_list) { return parse_internal(active_SPS_list) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     unsigned int bp_seq_parameter_set_id;
@@ -708,7 +708,7 @@ protected:
     pic_timing_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
     // Parsing might return SEI_PARSING_WAIT_FOR_PARAMETER_SETS if the referenced VPS was not found (yet).
     // In this case we have to parse this SEI once the VPS was recieved (which should happen at the beginning of the bitstream).
-    sei_parsing_return_t parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &active_VPS_list, const sps_map &active_SPS_list, parserCommon::TreeItem *root);
+    sei_parsing_return_t parse_pic_timing_sei(QByteArray &sliceHeaderData, const vps_map &active_VPS_list, const sps_map &active_SPS_list, QSharedPointer<parserCommon::TreeItem> root);
     sei_parsing_return_t reparse_pic_timing_sei(const vps_map &active_VPS_list, const sps_map &active_SPS_list) { return parse_internal(active_VPS_list, active_SPS_list) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     unsigned int pic_struct;
@@ -728,7 +728,7 @@ protected:
     // These are used internally when parsing of the SEI must be prosponed until the VPS is received.
     bool parse_internal(const vps_map &active_VPS_list, const sps_map &active_SPS_list);
     bool is_reparse_needed(const vps_map &active_VPS_list, const sps_map &active_SPS_list);
-    parserCommon::TreeItem *rootItem;
+    QSharedPointer<parserCommon::TreeItem> rootItem;
     QByteArray sei_data_storage;
   };
 
@@ -736,11 +736,11 @@ protected:
   {
   public:
     alternative_transfer_characteristics_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    parserAnnexB::sei_parsing_return_t parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, parserCommon::TreeItem *root) { return parse_internal(sliceHeaderData, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
+    parserAnnexB::sei_parsing_return_t parse_alternative_transfer_characteristics_sei(QByteArray &sliceHeaderData, QSharedPointer<parserCommon::TreeItem> root) { return parse_internal(sliceHeaderData, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     unsigned int preferred_transfer_characteristics;
   private:
-    bool parse_internal(QByteArray &sliceHeaderData, parserCommon::TreeItem *root);
+    bool parse_internal(QByteArray &sliceHeaderData, QSharedPointer<parserCommon::TreeItem> root);
   };
 
   // Get the meaning/interpretation mapping of some values
