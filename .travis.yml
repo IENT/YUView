@@ -46,6 +46,7 @@ before_install:
       sudo apt-get update -qq
       sudo apt-get install -qq g++-8
       sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
+      sudo apt-get install libgl1-mesa-dev
     fi
   
 install:
