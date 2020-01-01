@@ -101,10 +101,12 @@ private slots:
   bool handleKeyPress(QKeyEvent *event, bool keyFromSeparateView=true);
 
   // Some slots for the actions.
-  void openProjectWebsite() { QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); }
-  void openHMWebsize()      { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libHM/releases")); }
-  void openVTMWebsize()     { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/VTM/releases")); }
-  void checkForNewVersion() { updater->startCheckForNewVersion(); }
+  void openProjectWebsite()  { QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); }
+  void openLibde265Website() { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libde265/releases")); }
+  void openHMWebsite()       { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libHM/releases")); }
+  void openVTMWebsize()      { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/VTM/releases")); }
+  void openDav1dWebsite()    { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/dav1d/releases")); }
+  void checkForNewVersion()  { updater->startCheckForNewVersion(); }
   void performanceTest();
 
 private:

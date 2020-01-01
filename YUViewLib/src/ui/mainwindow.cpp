@@ -271,8 +271,10 @@ void MainWindow::createMenusAndActions()
   helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
   helpMenu->addAction("Check for new version", this, SLOT(checkForNewVersion()));
   QMenu *downloadsMenu = helpMenu->addMenu("Downloads");
-  downloadsMenu->addAction("libHMDecoder", this, SLOT(openHMWebsize()));
-  downloadsMenu->addAction("libVTMDecoder", this, SLOT(openVTMWebsize()));
+  downloadsMenu->addAction("libde265 HEVC decoder", this, SLOT(openLibde265Website()));
+  downloadsMenu->addAction("HM reference HEVC decoder", this, SLOT(openHMWebsite()));
+  downloadsMenu->addAction("VTM VVC decoder", this, SLOT(openVTMWebsize()));
+  downloadsMenu->addAction("dav1d AV1 decoder", this, SLOT(openDav1dWebsite()));
   helpMenu->addSeparator();
   helpMenu->addAction("Performance Tests", this, SLOT(performanceTest()));
   helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));
