@@ -651,7 +651,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   {
     if (packet.is_video_packet)
     {
-      if (max_ts > 0)
+      if (max_ts != 0)
         progressPercentValue = clip(int((packet.get_dts() - start_ts) * 100 / max_ts), 0, 100);
       videoFrameCounter++;
     }

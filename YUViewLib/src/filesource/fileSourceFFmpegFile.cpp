@@ -433,7 +433,7 @@ bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
       return false;
 
     int newPercentValue = 0;
-    if (maxPTS > 0) 
+    if (maxPTS != 0)
       newPercentValue = clip(int(pkt.get_pts() * 100 / maxPTS), 0, 100);
     if (newPercentValue != curPercentValue)
     {

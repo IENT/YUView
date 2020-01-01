@@ -102,6 +102,9 @@ public:
     // Draw the percentage as text
     //painter.setPen(Qt::black);
     const int maxFrameNumber = range.second + 1 - range.first;
+    if (maxFrameNumber <= 0)
+      return;
+    
     const float bufferPercent = float(frameList.count()) / maxFrameNumber * 100;
     QString pTxt = QString::number(bufferPercent, 'f', 0) + "%";
     painter.drawText(0, 0, s.width(), s.height(), Qt::AlignCenter, pTxt);
