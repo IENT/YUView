@@ -56,7 +56,7 @@ before_install:
 install:
   # Qt Base
   - cd $QT_INSTALL_DIR
-  - curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/qtbasexcb/${QT_FILE} -o Qt.zip
+  - curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.13.1/${QT_FILE} -o Qt.zip
   - unzip -q -a Qt.zip
   - export PATH=$QT_INSTALL_DIR/Qt/bin:$PATH
   - cd $TRAVIS_BUILD_DIR/..
@@ -70,7 +70,7 @@ install:
   # QtCharts
   - mkdir -p $QT_CHARTS_BUILD_DIR
   - cd $QT_CHARTS_BUILD_DIR
-  - curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/qtchartsfeaturexenial/$QT_CHARTS -o QtCharts.zip
+  - curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtCharts-5.13.1/$QT_CHARTS -o QtCharts.zip
   - unzip -q -a QtCharts.zip
   - cd QtCharts
   - if [[ "$TRAVIS_OS_NAME" == "osx" || "$TRAVIS_OS_NAME" == "linux" ]]; then make install; fi
