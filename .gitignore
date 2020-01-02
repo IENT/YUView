@@ -10,3 +10,5 @@ YUView.pro.user
 /build
 /GeneratedFiles
 /x64
+/deploy
+.vscode

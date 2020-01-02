@@ -1,0 +1,1247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SettingsDialog</class>
+ <widget class="QDialog" name="SettingsDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>535</width>
+    <height>619</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tabGeneral">
+      <attribute name="title">
+       <string>General</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string>General</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="checkBoxContinuePlaybackNewSelection">
+            <property name="toolTip">
+             <string>Should playback continue if a new sequence is selected from the playlist?</string>
+            </property>
+            <property name="whatsThis">
+             <string>Should playback continue if a new sequence is selected from the playlist?</string>
+            </property>
+            <property name="text">
+             <string>Continue playback when a new sequence is selected</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="checkBoxAskToSave">
+            <property name="text">
+             <string>Ask to save playlist on exit</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="checkBoxWatchFiles">
+            <property name="toolTip">
+             <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
+            </property>
+            <property name="whatsThis">
+             <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
+            </property>
+            <property name="text">
+             <string>Watch open files for changes</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QCheckBox" name="checkBoxSavePositionPerItem">
+            <property name="text">
+             <string>Restore position and zoom factor for each item in the playlist</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="GroupBoxColors">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="title">
+          <string>UI</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0">
+          <item row="1" column="1">
+           <widget class="QComboBox" name="comboBoxSplitLineStyle">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="whatsThis">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Solid Line</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Handlers</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelMouseMode">
+            <property name="toolTip">
+             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+            </property>
+            <property name="whatsThis">
+             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+            </property>
+            <property name="text">
+             <string>Mouse button behavior</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="labelGridLineColor">
+            <property name="toolTip">
+             <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+            </property>
+            <property name="text">
+             <string>Grid Line Color</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QCheckBox" name="checkBoxShowFilePathSplitMode">
+            <property name="palette">
+             <palette>
+              <active>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </active>
+              <inactive>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </inactive>
+              <disabled>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>190</red>
+                  <green>190</green>
+                  <blue>190</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
+             </palette>
+            </property>
+            <property name="toolTip">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
+            <property name="whatsThis">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
+            <property name="text">
+             <string>invisibleText</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="labelShowFilePathSplitView">
+            <property name="toolTip">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
+            <property name="whatsThis">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
+            <property name="text">
+             <string>Show file path in split view</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayoutGridLineColor" stretch="1,0">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="showColorWidget" name="frameGridLineColor">
+              <property name="toolTip">
+               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonEditGridColor">
+              <property name="toolTip">
+               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../images/images.qrc">
+                <normaloff>:/img_edit.png</normaloff>:/img_edit.png</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="labelHidePlaybackControlFullScreen">
+            <property name="toolTip">
+             <string>Show the playback control (the navigation panel at the bottom) also in full screen mode.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Show the playback control (the navigation panel at the bottom) also in full screen mode.</string>
+            </property>
+            <property name="text">
+             <string>Show playback control in full screen</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelSplitLineStyle">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="whatsThis">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="text">
+             <string>Split line style</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="comboBoxMouseMode">
+            <property name="toolTip">
+             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+            </property>
+            <property name="whatsThis">
+             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Left Zoom, Right Move</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Left Move, Right Zoom</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="comboBoxTheme"/>
+          </item>
+          <item row="3" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayoutBackgroundColor" stretch="1,0">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="showColorWidget" name="frameBackgroundColor">
+              <property name="toolTip">
+               <string>Set the background color of the central view widget.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Set the background color of the central view widget.</string>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonEditBackgroundColor">
+              <property name="toolTip">
+               <string>Set the background color of the central view widget.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Set the background color of the central view widget.</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../images/images.qrc">
+                <normaloff>:/img_edit.png</normaloff>:/img_edit.png</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelTheme">
+            <property name="text">
+             <string>Theme</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QCheckBox" name="checkBoxPlaybackControlFullScreen">
+            <property name="palette">
+             <palette>
+              <active>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </active>
+              <inactive>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </inactive>
+              <disabled>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>190</red>
+                  <green>190</green>
+                  <blue>190</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
+             </palette>
+            </property>
+            <property name="toolTip">
+             <string>Show the playback control (the navigation panel at the bottom) also in full screen mode.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Show the playback control (the navigation panel at the bottom) also in full screen mode.</string>
+            </property>
+            <property name="text">
+             <string>invisibleText</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labelBackgroundColor">
+            <property name="toolTip">
+             <string>Set the background color of the central view widget.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Set the background color of the central view widget.</string>
+            </property>
+            <property name="text">
+             <string>View Background Color</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="labelPixelValuesHex">
+            <property name="text">
+             <string>Show pixel values as Hex values</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QCheckBox" name="checkBoxPixelValuesHex">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxUpdates">
+         <property name="toolTip">
+          <string>If activated, YUView will try to check for updates every time you start YUView.</string>
+         </property>
+         <property name="whatsThis">
+          <string>If activated, YUView will try to check for updates every time you start YUView.</string>
+         </property>
+         <property name="title">
+          <string>Check for updates</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QLabel" name="labelUpdateSettings">
+            <property name="toolTip">
+             <string>Should updates be installed automatically?</string>
+            </property>
+            <property name="whatsThis">
+             <string>Should updates be installed automatically?</string>
+            </property>
+            <property name="text">
+             <string>Update Setting</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBoxUpdateSettings">
+            <property name="toolTip">
+             <string>Should updates be installed automatically?</string>
+            </property>
+            <property name="whatsThis">
+             <string>Should updates be installed automatically?</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Automatically download and update</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Always aks before an update</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Caching</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="QGroupBox" name="groupBoxCaching">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>If activated, YUView will cache items from the playlist in system memory. The RGB output images are cached to optimize playback speed.</string>
+         </property>
+         <property name="whatsThis">
+          <string>If activated, YUView will cache items from the playlist in system memory. The RGB output images are cached to optimize playback speed.</string>
+         </property>
+         <property name="title">
+          <string>Caching of video data</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <property name="sizeConstraint">
+           <enum>QLayout::SetDefaultConstraint</enum>
+          </property>
+          <item row="3" column="0" colspan="4">
+           <widget class="QGroupBox" name="groupBoxCachingPlayback">
+            <property name="toolTip">
+             <string>Settings that are related to the caching strategy when playback is running.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Settings that are related to the caching strategy when playback is running.</string>
+            </property>
+            <property name="title">
+             <string>Playback</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_4" columnstretch="0,0,1">
+             <item row="1" column="1">
+              <widget class="QSpinBox" name="spinBoxThreadLimit">
+               <property name="toolTip">
+                <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+               </property>
+               <property name="whatsThis">
+                <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QCheckBox" name="checkBoxEnablePlaybackCaching">
+               <property name="toolTip">
+                <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+               </property>
+               <property name="whatsThis">
+                <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+               </property>
+               <property name="text">
+                <string>Enable caching when playback is running with</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="2">
+              <widget class="QLabel" name="labelThreads">
+               <property name="toolTip">
+                <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+               </property>
+               <property name="whatsThis">
+                <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+               </property>
+               <property name="text">
+                <string>threads</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0" colspan="3">
+              <widget class="QCheckBox" name="checkBoxPausPlaybackForCaching">
+               <property name="toolTip">
+                <string>Before playing an item, wait for the caching of the item to finish.</string>
+               </property>
+               <property name="whatsThis">
+                <string>Before playing an item, wait for the caching of the item to finish.</string>
+               </property>
+               <property name="text">
+                <string>Pause playback until caching of the next item is complete</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QSlider" name="sliderThreshold">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="toolTip">
+             <string>How much of the available system memory should be used for the caching?</string>
+            </property>
+            <property name="whatsThis">
+             <string>How much of the available system memory should be used for the caching?</string>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="invertedAppearance">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="checkBoxNrThreads">
+            <property name="toolTip">
+             <string>Activate to set the number of threads to use for caching. If this is disabled, the optimal number of threads will be used.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Activate to set the number of threads to use for caching. If this is disabled, the optimal number of threads will be used.</string>
+            </property>
+            <property name="text">
+             <string>Set Nr Threads</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelThreshold">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>How much of the available system memory should be used for the caching?</string>
+            </property>
+            <property name="whatsThis">
+             <string>How much of the available system memory should be used for the caching?</string>
+            </property>
+            <property name="text">
+             <string>Threshold</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1" colspan="3">
+           <widget class="QSpinBox" name="spinBoxNrThreads">
+            <property name="toolTip">
+             <string>How many threads will be used for caching?</string>
+            </property>
+            <property name="whatsThis">
+             <string>How many threads will be used for caching?</string>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="labelMaxMb">
+            <property name="toolTip">
+             <string>How much of the available system memory should be used for the caching?</string>
+            </property>
+            <property name="whatsThis">
+             <string>How much of the available system memory should be used for the caching?</string>
+            </property>
+            <property name="text">
+             <string>max MB</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="labelMinMB">
+            <property name="toolTip">
+             <string>How much of the available system memory should be used for the caching?</string>
+            </property>
+            <property name="whatsThis">
+             <string>How much of the available system memory should be used for the caching?</string>
+            </property>
+            <property name="text">
+             <string>0 MB</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tabDecoders">
+      <attribute name="title">
+       <string>Decoders</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <layout class="QGridLayout" name="gridLayout_6">
+         <item row="1" column="0">
+          <widget class="QLabel" name="labelDefaultDecoder">
+           <property name="text">
+            <string>Default Decoder</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QPushButton" name="pushButtonDecoderSelectPath">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="whatsThis">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../images/images.qrc">
+             <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="comboBoxDefaultDecoder"/>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="lineEditDecoderPath">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="whatsThis">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="labelDecoderPath">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="whatsThis">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Decoder Search Path</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="3">
+          <widget class="QPushButton" name="pushButtonDecoderClearPath">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../images/images.qrc">
+             <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayoutDecoderPath"/>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxHEVC">
+         <property name="toolTip">
+          <string>Specify individual decoder libraries to use for HEVC files. These will always be tried first.</string>
+         </property>
+         <property name="whatsThis">
+          <string>Specify individual decoder libraries to use for HEVC files. These will always be tried first.</string>
+         </property>
+         <property name="title">
+          <string>Specific Decoder Libraries</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="3" column="3">
+           <widget class="QPushButton" name="pushButtonLibVTMClearFile">
+            <property name="toolTip">
+             <string>Remove the libVTM path.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the libVTM path.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="lineEditLibHMFile">
+            <property name="toolTip">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="pushButtonLibDav1dSelectFile">
+            <property name="toolTip">
+             <string>Specify a libDav1d library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libDav1d library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="lineEditLibVTMFile">
+            <property name="toolTip">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelLibde265">
+            <property name="toolTip">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string>libde265</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="pushButtonlibHMSelectFile">
+            <property name="toolTip">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButtonLibVTMSelectFile">
+            <property name="toolTip">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="lineEditLibDav1d">
+            <property name="toolTip">
+             <string>Specify a libDav1d library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libDav1d library file. These will always be tried first.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labellibDav1d">
+            <property name="text">
+             <string>libDav1d</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="pushButtonLibde265SelectFile">
+            <property name="toolTip">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="lineEditLibde265File">
+            <property name="toolTip">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labelLibVTM">
+            <property name="text">
+             <string>libVTM</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="3">
+           <widget class="QPushButton" name="pushButtonLibDav1dClearFile">
+            <property name="toolTip">
+             <string>Remove the libDav1d path.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the libDav1d path.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelLibHM">
+            <property name="toolTip">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string>libHM</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QPushButton" name="pushButtonLibde265ClearFile">
+            <property name="toolTip">
+             <string>Remove the libde265 path.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the libde265 path.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QPushButton" name="pushButtonlibHMClearFile">
+            <property name="toolTip">
+             <string>Remove the libHM path.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the libHM path.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxFFMpeg">
+         <property name="toolTip">
+          <string>Specify the individual FFmpeg libraries to use. These will always be tried first.</string>
+         </property>
+         <property name="whatsThis">
+          <string>Specify the individual FFmpeg libraries to use. These will always be tried first.</string>
+         </property>
+         <property name="title">
+          <string>Specific FFmpeg Libraries</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <layout class="QGridLayout" name="gridLayout_5">
+            <item row="4" column="0">
+             <widget class="QLabel" name="labelAVCodec">
+              <property name="text">
+               <string>libAVCodec</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="labelAVFormat">
+              <property name="text">
+               <string>libAVFormat</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="labelAVUtil">
+              <property name="text">
+               <string>libAVUtil</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="labelSWResample">
+              <property name="text">
+               <string>libSWResample</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QLineEdit" name="lineEditAVFormat">
+              <property name="toolTip">
+               <string>The libAVFormat library to use.</string>
+              </property>
+              <property name="whatsThis">
+               <string>The libAVFormat library to use.</string>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QLineEdit" name="lineEditAVCodec">
+              <property name="toolTip">
+               <string>The libAVCodec library to use.</string>
+              </property>
+              <property name="whatsThis">
+               <string>The libAVCodec library to use.</string>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="lineEditSWResample">
+              <property name="toolTip">
+               <string>The libSWResample library to use.</string>
+              </property>
+              <property name="whatsThis">
+               <string>The libSWResample library to use.</string>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="lineEditAVUtil">
+              <property name="toolTip">
+               <string>The libAVUtil library to use.</string>
+              </property>
+              <property name="whatsThis">
+               <string>The libAVUtil library to use.</string>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonFFMpegSelectFile">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Specify the 4 required ffmpeg library files. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify the 4 required ffmpeg library files. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonFFMpegClearFile">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Remove the ffmpeg library paths.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the ffmpeg library paths.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>0</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayoutDialogButtons">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButtonSave">
+       <property name="text">
+        <string>Save</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButtonCancel">
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>showColorWidget</class>
+   <extends>QFrame</extends>
+   <header>ui/showColorFrame.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>comboBoxTheme</tabstop>
+  <tabstop>comboBoxSplitLineStyle</tabstop>
+  <tabstop>comboBoxMouseMode</tabstop>
+  <tabstop>pushButtonEditBackgroundColor</tabstop>
+  <tabstop>pushButtonEditGridColor</tabstop>
+  <tabstop>checkBoxPlaybackControlFullScreen</tabstop>
+  <tabstop>groupBoxUpdates</tabstop>
+  <tabstop>comboBoxUpdateSettings</tabstop>
+  <tabstop>groupBoxCaching</tabstop>
+  <tabstop>sliderThreshold</tabstop>
+  <tabstop>checkBoxNrThreads</tabstop>
+  <tabstop>spinBoxNrThreads</tabstop>
+  <tabstop>checkBoxPausPlaybackForCaching</tabstop>
+  <tabstop>checkBoxEnablePlaybackCaching</tabstop>
+  <tabstop>spinBoxThreadLimit</tabstop>
+  <tabstop>lineEditDecoderPath</tabstop>
+  <tabstop>pushButtonDecoderSelectPath</tabstop>
+  <tabstop>pushButtonDecoderClearPath</tabstop>
+  <tabstop>lineEditLibde265File</tabstop>
+  <tabstop>pushButtonLibde265SelectFile</tabstop>
+  <tabstop>pushButtonLibde265ClearFile</tabstop>
+  <tabstop>lineEditLibHMFile</tabstop>
+  <tabstop>pushButtonlibHMSelectFile</tabstop>
+  <tabstop>pushButtonlibHMClearFile</tabstop>
+  <tabstop>lineEditAVUtil</tabstop>
+  <tabstop>lineEditSWResample</tabstop>
+  <tabstop>lineEditAVCodec</tabstop>
+  <tabstop>lineEditAVFormat</tabstop>
+  <tabstop>pushButtonFFMpegSelectFile</tabstop>
+  <tabstop>pushButtonFFMpegClearFile</tabstop>
+  <tabstop>pushButtonSave</tabstop>
+  <tabstop>pushButtonCancel</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../images/images.qrc"/>
+ </resources>
+ <connections/>
+</ui>

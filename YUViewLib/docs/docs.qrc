@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/">
+        <file>about.html</file>
+        <file>help.html</file>
+        <file>about_IENTLogo.png</file>
+        <file>help_MainWindow.png</file>
+        <file>help_PropertiesIndexed.png</file>
+        <file>about_YUViewLogo.png</file>
+        <file>help_PropertiesYUV.png</file>
+        <file>help_PropertiesYUVCustomFormat.png</file>
+        <file>help_YUVSubsamplingChromaPositions.png</file>
+        <file>help_PropertiesRGB.png</file>
+        <file>help_PropertiesRGBCustomFormat.png</file>
+        <file>help_PropertiesStatistics.png</file>
+        <file>help_PropertiesStatisticsEditRendering.png</file>
+        <file>help_PropertiesStatisticsEditRenderingColorMapEditor.png</file>
+    </qresource>
+</RCC>
