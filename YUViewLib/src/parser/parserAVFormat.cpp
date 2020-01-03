@@ -39,6 +39,7 @@
 #include "parserAnnexBMpeg2.h"
 #include "parserCommonMacros.h"
 #include "parserSubtitleDVB.h"
+#include "parserSubtitle608.h"
 
 using namespace parserCommon;
 
@@ -334,7 +335,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
 
   itemTree->setStreamIndex(packet.get_stream_index());
 
-  if (packet.is_video_packet)
+  if (packet.getPacketType() == PacketType::VIDEO)
   {
     if (annexBParser)
     {
@@ -452,7 +453,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
         specificDescription += (" " + n);
     }
   }
-  else if (packet.is_dvb_subtitle_packet)
+  else if (packet.getPacketType() == PacketType::SUBTITLE_DVB)
   {
     QStringList segmentNames;
     int segmentID = 0;
@@ -483,6 +484,11 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
         return false;
       }
     }
+  }
+  else if (packet.getPacketType() == PacketType::SUBTITLE_608)
+  {
+    QString segmentTypeName;
+    int nrBytesRead = subtitle_608::parse608SubtitleSegment(avpacketData, itemTree, &segmentTypeName);
   }
   else
     bitrateItemModel->addBitratePoint(packet.get_stream_index(), packet.get_pts(), packet.get_dts(), packet.get_data_size());
@@ -649,7 +655,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   signalEmitTimer.start();
   while (!ffmpegFile->atEnd() && !abortParsing)
   {
-    if (packet.is_video_packet)
+    if (packet.getPacketType() == PacketType::VIDEO)
     {
       if (max_ts != 0)
         progressPercentValue = clip(int((packet.get_dts() - start_ts) * 100 / max_ts), 0, 100);

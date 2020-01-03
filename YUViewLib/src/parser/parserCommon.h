@@ -82,7 +82,7 @@ namespace parserCommon
     bool testReadingBits(int nrBits);
     // How many full bytes were read/are left from the reader?
     unsigned int nrBytesRead() { return posInBuffer_bytes - initialPosInBuffer + (posInBuffer_bits != 0 ? 1 : 0); }
-    unsigned int nrBytesLeft() { return std::min((unsigned int)0, byteArray.size() - posInBuffer_bytes - 1); }
+    unsigned int nrBytesLeft() { return (unsigned int)(std::max(0, byteArray.size() - int(posInBuffer_bytes) - 1)); }
 
     void disableEmulationPrevention() { skipEmulationPrevention = false; }
 

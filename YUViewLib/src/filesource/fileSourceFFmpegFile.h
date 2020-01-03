@@ -134,6 +134,7 @@ protected:
     struct subtitle_t
     {
       QList<int> dvb;
+      QList<int> eia608;
       QList<int> other;
     };
     subtitle_t subtitle;
