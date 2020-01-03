@@ -488,7 +488,14 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
   else if (packet.getPacketType() == PacketType::SUBTITLE_608)
   {
     QString segmentTypeName;
-    int nrBytesRead = subtitle_608::parse608SubtitleSegment(avpacketData, itemTree, &segmentTypeName);
+    try
+    {
+      int nrBytesRead = subtitle_608::parse608SubtitlePacket(avpacketData, itemTree, &segmentTypeName);
+    }
+    catch (...)
+    {
+      // Catch exceptions
+    }
   }
   else
     bitrateItemModel->addBitratePoint(packet.get_stream_index(), packet.get_pts(), packet.get_dts(), packet.get_data_size());
