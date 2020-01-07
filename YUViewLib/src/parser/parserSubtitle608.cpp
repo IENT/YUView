@@ -188,7 +188,7 @@ int subtitle_608::parse608SubtitlePacket(QByteArray data, parserCommon::TreeItem
     throw std::logic_error("Unknown packt length. Length should be 10 or 20 bytes");
 
   unsigned int nrMessages = data.size() == 20 ? 2 : 1;
-  for (size_t i = 0; i < 2; i++)
+  for (size_t i = 0; i < nrMessages; i++)
   {
     // The packet should start with a size indicator of 10
     unsigned int sizeIndicator;
@@ -209,7 +209,6 @@ int subtitle_608::parse608SubtitlePacket(QByteArray data, parserCommon::TreeItem
       return r;
     };
     READBITS_M(tag, 32, tag_meaning);
-
     
     if (tag != 1667527730 && tag != 1667522932)
       throw std::logic_error("Unknown tag. Should be cdt2 or cdat.");
