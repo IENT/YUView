@@ -38,6 +38,7 @@
 #include <QFileSystemWatcher>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QSize>
 #include <QString>
 
 #include "common/fileInfo.h"
