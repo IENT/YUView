@@ -218,7 +218,7 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // If the sub format is "444" we will assume 4:4:4 input. Otherwise 4:2:0 will be assumed.
-  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.
@@ -315,6 +315,9 @@ private:
 
   // Set the new pixel format thread save (lock the mutex). We should also emit that something changed (can be disabled).
   void setSrcPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitChangedSignal=true);
+
+  bool setFormatFromSizeAndNamePlanar(QString name, const QSize size, int bitDepth, int64_t fileSize);
+  bool setFormatFromSizeAndNamePacked(QString name, const QSize size, int bitDepth, int64_t fileSize);
 
   bool canConvertToRGB(YUV_Internals::yuvPixelFormat format, QSize imageSize, QString *whyNot=nullptr) const;
 

@@ -58,6 +58,9 @@ const int yuvRgbConvCoeffs[6][5] =
 const int yuvRgbConvScaleLuma[256] =
 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 43, 44, 45, 46, 47, 48, 50, 51, 52, 53, 54, 55, 57, 58, 59, 60, 61, 62, 64, 65, 66, 67, 68, 69, 71, 72, 73, 74, 75, 76, 78, 79, 80, 81, 82, 83, 85, 86, 87, 88, 89, 90, 91, 93, 94, 95, 96, 97, 98, 100, 101, 102, 103, 104, 105, 107, 108, 109, 110, 111, 112, 114, 115, 116, 117, 118, 119, 121, 122, 123, 124, 125, 126, 128, 129, 130, 131, 132, 133, 135, 136, 137, 138, 139, 140, 142, 143, 144, 145, 146, 147, 149, 150, 151, 152, 153, 154, 156, 157, 158, 159, 160, 161, 163, 164, 165, 166, 167, 168, 170, 171, 172, 173, 174, 175, 176, 178, 179, 180, 181, 182, 183, 185, 186, 187, 188, 189, 190, 192, 193, 194, 195, 196, 197, 199, 200, 201, 202, 203, 204, 206, 207, 208, 209, 210, 211, 213, 214, 215, 216, 217, 218, 220, 221, 222, 223, 224, 225, 227, 228, 229, 230, 231, 232, 234, 235, 236, 237, 238, 239, 241, 242, 243, 244, 245, 246, 248, 249, 250, 251, 252, 253, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
 
+const QStringList subsamplingNameList = QStringList() << "444" << "422" << "420" << "440" << "410" << "411" << "400";
+const QList<int> bitDepthList = QList<int>() << 9 << 10 << 12 << 14 << 16 << 8;
+
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERYUV_DEBUG_LOADING 0
 #if VIDEOHANDLERYUV_DEBUG_LOADING && !NDEBUG
@@ -1342,7 +1345,91 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   painter->setPen(backupPen);
 }
 
-void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo)
+bool videoHandlerYUV::setFormatFromSizeAndNamePlanar(QString name, const QSize size, int bitDepth, int64_t fileSize)
+{
+  // First all planar formats
+  QStringList planarYUVOrderList = QStringList() << "yuv" << "yuvj" << "yvu" << "yuva" << "yvua";
+  for (int o = 0; o < planarYUVOrderList.count(); o++)
+  {
+    YUVPlaneOrder planeOrder = (o > 0) ? static_cast<YUVPlaneOrder>(o-1) : static_cast<YUVPlaneOrder>(o);
+
+    for (int s = 0; s < YUV_NUM_SUBSAMPLINGS; s++)
+    {
+      YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(s);
+      for (int bitDepth : bitDepthList)
+      {
+        QStringList endianessList = QStringList() << "le";
+        if (bitDepth > 8)
+          endianessList << "be";
+
+        for (const QString &endianess : endianessList)
+        {
+          QString formatName = planarYUVOrderList[o] + subsamplingNameList[s] + "p";
+          if (bitDepth > 8)
+            formatName += QString::number(bitDepth) + endianess;
+
+          // Check if this format is in the file name
+          if (name.contains(formatName))
+          {
+            // Check if the format and the file size match
+            yuvPixelFormat fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
+            int bpf = fmt.bytesPerFrame(size);
+            if (bpf != 0 && (fileSize % bpf) == 0)
+            {
+              // Bits per frame and file size match
+              setSrcPixelFormat(fmt, false);
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool videoHandlerYUV::setFormatFromSizeAndNamePacked(QString name, const QSize size, int bitDepth, int64_t fileSize)
+{
+  for (int s = 0; s < YUV_NUM_SUBSAMPLINGS; s++)
+  {
+    YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(s);
+    // What packing formats are supported by this subsampling?
+    QList<YUVPackingOrder> packingTypes = getSupportedPackingFormats(subsampling);
+    for (YUVPackingOrder packing : packingTypes)
+    {
+      for (int bitDepth : bitDepthList)
+      {
+        QStringList endianessList = QStringList() << "le";
+        if (bitDepth > 8)
+          endianessList << "be";
+
+        for (const QString &endianess : endianessList)
+        {
+          QString formatName = getPackingFormatString(packing).toLower() + subsamplingNameList[s];
+          if (bitDepth > 8)
+            formatName += QString::number(bitDepth) + endianess;
+
+          // Check if this format is in the file name
+          if (name.contains(formatName))
+          {
+            // Check if the format and the file size match
+            yuvPixelFormat fmt = yuvPixelFormat(subsampling, bitDepth, packing, false, endianess=="be");
+            int bpf = fmt.bytesPerFrame(size);
+            if (bpf != 0 && (fileSize % bpf) == 0)
+            {
+              // Bits per frame and file size match
+              setSrcPixelFormat(fmt, false);
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo)
 {
   // We are going to check two strings (one after the other) for indicators on the YUV format.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -1377,85 +1464,20 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, i
     // First, lets see if there is a YUV format defined as FFMpeg names them:
     // First the YUV order, then the subsampling, then a 'p' if the format is planar, then the number of bits (if > 8), finally 'le' or 'be' if bits is > 8.
     // E.g: yuv420p, yuv420p10le, yuv444p16be
-    QStringList subsamplingNameList = QStringList() << "444" << "422" << "420" << "440" << "410" << "411" << "400";
-    QList<int> bitDepthList = QList<int>() << 9 << 10 << 12 << 14 << 16 << 8;
 
-    // First all planar formats
-    QStringList planarYUVOrderList = QStringList() << "yuv" << "yuvj" << "yvu" << "yuva" << "yvua";
-    for (int o = 0; o < planarYUVOrderList.count(); o++)
+    if (packed)
     {
-      YUVPlaneOrder planeOrder = (o > 0) ? static_cast<YUVPlaneOrder>(o-1) : static_cast<YUVPlaneOrder>(o);
-
-      for (int s = 0; s < YUV_NUM_SUBSAMPLINGS; s++)
-      {
-        YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(s);
-        for (int bitDepth : bitDepthList)
-        {
-          QStringList endianessList = QStringList() << "le";
-          if (bitDepth > 8)
-            endianessList << "be";
-
-          for (const QString &endianess : endianessList)
-          {
-            QString formatName = planarYUVOrderList[o] + subsamplingNameList[s] + "p";
-            if (bitDepth > 8)
-              formatName += QString::number(bitDepth) + endianess;
-
-            // Check if this format is in the file name
-            if (name.contains(formatName))
-            {
-              // Check if the format and the file size match
-              yuvPixelFormat fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
-              int bpf = fmt.bytesPerFrame(size);
-              if (bpf != 0 && (fileSize % bpf) == 0)
-              {
-                // Bits per frame and file size match
-                setSrcPixelFormat(fmt, false);
-                return;
-              }
-            }
-          }
-        }
-      }
+      // Check packed formats first
+      if (setFormatFromSizeAndNamePacked(name, size, bitDepth, fileSize) || setFormatFromSizeAndNamePlanar(name, size, bitDepth, fileSize))
+        return;
     }
-
-    // Secondly, all packed formats
-    for (int s = 0; s < YUV_NUM_SUBSAMPLINGS; s++)
+    else
     {
-      YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(s);
-      // What packing formats are supported by this subsampling?
-      QList<YUVPackingOrder> packingTypes = getSupportedPackingFormats(subsampling);
-      for (YUVPackingOrder packing : packingTypes)
-      {
-        for (int bitDepth : bitDepthList)
-        {
-          QStringList endianessList = QStringList() << "le";
-          if (bitDepth > 8)
-            endianessList << "be";
-
-          for (const QString &endianess : endianessList)
-          {
-            QString formatName = getPackingFormatString(packing).toLower() + subsamplingNameList[s];
-            if (bitDepth > 8)
-              formatName += QString::number(bitDepth) + endianess;
-
-            // Check if this format is in the file name
-            if (name.contains(formatName))
-            {
-              // Check if the format and the file size match
-              yuvPixelFormat fmt = yuvPixelFormat(subsampling, bitDepth, packing, false, endianess=="be");
-              int bpf = fmt.bytesPerFrame(size);
-              if (bpf != 0 && (fileSize % bpf) == 0)
-              {
-                // Bits per frame and file size match
-                setSrcPixelFormat(fmt, false);
-                return;
-              }
-            }
-          }
-        }
-      }
+      // Check planar formats first
+      if (setFormatFromSizeAndNamePlanar(name, size, bitDepth, fileSize) || setFormatFromSizeAndNamePacked(name, size, bitDepth, fileSize))
+        return;
     }
+    
     // One more FFMpeg format description that does not match the pattern above is: "ayuv64le"
     if (name.contains("ayuv64le"))
     {
@@ -1471,7 +1493,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, i
     }
 
     // OK that did not work so far. Try other things. Just check if the file name contains one of the subsampling strings.
-    // Further parameters: YUV plane order, little endian. The first format to match the file size, wins.
+    // Further parameters: YUV plane order, little endian. The first format to match the file size wins.
     QList<int> bitDepths;
     if (bitDepth != -1)
       // We already extracted a bit depth from the name. Only try that.

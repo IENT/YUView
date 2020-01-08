@@ -122,7 +122,7 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // The sub format can be one of: "RGB", "GBR" or "BGR"
-  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a RGB source, so we can draw the source RGB values from the source data.
