@@ -59,7 +59,6 @@ const int yuvRgbConvScaleLuma[256] =
 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 43, 44, 45, 46, 47, 48, 50, 51, 52, 53, 54, 55, 57, 58, 59, 60, 61, 62, 64, 65, 66, 67, 68, 69, 71, 72, 73, 74, 75, 76, 78, 79, 80, 81, 82, 83, 85, 86, 87, 88, 89, 90, 91, 93, 94, 95, 96, 97, 98, 100, 101, 102, 103, 104, 105, 107, 108, 109, 110, 111, 112, 114, 115, 116, 117, 118, 119, 121, 122, 123, 124, 125, 126, 128, 129, 130, 131, 132, 133, 135, 136, 137, 138, 139, 140, 142, 143, 144, 145, 146, 147, 149, 150, 151, 152, 153, 154, 156, 157, 158, 159, 160, 161, 163, 164, 165, 166, 167, 168, 170, 171, 172, 173, 174, 175, 176, 178, 179, 180, 181, 182, 183, 185, 186, 187, 188, 189, 190, 192, 193, 194, 195, 196, 197, 199, 200, 201, 202, 203, 204, 206, 207, 208, 209, 210, 211, 213, 214, 215, 216, 217, 218, 220, 221, 222, 223, 224, 225, 227, 228, 229, 230, 231, 232, 234, 235, 236, 237, 238, 239, 241, 242, 243, 244, 245, 246, 248, 249, 250, 251, 252, 253, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
 
 const QStringList detectionSubsamplingNameList = QStringList() << "444" << "422" << "420" << "440" << "410" << "411" << "400";
-const QList<int> detectionBitDepthList = QList<int>() << 9 << 10 << 12 << 14 << 16 << 8;
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERYUV_DEBUG_LOADING 0
@@ -110,18 +109,34 @@ YUVSubsamplingType yuvSubsamplingTypeFromString(QString typeString)
   return YUV_NUM_SUBSAMPLINGS;
 }
 
-QList<YUVSubsamplingType> getDetectionSubsamplingNameList(YUVSubsamplingType forceAsFirst)
+QList<YUVSubsamplingType> getDetectionSubsamplingList(YUVSubsamplingType forceAsFirst)
 {
   QList<YUVSubsamplingType> subsamplingList;
   if (forceAsFirst != YUV_NUM_SUBSAMPLINGS)
-    subsamplingList.push_back(forceAsFirst);
+    subsamplingList.append(forceAsFirst);
   for (size_t i = 0; i < YUV_NUM_SUBSAMPLINGS; i++)
   {
     auto type = YUVSubsamplingType(i);
     if (!subsamplingList.contains(type))
-      subsamplingList.push_back(type);
+      subsamplingList.append(type);
   }
   return subsamplingList;
+}
+
+QList<int> getDetectionBitDepthList(int forceAsFirst)
+{
+  const QList<int> detectionBitDepthList = QList<int>() << 9 << 10 << 12 << 14 << 16 << 8;
+
+  QList<int> bitDepthList;
+  if (forceAsFirst >= 8 && forceAsFirst <= 16)
+    bitDepthList.append(forceAsFirst);
+
+  for (auto bitDepth : detectionBitDepthList)
+  {
+    if (!bitDepthList.contains(bitDepth))
+      bitDepthList.append(bitDepth);
+  }
+  return bitDepthList;
 }
 
 QString getPackingFormatString(YUVPackingOrder packing)
@@ -1389,15 +1404,13 @@ bool videoHandlerYUV::setFormatFromSizeAndNamePlanar(QString name, const QSize s
 {
   // First all planar formats
   auto planarYUVOrderList = QStringList() << "yuv" << "yuvj" << "yvu" << "yuva" << "yvua";
-  auto bitDepthList = detectionBitDepthList;
-  if (bitDepth != -1)
-    bitDepthList.push_front(bitDepth);
+  auto bitDepthList = getDetectionBitDepthList(bitDepth);
 
   for (int o = 0; o < planarYUVOrderList.count(); o++)
   {
     auto planeOrder = (o > 0) ? static_cast<YUVPlaneOrder>(o-1) : static_cast<YUVPlaneOrder>(o);
 
-    for (auto subsampling : getDetectionSubsamplingNameList(detectedSubsampling))
+    for (auto subsampling : getDetectionSubsamplingList(detectedSubsampling))
     {
       for (int bitDepth : bitDepthList)
       {
@@ -1413,11 +1426,7 @@ bool videoHandlerYUV::setFormatFromSizeAndNamePlanar(QString name, const QSize s
               formatName += QString::number(bitDepth) + endianess;
             auto fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
             // Check if this format is in the file name
-            if (name.contains(formatName))
-            {
-              if (checkAndSetFormat(fmt, size, fileSize))
-                return true;
-            }
+            return name.contains(formatName) && checkAndSetFormat(fmt, size, fileSize);
           };
 
           QString formatName = planarYUVOrderList[o] + yuvSubsamplingTypeToString(subsampling) + "p";
@@ -1440,11 +1449,9 @@ bool videoHandlerYUV::setFormatFromSizeAndNamePlanar(QString name, const QSize s
 
 bool videoHandlerYUV::setFormatFromSizeAndNamePacked(QString name, const QSize size, int bitDepth, YUVSubsamplingType detectedSubsampling, int64_t fileSize)
 {
-  auto bitDepthList = detectionBitDepthList;
-  if (bitDepth != -1)
-    bitDepthList.push_front(bitDepth);
+  auto bitDepthList = getDetectionBitDepthList(bitDepth);
 
-  for (auto subsampling : getDetectionSubsamplingNameList(detectedSubsampling))
+  for (auto subsampling : getDetectionSubsamplingList(detectedSubsampling))
   {
     // What packing formats are supported by this subsampling?
     auto packingTypes = getSupportedPackingFormats(subsampling);
@@ -1464,12 +1471,7 @@ bool videoHandlerYUV::setFormatFromSizeAndNamePacked(QString name, const QSize s
               formatName += QString::number(bitDepth) + endianess;
             auto fmt = yuvPixelFormat(subsampling, bitDepth, packing, false, endianess=="be");
             // Check if this format is in the file name
-            if (name.contains(formatName))
-            {
-              if (checkAndSetFormat(fmt, size, fileSize))
-                return true;
-            }
-            return false;
+            return name.contains(formatName) && checkAndSetFormat(fmt, size, fileSize);
           };
 
           QString formatName = getPackingFormatString(packing).toLower() + yuvSubsamplingTypeToString(subsampling);
