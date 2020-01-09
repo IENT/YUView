@@ -894,7 +894,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
   return value;
 }
 
-void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, int64_t fileSize, const QFileInfo &fileInfo)
+void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo)
 {
   // Get the file extension
   QString ext = fileInfo.suffix().toLower();
@@ -941,6 +941,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, i
       rgbPixelFormat cFormat;
       cFormat.setRGBFormatFromString(i == 0 ? subFormat : subFormat + "a");
       cFormat.bitsPerValue = bitDepth;
+      cFormat.planar = !packed;
 
       // Check if the file size and the assumed format match
       int bpf = cFormat.bytesPerFrame(size);
@@ -956,7 +957,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, i
 
   // Still no match. Set RGB 8 bit planar not alpha channel.
   // This will probably be wrong but we are out of options
-  rgbPixelFormat cFormat(8, true);
+  rgbPixelFormat cFormat(8, !packed);
   setSrcPixelFormat(cFormat);
 }
 

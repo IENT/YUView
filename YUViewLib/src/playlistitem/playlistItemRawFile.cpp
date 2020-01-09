@@ -367,7 +367,7 @@ void playlistItemRawFile::setFormatFromFileName()
 
     // We were able to extract width and height from the file name using
     // regular expressions. Try to get the pixel format by checking with the file size.
-    video->setFormatFromSizeAndName(fileFormat.frameSize, fileFormat.bitDepth, dataSource.getFileSize(), dataSource.getFileInfo());
+    video->setFormatFromSizeAndName(fileFormat.frameSize, fileFormat.bitDepth, fileFormat.packed, dataSource.getFileSize(), dataSource.getFileInfo());
     if (fileFormat.frameRate != -1)
       frameRate = fileFormat.frameRate;
   }

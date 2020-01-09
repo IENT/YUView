@@ -74,13 +74,14 @@ public:
   virtual bool seek(int64_t pos) { return !isFileOpened ? false : srcFile.seek(pos); }
   int64_t pos() { return !isFileOpened ? 0 : srcFile.pos(); }
 
-  // Guess the format (width, height, frameTate...) from the file name.
+  // Guess the format (width, height, framerate, packed/planar) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
   struct fileFormat_t
   {
     QSize frameSize;
-    int frameRate;
-    int bitDepth;
+    int frameRate {-1};
+    int bitDepth {-1};
+    bool packed {false};
   };
   static fileFormat_t formatFromFilename(QFileInfo fileInfo);
 
