@@ -90,7 +90,7 @@ namespace YUV_Internals
     YUV_400,  // Luma only
     YUV_NUM_SUBSAMPLINGS
   } YUVSubsamplingType;
-
+  
   typedef enum
   {
     Order_YUV,
@@ -315,9 +315,11 @@ private:
 
   // Set the new pixel format thread save (lock the mutex). We should also emit that something changed (can be disabled).
   void setSrcPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitChangedSignal=true);
+  // Check the given format against the file size. Set the format if this is a match.
+  bool checkAndSetFormat(const YUV_Internals::yuvPixelFormat format, const QSize frameSize, const int64_t fileSize);
 
-  bool setFormatFromSizeAndNamePlanar(QString name, const QSize size, int bitDepth, int64_t fileSize);
-  bool setFormatFromSizeAndNamePacked(QString name, const QSize size, int bitDepth, int64_t fileSize);
+  bool setFormatFromSizeAndNamePlanar(QString name, const QSize size, int bitDepth, YUV_Internals::YUVSubsamplingType subsampling, int64_t fileSize);
+  bool setFormatFromSizeAndNamePacked(QString name, const QSize size, int bitDepth, YUV_Internals::YUVSubsamplingType subsampling, int64_t fileSize);
 
   bool canConvertToRGB(YUV_Internals::yuvPixelFormat format, QSize imageSize, QString *whyNot=nullptr) const;
 
