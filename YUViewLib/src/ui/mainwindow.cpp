@@ -203,7 +203,7 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
   fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
   fileMenu->addSeparator();
-  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
+  fileMenu->addAction("&Delete Item", this, SLOT(deleteSelectedItems()), Qt::Key_Delete);
   fileMenu->addSeparator();
   fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, SLOT(savePlaylistToFile()), Qt::CTRL + Qt::Key_S);
   fileMenu->addSeparator();
@@ -215,10 +215,17 @@ void MainWindow::createMenusAndActions()
 
   // On Mac, the key to delete an item is backspace. We will add this for all platforms
   QShortcut* backSpaceDelete = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
-  connect(backSpaceDelete, SIGNAL(activated()), this, SLOT(deleteItem()));
+  connect(backSpaceDelete, SIGNAL(activated()), this, SLOT(deleteSelectedItems()));
 
   // View menu
   QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
+  auto addDockViewAction = [viewMenu](QDockWidget *dockWidget, QString text, const QKeySequence &shortcut = {})
+  {
+    QAction *action = dockWidget->toggleViewAction();
+    action->setText(text);
+    action->setShortcut(shortcut);
+    viewMenu->addAction(action);
+  };
   // Sub menu save/load state
   QMenu *saveStateMenu = viewMenu->addMenu("Save View State");
   saveStateMenu->addAction("Slot 1", &stateHandler, SLOT(saveViewState1()), Qt::CTRL + Qt::Key_1);
@@ -244,13 +251,13 @@ void MainWindow::createMenusAndActions()
   viewMenu->addAction("Zoom in", ui.displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
   viewMenu->addAction("Zoom out", ui.displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
   viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show P&laylist", ui.playlistDockWidget->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_L);
-  viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_D);
-  viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_P);
-  viewMenu->addAction("Hide/Show &Info", ui.fileInfoDock->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_I);
-  viewMenu->addAction("Hide/Show Caching Info", ui.cachingDebugDock->toggleViewAction(), SLOT(trigger()));
+  addDockViewAction(ui.playlistDockWidget, "Show P&laylist", Qt::CTRL + Qt::Key_L);
+  addDockViewAction(ui.displayDockWidget, "Show &Display Options", Qt::CTRL + Qt::Key_D);
+  addDockViewAction(ui.propertiesDock, "Show &Properties", Qt::CTRL + Qt::Key_P);
+  addDockViewAction(ui.fileInfoDock, "Show &Info", Qt::CTRL + Qt::Key_I);
+  addDockViewAction(ui.cachingDebugDock, "Show Caching Info");
   viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), SLOT(trigger()));
+  addDockViewAction(ui.playbackControllerDock, "Show Playback &Controls", Qt::CTRL + Qt::Key_D);
   viewMenu->addSeparator();
   viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
   viewMenu->addAction("&Single/Separate Window Mode", ui.displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
@@ -380,9 +387,9 @@ void MainWindow::currentSelectedItemsChanged(playlistItem *item1, playlistItem *
   }
 }
 
-void MainWindow::deleteItem()
+void MainWindow::deleteSelectedItems()
 {
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteItem()";
+  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteSelectedItems()";
 
   // stop playback first
   ui.playbackController->pausePlayback();
@@ -752,7 +759,7 @@ void MainWindow::resetWindowLayout()
   if (!is_Q_OS_MAC)
     ui.menuBar->show();
 
-  // Reset main window state (the size and position of the dock widgets). The code obtain this raw value is above.
+  // Reset main window state (the size and position of the dock widgets). The code to obtain this raw value is above.
   QByteArray mainWindowState = QByteArray::fromHex("000000ff00000000fd00000003000000000000011600000348fc0200000003fb000000240070006c00610079006c0069007300740044006f0063006b005700690064006700650074010000001500000212000000c000fffffffb0000001800660069006c00650049006e0066006f0044006f0063006b010000022b000000840000005b00fffffffb0000002000630061006300680069006e0067004400650062007500670044006f0063006b01000002b3000000aa000000aa00ffffff00000001000000b900000348fc0200000002fb0000001c00700072006f00700065007200740069006500730044006f0063006b0100000015000002670000002d00fffffffb000000220064006900730070006c006100790044006f0063006b0057006900640067006500740100000280000000dd000000dd0007ffff000000030000048f00000032fc0100000001fb0000002c0070006c00610079006200610063006b0043006f006e00740072006f006c006c006500720044006f0063006b01000000000000048f000001460007ffff000002b80000034800000004000000040000000800000008fc00000000");
   restoreState(mainWindowState);
 

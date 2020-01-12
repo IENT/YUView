@@ -72,7 +72,7 @@ public slots:
   void loadFiles(const QStringList &files);
 
   void toggleFullscreen();
-  void deleteItem(); //< Delete the selcted items
+  void deleteSelectedItems();
   void showAbout() { showAboutHelp(true); }
   void showHelp() { showAboutHelp(false); }
   void showSettingsWindow();
@@ -113,33 +113,18 @@ private:
 
   void createMenusAndActions();
   void updateRecentFileActions();
-  
-  // This window is shown for seperate windows mode. The main central splitViewWidget goes in here in this case.
-  SeparateWindow separateViewWindow;
 
-  // The video cache and the thread in which it is running
-  QScopedPointer<videoCache> cache;
-
-  // We save the recent file actions so that we can change them (their text) later
-  QPointer<QAction> recentFileActions[MAX_RECENT_FILES];
-  
-  // If the window is shown full screen, this saves if it was maximized before going to full screen
-  bool showNormalMaximized;
-
-  // Show the about or help frame
   void showAboutHelp(bool about);
-
-  // Which panels are visible when going to full-screen mode?
-  bool panelsVisible[6];
-
-  // Get the values from the settings and set them in this main windows and all the dock widgets
   void updateSettings();
 
+  QPointer<QAction> recentFileActions[MAX_RECENT_FILES];
+  QScopedPointer<videoCache> cache;
   bool saveWindowsStateOnExit;
-
   QScopedPointer<updateHandler> updater;
-
   viewStateHandler stateHandler;
+  SeparateWindow separateViewWindow;
+  bool showNormalMaximized; // When going to full screen: Was this windows maximized?  
+  bool panelsVisible[6] {false};  // Which panels are visible when going to full-screen mode?
 };
 
 #endif // MAINWINDOW_H
