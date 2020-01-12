@@ -36,6 +36,7 @@
 #include <QBackingStore>
 #include <QDockWidget>
 #include <QGestureEvent>
+#include <QInputDialog>
 #include <QMessageBox>
 #include <QPainter>
 #include <QSettings>
@@ -269,9 +270,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
         item[0]->drawItem(&painter, frame, zoom, drawRawValues);
       }
 
-      // Paint the regular gird
-      if (drawRegularGrid)
-        paintRegularGrid(&painter, item[0]);
+      paintRegularGrid(&painter, item[0]);
 
       if (pixelPosInItem[0])
       {
@@ -318,9 +317,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
         item[1]->drawItem(&painter, frame, zoom, drawRawValues);
       }
 
-      // Paint the regular gird
-      if (drawRegularGrid)
-        paintRegularGrid(&painter, item[1]);
+      paintRegularGrid(&painter, item[1]);
 
       if (pixelPosInItem[1])
       {
@@ -374,9 +371,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
         item[0]->drawItem(&painter, frame, zoom, drawRawValues);
       }
 
-      // Paint the regular gird
-      if (drawRegularGrid)
-        paintRegularGrid(&painter, item[0]);
+      paintRegularGrid(&painter, item[0]);
 
       if (pixelPosInItem[0])
       {
@@ -681,6 +676,9 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
 
 void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
 {
+  if (regularGridSize == 0)
+    return;
+
   QSize itemSize = item->getSize() * zoomFactor;
   painter->setPen(regularGridColor);
 
@@ -1064,14 +1062,7 @@ void splitViewWidget::wheelEvent (QWheelEvent *e)
 
   QPoint p = e->pos();
   e->accept();
-  if (e->delta() > 0)
-  {
-    zoomIn(p);
-  }
-  else
-  {
-    zoomOut(p);
-  }
+  zoom(e->delta() > 0 ? ZOOM_IN : ZOOM_OUT, p);
 }
 
 bool splitViewWidget::event(QEvent *event)
@@ -1281,7 +1272,7 @@ void splitViewWidget::updateMouseCursor(const QPoint &mousePos)
   }
 }
 
-void splitViewWidget::zoomIn(const QPoint &zoomPoint)
+void splitViewWidget::zoom(ZoomMode zoomMode, const QPoint &zoomPoint, double newZoomFactor)
 {
   // The zoom point works like this: After the zoom operation the pixel at zoomPoint shall
   // still be at the same position (zoomPoint)
@@ -1291,18 +1282,40 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
   // if the user used pinch zoom. So let's go back to the step size of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR
   // and calculate the next higher zoom which is a multiple of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR.
   // E.g.: If the zoom factor currently is 1.9 we want it to become 2 after zooming.
+
   double newZoom = 1.0;
-  if (zoomFactor > 1.0)
+  if (zoomMode == ZOOM_IN)
   {
-    double inf = std::numeric_limits<double>::infinity();
-    while (newZoom <= zoomFactor && newZoom < inf)
+    if (zoomFactor > 1.0)
+    {
+      double inf = std::numeric_limits<double>::infinity();
+      while (newZoom <= zoomFactor && newZoom < inf)
+        newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    }
+    else
+    {
+      while (newZoom > zoomFactor)
+        newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
       newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    }
   }
-  else
+  else if (zoomMode == ZOOM_OUT)
   {
-    while (newZoom > zoomFactor)
+    if (zoomFactor > 1.0)
+    {
+      while (newZoom < zoomFactor)
+        newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
       newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-    newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    }
+    else
+    {
+      while (newZoom >= zoomFactor && newZoom > 0.0)
+        newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    }
+  }
+  else if (zoomMode == ZOOM_TO_PERCENTAGE)
+  {
+    newZoom = newZoomFactor;
   }
   // So what is the zoom factor that we use in this step?
   double stepZoomFactor = newZoom / zoomFactor;
@@ -1343,78 +1356,16 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
   }
   else
   {
-    // Zoom in without considering the mouse position
+    // Zoom without considering the mouse position
     setCenterOffset(centerOffset * stepZoomFactor);
   }
 
   setZoomFactor(newZoom);
-  update(false, true);  // We zoomed in. Check if one of the items now needs loading
-}
 
-void splitViewWidget::zoomOut(const QPoint &zoomPoint)
-{
-  // What is the factor that we will zoom out by?
-  // The zoom factor could currently not be a multiple of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR
-  // if the user used pinch zoom. So let's go back to the step size of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR
-  // and calculate the next higher zoom which is a multiple of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR.
-  // E.g.: If the zoom factor currently is 2.1 we want it to become 2 after zooming.
-  double newZoom = 1.0;
-  if (zoomFactor > 1.0)
-  {
-    while (newZoom < zoomFactor)
-      newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-    newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-  }
+  if (newZoom > 1.0)
+    update(false, true);  // We zoomed in. Check if one of the items now needs loading
   else
-  {
-    while (newZoom >= zoomFactor && newZoom > 0.0)
-      newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-  }
-  // So what is the zoom factor that we use in this step?
-  double stepZoomFactor = newZoom / zoomFactor;
-
-  if (!zoomPoint.isNull() && SPLITVIEWWIDGET_ZOOM_OUT_MOUSE == 1)
-  {
-    // The center point has to be moved relative to the zoomPoint
-
-    // Get the absolute center point of the item
-    QPoint drawArea_botR(width(), height());
-    QPoint centerPoint = drawArea_botR / 2;
-
-    if (viewSplitMode == SIDE_BY_SIDE)
-    {
-      // For side by side mode, the center points are centered in each individual split view
-
-      // Which side of the split view are we zooming in?
-      // Get the center point of that view
-      int xSplit = int(drawArea_botR.x() * splittingPoint);
-      if (zoomPoint.x() > xSplit)
-        // Zooming in the right view
-        centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
-      else
-        // Zooming in the left view
-        centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
-    }
-
-    // The absolute center point of the item under the cursor
-    QPoint itemCenter = centerPoint + centerOffset;
-
-    // Move this item center point
-    QPoint diff = itemCenter - zoomPoint;
-    diff *= stepZoomFactor;
-    itemCenter = zoomPoint + diff;
-
-    // Calculate the new center offset
-    setCenterOffset(itemCenter - centerPoint);
-  }
-  else
-  {
-    // Zoom out without considering the mouse position.
-    setCenterOffset(centerOffset * stepZoomFactor);
-  }
-
-  setZoomFactor(newZoom);
-  update();
+    update();
 }
 
 void splitViewWidget::on_zoomFactorSpinBox_valueChanged(int val)
@@ -1424,6 +1375,25 @@ void splitViewWidget::on_zoomFactorSpinBox_valueChanged(int val)
     newZoom = 0.001;
   setZoomFactor(newZoom);
   update();
+}
+
+void splitViewWidget::gridSetCustom()
+{
+  bool ok;
+  int newValue = QInputDialog::getInt(this, "Custom grid", "Please select a grid size value in pixels", 64, 1, 2147483647, 1, &ok);
+  if (ok)
+  {
+    regularGridSize = newValue;
+    update();
+  }
+}
+
+void splitViewWidget::zoomToCustom()
+{
+  bool ok;
+  int newValue = QInputDialog::getInt(this, "Zoom to custom value", "Please select a zoom factor in percent", 100, 1, 2147483647, 1, &ok);
+  if (ok)
+    zoom(ZOOM_TO_PERCENTAGE, QPoint(), double(newValue) / 100);
 }
 
 void splitViewWidget::resetViews()
@@ -1890,18 +1860,18 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
   }
   else if (key == Qt::Key_Plus && controlOnly)
   {
-    zoomIn();
+    zoom(ZOOM_IN);
     return true;
   }
   else if (key == Qt::Key_BracketRight && controlOnly)
   {
     // This seems to be a bug in the Qt localization routine. On the German keyboard layout this key is returned if Ctrl + is pressed.
-    zoomIn();
+    zoom(ZOOM_OUT);
     return true;
   }
   else if (key == Qt::Key_Minus && controlOnly)
   {
-    zoomOut();
+    zoom(ZOOM_OUT);
     return true;
   }
 
@@ -2058,20 +2028,41 @@ void splitViewWidget::testDrawingSpeed()
 
 void splitViewWidget::addMenuActions(QMenu *menu)
 {
-  QMenu *splitViewMenu = menu->addMenu("Split and Comparison View");
-
-  auto addCheckableAction = [](QMenu *menu, QString text, bool checked)
+  auto addCheckableAction = [this](QMenu *menu, QString text, bool checked, void(splitViewWidget::*func)())
   {
-    QAction *action = menu->addAction(text);
+    QAction *action = menu->addAction(text, this, func);
     action->setCheckable(true);
     action->setChecked(checked);
+    return action;
   };
 
-  addCheckableAction(splitViewMenu, "Disabled", viewSplitMode == DISABLED);
-  addCheckableAction(splitViewMenu, "Side-by-Side", viewSplitMode == SIDE_BY_SIDE);
-  addCheckableAction(splitViewMenu, "Comparison", viewSplitMode == COMPARISON);
+  QMenu *splitViewMenu = menu->addMenu("Split View");
+  QActionGroup splitVieGroup(this);
+  splitVieGroup.addAction(addCheckableAction(splitViewMenu, "Disabled", viewSplitMode == DISABLED, &splitViewWidget::splitViewDisable));
+  splitVieGroup.addAction(addCheckableAction(splitViewMenu, "Side-by-Side", viewSplitMode == SIDE_BY_SIDE, &splitViewWidget::splitViewSideBySide));
+  splitVieGroup.addAction(addCheckableAction(splitViewMenu, "Comparison", viewSplitMode == COMPARISON, &splitViewWidget::splitViewComparison));
 
+  QMenu *drawGridMenu = menu->addMenu("Draw Grid");
+  QActionGroup drawGridGroup(this);
+  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "Disabled", regularGridSize == 0, &splitViewWidget::gridDisable));
+  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "16x16", regularGridSize == 16, &splitViewWidget::gridSet16));
+  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "32x32", regularGridSize == 32, &splitViewWidget::gridSet32));
+  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "64x64", regularGridSize == 64, &splitViewWidget::gridSet64));
+  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "128x128", regularGridSize == 128, &splitViewWidget::gridSet128));
+  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "Custom...", regularGridSize != 0 && regularGridSize != 16 && regularGridSize != 32 && regularGridSize != 64 && regularGridSize != 128, &splitViewWidget::gridSetCustom));
 
+  addCheckableAction(menu, "Zoom Box", drawZoomBox, &splitViewWidget::toggleZoomBox);
+
+  QMenu *zoomMenu = menu->addMenu("Zoom");
+  zoomMenu->addAction("Zoom to 1:1", this, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
+  zoomMenu->addAction("Zoom to Fit", this, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
+  zoomMenu->addAction("Zoom in", this, &splitViewWidget::zoomIn, Qt::CTRL + Qt::Key_Plus);
+  zoomMenu->addAction("Zoom out", this, &splitViewWidget::zoomOut, Qt::CTRL + Qt::Key_Minus);
+  zoomMenu->addSeparator();
+  zoomMenu->addAction("Zoom to 50%", this, &splitViewWidget::zoomTo50);
+  zoomMenu->addAction("Zoom to 100%", this, &splitViewWidget::zoomTo100);
+  zoomMenu->addAction("Zoom to 200%", this, &splitViewWidget::zoomTo200);
+  zoomMenu->addAction("Zoom to ...", this, &splitViewWidget::zoomToCustom);
 }
 
 void splitViewWidget::updateTestProgress()

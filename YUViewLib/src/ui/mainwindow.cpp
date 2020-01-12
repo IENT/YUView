@@ -237,11 +237,6 @@ void MainWindow::createMenusAndActions()
   loadStateMenu->addAction("Slot 7", &stateHandler, SLOT(loadViewState7()), Qt::Key_7);
   loadStateMenu->addAction("Slot 8", &stateHandler, SLOT(loadViewState8()), Qt::Key_8);
   viewMenu->addSeparator();
-  viewMenu->addAction("Zoom to 1:1", ui.displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
-  viewMenu->addAction("Zoom to Fit", ui.displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
-  viewMenu->addAction("Zoom in", ui.displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
-  viewMenu->addAction("Zoom out", ui.displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
-  viewMenu->addSeparator();
   QMenu *dockPanelsMenu = viewMenu->addMenu("Dock Panels");
     auto addDockViewAction = [dockPanelsMenu](QDockWidget *dockWidget, QString text, const QKeySequence &shortcut = {})
   {
@@ -256,6 +251,7 @@ void MainWindow::createMenusAndActions()
   addDockViewAction(ui.cachingInfoDock, "Show Caching Info");
   viewMenu->addSeparator();
   addDockViewAction(ui.playbackControllerDock, "Show Playback &Controls", Qt::CTRL + Qt::Key_D);
+  ui.displaySplitView->addMenuActions(viewMenu);
   viewMenu->addSeparator();
   viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
   viewMenu->addAction("&Single/Separate Window Mode", ui.displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);

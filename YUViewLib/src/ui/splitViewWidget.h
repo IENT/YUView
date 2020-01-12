@@ -154,33 +154,45 @@ signals:
 
 public slots:
 
-  /// Reset everything so that the zoom factor is 1 and the display positions are centered
-  void resetViews();
-
-  /// Reset the view and set the zoom so that the current item is entirely visible.
-  void zoomToFit();
-
-  /// Zoom in/out to the given point. If no point is given, the center of the view will be
-  /// used for the zoom operation.
-  void zoomIn(const QPoint &zoomPoint = QPoint());
-  void zoomOut(const QPoint &zoomPoint = QPoint());
-
   // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
   // This function will restore the view/position of the items (if enabled)
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
+
+  void resetViews(); // Reset everything so that the zoom factor is 1 and the display positions are centered
 
 private slots:
 
   // Slots for the controls. They are connected when the main function sets up the controls (setuptControls).
   //void on_SplitViewgroupBox_toggled(bool state) { setSplitEnabled(state); update(false, true); }
   void on_viewComboBox_currentIndexChanged(int index);
-  void on_regularGridCheckBox_toggled(bool arg) { drawRegularGrid = arg; update(); }
+  //void on_regularGridCheckBox_toggled(bool arg) { drawRegularGrid = arg; update(); }
   void on_gridSizeBox_valueChanged(int val) { regularGridSize = val; update(); }
   void on_zoomBoxCheckBox_toggled(bool state) { drawZoomBox = state; update(false, true); }
   void on_separateViewGroupBox_toggled(bool state);
   void on_linkViewsCheckBox_toggled(bool state);
   void on_playbackPrimaryCheckBox_toggled(bool state);
   void on_zoomFactorSpinBox_valueChanged(int val);
+
+  void splitViewDisable() { setViewSplitMode(DISABLED); }
+  void splitViewSideBySide() { setViewSplitMode(SIDE_BY_SIDE); }
+  void splitViewComparison() { setViewSplitMode(COMPARISON); }
+
+  void gridDisable() { regularGridSize = 0; update(); }
+  void gridSet16() { regularGridSize = 16; update(); }
+  void gridSet32() { regularGridSize = 32; update(); }
+  void gridSet64() { regularGridSize = 64; update(); }
+  void gridSet128() { regularGridSize = 128; update(); }
+  void gridSetCustom();
+
+  void toggleZoomBox() { drawZoomBox = !drawZoomBox; update(); }
+
+  void zoomToFit(); // Reset the view and set the zoom so that the current item is entirely visible.
+  void zoomIn() { zoom(ZOOM_IN); }
+  void zoomOut() { zoom(ZOOM_OUT); }
+  void zoomTo50() { zoom(ZOOM_TO_PERCENTAGE, QPoint(), 0.5); }
+  void zoomTo100() { zoom(ZOOM_TO_PERCENTAGE, QPoint(), 1.0); }
+  void zoomTo200() { zoom(ZOOM_TO_PERCENTAGE, QPoint(), 2.0); }
+  void zoomToCustom();
 
 protected:
   
@@ -240,6 +252,8 @@ protected:
   QPoint  viewZoomingMousePos;
   QRect   viewActiveArea;                   //!< The active area, where the picture is drawn into
 
+  enum ZoomMode {ZOOM_IN, ZOOM_OUT, ZOOM_TO_PERCENTAGE};
+  void    zoom(ZoomMode zoomMode, const QPoint &zoomPoint = QPoint(), double newZoomFactor = 0.0);
   void    setZoomFactor(double zoom);
   double  zoomFactor {1.0};                 //!< The current zoom factor
   QFont   zoomFactorFont;                   //!< The font to use for the zoom factor indicator
@@ -256,8 +270,7 @@ protected:
   QPoint zoomBoxPixelUnderCursor[2];        //!< The above function will update this. (The position of the pixel under the cursor (per item))
 
   // Regular grid
-  bool drawRegularGrid {false};
-  int  regularGridSize {64};                //!< The size of each block in the regular grid in pixels
+  unsigned int regularGridSize {0};         //!< The size of each block in the regular grid in pixels
   QColor regularGridColor;
   void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
