@@ -98,9 +98,9 @@ void viewStateHandler::saveViewState(int slot, bool saveOnSeparateView)
 
   // Get the state of the view from the splitView
   if (saveOnSeparateView)
-    splitView[1]->getViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splitting, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
+    splitView[1]->getViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
   else
-    splitView[0]->getViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splitting, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
+    splitView[0]->getViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
 }
 
 // Load the view state for a specific slot. If the views are linked, the behavior is different if loading was toggled
@@ -122,9 +122,9 @@ void viewStateHandler::loadViewState(int slot, bool loadOnSeparateView)
   playback->setCurrentFrame(playbackStateFrameIdx(slot));
 
   if (loadOnSeparateView)
-    splitView[1]->setViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splitting, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
+    splitView[1]->setViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
   else
-    splitView[0]->setViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splitting, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
+    splitView[0]->setViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
 }
 
 void viewStateHandler::savePlaylist(QDomElement &root)
@@ -173,7 +173,7 @@ void viewStateHandler::savePlaylist(QDomElement &root)
   
   // Append the state of the split view
   splitViewWidgetState viewState;
-  splitView[0]->getViewState(viewState.centerOffset, viewState.zoomFactor, viewState.splitting, viewState.splittingPoint, viewState.viewMode);
+  splitView[0]->getViewState(viewState.centerOffset, viewState.zoomFactor, viewState.splittingPoint, viewState.viewMode);
   state.appendProperiteChild("centerOffsetX", QString::number(viewState.centerOffset.x()));
   state.appendProperiteChild("centerOffsetY", QString::number(viewState.centerOffset.y()));
   if (viewState.splitting)
@@ -224,22 +224,18 @@ void viewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
 
     int centerOffsetX = elem.findChildValue("centerOffsetX").toInt();
     int centerOffsetY = elem.findChildValue("centerOffsetY").toInt();
-    bool splitting = false;
-    double splittingPoint = 0.5;
-    if (elem.findChildValue("splitting") == "1")
-    {
-      splitting = true;
-      splittingPoint = elem.findChildValue("splittingPoint").toDouble();
-    }
     int viewMode = elem.findChildValue("viewMode").toInt();
+    double splittingPoint = 0.5;
+    if (viewMode != 0)
+      splittingPoint = elem.findChildValue("splittingPoint").toDouble();
     double zoomFactor = elem.findChildValue("zoomFactor").toDouble();
-          
+
     // Perform a quick check if the values seem correct
     if (frameIdx < 0 || itemId1 < -1 || itemId2 < -1)
       continue;
-    if (splitting && (splittingPoint < 0 || splittingPoint > 1))
+    if (viewMode != 0 && (splittingPoint < 0 || splittingPoint > 1))
       continue;
-    if (viewMode < 0 || viewMode > 1 || zoomFactor < 0)
+    if (viewMode < 0 || viewMode > 2 || zoomFactor < 0)
       continue;
 
     // Everything seems to be OK
@@ -264,7 +260,7 @@ void viewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
       playback->setCurrentFrame(frameIdx);
 
       // Set the values for the split view
-      splitView[0]->setViewState(QPoint(centerOffsetX, centerOffsetY), zoomFactor, splitting, splittingPoint, viewMode);
+      splitView[0]->setViewState(QPoint(centerOffsetX, centerOffsetY), zoomFactor, splittingPoint, viewMode);
     }
     else
     {
@@ -278,7 +274,6 @@ void viewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
       
       // Save the view state
       viewStates[id].centerOffset = QPoint(centerOffsetX, centerOffsetY);
-      viewStates[id].splitting = splitting;
       viewStates[id].splittingPoint = splittingPoint;
       viewStates[id].viewMode = viewMode;
       viewStates[id].zoomFactor = zoomFactor;

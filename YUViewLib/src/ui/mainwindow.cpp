@@ -70,15 +70,13 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   statusBar()->hide();
 
   saveWindowsStateOnExit = true;
-  for (int i = 0; i < 6; i++)
+  for (int i = 0; i < 5; i++)
     panelsVisible[i] = false;
 
   // Initialize the separate window
   separateViewWindow.setWindowTitle("Separate View");
   separateViewWindow.setGeometry(0, 0, 300, 600);
 
-  // Setup the display controls of the splitViewWidget and add them to the displayDockWidget.
-  ui.displaySplitView->setupControls(ui.displayDockWidget);
   connect(ui.displaySplitView, &splitViewWidget::signalToggleFullScreen, this, &MainWindow::toggleFullscreen);
 
   // Setup primary/separate splitView
@@ -141,7 +139,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   connect(ui.openButton, &QPushButton::clicked, this, &MainWindow::showFileOpenDialog);
 
   // Connect signals from the separate window
-  connect(&separateViewWindow, &SeparateWindow::signalSingleWindowMode, ui.displaySplitView, &splitViewWidget::toggleSeparateViewHideShow);
+  //connect(&separateViewWindow, &SeparateWindow::signalSingleWindowMode, ui.displaySplitView, &splitViewWidget::toggleSeparateViewHideShow);
   connect(&separateViewWindow, &SeparateWindow::unhandledKeyPress, this, &MainWindow::handleKeyPressFromSeparateView);
 
   // Set the controls in the state handler. This way, the state handler can save/load the current state of the view.
@@ -253,7 +251,6 @@ void MainWindow::createMenusAndActions()
     dockPanelsMenu->addAction(action);
   };
   addDockViewAction(ui.playlistDockWidget, "Show P&laylist", Qt::CTRL + Qt::Key_L);
-  addDockViewAction(ui.displayDockWidget, "Show &Display Options", Qt::CTRL + Qt::Key_D);
   addDockViewAction(ui.propertiesDock, "Show &Properties", Qt::CTRL + Qt::Key_P);
   addDockViewAction(ui.fileInfoDock, "Show &Info", Qt::CTRL + Qt::Key_I);
   addDockViewAction(ui.cachingInfoDock, "Show Caching Info");
@@ -497,12 +494,10 @@ void MainWindow::toggleFullscreen()
     if (panelsVisible[1])
       ui.playlistDockWidget->show();
     if (panelsVisible[2])
-      ui.displayDockWidget->show();
-    if (panelsVisible[3])
       ui.playbackControllerDock->show();
-    if (panelsVisible[4])
+    if (panelsVisible[3])
       ui.fileInfoDock->show();
-    if (panelsVisible[5])
+    if (panelsVisible[4])
       ui.cachingInfoDock->show();
 
     // show the menu bar
@@ -521,15 +516,13 @@ void MainWindow::toggleFullscreen()
     // is restored when returning from full screen.
     panelsVisible[0] = ui.propertiesDock->isVisible();
     panelsVisible[1] = ui.playlistDockWidget->isVisible();
-    panelsVisible[2] = ui.displayDockWidget->isVisible();
-    panelsVisible[3] = ui.playbackControllerDock->isVisible();
-    panelsVisible[4] = ui.fileInfoDock->isVisible();
-    panelsVisible[5] = ui.cachingInfoDock->isVisible();
+    panelsVisible[2] = ui.playbackControllerDock->isVisible();
+    panelsVisible[3] = ui.fileInfoDock->isVisible();
+    panelsVisible[4] = ui.cachingInfoDock->isVisible();
 
     // Hide panels
     ui.propertiesDock->hide();
     ui.playlistDockWidget->hide();
-    ui.displayDockWidget->hide();
     QSettings settings;
     if (!settings.value("ShowPlaybackControlFullScreen", false).toBool())
       ui.playbackControllerDock->hide();
@@ -751,7 +744,6 @@ void MainWindow::resetWindowLayout()
   // Dock all dock panels
   ui.playlistDockWidget->setFloating(false);
   ui.propertiesDock->setFloating(false);
-  ui.displayDockWidget->setFloating(false);
   ui.playbackControllerDock->setFloating(false);
   ui.fileInfoDock->setFloating(false);
   ui.cachingInfoDock->setFloating(false);

@@ -140,6 +140,11 @@
        <attribute name="headerStretchLastSection">
         <bool>false</bool>
        </attribute>
+       <column>
+        <property name="text">
+         <string notr="true">1</string>
+        </property>
+       </column>
       </widget>
      </item>
      <item>
@@ -244,7 +249,7 @@
        <x>0</x>
        <y>0</y>
        <width>268</width>
-       <height>135</height>
+       <height>117</height>
       </rect>
      </property>
     </widget>
@@ -258,36 +263,6 @@
     <number>1</number>
    </attribute>
    <widget class="VideoCacheInfoWidget" name="cachingInfoWidget"/>
-  </widget>
-  <widget class="QDockWidget" name="displayDockWidget">
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>85</width>
-     <height>43</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>524287</width>
-     <height>524287</height>
-    </size>
-   </property>
-   <property name="floating">
-    <bool>false</bool>
-   </property>
-   <property name="windowTitle">
-    <string>Display Options</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>2</number>
-   </attribute>
-   <widget class="QWidget" name="displaydockWidgetContents"/>
   </widget>
   <action name="actionOpen">
    <property name="text">

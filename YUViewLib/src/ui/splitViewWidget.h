@@ -34,6 +34,7 @@
 #define SPLITVIEWWIDGET_H
 
 #include <QElapsedTimer>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPinchGesture>
 #include <QProgressDialog>
@@ -42,8 +43,6 @@
 
 #include "common/saveUi.h"
 #include "common/typedef.h"
-
-#include "ui_splitViewWidgetControls.h"
 
 // The splitter can be grabbed with a certain margin of pixels to the left and right. The margin
 // in pixels is calculated depending on the logical DPI of the user using:
@@ -96,11 +95,6 @@ public:
   void setPlaybackController(PlaybackController *p);
   void setVideoCache        (videoCache *p);
 
-  // Setup the controls of the splitViewWidget and add them to the given dock widget.
-  // This has the advantage, that we can handle all button presses and other events (which
-  // are only relevant to this class) within this class and we don't have to bother the main frame.
-  void setupControls(QDockWidget *dock);
-
   // Call setPrimaryWidget on the separate widget and provide the primary widget.
   // Call setSeparateWidget on the primary widget and provide the separate widget.
   void setPrimaryWidget(splitViewWidget *primary);
@@ -132,9 +126,9 @@ public:
   bool handleKeyPress(QKeyEvent *event);
 
   // Get and set the current state (center point and zoom, is splitting active? if yes the split line position)
-  void getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode) const;
-  void setViewState(const QPoint &offset, double zoom, bool split, double splitPoint, int mode);
-  bool isSplitting() { return splitting; }
+  void getViewState(QPoint &offset, double &zoom, double &splitPoint, int &mode) const;
+  void setViewState(const QPoint &offset, double zoom, double splitPoint, int mode);
+  bool isSplitting() { return viewSplitMode != DISABLED; }
 
   // Are the views linked? Only the primary view will return the correct value.
   bool viewsLinked() { return linkViews; }
@@ -147,6 +141,9 @@ public:
 
   // Test the drawing speed with the currently selected item
   void testDrawingSpeed();
+
+  // Add the split views menu items to the given menu. Used for the main menu bar and the context menu.
+  void addMenuActions(QMenu *menu);
 
 signals:
   // If the user double clicks this widget, go to full screen.
@@ -168,10 +165,6 @@ public slots:
   void zoomIn(const QPoint &zoomPoint = QPoint());
   void zoomOut(const QPoint &zoomPoint = QPoint());
 
-  // Update the control and emit signalShowSeparateWindow().
-  // This can be connected from the main window to allow keyboard shortcuts.
-  void toggleSeparateViewHideShow();
-
   // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
   // This function will restore the view/position of the items (if enabled)
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
@@ -179,7 +172,7 @@ public slots:
 private slots:
 
   // Slots for the controls. They are connected when the main function sets up the controls (setuptControls).
-  void on_SplitViewgroupBox_toggled(bool state) { setSplitEnabled(state); update(false, true); }
+  //void on_SplitViewgroupBox_toggled(bool state) { setSplitEnabled(state); update(false, true); }
   void on_viewComboBox_currentIndexChanged(int index);
   void on_regularGridCheckBox_toggled(bool arg) { drawRegularGrid = arg; update(); }
   void on_gridSizeBox_valueChanged(int val) { regularGridSize = val; update(); }
@@ -190,19 +183,13 @@ private slots:
   void on_zoomFactorSpinBox_valueChanged(int val);
 
 protected:
-
+  
   // Set the widget to the given view mode
-  enum ViewMode {SIDE_BY_SIDE, COMPARISON};
+  enum ViewSplitMode {DISABLED, SIDE_BY_SIDE, COMPARISON};
   // Set the view mode and update the view mode combo box. Disable the combo box events if emitSignal is false.
-  void setViewMode(ViewMode v, bool emitSignal=false);
+  void setViewSplitMode(ViewSplitMode v, bool emitSignal=false);
   // The current view mode (split view or comparison view)
-  ViewMode viewMode {SIDE_BY_SIDE};
-
-  /// Activate/Deactivate the splitting view. Only use this function!
-  void setSplitEnabled(bool splitting);
-
-  // The controls for the splitView (splitView, drawGrid ...)
-  SafeUi<Ui::splitViewControlsWidget> controls;
+  ViewSplitMode viewSplitMode {DISABLED};
 
   // Override some events from the widget
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
@@ -212,6 +199,7 @@ protected:
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
   virtual void mouseDoubleClickEvent(QMouseEvent *event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
   virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+  virtual void contextMenuEvent(QContextMenuEvent *event) Q_DECL_OVERRIDE;
   
   // Override the QWidget event to handle touch gestures
   virtual bool event(QEvent *event) Q_DECL_OVERRIDE;
@@ -236,7 +224,6 @@ protected:
   virtual QSize	minimumSizeHint() const Q_DECL_OVERRIDE { return minSizeHint; }
   QSize minSizeHint;
 
-  bool       splitting {false};             //!< If true the view will be split into 2 parts
   bool       splittingDragging {false};     //!< True if the user is currently dragging the splitter
   void       setSplittingPoint(double p);
   double     splittingPoint {0.5};          //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
@@ -284,6 +271,7 @@ protected:
   QPointer<splitViewWidget> otherWidget;   //!< Pointer to the other (primary or separate) widget
   bool linkViews {false};                  //!< Link the two widgets (link zoom factor, position and split position)
   bool playbackPrimary {false};            //!< When playback is running and this is the primary view and the secondary view is shown, don't run playback for this view.
+  bool separateViewEnabled {false};
 
   // Freezing of the view
   bool isViewFrozen {false};               //!< Is the view frozen?
@@ -306,9 +294,8 @@ protected:
     bool valid;
     QPoint centerOffset;
     double zoomFactor;
-    bool splitting;
     double splittingPoint;
-    ViewMode viewMode;
+    ViewSplitMode viewMode;
   };
   splitViewWidgetState viewStates[8];
 

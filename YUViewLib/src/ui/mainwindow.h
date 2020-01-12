@@ -124,7 +124,7 @@ private:
   viewStateHandler stateHandler;
   SeparateWindow separateViewWindow;
   bool showNormalMaximized; // When going to full screen: Was this windows maximized?  
-  bool panelsVisible[6] {false};  // Which panels are visible when going to full-screen mode?
+  bool panelsVisible[5] {false};  // Which panels are visible when going to full-screen mode?
 };
 
 #endif // MAINWINDOW_H
