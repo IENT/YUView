@@ -352,7 +352,7 @@
   <slot>togglePlayback()</slot>
   <slot>stop()</slot>
   <slot>setCurrentFrame(int)</slot>
-  <slot>deleteItem()</slot>
+  <slot>deleteSelectedItems()</slot>
   <slot>setSplitViewEnabled(int)</slot>
   <slot>setSplitViewMode(int)</slot>
   <slot>toggleRepeat()</slot>
