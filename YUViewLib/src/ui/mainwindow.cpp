@@ -219,13 +219,6 @@ void MainWindow::createMenusAndActions()
 
   // View menu
   QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
-  auto addDockViewAction = [viewMenu](QDockWidget *dockWidget, QString text, const QKeySequence &shortcut = {})
-  {
-    QAction *action = dockWidget->toggleViewAction();
-    action->setText(text);
-    action->setShortcut(shortcut);
-    viewMenu->addAction(action);
-  };
   // Sub menu save/load state
   QMenu *saveStateMenu = viewMenu->addMenu("Save View State");
   saveStateMenu->addAction("Slot 1", &stateHandler, SLOT(saveViewState1()), Qt::CTRL + Qt::Key_1);
@@ -251,11 +244,19 @@ void MainWindow::createMenusAndActions()
   viewMenu->addAction("Zoom in", ui.displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
   viewMenu->addAction("Zoom out", ui.displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
   viewMenu->addSeparator();
+  QMenu *dockPanelsMenu = viewMenu->addMenu("Dock Panels");
+    auto addDockViewAction = [dockPanelsMenu](QDockWidget *dockWidget, QString text, const QKeySequence &shortcut = {})
+  {
+    QAction *action = dockWidget->toggleViewAction();
+    action->setText(text);
+    action->setShortcut(shortcut);
+    dockPanelsMenu->addAction(action);
+  };
   addDockViewAction(ui.playlistDockWidget, "Show P&laylist", Qt::CTRL + Qt::Key_L);
   addDockViewAction(ui.displayDockWidget, "Show &Display Options", Qt::CTRL + Qt::Key_D);
   addDockViewAction(ui.propertiesDock, "Show &Properties", Qt::CTRL + Qt::Key_P);
   addDockViewAction(ui.fileInfoDock, "Show &Info", Qt::CTRL + Qt::Key_I);
-  addDockViewAction(ui.cachingDebugDock, "Show Caching Info");
+  addDockViewAction(ui.cachingInfoDock, "Show Caching Info");
   viewMenu->addSeparator();
   addDockViewAction(ui.playbackControllerDock, "Show Playback &Controls", Qt::CTRL + Qt::Key_D);
   viewMenu->addSeparator();
@@ -347,7 +348,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
   }
 
   // Delete all items in the playlist. This will also kill all eventual running background processes.
-  ui.playlistTreeWidget->deletePlaylistItems(false);
+  ui.playlistTreeWidget->deletePlaylistItems(true);
 
   event->accept();
 
@@ -394,7 +395,7 @@ void MainWindow::deleteSelectedItems()
   // stop playback first
   ui.playbackController->pausePlayback();
 
-  ui.playlistTreeWidget->deletePlaylistItems(true);
+  ui.playlistTreeWidget->deletePlaylistItems(false);
 }
 
 bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
@@ -502,7 +503,7 @@ void MainWindow::toggleFullscreen()
     if (panelsVisible[4])
       ui.fileInfoDock->show();
     if (panelsVisible[5])
-      ui.cachingDebugDock->show();
+      ui.cachingInfoDock->show();
 
     // show the menu bar
     if (!is_Q_OS_MAC)
@@ -523,7 +524,7 @@ void MainWindow::toggleFullscreen()
     panelsVisible[2] = ui.displayDockWidget->isVisible();
     panelsVisible[3] = ui.playbackControllerDock->isVisible();
     panelsVisible[4] = ui.fileInfoDock->isVisible();
-    panelsVisible[5] = ui.cachingDebugDock->isVisible();
+    panelsVisible[5] = ui.cachingInfoDock->isVisible();
 
     // Hide panels
     ui.propertiesDock->hide();
@@ -533,7 +534,7 @@ void MainWindow::toggleFullscreen()
     if (!settings.value("ShowPlaybackControlFullScreen", false).toBool())
       ui.playbackControllerDock->hide();
     ui.fileInfoDock->hide();
-    ui.cachingDebugDock->hide();
+    ui.cachingInfoDock->hide();
 
     // hide menu bar
     if (!is_Q_OS_MAC)
@@ -753,7 +754,7 @@ void MainWindow::resetWindowLayout()
   ui.displayDockWidget->setFloating(false);
   ui.playbackControllerDock->setFloating(false);
   ui.fileInfoDock->setFloating(false);
-  ui.cachingDebugDock->setFloating(false);
+  ui.cachingInfoDock->setFloating(false);
 
   // show the menu bar
   if (!is_Q_OS_MAC)

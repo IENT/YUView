@@ -250,7 +250,7 @@
     </widget>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="cachingDebugDock">
+  <widget class="QDockWidget" name="cachingInfoDock">
    <property name="windowTitle">
     <string>Caching Info</string>
    </property>

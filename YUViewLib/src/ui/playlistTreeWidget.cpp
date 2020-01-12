@@ -363,47 +363,26 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
 
 void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
 {
-  QMenu menu;
+  QMenu menu(this);
 
   // first add generic items to context menu
-  QAction *open       = menu.addAction("Open File...");
-  QAction *createText = menu.addAction("Add Text Frame");
-  QAction *createDiff = menu.addAction("Add Difference Sequence");
-  QAction *createOverlay = menu.addAction("Add Overlay");
-
-  QAction *deleteAction = nullptr;
-  QAction *cloneAction = nullptr;
+  menu.addAction("Open File...", this, &PlaylistTreeWidget::openFileDialog);
+  menu.addAction("Add Text Frame", this, &PlaylistTreeWidget::addTextItem);
+  menu.addAction("Add Difference Sequence", this, &PlaylistTreeWidget::addDifferenceItem);
+  menu.addAction("Add Overlay", this, &PlaylistTreeWidget::addOverlayItem);
 
   QTreeWidgetItem* itemAtPoint = itemAt(event->pos());
   if (itemAtPoint)
   {
     menu.addSeparator();
-    deleteAction = menu.addAction("Delete Item");
+    menu.addAction("Delete Item", this, &PlaylistTreeWidget::deletePlaylistItems);
 
     playlistItemText *txt = dynamic_cast<playlistItemText*>(itemAtPoint);
     if (txt)
-    {
-      cloneAction = menu.addAction("Clone Item...");
-    }
+      menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
   }
 
-  QAction* action = menu.exec(event->globalPos());
-  if (action == nullptr)
-    return;
-
-  if (action == open)
-    // Show the open file dialog
-    emit openFileDialog();
-  else if (action == createText)
-    addTextItem();
-  else if (action == createDiff)
-    addDifferenceItem();
-  else if (action == createOverlay)
-    addOverlayItem();
-  else if (action == deleteAction)
-    deletePlaylistItems(true);
-  else if (action == cloneAction)
-    cloneSelectedItem();
+  menu.exec(event->globalPos());
 }
 
 std::array<playlistItem *, 2> PlaylistTreeWidget::getSelectedItems() const
@@ -579,24 +558,24 @@ void PlaylistTreeWidget::selectPreviousItem()
 }
 
 // Remove the selected items from the playlist tree widget and delete them
-void PlaylistTreeWidget::deletePlaylistItems(bool selectionOnly)
+void PlaylistTreeWidget::deletePlaylistItems(bool deleteAllItems)
 {
   // First get all the items to process (top level or selected)
   QList<playlistItem*> itemList;
-  if (selectionOnly)
+  if (deleteAllItems)
+  {
+    // Get all top level items
+    for (int i = 0; i < topLevelItemCount(); i++)
+      itemList.append(dynamic_cast<playlistItem*>(topLevelItem(i)));
+  }
+  else
   {
     // Get the selected items
     QList<QTreeWidgetItem*> itemsList = selectedItems();
     for (QTreeWidgetItem* item : itemsList)
       itemList.append(dynamic_cast<playlistItem*>(item));
   }
-  else
-  {
-    // Get all top level items
-    for (int i = 0; i < topLevelItemCount(); i++)
-      itemList.append(dynamic_cast<playlistItem*>(topLevelItem(i)));
-  }
-    
+  
   // For all items, expand the items that contain children. However, do not add an item twice.
   QList<playlistItem*> unfoldedItemList;
   for (playlistItem *plItem : itemList)
@@ -642,7 +621,7 @@ void PlaylistTreeWidget::deletePlaylistItems(bool selectionOnly)
     emit itemAboutToBeDeleted(plItem);
   }
 
-  if (!selectionOnly)
+  if (deleteAllItems)
     // One of the items we deleted might be the child of a container item.
     // Update all container items.
     updateAllContainterItems();
@@ -808,7 +787,7 @@ bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
     if (msgBox.clickedButton() == clearPlaylist)
     {
       // Clear the playlist and continue
-      deletePlaylistItems(false);
+      deletePlaylistItems(true);
     }
     else if (msgBox.clickedButton() == abortButton)
     {
