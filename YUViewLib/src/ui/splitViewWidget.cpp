@@ -41,6 +41,7 @@
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
+#include <QDebug>
 
 #include "playbackController.h"
 #include "playlistitem/playlistItem.h"
@@ -83,7 +84,8 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   // We want to have all mouse events (even move)
   setMouseTracking(true);
 
-  createMenuActions();
+  if (!isSeparateWidget)
+    createMenuActions();
 }
 
 void splitViewWidget::setPlaylistTreeWidget(PlaylistTreeWidget *p) { playlist = p; }
@@ -998,7 +1000,10 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     if (mouse_event->button() == Qt::RightButton && !viewDraggingMouseMoved)
     {
       QMenu menu(this);
-      addMenuActions(&menu);
+      if (isSeparateWidget)
+        otherWidget->addMenuActions(&menu);
+      else
+        addMenuActions(&menu);
       menu.exec(mouse_event->globalPos());
     }
 
@@ -1411,6 +1416,19 @@ void splitViewWidget::zoomToCustom(bool checked)
     zoom(ZOOM_TO_PERCENTAGE, QPoint(), double(newValue) / 100);
 }
 
+void splitViewWidget::toggleFullScreen(bool checked) 
+{ 
+  Q_UNUSED(checked);
+  emit signalToggleFullScreen();
+}
+
+void splitViewWidget::toggleSeperateWindow(bool checked) 
+{ 
+  QSignalBlocker actionBlocker(actionSeperateView);
+  actionSeperateView.toggle();
+  emit signalShowSeparateWindow(checked);
+}
+
 void splitViewWidget::resetViews(bool checked)
 {
   Q_UNUSED(checked);
@@ -1565,13 +1583,15 @@ void splitViewWidget::setViewSplitMode(ViewSplitMode v, bool emitSignal)
 
 void splitViewWidget::setPrimaryWidget(splitViewWidget *primary)
 {
-  Q_ASSERT_X(isSeparateWidget, "setPrimaryWidget", "Call this function only on the separate widget.");
+  Q_ASSERT_X(isSeparateWidget, "splitViewWidget::setPrimaryWidget", "Call this function only on the separate widget.");
+  Q_ASSERT_X(otherWidget.isNull(), "splitViewWidget::setPrimaryWidget", "Call this only once.");
   otherWidget = primary;
 }
 
 void splitViewWidget::setSeparateWidget(splitViewWidget *separate)
 {
   Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
+  Q_ASSERT_X(otherWidget.isNull(), "splitViewWidget::setPrimaryWidget", "Call this only once.");
   otherWidget = separate;
 }
 
@@ -1614,6 +1634,11 @@ void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistI
     }
     DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item %d (%d,%d-%f)", item1->getID(), centerOffset.x(), centerOffset.y(), zoomFactor);
   }
+}
+
+void splitViewWidget::toggleSeparateViewHideShow()
+{
+  
 }
 
 QImage splitViewWidget::getScreenshot(bool fullItem)
@@ -1847,8 +1872,9 @@ void splitViewWidget::keyPressEvent(QKeyEvent *event)
 void splitViewWidget::createMenuActions()
 {
   Q_ASSERT_X(actionSplitViewGroup.isNull(), "splitViewWidget::createMenuActions", "Only call this initialization function once.");
+  Q_ASSERT_X(!isSeparateWidget, "splitViewWidget::createMenuAction", "Only call this for the main splitViewWidget");
 
-  auto addCheckableAction = [this](QAction &action, QActionGroup *actionGroup, QString text, bool checked, void(splitViewWidget::*func)(bool), const QKeySequence &shortcut = {})
+  auto configureCheckableAction = [this](QAction &action, QActionGroup *actionGroup, QString text, bool checked, void(splitViewWidget::*func)(bool), const QKeySequence &shortcut = {})
   {
     action.setParent(this);
     action.setCheckable(true);
@@ -1861,28 +1887,31 @@ void splitViewWidget::createMenuActions()
   };
 
   actionSplitViewGroup.reset(new QActionGroup(this));
-  addCheckableAction(actionSplitView[0], actionSplitViewGroup.data(), "Disabled", viewSplitMode == DISABLED, &splitViewWidget::splitViewDisable);
-  addCheckableAction(actionSplitView[1], actionSplitViewGroup.data(), "Side-by-Side", viewSplitMode == SIDE_BY_SIDE, &splitViewWidget::splitViewSideBySide);
-  addCheckableAction(actionSplitView[2], actionSplitViewGroup.data(), "Comparison", viewSplitMode == COMPARISON, &splitViewWidget::splitViewComparison);
+  configureCheckableAction(actionSplitView[0], actionSplitViewGroup.data(), "Disabled", viewSplitMode == DISABLED, &splitViewWidget::splitViewDisable);
+  configureCheckableAction(actionSplitView[1], actionSplitViewGroup.data(), "Side-by-Side", viewSplitMode == SIDE_BY_SIDE, &splitViewWidget::splitViewSideBySide);
+  configureCheckableAction(actionSplitView[2], actionSplitViewGroup.data(), "Comparison", viewSplitMode == COMPARISON, &splitViewWidget::splitViewComparison);
 
   actionGridGroup.reset(new QActionGroup(this));
-  addCheckableAction(actionGrid[0], actionGridGroup.data(), "Disabled", regularGridSize == 0, &splitViewWidget::gridDisable);
-  addCheckableAction(actionGrid[1], actionGridGroup.data(), "16x16", regularGridSize == 16, &splitViewWidget::gridSet16);
-  addCheckableAction(actionGrid[2], actionGridGroup.data(), "32x32", regularGridSize == 32, &splitViewWidget::gridSet32);
-  addCheckableAction(actionGrid[3], actionGridGroup.data(), "64x64", regularGridSize == 64, &splitViewWidget::gridSet64);
-  addCheckableAction(actionGrid[4], actionGridGroup.data(), "128x128", regularGridSize == 128, &splitViewWidget::gridSet128);
-  addCheckableAction(actionGrid[5], actionGridGroup.data(), "Custom...", regularGridSize != 0 && regularGridSize != 16 && regularGridSize != 32 && regularGridSize != 64 && regularGridSize != 128, &splitViewWidget::gridSetCustom);
+  configureCheckableAction(actionGrid[0], actionGridGroup.data(), "Disabled", regularGridSize == 0, &splitViewWidget::gridDisable);
+  configureCheckableAction(actionGrid[1], actionGridGroup.data(), "16x16", regularGridSize == 16, &splitViewWidget::gridSet16);
+  configureCheckableAction(actionGrid[2], actionGridGroup.data(), "32x32", regularGridSize == 32, &splitViewWidget::gridSet32);
+  configureCheckableAction(actionGrid[3], actionGridGroup.data(), "64x64", regularGridSize == 64, &splitViewWidget::gridSet64);
+  configureCheckableAction(actionGrid[4], actionGridGroup.data(), "128x128", regularGridSize == 128, &splitViewWidget::gridSet128);
+  configureCheckableAction(actionGrid[5], actionGridGroup.data(), "Custom...", regularGridSize != 0 && regularGridSize != 16 && regularGridSize != 32 && regularGridSize != 64 && regularGridSize != 128, &splitViewWidget::gridSetCustom);
 
-  addCheckableAction(actionZoomBox, nullptr, "Zoom Box", drawZoomBox, &splitViewWidget::toggleZoomBox);
+  configureCheckableAction(actionZoomBox, nullptr, "Zoom Box", drawZoomBox, &splitViewWidget::toggleZoomBox);
 
-  addCheckableAction(actionZoom[0], nullptr, "Zoom to 1:1", false, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
-  addCheckableAction(actionZoom[1], nullptr, "Zoom to Fit", false, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
-  addCheckableAction(actionZoom[2], nullptr, "Zoom in", false, &splitViewWidget::zoomIn, Qt::CTRL + Qt::Key_Plus);
-  addCheckableAction(actionZoom[3], nullptr, "Zoom out", false, &splitViewWidget::zoomOut, Qt::CTRL + Qt::Key_Minus);
-  addCheckableAction(actionZoom[4], nullptr, "Zoom to 50%", false, &splitViewWidget::zoomTo50);
-  addCheckableAction(actionZoom[5], nullptr, "Zoom to 100%", false, &splitViewWidget::zoomTo100);
-  addCheckableAction(actionZoom[6], nullptr, "Zoom to 200%", false, &splitViewWidget::zoomTo200);
-  addCheckableAction(actionZoom[7], nullptr, "Zoom to ...", false, &splitViewWidget::zoomToCustom);
+  configureCheckableAction(actionZoom[0], nullptr, "Zoom to 1:1", false, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
+  configureCheckableAction(actionZoom[1], nullptr, "Zoom to Fit", false, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
+  configureCheckableAction(actionZoom[2], nullptr, "Zoom in", false, &splitViewWidget::zoomIn, Qt::CTRL + Qt::Key_Plus);
+  configureCheckableAction(actionZoom[3], nullptr, "Zoom out", false, &splitViewWidget::zoomOut, Qt::CTRL + Qt::Key_Minus);
+  configureCheckableAction(actionZoom[4], nullptr, "Zoom to 50%", false, &splitViewWidget::zoomTo50);
+  configureCheckableAction(actionZoom[5], nullptr, "Zoom to 100%", false, &splitViewWidget::zoomTo100);
+  configureCheckableAction(actionZoom[6], nullptr, "Zoom to 200%", false, &splitViewWidget::zoomTo200);
+  configureCheckableAction(actionZoom[7], nullptr, "Zoom to ...", false, &splitViewWidget::zoomToCustom);
+
+  configureCheckableAction(actionFullScreen, nullptr, "&Fullscreen Mode", false, &splitViewWidget::toggleFullScreen, Qt::CTRL + Qt::Key_F);
+  configureCheckableAction(actionSeperateView, nullptr, "&Single/Separate Window Mode", false, &splitViewWidget::toggleSeperateWindow, Qt::CTRL + Qt::Key_W);
 }
 
 // Handle the key press event (if this widgets handles it). If not, return false.
@@ -2079,14 +2108,6 @@ void splitViewWidget::testDrawingSpeed()
 
 void splitViewWidget::addMenuActions(QMenu *menu)
 {
-  auto addCheckableAction = [this](QMenu *menu, QString text, bool checked, void(splitViewWidget::*func)())
-  {
-    QAction *action = menu->addAction(text, this, func);
-    action->setCheckable(true);
-    action->setChecked(checked);
-    return action;
-  };
-
   QMenu *splitViewMenu = menu->addMenu("Split View");
   for (size_t i = 0; i < 3; i++)
     splitViewMenu->addAction(&actionSplitView[i]);
@@ -2107,6 +2128,10 @@ void splitViewWidget::addMenuActions(QMenu *menu)
   zoomMenu->addAction("Zoom to 100%", this, &splitViewWidget::zoomTo100);
   zoomMenu->addAction("Zoom to 200%", this, &splitViewWidget::zoomTo200);
   zoomMenu->addAction("Zoom to ...", this, &splitViewWidget::zoomToCustom);
+
+  menu->addSeparator();
+  menu->addAction(&actionFullScreen);
+  menu->addAction(&actionSeperateView);
 }
 
 void splitViewWidget::updateTestProgress()

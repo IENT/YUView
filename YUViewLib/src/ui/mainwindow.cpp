@@ -139,7 +139,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   connect(ui.openButton, &QPushButton::clicked, this, &MainWindow::showFileOpenDialog);
 
   // Connect signals from the separate window
-  //connect(&separateViewWindow, &SeparateWindow::signalSingleWindowMode, ui.displaySplitView, &splitViewWidget::toggleSeparateViewHideShow);
+  connect(&separateViewWindow, &SeparateWindow::signalSingleWindowMode, ui.displaySplitView, &splitViewWidget::toggleSeparateViewHideShow);
   connect(&separateViewWindow, &SeparateWindow::unhandledKeyPress, this, &MainWindow::handleKeyPressFromSeparateView);
 
   // Set the controls in the state handler. This way, the state handler can save/load the current state of the view.
@@ -252,9 +252,6 @@ void MainWindow::createMenusAndActions()
   viewMenu->addSeparator();
   addDockViewAction(ui.playbackControllerDock, "Show Playback &Controls", Qt::CTRL + Qt::Key_D);
   ui.displaySplitView->addMenuActions(viewMenu);
-  viewMenu->addSeparator();
-  viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
-  viewMenu->addAction("&Single/Separate Window Mode", ui.displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
 
   // The playback menu
   QMenu *playbackMenu = menuBar()->addMenu(tr("&Playback"));
@@ -400,13 +397,13 @@ bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
   {
     if (isFullScreen())
     {
-      toggleFullscreen();
+      ui.displaySplitView->toggleFullScreenAction();
       return true;
     }
   }
   else if (key == Qt::Key_F && controlOnly)
   {
-    toggleFullscreen();
+    ui.displaySplitView->toggleFullScreenAction();
     return true;
   }
   else if (key == Qt::Key_Space)

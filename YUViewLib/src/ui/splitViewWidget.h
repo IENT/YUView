@@ -147,7 +147,7 @@ public:
   void addMenuActions(QMenu *menu);
 
 signals:
-  // If the user double clicks this widget, go to full screen.
+  
   void signalToggleFullScreen();
 
   // Show (or hide) the separate window
@@ -158,6 +158,9 @@ public slots:
   // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
   // This function will restore the view/position of the items (if enabled)
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
+
+  void toggleFullScreenAction() { actionFullScreen.trigger(); }
+  void toggleSeparateViewHideShow();
 
   void resetViews(bool checked = false); // Reset everything so that the zoom factor is 1 and the display positions are centered
 
@@ -195,6 +198,9 @@ private slots:
   void zoomTo200(bool checked) { Q_UNUSED(checked); zoom(ZOOM_TO_PERCENTAGE, QPoint(), 2.0); }
   void zoomToCustom(bool checked);
 
+  void toggleFullScreen(bool checked);
+  void toggleSeperateWindow(bool checked);
+
 protected:
   
   // Set the widget to the given view mode
@@ -210,7 +216,7 @@ protected:
   virtual void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
   virtual void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
-  virtual void mouseDoubleClickEvent(QMouseEvent *event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
+  virtual void mouseDoubleClickEvent(QMouseEvent *event) Q_DECL_OVERRIDE { actionFullScreen.trigger(); event->accept(); }
   virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
 
   void createMenuActions();
@@ -220,6 +226,8 @@ protected:
   QAction actionGrid[6];
   QAction actionZoomBox;
   QAction actionZoom[8];
+  QAction actionFullScreen;
+  QAction actionSeperateView;
   
   // Override the QWidget event to handle touch gestures
   virtual bool event(QEvent *event) Q_DECL_OVERRIDE;
