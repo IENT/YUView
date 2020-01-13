@@ -1861,17 +1861,17 @@ void splitViewWidget::createMenuActions()
   };
 
   actionSplitViewGroup.reset(new QActionGroup(this));
-  addCheckableAction(actionSplitView[0], actionSplitViewGroup.get(), "Disabled", viewSplitMode == DISABLED, &splitViewWidget::splitViewDisable);
-  addCheckableAction(actionSplitView[1], actionSplitViewGroup.get(), "Side-by-Side", viewSplitMode == SIDE_BY_SIDE, &splitViewWidget::splitViewSideBySide);
-  addCheckableAction(actionSplitView[2], actionSplitViewGroup.get(), "Comparison", viewSplitMode == COMPARISON, &splitViewWidget::splitViewComparison);
+  addCheckableAction(actionSplitView[0], actionSplitViewGroup.data(), "Disabled", viewSplitMode == DISABLED, &splitViewWidget::splitViewDisable);
+  addCheckableAction(actionSplitView[1], actionSplitViewGroup.data(), "Side-by-Side", viewSplitMode == SIDE_BY_SIDE, &splitViewWidget::splitViewSideBySide);
+  addCheckableAction(actionSplitView[2], actionSplitViewGroup.data(), "Comparison", viewSplitMode == COMPARISON, &splitViewWidget::splitViewComparison);
 
   actionGridGroup.reset(new QActionGroup(this));
-  addCheckableAction(actionGrid[0], actionGridGroup.get(), "Disabled", regularGridSize == 0, &splitViewWidget::gridDisable);
-  addCheckableAction(actionGrid[1], actionGridGroup.get(), "16x16", regularGridSize == 16, &splitViewWidget::gridSet16);
-  addCheckableAction(actionGrid[2], actionGridGroup.get(), "32x32", regularGridSize == 32, &splitViewWidget::gridSet32);
-  addCheckableAction(actionGrid[3], actionGridGroup.get(), "64x64", regularGridSize == 64, &splitViewWidget::gridSet64);
-  addCheckableAction(actionGrid[4], actionGridGroup.get(), "128x128", regularGridSize == 128, &splitViewWidget::gridSet128);
-  addCheckableAction(actionGrid[5], actionGridGroup.get(), "Custom...", regularGridSize != 0 && regularGridSize != 16 && regularGridSize != 32 && regularGridSize != 64 && regularGridSize != 128, &splitViewWidget::gridSetCustom);
+  addCheckableAction(actionGrid[0], actionGridGroup.data(), "Disabled", regularGridSize == 0, &splitViewWidget::gridDisable);
+  addCheckableAction(actionGrid[1], actionGridGroup.data(), "16x16", regularGridSize == 16, &splitViewWidget::gridSet16);
+  addCheckableAction(actionGrid[2], actionGridGroup.data(), "32x32", regularGridSize == 32, &splitViewWidget::gridSet32);
+  addCheckableAction(actionGrid[3], actionGridGroup.data(), "64x64", regularGridSize == 64, &splitViewWidget::gridSet64);
+  addCheckableAction(actionGrid[4], actionGridGroup.data(), "128x128", regularGridSize == 128, &splitViewWidget::gridSet128);
+  addCheckableAction(actionGrid[5], actionGridGroup.data(), "Custom...", regularGridSize != 0 && regularGridSize != 16 && regularGridSize != 32 && regularGridSize != 64 && regularGridSize != 128, &splitViewWidget::gridSetCustom);
 
   addCheckableAction(actionZoomBox, nullptr, "Zoom Box", drawZoomBox, &splitViewWidget::toggleZoomBox);
 
