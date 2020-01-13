@@ -212,7 +212,6 @@ protected:
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
   virtual void mouseDoubleClickEvent(QMouseEvent *event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
   virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
-  virtual void contextMenuEvent(QContextMenuEvent *event) Q_DECL_OVERRIDE;
 
   void createMenuActions();
   QScopedPointer<QActionGroup> actionSplitViewGroup;
@@ -254,6 +253,7 @@ protected:
   void    setCenterOffset(QPoint offset);
   QPoint  centerOffset;                     //!< The offset of the view to the center (0,0)
   bool    viewDragging {false};             //!< True if the user is currently moving the view
+  bool    viewDraggingMouseMoved {false};   //!< If the user is moving the view this indicates if the view was actually moved more than a few pixels
   QPoint  viewDraggingMousePosStart;
   QPoint  viewDraggingStartOffset;
   bool    viewZooming {false};              //!< True if the user is currently zooming using the mouse (zoom box)

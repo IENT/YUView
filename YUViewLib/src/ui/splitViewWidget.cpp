@@ -61,6 +61,7 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   setFocusPolicy(Qt::NoFocus);
   setViewSplitMode(DISABLED);
   updateSettings();
+  setContextMenuPolicy(Qt::PreventContextMenu);
 
   centerOffset = QPoint(0, 0);
 
@@ -839,8 +840,11 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
       // End dragging.
       splittingDragging = false;
     else if (viewDragging)
+    {
       // End dragging
       viewDragging = false;
+      viewDraggingMouseMoved = false;
+    }
     else if (viewZooming)
       viewZooming = false;
   }
@@ -854,15 +858,16 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     int xClip = clip(mouse_event->x(), SPLITVIEWWIDGET_SPLITTER_CLIPX, (width()-2- SPLITVIEWWIDGET_SPLITTER_CLIPX));
     setSplittingPoint((double)xClip / (double)(width()-2));
 
-    // The splitter was moved. Update the widget.
     update();
   }
   else if (viewDragging)
   {
     // The user is currently dragging the view. Calculate the new offset from the center position
     setCenterOffset(viewDraggingStartOffset + (mouse_event->pos() - viewDraggingMousePosStart));
+    auto mouseMoved = viewDraggingMousePosStart - mouse_event->pos();
+    if (mouseMoved.manhattanLength() > 3)
+      viewDraggingMouseMoved = true;
 
-    // The view was moved. Update the widget.
     update();
   }
   else if (viewZooming)
@@ -870,7 +875,6 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     // The user is currently using the mouse to zoom. Save the current mouse position so that we can draw a zooming rectangle.
     viewZoomingMousePos = mouse_event->pos();
 
-    // Update the view to draw the zoom box.
     update();
   }
   else
@@ -934,6 +938,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     // user grabbed the item (screen).
     viewDraggingMousePosStart = mouse_event->pos();
     viewDraggingStartOffset = centerOffset;
+    viewDraggingMouseMoved = false;
 
     //qDebug() << "MouseGrab - Center: " << centerPoint << " rel: " << grabPosRelative;
 
@@ -990,11 +995,17 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     // Calculate the new center offset one last time
     setCenterOffset(viewDraggingStartOffset + (mouse_event->pos() - viewDraggingMousePosStart));
 
-    // The view was moved. Update the widget.
-    update();
+    if (mouse_event->button() == Qt::RightButton && !viewDraggingMouseMoved)
+    {
+      QMenu menu(this);
+      addMenuActions(&menu);
+      menu.exec(mouse_event->globalPos());
+    }
 
     // End dragging
     viewDragging = false;
+    viewDraggingMouseMoved = false;
+    update();
   }
   else if (viewZooming && (
            (mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE) ||
@@ -1831,13 +1842,6 @@ void splitViewWidget::keyPressEvent(QKeyEvent *event)
     // If this widget does not handle the key press event, pass it up to the widget so that
     // it is propagated to the parent.
     QWidget::keyPressEvent(event);
-}
-
-void splitViewWidget::contextMenuEvent(QContextMenuEvent *event)
-{
-  QMenu menu(this);
-  addMenuActions(&menu);
-  menu.exec(event->globalPos());
 }
 
 void splitViewWidget::createMenuActions()
