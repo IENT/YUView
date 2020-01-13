@@ -33,6 +33,7 @@
 #ifndef SPLITVIEWWIDGET_H
 #define SPLITVIEWWIDGET_H
 
+#include <QAction>
 #include <QElapsedTimer>
 #include <QMenu>
 #include <QMouseEvent>
@@ -158,7 +159,7 @@ public slots:
   // This function will restore the view/position of the items (if enabled)
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
 
-  void resetViews(); // Reset everything so that the zoom factor is 1 and the display positions are centered
+  void resetViews(bool checked = false); // Reset everything so that the zoom factor is 1 and the display positions are centered
 
 private slots:
 
@@ -173,26 +174,26 @@ private slots:
   void on_playbackPrimaryCheckBox_toggled(bool state);
   void on_zoomFactorSpinBox_valueChanged(int val);
 
-  void splitViewDisable() { setViewSplitMode(DISABLED); }
-  void splitViewSideBySide() { setViewSplitMode(SIDE_BY_SIDE); }
-  void splitViewComparison() { setViewSplitMode(COMPARISON); }
+  void splitViewDisable(bool checked) { Q_UNUSED(checked); setViewSplitMode(DISABLED); update(); }
+  void splitViewSideBySide(bool checked) { Q_UNUSED(checked); setViewSplitMode(SIDE_BY_SIDE); update(); }
+  void splitViewComparison(bool checked) { Q_UNUSED(checked); setViewSplitMode(COMPARISON); update(); }
 
-  void gridDisable() { regularGridSize = 0; update(); }
-  void gridSet16() { regularGridSize = 16; update(); }
-  void gridSet32() { regularGridSize = 32; update(); }
-  void gridSet64() { regularGridSize = 64; update(); }
-  void gridSet128() { regularGridSize = 128; update(); }
-  void gridSetCustom();
+  void gridDisable(bool checked) { Q_UNUSED(checked); regularGridSize = 0; update(); }
+  void gridSet16(bool checked) { Q_UNUSED(checked); regularGridSize = 16; update(); }
+  void gridSet32(bool checked) { Q_UNUSED(checked); regularGridSize = 32; update(); }
+  void gridSet64(bool checked) { Q_UNUSED(checked); regularGridSize = 64; update(); }
+  void gridSet128(bool checked) { Q_UNUSED(checked); regularGridSize = 128; update(); }
+  void gridSetCustom(bool checked);
 
-  void toggleZoomBox() { drawZoomBox = !drawZoomBox; update(); }
+  void toggleZoomBox(bool checked) { Q_UNUSED(checked); drawZoomBox = !drawZoomBox; update(); }
 
-  void zoomToFit(); // Reset the view and set the zoom so that the current item is entirely visible.
-  void zoomIn() { zoom(ZOOM_IN); }
-  void zoomOut() { zoom(ZOOM_OUT); }
-  void zoomTo50() { zoom(ZOOM_TO_PERCENTAGE, QPoint(), 0.5); }
-  void zoomTo100() { zoom(ZOOM_TO_PERCENTAGE, QPoint(), 1.0); }
-  void zoomTo200() { zoom(ZOOM_TO_PERCENTAGE, QPoint(), 2.0); }
-  void zoomToCustom();
+  void zoomToFit(bool checked = false); // Reset the view and set the zoom so that the current item is entirely visible.
+  void zoomIn(bool checked) { Q_UNUSED(checked); zoom(ZOOM_IN); }
+  void zoomOut(bool checked) { Q_UNUSED(checked); zoom(ZOOM_OUT); }
+  void zoomTo50(bool checked) { Q_UNUSED(checked); zoom(ZOOM_TO_PERCENTAGE, QPoint(), 0.5); }
+  void zoomTo100(bool checked) { Q_UNUSED(checked); zoom(ZOOM_TO_PERCENTAGE, QPoint(), 1.0); }
+  void zoomTo200(bool checked) { Q_UNUSED(checked); zoom(ZOOM_TO_PERCENTAGE, QPoint(), 2.0); }
+  void zoomToCustom(bool checked);
 
 protected:
   
@@ -212,6 +213,14 @@ protected:
   virtual void mouseDoubleClickEvent(QMouseEvent *event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
   virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
   virtual void contextMenuEvent(QContextMenuEvent *event) Q_DECL_OVERRIDE;
+
+  void createMenuActions();
+  QScopedPointer<QActionGroup> actionSplitViewGroup;
+  QScopedPointer<QActionGroup> actionGridGroup;
+  QAction actionSplitView[3];
+  QAction actionGrid[6];
+  QAction actionZoomBox;
+  QAction actionZoom[8];
   
   // Override the QWidget event to handle touch gestures
   virtual bool event(QEvent *event) Q_DECL_OVERRIDE;

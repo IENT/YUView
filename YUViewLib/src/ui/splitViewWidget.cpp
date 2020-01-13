@@ -81,6 +81,8 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
 
   // We want to have all mouse events (even move)
   setMouseTracking(true);
+
+  createMenuActions();
 }
 
 void splitViewWidget::setPlaylistTreeWidget(PlaylistTreeWidget *p) { playlist = p; }
@@ -1377,8 +1379,9 @@ void splitViewWidget::on_zoomFactorSpinBox_valueChanged(int val)
   update();
 }
 
-void splitViewWidget::gridSetCustom()
+void splitViewWidget::gridSetCustom(bool checked)
 {
+  Q_UNUSED(checked);
   bool ok;
   int newValue = QInputDialog::getInt(this, "Custom grid", "Please select a grid size value in pixels", 64, 1, 2147483647, 1, &ok);
   if (ok)
@@ -1388,16 +1391,18 @@ void splitViewWidget::gridSetCustom()
   }
 }
 
-void splitViewWidget::zoomToCustom()
+void splitViewWidget::zoomToCustom(bool checked)
 {
+  Q_UNUSED(checked);
   bool ok;
   int newValue = QInputDialog::getInt(this, "Zoom to custom value", "Please select a zoom factor in percent", 100, 1, 2147483647, 1, &ok);
   if (ok)
     zoom(ZOOM_TO_PERCENTAGE, QPoint(), double(newValue) / 100);
 }
 
-void splitViewWidget::resetViews()
+void splitViewWidget::resetViews(bool checked)
 {
+  Q_UNUSED(checked);
   setCenterOffset(QPoint(0,0));
   setZoomFactor(1.0);
   setSplittingPoint(0.5);
@@ -1405,8 +1410,9 @@ void splitViewWidget::resetViews()
   update();
 }
 
-void splitViewWidget::zoomToFit()
+void splitViewWidget::zoomToFit(bool checked)
 {
+  Q_UNUSED(checked);
   if (!playlist)
     // The playlist was not initialized yet. Nothing to draw (yet)
     return;
@@ -1834,6 +1840,47 @@ void splitViewWidget::contextMenuEvent(QContextMenuEvent *event)
   menu.exec(event->globalPos());
 }
 
+void splitViewWidget::createMenuActions()
+{
+  Q_ASSERT_X(actionSplitViewGroup.isNull(), "splitViewWidget::createMenuActions", "Only call this initialization function once.");
+
+  auto addCheckableAction = [this](QAction &action, QActionGroup *actionGroup, QString text, bool checked, void(splitViewWidget::*func)(bool), const QKeySequence &shortcut = {})
+  {
+    action.setParent(this);
+    action.setCheckable(true);
+    action.setChecked(checked);
+    action.setText(text);
+    action.setShortcut(shortcut);
+    if (actionGroup)
+      actionGroup->addAction(&action);
+    connect(&action, &QAction::triggered, this, func);
+  };
+
+  actionSplitViewGroup.reset(new QActionGroup(this));
+  addCheckableAction(actionSplitView[0], actionSplitViewGroup.get(), "Disabled", viewSplitMode == DISABLED, &splitViewWidget::splitViewDisable);
+  addCheckableAction(actionSplitView[1], actionSplitViewGroup.get(), "Side-by-Side", viewSplitMode == SIDE_BY_SIDE, &splitViewWidget::splitViewSideBySide);
+  addCheckableAction(actionSplitView[2], actionSplitViewGroup.get(), "Comparison", viewSplitMode == COMPARISON, &splitViewWidget::splitViewComparison);
+
+  actionGridGroup.reset(new QActionGroup(this));
+  addCheckableAction(actionGrid[0], actionGridGroup.get(), "Disabled", regularGridSize == 0, &splitViewWidget::gridDisable);
+  addCheckableAction(actionGrid[1], actionGridGroup.get(), "16x16", regularGridSize == 16, &splitViewWidget::gridSet16);
+  addCheckableAction(actionGrid[2], actionGridGroup.get(), "32x32", regularGridSize == 32, &splitViewWidget::gridSet32);
+  addCheckableAction(actionGrid[3], actionGridGroup.get(), "64x64", regularGridSize == 64, &splitViewWidget::gridSet64);
+  addCheckableAction(actionGrid[4], actionGridGroup.get(), "128x128", regularGridSize == 128, &splitViewWidget::gridSet128);
+  addCheckableAction(actionGrid[5], actionGridGroup.get(), "Custom...", regularGridSize != 0 && regularGridSize != 16 && regularGridSize != 32 && regularGridSize != 64 && regularGridSize != 128, &splitViewWidget::gridSetCustom);
+
+  addCheckableAction(actionZoomBox, nullptr, "Zoom Box", drawZoomBox, &splitViewWidget::toggleZoomBox);
+
+  addCheckableAction(actionZoom[0], nullptr, "Zoom to 1:1", false, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
+  addCheckableAction(actionZoom[1], nullptr, "Zoom to Fit", false, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
+  addCheckableAction(actionZoom[2], nullptr, "Zoom in", false, &splitViewWidget::zoomIn, Qt::CTRL + Qt::Key_Plus);
+  addCheckableAction(actionZoom[3], nullptr, "Zoom out", false, &splitViewWidget::zoomOut, Qt::CTRL + Qt::Key_Minus);
+  addCheckableAction(actionZoom[4], nullptr, "Zoom to 50%", false, &splitViewWidget::zoomTo50);
+  addCheckableAction(actionZoom[5], nullptr, "Zoom to 100%", false, &splitViewWidget::zoomTo100);
+  addCheckableAction(actionZoom[6], nullptr, "Zoom to 200%", false, &splitViewWidget::zoomTo200);
+  addCheckableAction(actionZoom[7], nullptr, "Zoom to ...", false, &splitViewWidget::zoomToCustom);
+}
+
 // Handle the key press event (if this widgets handles it). If not, return false.
 bool splitViewWidget::handleKeyPress(QKeyEvent *event)
 {
@@ -2037,21 +2084,14 @@ void splitViewWidget::addMenuActions(QMenu *menu)
   };
 
   QMenu *splitViewMenu = menu->addMenu("Split View");
-  QActionGroup splitVieGroup(this);
-  splitVieGroup.addAction(addCheckableAction(splitViewMenu, "Disabled", viewSplitMode == DISABLED, &splitViewWidget::splitViewDisable));
-  splitVieGroup.addAction(addCheckableAction(splitViewMenu, "Side-by-Side", viewSplitMode == SIDE_BY_SIDE, &splitViewWidget::splitViewSideBySide));
-  splitVieGroup.addAction(addCheckableAction(splitViewMenu, "Comparison", viewSplitMode == COMPARISON, &splitViewWidget::splitViewComparison));
+  for (size_t i = 0; i < 3; i++)
+    splitViewMenu->addAction(&actionSplitView[i]);
 
   QMenu *drawGridMenu = menu->addMenu("Draw Grid");
-  QActionGroup drawGridGroup(this);
-  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "Disabled", regularGridSize == 0, &splitViewWidget::gridDisable));
-  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "16x16", regularGridSize == 16, &splitViewWidget::gridSet16));
-  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "32x32", regularGridSize == 32, &splitViewWidget::gridSet32));
-  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "64x64", regularGridSize == 64, &splitViewWidget::gridSet64));
-  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "128x128", regularGridSize == 128, &splitViewWidget::gridSet128));
-  drawGridGroup.addAction(addCheckableAction(drawGridMenu, "Custom...", regularGridSize != 0 && regularGridSize != 16 && regularGridSize != 32 && regularGridSize != 64 && regularGridSize != 128, &splitViewWidget::gridSetCustom));
+  for (size_t i = 0; i < 6; i++)
+    drawGridMenu->addAction(&actionGrid[i]);
 
-  addCheckableAction(menu, "Zoom Box", drawZoomBox, &splitViewWidget::toggleZoomBox);
+  menu->addAction(&actionZoomBox);
 
   QMenu *zoomMenu = menu->addMenu("Zoom");
   zoomMenu->addAction("Zoom to 1:1", this, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
