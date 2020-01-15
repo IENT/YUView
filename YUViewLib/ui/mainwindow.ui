@@ -140,11 +140,6 @@
        <attribute name="headerStretchLastSection">
         <bool>false</bool>
        </attribute>
-       <column>
-        <property name="text">
-         <string notr="true">1</string>
-        </property>
-       </column>
       </widget>
      </item>
      <item>
