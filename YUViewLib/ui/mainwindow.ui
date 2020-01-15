@@ -50,6 +50,9 @@
     </property>
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
+      <property name="styleSheet">
+       <string notr="true">border:0</string>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -140,6 +143,11 @@
        <attribute name="headerStretchLastSection">
         <bool>false</bool>
        </attribute>
+       <column>
+        <property name="text">
+         <string notr="true">1</string>
+        </property>
+       </column>
       </widget>
      </item>
      <item>

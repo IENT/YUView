@@ -493,9 +493,9 @@ void MainWindow::toggleFullscreen()
     if (panelsVisible[4])
       ui.cachingInfoDock->show();
 
-    // show the menu bar
     if (!is_Q_OS_MAC)
       ui.menuBar->show();
+    ui.tabWidget->tabBar()->show();
 
     // Show the window normal or maximized (depending on how it was shown before)
     if (showNormalMaximized)
@@ -522,9 +522,9 @@ void MainWindow::toggleFullscreen()
     ui.fileInfoDock->hide();
     ui.cachingInfoDock->hide();
 
-    // hide menu bar
     if (!is_Q_OS_MAC)
       ui.menuBar->hide();
+    ui.tabWidget->tabBar()->hide();
 
     // Save if the window is currently maximized
     showNormalMaximized = isMaximized();
