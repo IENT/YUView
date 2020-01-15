@@ -480,6 +480,8 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
     {
       if (codeID.getCodecName() == "dvb_subtitle")
         streamIndices.subtitle.dvb.append(idx);
+      else if (codeID.getCodecName() == "eia_608")
+        streamIndices.subtitle.eia608.append(idx);
       else
         streamIndices.subtitle.other.append(idx);
     }
@@ -534,11 +536,17 @@ bool fileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
       pkt.unref_packet(ff);
   
     ret = fmt_ctx.read_frame(ff, pkt);
-    pkt.is_video_packet = (pkt.get_stream_index() == streamIndices.video);
-    pkt.is_audio_packet = (streamIndices.audio.contains(pkt.get_stream_index()));
-    pkt.is_dvb_subtitle_packet = (streamIndices.subtitle.dvb.contains(pkt.get_stream_index()));
+
+    if (pkt.get_stream_index() == streamIndices.video)
+      pkt.setPacketType(PacketType::VIDEO);
+    else if (streamIndices.audio.contains(pkt.get_stream_index()))
+      pkt.setPacketType(PacketType::AUDIO);
+    else if (streamIndices.subtitle.dvb.contains(pkt.get_stream_index()))
+      pkt.setPacketType(PacketType::SUBTITLE_DVB);
+    else if (streamIndices.subtitle.eia608.contains(pkt.get_stream_index()))
+      pkt.setPacketType(PacketType::SUBTITLE_608);
   }
-  while (ret == 0 && videoPacketsOnly && !pkt.is_video_packet);
+  while (ret == 0 && videoPacketsOnly && pkt.getPacketType() != PacketType::VIDEO);
   
   if (ret < 0)
   {

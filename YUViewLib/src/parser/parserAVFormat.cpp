@@ -39,6 +39,7 @@
 #include "parserAnnexBMpeg2.h"
 #include "parserCommonMacros.h"
 #include "parserSubtitleDVB.h"
+#include "parserSubtitle608.h"
 
 using namespace parserCommon;
 
@@ -334,7 +335,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
 
   itemTree->setStreamIndex(packet.get_stream_index());
 
-  if (packet.is_video_packet)
+  if (packet.getPacketType() == PacketType::VIDEO)
   {
     if (annexBParser)
     {
@@ -452,7 +453,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
         specificDescription += (" " + n);
     }
   }
-  else if (packet.is_dvb_subtitle_packet)
+  else if (packet.getPacketType() == PacketType::SUBTITLE_DVB)
   {
     QStringList segmentNames;
     int segmentID = 0;
@@ -482,6 +483,18 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
         DEBUG_AVFORMAT("parserAVFormat::parseAVPacket We encountered more than 200 DVB segments in one packet. This is probably an error.");
         return false;
       }
+    }
+  }
+  else if (packet.getPacketType() == PacketType::SUBTITLE_608)
+  {
+    QString segmentTypeName;
+    try
+    {
+      int nrBytesRead = subtitle_608::parse608SubtitlePacket(avpacketData, itemTree, &segmentTypeName);
+    }
+    catch (...)
+    {
+      // Catch exceptions
     }
   }
   else
@@ -649,7 +662,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
   signalEmitTimer.start();
   while (!ffmpegFile->atEnd() && !abortParsing)
   {
-    if (packet.is_video_packet)
+    if (packet.getPacketType() == PacketType::VIDEO)
     {
       if (max_ts != 0)
         progressPercentValue = clip(int((packet.get_dts() - start_ts) * 100 / max_ts), 0, 100);

@@ -442,6 +442,15 @@ enum packetDataFormat_t
   packetFormatOBU
 };
 
+enum class PacketType
+{
+  VIDEO,
+  AUDIO,
+  SUBTITLE_DVB,
+  SUBTITLE_608,
+  SUBTITLE_OTHER
+};
+
 // A wrapper around the different versions of the AVPacket versions.
 // It also adds some functions like automatic deletion when it goes out of scope.
 class AVPacketWrapper
@@ -470,10 +479,9 @@ public:
   uint8_t *get_data()          { update(); return data; }
   int      get_data_size()     { update(); return size; }
 
-  // This is not part of the AVPacket but is set by fileSourceFFmpegFile when reading an AVPacket
-  bool     is_video_packet {false};
-  bool     is_audio_packet {false};
-  bool     is_dvb_subtitle_packet {false};
+  // This info is set externally (in fileSourceFFmpegFile) based on the stream info
+  PacketType getPacketType()                      { return packetType; }
+  void       setPacketType(PacketType packetType) { this->packetType = packetType; }
   
   // Guess the format. The actual guessing is only performed if the packetFormat is not set yet.
   packetDataFormat_t guessDataFormatFromData();
@@ -498,6 +506,8 @@ private:
   int64_t duration;
   int64_t pos;
   int64_t convergence_duration;
+
+  PacketType packetType;
 
   AVPacket *pkt;
   FFmpegLibraryVersion libVer;
