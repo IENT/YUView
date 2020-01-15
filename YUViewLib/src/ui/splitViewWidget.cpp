@@ -1883,6 +1883,9 @@ void splitViewWidget::createMenuActions()
   configureCheckableAction(actionSplitView[0], actionSplitViewGroup.data(), "Disabled", viewSplitMode == DISABLED, &splitViewWidget::splitViewDisable);
   configureCheckableAction(actionSplitView[1], actionSplitViewGroup.data(), "Side-by-Side", viewSplitMode == SIDE_BY_SIDE, &splitViewWidget::splitViewSideBySide);
   configureCheckableAction(actionSplitView[2], actionSplitViewGroup.data(), "Comparison", viewSplitMode == COMPARISON, &splitViewWidget::splitViewComparison);
+  actionSplitView[0].setToolTip("Show only one single Item.");
+  actionSplitView[1].setToolTip("Show two items side-by-side so that the same part of each item is visible.");
+  actionSplitView[2].setToolTip("Show two items at the same position with a split line that can be moved to reveal either item.");
 
   actionGridGroup.reset(new QActionGroup(this));
   configureCheckableAction(actionGrid[0], actionGridGroup.data(), "Disabled", regularGridSize == 0, &splitViewWidget::gridDisable);
@@ -1893,6 +1896,7 @@ void splitViewWidget::createMenuActions()
   configureCheckableAction(actionGrid[5], actionGridGroup.data(), "Custom...", regularGridSize != 0 && regularGridSize != 16 && regularGridSize != 32 && regularGridSize != 64 && regularGridSize != 128, &splitViewWidget::gridSetCustom);
 
   configureCheckableAction(actionZoomBox, nullptr, "Zoom Box", drawZoomBox, &splitViewWidget::toggleZoomBox);
+  actionZoomBox.setToolTip("Activate the Zoom Box which renders a zoomed portion of the screen and shows pixel information.");
 
   configureCheckableAction(actionZoom[0], nullptr, "Zoom to 1:1", false, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
   configureCheckableAction(actionZoom[1], nullptr, "Zoom to Fit", false, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
@@ -1909,6 +1913,9 @@ void splitViewWidget::createMenuActions()
     configureCheckableAction(actionSeparateView, nullptr, "&Show Separate Window", false, &splitViewWidget::toggleSeparateWindow, Qt::CTRL + Qt::Key_W);
     configureCheckableAction(actionSeparateViewLink, nullptr, "Link Views", false, &splitViewWidget::toggleSeparateWindowLink, {}, false);
     configureCheckableAction(actionSeparateViewPlaybackBoth, nullptr, "Playback in both Views", false, &splitViewWidget::toggleSeparateWindowPlaybackBoth, {}, false);
+    actionSeparateView.setToolTip("Show a second window with another view to the same item. Especially helpfull for multi screen setups.");
+    actionSeparateViewLink.setToolTip("Link the second view so that any change in one view is also applied in the other view.");
+    actionSeparateViewPlaybackBoth.setToolTip("For performance reasons playback only runs in one (the second) view. Activate this to run playback in both views siultaneously.");
   }
 }
 
@@ -2109,6 +2116,7 @@ void splitViewWidget::addMenuActions(QMenu *menu)
   QMenu *splitViewMenu = menu->addMenu("Split View");
   for (size_t i = 0; i < 3; i++)
     splitViewMenu->addAction(&actionSplitView[i]);
+  splitViewMenu->setToolTipsVisible(true);
 
   QMenu *drawGridMenu = menu->addMenu("Draw Grid");
   for (size_t i = 0; i < 6; i++)
@@ -2135,6 +2143,9 @@ void splitViewWidget::addMenuActions(QMenu *menu)
   separateViewMenu->addAction(isSeparateWidget ? &otherWidget->actionSeparateView : &actionSeparateView);
   separateViewMenu->addAction(isSeparateWidget ? &otherWidget->actionSeparateViewLink : &actionSeparateViewLink);
   separateViewMenu->addAction(isSeparateWidget ? &otherWidget->actionSeparateViewPlaybackBoth : &actionSeparateViewPlaybackBoth);
+  separateViewMenu->setToolTipsVisible(true);
+
+  menu->setToolTipsVisible(true);
 }
 
 void splitViewWidget::updateTestProgress()
