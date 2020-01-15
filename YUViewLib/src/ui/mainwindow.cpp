@@ -70,15 +70,13 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   statusBar()->hide();
 
   saveWindowsStateOnExit = true;
-  for (int i = 0; i < 6; i++)
+  for (int i = 0; i < 5; i++)
     panelsVisible[i] = false;
 
   // Initialize the separate window
   separateViewWindow.setWindowTitle("Separate View");
   separateViewWindow.setGeometry(0, 0, 300, 600);
 
-  // Setup the display controls of the splitViewWidget and add them to the displayDockWidget.
-  ui.displaySplitView->setupControls(ui.displayDockWidget);
   connect(ui.displaySplitView, &splitViewWidget::signalToggleFullScreen, this, &MainWindow::toggleFullscreen);
 
   // Setup primary/separate splitView
@@ -141,7 +139,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   connect(ui.openButton, &QPushButton::clicked, this, &MainWindow::showFileOpenDialog);
 
   // Connect signals from the separate window
-  connect(&separateViewWindow, &SeparateWindow::signalSingleWindowMode, ui.displaySplitView, &splitViewWidget::toggleSeparateViewHideShow);
+  connect(&separateViewWindow, &SeparateWindow::signalSingleWindowMode, ui.displaySplitView, &splitViewWidget::triggerActionSeparateView);
   connect(&separateViewWindow, &SeparateWindow::unhandledKeyPress, this, &MainWindow::handleKeyPressFromSeparateView);
 
   // Set the controls in the state handler. This way, the state handler can save/load the current state of the view.
@@ -203,7 +201,7 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
   fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
   fileMenu->addSeparator();
-  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
+  fileMenu->addAction("&Delete Item", this, SLOT(deleteSelectedItems()), Qt::Key_Delete);
   fileMenu->addSeparator();
   fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, SLOT(savePlaylistToFile()), Qt::CTRL + Qt::Key_S);
   fileMenu->addSeparator();
@@ -215,7 +213,7 @@ void MainWindow::createMenusAndActions()
 
   // On Mac, the key to delete an item is backspace. We will add this for all platforms
   QShortcut* backSpaceDelete = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
-  connect(backSpaceDelete, SIGNAL(activated()), this, SLOT(deleteItem()));
+  connect(backSpaceDelete, SIGNAL(activated()), this, SLOT(deleteSelectedItems()));
 
   // View menu
   QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
@@ -239,21 +237,21 @@ void MainWindow::createMenusAndActions()
   loadStateMenu->addAction("Slot 7", &stateHandler, SLOT(loadViewState7()), Qt::Key_7);
   loadStateMenu->addAction("Slot 8", &stateHandler, SLOT(loadViewState8()), Qt::Key_8);
   viewMenu->addSeparator();
-  viewMenu->addAction("Zoom to 1:1", ui.displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
-  viewMenu->addAction("Zoom to Fit", ui.displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
-  viewMenu->addAction("Zoom in", ui.displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
-  viewMenu->addAction("Zoom out", ui.displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
+  QMenu *dockPanelsMenu = viewMenu->addMenu("Dock Panels");
+    auto addDockViewAction = [dockPanelsMenu](QDockWidget *dockWidget, QString text, const QKeySequence &shortcut = {})
+  {
+    QAction *action = dockWidget->toggleViewAction();
+    action->setText(text);
+    action->setShortcut(shortcut);
+    dockPanelsMenu->addAction(action);
+  };
+  addDockViewAction(ui.playlistDockWidget, "Show P&laylist", Qt::CTRL + Qt::Key_L);
+  addDockViewAction(ui.propertiesDock, "Show &Properties", Qt::CTRL + Qt::Key_P);
+  addDockViewAction(ui.fileInfoDock, "Show &Info", Qt::CTRL + Qt::Key_I);
+  addDockViewAction(ui.cachingInfoDock, "Show Caching Info");
   viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show P&laylist", ui.playlistDockWidget->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_L);
-  viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_D);
-  viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_P);
-  viewMenu->addAction("Hide/Show &Info", ui.fileInfoDock->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_I);
-  viewMenu->addAction("Hide/Show Caching Info", ui.cachingDebugDock->toggleViewAction(), SLOT(trigger()));
-  viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), SLOT(trigger()));
-  viewMenu->addSeparator();
-  viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
-  viewMenu->addAction("&Single/Separate Window Mode", ui.displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
+  addDockViewAction(ui.playbackControllerDock, "Show Playback &Controls", Qt::CTRL + Qt::Key_D);
+  ui.displaySplitView->addMenuActions(viewMenu);
 
   // The playback menu
   QMenu *playbackMenu = menuBar()->addMenu(tr("&Playback"));
@@ -340,7 +338,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
   }
 
   // Delete all items in the playlist. This will also kill all eventual running background processes.
-  ui.playlistTreeWidget->deletePlaylistItems(false);
+  ui.playlistTreeWidget->deletePlaylistItems(true);
 
   event->accept();
 
@@ -380,14 +378,14 @@ void MainWindow::currentSelectedItemsChanged(playlistItem *item1, playlistItem *
   }
 }
 
-void MainWindow::deleteItem()
+void MainWindow::deleteSelectedItems()
 {
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteItem()";
+  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteSelectedItems()";
 
   // stop playback first
   ui.playbackController->pausePlayback();
 
-  ui.playlistTreeWidget->deletePlaylistItems(true);
+  ui.playlistTreeWidget->deletePlaylistItems(false);
 }
 
 bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
@@ -399,13 +397,13 @@ bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
   {
     if (isFullScreen())
     {
-      toggleFullscreen();
+      ui.displaySplitView->toggleFullScreenAction();
       return true;
     }
   }
   else if (key == Qt::Key_F && controlOnly)
   {
-    toggleFullscreen();
+    ui.displaySplitView->toggleFullScreenAction();
     return true;
   }
   else if (key == Qt::Key_Space)
@@ -489,13 +487,11 @@ void MainWindow::toggleFullscreen()
     if (panelsVisible[1])
       ui.playlistDockWidget->show();
     if (panelsVisible[2])
-      ui.displayDockWidget->show();
-    if (panelsVisible[3])
       ui.playbackControllerDock->show();
-    if (panelsVisible[4])
+    if (panelsVisible[3])
       ui.fileInfoDock->show();
-    if (panelsVisible[5])
-      ui.cachingDebugDock->show();
+    if (panelsVisible[4])
+      ui.cachingInfoDock->show();
 
     // show the menu bar
     if (!is_Q_OS_MAC)
@@ -513,20 +509,18 @@ void MainWindow::toggleFullscreen()
     // is restored when returning from full screen.
     panelsVisible[0] = ui.propertiesDock->isVisible();
     panelsVisible[1] = ui.playlistDockWidget->isVisible();
-    panelsVisible[2] = ui.displayDockWidget->isVisible();
-    panelsVisible[3] = ui.playbackControllerDock->isVisible();
-    panelsVisible[4] = ui.fileInfoDock->isVisible();
-    panelsVisible[5] = ui.cachingDebugDock->isVisible();
+    panelsVisible[2] = ui.playbackControllerDock->isVisible();
+    panelsVisible[3] = ui.fileInfoDock->isVisible();
+    panelsVisible[4] = ui.cachingInfoDock->isVisible();
 
     // Hide panels
     ui.propertiesDock->hide();
     ui.playlistDockWidget->hide();
-    ui.displayDockWidget->hide();
     QSettings settings;
     if (!settings.value("ShowPlaybackControlFullScreen", false).toBool())
       ui.playbackControllerDock->hide();
     ui.fileInfoDock->hide();
-    ui.cachingDebugDock->hide();
+    ui.cachingInfoDock->hide();
 
     // hide menu bar
     if (!is_Q_OS_MAC)
@@ -743,16 +737,15 @@ void MainWindow::resetWindowLayout()
   // Dock all dock panels
   ui.playlistDockWidget->setFloating(false);
   ui.propertiesDock->setFloating(false);
-  ui.displayDockWidget->setFloating(false);
   ui.playbackControllerDock->setFloating(false);
   ui.fileInfoDock->setFloating(false);
-  ui.cachingDebugDock->setFloating(false);
+  ui.cachingInfoDock->setFloating(false);
 
   // show the menu bar
   if (!is_Q_OS_MAC)
     ui.menuBar->show();
 
-  // Reset main window state (the size and position of the dock widgets). The code obtain this raw value is above.
+  // Reset main window state (the size and position of the dock widgets). The code to obtain this raw value is above.
   QByteArray mainWindowState = QByteArray::fromHex("000000ff00000000fd00000003000000000000011600000348fc0200000003fb000000240070006c00610079006c0069007300740044006f0063006b005700690064006700650074010000001500000212000000c000fffffffb0000001800660069006c00650049006e0066006f0044006f0063006b010000022b000000840000005b00fffffffb0000002000630061006300680069006e0067004400650062007500670044006f0063006b01000002b3000000aa000000aa00ffffff00000001000000b900000348fc0200000002fb0000001c00700072006f00700065007200740069006500730044006f0063006b0100000015000002670000002d00fffffffb000000220064006900730070006c006100790044006f0063006b0057006900640067006500740100000280000000dd000000dd0007ffff000000030000048f00000032fc0100000001fb0000002c0070006c00610079006200610063006b0043006f006e00740072006f006c006c006500720044006f0063006b01000000000000048f000001460007ffff000002b80000034800000004000000040000000800000008fc00000000");
   restoreState(mainWindowState);
 

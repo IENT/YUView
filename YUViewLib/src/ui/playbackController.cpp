@@ -155,7 +155,10 @@ void PlaybackController::on_playPauseButton_clicked()
       }
     }
     else
+    {
+      splitViewPrimary->freezeView(true);
       startPlayback();
+    }
   }
 }
 
