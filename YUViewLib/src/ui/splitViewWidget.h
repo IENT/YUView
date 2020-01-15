@@ -160,32 +160,23 @@ public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
 
   void toggleFullScreenAction() { actionFullScreen.trigger(); }
-  void toggleSeparateViewHideShow();
+  void triggerActionSeparateView() { actionSeparateView.trigger(); }
 
   void resetViews(bool checked = false); // Reset everything so that the zoom factor is 1 and the display positions are centered
 
 private slots:
 
-  // Slots for the controls. They are connected when the main function sets up the controls (setuptControls).
-  //void on_SplitViewgroupBox_toggled(bool state) { setSplitEnabled(state); update(false, true); }
-  void on_viewComboBox_currentIndexChanged(int index);
-  //void on_regularGridCheckBox_toggled(bool arg) { drawRegularGrid = arg; update(); }
-  void on_gridSizeBox_valueChanged(int val) { regularGridSize = val; update(); }
-  void on_zoomBoxCheckBox_toggled(bool state) { drawZoomBox = state; update(false, true); }
-  void on_separateViewGroupBox_toggled(bool state);
-  void on_linkViewsCheckBox_toggled(bool state);
-  void on_playbackPrimaryCheckBox_toggled(bool state);
-  void on_zoomFactorSpinBox_valueChanged(int val);
+  // These are all of the slots for the actions
 
-  void splitViewDisable(bool checked) { Q_UNUSED(checked); setViewSplitMode(DISABLED); update(); }
-  void splitViewSideBySide(bool checked) { Q_UNUSED(checked); setViewSplitMode(SIDE_BY_SIDE); update(); }
-  void splitViewComparison(bool checked) { Q_UNUSED(checked); setViewSplitMode(COMPARISON); update(); }
+  void splitViewDisable(bool checked) { Q_UNUSED(checked); setViewSplitMode(DISABLED, true, true); }
+  void splitViewSideBySide(bool checked) { Q_UNUSED(checked); setViewSplitMode(SIDE_BY_SIDE, true, true); }
+  void splitViewComparison(bool checked) { Q_UNUSED(checked); setViewSplitMode(COMPARISON, true, true); }
 
-  void gridDisable(bool checked) { Q_UNUSED(checked); regularGridSize = 0; update(); }
-  void gridSet16(bool checked) { Q_UNUSED(checked); regularGridSize = 16; update(); }
-  void gridSet32(bool checked) { Q_UNUSED(checked); regularGridSize = 32; update(); }
-  void gridSet64(bool checked) { Q_UNUSED(checked); regularGridSize = 64; update(); }
-  void gridSet128(bool checked) { Q_UNUSED(checked); regularGridSize = 128; update(); }
+  void gridDisable(bool checked) { Q_UNUSED(checked); setRegularGridSize(0, true, true); }
+  void gridSet16(bool checked) { Q_UNUSED(checked); setRegularGridSize(16, true, true); }
+  void gridSet32(bool checked) { Q_UNUSED(checked); setRegularGridSize(32, true, true); }
+  void gridSet64(bool checked) { Q_UNUSED(checked); setRegularGridSize(64, true, true); }
+  void gridSet128(bool checked) { Q_UNUSED(checked); setRegularGridSize(128, true, true); }
   void gridSetCustom(bool checked);
 
   void toggleZoomBox(bool checked) { Q_UNUSED(checked); drawZoomBox = !drawZoomBox; update(); }
@@ -199,14 +190,16 @@ private slots:
   void zoomToCustom(bool checked);
 
   void toggleFullScreen(bool checked);
-  void toggleSeperateWindow(bool checked);
+  void toggleSeparateWindow(bool checked);
+  void toggleSeparateWindowLink(bool checked);
+  void toggleSeparateWindowPlaybackBoth(bool checked);
 
 protected:
   
   // Set the widget to the given view mode
   enum ViewSplitMode {DISABLED, SIDE_BY_SIDE, COMPARISON};
   // Set the view mode and update the view mode combo box. Disable the combo box events if emitSignal is false.
-  void setViewSplitMode(ViewSplitMode v, bool emitSignal=false);
+  void setViewSplitMode(ViewSplitMode v, bool setOtherViewIfLinked = true, bool callUpdate = false);
   // The current view mode (split view or comparison view)
   ViewSplitMode viewSplitMode {DISABLED};
 
@@ -227,7 +220,9 @@ protected:
   QAction actionZoomBox;
   QAction actionZoom[8];
   QAction actionFullScreen;
-  QAction actionSeperateView;
+  QAction actionSeparateView;
+  QAction actionSeparateViewLink;
+  QAction actionSeparateViewPlaybackBoth;
   
   // Override the QWidget event to handle touch gestures
   virtual bool event(QEvent *event) Q_DECL_OVERRIDE;
@@ -253,12 +248,12 @@ protected:
   QSize minSizeHint;
 
   bool       splittingDragging {false};     //!< True if the user is currently dragging the splitter
-  void       setSplittingPoint(double p);
+  void       setSplittingPoint(double p, bool setOtherViewIfLinked = true, bool callUpdate = false);
   double     splittingPoint {0.5};          //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
   enum       splitStyle {SOLID_LINE, TOP_BOTTOM_HANDLERS};
   splitStyle splittingLineStyle;            //!< The style of the splitting line. This can be set in the settings window.
 
-  void    setCenterOffset(QPoint offset);
+  void    setCenterOffset(QPoint offset, bool setOtherViewIfLinked = true, bool callUpdate = false);
   QPoint  centerOffset;                     //!< The offset of the view to the center (0,0)
   bool    viewDragging {false};             //!< True if the user is currently moving the view
   bool    viewDraggingMouseMoved {false};   //!< If the user is moving the view this indicates if the view was actually moved more than a few pixels
@@ -271,7 +266,7 @@ protected:
 
   enum ZoomMode {ZOOM_IN, ZOOM_OUT, ZOOM_TO_PERCENTAGE};
   void    zoom(ZoomMode zoomMode, const QPoint &zoomPoint = QPoint(), double newZoomFactor = 0.0);
-  void    setZoomFactor(double zoom);
+  void    setZoomFactor(double zoom, bool setOtherViewIfLinked = true, bool callUpdate = false);
   double  zoomFactor {1.0};                 //!< The current zoom factor
   QFont   zoomFactorFont;                   //!< The font to use for the zoom factor indicator
   QPoint  zoomFactorFontPos;                //!< The position where the zoom factor indication will be shown
@@ -288,6 +283,7 @@ protected:
 
   // Regular grid
   unsigned int regularGridSize {0};         //!< The size of each block in the regular grid in pixels
+  void setRegularGridSize(unsigned int size, bool setOtherViewIfLinked = true, bool callUpdate = false);
   QColor regularGridColor;
   void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
