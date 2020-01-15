@@ -1431,7 +1431,7 @@ void splitViewWidget::toggleSeparateWindow(bool checked)
   actionSeparateViewLink.setEnabled(checked);
   actionSeparateViewPlaybackBoth.setEnabled(checked);
 
-  emit signalShowSeparateWindow(checked); 
+  emit signalShowSeparateWindow(checked);
 }
 
 void splitViewWidget::toggleSeparateWindowLink(bool checked)
@@ -1817,7 +1817,9 @@ void splitViewWidget::freezeView(bool freeze)
   }
   if (!isViewFrozen && freeze)
   {
-    if (!isSeparateWidget && separateViewEnabled && !playbackPrimary)
+    const bool isSeparateViewEnabled = actionSeparateView.isChecked();
+    const bool playbackPrimary = actionSeparateViewPlaybackBoth.isChecked();
+    if (!isSeparateWidget && isSeparateViewEnabled && !playbackPrimary)
     {
       isViewFrozen = true;
       setMouseTracking(false);

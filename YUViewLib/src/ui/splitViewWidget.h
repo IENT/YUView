@@ -296,8 +296,6 @@ protected:
   bool isSeparateWidget;                   //!< Is this the primary widget in the main windows or the one in the separate window
   QPointer<splitViewWidget> otherWidget;   //!< Pointer to the other (primary or separate) widget
   bool linkViews {false};                  //!< Link the two widgets (link zoom factor, position and split position)
-  bool playbackPrimary {false};            //!< When playback is running and this is the primary view and the secondary view is shown, don't run playback for this view.
-  bool separateViewEnabled {false};
 
   // Freezing of the view
   bool isViewFrozen {false};               //!< Is the view frozen?
