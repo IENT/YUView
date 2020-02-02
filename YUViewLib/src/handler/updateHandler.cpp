@@ -538,6 +538,11 @@ void updateHandler::abortUpdate(QString errorMsg)
   forceUpdate = false;
   userCheckRequest = false;
   updaterStatus = updaterIdle;
+  if (downloadProgress)
+  {
+    delete downloadProgress;
+    downloadProgress = NULL;
+  }
 }
 
 void updateHandler::updateDownloadProgress(int64_t val, int64_t max)
