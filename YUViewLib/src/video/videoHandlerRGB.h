@@ -148,7 +148,7 @@ protected:
     DisplayG,
     DisplayB
   } ComponentDisplayMode;
-  ComponentDisplayMode componentDisplayMode;
+  ComponentDisplayMode componentDisplayMode {DisplayAll};
 
   // A (static) convenience QList class that handles the preset rgbPixelFormats
   class RGBFormatList : public QList<RGB_Internals::rgbPixelFormat>
@@ -170,8 +170,9 @@ protected:
   RGB_Internals::rgbPixelFormat srcPixelFormat;
 
   // Parameters for the RGB transformation (like scaling, invert)
-  int  componentScale[3];
-  bool componentInvert[3];
+  int  componentScale[3] {1, 1, 1};
+  bool componentInvert[3] {false, false, false};
+  bool limitedRange {false};
 
   // Get the RGB values for the given pixel.
   struct rgba_t

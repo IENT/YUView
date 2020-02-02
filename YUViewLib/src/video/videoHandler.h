@@ -124,6 +124,9 @@ public:
   // A buffer with the raw RGB data (this is filled if signalRequestRawData() is emitted)
   QByteArray rawData;
   int        rawData_frameIdx;
+
+  // Scale a value with limited mpeg range (16 ... 245) to the full range (0 ... 255) for output.
+  static int convScaleLimitedRange(int value);
   
 signals:
 

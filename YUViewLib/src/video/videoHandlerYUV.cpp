@@ -54,9 +54,6 @@ const int yuvRgbConvCoeffs[6][5] =
   {76309, 110013, -12276, -42626, 140363}, // BT2020_LimitedRange
   {65536,  96638, -10783, -37444, 123299}  // BT2020_FullRange
 };
-// Scale a Y value with limited range (16 ... 245) to the full range (0 ... 255) for output.
-const int yuvRgbConvScaleLuma[256] =
-{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 43, 44, 45, 46, 47, 48, 50, 51, 52, 53, 54, 55, 57, 58, 59, 60, 61, 62, 64, 65, 66, 67, 68, 69, 71, 72, 73, 74, 75, 76, 78, 79, 80, 81, 82, 83, 85, 86, 87, 88, 89, 90, 91, 93, 94, 95, 96, 97, 98, 100, 101, 102, 103, 104, 105, 107, 108, 109, 110, 111, 112, 114, 115, 116, 117, 118, 119, 121, 122, 123, 124, 125, 126, 128, 129, 130, 131, 132, 133, 135, 136, 137, 138, 139, 140, 142, 143, 144, 145, 146, 147, 149, 150, 151, 152, 153, 154, 156, 157, 158, 159, 160, 161, 163, 164, 165, 166, 167, 168, 170, 171, 172, 173, 174, 175, 176, 178, 179, 180, 181, 182, 183, 185, 186, 187, 188, 189, 190, 192, 193, 194, 195, 196, 197, 199, 200, 201, 202, 203, 204, 206, 207, 208, 209, 210, 211, 213, 214, 215, 216, 217, 218, 220, 221, 222, 223, 224, 225, 227, 228, 229, 230, 231, 232, 234, 235, 236, 237, 238, 239, 241, 242, 243, 244, 245, 246, 248, 249, 250, 251, 252, 253, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
 
 const QStringList detectionSubsamplingNameList = QStringList() << "444" << "422" << "420" << "440" << "410" << "411" << "400";
 
@@ -1965,14 +1962,10 @@ inline void YUVPlaneToRGBMonochrome_444(const int componentSize, const yuvMathPa
     if (applyMath)
       newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
-    // Scale to 8 bit (if required)
     if (shiftTo8Bit > 0)
       newVal = clip8Bit(newVal >> shiftTo8Bit);
     if (!fullRange)
-    {
-      assert(newVal >= 0 && newVal <= 255);
-      newVal = yuvRgbConvScaleLuma[newVal];
-    }
+      newVal = videoHandler::convScaleLimitedRange(newVal);
 
     // Set the value for R, G and B (BGRA)
     dst[i*4  ] = (unsigned char)newVal;
@@ -1995,14 +1988,11 @@ inline void YUVPlaneToRGBMonochrome_422(const int componentSize, const yuvMathPa
     if (applyMath)
       newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
-    // Scale and clip to 8 bit
     if (shiftTo8Bit > 0)
       newVal = clip8Bit(newVal >> shiftTo8Bit);
     if (!fullRange)
-    {
-      assert(newVal >= 0 && newVal <= 255);
-      newVal = yuvRgbConvScaleLuma[newVal];
-    }
+      newVal = videoHandler::convScaleLimitedRange(newVal);
+
     // Set the value for R, G and B of 2 pixels (BGRA)
     dst[i*8  ] = (unsigned char)newVal;
     dst[i*8+1] = (unsigned char)newVal;
@@ -2028,14 +2018,11 @@ inline void YUVPlaneToRGBMonochrome_420(const int w, const int h, const yuvMathP
       if (applyMath)
         newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
-      // Scale and clip to 8 bit
       if (shiftTo8Bit > 0)
         newVal = clip8Bit(newVal >> shiftTo8Bit);
       if (!fullRange)
-      {
-        assert(newVal >= 0 && newVal <= 255);
-        newVal = yuvRgbConvScaleLuma[newVal];
-      }
+        newVal = videoHandler::convScaleLimitedRange(newVal);
+
       // Set the value for R, G and B of 4 pixels (BGRA)
       int o = (y*2*w + x*2)*4;
       dst[o  ] = (unsigned char)newVal;
@@ -2071,14 +2058,11 @@ inline void YUVPlaneToRGBMonochrome_440(const int w, const int h, const yuvMathP
       if (applyMath)
         newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
-      // Scale and clip to 8 bit
       if (shiftTo8Bit > 0)
         newVal = clip8Bit(newVal >> shiftTo8Bit);
       if (!fullRange)
-      {
-        assert(newVal >= 0 && newVal <= 255);
-        newVal = yuvRgbConvScaleLuma[newVal];
-      }
+        newVal = videoHandler::convScaleLimitedRange(newVal);
+
       // Set the value for R, G and B of 2 pixels (BGRA)
       const int pos1 = (y*2*w+x)*4;
       const int pos2 = pos1 + w*4;  // Next line
@@ -2108,14 +2092,11 @@ inline void YUVPlaneToRGBMonochrome_410(const int w, const int h, const yuvMathP
       if (applyMath)
         newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
-      // Scale and clip to 8 bit
       if (shiftTo8Bit > 0)
         newVal = clip8Bit(newVal >> shiftTo8Bit);
       if (!fullRange)
-      {
-        assert(newVal >= 0 && newVal <= 255);
-        newVal = yuvRgbConvScaleLuma[newVal];
-      }
+        newVal = videoHandler::convScaleLimitedRange(newVal);
+
       // Set the value as RGB for 4 pixels in this line and the next 3 lines (BGRA)
       for (int yo = 0; yo < 4; yo++)
         for (int xo = 0; xo < 4; xo++)
@@ -2141,14 +2122,11 @@ inline void YUVPlaneToRGBMonochrome_411(const int componentSize, const yuvMathPa
     if (applyMath)
       newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
-    // Scale and clip to 8 bit
     if (shiftTo8Bit > 0)
       newVal = clip8Bit(newVal >> shiftTo8Bit);
     if (!fullRange)
-    {
-      assert(newVal >= 0 && newVal <= 255);
-      newVal = yuvRgbConvScaleLuma[newVal];
-    }
+      newVal = videoHandler::convScaleLimitedRange(newVal);
+
     // Set the value for R, G and B of 4 pixels (BGRA)
     dst[i*16   ] = (unsigned char)newVal;
     dst[i*16+1 ] = (unsigned char)newVal;

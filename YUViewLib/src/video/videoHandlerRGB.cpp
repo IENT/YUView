@@ -252,15 +252,6 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
   // preset internal values
   setSrcPixelFormat(rgbPixelFormat());
-  componentDisplayMode = DisplayAll;
-
-  componentScale[0] = 1;
-  componentScale[1] = 1;
-  componentScale[2] = 1;
-
-  componentInvert[0] = false;
-  componentInvert[1] = false;
-  componentInvert[2] = false;
 
   // Set the order of the RGB formats in the combo box
   orderRGBList << "RGB" << "RBG" << "GRB" << "GBR" << "BRG" << "BGR";
@@ -396,6 +387,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   connect(ui.RInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
   connect(ui.GInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
   connect(ui.BInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.limitedRangeCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
 
   if (!isSizeFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui.topVerticalLayout);
@@ -415,6 +407,7 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
   componentInvert[0] = ui.RInvertCheckBox->isChecked();
   componentInvert[1] = ui.GInvertCheckBox->isChecked();
   componentInvert[2] = ui.BInvertCheckBox->isChecked();
+  limitedRange = ui.limitedRangeCheckBox->isChecked();
 
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
@@ -646,9 +639,9 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
       displayComponentOffset = srcPixelFormat.posB;
 
     // Get the scale/inversion for the displayed component
-    int displayIndex = (componentDisplayMode == DisplayR) ? 0 : (componentDisplayMode == DisplayG) ? 1 : 2;
-    int scale = componentScale[displayIndex];
-    bool invert = componentInvert[displayIndex];
+    const int displayIndex = (componentDisplayMode == DisplayR) ? 0 : (componentDisplayMode == DisplayG) ? 1 : 2;
+    const int scale = componentScale[displayIndex];
+    const bool invert = componentInvert[displayIndex];
 
     if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
     {
@@ -671,6 +664,8 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
         val = clip(val, 0, 255);
         if (invert)
           val = 255 - val;
+        if (limitedRange)
+          val = videoHandler::convScaleLimitedRange(val);
         dst[0] = val;
         dst[1] = val;
         dst[2] = val;
@@ -696,6 +691,8 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
         val = clip(val, 0, 255);
         if (invert)
           val = 255 - val;
+        if (limitedRange)
+          val = videoHandler::convScaleLimitedRange(val);
         dst[0] = val;
         dst[1] = val;
         dst[2] = val;
@@ -737,23 +734,27 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
       // Now we just have to iterate over all values and always skip "offsetToNextValue" values in the sources and write 3 values in dst.
       for (int i = 0; i < frameSize.width() * frameSize.height(); i++)
       {
-        // R
         int valR = (((int)srcR[0]) * componentScale[0]) >> rightShift;
         valR = clip(valR, 0, 255);
         if (componentInvert[0])
           valR = 255 - valR;
         
-        // G
         int valG = (((int)srcG[0]) * componentScale[1]) >> rightShift;
         valG = clip(valG, 0, 255);
         if (componentInvert[1])
           valG = 255 - valG;
 
-        // B
         int valB = (((int)srcB[0]) * componentScale[2]) >> rightShift;
         valB = clip(valB, 0, 255);
         if (componentInvert[2])
           valB = 255 - valB;
+
+        if (limitedRange)
+        {
+          valR = videoHandler::convScaleLimitedRange(valR);
+          valG = videoHandler::convScaleLimitedRange(valG);
+          valB = videoHandler::convScaleLimitedRange(valB);
+        }
 
         srcR += offsetToNextValue;
         srcG += offsetToNextValue;
@@ -786,23 +787,27 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
       // Now we just have to iterate over all values and always skip "offsetToNextValue" values in the sources and write 3 values in dst.
       for (int i = 0; i < frameSize.width() * frameSize.height(); i++)
       {
-        // R
         int valR = ((int)srcR[0]) * componentScale[0];
         valR = clip(valR, 0, 255);
         if (componentInvert[0])
           valR = 255 - valR;
 
-        // G
         int valG = ((int)srcG[0]) * componentScale[1];
         valG = clip(valG, 0, 255);
         if (componentInvert[1])
           valG = 255 - valG;
 
-        // B
         int valB = ((int)srcB[0]) * componentScale[2];
         valB = clip(valB, 0, 255);
         if (componentInvert[2])
           valB = 255 - valB;
+
+        if (limitedRange)
+        {
+          valR = videoHandler::convScaleLimitedRange(valR);
+          valG = videoHandler::convScaleLimitedRange(valG);
+          valB = videoHandler::convScaleLimitedRange(valB);
+        }
 
         srcR += offsetToNextValue;
         srcG += offsetToNextValue;
