@@ -581,9 +581,9 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
   bool downloadEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
   DEBUG_UPDATE("updateHandler::downloadFinished %s %s %d", error ? "error" : "", downloadEncrypted ? "encrypted" : "not encrypted", reply->error());
   if (error)
-    return abortUpdate(QString("An error occured while downloading YUView. Error code %1.").arg(err));
+    return abortUpdate(QString("An error occured while downloading file %1. Error code %2 (%3).").arg(currentDownloadFile.first).arg(err).arg(reply->errorString()));
   else if (!downloadEncrypted)
-    return abortUpdate("YUView could not be downloaded through a secure connection.");
+    return abortUpdate(QString("File %1 could not be downloaded through a secure connection.").arg(currentDownloadFile.first));
   else
   {
     // A file was downloaded successfully. Get the data.
