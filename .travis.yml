@@ -101,6 +101,7 @@ install:
 
 script:
   - cd $TRAVIS_BUILD_DIR
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/typedef.h; fi
   - mkdir build
   - cd build
   - |

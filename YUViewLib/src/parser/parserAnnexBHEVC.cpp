@@ -604,6 +604,9 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
     // Dolby vision EL or metadata
     // Technically this is not a specific NAL unit type but dolby vision uses a different
     // seperator that makes the DV metadata and EL data appear to be NAL unit type 62 and 63.
+    auto new_dolbyVisionMetadata = QSharedPointer<dolbyVisionMetadata>(new dolbyVisionMetadata(nal_hevc));
+    parsingSuccess = new_dolbyVisionMetadata->parse_metadata(payload, nalRoot);
+
     specificDescription = "Dolby Vision";
     if (nalTypeName)
       *nalTypeName = "Dolby Vision";
@@ -2261,6 +2264,30 @@ bool parserAnnexBHEVC::alternative_transfer_characteristics_sei::parse_internal(
 {
   reader_helper reader(data, root, "alternative transfer characteristics");
   READBITS_M(preferred_transfer_characteristics, 8, get_transfer_characteristics_meaning());
+  return true;
+}
+
+bool parserAnnexBHEVC::dolbyVisionMetadata::parse_metadata(const QByteArray &data, TreeItem *root)
+{
+  if (root == nullptr)
+    return false;
+
+  // Create a new TreeItem root for the item
+  TreeItem *const itemTree = new TreeItem("dolbyMetadata()", root);
+
+  for (int i=0; i<data.length(); i++)
+  {
+    unsigned char c = data[i];
+    QString binary;
+    for (int j=7; j>=0; j--)
+      if (c & (1<<j))
+        binary.append("1");
+      else
+        binary.append("0");
+
+    new TreeItem(QString("data[%1]").arg(i), c, QString("u(8)"), binary, itemTree);
+  }
+
   return true;
 }
 

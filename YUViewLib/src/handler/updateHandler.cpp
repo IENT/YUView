@@ -451,7 +451,13 @@ void updateHandler::replyFinished(QNetworkReply *reply)
       settings.endGroup();
     }
   }
-
+  else
+  {
+    forceUpdate = false;
+    userCheckRequest = false;
+    updaterStatus = updaterIdle;
+  }
+  
   reply->deleteLater();
   updaterStatus = updaterIdle;
 }

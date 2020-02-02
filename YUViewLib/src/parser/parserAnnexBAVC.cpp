@@ -35,6 +35,7 @@
 #include <cmath>
 
 #include "parserCommonMacros.h"
+#include "parserSubtitle608.h"
 
 using namespace parserCommon;
 
@@ -1927,7 +1928,10 @@ bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(reade
     // Now should follow (cc_count * 24 bits of cc_data_pkts)
     // Just display the raw bytes of the payload
     for (unsigned int i = 0; i < cc_count; i++)
-      READBITS_A_M(cc_packet_data, 24, i, &getCCDataPacketMeaning);
+    {
+      unsigned int ccData;
+      subtitle_608::parse608DataPayloadCCDataPacket(reader, ccData);
+    }
 
     READBITS(marker_bits, 8);
     // The ATSC marker_bits indicator should be 255
@@ -1942,140 +1946,6 @@ bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::parse_ATSC1_data(reade
   }
 
   return true;
-}
-
-QString parserAnnexBAVC::user_data_registered_itu_t_t35_sei::getCCDataPacketMeaning(unsigned int cc_packet_data)
-{
-  // Parse the 3 bytes as 608
-  unsigned int byte0 = (cc_packet_data >> 16) & 0xff;
-  unsigned int byte1 = (cc_packet_data >> 8) & 0xff;
-  unsigned int byte2 = cc_packet_data & 0xff;
-    
-  // Ignore if this flag is not set
-  bool cc_valid = ((byte0 & 4) > 0);
-  if (!cc_valid)
-    return "";
-
-  /* cc_type: 
-   * 0 ntsc_cc_field_1
-   * 1 ntsc_cc_field_2
-   * 2 dtvcc_packet_data
-   * dtvcc_packet_start
-   */
-  int cc_type = byte0 & 0x03;
-  if (cc_type == 1)
-    // For now, we ignore field 2 tags although we could also parse them ...
-    return "";
-  if (cc_type == 3 || cc_type == 2)
-    return "";
-    
-  // Check the parity
-  if (!checkByteParity(byte2))
-    return "";
-  if (!checkByteParity(byte1))
-    byte1 = 0x7f;
-  
-  if ((byte0 == 0xfa || byte0 == 0xfc || byte0 == 0xfd) && ((byte1 & 0x7f) == 0 && (byte2 & 0x7f) == 0))
-    return "";
-
-  // Remove the parity bits
-  byte1 &= 0x7f;
-  byte2 &= 0x7f;
-
-  auto colorFromIndex = [](int i) 
-  {
-    const QStringList c = QStringList() << "Green" << "Blue" << "Cyan" << "Red" << "Yellow" << "Magenta";
-    int idx = i/2 - 1;
-    if (idx >= 0 && idx <= 5)
-      return c[idx];
-    return QString("White");
-  };
-  auto styleFromIndex = [](int i)
-  {
-    if (i == 14)
-      return "Italic";
-    if (i == 15)
-      return "Italic Underlined";
-    if (i % 2 == 1)
-      return "Underlined";
-    return "";
-  };
-  auto indentFromIndex = [](int i)
-  {
-    if (i >= 16)
-      return (i - 16) * 2;
-    return 0;
-  };
-  
-  if (cc_type == 0)
-  {
-    if ((byte1 == 0x10 && (byte2 >= 0x40 && byte2 <= 0x5f)) || ((byte1 >= 0x11 && byte1 <= 0x17) && (byte2 >= 0x40 && byte2 <= 0x7f)))
-    {
-      const int pacIdx = ((byte1<<1) & 0x0e) | ((byte2>>5) & 0x01);
-      
-      const int row_map[] = {11, -1, 1, 2, 3, 4, 12, 13, 14, 15, 5, 6, 7, 8, 9, 10};
-      const int row = row_map[pacIdx] - 1;
-      if (row < 0)
-        return "PAC - Invalid index";
-      
-      byte2 &= 0x1f;
-
-      QString color = colorFromIndex(byte2);
-      QString style = styleFromIndex(byte2);
-      int indent = indentFromIndex(byte2);
-
-      return QString("PAC (Font and color) Idx %1 - Row %2 Color %3 Indent %4 %5").arg(pacIdx).arg(row).arg(color).arg(indent).arg(style);
-    } 
-    else if ((byte1 == 0x11 && byte2 >= 0x20 && byte2 <= 0x2f ) || (byte1 == 0x17 && byte2 >= 0x2e && byte2 <= 0x2f))
-    {
-      const int idx = byte2 - 0x20;
-      if (idx >= 32)
-        return "Textattribut - invalid index";
-
-      QString color = colorFromIndex(idx);
-      QString style = styleFromIndex(idx);
-
-      return QString("Textattribut (Font and color) Idx %1 - Color %2 ").arg(idx).arg(color).arg(style);
-    } 
-    else if (byte1 == 0x14 || byte1 == 0x15 || byte1 == 0x1c) 
-    {
-      const QStringList m = QStringList() << "resume caption loading" << "backspace (overwrite last char)" << "alarm off (unused)" << "alarm on (unused)" << "delete to end of row (clear line)" << "roll up 2 (scroll size)" << "roll up 3 (scroll size)" << "roll up 4 (scroll size)" << "flashes captions on (0.25 seconds once per second)" << "resume direct captioning (start caption text)" << "text restart (start non-caption text)" << "resume text display (resume non-caption text)" << "erase display memory (clear screen)" << "carriage return (scroll lines up)" << "erase non displayed memory (clear buffer)" << "end of caption (display buffer)";
-      if (byte2 >= 32 && byte2 <= 47)
-        return m.at(byte2 - 32);
-      return "Unknown command";
-    } 
-    else if (byte1 >= 0x11 && byte1 <= 0x13) 
-    {
-      if (byte1 == 0x11)
-        return "Special North American chracter";
-      if (byte2 == 0x12)
-        return "Special Spanish/French or miscellaneous character";
-      if (byte2 == 0x13)
-        return "Special Portuguese/German/Danish character";
-    } 
-    else if (byte1 >= 0x20) 
-      return QString("Standard characters '%1%2'").arg(char(byte1)).arg(char(byte2));
-    else if (byte1 == 0x17 && byte2 >= 0x21 && byte2 <= 0x23) 
-    {
-      int nrSpaces = byte2 - 0x20;
-      return QString("Tab offsets (spacing) - %1 spaces").arg(nrSpaces);
-    } 
-    else 
-      return "Non data code";
-  }
-  return "";
-}
-
-bool parserAnnexBAVC::user_data_registered_itu_t_t35_sei::checkByteParity(int val)
-{
-  int nrOneBits = 0;
-  for (int i = 0; i < 8; i++)
-  {
-    if (val & (1<<i))
-      nrOneBits++;
-  }
-  // Parity even?
-  return nrOneBits % 2 == 1;
 }
 
 bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData, TreeItem *root)

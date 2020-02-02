@@ -538,9 +538,6 @@ protected:
   private:
     bool parse_internal(QByteArray &data, parserCommon::TreeItem *root);
     bool parse_ATSC1_data(parserCommon::reader_helper &reader);
-
-    static QString getCCDataPacketMeaning(unsigned int cc_packet_data);
-    static bool checkByteParity(int val);
   };
 
   class user_data_sei : sei

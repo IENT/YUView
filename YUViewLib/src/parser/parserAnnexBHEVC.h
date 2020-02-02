@@ -743,6 +743,12 @@ protected:
     bool parse_internal(QByteArray &sliceHeaderData, parserCommon::TreeItem *root);
   };
 
+  struct dolbyVisionMetadata : nal_unit_hevc
+  {
+    dolbyVisionMetadata(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
+    bool parse_metadata(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+  };
+
   // Get the meaning/interpretation mapping of some values
   static QStringList get_colour_primaries_meaning();
   static QStringList get_transfer_characteristics_meaning();

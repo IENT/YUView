@@ -60,17 +60,13 @@ public:
   // If the playlist is empty, this will always return true.
   bool getIsSaved() { return (topLevelItemCount() == 0) ? true : isSaved; }
 
-  // load the given files into the playlist
   void loadFiles(const QStringList &files);
-
-  // Remove the selected / all items from the playlist tree widget and delete them
-  void deletePlaylistItems(bool selectionOnly);
+  void deletePlaylistItems(bool deleteAllItems);
 
   // Get a list of all playlist items that are currently in the playlist. Including all child items.
   QList<playlistItem*> getAllPlaylistItems(const bool topLevelOnly=false) const;
 
   Qt::DropActions supportedDropActions() const Q_DECL_OVERRIDE;
-
   QModelIndex indexForItem(playlistItem *item) { return indexFromItem((QTreeWidgetItem*)item); }
 
   // Get the first two selected items

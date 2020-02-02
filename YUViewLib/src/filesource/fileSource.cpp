@@ -143,9 +143,6 @@ QList<infoItem> fileSource::getFileInfoList() const
 fileSource::fileFormat_t fileSource::formatFromFilename(QFileInfo fileInfo)
 {
   fileSource::fileFormat_t format;
-  format.frameSize = QSize();
-  format.frameRate = -1;
-  format.bitDepth = -1;
 
   // We are going to check two strings (one after the other) for indicators on the frames size, fps and bit depth.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -270,6 +267,16 @@ fileSource::fileFormat_t fileSource::formatFromFilename(QFileInfo fileInfo)
           format.bitDepth = bd;
           break;
         }
+      }
+    }
+
+    // If we were able to get a frame size, try to get an indicator for packed formats
+    if (format.frameSize.isValid())
+    {
+      QRegExp exp("(?:_|\\.|-)packed(?:_|\\.|-)");
+      if (exp.indexIn(name) > -1)
+      {
+        format.packed = true;
       }
     }
   }
