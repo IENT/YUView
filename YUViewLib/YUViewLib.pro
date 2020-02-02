@@ -41,5 +41,14 @@ win32 {
     DEFINES += NOMINMAX
 }
 
+win32-msvc* {
+    HASHSTRING = '\\"$${LASTHASH}\\"'
+    DEFINES += YUVIEW_HASH=$${HASHSTRING}
+}
+win32-g++ | linux | macx {
+    HASHSTRING = '\\"$${LASTHASH}\\"'
+    DEFINES += YUVIEW_HASH=\"$${HASHSTRING}\"
+}
+
 VERSTR = '\\"$${SVNN}\\"'
 DEFINES += YUVIEW_VERSION=$${VERSTR}
