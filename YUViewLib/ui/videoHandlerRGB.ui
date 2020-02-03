@@ -155,6 +155,12 @@
         </item>
         <item row="4" column="0">
          <widget class="QLabel" name="label_6">
+          <property name="toolTip">
+           <string>Select this if the input values are using the limited MPEG range of values.</string>
+          </property>
+          <property name="whatsThis">
+           <string>Select this if the input values are using the limited MPEG range of values.</string>
+          </property>
           <property name="text">
            <string>Limited Range</string>
           </property>
@@ -162,6 +168,12 @@
         </item>
         <item row="4" column="1">
          <widget class="QCheckBox" name="limitedRangeCheckBox">
+          <property name="toolTip">
+           <string>Select this if the input values are using the limited MPEG range of values.</string>
+          </property>
+          <property name="whatsThis">
+           <string>Select this if the input values are using the limited MPEG range of values.</string>
+          </property>
           <property name="text">
            <string/>
           </property>
