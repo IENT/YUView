@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>213</width>
-    <height>179</height>
+    <height>162</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -46,16 +46,6 @@
         <string>RGB Display</string>
        </property>
        <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0">
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="toolTip">
-           <string>Scale every value in the blue channel with this factor</string>
-          </property>
-          <property name="text">
-           <string>Scale B</string>
-          </property>
-         </widget>
-        </item>
         <item row="3" column="1">
          <widget class="QSpinBox" name="BScaleSpinBox">
           <property name="toolTip">
@@ -66,13 +56,13 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
-         <widget class="QSpinBox" name="GScaleSpinBox">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_5">
           <property name="toolTip">
-           <string>Scale every value in the green channel with this factor</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Which of the RGB components should be displayed? You can choose all or one of the three color planes individually.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
-          <property name="minimum">
-           <number>1</number>
+          <property name="text">
+           <string>Components</string>
           </property>
          </widget>
         </item>
@@ -80,6 +70,26 @@
          <widget class="QCheckBox" name="BInvertCheckBox">
           <property name="toolTip">
            <string>Invert every value of the blue channel</string>
+          </property>
+          <property name="text">
+           <string>Invert</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label">
+          <property name="toolTip">
+           <string>Scale every value in the red channel with this factor</string>
+          </property>
+          <property name="text">
+           <string>Scale R</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QCheckBox" name="RInvertCheckBox">
+          <property name="toolTip">
+           <string>Invert every value of the red channel</string>
           </property>
           <property name="text">
            <string>Invert</string>
@@ -116,40 +126,44 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="2">
-         <widget class="QCheckBox" name="RInvertCheckBox">
-          <property name="toolTip">
-           <string>Invert every value of the red channel</string>
-          </property>
-          <property name="text">
-           <string>Invert</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label">
-          <property name="toolTip">
-           <string>Scale every value in the red channel with this factor</string>
-          </property>
-          <property name="text">
-           <string>Scale R</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_5">
-          <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Which of the RGB components should be displayed? You can choose all or one of the three color planes individually.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-          <property name="text">
-           <string>Components</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="1" colspan="2">
          <widget class="QComboBox" name="colorComponentsComboBox">
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Which of the RGB components should be displayed? You can choose all or one of the three color planes individually.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QSpinBox" name="GScaleSpinBox">
+          <property name="toolTip">
+           <string>Scale every value in the green channel with this factor</string>
+          </property>
+          <property name="minimum">
+           <number>1</number>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="toolTip">
+           <string>Scale every value in the blue channel with this factor</string>
+          </property>
+          <property name="text">
+           <string>Scale B</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Limited Range</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QCheckBox" name="limitedRangeCheckBox">
+          <property name="text">
+           <string/>
           </property>
          </widget>
         </item>
