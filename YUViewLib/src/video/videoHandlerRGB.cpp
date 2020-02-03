@@ -149,8 +149,9 @@ int64_t rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
     return 0;
 
   int64_t numSamples = frameSize.height() * frameSize.width();
-
-  return numSamples * nrChannels() * ((bitsPerValue + 7) / 8);
+  int64_t nrBytes = numSamples * nrChannels() * ((bitsPerValue + 7) / 8);
+  DEBUG_RGB("rgbPixelFormat::bytesPerFrame samples %d channels %d bytes %d", int(numSamples), nrChannels(), nrBytes);
+  return nrBytes;
 }
 
 /// ---------------------------- videoHandlerRGB_CustomFormatDialog ---------------------
@@ -426,6 +427,8 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
 
   if (idx == rgbPresetList.count())
   {
+    DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged custom format");
+
     // The user selected the "custom format..." option
     videoHandlerRGB_CustomFormatDialog dialog(srcPixelFormat.getRGBFormatString(), srcPixelFormat.bitsPerValue, srcPixelFormat.planar);
     if (dialog.exec() == QDialog::Accepted)
@@ -458,6 +461,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   else
   {
     // One of the preset formats was selected
+    DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged set preset format");
     setSrcPixelFormat(rgbPresetList.at(idx));
   }
 
@@ -466,10 +470,8 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   currentImageIdx = -1;
   if (nrBytesOldFormat != getBytesPerFrame())
   {
-    // The number of bytes per frame changed -> the number of frames in the sequence changed.
-    emit signalUpdateFrameLimits();
-    // The raw RGB data buffer also needs to be reloaded
-    currentFrameRawData_frameIdx = -1;
+    DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged nr bytes per frame changed");
+    invalidateAllBuffers();
   }
   setCacheInvalid();
   emit signalHandlerChanged(true, RECACHE_CLEAR);
@@ -477,16 +479,20 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
 
 void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 {
-  DEBUG_RGB("videoHandlerRGB::loadFrame %d\n", frameIndex);
+  DEBUG_RGB("videoHandlerRGB::loadFrame %d", frameIndex);
 
   if (!isFormatValid())
-    // We cannot load a frame if the format is not known
+  {
+    DEBUG_RGB("videoHandlerRGB::loadFrame invalid pixel format");
     return;
+  }
 
   // Does the data in currentFrameRawData need to be updated?
   if (!loadRawRGBData(frameIndex))
-    // Loading failed or it is still being performed in the background
+  {
+    DEBUG_RGB("videoHandlerRGB::loadFrame Loading faile or is still running in the background");
     return;
+  }
 
   // The data in currentFrameRawData is now up to date. If necessary
   // convert the data to RGB.
@@ -501,7 +507,7 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   {
     QImage newImage;
     convertRGBToImage(currentFrameRawData, newImage);
-    QMutexLocker writeLock(&currentImageSetMutex);    
+    QMutexLocker writeLock(&currentImageSetMutex);
     currentImage = newImage;
     currentImageIdx = frameIndex;
   }
@@ -537,9 +543,13 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 // Load the raw RGB data for the given frame index into currentFrameRawData.
 bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 {
+  DEBUG_RGB("videoHandlerRGB::loadRawRGBData frame %d", frameIndex);
+
   if (currentFrameRawData_frameIdx == frameIndex)
-    // Buffer already up to date
+  {
+    DEBUG_RGB("videoHandlerRGB::loadRawRGBData frame %d already in the current buffer - Done", frameIndex);
     return true;
+  }
 
   if (frameIndex == rawData_frameIdx)
   {
@@ -565,7 +575,7 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
   }
   requestDataMutex.unlock();
 
-  DEBUG_RGB("videoHandlerRGB::loadRawRGBData %d %s", frameIndex, (frameIndex == rawRGBData_frameIdx) ? "NewDataSet" : "Waiting...");
+  DEBUG_RGB("videoHandlerRGB::loadRawRGBData %d %s", frameIndex, (frameIndex == rawData_frameIdx) ? "NewDataSet" : "Waiting...");
   return (currentFrameRawData_frameIdx == frameIndex);
 }
 
@@ -608,6 +618,13 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 && f != QImage::Format_RGB32)
       outputImage = outputImage.convertToFormat(f);
   }
+}
+
+void videoHandlerRGB::setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &newFormat)
+{ 
+  rgbFormatMutex.lock();
+  srcPixelFormat = newFormat;
+  rgbFormatMutex.unlock();
 }
 
 // Convert the data in "sourceBuffer" from the format "srcPixelFormat" to RGB 888. While doing so, apply the

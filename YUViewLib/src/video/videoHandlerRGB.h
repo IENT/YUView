@@ -195,7 +195,7 @@ private:
   void convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage);
 
   // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &newFormat) { rgbFormatMutex.lock(); srcPixelFormat = newFormat; rgbFormatMutex.unlock(); }
+  void setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &newFormat);
 
   // Convert one frame from the current pixel format to RGB888
   void convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, unsigned char *targetBuffer);
