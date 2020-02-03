@@ -460,8 +460,6 @@ void playlistItemRawFile::loadRawData(int frameIdxInternal)
   if (!video->isFormatValid())
     return;
 
-  DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d", frameIdx);
-
   // Load the raw data for the given frameIdx from file and set it in the video
   int64_t fileStartPos;
   if (isY4MFile)
@@ -470,6 +468,7 @@ void playlistItemRawFile::loadRawData(int frameIdxInternal)
     fileStartPos = frameIdxInternal * getBytesPerFrame();
   int64_t nrBytes = getBytesPerFrame();
 
+  DEBUG_RAWFILE("playlistItemRawFile::loadRawData frame %d bytes %d", frameIdxInternal, int(nrBytes));
   if (dataSource.readBytes(video->rawData, fileStartPos, nrBytes) < nrBytes)
     return; // Error
   video->rawData_frameIdx = frameIdxInternal;

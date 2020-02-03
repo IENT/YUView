@@ -149,8 +149,9 @@ int64_t rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
     return 0;
 
   int64_t numSamples = frameSize.height() * frameSize.width();
-
-  return numSamples * nrChannels() * ((bitsPerValue + 7) / 8);
+  int64_t nrBytes = numSamples * nrChannels() * ((bitsPerValue + 7) / 8);
+  DEBUG_RGB("rgbPixelFormat::bytesPerFrame samples %d channels %d bytes %d", int(numSamples), nrChannels(), nrBytes);
+  return nrBytes;
 }
 
 /// ---------------------------- videoHandlerRGB_CustomFormatDialog ---------------------
@@ -252,15 +253,6 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
   // preset internal values
   setSrcPixelFormat(rgbPixelFormat());
-  componentDisplayMode = DisplayAll;
-
-  componentScale[0] = 1;
-  componentScale[1] = 1;
-  componentScale[2] = 1;
-
-  componentInvert[0] = false;
-  componentInvert[1] = false;
-  componentInvert[2] = false;
 
   // Set the order of the RGB formats in the combo box
   orderRGBList << "RGB" << "RBG" << "GRB" << "GBR" << "BRG" << "BGR";
@@ -396,6 +388,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   connect(ui.RInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
   connect(ui.GInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
   connect(ui.BInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.limitedRangeCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
 
   if (!isSizeFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui.topVerticalLayout);
@@ -415,6 +408,7 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
   componentInvert[0] = ui.RInvertCheckBox->isChecked();
   componentInvert[1] = ui.GInvertCheckBox->isChecked();
   componentInvert[2] = ui.BInvertCheckBox->isChecked();
+  limitedRange = ui.limitedRangeCheckBox->isChecked();
 
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
@@ -433,6 +427,8 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
 
   if (idx == rgbPresetList.count())
   {
+    DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged custom format");
+
     // The user selected the "custom format..." option
     videoHandlerRGB_CustomFormatDialog dialog(srcPixelFormat.getRGBFormatString(), srcPixelFormat.bitsPerValue, srcPixelFormat.planar);
     if (dialog.exec() == QDialog::Accepted)
@@ -465,6 +461,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   else
   {
     // One of the preset formats was selected
+    DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged set preset format");
     setSrcPixelFormat(rgbPresetList.at(idx));
   }
 
@@ -473,10 +470,8 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   currentImageIdx = -1;
   if (nrBytesOldFormat != getBytesPerFrame())
   {
-    // The number of bytes per frame changed -> the number of frames in the sequence changed.
-    emit signalUpdateFrameLimits();
-    // The raw RGB data buffer also needs to be reloaded
-    currentFrameRawData_frameIdx = -1;
+    DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged nr bytes per frame changed");
+    invalidateAllBuffers();
   }
   setCacheInvalid();
   emit signalHandlerChanged(true, RECACHE_CLEAR);
@@ -484,16 +479,20 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
 
 void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 {
-  DEBUG_RGB("videoHandlerRGB::loadFrame %d\n", frameIndex);
+  DEBUG_RGB("videoHandlerRGB::loadFrame %d", frameIndex);
 
   if (!isFormatValid())
-    // We cannot load a frame if the format is not known
+  {
+    DEBUG_RGB("videoHandlerRGB::loadFrame invalid pixel format");
     return;
+  }
 
   // Does the data in currentFrameRawData need to be updated?
   if (!loadRawRGBData(frameIndex))
-    // Loading failed or it is still being performed in the background
+  {
+    DEBUG_RGB("videoHandlerRGB::loadFrame Loading faile or is still running in the background");
     return;
+  }
 
   // The data in currentFrameRawData is now up to date. If necessary
   // convert the data to RGB.
@@ -508,7 +507,7 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   {
     QImage newImage;
     convertRGBToImage(currentFrameRawData, newImage);
-    QMutexLocker writeLock(&currentImageSetMutex);    
+    QMutexLocker writeLock(&currentImageSetMutex);
     currentImage = newImage;
     currentImageIdx = frameIndex;
   }
@@ -544,9 +543,13 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 // Load the raw RGB data for the given frame index into currentFrameRawData.
 bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 {
+  DEBUG_RGB("videoHandlerRGB::loadRawRGBData frame %d", frameIndex);
+
   if (currentFrameRawData_frameIdx == frameIndex)
-    // Buffer already up to date
+  {
+    DEBUG_RGB("videoHandlerRGB::loadRawRGBData frame %d already in the current buffer - Done", frameIndex);
     return true;
+  }
 
   if (frameIndex == rawData_frameIdx)
   {
@@ -572,7 +575,7 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
   }
   requestDataMutex.unlock();
 
-  DEBUG_RGB("videoHandlerRGB::loadRawRGBData %d %s", frameIndex, (frameIndex == rawRGBData_frameIdx) ? "NewDataSet" : "Waiting...");
+  DEBUG_RGB("videoHandlerRGB::loadRawRGBData %d %s", frameIndex, (frameIndex == rawData_frameIdx) ? "NewDataSet" : "Waiting...");
   return (currentFrameRawData_frameIdx == frameIndex);
 }
 
@@ -617,6 +620,13 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   }
 }
 
+void videoHandlerRGB::setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &newFormat)
+{ 
+  rgbFormatMutex.lock();
+  srcPixelFormat = newFormat;
+  rgbFormatMutex.unlock();
+}
+
 // Convert the data in "sourceBuffer" from the format "srcPixelFormat" to RGB 888. While doing so, apply the
 // scaling factors, inversions and only convert the selected color components.
 void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, unsigned char *targetBuffer)
@@ -646,9 +656,9 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
       displayComponentOffset = srcPixelFormat.posB;
 
     // Get the scale/inversion for the displayed component
-    int displayIndex = (componentDisplayMode == DisplayR) ? 0 : (componentDisplayMode == DisplayG) ? 1 : 2;
-    int scale = componentScale[displayIndex];
-    bool invert = componentInvert[displayIndex];
+    const int displayIndex = (componentDisplayMode == DisplayR) ? 0 : (componentDisplayMode == DisplayG) ? 1 : 2;
+    const int scale = componentScale[displayIndex];
+    const bool invert = componentInvert[displayIndex];
 
     if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
     {
@@ -671,6 +681,8 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
         val = clip(val, 0, 255);
         if (invert)
           val = 255 - val;
+        if (limitedRange)
+          val = videoHandler::convScaleLimitedRange(val);
         dst[0] = val;
         dst[1] = val;
         dst[2] = val;
@@ -696,6 +708,8 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
         val = clip(val, 0, 255);
         if (invert)
           val = 255 - val;
+        if (limitedRange)
+          val = videoHandler::convScaleLimitedRange(val);
         dst[0] = val;
         dst[1] = val;
         dst[2] = val;
@@ -737,23 +751,27 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
       // Now we just have to iterate over all values and always skip "offsetToNextValue" values in the sources and write 3 values in dst.
       for (int i = 0; i < frameSize.width() * frameSize.height(); i++)
       {
-        // R
         int valR = (((int)srcR[0]) * componentScale[0]) >> rightShift;
         valR = clip(valR, 0, 255);
         if (componentInvert[0])
           valR = 255 - valR;
         
-        // G
         int valG = (((int)srcG[0]) * componentScale[1]) >> rightShift;
         valG = clip(valG, 0, 255);
         if (componentInvert[1])
           valG = 255 - valG;
 
-        // B
         int valB = (((int)srcB[0]) * componentScale[2]) >> rightShift;
         valB = clip(valB, 0, 255);
         if (componentInvert[2])
           valB = 255 - valB;
+
+        if (limitedRange)
+        {
+          valR = videoHandler::convScaleLimitedRange(valR);
+          valG = videoHandler::convScaleLimitedRange(valG);
+          valB = videoHandler::convScaleLimitedRange(valB);
+        }
 
         srcR += offsetToNextValue;
         srcG += offsetToNextValue;
@@ -786,23 +804,27 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
       // Now we just have to iterate over all values and always skip "offsetToNextValue" values in the sources and write 3 values in dst.
       for (int i = 0; i < frameSize.width() * frameSize.height(); i++)
       {
-        // R
         int valR = ((int)srcR[0]) * componentScale[0];
         valR = clip(valR, 0, 255);
         if (componentInvert[0])
           valR = 255 - valR;
 
-        // G
         int valG = ((int)srcG[0]) * componentScale[1];
         valG = clip(valG, 0, 255);
         if (componentInvert[1])
           valG = 255 - valG;
 
-        // B
         int valB = ((int)srcB[0]) * componentScale[2];
         valB = clip(valB, 0, 255);
         if (componentInvert[2])
           valB = 255 - valB;
+
+        if (limitedRange)
+        {
+          valR = videoHandler::convScaleLimitedRange(valR);
+          valG = videoHandler::convScaleLimitedRange(valG);
+          valB = videoHandler::convScaleLimitedRange(valB);
+        }
 
         srcR += offsetToNextValue;
         srcG += offsetToNextValue;
