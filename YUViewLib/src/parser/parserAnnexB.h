@@ -95,6 +95,15 @@ public:
   // Called from the bitstream analyzer. This function can run in a background process.
   bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
 
+  // Parsing of an SEI message may fail when the required parameter sets are not yet available and parsing has to be performed
+  // once the required parameter sets are recieved.
+  enum sei_parsing_return_t
+  {
+    SEI_PARSING_OK,                      // Parsing is done
+    SEI_PARSING_ERROR,                   // A parsing error occured
+    SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
+  };
+
 protected:
   
   /* The basic NAL unit. Contains the NAL header and the file position of the unit.
@@ -126,15 +135,6 @@ protected:
 
     // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
     QByteArray nalPayload;
-  };
-
-  // Parsing of an SEI message may fail when the required parameter sets are not yet available and parsing has to be performed
-  // once the required parameter sets are recieved.
-  enum sei_parsing_return_t
-  {
-    SEI_PARSING_OK,                      // Parsing is done
-    SEI_PARSING_ERROR,                   // A parsing error occured
-    SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
   };
   
   struct annexBFrame

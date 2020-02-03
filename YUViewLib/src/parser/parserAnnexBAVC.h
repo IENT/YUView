@@ -512,34 +512,6 @@ protected:
     QByteArray sei_data_storage;
   };
 
-  class user_data_registered_itu_t_t35_sei : public sei
-  {
-  public:
-    user_data_registered_itu_t_t35_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    sei_parsing_return_t parse_user_data_registered_itu_t_t35(QByteArray &data, parserCommon::TreeItem *root) { return parse_internal(data, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
-
-    unsigned int itu_t_t35_country_code;
-    unsigned int itu_t_t35_country_code_extension_byte;
-    QByteArray itu_t_t35_payload_byte_array;
-    // ANSI-SCTE 128-1 2013
-    unsigned int itu_t_t35_provider_code;
-    unsigned int user_identifier;
-    // ATSC1 data
-    unsigned int user_data_type_code;
-    bool process_em_data_flag;
-    bool process_cc_data_flag;
-    bool additional_data_flag;
-    unsigned int cc_count;
-    unsigned int em_data;
-    QList<unsigned int> cc_packet_data;
-    unsigned int marker_bits;
-    QList<unsigned int> ATSC_reserved_user_data;
-
-  private:
-    bool parse_internal(QByteArray &data, parserCommon::TreeItem *root);
-    bool parse_ATSC1_data(parserCommon::reader_helper &reader);
-  };
-
   class user_data_sei : sei
   {
   public:
