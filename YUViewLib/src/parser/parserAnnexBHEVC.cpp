@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "parserAnnexBItuTT35.h"
 #include "parserCommonMacros.h"
 
 using namespace parserCommon;
@@ -551,6 +552,11 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
         auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
         result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, active_VPS_list, active_SPS_list, message_tree);
         reparse = new_pic_timing_sei;
+      }
+      else if (new_sei->payloadType == 4)
+      {
+        auto new_user_data_registered_itu_t_t35_sei = QSharedPointer<user_data_registered_itu_t_t35_sei<sei>>(new user_data_registered_itu_t_t35_sei<sei>(new_sei));
+        result = new_user_data_registered_itu_t_t35_sei->parse_user_data_registered_itu_t_t35(sub_sei_data, message_tree);
       }
       else if (new_sei->payloadType == 5)
       {
