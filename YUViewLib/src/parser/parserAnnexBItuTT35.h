@@ -33,6 +33,7 @@
 #pragma once
 
 #include "parserAnnexB.h"
+#include "parserCommon.h"
 #include "parserCommonMacros.h"
 #include "parserSubtitle608.h"
 
@@ -65,7 +66,7 @@ public:
 private:
   bool parse_internal(QByteArray &data, parserCommon::TreeItem *root)
   {
-    reader_helper reader(data, root, "user_data_registered_itu_t_t35()");
+    parserCommon::reader_helper reader(data, root, "user_data_registered_itu_t_t35()");
 
     if (data.length() < 2)
       return reader.addErrorMessageChildItem("Invalid length of user_data_registered_itu_t_t35 SEI.");
@@ -124,7 +125,7 @@ private:
   }
   bool parse_ATSC1_data(parserCommon::reader_helper &reader)
   {
-    reader_sub_level s(reader, "ATSC1_data");
+    parserCommon::reader_sub_level s(reader, "ATSC1_data");
 
     QMap<int, QString> user_data_type_code_meaning;
     user_data_type_code_meaning.insert(3, "cc_data() / DTV CC");
