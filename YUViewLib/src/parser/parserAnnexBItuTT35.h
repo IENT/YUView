@@ -39,7 +39,7 @@
 template <class T>
 class user_data_registered_itu_t_t35_sei : public T
 {
-  static_assert(std::is_base_of<nal_unit, T>::value, "T must derive from nal_unit");
+  static_assert(std::is_base_of<parserAnnexB::nal_unit, T>::value, "T must derive from parserAnnexB::nal_unit");
     
 public:
   user_data_registered_itu_t_t35_sei(QSharedPointer<T> sei_src) : T(sei_src) {};

@@ -104,8 +104,6 @@ public:
     SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
   };
 
-protected:
-  
   /* The basic NAL unit. Contains the NAL header and the file position of the unit.
   */
   struct nal_unit
@@ -136,6 +134,8 @@ protected:
     // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
     QByteArray nalPayload;
   };
+
+protected:
   
   struct annexBFrame
   {
