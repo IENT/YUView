@@ -1515,6 +1515,8 @@ void FFmpegVersionHandler::enableLoggingWarning()
 
 AVPixFmtDescriptorWrapper FFmpegVersionHandler::getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixFmt)
 {
+  if (pixFmt == AV_PIX_FMT_NONE)
+    return {};
   return AVPixFmtDescriptorWrapper(lib.av_pix_fmt_desc_get(pixFmt), libVersion);
 }
 
