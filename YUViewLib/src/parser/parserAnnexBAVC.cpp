@@ -143,7 +143,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
       // Save the info of the last frame
       if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
         return reader_helper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
-      DEBUG_AVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
     }
     // The file ended
     std::sort(POCList.begin(), POCList.end());
@@ -219,6 +219,8 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
 
     if (new_sps->vui_parameters.nal_hrd_parameters_present_flag || new_sps->vui_parameters.vcl_hrd_parameters_present_flag)
       CpbDpbDelaysPresentFlag = true;
+
+    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parse SPS ID %d", new_sps->seq_parameter_set_id);
   }
   else if (nal_avc.nal_unit_type == PPS) 
   {
@@ -235,7 +237,9 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
     // Add the PPS ID
     specificDescription = parsingSuccess ? QString(" PPS_NUT ID %1").arg(new_pps->pic_parameter_set_id) : "PPS_NUT ERR";
     if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->seq_parameter_set_id) : "PPS(ERR)";
+      *nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->pic_parameter_set_id) : "PPS(ERR)";
+
+    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parse PPS ID %d", new_pps->pic_parameter_set_id);
   }
   else if (nal_avc.isSlice())
   {
@@ -263,7 +267,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
           // Save the info of the last frame
           if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
             return reader_helper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
-          DEBUG_AVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+          DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
         curFramePOC = new_slice->globalPOC;
@@ -279,7 +283,13 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
         // This is the first slice of a random access point. Add it to the list.
         nalUnitList.append(new_slice);
       }
+
+      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Slice POC %d", new_slice->globalPOC);
     }
+    else
+    {
+      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Slice Error");
+  }
   }
   else if (nal_avc.nal_unit_type == SEI)
   {
@@ -353,17 +363,29 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
     specificDescription = parsingSuccess ? QString(" (#%1)").arg(sei_count) : QString(" (#%1-ERR)").arg(sei_count);
     if (nalTypeName)
       *nalTypeName = parsingSuccess ? QString("SEI(#%1)").arg(sei_count) : "SEI(ERR)";
+
+    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed SEI (%d messages)", sei_count);
   }
   else if (nal_avc.nal_unit_type == FILLER)
   {
     if (nalTypeName)
       *nalTypeName = "FILLER";
+    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Filler data");
+  }
+  else if (nal_avc.nal_unit_type == AUD)
+  {
+    if (nalTypeName)
+      *nalTypeName = "AUD";
+    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Access Unit Delimiter (AUD)");
   }
 
   if (auDelimiterDetector.isStartOfNewAU(nal_avc, curFramePOC))
   {
-    DEBUG_AVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
+    if (counterAU >= 0)
+    {
+      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate %d", sizeCurrentAU);
     bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+    }
     sizeCurrentAU = 0;
     counterAU++;
   }
@@ -1238,14 +1260,14 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
 
       globalPOC_highestGlobalPOCLastGOP = globalPOC;
       globalPOC_lastIDR = 0;
-      DEBUG_AVC("POC - First pic non IDR but I - global POC %d", globalPOC);
+      DEBUG_AVC("slice_header::parse_slice_header POC - First pic non IDR but I - global POC %d", globalPOC);
     }
     else
     {
       globalPOC = 0;
       globalPOC_lastIDR = 0;
       globalPOC_highestGlobalPOCLastGOP = 0;
-      DEBUG_AVC("POC - First pic - global POC %d", globalPOC);
+      DEBUG_AVC("slice_header::parse_slice_header POC - First pic - global POC %d", globalPOC);
     }
   }
   else
@@ -1255,14 +1277,14 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
       globalPOC = prev_pic->globalPOC;
       globalPOC_lastIDR = prev_pic->globalPOC_lastIDR;
       globalPOC_highestGlobalPOCLastGOP = prev_pic->globalPOC_highestGlobalPOCLastGOP;
-      DEBUG_AVC("POC - additional slice - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
+      DEBUG_AVC("slice_header::parse_slice_header POC - additional slice - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
     }
     else if (IdrPicFlag)
     {
       globalPOC = prev_pic->globalPOC_highestGlobalPOCLastGOP + 2;
       globalPOC_lastIDR = globalPOC;
       globalPOC_highestGlobalPOCLastGOP = globalPOC;
-      DEBUG_AVC("POC - IDR - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
+      DEBUG_AVC("slice_header::parse_slice_header POC - IDR - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
     }
     else
     {
@@ -1275,7 +1297,7 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
       if (globalPOC > globalPOC_highestGlobalPOCLastGOP)
         globalPOC_highestGlobalPOCLastGOP = globalPOC;
       globalPOC_lastIDR = prev_pic->globalPOC_lastIDR;
-      DEBUG_AVC("POC - first slice - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
+      DEBUG_AVC("slice_header::parse_slice_header POC - first slice - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
     }
   }
   return true;
@@ -2099,7 +2121,14 @@ bool parserAnnexBAVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_avc &nal_av
 {
   // TODO: This is not complete. Check and finish.
   if (nal_avc.nal_unit_type == AUD)
+  {
+    delimiterPresent = true;
     return true;
+  }
+
+  if (this->delimiterPresent)
+    // AUD messages were found in the bitstream. Only react to these.
+    return false;
   
   const bool isSlice = (nal_avc.nal_unit_type == CODED_SLICE_NON_IDR || nal_avc.nal_unit_type == CODED_SLICE_IDR);
   const bool isLastSlice = (lastNalType == CODED_SLICE_NON_IDR || lastNalType == CODED_SLICE_IDR);

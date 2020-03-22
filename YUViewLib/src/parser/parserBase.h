@@ -75,6 +75,7 @@ public:
   void setStreamColorCoding(bool colorCoding) { packetModel->setUseColorCoding(colorCoding); }
   void setFilterStreamIndex(int streamIndex) { streamIndexFilter->setFilterStreamIndex(streamIndex); }
   void setParsingLimitEnabled(bool limitEnabled) { parsingLimitEnabled = limitEnabled; }
+  void setBitrateSortingIndex(int sortingIndex) { bitrateSortingFilter->setBitrateSortingIndex(sortingIndex); }
 
 signals:
   // Some data was updated and the models can be updated to reflec this. This is called regularly
@@ -89,6 +90,7 @@ protected:
   QScopedPointer<parserCommon::PacketItemModel> packetModel;
   QScopedPointer<parserCommon::FilterByStreamIndexProxyModel> streamIndexFilter;
   QScopedPointer<parserCommon::BitrateItemModel> bitrateItemModel;
+  QScopedPointer<parserCommon::SortBitrateEntriesProxyModel> bitrateSortingFilter;
 
   // If this variable is set (from an external thread), the parsing process should cancel immediately
   bool cancelBackgroundParser {false};

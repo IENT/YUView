@@ -134,7 +134,7 @@ void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
     this->axisY.clear();
   }
 
-  if (model == nullptr)
+  if (!this->model)
     return;
 
   Q_ASSERT(this->barMapper.isNull());
@@ -150,10 +150,10 @@ void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
 
   this->barMapper = new QVBarModelMapper(this);
   this->barMapper->setFirstBarSetColumn(2);
-  this->barMapper->setLastBarSetColumn(model->columnCount() - 1);
-  this->barMapper->setRowCount(model->rowCount());
+  this->barMapper->setLastBarSetColumn(this->model->columnCount() - 1);
+  this->barMapper->setRowCount(this->model->rowCount());
   this->barMapper->setSeries(barSeries);
-  this->barMapper->setModel(model);
+  this->barMapper->setModel(this->model);
   this->chart.addSeries(barSeries);
 
   QLineSeries *lineSeries = new QLineSeries;
@@ -162,7 +162,7 @@ void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
   this->lineModelMapper->setXColumn(0);
   this->lineModelMapper->setYColumn(1);
   this->lineModelMapper->setSeries(lineSeries);
-  this->lineModelMapper->setModel(model);
+  this->lineModelMapper->setModel(this->model);
   this->chart.addSeries(lineSeries);
 
   this->axisX = new QValueAxis();
@@ -178,7 +178,7 @@ void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
 
   this->onScrollBarValueChanged(0);
 
-  connect(model, &QAbstractItemModel::rowsInserted, this, &BitrateBarChart::onRowsInserted);
+  connect(this->model, &QAbstractItemModel::rowsInserted, this, &BitrateBarChart::onRowsInserted);
 }
 
 void BitrateBarChart::onScrollBarValueChanged(int value)
@@ -193,9 +193,9 @@ void BitrateBarChart::tooltip(bool status, int index, QBarSet *barset)
 
   if (status)
   {
-    if (model != nullptr)
+    if (!this->model)
     {
-      QString itemInfoText = model->getItemInfoText(index);
+      QString itemInfoText = this->model->getItemInfoText(index);
       this->currentTooltip.setTextAndAnchor(itemInfoText, QPointF(double(index), 3));
       this->currentTooltip.setZValue(11);
       this->currentTooltip.show();

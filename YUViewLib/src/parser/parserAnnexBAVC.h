@@ -558,12 +558,13 @@ protected:
     bool isStartOfNewAU(nal_unit_avc &nal_avc, int curFramePOC);
     nal_unit_type_enum lastNalType {UNSPECIFIED};
     int lastNalSlicePoc {-1};
+    bool delimiterPresent {false};
   };
   auDelimiterDetector_t auDelimiterDetector;
 
   unsigned int sizeCurrentAU {0};
   int lastFramePOC{-1};
-  unsigned int counterAU {0};
+  int counterAU {-1};
 };
 
 #endif // PARSERANNEXBAVC_H

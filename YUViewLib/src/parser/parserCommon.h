@@ -298,6 +298,23 @@ namespace parserCommon
     bool showVideoOnly  { false };
   };
 
+  class FilterByStreamIndexProxyModel : public QSortFilterProxyModel
+  {
+    Q_OBJECT
+
+  public:
+    FilterByStreamIndexProxyModel(QObject *parent) : QSortFilterProxyModel(parent) {};
+
+    int filterStreamIndex() const { return streamIndex; }
+    void setFilterStreamIndex(int idx);
+
+  protected:
+    bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
+
+  private:
+    int streamIndex { -1 };
+  };
+
   class BitrateItemModel : public QAbstractTableModel
   {
     Q_OBJECT
@@ -339,21 +356,23 @@ namespace parserCommon
     double maxYValue {0};
   };
 
-  class FilterByStreamIndexProxyModel : public QSortFilterProxyModel
+  class SortBitrateEntriesProxyModel : public QSortFilterProxyModel
   {
     Q_OBJECT
 
   public:
-    FilterByStreamIndexProxyModel(QObject *parent) : QSortFilterProxyModel(parent) {};
+    SortBitrateEntriesProxyModel(QObject *parent) : QSortFilterProxyModel(parent) {};
 
-    int filterStreamIndex() const { return streamIndex; }
-    void setFilterStreamIndex(int idx);
-
-  protected:
-    bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
+    void setBitrateSortingIndex(int index);
 
   private:
-    int streamIndex { -1 };
+    enum class SortMode
+    {
+      DECODE_ODER,
+      PRESENTATION_ORDER
+    };
+
+    SortMode sortMode { SortMode::DECODE_ODER };
   };
 }
 

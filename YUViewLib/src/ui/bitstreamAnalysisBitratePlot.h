@@ -43,7 +43,6 @@
 #include <QtCharts/QVXYModelMapper>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QScrollBar>
-#include <QtCore/QAbstractItemModel>
 #include <QtCharts/QValueAxis>
 
 class BitrateBarChartCallout : public QGraphicsItem
@@ -78,8 +77,8 @@ private slots:
   void onRowsInserted(const QModelIndex &parent, int first, int last);
 
 private:
-  QtCharts::QChartView *chartView{ nullptr };
-  QScrollBar *scrollBar{ nullptr };
+  QPointer<QtCharts::QChartView> chartView;
+  QPointer<QScrollBar> scrollBar;
 
   QPointer<QtCharts::QVBarModelMapper> barMapper;
   QPointer<QtCharts::QVXYModelMapper> lineModelMapper;
@@ -88,7 +87,7 @@ private:
   
   QtCharts::QChart chart;
 
-  parserCommon::BitrateItemModel *model{ nullptr };
+  QPointer<parserCommon::BitrateItemModel> model;
 
   BitrateBarChartCallout currentTooltip;
 

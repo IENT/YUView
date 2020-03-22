@@ -1087,7 +1087,13 @@ int BitrateItemModel::rowCount(const QModelIndex &parent) const
 int BitrateItemModel::columnCount(const QModelIndex &parent) const
 { 
   Q_UNUSED(parent);
-  return 2 + 1;
+  /* 0: The index (the order the values were added)
+   * 1: The average value
+   * 2: Bitrate
+   * 3: dts
+   * 4: pts
+   */
+  return 5;
 }
 
 QVariant BitrateItemModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -1109,32 +1115,31 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
 {
   if (role == Qt::DisplayRole)
   {
-    int retVal = 0;
     if (index.column() == 0)
-      retVal = index.row();
+      return index.row();
+    QMutexLocker locker(&this->bitratePerStreamDataMutex);
     if (index.column() == 1)
     {
-      QMutexLocker locker(&this->bitratePerStreamDataMutex);
+      
       const int averageRange = 10;
       unsigned averageBitrate = 0;
       unsigned start = qMax(0, index.row() - averageRange);
       unsigned end = qMin(index.row() + averageRange, bitratePerStreamData[0].size());
       for (unsigned i = start; i < end; i++)
       {
-        averageBitrate += bitratePerStreamData[0][i].bitrate;
+        averageBitrate += this->bitratePerStreamData[0][i].bitrate;
       }
-      retVal = averageBitrate / (end - start);
+      return averageBitrate / (end - start);
     }
     if (index.column() == 2)
-    {
-      QMutexLocker locker(&this->bitratePerStreamDataMutex);
-      retVal = bitratePerStreamData[0][index.row()].bitrate;
-    }
-
-    return retVal;
+      return this->bitratePerStreamData[0][index.row()].bitrate;
+    if (index.column() == 3)
+      return this->bitratePerStreamData[0][index.row()].dts;
+    if (index.column() == 3)
+      return this->bitratePerStreamData[0][index.row()].pts;
   }
 
-  return QVariant();
+  return {};
 }
 
 QString BitrateItemModel::getItemInfoText(int index)
@@ -1186,40 +1191,19 @@ void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dt
     maxYValue = bitrate;
   }
 
-  DEBUG_PARSER("addBitratePoint streamIndex %d pts %d dts %d rate %d", streamIndex, pts, dts, bitrate);
+  DEBUG_PARSER("BitrateItemModel::addBitratePoint streamIndex %d pts %d dts %d rate %d", streamIndex, pts, dts, bitrate);
   
-  // Keep the list sorted
   QMutexLocker locker(&this->bitratePerStreamDataMutex);
-  if (bitratePerStreamData[streamIndex].isEmpty())
-  {
-    bitratePerStreamData[streamIndex].append(e);
-  }
-  else
-  {
-    for (int i = 0; i < bitratePerStreamData[streamIndex].size(); i++)
-    {
-      const bool hasNextItem = (i < bitratePerStreamData[streamIndex].size() - 1);
-      if (hasNextItem)
-      {
-        if (e.pts > bitratePerStreamData[streamIndex][i].pts && e.pts < bitratePerStreamData[streamIndex][i + 1].pts)
-        {
-          bitratePerStreamData[streamIndex].insert(i + 1, e);
-          return;
-        }
-      }
-      else
-      {
-        if (e.pts > bitratePerStreamData[streamIndex][i].pts)
-          bitratePerStreamData[streamIndex].append(e);
-        else
-          bitratePerStreamData[streamIndex].insert(i, e);
-        return;
-      }
-    }
-  }
+  bitratePerStreamData[streamIndex].append(e);
 }
 
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------
+
+void FilterByStreamIndexProxyModel::setFilterStreamIndex(int idx)
+{
+  this->streamIndex = idx;
+  invalidateFilter();
+}
 
 bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex &sourceParent) const
 {
@@ -1257,8 +1241,26 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
   return false;
 }
 
-void FilterByStreamIndexProxyModel::setFilterStreamIndex(int idx)
+/// ------------------- SortBitrateEntriesProxyMode -----------------------------
+
+void SortBitrateEntriesProxyModel::setBitrateSortingIndex(int index)
 {
-  streamIndex = idx;
-  invalidateFilter();
+  if (index == 1)
+  {
+    if (this->sortMode != SortMode::PRESENTATION_ORDER)
+    {
+      this->sortMode = SortMode::PRESENTATION_ORDER;
+      this->sort(3);
+      invalidateFilter();
+    }
+  }
+  else
+  {
+    if (this->sortMode != SortMode::DECODE_ODER)
+    {
+      this->sortMode = SortMode::DECODE_ODER;
+      this->sort(4);
+      invalidateFilter();
+    }
+  }
 }

@@ -51,39 +51,38 @@ using namespace YUView;
 BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
   QWidget(parent)
 {
-  ui.setupUi(this);
+  this->ui.setupUi(this);
+  this->ui.streamInfoTreeWidget->setColumnWidth(0, 300);
+  this->updateParsingStatusText(-1);
 
-  ui.streamInfoTreeWidget->setColumnWidth(0, 300);
+  this->connect(this->ui.showStreamComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &BitstreamAnalysisWidget::showOnlyStreamComboBoxIndexChanged);
+  this->connect(this->ui.colorCodeStreamsCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::colorCodeStreamsCheckBoxToggled);
+  this->connect(this->ui.parseEntireFileCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::parseEntireBitstreamCheckBoxToggled);
+  this->connect(this->ui.bitratePlotOrderComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged);
 
-  updateParsingStatusText(-1);
-
-  connect(ui.showStreamComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &BitstreamAnalysisWidget::showOnlyStreamComboBoxItemChanged);
-  connect(ui.colorCodeStreamsCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::colorCodeStreamsCheckBoxToggled);
-  connect(ui.parseEntireFileCheckBox, &QCheckBox::toggled, this, &BitstreamAnalysisWidget::parseEntireBitstreamCheckBoxToggled);
-
-  currentSelectedItemsChanged(nullptr, nullptr, false);
+  this->currentSelectedItemsChanged(nullptr, nullptr, false);
 }
 
 void BitstreamAnalysisWidget::updateParserItemModel()
 {
   this->parser->updateNumberModelItems();
-  updateParsingStatusText(parser->getParsingProgressPercent());
+  this->updateParsingStatusText(this->parser->getParsingProgressPercent());
 }
 
 void BitstreamAnalysisWidget::updateStreamInfo()
 {
-  ui.streamInfoTreeWidget->clear();
-  ui.streamInfoTreeWidget->addTopLevelItems(parser->getStreamInfo());
-  ui.streamInfoTreeWidget->expandAll();
+  this->ui.streamInfoTreeWidget->clear();
+  this->ui.streamInfoTreeWidget->addTopLevelItems(this->parser->getStreamInfo());
+  this->ui.streamInfoTreeWidget->expandAll();
 
-  if (ui.showStreamComboBox->count() + 1 != int(parser->getNrStreams()))
+  if (this->ui.showStreamComboBox->count() + 1 != int(this->parser->getNrStreams()))
   {
-    ui.showStreamComboBox->clear();
-    ui.showStreamComboBox->addItem("Show all streams");
-    for (unsigned int i = 0; i < parser->getNrStreams(); i++)
+    this->ui.showStreamComboBox->clear();
+    this->ui.showStreamComboBox->addItem("Show all streams");
+    for (unsigned int i = 0; i < this->parser->getNrStreams(); i++)
     {
-      QString info = parser->getShortStreamDescription(i);
-      ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) + info);
+      QString info = this->parser->getShortStreamDescription(i);
+      this->ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) + info);
     }
   }
 }
@@ -91,57 +90,60 @@ void BitstreamAnalysisWidget::updateStreamInfo()
 void BitstreamAnalysisWidget::backgroundParsingDone(QString error)
 {
   if (error.isEmpty())
-    ui.parsingStatusText->setText("Parsing done.");
+    this->ui.parsingStatusText->setText("Parsing done.");
   else
-    ui.parsingStatusText->setText("Error parsing the file: " + error);
-  updateParsingStatusText(100);
+    this->ui.parsingStatusText->setText("Error parsing the file: " + error);
+  this->updateParsingStatusText(100);
 }
 
-void BitstreamAnalysisWidget::showOnlyStreamComboBoxItemChanged(int index)
+void BitstreamAnalysisWidget::showOnlyStreamComboBoxIndexChanged(int index)
 {
-  if (!parser)
-    return;
-
-  if (showOnlyStream != index - 1)
+  if (this->parser && this->showOnlyStream != index - 1)
   {
-    showOnlyStream = index - 1;
-    parser->setFilterStreamIndex(showOnlyStream);
+    this->showOnlyStream = index - 1;
+    this->parser->setFilterStreamIndex(this->showOnlyStream);
   }
+}
+
+void BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged(int index)
+{
+  if (this->parser)
+    this->parser->setBitrateSortingIndex(index);
 }
 
 void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)
 {
   if (progressValue <= -1)
-    ui.parsingStatusText->setText("No bitstream file selected - Select a bitstream file to start bitstream analysis.");
+    this->ui.parsingStatusText->setText("No bitstream file selected - Select a bitstream file to start bitstream analysis.");
   else if (progressValue < 100)
-    ui.parsingStatusText->setText(QString("Parsing file (%1%)").arg(progressValue));
+    this->ui.parsingStatusText->setText(QString("Parsing file (%1%)").arg(progressValue));
   else
   {
-    const bool parsingLimitSet = !ui.parseEntireFileCheckBox->isChecked();
-    ui.parsingStatusText->setText(parsingLimitSet ? "Partial parsing done. Enable full parsing if needed." : "Parsing done.");
+    const bool parsingLimitSet = !this->ui.parseEntireFileCheckBox->isChecked();
+    this->ui.parsingStatusText->setText(parsingLimitSet ? "Partial parsing done. Enable full parsing if needed." : "Parsing done.");
   }
 }
 
-void BitstreamAnalysisWidget::stopAndDeleteParser()
+void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
 {
-  disconnect(parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
-  disconnect(parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
-  disconnect(parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
+  this->disconnect(this->parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
+  this->disconnect(this->parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
+  this->disconnect(this->parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
 
-  if (backgroundParserFuture.isRunning())
+  if (this->backgroundParserFuture.isRunning())
   {
     DEBUG_ANALYSIS("BitstreamAnalysisWidget::stopAndDeleteParser stopping parser");
-    parser->setAbortParsing();
-    backgroundParserFuture.waitForFinished();
+    this->parser->setAbortParsing();
+    this->backgroundParserFuture.waitForFinished();
   }
-  parser.reset();
+  this->parser.reset();
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::stopAndDeleteParser parser stopped and deleted");
 }
 
 void BitstreamAnalysisWidget::backgroundParsingFunction()
 {
-  if (parser)
-    parser->runParsingOfFile(compressedFilePath);
+  if (this->parser)
+    this->parser->runParsingOfFile(this->currentCompressedVideo->getName());
 }
 
 void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback)
@@ -149,82 +151,83 @@ void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, p
   Q_UNUSED(item2);
   Q_UNUSED(chageByPlayback);
 
-  currentCompressedVideo = dynamic_cast<playlistItemCompressedVideo*>(item1);
-  ui.streamInfoTreeWidget->clear();
+  this->currentCompressedVideo = dynamic_cast<playlistItemCompressedVideo*>(item1);
+  this->ui.streamInfoTreeWidget->clear();
 
-  const bool isBitstream = !currentCompressedVideo.isNull();
-  ui.tabStreamInfo->setEnabled(isBitstream);
-  ui.tabPacketAnalysis->setEnabled(isBitstream);
-  ui.tabBitrateGraphicsView->setEnabled(isBitstream);
+  const bool isBitstream = !this->currentCompressedVideo.isNull();
+  this->ui.tabStreamInfo->setEnabled(isBitstream);
+  this->ui.tabPacketAnalysis->setEnabled(isBitstream);
+  this->ui.tabBitrateGraphicsView->setEnabled(isBitstream);
 
-  restartParsingOfCurrentItem();
+  this->restartParsingOfCurrentItem();
 }
 
 void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
 {
-  if (!isVisible())
+  if (!this->isVisible())
   {
     DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem not visible - abort");
     return;
   }
 
-  stopAndDeleteParser();
+  this->stopAndDeleteParserBlocking();
   
-  if (currentCompressedVideo.isNull())
+  if (this->currentCompressedVideo.isNull())
   {
     DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem no compressed video - abort");
-    updateParsingStatusText(-1);
-    ui.streamInfoTreeWidget->clear();
-    ui.dataTreeView->setModel(nullptr);
-    ui.bitrateBarChart->setModel(nullptr);
-    parser.reset();
+    this->updateParsingStatusText(-1);
+    this->ui.streamInfoTreeWidget->clear();
+    this->ui.dataTreeView->setModel(nullptr);
+    this->ui.bitrateBarChart->setModel(nullptr);
+    this->parser.reset();
     return;
   }
 
-  // Setup a new parser
-  inputFormat inputFormatType = currentCompressedVideo->getInputFormat();
-  if (inputFormatType == inputAnnexBHEVC)
-    parser.reset(new parserAnnexBHEVC(this));
-  if (inputFormatType == inputAnnexBVVC)
-    parser.reset(new parserAnnexBVVC(this));
-  else if (inputFormatType == inputAnnexBAVC)
-    parser.reset(new parserAnnexBAVC(this));
-  else if (inputFormatType == inputLibavformat)
-    parser.reset(new parserAVFormat(this));
-  parser->enableModel();
-  const bool parsingLimitSet = !ui.parseEntireFileCheckBox->isChecked();
-  parser->setParsingLimitEnabled(parsingLimitSet);
+  this->createAndConnectNewParser(this->currentCompressedVideo->getInputFormat());
 
-  connect(parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
-  connect(parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
-  connect(parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
+  this->ui.dataTreeView->setModel(this->parser->getPacketItemModel());
+  this->ui.dataTreeView->setColumnWidth(0, 600);
+  this->ui.dataTreeView->setColumnWidth(1, 100);
+  this->ui.dataTreeView->setColumnWidth(2, 120);
+  this->ui.bitrateBarChart->setModel(this->parser->getBitrateItemModel());
 
-  compressedFilePath = currentCompressedVideo->getName();
+  this->updateStreamInfo();
 
-  ui.dataTreeView->setModel(parser->getPacketItemModel());
-  ui.dataTreeView->setColumnWidth(0, 600);
-  ui.dataTreeView->setColumnWidth(1, 100);
-  ui.dataTreeView->setColumnWidth(2, 120);
-  ui.bitrateBarChart->setModel(parser->getBitrateItemModel());
-
-  updateStreamInfo();
-
-  // Start the background parsing thread
-  updateParsingStatusText(0);
-  backgroundParserFuture = QtConcurrent::run(this, &BitstreamAnalysisWidget::backgroundParsingFunction);
+  this->updateParsingStatusText(0);
+  this->backgroundParserFuture = QtConcurrent::run(this, &BitstreamAnalysisWidget::backgroundParsingFunction);
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem new parser created and started");
+}
+
+void BitstreamAnalysisWidget::createAndConnectNewParser(inputFormat inputFormatType)
+{
+  Q_ASSERT_X(!this->parser, "BitstreamAnalysisWidget::restartParsingOfCurrentItem", "Error reinitlaizing parser. The current parser is not null.");
+  if (inputFormatType == inputAnnexBHEVC)
+    this->parser.reset(new parserAnnexBHEVC(this));
+  if (inputFormatType == inputAnnexBVVC)
+    this->parser.reset(new parserAnnexBVVC(this));
+  else if (inputFormatType == inputAnnexBAVC)
+    this->parser.reset(new parserAnnexBAVC(this));
+  else if (inputFormatType == inputLibavformat)
+    this->parser.reset(new parserAVFormat(this));
+  this->parser->enableModel();
+  const bool parsingLimitSet = !this->ui.parseEntireFileCheckBox->isChecked();
+  this->parser->setParsingLimitEnabled(parsingLimitSet);
+
+  this->connect(this->parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
+  this->connect(this->parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
+  this->connect(this->parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
 }
 
 void BitstreamAnalysisWidget::hideEvent(QHideEvent *event)
 {
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::hideEvent");
-  stopAndDeleteParser();
+  this->stopAndDeleteParserBlocking();
   QWidget::hideEvent(event);
 }
 
 void BitstreamAnalysisWidget::showEvent(QShowEvent *event)
 {
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::showEvent");
-  restartParsingOfCurrentItem();
+  this->restartParsingOfCurrentItem();
   QWidget::showEvent(event);
 }

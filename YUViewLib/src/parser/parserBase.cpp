@@ -52,6 +52,8 @@ parserBase::parserBase(QObject *parent) : QObject(parent)
   bitrateItemModel.reset(new BitrateItemModel(parent));
   streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
   streamIndexFilter->setSourceModel(packetModel.data());
+  bitrateSortingFilter.reset(new SortBitrateEntriesProxyModel(parent));
+  bitrateSortingFilter->setSourceModel(bitrateItemModel.data());
 }
 
 parserBase::~parserBase()
