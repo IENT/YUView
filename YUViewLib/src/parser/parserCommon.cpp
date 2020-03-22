@@ -38,6 +38,7 @@
 #include <time.h>  
 
 #define PARSERCOMMON_DEBUG_OUTPUT 0
+#define PARSERCOMMON_DEBUG_MODEL 0
 #define PARSERCOMMON_DEBUG_FILTER_OUTPUT 0
 
 #if PARSERCOMMON_DEBUG_OUTPUT && !NDEBUG
@@ -45,6 +46,13 @@
 #define DEBUG_PARSER qDebug
 #else
 #define DEBUG_PARSER(fmt,...) ((void)0)
+#endif
+
+#if PARSERCOMMON_DEBUG_MODEL && !NDEBUG
+#include <QDebug>
+#define DEBUG_MODEL qDebug
+#else
+#define DEBUG_MODEL(fmt,...) ((void)0)
 #endif
 
 #if PARSERCOMMON_DEBUG_FILTER_OUTPUT && !NDEBUG
@@ -332,7 +340,7 @@ bool sub_byte_reader::testReadingBits(int nrBits)
 bool sub_byte_reader::gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
-  if (posInBuffer_bytes >= byteArray.length())
+  if (posInBuffer_bytes >= unsigned(byteArray.length()))
     throw std::out_of_range("Reading out of bounds");
   if (byteArray[posInBuffer_bytes] == (char)0)
     numEmuPrevZeroBytes++;
@@ -1113,6 +1121,7 @@ QVariant BitrateItemModel::headerData(int section, Qt::Orientation orientation, 
 
 QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
 {
+  DEBUG_MODEL("BitrateItemModel::data role %d row %d column %d", role, index.row(), index.column());
   if (role == Qt::DisplayRole)
   {
     if (index.column() == 0)
@@ -1135,7 +1144,7 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
       return this->bitratePerStreamData[0][index.row()].bitrate;
     if (index.column() == 3)
       return this->bitratePerStreamData[0][index.row()].dts;
-    if (index.column() == 3)
+    if (index.column() == 4)
       return this->bitratePerStreamData[0][index.row()].pts;
   }
 
@@ -1192,10 +1201,49 @@ void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dt
   }
 
   DEBUG_PARSER("BitrateItemModel::addBitratePoint streamIndex %d pts %d dts %d rate %d", streamIndex, pts, dts, bitrate);
-  
+
+  // Keep the list sorted
   QMutexLocker locker(&this->bitratePerStreamDataMutex);
-  bitratePerStreamData[streamIndex].append(e);
+  const auto currentSortMode = this->sortMode;
+  auto compareFunctionLessThen = [currentSortMode](const bitrateEntry &a, const bitrateEntry &b)
+  {
+    if (currentSortMode == SortMode::DECODE_ORDER)
+      return a.dts < b.dts;
+    else
+      return b.pts < a.pts;
+  };
+  auto insertIterator = std::upper_bound(bitratePerStreamData[streamIndex].begin(), bitratePerStreamData[streamIndex].end(), e, compareFunctionLessThen);
+  bitratePerStreamData[streamIndex].insert(insertIterator, e);
 }
+
+void BitrateItemModel::setBitrateSortingIndex(int index)
+{
+  if (index == 1)
+  {
+    if (this->sortMode == SortMode::PRESENTATION_ORDER)
+      return;
+    this->sortMode = SortMode::PRESENTATION_ORDER;
+  }
+  else
+  {
+    if (this->sortMode == SortMode::DECODE_ORDER)
+      return;
+    this->sortMode = SortMode::DECODE_ORDER;
+  }
+
+  const auto currentSortMode = this->sortMode;
+  auto compareFunctionLessThen = [currentSortMode](const bitrateEntry &a, const bitrateEntry &b)
+  {
+    if (currentSortMode == SortMode::DECODE_ORDER)
+      return a.dts < b.dts;
+    else
+      return b.pts < a.pts;
+  };
+
+  for (auto list : this->bitratePerStreamData)
+    std::sort(list.begin(), list.end(), compareFunctionLessThen);
+}
+
 
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------
 
@@ -1239,28 +1287,4 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
 
   DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> reject");
   return false;
-}
-
-/// ------------------- SortBitrateEntriesProxyMode -----------------------------
-
-void SortBitrateEntriesProxyModel::setBitrateSortingIndex(int index)
-{
-  if (index == 1)
-  {
-    if (this->sortMode != SortMode::PRESENTATION_ORDER)
-    {
-      this->sortMode = SortMode::PRESENTATION_ORDER;
-      this->sort(3);
-      invalidateFilter();
-    }
-  }
-  else
-  {
-    if (this->sortMode != SortMode::DECODE_ODER)
-    {
-      this->sortMode = SortMode::DECODE_ODER;
-      this->sort(4);
-      invalidateFilter();
-    }
-  }
 }

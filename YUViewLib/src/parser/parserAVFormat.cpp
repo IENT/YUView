@@ -464,7 +464,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
       QString segmentTypeName;
       try
       {  
-        int nrBytesRead = subtitle_dvb::parseDVBSubtitleSegment(segmentID, avpacketData.mid(posInData), itemTree, &segmentTypeName);
+        int nrBytesRead = subtitle_dvb::parseDVBSubtitleSegment(avpacketData.mid(posInData), itemTree, &segmentTypeName);
         DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
         posInData += nrBytesRead;
       }
@@ -487,10 +487,9 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
   }
   else if (packet.getPacketType() == PacketType::SUBTITLE_608)
   {
-    QString segmentTypeName;
     try
     {
-      int nrBytesRead = subtitle_608::parse608SubtitlePacket(avpacketData, itemTree, &segmentTypeName);
+      subtitle_608::parse608SubtitlePacket(avpacketData, itemTree);
     }
     catch (...)
     {

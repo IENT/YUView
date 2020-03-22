@@ -336,6 +336,8 @@ namespace parserCommon
     RangeInt getXRange() { return ptsRange; }
 
     void addBitratePoint(unsigned int streamIndex, int pts, int dts, unsigned int bitrate);
+    void setBitrateSortingIndex(int index);
+
   private:
     // The current number of bitrate points that we show.
     // The background parser will add more data to "bitrateData" and periodically update the model
@@ -348,31 +350,19 @@ namespace parserCommon
       unsigned int bitrate {0};
     };
 
+    enum class SortMode
+    {
+      DECODE_ORDER,
+      PRESENTATION_ORDER
+    };
+    SortMode sortMode { SortMode::DECODE_ORDER };
+
     QMap<unsigned int, QList<bitrateEntry>> bitratePerStreamData;
     mutable QMutex bitratePerStreamDataMutex;
     RangeInt dtsRange;
     RangeInt ptsRange;
 
     double maxYValue {0};
-  };
-
-  class SortBitrateEntriesProxyModel : public QSortFilterProxyModel
-  {
-    Q_OBJECT
-
-  public:
-    SortBitrateEntriesProxyModel(QObject *parent) : QSortFilterProxyModel(parent) {};
-
-    void setBitrateSortingIndex(int index);
-
-  private:
-    enum class SortMode
-    {
-      DECODE_ODER,
-      PRESENTATION_ORDER
-    };
-
-    SortMode sortMode { SortMode::DECODE_ODER };
   };
 }
 

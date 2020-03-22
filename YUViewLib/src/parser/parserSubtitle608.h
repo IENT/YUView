@@ -41,7 +41,7 @@
 namespace subtitle_608
 {
     // Parse the subtitle in an AVPacket
-    int parse608SubtitlePacket(QByteArray data, parserCommon::TreeItem *parent, QString *segmentTypeName);
+    int parse608SubtitlePacket(QByteArray data, parserCommon::TreeItem *parent);
 
     // Parse the 608 subtitle encoded in ATSC CC Data packet format with 3 bytes
     int parse608DataPayloadCCDataPacket(parserCommon::reader_helper &reader, unsigned int &ccData);
