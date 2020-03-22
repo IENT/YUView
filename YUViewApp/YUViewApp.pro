@@ -10,6 +10,7 @@ HEADERS += $$files(src/*.h, false)
 
 INCLUDEPATH += $$top_srcdir/YUViewLib/src
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
+PRE_TARGETDEPS += $$top_builddir/YUViewLib/YUViewLib.lib
 
 unix:!mac {
     isEmpty(PREFIX) {
