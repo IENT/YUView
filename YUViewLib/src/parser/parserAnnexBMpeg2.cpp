@@ -166,6 +166,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
     return false;
 
   bool parsingSuccess = true;
+  bool currentSliceIntra = false;
   if (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER)
   {
     // A sequence header
@@ -190,6 +191,8 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
           pocOffset = lastFramePOC + 1;
       }
       curFramePOC = pocOffset + new_picture_header->temporal_reference;
+      currentSliceIntra = new_picture_header->isIntraPicture();
+      lastPictureHeader = new_picture_header;
     }
 
     specificDescription = parsingSuccess ? " Picture Header" : " Picture Header (Error)";
@@ -258,9 +261,17 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
   const bool isStartOfNewAU = (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER || (nal_mpeg2.nal_unit_type == PICTURE && !lastAUStartBySequenceHeader));
   if (isStartOfNewAU && lastFramePOC >= 0)
   {
-    bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+    BitrateItemModel::bitrateEntry entry;
+    entry.pts = lastFramePOC;
+    entry.dts = counterAU;
+    entry.bitrate = sizeCurrentAU;
+    entry.keyframe = lastAUIntra;
+    entry.frameType = lastPictureHeader->getPictureTypeString();
+    bitrateModel->addBitratePoint(0, entry);
+
     sizeCurrentAU = 0;
     counterAU++;
+    lastAUIntra = currentSliceIntra;
   }
   if (lastFramePOC != curFramePOC)
     lastFramePOC = curFramePOC;
@@ -325,14 +336,16 @@ bool parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray 
   return true;
 }
 
+QStringList picture_coding_type_meaning = QStringList()
+    << "Forbidden" << "intra-coded (I)" << "predictive-coded (P)" << "bidirectionally-predictive-coded (B)" << "dc intra-coded (D)" << "Reserved";
+
 bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
   reader_helper reader(parameterSetData, root, "picture_header");
 
   READBITS(temporal_reference, 10);
-  QStringList picture_coding_type_meaning = QStringList()
-    << "Forbidden" << "intra-coded (I)" << "predictive-coded (P)" << "bidirectionally-predictive-coded (B)" << "dc intra-coded (D)" << "Reserved";
+  
   READBITS_M(picture_coding_type, 3, picture_coding_type_meaning);
   READBITS(vbv_delay, 16);
   if (picture_coding_type == 2 || picture_coding_type == 3)
@@ -361,6 +374,12 @@ bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & 
     }
   }
   return true;
+}
+
+QString parserAnnexBMpeg2::picture_header::getPictureTypeString() const
+{
+  auto i = std::min(int(this->picture_coding_type), picture_coding_type_meaning.count() - 1);
+  return picture_coding_type_meaning[i];
 }
 
 bool parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header(const QByteArray & parameterSetData, TreeItem * root)

@@ -353,6 +353,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
     return false;
 
   bool first_slice_segment_in_pic_flag = false;
+  bool currentSliceIntra = false;
 
   if (nal_hevc.isSlice())
   {
@@ -463,24 +464,16 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
           || nal_hevc.nal_type == BLA_W_LP
           || nal_hevc.nal_type == BLA_N_LP
           || nal_hevc.nal_type == BLA_W_RADL)
-        {
           // set the POC random access since we need to skip the reordered pictures in the case of CRA/CRANT/BLA/BLANT.
           firstPOCRandomAccess = new_slice->PicOrderCntVal;
-        }
         else if (nal_hevc.nal_type == IDR_W_RADL || nal_hevc.nal_type == IDR_N_LP)
-        {
           firstPOCRandomAccess = -INT_MAX; // no need to skip the reordered pictures in IDR, they are decodable.
-        }
         else
-        {
           isRandomAccessSkip = true;
-        }
       }
       // skip the reordered pictures, if necessary
       else if (new_slice->PicOrderCntVal < firstPOCRandomAccess && (nal_hevc.nal_type == RASL_R || nal_hevc.nal_type == RASL_N))
-      {
         isRandomAccessSkip = true;
-      }
 
       if (new_slice->first_slice_segment_in_pic_flag)
       {
@@ -504,11 +497,11 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
       if (nal_hevc.isIRAP())
       {
         if (new_slice->first_slice_segment_in_pic_flag)
-        {
           // This is the first slice of a random access point. Add it to the list.
           nalUnitList.append(new_slice);
-        }
+        currentSliceIntra = true;
       }
+      lastSliceType = new_slice->getSliceTypeString();
     }
 
     specificDescription = parsingSuccess ? QString(" POC %1").arg(POC) : " POC ERR";
@@ -587,10 +580,8 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
       // Remove the sei payload bytes from the data
       sei_data.remove(0, new_sei->payloadSize);
       if (sei_data.length() == 1)
-      {
         // This should be the rspb trailing bits (10000000)
         sei_data.remove(0, 1);
-      }
 
       sei_count++;
     }
@@ -621,9 +612,19 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
   if (auDelimiterDetector.isStartOfNewAU(nal_hevc, first_slice_segment_in_pic_flag))
   {
     DEBUG_HEVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
-    bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+
+    BitrateItemModel::bitrateEntry entry;
+    entry.pts = lastFramePOC;
+    entry.dts = counterAU;
+    entry.bitrate = sizeCurrentAU;
+    entry.keyframe = lastAUIntra;
+    entry.frameType = lastSliceType;
+    bitrateModel->addBitratePoint(0, entry);
+
     sizeCurrentAU = 0;
     counterAU++;
+    lastAUIntra = currentSliceIntra;
+    lastSliceType = "";
   }
   if (lastFramePOC != curFramePOC)
     lastFramePOC = curFramePOC;
@@ -1635,6 +1636,7 @@ parserAnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 }
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
+QStringList slice_type_meaning = QStringList() << "B-Slice" << "P-Slice" << "I-Slice";
 bool parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
 {
   reader_helper reader(sliceHeaderData, root, "slice_segment_header()");
@@ -1672,7 +1674,6 @@ bool parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
     for (unsigned int i=0; i < actPPS->num_extra_slice_header_bits; i++)
       READFLAG_A(slice_reserved_flag, i);
 
-    QStringList slice_type_meaning = QStringList() << "B-Slice" << "P-Slice" << "I-Slice";
     READUEV_M(slice_type, slice_type_meaning); // Max 3 bits read. 0-B 1-P 2-I
     if (actPPS->output_flag_present_flag) 
       READFLAG(pic_output_flag);
@@ -1905,6 +1906,11 @@ bool parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
   }
 
   return true;
+}
+
+QString parserAnnexBHEVC::slice::getSliceTypeString() const
+{
+  return slice_type_meaning[this->slice_type];
 }
 
 QByteArray parserAnnexBHEVC::nal_unit_hevc::getNALHeader() const

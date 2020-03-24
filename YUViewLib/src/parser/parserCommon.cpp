@@ -1114,8 +1114,10 @@ QVariant BitrateItemModel::headerData(int section, Qt::Orientation orientation, 
     if (section == 1)
       return "Average";
     if (section == 2)
-      return "Bitrate";
-  } 
+      return "Bitrate Non-Keyframe";
+    if (section == 3)
+      return "Bitrate Keyframe";
+  }
   return {};
 }
 
@@ -1129,7 +1131,6 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
     QMutexLocker locker(&this->bitratePerStreamDataMutex);
     if (index.column() == 1)
     {
-      
       const int averageRange = 10;
       unsigned averageBitrate = 0;
       unsigned start = qMax(0, index.row() - averageRange);
@@ -1140,12 +1141,27 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
       }
       return averageBitrate / (end - start);
     }
-    if (index.column() == 2)
+    const bool key = this->bitratePerStreamData[0][index.row()].keyframe;
+    if (!key && index.column() == 2)
       return this->bitratePerStreamData[0][index.row()].bitrate;
-    if (index.column() == 3)
-      return this->bitratePerStreamData[0][index.row()].dts;
-    if (index.column() == 4)
-      return this->bitratePerStreamData[0][index.row()].pts;
+    if (key && index.column() == 3)
+      return this->bitratePerStreamData[0][index.row()].bitrate;
+    // if (index.column() == 3)
+    //   return this->bitratePerStreamData[0][index.row()].dts;
+    // if (index.column() == 4)
+    //   return this->bitratePerStreamData[0][index.row()].pts;
+  }
+  else
+  {
+    qDebug("Role %d", role);
+  }
+  qDebug("Test %d", role);
+  
+  if (role == Qt::BackgroundRole)
+  {
+    QMutexLocker locker(&this->bitratePerStreamDataMutex);
+    if (this->bitratePerStreamData[0][index.row()].keyframe)
+      return QBrush(QColor(255, 0, 0));
   }
 
   return {};
@@ -1159,6 +1175,8 @@ QString BitrateItemModel::getItemInfoText(int index)
     text += QString("PTS: %1\n").arg(bitratePerStreamData[0][index].pts);
     text += QString("DTS: %1\n").arg(bitratePerStreamData[0][index].dts);
     text += QString("Bitrate: %1").arg(bitratePerStreamData[0][index].bitrate);
+    if (!bitratePerStreamData[0][index].frameType.isEmpty())
+      text += QString("\nFrame Type: " + bitratePerStreamData[0][index].frameType);
   }
   return text;
 }
@@ -1183,24 +1201,19 @@ void BitrateItemModel::updateNumberModelItems()
   endInsertRows();
 }
 
-void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dts, unsigned int bitrate)
+void BitrateItemModel::addBitratePoint(int streamIndex, bitrateEntry &entry)
 {
-  bitrateEntry e;
-  e.pts = pts;
-  e.dts = dts;
-  e.bitrate = bitrate;
+  dtsRange.min = qMin(dtsRange.min, entry.dts);
+  dtsRange.max = qMax(dtsRange.max, entry.dts);
+  ptsRange.min = qMin(ptsRange.min, entry.pts);
+  ptsRange.max = qMax(ptsRange.max, entry.pts);
 
-  dtsRange.min = qMin(dtsRange.min, dts);
-  dtsRange.max = qMax(dtsRange.max, dts);
-  ptsRange.min = qMin(ptsRange.min, dts);
-  ptsRange.max = qMax(ptsRange.max, dts);
-
-  if (bitrate > maxYValue)
+  if (entry.bitrate > maxYValue)
   {
-    maxYValue = bitrate;
+    maxYValue = entry.bitrate;
   }
 
-  DEBUG_PARSER("BitrateItemModel::addBitratePoint streamIndex %d pts %d dts %d rate %d", streamIndex, pts, dts, bitrate);
+  DEBUG_PARSER("BitrateItemModel::addBitratePoint streamIndex %d pts %d dts %d rate %d keyframe %d", streamIndex, pts, dts, bitrate, keyframe);
 
   // Keep the list sorted
   QMutexLocker locker(&this->bitratePerStreamDataMutex);
@@ -1212,8 +1225,8 @@ void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dt
     else
       return b.pts < a.pts;
   };
-  auto insertIterator = std::upper_bound(bitratePerStreamData[streamIndex].begin(), bitratePerStreamData[streamIndex].end(), e, compareFunctionLessThen);
-  bitratePerStreamData[streamIndex].insert(insertIterator, e);
+  auto insertIterator = std::upper_bound(bitratePerStreamData[streamIndex].begin(), bitratePerStreamData[streamIndex].end(), entry, compareFunctionLessThen);
+  bitratePerStreamData[streamIndex].insert(insertIterator, entry);
 }
 
 void BitrateItemModel::setBitrateSortingIndex(int index)

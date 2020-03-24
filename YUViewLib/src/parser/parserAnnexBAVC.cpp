@@ -200,6 +200,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
   }
 
   bool parsingSuccess = true;
+  bool currentSliceIntra = false;
   if (nal_avc.nal_unit_type == SPS)
   {
     // A sequence parameter set
@@ -283,6 +284,9 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
         // This is the first slice of a random access point. Add it to the list.
         nalUnitList.append(new_slice);
       }
+
+      currentSliceIntra = new_slice->isRandomAccess();
+      lastSliceType = new_slice->getSliceTypeString();
 
       DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Slice POC %d", new_slice->globalPOC);
     }
@@ -381,13 +385,22 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
 
   if (auDelimiterDetector.isStartOfNewAU(nal_avc, curFramePOC))
   {
-    if (counterAU >= 0)
+    if (sizeCurrentAU > 0)
     {
       DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate %d", sizeCurrentAU);
-    bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+
+      BitrateItemModel::bitrateEntry entry;
+      entry.pts = lastFramePOC;
+      entry.dts = counterAU;
+      entry.bitrate = sizeCurrentAU;
+      entry.keyframe = lastAUIntra;
+      entry.frameType = lastSliceType;
+      bitrateModel->addBitratePoint(0, entry);
     }
     sizeCurrentAU = 0;
     counterAU++;
+    lastAUIntra = currentSliceIntra;
+    lastSliceType = "";
   }
   if (lastFramePOC != curFramePOC)
     lastFramePOC = curFramePOC;
@@ -958,13 +971,13 @@ bool parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIte
   return true;
 }
 
+QStringList slice_type_id_meaning = QStringList()
+    << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)" << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)";
 bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
 {
   reader_helper reader(sliceHeaderData, root, "slice_header()");
 
   READUEV(first_mb_in_slice);
-  QStringList slice_type_id_meaning = QStringList() 
-    << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)" << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)";
   READUEV_M(slice_type_id, slice_type_id_meaning);
   slice_type = (slice_type_enum)(slice_type_id % 5);
   slice_type_fixed = slice_type_id > 4;
@@ -1301,6 +1314,11 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
     }
   }
   return true;
+}
+
+QString parserAnnexBAVC::slice_header::getSliceTypeString() const
+{
+  return slice_type_id_meaning[slice_type_id];
 }
 
 bool parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::parse_ref_pic_list_mvc_modification(reader_helper & reader, slice_type_enum slice_type)

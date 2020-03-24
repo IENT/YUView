@@ -150,7 +150,7 @@ void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
 
   this->barMapper = new QVBarModelMapper(this);
   this->barMapper->setFirstBarSetColumn(2);
-  this->barMapper->setLastBarSetColumn(2);
+  this->barMapper->setLastBarSetColumn(3);
   this->barMapper->setRowCount(this->model->rowCount());
   this->barMapper->setSeries(barSeries);
   this->barMapper->setModel(this->model);

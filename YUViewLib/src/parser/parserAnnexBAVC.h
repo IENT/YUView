@@ -312,6 +312,7 @@ protected:
     slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
     bool parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, parserCommon::TreeItem *root);
     bool isRandomAccess() { return (nal_unit_type == CODED_SLICE_IDR || slice_type == SLICE_I); }
+    QString getSliceTypeString() const;
 
     enum slice_type_enum
     {
@@ -564,7 +565,9 @@ protected:
 
   unsigned int sizeCurrentAU {0};
   int lastFramePOC{-1};
-  int counterAU {-1};
+  int counterAU {0};
+  bool lastAUIntra {false};
+  QString lastSliceType;
 };
 
 #endif // PARSERANNEXBAVC_H

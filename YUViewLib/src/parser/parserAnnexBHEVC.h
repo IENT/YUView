@@ -541,6 +541,7 @@ protected:
     slice(const nal_unit_hevc &nal);
     bool parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, parserCommon::TreeItem *root);
     virtual int getPOC() const override { return PicOrderCntVal; }
+    QString getSliceTypeString() const;
 
     bool first_slice_segment_in_pic_flag;
     bool no_output_of_prior_pics_flag;
@@ -790,6 +791,8 @@ protected:
   unsigned int sizeCurrentAU {0};
   int lastFramePOC {-1};
   unsigned int counterAU {0};
+  bool lastAUIntra {false};
+  QString lastSliceType;
 };
 
 #endif //PARSERANNEXBHEVC_H

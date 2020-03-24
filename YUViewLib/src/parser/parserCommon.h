@@ -335,20 +335,22 @@ namespace parserCommon
     void updateNumberModelItems();
     RangeInt getXRange() { return ptsRange; }
 
-    void addBitratePoint(unsigned int streamIndex, int pts, int dts, unsigned int bitrate);
+    struct bitrateEntry
+    {
+      int dts {0};
+      int pts {0};
+      unsigned int bitrate {0};
+      bool keyframe {false};
+      QString frameType;
+    };
+
+    void addBitratePoint(int streamIndex, bitrateEntry &entry);
     void setBitrateSortingIndex(int index);
 
   private:
     // The current number of bitrate points that we show.
     // The background parser will add more data to "bitrateData" and periodically update the model
     unsigned int nrRatePoints {0};
-
-    struct bitrateEntry
-    {
-      int dts {0};
-      int pts {0};
-      unsigned int bitrate {0};
-    };
 
     enum class SortMode
     {
