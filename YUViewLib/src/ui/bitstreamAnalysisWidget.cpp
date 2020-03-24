@@ -108,7 +108,12 @@ void BitstreamAnalysisWidget::showOnlyStreamComboBoxIndexChanged(int index)
 void BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged(int index)
 {
   if (this->parser)
+  {
     this->parser->setBitrateSortingIndex(index);
+    // Note: This was the only way I found to update the bar graph. None of the emit signal ways worked.
+    this->ui.bitrateBarChart->setModel(nullptr);
+    this->ui.bitrateBarChart->setModel(this->parser->getBitrateItemModel());
+  }
 }
 
 void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)

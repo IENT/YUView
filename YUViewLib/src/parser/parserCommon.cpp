@@ -1237,11 +1237,18 @@ void BitrateItemModel::setBitrateSortingIndex(int index)
     if (currentSortMode == SortMode::DECODE_ORDER)
       return a.dts < b.dts;
     else
-      return b.pts < a.pts;
+      return a.pts < b.pts;
   };
 
-  for (auto list : this->bitratePerStreamData)
+  // Note: None of these signals really update the bar chart. The way that worked is to set a null Model and then set the model again (see BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged)
+  //emit QAbstractItemModel::layoutAboutToBeChanged();
+  for (auto &list : this->bitratePerStreamData)
     std::sort(list.begin(), list.end(), compareFunctionLessThen);
+  //emit QAbstractItemModel::layoutChanged();
+
+  // auto topLeft = this->index(0, 0);
+  // auto bottomRight = this->index(this->rowCount(), this->columnCount());
+  // emit QAbstractItemModel::dataChanged(topLeft, bottomRight);
 }
 
 

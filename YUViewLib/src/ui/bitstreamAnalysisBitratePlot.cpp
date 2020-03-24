@@ -193,7 +193,7 @@ void BitrateBarChart::tooltip(bool status, int index, QBarSet *barset)
 
   if (status)
   {
-    if (!this->model)
+    if (this->model)
     {
       QString itemInfoText = this->model->getItemInfoText(index);
       this->currentTooltip.setTextAndAnchor(itemInfoText, QPointF(double(index), 3));
