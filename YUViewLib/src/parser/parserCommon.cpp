@@ -35,7 +35,7 @@
 #include <QString>
 #include <assert.h>
 #include <stdlib.h>
-#include <time.h>  
+#include <time.h>
 
 #define PARSERCOMMON_DEBUG_OUTPUT 0
 #define PARSERCOMMON_DEBUG_MODEL 0
@@ -1151,11 +1151,6 @@ QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
     // if (index.column() == 4)
     //   return this->bitratePerStreamData[0][index.row()].pts;
   }
-  else
-  {
-    qDebug("Role %d", role);
-  }
-  qDebug("Test %d", role);
   
   if (role == Qt::BackgroundRole)
   {
