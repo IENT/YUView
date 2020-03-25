@@ -393,18 +393,21 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
       entry.pts = lastFramePOC;
       entry.dts = counterAU;
       entry.bitrate = sizeCurrentAU;
-      entry.keyframe = lastAUIntra;
+      entry.keyframe = currentAUAllSlicesIntra;
       entry.frameType = lastSliceType;
       bitrateModel->addBitratePoint(0, entry);
     }
     sizeCurrentAU = 0;
     counterAU++;
-    lastAUIntra = currentSliceIntra;
+    currentAUAllSlicesIntra = true;
     lastSliceType = "";
   }
   if (lastFramePOC != curFramePOC)
     lastFramePOC = curFramePOC;
   sizeCurrentAU += data.size();
+
+  if (nal_avc.isSlice() && !currentSliceIntra)
+    currentAUAllSlicesIntra = false;
 
   if (nalRoot)
   {

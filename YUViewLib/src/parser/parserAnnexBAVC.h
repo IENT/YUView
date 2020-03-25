@@ -566,7 +566,7 @@ protected:
   unsigned int sizeCurrentAU {0};
   int lastFramePOC{-1};
   int counterAU {0};
-  bool lastAUIntra {false};
+  bool currentAUAllSlicesIntra {true};
   QString lastSliceType;
 };
 
