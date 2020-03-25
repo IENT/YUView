@@ -791,8 +791,8 @@ protected:
   unsigned int sizeCurrentAU {0};
   int lastFramePOC {-1};
   unsigned int counterAU {0};
-  bool lastAUIntra {false};
-  QString lastSliceType;
+  bool currentAUAllSlicesIntra {true};
+  QString currentAUAllSliceTypes;
 };
 
 #endif //PARSERANNEXBHEVC_H
