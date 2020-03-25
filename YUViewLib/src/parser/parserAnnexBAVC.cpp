@@ -201,6 +201,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
 
   bool parsingSuccess = true;
   bool currentSliceIntra = false;
+  QString currentSliceType;
   if (nal_avc.nal_unit_type == SPS)
   {
     // A sequence parameter set
@@ -286,7 +287,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
       }
 
       currentSliceIntra = new_slice->isRandomAccess();
-      lastSliceType = new_slice->getSliceTypeString();
+      currentSliceType = new_slice->getSliceTypeString();
 
       DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Slice POC %d", new_slice->globalPOC);
     }
@@ -394,20 +395,24 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
       entry.dts = counterAU;
       entry.bitrate = sizeCurrentAU;
       entry.keyframe = currentAUAllSlicesIntra;
-      entry.frameType = lastSliceType;
+      entry.frameType = currentAUAllSliceTypes;
       bitrateModel->addBitratePoint(0, entry);
     }
     sizeCurrentAU = 0;
     counterAU++;
     currentAUAllSlicesIntra = true;
-    lastSliceType = "";
+    currentAUAllSliceTypes = "";
   }
   if (lastFramePOC != curFramePOC)
     lastFramePOC = curFramePOC;
   sizeCurrentAU += data.size();
 
-  if (nal_avc.isSlice() && !currentSliceIntra)
-    currentAUAllSlicesIntra = false;
+  if (nal_avc.isSlice())
+  {
+    if (!currentSliceIntra)
+      currentAUAllSlicesIntra = false;
+    currentAUAllSliceTypes += currentSliceType + " ";
+  }
 
   if (nalRoot)
   {

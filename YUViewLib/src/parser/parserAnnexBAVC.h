@@ -567,7 +567,7 @@ protected:
   int lastFramePOC{-1};
   int counterAU {0};
   bool currentAUAllSlicesIntra {true};
-  QString lastSliceType;
+  QString currentAUAllSliceTypes;
 };
 
 #endif // PARSERANNEXBAVC_H
