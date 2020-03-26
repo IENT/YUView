@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="YUView" Language="1033" Version="2.5" Manufacturer="IENT RWTH Aachen University" UpgradeCode="07fd1dd5-9b1e-453d-974b-4ff7919a49c7">
+  <Product Id="*" Name="YUView" Language="1033" Version="2.6" Manufacturer="IENT RWTH Aachen University" UpgradeCode="07fd1dd5-9b1e-453d-974b-4ff7919a49c7">
     <Package InstallerVersion="301" Compressed="yes" Platform="x64" InstallScope="perMachine" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
