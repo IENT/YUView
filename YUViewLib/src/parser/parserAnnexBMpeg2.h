@@ -233,8 +233,9 @@ private:
   int curFramePOC{ -1 };
   int lastFramePOC{ -1 };
   unsigned int counterAU{ 0 };
-  bool lastAUIntra{ false };
   bool lastAUStartBySequenceHeader{ false };
+  bool currentAUAllSlicesIntra {true};
+  QString currentAUAllSliceTypes;
   QSharedPointer<picture_header> lastPictureHeader;
 };
 
