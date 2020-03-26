@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ class BitstreamAnalysisWidget : public QWidget
 
 public:
   BitstreamAnalysisWidget(QWidget *parent = nullptr);
-  ~BitstreamAnalysisWidget() { stopAndDeleteParser(); }
+  ~BitstreamAnalysisWidget() { stopAndDeleteParserBlocking(); }
 
 public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
@@ -59,9 +59,10 @@ private slots:
   void updateStreamInfo();
   void backgroundParsingDone(QString error);
 
-  void showOnlyStreamComboBoxItemChanged(int index);
+  void showOnlyStreamComboBoxIndexChanged(int index);
   void colorCodeStreamsCheckBoxToggled(bool state) { this->parser->setStreamColorCoding(state); }
-  void parseEntireBitstreamCheckBoxToggled(bool state) { Q_UNUSED(state); restartParsingOfCurrentItem(); }
+  void parseEntireBitstreamCheckBoxToggled(bool state) { Q_UNUSED(state); this->restartParsingOfCurrentItem(); }
+  void bitratePlotOrderComboBoxIndexChanged(int index);
 
 protected:
   void hideEvent(QHideEvent *event) override;
@@ -74,15 +75,14 @@ private:
   // -1: No Item selected, 0-99: parsing in progress, 100: parsing done
   void updateParsingStatusText(int progressValue);
 
-  // Tell the parser to stop and block until it stops. Then delete the parser.
-  void stopAndDeleteParser();
+  void stopAndDeleteParserBlocking();
 
   void restartParsingOfCurrentItem();
+  void createAndConnectNewParser(YUView::inputFormat inputFormatType);
 
   QScopedPointer<parserBase> parser;
   QFuture<void> backgroundParserFuture;
   void backgroundParsingFunction();
-  QString compressedFilePath;
 
   QPointer<playlistItemCompressedVideo> currentCompressedVideo;
 

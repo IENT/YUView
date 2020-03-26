@@ -123,6 +123,8 @@ private:
   {
     picture_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
     bool parse_picture_header(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool isIntraPicture() const { return picture_coding_type == 1; };
+    QString getPictureTypeString() const;
 
     unsigned int temporal_reference;
     unsigned int picture_coding_type;
@@ -232,6 +234,9 @@ private:
   int lastFramePOC{ -1 };
   unsigned int counterAU{ 0 };
   bool lastAUStartBySequenceHeader{ false };
+  bool currentAUAllSlicesIntra {true};
+  QString currentAUAllSliceTypes;
+  QSharedPointer<picture_header> lastPictureHeader;
 };
 
 #endif // PARSERANNEXBMPEG2_H

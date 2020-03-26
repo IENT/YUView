@@ -35,9 +35,10 @@
 #include <QString>
 #include <assert.h>
 #include <stdlib.h>
-#include <time.h>  
+#include <time.h>
 
 #define PARSERCOMMON_DEBUG_OUTPUT 0
+#define PARSERCOMMON_DEBUG_MODEL 0
 #define PARSERCOMMON_DEBUG_FILTER_OUTPUT 0
 
 #if PARSERCOMMON_DEBUG_OUTPUT && !NDEBUG
@@ -45,6 +46,13 @@
 #define DEBUG_PARSER qDebug
 #else
 #define DEBUG_PARSER(fmt,...) ((void)0)
+#endif
+
+#if PARSERCOMMON_DEBUG_MODEL && !NDEBUG
+#include <QDebug>
+#define DEBUG_MODEL qDebug
+#else
+#define DEBUG_MODEL(fmt,...) ((void)0)
 #endif
 
 #if PARSERCOMMON_DEBUG_FILTER_OUTPUT && !NDEBUG
@@ -332,7 +340,7 @@ bool sub_byte_reader::testReadingBits(int nrBits)
 bool sub_byte_reader::gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
-  if (posInBuffer_bytes >= byteArray.length())
+  if (posInBuffer_bytes >= unsigned(byteArray.length()))
     throw std::out_of_range("Reading out of bounds");
   if (byteArray[posInBuffer_bytes] == (char)0)
     numEmuPrevZeroBytes++;
@@ -1087,7 +1095,13 @@ int BitrateItemModel::rowCount(const QModelIndex &parent) const
 int BitrateItemModel::columnCount(const QModelIndex &parent) const
 { 
   Q_UNUSED(parent);
-  return 2 + 1;
+  /* 0: The index (the order the values were added)
+   * 1: The average value
+   * 2: Bitrate
+   * 3: dts
+   * 4: pts
+   */
+  return 5;
 }
 
 QVariant BitrateItemModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -1100,41 +1114,52 @@ QVariant BitrateItemModel::headerData(int section, Qt::Orientation orientation, 
     if (section == 1)
       return "Average";
     if (section == 2)
-      return "Bitrate";
-  } 
+      return "Bitrate Non-Keyframe";
+    if (section == 3)
+      return "Bitrate Keyframe";
+  }
   return {};
 }
 
 QVariant BitrateItemModel::data(const QModelIndex &index, int role) const
 {
+  DEBUG_MODEL("BitrateItemModel::data role %d row %d column %d", role, index.row(), index.column());
   if (role == Qt::DisplayRole)
   {
-    int retVal = 0;
     if (index.column() == 0)
-      retVal = index.row();
+      return index.row();
+    QMutexLocker locker(&this->bitratePerStreamDataMutex);
     if (index.column() == 1)
     {
-      QMutexLocker locker(&this->bitratePerStreamDataMutex);
       const int averageRange = 10;
       unsigned averageBitrate = 0;
       unsigned start = qMax(0, index.row() - averageRange);
       unsigned end = qMin(index.row() + averageRange, bitratePerStreamData[0].size());
       for (unsigned i = start; i < end; i++)
       {
-        averageBitrate += bitratePerStreamData[0][i].bitrate;
+        averageBitrate += this->bitratePerStreamData[0][i].bitrate;
       }
-      retVal = averageBitrate / (end - start);
+      return averageBitrate / (end - start);
     }
-    if (index.column() == 2)
-    {
-      QMutexLocker locker(&this->bitratePerStreamDataMutex);
-      retVal = bitratePerStreamData[0][index.row()].bitrate;
-    }
-
-    return retVal;
+    const bool key = this->bitratePerStreamData[0][index.row()].keyframe;
+    if (!key && index.column() == 2)
+      return this->bitratePerStreamData[0][index.row()].bitrate;
+    if (key && index.column() == 3)
+      return this->bitratePerStreamData[0][index.row()].bitrate;
+    // if (index.column() == 3)
+    //   return this->bitratePerStreamData[0][index.row()].dts;
+    // if (index.column() == 4)
+    //   return this->bitratePerStreamData[0][index.row()].pts;
+  }
+  
+  if (role == Qt::BackgroundRole)
+  {
+    QMutexLocker locker(&this->bitratePerStreamDataMutex);
+    if (this->bitratePerStreamData[0][index.row()].keyframe)
+      return QBrush(QColor(255, 0, 0));
   }
 
-  return QVariant();
+  return {};
 }
 
 QString BitrateItemModel::getItemInfoText(int index)
@@ -1145,6 +1170,8 @@ QString BitrateItemModel::getItemInfoText(int index)
     text += QString("PTS: %1\n").arg(bitratePerStreamData[0][index].pts);
     text += QString("DTS: %1\n").arg(bitratePerStreamData[0][index].dts);
     text += QString("Bitrate: %1").arg(bitratePerStreamData[0][index].bitrate);
+    if (!bitratePerStreamData[0][index].frameType.isEmpty())
+      text += QString("\nFrame Type: " + bitratePerStreamData[0][index].frameType);
   }
   return text;
 }
@@ -1169,57 +1196,77 @@ void BitrateItemModel::updateNumberModelItems()
   endInsertRows();
 }
 
-void BitrateItemModel::addBitratePoint(unsigned int streamIndex, int pts, int dts, unsigned int bitrate)
+void BitrateItemModel::addBitratePoint(int streamIndex, bitrateEntry &entry)
 {
-  bitrateEntry e;
-  e.pts = pts;
-  e.dts = dts;
-  e.bitrate = bitrate;
+  dtsRange.min = qMin(dtsRange.min, entry.dts);
+  dtsRange.max = qMax(dtsRange.max, entry.dts);
+  ptsRange.min = qMin(ptsRange.min, entry.pts);
+  ptsRange.max = qMax(ptsRange.max, entry.pts);
 
-  dtsRange.min = qMin(dtsRange.min, dts);
-  dtsRange.max = qMax(dtsRange.max, dts);
-  ptsRange.min = qMin(ptsRange.min, dts);
-  ptsRange.max = qMax(ptsRange.max, dts);
-
-  if (bitrate > maxYValue)
+  if (entry.bitrate > maxYValue)
   {
-    maxYValue = bitrate;
+    maxYValue = entry.bitrate;
   }
 
-  DEBUG_PARSER("addBitratePoint streamIndex %d pts %d dts %d rate %d", streamIndex, pts, dts, bitrate);
-  
+  DEBUG_PARSER("BitrateItemModel::addBitratePoint streamIndex %d pts %d dts %d rate %d keyframe %d", streamIndex, pts, dts, bitrate, keyframe);
+
   // Keep the list sorted
   QMutexLocker locker(&this->bitratePerStreamDataMutex);
-  if (bitratePerStreamData[streamIndex].isEmpty())
+  const auto currentSortMode = this->sortMode;
+  auto compareFunctionLessThen = [currentSortMode](const bitrateEntry &a, const bitrateEntry &b)
   {
-    bitratePerStreamData[streamIndex].append(e);
+    if (currentSortMode == SortMode::DECODE_ORDER)
+      return a.dts < b.dts;
+    else
+      return b.pts < a.pts;
+  };
+  auto insertIterator = std::upper_bound(bitratePerStreamData[streamIndex].begin(), bitratePerStreamData[streamIndex].end(), entry, compareFunctionLessThen);
+  bitratePerStreamData[streamIndex].insert(insertIterator, entry);
+}
+
+void BitrateItemModel::setBitrateSortingIndex(int index)
+{
+  if (index == 1)
+  {
+    if (this->sortMode == SortMode::PRESENTATION_ORDER)
+      return;
+    this->sortMode = SortMode::PRESENTATION_ORDER;
   }
   else
   {
-    for (int i = 0; i < bitratePerStreamData[streamIndex].size(); i++)
-    {
-      const bool hasNextItem = (i < bitratePerStreamData[streamIndex].size() - 1);
-      if (hasNextItem)
-      {
-        if (e.pts > bitratePerStreamData[streamIndex][i].pts && e.pts < bitratePerStreamData[streamIndex][i + 1].pts)
-        {
-          bitratePerStreamData[streamIndex].insert(i + 1, e);
-          return;
-        }
-      }
-      else
-      {
-        if (e.pts > bitratePerStreamData[streamIndex][i].pts)
-          bitratePerStreamData[streamIndex].append(e);
-        else
-          bitratePerStreamData[streamIndex].insert(i, e);
-        return;
-      }
-    }
+    if (this->sortMode == SortMode::DECODE_ORDER)
+      return;
+    this->sortMode = SortMode::DECODE_ORDER;
   }
+
+  const auto currentSortMode = this->sortMode;
+  auto compareFunctionLessThen = [currentSortMode](const bitrateEntry &a, const bitrateEntry &b)
+  {
+    if (currentSortMode == SortMode::DECODE_ORDER)
+      return a.dts < b.dts;
+    else
+      return a.pts < b.pts;
+  };
+
+  // Note: None of these signals really update the bar chart. The way that worked is to set a null Model and then set the model again (see BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged)
+  //emit QAbstractItemModel::layoutAboutToBeChanged();
+  for (auto &list : this->bitratePerStreamData)
+    std::sort(list.begin(), list.end(), compareFunctionLessThen);
+  //emit QAbstractItemModel::layoutChanged();
+
+  // auto topLeft = this->index(0, 0);
+  // auto bottomRight = this->index(this->rowCount(), this->columnCount());
+  // emit QAbstractItemModel::dataChanged(topLeft, bottomRight);
 }
 
+
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------
+
+void FilterByStreamIndexProxyModel::setFilterStreamIndex(int idx)
+{
+  this->streamIndex = idx;
+  invalidateFilter();
+}
 
 bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex &sourceParent) const
 {
@@ -1255,10 +1302,4 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
 
   DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow item null -> reject");
   return false;
-}
-
-void FilterByStreamIndexProxyModel::setFilterStreamIndex(int idx)
-{
-  streamIndex = idx;
-  invalidateFilter();
 }

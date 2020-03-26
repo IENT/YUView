@@ -40,7 +40,7 @@
 
 namespace subtitle_dvb
 {
-    int parseDVBSubtitleSegment(int segmentID, QByteArray data, parserCommon::TreeItem *parent, QString *segmentTypeName);
+    int parseDVBSubtitleSegment(QByteArray data, parserCommon::TreeItem *parent, QString *segmentTypeName);
 }
 
 #endif // PARSERSUBTITLEDVB_H

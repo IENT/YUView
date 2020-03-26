@@ -36,6 +36,14 @@
 
 using namespace parserCommon;
 
+#define PARSER_MPEG2_DEBUG_OUTPUT 0
+#if PARSER_MPEG2_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_MPEG2 qDebug
+#else
+#define DEBUG_MPEG2(fmt,...) ((void)0)
+#endif
+
 const QStringList parserAnnexBMpeg2::nal_unit_type_toString = QStringList()
   << "UNSPECIFIED" << "PICTURE" << "SLICE" << "USER_DATA" << "SEQUENCE_HEADER" << "SEQUENCE_ERROR" << "EXTENSION_START" << "SEQUENCE_END"
   << "GROUP_START" << "SYSTEM_START_CODE" << "RESERVED";
@@ -166,6 +174,8 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
     return false;
 
   bool parsingSuccess = true;
+  bool currentSliceIntra = false;
+  QString currentSliceType;
   if (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER)
   {
     // A sequence header
@@ -177,6 +187,8 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
       *nalTypeName = parsingSuccess ? " SeqHeader" : " SeqHeader(Err)";
     if (parsingSuccess && !first_sequence_header)
       first_sequence_header = new_sequence_header;
+
+    DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Sequence header");
   }
   else if (nal_mpeg2.nal_unit_type == PICTURE)
   {
@@ -190,6 +202,11 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
           pocOffset = lastFramePOC + 1;
       }
       curFramePOC = pocOffset + new_picture_header->temporal_reference;
+      currentSliceIntra = new_picture_header->isIntraPicture();
+      lastPictureHeader = new_picture_header;
+      currentSliceType = new_picture_header->getPictureTypeString();
+      
+      DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Picture");
     }
 
     specificDescription = parsingSuccess ? " Picture Header" : " Picture Header (Error)";
@@ -204,6 +221,8 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
     specificDescription = parsingSuccess ? " Group of Pictures" : " Group of Pictures (Error)";
     if (nalTypeName)
       *nalTypeName = parsingSuccess ? " PicGroup" : " PicGroup(Err)";
+
+    DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Group Start");
   }
   else if (nal_mpeg2.nal_unit_type == USER_DATA)
   {
@@ -213,6 +232,8 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
     specificDescription = parsingSuccess ? " User Data" : " User Data (Error)";
     if (nalTypeName)
       *nalTypeName = parsingSuccess ? " UserData" : " UserData(Err)";
+
+    DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit User Data");
   }
   else if (nal_mpeg2.nal_unit_type == EXTENSION_START)
   {
@@ -237,6 +258,8 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
       
       if (!first_sequence_extension)
         first_sequence_extension = new_sequence_extension;
+
+      DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Extension Start");
     }
     else if (new_extension->extension_type == EXT_PICTURE_CODING)
     {
@@ -246,6 +269,8 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
       specificDescription = parsingSuccess ? " Picture Coding Extension" : " Picture Coding Extension (Error)";
       if (nalTypeName)
         *nalTypeName = parsingSuccess ? " PicCodExt" : " PicCodExt(Err)";
+
+      DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Picture Coding Extension");
     }
     else
     {
@@ -258,9 +283,20 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
   const bool isStartOfNewAU = (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER || (nal_mpeg2.nal_unit_type == PICTURE && !lastAUStartBySequenceHeader));
   if (isStartOfNewAU && lastFramePOC >= 0)
   {
-    bitrateModel->addBitratePoint(0, lastFramePOC, counterAU, sizeCurrentAU);
+    DEBUG_MPEG2("Start of new AU. Adding bitrate %d for last AU (#%d).", sizeCurrentAU, counterAU);
+
+    BitrateItemModel::bitrateEntry entry;
+    entry.pts = lastFramePOC;
+    entry.dts = counterAU;
+    entry.bitrate = sizeCurrentAU;
+    entry.keyframe = currentAUAllSlicesIntra;
+    entry.frameType = currentAUAllSliceTypes;
+    bitrateModel->addBitratePoint(0, entry);
+
     sizeCurrentAU = 0;
     counterAU++;
+    currentAUAllSlicesIntra = true;
+    currentAUAllSliceTypes = "";
   }
   if (lastFramePOC != curFramePOC)
     lastFramePOC = curFramePOC;
@@ -269,6 +305,13 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
     lastAUStartBySequenceHeader = false;
   if (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER)
     lastAUStartBySequenceHeader = true;
+
+  if (nal_mpeg2.nal_unit_type == PICTURE)
+  {
+    if (!currentSliceIntra)
+      currentAUAllSlicesIntra = false;
+    currentAUAllSliceTypes += currentSliceType + " ";
+  }
   
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
@@ -325,14 +368,16 @@ bool parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray 
   return true;
 }
 
+QStringList picture_coding_type_meaning = QStringList()
+    << "Forbidden" << "intra-coded (I)" << "predictive-coded (P)" << "bidirectionally-predictive-coded (B)" << "dc intra-coded (D)" << "Reserved";
+
 bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
   reader_helper reader(parameterSetData, root, "picture_header");
 
   READBITS(temporal_reference, 10);
-  QStringList picture_coding_type_meaning = QStringList()
-    << "Forbidden" << "intra-coded (I)" << "predictive-coded (P)" << "bidirectionally-predictive-coded (B)" << "dc intra-coded (D)" << "Reserved";
+  
   READBITS_M(picture_coding_type, 3, picture_coding_type_meaning);
   READBITS(vbv_delay, 16);
   if (picture_coding_type == 2 || picture_coding_type == 3)
@@ -361,6 +406,12 @@ bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & 
     }
   }
   return true;
+}
+
+QString parserAnnexBMpeg2::picture_header::getPictureTypeString() const
+{
+  auto i = std::min(int(this->picture_coding_type), picture_coding_type_meaning.count() - 1);
+  return picture_coding_type_meaning[i];
 }
 
 bool parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header(const QByteArray & parameterSetData, TreeItem * root)
