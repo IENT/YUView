@@ -75,6 +75,7 @@ public:
   void setStreamColorCoding(bool colorCoding) { packetModel->setUseColorCoding(colorCoding); }
   void setFilterStreamIndex(int streamIndex) { streamIndexFilter->setFilterStreamIndex(streamIndex); }
   void setParsingLimitEnabled(bool limitEnabled) { parsingLimitEnabled = limitEnabled; }
+  void setBitrateSortingIndex(int sortingIndex) { bitrateItemModel->setBitrateSortingIndex(sortingIndex); }
 
 signals:
   // Some data was updated and the models can be updated to reflec this. This is called regularly

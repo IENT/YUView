@@ -89,9 +89,7 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
   Q_UNUSED(nalTypeName);
   
   if (nalID == -1 && data.isEmpty())
-  {
     return false;
-  }
 
   // Skip the NAL unit header
   int skip = 0;
@@ -125,7 +123,13 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
   if (nal_vvc.isAUDelimiter())
   {
     DEBUG_VVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
-    bitrateModel->addBitratePoint(0, counterAU, counterAU, sizeCurrentAU);
+    
+    BitrateItemModel::bitrateEntry entry;
+    entry.pts = counterAU;
+    entry.dts = counterAU;  // TODO: Not true. We need to parse the VVC header data
+    entry.bitrate = sizeCurrentAU;
+    entry.keyframe = false; // TODO: Also not correct. We need parsing.
+    bitrateModel->addBitratePoint(0, entry);
 
     if (counterAU > 0)
     {

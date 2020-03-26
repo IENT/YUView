@@ -130,9 +130,9 @@ QString getCCDataBytesMeaning(unsigned int byte1, unsigned int byte2)
   {
     int nrSpaces = byte2 - 0x20;
     return QString("Tab offsets (spacing) - %1 spaces").arg(nrSpaces);
-  } 
-  else 
-    return "Non data code";
+  }
+  
+  return "Non data code";
 }
 
 QString getCCDataPacketMeaning(unsigned int cc_packet_data)
@@ -172,7 +172,7 @@ QString getCCDataPacketMeaning(unsigned int cc_packet_data)
   return getCCDataBytesMeaning(byte1, byte2);
 }
 
-int subtitle_608::parse608SubtitlePacket(QByteArray data, parserCommon::TreeItem *parent, QString *segmentTypeName)
+int subtitle_608::parse608SubtitlePacket(QByteArray data, parserCommon::TreeItem *parent)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet. 

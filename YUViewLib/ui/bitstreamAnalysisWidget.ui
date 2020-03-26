@@ -116,7 +116,38 @@
       <attribute name="title">
        <string>Bitrate Plot</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
+      <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,1">
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QComboBox" name="bitratePlotOrderComboBox">
+           <item>
+            <property name="text">
+             <string>Decoding Order</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Display Order</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
        <item>
         <widget class="BitrateBarChart" name="bitrateBarChart" native="true"/>
        </item>

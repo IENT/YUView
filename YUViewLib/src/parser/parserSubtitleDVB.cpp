@@ -687,7 +687,7 @@ bool parseAlternativeCLUTSegment(reader_helper &reader, unsigned int segment_len
     return true;
 }
 
-int subtitle_dvb::parseDVBSubtitleSegment(int segmentID, QByteArray data, parserCommon::TreeItem *parent, QString *segmentTypeName)
+int subtitle_dvb::parseDVBSubtitleSegment(QByteArray data, parserCommon::TreeItem *parent, QString *segmentTypeName)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet. 
