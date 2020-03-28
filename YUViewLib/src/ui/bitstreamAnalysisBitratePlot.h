@@ -35,33 +35,9 @@
 #include "parser/parserCommon.h"
 
 #include <QtWidgets/QGraphicsItem>
-#include <QtCharts/QBarSet>
-#include <QtCharts/QChart>
-#include <QtCharts/QChartView>
 #include <QtCore/QPointer>
-#include <QtCharts/QVBarModelMapper>
-#include <QtCharts/QVXYModelMapper>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QScrollBar>
-#include <QtCharts/QValueAxis>
-
-class BitrateBarChartCallout : public QGraphicsItem
-{
-public:
-  BitrateBarChartCallout();
-  void setChart(QtCharts::QChart *chart);
-  QRectF boundingRect() const override;
-
-  void setTextAndAnchor(const QString &text, QPointF anchor);
-  void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
-
-private:
-  QString text;
-  QRectF textRect;
-  QRectF rect;
-  QPointF anchor;
-  QtCharts::QChart *chart{ nullptr };
-};
 
 class BitrateBarChart : public QWidget
 {
@@ -71,31 +47,39 @@ public:
   BitrateBarChart(QWidget *parent = 0);
   void setModel(parserCommon::BitrateItemModel *model);
 
-private slots:
-  void onScrollBarValueChanged(int value);
-  void tooltip(bool status, int index, QtCharts::QBarSet *barset);
-  void onRowsInserted(const QModelIndex &parent, int first, int last);
-
 private:
-  QPointer<QtCharts::QChartView> chartView;
-  QPointer<QScrollBar> scrollBar;
-
-  QPointer<QtCharts::QVBarModelMapper> barMapper;
-  QPointer<QtCharts::QVXYModelMapper> lineModelMapper;
-  QPointer<QtCharts::QValueAxis> axisX;
-  QPointer<QtCharts::QValueAxis> axisY;
-  
-  QtCharts::QChart chart;
-
   QPointer<parserCommon::BitrateItemModel> model;
 
-  BitrateBarChartCallout currentTooltip;
-
 protected:
+
+  // Override some events from the widget
+  void paintEvent(QPaintEvent *event) override;
+  void mouseMoveEvent(QMouseEvent *event) override { Q_UNUSED(event); }
+  void mousePressEvent(QMouseEvent *event) override { Q_UNUSED(event); }
+  void mouseReleaseEvent(QMouseEvent *event) override { Q_UNUSED(event); }
+  void wheelEvent (QWheelEvent *event) override { Q_UNUSED(event); }
+  void mouseDoubleClickEvent(QMouseEvent *event) override { Q_UNUSED(event); }
+  void keyPressEvent(QKeyEvent *event) override { Q_UNUSED(event); }
   void resizeEvent(QResizeEvent *event) override;
 
-  void updateAxis();
-  void updateScrollBarRange();
+private:
+  void drawXAxis(QPainter &painter);
+  void drawYAxis(QPainter &painter);
+
+  struct AxisProperties
+  {
+    double minValue {0};
+    double maxValue {1};
+    bool showDoubleValues {true};
+
+    // Updated when drawing the axis. For x-axis x values, for y-axis y values.
+    int pixelValueOfMinValue {-1};
+    int pixelValueOfMaxValue {-1};
+  };
+  AxisProperties propertiesAxisX;
+  AxisProperties propertiesAxisY;
+
+  static QList<double> getAxisValuesToShow(AxisProperties &properties);
 
   double barsPerWidthOf100Pixels{ 8.0 };
   double maxYValue{ 0 };

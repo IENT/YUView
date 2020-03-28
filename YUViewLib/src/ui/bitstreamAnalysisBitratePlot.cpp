@@ -33,233 +33,158 @@
 #include "bitstreamAnalysisBitratePlot.h"
 
 #include <QtWidgets/QVBoxLayout>
-#include <QtCharts/QStackedBarSeries>
-#include <QtCharts/QLineSeries>
+#include <QPainter>
 
-QT_CHARTS_USE_NAMESPACE
-
-const int scrollBarScale = 10;
-
-BitrateBarChartCallout::BitrateBarChartCallout() :
-  QGraphicsItem()
-{
-}
-
-void BitrateBarChartCallout::setChart(QtCharts::QChart *chart)
-{
-  this->setParentItem(chart);
-  this->chart = chart;
-}
-
-QRectF BitrateBarChartCallout::boundingRect() const
-{
-  if (this->parentItem() == nullptr || this->chart == nullptr)
-    return {};
-
-  QPointF anchor = mapFromParent(this->chart->mapToPosition(this->anchor));
-  QRectF rect;
-  rect.setLeft(qMin(this->rect.left(), anchor.x()));
-  rect.setRight(qMax(this->rect.right(), anchor.x()));
-  rect.setTop(qMin(this->rect.top(), anchor.y()));
-  rect.setBottom(qMax(this->rect.bottom(), anchor.y()));
-  return rect;
-}
-
-void BitrateBarChartCallout::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
-{
-  Q_UNUSED(option)
-  Q_UNUSED(widget)
-
-  painter->setBrush(QColor(255, 255, 255));
-  painter->drawRect(this->rect);
-  painter->drawText(this->textRect, this->text);
-}
-
-void BitrateBarChartCallout::setTextAndAnchor(const QString &text, QPointF anchor)
-{
-  this->text = text;
-  QFont defaultFont;
-  QFontMetrics metrics(defaultFont);
-  this->textRect = metrics.boundingRect(QRect(0, 0, 150, 150), Qt::AlignLeft, this->text);
-  prepareGeometryChange();
-  this->rect = this->textRect.adjusted(-5, -5, 5, 5);
-  this->anchor = anchor;
-  setPos(this->chart->mapToPosition(anchor) + QPoint(-this->textRect.width() / 2, -this->textRect.height() - 10));
-}
+const int widthAxisY = 30;
+const int heightAxisX = 30;
+const int marginTop = 5;
+const int marginRight = 5;
 
 BitrateBarChart::BitrateBarChart(QWidget *parent)
   : QWidget(parent)
 {
-  QVBoxLayout *mainLayout = new QVBoxLayout(this);
-
-  this->chartView = new QChartView(this);
-  this->chartView->setRenderHint(QPainter::Antialiasing);
-  this->chartView->setMinimumSize(640, 480);
-  mainLayout->addWidget(this->chartView);
-
-  this->chartView->setChart(&this->chart);
-  this->currentTooltip.setChart(&this->chart);
-
-  this->scrollBar = new QScrollBar(Qt::Horizontal, this);
-  mainLayout->addWidget(this->scrollBar);
-  connect(this->scrollBar, &QAbstractSlider::valueChanged, this, &BitrateBarChart::onScrollBarValueChanged);
 }
 
 void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
 {
   this->model = model;
-  
-  // Clear the current chart
-  this->chart.removeAllSeries();
-  if (!this->barMapper.isNull())
-  {
-    delete this->barMapper;
-    this->barMapper.clear();
-  }
-  if (!this->lineModelMapper.isNull())
-  {
-    delete this->lineModelMapper;
-    this->lineModelMapper.clear();
-  }
-  if (!this->axisX.isNull())
-  {
-    this->chart.removeAxis(this->axisX);
-    delete this->axisX;
-    this->axisX.clear();
-  }
-  if (!this->axisY.isNull())
-  {
-    this->chart.removeAxis(this->axisY);
-    delete this->axisY;
-    this->axisY.clear();
-  }
-
-  if (!this->model)
-    return;
-
-  Q_ASSERT(this->barMapper.isNull());
-  Q_ASSERT(this->lineModelMapper.isNull());
-  Q_ASSERT(this->axisX.isNull());
-  Q_ASSERT(this->axisY.isNull());
-
-  QStackedBarSeries *barSeries = new QStackedBarSeries;
-  barSeries->setBarWidth(1.0);
-  this->chart.setAnimationOptions(QChart::NoAnimation);
-
-  this->updateScrollBarRange();
-
-  this->barMapper = new QVBarModelMapper(this);
-  this->barMapper->setFirstBarSetColumn(2);
-  this->barMapper->setLastBarSetColumn(3);
-  this->barMapper->setRowCount(this->model->rowCount());
-  this->barMapper->setSeries(barSeries);
-  this->barMapper->setModel(this->model);
-  this->chart.addSeries(barSeries);
-
-  QLineSeries *lineSeries = new QLineSeries;
-  lineSeries->setName("Average");
-  this->lineModelMapper = new QVXYModelMapper(this);
-  this->lineModelMapper->setXColumn(0);
-  this->lineModelMapper->setYColumn(1);
-  this->lineModelMapper->setSeries(lineSeries);
-  this->lineModelMapper->setModel(this->model);
-  this->chart.addSeries(lineSeries);
-
-  this->axisX = new QValueAxis();
-  this->axisX->setLabelFormat("%.0f");
-  this->axisY = new QValueAxis();
-  this->chart.addAxis(this->axisX, Qt::AlignBottom);
-  this->chart.addAxis(this->axisY, Qt::AlignLeft);
-  barSeries->attachAxis(this->axisX);
-  lineSeries->attachAxis(this->axisX);
-  barSeries->attachAxis(this->axisY);
-  lineSeries->attachAxis(this->axisY);
-  connect(barSeries, &QAbstractBarSeries::hovered, this, &BitrateBarChart::tooltip);
-
-  this->onScrollBarValueChanged(0);
-
-  connect(this->model, &QAbstractItemModel::rowsInserted, this, &BitrateBarChart::onRowsInserted);
-}
-
-void BitrateBarChart::onScrollBarValueChanged(int value)
-{
-  Q_UNUSED(value);
-  this->updateAxis();
-}
-
-void BitrateBarChart::tooltip(bool status, int index, QBarSet *barset)
-{
-  Q_UNUSED(barset);
-
-  if (status)
-  {
-    if (this->model)
-    {
-      QString itemInfoText = this->model->getItemInfoText(index);
-      this->currentTooltip.setTextAndAnchor(itemInfoText, QPointF(double(index), 3));
-      this->currentTooltip.setZValue(11);
-      this->currentTooltip.show();
-    }
-  }
-  else
-    this->currentTooltip.hide();
-}
-
-void BitrateBarChart::onRowsInserted(const QModelIndex &parent, int first, int last)
-{
-  Q_UNUSED(parent);
-  Q_UNUSED(first);
-  Q_UNUSED(last);
-
-  if (!this->barMapper.isNull())
-  {
-    this->axisY->setMax(this->model->getMaximumBitrateValue() * 1.05);
-    this->barMapper->setRowCount(this->model->rowCount());
-    this->updateScrollBarRange();
-  }
+  this->update();
 }
 
 void BitrateBarChart::resizeEvent(QResizeEvent *event)
 {
   Q_UNUSED(event);
-  this->updateScrollBarRange();
-  this->updateAxis();
+  this->update();
 }
 
-void BitrateBarChart::updateAxis()
+void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text)
 {
-  if (this->axisX.isNull())
-    return;
+  // Set the QRect where to show the text
+  QFont displayFont = painter.font();
+  QFontMetrics metrics(displayFont);
+  QSize textSize = metrics.size(0, text);
 
-  const auto plotWidth = this->chart.plotArea().width();
-  double barsVisible = plotWidth / 100 * this->barsPerWidthOf100Pixels;
+  QRect textRect;
+  textRect.setSize(textSize);
+  textRect.moveCenter(area.center());
 
-  auto currentScrollBarValue = this->scrollBar->value();
-  double v = double(currentScrollBarValue) / scrollBarScale;
-  this->axisX->setRange(v - 0.5, v + barsVisible - 0.5);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
-  this->axisX->setTickType(QValueAxis::TicksDynamic);
-  this->axisX->setTickInterval(5.0);
-#endif
+  // Draw a rectangle around the text in white with a black border
+  QRect boxRect = textRect + QMargins(5, 5, 5, 5);
+  painter.setPen(QPen(Qt::black, 1));
+  painter.fillRect(boxRect,Qt::white);
+  painter.drawRect(boxRect);
+
+  // Draw the text
+  painter.drawText(textRect, Qt::AlignCenter, text);
 }
 
-void BitrateBarChart::updateScrollBarRange()
+void BitrateBarChart::paintEvent(QPaintEvent *paint_event)
 {
-  if (this->barMapper.isNull())
-    return;
+  Q_UNUSED(paint_event);
 
-  const auto plotWidth = this->chart.plotArea().width();
-  const double barsVisible = plotWidth / 100 * this->barsPerWidthOf100Pixels;
+  QPainter painter(this);
 
-  auto nrRows = this->barMapper->model()->rowCount();
-  auto maxValue = scrollBarScale * nrRows - int(barsVisible * scrollBarScale);
-  if (maxValue <= 0)
-    this->scrollBar->setEnabled(false);
-  else
+  drawXAxis(painter);
+  drawYAxis(painter);
+
+  // if (!this->model)
+  // {
+  //   drawTextInCenterOfArea(painter, this->rect(), "Please select an item");
+  //   return;
+  // }
+
+  // drawTextInCenterOfArea(painter, this->rect(), "Drawing drawing :)");
+}
+
+QList<double> BitrateBarChart::getAxisValuesToShow(AxisProperties &properties)
+{
+  auto axisLengthInPixels = properties.pixelValueOfMaxValue - properties.pixelValueOfMinValue;
+  auto valueRange = properties.maxValue - properties.minValue;
+
+  const auto nrValuesToShowMax = double(axisLengthInPixels) / 50;
+
+  auto nrWholeValuesInRange = int(floor(valueRange));
+
+  auto offsetLeft = ceil(properties.minValue) - properties.minValue;
+  auto offsetRight = properties.maxValue - floor(properties.maxValue);
+  auto rangeRemainder = valueRange - int(floor(valueRange));
+  if (offsetLeft < rangeRemainder && offsetRight < rangeRemainder)
+    nrWholeValuesInRange++;
+
+  double factor = 1.0;
+  while (factor * 10 * nrWholeValuesInRange < nrValuesToShowMax)
+    factor *= 10;
+  while (factor / 10 * nrWholeValuesInRange > nrValuesToShowMax)
+    factor /= 10;
+
+  QList<double> values;
+  int min = ceil(properties.minValue * factor);
+  int max = floor(properties.maxValue * factor);
+  for (int i = min; i <= max; i++)
+    values.append(double(i) / factor);
+  return values;
+}
+
+void BitrateBarChart::drawXAxis(QPainter &painter)
+{
+  QRect drawRect;
+  drawRect.setWidth(this->rect().width() - widthAxisY - marginRight);
+  drawRect.setHeight(heightAxisX);
+  drawRect.moveBottomRight(this->rect().bottomRight() - QPoint(marginRight, 0));
+
+  // Line
+  const QPoint offsetBottom = QPoint(0, drawRect.height() * 3 / 4);
+  const QPoint axisStart = drawRect.bottomLeft() - offsetBottom;
+  const QPoint axisEnd = drawRect.bottomRight() - offsetBottom;
+  painter.drawLine(axisStart, axisEnd);
+
+  // Tip
+  painter.drawLine(axisEnd, axisEnd + QPoint(-5,  3));
+  painter.drawLine(axisEnd, axisEnd + QPoint(-5, -3));
+
+  this->propertiesAxisX.pixelValueOfMinValue = axisStart.x();
+  this->propertiesAxisX.pixelValueOfMaxValue = axisEnd.x() - 8;
+
+  auto values = getAxisValuesToShow(this->propertiesAxisX);
+  const auto valueRange = this->propertiesAxisX.maxValue - this->propertiesAxisX.minValue;
+  const auto pixelRange = axisEnd.x() - axisStart.x();
+  QFont displayFont = painter.font();
+  QFontMetrics metrics(displayFont);
+  painter.setPen(QPen(Qt::black, 1));
+  for (auto v : values)
   {
-    QSignalBlocker scrollBarSignalBlocker(this->scrollBar);
-    this->scrollBar->setEnabled(true);
-    this->scrollBar->setMinimum(0);
-    this->scrollBar->setMaximum(maxValue);
+    int pixelPosX = int(((v - this->propertiesAxisX.minValue) / valueRange) * pixelRange);
+    QPoint p = axisStart + QPoint(pixelPosX, 0);
+    painter.drawLine(p, p + QPoint(0, 5));
+
+    QString text = QString("%1").arg(v);
+    QSize textSize = metrics.size(0, text);
+    QRect textRect;
+    textRect.setSize(textSize);
+    textRect.moveCenter(p);
+    textRect.moveTop(p.y() + 6);
+
+    painter.drawText(textRect, Qt::AlignCenter, text);
   }
+}
+
+void BitrateBarChart::drawYAxis(QPainter &painter)
+{
+  QRect drawRect;
+  drawRect.setWidth(widthAxisY);
+  drawRect.setHeight(this->rect().height() - heightAxisX - marginTop);
+  drawRect.moveTopLeft(QPoint(0, marginTop));
+
+  // Line
+  const QPoint offsetLeft = QPoint(drawRect.width() / 4, 0);
+  const QPoint axisStart = drawRect.bottomRight() - offsetLeft;
+  const QPoint axisEnd = drawRect.topRight() - offsetLeft;
+  painter.drawLine(axisStart, axisEnd + QPoint(0, 5));
+
+  // Tip
+  painter.drawLine(axisEnd, axisEnd - QPoint(-3, 5));
+  painter.drawLine(axisEnd, axisEnd - QPoint( 3, 5));
+
+  this->propertiesAxisY.pixelValueOfMinValue = axisStart.y();
+  this->propertiesAxisY.pixelValueOfMaxValue = axisEnd.y() - 8;
 }
