@@ -41,6 +41,7 @@ const int marginTop = 5;
 const int marginRight = 5;
 const int axisMaxValueMargin = 10;
 const int tickLength = 5;
+const int fadeBoxThickness = 10;
 
 const QColor gridLineMajor = QColor(180, 180, 180);
 const QColor gridLineMinor = QColor(230, 230, 230);
@@ -95,10 +96,14 @@ void BitrateBarChart::paintEvent(QPaintEvent *paint_event)
     properties.startEnd = this->determineAxisStartEnd(axis);
 
     auto values = this->getAxisValuesToShow(axis);
-    drawAxisAndTip(painter, axis);
     drawAxisTicksAndValues(painter, axis, values);
     drawGridLines(painter, axis, values);
   }
+
+  for (auto axis : std::vector<Axis>{Axis::X, Axis::Y})
+    drawFadeBoxes(painter, axis);
+  for (auto axis : std::vector<Axis>{Axis::X, Axis::Y})
+    drawAxisAndTip(painter, axis);
 
   // if (!this->model)
   // {
@@ -119,11 +124,11 @@ QList<BitrateBarChart::TickValue> BitrateBarChart::getAxisValuesToShow(BitrateBa
   const int minPixelDistanceBetweenValues = 50;
   const auto nrValuesToShowMax = double(axisLengthInPixels) / minPixelDistanceBetweenValues;
 
-  auto nrWholeValuesInRange = int(floor(valueRange));
+  auto nrWholeValuesInRange = int(std::floor(valueRange));
 
-  auto offsetLeft = ceil(properties.minValue) - properties.minValue;
-  auto offsetRight = properties.maxValue - floor(properties.maxValue);
-  auto rangeRemainder = valueRange - int(floor(valueRange));
+  auto offsetLeft = std::ceil(properties.minValue) - properties.minValue;
+  auto offsetRight = properties.maxValue - std::floor(properties.maxValue);
+  auto rangeRemainder = valueRange - int(std::floor(valueRange));
   if (offsetLeft < rangeRemainder && offsetRight < rangeRemainder)
     nrWholeValuesInRange++;
 
@@ -140,8 +145,8 @@ QList<BitrateBarChart::TickValue> BitrateBarChart::getAxisValuesToShow(BitrateBa
   auto getValuesForFactor = [properties](double factor)
   {
     QList<double> values;
-    int min = ceil(properties.minValue * factor);
-    int max = floor(properties.maxValue * factor);
+    int min = std::ceil(properties.minValue * factor);
+    int max = std::floor(properties.maxValue * factor);
     for (int i = min; i <= max; i++)
       values.append(double(i) / factor);
     return values;
@@ -234,6 +239,12 @@ void BitrateBarChart::drawGridLines(QPainter &painter, BitrateBarChart::Axis axi
   
   QPointF drawStart = otherAxis.startEnd.first;
   QPointF drawEnd = otherAxis.startEnd.second;
+  
+  if (axis == Axis::X)
+    drawEnd.ry() += axisMaxValueMargin;
+  else
+    drawEnd.rx() -= axisMaxValueMargin;
+
   for (auto v : values)
   {
     if (axis == Axis::X)
@@ -251,5 +262,57 @@ void BitrateBarChart::drawGridLines(QPainter &painter, BitrateBarChart::Axis axi
 
     painter.setPen(v.minorTick ? gridLineMinor : gridLineMajor);
     painter.drawLine(drawStart, drawEnd);
+  }
+}
+
+void BitrateBarChart::drawFadeBoxes(QPainter &painter, BitrateBarChart::Axis axis) const
+{
+  QLinearGradient gradient;
+  gradient.setCoordinateMode(QGradient::ObjectMode);
+  gradient.setColorAt(0, Qt::blue);
+  gradient.setColorAt(1, Qt::green);
+  gradient.setStart(QPointF(0.0, 0.0));
+  gradient.setFinalStop((axis == Axis::X) ? QPointF(1.0, 0) : QPointF(0.0, 1.0));
+
+  painter.setPen(Qt::NoPen);
+
+  auto setGradientBrush = [&gradient, &painter](bool inverse) {
+    gradient.setColorAt(inverse ? 1 : 0, Qt::white);
+    gradient.setColorAt(inverse ? 0 : 1, Qt::transparent);
+    painter.setBrush(gradient);
+  };
+
+  auto thisAxis = this->propertiesAxis[axis == Axis::X ? 0 : 1];
+
+  const double slightOffset = 0.5;
+  if (axis == Axis::X)
+  {
+    const auto xLeft = double(thisAxis.startEnd.first.x()) - slightOffset;
+    setGradientBrush(false);
+    painter.drawRect(QRectF(xLeft, 0, fadeBoxThickness, this->rect().height()));
+    painter.setBrush(Qt::white);
+    painter.drawRect(QRectF(this->rect().bottomLeft(), thisAxis.startEnd.first));
+
+    const auto xRight = double(thisAxis.startEnd.second.x()) - axisMaxValueMargin + slightOffset;
+    const auto yRight = double(thisAxis.startEnd.second.y());
+    setGradientBrush(true);
+    painter.drawRect(QRectF(xRight, 0, -fadeBoxThickness, this->rect().height()));
+    painter.setBrush(Qt::white);
+    painter.drawRect(QRectF(QPoint(xRight, yRight), this->rect().bottomRight()));
+  }
+  else
+  {
+    const auto yBottom = double(thisAxis.startEnd.first.y()) + slightOffset;
+    setGradientBrush(true);
+    painter.drawRect(QRectF(0, yBottom, this->rect().width(), -fadeBoxThickness));
+    painter.setBrush(Qt::white);
+    painter.drawRect(QRectF(this->rect().bottomLeft(), thisAxis.startEnd.first));
+
+    const auto yTop = double(thisAxis.startEnd.second.y()) + axisMaxValueMargin - slightOffset;
+    const auto xTop = double(thisAxis.startEnd.second.x());
+    setGradientBrush(false);
+    painter.drawRect(QRectF(0, yTop, this->rect().width(), fadeBoxThickness));
+    painter.setBrush(Qt::white);
+    painter.drawRect(QRectF(QPoint(0, 0), QPoint(xTop, yTop)));
   }
 }

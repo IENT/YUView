@@ -81,6 +81,7 @@ private:
   void drawAxisAndTip(QPainter &painter, Axis axis) const;
   void drawAxisTicksAndValues(QPainter &painter, Axis axis, QList<TickValue> &values) const;
   void drawGridLines(QPainter &painter, Axis axis, QList<TickValue> &values) const;
+  void drawFadeBoxes(QPainter &painter, Axis axis) const;
 
   struct AxisProperties
   {
