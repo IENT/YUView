@@ -39,6 +39,11 @@ const int widthAxisY = 30;
 const int heightAxisX = 30;
 const int marginTop = 5;
 const int marginRight = 5;
+const int axisMaxValueMargin = 10;
+const int tickLength = 5;
+
+const QColor gridLineMajor = QColor(180, 180, 180);
+const QColor gridLineMinor = QColor(230, 230, 230);
 
 BitrateBarChart::BitrateBarChart(QWidget *parent)
   : QWidget(parent)
@@ -84,8 +89,16 @@ void BitrateBarChart::paintEvent(QPaintEvent *paint_event)
 
   QPainter painter(this);
 
-  drawXAxis(painter);
-  drawYAxis(painter);
+  for (auto axis : std::vector<Axis>{Axis::X, Axis::Y})
+  {
+    auto &properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
+    properties.startEnd = this->determineAxisStartEnd(axis);
+
+    auto values = this->getAxisValuesToShow(axis);
+    drawAxisAndTip(painter, axis);
+    drawAxisTicksAndValues(painter, axis, values);
+    drawGridLines(painter, axis, values);
+  }
 
   // if (!this->model)
   // {
@@ -96,12 +109,15 @@ void BitrateBarChart::paintEvent(QPaintEvent *paint_event)
   // drawTextInCenterOfArea(painter, this->rect(), "Drawing drawing :)");
 }
 
-QList<double> BitrateBarChart::getAxisValuesToShow(AxisProperties &properties)
+QList<BitrateBarChart::TickValue> BitrateBarChart::getAxisValuesToShow(BitrateBarChart::Axis axis) const
 {
-  auto axisLengthInPixels = properties.pixelValueOfMaxValue - properties.pixelValueOfMinValue;
-  auto valueRange = properties.maxValue - properties.minValue;
+  auto properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
+  const QPoint axisVector = (axis == Axis::X) ? QPoint(1, 0) : QPoint(0, -1);
+  const auto axisLengthInPixels = QPoint::dotProduct(properties.startEnd.second - properties.startEnd.first, axisVector);
+  const auto valueRange = properties.maxValue - properties.minValue;
 
-  const auto nrValuesToShowMax = double(axisLengthInPixels) / 50;
+  const int minPixelDistanceBetweenValues = 50;
+  const auto nrValuesToShowMax = double(axisLengthInPixels) / minPixelDistanceBetweenValues;
 
   auto nrWholeValuesInRange = int(floor(valueRange));
 
@@ -111,80 +127,129 @@ QList<double> BitrateBarChart::getAxisValuesToShow(AxisProperties &properties)
   if (offsetLeft < rangeRemainder && offsetRight < rangeRemainder)
     nrWholeValuesInRange++;
 
-  double factor = 1.0;
-  while (factor * 10 * nrWholeValuesInRange < nrValuesToShowMax)
-    factor *= 10;
-  while (factor / 10 * nrWholeValuesInRange > nrValuesToShowMax)
-    factor /= 10;
+  double factorMajor = 1.0;
+  while (factorMajor * 10 * nrWholeValuesInRange < nrValuesToShowMax)
+    factorMajor *= 10;
+  while (factorMajor / 10 * nrWholeValuesInRange > nrValuesToShowMax)
+    factorMajor /= 10;
 
-  QList<double> values;
-  int min = ceil(properties.minValue * factor);
-  int max = floor(properties.maxValue * factor);
-  for (int i = min; i <= max; i++)
-    values.append(double(i) / factor);
+  double factorMinor = factorMajor;
+  while (factorMinor * nrWholeValuesInRange * 2 < nrValuesToShowMax)
+    factorMinor *= 2;
+
+  auto getValuesForFactor = [properties](double factor)
+  {
+    QList<double> values;
+    int min = ceil(properties.minValue * factor);
+    int max = floor(properties.maxValue * factor);
+    for (int i = min; i <= max; i++)
+      values.append(double(i) / factor);
+    return values;
+  };
+
+  auto valuesMajor = getValuesForFactor(factorMajor);
+  auto valuesMinor = getValuesForFactor(factorMinor);
+  
+  QList<TickValue> values;
+  for (auto v : valuesMinor)
+  {
+    const bool isMinor = !valuesMajor.contains(v);
+    auto pixelPosOnAxis = ((v - properties.minValue) / valueRange) * (axisLengthInPixels - axisMaxValueMargin);
+    values.append({v, pixelPosOnAxis, isMinor});
+  }
   return values;
 }
 
-void BitrateBarChart::drawXAxis(QPainter &painter)
+QPair<QPoint, QPoint> BitrateBarChart::determineAxisStartEnd(Axis axis) const
 {
   QRect drawRect;
-  drawRect.setWidth(this->rect().width() - widthAxisY - marginRight);
-  drawRect.setHeight(heightAxisX);
-  drawRect.moveBottomRight(this->rect().bottomRight() - QPoint(marginRight, 0));
+  if (axis == Axis::X)
+  {
+    drawRect.setWidth(this->rect().width() - widthAxisY - marginRight);
+    drawRect.setHeight(heightAxisX);
+    drawRect.moveBottomRight(this->rect().bottomRight() - QPoint(marginRight, 0));
 
-  // Line
-  const QPoint offsetBottom = QPoint(0, drawRect.height() * 3 / 4);
-  const QPoint axisStart = drawRect.bottomLeft() - offsetBottom;
-  const QPoint axisEnd = drawRect.bottomRight() - offsetBottom;
-  painter.drawLine(axisStart, axisEnd);
+    const QPoint offsetBottom = QPoint(0, drawRect.height() * 3 / 4);
+    return {drawRect.bottomLeft() - offsetBottom, drawRect.bottomRight() - offsetBottom};
+  }
+  else
+  {
+    drawRect.setWidth(widthAxisY);
+    drawRect.setHeight(this->rect().height() - heightAxisX - marginTop);
+    drawRect.moveTopLeft(QPoint(0, marginTop));
 
-  // Tip
-  painter.drawLine(axisEnd, axisEnd + QPoint(-5,  3));
-  painter.drawLine(axisEnd, axisEnd + QPoint(-5, -3));
+    const QPoint offsetLeft = QPoint(drawRect.width() / 4, 0);
+    return {drawRect.bottomRight() - offsetLeft, drawRect.topRight() - offsetLeft};
+  }
+}
 
-  this->propertiesAxisX.pixelValueOfMinValue = axisStart.x();
-  this->propertiesAxisX.pixelValueOfMaxValue = axisEnd.x() - 8;
+void BitrateBarChart::drawAxisAndTip(QPainter &painter, Axis axis) const
+{
+  auto properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
+  auto offsetTip1 = (axis == Axis::X) ? QPoint(-5,  3) : QPoint( 3, 5);
+  auto offsetTip2 = (axis == Axis::X) ? QPoint(-5, -3) : QPoint(-3, 5);
 
-  auto values = getAxisValuesToShow(this->propertiesAxisX);
-  const auto valueRange = this->propertiesAxisX.maxValue - this->propertiesAxisX.minValue;
-  const auto pixelRange = axisEnd.x() - axisStart.x();
+  const auto start = properties.startEnd.first;
+  const auto end = properties.startEnd.second;
+  painter.setPen(QPen(Qt::black, 1));
+  painter.drawLine(start, end);
+  painter.drawLine(end, end + offsetTip1);
+  painter.drawLine(end, end + offsetTip2);
+}
+
+void BitrateBarChart::drawAxisTicksAndValues(QPainter &painter, BitrateBarChart::Axis axis, QList<BitrateBarChart::TickValue> &values) const
+{
+  auto properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
+
+  const QPoint axisVector = (axis == Axis::X) ? QPoint(1, 0) : QPoint(0, -1);
+  const QPoint tickLine = (axis == Axis::X) ? QPoint(0, tickLength) : QPoint(-tickLength, 0);
+
   QFont displayFont = painter.font();
-  QFontMetrics metrics(displayFont);
+  QFontMetricsF metrics(displayFont);
   painter.setPen(QPen(Qt::black, 1));
   for (auto v : values)
   {
-    int pixelPosX = int(((v - this->propertiesAxisX.minValue) / valueRange) * pixelRange);
-    QPoint p = axisStart + QPoint(pixelPosX, 0);
-    painter.drawLine(p, p + QPoint(0, 5));
+    //auto pixelPosOnAxis = ((v.value - properties.minValue) / valueRange) * axisLengthInPixels;
+    QPointF p = properties.startEnd.first + v.pixelPosOnAxis * axisVector;
+    painter.drawLine(p, p + tickLine);
 
-    QString text = QString("%1").arg(v);
-    QSize textSize = metrics.size(0, text);
-    QRect textRect;
+    auto text = QString("%1").arg(v.value);
+    auto textSize = metrics.size(0, text);
+    QRectF textRect;
     textRect.setSize(textSize);
     textRect.moveCenter(p);
-    textRect.moveTop(p.y() + 6);
-
+    if (axis == Axis::X)
+      textRect.moveTop(p.y() + tickLength + 2);
+    else
+      textRect.moveRight(p.x() - tickLength - 2);
+    
     painter.drawText(textRect, Qt::AlignCenter, text);
   }
 }
 
-void BitrateBarChart::drawYAxis(QPainter &painter)
+void BitrateBarChart::drawGridLines(QPainter &painter, BitrateBarChart::Axis axis, QList<BitrateBarChart::TickValue> &values) const
 {
-  QRect drawRect;
-  drawRect.setWidth(widthAxisY);
-  drawRect.setHeight(this->rect().height() - heightAxisX - marginTop);
-  drawRect.moveTopLeft(QPoint(0, marginTop));
+  auto thisAxis = this->propertiesAxis[axis == Axis::X ? 0 : 1];
+  auto otherAxis = this->propertiesAxis[axis == Axis::X ? 1 : 0];
+  
+  QPointF drawStart = otherAxis.startEnd.first;
+  QPointF drawEnd = otherAxis.startEnd.second;
+  for (auto v : values)
+  {
+    if (axis == Axis::X)
+    {
+      auto x = v.pixelPosOnAxis + thisAxis.startEnd.first.x();
+      drawStart.setX(x);
+      drawEnd.setX(x);
+    }
+    else
+    {
+      auto y = thisAxis.startEnd.first.y() - v.pixelPosOnAxis;
+      drawStart.setY(y);
+      drawEnd.setY(y);
+    }
 
-  // Line
-  const QPoint offsetLeft = QPoint(drawRect.width() / 4, 0);
-  const QPoint axisStart = drawRect.bottomRight() - offsetLeft;
-  const QPoint axisEnd = drawRect.topRight() - offsetLeft;
-  painter.drawLine(axisStart, axisEnd + QPoint(0, 5));
-
-  // Tip
-  painter.drawLine(axisEnd, axisEnd - QPoint(-3, 5));
-  painter.drawLine(axisEnd, axisEnd - QPoint( 3, 5));
-
-  this->propertiesAxisY.pixelValueOfMinValue = axisStart.y();
-  this->propertiesAxisY.pixelValueOfMaxValue = axisEnd.y() - 8;
+    painter.setPen(v.minorTick ? gridLineMinor : gridLineMajor);
+    painter.drawLine(drawStart, drawEnd);
+  }
 }

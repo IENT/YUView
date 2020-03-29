@@ -63,8 +63,24 @@ protected:
   void resizeEvent(QResizeEvent *event) override;
 
 private:
-  void drawXAxis(QPainter &painter);
-  void drawYAxis(QPainter &painter);
+  enum class Axis
+  {
+    X,
+    Y
+  };
+
+  struct TickValue
+  {
+    double value;
+    double pixelPosOnAxis;
+    bool minorTick;
+  };
+
+  QPair<QPoint, QPoint> determineAxisStartEnd(Axis axis) const;
+  QList<TickValue> getAxisValuesToShow(Axis axis) const;
+  void drawAxisAndTip(QPainter &painter, Axis axis) const;
+  void drawAxisTicksAndValues(QPainter &painter, Axis axis, QList<TickValue> &values) const;
+  void drawGridLines(QPainter &painter, Axis axis, QList<TickValue> &values) const;
 
   struct AxisProperties
   {
@@ -72,15 +88,7 @@ private:
     double maxValue {1};
     bool showDoubleValues {true};
 
-    // Updated when drawing the axis. For x-axis x values, for y-axis y values.
-    int pixelValueOfMinValue {-1};
-    int pixelValueOfMaxValue {-1};
+    QPair<QPoint, QPoint> startEnd;
   };
-  AxisProperties propertiesAxisX;
-  AxisProperties propertiesAxisY;
-
-  static QList<double> getAxisValuesToShow(AxisProperties &properties);
-
-  double barsPerWidthOf100Pixels{ 8.0 };
-  double maxYValue{ 0 };
+  AxisProperties propertiesAxis[2];
 };
