@@ -30,10 +30,11 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "bitstreamAnalysisBitratePlot.h"
+#include "plotWidget.h"
 
 #include <QtWidgets/QVBoxLayout>
 #include <QPainter>
+#include <cmath>
 
 const int widthAxisY = 30;
 const int heightAxisX = 30;
@@ -46,18 +47,18 @@ const int fadeBoxThickness = 10;
 const QColor gridLineMajor = QColor(180, 180, 180);
 const QColor gridLineMinor = QColor(230, 230, 230);
 
-BitrateBarChart::BitrateBarChart(QWidget *parent)
+PlotWidget::PlotWidget(QWidget *parent)
   : QWidget(parent)
 {
 }
 
-void BitrateBarChart::setModel(parserCommon::BitrateItemModel *model)
+void PlotWidget::setModel(parserCommon::BitrateItemModel *model)
 {
   this->model = model;
   this->update();
 }
 
-void BitrateBarChart::resizeEvent(QResizeEvent *event)
+void PlotWidget::resizeEvent(QResizeEvent *event)
 {
   Q_UNUSED(event);
   this->update();
@@ -84,7 +85,7 @@ void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text)
   painter.drawText(textRect, Qt::AlignCenter, text);
 }
 
-void BitrateBarChart::paintEvent(QPaintEvent *paint_event)
+void PlotWidget::paintEvent(QPaintEvent *paint_event)
 {
   Q_UNUSED(paint_event);
 
@@ -114,7 +115,7 @@ void BitrateBarChart::paintEvent(QPaintEvent *paint_event)
   // drawTextInCenterOfArea(painter, this->rect(), "Drawing drawing :)");
 }
 
-QList<BitrateBarChart::TickValue> BitrateBarChart::getAxisValuesToShow(BitrateBarChart::Axis axis) const
+QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(PlotWidget::Axis axis) const
 {
   auto properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
   const QPoint axisVector = (axis == Axis::X) ? QPoint(1, 0) : QPoint(0, -1);
@@ -165,7 +166,7 @@ QList<BitrateBarChart::TickValue> BitrateBarChart::getAxisValuesToShow(BitrateBa
   return values;
 }
 
-QPair<QPoint, QPoint> BitrateBarChart::determineAxisStartEnd(Axis axis) const
+QPair<QPoint, QPoint> PlotWidget::determineAxisStartEnd(Axis axis) const
 {
   QRect drawRect;
   if (axis == Axis::X)
@@ -188,7 +189,7 @@ QPair<QPoint, QPoint> BitrateBarChart::determineAxisStartEnd(Axis axis) const
   }
 }
 
-void BitrateBarChart::drawAxisAndTip(QPainter &painter, Axis axis) const
+void PlotWidget::drawAxisAndTip(QPainter &painter, Axis axis) const
 {
   auto properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
   auto offsetTip1 = (axis == Axis::X) ? QPoint(-5,  3) : QPoint( 3, 5);
@@ -202,7 +203,7 @@ void BitrateBarChart::drawAxisAndTip(QPainter &painter, Axis axis) const
   painter.drawLine(end, end + offsetTip2);
 }
 
-void BitrateBarChart::drawAxisTicksAndValues(QPainter &painter, BitrateBarChart::Axis axis, QList<BitrateBarChart::TickValue> &values) const
+void PlotWidget::drawAxisTicksAndValues(QPainter &painter, PlotWidget::Axis axis, QList<PlotWidget::TickValue> &values) const
 {
   auto properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
 
@@ -232,7 +233,7 @@ void BitrateBarChart::drawAxisTicksAndValues(QPainter &painter, BitrateBarChart:
   }
 }
 
-void BitrateBarChart::drawGridLines(QPainter &painter, BitrateBarChart::Axis axis, QList<BitrateBarChart::TickValue> &values) const
+void PlotWidget::drawGridLines(QPainter &painter, PlotWidget::Axis axis, QList<PlotWidget::TickValue> &values) const
 {
   auto thisAxis = this->propertiesAxis[axis == Axis::X ? 0 : 1];
   auto otherAxis = this->propertiesAxis[axis == Axis::X ? 1 : 0];
@@ -265,7 +266,7 @@ void BitrateBarChart::drawGridLines(QPainter &painter, BitrateBarChart::Axis axi
   }
 }
 
-void BitrateBarChart::drawFadeBoxes(QPainter &painter, BitrateBarChart::Axis axis) const
+void PlotWidget::drawFadeBoxes(QPainter &painter, PlotWidget::Axis axis) const
 {
   QLinearGradient gradient;
   gradient.setCoordinateMode(QGradient::ObjectMode);

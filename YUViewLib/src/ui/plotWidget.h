@@ -39,12 +39,12 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QScrollBar>
 
-class BitrateBarChart : public QWidget
+class PlotWidget : public QWidget
 {
   Q_OBJECT
 
 public:
-  BitrateBarChart(QWidget *parent = 0);
+  PlotWidget(QWidget *parent = 0);
   void setModel(parserCommon::BitrateItemModel *model);
 
 private:
