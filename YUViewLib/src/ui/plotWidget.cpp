@@ -269,7 +269,11 @@ void PlotWidget::drawGridLines(QPainter &painter, PlotWidget::Axis axis, QList<P
 void PlotWidget::drawFadeBoxes(QPainter &painter, PlotWidget::Axis axis) const
 {
   QLinearGradient gradient;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
   gradient.setCoordinateMode(QGradient::ObjectMode);
+#else
+  gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
+#endif
   gradient.setColorAt(0, Qt::blue);
   gradient.setColorAt(1, Qt::green);
   gradient.setStart(QPointF(0.0, 0.0));
