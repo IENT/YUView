@@ -36,16 +36,15 @@
 #include <QPainter>
 #include <cmath>
 
-const int widthAxisY = 30;
-const int heightAxisX = 30;
-const int marginTop = 5;
-const int marginRight = 5;
+const QPoint marginTopLeft(30, 5);
+const QPoint marginBottomRight(5, 30);
+
 const int axisMaxValueMargin = 10;
 const int tickLength = 5;
 const int fadeBoxThickness = 10;
 
-const QColor gridLineMajor = QColor(180, 180, 180);
-const QColor gridLineMinor = QColor(230, 230, 230);
+const QColor gridLineMajor(180, 180, 180);
+const QColor gridLineMinor(230, 230, 230);
 
 PlotWidget::PlotWidget(QWidget *parent)
   : QWidget(parent)
@@ -91,20 +90,32 @@ void PlotWidget::paintEvent(QPaintEvent *paint_event)
 
   QPainter painter(this);
 
-  for (auto axis : std::vector<Axis>{Axis::X, Axis::Y})
-  {
-    auto &properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
-    properties.startEnd = this->determineAxisStartEnd(axis);
+  const auto widgetRect = QRectF(this->rect());
+  const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
 
-    auto values = this->getAxisValuesToShow(axis);
-    drawAxisTicksAndValues(painter, axis, values);
-    drawGridLines(painter, axis, values);
+  auto valuesX = this->getAxisValuesToShow(Axis::X, this->propertiesAxis[0]);
+  auto valuesY = this->getAxisValuesToShow(Axis::Y, this->propertiesAxis[1]);
+  drawGridLines(painter, Axis::X, this->propertiesAxis[0], plotRect, valuesX);
+  drawGridLines(painter, Axis::Y, this->propertiesAxis[1], plotRect, valuesY);
+
+  if (false)
+  {
+    // DEBUG draw plot
+    painter.setBrush(Qt::blue);
+    painter.setPen(Qt::NoPen);
+    painter.drawRect(widgetRect);
   }
 
-  for (auto axis : std::vector<Axis>{Axis::X, Axis::Y})
-    drawFadeBoxes(painter, axis);
-  for (auto axis : std::vector<Axis>{Axis::X, Axis::Y})
-    drawAxisAndTip(painter, axis);
+  drawWhiteBoarders(painter, plotRect, widgetRect);
+  drawAxis(painter, plotRect);
+
+  this->propertiesAxis[0].line = getAxisLine(Axis::X, plotRect);
+  this->propertiesAxis[1].line = getAxisLine(Axis::Y, plotRect);
+
+  drawAxisTicksAndValues(painter, Axis::X, this->propertiesAxis[0], valuesX);
+  drawAxisTicksAndValues(painter, Axis::Y, this->propertiesAxis[1], valuesY);
+
+  drawFadeBoxes(painter, plotRect, widgetRect);
 
   // if (!this->model)
   // {
@@ -115,11 +126,36 @@ void PlotWidget::paintEvent(QPaintEvent *paint_event)
   // drawTextInCenterOfArea(painter, this->rect(), "Drawing drawing :)");
 }
 
-QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(PlotWidget::Axis axis) const
+void PlotWidget::drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect)
 {
-  auto properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
-  const QPoint axisVector = (axis == Axis::X) ? QPoint(1, 0) : QPoint(0, -1);
-  const auto axisLengthInPixels = QPoint::dotProduct(properties.startEnd.second - properties.startEnd.first, axisVector);
+  painter.setBrush(Qt::white);
+  painter.setPen(Qt::NoPen);
+  painter.drawRect(QRectF(QPointF(0, 0), QPointF(plotRect.left(), widgetRect.bottom())));
+  painter.drawRect(QRectF(QPointF(0, 0), QPointF(widgetRect.right(), plotRect.top())));
+  painter.drawRect(QRectF(QPointF(plotRect.right(), 0), widgetRect.bottomRight()));
+  painter.drawRect(QRectF(QPointF(0, plotRect.bottom()), widgetRect.bottomRight()));
+}
+
+QLineF PlotWidget::getAxisLine(const PlotWidget::Axis axis, const QRectF plotRect)
+{
+  QLineF line;
+  if (axis == Axis::X)
+  {
+    QPointF thicknessDirection(fadeBoxThickness, 0);
+    line = {plotRect.bottomLeft() + thicknessDirection, plotRect.bottomRight() - thicknessDirection};
+  }
+  else
+  {
+    QPointF thicknessDirection(0, fadeBoxThickness);
+    line = {plotRect.bottomLeft() - thicknessDirection, plotRect.topLeft() + thicknessDirection};
+  }
+  return line;
+}
+
+QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(const PlotWidget::Axis axis, const PlotWidget::AxisProperties &properties)
+{
+  const auto axisVector = (axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
+  const auto axisLengthInPixels = QPointF::dotProduct(properties.line.p2() - properties.line.p1(), axisVector);
   const auto valueRange = properties.maxValue - properties.minValue;
 
   const int minPixelDistanceBetweenValues = 50;
@@ -166,49 +202,17 @@ QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(PlotWidget::Axis ax
   return values;
 }
 
-QPair<QPoint, QPoint> PlotWidget::determineAxisStartEnd(Axis axis) const
+void PlotWidget::drawAxis(QPainter &painter, const QRectF &plotRect)
 {
-  QRect drawRect;
-  if (axis == Axis::X)
-  {
-    drawRect.setWidth(this->rect().width() - widthAxisY - marginRight);
-    drawRect.setHeight(heightAxisX);
-    drawRect.moveBottomRight(this->rect().bottomRight() - QPoint(marginRight, 0));
-
-    const QPoint offsetBottom = QPoint(0, drawRect.height() * 3 / 4);
-    return {drawRect.bottomLeft() - offsetBottom, drawRect.bottomRight() - offsetBottom};
-  }
-  else
-  {
-    drawRect.setWidth(widthAxisY);
-    drawRect.setHeight(this->rect().height() - heightAxisX - marginTop);
-    drawRect.moveTopLeft(QPoint(0, marginTop));
-
-    const QPoint offsetLeft = QPoint(drawRect.width() / 4, 0);
-    return {drawRect.bottomRight() - offsetLeft, drawRect.topRight() - offsetLeft};
-  }
-}
-
-void PlotWidget::drawAxisAndTip(QPainter &painter, Axis axis) const
-{
-  auto properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
-  auto offsetTip1 = (axis == Axis::X) ? QPoint(-5,  3) : QPoint( 3, 5);
-  auto offsetTip2 = (axis == Axis::X) ? QPoint(-5, -3) : QPoint(-3, 5);
-
-  const auto start = properties.startEnd.first;
-  const auto end = properties.startEnd.second;
   painter.setPen(QPen(Qt::black, 1));
-  painter.drawLine(start, end);
-  painter.drawLine(end, end + offsetTip1);
-  painter.drawLine(end, end + offsetTip2);
+  painter.drawLine(plotRect.bottomLeft(), plotRect.topLeft());
+  painter.drawLine(plotRect.bottomLeft(), plotRect.bottomRight());
 }
 
-void PlotWidget::drawAxisTicksAndValues(QPainter &painter, PlotWidget::Axis axis, QList<PlotWidget::TickValue> &values) const
+void PlotWidget::drawAxisTicksAndValues(QPainter &painter, const PlotWidget::Axis axis, const AxisProperties &properties, const QList<PlotWidget::TickValue> &values)
 {
-  auto properties = this->propertiesAxis[axis == Axis::X ? 0 : 1];
-
-  const QPoint axisVector = (axis == Axis::X) ? QPoint(1, 0) : QPoint(0, -1);
-  const QPoint tickLine = (axis == Axis::X) ? QPoint(0, tickLength) : QPoint(-tickLength, 0);
+  const auto axisVector = (axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
+  const auto tickLine = (axis == Axis::X) ? QPointF(0, tickLength) : QPointF(-tickLength, 0);
 
   QFont displayFont = painter.font();
   QFontMetricsF metrics(displayFont);
@@ -216,7 +220,7 @@ void PlotWidget::drawAxisTicksAndValues(QPainter &painter, PlotWidget::Axis axis
   for (auto v : values)
   {
     //auto pixelPosOnAxis = ((v.value - properties.minValue) / valueRange) * axisLengthInPixels;
-    QPointF p = properties.startEnd.first + v.pixelPosOnAxis * axisVector;
+    QPointF p = properties.line.p1() + v.pixelPosOnAxis * axisVector;
     painter.drawLine(p, p + tickLine);
 
     auto text = QString("%1").arg(v.value);
@@ -233,30 +237,22 @@ void PlotWidget::drawAxisTicksAndValues(QPainter &painter, PlotWidget::Axis axis
   }
 }
 
-void PlotWidget::drawGridLines(QPainter &painter, PlotWidget::Axis axis, QList<PlotWidget::TickValue> &values) const
+void PlotWidget::drawGridLines(QPainter &painter, const Axis axis, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &values)
 {
-  auto thisAxis = this->propertiesAxis[axis == Axis::X ? 0 : 1];
-  auto otherAxis = this->propertiesAxis[axis == Axis::X ? 1 : 0];
-  
-  QPointF drawStart = otherAxis.startEnd.first;
-  QPointF drawEnd = otherAxis.startEnd.second;
-  
-  if (axis == Axis::X)
-    drawEnd.ry() += axisMaxValueMargin;
-  else
-    drawEnd.rx() -= axisMaxValueMargin;
+  auto drawStart = (axis == Axis::X) ? plotRect.topLeft() : plotRect.bottomLeft();
+  auto drawEnd = (axis == Axis::X) ? plotRect.bottomLeft() : plotRect.bottomRight();
 
   for (auto v : values)
   {
     if (axis == Axis::X)
     {
-      auto x = v.pixelPosOnAxis + thisAxis.startEnd.first.x();
+      auto x = v.pixelPosOnAxis + propertiesThis.line.p1().x();
       drawStart.setX(x);
       drawEnd.setX(x);
     }
     else
     {
-      auto y = thisAxis.startEnd.first.y() - v.pixelPosOnAxis;
+      auto y = propertiesThis.line.p1().y() - v.pixelPosOnAxis;
       drawStart.setY(y);
       drawEnd.setY(y);
     }
@@ -266,7 +262,7 @@ void PlotWidget::drawGridLines(QPainter &painter, PlotWidget::Axis axis, QList<P
   }
 }
 
-void PlotWidget::drawFadeBoxes(QPainter &painter, PlotWidget::Axis axis) const
+void PlotWidget::drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect)
 {
   QLinearGradient gradient;
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
@@ -274,10 +270,7 @@ void PlotWidget::drawFadeBoxes(QPainter &painter, PlotWidget::Axis axis) const
 #else
   gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
 #endif
-  gradient.setColorAt(0, Qt::blue);
-  gradient.setColorAt(1, Qt::green);
   gradient.setStart(QPointF(0.0, 0.0));
-  gradient.setFinalStop((axis == Axis::X) ? QPointF(1.0, 0) : QPointF(0.0, 1.0));
 
   painter.setPen(Qt::NoPen);
 
@@ -287,37 +280,17 @@ void PlotWidget::drawFadeBoxes(QPainter &painter, PlotWidget::Axis axis) const
     painter.setBrush(gradient);
   };
 
-  auto thisAxis = this->propertiesAxis[axis == Axis::X ? 0 : 1];
+  // Vertival
+  gradient.setFinalStop(QPointF(1.0, 0));
+  setGradientBrush(false);
+  painter.drawRect(QRectF(plotRect.left(), 0, fadeBoxThickness, widgetRect.height()));
+  setGradientBrush(true);
+  painter.drawRect(QRectF(plotRect.right(), 0, -fadeBoxThickness, widgetRect.height()));
 
-  const double slightOffset = 0.5;
-  if (axis == Axis::X)
-  {
-    const auto xLeft = double(thisAxis.startEnd.first.x()) - slightOffset;
-    setGradientBrush(false);
-    painter.drawRect(QRectF(xLeft, 0, fadeBoxThickness, this->rect().height()));
-    painter.setBrush(Qt::white);
-    painter.drawRect(QRectF(this->rect().bottomLeft(), thisAxis.startEnd.first));
-
-    const auto xRight = double(thisAxis.startEnd.second.x()) - axisMaxValueMargin + slightOffset;
-    const auto yRight = double(thisAxis.startEnd.second.y());
-    setGradientBrush(true);
-    painter.drawRect(QRectF(xRight, 0, -fadeBoxThickness, this->rect().height()));
-    painter.setBrush(Qt::white);
-    painter.drawRect(QRectF(QPoint(xRight, yRight), this->rect().bottomRight()));
-  }
-  else
-  {
-    const auto yBottom = double(thisAxis.startEnd.first.y()) + slightOffset;
-    setGradientBrush(true);
-    painter.drawRect(QRectF(0, yBottom, this->rect().width(), -fadeBoxThickness));
-    painter.setBrush(Qt::white);
-    painter.drawRect(QRectF(this->rect().bottomLeft(), thisAxis.startEnd.first));
-
-    const auto yTop = double(thisAxis.startEnd.second.y()) + axisMaxValueMargin - slightOffset;
-    const auto xTop = double(thisAxis.startEnd.second.x());
-    setGradientBrush(false);
-    painter.drawRect(QRectF(0, yTop, this->rect().width(), fadeBoxThickness));
-    painter.setBrush(Qt::white);
-    painter.drawRect(QRectF(QPoint(0, 0), QPoint(xTop, yTop)));
-  }
+  // Horizontal
+  gradient.setFinalStop(QPointF(0.0, 1.0));
+  setGradientBrush(true);
+  painter.drawRect(QRectF(0, plotRect.bottom(), widgetRect.width(), -fadeBoxThickness));
+  setGradientBrush(false);
+  painter.drawRect(QRectF(0, plotRect.top(), widgetRect.width(), fadeBoxThickness));
 }

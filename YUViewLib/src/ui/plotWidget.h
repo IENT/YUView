@@ -76,20 +76,21 @@ private:
     bool minorTick;
   };
 
-  QPair<QPoint, QPoint> determineAxisStartEnd(Axis axis) const;
-  QList<TickValue> getAxisValuesToShow(Axis axis) const;
-  void drawAxisAndTip(QPainter &painter, Axis axis) const;
-  void drawAxisTicksAndValues(QPainter &painter, Axis axis, QList<TickValue> &values) const;
-  void drawGridLines(QPainter &painter, Axis axis, QList<TickValue> &values) const;
-  void drawFadeBoxes(QPainter &painter, Axis axis) const;
-
   struct AxisProperties
   {
     double minValue {0};
     double maxValue {1};
     bool showDoubleValues {true};
 
-    QPair<QPoint, QPoint> startEnd;
+    QLineF line;
   };
   AxisProperties propertiesAxis[2];
+
+  static QLineF getAxisLine(const Axis axis, const QRectF plotRect);
+  static QList<TickValue> getAxisValuesToShow(const Axis axis, const AxisProperties &properties);
+  static void drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect);
+  static void drawAxis(QPainter &painter, const QRectF &plotRect);
+  static void drawAxisTicksAndValues(QPainter &painter, const Axis axis, const AxisProperties &properties, const QList<TickValue> &values);
+  static void drawGridLines(QPainter &painter, const Axis axis, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &values);
+  static void drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect);
 };
