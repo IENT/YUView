@@ -53,7 +53,7 @@ PlotWidget::PlotWidget(QWidget *parent)
 
 void PlotWidget::setModel(parserCommon::BitrateItemModel *model)
 {
-  this->model = model;
+  //this->model = model;
   this->update();
 }
 

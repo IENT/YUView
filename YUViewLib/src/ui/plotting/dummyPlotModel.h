@@ -32,35 +32,58 @@
 
 #pragma once
 
-class PlotModel
+#include "plotModel.h"
+
+#include <QList>
+#include <QRandomGenerator>
+
+class DummyPlotModel : public PlotModel
 {
 public:
-  enum class PlotType
+  DummyPlotModel() : PlotModel()
   {
-    Bar,
-    Line,
-    ConstValue
-  };
+    QRandomGenerator generator;
+    for (size_t i = 0; i < 100; i++)
+      this->barData.append(int(generator.bounded(500)));
+    for (size_t i = 0; i < 10; i++)
+      this->graphData.append({double(generator.bounded(100)), double(generator.bounded(1000))});
+  }
 
-  struct Range
+  unsigned int getNrPlots() const override
+  { 
+    return 3; 
+  }
+
+  PlotParameter getPlotParameter(unsigned plotIndex) const override
   {
-    int min, max;
-  };
+    if (plotIndex == 0)
+      return {PlotType::Bar, {0, 100}, {0, 500}};
+    if (plotIndex == 1)
+      return {PlotType::Line, {0, 100}, {0, 1000}};
+    if (plotIndex == 2)
+      return {PlotType::ConstValue, {-1, -1}, {300, 300}};
+    return {};
+  }
 
-  struct PlotParameter
+  unsigned int getNrPlotPoints(unsigned plotIndex) const override
   {
-    PlotType type;
-    Range xRange;
-    Range yRange;
-  };
+    if (plotIndex == 0)
+      return barData.size();
+    if (plotIndex == 1)
+      return graphData.size();
+    return 0;
+  }
 
-  struct Point
+  Point getPlotPoint(unsigned plotIndex, unsigned pointIndex) const override
   {
-    double x, y;
-  };
+    if (plotIndex == 0)
+      return {double(pointIndex), double(barData[pointIndex])};
+    if (plotIndex == 1)
+      return graphData[pointIndex];
+    return {};
+  }
 
-  virtual unsigned int getNrPlots() const = 0;
-  virtual PlotParameter getPlotParameter(unsigned plotIndex) const = 0;
-  virtual unsigned int getNrPlotPoints(unsigned plotIndex) const = 0;
-  virtual Point getPlotPoint(unsigned plotIndex, unsigned pointIndex) const = 0;
+private:
+  QList<int> barData;
+  QList<Point> graphData;
 };

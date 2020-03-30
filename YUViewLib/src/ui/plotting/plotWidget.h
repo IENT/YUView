@@ -39,6 +39,8 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QScrollBar>
 
+#include "dummyPlotModel.h"
+
 class PlotWidget : public QWidget
 {
   Q_OBJECT
@@ -46,9 +48,6 @@ class PlotWidget : public QWidget
 public:
   PlotWidget(QWidget *parent = 0);
   void setModel(parserCommon::BitrateItemModel *model);
-
-private:
-  QPointer<parserCommon::BitrateItemModel> model;
 
 protected:
 
@@ -93,4 +92,6 @@ private:
   static void drawAxisTicksAndValues(QPainter &painter, const Axis axis, const AxisProperties &properties, const QList<TickValue> &values);
   static void drawGridLines(QPainter &painter, const Axis axis, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &values);
   static void drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect);
+
+  DummyPlotModel model;
 };
