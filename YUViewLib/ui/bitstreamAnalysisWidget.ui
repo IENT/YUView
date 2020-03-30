@@ -172,7 +172,7 @@
   <customwidget>
    <class>PlotWidget</class>
    <extends>QWidget</extends>
-   <header>ui/plotWidget.h</header>
+   <header>ui/plotting/plotWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
