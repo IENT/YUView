@@ -34,11 +34,13 @@
 
 #include "parser/parserCommon.h"
 
+#include <QAction>
 #include <QtWidgets/QGraphicsItem>
 #include <QtCore/QPointer>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QScrollBar>
 
+#include "plotModel.h"
 #include "dummyPlotModel.h"
 
 class PlotWidget : public QWidget
@@ -47,19 +49,21 @@ class PlotWidget : public QWidget
 
 public:
   PlotWidget(QWidget *parent = 0);
-  void setModel(parserCommon::BitrateItemModel *model);
+  void setModel(PlotModel *model);
 
 protected:
 
   // Override some events from the widget
   void paintEvent(QPaintEvent *event) override;
-  void mouseMoveEvent(QMouseEvent *event) override { Q_UNUSED(event); }
-  void mousePressEvent(QMouseEvent *event) override { Q_UNUSED(event); }
-  void mouseReleaseEvent(QMouseEvent *event) override { Q_UNUSED(event); }
-  void wheelEvent (QWheelEvent *event) override { Q_UNUSED(event); }
-  void mouseDoubleClickEvent(QMouseEvent *event) override { Q_UNUSED(event); }
-  void keyPressEvent(QKeyEvent *event) override { Q_UNUSED(event); }
+  void mouseMoveEvent(QMouseEvent *event) override { event->ignore(); }
+  void mousePressEvent(QMouseEvent *event) override;
+  void mouseReleaseEvent(QMouseEvent *event) override { event->ignore(); }
+  void wheelEvent (QWheelEvent *event) override;
+  void mouseDoubleClickEvent(QMouseEvent *event) override { event->ignore(); }
+  void keyPressEvent(QKeyEvent *event) override { event->ignore(); }
   void resizeEvent(QResizeEvent *event) override;
+
+  virtual bool event(QEvent *event) override;
 
 private:
   enum class Axis
@@ -93,5 +97,16 @@ private:
   static void drawGridLines(QPainter &painter, const Axis axis, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &values);
   static void drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect);
 
-  DummyPlotModel model;
+  void drawPlot(QPainter &painter, QRectF plotRect) const;
+
+  double zoomFactor {1.0}; //!< The current zoom factor in two dimensions
+  enum class ZoomDirection {BOTH, HORIZONTAL};
+  ZoomDirection zoomDirection {ZoomDirection::HORIZONTAL};
+  enum class ZoomMode {IN, OUT, TO_VALUE};
+  void zoom(ZoomMode zoomMode, const QPoint &zoomPoint = QPoint(), double newZoomFactor = 0.0);
+
+  QPoint moveOffset; //!< The offset of the view
+
+  PlotModel *model {nullptr};
+  DummyPlotModel dummyModel;
 };

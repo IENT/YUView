@@ -36,6 +36,8 @@
 #include <QPainter>
 #include <cmath>
 
+#include <QDebug>
+
 const QPoint marginTopLeft(30, 5);
 const QPoint marginBottomRight(5, 30);
 
@@ -46,14 +48,35 @@ const int fadeBoxThickness = 10;
 const QColor gridLineMajor(180, 180, 180);
 const QColor gridLineMinor(230, 230, 230);
 
+const int ZOOM_STEP_FACTOR = 2;
+
 PlotWidget::PlotWidget(QWidget *parent)
   : QWidget(parent)
 {
+  this->setModel(&this->dummyModel);
+
+  // setContextMenuPolicy(Qt::PreventContextMenu);
+
+  // if (!isEnabled())
+  // {
+  //   this->setEnabled(true);
+  // }
+
+  // // We want to have all mouse events (even move)
+  // setMouseTracking(true);
 }
 
-void PlotWidget::setModel(parserCommon::BitrateItemModel *model)
+void PlotWidget::setModel(PlotModel *model)
 {
-  //this->model = model;
+  this->model = model;
+  if (this->model)
+  {
+    auto param = this->model->getPlotParameter(0);
+    propertiesAxis[0].minValue = param.xRange.min;
+    propertiesAxis[0].maxValue = param.xRange.max;
+    propertiesAxis[1].minValue = param.yRange.min;
+    propertiesAxis[1].maxValue = param.yRange.max;
+  }
   this->update();
 }
 
@@ -93,24 +116,18 @@ void PlotWidget::paintEvent(QPaintEvent *paint_event)
   const auto widgetRect = QRectF(this->rect());
   const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
 
+  this->propertiesAxis[0].line = getAxisLine(Axis::X, plotRect);
+  this->propertiesAxis[1].line = getAxisLine(Axis::Y, plotRect);
+
   auto valuesX = this->getAxisValuesToShow(Axis::X, this->propertiesAxis[0]);
   auto valuesY = this->getAxisValuesToShow(Axis::Y, this->propertiesAxis[1]);
   drawGridLines(painter, Axis::X, this->propertiesAxis[0], plotRect, valuesX);
   drawGridLines(painter, Axis::Y, this->propertiesAxis[1], plotRect, valuesY);
 
-  if (false)
-  {
-    // DEBUG draw plot
-    painter.setBrush(Qt::blue);
-    painter.setPen(Qt::NoPen);
-    painter.drawRect(widgetRect);
-  }
+  this->drawPlot(painter, plotRect);
 
   drawWhiteBoarders(painter, plotRect, widgetRect);
   drawAxis(painter, plotRect);
-
-  this->propertiesAxis[0].line = getAxisLine(Axis::X, plotRect);
-  this->propertiesAxis[1].line = getAxisLine(Axis::Y, plotRect);
 
   drawAxisTicksAndValues(painter, Axis::X, this->propertiesAxis[0], valuesX);
   drawAxisTicksAndValues(painter, Axis::Y, this->propertiesAxis[1], valuesY);
@@ -172,7 +189,7 @@ QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(const PlotWidget::A
   double factorMajor = 1.0;
   while (factorMajor * 10 * nrWholeValuesInRange < nrValuesToShowMax)
     factorMajor *= 10;
-  while (factorMajor / 10 * nrWholeValuesInRange > nrValuesToShowMax)
+  while (factorMajor * nrWholeValuesInRange > nrValuesToShowMax)
     factorMajor /= 10;
 
   double factorMinor = factorMajor;
@@ -293,4 +310,161 @@ void PlotWidget::drawFadeBoxes(QPainter &painter, const QRectF plotRect, const Q
   painter.drawRect(QRectF(0, plotRect.bottom(), widgetRect.width(), -fadeBoxThickness));
   setGradientBrush(false);
   painter.drawRect(QRectF(0, plotRect.top(), widgetRect.width(), fadeBoxThickness));
+}
+
+void PlotWidget::drawPlot(QPainter &painter, QRectF plotRect) const
+{
+  const int plotIndex = 0;
+
+  if (!model)
+    return;
+
+  if (plotIndex >= model->getNrPlots())
+    return;
+
+  painter.setBrush(QColor(0, 0, 200, 100));
+  painter.setPen(QColor(0, 0, 200));
+
+  const auto yPixelMin = this->propertiesAxis[1].line.p1().y() - fadeBoxThickness;
+  const auto yPixelMax = this->propertiesAxis[1].line.p2().y() + fadeBoxThickness;
+  const auto yValMin = this->propertiesAxis[1].minValue;
+  const auto yValMax = this->propertiesAxis[1].maxValue;
+  const auto yPixelPerValue = (yPixelMax - yPixelMin) / (yValMax - yValMin);
+  const auto xPixelMin = this->propertiesAxis[0].line.p1().x() + fadeBoxThickness;
+  const auto xPixelMax = this->propertiesAxis[0].line.p2().x() - fadeBoxThickness;
+  const auto xValMin = this->propertiesAxis[0].minValue;
+  const auto xValMax = this->propertiesAxis[0].maxValue;
+  const auto xPixelPerValue = (xPixelMax - xPixelMin) / (xValMax - xValMin);
+
+  const auto zeroPointX = plotRect.bottomLeft().x() + fadeBoxThickness;
+  const auto zeroPointY = plotRect.bottomLeft().y() - fadeBoxThickness;
+
+  auto param = model->getPlotParameter(plotIndex);
+  if (param.type == PlotModel::PlotType::Bar)
+  {
+    const auto nrBars = param.xRange.max - param.xRange.min;
+    for (size_t i = 0; i < nrBars; i++)
+    {
+      const auto value = model->getPlotPoint(plotIndex, i);
+      const auto posXLeftPixel = zeroPointX + (value.x - 0.5 - xValMin) * xPixelPerValue;
+      const auto posXRightPixel = zeroPointX + (value.x + 0.5 - xValMin) * xPixelPerValue;
+      const auto posYZeroPixel = zeroPointY + (0 - yValMin) * yPixelPerValue;
+      const auto posYPixel = zeroPointY + (yValMax - value.y) * yPixelPerValue;
+
+      QRectF drawRect(QPointF(posXLeftPixel, posYPixel), QPointF(posXRightPixel, posYZeroPixel));
+      painter.drawRect(drawRect);
+    }
+  }
+}
+
+void PlotWidget::mousePressEvent(QMouseEvent *event)
+{
+  qDebug() << "PlotWidget::mousePressEvent";
+}
+
+void PlotWidget::wheelEvent(QWheelEvent *e)
+{
+  qDebug() << "PlotWidget::wheelEvent";
+  QPoint p = e->pos();
+  e->accept();
+  zoom(e->delta() > 0 ? ZoomMode::IN : ZoomMode::OUT, p);
+}
+
+bool PlotWidget::event(QEvent *event) 
+{ 
+  qDebug() << "PlotWidget::event type " << event->type() << " enabled " << isEnabled();
+  return QWidget::event(event); 
+}
+
+void PlotWidget::zoom(PlotWidget::ZoomMode zoomMode, const QPoint &zoomPoint, double newZoomFactor)
+{
+  // The zoom point works like this: After the zoom operation the pixel at zoomPoint shall
+  // still be at the same position (zoomPoint)
+
+  // What is the factor that we will zoom in by?
+  // The zoom factor could currently not be a multiple of ZOOM_STEP_FACTOR
+  // if the user used pinch zoom. So let's go back to the step size of ZOOM_STEP_FACTOR
+  // and calculate the next higher zoom which is a multiple of ZOOM_STEP_FACTOR.
+  // E.g.: If the zoom factor currently is 1.9 we want it to become 2 after zooming.
+
+  double newZoom = 1.0;
+  if (zoomMode == ZoomMode::IN)
+  {
+    if (this->zoomFactor > 1.0)
+    {
+      double inf = std::numeric_limits<double>::infinity();
+      while (newZoom <= this->zoomFactor && newZoom < inf)
+        newZoom *= ZOOM_STEP_FACTOR;
+    }
+    else
+    {
+      while (newZoom > this->zoomFactor)
+        newZoom /= ZOOM_STEP_FACTOR;
+      newZoom *= ZOOM_STEP_FACTOR;
+    }
+  }
+  else if (zoomMode == ZoomMode::OUT)
+  {
+    if (this->zoomFactor > 1.0)
+    {
+      while (newZoom < zoomFactor)
+        newZoom *= ZOOM_STEP_FACTOR;
+      newZoom /= ZOOM_STEP_FACTOR;
+    }
+    else
+    {
+      while (newZoom >= this->zoomFactor && newZoom > 0.0)
+        newZoom /= ZOOM_STEP_FACTOR;
+    }
+  }
+  else if (zoomMode == ZoomMode::TO_VALUE)
+  {
+    newZoom = newZoomFactor;
+  }
+  // So what is the zoom factor that we use in this step?
+  double stepZoomFactor = newZoom / this->zoomFactor;
+
+  if (!zoomPoint.isNull())
+  {
+    // // The center point has to be moved relative to the zoomPoint
+
+    // // Get the absolute center point of the item
+    // QPoint drawArea_botR(width(), height());
+    // QPoint centerPoint = drawArea_botR / 2;
+
+    // if (viewSplitMode == SIDE_BY_SIDE)
+    // {
+    //   // For side by side mode, the center points are centered in each individual split view
+
+    //   // Which side of the split view are we zooming in?
+    //   // Get the center point of that view
+    //   int xSplit = int(drawArea_botR.x() * splittingPoint);
+    //   if (zoomPoint.x() > xSplit)
+    //     // Zooming in the right view
+    //     centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
+    //   else
+    //     // Zooming in the left view
+    //     centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
+    // }
+
+    // // The absolute center point of the item under the cursor
+    // QPoint itemCenter = centerPoint + centerOffset;
+
+    // // Move this item center point
+    // QPoint diff = itemCenter - zoomPoint;
+    // diff *= stepZoomFactor;
+    // itemCenter = zoomPoint + diff;
+
+    // // Calculate the new center offset
+    // setCenterOffset(itemCenter - centerPoint);
+  }
+  else
+  {
+    // Zoom without considering the mouse position
+    this->moveOffset = this->moveOffset * stepZoomFactor;
+  }
+
+  this->zoomFactor = newZoom;
+
+  update();
 }
