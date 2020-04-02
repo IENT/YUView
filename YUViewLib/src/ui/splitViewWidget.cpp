@@ -48,6 +48,40 @@
 #include "video/frameHandler.h"
 #include "video/videoCache.h"
 
+// The splitter can be grabbed with a certain margin of pixels to the left and right. The margin
+// in pixels is calculated depending on the logical DPI of the user using:
+//    logicalDPI() / SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV
+// From the MS docs: "The standard DPI settings are 100% (96 DPI), 125% (120 DPI), and 150% (144 DPI). 
+// The user can also apply a custom setting. Starting in Windows 7, DPI is a per-user setting."
+// For 96 a divisor of 24 will results in +-4 pixels and 150% will result in +-6 pixels.
+const int SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV = 24;
+// The splitter cannot be moved closer to the border of the widget than SPLITTER_CLIPX pixels
+// If the splitter is moved closer it cannot be moved back into view and is "lost"
+const int SPLITVIEWWIDGET_SPLITTER_CLIPX = 10;
+// The font and size of the text that will be drawn in the top left corner indicating the zoom factor
+const QString SPLITVIEWWIDGET_ZOOMFACTOR_FONT = "helvetica";
+const int SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE = 24;
+// The font and the font size of the "loading..." message
+const QString SPLITVIEWWIDGET_LOADING_FONT = "helvetica";
+const int SPLITVIEWWIDGET_LOADING_FONTSIZE = 10;
+// The font and the font size when drawing the item path in split view mode
+const QString SPLITVIEWWIDGET_SPLITPATH_FONT = "helvetica";
+const int SPLITVIEWWIDGET_SPLITPATH_FONTSIZE = 10;
+const int SPLITVIEWWIDGET_SPLITPATH_PADDING = 20;
+const int SPLITVIEWWIDGET_SPLITPATH_TOP_OFFSET = 10;
+// The font and the font size when drawing the pixel values
+const QString SPLITVIEWWIDGET_PIXEL_VALUES_FONT = "helvetica";
+const int SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE = 10;
+// When zooming in or out, you can only step by factors of x
+const int SPLITVIEWWIDGET_ZOOM_STEP_FACTOR = 2;
+// Set the zooming behavior. If zooming out, two approaches can be taken:
+// 0: After the zoom out operation, the item point in the center of the widget will still be in the center of the widget.
+// 1: After the zoom out operation, the item point under the mouse cursor will still be under the mouse.
+const int SPLITVIEWWIDGET_ZOOM_OUT_MOUSE = 1;
+// What message is shown when a playlist item is loading.
+const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
+
+
 // Activate this if you want to know when which item is triggered to load and draw
 #define SPLITVIEWWIDGET_DEBUG_LOAD_DRAW 0
 #if SPLITVIEWWIDGET_DEBUG_LOAD_DRAW && !NDEBUG
@@ -1315,30 +1349,30 @@ void splitViewWidget::zoom(ZoomMode zoomMode, const QPoint &zoomPoint, double ne
   double newZoom = 1.0;
   if (zoomMode == ZOOM_IN)
   {
-    if (zoomFactor > 1.0)
+    if (this->zoomFactor > 1.0)
     {
       double inf = std::numeric_limits<double>::infinity();
-      while (newZoom <= zoomFactor && newZoom < inf)
+      while (newZoom <= this->zoomFactor && newZoom < inf)
         newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
     }
     else
     {
-      while (newZoom > zoomFactor)
+      while (newZoom > this->zoomFactor)
         newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
       newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
     }
   }
   else if (zoomMode == ZOOM_OUT)
   {
-    if (zoomFactor > 1.0)
+    if (this->zoomFactor > 1.0)
     {
-      while (newZoom < zoomFactor)
+      while (newZoom < this->zoomFactor)
         newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
       newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
     }
     else
     {
-      while (newZoom >= zoomFactor && newZoom > 0.0)
+      while (newZoom >= this->zoomFactor && newZoom > 0.0)
         newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
     }
   }
@@ -1347,7 +1381,7 @@ void splitViewWidget::zoom(ZoomMode zoomMode, const QPoint &zoomPoint, double ne
     newZoom = newZoomFactor;
   }
   // So what is the zoom factor that we use in this step?
-  double stepZoomFactor = newZoom / zoomFactor;
+  double stepZoomFactor = newZoom / this->zoomFactor;
 
   if (!zoomPoint.isNull())
   {

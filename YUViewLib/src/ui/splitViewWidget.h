@@ -45,39 +45,6 @@
 #include "common/saveUi.h"
 #include "common/typedef.h"
 
-// The splitter can be grabbed with a certain margin of pixels to the left and right. The margin
-// in pixels is calculated depending on the logical DPI of the user using:
-//    logicalDPI() / SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV
-// From the MS docs: "The standard DPI settings are 100% (96 DPI), 125% (120 DPI), and 150% (144 DPI). 
-// The user can also apply a custom setting. Starting in Windows 7, DPI is a per-user setting."
-// For 96 a divisor of 24 will results in +-4 pixels and 150% will result in +-6 pixels.
-#define SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV 24
-// The splitter cannot be moved closer to the border of the widget than SPLITTER_CLIPX pixels
-// If the splitter is moved closer it cannot be moved back into view and is "lost"
-#define SPLITVIEWWIDGET_SPLITTER_CLIPX 10
-// The font and size of the text that will be drawn in the top left corner indicating the zoom factor
-#define SPLITVIEWWIDGET_ZOOMFACTOR_FONT "helvetica"
-#define SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE 24
-// The font and the font size of the "loading..." message
-#define SPLITVIEWWIDGET_LOADING_FONT "helvetica"
-#define SPLITVIEWWIDGET_LOADING_FONTSIZE 10
-// The font and the font size when drawing the item path in split view mode
-#define SPLITVIEWWIDGET_SPLITPATH_FONT "helvetica"
-#define SPLITVIEWWIDGET_SPLITPATH_FONTSIZE 10
-#define SPLITVIEWWIDGET_SPLITPATH_PADDING 20
-#define SPLITVIEWWIDGET_SPLITPATH_TOP_OFFSET 10
-// The font and the font size when drawing the pixel values
-#define SPLITVIEWWIDGET_PIXEL_VALUES_FONT "helvetica"
-#define SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE 10
-// When zooming in or out, you can only step by factors of x
-#define SPLITVIEWWIDGET_ZOOM_STEP_FACTOR 2
-// Set the zooming behavior. If zooming out, two approaches can be taken:
-// 0: After the zoom out operation, the item point in the center of the widget will still be in the center of the widget.
-// 1: After the zoom out operation, the item point under the mouse cursor will still be under the mouse.
-#define SPLITVIEWWIDGET_ZOOM_OUT_MOUSE 1
-// What message is shown when a playlist item is loading.
-#define SPLITVIEWWIDGET_LOADING_TEXT "Loading..."
-
 class QDockWidget;
 class PlaybackController;
 class playlistItem;
