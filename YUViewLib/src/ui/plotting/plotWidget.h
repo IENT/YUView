@@ -56,7 +56,7 @@ protected:
   // Override some events from the widget
   void paintEvent(QPaintEvent *event) override;
   void mouseMoveEvent(QMouseEvent *event) override { event->ignore(); }
-  void mousePressEvent(QMouseEvent *event) override;
+  void mousePressEvent(QMouseEvent *event) override { event->ignore(); }
   void mouseReleaseEvent(QMouseEvent *event) override { event->ignore(); }
   void wheelEvent (QWheelEvent *event) override;
   void mouseDoubleClickEvent(QMouseEvent *event) override { event->ignore(); }

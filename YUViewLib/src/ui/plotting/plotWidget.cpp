@@ -357,22 +357,15 @@ void PlotWidget::drawPlot(QPainter &painter, QRectF plotRect) const
   }
 }
 
-void PlotWidget::mousePressEvent(QMouseEvent *event)
-{
-  qDebug() << "PlotWidget::mousePressEvent";
-}
-
 void PlotWidget::wheelEvent(QWheelEvent *e)
 {
-  qDebug() << "PlotWidget::wheelEvent";
   QPoint p = e->pos();
   e->accept();
   zoom(e->delta() > 0 ? ZoomMode::IN : ZoomMode::OUT, p);
 }
 
 bool PlotWidget::event(QEvent *event) 
-{ 
-  qDebug() << "PlotWidget::event type " << event->type() << " enabled " << isEnabled();
+{
   return QWidget::event(event); 
 }
 
