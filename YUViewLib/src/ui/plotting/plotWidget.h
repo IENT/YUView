@@ -65,25 +65,33 @@ private:
     bool minorTick;
   };
 
+  struct ValueRange
+  {
+    double min {0};
+    double max {1};
+  };
+
   struct AxisProperties
   {
-    double minValue {0};
-    double maxValue {1};
+    ValueRange range;
+    ValueRange rangeZoomed;
+    Axis axis;
     bool showDoubleValues {true};
 
     QLineF line;
   };
   AxisProperties propertiesAxis[2];
 
-  static QLineF getAxisLine(const Axis axis, const QRectF plotRect);
-  static QList<TickValue> getAxisValuesToShow(const Axis axis, const AxisProperties &properties);
+  static QList<TickValue> getAxisValuesToShow(const AxisProperties &properties);
   static void drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect);
   static void drawAxis(QPainter &painter, const QRectF &plotRect);
-  static void drawAxisTicksAndValues(QPainter &painter, const Axis axis, const AxisProperties &properties, const QList<TickValue> &values);
-  static void drawGridLines(QPainter &painter, const Axis axis, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &values);
+  static void drawAxisTicksAndValues(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &values);
+  static void drawGridLines(QPainter &painter, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &values);
   static void drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect);
 
-  void drawPlot(QPainter &painter, QRectF plotRect) const;
+  void updateAxis(AxisProperties &properties, const QRectF &plotRect) const;
+
+  void drawPlot(QPainter &painter, const QRectF &plotRect) const;
 
   PlotModel *model {nullptr};
   DummyPlotModel dummyModel;

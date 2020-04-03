@@ -44,6 +44,9 @@ const int axisMaxValueMargin = 10;
 const int tickLength = 5;
 const int fadeBoxThickness = 10;
 
+// At zoom 1.0 (no zoom) we will show values with this distance
+const auto zoomToPixelsPerValue = 10;
+
 const QColor gridLineMajor(180, 180, 180);
 const QColor gridLineMinor(230, 230, 230);
 
@@ -51,6 +54,9 @@ PlotWidget::PlotWidget(QWidget *parent)
   : MoveAndZoomableView(parent)
 {
   this->setModel(&this->dummyModel);
+
+  this->propertiesAxis[0].axis = Axis::X;
+  this->propertiesAxis[1].axis = Axis::Y;
 
   // setContextMenuPolicy(Qt::PreventContextMenu);
 
@@ -69,10 +75,10 @@ void PlotWidget::setModel(PlotModel *model)
   if (this->model)
   {
     auto param = this->model->getPlotParameter(0);
-    propertiesAxis[0].minValue = param.xRange.min;
-    propertiesAxis[0].maxValue = param.xRange.max;
-    propertiesAxis[1].minValue = param.yRange.min;
-    propertiesAxis[1].maxValue = param.yRange.max;
+    propertiesAxis[0].range.min = param.xRange.min;
+    propertiesAxis[0].range.max = param.xRange.max;
+    propertiesAxis[1].range.min = param.yRange.min;
+    propertiesAxis[1].range.max = param.yRange.max;
   }
   this->update();
 }
@@ -107,21 +113,21 @@ void PlotWidget::paintEvent(QPaintEvent *paint_event)
   const auto widgetRect = QRectF(this->rect());
   const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
 
-  this->propertiesAxis[0].line = getAxisLine(Axis::X, plotRect);
-  this->propertiesAxis[1].line = getAxisLine(Axis::Y, plotRect);
+  this->updateAxis(this->propertiesAxis[0], plotRect);
+  this->updateAxis(this->propertiesAxis[1], plotRect);
 
-  auto valuesX = this->getAxisValuesToShow(Axis::X, this->propertiesAxis[0]);
-  auto valuesY = this->getAxisValuesToShow(Axis::Y, this->propertiesAxis[1]);
-  drawGridLines(painter, Axis::X, this->propertiesAxis[0], plotRect, valuesX);
-  drawGridLines(painter, Axis::Y, this->propertiesAxis[1], plotRect, valuesY);
+  auto valuesX = this->getAxisValuesToShow(this->propertiesAxis[0]);
+  auto valuesY = this->getAxisValuesToShow(this->propertiesAxis[1]);
+  drawGridLines(painter, this->propertiesAxis[0], plotRect, valuesX);
+  drawGridLines(painter, this->propertiesAxis[1], plotRect, valuesY);
 
   this->drawPlot(painter, plotRect);
 
   drawWhiteBoarders(painter, plotRect, widgetRect);
   drawAxis(painter, plotRect);
 
-  drawAxisTicksAndValues(painter, Axis::X, this->propertiesAxis[0], valuesX);
-  drawAxisTicksAndValues(painter, Axis::Y, this->propertiesAxis[1], valuesY);
+  drawAxisTicksAndValues(painter, this->propertiesAxis[0], valuesX);
+  drawAxisTicksAndValues(painter, this->propertiesAxis[1], valuesY);
 
   drawFadeBoxes(painter, plotRect, widgetRect);
 
@@ -144,35 +150,19 @@ void PlotWidget::drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, co
   painter.drawRect(QRectF(QPointF(0, plotRect.bottom()), widgetRect.bottomRight()));
 }
 
-QLineF PlotWidget::getAxisLine(const PlotWidget::Axis axis, const QRectF plotRect)
+QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(const PlotWidget::AxisProperties &properties)
 {
-  QLineF line;
-  if (axis == Axis::X)
-  {
-    QPointF thicknessDirection(fadeBoxThickness, 0);
-    line = {plotRect.bottomLeft() + thicknessDirection, plotRect.bottomRight() - thicknessDirection};
-  }
-  else
-  {
-    QPointF thicknessDirection(0, fadeBoxThickness);
-    line = {plotRect.bottomLeft() - thicknessDirection, plotRect.topLeft() + thicknessDirection};
-  }
-  return line;
-}
-
-QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(const PlotWidget::Axis axis, const PlotWidget::AxisProperties &properties)
-{
-  const auto axisVector = (axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
+  const auto axisVector = (properties.axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
   const auto axisLengthInPixels = QPointF::dotProduct(properties.line.p2() - properties.line.p1(), axisVector);
-  const auto valueRange = properties.maxValue - properties.minValue;
+  const auto valueRange = properties.rangeZoomed.max - properties.rangeZoomed.min;
 
   const int minPixelDistanceBetweenValues = 50;
   const auto nrValuesToShowMax = double(axisLengthInPixels) / minPixelDistanceBetweenValues;
 
   auto nrWholeValuesInRange = int(std::floor(valueRange));
 
-  auto offsetLeft = std::ceil(properties.minValue) - properties.minValue;
-  auto offsetRight = properties.maxValue - std::floor(properties.maxValue);
+  auto offsetLeft = std::ceil(properties.rangeZoomed.min) - properties.rangeZoomed.min;
+  auto offsetRight = properties.rangeZoomed.max - std::floor(properties.rangeZoomed.max);
   auto rangeRemainder = valueRange - int(std::floor(valueRange));
   if (offsetLeft < rangeRemainder && offsetRight < rangeRemainder)
     nrWholeValuesInRange++;
@@ -190,8 +180,8 @@ QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(const PlotWidget::A
   auto getValuesForFactor = [properties](double factor)
   {
     QList<double> values;
-    int min = std::ceil(properties.minValue * factor);
-    int max = std::floor(properties.maxValue * factor);
+    int min = std::ceil(properties.rangeZoomed.min * factor);
+    int max = std::floor(properties.rangeZoomed.max * factor);
     for (int i = min; i <= max; i++)
       values.append(double(i) / factor);
     return values;
@@ -204,7 +194,7 @@ QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(const PlotWidget::A
   for (auto v : valuesMinor)
   {
     const bool isMinor = !valuesMajor.contains(v);
-    auto pixelPosOnAxis = ((v - properties.minValue) / valueRange) * (axisLengthInPixels - axisMaxValueMargin);
+    auto pixelPosOnAxis = ((v - properties.rangeZoomed.min) / valueRange) * (axisLengthInPixels - axisMaxValueMargin);
     values.append({v, pixelPosOnAxis, isMinor});
   }
   return values;
@@ -217,10 +207,10 @@ void PlotWidget::drawAxis(QPainter &painter, const QRectF &plotRect)
   painter.drawLine(plotRect.bottomLeft(), plotRect.bottomRight());
 }
 
-void PlotWidget::drawAxisTicksAndValues(QPainter &painter, const PlotWidget::Axis axis, const AxisProperties &properties, const QList<PlotWidget::TickValue> &values)
+void PlotWidget::drawAxisTicksAndValues(QPainter &painter, const AxisProperties &properties, const QList<PlotWidget::TickValue> &values)
 {
-  const auto axisVector = (axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
-  const auto tickLine = (axis == Axis::X) ? QPointF(0, tickLength) : QPointF(-tickLength, 0);
+  const auto axisVector = (properties.axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
+  const auto tickLine = (properties.axis == Axis::X) ? QPointF(0, tickLength) : QPointF(-tickLength, 0);
 
   QFont displayFont = painter.font();
   QFontMetricsF metrics(displayFont);
@@ -236,7 +226,7 @@ void PlotWidget::drawAxisTicksAndValues(QPainter &painter, const PlotWidget::Axi
     QRectF textRect;
     textRect.setSize(textSize);
     textRect.moveCenter(p);
-    if (axis == Axis::X)
+    if (properties.axis == Axis::X)
       textRect.moveTop(p.y() + tickLength + 2);
     else
       textRect.moveRight(p.x() - tickLength - 2);
@@ -245,22 +235,22 @@ void PlotWidget::drawAxisTicksAndValues(QPainter &painter, const PlotWidget::Axi
   }
 }
 
-void PlotWidget::drawGridLines(QPainter &painter, const Axis axis, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &values)
+void PlotWidget::drawGridLines(QPainter &painter, const AxisProperties &properties, const QRectF &plotRect, const QList<TickValue> &values)
 {
-  auto drawStart = (axis == Axis::X) ? plotRect.topLeft() : plotRect.bottomLeft();
-  auto drawEnd = (axis == Axis::X) ? plotRect.bottomLeft() : plotRect.bottomRight();
+  auto drawStart = (properties.axis == Axis::X) ? plotRect.topLeft() : plotRect.bottomLeft();
+  auto drawEnd = (properties.axis == Axis::X) ? plotRect.bottomLeft() : plotRect.bottomRight();
 
   for (auto v : values)
   {
-    if (axis == Axis::X)
+    if (properties.axis == Axis::X)
     {
-      auto x = v.pixelPosOnAxis + propertiesThis.line.p1().x();
+      auto x = v.pixelPosOnAxis + properties.line.p1().x();
       drawStart.setX(x);
       drawEnd.setX(x);
     }
     else
     {
-      auto y = propertiesThis.line.p1().y() - v.pixelPosOnAxis;
+      auto y = properties.line.p1().y() - v.pixelPosOnAxis;
       drawStart.setY(y);
       drawEnd.setY(y);
     }
@@ -303,7 +293,7 @@ void PlotWidget::drawFadeBoxes(QPainter &painter, const QRectF plotRect, const Q
   painter.drawRect(QRectF(0, plotRect.top(), widgetRect.width(), fadeBoxThickness));
 }
 
-void PlotWidget::drawPlot(QPainter &painter, QRectF plotRect) const
+void PlotWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
 {
   const int plotIndex = 0;
 
@@ -318,13 +308,13 @@ void PlotWidget::drawPlot(QPainter &painter, QRectF plotRect) const
 
   const auto yPixelMin = this->propertiesAxis[1].line.p1().y() - fadeBoxThickness;
   const auto yPixelMax = this->propertiesAxis[1].line.p2().y() + fadeBoxThickness;
-  const auto yValMin = this->propertiesAxis[1].minValue;
-  const auto yValMax = this->propertiesAxis[1].maxValue;
+  const auto yValMin = this->propertiesAxis[1].rangeZoomed.min;
+  const auto yValMax = this->propertiesAxis[1].rangeZoomed.max;
   const auto yPixelPerValue = (yPixelMax - yPixelMin) / (yValMax - yValMin);
   const auto xPixelMin = this->propertiesAxis[0].line.p1().x() + fadeBoxThickness;
   const auto xPixelMax = this->propertiesAxis[0].line.p2().x() - fadeBoxThickness;
-  const auto xValMin = this->propertiesAxis[0].minValue;
-  const auto xValMax = this->propertiesAxis[0].maxValue;
+  const auto xValMin = this->propertiesAxis[0].rangeZoomed.min;
+  const auto xValMax = this->propertiesAxis[0].rangeZoomed.max;
   const auto xPixelPerValue = (xPixelMax - xPixelMin) / (xValMax - xValMin);
 
   const auto zeroPointX = plotRect.bottomLeft().x() + fadeBoxThickness;
@@ -348,3 +338,36 @@ void PlotWidget::drawPlot(QPainter &painter, QRectF plotRect) const
   }
 }
 
+void PlotWidget::updateAxis(PlotWidget::AxisProperties &properties, const QRectF &plotRect) const
+{
+  auto param = model->getPlotParameter(0);
+  if (param.type == PlotModel::PlotType::Bar)
+  {
+    if (properties.axis == Axis::Y)
+    {
+      properties.rangeZoomed.min = properties.range.min;
+      properties.rangeZoomed.max = properties.range.max;
+    }
+    else
+    {
+      properties.rangeZoomed.min = properties.range.min;
+      properties.rangeZoomed.max = properties.range.max * this->zoomFactor;
+      qDebug() << "Zoom factor " << this->zoomFactor;
+    }
+  }
+  else
+  {
+    assert(false);
+  }
+
+  if (properties.axis == Axis::X)
+  {
+    const QPointF thicknessDirection(fadeBoxThickness, 0);
+    properties.line = {plotRect.bottomLeft() + thicknessDirection, plotRect.bottomRight() - thicknessDirection};
+  }
+  else
+  {
+    const QPointF thicknessDirection(0, fadeBoxThickness);
+    properties.line = {plotRect.bottomLeft() - thicknessDirection, plotRect.topLeft() + thicknessDirection};
+  }
+}
