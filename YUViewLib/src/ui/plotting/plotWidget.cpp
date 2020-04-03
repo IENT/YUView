@@ -32,7 +32,6 @@
 
 #include "plotWidget.h"
 
-#include <QtWidgets/QVBoxLayout>
 #include <QPainter>
 #include <cmath>
 
@@ -48,10 +47,8 @@ const int fadeBoxThickness = 10;
 const QColor gridLineMajor(180, 180, 180);
 const QColor gridLineMinor(230, 230, 230);
 
-const int ZOOM_STEP_FACTOR = 2;
-
 PlotWidget::PlotWidget(QWidget *parent)
-  : QWidget(parent)
+  : MoveAndZoomableView(parent)
 {
   this->setModel(&this->dummyModel);
 
@@ -77,12 +74,6 @@ void PlotWidget::setModel(PlotModel *model)
     propertiesAxis[1].minValue = param.yRange.min;
     propertiesAxis[1].maxValue = param.yRange.max;
   }
-  this->update();
-}
-
-void PlotWidget::resizeEvent(QResizeEvent *event)
-{
-  Q_UNUSED(event);
   this->update();
 }
 
@@ -357,107 +348,3 @@ void PlotWidget::drawPlot(QPainter &painter, QRectF plotRect) const
   }
 }
 
-void PlotWidget::wheelEvent(QWheelEvent *e)
-{
-  QPoint p = e->pos();
-  e->accept();
-  zoom(e->delta() > 0 ? ZoomMode::IN : ZoomMode::OUT, p);
-}
-
-bool PlotWidget::event(QEvent *event) 
-{
-  return QWidget::event(event); 
-}
-
-void PlotWidget::zoom(PlotWidget::ZoomMode zoomMode, const QPoint &zoomPoint, double newZoomFactor)
-{
-  // The zoom point works like this: After the zoom operation the pixel at zoomPoint shall
-  // still be at the same position (zoomPoint)
-
-  // What is the factor that we will zoom in by?
-  // The zoom factor could currently not be a multiple of ZOOM_STEP_FACTOR
-  // if the user used pinch zoom. So let's go back to the step size of ZOOM_STEP_FACTOR
-  // and calculate the next higher zoom which is a multiple of ZOOM_STEP_FACTOR.
-  // E.g.: If the zoom factor currently is 1.9 we want it to become 2 after zooming.
-
-  double newZoom = 1.0;
-  if (zoomMode == ZoomMode::IN)
-  {
-    if (this->zoomFactor > 1.0)
-    {
-      double inf = std::numeric_limits<double>::infinity();
-      while (newZoom <= this->zoomFactor && newZoom < inf)
-        newZoom *= ZOOM_STEP_FACTOR;
-    }
-    else
-    {
-      while (newZoom > this->zoomFactor)
-        newZoom /= ZOOM_STEP_FACTOR;
-      newZoom *= ZOOM_STEP_FACTOR;
-    }
-  }
-  else if (zoomMode == ZoomMode::OUT)
-  {
-    if (this->zoomFactor > 1.0)
-    {
-      while (newZoom < zoomFactor)
-        newZoom *= ZOOM_STEP_FACTOR;
-      newZoom /= ZOOM_STEP_FACTOR;
-    }
-    else
-    {
-      while (newZoom >= this->zoomFactor && newZoom > 0.0)
-        newZoom /= ZOOM_STEP_FACTOR;
-    }
-  }
-  else if (zoomMode == ZoomMode::TO_VALUE)
-  {
-    newZoom = newZoomFactor;
-  }
-  // So what is the zoom factor that we use in this step?
-  double stepZoomFactor = newZoom / this->zoomFactor;
-
-  if (!zoomPoint.isNull())
-  {
-    // // The center point has to be moved relative to the zoomPoint
-
-    // // Get the absolute center point of the item
-    // QPoint drawArea_botR(width(), height());
-    // QPoint centerPoint = drawArea_botR / 2;
-
-    // if (viewSplitMode == SIDE_BY_SIDE)
-    // {
-    //   // For side by side mode, the center points are centered in each individual split view
-
-    //   // Which side of the split view are we zooming in?
-    //   // Get the center point of that view
-    //   int xSplit = int(drawArea_botR.x() * splittingPoint);
-    //   if (zoomPoint.x() > xSplit)
-    //     // Zooming in the right view
-    //     centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
-    //   else
-    //     // Zooming in the left view
-    //     centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
-    // }
-
-    // // The absolute center point of the item under the cursor
-    // QPoint itemCenter = centerPoint + centerOffset;
-
-    // // Move this item center point
-    // QPoint diff = itemCenter - zoomPoint;
-    // diff *= stepZoomFactor;
-    // itemCenter = zoomPoint + diff;
-
-    // // Calculate the new center offset
-    // setCenterOffset(itemCenter - centerPoint);
-  }
-  else
-  {
-    // Zoom without considering the mouse position
-    this->moveOffset = this->moveOffset * stepZoomFactor;
-  }
-
-  this->zoomFactor = newZoom;
-
-  update();
-}

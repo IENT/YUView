@@ -34,16 +34,11 @@
 
 #include "parser/parserCommon.h"
 
-#include <QAction>
-#include <QtWidgets/QGraphicsItem>
-#include <QtCore/QPointer>
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QScrollBar>
-
+#include "MoveAndZoomableView.h"
 #include "plotModel.h"
 #include "dummyPlotModel.h"
 
-class PlotWidget : public QWidget
+class PlotWidget : public MoveAndZoomableView
 {
   Q_OBJECT
 
@@ -55,16 +50,7 @@ protected:
 
   // Override some events from the widget
   void paintEvent(QPaintEvent *event) override;
-  void mouseMoveEvent(QMouseEvent *event) override { event->ignore(); }
-  void mousePressEvent(QMouseEvent *event) override { event->ignore(); }
-  void mouseReleaseEvent(QMouseEvent *event) override { event->ignore(); }
-  void wheelEvent (QWheelEvent *event) override;
-  void mouseDoubleClickEvent(QMouseEvent *event) override { event->ignore(); }
-  void keyPressEvent(QKeyEvent *event) override { event->ignore(); }
-  void resizeEvent(QResizeEvent *event) override;
-
-  virtual bool event(QEvent *event) override;
-
+  
 private:
   enum class Axis
   {
@@ -98,14 +84,6 @@ private:
   static void drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect);
 
   void drawPlot(QPainter &painter, QRectF plotRect) const;
-
-  double zoomFactor {1.0}; //!< The current zoom factor in two dimensions
-  enum class ZoomDirection {BOTH, HORIZONTAL};
-  ZoomDirection zoomDirection {ZoomDirection::HORIZONTAL};
-  enum class ZoomMode {IN, OUT, TO_VALUE};
-  void zoom(ZoomMode zoomMode, const QPoint &zoomPoint = QPoint(), double newZoomFactor = 0.0);
-
-  QPoint moveOffset; //!< The offset of the view
 
   PlotModel *model {nullptr};
   DummyPlotModel dummyModel;
