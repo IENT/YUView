@@ -61,7 +61,7 @@ private:
   struct TickValue
   {
     double value;
-    double pixelPosOnAxis;
+    double pixelPosInWidget;
     bool minorTick;
   };
 
@@ -82,7 +82,7 @@ private:
   };
   AxisProperties propertiesAxis[2];
 
-  static QList<TickValue> getAxisValuesToShow(const AxisProperties &properties);
+  static QList<TickValue> getAxisValuesToShow(const AxisProperties &properties, const QPoint &moveOffset);
   static void drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect);
   static void drawAxis(QPainter &painter, const QRectF &plotRect);
   static void drawAxisTicksAndValues(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &values);
@@ -92,6 +92,8 @@ private:
   void updateAxis(AxisProperties &properties, const QRectF &plotRect) const;
 
   void drawPlot(QPainter &painter, const QRectF &plotRect) const;
+
+  static double convertAxisValueToPixel(const AxisProperties &properties, const double value, const QPoint &moveOffset);
 
   PlotModel *model {nullptr};
   DummyPlotModel dummyModel;

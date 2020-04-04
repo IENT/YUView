@@ -64,9 +64,6 @@ PlotWidget::PlotWidget(QWidget *parent)
   // {
   //   this->setEnabled(true);
   // }
-
-  // // We want to have all mouse events (even move)
-  // setMouseTracking(true);
 }
 
 void PlotWidget::setModel(PlotModel *model)
@@ -116,8 +113,8 @@ void PlotWidget::paintEvent(QPaintEvent *paint_event)
   this->updateAxis(this->propertiesAxis[0], plotRect);
   this->updateAxis(this->propertiesAxis[1], plotRect);
 
-  auto valuesX = this->getAxisValuesToShow(this->propertiesAxis[0]);
-  auto valuesY = this->getAxisValuesToShow(this->propertiesAxis[1]);
+  auto valuesX = this->getAxisValuesToShow(this->propertiesAxis[0], this->centerOffset);
+  auto valuesY = this->getAxisValuesToShow(this->propertiesAxis[1], this->centerOffset);
   drawGridLines(painter, this->propertiesAxis[0], plotRect, valuesX);
   drawGridLines(painter, this->propertiesAxis[1], plotRect, valuesY);
 
@@ -130,6 +127,14 @@ void PlotWidget::paintEvent(QPaintEvent *paint_event)
   drawAxisTicksAndValues(painter, this->propertiesAxis[1], valuesY);
 
   drawFadeBoxes(painter, plotRect, widgetRect);
+
+  auto drawPoint = plotRect.center() + centerOffset;
+  QRectF debugRect;
+  debugRect.setSize(QSizeF(20, 20));
+  debugRect.moveCenter(drawPoint);
+  painter.setBrush(Qt::white);
+  painter.setPen(Qt::black);
+  painter.drawRect(debugRect);
 
   // if (!this->model)
   // {
@@ -150,7 +155,7 @@ void PlotWidget::drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, co
   painter.drawRect(QRectF(QPointF(0, plotRect.bottom()), widgetRect.bottomRight()));
 }
 
-QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(const PlotWidget::AxisProperties &properties)
+QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(const PlotWidget::AxisProperties &properties, const QPoint &moveOffset)
 {
   const auto axisVector = (properties.axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
   const auto axisLengthInPixels = QPointF::dotProduct(properties.line.p2() - properties.line.p1(), axisVector);
@@ -194,8 +199,8 @@ QList<PlotWidget::TickValue> PlotWidget::getAxisValuesToShow(const PlotWidget::A
   for (auto v : valuesMinor)
   {
     const bool isMinor = !valuesMajor.contains(v);
-    auto pixelPosOnAxis = ((v - properties.rangeZoomed.min) / valueRange) * (axisLengthInPixels - axisMaxValueMargin);
-    values.append({v, pixelPosOnAxis, isMinor});
+    auto pixelPosInWidget = convertAxisValueToPixel(properties, v, moveOffset);
+    values.append({v, pixelPosInWidget, isMinor});
   }
   return values;
 }
@@ -209,7 +214,6 @@ void PlotWidget::drawAxis(QPainter &painter, const QRectF &plotRect)
 
 void PlotWidget::drawAxisTicksAndValues(QPainter &painter, const AxisProperties &properties, const QList<PlotWidget::TickValue> &values)
 {
-  const auto axisVector = (properties.axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
   const auto tickLine = (properties.axis == Axis::X) ? QPointF(0, tickLength) : QPointF(-tickLength, 0);
 
   QFont displayFont = painter.font();
@@ -218,7 +222,11 @@ void PlotWidget::drawAxisTicksAndValues(QPainter &painter, const AxisProperties 
   for (auto v : values)
   {
     //auto pixelPosOnAxis = ((v.value - properties.minValue) / valueRange) * axisLengthInPixels;
-    QPointF p = properties.line.p1() + v.pixelPosOnAxis * axisVector;
+    QPointF p = properties.line.p1();
+    if (properties.axis == Axis::X)
+      p.setX(v.pixelPosInWidget);
+    else
+      p.setY(v.pixelPosInWidget);
     painter.drawLine(p, p + tickLine);
 
     auto text = QString("%1").arg(v.value);
@@ -244,15 +252,13 @@ void PlotWidget::drawGridLines(QPainter &painter, const AxisProperties &properti
   {
     if (properties.axis == Axis::X)
     {
-      auto x = v.pixelPosOnAxis + properties.line.p1().x();
-      drawStart.setX(x);
-      drawEnd.setX(x);
+      drawStart.setX(v.pixelPosInWidget);
+      drawEnd.setX(v.pixelPosInWidget);
     }
     else
     {
-      auto y = properties.line.p1().y() - v.pixelPosOnAxis;
-      drawStart.setY(y);
-      drawEnd.setY(y);
+      drawStart.setY(v.pixelPosInWidget);
+      drawEnd.setY(v.pixelPosInWidget);
     }
 
     painter.setPen(v.minorTick ? gridLineMinor : gridLineMajor);
@@ -327,10 +333,10 @@ void PlotWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
     for (size_t i = 0; i < nrBars; i++)
     {
       const auto value = model->getPlotPoint(plotIndex, i);
-      const auto posXLeftPixel = zeroPointX + (value.x - 0.5 - xValMin) * xPixelPerValue;
-      const auto posXRightPixel = zeroPointX + (value.x + 0.5 - xValMin) * xPixelPerValue;
-      const auto posYZeroPixel = zeroPointY + (0 - yValMin) * yPixelPerValue;
-      const auto posYPixel = zeroPointY + (yValMax - value.y) * yPixelPerValue;
+      auto posXLeftPixel = convertAxisValueToPixel(this->propertiesAxis[0], value.x - 0.5, this->centerOffset);
+      auto posXRightPixel = convertAxisValueToPixel(this->propertiesAxis[0], value.x + 0.5, this->centerOffset);
+      auto posYZeroPixel = convertAxisValueToPixel(this->propertiesAxis[1], 0, this->centerOffset);
+      auto posYPixel = convertAxisValueToPixel(this->propertiesAxis[1], value.y, this->centerOffset);
 
       QRectF drawRect(QPointF(posXLeftPixel, posYPixel), QPointF(posXRightPixel, posYZeroPixel));
       painter.drawRect(drawRect);
@@ -352,7 +358,6 @@ void PlotWidget::updateAxis(PlotWidget::AxisProperties &properties, const QRectF
     {
       properties.rangeZoomed.min = properties.range.min;
       properties.rangeZoomed.max = properties.range.max * this->zoomFactor;
-      qDebug() << "Zoom factor " << this->zoomFactor;
     }
   }
   else
@@ -370,4 +375,16 @@ void PlotWidget::updateAxis(PlotWidget::AxisProperties &properties, const QRectF
     const QPointF thicknessDirection(0, fadeBoxThickness);
     properties.line = {plotRect.bottomLeft() - thicknessDirection, plotRect.topLeft() + thicknessDirection};
   }
+}
+
+double PlotWidget::convertAxisValueToPixel(const PlotWidget::AxisProperties &properties, const double value, const QPoint &moveOffset)
+{
+  const auto axisVector = (properties.axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
+  const auto axisLengthInPixels = QPointF::dotProduct(properties.line.p2() - properties.line.p1(), axisVector);
+  const auto valueRange = properties.rangeZoomed.max - properties.rangeZoomed.min;
+  auto pixelPosOnAxis = ((value - properties.rangeZoomed.min) / valueRange) * (axisLengthInPixels - axisMaxValueMargin);
+  if (properties.axis == Axis::X)
+    return pixelPosOnAxis + properties.line.p1().x() + moveOffset.x();
+  else
+    return properties.line.p1().y() - pixelPosOnAxis;
 }
