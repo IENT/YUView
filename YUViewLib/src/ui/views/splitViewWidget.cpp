@@ -35,7 +35,6 @@
 #include <QActionGroup>
 #include <QBackingStore>
 #include <QDockWidget>
-#include <QGestureEvent>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QPainter>
@@ -90,15 +89,13 @@ const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 #define DEBUG_LOAD_DRAW(fmt,...) ((void)0)
 #endif
 
-splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
-  : QWidget(parent), isSeparateWidget(separateView), parentWidget(parent)
+splitViewWidget::splitViewWidget(QWidget *parent)
+  : MoveAndZoomableView(parent)
 {
   setFocusPolicy(Qt::NoFocus);
   setViewSplitMode(DISABLED);
   updateSettings();
   setContextMenuPolicy(Qt::PreventContextMenu);
-
-  centerOffset = QPoint(0, 0);
 
   // No test running yet
   connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=]{ updateTestProgress(); });
@@ -130,6 +127,8 @@ void splitViewWidget::setVideoCache        (videoCache         *p) { cache = p; 
   */
 void splitViewWidget::updateSettings()
 {
+  MoveAndZoomableView::updateSettings();
+
   // Update the palette in the next draw event.
   // We don't do this here because Qt overwrites the setting if the theme is changed.
   paletteNeedsUpdate = true;
@@ -144,13 +143,6 @@ void splitViewWidget::updateSettings()
     splittingLineStyle = TOP_BOTTOM_HANDLERS;
   else
     splittingLineStyle = SOLID_LINE;
-
-  // Load the mouse mode
-  QString mouseModeString = settings.value("MouseMode", "Left Zoom, Right Move").toString();
-  if (mouseModeString == "Left Zoom, Right Move")
-    mouseMode = MOUSE_RIGHT_MOVE;
-  else
-    mouseMode = MOUSE_LEFT_MOVE;
 
   zoomBoxBackgroundColor = settings.value("Background/Color").value<QColor>();
   drawItemPathAndNameEnabled = settings.value("ShowFilePathInSplitMode", true).toBool();
@@ -207,7 +199,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     painter.drawText(textRect, Qt::AlignCenter, text);
 
     // Update the mouse cursor
-    updateMouseCursor();
+    MoveAndZoomableView::updateMouseCursor();
 
     return;
   }
@@ -230,8 +222,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   int xSplit = int(drawArea_botR.x() * splittingPoint);
 
   // Calculate the zoom to use
-  double zoom = zoomFactor * currentStepScaleFactor;
-  QPoint offset = QPointF(QPointF(centerOffset) * currentStepScaleFactor + currentStepCenterPointOffset).toPoint();
+  double zoom = this->zoomFactor * this->currentStepScaleFactor;
+  auto offset = QPoint(this->moveOffset * this->currentStepScaleFactor + this->currentStepCenterPointOffset.toPoint());
 
   bool drawRawValues = showRawData() && !playing;
 
@@ -467,7 +459,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     }
   }
 
-  if (viewZooming)
+  if (this->viewAction == ViewAction::ZOOM_BOX)
   {
     // Draw the zoom rectangle. Draw black rectangle, then a white dashed/dotted one.
     // This is visible in dark and bright areas
@@ -503,7 +495,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   }
 
   // Update the mouse cursor
-  updateMouseCursor();
+  MoveAndZoomableView::updateMouseCursor();
 
   if (testMode)
   {
@@ -553,11 +545,11 @@ void splitViewWidget::updatePixelPositions()
     bool mouseInLeftOrRightView = (isSplitting() && (zoomBoxMousePosition.x() > xSplit));
 
     // The absolute center point of the item under the cursor
-    QPoint itemCenterMousePos = (mouseInLeftOrRightView) ? centerPoints[1] + centerOffset : centerPoints[0] + centerOffset;
+    QPoint itemCenterMousePos = (mouseInLeftOrRightView) ? centerPoints[1] + this->moveOffset : centerPoints[0] + this->moveOffset;
 
     // The difference in the item under the mouse (normalized by zoom factor)
-    double diffInItem[2] = {(double)(itemCenterMousePos.x() - zoomBoxMousePosition.x()) / zoomFactor + 0.5,
-                            (double)(itemCenterMousePos.y() - zoomBoxMousePosition.y()) / zoomFactor + 0.5};
+    double diffInItem[2] = {(double)(itemCenterMousePos.x() - zoomBoxMousePosition.x()) / this->zoomFactor + 0.5,
+                            (double)(itemCenterMousePos.y() - zoomBoxMousePosition.y()) / this->zoomFactor + 0.5};
 
     // We now have the pixel difference value for the item under the cursor.
     // We now draw one zoom box per view
@@ -717,13 +709,13 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   if (regularGridSize == 0)
     return;
 
-  QSize itemSize = item->getSize() * zoomFactor;
+  QSize itemSize = item->getSize() * this->zoomFactor;
   painter->setPen(regularGridColor);
 
   // Draw horizontal lines
   const int xMin = -itemSize.width() / 2;
   const int xMax =  itemSize.width() / 2;
-  const double gridZoom = regularGridSize * zoomFactor;
+  const double gridZoom = regularGridSize * this->zoomFactor;
   for (int y = 1; y <= (itemSize.height() - 1) / gridZoom; y++)
   {
     int yPos = (-itemSize.height() / 2) + y * gridZoom;
@@ -863,57 +855,7 @@ void splitViewWidget::drawLoadingMessage(QPainter *painter, const QPoint &pos)
 
 void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 {
-  if (mouse_event->source() == Qt::MouseEventSynthesizedBySystem && currentlyPinching)
-    // The mouse event was generated by the system from a touch event which is already handled by the touch pinch handler.
-    return;
-
-  if (mouse_event->buttons() == Qt::NoButton)
-  {
-    // The mouse is moved, but no button is pressed. This should not be caught here. Maybe a mouse press/release event
-    // got lost somewhere. In this case go to the normal mode.
-    if (isSplitting() && splittingDragging)
-      // End dragging.
-      splittingDragging = false;
-    else if (viewDragging)
-    {
-      // End dragging
-      viewDragging = false;
-      viewDraggingMouseMoved = false;
-    }
-    else if (viewZooming)
-      viewZooming = false;
-  }
-
-  // We want this event
-  mouse_event->accept();
-
-  if (isSplitting() && splittingDragging)
-  {
-    // The user is currently dragging the splitter. Calculate the new splitter point.
-    int xClip = clip(mouse_event->x(), SPLITVIEWWIDGET_SPLITTER_CLIPX, (width()-2- SPLITVIEWWIDGET_SPLITTER_CLIPX));
-    setSplittingPoint((double)xClip / (double)(width()-2));
-
-    update();
-  }
-  else if (viewDragging)
-  {
-    // The user is currently dragging the view. Calculate the new offset from the center position
-    setCenterOffset(viewDraggingStartOffset + (mouse_event->pos() - viewDraggingMousePosStart));
-    auto mouseMoved = viewDraggingMousePosStart - mouse_event->pos();
-    if (mouseMoved.manhattanLength() > 3)
-      viewDraggingMouseMoved = true;
-
-    update();
-  }
-  else if (viewZooming)
-  {
-    // The user is currently using the mouse to zoom. Save the current mouse position so that we can draw a zooming rectangle.
-    viewZoomingMousePos = mouse_event->pos();
-
-    update();
-  }
-  else
-    updateMouseCursor(mouse_event->pos());
+  MoveAndZoomableView::mouseMoveEvent(mouse_event);
 
   if (drawZoomBox)
   {
@@ -924,19 +866,20 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
       updatePixelPositions();
       update();
 
-      if (linkViews)
-      {
-        otherWidget->zoomBoxPixelUnderCursor[0] = zoomBoxPixelUnderCursor[0];
-        otherWidget->zoomBoxPixelUnderCursor[1] = zoomBoxPixelUnderCursor[1];
-        otherWidget->update();
-      }
+      // TODO: 
+      // if (linkViews)
+      // {
+      //   otherWidget->zoomBoxPixelUnderCursor[0] = zoomBoxPixelUnderCursor[0];
+      //   otherWidget->zoomBoxPixelUnderCursor[1] = zoomBoxPixelUnderCursor[1];
+      //   otherWidget->update();
+      // }
     }
   }
 }
 
 void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
 {
-  if (mouse_event->source() == Qt::MouseEventSynthesizedBySystem && currentlyPinching)
+  if (mouse_event->source() == Qt::MouseEventSynthesizedBySystem && this->viewAction == ViewAction::PINCHING)
     // The mouse event was generated by the system from a touch event which is already handled by the touch pinch handler.
     return;
 
@@ -958,43 +901,11 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     // Left mouse buttons pressed over the split line. Activate dragging of splitter.
     splittingDragging = true;
 
-    // We handled this event
     mouse_event->accept();
+    updateMouseCursor(mouse_event->pos());
   }
-  else if ((mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE))
-  {
-    // The user pressed the 'move' mouse button. In this case drag the view.
-    viewDragging = true;
-
-    // Save the position where the user grabbed the item (screen), and the current value of
-    // the centerOffset. So when the user moves the mouse, the new offset is just the old one
-    // plus the difference between the position of the mouse and the position where the
-    // user grabbed the item (screen).
-    viewDraggingMousePosStart = mouse_event->pos();
-    viewDraggingStartOffset = centerOffset;
-    viewDraggingMouseMoved = false;
-
-    //qDebug() << "MouseGrab - Center: " << centerPoint << " rel: " << grabPosRelative;
-
-    // We handled this event
-    mouse_event->accept();
-  }
-  else if ((mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_RIGHT_MOVE))
-  {
-    // The user pressed the 'zoom' mouse button. In this case start drawing the zoom box.
-    viewZooming = true;
-
-    // Save the position of the mouse where the user started the zooming.
-    viewZoomingMousePosStart = mouse_event->pos();
-    viewZoomingMousePos = viewZoomingMousePosStart;
-
-    // We handled this event
-    mouse_event->accept();
-  }
-
-  updateMouseCursor(mouse_event->pos());
+  else
+    MoveAndZoomableView::mousePressEvent(mouse_event);
 }
 
 void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
@@ -1004,301 +915,89 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
   if (mouse_event->button() == Qt::LeftButton && isSplitting() && splittingDragging)
   {
-    // We want this event
     mouse_event->accept();
-
-    // The left mouse button was released, we are showing a split view and the user is dragging the splitter.
-    // End dragging.
     splittingDragging = false;
 
     // Update current splitting position / update last time
     int xClip = clip(mouse_event->x(), SPLITVIEWWIDGET_SPLITTER_CLIPX, (width()-2-SPLITVIEWWIDGET_SPLITTER_CLIPX));
     setSplittingPoint((double)xClip / (double)(width()-2));
 
-    // The view was moved. Update the widget.
     update();
   }
-  else if (viewDragging && (
-           (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)))
-  {
-    // The user released the mouse 'move' button and was dragging the view.
-
-    // We want this event
-    mouse_event->accept();
-
-    // Calculate the new center offset one last time
-    setCenterOffset(viewDraggingStartOffset + (mouse_event->pos() - viewDraggingMousePosStart));
-
-    if (mouse_event->button() == Qt::RightButton && !viewDraggingMouseMoved)
-    {
-      QMenu menu(this);
-      addMenuActions(&menu);
-      menu.exec(mouse_event->globalPos());
-    }
-
-    // End dragging
-    viewDragging = false;
-    viewDraggingMouseMoved = false;
-    update();
-  }
-  else if (viewZooming && (
-           (mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE)))
-  {
-    // The user used the mouse to zoom. End this operation.
-
-    // We want this event
-    mouse_event->accept();
-
-    // Zoom so that the whole rectangle is visible and center it in the view.
-    QRect zoomRect = QRect(viewZoomingMousePosStart, mouse_event->pos());
-    if (abs(zoomRect.width()) < 2 && abs(zoomRect.height()) < 2)
-    {
-      // The user just pressed the button without moving the mouse.
-      viewZooming = false;
-      update();
-      return;
-    }
-
-    // Get the absolute center point of the view
-    QPoint drawArea_botR(width(), height());
-    QPoint centerPoint = drawArea_botR / 2;
-
-    if (viewSplitMode == SIDE_BY_SIDE)
-    {
-      // For side by side mode, the center points are centered in each individual split view
-
-      // Which side of the split view are we zooming in?
-      // Get the center point of that view
-      int xSplit = int(drawArea_botR.x() * splittingPoint);
-      if (viewZoomingMousePosStart.x() >= xSplit)
-        // Zooming in the right view
-        centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
-      else
-        // Zooming in the left view
-        centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
-    }
-
-    // Calculate the new center offset
-    QPoint zoomRectCenterOffset = zoomRect.center() - centerPoint;
-    setCenterOffset(centerOffset - zoomRectCenterOffset);
-
-    // Now we zoom in as far as possible
-    double additionalZoomFactor = 1.0;
-    while (abs(zoomRect.width())  * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= width() &&
-           abs(zoomRect.height()) * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= height())
-    {
-      // We can zoom in more
-      setZoomFactor(zoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR);
-      additionalZoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-      setCenterOffset(centerOffset * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR);
-    }
-
-    // End zooming
-    viewZooming = false;
-
-    // The view was moved. Update the widget.
-    update();
-  }
+  else
+    MoveAndZoomableView::mouseReleaseEvent(mouse_event);
 }
 
-void splitViewWidget::wheelEvent (QWheelEvent *e)
+void splitViewWidget::wheelEvent (QWheelEvent *event)
 {
-  if (isViewFrozen)
-    return;
-
-  QPoint p = e->pos();
-  e->accept();
-  zoom(e->delta() > 0 ? ZOOM_IN : ZOOM_OUT, p);
+  if (!isViewFrozen)
+    MoveAndZoomableView::wheelEvent(event);
 }
 
-bool splitViewWidget::event(QEvent *event)
+void splitViewWidget::setMoveOffset(QPoint offset, bool setLinkedViews)
 {
-  if (event->type() == QEvent::Gesture)
-  {
-    QGestureEvent *gestureEvent = static_cast<QGestureEvent*>(event);
+  MoveAndZoomableView::setMoveOffset(offset, setLinkedViews);
 
-    // Handle the gesture event
-    if (QGesture *swipeGesture = gestureEvent->gesture(Qt::SwipeGesture))
-    {
-      QSwipeGesture *swipe = static_cast<QSwipeGesture*>(swipeGesture);
-
-      if (swipe->state() == Qt::GestureStarted)
-        // The gesture was just started. This will prevent (generated) mouse events from being interpreted.
-        currentlyPinching = true;
-
-      if (swipe->state() == Qt::GestureFinished)
-      {
-        if (swipe->horizontalDirection() == QSwipeGesture::NoDirection && swipe->verticalDirection() == QSwipeGesture::Up)
-          playlist->selectNextItem();
-        else if (swipe->horizontalDirection() == QSwipeGesture::NoDirection && swipe->verticalDirection() == QSwipeGesture::Down)
-          playlist->selectPreviousItem();
-        else if (swipe->horizontalDirection() == QSwipeGesture::Left && swipe->verticalDirection() == QSwipeGesture::NoDirection)
-          playback->nextFrame();
-        else if (swipe->horizontalDirection() == QSwipeGesture::Right && swipe->verticalDirection() == QSwipeGesture::NoDirection)
-          playback->previousFrame();
-        else
-        {
-          // The swipe was both horizontal and vertical. What is the dominating direction?
-          double a = swipe->swipeAngle();
-          if (a < 45 || a > 315)
-            playback->previousFrame();      // Right
-          else if (a >= 45 && a < 135)
-            playlist->selectNextItem();     // Up
-          else if (a >= 135 && a < 225)
-            playback->nextFrame();          // Left
-          else
-            playlist->selectPreviousItem(); // Down
-        }
-
-        currentlyPinching = false;
-      }
-
-      event->accept();
-      update();
-    }
-    if (QGesture *pinchGesture = gestureEvent->gesture(Qt::PinchGesture))
-    {
-      QPinchGesture *pinch = static_cast<QPinchGesture*>(pinchGesture);
-
-      if (pinch->state() == Qt::GestureStarted)
-      {
-        // The gesture was just started. This will prevent (generated) mouse events from being interpreted.
-        currentlyPinching = true;
-      }
-
-      // See what changed in this pinch gesture (the scale factor and/or the position)
-      QPinchGesture::ChangeFlags changeFlags = pinch->changeFlags();
-      if (changeFlags & QPinchGesture::ScaleFactorChanged)
-        currentStepScaleFactor = pinch->totalScaleFactor();
-      if (changeFlags & QPinchGesture::CenterPointChanged)
-        currentStepCenterPointOffset += pinch->centerPoint() - pinch->lastCenterPoint();
-
-      // Check if the gesture just finished
-      if (pinch->state() == Qt::GestureFinished)
-      {
-        // Set the new position/zoom
-        setZoomFactor(zoomFactor * currentStepScaleFactor, false);
-        setCenterOffset(QPointF(QPointF(centerOffset) * currentStepScaleFactor + currentStepCenterPointOffset).toPoint());
-        
-        // Reset the dynamic values
-        currentStepScaleFactor = 1;
-        currentStepCenterPointOffset = QPointF(0, 0);
-        currentlyPinching = false;
-      }
-
-      if (linkViews)
-      {
-        otherWidget->currentlyPinching = currentlyPinching;
-        otherWidget->currentStepScaleFactor = currentStepScaleFactor;
-        otherWidget->currentStepCenterPointOffset = currentStepCenterPointOffset;
-      }
-
-      event->accept();
-      update();
-    }
-
-    return true;
-  }
-  else if (event->type() == QEvent::NativeGesture)
-  {
-    // TODO #195 - For pinching on mac this would have to be added here...
-    // QNativeGestureEvent
-
-    // return true;
-  }
-
-  return QWidget::event(event);
-}
-
-void splitViewWidget::updateMouseCursor()
-{
-  updateMouseCursor(mapFromGlobal(QCursor::pos()));
-}
-
-void splitViewWidget::setCenterOffset(QPoint offset, bool setOtherViewIfLinked, bool callUpdate)
-{
-  if (linkViews && setOtherViewIfLinked)
-    otherWidget->setCenterOffset(offset, false, callUpdate);
-
-  centerOffset = offset;
-
-  if (!setOtherViewIfLinked)
+  if (!setLinkedViews)
   {
     // Save the center offset in the currently selected item
     auto item = playlist->getSelectedItems();
     if (item[0])
     {
-      DEBUG_LOAD_DRAW("splitViewWidget::setCenterOffset item %d (%d,%d)", item[0]->getID(), offset.x(), offset.y());
-      item[0]->saveCenterOffset(centerOffset, isSeparateWidget);
-      item[0]->saveCenterOffset(otherWidget->centerOffset, !isSeparateWidget);
+      DEBUG_LOAD_DRAW("splitViewWidget::setMoveOffset item %d (%d,%d)", item[0]->getID(), offset.x(), offset.y());
+      item[0]->saveCenterOffset(this->moveOffset, !isMasterView);
+      item[0]->saveCenterOffset(this->getOtherWidget()->moveOffset, isMasterView);
     }
     if (item[1])
     {
-      DEBUG_LOAD_DRAW("splitViewWidget::setCenterOffset item %d (%d,%d)", item[1]->getID(), offset.x(), offset.y());
-      item[1]->saveCenterOffset(centerOffset, isSeparateWidget);
-      item[1]->saveCenterOffset(otherWidget->centerOffset, !isSeparateWidget);
+      DEBUG_LOAD_DRAW("splitViewWidget::setMoveOffset item %d (%d,%d)", item[1]->getID(), offset.x(), offset.y());
+      item[1]->saveCenterOffset(this->moveOffset, !isMasterView);
+      item[1]->saveCenterOffset(this->getOtherWidget()->moveOffset, isMasterView);
     }
   }
 }
 
 void splitViewWidget::setSplittingPoint(double point, bool setOtherViewIfLinked, bool callUpdate)
 {
-  if (linkViews && setOtherViewIfLinked)
-    otherWidget->setSplittingPoint(point, false, callUpdate);
+  if (enableLink && setOtherViewIfLinked)
+    this->getOtherWidget()->setSplittingPoint(point, false, callUpdate);
 
   splittingPoint = point;
   if (callUpdate)
     update();
 }
 
-void splitViewWidget::setZoomFactor(double zoom, bool setOtherViewIfLinked, bool callUpdate)
+void splitViewWidget::setZoomFactor(double zoom, bool setLinkedViews)
 {
-  if (linkViews && setOtherViewIfLinked)
-    otherWidget->setZoomFactor(zoom, false, callUpdate);
+  MoveAndZoomableView::setZoomFactor(zoom, setLinkedViews);
 
-  zoomFactor = zoom;
-
-  if (!setOtherViewIfLinked)
+  if (!setLinkedViews)
   {
     // We are not calling the function in the other function
     // Save the zoom factor in the currently selected item
     auto item = playlist->getSelectedItems();
     if (item[0])
     {
-      DEBUG_LOAD_DRAW("splitViewWidget::setZoomFactor item %d (%f)", item[0]->getID(), zoom);
-      item[0]->saveZoomFactor(zoomFactor, isSeparateWidget);
-      item[0]->saveZoomFactor(otherWidget->zoomFactor, !isSeparateWidget);
+      DEBUG_LOAD_DRAW("splitViewWidget::setthis->getZoomFactor() item %d (%f)", item[0]->getID(), zoom);
+      item[0]->saveZoomFactor(this->zoomFactor, !this->isMasterView);
+      item[0]->saveZoomFactor(this->getOtherWidget()->zoomFactor, this->isMasterView);
     }
     if (item[1])
     {
-      DEBUG_LOAD_DRAW("splitViewWidget::setZoomFactor item %d (%f)", item[0]->getID(), zoom);
-      item[1]->saveZoomFactor(zoomFactor, isSeparateWidget);
-      item[1]->saveZoomFactor(otherWidget->zoomFactor, !isSeparateWidget);
+      DEBUG_LOAD_DRAW("splitViewWidget::setthis->getZoomFactor() item %d (%f)", item[0]->getID(), zoom);
+      item[1]->saveZoomFactor(zoomFactor, !this->isMasterView);
+      item[1]->saveZoomFactor(this->getOtherWidget()->zoomFactor, this->isMasterView);
     }
   }
-
-  if (callUpdate)
-    update();
 }
 
-void splitViewWidget::updateMouseCursor(const QPoint &mousePos)
+bool splitViewWidget::updateMouseCursor(const QPoint &mousePos)
 {
-  // Check if the position is within the widget
-  if (mousePos.x() < 0 || mousePos.x() > width() || mousePos.y() < 0 || mousePos.y() > height())
-    return;
-
-  if (viewDragging)
-    // Dragging the view around. Show the closed hand cursor.
-    setCursor(Qt::ClosedHandCursor);
-  else if (viewZooming || isViewFrozen)
-    // Drawing the zoom box or the view is frozen. Show the normal cursor.
-    setCursor(Qt::ArrowCursor);
-  else
+  if (!MoveAndZoomableView::updateMouseCursor(mousePos))
+    return false;
+  
+  if (this->viewAction == ViewAction::NONE)
   {
-    // Not dragging or zooming. Show the normal cursor.
-
     // Get the item(s)
     auto item = playlist->getSelectedItems();
 
@@ -1333,102 +1032,8 @@ void splitViewWidget::updateMouseCursor(const QPoint &mousePos)
           setCursor(Qt::ArrowCursor);
     }
   }
-}
 
-void splitViewWidget::zoom(ZoomMode zoomMode, const QPoint &zoomPoint, double newZoomFactor)
-{
-  // The zoom point works like this: After the zoom operation the pixel at zoomPoint shall
-  // still be at the same position (zoomPoint)
-
-  // What is the factor that we will zoom in by?
-  // The zoom factor could currently not be a multiple of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR
-  // if the user used pinch zoom. So let's go back to the step size of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR
-  // and calculate the next higher zoom which is a multiple of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR.
-  // E.g.: If the zoom factor currently is 1.9 we want it to become 2 after zooming.
-
-  double newZoom = 1.0;
-  if (zoomMode == ZOOM_IN)
-  {
-    if (this->zoomFactor > 1.0)
-    {
-      double inf = std::numeric_limits<double>::infinity();
-      while (newZoom <= this->zoomFactor && newZoom < inf)
-        newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-    }
-    else
-    {
-      while (newZoom > this->zoomFactor)
-        newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-      newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-    }
-  }
-  else if (zoomMode == ZOOM_OUT)
-  {
-    if (this->zoomFactor > 1.0)
-    {
-      while (newZoom < this->zoomFactor)
-        newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-      newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-    }
-    else
-    {
-      while (newZoom >= this->zoomFactor && newZoom > 0.0)
-        newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-    }
-  }
-  else if (zoomMode == ZOOM_TO_PERCENTAGE)
-  {
-    newZoom = newZoomFactor;
-  }
-  // So what is the zoom factor that we use in this step?
-  double stepZoomFactor = newZoom / this->zoomFactor;
-
-  if (!zoomPoint.isNull())
-  {
-    // The center point has to be moved relative to the zoomPoint
-
-    // Get the absolute center point of the item
-    QPoint drawArea_botR(width(), height());
-    QPoint centerPoint = drawArea_botR / 2;
-
-    if (viewSplitMode == SIDE_BY_SIDE)
-    {
-      // For side by side mode, the center points are centered in each individual split view
-
-      // Which side of the split view are we zooming in?
-      // Get the center point of that view
-      int xSplit = int(drawArea_botR.x() * splittingPoint);
-      if (zoomPoint.x() > xSplit)
-        // Zooming in the right view
-        centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
-      else
-        // Zooming in the left view
-        centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
-    }
-
-    // The absolute center point of the item under the cursor
-    QPoint itemCenter = centerPoint + centerOffset;
-
-    // Move this item center point
-    QPoint diff = itemCenter - zoomPoint;
-    diff *= stepZoomFactor;
-    itemCenter = zoomPoint + diff;
-
-    // Calculate the new center offset
-    setCenterOffset(itemCenter - centerPoint);
-  }
-  else
-  {
-    // Zoom without considering the mouse position
-    setCenterOffset(centerOffset * stepZoomFactor);
-  }
-
-  setZoomFactor(newZoom);
-
-  if (newZoom > 1.0)
-    update(false, true);  // We zoomed in. Check if one of the items now needs loading
-  else
-    update();
+  return true;
 }
 
 void splitViewWidget::gridSetCustom(bool checked)
@@ -1443,24 +1048,9 @@ void splitViewWidget::gridSetCustom(bool checked)
   }
 }
 
-void splitViewWidget::zoomToCustom(bool checked)
-{
-  Q_UNUSED(checked);
-  bool ok;
-  int newValue = QInputDialog::getInt(this, "Zoom to custom value", "Please select a zoom factor in percent", 100, 1, 2147483647, 1, &ok);
-  if (ok)
-    zoom(ZOOM_TO_PERCENTAGE, QPoint(), double(newValue) / 100);
-}
-
-void splitViewWidget::toggleFullScreen(bool checked) 
-{ 
-  Q_UNUSED(checked);
-  emit signalToggleFullScreen();
-}
-
 void splitViewWidget::toggleSeparateWindow(bool checked) 
 {
-  Q_ASSERT_X(!isSeparateWidget, "splitViewWidget::toggleSeparateWindow", "This should only be toggled in the main widget.");
+  Q_ASSERT_X(this->isMasterView, "splitViewWidget::toggleSeparateWindow", "This should only be toggled in the main widget.");
 
   actionSeparateViewLink.setEnabled(checked);
   actionSeparateViewPlaybackBoth.setEnabled(checked);
@@ -1468,41 +1058,10 @@ void splitViewWidget::toggleSeparateWindow(bool checked)
   emit signalShowSeparateWindow(checked);
 }
 
-void splitViewWidget::toggleSeparateWindowLink(bool checked)
+void splitViewWidget::resetView(bool checked)
 {
-  Q_ASSERT_X(!isSeparateWidget, "splitViewWidget::toggleSeparateWindowLink", "This should only be toggled in the main widget.");
-  
-  linkViews = checked;
-  otherWidget->linkViews = checked;
-
-  // The two views may have different settings. Force all settings of the separate view to the settings of the main widget.
-  if (checked)
-  {
-    setZoomFactor(zoomFactor);
-    setViewSplitMode(viewSplitMode);
-    setCenterOffset(centerOffset);
-    setSplittingPoint(splittingPoint);
-    setRegularGridSize(regularGridSize);
-  }
-
-  update();
-  otherWidget->update();
-}
-
-void splitViewWidget::toggleSeparateWindowPlaybackBoth(bool checked)
-{
-  Q_ASSERT_X(!isSeparateWidget, "splitViewWidget::toggleSeparateWindowPlaybackBoth", "This should only be toggled in the main widget.");
-  Q_UNUSED(checked);
-}
-
-void splitViewWidget::resetViews(bool checked)
-{
-  Q_UNUSED(checked);
-  setCenterOffset(QPoint(0,0));
-  setZoomFactor(1.0);
-  setSplittingPoint(0.5);
-
-  update();
+  this->setSplittingPoint(0.5);
+  MoveAndZoomableView::resetView(checked);
 }
 
 void splitViewWidget::zoomToFit(bool checked)
@@ -1512,7 +1071,7 @@ void splitViewWidget::zoomToFit(bool checked)
     // The playlist was not initialized yet. Nothing to draw (yet)
     return;
 
-  setCenterOffset(QPoint(0,0));
+  this->setMoveOffset(QPoint(0,0));
 
   auto item = playlist->getSelectedItems();
 
@@ -1599,14 +1158,14 @@ void splitViewWidget::zoomToFit(bool checked)
   }
 
   // Set new zoom factor and update
-  setZoomFactor(newZoomFactor);
+  this->setZoomFactor(newZoomFactor);
   update();
 }
 
 void splitViewWidget::setViewSplitMode(ViewSplitMode mode, bool setOtherViewIfLinked, bool callUpdate)
 {
-  if (linkViews && setOtherViewIfLinked)
-    otherWidget->setViewSplitMode(mode, false, callUpdate);
+  if (this->enableLink && setOtherViewIfLinked)
+    this->getOtherWidget()->setViewSplitMode(mode, false, callUpdate);
 
   if (viewSplitMode == mode)
     return;
@@ -1626,8 +1185,8 @@ void splitViewWidget::setViewSplitMode(ViewSplitMode mode, bool setOtherViewIfLi
 
 void splitViewWidget::setRegularGridSize(unsigned int size, bool setOtherViewIfLinked, bool callUpdate)
 {
-  if (linkViews && setOtherViewIfLinked)
-    otherWidget->setRegularGridSize(size, false, callUpdate);
+  if (this->enableLink && setOtherViewIfLinked)
+    this->getOtherWidget()->setRegularGridSize(size, false, callUpdate);
 
   if (regularGridSize == size)
     return;
@@ -1653,23 +1212,9 @@ void splitViewWidget::setRegularGridSize(unsigned int size, bool setOtherViewIfL
     update();
 }
 
-void splitViewWidget::setPrimaryWidget(splitViewWidget *primary)
-{
-  Q_ASSERT_X(isSeparateWidget, "splitViewWidget::setPrimaryWidget", "Call this function only on the separate widget.");
-  Q_ASSERT_X(otherWidget.isNull(), "splitViewWidget::setPrimaryWidget", "Call this only once.");
-  otherWidget = primary;
-}
-
-void splitViewWidget::setSeparateWidget(splitViewWidget *separate)
-{
-  Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
-  Q_ASSERT_X(otherWidget.isNull(), "splitViewWidget::setPrimaryWidget", "Call this only once.");
-  otherWidget = separate;
-}
-
 void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
 {
-  Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
+  Q_ASSERT_X(this->isMasterView, "setSeparateWidget", "Call this function only on the primary widget.");
 
   if (!item1 && !item2)
     return;
@@ -1679,18 +1224,18 @@ void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistI
   if (savePositionAndZoomPerItem)
   {
     // Restore the zoom and position which was saved in the playlist item
-    const bool getOtherViewValuesFromOtherSlot = !linkViews;
+    const bool getOtherViewValuesFromOtherSlot = !enableLink;
     if (item1)
     {
-      item1->getZoomAndPosition(centerOffset, zoomFactor, false);
-      item1->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, getOtherViewValuesFromOtherSlot);
+      item1->getZoomAndPosition(this->moveOffset, this->zoomFactor, false);
+      item1->getZoomAndPosition(this->getOtherWidget()->moveOffset, this->getOtherWidget()->zoomFactor, getOtherViewValuesFromOtherSlot);
     }
     else if (item2)
     {
-      item2->getZoomAndPosition(centerOffset, zoomFactor, false);
-      item2->getZoomAndPosition(otherWidget->centerOffset, otherWidget->zoomFactor, getOtherViewValuesFromOtherSlot);
+      item2->getZoomAndPosition(moveOffset, this->zoomFactor, false);
+      item2->getZoomAndPosition(this->getOtherWidget()->moveOffset, this->getOtherWidget()->zoomFactor, getOtherViewValuesFromOtherSlot);
     }
-    DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item %d (%d,%d-%f)", item1->getID(), centerOffset.x(), centerOffset.y(), zoomFactor);
+    DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item %d (%d,%d-%f)", item1->getID(), centerOffset.x(), centerOffset.y(), this->getZoomFactor());
   }
 }
 
@@ -1736,7 +1281,7 @@ QImage splitViewWidget::getScreenshot(bool fullItem)
 
 void splitViewWidget::playbackStarted(int nextFrameIdx)
 {
-  if (isSeparateWidget)
+  if (!this->isMasterView)
     return;
   if (nextFrameIdx == -1)
     // The next frame is not within the currently selected item.
@@ -1767,14 +1312,14 @@ void splitViewWidget::playbackStarted(int nextFrameIdx)
 
 void splitViewWidget::update(bool newFrame, bool itemRedraw, bool updateOtherWidget)
 {
-  if (isSeparateWidget && !isVisible())
+  if (!this->isMasterView && !isVisible())
     // This is the separate view and it is not enabled. Nothing to update.
     return;
-  if (linkViews && updateOtherWidget)
-    otherWidget->update(newFrame, itemRedraw, false);
+  if (this->enableLink && updateOtherWidget)
+    this->getOtherWidget()->update(newFrame, itemRedraw, false);
 
   bool playing = (playback) ? playback->playing() : false;
-  DEBUG_LOAD_DRAW("splitViewWidget::update%s%s%s", (isSeparateWidget) ? " separate" : "", (newFrame) ? " newFrame" : "", (playing) ? " playing" : "");
+  DEBUG_LOAD_DRAW("splitViewWidget::update%s%s%s", (!this->isMasterView) ? " separate" : "", (newFrame) ? " newFrame" : "", (playing) ? " playing" : "");
 
   if (newFrame || itemRedraw)
   {
@@ -1790,14 +1335,14 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw, bool updateOtherWid
       if (state == LoadingNeeded)
       {
         // The frame needs to be loaded first.
-        if (!isSeparateWidget)
+        if (this->isMasterView)
           cache->loadFrame(item[0], frameIdx, 0);
         itemLoading[0] = true;
       }
       else if (playing && state == LoadingNeededDoubleBuffer)
       {
         // We can immediately draw the new frame but then we need to update the double buffer
-        if (!isSeparateWidget)
+        if (this->isMasterView)
         {
           item[0]->activateDoubleBuffer();
           cache->loadFrame(item[0], frameIdx, 0);
@@ -1810,14 +1355,14 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw, bool updateOtherWid
       if (state == LoadingNeeded)
       {
         // The frame needs to be loaded first.
-        if (!isSeparateWidget)
+        if (this->isMasterView)
           cache->loadFrame(item[1], frameIdx, 1);
         itemLoading[1] = true;
       }
       else if (playing && state == LoadingNeededDoubleBuffer)
       {
         // We can immediately draw the new frame but then we need to update the double buffer
-        if (!isSeparateWidget)
+        if (this->isMasterView)
         {
           item[1]->activateDoubleBuffer();
           cache->loadFrame(item[1], frameIdx, 1);
@@ -1853,7 +1398,7 @@ void splitViewWidget::freezeView(bool freeze)
   {
     const bool isSeparateViewEnabled = actionSeparateView.isChecked();
     const bool playbackPrimary = actionSeparateViewPlaybackBoth.isChecked();
-    if (!isSeparateWidget && isSeparateViewEnabled && !playbackPrimary)
+    if (this->isMasterView && isSeparateViewEnabled && !playbackPrimary)
     {
       isViewFrozen = true;
       setMouseTracking(false);
@@ -1864,8 +1409,8 @@ void splitViewWidget::freezeView(bool freeze)
 
 void splitViewWidget::getViewState(QPoint &offset, double &zoom, double &splitPoint, int &mode) const
 {
-  offset = centerOffset;
-  zoom = zoomFactor;
+  offset = this->moveOffset;
+  zoom = this->zoomFactor;
   splitPoint = splittingPoint;
   if (viewSplitMode == DISABLED)
     mode = 0;
@@ -1877,12 +1422,12 @@ void splitViewWidget::getViewState(QPoint &offset, double &zoom, double &splitPo
 
 void splitViewWidget::setViewState(const QPoint &offset, double zoom, double splitPoint, int mode)
 {
-  setCenterOffset(offset);
-  setZoomFactor(zoom);
-  setSplittingPoint(splitPoint);
-  setViewSplitMode(ViewSplitMode(mode));
-  if (linkViews)
-    otherWidget->setViewSplitMode(viewSplitMode);
+  this->setMoveOffset(offset);
+  this->setZoomFactor(zoom);
+  this->setSplittingPoint(splitPoint);
+  this->setViewSplitMode(ViewSplitMode(mode));
+  if (enableLink)
+    this->getOtherWidget()->setViewSplitMode(viewSplitMode);
 
   update();
 }
@@ -1893,6 +1438,26 @@ void splitViewWidget::keyPressEvent(QKeyEvent *event)
     // If this widget does not handle the key press event, pass it up to the widget so that
     // it is propagated to the parent.
     QWidget::keyPressEvent(event);
+}
+
+void splitViewWidget::onSwipeLeft() 
+{ 
+  playback->nextFrame(); 
+}
+
+void splitViewWidget::onSwipeRight() 
+{ 
+  playback->previousFrame(); 
+}
+
+void splitViewWidget::onSwipeUp() 
+{ 
+  playlist->selectNextItem(); 
+}
+
+void splitViewWidget::onSwipeDown() 
+{ 
+  playlist->selectPreviousItem(); 
 }
 
 void splitViewWidget::createMenuActions()
@@ -1932,25 +1497,26 @@ void splitViewWidget::createMenuActions()
   configureCheckableAction(actionZoomBox, nullptr, "Zoom Box", drawZoomBox, &splitViewWidget::toggleZoomBox);
   actionZoomBox.setToolTip("Activate the Zoom Box which renders a zoomed portion of the screen and shows pixel information.");
 
-  configureCheckableAction(actionZoom[0], nullptr, "Zoom to 1:1", false, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
-  configureCheckableAction(actionZoom[1], nullptr, "Zoom to Fit", false, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
-  configureCheckableAction(actionZoom[2], nullptr, "Zoom in", false, &splitViewWidget::zoomIn, Qt::CTRL + Qt::Key_Plus);
-  configureCheckableAction(actionZoom[3], nullptr, "Zoom out", false, &splitViewWidget::zoomOut, Qt::CTRL + Qt::Key_Minus);
-  configureCheckableAction(actionZoom[4], nullptr, "Zoom to 50%", false, &splitViewWidget::zoomTo50);
-  configureCheckableAction(actionZoom[5], nullptr, "Zoom to 100%", false, &splitViewWidget::zoomTo100);
-  configureCheckableAction(actionZoom[6], nullptr, "Zoom to 200%", false, &splitViewWidget::zoomTo200);
-  configureCheckableAction(actionZoom[7], nullptr, "Zoom to ...", false, &splitViewWidget::zoomToCustom);
+  // TODO: Context menus
+  // configureCheckableAction(actionZoom[0], nullptr, "Zoom to 1:1", false, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
+  // configureCheckableAction(actionZoom[1], nullptr, "Zoom to Fit", false, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
+  // configureCheckableAction(actionZoom[2], nullptr, "Zoom in", false, &splitViewWidget::zoomIn, Qt::CTRL + Qt::Key_Plus);
+  // configureCheckableAction(actionZoom[3], nullptr, "Zoom out", false, &splitViewWidget::zoomOut, Qt::CTRL + Qt::Key_Minus);
+  // configureCheckableAction(actionZoom[4], nullptr, "Zoom to 50%", false, &splitViewWidget::zoomTo50);
+  // configureCheckableAction(actionZoom[5], nullptr, "Zoom to 100%", false, &splitViewWidget::zoomTo100);
+  // configureCheckableAction(actionZoom[6], nullptr, "Zoom to 200%", false, &splitViewWidget::zoomTo200);
+  // configureCheckableAction(actionZoom[7], nullptr, "Zoom to ...", false, &splitViewWidget::zoomToCustom);
 
-  configureCheckableAction(actionFullScreen, nullptr, "&Fullscreen Mode", false, &splitViewWidget::toggleFullScreen, Qt::CTRL + Qt::Key_F);
-  if (!isSeparateWidget)
-  {
-    configureCheckableAction(actionSeparateView, nullptr, "&Show Separate Window", false, &splitViewWidget::toggleSeparateWindow, Qt::CTRL + Qt::Key_W);
-    configureCheckableAction(actionSeparateViewLink, nullptr, "Link Views", false, &splitViewWidget::toggleSeparateWindowLink, {}, false);
-    configureCheckableAction(actionSeparateViewPlaybackBoth, nullptr, "Playback in both Views", false, &splitViewWidget::toggleSeparateWindowPlaybackBoth, {}, false);
-    actionSeparateView.setToolTip("Show a second window with another view to the same item. Especially helpfull for multi screen setups.");
-    actionSeparateViewLink.setToolTip("Link the second view so that any change in one view is also applied in the other view.");
-    actionSeparateViewPlaybackBoth.setToolTip("For performance reasons playback only runs in one (the second) view. Activate this to run playback in both views siultaneously.");
-  }
+  //configureCheckableAction(actionFullScreen, nullptr, "&Fullscreen Mode", false, &MoveAndZoomableView::toggleFullScreen, Qt::CTRL + Qt::Key_F);
+  // if (this->isMasterView)
+  // {
+  //   configureCheckableAction(actionSeparateView, nullptr, "&Show Separate Window", false, &splitViewWidget::toggleSeparateWindow, Qt::CTRL + Qt::Key_W);
+  //   configureCheckableAction(actionSeparateViewLink, nullptr, "Link Views", false, &splitViewWidget::toggleSeparateWindowLink, {}, false);
+  //   configureCheckableAction(actionSeparateViewPlaybackBoth, nullptr, "Playback in both Views", false, &splitViewWidget::toggleSeparateWindowPlaybackBoth, {}, false);
+  //   actionSeparateView.setToolTip("Show a second window with another view to the same item. Especially helpfull for multi screen setups.");
+  //   actionSeparateViewLink.setToolTip("Link the second view so that any change in one view is also applied in the other view.");
+  //   actionSeparateViewPlaybackBoth.setToolTip("For performance reasons playback only runs in one (the second) view. Activate this to run playback in both views siultaneously.");
+  // }
 }
 
 // Handle the key press event (if this widgets handles it). If not, return false.
@@ -1963,13 +1529,13 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
 
   if (key == Qt::Key_W && controlOnly)
   {
-    if (isSeparateWidget)
+    if (!this->isMasterView)
       emit signalShowSeparateWindow(false);
     return true;
   }
   else if (key == Qt::Key_0 && controlOnly)
   {
-    resetViews();
+    this->resetView();
     return true;
   }
   else if (key == Qt::Key_9 && controlOnly)
@@ -1979,18 +1545,18 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
   }
   else if (key == Qt::Key_Plus && controlOnly)
   {
-    zoom(ZOOM_IN);
+    this->zoom(ZoomMode::IN);
     return true;
   }
   else if (key == Qt::Key_BracketRight && controlOnly)
   {
     // This seems to be a bug in the Qt localization routine. On the German keyboard layout this key is returned if Ctrl + is pressed.
-    zoom(ZOOM_OUT);
+    this->zoom(ZoomMode::OUT);
     return true;
   }
   else if (key == Qt::Key_Minus && controlOnly)
   {
-    zoom(ZOOM_OUT);
+    this->zoom(ZoomMode::OUT);
     return true;
   }
 
@@ -2124,7 +1690,7 @@ void splitViewWidget::testDrawingSpeed()
   auto selection = playlist->getSelectedItems();
   if (selection[0] == nullptr)
   {
-    QMessageBox::information(parentWidget, "Test error", "Please select an item from the playlist to perform the test on.");
+    QMessageBox::information(this, "Test error", "Please select an item from the playlist to perform the test on.");
     return;
   }
 
@@ -2132,9 +1698,8 @@ void splitViewWidget::testDrawingSpeed()
   if (playback->playing())
     playback->on_stopButton_clicked();
   
-  assert(parentWidget != nullptr);
   assert(testProgressDialog.isNull());
-  testProgressDialog = new QProgressDialog("Running draw test...", "Cancel", 0, 1000, parentWidget);
+  testProgressDialog = new QProgressDialog("Running draw test...", "Cancel", 0, 1000, this);
   testProgressDialog->setWindowModality(Qt::WindowModal);
 
   testLoopCount = 1000;
@@ -2157,26 +1722,13 @@ void splitViewWidget::addMenuActions(QMenu *menu)
     drawGridMenu->addAction(&actionGrid[i]);
 
   menu->addAction(&actionZoomBox);
-
-  QMenu *zoomMenu = menu->addMenu("Zoom");
-  zoomMenu->addAction("Zoom to 1:1", this, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
-  zoomMenu->addAction("Zoom to Fit", this, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
-  zoomMenu->addAction("Zoom in", this, &splitViewWidget::zoomIn, Qt::CTRL + Qt::Key_Plus);
-  zoomMenu->addAction("Zoom out", this, &splitViewWidget::zoomOut, Qt::CTRL + Qt::Key_Minus);
-  zoomMenu->addSeparator();
-  zoomMenu->addAction("Zoom to 50%", this, &splitViewWidget::zoomTo50);
-  zoomMenu->addAction("Zoom to 100%", this, &splitViewWidget::zoomTo100);
-  zoomMenu->addAction("Zoom to 200%", this, &splitViewWidget::zoomTo200);
-  zoomMenu->addAction("Zoom to ...", this, &splitViewWidget::zoomToCustom);
-  
-  menu->addAction(&actionFullScreen);
-  
+  MoveAndZoomableView::addMenuActions(menu);
   menu->addSeparator();
 
   QMenu *separateViewMenu = menu->addMenu("Separate View");
-  separateViewMenu->addAction(isSeparateWidget ? &otherWidget->actionSeparateView : &actionSeparateView);
-  separateViewMenu->addAction(isSeparateWidget ? &otherWidget->actionSeparateViewLink : &actionSeparateViewLink);
-  separateViewMenu->addAction(isSeparateWidget ? &otherWidget->actionSeparateViewPlaybackBoth : &actionSeparateViewPlaybackBoth);
+  separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateView : &actionSeparateView);
+  separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewLink : &actionSeparateViewLink);
+  separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewPlaybackBoth : &actionSeparateViewPlaybackBoth);
   separateViewMenu->setToolTipsVisible(true);
 
   menu->setToolTipsVisible(true);
@@ -2217,5 +1769,12 @@ void splitViewWidget::testFinished(bool canceled)
   // Calculate and report the time
   int64_t msec = testDuration.elapsed();
   double rate = 1000.0 * 1000 / msec;
-  QMessageBox::information(parentWidget, "Test results", QString("We drew 1000 frames in %1 msec. The draw rate is %2 frames per second.").arg(msec).arg(rate));
+  QMessageBox::information(this, "Test results", QString("We drew 1000 frames in %1 msec. The draw rate is %2 frames per second.").arg(msec).arg(rate));
+}
+
+QPointer<splitViewWidget> splitViewWidget::getOtherWidget() const
+{
+  if (this->slaveViews.size() >= 1)
+    return QPointer<splitViewWidget>(qobject_cast<splitViewWidget*>(slaveViews[0]));
+  return {};
 }

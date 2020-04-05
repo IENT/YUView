@@ -29,12 +29,15 @@
 *   You should have received a copy of the GNU General Public License
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
+#pragma once
 
 #include <QtWidgets/QWidget>
 
+#include <QAction>
 #include <QWheelEvent>
 #include <QMouseEvent>
 #include <QPointer>
+#include <QMenu>
 
 class MoveAndZoomableView : public QWidget
 {
@@ -43,42 +46,87 @@ class MoveAndZoomableView : public QWidget
 public:
   MoveAndZoomableView(QWidget *parent = 0);
 
+  /* Add a slave view to this. This makes this view a master and the added one
+   * a slave.
+   */
+  void addSlaveView(MoveAndZoomableView *view);
+
+  // Add the split views menu items to the given menu. Used for the main menu bar and the context menu.
+  void addMenuActions(QMenu *menu);
+
+signals:
+  void signalToggleFullScreen();
+
+public slots:
+  virtual void resetView(bool checked = false);
+  void toggleFullScreenAction() { actionFullScreen.trigger(); }
+
+private slots:
+  virtual void zoomToFit(bool checked = false);
+  void zoomIn(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::IN); }
+  void zoomOut(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::OUT); }
+  void zoomTo50(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::TO_VALUE, QPoint(), 0.5); }
+  void zoomTo100(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::TO_VALUE, QPoint(), 1.0); }
+  void zoomTo200(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::TO_VALUE, QPoint(), 2.0); }
+  void zoomToCustom(bool checked);
+
+  void toggleFullScreen(bool checked);
+  void setLinkState(bool enabled);
+
 protected:
 
-  void mouseMoveEvent(QMouseEvent *event) override;
-  void mousePressEvent(QMouseEvent *event) override;
-  void mouseReleaseEvent(QMouseEvent *event) override;
-  void wheelEvent (QWheelEvent *event) override;
-  void mouseDoubleClickEvent(QMouseEvent *event) override { event->ignore(); }
-  void keyPressEvent(QKeyEvent *event) override { event->ignore(); }
-  void resizeEvent(QResizeEvent *event) override;
+  virtual void mouseMoveEvent(QMouseEvent *event) override;
+  virtual void mousePressEvent(QMouseEvent *event) override;
+  virtual void mouseReleaseEvent(QMouseEvent *event) override;
+  virtual void wheelEvent (QWheelEvent *event) override;
+  virtual void mouseDoubleClickEvent(QMouseEvent *event) override { actionFullScreen.trigger(); event->accept(); }
+  virtual void keyPressEvent(QKeyEvent *event) override { event->ignore(); }
+  virtual void resizeEvent(QResizeEvent *event) override;
+  virtual bool event(QEvent *event) override; ///< Handle touch event
 
-  void openContextMenu() { }
+  QAction actionFullScreen;
 
-  // Use the current mouse position within the widget to update the mouse cursor.
+  virtual void openContextMenu() { }
+
   void updateMouseCursor();
-  virtual void updateMouseCursor(const QPoint &srcMousePos);
-
-  double zoomFactor {1.0};
+  virtual bool updateMouseCursor(const QPoint &srcMousePos);
+  
   enum class ZoomDirection {BOTH, HORIZONTAL};
-  ZoomDirection zoomDirection {ZoomDirection::HORIZONTAL};
+  ZoomDirection zoomDirection {ZoomDirection::BOTH};
   enum class ZoomMode {IN, OUT, TO_VALUE};
   void zoom(ZoomMode zoomMode, const QPoint &zoomPoint = QPoint(), double newZoomFactor = 0.0);
+  virtual void setZoomFactor(double zoom, bool setLinkedViews = true);
 
-  // When touching (pinch/swipe) these values are updated to enable interactive zooming
+  virtual void setMoveOffset(QPoint offset, bool setLinkedViews = true);
+
+  enum class ViewAction
+  {
+    NONE,
+    DRAGGING,
+    DRAGGING_MOUSE_MOVED,
+    PINCHING,
+    ZOOM_BOX
+  };
+  
+  virtual void updateSettings();
+
+  virtual void onSwipeLeft() {}
+  virtual void onSwipeRight() {}
+  virtual void onSwipeUp() {}
+  virtual void onSwipeDown() {}
+
+  double zoomFactor {1.0};
+
   double  currentStepScaleFactor {1.0};
   QPointF currentStepCenterPointOffset;
-  bool    currentlyPinching {false};
 
-  void    setCenterOffset(QPoint offset, bool setOtherViewIfLinked = true, bool callUpdate = false);
-  QPoint  centerOffset;                     //!< The offset of the view to the center (0,0)
-  bool    viewDragging {false};             //!< True if the user is currently moving the view
-  bool    viewDraggingMouseMoved {false};   //!< If the user is moving the view this indicates if the view was actually moved more than a few pixels
+  QPoint  moveOffset;                 //!< The offset that the view was moved
   QPoint  viewDraggingMousePosStart;
   QPoint  viewDraggingStartOffset;
-  bool    viewZooming {false};              //!< True if the user is currently zooming using the mouse (zoom box)
   QPoint  viewZoomingMousePosStart;
   QPoint  viewZoomingMousePos;
+
+  ViewAction viewAction {ViewAction::NONE};
 
   // Two modes of mouse operation can be set for the view:
   // 1: The right mouse button moves the view, the left one draws the zoom box
@@ -86,10 +134,17 @@ protected:
   enum mouseModeEnum {MOUSE_RIGHT_MOVE, MOUSE_LEFT_MOVE};
   mouseModeEnum mouseMode;
 
+  /* Views can be linked together. There is always one mater view and a list of 
+   * slave views. If the link is enabled, all interactive commands are pushed to 
+   * the master and that will forward them to all slaves.
+   */
   bool enableLink {false};
-  QList<QPointer<MoveAndZoomableView>> linkedViews;
+  bool isMasterView {true};
+  QList<QPointer<MoveAndZoomableView>> slaveViews;
+  QPointer<MoveAndZoomableView> masterView;
 
-  void updateSettings();
+private:
+  void slaveSetLinkState(bool enable);
+  void getStateFromMaster();
 
-  QPoint moveOffset; //!< The offset of the view
 };

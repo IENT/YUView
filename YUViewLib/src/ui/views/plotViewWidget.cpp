@@ -58,6 +58,8 @@ PlotViewWidget::PlotViewWidget(QWidget *parent)
   this->propertiesAxis[0].axis = Axis::X;
   this->propertiesAxis[1].axis = Axis::Y;
 
+  this->zoomDirection = ZoomDirection::BOTH;
+
   // setContextMenuPolicy(Qt::PreventContextMenu);
 
   // if (!isEnabled())
@@ -113,8 +115,8 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
   this->updateAxis(this->propertiesAxis[0], plotRect);
   this->updateAxis(this->propertiesAxis[1], plotRect);
 
-  auto valuesX = this->getAxisValuesToShow(this->propertiesAxis[0], this->centerOffset);
-  auto valuesY = this->getAxisValuesToShow(this->propertiesAxis[1], this->centerOffset);
+  auto valuesX = this->getAxisValuesToShow(this->propertiesAxis[0], this->moveOffset);
+  auto valuesY = this->getAxisValuesToShow(this->propertiesAxis[1], this->moveOffset);
   drawGridLines(painter, this->propertiesAxis[0], plotRect, valuesX);
   drawGridLines(painter, this->propertiesAxis[1], plotRect, valuesY);
 
@@ -128,7 +130,7 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
 
   drawFadeBoxes(painter, plotRect, widgetRect);
 
-  auto drawPoint = plotRect.center() + centerOffset;
+  auto drawPoint = plotRect.center() + moveOffset;
   QRectF debugRect;
   debugRect.setSize(QSizeF(20, 20));
   debugRect.moveCenter(drawPoint);
@@ -333,10 +335,10 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
     for (size_t i = 0; i < nrBars; i++)
     {
       const auto value = model->getPlotPoint(plotIndex, i);
-      auto posXLeftPixel = convertAxisValueToPixel(this->propertiesAxis[0], value.x - 0.5, this->centerOffset);
-      auto posXRightPixel = convertAxisValueToPixel(this->propertiesAxis[0], value.x + 0.5, this->centerOffset);
-      auto posYZeroPixel = convertAxisValueToPixel(this->propertiesAxis[1], 0, this->centerOffset);
-      auto posYPixel = convertAxisValueToPixel(this->propertiesAxis[1], value.y, this->centerOffset);
+      auto posXLeftPixel = convertAxisValueToPixel(this->propertiesAxis[0], value.x - 0.5, this->moveOffset);
+      auto posXRightPixel = convertAxisValueToPixel(this->propertiesAxis[0], value.x + 0.5, this->moveOffset);
+      auto posYZeroPixel = convertAxisValueToPixel(this->propertiesAxis[1], 0, this->moveOffset);
+      auto posYPixel = convertAxisValueToPixel(this->propertiesAxis[1], value.y, this->moveOffset);
 
       QRectF drawRect(QPointF(posXLeftPixel, posYPixel), QPointF(posXRightPixel, posYZeroPixel));
       painter.drawRect(drawRect);
