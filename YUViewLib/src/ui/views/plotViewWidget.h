@@ -38,12 +38,12 @@
 #include "plotModel.h"
 #include "dummyPlotModel.h"
 
-class PlotWidget : public MoveAndZoomableView
+class PlotViewWidget : public MoveAndZoomableView
 {
   Q_OBJECT
 
 public:
-  PlotWidget(QWidget *parent = 0);
+  PlotViewWidget(QWidget *parent = 0);
   void setModel(PlotModel *model);
 
 protected:

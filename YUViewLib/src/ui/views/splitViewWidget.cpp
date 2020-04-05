@@ -43,7 +43,7 @@
 #include <QTextDocument>
 #include <QDebug>
 
-#include "playbackController.h"
+#include "ui/playbackController.h"
 #include "playlistitem/playlistItem.h"
 #include "video/frameHandler.h"
 #include "video/videoCache.h"

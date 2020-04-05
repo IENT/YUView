@@ -35,7 +35,7 @@
 
 #include <QMainWindow>
 
-#include "splitViewWidget.h"
+#include "views/splitViewWidget.h"
 
 class SeparateWindow : public QMainWindow
 {

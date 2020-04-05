@@ -39,7 +39,7 @@
 #include <QWidget>
 
 #include "playlistTreeWidget.h"
-#include "splitViewWidget.h"
+#include "views/splitViewWidget.h"
 #include "common/typedef.h"
 
 #include "ui_playbackController.h"

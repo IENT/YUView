@@ -149,7 +149,7 @@
         </layout>
        </item>
        <item>
-        <widget class="PlotWidget" name="plotWidget" native="true"/>
+        <widget class="PlotViewWidget" name="plotViewWidget" native="true"/>
        </item>
       </layout>
      </widget>
@@ -170,9 +170,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>PlotWidget</class>
+   <class>PlotViewWidget</class>
    <extends>QWidget</extends>
-   <header>ui/plotting/plotWidget.h</header>
+   <header>ui/views/plotViewWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
