@@ -86,9 +86,6 @@ protected:
   enum mouseModeEnum {MOUSE_RIGHT_MOVE, MOUSE_LEFT_MOVE};
   mouseModeEnum mouseMode;
 
-  // Freezing of the view
-  bool viewFrozen {false};
-
   bool enableLink {false};
   QList<QPointer<MoveAndZoomableView>> linkedViews;
 
