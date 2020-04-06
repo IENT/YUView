@@ -131,6 +131,9 @@ void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)
 
 void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
 {
+  if (this->parser.isNull())
+    return;
+
   this->disconnect(this->parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
   this->disconnect(this->parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
   this->disconnect(this->parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);

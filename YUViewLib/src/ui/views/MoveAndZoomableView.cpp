@@ -61,7 +61,7 @@ void MoveAndZoomableView::addSlaveView(MoveAndZoomableView *view)
 {
   Q_ASSERT_X(view, Q_FUNC_INFO, "nullptr");
   Q_ASSERT_X(this->isMasterView, Q_FUNC_INFO, "Can not add slave to a slave");
-  Q_ASSERT_X(!view->masterView.isNull(), Q_FUNC_INFO, "Slave already has a master");
+  Q_ASSERT_X(view->masterView.isNull(), Q_FUNC_INFO, "Slave already has a master");
 
   view->isMasterView = false;
   view->masterView = this;
