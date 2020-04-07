@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "PlotViewWidget.h"
+#include "plotViewWidget.h"
 
 #include <QPainter>
 #include <cmath>
