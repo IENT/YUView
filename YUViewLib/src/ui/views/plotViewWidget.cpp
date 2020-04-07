@@ -173,12 +173,6 @@ QList<PlotViewWidget::TickValue> PlotViewWidget::getAxisValuesToShow(const PlotV
 
   auto nrWholeValuesInRange = int(std::floor(valueRange));
 
-  auto offsetLeft = std::ceil(rangeMin) - rangeMin;
-  auto offsetRight = rangeMax - std::floor(rangeMax);
-  auto rangeRemainder = valueRange - int(std::floor(valueRange));
-  // if (offsetLeft < rangeRemainder && offsetRight < rangeRemainder)
-  //   nrWholeValuesInRange++;
-
   double factorMajor = 1.0;
   while (factorMajor * 10 * nrWholeValuesInRange < nrValuesToShowMax)
     factorMajor *= 10;
@@ -330,9 +324,9 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
   if (param.type == PlotModel::PlotType::Bar)
   {
     const auto nrBars = param.xRange.max - param.xRange.min;
-    for (size_t i = 0; i < nrBars; i++)
+    for (int i = 0; i < nrBars; i++)
     {
-      const auto value = model->getPlotPoint(plotIndex, i);
+      const auto value = model->getPlotPoint(plotIndex, unsigned(i));
 
       auto barTopLeft = this->convertPlotPosToPixelPos(QPointF(value.x - 0.5, value.y));
       auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + 0.5, 0));

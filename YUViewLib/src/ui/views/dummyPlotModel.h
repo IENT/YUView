@@ -35,18 +35,23 @@
 #include "plotModel.h"
 
 #include <QList>
-#include <QRandomGenerator>
+#include <random>
 
 class DummyPlotModel : public PlotModel
 {
 public:
   DummyPlotModel() : PlotModel()
   {
-    QRandomGenerator generator;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    
+    std::uniform_int_distribution<> dis500(0, 500);
     for (size_t i = 0; i < 100; i++)
-      this->barData.append(int(generator.bounded(500)));
+      this->barData.append(int(dis500(gen)));
+    std::uniform_int_distribution<> dis100(0, 100);
+    std::uniform_int_distribution<> dis1000(0, 1000);
     for (size_t i = 0; i < 10; i++)
-      this->graphData.append({double(generator.bounded(100)), double(generator.bounded(1000))});
+      this->graphData.append({double(dis100(gen)), double(dis1000(gen))});
   }
 
   unsigned int getNrPlots() const override
