@@ -104,7 +104,7 @@ public:
   void testDrawingSpeed();
 
   // Add the split views menu items to the given menu. Used for the main menu bar and the context menu.
-  void addMenuActions(QMenu *menu);
+  void addMenuActions(QMenu *menu) override;
 
 signals:
   
@@ -139,6 +139,7 @@ private slots:
   void toggleZoomBox(bool checked) { Q_UNUSED(checked); drawZoomBox = !drawZoomBox; update(); }
 
   void toggleSeparateWindow(bool checked);
+  void toggleSeparateWindowPlaybackBoth(bool checked) { Q_UNUSED(checked); };
 
 protected:
   
@@ -167,11 +168,10 @@ protected:
   QScopedPointer<QActionGroup> actionGridGroup;
   QAction actionSplitView[3];
   QAction actionGrid[6];
-  QAction actionZoomBox;
-  QAction actionZoom[8];
   QAction actionSeparateView;
   QAction actionSeparateViewLink;
   QAction actionSeparateViewPlaybackBoth;
+  QAction actionZoomBox;
 
   virtual bool updateMouseCursor(const QPoint &srcMousePos) override;
 

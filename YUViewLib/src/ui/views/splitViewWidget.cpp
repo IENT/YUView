@@ -114,8 +114,8 @@ splitViewWidget::splitViewWidget(QWidget *parent)
 
   // We want to have all mouse events (even move)
   setMouseTracking(true);
-
-  createMenuActions();
+  
+  this->createMenuActions();
 }
 
 void splitViewWidget::setPlaylistTreeWidget(PlaylistTreeWidget *p) { playlist = p; }
@@ -1462,7 +1462,8 @@ void splitViewWidget::onSwipeDown()
 
 void splitViewWidget::createMenuActions()
 {
-  Q_ASSERT_X(actionSplitViewGroup.isNull(), "splitViewWidget::createMenuActions", "Only call this initialization function once.");
+  const bool menuActionsNoteCreatedYet = actionSplitViewGroup.isNull();
+  Q_ASSERT_X(menuActionsNoteCreatedYet, Q_FUNC_INFO, "Only call this initialization function once.");
 
   auto configureCheckableAction = [this](QAction &action, QActionGroup *actionGroup, QString text, bool checked, void(splitViewWidget::*func)(bool), const QKeySequence &shortcut = {}, bool isEnabled = true)
   {
@@ -1497,26 +1498,15 @@ void splitViewWidget::createMenuActions()
   configureCheckableAction(actionZoomBox, nullptr, "Zoom Box", drawZoomBox, &splitViewWidget::toggleZoomBox);
   actionZoomBox.setToolTip("Activate the Zoom Box which renders a zoomed portion of the screen and shows pixel information.");
 
-  // TODO: Context menus
-  // configureCheckableAction(actionZoom[0], nullptr, "Zoom to 1:1", false, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
-  // configureCheckableAction(actionZoom[1], nullptr, "Zoom to Fit", false, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
-  // configureCheckableAction(actionZoom[2], nullptr, "Zoom in", false, &splitViewWidget::zoomIn, Qt::CTRL + Qt::Key_Plus);
-  // configureCheckableAction(actionZoom[3], nullptr, "Zoom out", false, &splitViewWidget::zoomOut, Qt::CTRL + Qt::Key_Minus);
-  // configureCheckableAction(actionZoom[4], nullptr, "Zoom to 50%", false, &splitViewWidget::zoomTo50);
-  // configureCheckableAction(actionZoom[5], nullptr, "Zoom to 100%", false, &splitViewWidget::zoomTo100);
-  // configureCheckableAction(actionZoom[6], nullptr, "Zoom to 200%", false, &splitViewWidget::zoomTo200);
-  // configureCheckableAction(actionZoom[7], nullptr, "Zoom to ...", false, &splitViewWidget::zoomToCustom);
-
-  //configureCheckableAction(actionFullScreen, nullptr, "&Fullscreen Mode", false, &MoveAndZoomableView::toggleFullScreen, Qt::CTRL + Qt::Key_F);
-  // if (this->isMasterView)
-  // {
-  //   configureCheckableAction(actionSeparateView, nullptr, "&Show Separate Window", false, &splitViewWidget::toggleSeparateWindow, Qt::CTRL + Qt::Key_W);
-  //   configureCheckableAction(actionSeparateViewLink, nullptr, "Link Views", false, &splitViewWidget::toggleSeparateWindowLink, {}, false);
-  //   configureCheckableAction(actionSeparateViewPlaybackBoth, nullptr, "Playback in both Views", false, &splitViewWidget::toggleSeparateWindowPlaybackBoth, {}, false);
-  //   actionSeparateView.setToolTip("Show a second window with another view to the same item. Especially helpfull for multi screen setups.");
-  //   actionSeparateViewLink.setToolTip("Link the second view so that any change in one view is also applied in the other view.");
-  //   actionSeparateViewPlaybackBoth.setToolTip("For performance reasons playback only runs in one (the second) view. Activate this to run playback in both views siultaneously.");
-  // }
+  if (this->isMasterView)
+  {
+    configureCheckableAction(actionSeparateView, nullptr, "&Show Separate Window", false, &splitViewWidget::toggleSeparateWindow, Qt::CTRL + Qt::Key_W);
+    configureCheckableAction(actionSeparateViewLink, nullptr, "Link Views", false, &MoveAndZoomableView::setLinkState, {}, false);
+    configureCheckableAction(actionSeparateViewPlaybackBoth, nullptr, "Playback in both Views", false, &splitViewWidget::toggleSeparateWindowPlaybackBoth, {}, false);
+    actionSeparateView.setToolTip("Show a second window with another view to the same item. Especially helpfull for multi screen setups.");
+    actionSeparateViewLink.setToolTip("Link the second view so that any change in one view is also applied in the other view.");
+    actionSeparateViewPlaybackBoth.setToolTip("For performance reasons playback only runs in one (the second) view. Activate this to run playback in both views siultaneously.");
+  }
 }
 
 // Handle the key press event (if this widgets handles it). If not, return false.

@@ -40,7 +40,7 @@
 
 const int ZOOM_STEP_FACTOR = 2;
 
-#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 1
+#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 0
 #if MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_VIEW(fmt) qDebug() << fmt
@@ -55,6 +55,8 @@ MoveAndZoomableView::MoveAndZoomableView(QWidget *parent)
   setMouseTracking(true);
 
   this->updateSettings();
+
+  this->createMenuActions();
 }
 
 void MoveAndZoomableView::addSlaveView(MoveAndZoomableView *view)
@@ -265,7 +267,7 @@ void MoveAndZoomableView::mouseMoveEvent(QMouseEvent *mouse_event)
   else if (this->viewAction == ViewAction::ZOOM_BOX)
   {
     this->viewZoomingMousePos = mouse_event->pos();
-    DEBUG_VIEW("MoveAndZoomableView::mouseMoveEvent zooming pos ", viewZoomingMousePos);
+    DEBUG_VIEW("MoveAndZoomableView::mouseMoveEvent zooming pos " << viewZoomingMousePos);
     this->update();
   }
   else
@@ -324,10 +326,14 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
     // Calculate the new center offset one last time
     this->setMoveOffset(this->viewDraggingStartOffset + (mouse_event->pos() - this->viewDraggingMousePosStart));
 
-    if (mouse_event->button() == Qt::RightButton && this->viewAction != ViewAction::DRAGGING)
-      this->openContextMenu();
+    if (mouse_event->button() == Qt::RightButton && this->viewAction == ViewAction::DRAGGING)
+    {
+      QMenu menu(this);
+      this->addMenuActions(&menu);
+      menu.exec(mouse_event->globalPos());
+    }
 
-    this->viewAction == ViewAction::NONE;
+    this->viewAction = ViewAction::NONE;
     
     this->update();
   }
@@ -343,7 +349,7 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
     if (abs(zoomRect.width()) < 2 && abs(zoomRect.height()) < 2)
     {
       // The user just pressed the button without moving the mouse.
-      this->viewAction == ViewAction::NONE;
+      this->viewAction = ViewAction::NONE;
       update();
       return;
     }
@@ -368,7 +374,7 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
       this->setMoveOffset(this->moveOffset * ZOOM_STEP_FACTOR);
     }
 
-    this->viewAction == ViewAction::NONE;
+    this->viewAction = ViewAction::NONE;
 
     // The view was moved. Update the widget.
     this->update();
@@ -473,6 +479,37 @@ bool MoveAndZoomableView::event(QEvent *event)
   }
 
   return QWidget::event(event);
+}
+
+void MoveAndZoomableView::createMenuActions()
+{
+  const bool menuActionsNoteCreatedYet = actionFullScreen.text().isEmpty();
+  Q_ASSERT_X(menuActionsNoteCreatedYet, Q_FUNC_INFO, "Only call this initialization function once.");
+
+  auto configureCheckableAction = [this](QAction &action, QActionGroup *actionGroup, QString text, bool checked, void(MoveAndZoomableView::*func)(bool), const QKeySequence &shortcut = {}, bool isEnabled = true)
+  {
+    action.setParent(this);
+    action.setCheckable(true);
+    action.setChecked(checked);
+    action.setText(text);
+    action.setShortcut(shortcut);
+    if (actionGroup)
+      actionGroup->addAction(&action);
+    if (!isEnabled)
+      action.setEnabled(false);
+    connect(&action, &QAction::triggered, this, func);
+  };
+
+  configureCheckableAction(actionZoom[0], nullptr, "Zoom to 1:1", false, &MoveAndZoomableView::resetView, Qt::CTRL + Qt::Key_0);
+  configureCheckableAction(actionZoom[1], nullptr, "Zoom to Fit", false, &MoveAndZoomableView::zoomToFit, Qt::CTRL + Qt::Key_9);
+  configureCheckableAction(actionZoom[2], nullptr, "Zoom in", false, &MoveAndZoomableView::zoomIn, Qt::CTRL + Qt::Key_Plus);
+  configureCheckableAction(actionZoom[3], nullptr, "Zoom out", false, &MoveAndZoomableView::zoomOut, Qt::CTRL + Qt::Key_Minus);
+  configureCheckableAction(actionZoom[4], nullptr, "Zoom to 50%", false, &MoveAndZoomableView::zoomTo50);
+  configureCheckableAction(actionZoom[5], nullptr, "Zoom to 100%", false, &MoveAndZoomableView::zoomTo100);
+  configureCheckableAction(actionZoom[6], nullptr, "Zoom to 200%", false, &MoveAndZoomableView::zoomTo200);
+  configureCheckableAction(actionZoom[7], nullptr, "Zoom to ...", false, &MoveAndZoomableView::zoomToCustom);
+
+  configureCheckableAction(actionFullScreen, nullptr, "&Fullscreen Mode", false, &MoveAndZoomableView::toggleFullScreen, Qt::CTRL + Qt::Key_F);
 }
 
 void MoveAndZoomableView::setZoomFactor(double zoom, bool setLinkedViews)

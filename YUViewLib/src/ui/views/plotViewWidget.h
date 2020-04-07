@@ -50,6 +50,7 @@ protected:
 
   // Override some events from the widget
   void paintEvent(QPaintEvent *event) override;
+  void resizeEvent(QResizeEvent *event) override;
   
 private:
   enum class Axis
@@ -73,28 +74,36 @@ private:
 
   struct AxisProperties
   {
-    ValueRange range;
-    ValueRange rangeZoomed;
     Axis axis;
-    bool showDoubleValues {true};
-
+    
+    // In the widgets pixel domain. The first point marks the 0 point on the axis.
+    // This is updated every time the size of the widget changes
     QLineF line;
+    bool showDoubleValues {true};
   };
   AxisProperties propertiesAxis[2];
 
-  static QList<TickValue> getAxisValuesToShow(const AxisProperties &properties, const QPoint &moveOffset);
+  QList<TickValue> getAxisValuesToShow(const Axis axis) const;
   static void drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect);
   static void drawAxis(QPainter &painter, const QRectF &plotRect);
   static void drawAxisTicksAndValues(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &values);
   static void drawGridLines(QPainter &painter, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &values);
   static void drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect);
 
-  void updateAxis(AxisProperties &properties, const QRectF &plotRect) const;
+  void updateAxis(const QRectF &plotRect);
 
   void drawPlot(QPainter &painter, const QRectF &plotRect) const;
 
-  static double convertAxisValueToPixel(const AxisProperties &properties, const double value, const QPoint &moveOffset);
+  // Convert a position in the 2D coordinate system of the plot into a pixel position and vise versa
+  QPointF convertPlotPosToPixelPos(const QPointF &plotPos) const;
+  QPointF convertPixelPosToPlotPos(const QPointF &pixelPos) const;
 
   PlotModel *model {nullptr};
   DummyPlotModel dummyModel;
+
+  // At zoom 1.0 (no zoom) we will show values with this distance on the x axis
+  double zoomToPixelsPerValueX = 10.0;
+  double zoomToPixelsPerValueY = 10.0;
+
+  bool fixYAxis {true};
 };

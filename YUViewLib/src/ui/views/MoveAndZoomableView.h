@@ -52,7 +52,7 @@ public:
   void addSlaveView(MoveAndZoomableView *view);
 
   // Add the split views menu items to the given menu. Used for the main menu bar and the context menu.
-  void addMenuActions(QMenu *menu);
+  virtual void addMenuActions(QMenu *menu);
 
 signals:
   void signalToggleFullScreen();
@@ -60,8 +60,9 @@ signals:
 public slots:
   virtual void resetView(bool checked = false);
   void toggleFullScreenAction() { actionFullScreen.trigger(); }
+  void setLinkState(bool enabled);
 
-private slots:
+protected slots:
   virtual void zoomToFit(bool checked = false);
   void zoomIn(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::IN); }
   void zoomOut(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::OUT); }
@@ -71,7 +72,6 @@ private slots:
   void zoomToCustom(bool checked);
 
   void toggleFullScreen(bool checked);
-  void setLinkState(bool enabled);
 
 protected:
 
@@ -84,15 +84,13 @@ protected:
   virtual void resizeEvent(QResizeEvent *event) override;
   virtual bool event(QEvent *event) override; ///< Handle touch event
 
+  void createMenuActions();
+  QAction actionZoom[8];
   QAction actionFullScreen;
-
-  virtual void openContextMenu() { }
 
   void updateMouseCursor();
   virtual bool updateMouseCursor(const QPoint &srcMousePos);
   
-  enum class ZoomDirection {BOTH, HORIZONTAL};
-  ZoomDirection zoomDirection {ZoomDirection::BOTH};
   enum class ZoomMode {IN, OUT, TO_VALUE};
   void zoom(ZoomMode zoomMode, const QPoint &zoomPoint = QPoint(), double newZoomFactor = 0.0);
   virtual void setZoomFactor(double zoom, bool setLinkedViews = true);
