@@ -143,6 +143,34 @@ void PlotViewWidget::resizeEvent(QResizeEvent *event)
   MoveAndZoomableView::resizeEvent(event);
 }
 
+void PlotViewWidget::mouseMoveEvent(QMouseEvent *mouseMoveEvent)
+{
+  const auto plotIndex = 0;
+  MoveAndZoomableView::mouseMoveEvent(mouseMoveEvent);
+
+  int newHoveredModelIndex = -1;
+  if (this->model)
+  {
+    auto pos = mouseMoveEvent->pos();
+    auto mouseHoverPos = this->convertPixelPosToPlotPos(pos);
+    auto param = model->getPlotParameter(plotIndex);
+    if (mouseHoverPos.x() + 0.5 > param.xRange.min && mouseHoverPos.x() - 0.5 < param.xRange.max)
+    {
+      const auto barIndex = unsigned(std::round(mouseHoverPos.x()));
+      auto point = model->getPlotPoint(plotIndex, barIndex);
+      if (mouseHoverPos.y() >= 0 && mouseHoverPos.y() < point.y)
+        newHoveredModelIndex = barIndex;
+    }
+    mouseMoveEvent->accept();
+  }
+
+  if (this->currentlyHoveredModelIndex != newHoveredModelIndex)
+  {
+    this->currentlyHoveredModelIndex = newHoveredModelIndex;
+    update();
+  }
+}
+
 void PlotViewWidget::drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect)
 {
   painter.setBrush(Qt::white);
@@ -314,9 +342,6 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
   if (plotIndex >= model->getNrPlots())
     return;
 
-  painter.setBrush(QColor(0, 0, 200, 100));
-  painter.setPen(QColor(0, 0, 200));
-
   const auto zeroPointX = plotRect.bottomLeft().x() + fadeBoxThickness;
   const auto zeroPointY = plotRect.bottomLeft().y() - fadeBoxThickness;
 
@@ -330,6 +355,17 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
 
       auto barTopLeft = this->convertPlotPosToPixelPos(QPointF(value.x - 0.5, value.y));
       auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + 0.5, 0));
+
+      if (this->currentlyHoveredModelIndex != -1 && this->currentlyHoveredModelIndex == i)
+      {
+        painter.setBrush(QColor(200, 0, 0, 100));
+        painter.setPen(QColor(200, 0, 0));
+      }
+      else
+      {
+        painter.setBrush(QColor(0, 0, 200, 100));
+        painter.setPen(QColor(0, 0, 200));
+      }
 
       painter.drawRect(QRectF(barTopLeft, barBottomRight));
     }

@@ -262,18 +262,18 @@ void MoveAndZoomableView::mouseMoveEvent(QMouseEvent *mouse_event)
     }
 
     DEBUG_VIEW("MoveAndZoomableView::mouseMoveEvent dragging pos " << mouse_event->pos());
+    mouse_event->accept();
     this->update();
   }
   else if (this->viewAction == ViewAction::ZOOM_BOX)
   {
     this->viewZoomingMousePos = mouse_event->pos();
     DEBUG_VIEW("MoveAndZoomableView::mouseMoveEvent zooming pos " << viewZoomingMousePos);
+    mouse_event->accept();
     this->update();
   }
   else
     this->updateMouseCursor(mouse_event->pos());
-
-  mouse_event->accept();
 }
 
 void MoveAndZoomableView::mousePressEvent(QMouseEvent *mouse_event)

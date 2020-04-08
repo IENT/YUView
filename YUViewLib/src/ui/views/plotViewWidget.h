@@ -51,6 +51,7 @@ protected:
   // Override some events from the widget
   void paintEvent(QPaintEvent *event) override;
   void resizeEvent(QResizeEvent *event) override;
+  void mouseMoveEvent(QMouseEvent *event) override;
   
 private:
   enum class Axis
@@ -102,8 +103,10 @@ private:
   DummyPlotModel dummyModel;
 
   // At zoom 1.0 (no zoom) we will show values with this distance on the x axis
-  double zoomToPixelsPerValueX = 10.0;
-  double zoomToPixelsPerValueY = 10.0;
+  double zoomToPixelsPerValueX {10.0};
+  double zoomToPixelsPerValueY {10.0};
+
+  int currentlyHoveredModelIndex {-1};
 
   bool fixYAxis {true};
 };

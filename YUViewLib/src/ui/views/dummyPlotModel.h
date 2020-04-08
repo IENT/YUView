@@ -62,11 +62,11 @@ public:
   PlotParameter getPlotParameter(unsigned plotIndex) const override
   {
     if (plotIndex == 0)
-      return {PlotType::Bar, {0, 100}, {0, 500}};
+      return {PlotType::Bar, {0, 99}, {0, 500}};
     if (plotIndex == 1)
-      return {PlotType::Line, {0, 100}, {0, 1000}};
+      return {PlotType::Line, {0, 99}, {0, 1000}};
     if (plotIndex == 2)
-      return {PlotType::ConstValue, {-1, -1}, {300, 300}};
+      return {PlotType::ConstValue, {-1, -1}, {300, 99}};
     return {};
   }
 

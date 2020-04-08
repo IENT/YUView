@@ -1440,24 +1440,24 @@ void splitViewWidget::keyPressEvent(QKeyEvent *event)
     QWidget::keyPressEvent(event);
 }
 
-void splitViewWidget::onSwipeLeft() 
+void splitViewWidget::onSwipeLeft()
 { 
-  playback->nextFrame(); 
+  playback->nextFrame();
 }
 
-void splitViewWidget::onSwipeRight() 
+void splitViewWidget::onSwipeRight()
 { 
-  playback->previousFrame(); 
+  playback->previousFrame();
 }
 
-void splitViewWidget::onSwipeUp() 
+void splitViewWidget::onSwipeUp()
 { 
-  playlist->selectNextItem(); 
+  playlist->selectNextItem();
 }
 
-void splitViewWidget::onSwipeDown() 
+void splitViewWidget::onSwipeDown()
 { 
-  playlist->selectPreviousItem(); 
+  playlist->selectPreviousItem();
 }
 
 void splitViewWidget::createMenuActions()
