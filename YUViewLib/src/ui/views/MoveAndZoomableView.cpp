@@ -95,7 +95,7 @@ void MoveAndZoomableView::resetView(bool checked)
   update();
 }
 
-void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, const QPoint &zoomPoint, double newZoomFactor)
+void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zoomPoint, double newZoomFactor)
 {
   // The zoom point works like this: After the zoom operation the pixel at zoomPoint shall
   // still be at the same position (zoomPoint)
@@ -143,10 +143,15 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, const QPo
   // So what is the zoom factor that we use in this step?
   double stepZoomFactor = newZoom / this->zoomFactor;
 
+  auto viewCenter = this->getMoveOffsetCoordinateSystemOrigin(zoomPoint);
+
+  if (zoomPoint.isNull())
+    zoomPoint = viewCenter;
+
   if (!zoomPoint.isNull())
   {
     // The center point has to be moved relative to the zoomPoint
-    auto origin = this->getMoveOffsetCoordinateSystemOrigin(zoomPoint);
+    auto origin = viewCenter;
     auto centerMoveOffset = origin + this->moveOffset;
     
     auto movementDelta = centerMoveOffset - zoomPoint;
@@ -161,7 +166,6 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, const QPo
   }
 
   this->setZoomFactor(newZoom);
-
   this->update();
 
   // TODO: Split view:
@@ -239,7 +243,7 @@ void MoveAndZoomableView::mouseMoveEvent(QMouseEvent *mouse_event)
     mouse_event->accept();
     this->update();
   }
-  else if (this->viewAction == ViewAction::ZOOM_BOX)
+  else if (this->viewAction == ViewAction::ZOOM_RECT)
   {
     this->viewZoomingMousePos = mouse_event->pos();
     DEBUG_VIEW("MoveAndZoomableView::mouseMoveEvent zooming pos " << viewZoomingMousePos);
@@ -275,7 +279,7 @@ void MoveAndZoomableView::mousePressEvent(QMouseEvent *mouse_event)
   else if ((mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_LEFT_MOVE) ||
            (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_RIGHT_MOVE))
   {
-    this->viewAction = ViewAction::ZOOM_BOX;
+    this->viewAction = ViewAction::ZOOM_RECT;
 
     // Save the position of the mouse where the user started the zooming.
     this->viewZoomingMousePosStart = mouse_event->pos();
@@ -311,7 +315,7 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
     
     this->update();
   }
-  else if (this->viewAction == ViewAction::ZOOM_BOX && 
+  else if (this->viewAction == ViewAction::ZOOM_RECT && 
           ((mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE) ||
            (mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE)))
   {
@@ -329,9 +333,7 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
     }
 
     // Get the absolute center point of the view
-    // TODO: Getting the center point needs a function with an overload in the splitViewWIdget
-    QPoint drawArea_botR(width(), height());
-    QPoint centerPoint = drawArea_botR / 2;
+    QPoint centerPoint = this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
 
     // Calculate the new center offset
     QPoint zoomRectCenterOffset = zoomRect.center() - centerPoint;
@@ -488,21 +490,48 @@ void MoveAndZoomableView::createMenuActions()
 
 void MoveAndZoomableView::setZoomFactor(double zoom, bool setLinkedViews)
 {
-  if (this->enableLink && setLinkedViews)
-    for (auto v : this->slaveViews)
-      v->setZoomFactor(zoom, false);
+  if (isMasterView)
+  {
+    if (this->enableLink && setLinkedViews)
+      for (auto v : this->slaveViews)
+        v->slaveSetZoomFactor(zoom);
 
-  this->zoomFactor = zoom;
+    this->zoomFactor = zoom;
+    DEBUG_VIEW("MoveAndZoomableView::setZoomFactor " << zoom);
+  }
+  else
+  {
+    assert(this->masterView);
+    this->masterView->setZoomFactor(zoom, setLinkedViews);
+  }
+}
+
+void MoveAndZoomableView::drawZoomRect(QPainter &painter) const
+{
+  if (this->viewAction != ViewAction::ZOOM_RECT)
+    return;
+
+  painter.setPen(QPen(QColor(50, 50, 255, 150)));
+  painter.setBrush(QBrush(QColor(50, 50, 255, 50)));
+  painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
 }
 
 void MoveAndZoomableView::setMoveOffset(QPoint offset, bool setLinkedViews)
 {
-  if (this->enableLink && setLinkedViews)
-    for (auto v : this->slaveViews)
-      v->setMoveOffset(offset, false);
+  if (isMasterView)
+  {
+    if (this->enableLink && setLinkedViews)
+      for (auto v : this->slaveViews)
+        v->slaveSetMoveOffset(offset);
 
-  this->moveOffset = offset;
-  DEBUG_VIEW("MoveAndZoomableView::setMoveOffset " << offset);
+    DEBUG_VIEW("MoveAndZoomableView::setMoveOffset " << offset);
+    this->moveOffset = offset;
+  }
+  else
+  {
+    assert(this->masterView);
+    this->masterView->setMoveOffset(offset, setLinkedViews);
+  }
 }
 
 QPoint MoveAndZoomableView::getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const
@@ -553,15 +582,15 @@ void MoveAndZoomableView::toggleFullScreen(bool checked)
 
 void MoveAndZoomableView::setLinkState(bool enabled)
 {
-  if (!this->masterView)
+  if (this->isMasterView)
+  {
+    for (auto v : this->slaveViews)
+      v->slaveSetLinkState(enabled);
+  }
+  else
   {
     Q_ASSERT_X(this->masterView, Q_FUNC_INFO, "Master not set for slave");
     this->masterView->setLinkState(enabled);
-  }
-
-  for (auto v : this->slaveViews)
-  {
-    v->slaveSetLinkState(enabled);
   }
 }
 
@@ -574,7 +603,20 @@ void MoveAndZoomableView::slaveSetLinkState(bool enable)
     this->getStateFromMaster();
 }
 
+void MoveAndZoomableView::slaveSetMoveOffset(QPoint offset)
+{
+  Q_ASSERT_X(!this->isMasterView, Q_FUNC_INFO, "Not a slave item");
+  this->moveOffset = offset;
+}
+
+void MoveAndZoomableView::slaveSetZoomFactor(double zoom)
+{
+  Q_ASSERT_X(!this->isMasterView, Q_FUNC_INFO, "Not a slave item");
+  this->zoomFactor = zoom;
+}
+
 void MoveAndZoomableView::getStateFromMaster()
 {
-
+  this->moveOffset = this->masterView->moveOffset;
+  this->zoomFactor = this->masterView->zoomFactor;
 }

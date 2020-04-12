@@ -182,7 +182,7 @@ protected:
   QSize minSizeHint;
 
   bool       splittingDragging {false};     //!< True if the user is currently dragging the splitter
-  void       setSplittingPoint(double p, bool setOtherViewIfLinked = true, bool callUpdate = false);
+  void       setSplittingPoint(double p, bool setOtherViewIfLinked = true);
   double     splittingPoint {0.5};          //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
   enum       splitStyle {SOLID_LINE, TOP_BOTTOM_HANDLERS};
   splitStyle splittingLineStyle;            //!< The style of the splitting line. This can be set in the settings window.

@@ -36,6 +36,7 @@
 #include <QAction>
 #include <QWheelEvent>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QPointer>
 #include <QMenu>
 
@@ -92,8 +93,9 @@ protected:
   virtual bool updateMouseCursor(const QPoint &srcMousePos);
   
   enum class ZoomMode {IN, OUT, TO_VALUE};
-  void zoom(ZoomMode zoomMode, const QPoint &zoomPoint = QPoint(), double newZoomFactor = 0.0);
+  void zoom(ZoomMode zoomMode, QPoint zoomPoint = QPoint(), double newZoomFactor = 0.0);
   virtual void setZoomFactor(double zoom, bool setLinkedViews = true);
+  void drawZoomRect(QPainter &painter) const;
 
   virtual void setMoveOffset(QPoint offset, bool setLinkedViews = true);
   virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const;
@@ -104,7 +106,7 @@ protected:
     DRAGGING,
     DRAGGING_MOUSE_MOVED,
     PINCHING,
-    ZOOM_BOX
+    ZOOM_RECT
   };
   
   virtual void updateSettings();
@@ -144,6 +146,7 @@ protected:
 
 private:
   void slaveSetLinkState(bool enable);
+  void slaveSetMoveOffset(QPoint offset);
+  void slaveSetZoomFactor(double zoom);
   void getStateFromMaster();
-
 };

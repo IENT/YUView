@@ -84,9 +84,9 @@ const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 // Activate this if you want to know when which item is triggered to load and draw
 #define SPLITVIEWWIDGET_DEBUG_LOAD_DRAW 0
 #if SPLITVIEWWIDGET_DEBUG_LOAD_DRAW && !NDEBUG
-#define DEBUG_LOAD_DRAW qDebug
+#define DEBUG_LOAD_DRAW(fmt) qDebug() << fmt
 #else
-#define DEBUG_LOAD_DRAW(fmt,...) ((void)0)
+#define DEBUG_LOAD_DRAW(fmt) ((void)0)
 #endif
 
 splitViewWidget::splitViewWidget(QWidget *parent)
@@ -204,7 +204,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     return;
   }
 
-  DEBUG_LOAD_DRAW("splitViewWidget::paintEvent drawing %s", (isSeparateWidget) ? " separate widget" : "");
+  DEBUG_LOAD_DRAW("splitViewWidget::paintEvent drawing " << (isMasterView ? " separate widget" : ""));
 
   // Get the current frame to draw
   int frame = playback->getCurrentFrame();
@@ -381,7 +381,6 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
         drawItemPathAndName(&painter, xSplit, drawArea_botR.x() - xSplit, itemNamesToDraw.second);
     }
 
-    // Disable clipping
     painter.setClipping(false);
   }
   else // (!splitting)
@@ -459,22 +458,18 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     }
   }
 
-  if (this->viewAction == ViewAction::ZOOM_BOX)
+  if (isSplitting())
   {
-    // Draw the zoom rectangle. Draw black rectangle, then a white dashed/dotted one.
-    // This is visible in dark and bright areas
-    if (viewSplitMode == SIDE_BY_SIDE)
-    {
-      // Only draw the zoom rectangle in the view that it was started in
-      if ((viewZoomingMousePosStart.x() < xSplit && viewZoomingMousePos.x() >= xSplit) ||
-        (viewZoomingMousePosStart.x() >= xSplit && viewZoomingMousePos.x() < xSplit))
-        viewZoomingMousePos.setX(xSplit);
-    }
-    painter.setPen(QPen(Qt::black));
-    painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
-    painter.setPen(QPen(Qt::white, 1, Qt::DashDotDotLine));
-    painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
+    QRegion clipping;
+    if (viewZoomingMousePosStart.x() < xSplit)
+      clipping = QRegion(0, 0, xSplit, drawArea_botR.y());
+    else
+      clipping = QRegion(xSplit, 0, drawArea_botR.x() - xSplit, drawArea_botR.y());
+    painter.setClipRegion(clipping);
   }
+  MoveAndZoomableView::drawZoomRect(painter);
+  if (isSplitting())
+    painter.setClipping(false);
 
   if (zoom != 1.0)
   {
@@ -874,6 +869,19 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
       //   otherWidget->update();
       // }
     }
+    mouse_event->accept();
+  }
+
+  DEBUG_LOAD_DRAW("splitViewWidget::mouseMoveEvent isSplitting() " << isSplitting() << " splittingDragging " << this->splittingDragging);
+  if (isSplitting() && this->splittingDragging)
+  {
+    mouse_event->accept();
+
+    // The user is currently dragging the splitter. Calculate the new splitter point.
+    int xClip = clip(mouse_event->x(), SPLITVIEWWIDGET_SPLITTER_CLIPX, (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+    setSplittingPoint((double)xClip / (double)(width()-2));
+
+    update();
   }
 }
 
@@ -942,17 +950,14 @@ void splitViewWidget::setMoveOffset(QPoint offset, bool setLinkedViews)
   {
     // Save the center offset in the currently selected item
     auto item = playlist->getSelectedItems();
-    if (item[0])
+    for (int i = 0; i < 2; i++)
     {
-      DEBUG_LOAD_DRAW("splitViewWidget::setMoveOffset item %d (%d,%d)", item[0]->getID(), offset.x(), offset.y());
-      item[0]->saveCenterOffset(this->moveOffset, !isMasterView);
-      item[0]->saveCenterOffset(this->getOtherWidget()->moveOffset, isMasterView);
-    }
-    if (item[1])
-    {
-      DEBUG_LOAD_DRAW("splitViewWidget::setMoveOffset item %d (%d,%d)", item[1]->getID(), offset.x(), offset.y());
-      item[1]->saveCenterOffset(this->moveOffset, !isMasterView);
-      item[1]->saveCenterOffset(this->getOtherWidget()->moveOffset, isMasterView);
+      if (item[i])
+      {
+        DEBUG_LOAD_DRAW("splitViewWidget::setMoveOffset item " << item[i]->getID() << " (" << offset.x() << "," << offset.y() << ")");
+        item[i]->saveCenterOffset(this->moveOffset, !isMasterView);
+        item[i]->saveCenterOffset(this->getOtherWidget()->moveOffset, isMasterView);
+      }
     }
   }
 }
@@ -980,14 +985,12 @@ QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPo
     return QWidget::rect().center();
 }
 
-void splitViewWidget::setSplittingPoint(double point, bool setOtherViewIfLinked, bool callUpdate)
+void splitViewWidget::setSplittingPoint(double point, bool setLinkedViews)
 {
-  if (enableLink && setOtherViewIfLinked)
-    this->getOtherWidget()->setSplittingPoint(point, false, callUpdate);
+  if (this->enableLink && setLinkedViews)
+    this->getOtherWidget()->setSplittingPoint(point, false);
 
   splittingPoint = point;
-  if (callUpdate)
-    update();
 }
 
 void splitViewWidget::setZoomFactor(double zoom, bool setLinkedViews)
@@ -999,17 +1002,14 @@ void splitViewWidget::setZoomFactor(double zoom, bool setLinkedViews)
     // We are not calling the function in the other function
     // Save the zoom factor in the currently selected item
     auto item = playlist->getSelectedItems();
-    if (item[0])
+    for (int i = 0; i < 2; i++)
     {
-      DEBUG_LOAD_DRAW("splitViewWidget::setthis->getZoomFactor() item %d (%f)", item[0]->getID(), zoom);
-      item[0]->saveZoomFactor(this->zoomFactor, !this->isMasterView);
-      item[0]->saveZoomFactor(this->getOtherWidget()->zoomFactor, this->isMasterView);
-    }
-    if (item[1])
-    {
-      DEBUG_LOAD_DRAW("splitViewWidget::setthis->getZoomFactor() item %d (%f)", item[0]->getID(), zoom);
-      item[1]->saveZoomFactor(zoomFactor, !this->isMasterView);
-      item[1]->saveZoomFactor(this->getOtherWidget()->zoomFactor, this->isMasterView);
+      if (item[i])
+      {
+        DEBUG_LOAD_DRAW("splitViewWidget::setthis->getZoomFactor() item " << item[0]->getID() << " (" << zoom << ")");
+        item[i]->saveZoomFactor(this->zoomFactor, !this->isMasterView);
+        item[i]->saveZoomFactor(this->getOtherWidget()->zoomFactor, this->isMasterView);
+      }
     }
   }
 }
@@ -1258,7 +1258,7 @@ void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistI
       item2->getZoomAndPosition(moveOffset, this->zoomFactor, false);
       item2->getZoomAndPosition(this->getOtherWidget()->moveOffset, this->getOtherWidget()->zoomFactor, getOtherViewValuesFromOtherSlot);
     }
-    DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item %d (%d,%d-%f)", item1->getID(), centerOffset.x(), centerOffset.y(), this->getZoomFactor());
+    DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item " << item1->getID() << " moveOffset " << this->moveOffset << " zoom " << this->zoomFactor);
   }
 }
 
@@ -1318,7 +1318,7 @@ void splitViewWidget::playbackStarted(int nextFrameIdx)
     if (item[0]->needsLoading(nextFrameIdx, false) == LoadingNeeded)
     {
       // The current frame is loaded but the double buffer is not loaded yet. Start loading it.
-      DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 0 load frame %d", frameIdx);
+      DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 0 load frame " << frameIdx);
       cache->loadFrame(item[0], frameIdx, 0);
     }
   }
@@ -1327,7 +1327,7 @@ void splitViewWidget::playbackStarted(int nextFrameIdx)
     if (item[1]->needsLoading(nextFrameIdx, false) == LoadingNeeded)
     {
       // The current frame is loaded but the double buffer is not loaded yet. Start loading it.
-      DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 1 load frame %d", frameIdx);
+      DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 1 load frame " << frameIdx);
       cache->loadFrame(item[1], frameIdx, 1);
     }
   }
@@ -1342,7 +1342,7 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw, bool updateOtherWid
     this->getOtherWidget()->update(newFrame, itemRedraw, false);
 
   bool playing = (playback) ? playback->playing() : false;
-  DEBUG_LOAD_DRAW("splitViewWidget::update%s%s%s", (!this->isMasterView) ? " separate" : "", (newFrame) ? " newFrame" : "", (playing) ? " playing" : "");
+  DEBUG_LOAD_DRAW("splitViewWidget::update" << (!this->isMasterView ? " separate" : "") << (newFrame ? " newFrame" : "") << (playing ? " playing" : ""));
 
   if (newFrame || itemRedraw)
   {
@@ -1393,7 +1393,7 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw, bool updateOtherWid
       }
     }
 
-    DEBUG_LOAD_DRAW("splitViewWidget::update%s itemLoading[%d %d]", (isSeparateWidget) ? " separate" : "", itemLoading[0], itemLoading[1]);
+    DEBUG_LOAD_DRAW("splitViewWidget::update" << (this->isMasterView ? "" : " seperate") << " itemLoading[" << itemLoading[0] << "," << itemLoading[1] << "]");
 
     if ((itemLoading[0] || itemLoading[1]) && playing)
       // In case of playback, the item will let us know when it can be drawn.
@@ -1404,7 +1404,7 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw, bool updateOtherWid
         return;
   }
 
-  DEBUG_LOAD_DRAW("splitViewWidget::update%s trigger QWidget::update", (isSeparateWidget) ? " separate" : "");
+  DEBUG_LOAD_DRAW("splitViewWidget::update%s trigger QWidget::update" << (this->isMasterView ? "" : " separate"));
   QWidget::update();
 }
 
@@ -1564,7 +1564,7 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
   else if (key == Qt::Key_BracketRight && controlOnly)
   {
     // This seems to be a bug in the Qt localization routine. On the German keyboard layout this key is returned if Ctrl + is pressed.
-    this->zoom(ZoomMode::OUT);
+    this->zoom(ZoomMode::IN);
     return true;
   }
   else if (key == Qt::Key_Minus && controlOnly)
@@ -1752,7 +1752,7 @@ void splitViewWidget::updateTestProgress()
   if (testProgressDialog.isNull())
     return;
 
-  DEBUG_LOAD_DRAW("splitViewWidget::updateTestProgress %d", testLoopCount);
+  DEBUG_LOAD_DRAW("splitViewWidget::updateTestProgress " << testLoopCount);
 
   // Check if the dialog was canceled
   if (testProgressDialog->wasCanceled())
