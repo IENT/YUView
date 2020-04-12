@@ -957,6 +957,29 @@ void splitViewWidget::setMoveOffset(QPoint offset, bool setLinkedViews)
   }
 }
 
+QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const
+{
+  if (viewSplitMode == SIDE_BY_SIDE)
+  {
+    const auto drawAreaBotR = QWidget::rect().bottomRight();
+
+    int xSplit = int(drawAreaBotR.x() * splittingPoint);
+    const auto zoomPointInRightView = zoomPoint.x() > xSplit;
+    if (zoomPointInRightView)
+    {
+      const auto centerOfRightView = QPoint(xSplit + (drawAreaBotR.x() - xSplit) / 2, drawAreaBotR.y() / 2);
+      return centerOfRightView;
+    }
+    else
+    {
+      const auto centerOfLeftView = QPoint(xSplit / 2, drawAreaBotR.y() / 2);
+      return centerOfLeftView;
+    }
+  }
+  else
+    return QWidget::rect().center();
+}
+
 void splitViewWidget::setSplittingPoint(double point, bool setOtherViewIfLinked, bool callUpdate)
 {
   if (enableLink && setOtherViewIfLinked)

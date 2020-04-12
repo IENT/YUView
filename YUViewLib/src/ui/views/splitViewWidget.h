@@ -188,7 +188,8 @@ protected:
   splitStyle splittingLineStyle;            //!< The style of the splitting line. This can be set in the settings window.
 
   void    setMoveOffset(QPoint offset, bool setLinkedViews = true) override;
-  
+  virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const override;
+
   QRect   viewActiveArea;                   //!< The active area, where the picture is drawn into
 
   void    setZoomFactor(double zoom, bool setLinkedViews = true) override;

@@ -96,6 +96,7 @@ protected:
   virtual void setZoomFactor(double zoom, bool setLinkedViews = true);
 
   virtual void setMoveOffset(QPoint offset, bool setLinkedViews = true);
+  virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const;
 
   enum class ViewAction
   {
