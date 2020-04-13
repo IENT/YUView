@@ -105,10 +105,6 @@ splitViewWidget::splitViewWidget(QWidget *parent)
   QFontMetrics fm(zoomFactorFont);
   zoomFactorFontPos = QPoint(10, fm.height());
 
-  // Grab some touch gestures
-  grabGesture(Qt::SwipeGesture);
-  grabGesture(Qt::PinchGesture);
-
   // Load the caching pixmap
   waitingForCachingPixmap = QPixmap(":/img_hourglass.png");
 
@@ -942,11 +938,11 @@ void splitViewWidget::wheelEvent (QWheelEvent *event)
     MoveAndZoomableView::wheelEvent(event);
 }
 
-void splitViewWidget::setMoveOffset(QPoint offset, bool setLinkedViews)
+void splitViewWidget::setMoveOffset(QPoint offset)
 {
-  MoveAndZoomableView::setMoveOffset(offset, setLinkedViews);
+  MoveAndZoomableView::setMoveOffset(offset);
 
-  if (!setLinkedViews)
+  if (this->isMasterView)
   {
     // Save the center offset in the currently selected item
     auto item = playlist->getSelectedItems();
@@ -993,11 +989,11 @@ void splitViewWidget::setSplittingPoint(double point, bool setLinkedViews)
   splittingPoint = point;
 }
 
-void splitViewWidget::setZoomFactor(double zoom, bool setLinkedViews)
+void splitViewWidget::setZoomFactor(double zoom)
 {
-  MoveAndZoomableView::setZoomFactor(zoom, setLinkedViews);
+  MoveAndZoomableView::setZoomFactor(zoom);
 
-  if (!setLinkedViews)
+  if (this->isMasterView)
   {
     // We are not calling the function in the other function
     // Save the zoom factor in the currently selected item
@@ -1073,7 +1069,7 @@ void splitViewWidget::gridSetCustom(bool checked)
 
 void splitViewWidget::toggleSeparateWindow(bool checked) 
 {
-  Q_ASSERT_X(this->isMasterView, "splitViewWidget::toggleSeparateWindow", "This should only be toggled in the main widget.");
+  Q_ASSERT_X(this->isMasterView, Q_FUNC_INFO, "This should only be toggled in the main widget.");
 
   actionSeparateViewLink.setEnabled(checked);
   actionSeparateViewPlaybackBoth.setEnabled(checked);
@@ -1237,7 +1233,7 @@ void splitViewWidget::setRegularGridSize(unsigned int size, bool setOtherViewIfL
 
 void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
 {
-  Q_ASSERT_X(this->isMasterView, "setSeparateWidget", "Call this function only on the primary widget.");
+  Q_ASSERT_X(this->isMasterView, Q_FUNC_INFO, "Call this function only on the primary widget.");
 
   if (!item1 && !item2)
     return;
@@ -1333,13 +1329,11 @@ void splitViewWidget::playbackStarted(int nextFrameIdx)
   }
 }
 
-void splitViewWidget::update(bool newFrame, bool itemRedraw, bool updateOtherWidget)
+void splitViewWidget::update(bool newFrame, bool itemRedraw)
 {
   if (!this->isMasterView && !isVisible())
     // This is the separate view and it is not enabled. Nothing to update.
     return;
-  if (this->enableLink && updateOtherWidget)
-    this->getOtherWidget()->update(newFrame, itemRedraw, false);
 
   bool playing = (playback) ? playback->playing() : false;
   DEBUG_LOAD_DRAW("splitViewWidget::update" << (!this->isMasterView ? " separate" : "") << (newFrame ? " newFrame" : "") << (playing ? " playing" : ""));
@@ -1405,7 +1399,7 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw, bool updateOtherWid
   }
 
   DEBUG_LOAD_DRAW("splitViewWidget::update%s trigger QWidget::update" << (this->isMasterView ? "" : " separate"));
-  QWidget::update();
+  MoveAndZoomableView::update();
 }
 
 void splitViewWidget::freezeView(bool freeze)
@@ -1787,7 +1781,14 @@ void splitViewWidget::testFinished(bool canceled)
 
 QPointer<splitViewWidget> splitViewWidget::getOtherWidget() const
 {
-  if (this->slaveViews.size() >= 1)
-    return QPointer<splitViewWidget>(qobject_cast<splitViewWidget*>(slaveViews[0]));
-  return {};
+  if (this->isMasterView)
+  {
+    Q_ASSERT_X(this->slaveViews.size() == 1, Q_FUNC_INFO, "The other view is not set as slave.");
+    return QPointer<splitViewWidget>(qobject_cast<splitViewWidget*>(this->slaveViews[0]));
+  }
+  else
+  {
+    Q_ASSERT_X(this->masterView, Q_FUNC_INFO, "The master view is not set.");
+    return QPointer<splitViewWidget>(qobject_cast<splitViewWidget*>(this->masterView));
+  }
 }

@@ -66,8 +66,8 @@ using namespace RGB_Internals;
 rgbPixelFormat::rgbPixelFormat(int bitsPerValue, bool planar, int posR, int posG, int posB, int posA)
   : posR(posR), posG(posG), posB(posB), posA(posA), bitsPerValue(bitsPerValue), planar(planar)
 {
-  Q_ASSERT_X(posR != posG && posR != posB && posG != posB, "rgbPixelFormat", "Invalid RGB format set"); 
-  Q_ASSERT_X(posA != posR && posA != posG && posA != posB, "rgbPixelFormat", "Invalid alpha component for RGB format set"); 
+  Q_ASSERT_X(posR != posG && posR != posB && posG != posB, Q_FUNC_INFO, "Invalid RGB format set"); 
+  Q_ASSERT_X(posA != posR && posA != posG && posA != posB, Q_FUNC_INFO, "Invalid alpha component for RGB format set"); 
 }
 
 QString rgbPixelFormat::getName() const
@@ -632,7 +632,7 @@ void videoHandlerRGB::setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &new
 void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, unsigned char *targetBuffer)
 {
   // Check if the source buffer is of the correct size
-  Q_ASSERT_X(sourceBuffer.size() >= getBytesPerFrame(), "videoHandlerRGB::convertSourceToRGB888", "The source buffer does not hold enough data.");
+  Q_ASSERT_X(sourceBuffer.size() >= getBytesPerFrame(), Q_FUNC_INFO, "The source buffer does not hold enough data.");
 
   // Get the raw data pointer to the output array
   unsigned char * restrict dst = targetBuffer;
@@ -720,7 +720,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
       }
     }
     else
-      Q_ASSERT_X(false, "videoHandlerRGB::convertSourceToRGB888", "No RGB format with less than 8 or more than 16 bits supported yet.");
+      Q_ASSERT_X(false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
   }
   else if (componentDisplayMode == DisplayAll)
   {
@@ -838,10 +838,10 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, u
       }
     }
     else
-      Q_ASSERT_X(false, "videoHandlerRGB::convertSourceToRGB888", "No RGB format with less than 8 or more than 16 bits supported yet.");
+      Q_ASSERT_X(false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
   }
   else
-    Q_ASSERT_X(false, "videoHandlerRGB::convertSourceToRGB888", "Unsupported display mode.");
+    Q_ASSERT_X(false, Q_FUNC_INFO, "Unsupported display mode.");
 }
 
 videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) const
@@ -911,7 +911,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
       value.A = (unsigned int)(*(srcA + offsetToNextValue * offsetCoordinate));
   }
   else
-    Q_ASSERT_X(false, "videoHandlerRGB::getPixelValue", "No RGB format with less than 8 or more than 16 bits supported yet.");
+    Q_ASSERT_X(false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
 
   return value;
 }
@@ -1279,7 +1279,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
       }
     }
     else
-      Q_ASSERT_X(false, "videoHandlerRGB::getPixelValue", "No RGB format with less than 8 or more than 16 bits supported yet.");
+      Q_ASSERT_X(false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
   }
 
   // Append the conversion information that will be returned

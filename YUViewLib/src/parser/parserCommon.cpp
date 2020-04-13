@@ -998,7 +998,7 @@ QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &paren
   else
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
 
-  Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::index", "pointer to parent is null. This must never happen");
+  Q_ASSERT_X(parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
 
   TreeItem *childItem = parentItem->childItems.value(row, nullptr);
   if (childItem)
@@ -1043,7 +1043,7 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
 void PacketItemModel::updateNumberModelItems()
 {
   auto n = getNumberFirstLevelChildren();
-  Q_ASSERT_X(n >= nrShowChildItems, "PacketItemModel::updateNumberModelItems", "Setting a smaller number of items.");
+  Q_ASSERT_X(n >= nrShowChildItems, Q_FUNC_INFO, "Setting a smaller number of items.");
   unsigned int nrAddItems = n - nrShowChildItems;
   if (nrAddItems == 0)
     return;
@@ -1184,7 +1184,7 @@ void BitrateItemModel::updateNumberModelItems()
     newCount = unsigned(bitratePerStreamData[0].count());
   }
   
-  Q_ASSERT_X(newCount >= nrRatePoints, "PacketItemModel::updateNumberModelItems", "Setting a smaller number of items.");
+  Q_ASSERT_X(newCount >= nrRatePoints, Q_FUNC_INFO, "Setting a smaller number of items.");
   unsigned int nrAddItems = newCount - nrRatePoints;
 
   if (nrAddItems == 0)
@@ -1291,7 +1291,7 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
   }
   else
     parentItem = static_cast<TreeItem*>(sourceParent.internalPointer());
-  Q_ASSERT_X(parentItem != nullptr, "PacketItemModel::index", "pointer to parent is null. This must never happen");
+  Q_ASSERT_X(parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
 
   TreeItem *childItem = parentItem->childItems.value(row, nullptr);
   if (childItem != nullptr)

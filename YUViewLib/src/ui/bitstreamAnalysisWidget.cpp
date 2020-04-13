@@ -208,7 +208,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
 
 void BitstreamAnalysisWidget::createAndConnectNewParser(inputFormat inputFormatType)
 {
-  Q_ASSERT_X(!this->parser, "BitstreamAnalysisWidget::restartParsingOfCurrentItem", "Error reinitlaizing parser. The current parser is not null.");
+  Q_ASSERT_X(!this->parser, Q_FUNC_INFO, "Error reinitlaizing parser. The current parser is not null.");
   if (inputFormatType == inputAnnexBHEVC)
     this->parser.reset(new parserAnnexBHEVC(this));
   if (inputFormatType == inputAnnexBVVC)

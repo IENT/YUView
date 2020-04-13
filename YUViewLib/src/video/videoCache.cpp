@@ -104,8 +104,8 @@ int loadingWorker::id_counter = 0;
 
 void loadingWorker::setJob(playlistItem *item, int frame, bool test)
 {
-  Q_ASSERT_X(item != nullptr, "loadingWorker::setJob", "Given item is nullptr");
-  Q_ASSERT_X(frame >= 0 || !item->isIndexedByFrame(), "loadingWorker::setJob", "Given frame index invalid");
+  Q_ASSERT_X(item != nullptr, Q_FUNC_INFO, "Given item is nullptr");
+  Q_ASSERT_X(frame >= 0 || !item->isIndexedByFrame(), Q_FUNC_INFO, "Given frame index invalid");
   currentCacheItem = item;
   currentFrame = frame;
   testMode = test;
@@ -125,8 +125,8 @@ void loadingWorker::processLoadingJob(bool playing, bool loadRawData)
 
 void loadingWorker::processCacheJobInternal()
 {
-  Q_ASSERT_X(currentCacheItem != nullptr, "loadingWorker::processLoadingJobInternal", "Invalid Job - Item is nullptr");
-  Q_ASSERT_X(currentFrame >= 0 || !currentCacheItem->isIndexedByFrame(), "loadingWorker::processLoadingJobInternal", "Given frame index invalid");
+  Q_ASSERT_X(currentCacheItem != nullptr, Q_FUNC_INFO, "Invalid Job - Item is nullptr");
+  Q_ASSERT_X(currentFrame >= 0 || !currentCacheItem->isIndexedByFrame(), Q_FUNC_INFO, "Given frame index invalid");
   DEBUG_JOBS("loadingWorker::processCacheJobInternal");
 
   // Just cache the frame that was given to us.
@@ -140,10 +140,10 @@ void loadingWorker::processCacheJobInternal()
 
 void loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
 {
-  Q_ASSERT_X(currentCacheItem != nullptr, "loadingWorker::processLoadingJobInternal", "The set job is nullptr");
-  Q_ASSERT_X((!currentCacheItem->isIndexedByFrame() || currentFrame >= 0), "loadingWorker::processLoadingJobInternal", "The set frame index is invalid");
-  Q_ASSERT_X(!currentCacheItem->taggedForDeletion(), "loadingWorker::processLoadingJobInternal", "The set job was tagged for deletion");
-  DEBUG_JOBS("loadingWorker::processLoadingJobInternal");
+  Q_ASSERT_X(currentCacheItem != nullptr, Q_FUNC_INFO, "The set job is nullptr");
+  Q_ASSERT_X((!currentCacheItem->isIndexedByFrame() || currentFrame >= 0), Q_FUNC_INFO, "The set frame index is invalid");
+  Q_ASSERT_X(!currentCacheItem->taggedForDeletion(), Q_FUNC_INFO, "The set job was tagged for deletion");
+  DEBUG_JOBS(Q_FUNC_INFO);
 
   // Load the frame of the item that was given to us.
   // This is performed in the thread (the loading thread with higher priority.
@@ -504,7 +504,7 @@ void videoCache::updateCacheQueue()
     selection[0] = allItems[0];
   // Get the position of the curretnly selected item
   int itemPos = allItems.indexOf(selection[0]);
-  Q_ASSERT_X(itemPos >= 0, "updateCacheQueue", "The current item is not in the list of all items? No possible.");
+  Q_ASSERT_X(itemPos >= 0, Q_FUNC_INFO, "The current item is not in the list of all items? No possible.");
 
   // At first, let's find out how much space in the cache is used.
   // In combination with cacheLevelMax we also know how much space is free.
@@ -920,7 +920,7 @@ void videoCache::threadCachingFinished()
   // Get the thread that caused this call
   QObject *sender = QObject::sender();
   loadingWorker *worker = dynamic_cast<loadingWorker*>(sender);
-  Q_ASSERT_X(worker->isWorking(), "videoCache::threadCachingFinished", "The worker that just finished was not working?");
+  Q_ASSERT_X(worker->isWorking(), Q_FUNC_INFO, "The worker that just finished was not working?");
   worker->setWorking(false);
   DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - state %d - worker %p", workersState, worker);
 
@@ -1062,7 +1062,7 @@ void videoCache::threadCachingFinished()
     for (int i=0; i<cachingThreadList.count(); i++)
       if (cachingThreadList[i]->worker() == worker)
         idx = i;
-    Q_ASSERT_X(idx >= 0, "deleting thread", "The thread that just finished was not found in the thread list.");
+    Q_ASSERT_X(idx >= 0, Q_FUNC_INFO, "The thread that just finished was not found in the thread list.");
     loadingThread *t = cachingThreadList.takeAt(idx);
     t->exit();
     t->deleteLater();
@@ -1113,7 +1113,7 @@ bool videoCache::pushNextJobToCachingThread(loadingThread *thread)
 
   if (testMode)
   {
-    Q_ASSERT_X(testItem, "test mode", "Test item invalid");
+    Q_ASSERT_X(testItem, Q_FUNC_INFO, "Test item invalid");
     indexRange r = testItem->getFrameIdxRange();
     int frameNr = clip((1000-testLoopCount) % (r.second - r.first) + r.first, r.first, r.second);
     if (frameNr < 0)
@@ -1230,7 +1230,7 @@ bool videoCache::pushNextJobToCachingThread(loadingThread *thread)
   }
 
   // Push the job to the thread
-  Q_ASSERT_X(plItem != nullptr && frameToCache >= 0, "push next job to cache", "Invalid job.");
+  Q_ASSERT_X(plItem != nullptr && frameToCache >= 0, Q_FUNC_INFO, "Invalid job.");
   thread->worker()->setJob(plItem, frameToCache);
   thread->worker()->setWorking(true);
   thread->worker()->processCacheJob();

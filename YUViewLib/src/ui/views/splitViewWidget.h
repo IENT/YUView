@@ -37,7 +37,6 @@
 #include <QElapsedTimer>
 #include <QMenu>
 #include <QMouseEvent>
-#include <QPinchGesture>
 #include <QProgressDialog>
 #include <QPointer>
 #include <QTimer>
@@ -72,7 +71,7 @@ public:
   // Update the splitView. newFrame should be true if the frame index was changed or the playlistitem needs a redraw.
   // If newFrame is true, this will not automatically trigger a redraw, because first we might need to load the right frame.
   // itemRedraw indicates if the playlist item initiated this redraw (possibly the item also needs to be reloaded).
-  void update(bool newFrame=false, bool itemRedraw=false, bool updateOtherWidget=true);
+  void update(bool newFrame=false, bool itemRedraw=false);
 
   // Called by the playback controller if playback was just started. In this case, we immediately see if the double buffer
   // of the visible item(s) need to be updated.
@@ -187,12 +186,12 @@ protected:
   enum       splitStyle {SOLID_LINE, TOP_BOTTOM_HANDLERS};
   splitStyle splittingLineStyle;            //!< The style of the splitting line. This can be set in the settings window.
 
-  void    setMoveOffset(QPoint offset, bool setLinkedViews = true) override;
+  void    setMoveOffset(QPoint offset) override;
   virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const override;
 
   QRect   viewActiveArea;                   //!< The active area, where the picture is drawn into
 
-  void    setZoomFactor(double zoom, bool setLinkedViews = true) override;
+  void    setZoomFactor(double zoom) override;
   QFont   zoomFactorFont;                   //!< The font to use for the zoom factor indicator
   QPoint  zoomFactorFontPos;                //!< The position where the zoom factor indication will be shown
 

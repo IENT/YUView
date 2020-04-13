@@ -85,6 +85,8 @@ protected:
   virtual void resizeEvent(QResizeEvent *event) override;
   virtual bool event(QEvent *event) override; ///< Handle touch event
 
+  void update();
+
   void createMenuActions();
   QAction actionZoom[8];
   QAction actionFullScreen;
@@ -94,10 +96,10 @@ protected:
   
   enum class ZoomMode {IN, OUT, TO_VALUE};
   void zoom(ZoomMode zoomMode, QPoint zoomPoint = QPoint(), double newZoomFactor = 0.0);
-  virtual void setZoomFactor(double zoom, bool setLinkedViews = true);
+  virtual void setZoomFactor(double zoom);
   void drawZoomRect(QPainter &painter) const;
 
-  virtual void setMoveOffset(QPoint offset, bool setLinkedViews = true);
+  virtual void setMoveOffset(QPoint offset);
   virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const;
 
   enum class ViewAction
@@ -105,6 +107,7 @@ protected:
     NONE,
     DRAGGING,
     DRAGGING_MOUSE_MOVED,
+    DRAGGING_TOUCH,
     PINCHING,
     ZOOM_RECT
   };
@@ -121,11 +124,9 @@ protected:
   double  currentStepScaleFactor {1.0};
   QPointF currentStepCenterPointOffset;
 
-  QPoint  moveOffset;                 //!< The offset that the view was moved
-  QPoint  viewDraggingMousePosStart;
-  QPoint  viewDraggingStartOffset;
-  QPoint  viewZoomingMousePosStart;
-  QPoint  viewZoomingMousePos;
+  QPoint moveOffset;                 //!< The offset that the view was moved
+  QPoint viewZoomingMousePosStart;
+  QPoint viewZoomingMousePos;
 
   ViewAction viewAction {ViewAction::NONE};
 
@@ -141,12 +142,17 @@ protected:
    */
   bool enableLink {false};
   bool isMasterView {true};
+  bool updateLinkedViews {false};
   QList<QPointer<MoveAndZoomableView>> slaveViews;
   QPointer<MoveAndZoomableView> masterView;
 
 private:
-  void slaveSetLinkState(bool enable);
+  QPoint viewDraggingMousePosStart;
+  QPoint viewDraggingStartOffset;
+
+  void slaveSetLinkState(bool enabled);
   void slaveSetMoveOffset(QPoint offset);
   void slaveSetZoomFactor(double zoom);
+  void slaveUpdateWidget();
   void getStateFromMaster();
 };

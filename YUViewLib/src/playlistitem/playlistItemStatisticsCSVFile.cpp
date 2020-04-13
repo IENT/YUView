@@ -489,7 +489,7 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
         blockOutsideOfFrame_idx = frameIdxInternal;
 
       const StatisticsType *statsType = statSource.getStatisticsType(type);
-      Q_ASSERT_X(statsType != nullptr, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
+      Q_ASSERT_X(statsType != nullptr, Q_FUNC_INFO, "Stat type not found.");
 
       if (vectorData && statsType->hasVectorData)
         statSource.statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);

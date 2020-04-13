@@ -86,7 +86,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
     rawFormat = raw_RGB;
   }
   else
-    Q_ASSERT_X(false, "playlistItemRawFile()", "No video handler for the raw file format found.");
+    Q_ASSERT_X(false, Q_FUNC_INFO, "No video handler for the raw file format found.");
 
   if (ext == "y4m")
   {
