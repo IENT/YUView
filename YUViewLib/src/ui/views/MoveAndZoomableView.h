@@ -121,9 +121,6 @@ protected:
 
   double zoomFactor {1.0};
 
-  double  currentStepScaleFactor {1.0};
-  QPointF currentStepCenterPointOffset;
-
   QPoint moveOffset;                 //!< The offset that the view was moved
   QPoint viewZoomingMousePosStart;
   QPoint viewZoomingMousePos;
@@ -150,9 +147,14 @@ private:
   QPoint viewDraggingMousePosStart;
   QPoint viewDraggingStartOffset;
 
+  double  pinchStartZoomFactor {1.0};
+  QPointF pinchStartMoveOffset;
+  QPointF pinchStartCenterPoint;
+
   void slaveSetLinkState(bool enabled);
   void slaveSetMoveOffset(QPoint offset);
   void slaveSetZoomFactor(double zoom);
+  //void slaveSetPinchValues(double scaleFactor, QPointF centerPointOffset);
   void slaveUpdateWidget();
   void getStateFromMaster();
 };

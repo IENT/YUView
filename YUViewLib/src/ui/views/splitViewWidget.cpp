@@ -203,7 +203,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   DEBUG_LOAD_DRAW("splitViewWidget::paintEvent drawing " << (isMasterView ? " separate widget" : ""));
 
   // Get the current frame to draw
-  int frame = playback->getCurrentFrame();
+  const auto frame = playback->getCurrentFrame();
 
   // Is playback running?
   const bool playing = (playback) ? playback->playing() : false;
@@ -211,17 +211,17 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   const bool waitingForCaching = playback->isWaitingForCaching();
 
   // Get the playlist item(s) to draw
-  auto item = playlist->getSelectedItems();
-  bool anyItemsSelected = item[0] != nullptr || item[1] != nullptr;
+  const auto item = playlist->getSelectedItems();
+  const bool anyItemsSelected = item[0] != nullptr || item[1] != nullptr;
 
   // The x position of the split (if splitting)
-  int xSplit = int(drawArea_botR.x() * splittingPoint);
+  const int xSplit = int(drawArea_botR.x() * splittingPoint);
 
   // Calculate the zoom to use
-  double zoom = this->zoomFactor * this->currentStepScaleFactor;
-  auto offset = QPoint(this->moveOffset * this->currentStepScaleFactor + this->currentStepCenterPointOffset.toPoint());
+  const double zoom = this->zoomFactor;
+  const auto offset = this->moveOffset;
 
-  bool drawRawValues = showRawData() && !playing;
+  const bool drawRawValues = showRawData() && !playing;
 
   // First determine the center points per of each view
   QPoint centerPoints[2];

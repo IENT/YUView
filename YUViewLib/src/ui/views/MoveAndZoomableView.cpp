@@ -42,7 +42,7 @@
 
 const int ZOOM_STEP_FACTOR = 2;
 
-#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 1
+#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 0
 #if MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_VIEW(fmt) qDebug() << fmt
@@ -53,7 +53,7 @@ const int ZOOM_STEP_FACTOR = 2;
 MoveAndZoomableView::MoveAndZoomableView(QWidget *parent) 
   : QWidget(parent)
 {
-  this->grapMouse
+  
 
   // Grab some touch gestures
   grabGesture(Qt::SwipeGesture);
@@ -216,6 +216,7 @@ void MoveAndZoomableView::mouseMoveEvent(QMouseEvent *mouse_event)
   if (mouse_event->source() == Qt::MouseEventSynthesizedBySystem && (this->viewAction == ViewAction::PINCHING || this->viewAction == ViewAction::DRAGGING_TOUCH))
   {
     DEBUG_VIEW("MoveAndZoomableView::mouseMoveEvent ignore system generated touch event");
+    mouse_event->ignore();
     return;
   }
 
@@ -406,35 +407,31 @@ bool MoveAndZoomableView::event(QEvent *event)
       {
         // The gesture was just started. This will prevent (generated) mouse events from being interpreted.
         this->viewAction = ViewAction::PINCHING;
+        this->pinchStartMoveOffset = this->moveOffset;
+        this->pinchStartZoomFactor = this->zoomFactor;
+        this->pinchStartCenterPoint = pinch->centerPoint();
       }
 
-      // See what changed in this pinch gesture (the scale factor and/or the position)
-      QPinchGesture::ChangeFlags changeFlags = pinch->changeFlags();
-      if (changeFlags & QPinchGesture::ScaleFactorChanged)
-        currentStepScaleFactor = pinch->totalScaleFactor();
-      if (changeFlags & QPinchGesture::CenterPointChanged)
-        currentStepCenterPointOffset += pinch->centerPoint() - pinch->lastCenterPoint();
-
-      // Check if the gesture just finished
-      if (pinch->state() == Qt::GestureFinished)
+      if (pinch->state() == Qt::GestureStarted || pinch->state() == Qt::GestureUpdated)
       {
-        // Set the new position/zoom
-        setZoomFactor(this->zoomFactor * currentStepScaleFactor);
-        setMoveOffset(QPointF(QPointF(moveOffset) * currentStepScaleFactor + currentStepCenterPointOffset).toPoint());
+        // See what changed in this pinch gesture (the scale factor and/or the position)
+        QPinchGesture::ChangeFlags changeFlags = pinch->changeFlags();
+        if (changeFlags & QPinchGesture::ScaleFactorChanged || changeFlags & QPinchGesture::CenterPointChanged)
+        {
+          setZoomFactor(this->pinchStartZoomFactor * pinch->totalScaleFactor());
+          setMoveOffset((this->pinchStartMoveOffset * pinch->totalScaleFactor() + pinch->centerPoint() - this->pinchStartCenterPoint).toPoint());
+        }
+      }
+      else if (pinch->state() == Qt::GestureFinished)
+      {
+        setZoomFactor(this->pinchStartZoomFactor * pinch->totalScaleFactor());
+        setMoveOffset((this->pinchStartMoveOffset * pinch->totalScaleFactor() + pinch->centerPoint() - this->pinchStartCenterPoint).toPoint());
         
-        // Reset the dynamic values
-        currentStepScaleFactor = 1;
-        currentStepCenterPointOffset = QPointF(0, 0);
+        this->pinchStartMoveOffset = QPointF();
+        this->pinchStartZoomFactor = 1.0;
+        this->pinchStartCenterPoint = QPointF();
         this->viewAction = ViewAction::NONE;
       }
-
-      // TODO: Pinching and linking
-      // if (linkViews)
-      // {
-      //   otherWidget->currentlyPinching = currentlyPinching;
-      //   otherWidget->currentStepScaleFactor = currentStepScaleFactor;
-      //   otherWidget->currentStepCenterPointOffset = currentStepCenterPointOffset;
-      // }
 
       event->accept();
       this->update();
@@ -450,7 +447,7 @@ bool MoveAndZoomableView::event(QEvent *event)
     {
       DEBUG_VIEW("MoveAndZoomableView::event handle touch even " << event->type());
       auto pos = touchPoints[0].pos().toPoint();
-      if (event->type() == QEvent::TouchBegin)
+      if (this->viewAction == ViewAction::NONE && event->type() == QEvent::TouchBegin)
       {
         this->viewAction = ViewAction::DRAGGING_TOUCH;
 
@@ -470,7 +467,7 @@ bool MoveAndZoomableView::event(QEvent *event)
         this->setMoveOffset(viewDraggingStartOffset + (pos - this->viewDraggingMousePosStart));
         this->update();
       }
-      else
+      else if (this->viewAction == ViewAction::DRAGGING_TOUCH)
       {
         DEBUG_VIEW("MoveAndZoomableView::event touch dragging end pos " << pos);
         this->setMoveOffset(this->viewDraggingStartOffset + (pos - this->viewDraggingMousePosStart));
@@ -478,21 +475,23 @@ bool MoveAndZoomableView::event(QEvent *event)
         this->update();
       }
     }
-    event->accept();
+    else
+      DEBUG_VIEW("MoveAndZoomableView::event handle touch even no points");
+
+    touchEvent->accept();
   }
   else if (event->type() == QEvent::NativeGesture)
   {
     // TODO #195 - For pinching on mac this would have to be added here...
     // QNativeGestureEvent
 
-    // return true;
+    return false;
   }
   else
   {
     //DEBUG_VIEW("MoveAndZoomableView::event unhandled event type " << event->type());
+    return QWidget::event(event);
   }
-
-  return QWidget::event(event);
 }
 
 void MoveAndZoomableView::update()
