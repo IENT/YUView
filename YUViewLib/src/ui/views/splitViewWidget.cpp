@@ -568,11 +568,11 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
   if (!this->drawZoomBox)
     return;
 
-  const int zoomBoxFactor = 32;
+  const int zoomBoxWindowZoomFactor = 32;
   const int srcSize = 5;
   const int margin = 11;
   const int padding = 6;
-  int zoomBoxSize = srcSize*zoomBoxFactor;
+  int zoomBoxSize = srcSize * zoomBoxWindowZoomFactor;
 
   // Where will the zoom view go?
   QRect zoomViewRect(0,0, zoomBoxSize, zoomBoxSize);
@@ -592,7 +592,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
   }
 
   // Do not draw the zoom view if the zoomFactor is equal or greater than that of the zoom box
-  if (zoomFactor < zoomBoxFactor)
+  if (zoomFactor < zoomBoxWindowZoomFactor)
   {
     if (view == 0 && isSplitting())
       zoomViewRect.moveBottomRight(QPoint(xSplit - margin, drawArea_botR.y() - margin));
@@ -616,11 +616,11 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
     // is in the center of the view (so we can draw it at (0,0)).
     QPointF itemZoomBoxTranslation = QPointF(item->getSize().width()  / 2 - pixelPos.x() - 0.5,
                                              item->getSize().height() / 2 - pixelPos.y() - 0.5);
-    painter.translate(itemZoomBoxTranslation * zoomBoxFactor);
+    painter.translate(itemZoomBoxTranslation * zoomBoxWindowZoomFactor);
 
     // Draw the item again, but this time with a high zoom factor into the clipped region
     // Never draw the raw values in the zoom box.
-    item->drawItem(&painter, frame, zoomBoxFactor, false);
+    item->drawItem(&painter, frame, zoomBoxWindowZoomFactor, false);
 
     // Reset transform and reset clipping to the previous clip region (if there was one)
     painter.resetTransform();

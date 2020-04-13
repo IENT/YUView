@@ -63,4 +63,5 @@ public:
   virtual PlotParameter getPlotParameter(unsigned plotIndex) const = 0;
   virtual unsigned int getNrPlotPoints(unsigned plotIndex) const = 0;
   virtual Point getPlotPoint(unsigned plotIndex, unsigned pointIndex) const = 0;
+  virtual QString getPointInfo(unsigned plotIndex, unsigned pointIndex) const = 0;
 };

@@ -33,6 +33,7 @@
 #include "plotViewWidget.h"
 
 #include <QPainter>
+#include <QTextDocument>
 #include <cmath>
 
 #define PLOTVIEW_WIDGET_DEBUG_OUTPUT 0
@@ -117,15 +118,9 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
   drawAxisTicksAndValues(painter, this->propertiesAxis[0], valuesX);
   drawAxisTicksAndValues(painter, this->propertiesAxis[1], valuesY);
 
-  drawFadeBoxes(painter, plotRect, widgetRect);
+  drawInfoBox(painter, plotRect);
 
-  auto drawPoint = plotRect.center() + moveOffset;
-  QRectF debugRect;
-  debugRect.setSize(QSizeF(20, 20));
-  debugRect.moveCenter(drawPoint);
-  painter.setBrush(Qt::white);
-  painter.setPen(Qt::black);
-  painter.drawRect(debugRect);
+  drawFadeBoxes(painter, plotRect, widgetRect);
 
   // if (!this->model)
   // {
@@ -158,8 +153,7 @@ void PlotViewWidget::mouseMoveEvent(QMouseEvent *mouseMoveEvent)
     if (mouseHoverPos.x() + 0.5 > param.xRange.min && mouseHoverPos.x() - 0.5 < param.xRange.max)
     {
       const auto barIndex = unsigned(std::round(mouseHoverPos.x()));
-      auto point = model->getPlotPoint(plotIndex, barIndex);
-      if (mouseHoverPos.y() >= 0 && mouseHoverPos.y() < point.y)
+      if (mouseHoverPos.y() >= 0 && mouseHoverPos.y())
         newHoveredModelIndex = barIndex;
     }
     mouseMoveEvent->accept();
@@ -377,20 +371,60 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
       auto barTopLeft = this->convertPlotPosToPixelPos(QPointF(value.x - 0.5, value.y));
       auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + 0.5, 0));
 
-      if (this->currentlyHoveredModelIndex != -1 && this->currentlyHoveredModelIndex == i)
+      const QColor barColor = QColor(0, 0, 200);
+
+      const bool isHoveredBar = this->currentlyHoveredModelIndex != -1 && this->currentlyHoveredModelIndex == i;
+      QColor c = barColor;
+      if (isHoveredBar)
       {
-        painter.setBrush(QColor(200, 0, 0, 100));
-        painter.setPen(QColor(200, 0, 0));
+        int h, s, v, a;
+        c.getHsv(&h, &s, &v, &a);
+        h += 90;
+        c.setHsv(h, s, v, a);
       }
-      else
-      {
-        painter.setBrush(QColor(0, 0, 200, 100));
-        painter.setPen(QColor(0, 0, 200));
-      }
+      painter.setPen(c);
+      c.setAlpha(100);
+      painter.setBrush(c);
 
       painter.drawRect(QRectF(barTopLeft, barBottomRight));
     }
   }
+}
+
+void PlotViewWidget::drawInfoBox(QPainter &painter, const QRectF &plotRect) const
+{
+  if (!this->model)
+    return;
+
+  const int margin = 6;
+  const int padding = 6;
+
+  const auto xRange = this->model->getPlotParameter(0).xRange;
+  if (this->currentlyHoveredModelIndex < xRange.min || this->currentlyHoveredModelIndex >= xRange.max)
+    return;
+  
+  auto infoString = this->model->getPointInfo(0, this->currentlyHoveredModelIndex);
+
+  // Create a QTextDocument. This object can tell us the size of the rendered text.
+  QTextDocument textDocument;
+  textDocument.setHtml(infoString);
+  textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
+  textDocument.setTextWidth(textDocument.size().width());
+
+  // Translate to the position where the text box shall be
+  painter.translate(plotRect.bottomRight().x() - axisMaxValueMargin - margin - textDocument.size().width() - padding * 2 + 1, plotRect.bottomRight().y() - axisMaxValueMargin - margin - textDocument.size().height() - padding * 2 + 1);
+
+  // Draw a black rectangle and then the text on top of that
+  QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
+  QBrush originalBrush;
+  painter.setBrush(QColor(255, 255, 255, 150));
+  painter.setPen(Qt::black);
+  painter.drawRect(rect);
+  painter.translate(padding, padding);
+  textDocument.drawContents(&painter);
+  painter.setBrush(originalBrush);
+
+  painter.resetTransform();
 }
 
 void PlotViewWidget::updateAxis(const QRectF &plotRect)

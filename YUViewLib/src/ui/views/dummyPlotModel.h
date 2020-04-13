@@ -88,6 +88,19 @@ public:
     return {};
   }
 
+  QString getPointInfo(unsigned plotIndex, unsigned pointIndex) const override
+  {
+    auto point = this->getPlotPoint(plotIndex, pointIndex);
+    return QString("<h4>Frame</h4>"
+                   "<table width=\"100%\">"
+                   "<tr><td>PTS:</td><td align=\"right\">%1</td></tr>"
+                   "<tr><td>DTS:</td><td align=\"right\">%1</td></tr>"
+                   "<tr><td>Bitrate:</td><td align=\"right\">%2</td></tr>"
+                   "<tr><td>Type:</td><td align=\"right\">%3</td></tr>"
+                   "</table>"
+                   ).arg(point.x).arg(point.y).arg("Inter");
+  }
+
 private:
   QList<int> barData;
   QList<Point> graphData;
