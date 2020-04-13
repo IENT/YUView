@@ -52,6 +52,8 @@ protected:
   void paintEvent(QPaintEvent *event) override;
   void resizeEvent(QResizeEvent *event) override;
   void mouseMoveEvent(QMouseEvent *event) override;
+
+  void setMoveOffset(QPoint offset) override;
   
 private:
   enum class Axis

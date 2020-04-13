@@ -57,6 +57,7 @@ PlotViewWidget::PlotViewWidget(QWidget *parent)
   : MoveAndZoomableView(parent)
 {
   this->setModel(&this->dummyModel);
+  this->setMouseTracking(true);
 
   this->propertiesAxis[0].axis = Axis::X;
   this->propertiesAxis[1].axis = Axis::Y;
@@ -169,6 +170,26 @@ void PlotViewWidget::mouseMoveEvent(QMouseEvent *mouseMoveEvent)
     this->currentlyHoveredModelIndex = newHoveredModelIndex;
     update();
   }
+}
+
+void PlotViewWidget::setMoveOffset(QPoint offset)
+{
+  if (!this->model)
+  {
+    MoveAndZoomableView::setMoveOffset(offset);
+    return;
+  }
+
+  auto plotParam = this->model->getPlotParameter(0);
+
+  const auto clipLeft = int((plotParam.xRange.min + 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
+  const auto axisLengthInValues = (this->propertiesAxis[0].line.p2().x() - this->propertiesAxis[0].line.p1().x()) / this->zoomToPixelsPerValueX / this->zoomFactor;
+  const auto clipRight = int(-(plotParam.xRange.max - axisLengthInValues - 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
+
+  auto offsetClipped = QPoint(clip(offset.x(), clipRight, clipLeft) , 0);
+
+  DEBUG_PLOT("PlotViewWidget::setMoveOffset offset " << offset << " clipped " << offsetClipped);
+  MoveAndZoomableView::setMoveOffset(offsetClipped);
 }
 
 void PlotViewWidget::drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect)
