@@ -98,6 +98,7 @@ protected:
   void zoom(ZoomMode zoomMode, QPoint zoomPoint = QPoint(), double newZoomFactor = 0.0);
   virtual void setZoomFactor(double zoom);
   void drawZoomRect(QPainter &painter) const;
+  virtual void onZoomIn() {}
 
   virtual void setMoveOffset(QPoint offset);
   virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const;

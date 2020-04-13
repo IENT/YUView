@@ -53,9 +53,6 @@ const int ZOOM_STEP_FACTOR = 2;
 MoveAndZoomableView::MoveAndZoomableView(QWidget *parent) 
   : QWidget(parent)
 {
-  
-
-  // Grab some touch gestures
   grabGesture(Qt::SwipeGesture);
   grabGesture(Qt::PinchGesture);
 
@@ -99,17 +96,19 @@ void MoveAndZoomableView::resetView(bool checked)
   update();
 }
 
+/* Zoom in/out by one step or to a specific zoom value
+ * 
+ * Zooming is performed in steps of ZOOM_STEP_FACTOR. However, the zoom factor can not be a multiple of
+ * ZOOM_STEP_FACTOR in two cases: The used pinched the screen or entered a custom zoom value. If this is
+ * the case and a normal zoom operation happens, we "snap back" to a multiple of ZOOM_STEP_FACTOR. E.g.:
+ * If the zoom factor currently is 1.9 and we zoom in, it will become 2.
+ * 
+ * \param zoomMode In/out or to a specific value. See ZoomMode.
+ * \param zoomPoint After the zoom operation the pixel at zoomPoint shall still be at the same position (zoomPoint)
+ * \param newZoomFactor Zoom to this value in case of ZoomMode::TO_VALUE
+ */
 void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zoomPoint, double newZoomFactor)
 {
-  // The zoom point works like this: After the zoom operation the pixel at zoomPoint shall
-  // still be at the same position (zoomPoint)
-
-  // What is the factor that we will zoom in by?
-  // The zoom factor could currently not be a multiple of ZOOM_STEP_FACTOR
-  // if the user used pinch zoom. So let's go back to the step size of ZOOM_STEP_FACTOR
-  // and calculate the next higher zoom which is a multiple of ZOOM_STEP_FACTOR.
-  // E.g.: If the zoom factor currently is 1.9 we want it to become 2 after zooming.
-
   double newZoom = 1.0;
   if (zoomMode == ZoomMode::IN)
   {
@@ -172,11 +171,8 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
   this->setZoomFactor(newZoom);
   this->update();
 
-  // TODO: Split view:
-  // if (newZoom > 1.0)
-  //   update(false, true);  // We zoomed in. Check if one of the items now needs loading
-  // else
-  //   update();
+  if (newZoom > 1.0)
+    this->onZoomIn();
 }
 
 void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
@@ -357,6 +353,9 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
 
 bool MoveAndZoomableView::event(QEvent *event)
 {
+  // IMPORTANT:
+  // We are not using the QPanGesture as this uses two fingers. This is not documented in the Qt documentation.
+
   if (event->type() == QEvent::Gesture)
   {
     QGestureEvent *gestureEvent = static_cast<QGestureEvent*>(event);

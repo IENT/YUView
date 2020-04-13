@@ -40,7 +40,6 @@
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
-#include <QDebug>
 
 #include "ui/playbackController.h"
 #include "playlistitem/playlistItem.h"
@@ -107,9 +106,6 @@ splitViewWidget::splitViewWidget(QWidget *parent)
 
   // Load the caching pixmap
   waitingForCachingPixmap = QPixmap(":/img_hourglass.png");
-
-  // We want to have all mouse events (even move)
-  setMouseTracking(true);
   
   this->createMenuActions();
 }
@@ -244,7 +240,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   // things are calculated in this function:
   bool    pixelPosInItem[2] = {false, false};  //< Is the pixel position under the cursor within the item?
   QRect   zoomPixelRect[2];                    //< A QRect around the pixel that is under the cursor
-  if (anyItemsSelected && drawZoomBox)
+  if (anyItemsSelected && this->drawZoomBox)
   {
     // We now have the pixel difference value for the item under the cursor.
     // We now draw one zoom box per view
@@ -503,14 +499,14 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 void splitViewWidget::updatePixelPositions()
 {
   // Get the selected item(s)
-  auto item = playlist->getSelectedItems();
-  bool anyItemsSelected = item[0] != nullptr || item[1] != nullptr;
+  const auto item = playlist->getSelectedItems();
+  const bool anyItemsSelected = item[0] != nullptr || item[1] != nullptr;
 
   // Get the full size of the area that we can draw on (from the paint device base)
-  QPoint drawArea_botR(width(), height());
+  const auto drawAreaBotR = this->rect().bottomRight();
 
   // The x position of the split (if splitting)
-  int xSplit = int(drawArea_botR.x() * splittingPoint);
+  int xSplit = int(drawAreaBotR.x() * splittingPoint);
 
   // First determine the center points per of each view
   QPoint centerPoints[2];
@@ -518,46 +514,44 @@ void splitViewWidget::updatePixelPositions()
   {
     // For comparison mode, both items have the same center point, in the middle of the view widget
     // This is equal to the scenario of not splitting
-    centerPoints[0] = drawArea_botR / 2;
+    centerPoints[0] = drawAreaBotR / 2;
     centerPoints[1] = centerPoints[0];
   }
   else
   {
     // For side by side mode, the center points are centered in each individual split view
-    int y = drawArea_botR.y() / 2;
+    const auto y = drawAreaBotR.y() / 2;
     centerPoints[0] = QPoint(xSplit / 2, y);
-    centerPoints[1] = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, y);
+    centerPoints[1] = QPoint(xSplit + (drawAreaBotR.x() - xSplit) / 2, y);
   }
 
-  if (anyItemsSelected && drawZoomBox && geometry().contains(zoomBoxMousePosition))
+  if (anyItemsSelected && this->drawZoomBox && geometry().contains(this->zoomBoxMousePosition))
   {
     // Is the mouse over the left or the right item? (mouseInLeftOrRightView: false=left, true=right)
-    int xSplit = int(drawArea_botR.x() * splittingPoint);
-    bool mouseInLeftOrRightView = (isSplitting() && (zoomBoxMousePosition.x() > xSplit));
+    const auto xSplit = int(drawAreaBotR.x() * splittingPoint);
+    const bool mouseInLeftOrRightView = (isSplitting() && (this->zoomBoxMousePosition.x() > xSplit));
 
     // The absolute center point of the item under the cursor
-    QPoint itemCenterMousePos = (mouseInLeftOrRightView) ? centerPoints[1] + this->moveOffset : centerPoints[0] + this->moveOffset;
+    const QPoint itemCenterMousePos = (mouseInLeftOrRightView) ? centerPoints[1] + this->moveOffset : centerPoints[0] + this->moveOffset;
 
     // The difference in the item under the mouse (normalized by zoom factor)
-    double diffInItem[2] = {(double)(itemCenterMousePos.x() - zoomBoxMousePosition.x()) / this->zoomFactor + 0.5,
-                            (double)(itemCenterMousePos.y() - zoomBoxMousePosition.y()) / this->zoomFactor + 0.5};
+    double diffInItem[2] = {(double)(itemCenterMousePos.x() - this->zoomBoxMousePosition.x()) / this->zoomFactor + 0.5,
+                            (double)(itemCenterMousePos.y() - this->zoomBoxMousePosition.y()) / this->zoomFactor + 0.5};
 
     // We now have the pixel difference value for the item under the cursor.
     // We now draw one zoom box per view
-    int viewNum = (isSplitting() && item[1]) ? 2 : 1;
-    for (int view=0; view<viewNum; view++)
+    const auto viewNum = (isSplitting() && item[1]) ? 2 : 1;
+    for (int view = 0; view < viewNum; view++)
     {
       // Get the size of the item
-      double itemSize[2];
-      itemSize[0] = item[view]->getSize().width();
-      itemSize[1] = item[view]->getSize().height();
+      int itemSize[] = {item[view]->getSize().width(), item[view]->getSize().height()};
 
       // Calculate the position under the mouse cursor in pixels in the item under the mouse.
       {
         // Divide and round. We want value from 0...-1 to be quantized to -1 and not 0
         // so subtract 1 from the value if it is < 0.
-        double pixelPosX = -diffInItem[0] + (itemSize[0] / 2) + 0.5;
-        double pixelPoxY = -diffInItem[1] + (itemSize[1] / 2) + 0.5;
+        double pixelPosX = -diffInItem[0] + (double(itemSize[0]) / 2) + 0.5;
+        double pixelPoxY = -diffInItem[1] + (double(itemSize[1]) / 2) + 0.5;
         if (pixelPosX < 0)
           pixelPosX -= 1;
         if (pixelPoxY < 0)
@@ -571,7 +565,7 @@ void splitViewWidget::updatePixelPositions()
 
 void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing)
 {
-  if (!drawZoomBox)
+  if (!this->drawZoomBox)
     return;
 
   const int zoomBoxFactor = 32;
@@ -848,7 +842,7 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 {
   MoveAndZoomableView::mouseMoveEvent(mouse_event);
 
-  if (drawZoomBox)
+  if (this->drawZoomBox)
   {
     // If the mouse position changed, save the current point of the mouse and update the view (this will update the zoom box)
     if (zoomBoxMousePosition != mouse_event->pos())
@@ -856,14 +850,6 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
       zoomBoxMousePosition = mouse_event->pos();
       updatePixelPositions();
       update();
-
-      // TODO: 
-      // if (linkViews)
-      // {
-      //   otherWidget->zoomBoxPixelUnderCursor[0] = zoomBoxPixelUnderCursor[0];
-      //   otherWidget->zoomBoxPixelUnderCursor[1] = zoomBoxPixelUnderCursor[1];
-      //   otherWidget->update();
-      // }
     }
     mouse_event->accept();
   }
@@ -1065,6 +1051,14 @@ void splitViewWidget::gridSetCustom(bool checked)
     regularGridSize = newValue;
     update();
   }
+}
+
+void splitViewWidget::toggleZoomBox(bool checked)
+{ 
+  Q_UNUSED(checked); 
+  this->drawZoomBox = !this->drawZoomBox;
+  this->setMouseTracking(this->drawZoomBox);
+  update(); 
 }
 
 void splitViewWidget::toggleSeparateWindow(bool checked) 

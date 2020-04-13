@@ -97,7 +97,7 @@ public:
   void updateSettings() override;
 
   // Raw values are shown if the zoom factor is high enough or if the zoom box is shown.
-  bool showRawData() { return this->zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR || drawZoomBox; }
+  bool showRawData() { return this->zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR || this->drawZoomBox; }
 
   // Test the drawing speed with the currently selected item
   void testDrawingSpeed();
@@ -135,7 +135,7 @@ private slots:
   void gridSet128(bool checked) { Q_UNUSED(checked); setRegularGridSize(128, true, true); }
   void gridSetCustom(bool checked);
 
-  void toggleZoomBox(bool checked) { Q_UNUSED(checked); drawZoomBox = !drawZoomBox; update(); }
+  void toggleZoomBox(bool checked);
 
   void toggleSeparateWindow(bool checked);
   void toggleSeparateWindowPlaybackBoth(bool checked) { Q_UNUSED(checked); };
@@ -194,6 +194,7 @@ protected:
   void    setZoomFactor(double zoom) override;
   QFont   zoomFactorFont;                   //!< The font to use for the zoom factor indicator
   QPoint  zoomFactorFontPos;                //!< The position where the zoom factor indication will be shown
+  void    onZoomIn() { this->update(false, true); }
 
   // The zoom box(es)
   bool   drawZoomBox {false};               //!< If set to true, the paint event will draw the zoom box(es)
