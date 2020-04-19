@@ -1,6 +1,5 @@
 #include <QtTest>
 
-#include <video/videoHandlerYUV.h>
 #include <video/yuvPixelFormat.h>
 
 class videoHandlerYUVFormatFromToString : public QObject
@@ -54,8 +53,6 @@ QList<YUV_Internals::yuvPixelFormat> getAllFormats()
 
 void videoHandlerYUVFormatFromToString::testFormatFromToString()
 {
-  videoHandlerYUV handler;
-
   for (auto fmt : getAllFormats())
   {
     QVERIFY(fmt.isValid());
@@ -82,8 +79,6 @@ void videoHandlerYUVFormatFromToString::testFormatFromToString()
       QFAIL(QString("Comparison of parameters failed. Endianess wrong. Names: %1").arg(name).toLocal8Bit().data());
     }
   }
-
-  handler.setYUVPixelFormat(YUV_Internals::yuvPixelFormat());
 }
 
 QTEST_MAIN(videoHandlerYUVFormatFromToString)

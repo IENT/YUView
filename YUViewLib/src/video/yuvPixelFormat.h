@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <QDialog>
 #include <QObject>
 #include <QString>
 

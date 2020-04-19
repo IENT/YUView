@@ -32,6 +32,8 @@
 
 #include "yuvPixelFormat.h"
 
+#include <QSize>
+
 namespace YUV_Internals
 {
 

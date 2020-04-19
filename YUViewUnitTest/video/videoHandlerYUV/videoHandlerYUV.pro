@@ -6,7 +6,7 @@ CONFIG -= app_bundled
 
 TARGET = videoHandlerYUVFormatFromToString
 
-QT += testlib gui widgets
+QT += testlib
 
 INCLUDEPATH += $$top_srcdir/YUViewLib/src $$top_builddir/YUViewLib
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
