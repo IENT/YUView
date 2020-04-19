@@ -48,9 +48,9 @@ using namespace YUV_Internals;
 #define VIDEOHANDLERYUV_DEBUG_LOADING 0
 #if VIDEOHANDLERYUV_DEBUG_LOADING && !NDEBUG
 #include <QDebug>
-#define DEBUG_YUV qDebug
+#define DEBUG_YUV(message) qDebug() << message;
 #else
-#define DEBUG_YUV(fmt,...) ((void)0)
+#define DEBUG_YUV(message) ((void)0)
 #endif
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of the pointer will only be accessed through that pointer (and pointers copied from it).
@@ -1222,7 +1222,7 @@ bool videoHandlerYUV::setFormatFromString(QString format)
 
 void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 {
-  DEBUG_YUV("videoHandlerYUV::loadFrame %d\n", frameIndex);
+  DEBUG_YUV("videoHandlerYUV::loadFrame " << frameIndex);
 
   if (!isFormatValid())
     // We cannot load a frame if the format is not known
@@ -1254,7 +1254,7 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 
 void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 {
-  DEBUG_YUV("videoHandlerYUV::loadFrameForCaching %d", frameIndex);
+  DEBUG_YUV("videoHandlerYUV::loadFrameForCaching " << frameIndex);
 
   // Get the YUV format and the size here, so that the caching process does not crash if this changes.
   yuvPixelFormat yuvFormat = srcPixelFormat;
@@ -1283,7 +1283,7 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
     // Buffer already up to date
     return true;
 
-  DEBUG_YUV("videoHandlerYUV::loadRawYUVData %d", frameIndex);
+  DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex);
 
   // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
   // However, only one thread can use this at a time.
@@ -1302,7 +1302,7 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   currentFrameRawData_frameIdx = frameIndex;
   requestDataMutex.unlock();
   
-  DEBUG_YUV("videoHandlerYUV::loadRawYUVData %d Done", frameIndex);
+  DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex << " Done");
   return true;
 }
 
@@ -3214,7 +3214,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
     return QImage();  // Loading failed
 
   // Both YUV buffers are up to date. Really calculate the difference.
-  DEBUG_YUV("videoHandlerYUV::calculateDifference frame idx item 0 %d - item 1 %d", frameIdxItem0, frameIdxItem1);
+  DEBUG_YUV("videoHandlerYUV::calculateDifference frame idx item 0 " << frameIdxItem0 << " - item 1 " << frameIdxItem1);
 
   // The items can be of different size (we then calculate the difference of the top left aligned part)
   const int w_in[2] = {frameSize.width(), yuvItem2->frameSize.width()};
