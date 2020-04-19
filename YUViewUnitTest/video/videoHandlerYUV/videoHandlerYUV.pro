@@ -8,7 +8,7 @@ TARGET = videoHandlerYUVFormatFromToString
 
 QT += testlib
 
-INCLUDEPATH += $$top_srcdir/YUViewLib/src $$top_builddir/YUViewLib
+INCLUDEPATH += $$top_srcdir/YUViewLib/src
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
 
 SOURCES += videoHandlerYUVFormatFromToString.cpp
