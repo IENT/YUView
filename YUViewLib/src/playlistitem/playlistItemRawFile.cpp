@@ -191,7 +191,7 @@ bool playlistItemRawFile::parseY4MFile()
   int64_t offset = 9;
   int width = -1;
   int height = -1;
-  yuvPixelFormat format = yuvPixelFormat(YUV_420, 8, Order_YUV);
+  yuvPixelFormat format = yuvPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YUV);
 
   while (rawData.at(offset++) == ' ')
   {
@@ -270,9 +270,9 @@ bool playlistItemRawFile::parseY4MFile()
       // 'C420jpeg' = 4:2 : 0 with biaxially - displaced chroma planes
       // 'C420paldv' = 4 : 2 : 0 with vertically - displaced chroma planes
       if (formatName == "422")
-        format.subsampling = YUV_422;
+        format.subsampling = Subsampling::YUV_422;
       else if (formatName == "444")
-        format.subsampling = YUV_444;
+        format.subsampling = Subsampling::YUV_444;
 
       if (rawData.at(offset) == 'p' && rawData.at(offset+1) == '1' && rawData.at(offset+2) == '0')
       {
@@ -308,9 +308,9 @@ bool playlistItemRawFile::parseY4MFile()
 
   // The offset in bytes to the next frame
   int stride = width * height * 3 / 2;
-  if (format.subsampling == YUV_422)
+  if (format.subsampling == Subsampling::YUV_422)
     stride = width * height * 2;
-  else if (format.subsampling == YUV_444)
+  else if (format.subsampling == Subsampling::YUV_444)
     stride = width * height * 3;
   if (format.bitsPerSample > 8)
     stride *= 2;

@@ -79,6 +79,9 @@ public:
   // checks if a valid YUV format is set.
   virtual bool isFormatValid() const { return frameSize.width() > 0 && frameSize.height() > 0; }
 
+  virtual QString getFormatAsString() const { return QString("%1;%2").arg(this->frameSize.width()).arg(this->frameSize.height()); }
+  virtual bool setFormatFromString(QString format);
+
   // Calculate the difference of this frameHandler to another frameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
   // overloads this and calculates the difference directly on the YUV values (if possible).

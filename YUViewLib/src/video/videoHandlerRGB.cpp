@@ -70,20 +70,7 @@ rgbPixelFormat::rgbPixelFormat(int bitsPerValue, bool planar, int posR, int posG
   Q_ASSERT_X(posA != posR && posA != posG && posA != posB, "rgbPixelFormat", "Invalid alpha component for RGB format set"); 
 }
 
-QString rgbPixelFormat::getName() const
-{
-  if (bitsPerValue == 0)
-    return "Unknown Pixel Format";
-
-  QString name = getRGBFormatString();
-  name.append(QString(" %1bit").arg(bitsPerValue));
-  if (planar)
-    name.append(" planar");
-
-  return name;
-}
-
-void rgbPixelFormat::setFromName(const QString &name)
+rgbPixelFormat::rgbPixelFormat(const QString &name)
 {
   if (name == "Unknown Pixel Format")
   {
@@ -101,6 +88,19 @@ void rgbPixelFormat::setFromName(const QString &name)
     bitsPerValue = name.mid(bitIdx-2, 2).toInt();
     planar = name.contains("planar");
   }
+}
+
+QString rgbPixelFormat::getName() const
+{
+  if (bitsPerValue == 0)
+    return "Unknown Pixel Format";
+
+  QString name = getRGBFormatString();
+  name.append(QString(" %1bit").arg(bitsPerValue));
+  if (planar)
+    name.append(" planar");
+
+  return name;
 }
 
 QString rgbPixelFormat::getRGBFormatString() const
@@ -328,6 +328,25 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int fram
   }
 
   return values;
+}
+
+bool videoHandlerRGB::setFormatFromString(QString format)
+{
+  DEBUG_RGB("videoHandlerRGB::setFormatFromString " << format << "\n");
+
+  auto split = format.split(";");
+  if (split.length() != 4 || split[2] != "RGB")
+    return false;
+
+  if (!frameHandler::setFormatFromString(split[0] + ";" + split[1]))
+    return false;
+
+  auto fmt = RGB_Internals::rgbPixelFormat(split[3]);
+  if (!fmt.isValid())
+    return false;
+
+  this->setRGBPixelFormat(fmt, false);
+  return true;
 }
 
 QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)

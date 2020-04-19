@@ -125,7 +125,7 @@ private:
   int nrSignals { 0 };
 
   // Convert from libde265 types to YUView types
-  YUVSubsamplingType convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt);
+  YUV_Internals::Subsampling convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt);
 
   // Add the statistics supported by the HM decoder
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;

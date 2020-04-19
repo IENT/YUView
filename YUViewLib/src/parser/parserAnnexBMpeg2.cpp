@@ -648,11 +648,11 @@ yuvPixelFormat parserAnnexBMpeg2::getPixelFormat() const
   {
     int c = first_sequence_extension->chroma_format;
     if (c == 1)
-      return yuvPixelFormat(YUV_420, 8);
+      return yuvPixelFormat(Subsampling::YUV_420, 8);
     if (c == 2)
-      return yuvPixelFormat(YUV_422, 8);
+      return yuvPixelFormat(Subsampling::YUV_422, 8);
     if (c == 3)
-      return yuvPixelFormat(YUV_444, 8);
+      return yuvPixelFormat(Subsampling::YUV_444, 8);
   }
   return yuvPixelFormat();
 }

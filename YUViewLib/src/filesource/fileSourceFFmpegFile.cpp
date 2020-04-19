@@ -516,11 +516,11 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   frameSize.setHeight(h);
 
   if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
-    colorConversionType = BT2020_LimitedRange;
+    colorConversionType = ColorConversion::BT2020_LimitedRange;
   else if (colSpace == AVCOL_SPC_BT470BG || colSpace == AVCOL_SPC_SMPTE170M)
-    colorConversionType = BT601_LimitedRange;
+    colorConversionType = ColorConversion::BT601_LimitedRange;
   else
-    colorConversionType = BT709_LimitedRange;
+    colorConversionType = ColorConversion::BT709_LimitedRange;
 
   isFileOpened = true;
 }

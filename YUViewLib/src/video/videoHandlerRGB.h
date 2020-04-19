@@ -45,6 +45,7 @@ namespace RGB_Internals
   public:
     // The default constructor (will create an "Unknown Pixel Format")
     rgbPixelFormat() {}
+    rgbPixelFormat(const QString &name);
     rgbPixelFormat(int bitsPerValue, bool planar, int posR=0, int posG=1, int posB=2, int posA=-1);
     bool operator==(const rgbPixelFormat &a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
     bool operator!=(const rgbPixelFormat &a) const { return getName()!= a.getName(); }
@@ -55,7 +56,6 @@ namespace RGB_Internals
     bool hasAlphaChannel() const { return posA != -1; }
     // Get a name representation of this item (this will be unique for the set parameters)
     QString getName() const;
-    void setFromName(const QString &name);
     // Get/Set the RGB format from string (accepted string are: "RGB", "BGR", ...)
     QString getRGBFormatString() const;
     void setRGBFormatFromString(const QString &sFormat);
@@ -107,6 +107,9 @@ public:
   // If a file size is given, it is tested if the RGB format and the file size match.
   virtual void setFormatFromCorrelation(const QByteArray &rawRGBData, int64_t fileSize=-1) Q_DECL_OVERRIDE { /* TODO */ Q_UNUSED(rawRGBData); Q_UNUSED(fileSize); }
 
+  virtual QString getFormatAsString() const override { return frameHandler::getFormatAsString() + ";RGB;" + this->srcPixelFormat.getName(); }
+  virtual bool setFormatFromString(QString format) override;
+
   // Create the RGB controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change.
@@ -116,8 +119,8 @@ public:
   virtual QString getRawRGBPixelFormatName() const { return srcPixelFormat.getName(); }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, RECACHE_NONE); }
-  void setRGBPixelFormat(const RGB_Internals::rgbPixelFormat &format, bool emitSignal=false) { setSrcPixelFormat(format); if (emitSignal) emit signalHandlerChanged(true, RECACHE_NONE); }
+  virtual void setRGBPixelFormat(const RGB_Internals::rgbPixelFormat &format, bool emitSignal=false) { setSrcPixelFormat(format); if (emitSignal) emit signalHandlerChanged(true, RECACHE_NONE); }
+  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { this->setRGBPixelFormat(RGB_Internals::rgbPixelFormat(name), emitSignal); }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.

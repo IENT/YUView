@@ -30,158 +30,12 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VIDEOHANDLERYUV_H
-#define VIDEOHANDLERYUV_H
+#pragma once
 
 #include "videoHandler.h"
+#include "yuvPixelFormat.h"
 
 #include "ui_videoHandlerYUV.h"
-#include "ui_videoHandlerYUV_CustomFormatDialog.h"
-
-// The YUV_Internals namespace. We use this namespace because of the dialog. We want to be able to pass a yuvPixelFormat to the dialog and keep the
-// global namespace clean but we are not able to use nested classes because of the Q_OBJECT macro. So the dialog and the yuvPixelFormat is inside
-// of this namespace.
-namespace YUV_Internals
-{
-  typedef enum
-  {
-    Luma = 0,
-    Chroma = 1
-  } Component;
-
-  typedef enum
-  {
-    BT709_LimitedRange,
-    BT709_FullRange,
-    BT601_LimitedRange,
-    BT601_FullRange,
-    BT2020_LimitedRange,
-    BT2020_FullRange,
-  } ColorConversion;
-
-  // How to perform up-sampling (chroma subsampling)
-  typedef enum
-  {
-    NearestNeighborInterpolation,
-    BiLinearInterpolation,
-    InterstitialInterpolation
-  } InterpolationMode;
-
-  class yuvMathParameters
-  {
-  public:
-    yuvMathParameters() : scale(1), offset(128), invert(false) {}
-    yuvMathParameters(int scale, int offset, bool invert) : scale(scale), offset(offset), invert(invert) {}
-    // Do we need to apply any transform to the raw YUV data before conversion to RGB?
-    bool yuvMathRequired() const { return scale != 1 || invert; }
-
-    int scale, offset;
-    bool invert;
-  };
-
-  typedef enum
-  {
-    YUV_444,  // No subsampling
-    YUV_422,  // Chroma: half horizontal resolution
-    YUV_420,  // Chroma: half vertical and horizontal resolution
-    YUV_440,  // Chroma: half vertical resolution
-    YUV_410,  // Chroma: quarter vertical, quarter horizontal resolution
-    YUV_411,  // Chroma: quarter horizontal resolution
-    YUV_400,  // Luma only
-    YUV_NUM_SUBSAMPLINGS
-  } YUVSubsamplingType;
-  
-  typedef enum
-  {
-    Order_YUV,
-    Order_YVU,
-    Order_YUVA,
-    Order_YVUA,
-    Order_NUM
-  } YUVPlaneOrder;
-
-  typedef enum
-  {
-    Packing_YUV,      // 444
-    Packing_YVU,      // 444
-    Packing_AYUV,     // 444
-    Packing_YUVA,     // 444
-    Packing_UYVY,     // 422
-    Packing_VYUY,     // 422
-    Packing_YUYV,     // 422
-    Packing_YVYU,     // 422
-    //Packing_YYYYUV,   // 420
-    //Packing_YYUYYV,   // 420
-    //Packing_UYYVYY,   // 420
-    //Packing_VYYUYY,   // 420
-    Packing_NUM
-  } YUVPackingOrder;
-
-  // This class defines a specific YUV format with all properties like pixels per sample, subsampling of chroma
-  // components and so on.
-  class yuvPixelFormat
-  {
-  public:
-    // The default constructor (will create an "Unknown Pixel Format")
-    yuvPixelFormat();
-    yuvPixelFormat(const QString &name);  // Set the pixel format by name. The name should have the format that is returned by getName().
-    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder=Order_YUV, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true), planeOrder(planeOrder), uvInterleaved(false) { setDefaultChromaOffset(); }
-    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false), uvInterleaved(false), packingOrder(packingOrder), bytePacking(bytePacking) { setDefaultChromaOffset(); }
-    bool isValid() const;
-    int64_t bytesPerFrame(const QSize &frameSize) const;
-    QString getName() const;
-    int getSubsamplingHor() const;
-    int getSubsamplingVer() const;
-    void setDefaultChromaOffset(); // Set the default chroma offset values from the subsampling
-    bool subsampled() const { return subsampling != YUV_444; }
-    bool operator==(const yuvPixelFormat& a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
-    bool operator!=(const yuvPixelFormat& a) const { return getName()!= a.getName(); }
-    bool operator==(const QString& a) const { return getName() == a; }
-    bool operator!=(const QString& a) const { return getName() != a; }
-
-    YUVSubsamplingType subsampling;
-    int bitsPerSample;
-    bool bigEndian;
-    bool planar;
-    // The chroma offset in x and y direction. The vales (0...4) define the offsets [0, 1/2, 1, 3/2] samples towards the right and bottom.
-    int chromaOffset[2];
-
-    // if planar is set
-    YUVPlaneOrder planeOrder;
-    bool uvInterleaved;       //< If set, the UV (and A if present) planes are interleaved
-
-    // if planar is not set
-    YUVPackingOrder packingOrder;
-    bool bytePacking;
-  };
-
-  class videoHandlerYUV_CustomFormatDialog : public QDialog, public Ui::CustomYUVFormatDialog
-  {
-    Q_OBJECT
-
-  public:
-    videoHandlerYUV_CustomFormatDialog(const yuvPixelFormat &yuvFormat);
-    // This function provides the currently selected YUV format
-    yuvPixelFormat getYUVFormat() const;
-  private slots:
-    void on_groupBoxPlanar_toggled(bool checked);
-    void on_groupBoxPacked_toggled(bool checked) { groupBoxPlanar->setChecked(!checked); }
-    void on_comboBoxChromaSubsampling_currentIndexChanged(int idx);
-    void on_comboBoxBitDepth_currentIndexChanged(int idx);
-  };
-
-  // A (static) convenience QList class that handles the preset rgbPixelFormats
-  class YUVFormatList : public QList<yuvPixelFormat>
-  {
-  public:
-    // Default constructor. Fill the list with all the supported YUV formats.
-    YUVFormatList();
-    // Get all the YUV formats as a formatted list (for the drop down control)
-    QStringList getFormattedNames();
-    // Get the yuvPixelFormat with the given name
-    yuvPixelFormat getFromName(const QString &name);
-  };
-}
 
 /** The videoHandlerYUV can be used in any playlistItem to read/display YUV data. A playlistItem could even provide multiple YUV videos.
   * A videoHandlerYUV supports handling of YUV data and can return a specific frame as a image by calling getOneFrame.
@@ -196,7 +50,7 @@ public:
   ~videoHandlerYUV();
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && canConvertToRGB(srcPixelFormat, frameSize)); }
+  virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && this->srcPixelFormat.canConvertToRGB(frameSize)); }
 
   // Certain settings for a YUV source are invalid. In this case we will draw an error message instead of the image.
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
@@ -224,6 +78,9 @@ public:
   // If a file size is given, it is tested if the YUV format and the file size match.
   virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, int64_t fileSize=-1) Q_DECL_OVERRIDE;
 
+  virtual QString getFormatAsString() const override { return frameHandler::getFormatAsString() + ";YUV;" + this->srcPixelFormat.getName(); }
+  virtual bool setFormatFromString(QString format) override;
+
   // Create the YUV controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
@@ -233,8 +90,8 @@ public:
   virtual QString getRawYUVPixelFormatName() const { return srcPixelFormat.getName(); }
   // Set the current YUV format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false) { setYUVPixelFormat(YUV_Internals::yuvPixelFormat(name), emitSignal); }
   virtual void setYUVPixelFormat(const YUV_Internals::yuvPixelFormat &fmt, bool emitSignal=false);
+  virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false) { this->setYUVPixelFormat(YUV_Internals::yuvPixelFormat(name), emitSignal); }
   virtual void setYUVColorConversion(YUV_Internals::ColorConversion conversion);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
@@ -261,7 +118,7 @@ public:
 protected:
   
   // How do we perform interpolation for the subsampled YUV formats?
-  YUV_Internals::InterpolationMode interpolationMode;
+  YUV_Internals::ChromaInterpolation chromaInterpolation {YUV_Internals::ChromaInterpolation::NearestNeighbor};
 
   // Which components should we display
   typedef enum
@@ -286,13 +143,10 @@ protected:
   YUV_Internals::ColorConversion yuvColorConversionType;
 
   // Parameters for the YUV transformation (like scaling, invert, offset). For Luma ([0]) and chroma([1]).
-  YUV_Internals::yuvMathParameters mathParameters[2];
+  QMap<YUV_Internals::Component, YUV_Internals::MathParameters> mathParameters;
 
   // The currently selected YUV format
   YUV_Internals::yuvPixelFormat srcPixelFormat;
-
-  // A static list of preset YUV formats. These are the formats that are shown in the YUV format selection comboBox.
-  YUV_Internals::YUVFormatList yuvPresetsList;
 
   struct yuv_t
   {
@@ -318,10 +172,8 @@ private:
   // Check the given format against the file size. Set the format if this is a match.
   bool checkAndSetFormat(const YUV_Internals::yuvPixelFormat format, const QSize frameSize, const int64_t fileSize);
 
-  bool setFormatFromSizeAndNamePlanar(QString name, const QSize size, int bitDepth, YUV_Internals::YUVSubsamplingType subsampling, int64_t fileSize);
-  bool setFormatFromSizeAndNamePacked(QString name, const QSize size, int bitDepth, YUV_Internals::YUVSubsamplingType subsampling, int64_t fileSize);
-
-  bool canConvertToRGB(YUV_Internals::yuvPixelFormat format, QSize imageSize, QString *whyNot=nullptr) const;
+  bool setFormatFromSizeAndNamePlanar(QString name, const QSize size, int bitDepth, YUV_Internals::Subsampling subsampling, int64_t fileSize);
+  bool setFormatFromSizeAndNamePacked(QString name, const QSize size, int bitDepth, YUV_Internals::Subsampling subsampling, int64_t fileSize);
 
 #if SSE_CONVERSION
   bool convertYUV420ToRGB(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
@@ -346,6 +198,8 @@ private:
   QByteArray diffYUV;
   YUV_Internals::yuvPixelFormat diffYUVFormat;
 
+  QList<YUV_Internals::yuvPixelFormat> presetList;
+
 private slots:
 
   // All the valueChanged() signals from the controls are connected here.
@@ -354,5 +208,3 @@ private slots:
   void slotYUVFormatControlChanged(int idx);
 
 };
-
-#endif // VIDEOHANDLERYUV_H
