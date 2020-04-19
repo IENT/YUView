@@ -317,7 +317,7 @@ QString yuvPixelFormat::getName() const
     name += getPackingFormatString(packingOrder);
 
   // Next add the subsampling
-  assert(subsampling != Subsampling::UNKNOWN);
+  Q_ASSERT(subsampling != Subsampling::UNKNOWN);
   name += " " + subsamplingTextList[subsamplingList.indexOf(subsampling)];
 
   // Add the bits
