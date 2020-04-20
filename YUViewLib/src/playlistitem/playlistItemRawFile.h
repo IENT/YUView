@@ -33,7 +33,6 @@
 #ifndef PLAYLISTITEMRAWFILE_H
 #define PLAYLISTITEMRAWFILE_H
 
-#include <QFileInfo>
 #include <QFuture>
 #include <QString>
 
