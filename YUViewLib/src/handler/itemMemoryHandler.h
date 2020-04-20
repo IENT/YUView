@@ -38,7 +38,7 @@ namespace itemMemoryHandler
 {
 
 /* Simple memory that uses QSettings to save the format for a file.
- * Entries older then 24 hours are automatically deleted.
+ * Entries older then 48 hours are automatically deleted.
  */
 void itemMemoryAddFormat(QString filePath, QString format);
 QString itemMemoryGetFormat(QString filePath);

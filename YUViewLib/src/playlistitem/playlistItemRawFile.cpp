@@ -88,12 +88,18 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   else
     Q_ASSERT_X(false, "playlistItemRawFile()", "No video handler for the raw file format found.");
 
+  auto pixelFormatFromMemory = itemMemoryHandler::itemMemoryGetFormat(rawFilePath);
   if (ext == "y4m")
   {
     // A y4m file has a header and indicators for ever frame
     isY4MFile = true;
     if (!parseY4MFile())
       return;
+  }
+  else if (!pixelFormatFromMemory.isEmpty())
+  {
+    // Use the format that we got from the memory. Don't do any auto detection.
+    video->setFormatFromString(pixelFormatFromMemory);
   }
   else if (frameSize == QSize(-1,-1) && sourcePixelFormat.isEmpty())
   {

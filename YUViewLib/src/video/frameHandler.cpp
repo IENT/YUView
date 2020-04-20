@@ -410,7 +410,7 @@ bool frameHandler::setFormatFromString(QString format)
   if (!ok)
     return false;
 
-  auto newHeight = split[0].toInt(&ok);
+  auto newHeight = split[1].toInt(&ok);
   if (!ok)
     return false;
 

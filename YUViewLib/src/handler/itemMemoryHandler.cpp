@@ -58,7 +58,7 @@ QList<ItemData> getAllValidItems()
 {
   QSettings settings;
   QList<ItemData> validItems;
-  auto timeYesterday = QDateTime::currentDateTime().addDays(-1);
+  auto timeYesterday = QDateTime::currentDateTime().addDays(-2);
 
   auto size = settings.beginReadArray("itemMemory");
   for (int i = 0; i < size; ++i) 
@@ -106,14 +106,14 @@ void itemMemoryAddFormat(QString filePath, QString format)
   auto validItems = getAllValidItems();
 
   bool itemUpdated = false;
-  for (auto item : validItems)
+  for (int i = 0; i < validItems.size(); i++)
   {
-    if (item.filePath == filePath)
+    if (validItems[i].filePath == filePath)
     {
-      item.itemChangedLast = QDateTime::currentDateTime();
-      item.format = format;
+      validItems[i].itemChangedLast = QDateTime::currentDateTime();
+      validItems[i].format = format;
       itemUpdated = true;
-      DEBUG_MEMORY("itemMemoryAddFormat Modified item " << item.toString());
+      DEBUG_MEMORY("itemMemoryAddFormat Modified item " << validItems[i].toString());
       break;
     }
   }
