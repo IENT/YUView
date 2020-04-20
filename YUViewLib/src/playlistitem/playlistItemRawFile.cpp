@@ -32,18 +32,18 @@
 
 #include "playlistItemRawFile.h"
 
-#include <QFileInfo>
 #include <QPainter>
 #include <QUrl>
 #include <QVBoxLayout>
 
 #include "common/functions.h"
+#include "handler/itemMemoryHandler.h"
 
 using namespace YUView;
 using namespace YUV_Internals;
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define PLAYLISTITEMRAWFILE_DEBUG_LOADING 0
+#define PLAYLISTITEMRAWFILE_DEBUG_LOADING 1
 #if PLAYLISTITEMRAWFILE_DEBUG_LOADING && !NDEBUG
 #define DEBUG_RAWFILE qDebug
 #else
@@ -123,13 +123,16 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
 
   // If the videHandler requests raw data, we provide it from the file
   connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemRawFile::loadRawData, Qt::DirectConnection);
-  connect(video.data(), &videoHandler::signalUpdateFrameLimits, this,  &playlistItemRawFile::slotUpdateFrameLimits);
+  connect(video.data(), &videoHandler::signalUpdateFrameLimits, this, &playlistItemRawFile::slotUpdateFrameLimits);
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
+  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemRawFile::slotVideoPropertiesChanged);
+
+  this->pixelFormatAfterLoading = video->getFormatAsString();
 
   // A raw file can be cached.
-  cachingEnabled = true;
+  this->cachingEnabled = true;
 }
 
 int64_t playlistItemRawFile::getNumberFrames() const
@@ -474,6 +477,15 @@ void playlistItemRawFile::loadRawData(int frameIdxInternal)
   video->rawData_frameIdx = frameIdxInternal;
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d Done", frameIdxInternal);
+}
+
+void playlistItemRawFile::slotVideoPropertiesChanged()
+{
+  DEBUG_RAWFILE("playlistItemRawFile::slotVideoPropertiesChanged");
+
+  auto currentPixelFormat = video->getFormatAsString();
+  if (currentPixelFormat != this->pixelFormatAfterLoading)
+    itemMemoryHandler::itemMemoryAddFormat(plItemNameOrFileName, currentPixelFormat);
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
