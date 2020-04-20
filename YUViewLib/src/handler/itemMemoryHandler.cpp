@@ -35,6 +35,14 @@
 #include <QDateTime>
 #include <QSettings>
 
+#define ITEMMEMORYHANDLER_DEBUG 0
+#if ITEMMEMORYHANDLER_DEBUG && !NDEBUG
+#include <QDebug>
+#define DEBUG_MEMORY(msg) qDebug() << msg
+#else
+#define DEBUG_MEMORY(msg) ((void)0)
+#endif
+
 namespace itemMemoryHandler
 {
 
@@ -43,6 +51,7 @@ struct ItemData
   QString filePath;
   QDateTime itemChangedLast;
   QString format;
+  QString toString() const { return QString("File: %1 Last Changed: %2 Format: %3").arg(filePath).arg(itemChangedLast.toString("yy-M-d H-m-s")).arg(format); }
 };
 
 QList<ItemData> getAllValidItems()
@@ -60,7 +69,14 @@ QList<ItemData> getAllValidItems()
     data.itemChangedLast = settings.value("dateChanged").toDateTime();
     data.format = settings.value("format").toString();
     if (data.itemChangedLast >= timeYesterday)
+    {
       validItems.append(data);
+      DEBUG_MEMORY("getAllValidItems Read Valid Item " << data.toString());
+    }
+    else
+    {
+      DEBUG_MEMORY("getAllValidItems Read invalid Item " << data.toString() << " - discarded");
+    }
   }
   settings.endArray();
 
@@ -72,7 +88,7 @@ void writeNewItemList(QList<ItemData> newItemList)
   QSettings settings;
   settings.remove("itemMemory");  // Delete the old list
 
-  settings.beginWriteArray("logins");
+  settings.beginWriteArray("itemMemory");
   for (int i = 0; i < newItemList.size(); ++i) 
   {
     const auto &item = newItemList[i];
@@ -80,6 +96,7 @@ void writeNewItemList(QList<ItemData> newItemList)
     settings.setValue("filePath", item.filePath);
     settings.setValue("dateChanged", QVariant(item.itemChangedLast));
     settings.setValue("format", item.format);
+    DEBUG_MEMORY("writeNewItemList Written item " << item.toString());
   }
   settings.endArray();
 }
@@ -96,6 +113,8 @@ void itemMemoryAddFormat(QString filePath, QString format)
       item.itemChangedLast = QDateTime::currentDateTime();
       item.format = format;
       itemUpdated = true;
+      DEBUG_MEMORY("itemMemoryAddFormat Modified item " << item.toString());
+      break;
     }
   }
 
@@ -106,6 +125,7 @@ void itemMemoryAddFormat(QString filePath, QString format)
     newItem.itemChangedLast = QDateTime::currentDateTime();
     newItem.format = format;
     validItems.append(newItem);
+    DEBUG_MEMORY("itemMemoryAddFormat Added new item " << newItem.toString());
   }
   
   writeNewItemList(validItems);

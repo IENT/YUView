@@ -43,7 +43,7 @@ using namespace YUView;
 using namespace YUV_Internals;
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define PLAYLISTITEMRAWFILE_DEBUG_LOADING 1
+#define PLAYLISTITEMRAWFILE_DEBUG_LOADING 0
 #if PLAYLISTITEMRAWFILE_DEBUG_LOADING && !NDEBUG
 #define DEBUG_RAWFILE qDebug
 #else
