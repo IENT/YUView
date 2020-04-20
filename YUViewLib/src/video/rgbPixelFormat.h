@@ -50,7 +50,7 @@ public:
   bool operator!=(const rgbPixelFormat &a) const { return getName()!= a.getName(); }
   bool operator==(const QString &a) const { return getName() == a; }
   bool operator!=(const QString &a) const { return getName() != a; }
-  bool isValid() const { return bitsPerValue > 0 && posR != posG && posR != posB && posG != posB; }
+  bool isValid() const;
   int  nrChannels() const { return posA == -1 ? 3 : 4; }
   bool hasAlphaChannel() const { return posA != -1; }
   // Get a name representation of this item (this will be unique for the set parameters)
@@ -60,6 +60,7 @@ public:
   void setRGBFormatFromString(const QString &sFormat);
   // Get the number of bytes for a frame with this rgbPixelFormat and the given size
   int64_t bytesPerFrame(const QSize &frameSize) const;
+  
   // The order of each component (E.g. for GBR this is posR=2,posG=0,posB=1)
   int posR {0};
   int posG {1};

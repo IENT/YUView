@@ -2,13 +2,13 @@
 
 #include <video/yuvPixelFormat.h>
 
-class videoHandlerYUVFormatFromToString : public QObject
+class yuvPixelFormatTest : public QObject
 {
   Q_OBJECT
 
 public:
-  videoHandlerYUVFormatFromToString() {};
-  ~videoHandlerYUVFormatFromToString() {};
+  yuvPixelFormatTest() {};
+  ~yuvPixelFormatTest() {};
 
 private slots:
   void testFormatFromToString();
@@ -51,12 +51,16 @@ QList<YUV_Internals::yuvPixelFormat> getAllFormats()
   return allFormats;
 }
 
-void videoHandlerYUVFormatFromToString::testFormatFromToString()
+void yuvPixelFormatTest::testFormatFromToString()
 {
   for (auto fmt : getAllFormats())
   {
     QVERIFY(fmt.isValid());
     auto name = fmt.getName();
+    if (name.isEmpty())
+    {
+      QFAIL("Name empty");
+    }
     auto fmtNew = YUV_Internals::yuvPixelFormat(name);
     if (fmt != fmtNew)
     {
@@ -81,6 +85,6 @@ void videoHandlerYUVFormatFromToString::testFormatFromToString()
   }
 }
 
-QTEST_MAIN(videoHandlerYUVFormatFromToString)
+QTEST_MAIN(yuvPixelFormatTest)
 
-#include "videoHandlerYUVFormatFromToString.moc"
+#include "yuvPixelFormatTest.moc"

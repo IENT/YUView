@@ -1,3 +1,6 @@
 TEMPLATE = subdirs
 
-SUBDIRS = videoHandlerYUV
+requires(qtHaveModule(testlib))
+
+SUBDIRS = yuvPixelFormatTest.pro \
+          rgbPixelFormatTest.pro

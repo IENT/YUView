@@ -4,7 +4,7 @@ CONFIG += qt console warn_on no_testcase_installs depend_includepath testcase
 CONFIG -= debug_and_release
 CONFIG -= app_bundled
 
-TARGET = videoHandlerYUVFormatFromToString
+TARGET = yuvPixelFormatTest
 
 QT += testlib
 QT -= gui
@@ -12,4 +12,4 @@ QT -= gui
 INCLUDEPATH += $$top_srcdir/YUViewLib/src
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
 
-SOURCES += videoHandlerYUVFormatFromToString.cpp
+SOURCES += yuvPixelFormatTest.cpp
