@@ -207,7 +207,7 @@ private:
 // probably not work then. This macro is set to true by our buildbot server. Only builds
 // from that server will use the update feature (that way we can ensure that the same build
 // environment is used).
-#define UPDATE_FEATURE_ENABLE 0
+#define UPDATE_FEATURE_ENABLE 1
 
 #ifndef YUVIEW_VERSION
 #define YUVIEW_VERSION "Unknown"

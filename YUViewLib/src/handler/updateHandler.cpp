@@ -51,6 +51,10 @@
 #include <ShellAPI.h> // without space also
 #endif
 
+// Don't abort in case a connection is not encrypted. 
+// ONLY USE THIS FOR DEBGGING
+#define ALLOW_UNENCRYPTED_CONNECTIONS 1
+
 #define UPDATER_DEBUG_OUTPUT 0
 #if UPDATER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -63,8 +67,13 @@ typedef QPair<QString, int> downloadFile;
 
 // ------------------ updateFileHandler helper class -----------------
 #define UPDATEFILEHANDLER_FILE_NAME "versioninfo.txt"
+#if ALLOW_UNENCRYPTED_CONNECTIONS
 #define UPDATEFILEHANDLER_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/master/win/autoupdate/"
 #define UPDATEFILEHANDLER_TESTDEPLOY_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/dev/win/autoupdate/"
+#else
+#define UPDATEFILEHANDLER_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/master/win/autoupdate/"
+#define UPDATEFILEHANDLER_TESTDEPLOY_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/dev/win/autoupdate/"
+#endif
 
 class updateFileHandler
 {
@@ -273,10 +282,17 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool force)
     // We are on windows and the update feature is available.
     // Check the Github repository branch binariesAutoUpdate if there is a new version of the YUView executable available.
     // First we will try to establish a secure connection to raw.githubusercontent.com
+#if ALLOW_UNENCRYPTED_CONNECTIONS
+    DEBUG_UPDATE("updateHandler::startCheckForNewVersion connectToHost raw.githubusercontent.com");
+    updaterStatus = updaterEstablishConnection;
+    userCheckRequest = userRequest;
+    networkManager.connectToHost("raw.githubusercontent.com");
+#else
     DEBUG_UPDATE("updateHandler::startCheckForNewVersion connectToHostEncrypted raw.githubusercontent.com");
     updaterStatus = updaterEstablishConnection;
     userCheckRequest = userRequest;
     networkManager.connectToHostEncrypted("raw.githubusercontent.com");
+#endif
   }
   else if (VERSION_CHECK)
   {
@@ -304,6 +320,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   }
 
   bool error = (reply->error() != QNetworkReply::NoError);
+  auto errorCode = reply->error();
   QString errorString;
   if (error)
     errorString = reply->error();
@@ -329,47 +346,58 @@ void updateHandler::replyFinished(QNetworkReply *reply)
     }
     else if (updaterStatus == updaterChecking && !error)
     {
+#if !ALLOW_UNENCRYPTED_CONNECTIONS
       bool connectionEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
       if (!connectionEncrypted)
         return abortUpdate("The " UPDATEFILEHANDLER_FILE_NAME " file could not be downloaded using a secure connection.");
+#endif
 
       // We recieved the version info file. See what it contains.
       QByteArray updateFileInfo = reply->readAll();
-      updateFileHandler remoteFile(updateFileInfo);
 
-      // Next, also load the corresponding local file
-      updateFileHandler localFile(updatePath + UPDATEFILEHANDLER_FILE_NAME);
-
-      // Now compare the two so that we can download all files that require an update.
-      // A file will be updated if:
-      // - The version number of the remote and local file differ
-      // - If the remote file does not exist locally
-      // - If the file name is versioninfo.txt
-      downloadFiles = remoteFile.getFilesToUpdate(localFile);
-
-      if (downloadFiles.count() > 1)
+      if (updateFileInfo.size() == 0)
       {
-        // There are files to update besides the versioninfo.txt file.
-        // There is a new YUView version available. Do we ask the user first or do we just install?
-        QSettings settings;
-        settings.beginGroup("updates");
-        QString updateBehavior = settings.value("updateBehavior", "ask").toString();
-        if (updateBehavior == "auto" || forceUpdate)
-          // Don't ask. Just update.
-          downloadAndInstallUpdate();
-        else
+        error = true;
+        errorString = "The download of ther version info file was empty.";
+      }
+      else
+      {
+        updateFileHandler remoteFile(updateFileInfo);
+
+        // Next, also load the corresponding local file
+        updateFileHandler localFile(updatePath + UPDATEFILEHANDLER_FILE_NAME);
+
+        // Now compare the two so that we can download all files that require an update.
+        // A file will be updated if:
+        // - The version number of the remote and local file differ
+        // - If the remote file does not exist locally
+        // - If the file name is versioninfo.txt
+        downloadFiles = remoteFile.getFilesToUpdate(localFile);
+
+        if (downloadFiles.count() > 1)
         {
-          // Ask the user if he wants to update.
-          UpdateDialog update(mainWidget);
-          if (update.exec() == QDialog::Accepted)
-            // The user pressed 'update'
+          // There are files to update besides the versioninfo.txt file.
+          // There is a new YUView version available. Do we ask the user first or do we just install?
+          QSettings settings;
+          settings.beginGroup("updates");
+          QString updateBehavior = settings.value("updateBehavior", "ask").toString();
+          if (updateBehavior == "auto" || forceUpdate)
+            // Don't ask. Just update.
             downloadAndInstallUpdate();
           else
-            updaterStatus = updaterIdle;
-        }
+          {
+            // Ask the user if he wants to update.
+            UpdateDialog update(mainWidget);
+            if (update.exec() == QDialog::Accepted)
+              // The user pressed 'update'
+              downloadAndInstallUpdate();
+            else
+              updaterStatus = updaterIdle;
+          }
 
-        reply->deleteLater();
-        return;
+          reply->deleteLater();
+          return;
+        }
       }
     }
   }

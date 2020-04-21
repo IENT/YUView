@@ -34,13 +34,11 @@
 
 #include <QApplication>
 #include <QSettings>
+#include <QMessageBox>
 
 #include "ui/mainwindow.h"
 #include "handler/singleInstanceHandler.h"
 #include "common/typedef.h"
-
-#include <iostream>
-#include <fstream>
 
 #define APPLICATION_DEBUG 0
 #if APPLICATION_DEBUG && !NDEBUG
@@ -52,8 +50,6 @@
 
 YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc, argv)
 {
-  std::ofstream debugFile("D:/debugLog.txt");
-
   QString versionString = QString::fromUtf8(YUVIEW_VERSION);
   setApplicationName("YUView");
   setApplicationVersion(versionString);
@@ -67,9 +63,6 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
 
   QStringList args = arguments();
   DEBUG_APP("YUViewApplication args" << args);
-  debugFile << "Arguments:\n";
-  for (auto a : args)
-    debugFile << "  " << a.toStdString() << "\n";
 
   QScopedPointer<singleInstanceHandler> instance;
   if (WIN_LINUX_SINGLE_INSTANCE && (is_Q_OS_WIN || is_Q_OS_LINUX))
@@ -81,13 +74,17 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
     {
       // An instance is already running and we passed our command line arguments to it.
       DEBUG_APP("YUViewApplication sent command line to other instance");
-      debugFile << "Send command to other instance\n";
       return;
     }
     
     // This is the first instance of the program
     instance->listen(appName);
   }
+
+  QString text;
+  for (auto a : args)
+    text += " " + a;
+  QMessageBox::information(nullptr, "TEST", "TESTTTTTT " + text);
   
   // For Qt 5.8 there is a Bug in Qt that crashes the application if a certain type of proxy server is used.
   // With the -noUpdate parameter, we can disable automatic updates so that YUView can be used normally.
@@ -98,7 +95,7 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
     settings.setValue("checkForUpdates", false);
     settings.endGroup();
     DEBUG_APP("YUViewApplication automatic updates disabled");
-    debugFile << "Automatic updates disabled\n";
+    QMessageBox::information(nullptr, "TEST", "Disable automatic updates");
   }
   
   bool alternativeUpdateSource = false;
@@ -108,7 +105,7 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
     // an alternative source before deploying it to everybody.
     alternativeUpdateSource = true;
     DEBUG_APP("YUViewApplication update from alternate URL");
-    debugFile << "update from alternate URL\n";
+    QMessageBox::information(nullptr, "TEST", "Update from alternate URL");
   }
 
   MainWindow w(alternativeUpdateSource);
@@ -121,25 +118,23 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && args.size() == 2 && (args.last() == "updateElevated" || args.last() == "updateElevatedAltSource"))
   {
     // The process should now be elevated and we will force an update
+    QMessageBox::information(nullptr, "TEST", "Update elevated");
     w.forceUpdateElevated();
     args.removeLast();
     DEBUG_APP("YUViewApplication update being elevated");
-    debugFile << "update being elevated\n";
   }
   else
+  {
+    QMessageBox::information(nullptr, "TEST", "Auto update check");
     w.autoUpdateCheck();
+  }
 
   QStringList fileList = args.mid(1);
   if (!fileList.empty())
   {
     DEBUG_APP("YUViewApplication loading file list " << fileList);
-    debugFile << "Loading files:\n";
-    for (auto f : fileList)
-      debugFile << "  File " << f.toStdString() << "\n";
     w.loadFiles(fileList);
   }
-
-  debugFile.close();
 
   w.show();
   returnCode = exec();
