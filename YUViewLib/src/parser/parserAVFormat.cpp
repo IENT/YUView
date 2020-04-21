@@ -498,6 +498,15 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
   }
   else
   {
+    TreeItem *rawDataRoot = new TreeItem("Data", itemTree);
+    const auto nrBytesToLog = std::min(avpacketData.length(), 100);
+    for (int i = 0; i < nrBytesToLog; i++)
+    {
+      int val = (unsigned char)avpacketData.at(i);
+      QString code = QString("%1 (0x%2)").arg(val, 8, 2, QChar('0')).arg(val, 2, 16, QChar('0'));
+      new TreeItem(QString("Byte %1").arg(i), val, "b(8)", code, rawDataRoot);
+    }
+
     BitrateItemModel::bitrateEntry entry;
     entry.pts = packet.get_pts();
     entry.dts = packet.get_dts();
