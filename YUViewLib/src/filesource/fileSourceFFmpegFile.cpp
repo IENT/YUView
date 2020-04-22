@@ -546,7 +546,7 @@ bool fileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
     else if (streamIndices.subtitle.eia608.contains(pkt.get_stream_index()))
       pkt.setPacketType(PacketType::SUBTITLE_608);
     else
-      pkt.setPacketType(PacketType::SUBTITLE_OTHER);
+      pkt.setPacketType(PacketType::OTHER);
   }
   while (ret == 0 && videoPacketsOnly && pkt.getPacketType() != PacketType::VIDEO);
   
