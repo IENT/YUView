@@ -98,7 +98,7 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
   // Get the subsampling and bit-depth from the sps
   int bitDepthY = -1;
   int bitDepthC = -1;
-  YUVSubsamplingType subsampling = YUV_NUM_SUBSAMPLINGS;
+  auto subsampling = Subsampling::UNKNOWN;
   for (auto nal : nalUnitList)
   {
     // This should be an hevc nal
@@ -108,19 +108,19 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
     {
       auto s = nal_avc.dynamicCast<sps>();
       if (s->chroma_format_idc == 0)
-        subsampling = YUV_400;
+        subsampling = Subsampling::YUV_400;
       else if (s->chroma_format_idc == 1)
-        subsampling = YUV_420;
+        subsampling = Subsampling::YUV_420;
       else if (s->chroma_format_idc == 2)
-        subsampling = YUV_422;
+        subsampling = Subsampling::YUV_422;
       else if (s->chroma_format_idc == 3)
-        subsampling = YUV_444;
+        subsampling = Subsampling::YUV_444;
 
       bitDepthY = s->bit_depth_luma_minus8 + 8;
       bitDepthC = s->bit_depth_chroma_minus8 + 8;
     }
 
-    if (bitDepthY != -1 && bitDepthC != -1 && subsampling != YUV_NUM_SUBSAMPLINGS)
+    if (bitDepthY != -1 && bitDepthC != -1 && subsampling != Subsampling::UNKNOWN)
     {
       if (bitDepthY != bitDepthC)
       {

@@ -59,7 +59,7 @@ QSize parserAnnexBVVC::getSequenceSizeSamples() const
 
 yuvPixelFormat parserAnnexBVVC::getPixelFormat() const
 {
-  return yuvPixelFormat(YUV_420, 8);
+  return yuvPixelFormat(Subsampling::YUV_420, 8);
 }
 
 QList<QByteArray> parserAnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)

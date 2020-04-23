@@ -32,12 +32,12 @@
 
 #include "playlistItemRawFile.h"
 
-#include <QFileInfo>
 #include <QPainter>
 #include <QUrl>
 #include <QVBoxLayout>
 
 #include "common/functions.h"
+#include "handler/itemMemoryHandler.h"
 
 using namespace YUView;
 using namespace YUV_Internals;
@@ -88,12 +88,18 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   else
     Q_ASSERT_X(false, "playlistItemRawFile()", "No video handler for the raw file format found.");
 
+  auto pixelFormatFromMemory = itemMemoryHandler::itemMemoryGetFormat(rawFilePath);
   if (ext == "y4m")
   {
     // A y4m file has a header and indicators for ever frame
     isY4MFile = true;
     if (!parseY4MFile())
       return;
+  }
+  else if (!pixelFormatFromMemory.isEmpty())
+  {
+    // Use the format that we got from the memory. Don't do any auto detection.
+    video->setFormatFromString(pixelFormatFromMemory);
   }
   else if (frameSize == QSize(-1,-1) && sourcePixelFormat.isEmpty())
   {
@@ -123,13 +129,16 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
 
   // If the videHandler requests raw data, we provide it from the file
   connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemRawFile::loadRawData, Qt::DirectConnection);
-  connect(video.data(), &videoHandler::signalUpdateFrameLimits, this,  &playlistItemRawFile::slotUpdateFrameLimits);
+  connect(video.data(), &videoHandler::signalUpdateFrameLimits, this, &playlistItemRawFile::slotUpdateFrameLimits);
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
+  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemRawFile::slotVideoPropertiesChanged);
+
+  this->pixelFormatAfterLoading = video->getFormatAsString();
 
   // A raw file can be cached.
-  cachingEnabled = true;
+  this->cachingEnabled = true;
 }
 
 int64_t playlistItemRawFile::getNumberFrames() const
@@ -191,7 +200,7 @@ bool playlistItemRawFile::parseY4MFile()
   int64_t offset = 9;
   int width = -1;
   int height = -1;
-  yuvPixelFormat format = yuvPixelFormat(YUV_420, 8, Order_YUV);
+  yuvPixelFormat format = yuvPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YUV);
 
   while (rawData.at(offset++) == ' ')
   {
@@ -270,9 +279,9 @@ bool playlistItemRawFile::parseY4MFile()
       // 'C420jpeg' = 4:2 : 0 with biaxially - displaced chroma planes
       // 'C420paldv' = 4 : 2 : 0 with vertically - displaced chroma planes
       if (formatName == "422")
-        format.subsampling = YUV_422;
+        format.subsampling = Subsampling::YUV_422;
       else if (formatName == "444")
-        format.subsampling = YUV_444;
+        format.subsampling = Subsampling::YUV_444;
 
       if (rawData.at(offset) == 'p' && rawData.at(offset+1) == '1' && rawData.at(offset+2) == '0')
       {
@@ -308,9 +317,9 @@ bool playlistItemRawFile::parseY4MFile()
 
   // The offset in bytes to the next frame
   int stride = width * height * 3 / 2;
-  if (format.subsampling == YUV_422)
+  if (format.subsampling == Subsampling::YUV_422)
     stride = width * height * 2;
-  else if (format.subsampling == YUV_444)
+  else if (format.subsampling == Subsampling::YUV_444)
     stride = width * height * 3;
   if (format.bitsPerSample > 8)
     stride *= 2;
@@ -474,6 +483,15 @@ void playlistItemRawFile::loadRawData(int frameIdxInternal)
   video->rawData_frameIdx = frameIdxInternal;
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d Done", frameIdxInternal);
+}
+
+void playlistItemRawFile::slotVideoPropertiesChanged()
+{
+  DEBUG_RAWFILE("playlistItemRawFile::slotVideoPropertiesChanged");
+
+  auto currentPixelFormat = video->getFormatAsString();
+  if (currentPixelFormat != this->pixelFormatAfterLoading)
+    itemMemoryHandler::itemMemoryAddFormat(plItemNameOrFileName, currentPixelFormat);
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
