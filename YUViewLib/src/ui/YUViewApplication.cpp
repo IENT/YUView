@@ -34,7 +34,6 @@
 
 #include <QApplication>
 #include <QSettings>
-#include <QMessageBox>
 
 #include "ui/mainwindow.h"
 #include "handler/singleInstanceHandler.h"
@@ -81,11 +80,6 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
     instance->listen(appName);
   }
 
-  QString text;
-  for (auto a : args)
-    text += " " + a;
-  QMessageBox::information(nullptr, "TEST", "TESTTTTTT " + text);
-  
   // For Qt 5.8 there is a Bug in Qt that crashes the application if a certain type of proxy server is used.
   // With the -noUpdate parameter, we can disable automatic updates so that YUView can be used normally.
   if (args.size() == 2 && args.last() == "-noUpdate")
@@ -95,7 +89,6 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
     settings.setValue("checkForUpdates", false);
     settings.endGroup();
     DEBUG_APP("YUViewApplication automatic updates disabled");
-    QMessageBox::information(nullptr, "TEST", "Disable automatic updates");
   }
   
   bool alternativeUpdateSource = false;
@@ -105,7 +98,6 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
     // an alternative source before deploying it to everybody.
     alternativeUpdateSource = true;
     DEBUG_APP("YUViewApplication update from alternate URL");
-    QMessageBox::information(nullptr, "TEST", "Update from alternate URL");
   }
 
   MainWindow w(alternativeUpdateSource);
@@ -118,14 +110,12 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && args.size() == 2 && (args.last() == "updateElevated" || args.last() == "updateElevatedAltSource"))
   {
     // The process should now be elevated and we will force an update
-    QMessageBox::information(nullptr, "TEST", "Update elevated");
     w.forceUpdateElevated();
     args.removeLast();
     DEBUG_APP("YUViewApplication update being elevated");
   }
   else
   {
-    QMessageBox::information(nullptr, "TEST", "Auto update check");
     w.autoUpdateCheck();
   }
 

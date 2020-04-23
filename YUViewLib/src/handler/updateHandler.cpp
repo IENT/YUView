@@ -226,9 +226,6 @@ void updateHandler::replyFinished(QNetworkReply *reply)
         // Next, also load the corresponding local file
         updateFileHandler localFile(updatePath + UPDATEFILEHANDLER_FILE_NAME, this->updatePath);
 
-        QString message = "Remote file: " + remoteFile.getInfo() + " --- Local file: (" + updatePath + UPDATEFILEHANDLER_FILE_NAME + ") " + localFile.getInfo();
-        QMessageBox::information(mainWidget, "Update files content", message);
-
         // Now compare the two so that we can download all files that require an update.
         // A file will be updated if:
         // - The version number of the remote and local file differ
