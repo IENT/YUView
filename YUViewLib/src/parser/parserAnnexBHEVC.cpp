@@ -316,7 +316,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
       // Save the info of the last frame
       if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
         return reader_helper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
-      DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+      DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", unsigned(curFrameFileStartEndPos.first), unsigned(curFrameFileStartEndPos.second), curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
     }
     // The file ended
     std::sort(POCList.begin(), POCList.end());
@@ -488,7 +488,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
           // Save the info of the last frame
           if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
             return reader_helper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
-          DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+          DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", unsigned(curFrameFileStartEndPos.first), unsigned (curFrameFileStartEndPos.second), curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
         curFramePOC = new_slice->globalPOC;
