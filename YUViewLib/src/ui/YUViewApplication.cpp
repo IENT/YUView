@@ -115,9 +115,7 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
     DEBUG_APP("YUViewApplication update being elevated");
   }
   else
-  {
     w.autoUpdateCheck();
-  }
 
   QStringList fileList = args.mid(1);
   if (!fileList.empty())
