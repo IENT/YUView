@@ -115,7 +115,7 @@ yuvPixelFormat parserAnnexBHEVC::getPixelFormat() const
   // Get the subsampling and bit-depth from the sps
   int bitDepthY = -1;
   int bitDepthC = -1;
-  YUVSubsamplingType subsampling = YUV_NUM_SUBSAMPLINGS;
+  auto subsampling = Subsampling::UNKNOWN;
   for (auto nal : nalUnitList)
   {
     // This should be an hevc nal
@@ -125,19 +125,19 @@ yuvPixelFormat parserAnnexBHEVC::getPixelFormat() const
     {
       auto s = nal_hevc.dynamicCast<sps>();
       if (s->chroma_format_idc == 0)
-        subsampling = YUV_400;
+        subsampling = Subsampling::YUV_400;
       else if (s->chroma_format_idc == 1)
-        subsampling = YUV_420;
+        subsampling = Subsampling::YUV_420;
       else if (s->chroma_format_idc == 2)
-        subsampling = YUV_422;
+        subsampling = Subsampling::YUV_422;
       else if (s->chroma_format_idc == 3)
-        subsampling = YUV_444;
+        subsampling = Subsampling::YUV_444;
 
       bitDepthY = s->bit_depth_luma_minus8 + 8;
       bitDepthC = s->bit_depth_chroma_minus8 + 8;
     }
 
-    if (bitDepthY != -1 && bitDepthC != -1 && subsampling != YUV_NUM_SUBSAMPLINGS)
+    if (bitDepthY != -1 && bitDepthC != -1 && subsampling != Subsampling::UNKNOWN)
     {
       if (bitDepthY != bitDepthC)
       {
@@ -316,7 +316,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
       // Save the info of the last frame
       if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
         return reader_helper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
-      DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+      DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", unsigned(curFrameFileStartEndPos.first), unsigned(curFrameFileStartEndPos.second), curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
     }
     // The file ended
     std::sort(POCList.begin(), POCList.end());
@@ -488,7 +488,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
           // Save the info of the last frame
           if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
             return reader_helper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
-          DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+          DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", unsigned(curFrameFileStartEndPos.first), unsigned (curFrameFileStartEndPos.second), curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
         curFramePOC = new_slice->globalPOC;

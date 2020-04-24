@@ -398,8 +398,8 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int x, int y, int blockSize
   if (blockSize == 4)
   {
       const unsigned char * srcY1 = (unsigned char*)diffYUV.data();
-      const unsigned char * srcU1 = (diffYUVFormat.planeOrder == YUV_Internals::Order_YUV || diffYUVFormat.planeOrder == YUV_Internals::Order_YUVA) ? srcY1 + nrBytesLumaPlane_In : srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In;
-      const unsigned char * srcV1 = (diffYUVFormat.planeOrder == YUV_Internals::Order_YUV || diffYUVFormat.planeOrder == YUV_Internals::Order_YUVA) ? srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In: srcY1 + nrBytesLumaPlane_In;
+      const unsigned char * srcU1 = (diffYUVFormat.planeOrder == YUV_Internals::PlaneOrder::YUV || diffYUVFormat.planeOrder == YUV_Internals::PlaneOrder::YUVA) ? srcY1 + nrBytesLumaPlane_In : srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In;
+      const unsigned char * srcV1 = (diffYUVFormat.planeOrder == YUV_Internals::PlaneOrder::YUV || diffYUVFormat.planeOrder == YUV_Internals::PlaneOrder::YUVA) ? srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In: srcY1 + nrBytesLumaPlane_In;
 
     // adjust source pointer according to block position
     srcY1 += y*stride_in;

@@ -36,6 +36,7 @@
 
 #include "common/functions.h"
 #include "common/fileInfo.h"
+#include "videoHandlerRGBCustomFormatDialog.h"
 
 using namespace RGB_Internals;
 
@@ -62,154 +63,6 @@ using namespace RGB_Internals;
 #        endif
 #    endif
 #endif
-
-rgbPixelFormat::rgbPixelFormat(int bitsPerValue, bool planar, int posR, int posG, int posB, int posA)
-  : posR(posR), posG(posG), posB(posB), posA(posA), bitsPerValue(bitsPerValue), planar(planar)
-{
-  Q_ASSERT_X(posR != posG && posR != posB && posG != posB, Q_FUNC_INFO, "Invalid RGB format set"); 
-  Q_ASSERT_X(posA != posR && posA != posG && posA != posB, Q_FUNC_INFO, "Invalid alpha component for RGB format set"); 
-}
-
-QString rgbPixelFormat::getName() const
-{
-  if (bitsPerValue == 0)
-    return "Unknown Pixel Format";
-
-  QString name = getRGBFormatString();
-  name.append(QString(" %1bit").arg(bitsPerValue));
-  if (planar)
-    name.append(" planar");
-
-  return name;
-}
-
-void rgbPixelFormat::setFromName(const QString &name)
-{
-  if (name == "Unknown Pixel Format")
-  {
-    posR = 0;
-    posG = 0;
-    posB = 0;
-    posA = -1;
-    bitsPerValue = 0;
-    planar = false;
-  }
-  else
-  {
-    setRGBFormatFromString(name.left(4));
-    int bitIdx = name.indexOf("bit");
-    bitsPerValue = name.mid(bitIdx-2, 2).toInt();
-    planar = name.contains("planar");
-  }
-}
-
-QString rgbPixelFormat::getRGBFormatString() const
-{
-  QString name;
-  for (int i = 0; i < nrChannels(); i++)
-  {
-    if (posR == i)
-      name.append("R");
-    if (posG == i)
-      name.append("G");
-    if (posB == i)
-      name.append("B");
-    if (posA == i)
-      name.append("A");
-  }
-  return name;
-}
-
-void rgbPixelFormat::setRGBFormatFromString(const QString &format)
-{
-  int n = format.length();
-  if (n < 3)
-    return;
-  if (n > 4)
-    n = 4;
-
-  for (int i = 0; i < n; i++)
-  {
-    if (format[i].toLower() == 'r')
-      posR = i;
-    else if (format[i].toLower() == 'g')
-      posG = i;
-    else if (format[i].toLower() == 'b')
-      posB = i;
-    else if (format[i].toLower() == 'a')
-      posA = i;
-  }
-}
-
-/* Get the number of bytes for a frame with this RGB format and the given size
-*/
-int64_t rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
-{
-  if (bitsPerValue == 0 || !frameSize.isValid())
-    return 0;
-
-  int64_t numSamples = frameSize.height() * frameSize.width();
-  int64_t nrBytes = numSamples * nrChannels() * ((bitsPerValue + 7) / 8);
-  DEBUG_RGB("rgbPixelFormat::bytesPerFrame samples %d channels %d bytes %d", int(numSamples), nrChannels(), nrBytes);
-  return nrBytes;
-}
-
-/// ---------------------------- videoHandlerRGB_CustomFormatDialog ---------------------
-
-videoHandlerRGB_CustomFormatDialog::videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar)
-{
-  setupUi(this);
-
-  // Set the default (RGB no alpha)
-  rgbOrderComboBox->setCurrentIndex(0);
-  alphaChannelGroupBox->setChecked(false);
-  afterRGBRadioButton->setChecked(false);
-
-  QString f = rgbFormat.toLower();
-  if (f.length() == 3 || f.length() == 4)
-  {
-    if (f.length() == 4 && f.at(0) == 'a')
-    {
-      alphaChannelGroupBox->setChecked(true);
-      beforeRGBRadioButton->setChecked(true);
-      f.remove(0, 1); // Remove the 'a'
-    }
-    else if (f.length() == 4 && f.at(3) == 'a')
-    {
-      alphaChannelGroupBox->setChecked(true);
-      afterRGBRadioButton->setChecked(true);
-      f.remove(3, 1); // Remove the 'a'
-    }
-
-    for (int i = 0; i < rgbOrderComboBox->count(); i++)
-      if (rgbOrderComboBox->itemText(i).toLower() == f)
-      {
-        rgbOrderComboBox->setCurrentIndex(i);
-        break;
-      }
-  }
-
-  if (bitDepth == 0)
-    bitDepth = 8;
-  bitDepthSpinBox->setValue(bitDepth);
-
-  planarCheckBox->setChecked(planar);
-}
-
-QString videoHandlerRGB_CustomFormatDialog::getRGBFormat() const
-{ 
-  QString f = rgbOrderComboBox->currentText(); 
-  if (alphaChannelGroupBox->isChecked())
-  {
-    if (beforeRGBRadioButton->isChecked())
-      f.prepend("A");
-    if (afterRGBRadioButton->isChecked())
-      f.append("A");
-  }
-  return f;
-}
-
-/// ------------------------- videoHandlerRGB -------------------
 
 /* The default constructor of the RGBFormatList will fill the list with all supported RGB file formats.
  * Don't forget to implement actual support for all of them in the conversion functions.
@@ -246,8 +99,6 @@ rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const QString &name) 
 
 // Initialize the static rgbPresetList
 videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
-
-// --------------------- videoHandlerRGB ----------------------------------
 
 videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
@@ -328,6 +179,25 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int fram
   }
 
   return values;
+}
+
+bool videoHandlerRGB::setFormatFromString(QString format)
+{
+  DEBUG_RGB("videoHandlerRGB::setFormatFromString " << format << "\n");
+
+  auto split = format.split(";");
+  if (split.length() != 4 || split[2] != "RGB")
+    return false;
+
+  if (!frameHandler::setFormatFromString(split[0] + ";" + split[1]))
+    return false;
+
+  auto fmt = RGB_Internals::rgbPixelFormat(split[3]);
+  if (!fmt.isValid())
+    return false;
+
+  this->setRGBPixelFormat(fmt, false);
+  return true;
 }
 
 QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
@@ -430,7 +300,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged custom format");
 
     // The user selected the "custom format..." option
-    videoHandlerRGB_CustomFormatDialog dialog(srcPixelFormat.getRGBFormatString(), srcPixelFormat.bitsPerValue, srcPixelFormat.planar);
+    videoHandlerRGBCustomFormatDialog dialog(srcPixelFormat.getRGBFormatString(), srcPixelFormat.bitsPerValue, srcPixelFormat.planar);
     if (dialog.exec() == QDialog::Accepted)
     {
       // Set the custom format

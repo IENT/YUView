@@ -79,10 +79,12 @@ public:
   // Cache the given frame
   virtual void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE { if (testMode) dataSource.clearFileCache(); playlistItemWithVideo::cacheFrame(idx, testMode); }
 
-public slots:
+private slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadRawData(int frameIdxInternal);
+  void loadRawData(int frameIdxInternal);
+
+  void slotVideoPropertiesChanged();
 
 protected:
   // Override from playlistItemIndexed. For a raw file the index range is 0...numFrames-1. 
@@ -110,6 +112,8 @@ private:
   bool parseY4MFile();
   bool isY4MFile;
   QList<uint64_t> y4mFrameIndices;
+
+  QString pixelFormatAfterLoading;
 };
 
 #endif // PLAYLISTITEMRAWFILE_H
