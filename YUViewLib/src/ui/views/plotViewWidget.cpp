@@ -107,20 +107,21 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
 
   auto valuesX = this->getAxisValuesToShow(Axis::X);
   auto valuesY = this->getAxisValuesToShow(Axis::Y);
-  drawGridLines(painter, this->propertiesAxis[0], plotRect, valuesX);
-  drawGridLines(painter, this->propertiesAxis[1], plotRect, valuesY);
+  this->drawGridLines(painter, this->propertiesAxis[0], plotRect, valuesX);
+  this->drawGridLines(painter, this->propertiesAxis[1], plotRect, valuesY);
 
   this->drawPlot(painter, plotRect);
+  this->drawZoomRect(painter, plotRect);
 
-  drawWhiteBoarders(painter, plotRect, widgetRect);
-  drawAxis(painter, plotRect);
+  this->drawWhiteBoarders(painter, plotRect, widgetRect);
+  this->drawAxis(painter, plotRect);
 
-  drawAxisTicksAndValues(painter, this->propertiesAxis[0], valuesX);
-  drawAxisTicksAndValues(painter, this->propertiesAxis[1], valuesY);
+  this->drawAxisTicksAndValues(painter, this->propertiesAxis[0], valuesX);
+  this->drawAxisTicksAndValues(painter, this->propertiesAxis[1], valuesY);
 
-  drawInfoBox(painter, plotRect);
+  this->drawInfoBox(painter, plotRect);
 
-  drawFadeBoxes(painter, plotRect, widgetRect);
+  this->drawFadeBoxes(painter, plotRect, widgetRect);
 
   // if (!this->model)
   // {
@@ -434,6 +435,26 @@ void PlotViewWidget::drawInfoBox(QPainter &painter, const QRectF &plotRect) cons
   painter.setBrush(originalBrush);
 
   painter.resetTransform();
+}
+
+void PlotViewWidget::drawZoomRect(QPainter &painter, const QRectF plotRect) const
+{
+  if (this->viewAction != ViewAction::ZOOM_RECT)
+    return;
+
+  if (!this->fixYAxis)
+  {
+    MoveAndZoomableView::drawZoomRect(painter);
+    return;
+  }
+
+  auto yTop    = plotRect.top() + fadeBoxThickness;
+  auto yBottom = plotRect.bottom() - fadeBoxThickness;
+  const auto mouseRect = QRectF(QPointF(viewZoomingMousePosStart.x(), yTop), QPointF(viewZoomingMousePos.x(), yBottom));
+
+  painter.setPen(ZOOM_RECT_PEN);
+  painter.setBrush(ZOOM_RECT_BRUSH);
+  painter.drawRect(mouseRect);
 }
 
 void PlotViewWidget::updateAxis(const QRectF &plotRect)

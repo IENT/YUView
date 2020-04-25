@@ -450,18 +450,21 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     }
   }
 
-  if (isSplitting())
+  if (this->viewAction != ViewAction::ZOOM_RECT)
   {
-    QRegion clipping;
-    if (viewZoomingMousePosStart.x() < xSplit)
-      clipping = QRegion(0, 0, xSplit, drawArea_botR.y());
-    else
-      clipping = QRegion(xSplit, 0, drawArea_botR.x() - xSplit, drawArea_botR.y());
-    painter.setClipRegion(clipping);
+    if (isSplitting())
+    {
+      QRegion clipping;
+      if (viewZoomingMousePosStart.x() < xSplit)
+        clipping = QRegion(0, 0, xSplit, drawArea_botR.y());
+      else
+        clipping = QRegion(xSplit, 0, drawArea_botR.x() - xSplit, drawArea_botR.y());
+      painter.setClipRegion(clipping);
+    }
+    this->drawZoomRect(painter);
+    if (isSplitting())
+      painter.setClipping(false);
   }
-  MoveAndZoomableView::drawZoomRect(painter);
-  if (isSplitting())
-    painter.setClipping(false);
 
   if (zoom != 1.0)
   {

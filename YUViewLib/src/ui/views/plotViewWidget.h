@@ -97,6 +97,7 @@ private:
 
   void drawPlot(QPainter &painter, const QRectF &plotRect) const;
   void drawInfoBox(QPainter &painter, const QRectF &plotRect) const;
+  void drawZoomRect(QPainter &painter, const QRectF plotRect) const;
 
   // Convert a position in the 2D coordinate system of the plot into a pixel position and vise versa
   QPointF convertPlotPosToPixelPos(const QPointF &plotPos) const;

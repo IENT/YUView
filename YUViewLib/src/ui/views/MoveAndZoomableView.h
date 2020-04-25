@@ -144,6 +144,9 @@ protected:
   QList<QPointer<MoveAndZoomableView>> slaveViews;
   QPointer<MoveAndZoomableView> masterView;
 
+  const QPen   ZOOM_RECT_PEN   = QPen(QColor(50, 50, 255, 150));
+  const QBrush ZOOM_RECT_BRUSH = QBrush(QColor(50, 50, 255, 50));
+
 private:
   QPoint viewDraggingMousePosStart;
   QPoint viewDraggingStartOffset;

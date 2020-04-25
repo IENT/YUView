@@ -582,8 +582,8 @@ void MoveAndZoomableView::drawZoomRect(QPainter &painter) const
   if (this->viewAction != ViewAction::ZOOM_RECT)
     return;
 
-  painter.setPen(QPen(QColor(50, 50, 255, 150)));
-  painter.setBrush(QBrush(QColor(50, 50, 255, 50)));
+  painter.setPen(ZOOM_RECT_PEN);
+  painter.setBrush(ZOOM_RECT_BRUSH);
   painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
 }
 
