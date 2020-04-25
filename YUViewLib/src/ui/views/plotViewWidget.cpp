@@ -177,11 +177,16 @@ void PlotViewWidget::setMoveOffset(QPoint offset)
   auto plotParam = this->model->getPlotParameter(0);
 
   const auto clipLeft = int((plotParam.xRange.min + 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
-  const auto axisLengthInValues = (this->propertiesAxis[0].line.p2().x() - this->propertiesAxis[0].line.p1().x()) / this->zoomToPixelsPerValueX / this->zoomFactor;
+  const auto axisLengthX = this->propertiesAxis[0].line.p2().x() - this->propertiesAxis[0].line.p1().x();
+  const auto axisLengthInValues = axisLengthX / this->zoomToPixelsPerValueX / this->zoomFactor;
   const auto clipRight = int(-(plotParam.xRange.max - axisLengthInValues - 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
 
-  auto offsetClipped = QPoint(clip(offset.x(), clipRight, clipLeft) , 0);
-
+  QPoint offsetClipped;
+  if (axisLengthInValues > (plotParam.xRange.max - plotParam.xRange.min))
+    offsetClipped = QPoint(clip(offset.x(), clipLeft, clipRight) , 0);
+  else
+    offsetClipped = QPoint(clip(offset.x(), clipRight, clipLeft) , 0);
+  
   DEBUG_PLOT("PlotViewWidget::setMoveOffset offset " << offset << " clipped " << offsetClipped);
   MoveAndZoomableView::setMoveOffset(offsetClipped);
 }
@@ -359,6 +364,7 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
 
   const auto zeroPointX = plotRect.bottomLeft().x() + fadeBoxThickness;
   const auto zeroPointY = plotRect.bottomLeft().y() - fadeBoxThickness;
+  const bool usePen = this->zoomFactor >= 0.25;
 
   auto param = model->getPlotParameter(plotIndex);
   if (param.type == PlotModel::PlotType::Bar)
@@ -382,7 +388,10 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
         h += 90;
         c.setHsv(h, s, v, a);
       }
-      painter.setPen(c);
+      if (usePen)
+        painter.setPen(c);
+      else
+        painter.setPen(Qt::NoPen);
       c.setAlpha(100);
       painter.setBrush(c);
 
