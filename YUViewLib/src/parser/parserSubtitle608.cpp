@@ -32,10 +32,7 @@
 
 #include "parserSubtitle608.h"
 
-#include "parserCommon.h"
-#include "parserCommonMacros.h"
-
-using namespace parserCommon;
+#include "common/parserMacros.h"
 
 bool checkByteParity(int val)
 {
@@ -172,7 +169,7 @@ QString getCCDataPacketMeaning(unsigned int cc_packet_data)
   return getCCDataBytesMeaning(byte1, byte2);
 }
 
-int subtitle_608::parse608SubtitlePacket(QByteArray data, parserCommon::TreeItem *parent)
+int subtitle_608::parse608SubtitlePacket(QByteArray data, TreeItem *parent)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet. 
@@ -182,7 +179,7 @@ int subtitle_608::parse608SubtitlePacket(QByteArray data, parserCommon::TreeItem
     return -1;
 
   // Create a sub byte parser to access the bits
-  parserCommon::reader_helper reader(data, parent, "subtitling_608()");
+  readerHelper reader(data, parent, "subtitling_608()");
 
   if (data.size() != 10 && data.size() != 20)
     throw std::logic_error("Unknown packt length. Length should be 10 or 20 bytes");
@@ -224,7 +221,7 @@ int subtitle_608::parse608SubtitlePacket(QByteArray data, parserCommon::TreeItem
   return reader.nrBytesRead();
 }
 
-int subtitle_608::parse608DataPayloadCCDataPacket(parserCommon::reader_helper &reader, unsigned int &ccData)
+int subtitle_608::parse608DataPayloadCCDataPacket(readerHelper &reader, unsigned int &ccData)
 {
     READBITS_M(ccData, 24, &getCCDataPacketMeaning);
     return 3;

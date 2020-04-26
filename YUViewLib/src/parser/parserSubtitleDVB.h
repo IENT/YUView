@@ -30,17 +30,14 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PARSERSUBTITLEDVB_H
-#define PARSERSUBTITLEDVB_H
+#pragma once
 
 #include <QByteArray>
 #include <QString>
 
-#include "parserCommon.h"
+#include "common/treeItem.h"
 
 namespace subtitle_dvb
 {
-    int parseDVBSubtitleSegment(QByteArray data, parserCommon::TreeItem *parent, QString *segmentTypeName);
+    int parseDVBSubtitleSegment(QByteArray data, TreeItem *parent, QString *segmentTypeName);
 }
-
-#endif // PARSERSUBTITLEDVB_H

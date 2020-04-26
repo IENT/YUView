@@ -32,8 +32,6 @@
 
 #pragma once
 
-#include "parser/parserCommon.h"
-
 #include "MoveAndZoomableView.h"
 #include "plotModel.h"
 #include "dummyPlotModel.h"

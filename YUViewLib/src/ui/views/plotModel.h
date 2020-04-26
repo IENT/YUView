@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "common/typedef.h"
+
 class PlotModel
 {
 public:
@@ -42,16 +44,12 @@ public:
     ConstValue
   };
 
-  struct Range
-  {
-    int min, max;
-  };
-
   struct PlotParameter
   {
     PlotType type;
-    Range xRange;
-    Range yRange;
+    Range<int> xRange;
+    Range<int> yRange;
+    unsigned int nrpoints;
   };
 
   struct Point
@@ -61,7 +59,6 @@ public:
 
   virtual unsigned int getNrPlots() const = 0;
   virtual PlotParameter getPlotParameter(unsigned plotIndex) const = 0;
-  virtual unsigned int getNrPlotPoints(unsigned plotIndex) const = 0;
   virtual Point getPlotPoint(unsigned plotIndex, unsigned pointIndex) const = 0;
   virtual QString getPointInfo(unsigned plotIndex, unsigned pointIndex) const = 0;
 };

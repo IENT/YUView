@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*
+*   
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -30,39 +30,53 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserBase.h"
+#pragma once
 
-#include <assert.h>
+#include <QMap>
+#include <QMutex>
+#include <QString>
 
-#define PARSERBASE_DEBUG_OUTPUT 0
-#if PARSERBASE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_PARSER qDebug
-#else
-#define DEBUG_PARSER(fmt,...) ((void)0)
-#endif
+#include "common/typedef.h"
+#include "ui/views/plotModel.h"
 
-/// --------------- parserBase ---------------------
-
-parserBase::parserBase(QObject *parent) : QObject(parent)
+class BitratePlotModel : public PlotModel
 {
-  packetModel.reset(new PacketItemModel(parent));
-  bitrateItemModel.reset(new BitratePlotModel());
-  streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
-  streamIndexFilter->setSourceModel(packetModel.data());
-}
+public:
+  BitratePlotModel() = default;
+  virtual ~BitratePlotModel() = default;
 
-parserBase::~parserBase()
-{
-}
+  virtual unsigned int getNrPlots() const override;
+  virtual PlotModel::PlotParameter getPlotParameter(unsigned plotIndex) const override;
+  virtual PlotModel::Point getPlotPoint(unsigned plotIndex, unsigned pointIndex) const override;
+  virtual QString getPointInfo(unsigned plotIndex, unsigned pointIndex) const override;
+  
+  QString getItemInfoText(int index);
 
-void parserBase::enableModel()
-{
-  if (packetModel->isNull())
-    packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
-}
+  struct bitrateEntry
+  {
+    int dts {0};
+    int pts {0};
+    unsigned int bitrate {0};
+    bool keyframe {false};
+    QString frameType;
+  };
 
-void parserBase::updateNumberModelItems()
-{ 
-  packetModel->updateNumberModelItems();
-}
+  void addBitratePoint(int streamIndex, bitrateEntry &entry);
+  void setBitrateSortingIndex(int index);
+
+private:
+
+  enum class SortMode
+  {
+    DECODE_ORDER,
+    PRESENTATION_ORDER
+  };
+  SortMode sortMode { SortMode::DECODE_ORDER };
+
+  QMap<unsigned int, QList<bitrateEntry>> dataPerStream;
+  mutable QMutex dataMutex;
+
+  Range<int> rangeDts;
+  Range<int> rangePts;
+  QMap<unsigned int, Range<int>> rangeBitratePerStream;
+};

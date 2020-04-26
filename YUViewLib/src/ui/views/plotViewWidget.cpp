@@ -36,6 +36,8 @@
 #include <QTextDocument>
 #include <cmath>
 
+#include "common/typedef.h"
+
 #define PLOTVIEW_WIDGET_DEBUG_OUTPUT 0
 #if PLOTVIEW_WIDGET_DEBUG_OUTPUT
 #include <QDebug>

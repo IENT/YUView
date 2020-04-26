@@ -62,21 +62,12 @@ public:
   PlotParameter getPlotParameter(unsigned plotIndex) const override
   {
     if (plotIndex == 0)
-      return {PlotType::Bar, {0, 99}, {0, 500}};
+      return {PlotType::Bar, {0, 99}, {0, 500}, unsigned(barData.size())};
     if (plotIndex == 1)
-      return {PlotType::Line, {0, 99}, {0, 1000}};
+      return {PlotType::Line, {0, 99}, {0, 1000}, unsigned(graphData.size())};
     if (plotIndex == 2)
-      return {PlotType::ConstValue, {-1, -1}, {300, 99}};
+      return {PlotType::ConstValue, {-1, -1}, {300, 99}, 1};
     return {};
-  }
-
-  unsigned int getNrPlotPoints(unsigned plotIndex) const override
-  {
-    if (plotIndex == 0)
-      return barData.size();
-    if (plotIndex == 1)
-      return graphData.size();
-    return 0;
   }
 
   Point getPlotPoint(unsigned plotIndex, unsigned pointIndex) const override

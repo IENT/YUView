@@ -34,14 +34,12 @@
 
 #include <QElapsedTimer>
 
+#include "common/parserMacros.h"
 #include "parserAnnexBAVC.h"
 #include "parserAnnexBHEVC.h"
 #include "parserAnnexBMpeg2.h"
-#include "parserCommonMacros.h"
 #include "parserSubtitleDVB.h"
 #include "parserSubtitle608.h"
-
-using namespace parserCommon;
 
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
@@ -143,7 +141,7 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 
   if (extradata.at(0) == 1 && extradata.length() >= 7)
   {
-    reader_helper reader(extradata, packetModel->getRootItem(), "Extradata (Raw AVC NAL units)");
+    readerHelper reader(extradata, packetModel->getRootItem(), "Extradata (Raw AVC NAL units)");
     IGNOREBITS(8); // Ignore the "1" byte which we already found
 
     // The extradata uses the avcc format (see avc.c in libavformat)
@@ -161,7 +159,7 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
     for (unsigned int i = 0; i < number_of_sps; i++)
     {
       QByteArray size_bytes = extradata.mid(pos, 2);
-      reader_helper sps_size_reader(size_bytes, reader.getCurrentItemTree(), QString("SPS %1").arg(i));
+      readerHelper sps_size_reader(size_bytes, reader.getCurrentItemTree(), QString("SPS %1").arg(i));
       unsigned int sps_size;
       if (!sps_size_reader.readBits(16, sps_size, "sps_size"))
         return false;
@@ -178,7 +176,7 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
     for (int i = 0; i < nrPPS; i++)
     {
       QByteArray size_bytes = extradata.mid(pos, 2);
-      reader_helper pps_size_reader(size_bytes, reader.getCurrentItemTree(), QString("PPS %1").arg(i));
+      readerHelper pps_size_reader(size_bytes, reader.getCurrentItemTree(), QString("PPS %1").arg(i));
       unsigned int pps_size;
       if (!pps_size_reader.readBits(16, pps_size, "pps_size"))
         return false;
@@ -234,7 +232,7 @@ bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
     }
   }
   else
-    return reader_helper::addErrorMessageChildItem("Unsupported extradata format (configurationVersion != 1)", packetModel->getRootItem());
+    return readerHelper::addErrorMessageChildItem("Unsupported extradata format (configurationVersion != 1)", packetModel->getRootItem());
   
   return true;
 }
@@ -270,7 +268,7 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
     }
   }
   else
-    return reader_helper::addErrorMessageChildItem("Unsupported extradata format (configurationVersion != 1)", packetModel->getRootItem());
+    return readerHelper::addErrorMessageChildItem("Unsupported extradata format (configurationVersion != 1)", packetModel->getRootItem());
 
   return true;
 }
@@ -358,7 +356,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
           else if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)1)
             offset = 3;
           else
-            return reader_helper::addErrorMessageChildItem("Start code could not be found.", itemTree);
+            return readerHelper::addErrorMessageChildItem("Start code could not be found.", itemTree);
 
           // Look for the next start code (or the end of the file)
           int nextStartCodePos = avpacketData.indexOf(startCode, posInData + 3);
@@ -387,9 +385,9 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
 
           if (size < 0)
             // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
-            return reader_helper::addErrorMessageChildItem("Invalid size indicator in packet.", itemTree);
+            return readerHelper::addErrorMessageChildItem("Invalid size indicator in packet.", itemTree);
           if (posInData + size > avpacketData.length())
-            return reader_helper::addErrorMessageChildItem("Not enough data in the input array to read NAL unit.", itemTree);
+            return readerHelper::addErrorMessageChildItem("Not enough data in the input array to read NAL unit.", itemTree);
 
           nalData = avpacketData.mid(posInData, size);
           posInData += size;
@@ -507,7 +505,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
       new TreeItem(QString("Byte %1").arg(i), val, "b(8)", code, rawDataRoot);
     }
 
-    BitrateItemModel::bitrateEntry entry;
+    BitratePlotModel::bitrateEntry entry;
     entry.pts = packet.get_pts();
     entry.dts = packet.get_dts();
     entry.bitrate = packet.get_data_size();
@@ -521,9 +519,9 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
   return true;
 }
 
-bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser, BitrateItemModel *bitrateModel)
+bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
 {
-  reader_helper reader(hvcCData, root, "hvcC");
+  readerHelper reader(hvcCData, root, "hvcC");
   reader.disableEmulationPrevention();
 
   unsigned int reserved_4onebits, reserved_5onebits, reserver_6onebits;
@@ -581,7 +579,7 @@ bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QSco
   return true;
 }
 
-bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitrateItemModel *bitrateModel)
+bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, readerHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
 {
   reader_sub_level sub_level_adder(reader, QString("nal unit array %1").arg(arrayID));
 
@@ -604,7 +602,7 @@ bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, reader_he
   return true;
 }
 
-bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitrateItemModel *bitrateModel)
+bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, readerHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
 {
   reader_sub_level sub_level_adder(reader, QString("nal unit %1").arg(unitID));
 

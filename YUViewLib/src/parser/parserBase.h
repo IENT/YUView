@@ -30,14 +30,14 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PARSERBASE_H
-#define PARSERBASE_H
+#pragma once
 
 #include <QAbstractItemModel>
 #include <QString>
 #include <QTreeWidgetItem>
 
-#include "parserCommon.h"
+#include "common/packetItemModel.h"
+#include "common/bitratePlotModel.h"
 
 // If the file parsing limit is enabled (setParsingLimitEnabled) parsing will be aborted after
 // 500 frames have been parsed. This should be enough in most situations and full parsing can be
@@ -55,7 +55,7 @@ public:
   virtual ~parserBase() = 0;
 
   QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
-  parserCommon::BitrateItemModel *getBitrateItemModel() { return bitrateItemModel.data(); }
+  BitratePlotModel *getBitrateItemModel() { return bitrateItemModel.data(); }
   
   void updateNumberModelItems();
   void enableModel();
@@ -87,14 +87,12 @@ signals:
   void streamInfoUpdated();
 
 protected:
-  QScopedPointer<parserCommon::PacketItemModel> packetModel;
-  QScopedPointer<parserCommon::FilterByStreamIndexProxyModel> streamIndexFilter;
-  QScopedPointer<parserCommon::BitrateItemModel> bitrateItemModel;
+  QScopedPointer<PacketItemModel> packetModel;
+  QScopedPointer<FilterByStreamIndexProxyModel> streamIndexFilter;
+  QScopedPointer<BitratePlotModel> bitrateItemModel;
 
   // If this variable is set (from an external thread), the parsing process should cancel immediately
   bool cancelBackgroundParser {false};
   int  progressPercentValue   {0};
   bool parsingLimitEnabled    {true};
 };
-
-#endif // PARSERBASE_H

@@ -232,10 +232,11 @@ typedef QPair<int,int> indexRange;  // QPair of integers (minimum and maximum)
 typedef QPair<int,int> QIntPair;
 typedef QPair<unsigned int, unsigned int> QUIntPair;
 
-struct RangeInt
+template<typename T>
+struct Range
 {
-  int min;
-  int max;
+  T min;
+  T max;
 };
 
 // A list of value pair lists, where every list has a string (title)
