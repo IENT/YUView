@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DECODERFFMPEG_H
-#define DECODERFFMPEG_H
+#pragma once
 
 #include "decoderBase.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
@@ -92,5 +91,3 @@ protected:
   // An array of AV_INPUT_BUFFER_PADDING_SIZE zeros to be added as padding in pushData
   QByteArray avPacketPaddingData;
 };
-
-#endif // DECODERFFMPEG_H

@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILESOURCEANNEXBFILE_H
-#define FILESOURCEANNEXBFILE_H
+#pragma once
 
 #include "fileSource.h"
 #include "video/videoHandlerYUV.h"
@@ -98,6 +97,3 @@ protected:
   // We will keep the last buffer in case the reader wants to get it again
   QByteArray lastReturnArray;
 };
-
-#endif //FILESOURCEANNEXBFILE_H
-

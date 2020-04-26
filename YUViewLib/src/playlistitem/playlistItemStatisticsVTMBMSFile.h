@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMSTATISTICSVTMBMSFILE_H
-#define PLAYLISTITEMSTATISTICSVTMBMSFILE_H
+#pragma once
 
 #include <QBasicTimer>
 #include <QFuture>
@@ -88,5 +87,3 @@ private:
   //! This is performed in the background using a QFuture.
   void readFramePositionsFromFile();
 };
-
-#endif // PLAYLISTITEMSTATISTICSVTMBMSFILE_H

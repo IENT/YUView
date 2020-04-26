@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMIMAGEFILESEQUENCE_H
-#define PLAYLISTITEMIMAGEFILESEQUENCE_H
+#pragma once
 
 #include <QFileSystemWatcher>
 #include <QFuture>
@@ -121,5 +120,3 @@ private:
   // Is a frame currently being loaded?
   bool isFrameLoading;
 };
-
-#endif // PLAYLISTITEMIMAGEFILESEQUENCE_H

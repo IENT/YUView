@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYBACKCONTROLLER_H
-#define PLAYBACKCONTROLLER_H
+#pragma once
 
 #include <QBasicTimer>
 #include <QPointer>
@@ -195,5 +194,3 @@ private:
   // We keep a pointer to the playlist tree so we can select the next item, see if there is a next item and so on.
   QPointer<PlaylistTreeWidget> playlist;
 };
-
-#endif // PLAYBACKCONTROLLER_H

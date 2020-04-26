@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMOVERLAY_H
-#define PLAYLISTITEMOVERLAY_H
+#pragma once
 
 #include "playlistItemContainer.h"
 #include "common/typedef.h"
@@ -119,5 +118,3 @@ private slots:
   void on_arangeGroupBox_toggled(bool on)  { onGroupBoxToggled(1, on); };
   void on_customGroupBox_toggled(bool on)  { onGroupBoxToggled(2, on); };
 };
-
-#endif // PLAYLISTITEMOVERLAY_H

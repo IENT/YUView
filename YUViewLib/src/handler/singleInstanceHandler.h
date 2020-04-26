@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SINGLEINSTANCEHANDLER_H
-#define SINGLEINSTANCEHANDLER_H
+#pragma once
 
 #include <QObject>
 #include <QPointer>
@@ -64,5 +63,3 @@ private:
   QPointer<QLocalSocket> socket;
   QLocalServer server;
 };
-
-#endif // SINGLEINSTANCEHANDLER_H

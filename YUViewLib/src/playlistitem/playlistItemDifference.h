@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMDIFFERENCE_H
-#define PLAYLISTITEMDIFFERENCE_H
+#pragma once
 
 #include "playlistItemContainer.h"
 #include "video/videoHandlerDifference.h"
@@ -85,5 +84,3 @@ private:
   bool isDifferenceLoading;
   bool isDifferenceLoadingToDoubleBuffer;
 };
-
-#endif

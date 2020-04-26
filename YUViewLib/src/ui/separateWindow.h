@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SEPARATEWINDOW_H
-#define SEPARATEWINDOW_H
+#pragma once
 
 #include <QMainWindow>
 
@@ -67,5 +66,3 @@ private:
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;
 };
-
-#endif // SEPARATEWINDOW_H

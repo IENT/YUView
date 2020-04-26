@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VIDEOCACHEINFOWIDGET_H
-#define VIDEOCACHEINFOWIDGET_H
+#pragma once
 
 #include <QWidget>
 
@@ -82,5 +81,3 @@ private:
 
   unsigned int cacheRateInBytesPerMs {0};
 };
-
-#endif

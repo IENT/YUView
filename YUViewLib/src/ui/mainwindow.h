@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <QDesktopServices>
 #include <QMainWindow>
@@ -126,5 +125,3 @@ private:
   bool showNormalMaximized; // When going to full screen: Was this windows maximized?  
   bool panelsVisible[5] {false};  // Which panels are visible when going to full-screen mode?
 };
-
-#endif // MAINWINDOW_H

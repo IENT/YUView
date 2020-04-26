@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DECODERDAV1D_H
-#define DECODERDAV1D_H
+#pragma once
 
 #include <QLibrary>
 
@@ -177,5 +176,3 @@ private:
   QIntPair calculateIntraPredDirection(IntraPredMode predMode, int angleDelta);
   unsigned int subBlockSize {0};
 };
-
-#endif // DECODERDAV1D_H

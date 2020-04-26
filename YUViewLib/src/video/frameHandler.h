@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FRAMEHANDLER_H
-#define FRAMEHANDLER_H
+#pragma once
 
 #include <QImage>
 #include <QObject>
@@ -140,5 +139,3 @@ protected slots:
   // All the valueChanged() signals from the controls are connected here.
   virtual void slotVideoControlChanged();
 };
-
-#endif // FRAMEHANDLER_H

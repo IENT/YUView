@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TYPEDEF_H
-#define TYPEDEF_H
+#pragma once
 
 #include <cassert>
 #include <cstring>
@@ -347,5 +346,3 @@ struct QOverload : QConstOverload<Args...>, QNonConstOverload<Args...>
     { return ptr; }
 };
 #endif
-
-#endif // TYPEDEF_H

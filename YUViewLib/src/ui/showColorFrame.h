@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SHOWCOLORFRAME_H
-#define SHOWCOLORFRAME_H
+#pragma once
 
 #include <QFrame>
 
@@ -61,5 +60,3 @@ protected:
   colorMapper colMapper;
   QColor      plainColor;
 };
-
-#endif
