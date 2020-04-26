@@ -76,6 +76,8 @@ private:
   QMap<unsigned int, QList<bitrateEntry>> dataPerStream;
   mutable QMutex dataMutex;
 
+  unsigned int calculateAverageValue(unsigned streamIndex, unsigned pointIndex) const;
+
   Range<int> rangeDts;
   Range<int> rangePts;
   QMap<unsigned int, Range<int>> rangeBitratePerStream;

@@ -55,6 +55,7 @@ public:
   struct Point
   {
     double x, y;
+    bool intra;
   };
 
   virtual unsigned int getNrPlots() const = 0;

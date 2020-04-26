@@ -369,48 +369,67 @@ void PlotViewWidget::drawFadeBoxes(QPainter &painter, const QRectF plotRect, con
 
 void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
 {
-  const unsigned int plotIndex = 0;
-
   if (!this->model)
-    return;
-
-  if (plotIndex >= this->model->getNrPlots())
     return;
 
   const auto zeroPointX = plotRect.bottomLeft().x() + fadeBoxThickness;
   const auto zeroPointY = plotRect.bottomLeft().y() - fadeBoxThickness;
-  const bool usePen = this->zoomFactor >= 0.25;
+  const bool detailedPainting = this->zoomFactor >= 0.5;
 
-  auto param = this->model->getPlotParameter(plotIndex);
-  if (param.type == PlotModel::PlotType::Bar)
+  // TODO: Use the painter list operations for painting. They are much faster.
+  //       Also get the range of things that must be drawn for speedup.
+  for (int plotIndex = 0; plotIndex < this->model->getNrPlots(); plotIndex++)
   {
-    const auto nrBars = param.xRange.max - param.xRange.min;
-    for (int i = 0; i < nrBars; i++)
+    auto param = this->model->getPlotParameter(plotIndex);
+    if (param.type == PlotModel::PlotType::Bar)
     {
-      const auto value = model->getPlotPoint(plotIndex, unsigned(i));
-
-      auto barTopLeft = this->convertPlotPosToPixelPos(QPointF(value.x - 0.5, value.y));
-      auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + 0.5, 0));
-
-      const QColor barColor = QColor(0, 0, 200);
-
-      const bool isHoveredBar = this->currentlyHoveredModelIndex != -1 && this->currentlyHoveredModelIndex == i;
-      QColor c = barColor;
-      if (isHoveredBar)
+      const auto nrBars = param.xRange.max - param.xRange.min;
+      for (int i = 0; i < nrBars; i++)
       {
-        int h, s, v, a;
-        c.getHsv(&h, &s, &v, &a);
-        h += 90;
-        c.setHsv(h, s, v, a);
-      }
-      if (usePen)
-        painter.setPen(c);
-      else
-        painter.setPen(Qt::NoPen);
-      c.setAlpha(100);
-      painter.setBrush(c);
+        const auto value = model->getPlotPoint(plotIndex, unsigned(i));
 
-      painter.drawRect(QRectF(barTopLeft, barBottomRight));
+        const auto barTopLeft = this->convertPlotPosToPixelPos(QPointF(value.x - 0.5, value.y));
+        const auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + 0.5, 0));
+        
+        const QColor barColor = QColor(0, 0, 200);
+        const QColor barColorIntra = QColor(200, 100, 0);
+
+        const bool isHoveredBar = this->currentlyHoveredModelIndex != -1 && this->currentlyHoveredModelIndex == i;
+        QColor c = value.intra ? barColorIntra : barColor;
+        if (isHoveredBar)
+        {
+          int h, s, v, a;
+          c.getHsv(&h, &s, &v, &a);
+          h += 90;
+          c.setHsv(h, s, v, a);
+        }
+        if (detailedPainting)
+          painter.setPen(c);
+        else
+          painter.setPen(Qt::NoPen);
+        c.setAlpha(100);
+        painter.setBrush(c);
+
+        painter.drawRect(QRectF(barTopLeft, barBottomRight));
+      }
+    }
+    else if (param.type == PlotModel::PlotType::Line)
+    {
+      const auto nrLineSegments = param.nrpoints - 1;
+      for (int i = 0; i < nrLineSegments; i++)
+      {
+        const auto valueStart = model->getPlotPoint(plotIndex, unsigned(i));
+        const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));
+        const auto valueEnd = model->getPlotPoint(plotIndex, unsigned(i + 1));
+        const auto linePointEnd = this->convertPlotPosToPixelPos(QPointF(valueEnd.x, valueEnd.y));
+        
+        QPen linePen(QColor(255, 200, 30));
+        linePen.setWidthF(detailedPainting ? 2.0 : 1.0);
+        painter.setPen(linePen);
+        painter.drawLine(linePointStart, linePointEnd);
+        if (detailedPainting)
+          painter.drawEllipse(linePointStart, 2.0, 2.0);
+      }
     }
   }
 }
