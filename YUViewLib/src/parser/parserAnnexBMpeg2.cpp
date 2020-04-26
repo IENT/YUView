@@ -289,13 +289,13 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
     entry.dts = counterAU;
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
-    entry.frameType = currentAUAllSliceTypes;
+    entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
     bitrateModel->addBitratePoint(0, entry);
 
     sizeCurrentAU = 0;
     counterAU++;
     currentAUAllSlicesIntra = true;
-    currentAUAllSliceTypes = "";
+    this->currentAUSliceTypes.clear();
   }
   if (lastFramePOC != curFramePOC)
     lastFramePOC = curFramePOC;
@@ -309,7 +309,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
   {
     if (!currentSliceIntra)
       currentAUAllSlicesIntra = false;
-    currentAUAllSliceTypes += currentSliceType + " ";
+    this->currentAUSliceTypes[currentSliceType]++;
   }
   
   if (nalRoot)

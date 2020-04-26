@@ -234,6 +234,6 @@ private:
   unsigned int counterAU{ 0 };
   bool lastAUStartBySequenceHeader{ false };
   bool currentAUAllSlicesIntra {true};
-  QString currentAUAllSliceTypes;
+  QMap<QString, unsigned int> currentAUSliceTypes;
   QSharedPointer<picture_header> lastPictureHeader;
 };

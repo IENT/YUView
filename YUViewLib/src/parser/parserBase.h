@@ -33,6 +33,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <QMap>
 #include <QString>
 #include <QTreeWidgetItem>
 
@@ -90,6 +91,8 @@ protected:
   QScopedPointer<PacketItemModel> packetModel;
   QScopedPointer<FilterByStreamIndexProxyModel> streamIndexFilter;
   QScopedPointer<BitratePlotModel> bitrateItemModel;
+
+  static QString convertSliceTypeMapToString(QMap<QString, unsigned int> &currentAUSliceTypes);
 
   // If this variable is set (from an external thread), the parsing process should cancel immediately
   bool cancelBackgroundParser {false};

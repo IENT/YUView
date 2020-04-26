@@ -66,3 +66,17 @@ void parserBase::updateNumberModelItems()
 { 
   packetModel->updateNumberModelItems();
 }
+
+QString parserBase::convertSliceTypeMapToString(QMap<QString, unsigned int> &sliceTypes)
+{
+  QString text;
+  for (auto key : sliceTypes.keys())
+  {
+    text += key;
+    const auto value = sliceTypes.value(key);
+    if (value > 1)
+      text += QString("(%1x)").arg(value);
+    text += " ";
+  }
+  return text;
+}

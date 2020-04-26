@@ -626,13 +626,13 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
     entry.dts = counterAU;
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
-    entry.frameType = currentAUAllSliceTypes;
+    entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
     bitrateModel->addBitratePoint(0, entry);
 
     sizeCurrentAU = 0;
     counterAU++;
     currentAUAllSlicesIntra = true;
-    currentAUAllSliceTypes = "";
+    this->currentAUSliceTypes.clear();
   }
   if (lastFramePOC != curFramePOC)
     lastFramePOC = curFramePOC;
@@ -642,7 +642,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
   { 
     if (!currentSliceIntra)
       currentAUAllSlicesIntra = false;
-    currentAUAllSliceTypes += currentSliceType + " ";
+    this->currentAUSliceTypes[currentSliceType]++;
   }
 
   if (nalRoot)

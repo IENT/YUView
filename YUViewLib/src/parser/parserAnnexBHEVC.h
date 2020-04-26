@@ -792,5 +792,5 @@ protected:
   int lastFramePOC {-1};
   unsigned int counterAU {0};
   bool currentAUAllSlicesIntra {true};
-  QString currentAUAllSliceTypes;
+  QMap<QString, unsigned int> currentAUSliceTypes;
 };
