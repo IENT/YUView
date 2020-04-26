@@ -450,7 +450,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     }
   }
 
-  if (this->viewAction != ViewAction::ZOOM_RECT)
+  if (this->viewAction == ViewAction::ZOOM_RECT)
   {
     if (isSplitting())
     {
@@ -947,7 +947,7 @@ void splitViewWidget::setMoveOffset(QPoint offset)
   }
 }
 
-QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const
+QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint) const
 {
   if (viewSplitMode == SIDE_BY_SIDE)
   {
@@ -968,6 +968,13 @@ QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPo
   }
   else
     return QWidget::rect().center();
+}
+
+void splitViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor)
+{
+  const QPoint zoomRectCenterOffset = zoomRect.center() - this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
+  this->setMoveOffset((this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor);
+  this->setZoomFactor(this->zoomFactor * additionalZoomFactor);
 }
 
 void splitViewWidget::setSplittingPoint(double point, bool setLinkedViews)

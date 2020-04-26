@@ -52,6 +52,7 @@ PlotModel::PlotParameter BitratePlotModel::getPlotParameter(unsigned plotIndex) 
     parameter.nrpoints = this->dataPerStream[plotIndex].size();
     parameter.xRange = (sortMode == SortMode::DECODE_ORDER) ? this->rangeDts : this->rangePts;
     parameter.yRange = this->rangeBitratePerStream[plotIndex];
+    parameter.type = PlotType::Bar;
     return parameter;
   }
   return {};

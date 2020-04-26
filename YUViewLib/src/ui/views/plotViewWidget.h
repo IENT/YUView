@@ -34,7 +34,6 @@
 
 #include "MoveAndZoomableView.h"
 #include "plotModel.h"
-#include "dummyPlotModel.h"
 
 class PlotViewWidget : public MoveAndZoomableView
 {
@@ -51,7 +50,9 @@ protected:
   void resizeEvent(QResizeEvent *event) override;
   void mouseMoveEvent(QMouseEvent *event) override;
 
-  void setMoveOffset(QPoint offset) override;
+  void   setMoveOffset(QPoint offset) override;
+  QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint = {}) const override;
+  void   setZoomFactor(double zoom) override;
   
 private:
   enum class Axis
@@ -95,14 +96,16 @@ private:
 
   void drawPlot(QPainter &painter, const QRectF &plotRect) const;
   void drawInfoBox(QPainter &painter, const QRectF &plotRect) const;
+  void drawDebugBox(QPainter &painter, const QRectF &plotRect) const;
   void drawZoomRect(QPainter &painter, const QRectF plotRect) const;
 
   // Convert a position in the 2D coordinate system of the plot into a pixel position and vise versa
   QPointF convertPlotPosToPixelPos(const QPointF &plotPos) const;
   QPointF convertPixelPosToPlotPos(const QPointF &pixelPos) const;
 
+  void onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) override;
+
   PlotModel *model {nullptr};
-  DummyPlotModel dummyModel;
 
   // At zoom 1.0 (no zoom) we will show values with this distance on the x axis
   double zoomToPixelsPerValueX {10.0};

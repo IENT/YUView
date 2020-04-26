@@ -101,7 +101,8 @@ protected:
   virtual void onZoomIn() {}
 
   virtual void setMoveOffset(QPoint offset);
-  virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const;
+  virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint = {}) const = 0;
+  virtual void onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) = 0;
 
   enum class ViewAction
   {

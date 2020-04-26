@@ -59,7 +59,6 @@ const QColor gridLineMinor(230, 230, 230);
 PlotViewWidget::PlotViewWidget(QWidget *parent)
   : MoveAndZoomableView(parent)
 {
-  this->setModel(&this->dummyModel);
   this->setMouseTracking(true);
 
   this->propertiesAxis[0].axis = Axis::X;
@@ -122,16 +121,14 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
   this->drawAxisTicksAndValues(painter, this->propertiesAxis[1], valuesY);
 
   this->drawInfoBox(painter, plotRect);
+  //this->drawDebugBox(painter, plotRect);
 
   this->drawFadeBoxes(painter, plotRect, widgetRect);
 
-  // if (!this->model)
-  // {
-  //   drawTextInCenterOfArea(painter, this->rect(), "Please select an item");
-  //   return;
-  // }
-
-  // drawTextInCenterOfArea(painter, this->rect(), "Drawing drawing :)");
+  if (!this->model)
+  {
+    drawTextInCenterOfArea(painter, this->rect(), "Please select an item");
+  }
 }
 
 void PlotViewWidget::resizeEvent(QResizeEvent *event)
@@ -192,6 +189,21 @@ void PlotViewWidget::setMoveOffset(QPoint offset)
   
   DEBUG_PLOT("PlotViewWidget::setMoveOffset offset " << offset << " clipped " << offsetClipped);
   MoveAndZoomableView::setMoveOffset(offsetClipped);
+}
+
+QPoint PlotViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint) const
+{
+  Q_UNUSED(zoomPoint);
+  const auto widgetRect = QRect(this->rect());
+  const auto plotRect = QRect(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
+  const auto plotRectBottomLeft = plotRect.bottomLeft();
+  return QPoint(plotRectBottomLeft.x() + fadeBoxThickness, plotRectBottomLeft.y() - fadeBoxThickness);
+}
+
+void PlotViewWidget::setZoomFactor(double zoom)
+{
+  MoveAndZoomableView::setZoomFactor(zoom);
+  this->setMoveOffset(this->moveOffset);
 }
 
 void PlotViewWidget::drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect)
@@ -359,17 +371,17 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
 {
   const unsigned int plotIndex = 0;
 
-  if (!model)
+  if (!this->model)
     return;
 
-  if (plotIndex >= model->getNrPlots())
+  if (plotIndex >= this->model->getNrPlots())
     return;
 
   const auto zeroPointX = plotRect.bottomLeft().x() + fadeBoxThickness;
   const auto zeroPointY = plotRect.bottomLeft().y() - fadeBoxThickness;
   const bool usePen = this->zoomFactor >= 0.25;
 
-  auto param = model->getPlotParameter(plotIndex);
+  auto param = this->model->getPlotParameter(plotIndex);
   if (param.type == PlotModel::PlotType::Bar)
   {
     const auto nrBars = param.xRange.max - param.xRange.min;
@@ -425,6 +437,42 @@ void PlotViewWidget::drawInfoBox(QPainter &painter, const QRectF &plotRect) cons
 
   // Translate to the position where the text box shall be
   painter.translate(plotRect.bottomRight().x() - axisMaxValueMargin - margin - textDocument.size().width() - padding * 2 + 1, plotRect.bottomRight().y() - axisMaxValueMargin - margin - textDocument.size().height() - padding * 2 + 1);
+
+  // Draw a black rectangle and then the text on top of that
+  QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
+  QBrush originalBrush;
+  painter.setBrush(QColor(255, 255, 255, 150));
+  painter.setPen(Qt::black);
+  painter.drawRect(rect);
+  painter.translate(padding, padding);
+  textDocument.drawContents(&painter);
+  painter.setBrush(originalBrush);
+
+  painter.resetTransform();
+}
+
+void PlotViewWidget::drawDebugBox(QPainter &painter, const QRectF &plotRect) const
+{
+  const int margin = 6;
+  const int padding = 6;
+
+  const auto mousePos = mapFromGlobal(QCursor::pos());
+  QString infoString = QString("<h4>Debug</h4>"
+                   "<table width=\"100%\">"
+                   "<tr><td>MoveOffset</td><td align=\"right\">(%1,%2)</td></tr>"
+                   "<tr><td>ZoomFactor</td><td align=\"right\">%3</td></tr>"
+                   "<tr><td>Mouse</td><td align=\"right\">(%4,%5)</td></tr>"
+                   "</table>"
+                   ).arg(this->moveOffset.x()).arg(this->moveOffset.y()).arg(this->zoomFactor).arg(mousePos.x()).arg(mousePos.y());
+
+  // Create a QTextDocument. This object can tell us the size of the rendered text.
+  QTextDocument textDocument;
+  textDocument.setHtml(infoString);
+  textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
+  textDocument.setTextWidth(textDocument.size().width());
+
+  // Translate to the position where the text box shall be
+  painter.translate(plotRect.topLeft().x() + axisMaxValueMargin + margin + 1, plotRect.topLeft().y() + axisMaxValueMargin + margin + 1);
 
   // Draw a black rectangle and then the text on top of that
   QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
@@ -508,4 +556,19 @@ QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos) const
     const auto valueY = ((- pixelPos.y() + this->propertiesAxis[1].line.p1().y() + this->moveOffset.y()) / this->zoomFactor) / this->zoomToPixelsPerValueY;
     return {valueX, valueY};
   }
+}
+
+void PlotViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor)
+{
+  const auto widgetRect = QRect(this->rect());
+  const auto plotRect = QRect(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
+  const auto plotRectBottomLeft = plotRect.bottomLeft();
+  auto moveOrigin = QPoint(plotRectBottomLeft.x() + fadeBoxThickness, plotRectBottomLeft.y() - fadeBoxThickness);
+
+  const QPoint zoomRectCenterOffset = zoomRect.center() - moveOrigin;
+  auto newMoveOffset = (this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor + plotRect.center();
+  this->setZoomFactor(this->zoomFactor * additionalZoomFactor);
+  this->setMoveOffset(newMoveOffset);
+
+  DEBUG_PLOT("MoveAndZoomableView::mouseReleaseEvent end zoom box - zoomRectCenterOffset " << zoomRectCenterOffset << " newMoveOffset " << newMoveOffset);
 }

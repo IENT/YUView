@@ -150,25 +150,22 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
 
   if (zoomPoint.isNull())
     zoomPoint = viewCenter;
+  
+  // The center point has to be moved relative to the zoomPoint
+  auto origin = viewCenter;
+  auto centerMoveOffset = origin + this->moveOffset;
+  
+  auto movementDelta = centerMoveOffset - zoomPoint;
+  QPoint newMoveOffset;
+  if (stepZoomFactor >= 1)
+    newMoveOffset = this->moveOffset + movementDelta;
+  else
+    newMoveOffset = this->moveOffset - stepZoomFactor * movementDelta;
 
-  if (!zoomPoint.isNull())
-  {
-    // The center point has to be moved relative to the zoomPoint
-    auto origin = viewCenter;
-    auto centerMoveOffset = origin + this->moveOffset;
-    
-    auto movementDelta = centerMoveOffset - zoomPoint;
-    QPoint newMoveOffset;
-    if (stepZoomFactor >= 1)
-      newMoveOffset = this->moveOffset + movementDelta;
-    else
-      newMoveOffset = this->moveOffset - stepZoomFactor * movementDelta;
-
-    DEBUG_VIEW("MoveAndZoomableView::zoom point " << newMoveOffset);
-    this->setMoveOffset(newMoveOffset);
-  }
-
+  DEBUG_VIEW("MoveAndZoomableView::zoom point " << newMoveOffset);
   this->setZoomFactor(newZoom);
+  this->setMoveOffset(newMoveOffset);
+
   this->update();
 
   if (newZoom > 1.0)
@@ -340,13 +337,8 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
            abs(zoomRect.height()) * additionalZoomFactor * ZOOM_STEP_FACTOR <= height())
       additionalZoomFactor *= ZOOM_STEP_FACTOR;
 
-    // Calculate the new center offset
-    const QPoint zoomRectCenterOffset = zoomRect.center() - this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
-    this->setMoveOffset((this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor);
-    this->setZoomFactor(this->zoomFactor * additionalZoomFactor);
-
+    this->onZoomRectUpdateOffsetAndZoom(zoomRect, additionalZoomFactor);
     this->viewAction = ViewAction::NONE;
-
     this->update();
   }
 }
@@ -612,12 +604,6 @@ void MoveAndZoomableView::setMoveOffset(QPoint offset)
     DEBUG_VIEW("MoveAndZoomableView::setMoveOffset link off " << offset);
     this->moveOffset = offset;
   }
-}
-
-QPoint MoveAndZoomableView::getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const
-{
-  Q_UNUSED(zoomPoint);
-  return QWidget::rect().center();
 }
 
 /** The common settings might have changed. Reload all settings from the QSettings.

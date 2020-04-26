@@ -186,8 +186,9 @@ protected:
   enum       splitStyle {SOLID_LINE, TOP_BOTTOM_HANDLERS};
   splitStyle splittingLineStyle;            //!< The style of the splitting line. This can be set in the settings window.
 
-  void    setMoveOffset(QPoint offset) override;
-  virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint &zoomPoint) const override;
+  void   setMoveOffset(QPoint offset) override;
+  QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint = {}) const override;
+  void   onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) override;
 
   QRect   viewActiveArea;                   //!< The active area, where the picture is drawn into
 

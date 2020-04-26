@@ -110,9 +110,6 @@ void BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged(int index)
   if (this->parser)
   {
     this->parser->setBitrateSortingIndex(index);
-    // Note: This was the only way I found to update the bar graph. None of the emit signal ways worked.
-    //this->ui.plotViewWidget->setModel(nullptr);
-    //this->ui.plotViewWidget->setModel(this->parser->getBitrateItemModel());
   }
 }
 
@@ -186,7 +183,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
     this->updateParsingStatusText(-1);
     this->ui.streamInfoTreeWidget->clear();
     this->ui.dataTreeView->setModel(nullptr);
-    //this->ui.plotViewWidget->setModel(nullptr);
+    this->ui.plotViewWidget->setModel(nullptr);
     this->parser.reset();
     return;
   }
@@ -197,7 +194,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   this->ui.dataTreeView->setColumnWidth(0, 600);
   this->ui.dataTreeView->setColumnWidth(1, 100);
   this->ui.dataTreeView->setColumnWidth(2, 120);
-  //this->ui.plotViewWidget->setModel(this->parser->getBitrateItemModel());
+  this->ui.plotViewWidget->setModel(this->parser->getBitrateItemModel());
 
   this->updateStreamInfo();
 
