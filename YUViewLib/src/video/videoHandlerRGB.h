@@ -75,6 +75,7 @@ public:
   // if emitSignal is true.
   virtual void setRGBPixelFormat(const RGB_Internals::rgbPixelFormat &format, bool emitSignal=false) { setSrcPixelFormat(format); if (emitSignal) emit signalHandlerChanged(true, RECACHE_NONE); }
   virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { this->setRGBPixelFormat(RGB_Internals::rgbPixelFormat(name), emitSignal); }
+  RGB_Internals::rgbPixelFormat getRGBPixelFormat() const { return this->srcPixelFormat; }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.

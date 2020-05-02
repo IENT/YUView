@@ -93,6 +93,7 @@ public:
   virtual void setYUVPixelFormat(const YUV_Internals::yuvPixelFormat &fmt, bool emitSignal=false);
   virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false) { this->setYUVPixelFormat(YUV_Internals::yuvPixelFormat(name), emitSignal); }
   virtual void setYUVColorConversion(YUV_Internals::ColorConversion conversion);
+  YUV_Internals::yuvPixelFormat getYUVPixelFormat() const { return this->srcPixelFormat; }
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
   void loadValues(const QSize &frameSize, const QString &sourcePixelFormat);

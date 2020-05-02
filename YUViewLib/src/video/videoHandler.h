@@ -127,6 +127,8 @@ public:
 
   // Scale a value with limited mpeg range (16 ... 245) to the full range (0 ... 255) for output.
   static int convScaleLimitedRange(int value);
+
+  bool defaultPixelFormatSet() const { return this->isDefaultPixelFormatSet; }
   
 signals:
 
@@ -142,7 +144,7 @@ signals:
   // frameIndex. caching will signal if this call comes from a caching thread or not. If it does come
   // from a caching thread, the result must be ready when the call to this function returns.
   void signalRequestRawData(int frameIndex, bool caching);
-    
+
 protected:
 
   // Do we need to load the raw values (because they are drawn on screen?)
@@ -176,6 +178,9 @@ protected:
   // Double buffering
   QImage doubleBufferImage;
   int    doubleBufferImageFrameIdx;
+
+  // Set to false when a pixel format (YUV/RGB) is set
+  bool   isDefaultPixelFormatSet { true };
 
   // Set the cache to be invalid until a call to removefromCache(-1) clears it.
   void setCacheInvalid() { cacheValid = false; }

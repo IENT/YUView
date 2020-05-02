@@ -492,9 +492,10 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
 
 void videoHandlerRGB::setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &newFormat)
 { 
-  rgbFormatMutex.lock();
-  srcPixelFormat = newFormat;
-  rgbFormatMutex.unlock();
+  this->rgbFormatMutex.lock();
+  this->srcPixelFormat = newFormat;
+  this->isDefaultPixelFormatSet = false;
+  this->rgbFormatMutex.unlock();
 }
 
 // Convert the data in "sourceBuffer" from the format "srcPixelFormat" to RGB 888. While doing so, apply the

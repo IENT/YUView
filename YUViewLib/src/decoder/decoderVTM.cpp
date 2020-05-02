@@ -40,15 +40,15 @@
 #include "common/typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERVTM_DEBUG_OUTPUT 0
+#define DECODERVTM_DEBUG_OUTPUT 1
 #if DECODERVTM_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERVTM_DEBUG_OUTPUT == 1
-#define DEBUG_DECVTM if(!isCachingDecoder) qDebug
+#define DEBUG_DECVTM(msg) if(!isCachingDecoder) qDebug() << msg
 #elif DECODERVTM_DEBUG_OUTPUT == 2
-#define DEBUG_DECVTM if(isCachingDecoder) qDebug
+#define DEBUG_DECVTM(msg) if(isCachingDecoder) qDebug() << msg
 #elif DECODERVTM_DEBUG_OUTPUT == 3
-#define DEBUG_DECVTM if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
+#define DEBUG_DECVTM(msg) qDebug() << (isCachingDecoder ? "c:" : "i") << msg
 #endif
 #else
 #define DEBUG_DECVTM(fmt,...) ((void)0)
@@ -179,7 +179,7 @@ void decoderVTM::allocateNewDecoder()
   if (decoder != nullptr)
     return;
 
-  DEBUG_DECVTM("decoderVTM::allocateNewDecoder - decodeSignal %d", decodeSignal);
+  DEBUG_DECVTM("decoderVTM::allocateNewDecoder - decodeSignal " << decodeSignal);
 
   // Create new decoder object
   decoder = libVTMDec_new_decoder();
@@ -252,7 +252,7 @@ bool decoderVTM::getNextFrameFromDecoder()
       return setErrorB("Recieved a frame with different bit depth");
   }
   
-  DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame wit POC %d", poc);
+  DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame wit POC " << poc);
   currentOutputBuffer.clear();
   return true;
 }
@@ -271,14 +271,12 @@ bool decoderVTM::pushData(QByteArray &data)
 
   // Push the data of the NAL unit. The function libVTMDec_push_nal_unit can handle data 
   // with a start code and without.
-  bool checkOutputPictures = false;
-  bool bNewPicture = false;
-  libVTMDec_error err = libVTMDec_push_nal_unit(decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
-  if (err != LIBVTMDEC_OK)
+  libVTMDec_error err = libVTMDec_push_nal_unit(decoder, data, data.length(), endOfFile);
+  if (err != LIBVTMDEC_OK && err != LIBVTMDEC_OK_FLUSH_REPUSH)
     return setErrorB(QString("Error pushing data to decoder (libVTMDec_push_nal_unit) length %1").arg(data.length()));
-  DEBUG_DECVTM("decoderVTM::pushData pushed NAL length %d%s%s", data.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+  DEBUG_DECVTM("decoderVTM::pushData pushed NAL length " << data.length());
 
-  if (checkOutputPictures && getNextFrameFromDecoder())
+  if (err == LIBVTMDEC_OK_FLUSH_REPUSH && getNextFrameFromDecoder())
   {
     decodedFrameWaiting = true;
     decoderState = decoderRetrieveFrames;
@@ -288,7 +286,7 @@ bool decoderVTM::pushData(QByteArray &data)
   // If bNewPicture is true, the decoder noticed that a new picture starts with this 
   // NAL unit and decoded what it already has (in the original decoder, the bitstream will
   // be rewound). The decoder expects us to push the data again.
-  return !bNewPicture;
+  return err == LIBVTMDEC_OK;
 }
 
 QByteArray decoderVTM::getRawFrameData()
@@ -334,7 +332,7 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
   int outSizeCr = (nrPlanes == 1) ? 0 : (libVTMDec_get_picture_width(src, LIBVTMDEC_CHROMA_V) * libVTMDec_get_picture_height(src, LIBVTMDEC_CHROMA_V));
   // How many bytes do we need in the output buffer?
   int nrBytesOutput = (outSizeY + outSizeCb + outSizeCr) * (outputTwoByte ? 2 : 1);
-  DEBUG_DECVTM("decoderVTM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
+  DEBUG_DECVTM("decoderVTM::copyImgToByteArray nrBytesOutput " << nrBytesOutput);
 
   // Is the output big enough?
   if (dst.capacity() < nrBytesOutput)
@@ -400,7 +398,7 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
   if (!internalsSupported)
     return;
 
-  DEBUG_DECVTM("decoderVTM::cacheStatistics POC %d", libVTMDec_get_POC(img));
+  DEBUG_DECVTM("decoderVTM::cacheStatistics POC " << libVTMDec_get_POC(img));
 
   // Clear the local statistics cache
   curPOCStats.clear();

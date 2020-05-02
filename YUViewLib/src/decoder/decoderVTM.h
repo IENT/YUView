@@ -51,7 +51,7 @@ struct decoderVTM_Functions
   libVTMDec_error        (*libVTMDec_free_decoder)           (libVTMDec_context*);
   void                   (*libVTMDec_set_SEI_Check)          (libVTMDec_context*, bool check_hash);
   void                   (*libVTMDec_set_max_temporal_layer) (libVTMDec_context*, int max_layer);
-  libVTMDec_error        (*libVTMDec_push_nal_unit)          (libVTMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
+  libVTMDec_error        (*libVTMDec_push_nal_unit)          (libVTMDec_context *decCtx, const void* data8, int length, bool eof);
 
   // Get a picture and retrive information on the picture
   libVTMDec_picture     *(*libVTMDec_get_picture)            (libVTMDec_context*);

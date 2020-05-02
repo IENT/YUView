@@ -445,7 +445,8 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
   int64_t oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
   // Set the new pixel format. Lock the mutex, so that no background process is running wile the format changes.
-  srcPixelFormat = format;
+  this->srcPixelFormat = format;
+  this->isDefaultPixelFormatSet = false;
 
   // Update the math parameter offset (the default offset depends on the bit depth and the range)
   int shift = format.bitsPerSample - 8;

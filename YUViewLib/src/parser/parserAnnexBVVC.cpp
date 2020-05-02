@@ -59,6 +59,8 @@ QSize parserAnnexBVVC::getSequenceSizeSamples() const
 
 yuvPixelFormat parserAnnexBVVC::getPixelFormat() const
 {
+  // This does not have to be correct here now. It will be updated once the first
+  // frame was decoded. However, this should be correct once we add VVC bitstream parsing.
   return yuvPixelFormat(Subsampling::YUV_420, 8);
 }
 

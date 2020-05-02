@@ -76,7 +76,7 @@ protected:
     virtual bool isParameterSet() const override { return false; }  // We don't know yet
     bool parse_nal_unit_header(const QByteArray &parameterSetData, parserCommon::TreeItem *root) override;
 
-    bool isAUDelimiter() { return nal_unit_type_id == 19; }
+    bool isAUDelimiter() { return nal_unit_type_id == 20; }
 
     // The information of the NAL unit header
     unsigned int nuh_layer_id;
