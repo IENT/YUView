@@ -196,16 +196,19 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     }
   }
 
-  // Check/set properties
-  if (!frameSize.isValid())
+  // The only thing we need to know now is the raw format (YUV or RGB)
+  // The actual resolution and pixel format can be obtained when the first frame is decoded.
+  // However, once we decode the first frame and these are still not known that will be an unrecoverable error.
+  if (rawFormat == raw_Invalid)
   {
-    setError("Error opening file: Unable to obtain frame size from file.");
+    setError("Error opening file: Unable to obtain a raw pixel format (YUV or RGB) from file.");
     return;
   }
-  if (rawFormat == raw_Invalid || (rawFormat == raw_YUV && !format_yuv.isValid()) || (rawFormat == raw_RGB && !format_rgb.isValid()))
+
+  if (!frameSize.isValid())
   {
-    setError("Error opening file: Unable to obtain a valid pixel format from file.");
-    return;
+    frameSize = QSize(100, 100);  // Set a dummy size for now
+    this->frameSizeNeededAtFirstDecodedFrame = true;
   }
   
   // Allocate the videoHander (RGB or YUV)
@@ -213,14 +216,26 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     video.reset(new videoHandlerYUV());
     videoHandlerYUV *yuvVideo = getYUVVideo();
-    yuvVideo->setFrameSize(frameSize);
+    if (frameSize.isValid())
+      yuvVideo->setFrameSize(frameSize);
+    if (!format_yuv.isValid())
+    {
+      this->formatNeededAtFirstDecodedFrame = true;
+      format_yuv = YUV_Internals::yuvPixelFormat(Subsampling::YUV_420, 8); // Set a dummy format for now
+    }
     yuvVideo->setYUVPixelFormat(format_yuv);
   }
   else
   {
     video.reset(new videoHandlerRGB());
     videoHandlerRGB *rgbVideo = getRGBVideo();
-    rgbVideo->setFrameSize(frameSize);
+    if (frameSize.isValid())
+      rgbVideo->setFrameSize(frameSize);
+    if (!format_rgb.isValid())
+    {
+      format_rgb = RGB_Internals::rgbPixelFormat(8, true); // Set a dummy format for now
+      this->formatNeededAtFirstDecodedFrame = true;
+    }
     rgbVideo->setRGBPixelFormat(format_rgb);
   }
 
@@ -485,8 +500,9 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
   }
 
   // Get the right decoder
-  decoderBase *dec = caching ? cachingDecoder.data() : loadingDecoder.data();
-  int curFrameIdx = caching ? currentFrameIdx[1] : currentFrameIdx[0];
+  auto dec = caching ? cachingDecoder.data() : loadingDecoder.data();
+  const auto decoderIndex = caching ? 1 : 0;
+  const auto curFrameIdx = this->currentFrameIdx[decoderIndex];
 
   // Should we seek?
   if (curFrameIdx == -1 || frameIdxInternal < curFrameIdx || frameIdxInternal > curFrameIdx + FORWARD_SEEK_THRESHOLD)
@@ -524,7 +540,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
   }
   
   // Decode until we get the right frame from the deocder
-  bool rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
+  bool rightFrame = this->currentFrameIdx[decoderIndex] == frameIdxInternal;
   while (!rightFrame)
   {
     while (dec->needsMoreData())
@@ -593,36 +609,47 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
     {
       if (dec->decodeNextFrame())
       {
-        if (caching)
-          currentFrameIdx[1]++;
-        else
-          currentFrameIdx[0]++;
+        this->currentFrameIdx[decoderIndex]++;
 
         // Check if the pixel format changed. For seom decoders we may not be able to get the pixel format from the bitstream
         // so we only know it here once we decoded the first frame.
-        if (this->rawFormat == raw_YUV)
+        bool invokeFormatUpdateMethod = false;
+        if (!this->firstFrameDecoded && this->frameSizeNeededAtFirstDecodedFrame)
         {
-          if (getYUVVideo()->getYUVPixelFormat() != dec->getYUVPixelFormat())
+          auto frameSize = dec->getFrameSize();
+          if (!frameSize.isValid())
           {
-            if (this->video->defaultPixelFormatSet())
-              getYUVVideo()->setYUVPixelFormat(dec->getYUVPixelFormat());
-            else
-              DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData the recieved frame has a different YUV format then previous frames.");
+            this->setError("Unable to obtain a valid picture size from the decoder with the first decoded picture.");
+            return;
           }
+          
+          invokeFormatUpdateMethod = true;
+          this->frameSizeNeededAtFirstDecodedFrame = false;
         }
-        else
+        const bool decPixelFormatValid = this->rawFormat == raw_YUV ? dec->getYUVPixelFormat().isValid() : dec->getRGBPixelFormat().isValid();
+        if (!this->firstFrameDecoded && this->formatNeededAtFirstDecodedFrame)
         {
-          if (getRGBVideo()->getRGBPixelFormat() != dec->getRGBPixelFormat())
+          if (!decPixelFormatValid)
           {
-            if (this->video->defaultPixelFormatSet())
-              getRGBVideo()->setRGBPixelFormat(dec->getRGBPixelFormat());
-            else
-              DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData the recieved frame has a different RGB format then previous frames.");
+            this->setError("Unable to obtain a valid pixel format from the decoder with the first decoded picture.");
+            return;
           }
+          if (this->rawFormat == raw_YUV)
+            this->getYUVVideo()->setYUVPixelFormat(dec->getYUVPixelFormat(), false, false);
+          else
+            this->getRGBVideo()->setRGBPixelFormat(dec->getRGBPixelFormat());
+          invokeFormatUpdateMethod = true;
+          this->formatNeededAtFirstDecodedFrame = false;
         }
+        if (invokeFormatUpdateMethod)
+        {
+          this->video->setFrameSize(dec->getFrameSize());
+          //QMetaObject::invokeMethod(this, "pixelFormatChangedAfterFirstDecodedFrame", Q_ARG(bool, caching));
+        }
+        this->firstFrameDecoded = true;
         
-        DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData decoded frame %d", caching ? currentFrameIdx[1] : currentFrameIdx[0]);
-        rightFrame = caching ? currentFrameIdx[1] == frameIdxInternal : currentFrameIdx[0] == frameIdxInternal;
+        DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData decoded frame %d", this->currentFrameIdx[decoderIndex]);
+        rightFrame = this->currentFrameIdx[decoderIndex] == frameIdxInternal;
         if (rightFrame)
         {
           video->rawData = dec->getRawFrameData();
@@ -643,10 +670,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
   {
     // The specified frame (which is thoretically in the bitstream) can not be decoded.
     // Maybe the bitstream was cut at a position that it was not supposed to be cut at.
-    if (caching)
-      currentFrameIdx[1] = frameIdxInternal;
-    else
-      currentFrameIdx[0] = frameIdxInternal;
+    currentFrameIdx[decoderIndex] = frameIdxInternal;
     // Just set the frame number of the buffer to the current frame so that it will trigger a
     // reload when the frame number changes.
     video->rawData_frameIdx = frameIdxInternal;
@@ -667,8 +691,9 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToDTS,
   // Do the seek
   decoderBase *dec = caching ? cachingDecoder.data() : loadingDecoder.data();
   dec->resetDecoder();
-  repushData = false;
-  decodingNotPossibleAfter = -1;
+  this->repushData = false;
+  this->decodingNotPossibleAfter = -1;
+  this->firstFrameDecoded = false;
 
   // Retrieval of the raw metadata is only required if the the reader or the decoder is not ffmpeg
   const bool bothFFmpeg = (!isInputFormatTypeAnnexB(inputFormatType) && decoderEngineType == decoderEngineFFMpeg);
@@ -1020,21 +1045,23 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
   if (loadingDecoder && idx != loadingDecoder->getDecodeSignal())
   {
     bool resetDecoder = false;
-    loadingDecoder->setDecodeSignal(idx, resetDecoder);
-    cachingDecoder->setDecodeSignal(idx, resetDecoder);
+    this->loadingDecoder->setDecodeSignal(idx, resetDecoder);
+    this->cachingDecoder->setDecodeSignal(idx, resetDecoder);
 
     if (resetDecoder)
     {
-      loadingDecoder->resetDecoder();
-      cachingDecoder->resetDecoder();
+      this->loadingDecoder->resetDecoder();
+      this->cachingDecoder->resetDecoder();
 
       // Reset the decoded frame indices so that decoding of the current frame is triggered
-      currentFrameIdx[0] = -1;
-      currentFrameIdx[1] = -1;
+      this->currentFrameIdx[0] = -1;
+      this->currentFrameIdx[1] = -1;
+
+      this->firstFrameDecoded = false;
     }
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a redraw.
-    videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+    videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(this->video.data());
     yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();
 
@@ -1076,5 +1103,23 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
     statSource.updateStatisticsHandlerControls();
 
     emit signalItemChanged(true, RECACHE_CLEAR);
+  }
+}
+
+void playlistItemCompressedVideo::pixelFormatChangedAfterFirstDecodedFrame(bool caching)
+{
+  auto dec = caching ? cachingDecoder.data() : loadingDecoder.data();
+  this->video->setFrameSize(dec->getFrameSize());
+  if (this->rawFormat == raw_YUV)
+  {
+    const auto fmtDec = dec->getYUVPixelFormat();
+    this->getYUVVideo()->setYUVPixelFormat(fmtDec);
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::pixelFormatChangedAfterFirstDecodedFrame set new YUV pixel format.");
+  }
+  else
+  {
+    const auto fmtDec = dec->getRGBPixelFormat();
+    this->getRGBVideo()->setRGBPixelFormat(fmtDec);
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::pixelFormatChangedAfterFirstDecodedFrame set new RGB pixel format.");
   }
 }

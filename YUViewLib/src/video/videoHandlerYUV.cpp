@@ -439,14 +439,12 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
     setSrcPixelFormat(newFormat);
 }
 
-void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
+void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal, bool updateGui)
 {
   // Store the number bytes per frame of the old pixel format
   int64_t oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
-  // Set the new pixel format. Lock the mutex, so that no background process is running wile the format changes.
   this->srcPixelFormat = format;
-  this->isDefaultPixelFormatSet = false;
 
   // Update the math parameter offset (the default offset depends on the bit depth and the range)
   int shift = format.bitsPerSample - 8;
@@ -454,13 +452,10 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
   mathParameters[Component::Luma].offset = (fullRange ? 128 : 125) << shift;
   mathParameters[Component::Chroma].offset = 128 << shift;
 
-  if (ui.created())
-  {
-    // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
-    ui.chromaInterpolationComboBox->setEnabled(format.isChromaSubsampled());
-    ui.lumaOffsetSpinBox->setValue(mathParameters[Component::Luma].offset);
-    ui.chromaOffsetSpinBox->setValue(mathParameters[Component::Chroma].offset);
-  }
+  if (updateGui)
+    this->slotUpdateYUVChromaGui();
+  else
+    QMetaObject::invokeMethod(this, "slotUpdateYUVChromaGui");
   
   if (emitSignal)
   {
@@ -477,7 +472,6 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
 
     // The number of frames in the sequence might have changed as well
     emit signalUpdateFrameLimits();
-
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
 }
@@ -3402,37 +3396,20 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
   return outputImage;
 }
 
-void videoHandlerYUV::setYUVPixelFormat(const yuvPixelFormat &newFormat, bool emitSignal)
+void videoHandlerYUV::setYUVPixelFormat(const yuvPixelFormat &newFormat, bool emitSignal, bool updateGui)
 {
   if (!newFormat.isValid())
     return;
 
   if (newFormat != srcPixelFormat)
   {
-    if (ui.created())
-    {
-      // Check if the custom format is in the presets list. If not, add it.
-      int idx = presetList.indexOf(newFormat);
-      if (idx == -1)
-      {
-        // Valid pixel format with is not in the list. Add it...
-        presetList.append(newFormat);
-        int nrItems = ui.yuvFormatComboBox->count();
-        const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->insertItem(nrItems-1, newFormat.getName());
-        // Select the added format
-        idx = presetList.indexOf(newFormat);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
-      }
-      else
-      {
-        // Just select the format in the combo box
-        const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
-      }
-    }
+    this->srcPixelFormat = newFormat;
+    if (updateGui)
+      this->slotUpdateYUVFormatComboBox();
+    else
+      QMetaObject::invokeMethod(this, "slotUpdateYUVFormatComboBox");
 
-    setSrcPixelFormat(newFormat, emitSignal);
+    setSrcPixelFormat(newFormat, emitSignal, updateGui);
   }
 }
 
@@ -3440,7 +3417,6 @@ bool videoHandlerYUV::getIs_YUV_diff() const
 {
     return is_YUV_diff;
 }
-
 
 void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
 {
@@ -3451,4 +3427,45 @@ void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
     if (ui.created())
       ui.colorConversionComboBox->setCurrentIndex(int(yuvColorConversionType));
   }
+}
+
+void videoHandlerYUV::slotUpdateYUVFormatComboBox()
+{
+  if (!this->ui.created())
+    return;
+
+  // Check if the custom format is in the presets list. If not, add it.
+  auto newFormat = this->srcPixelFormat;
+  auto idx = this->presetList.indexOf(newFormat);
+  if (idx == -1)
+  {
+    // Valid pixel format with is not in the list. Add it...
+    this->presetList.append(newFormat);
+    const auto nrItems = ui.yuvFormatComboBox->count();
+    const QSignalBlocker blocker(ui.yuvFormatComboBox);
+    this->ui.yuvFormatComboBox->insertItem(nrItems-1, newFormat.getName());
+    // Select the added format
+    idx = this->presetList.indexOf(newFormat);
+    this->ui.yuvFormatComboBox->setCurrentIndex(idx);
+  }
+  else
+  {
+    // Just select the format in the combo box
+    const QSignalBlocker blocker(ui.yuvFormatComboBox);
+    this->ui.yuvFormatComboBox->setCurrentIndex(idx);
+  }
+}
+
+void videoHandlerYUV::slotUpdateYUVChromaGui()
+{
+  if (!this->ui.created())
+    return;
+
+  // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
+  const QSignalBlocker blocker1(ui.chromaInterpolationComboBox);
+  const QSignalBlocker blocker2(ui.lumaOffsetSpinBox);
+  const QSignalBlocker blocker3(ui.chromaOffsetSpinBox);
+  this->ui.chromaInterpolationComboBox->setEnabled(this->srcPixelFormat.isChromaSubsampled());
+  this->ui.lumaOffsetSpinBox->setValue(this->mathParameters[Component::Luma].offset);
+  this->ui.chromaOffsetSpinBox->setValue(this->mathParameters[Component::Chroma].offset);
 }

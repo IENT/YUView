@@ -89,8 +89,8 @@ public:
   // Get the name of the currently selected YUV pixel format
   virtual QString getRawYUVPixelFormatName() const { return srcPixelFormat.getName(); }
   // Set the current YUV format and update the control. Only emit a signalHandlerChanged signal
-  // if emitSignal is true.
-  virtual void setYUVPixelFormat(const YUV_Internals::yuvPixelFormat &fmt, bool emitSignal=false);
+  // if emitSignal is true. Not updating the GUI is needed in case of doing this from a thread.
+  virtual void setYUVPixelFormat(const YUV_Internals::yuvPixelFormat &fmt, bool emitSignal=false, bool updateGui=true);
   virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false) { this->setYUVPixelFormat(YUV_Internals::yuvPixelFormat(name), emitSignal); }
   virtual void setYUVColorConversion(YUV_Internals::ColorConversion conversion);
   YUV_Internals::yuvPixelFormat getYUVPixelFormat() const { return this->srcPixelFormat; }
@@ -169,7 +169,7 @@ private:
   void convertYUVToImage(const QByteArray &sourceBuffer, QImage &outputImage, const YUV_Internals::yuvPixelFormat &yuvFormat, const QSize &curFrameSize);
 
   // Set the new pixel format thread save (lock the mutex). We should also emit that something changed (can be disabled).
-  void setSrcPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitChangedSignal=true);
+  void setSrcPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitChangedSignal=true, bool updateGui=true);
   // Check the given format against the file size. Set the format if this is a match.
   bool checkAndSetFormat(const YUV_Internals::yuvPixelFormat format, const QSize frameSize, const int64_t fileSize);
 
@@ -208,4 +208,6 @@ private slots:
   // The YUV format combo box was changed
   void slotYUVFormatControlChanged(int idx);
 
+  void slotUpdateYUVFormatComboBox();
+  void slotUpdateYUVChromaGui();
 };

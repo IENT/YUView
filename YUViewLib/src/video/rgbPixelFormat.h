@@ -43,7 +43,7 @@ class rgbPixelFormat
 {
 public:
   // The default constructor (will create an "Unknown Pixel Format")
-  rgbPixelFormat() {}
+  rgbPixelFormat() = default;
   rgbPixelFormat(const QString &name);
   rgbPixelFormat(int bitsPerValue, bool planar, int posR=0, int posG=1, int posB=2, int posA=-1);
   bool operator==(const rgbPixelFormat &a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.

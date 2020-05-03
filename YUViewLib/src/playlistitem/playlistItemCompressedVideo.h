@@ -177,6 +177,11 @@ protected:
   // might be unable to decode some of the frames at the end of the sequence.
   int decodingNotPossibleAfter { -1 };
 
+  // Did we already get a frame from the decoders (interactive or caching)
+  bool firstFrameDecoded { false };
+  bool frameSizeNeededAtFirstDecodedFrame { false };
+  bool formatNeededAtFirstDecodedFrame { false };
+
 private slots:
   // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
@@ -188,6 +193,8 @@ private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
   void displaySignalComboBoxChanged(int idx);
   void decoderComboxBoxChanged(int idx);
+
+  void pixelFormatChangedAfterFirstDecodedFrame(bool caching);
 };
 
 #endif // PLAYLISTITEMCOMPRESSEDVIDEO_H

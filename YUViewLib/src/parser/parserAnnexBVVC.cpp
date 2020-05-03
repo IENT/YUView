@@ -54,14 +54,14 @@ double parserAnnexBVVC::getFramerate() const
 
 QSize parserAnnexBVVC::getSequenceSizeSamples() const
 {
-  return QSize(352, 288);
+  return {};
 }
 
 yuvPixelFormat parserAnnexBVVC::getPixelFormat() const
 {
-  // This does not have to be correct here now. It will be updated once the first
+  // Return invalid format. It will be updated once the first
   // frame was decoded. However, this should be correct once we add VVC bitstream parsing.
-  return yuvPixelFormat(Subsampling::YUV_420, 8);
+  return {};
 }
 
 QList<QByteArray> parserAnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)

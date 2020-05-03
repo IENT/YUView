@@ -494,7 +494,6 @@ void videoHandlerRGB::setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &new
 { 
   this->rgbFormatMutex.lock();
   this->srcPixelFormat = newFormat;
-  this->isDefaultPixelFormatSet = false;
   this->rgbFormatMutex.unlock();
 }
 

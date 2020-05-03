@@ -89,7 +89,6 @@ void videoHandler::setFrameSize(const QSize &size)
   frameHandler::setFrameSize(size);
 }
 
-
 itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
 {
   if (loadRawValues)
