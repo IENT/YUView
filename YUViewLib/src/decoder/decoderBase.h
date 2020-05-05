@@ -75,9 +75,18 @@ public:
   YUV_Internals::yuvPixelFormat getYUVPixelFormat() const { return formatYUV; }
   RGB_Internals::rgbPixelFormat getRGBPixelFormat() const { return formatRGB; }
   QSize getFrameSize() { return frameSize; }
+  
+  enum class PushResponse
+  {
+    CONSUMED,   // Data was consumed. Don't push it again.
+    REPUSH,     // Data needs to be pushed again (after flushing).
+    ERROR,
+    END_OF_FILE // Don't push more data.
+  };
+
   // Push data to the decoder (until no more data is needed)
   // In order to make the interface generic, the pushData function accepts data only without start codes
-  virtual bool pushData(QByteArray &data) = 0;
+  virtual PushResponse pushData(QByteArray &data) = 0;
 
   // The state of the decoder
   bool decodeFrames() const { return decoderState == decoderRetrieveFrames; }
@@ -133,6 +142,10 @@ protected:
   void setError(const QString &reason) { decoderState = decoderError; errorString = reason; }
   bool setErrorB(const QString &reason) { setError(reason); return false; }
   QString errorString;
+
+  // If you push an empty packet this flag will be set. In flushing mode, retrieve frames but don't push more data.
+  // Once no more frames can be retrieved, the decoding finished.
+  bool flushing { false };
   
   // Statistics caching
   QHash<int, statisticsData> curPOCStats;  // cache of the statistics for the current POC [statsTypeID]

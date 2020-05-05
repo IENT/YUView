@@ -51,8 +51,8 @@ public:
   
   // Push an AVPacket or raw data. When this returns false, pushing the given packet failed. Probably the 
   // decoder switched to decoderRetrieveFrames. Don't forget to push the given packet again later.
-  bool pushAVPacket(AVPacketWrapper &pkt);
-  bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  PushResponse pushAVPacket(AVPacketWrapper &pkt);
+  PushResponse pushData(QByteArray &data) Q_DECL_OVERRIDE;
 
   // What statistics do we support?
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
@@ -81,10 +81,6 @@ protected:
 
   QByteArray currentOutputBuffer;
   void copyCurImageToBuffer();   // Copy the raw data from the de265_image source *src to the byte array
-
-  // At the end of the file, when no more data is available, we will swith to flushing. After all
-  // remaining frames were decoding, we will not request more data but switch to decoderEndOfBitstream.
-  bool flushing;
 
   // When pushing raw data to the decoder, we need to package it into AVPackets
   AVPacketWrapper raw_pkt;

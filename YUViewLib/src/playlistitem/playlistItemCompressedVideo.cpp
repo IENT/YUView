@@ -550,19 +550,26 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
       {
         // In this scenario, we can read and push AVPackets
         // from the FFmpeg file and pass them to the FFmpeg decoder directly.
-        AVPacketWrapper pkt = caching ? inputFileFFmpegCaching->getNextPacket(repushData) : inputFileFFmpegLoading->getNextPacket(repushData);
-        repushData = false;
+        AVPacketWrapper pkt = caching ? inputFileFFmpegCaching->getNextPacket(this->repushData) : inputFileFFmpegLoading->getNextPacket(this->repushData);
         if (pkt)
           DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived packet PTS %" PRId64 "", pkt.get_pts());
         else
           DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived empty packet");
         decoderFFmpeg *ffmpegDec = (caching ? dynamic_cast<decoderFFmpeg*>(cachingDecoder.data()) : dynamic_cast<decoderFFmpeg*>(loadingDecoder.data()));
-        if (!ffmpegDec->pushAVPacket(pkt))
+        auto ret = ffmpegDec->pushAVPacket(pkt);
+        if (ret == decoderBase::PushResponse::ERROR)
+        {
+          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData Error pushing AVPacket to decoder.");
+          return;
+        }
+        this->repushData = ret == decoderBase::PushResponse::REPUSH;
+        if (this->repushData)
         {
           if (!ffmpegDec->decodeFrames())
-            // The decoder did not switch to decoding frame mode. Error.
+          {
+            DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData The decoder did not switch to decoding frame mode. Error.");
             return;
-          repushData = true;
+          }
         }
       }
       else if (isInputFormatTypeAnnexB(inputFormatType) && decoderEngineType == decoderEngineFFMpeg)
@@ -574,7 +581,14 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
         if (frameStartEndFilePos != QUint64Pair(-1, -1))
           data = caching ? inputFileAnnexBCaching->getFrameData(frameStartEndFilePos) : inputFileAnnexBLoading->getFrameData(frameStartEndFilePos);
         DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived frame data from file - AnnexBCnt %d startEnd %lu-%lu - size %d", readAnnexBFrameCounterCodingOrder, frameStartEndFilePos.first, frameStartEndFilePos.second, data.size());
-        if (!dec->pushData(data))
+        auto ret = dec->pushData(data);
+        if (ret == decoderBase::PushResponse::ERROR)
+        {
+          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData Error pushing AVPacket to decoder.");
+          return;
+        }
+        this->repushData = ret == decoderBase::PushResponse::REPUSH;
+        if (this->repushData)
         {
           if (!dec->decodeFrames())
           {
@@ -588,18 +602,25 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
         else
           readAnnexBFrameCounterCodingOrder++;
       }
-      else if (isInputFormatTypeAnnexB(inputFormatType) && decoderEngineType != decoderEngineFFMpeg)
+      else if (decoderEngineType != decoderEngineFFMpeg)
       {
-        QByteArray data = caching ? inputFileAnnexBCaching->getNextNALUnit(repushData) : inputFileAnnexBLoading->getNextNALUnit(repushData);
+        QByteArray data;
+        if (isInputFormatTypeAnnexB(inputFormatType))
+          data = caching ? inputFileAnnexBCaching->getNextNALUnit(this->repushData) : inputFileAnnexBLoading->getNextNALUnit(this->repushData);
+        else if (isInputFormatTypeFFmpeg(inputFormatType))
+          data = caching ? inputFileFFmpegCaching->getNextUnit(this->repushData) : inputFileFFmpegLoading->getNextUnit(this->repushData);
+        else
+          assert(false);
+        
         DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived nal unit from file - size %d", data.size());
-        repushData = !dec->pushData(data);
-      }
-      else if (isInputFormatTypeFFmpeg(inputFormatType) && decoderEngineType != decoderEngineFFMpeg)
-      {
-        // Get the next unit (NAL or OBU) form ffmepg and push it to the decoder
-        QByteArray data = caching ? inputFileFFmpegCaching->getNextUnit(repushData) : inputFileFFmpegLoading->getNextUnit(repushData);
-        DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived nal unit from file - size %d", data.size());
-        repushData = !dec->pushData(data);
+        auto ret = dec->pushData(data);
+        if (ret == decoderBase::PushResponse::ERROR)
+        {
+          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData Error pushing data to decoder.");
+          return;
+        }
+        this->repushData = ret == decoderBase::PushResponse::REPUSH;
+
       }
       else
         assert(false);
@@ -729,11 +750,14 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToDTS,
     // Push the parameter sets to the decoder
     DEBUG_COMPRESSED("playlistItemCompressedVideo::seekToPosition pushing parameter sets to decoder (nr %d)", parametersets.length());
     for (QByteArray d : parametersets)
-      if (!dec->pushData(d))
+    {
+      auto ret = dec->pushData(d);
+      if (ret != decoderBase::PushResponse::CONSUMED)
       {
         setDecodingError("Error when seeking in file.");
         return;
       }
+    }
   }
   if (caching)
     currentFrameIdx[1] = seekToFrame - 1;

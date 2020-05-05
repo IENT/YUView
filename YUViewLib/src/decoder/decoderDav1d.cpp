@@ -320,17 +320,17 @@ QByteArray decoderDav1d::getRawFrameData()
   return currentOutputBuffer;
 }
 
-bool decoderDav1d::pushData(QByteArray &data) 
+decoderBase::PushResponse decoderDav1d::pushData(QByteArray &data)
 {
   if (decoderState != decoderNeedsMoreData)
   {
     DEBUG_DAV1D("decoderDav1d::pushData: Wrong decoder state.");
-    return false;
+    return PushResponse::ERROR;
   }
-  if (flushing)
+  if (this->flushing)
   {
     DEBUG_DAV1D("decoderDav1d::pushData: Do not push data when flushing!");
-    return false;
+    return PushResponse::ERROR;
   }
 
   if (!sequenceHeaderPushed)
@@ -340,7 +340,8 @@ bool decoderDav1d::pushData(QByteArray &data)
     if (data.size() == 0)
     {
       DEBUG_DAV1D("decoderDav1d::pushData Error: Sequence header not pushed yet and the data is empty");
-      return setErrorB("Error: Sequence header not pushed yet and the data is empty.");
+      this->setErrorB("Error: Sequence header not pushed yet and the data is empty.");
+      return PushResponse::ERROR;
     }
 
     Dav1dSequenceHeader seq;
@@ -366,15 +367,15 @@ bool decoderDav1d::pushData(QByteArray &data)
     else
     {
       DEBUG_DAV1D("decoderDav1d::pushData Error: No sequence header revieved yet and parsing of this packet as slice header failed. Ignoring packet.");
-      return true;
+      return PushResponse::CONSUMED;
     }
   }
 
-  if (data.size() == 0)
+  this->flushing = data.size() == 0;
+  if (this->flushing)
   {
     // The input file is at the end. Switch to flushing mode.
     DEBUG_DAV1D("decoderDav1d::pushData input ended - flushing");
-    flushing = true;
   }
   else
   {
@@ -389,13 +390,14 @@ bool decoderDav1d::pushData(QByteArray &data)
       // The data was not consumed and must be pushed again after retrieving some frames
       delete dav1dData;
       DEBUG_DAV1D("decoderDav1d::pushData need to re-push data");
-      return false;
+      return PushResponse::REPUSH;
     }
     else if (err != 0)
     {
       delete dav1dData;
       DEBUG_DAV1D("decoderDav1d::pushData error pushing data");
-      return setErrorB("Error pushing data to the decoder.");
+      this->setErrorB("Error pushing data to the decoder.");
+      return PushResponse::ERROR;
     }
     DEBUG_DAV1D("decoderDav1d::pushData successfully pushed %d bytes", data.size());
   }
@@ -404,7 +406,7 @@ bool decoderDav1d::pushData(QByteArray &data)
   if (decodeFrame())
     decodedFrameWaiting = true;
 
-  return true;
+  return this->flushing ? PushResponse::END_OF_FILE : PushResponse::CONSUMED;
 }
 
 #if SSE_CONVERSION

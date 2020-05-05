@@ -98,7 +98,7 @@ public:
   // Decoding / pushing data
   bool decodeNextFrame() Q_DECL_OVERRIDE;
   QByteArray getRawFrameData() Q_DECL_OVERRIDE;
-  bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  PushResponse pushData(QByteArray &data) Q_DECL_OVERRIDE;
   
   // Statistics
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
@@ -130,7 +130,6 @@ private:
   de265_decoder_context* decoder {nullptr};
 
   int nrSignals {1};
-  bool flushing {false};
 
   // When pushing frames, the decoder will try to decode a frame to check if this is possible.
   // If this is true, a frame is waiting from that step and decodeNextFrame will not actually decode a new frame.

@@ -298,7 +298,7 @@ void decoderFFmpeg::cacheCurStatistics()
   }
 }
 
-bool decoderFFmpeg::pushData(QByteArray &data)
+decoderBase::PushResponse decoderFFmpeg::pushData(QByteArray &data)
 {
   if (!raw_pkt)
     raw_pkt.allocate_paket(ff);
@@ -322,24 +322,24 @@ bool decoderFFmpeg::pushData(QByteArray &data)
   return pushAVPacket(raw_pkt);
 }
 
-bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
+decoderBase::PushResponse decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
 {
   if (decoderState != decoderNeedsMoreData)
   {
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Wrong decoder state.");
-    return false;
+    return PushResponse::ERROR;
   }
   if (!pkt)
   {
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Recieved empty packet. Swithing to flushing.");
-    flushing = true;
+    this->flushing = true;
     decoderState = decoderRetrieveFrames;
-    return false;
+    return PushResponse::END_OF_FILE;
   }
-  if (flushing)
+  if (this->flushing)
   {
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Error no new packets should be pushed in flushing mode.");
-    return false;
+    return PushResponse::ERROR;
   }
 
   // Push the packet to the decoder
@@ -366,7 +366,7 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
     }
 #endif
     setError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
-    return false;
+    return PushResponse::ERROR;
   }
   else
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Send packet PTS %ld duration %ld flags %d", pkt.get_pts(), pkt.get_duration(), pkt.get_flags());
@@ -376,10 +376,10 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
     // Enough data pushed. Decode and retrieve frames now.
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Enough data pushed. Decode and retrieve frames now.");
     decoderState = decoderRetrieveFrames;
-    return false;
+    return PushResponse::REPUSH;
   }
 
-  return true;
+  return PushResponse::CONSUMED;
 }
 
 bool decoderFFmpeg::decodeFrame()

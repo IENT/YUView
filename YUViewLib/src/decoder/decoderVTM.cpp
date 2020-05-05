@@ -257,36 +257,47 @@ bool decoderVTM::getNextFrameFromDecoder()
   return true;
 }
 
-bool decoderVTM::pushData(QByteArray &data)
+decoderVTM::PushResponse decoderVTM::pushData(QByteArray &data)
 {
   if (decoderState != decoderNeedsMoreData)
   {
     DEBUG_DECVTM("decoderVTM::pushData: Wrong decoder state.");
-    return false;
+    return PushResponse::ERROR;
+  }
+  if (this->flushing)
+  {
+    DEBUG_DECVTM("decoderVTM::pushData: No more data should be pushed in flushing mode.");
+    return PushResponse::ERROR;
   }
 
-  bool endOfFile = (data.length() == 0);
-  if (endOfFile)
+  this->flushing = (data.length() == 0);
+  if (this->flushing)
     DEBUG_DECVTM("decoderVTM::pushData: Recieved empty packet. Setting EOF.");
 
   // Push the data of the NAL unit. The function libVTMDec_push_nal_unit can handle data 
   // with a start code and without.
-  libVTMDec_error err = libVTMDec_push_nal_unit(decoder, data, data.length(), endOfFile);
+  libVTMDec_error err = libVTMDec_push_nal_unit(decoder, data, data.length(), this->flushing);
   if (err != LIBVTMDEC_OK && err != LIBVTMDEC_OK_FLUSH_REPUSH)
-    return setErrorB(QString("Error pushing data to decoder (libVTMDec_push_nal_unit) length %1").arg(data.length()));
+  {
+    this->setErrorB(QString("Error pushing data to decoder (libVTMDec_push_nal_unit) length %1").arg(data.length()));
+    return PushResponse::ERROR;
+  }
   DEBUG_DECVTM("decoderVTM::pushData pushed NAL length " << data.length());
 
-  if (err == LIBVTMDEC_OK_FLUSH_REPUSH && getNextFrameFromDecoder())
+  if (err == LIBVTMDEC_OK_FLUSH_REPUSH || (this->flushing && err == LIBVTMDEC_OK))
   {
-    decodedFrameWaiting = true;
-    decoderState = decoderRetrieveFrames;
-    currentOutputBuffer.clear();
+    if (this->getNextFrameFromDecoder())
+    {
+      decodedFrameWaiting = true;
+      decoderState = decoderRetrieveFrames;
+      currentOutputBuffer.clear();
+    }
   }
 
-  // If bNewPicture is true, the decoder noticed that a new picture starts with this 
-  // NAL unit and decoded what it already has (in the original decoder, the bitstream will
-  // be rewound). The decoder expects us to push the data again.
-  return err == LIBVTMDEC_OK;
+  if (this->flushing)
+    return PushResponse::END_OF_FILE;
+
+  return err == LIBVTMDEC_OK_FLUSH_REPUSH ? PushResponse::REPUSH : PushResponse::CONSUMED;
 }
 
 QByteArray decoderVTM::getRawFrameData()

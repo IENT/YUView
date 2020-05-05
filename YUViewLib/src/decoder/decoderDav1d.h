@@ -77,7 +77,7 @@ public:
   // Decoding / pushing data
   bool decodeNextFrame() Q_DECL_OVERRIDE;
   QByteArray getRawFrameData() Q_DECL_OVERRIDE;
-  bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  PushResponse pushData(QByteArray &data) Q_DECL_OVERRIDE;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
@@ -108,7 +108,6 @@ private:
   Dav1dAnalyzerFlags analyzerSettings;
 
   int nrSignals {1};
-  bool flushing {false};
   bool sequenceHeaderPushed {false};
 
   // When pushing frames, the decoder will try to decode a frame to check if this is possible.

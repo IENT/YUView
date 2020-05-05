@@ -338,17 +338,17 @@ QByteArray decoderLibde265::getRawFrameData()
   return currentOutputBuffer;
 }
 
-bool decoderLibde265::pushData(QByteArray &data) 
+decoderBase::PushResponse decoderLibde265::pushData(QByteArray &data) 
 {
   if (decoderState != decoderNeedsMoreData)
   {
     DEBUG_LIBDE265("decoderLibde265::pushData: Wrong decoder state.");
-    return false;
+    return PushResponse::ERROR;
   }
-  if (flushing)
+  if (this->flushing)
   {
     DEBUG_LIBDE265("decoderLibde265::pushData: Do not push data when flushing!");
-    return false;
+    return PushResponse::ERROR;
   }
   
   // Push the data to the decoder
@@ -367,7 +367,10 @@ bool decoderLibde265::pushData(QByteArray &data)
     de265_error err = de265_push_NAL(decoder, data.data() + offset, data.size() - offset, 0, nullptr);
     DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes%s%s", data.size(), err != DE265_OK ? " - err " : "", err != DE265_OK ? de265_get_error_text(err) : "");
     if (err != DE265_OK)
-      return setErrorB("Error pushing data to decoder (de265_push_NAL): " + QString(de265_get_error_text(err)));
+    {
+      this->setErrorB("Error pushing data to decoder (de265_push_NAL): " + QString(de265_get_error_text(err)));
+      return PushResponse::ERROR;
+    }
   }
   else
   {
@@ -375,15 +378,18 @@ bool decoderLibde265::pushData(QByteArray &data)
     DEBUG_LIBDE265("decoderLibde265::pushData input ended - flushing");
     de265_error err = de265_flush_data(decoder);
     if (err != DE265_OK)
-      return setErrorB("Error switching to flushing mode.");
-    flushing = true;
+    {
+      this->setErrorB("Error switching to flushing mode.");
+      return PushResponse::ERROR;
+    }
+    this->flushing = true;
   }
 
   // Check for an available frame
   if (decodeFrame())
     decodedFrameWaiting = true;
 
-  return true;
+  return this->flushing ? PushResponse::END_OF_FILE : PushResponse::CONSUMED;
 }
 
 #if SSE_CONVERSION

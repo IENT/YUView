@@ -255,25 +255,33 @@ bool decoderHM::getNextFrameFromDecoder()
   return true;
 }
 
-bool decoderHM::pushData(QByteArray &data) 
+decoderBase::PushResponse decoderHM::pushData(QByteArray &data) 
 {
   if (decoderState != decoderNeedsMoreData)
   {
     DEBUG_DECHM("decoderHM::pushData: Wrong decoder state.");
-    return false;
+    return PushResponse::ERROR;
+  }
+  if (this->flushing)
+  {
+    DEBUG_DECHM("decoderHM::pushData: No more data should be pushed in flushing mode.");
+    return PushResponse::ERROR;
   }
 
-  bool endOfFile = (data.length() == 0);
-  if (endOfFile)
+  this->flushing = (data.length() == 0);
+  if (this->flushing)
     DEBUG_DECHM("decoderFFmpeg::pushData: Recieved empty packet. Setting EOF.");
 
   // Push the data of the NAL unit. The function libHMDec_push_nal_unit can handle data 
   // with a start code and without.
   bool checkOutputPictures = false;
   bool bNewPicture = false;
-  libHMDec_error err = libHMDec_push_nal_unit(decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
+  libHMDec_error err = libHMDec_push_nal_unit(decoder, data, data.length(), this->flushing, bNewPicture, checkOutputPictures);
   if (err != LIBHMDEC_OK)
-    return setErrorB(QString("Error pushing data to decoder (libHMDec_push_nal_unit) length %1").arg(data.length()));
+  {
+    setErrorB(QString("Error pushing data to decoder (libHMDec_push_nal_unit) length %1").arg(data.length()));
+    return PushResponse::ERROR;
+  }
   DEBUG_DECHM("decoderHM::pushData pushed NAL length %d%s%s", data.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
 
   if (checkOutputPictures && getNextFrameFromDecoder())
@@ -286,7 +294,7 @@ bool decoderHM::pushData(QByteArray &data)
   // If bNewPicture is true, the decoder noticed that a new picture starts with this 
   // NAL unit and decoded what it already has (in the original decoder, the bitstream will
   // be rewound). The decoder expects us to push the data again.
-  return !bNewPicture;
+  return this->flushing ? PushResponse::END_OF_FILE : PushResponse::CONSUMED;
 }
 
 QByteArray decoderHM::getRawFrameData()
