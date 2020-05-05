@@ -42,9 +42,9 @@ using namespace parserCommon;
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_VVC qDebug
+#define DEBUG_VVC(msg) qDebug << msg
 #else
-#define DEBUG_VVC(fmt,...) ((void)0)
+#define DEBUG_VVC(msg) ((void)0)
 #endif
 
 double parserAnnexBVVC::getFramerate() const
@@ -91,7 +91,11 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
   Q_UNUSED(nalTypeName);
   
   if (nalID == -1 && data.isEmpty())
-    return false;
+  {
+    if (!addFrameToList(this->counterAU, this->curFrameFileStartEndPos, false))
+      return reader_helper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
+    return true;
+  }
 
   // Skip the NAL unit header
   int skip = 0;
@@ -112,10 +116,10 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
   // yet. We want to parse the item and then set a good description.
   QString specificDescription;
   TreeItem *nalRoot = nullptr;
-  if (parent)
+ if (parent)
     nalRoot = new TreeItem(parent);
-  else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+  else if (!this->packetModel->isNull())
+    nalRoot = new TreeItem(this->packetModel->getRootItem());
 
   // Create a nal_unit and read the header
   nal_unit_vvc nal_vvc(nalStartEndPosFile, nalID);
@@ -124,30 +128,30 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
 
   if (nal_vvc.isAUDelimiter())
   {
-    DEBUG_VVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
+    DEBUG_VVC("Start of new AU. Adding bitrate " << this->sizeCurrentAU);
     
     BitrateItemModel::bitrateEntry entry;
-    entry.pts = counterAU;
-    entry.dts = counterAU;  // TODO: Not true. We need to parse the VVC header data
-    entry.bitrate = sizeCurrentAU;
+    entry.pts = this->counterAU;
+    entry.dts = this->counterAU;  // TODO: Not true. We need to parse the VVC header data
+    entry.bitrate = this->sizeCurrentAU;
     entry.keyframe = false; // TODO: Also not correct. We need parsing.
     bitrateModel->addBitratePoint(0, entry);
 
-    if (counterAU > 0)
+    if (this->counterAU > 0)
     {
-      const bool curFrameIsRandomAccess = (counterAU == 1);
-      if (!addFrameToList(counterAU, curFrameFileStartEndPos, curFrameIsRandomAccess))
+      const bool curFrameIsRandomAccess = (this->counterAU == 1);
+      if (!addFrameToList(this->counterAU, this->curFrameFileStartEndPos, curFrameIsRandomAccess))
         return reader_helper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
-      DEBUG_VVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, counterAU, curFrameIsRandomAccess ? " - ra" : "");
+      DEBUG_VVC("Adding start/end " << this->curFrameFileStartEndPos << " - POC " << this->counterAU << (curFrameIsRandomAccess ? " - ra" : ""));
     }
-    curFrameFileStartEndPos = nalStartEndPosFile;
-    sizeCurrentAU = 0;
-    counterAU++;
+    this->curFrameFileStartEndPos = nalStartEndPosFile;
+    this->sizeCurrentAU = 0;
+    this->counterAU++;
   }
   else
-    curFrameFileStartEndPos.second = nalStartEndPosFile.second;
+    this->curFrameFileStartEndPos.second = nalStartEndPosFile.second;
 
-  sizeCurrentAU += data.size();
+  this->sizeCurrentAU += data.size();
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
