@@ -667,6 +667,23 @@ protected:
     parserCommon::reader_helper reader;
   };
 
+  class mastering_display_colour_volume_sei : public sei
+  {
+  public:
+    mastering_display_colour_volume_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    sei_parsing_return_t parse_mastering_display_colour_volume_sei(QByteArray &sliceHeaderData, parserCommon::TreeItem *root) { return parse_internal(sliceHeaderData, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
+
+    QList<unsigned int> display_primaries_x;
+    QList<unsigned int> display_primaries_y;
+    unsigned int white_point_x;
+    unsigned int white_point_y;
+    unsigned int max_display_mastering_luminance;
+    unsigned int min_display_mastering_luminance;
+  
+  private:
+    bool parse_internal(QByteArray &sliceHeaderData, parserCommon::TreeItem *root);
+  };
+
   class buffering_period_sei : public sei
   {
   public:

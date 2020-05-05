@@ -569,6 +569,11 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIte
         result = new_active_parameter_sets_sei->parse_active_parameter_sets_sei(sub_sei_data, active_VPS_list, message_tree);
         reparse = new_active_parameter_sets_sei;
       }
+      else if (new_sei->payloadType == 137)
+      {
+        auto new_mastering_display_colour_volume = QSharedPointer<mastering_display_colour_volume_sei>(new mastering_display_colour_volume_sei(new_sei));
+        result = new_mastering_display_colour_volume->parse_mastering_display_colour_volume_sei(sub_sei_data, message_tree);
+      }
       else if (new_sei->payloadType == 147)
       {
         auto new_alternative_transfer_characteristics_sei = QSharedPointer<alternative_transfer_characteristics_sei>(new alternative_transfer_characteristics_sei(new_sei));
@@ -2329,6 +2334,22 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::active_parameter_sets_sei::
     return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
   if (!parse_internal(active_VPS_list))
     return SEI_PARSING_ERROR;
+  return SEI_PARSING_OK;
+}
+
+bool parserAnnexBHEVC::mastering_display_colour_volume_sei::parse_internal(QByteArray &sliceHeaderData, parserCommon::TreeItem *root)
+{
+  reader_helper reader(sliceHeaderData, root, "mastering_display_colour_volume");
+  for (int c = 0; c < 3; c++)
+  {
+    READBITS_A(this->display_primaries_x, 16, c);
+    READBITS_A(this->display_primaries_y, 16, c);
+  }
+  READBITS(this->white_point_x, 16);
+  READBITS(this->white_point_y, 16);
+  READBITS(this->max_display_mastering_luminance, 32);
+  READBITS(this->min_display_mastering_luminance, 32);
+  
   return SEI_PARSING_OK;
 }
 
