@@ -76,12 +76,8 @@ unsigned int sub_byte_reader::readBits(int nrBits, QString &bitsRead)
   while (nrBits > 0)
   {
     if (posInBuffer_bits == 8 && nrBits != 0) 
-    {
       // We read all bits we could from the current byte but we need more. Go to the next byte.
-      if (!gotoNextByte())
-        // We are at the end of the buffer but we need to read more. Error.
-        throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
-    }
+      gotoNextByte();
 
     // How many bits can be gotton from the current byte?
     int curBitsLeft = 8 - posInBuffer_bits;
@@ -145,24 +141,17 @@ uint64_t sub_byte_reader::readBits64(int nrBits, QString &bitsRead)
 
 QByteArray sub_byte_reader::readBytes(int nrBytes)
 {
-  if (skipEmulationPrevention)
-    throw std::logic_error("Reading bytes with emulation prevention active is not supported.");
   if (posInBuffer_bits != 0 && posInBuffer_bits != 8)
     throw std::logic_error("When reading bytes from the bitstream, it should be byte alligned.");
 
   if (posInBuffer_bits == 8)
-    if (!gotoNextByte())
-      // We are at the end of the buffer but we need to read more. Error.
-      throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
-
+    gotoNextByte();
+  
   QByteArray retArray;
   for (int i = 0; i < nrBytes; i++)
   {
-    if (posInBuffer_bytes >= (unsigned int)byteArray.size())
-      throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
-
     retArray.append(byteArray[posInBuffer_bytes]);
-    posInBuffer_bytes++;
+    gotoNextByte();
   }
 
   return retArray;
@@ -337,7 +326,7 @@ bool sub_byte_reader::testReadingBits(int nrBits)
   return nrBits <= nrBitsLeftToRead;
 }
 
-bool sub_byte_reader::gotoNextByte()
+void sub_byte_reader::gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
   if (posInBuffer_bytes >= unsigned(byteArray.length()))
@@ -350,9 +339,9 @@ bool sub_byte_reader::gotoNextByte()
   // Advance pointer
   posInBuffer_bytes++;
 
-  if (posInBuffer_bytes >= (unsigned int)byteArray.size()) 
+  if (posInBuffer_bytes >= (unsigned int)byteArray.size())
     // The next byte is outside of the current buffer. Error.
-    return false;    
+    throw std::out_of_range("Reading out of bounds");
 
   if (skipEmulationPrevention)
   {
@@ -361,10 +350,9 @@ bool sub_byte_reader::gotoNextByte()
       // The current byte is an emulation prevention 3 byte. Skip it.
       posInBuffer_bytes++; // Skip byte
 
-      if (posInBuffer_bytes >= (unsigned int)byteArray.size()) {
+      if (posInBuffer_bytes >= (unsigned int)byteArray.size())
         // The next byte is outside of the current buffer. Error
-        return false;
-      }
+        throw std::out_of_range("Reading out of bounds");
 
       // Reset counter
       numEmuPrevZeroBytes = 0;
@@ -373,8 +361,6 @@ bool sub_byte_reader::gotoNextByte()
       // No zero byte. No emulation prevention 3 byte
       numEmuPrevZeroBytes = 0;
   }
-
-  return true;
 }
 
 void sub_byte_writer::writeBits(int val, int nrBits)
@@ -441,10 +427,22 @@ QByteArray sub_byte_writer::getByteArray()
 }
 
 /// --------------- reader_helper ---------------------
-
-void reader_helper::init(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name)
+reader_helper::reader_helper(sub_byte_reader &reader, TreeItem *item, QString new_sub_item_name)
 {
-  set_input(inArr);
+  this->reader = reader;
+  if (item)
+  {
+    if (new_sub_item_name.isEmpty())
+      currentTreeLevel = item;
+    else
+      currentTreeLevel = new TreeItem(new_sub_item_name, item);
+  }
+  itemHierarchy.append(currentTreeLevel);
+}
+
+reader_helper::reader_helper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name)
+{
+  this->reader = sub_byte_reader(inArr);
   if (item)
   {
     if (new_sub_item_name.isEmpty())
@@ -792,7 +790,7 @@ bool reader_helper::readBits_catch(unsigned int &into, int numBits, QString &cod
 {
   try
   {
-    into = sub_byte_reader::readBits(numBits, code);
+    into = reader.readBits(numBits, code);
   }
   catch (const std::exception& ex)
   {
@@ -806,7 +804,7 @@ bool reader_helper::readBits64_catch(uint64_t &into, int numBits, QString &code)
 {
   try
   {
-    into = sub_byte_reader::readBits64(numBits, code);
+    into = reader.readBits64(numBits, code);
   }
   catch (const std::exception& ex)
   {
@@ -820,7 +818,7 @@ bool reader_helper::readUEV_catch(unsigned int &into, int &bit_count, QString &c
 {
   try
   {
-    into = sub_byte_reader::readUE_V(code, bit_count);
+    into = reader.readUE_V(code, bit_count);
   }
   catch (const std::exception& ex)
   {
@@ -834,7 +832,7 @@ bool reader_helper::readSEV_catch(int &into, int &bit_count, QString &code)
 {
   try
   {
-    into = sub_byte_reader::readSE_V(code, bit_count);
+    into = reader.readSE_V(code, bit_count);
   }
   catch (const std::exception& ex)
   {
@@ -848,7 +846,7 @@ bool reader_helper::readLeb128_catch(uint64_t &into, int &bit_count, QString &co
 {
   try
   {
-    into = sub_byte_reader::readLeb128(code, bit_count);
+    into = reader.readLeb128(code, bit_count);
   }
   catch (const std::exception& ex)
   {
@@ -862,7 +860,7 @@ bool reader_helper::readUVLC_catch(uint64_t &into, int &bit_count, QString &code
 {
   try
   {
-    into = sub_byte_reader::readUVLC(code, bit_count);
+    into = reader.readUVLC(code, bit_count);
   }
   catch (const std::exception& ex)
   {
@@ -876,7 +874,7 @@ bool reader_helper::readNS_catch(int &into, int maxVal, int &bit_count, QString 
 {
   try
   {
-    into = sub_byte_reader::readNS(maxVal, code, bit_count);
+    into = reader.readNS(maxVal, code, bit_count);
   }
   catch (const std::exception& ex)
   {
@@ -890,7 +888,7 @@ bool reader_helper::readSU_catch(int &into, int numBits, QString &code)
 {
   try
   {
-    into = sub_byte_reader::readSU(numBits, code);
+    into = reader.readSU(numBits, code);
   }
   catch (const std::exception& ex)
   {
