@@ -205,6 +205,8 @@ void decoderVTM::allocateNewDecoder()
   
   libVTMDec_set_SEI_Check(decoder, true);
   libVTMDec_set_max_temporal_layer(decoder, -1);
+  
+  decoderBase::resetDecoder();
 }
 
 bool decoderVTM::decodeNextFrame()

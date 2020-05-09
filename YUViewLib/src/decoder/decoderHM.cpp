@@ -187,6 +187,8 @@ void decoderHM::allocateNewDecoder()
   // Set some decoder parameters
   libHMDec_set_SEI_Check(decoder, true);
   libHMDec_set_max_temporal_layer(decoder, -1);
+
+  decoderBase::resetDecoder();
 }
 
 bool decoderHM::decodeNextFrame()

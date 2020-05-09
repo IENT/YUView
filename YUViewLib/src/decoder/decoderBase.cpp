@@ -63,11 +63,12 @@ decoderBase::decoderBase(bool cachingDecoder)
 void decoderBase::resetDecoder()
 {
   DEBUG_DECODERBASE("decoderBase::resetDecoder");
-  decoderState = decoderNeedsMoreData;
-  statsCacheCurPOC = -1;
-  frameSize = QSize();
-  formatYUV = yuvPixelFormat();
-  rawFormat = raw_Invalid;
+  this->decoderState = decoderNeedsMoreData;
+  this->statsCacheCurPOC = -1;
+  this->frameSize = QSize();
+  this->formatYUV = yuvPixelFormat();
+  this->rawFormat = raw_Invalid;
+  this->flushing = false;
 }
 
 statisticsData decoderBase::getStatisticsData(int typeIdx)
