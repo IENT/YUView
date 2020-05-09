@@ -69,6 +69,13 @@
 #    endif
 #endif
 
+void logCallback(void *userData, int logLevel, const char *message)
+{
+  auto decoder = static_cast<decoderVTM*>(userData);
+  if (decoder)
+    decoder->logCallbackLogMessage(logLevel, QString(message));
+}
+
 decoderVTM_Functions::decoderVTM_Functions()
 { 
   memset(this, 0, sizeof(*this)); 
@@ -109,12 +116,22 @@ QStringList decoderVTM::getLibraryNames()
   return names;
 }
 
+void decoderVTM::logCallbackLogMessage(int logLevel, QString message)
+{
+  QStringList logLevels = QStringList() << "INFO" << "WARN" << "VERBOSE" << "ERROR";
+  if (logLevel >= 0 && logLevel < 4)
+    DEBUG_DECVTM("decoderVTM::logCallbackLogMessage " << logLevels[logLevel] << " " << message.simplified());
+  else
+    DEBUG_DECVTM("decoderVTM::logCallbackLogMessage UNKNOWN " << message.simplified());
+}
+
 void decoderVTM::resolveLibraryFunctionPointers()
 {
   // Get/check function pointers
   if (!resolve(libVTMDec_get_version, "libVTMDec_get_version")) return;
   if (!resolve(libVTMDec_new_decoder, "libVTMDec_new_decoder")) return;
   if (!resolve(libVTMDec_free_decoder, "libVTMDec_free_decoder")) return;
+  if (!resolve(libVTMDec_set_log_callback, "libVTMDec_set_log_callback")) return;
   if (!resolve(libVTMDec_set_SEI_Check, "libVTMDec_set_SEI_Check")) return;
   if (!resolve(libVTMDec_set_max_temporal_layer, "libVTMDec_set_max_temporal_layer")) return;
   if (!resolve(libVTMDec_push_nal_unit, "libVTMDec_push_nal_unit")) return;
@@ -181,10 +198,11 @@ void decoderVTM::allocateNewDecoder()
 
   DEBUG_DECVTM("decoderVTM::allocateNewDecoder - decodeSignal " << decodeSignal);
 
-  // Create new decoder object
   decoder = libVTMDec_new_decoder();
 
-  // Set some decoder parameters
+  if (libVTMDec_set_log_callback(decoder, this, &logCallback) != LIBVTMDEC_OK)
+    DEBUG_DECVTM("Error setting log callback.");
+  
   libVTMDec_set_SEI_Check(decoder, true);
   libVTMDec_set_max_temporal_layer(decoder, -1);
 }
@@ -282,7 +300,7 @@ decoderVTM::PushResponse decoderVTM::pushData(QByteArray &data)
     this->setErrorB(QString("Error pushing data to decoder (libVTMDec_push_nal_unit) length %1").arg(data.length()));
     return PushResponse::ERROR;
   }
-  DEBUG_DECVTM("decoderVTM::pushData pushed NAL length " << data.length());
+  DEBUG_DECVTM("decoderVTM::pushData pushed NAL length " << data.length() << (err == LIBVTMDEC_OK_FLUSH_REPUSH ? " repush" : ""));
 
   if (err == LIBVTMDEC_OK_FLUSH_REPUSH || (this->flushing && err == LIBVTMDEC_OK))
   {

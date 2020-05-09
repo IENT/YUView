@@ -49,6 +49,7 @@ struct decoderVTM_Functions
   const char            *(*libVTMDec_get_version)            (void);
   libVTMDec_context     *(*libVTMDec_new_decoder)            (void);
   libVTMDec_error        (*libVTMDec_free_decoder)           (libVTMDec_context*);
+  libVTMDec_error        (*libVTMDec_set_log_callback)       (libVTMDec_context* decCtx, void *userData, void (*callback)(void*, int, const char*));
   void                   (*libVTMDec_set_SEI_Check)          (libVTMDec_context*, bool check_hash);
   void                   (*libVTMDec_set_max_temporal_layer) (libVTMDec_context*, int max_layer);
   libVTMDec_error        (*libVTMDec_push_nal_unit)          (libVTMDec_context *decCtx, const void* data8, int length, bool eof);
@@ -90,6 +91,8 @@ public:
   QString getCodecName()         Q_DECL_OVERRIDE { return "hevc"; }
 
   int nrSignalsSupported() const Q_DECL_OVERRIDE { return nrSignals; }
+
+  void logCallbackLogMessage(int logLevel, QString message);
 
 private:
   // A private constructor that creates an uninitialized decoder library.

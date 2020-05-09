@@ -132,6 +132,12 @@ VTM_DEC_API libVTMDec_context* libVTMDec_new_decoder(void);
  */
 VTM_DEC_API libVTMDec_error libVTMDec_free_decoder(libVTMDec_context* decCtx);
 
+/** Set a logging callback. The callback will provide a log level:
+ * Debug (0), Info (1), Verbose (2), Error (3)
+ * The callback will not be called from any threads (there are none in libVTM)
+ */
+VTM_DEC_API libVTMDec_error libVTMDec_set_log_callback(libVTMDec_context* decCtx, void *userData, void (*callback)(void*, int, const char*));
+
 /** Enable/disable checking the SEI hash (default enabled).
  * This should be set before the first NAL unit is pushed to the decoder.
  * \param decCtx The decoder context that was created with libVTMDec_new_decoder
