@@ -257,13 +257,19 @@ fileSource::fileFormat_t fileSource::formatFromFilename(QFileInfo fileInfo)
     // Third, if we were able to get a frame size but no bit depth, we try to get a bit depth.
     if (format.frameSize.isValid() && format.bitDepth == -1)
     {
-      // Look for: 10bit, 10BIT, 10-bit, 10-BIT
       QList<int> bitDepths = QList<int>() << 8 << 9 << 10 << 12 << 16;
       for (int bd : bitDepths)
       {
+        // Look for: 10bit, 10BIT, 10-bit, 10-BIT
         if (name.contains(QString("%1bit").arg(bd), Qt::CaseInsensitive) || name.contains(QString("%1-bit").arg(bd), Qt::CaseInsensitive))
         {
-          // That looks like a bit depth indicator
+          format.bitDepth = bd;
+          break;
+        }
+        // Look for bit depths like: _16b_ .8b. -12b-
+        QRegExp exp(QString("(?:_|\\.|-)%1b(?:_|\\.|-)").arg(bd));
+        if (exp.indexIn(name) > -1)
+        {
           format.bitDepth = bd;
           break;
         }
