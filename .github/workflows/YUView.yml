@@ -37,11 +37,8 @@ jobs:
       uses: actions/checkout@v2
     - name: Install Qt base
       run: |
-        pwd
         cd $HOME
         pwd
-        cd ..
-        cd ..
         mkdir YUViewQt
         cd YUViewQt
         mkdir YUViewQt
