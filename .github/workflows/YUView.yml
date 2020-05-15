@@ -1,0 +1,106 @@
+name: C/C++ CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['ubuntu-16.04', 'windows-2019', 'macos-10.15']
+        include: 
+          - os: ubuntu-16.04
+            QT_INSTALL_DIR: /home/travis/build
+            QT_FILE: qtBase_5.14.2_xenial.zip
+            LIBDE265_REMOTE: libde265.so
+            LIBDE265_LOCAL: libde265-internals.so
+            ARTIFACT_NAME: VTM-Ubuntu
+            UNZIP_COMMAND: unzip -qa
+          - os: windows-2019
+            QT_INSTALL_DIR: /c/Users/travis/build
+            QT_FILE: qtBase_5.14.2_win.zip
+            QT_DEPLOY: WinDeployQt-5.13.1_win.zip
+            LIBDE265_REMOTE: libde265.dll
+            LIBDE265_LOCAL: libde265.dll
+            ARTIFACT_NAME: VTM-Windows
+            UNZIP_COMMAND: 7z x
+          - os: macos-10.15
+            QT_INSTALL_DIR: /Users/travis/build
+            QT_FILE: qtBase_5.14.2_mac.zip
+            QT_DEPLOY: MacDeployQt-5.13.1.zip
+            LIBDE265_REMOTE: libde265.dylib
+            LIBDE265_LOCAL: libde265-internals.dylib
+            ARTIFACT_NAME: VTM-Macos
+            UNZIP_COMMAND: unzip -qa
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Install Qt base
+      run: |
+        pwd
+        cd $HOME
+        pwd
+        ls
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.14.2/${{matrix.QT_FILE}} -o Qt.zip
+        ls
+        ${{matrix.UNZIP_COMMAND}} Qt.zip
+    - name: Install Qt deploy tools
+      run: |
+        cd $HOME
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.14.2/${{matrix.QT_DEPLOY}} -o deployQt.zip
+        echo ${{matrix.UNZIP_COMMAND}} deployQt.zip
+        ${{matrix.UNZIP_COMMAND}} deployQt.zip
+        ls
+      if: matrix.os == 'macos-10.15' || matrix.os == 'windows-2019'
+    - name: Install Macdeploy Qt
+      run: |
+        cp $HOME/Qttools/bin/macdeployqt $HOME/Qt/bin/macdeployqt
+        strip $HOME/Qt/bin/macdeployqt
+      if: matrix.os == 'macos-10.15'
+    - name: Install Linuxdeployqt
+      run: |
+        curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
+        chmod a+x linuxdeployqt-6-x86_64.AppImage
+      if: matrix.os == 'ubuntu-16.04'
+    - name: Install libde265
+      run: |
+        curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
+        curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+    - name: Install openSSL
+      run: |
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1g/openSSL_1_1_1g_win.zip -o openSSL.zip
+        ${{matrix.UNZIP_COMMAND}} openSSL.zip
+      if: matrix.os == 'windows-2019'
+    - name: Install jom (Windows only)
+      run: choco install jom
+      if: matrix.os == 'windows-2019'
+    - name: Build Linux/Mac
+      run: |
+        cd $HOME
+        ls
+        cd $GITHUB_WORKSPACE
+        export PATH=$HOME/Qt/bin:$PATH
+        echo $PATH
+        mkdir build
+        cd build
+        qmake ..
+        make -j 2
+      if: matrix.os == 'ubuntu-16.04' || matrix.os == 'macos-10.15'
+    - name: Build Windows
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir build
+        cd build
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        $HOME/Qt/bin/qmake.exe ..
+        jom
+      shell: cmd
+      if: matrix.os == 'windows-2019'
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{matrix.ARTIFACT_NAME}}
+        path: ${{matrix.BIN_PATH}}
+
+  # How to upload files to the release:
+  # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
