@@ -39,6 +39,12 @@ jobs:
       run: |
         pwd
         cd $HOME
+        cd ..
+        cd ..
+        mkdir YUViewQt
+        cd YUViewQt
+        mkdir YUViewQt
+        cd YUViewQt
         pwd
         ls
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.14.2/${{matrix.QT_FILE}} -o Qt.zip
@@ -91,7 +97,7 @@ jobs:
         mkdir build
         cd build
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        ../Qt/bin/qmake.exe ..
+        d:\a\YUViewQt\YUViewQt\Qt\bin\qmake ..
         jom
       shell: cmd
       if: matrix.os == 'windows-2019'
