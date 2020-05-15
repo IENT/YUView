@@ -19,7 +19,7 @@ jobs:
           - os: windows-2019
             QT_INSTALL_DIR: /c/Users/travis/build
             QT_FILE: qtBase_5.14.2_win.zip
-            QT_DEPLOY: WinDeployQt-5.13.1_win.zip
+            QT_DEPLOY: qtTools_5.14.2_win.zip
             LIBDE265_REMOTE: libde265.dll
             LIBDE265_LOCAL: libde265.dll
             ARTIFACT_NAME: VTM-Windows
@@ -27,7 +27,7 @@ jobs:
           - os: macos-10.15
             QT_INSTALL_DIR: /Users/travis/build
             QT_FILE: qtBase_5.14.2_mac.zip
-            QT_DEPLOY: MacDeployQt-5.13.1.zip
+            QT_DEPLOY: qtTools_5.14.2_mac.zip
             LIBDE265_REMOTE: libde265.dylib
             LIBDE265_LOCAL: libde265-internals.dylib
             ARTIFACT_NAME: VTM-Macos
