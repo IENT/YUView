@@ -39,6 +39,7 @@ jobs:
       run: |
         pwd
         cd $HOME
+        pwd
         cd ..
         cd ..
         mkdir YUViewQt
