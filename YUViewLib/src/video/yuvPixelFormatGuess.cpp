@@ -115,24 +115,32 @@ yuvPixelFormat testFormatFromSizeAndNamePlanar(QString name, const QSize size, i
 
         for (const QString &endianess : endianessList)
         {
+          for (QString interlacedString : {"UVI", "interlaced", ""})
           {
-            QString formatName = planarYUVOrderList[o] + subsamplingToString(subsampling) + "p";
-            if (bitDepth > 8)
-              formatName += QString::number(bitDepth) + endianess;
-            auto fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
-            if (name.contains(formatName) && checkFormat(fmt, size, fileSize))
-              return fmt;
-          }
-          
-          if (subsampling == detectedSubsampling && detectedSubsampling != Subsampling::UNKNOWN)
-          {
-            // Also try the string without the subsampling indicator (which we already detected)
-            QString formatName = planarYUVOrderList[o] + "p";
-            if (bitDepth > 8)
-              formatName += QString::number(bitDepth) + endianess;
-            auto fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
-            if (name.contains(formatName) && checkFormat(fmt, size, fileSize))
-              return fmt;
+            const bool interlaced = !interlacedString.isEmpty();
+            {
+              QString formatName = planarYUVOrderList[o] + subsamplingToString(subsampling) + "p";
+              if (bitDepth > 8)
+                formatName += QString::number(bitDepth) + endianess;
+              formatName += interlacedString;
+              auto fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
+              fmt.uvInterleaved = interlaced;
+              if (name.contains(formatName) && checkFormat(fmt, size, fileSize))
+                return fmt;
+            }
+            
+            if (subsampling == detectedSubsampling && detectedSubsampling != Subsampling::UNKNOWN)
+            {
+              // Also try the string without the subsampling indicator (which we already detected)
+              QString formatName = planarYUVOrderList[o] + "p";
+              if (bitDepth > 8)
+                formatName += QString::number(bitDepth) + endianess;
+              formatName += interlacedString;
+              auto fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
+              fmt.uvInterleaved = interlaced;
+              if (name.contains(formatName) && checkFormat(fmt, size, fileSize))
+                return fmt;
+            }
           }
         }
       }
