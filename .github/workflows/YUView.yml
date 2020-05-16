@@ -59,7 +59,7 @@ jobs:
     - name: Install Macdeploy Qt
       run: |
         cp $HOME/Qttools/bin/macdeployqt $HOME/YUViewQt/YUViewQt/Qt/bin/macdeployqt
-        strip $HOME/Qt/bin/macdeployqt
+        strip $HOME/YUViewQt/YUViewQt/Qt/bin/macdeployqt
       if: matrix.os == 'macos-10.15'
     - name: Install Linuxdeployqt
       run: |
