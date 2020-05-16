@@ -60,8 +60,8 @@ jobs:
       if: matrix.os == 'macos-10.15' || matrix.os == 'windows-2019'
     - name: Install Macdeploy Qt
       run: |
-        cp $GITHUB_WORKSPACE/../../Qttools/bin/macdeployqt $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
-        strip $HOME/YUViewQt/YUViewQt/Qt/bin/macdeployqt
+        cp $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qttools/bin/macdeployqt $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
+        strip $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
       if: matrix.os == 'macos-10.15'
     - name: Install Linuxdeployqt
       run: |
