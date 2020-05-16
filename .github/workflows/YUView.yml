@@ -52,6 +52,7 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.14.2/${{matrix.QT_FILE}} -o Qt.zip
         ls
         ${{matrix.UNZIP_COMMAND}} Qt.zip
+      shell: cmd
     - name: Install Qt deploy tools
       run: |
         cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
