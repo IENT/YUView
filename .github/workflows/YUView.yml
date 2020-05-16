@@ -36,9 +36,9 @@ jobs:
       uses: actions/checkout@v2
     - name: Install Qt base
       run: |
-        echo GITHUB_WORKSPACE: $GITHUB_WORKSPACE
-        echo HOME: $HOME
-        echo "::debug GITHUB_WORKSPACE: $GITHUB_WORKSPACE HOME: $HOME"
+        echo GITHUB_WORKSPACE: %GITHUB_WORKSPACE%
+        echo HOME: %HOME%
+        echo "::debug GITHUB_WORKSPACE: %GITHUB_WORKSPACE% HOME: %HOME%"
         cd $GITHUB_WORKSPACE
         pwd
         cd ../../
