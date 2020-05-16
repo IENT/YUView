@@ -82,7 +82,7 @@ jobs:
     - name: Build Linux/Mac
       run: |
         cd $GITHUB_WORKSPACE
-        export PATH=$HOME/YUViewQt/YUViewQt/Qt/bin:$PATH
+        export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
         echo $PATH
         mkdir build
         cd build
