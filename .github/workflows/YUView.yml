@@ -51,7 +51,8 @@ jobs:
         ${{matrix.UNZIP_COMMAND}} Qt.zip
     - name: Install Qt deploy tools
       run: |
-        cd $HOME
+        cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
+        pwd
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.14.2/${{matrix.QT_DEPLOY}} -o deployQt.zip
         echo ${{matrix.UNZIP_COMMAND}} deployQt.zip
         ${{matrix.UNZIP_COMMAND}} deployQt.zip
