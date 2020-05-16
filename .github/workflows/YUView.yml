@@ -61,6 +61,7 @@ jobs:
         echo ${{matrix.UNZIP_COMMAND}} deployQt.zip
         ${{matrix.UNZIP_COMMAND}} deployQt.zip
         ls
+      shell: bash
       if: matrix.os == 'macos-10.15' || matrix.os == 'windows-2019'
     - name: Install Macdeploy Qt
       run: |
