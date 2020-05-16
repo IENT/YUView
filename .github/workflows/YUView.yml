@@ -92,6 +92,8 @@ jobs:
       if: matrix.os == 'ubuntu-16.04' || matrix.os == 'macos-10.15'
     - name: Build Windows
       run: |
+        echo %HOME%
+        dir
         mkdir build
         cd build
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
