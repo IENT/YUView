@@ -37,7 +37,8 @@ jobs:
       uses: actions/checkout@v2
     - name: Install Qt base
       run: |
-        cd $HOME
+        cd $GITHUB_WORKSPACE
+        cd ../../
         pwd
         mkdir YUViewQt
         cd YUViewQt
@@ -80,8 +81,6 @@ jobs:
       if: matrix.os == 'windows-2019'
     - name: Build Linux/Mac
       run: |
-        cd $HOME
-        ls
         cd $GITHUB_WORKSPACE
         export PATH=$HOME/YUViewQt/YUViewQt/Qt/bin:$PATH
         echo $PATH
@@ -92,7 +91,7 @@ jobs:
       if: matrix.os == 'ubuntu-16.04' || matrix.os == 'macos-10.15'
     - name: Build Windows
       run: |
-        echo %HOME%
+        cd $GITHUB_WORKSPACE
         dir
         mkdir build
         cd build
