@@ -36,9 +36,9 @@ jobs:
       uses: actions/checkout@v2
     - name: Install Qt base
       run: |
-        echo GITHUB_WORKSPACE: %GITHUB_WORKSPACE%
-        echo HOME: %HOME%
-        echo "::debug GITHUB_WORKSPACE: %GITHUB_WORKSPACE% HOME: %HOME%"
+        echo GITHUB_WORKSPACE: $GITHUB_WORKSPACE
+        echo HOME: $HOME
+        echo "::debug GITHUB_WORKSPACE: $GITHUB_WORKSPACE HOME: $HOME"
         cd $GITHUB_WORKSPACE
         pwd
         cd ../../
@@ -52,7 +52,7 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.14.2/${{matrix.QT_FILE}} -o Qt.zip
         ls
         ${{matrix.UNZIP_COMMAND}} Qt.zip
-      shell: cmd
+      shell: bash
     - name: Install Qt deploy tools
       run: |
         cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
