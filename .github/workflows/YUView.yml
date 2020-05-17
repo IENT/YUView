@@ -33,7 +33,7 @@ jobs:
           #   UNZIP_COMMAND: unzip -qa
     steps:
     - uses: actions/checkout@v2
-    - run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+    - run: git fetch --prune --unshallow
     - name: Install Qt base
       run: |
         echo GITHUB_WORKSPACE: $GITHUB_WORKSPACE
