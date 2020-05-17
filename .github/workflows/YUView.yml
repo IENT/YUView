@@ -77,11 +77,17 @@ jobs:
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+        pwd
+        ls
+      shell: bash
     - name: Install openSSL
       run: |
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1g/openSSL_1_1_1g_win.zip -o openSSL.zip
         ${{matrix.UNZIP_COMMAND}} openSSL.zip
+        pwd
+        ls
       if: matrix.os == 'windows-2019'
+      shell: bash
     - name: Install jom (Windows only)
       run: choco install jom
       if: matrix.os == 'windows-2019'
@@ -97,13 +103,32 @@ jobs:
       if: matrix.os == 'ubuntu-16.04' || matrix.os == 'macos-10.15'
     - name: Build Windows
       run: |
-        cd $GITHUB_WORKSPACE
         dir
         mkdir build
         cd build
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake ..
         jom
+        cd ..
+        # create temporary folder for preparing the deployment package
+        mkdir deploy
+        cd deploy
+        cp ../build/YUViewApp/YUView.exe .
+        d:\a\YUViewQt\YUViewQt\Qttools\bin\windeployqt.exe --release --dir d:\a\YUView\YUView\deploy YUView.exe
+        # Copy libraries and other misc files
+        cp d:\a\YUViewQt\YUViewQt\openSSL\*.dll .
+        mkdir decoder
+        cp d:\a\YUViewQt\YUViewQt\libde265.dll decoder
+        cp d:\a\YUViewQt\YUViewQt\libde265License.txt decoder
+        cp ../LICENSE.GPL3 .
+        # Run the versioning tool
+        dir
+        python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
+        ls -l deploy
+        # Package the installer and the zip file
+        7z a $TRAVIS_BUILD_DIR/release_files/YUView-Win.zip ./deploy/*
+        cd deployment/wix
+        cp /c/Program\ Files\ \(x86\)/Common\ Files/Merge\ Modules/Microsoft_VC140_CRT_x64.msm .
       shell: cmd
       if: matrix.os == 'windows-2019'
     - name: Upload Artifact
