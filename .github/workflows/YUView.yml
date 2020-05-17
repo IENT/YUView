@@ -117,13 +117,14 @@ jobs:
         cd deploy
         cp ../build/YUViewApp/YUView.exe .
         d:\a\YUViewQt\YUViewQt\Qttools\bin\windeployqt.exe --release --dir d:\a\YUView\YUView\deploy YUView.exe
-        cp ..\openSSL\*.dll .
+        cp ../openSSL/*.dll .
         mkdir decoder
         cp ..\libde265.dll decoder
         cp ..\libde265License.txt decoder
         cp ../LICENSE.GPL3 .
         dir
         cd ..
+        dir
         python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
         cd deploy
         dir
@@ -135,7 +136,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ${{matrix.ARTIFACT_NAME}}
-        path: ${{matrix.BIN_PATH}}
+        path: ${{matrix.ARTIFACT_NAME}}
 
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
