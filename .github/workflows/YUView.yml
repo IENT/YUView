@@ -52,6 +52,7 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.14.2/${{matrix.QT_FILE}} -o Qt.zip
         ls
         ${{matrix.UNZIP_COMMAND}} Qt.zip
+        echo "::add-path::$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin"
       shell: bash
     - name: Install Qt deploy tools
       run: |
@@ -107,6 +108,7 @@ jobs:
     - name: Build Windows
       run: |
         dir
+        echo %Path%
         mkdir build
         cd build
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
