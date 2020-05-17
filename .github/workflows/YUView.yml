@@ -21,7 +21,7 @@ jobs:
             QT_DEPLOY: qtTools_5.14.2_win.zip
             LIBDE265_REMOTE: libde265.dll
             LIBDE265_LOCAL: libde265.dll
-            ARTIFACT_NAME: VTM-Windows
+            ARTIFACT_NAME: YUView-Win.zip
             UNZIP_COMMAND: 7z x
           # - os: macos-10.15
           #   QT_INSTALL_DIR: /Users/travis/build
@@ -82,8 +82,11 @@ jobs:
       shell: bash
     - name: Install openSSL
       run: |
+        mkdir openSSL
+        cd openSSL
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1g/openSSL_1_1_1g_win.zip -o openSSL.zip
         ${{matrix.UNZIP_COMMAND}} openSSL.zip
+        cd ..
         pwd
         ls
       if: matrix.os == 'windows-2019'
@@ -110,25 +113,22 @@ jobs:
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake ..
         jom
         cd ..
-        # create temporary folder for preparing the deployment package
         mkdir deploy
         cd deploy
         cp ../build/YUViewApp/YUView.exe .
         d:\a\YUViewQt\YUViewQt\Qttools\bin\windeployqt.exe --release --dir d:\a\YUView\YUView\deploy YUView.exe
-        # Copy libraries and other misc files
-        cp d:\a\YUViewQt\YUViewQt\openSSL\*.dll .
+        cp ..\openSSL\*.dll .
         mkdir decoder
-        cp d:\a\YUViewQt\YUViewQt\libde265.dll decoder
-        cp d:\a\YUViewQt\YUViewQt\libde265License.txt decoder
+        cp ..\libde265.dll decoder
+        cp ..\libde265License.txt decoder
         cp ../LICENSE.GPL3 .
-        # Run the versioning tool
         dir
+        cd ..
         python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
-        ls -l deploy
-        # Package the installer and the zip file
-        7z a $TRAVIS_BUILD_DIR/release_files/YUView-Win.zip ./deploy/*
-        cd deployment/wix
-        cp /c/Program\ Files\ \(x86\)/Common\ Files/Merge\ Modules/Microsoft_VC140_CRT_x64.msm .
+        cd deploy
+        dir
+        cd ..
+        7z a YUView-Win.zip ./deploy/*
       shell: cmd
       if: matrix.os == 'windows-2019'
     - name: Upload Artifact
