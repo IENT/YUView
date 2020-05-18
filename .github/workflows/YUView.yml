@@ -98,7 +98,6 @@ jobs:
       shell: bash
     - name: Build Linux/Mac
       run: |
-        locate libGL
         ln -s /usr/lib/x86_64-linux-gnu/mesa/libGL.so.1 /usr/lib/libGL.so
         cd $GITHUB_WORKSPACE
         export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
