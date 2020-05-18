@@ -137,7 +137,7 @@ jobs:
     - name: Wix Windows
       run: |
         ls
-        cd $WIX
+        cd "$WIX"
         echo ---------
         ls
         echo ----- heat
