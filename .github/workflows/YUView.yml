@@ -81,6 +81,9 @@ jobs:
         pwd
         ls
       shell: bash
+    - name: Install jom (Windows only)
+      run: choco install jom
+      if: matrix.os == 'windows-2019'
     - name: Install openSSL
       run: |
         mkdir openSSL
@@ -110,7 +113,7 @@ jobs:
         cd build
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake ..
-        nmake
+        jom
         cd ..
         mkdir deploy
         cd deploy
@@ -140,7 +143,7 @@ jobs:
         "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
         "${WIX}\bin\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "${WIX}\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
         cd $GITHUB_WORKSPACE
-        cp cd $GITHUB_WORKSPACE/deployment/wix/bin/Release/YUViewSetup.msi .
+        cp $GITHUB_WORKSPACE/deployment/wix/bin/Release/YUViewSetup.msi .
       shell: bash
       if: matrix.os == 'windows-2019'
     - name: Upload Artifact
