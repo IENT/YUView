@@ -143,7 +143,7 @@ jobs:
         ls
         cd Common\ Files
         ls
-        cd Merge \Modules
+        cd Merge\ Modules
         ls
         cd deployment/wix
         cp /c/Program\ Files\ \(x86\)/Common\ Files/Merge\ Modules/Microsoft_VC140_CRT_x64.msm .
