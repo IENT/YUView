@@ -104,16 +104,17 @@ jobs:
         cd build
         qmake ..
         make -j 2
+        make check
       if: matrix.os == 'ubuntu-16.04' || matrix.os == 'macos-10.15'
     - name: Build Windows
       run: |
-        dir
         echo %Path%
         mkdir build
         cd build
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake ..
         jom
+        nmake check
         cd ..
         mkdir deploy
         cd deploy
@@ -124,13 +125,8 @@ jobs:
         cp ..\libde265.dll decoder
         cp ..\libde265License.txt decoder
         cp ../LICENSE.GPL3 .
-        dir
         cd ..
-        dir
         python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
-        cd deploy
-        dir
-        cd ..
         7z a YUView-Win.zip ./deploy/*
       shell: cmd
       if: matrix.os == 'windows-2019'
@@ -142,8 +138,7 @@ jobs:
         "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext "${WIX}\bin\WixUIExtension.dll" YUView.wxs
         "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
         "${WIX}\bin\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "${WIX}\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
-        cd $GITHUB_WORKSPACE
-        cp $GITHUB_WORKSPACE/deployment/wix/bin/Release/YUViewSetup.msi .
+        cp bin/Release/YUViewSetup.msi $GITHUB_WORKSPACE
       shell: bash
       if: matrix.os == 'windows-2019'
     - name: Upload Artifact
