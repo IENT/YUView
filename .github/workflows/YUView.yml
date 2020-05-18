@@ -84,7 +84,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         curl -L http://download.qt.io/official_releases/jom/jom.zip -o jom.zip
-        7z x jom.zip
+        7z x jom.zip -ojom
         cp jom/jom.exe $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/
       shell: bash
       if: matrix.os == 'windows-2019'
