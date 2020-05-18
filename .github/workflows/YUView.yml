@@ -137,6 +137,16 @@ jobs:
     - name: Wix Windows
       run: |
         ls
+        cd /c/
+        dir
+        cd Program\ Files\ \(x86\)
+        dir
+        cd Common
+        dir
+        cd Common\ Files
+        dir
+        cd Merge \Modules
+        dir
         cd deployment/wix
         cp /c/Program\ Files\ \(x86\)/Common\ Files/Merge\ Modules/Microsoft_VC140_CRT_x64.msm .
         $WIX/heat.exe dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
