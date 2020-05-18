@@ -138,15 +138,13 @@ jobs:
       run: |
         ls
         cd /c/
-        dir
+        ls
         cd Program\ Files\ \(x86\)
-        dir
-        cd Common
-        dir
+        ls
         cd Common\ Files
-        dir
+        ls
         cd Merge \Modules
-        dir
+        ls
         cd deployment/wix
         cp /c/Program\ Files\ \(x86\)/Common\ Files/Merge\ Modules/Microsoft_VC140_CRT_x64.msm .
         $WIX/heat.exe dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
