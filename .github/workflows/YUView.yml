@@ -152,7 +152,7 @@ jobs:
         echo ---------
         echo $WIX
         echo ----- lsls
-        cd $WIX
+        cd "$WIX"
         ls
         echo ----- heat
         "${WIX}heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
