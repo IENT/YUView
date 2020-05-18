@@ -120,6 +120,10 @@ jobs:
         jom
         nmake check
         cd ..
+      shell: cmd
+      if: matrix.os == 'windows-2019'
+    - name: Deploy Windows
+      run: |
         mkdir deploy
         cd deploy
         cp ../build/YUViewApp/YUView.exe .
@@ -131,7 +135,8 @@ jobs:
         cp ../LICENSE.GPL3 .
         cd ..
         python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
-        7z a YUView-Win.zip ./deploy/*
+        mkdir artifacts
+        7z a artifacts/YUView-Win.zip ./deploy/*
       shell: cmd
       if: matrix.os == 'windows-2019'
     - name: Wix Windows
@@ -143,14 +148,14 @@ jobs:
         "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
         "${WIX}\bin\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "${WIX}\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
         cd $GITHUB_WORKSPACE
-        cp deployment/wix/bin/Release/YUViewSetup.msi .
+        cp deployment/wix/bin/Release/YUViewSetup.msi ./artifacts
       shell: bash
       if: matrix.os == 'windows-2019'
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
         name: ${{matrix.ARTIFACT_NAME}}
-        path: ${{matrix.ARTIFACT_NAME}} YUViewSetup.msi
+        path: artifacts
 
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
