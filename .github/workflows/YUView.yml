@@ -145,6 +145,7 @@ jobs:
         ls
         cd Merge\ Modules
         ls
+        cd $GITHUB_WORKSPACE
         cd deployment/wix
         cp /c/Program\ Files\ \(x86\)/Common\ Files/Merge\ Modules/Microsoft_VC140_CRT_x64.msm .
         $WIX/heat.exe dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
