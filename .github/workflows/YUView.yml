@@ -59,7 +59,6 @@ jobs:
         cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
         pwd
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.14.2/${{matrix.QT_DEPLOY}} -o deployQt.zip
-        echo ${{matrix.UNZIP_COMMAND}} deployQt.zip
         ${{matrix.UNZIP_COMMAND}} deployQt.zip
         ls
       shell: bash
@@ -82,7 +81,12 @@ jobs:
         ls
       shell: bash
     - name: Install jom (Windows only)
-      run: choco install jom
+      run: |
+        cd $GITHUB_WORKSPACE
+        curl -L http://download.qt.io/official_releases/jom/jom.zip -o jom.zip
+        7z x jom.zip
+        cp jom/jom.exe $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/
+      shell: bash
       if: matrix.os == 'windows-2019'
     - name: Install openSSL
       run: |
@@ -138,7 +142,8 @@ jobs:
         "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext "${WIX}\bin\WixUIExtension.dll" YUView.wxs
         "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
         "${WIX}\bin\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "${WIX}\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
-        cp bin/Release/YUViewSetup.msi $GITHUB_WORKSPACE
+        cd $GITHUB_WORKSPACE
+        cp deployment/wix/bin/Release/YUViewSetup.msi .
       shell: bash
       if: matrix.os == 'windows-2019'
     - name: Upload Artifact
