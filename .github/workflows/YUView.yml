@@ -152,6 +152,8 @@ jobs:
         echo ---------
         echo $WIX
         echo ----- heat
+        cd $WIX
+        ls
         "${WIX}heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
         "${WIX}candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext TRAVIS_BUILD_DIR/../wix311/WixUIExtension.dll YUView.wxs
         "${WIX}candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
