@@ -136,9 +136,17 @@ jobs:
       if: matrix.os == 'windows-2019'
     - name: Wix Windows
       run: |
-        ls
-        cd "$WIX"
         echo ---------
+        cd "$WIX"
+        ls
+        echo ---------
+        cd "$WIX\bin"
+        ls
+        echo ---------
+        cd "$WIX\SDK"
+        ls
+        echo ---------
+        cd "$WIX\swidtag"
         ls
         echo ----- heat
         cd $GITHUB_WORKSPACE/deployment/wix
