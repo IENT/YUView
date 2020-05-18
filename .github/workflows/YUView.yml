@@ -152,10 +152,10 @@ jobs:
         echo ---------
         echo $WIX
         echo ----- heat
-        "$WIXheat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
-        "$WIXcandle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext TRAVIS_BUILD_DIR/../wix311/WixUIExtension.dll YUView.wxs
-        "$WIXcandle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
-        "$WIX/Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext $TRAVIS_BUILD_DIR/../wix311/WixUIExtension.dll -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
+        "$WIX\heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
+        "$WIX\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext TRAVIS_BUILD_DIR/../wix311/WixUIExtension.dll YUView.wxs
+        "$WIX\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
+        "$WIX\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext $TRAVIS_BUILD_DIR/../wix311/WixUIExtension.dll -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
         ls
       shell: bash
       if: matrix.os == 'windows-2019'
