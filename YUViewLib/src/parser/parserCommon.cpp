@@ -148,7 +148,7 @@ QByteArray sub_byte_reader::readBytes(int nrBytes)
   if (skipEmulationPrevention)
     throw std::logic_error("Reading bytes with emulation prevention active is not supported.");
   if (posInBuffer_bits != 0 && posInBuffer_bits != 8)
-    throw std::logic_error("When reading bytes from the bitstream, it should be byte alligned.");
+    throw std::logic_error("When reading bytes from the bitstream, it should be byte aligned.");
 
   if (posInBuffer_bits == 8)
     if (!gotoNextByte())

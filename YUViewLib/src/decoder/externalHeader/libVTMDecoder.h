@@ -101,7 +101,7 @@ extern "C" {
    */
   typedef enum
   {
-    LIBVTMDEC_OK = 0,            ///< No error occured
+    LIBVTMDEC_OK = 0,            ///< No error occurred
     LIBVTMDEC_ERROR,             ///< There was an unspecified error
     LIBVTMDEC_ERROR_READ_ERROR   ///< There was an error reading the provided data
   } libVTMDec_error;
@@ -123,7 +123,7 @@ extern "C" {
 
   /** Destroy an existing decoder.
    * \param decCtx The decoder context to destroy that was created with libVTMDec_new_decoder
-   * \return Return an error code or LIBVTMDEC_OK if no error occured.
+   * \return Return an error code or LIBVTMDEC_OK if no error occurred.
    */
   VTM_DEC_API libVTMDec_error libVTMDec_free_decoder(libVTMDec_context* decCtx);
 
@@ -150,7 +150,7 @@ extern "C" {
    * \param eof Is this NAL the last one in the bitstream?
    * \param bNewPicture This bool is set by the function if the NAL unit must be pushed to the decoder again after reading frames.
    * \param checkOutputPictures This bool is set by the function if pictures might be available (see libVTMDec_get_picture).
-   * \return An error code or LIBVTMDEC_OK if no error occured
+   * \return An error code or LIBVTMDEC_OK if no error occurred
    */
   VTM_DEC_API libVTMDec_error libVTMDec_push_nal_unit(libVTMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
 
@@ -272,7 +272,7 @@ extern "C" {
   /** Clear the internal storage for the internal info (the pointer returned by LIBVTMDEC_get_internal_info).
    * If you no longer need the info in the internals vector, you can call this to free some space.
    * \param decCtx The decoder context that was created with libVTMDec_new_decoder
-   * \return An error code or LIBVTMDEC_OK if no error occured
+   * \return An error code or LIBVTMDEC_OK if no error occurred
    */
   VTM_DEC_API libVTMDec_error libVTMDec_clear_internal_info(libVTMDec_context *decCtx);
 

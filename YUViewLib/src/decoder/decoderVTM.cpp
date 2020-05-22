@@ -245,11 +245,11 @@ bool decoderVTM::getNextFrameFromDecoder()
   {
     // Check the values against the previously set values
     if (frameSize != picSize)
-      return setErrorB("Recieved a frame of different size");
+      return setErrorB("Received a frame of different size");
     if (formatYUV.subsampling != subsampling)
-      return setErrorB("Recieved a frame with different subsampling");
+      return setErrorB("Received a frame with different subsampling");
     if (formatYUV.bitsPerSample != bitDepth)
-      return setErrorB("Recieved a frame with different bit depth");
+      return setErrorB("Received a frame with different bit depth");
   }
   
   DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame wit POC %d", poc);
@@ -267,7 +267,7 @@ bool decoderVTM::pushData(QByteArray &data)
 
   bool endOfFile = (data.length() == 0);
   if (endOfFile)
-    DEBUG_DECVTM("decoderVTM::pushData: Recieved empty packet. Setting EOF.");
+    DEBUG_DECVTM("decoderVTM::pushData: Received empty packet. Setting EOF.");
 
   // Push the data of the NAL unit. The function libVTMDec_push_nal_unit can handle data 
   // with a start code and without.

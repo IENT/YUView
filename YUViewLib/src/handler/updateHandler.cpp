@@ -222,7 +222,7 @@ void updateHandler::sslErrors(QNetworkReply *reply, const QList<QSslError> &erro
 {
   Q_UNUSED(reply);
   Q_UNUSED(errors);
-  QMessageBox::information(mainWidget, "SSL Connection error", "An error occured while trying to establish a secure coonection to the server raw.githubusercontent.com.");
+  QMessageBox::information(mainWidget, "SSL Connection error", "An error occurred while trying to establish a secure coonection to the server raw.githubusercontent.com.");
   
   // Abort
   forceUpdate = false;
@@ -421,7 +421,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   {
     // Inform the user about the outcome of the check because he requested the check.
     if (error)
-      return abortUpdate("An error occured while checking for updates. Are you connected to the internet? " + errorString);
+      return abortUpdate("An error occurred while checking for updates. Are you connected to the internet? " + errorString);
     else
     {
       // The software is up to date but the user requested this check so tell him that no update is required.
@@ -438,7 +438,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
         // Suggest to activate automatic update checking
         QMessageBox msgBox(mainWidget);
         msgBox.setText("Your YUView version is up to date.");
-        msgBox.setInformativeText("Currently, automatic checking for updates is disabled. If you want to obtain the latest bugfixes and enhancements, we recomend to activate automatic update checks.");
+        msgBox.setInformativeText("Currently, automatic checking for updates is disabled. If you want to obtain the latest bugfixes and enhancements, we recommend to activate automatic update checks.");
         msgBox.setCheckBox(new QCheckBox("Check for updates"));
         msgBox.exec();
 
@@ -586,7 +586,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
   bool downloadEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
   DEBUG_UPDATE("updateHandler::downloadFinished %s %s %d", error ? "error" : "", downloadEncrypted ? "encrypted" : "not encrypted", reply->error());
   if (error)
-    return abortUpdate(QString("An error occured while downloading file %1. Error code %2 (%3).").arg(currentDownloadFile.first).arg(err).arg(reply->errorString()));
+    return abortUpdate(QString("An error occurred while downloading file %1. Error code %2 (%3).").arg(currentDownloadFile.first).arg(err).arg(reply->errorString()));
   else if (!downloadEncrypted)
     return abortUpdate(QString("File %1 could not be downloaded through a secure connection.").arg(currentDownloadFile.first));
   else
@@ -647,8 +647,8 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
 
       if (downloadFiles.isEmpty())
       {
-        // No more files to download. Update successfull.
-        QMessageBox::information(mainWidget, "Update successfull.", "Update was successfull. We will now start the new version of YUView.");
+        // No more files to download. Update successfully.
+        QMessageBox::information(mainWidget, "Update successfully.", "Update was successful. We will now start the new version of YUView.");
 
         // Disconnect/delete the update progress dialog.
         if (downloadProgress)

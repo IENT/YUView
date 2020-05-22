@@ -622,7 +622,7 @@ protected:
   {
     sei(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
     sei(QSharedPointer<sei> sei_src) : nal_unit_hevc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; payloadTypeName = sei_src->payloadTypeName; }
-    // Parse the SEI and return how many bytes were read. -1 if an error occured.
+    // Parse the SEI and return how many bytes were read. -1 if an error occurred.
     int parse_sei_header(const QByteArray &sliceHeaderData, parserCommon::TreeItem *root);
     // If parsing of a special SEI is not implemented, this function can just parse/show the raw bytes.
     sei_parsing_return_t parser_sei_bytes(QByteArray &data, parserCommon::TreeItem *root);

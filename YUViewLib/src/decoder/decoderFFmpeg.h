@@ -73,7 +73,7 @@ protected:
   AVCodecContextWrapper decCtx;     //< The decoder context
   AVFrameWrapper frame;             //< The frame that we use for decoding
 
-  // Try to decode a frame. If successfull, the frame will be in "frame" and return true.
+  // Try to decode a frame. If successful, the frame will be in "frame" and return true.
   bool decodeFrame();
 
   // Statistics caching

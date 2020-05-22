@@ -117,7 +117,7 @@ private:
 
   static YUVSubsamplingType convertFromInternalSubsampling(Dav1dPixelLayout layout);
 
-  // Try to decode a frame. If successfull, the frame will be in curPicture.
+  // Try to decode a frame. If successful, the frame will be in curPicture.
   bool decodeFrame();
 
   class Dav1dPictureWrapper
