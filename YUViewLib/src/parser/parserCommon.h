@@ -93,7 +93,7 @@ namespace parserCommon
 
     // Move to the next byte and look for an emulation prevention 3 byte. Remove it (skip it) if found.
     // This function is just used by the internal reading functions.
-    bool gotoNextByte();
+    void gotoNextByte();
 
     unsigned int posInBuffer_bytes   {0}; // The byte position in the buffer
     unsigned int posInBuffer_bits    {0}; // The sub byte (bit) position in the buffer (0...7)
@@ -161,13 +161,12 @@ namespace parserCommon
   typedef QString (*meaning_callback_function)(unsigned int);
 
   // This is a wrapper around the sub_byte_reader that adds the functionality to log the read symbold to TreeItems
-  class reader_helper : protected parserCommon::sub_byte_reader
+  class reader_helper
   {
   public:
-    reader_helper() : sub_byte_reader() {};
-    reader_helper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "") : sub_byte_reader(inArr) { init(inArr, item, new_sub_item_name); }
-
-    void init(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "");
+    reader_helper() = default;
+    reader_helper(sub_byte_reader &reader, TreeItem *item, QString new_sub_item_name = "");
+    reader_helper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "");
 
     // Add another hierarchical log level to the tree or go back up. Don't call these directly but use the reader_sub_level wrapper.
     void addLogSubLevel(QString name);
@@ -212,14 +211,15 @@ namespace parserCommon
     TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
     // Some functions passed thourgh from the sub_byte_reader
-    bool          more_rbsp_data()             { return sub_byte_reader::more_rbsp_data();             }
-    bool          payload_extension_present()  { return sub_byte_reader::payload_extension_present();  }
-    unsigned int  nrBytesRead()                { return sub_byte_reader::nrBytesRead();                }
-    unsigned int  nrBytesLeft()                { return sub_byte_reader::nrBytesLeft();                }
-    bool          testReadingBits(int nrBits)  { return sub_byte_reader::testReadingBits(nrBits);      }
-    void          disableEmulationPrevention() {        sub_byte_reader::disableEmulationPrevention(); }
-    QByteArray    readBytes(int nrBytes)       { return sub_byte_reader::readBytes(nrBytes);           }
-  protected:
+    bool          more_rbsp_data()             { return reader.more_rbsp_data();             }
+    bool          payload_extension_present()  { return reader.payload_extension_present();  }
+    unsigned int  nrBytesRead()                { return reader.nrBytesRead();                }
+    unsigned int  nrBytesLeft()                { return reader.nrBytesLeft();                }
+    bool          testReadingBits(int nrBits)  { return reader.testReadingBits(nrBits);      }
+    void          disableEmulationPrevention() {        reader.disableEmulationPrevention(); }
+    QByteArray    readBytes(int nrBytes)       { return reader.readBytes(nrBytes);           }
+  
+  private:
     // TODO: This is just too much. Replace by one function maybe ...
     /*
     template <typename F, typename...Args>
@@ -249,6 +249,7 @@ namespace parserCommon
 
     QList<TreeItem*> itemHierarchy;
     TreeItem *currentTreeLevel { nullptr };
+    parserCommon::sub_byte_reader reader;
   };
 
   // A simple wrapper for reader_helper.addLogSubLevel / reader_helper->removeLogSubLevel

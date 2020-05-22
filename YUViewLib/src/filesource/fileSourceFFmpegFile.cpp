@@ -516,11 +516,11 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   frameSize.setHeight(h);
 
   if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
-    colorConversionType = BT2020_LimitedRange;
+    colorConversionType = ColorConversion::BT2020_LimitedRange;
   else if (colSpace == AVCOL_SPC_BT470BG || colSpace == AVCOL_SPC_SMPTE170M)
-    colorConversionType = BT601_LimitedRange;
+    colorConversionType = ColorConversion::BT601_LimitedRange;
   else
-    colorConversionType = BT709_LimitedRange;
+    colorConversionType = ColorConversion::BT709_LimitedRange;
 
   isFileOpened = true;
 }
@@ -545,6 +545,8 @@ bool fileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
       pkt.setPacketType(PacketType::SUBTITLE_DVB);
     else if (streamIndices.subtitle.eia608.contains(pkt.get_stream_index()))
       pkt.setPacketType(PacketType::SUBTITLE_608);
+    else
+      pkt.setPacketType(PacketType::OTHER);
   }
   while (ret == 0 && videoPacketsOnly && pkt.getPacketType() != PacketType::VIDEO);
   

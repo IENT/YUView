@@ -68,41 +68,6 @@
 &lt;b&gt;4:0:0:&lt;/b&gt; Luma only. No chroma components are present.&lt;br /&gt;
 &lt;/p&gt;</string>
        </property>
-       <item>
-        <property name="text">
-         <string>4:4:4</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>4:2:2</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>4:2:0</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>4:4:0</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>4:1:0</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>4:1:1</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>4:0:0 (Luma only)</string>
-        </property>
-       </item>
       </widget>
      </item>
      <item row="2" column="0">
@@ -157,36 +122,6 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
        <property name="whatsThis">
         <string>How many bits per color component are there? If the bit depth is greater than 8, we will assume multiple bytes per component.</string>
        </property>
-       <item>
-        <property name="text">
-         <string>8</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>9</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>10</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>12</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>14</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>16</string>
-        </property>
-       </item>
       </widget>
      </item>
      <item row="2" column="1">
@@ -267,26 +202,6 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
         <property name="whatsThis">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the order of the planes in the file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
-        <item>
-         <property name="text">
-          <string>YUV</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>YVU</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>YUVA</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>YVUA</string>
-         </property>
-        </item>
        </widget>
       </item>
       <item row="0" column="0">

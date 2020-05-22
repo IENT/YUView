@@ -115,7 +115,7 @@ private:
   // If this is true, a frame is waiting from that step and decodeNextFrame will not actually decode a new frame.
   bool decodedFrameWaiting {false};
 
-  static YUVSubsamplingType convertFromInternalSubsampling(Dav1dPixelLayout layout);
+  static YUV_Internals::Subsampling convertFromInternalSubsampling(Dav1dPixelLayout layout);
 
   // Try to decode a frame. If successful, the frame will be in curPicture.
   bool decodeFrame();
@@ -130,7 +130,7 @@ private:
     void clear() { memset(&curPicture, 0, sizeof(Dav1dPicture)); }
     QSize getFrameSize() const { return QSize(curPicture.p.w, curPicture.p.h); }
     Dav1dPicture *getPicture() const { return (Dav1dPicture*)(&curPicture); }
-    YUVSubsamplingType getSubsampling() const { return decoderDav1d::convertFromInternalSubsampling(curPicture.p.layout); }
+    YUV_Internals::Subsampling getSubsampling() const { return decoderDav1d::convertFromInternalSubsampling(curPicture.p.layout); }
     int getBitDepth() const { return curPicture.p.bpc; }
     uint8_t *getData(int component) const { return (uint8_t*)curPicture.data[component]; }
     ptrdiff_t getStride(int component) const { return curPicture.stride[component]; }

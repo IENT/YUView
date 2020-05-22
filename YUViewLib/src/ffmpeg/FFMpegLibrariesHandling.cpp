@@ -49,8 +49,6 @@
 #endif
 
 using namespace YUView;
-using namespace YUV_Internals;
-using namespace RGB_Internals;
 
 namespace
 {
@@ -1520,38 +1518,38 @@ AVPixFmtDescriptorWrapper FFmpegVersionHandler::getAvPixFmtDescriptionFromAvPixe
   return AVPixFmtDescriptorWrapper(lib.av_pix_fmt_desc_get(pixFmt), libVersion);
 }
 
-yuvPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
+YUV_Internals::yuvPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
 {
   if (getRawFormat() == raw_RGB || !flagsSupported())
-    return yuvPixelFormat();
+    return YUV_Internals::yuvPixelFormat();
 
-  YUVSubsamplingType subsampling;
+  YUV_Internals::Subsampling subsampling;
   if (nb_components == 1)
-    subsampling = YUV_400;
+    subsampling = YUV_Internals::Subsampling::YUV_400;
   else if (log2_chroma_w == 0 && log2_chroma_h == 0)
-    subsampling = YUV_444;
+    subsampling = YUV_Internals::Subsampling::YUV_444;
   else if (log2_chroma_w == 1 && log2_chroma_h == 0)
-    subsampling = YUV_422;
+    subsampling = YUV_Internals::Subsampling::YUV_422;
   else if (log2_chroma_w == 1 && log2_chroma_h == 1)
-    subsampling = YUV_420;
+    subsampling = YUV_Internals::Subsampling::YUV_420;
   else if (log2_chroma_w == 0 && log2_chroma_h == 1)
-    subsampling = YUV_440;
+    subsampling = YUV_Internals::Subsampling::YUV_440;
   else if (log2_chroma_w == 2 && log2_chroma_h == 2)
-    subsampling = YUV_410;
+    subsampling = YUV_Internals::Subsampling::YUV_410;
   else if (log2_chroma_w == 0 && log2_chroma_h == 2)
-    subsampling = YUV_411;
+    subsampling = YUV_Internals::Subsampling::YUV_411;
   else
-    return yuvPixelFormat();
+    return YUV_Internals::yuvPixelFormat();
   
-  YUVPlaneOrder planeOrder;
+  YUV_Internals::PlaneOrder planeOrder;
   if (nb_components == 1)
-    planeOrder = Order_YUV;
+    planeOrder = YUV_Internals::PlaneOrder::YUV;
   else if (nb_components == 3 && !flagHasAlphaPlane())
-    planeOrder = Order_YUV;
+    planeOrder = YUV_Internals::PlaneOrder::YUV;
   else if (nb_components == 4 && flagHasAlphaPlane())
-    planeOrder = Order_YUVA;
+    planeOrder = YUV_Internals::PlaneOrder::YUVA;
   else
-    return yuvPixelFormat();
+    return YUV_Internals::yuvPixelFormat();
     
   bool bigEndian = flagIsBigEndian();
 
@@ -1559,83 +1557,83 @@ yuvPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
   for (int i=1; i<nb_components; i++)
     if (comp[i].depth != bitsPerSample)
       // Varying bit depths for components is not supported
-      return yuvPixelFormat();
+      return YUV_Internals::yuvPixelFormat();
   
   if (flagIsBitWisePacked() || !flagIsPlanar())
     // Maybe this could be supported but I don't think that any decoder actually uses this.
     // If you encounter a format that does not work because of this check please let us know.
-    return yuvPixelFormat();
+    return YUV_Internals::yuvPixelFormat();
 
-  return yuvPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
+  return YUV_Internals::yuvPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
 }
 
-rgbPixelFormat AVPixFmtDescriptorWrapper::getRGBPixelFormat()
+RGB_Internals::rgbPixelFormat AVPixFmtDescriptorWrapper::getRGBPixelFormat()
 {
   if (getRawFormat() == raw_YUV || !flagsSupported())
-    return rgbPixelFormat();
+    return RGB_Internals::rgbPixelFormat();
 
   int bitsPerSample = comp[0].depth;
   for (int i=1; i<nb_components; i++)
     if (comp[i].depth != bitsPerSample)
       // Varying bit depths for components is not supported
-      return rgbPixelFormat();
+      return RGB_Internals::rgbPixelFormat();
 
   if (flagIsBitWisePacked() || !flagIsPlanar())
     // Maybe this could be supported but I don't think that any decoder actually uses this.
     // If you encounter a format that does not work because of this check please let us know.
-    return rgbPixelFormat();
+    return RGB_Internals::rgbPixelFormat();
 
   // The only possible order of planes seems to be RGB(A)
-  return rgbPixelFormat(bitsPerSample, true, 0, 1, 2, flagHasAlphaPlane() ? 3 : -1);
+  return RGB_Internals::rgbPixelFormat(bitsPerSample, true, 0, 1, 2, flagHasAlphaPlane() ? 3 : -1);
 }
 
 bool AVPixFmtDescriptorWrapper::setValuesFromYUVPixelFormat(YUV_Internals::yuvPixelFormat fmt)
 {
-  if (fmt.planeOrder == Order_YVU || fmt.planeOrder == Order_YVUA)
+  if (fmt.planeOrder == YUV_Internals::PlaneOrder::YVU || fmt.planeOrder == YUV_Internals::PlaneOrder::YVUA)
     return false;
 
-  if (fmt.subsampling == YUV_422)
+  if (fmt.subsampling == YUV_Internals::Subsampling::YUV_422)
   {
     log2_chroma_w = 1;
     log2_chroma_h = 0;
   }
-  else if (fmt.subsampling == YUV_422)
+  else if (fmt.subsampling == YUV_Internals::Subsampling::YUV_422)
   {
     log2_chroma_w = 1;
     log2_chroma_h = 0;
   }
-  else if (fmt.subsampling == YUV_420)
+  else if (fmt.subsampling == YUV_Internals::Subsampling::YUV_420)
   {
     log2_chroma_w = 1;
     log2_chroma_h = 1;
   }
-  else if (fmt.subsampling == YUV_440)
+  else if (fmt.subsampling == YUV_Internals::Subsampling::YUV_440)
   {
     log2_chroma_w = 0;
     log2_chroma_h = 1;
   }
-  else if (fmt.subsampling == YUV_410)
+  else if (fmt.subsampling == YUV_Internals::Subsampling::YUV_410)
   {
     log2_chroma_w = 2;
     log2_chroma_h = 2;
   }
-  else if (fmt.subsampling == YUV_411)
+  else if (fmt.subsampling == YUV_Internals::Subsampling::YUV_411)
   {
     log2_chroma_w = 0;
     log2_chroma_h = 2;
   }
-  else if (fmt.subsampling == YUV_400)
+  else if (fmt.subsampling == YUV_Internals::Subsampling::YUV_400)
     nb_components = 1;
   else
     return false;
 
-  nb_components = fmt.subsampling == YUV_400 ? 1 : 3;
+  nb_components = fmt.subsampling == YUV_Internals::Subsampling::YUV_400 ? 1 : 3;
 
   if (fmt.bigEndian)
     flags += (1 << 0);
   if (fmt.planar)
     flags += (1 << 4);
-  if (fmt.planeOrder == Order_YUVA)
+  if (fmt.planeOrder == YUV_Internals::PlaneOrder::YUVA)
     // Has alpha channel
     flags += (1 << 7);
 
@@ -1693,7 +1691,7 @@ bool AVPixFmtDescriptorWrapper::operator==(const AVPixFmtDescriptorWrapper &othe
   return true;
 }
 
-AVPixelFormat FFmpegVersionHandler::getAVPixelFormatFromYUVPixelFormat(yuvPixelFormat pixFmt)
+AVPixelFormat FFmpegVersionHandler::getAVPixelFormatFromYUVPixelFormat(YUV_Internals::yuvPixelFormat pixFmt)
 {
   AVPixFmtDescriptorWrapper wrapper;
   wrapper.setValuesFromYUVPixelFormat(pixFmt);

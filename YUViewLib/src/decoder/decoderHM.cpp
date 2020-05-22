@@ -228,7 +228,7 @@ bool decoderHM::getNextFrameFromDecoder()
   if (!picSize.isValid())
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid size");
   auto subsampling = convertFromInternalSubsampling(libHMDEC_get_chroma_format(currentHMPic));
-  if (subsampling == YUV_NUM_SUBSAMPLINGS)
+  if (subsampling == Subsampling::UNKNOWN)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
   int bitDepth = libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
@@ -578,15 +578,14 @@ bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)
   return !testDecoder.errorInDecoder();
 }
 
-YUVSubsamplingType decoderHM::convertFromInternalSubsampling(libHMDec_ChromaFormat fmt)
+Subsampling decoderHM::convertFromInternalSubsampling(libHMDec_ChromaFormat fmt)
 {
   if (fmt == LIBHMDEC_CHROMA_400)
-    return YUV_400;
+    return Subsampling::YUV_400;
   if (fmt == LIBHMDEC_CHROMA_420)
-    return YUV_420;
+    return Subsampling::YUV_420;
   if (fmt == LIBHMDEC_CHROMA_422)
-    return YUV_422;
+    return Subsampling::YUV_422;
 
-  // Invalid
-  return YUV_NUM_SUBSAMPLINGS;
+  return Subsampling::UNKNOWN;
 }

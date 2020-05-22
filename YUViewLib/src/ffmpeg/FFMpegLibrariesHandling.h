@@ -448,7 +448,7 @@ enum class PacketType
   AUDIO,
   SUBTITLE_DVB,
   SUBTITLE_608,
-  SUBTITLE_OTHER
+  OTHER
 };
 
 // A wrapper around the different versions of the AVPacket versions.
