@@ -938,10 +938,10 @@ bool FFmpegLibraryFunctions::bindFunctionsFromSWResampleLib()
 
 bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
 {
-  // Loading the libraries was successfull. Get/check function pointers.
+  // Loading the libraries was successful. Get/check function pointers.
   bool success = bindFunctionsFromAVFormatLib() && bindFunctionsFromAVCodecLib() && bindFunctionsFromAVUtilLib() && bindFunctionsFromSWResampleLib();
   if (success)
-    LOG("Binding functions successfull");
+    LOG("Binding functions successful");
   else
     LOG("Binding functions failed");
   return success;
@@ -1441,11 +1441,11 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
       if (success)
       {
         // Everything worked. We can break the loop over all versions that we support.
-        LOG("checking the library versions was successfull.");
+        LOG("checking the library versions was successful.");
         break;
       }
       else
-        LOG("checking the library versions was not successfull.");
+        LOG("checking the library versions was not successful.");
     }
   }
 
@@ -2419,7 +2419,7 @@ QStringPairList AVCodecParametersWrapper::getInfoText()
     << "Not part of ABI";
   info.append(QStringPair("Color Primaries", colorPrimaries.at((int)color_primaries)));
   QStringList colorTransfers = QStringList()
-    << "Reseved"
+    << "Reserved"
     << "BT709 / ITU-R BT1361"
     << "Unspecified"
     << "Reserved"

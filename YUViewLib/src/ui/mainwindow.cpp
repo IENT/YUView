@@ -182,7 +182,7 @@ void MainWindow::loadFiles(const QStringList &files)
 
 void MainWindow::createMenusAndActions()
 {
-  // Create the menu actions and connect them. Qt>=5.6 allows to conveniontly use delta functions and function pointers
+  // Create the menu actions and connect them. Qt>=5.6 allows you to conveniontly use delta functions and function pointers
   // in ->addAction(...). However, we also want to be able to compile with Qt 5.5 (and possibly lower). Because of
   // this, we use the old SLOT(...) mechanism.
 
