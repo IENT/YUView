@@ -126,7 +126,6 @@ jobs:
       if: matrix.os == 'windows-2019'
     - name: Build App (Mac)
       run: |
-        cd build
         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
         cp ${{matrix.LIBDE265_LOCAL}} build/YUViewApp/YUView.app/Contents/MacOS/.
         cd build/YUViewApp
