@@ -8,12 +8,12 @@ jobs:
     strategy:
       matrix:
         include: 
-          - os: ubuntu-16.04
-            QT_FILE: qtBase_5.14.2_xenial.zip
-            LIBDE265_REMOTE: libde265.so
-            LIBDE265_LOCAL: libde265-internals.so
-            ARTIFACT_NAME: YUView.AppImage
-            UNZIP_COMMAND: unzip -qa
+          # - os: ubuntu-16.04
+          #   QT_FILE: qtBase_5.14.2_xenial.zip
+          #   LIBDE265_REMOTE: libde265.so
+          #   LIBDE265_LOCAL: libde265-internals.so
+          #   ARTIFACT_NAME: YUView.AppImage
+          #   UNZIP_COMMAND: unzip -qa
           # - os: windows-2019
           #   QT_FILE: qtBase_5.14.2_win.zip
           #   QT_DEPLOY: qtTools_5.14.2_win.zip
@@ -21,13 +21,13 @@ jobs:
           #   LIBDE265_LOCAL: libde265.dll
           #   ARTIFACT_NAME: YUView-Win.zip
           #   UNZIP_COMMAND: 7z x
-          # - os: macos-10.15
-          #   QT_FILE: qtBase_5.14.2_mac.zip
-          #   QT_DEPLOY: qtTools_5.14.2_mac.zip
-          #   LIBDE265_REMOTE: libde265.dylib
-          #   LIBDE265_LOCAL: libde265-internals.dylib
-          #   ARTIFACT_NAME: VTM-Macos
-          #   UNZIP_COMMAND: unzip -qa
+          - os: macos-10.15
+            QT_FILE: qtBase_5.14.2_mac.zip
+            QT_DEPLOY: qtTools_5.14.2_mac.zip
+            LIBDE265_REMOTE: libde265.dylib
+            LIBDE265_LOCAL: libde265-internals.dylib
+            ARTIFACT_NAME: YUView-Mac.zip
+            UNZIP_COMMAND: unzip -qa
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
@@ -124,9 +124,17 @@ jobs:
         cd ..
       shell: cmd
       if: matrix.os == 'windows-2019'
+    - name: Build App (Mac)
+      run: |
+        cd build
+        macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
+        cp ${{matrix.LIBDE265_LOCAL}} build/YUViewApp/YUView.app/Contents/MacOS/.
+        cd build/YUViewApp
+        # Zip
+        zip -r $GITHUB_WORKSPACE/artifacts/${{matrix.ARTIFACT_NAME}} YUView.app
+      if: matrix.os == 'ubuntu-16.04'
     - name: Build Appimage (Linux)
       run: |
-        pwd
         cd build
         make INSTALL_ROOT=appdir install
         $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
