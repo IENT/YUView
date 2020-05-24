@@ -126,7 +126,7 @@ jobs:
       if: matrix.os == 'windows-2019'
     - name: Build Appimage (Linux)
       run: |
-        cwd
+        pwd
         cd build
         make INSTALL_ROOT=appdir install
         $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
