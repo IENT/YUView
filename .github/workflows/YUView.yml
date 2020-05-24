@@ -14,29 +14,34 @@ jobs:
             LIBDE265_LOCAL: libde265-internals.so
             ARTIFACT_NAME: YUView.AppImage
             UNZIP_COMMAND: unzip -qa
-          - os: windows-2019
-            auto_update: true
-            QT_FILE: qtBase_5.14.2_win.zip
-            QT_DEPLOY: qtTools_5.14.2_win.zip
-            LIBDE265_REMOTE: libde265.dll
-            LIBDE265_LOCAL: libde265.dll
-            ARTIFACT_NAME: YUView-Win.zip
-            UNZIP_COMMAND: 7z x
-          - os: windows-2019
-            auto_update: false
-            QT_FILE: qtBase_5.14.2_win.zip
-            QT_DEPLOY: qtTools_5.14.2_win.zip
-            LIBDE265_REMOTE: libde265.dll
-            LIBDE265_LOCAL: libde265.dll
-            ARTIFACT_NAME: YUView-Win-noautoupdate.zip
-            UNZIP_COMMAND: 7z x
-          - os: macos-10.15
-            QT_FILE: qtBase_5.14.2_mac.zip
-            QT_DEPLOY: qtTools_5.14.2_mac.zip
-            LIBDE265_REMOTE: libde265.dylib
-            LIBDE265_LOCAL: libde265-internals.dylib
-            ARTIFACT_NAME: YUView-Mac.zip
+          - os: ubuntu-18.04
+            QT_FILE: qtBase_5.14.2_bionic.zip
+            LIBDE265_REMOTE: libde265.so
+            LIBDE265_LOCAL: libde265-internals.so
             UNZIP_COMMAND: unzip -qa
+          # - os: windows-2019
+          #   auto_update: true
+          #   QT_FILE: qtBase_5.14.2_win.zip
+          #   QT_DEPLOY: qtTools_5.14.2_win.zip
+          #   LIBDE265_REMOTE: libde265.dll
+          #   LIBDE265_LOCAL: libde265.dll
+          #   ARTIFACT_NAME: YUView-Win.zip
+          #   UNZIP_COMMAND: 7z x
+          # - os: windows-2019
+          #   auto_update: false
+          #   QT_FILE: qtBase_5.14.2_win.zip
+          #   QT_DEPLOY: qtTools_5.14.2_win.zip
+          #   LIBDE265_REMOTE: libde265.dll
+          #   LIBDE265_LOCAL: libde265.dll
+          #   ARTIFACT_NAME: YUView-Win-noautoupdate.zip
+          #   UNZIP_COMMAND: 7z x
+          # - os: macos-10.15
+          #   QT_FILE: qtBase_5.14.2_mac.zip
+          #   QT_DEPLOY: qtTools_5.14.2_mac.zip
+          #   LIBDE265_REMOTE: libde265.dylib
+          #   LIBDE265_LOCAL: libde265-internals.dylib
+          #   ARTIFACT_NAME: YUView-Mac.zip
+          #   UNZIP_COMMAND: unzip -qa
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
@@ -101,7 +106,7 @@ jobs:
         qmake ..
         make -j 2
         make check
-      if: matrix.os == 'ubuntu-16.04' || matrix.os == 'macos-10.15'
+      if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04' || matrix.os == 'macos-10.15'
     - name: Activate auto update (Windows)
       run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/typedef.h
       shell: bash
