@@ -12,7 +12,7 @@ jobs:
             QT_FILE: qtBase_5.14.2_xenial.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
-            ARTIFACT_NAME: VTM-Ubuntu
+            ARTIFACT_NAME: YUView.AppImage
             UNZIP_COMMAND: unzip -qa
           # - os: windows-2019
           #   QT_FILE: qtBase_5.14.2_win.zip
@@ -124,6 +124,14 @@ jobs:
         cd ..
       shell: cmd
       if: matrix.os == 'windows-2019'
+    - name: Build Appimage (Linux)
+      run: |
+        cd build
+        make INSTALL_ROOT=appdir install
+        $GITHUB_WORKSPAC/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
+        mv YUView-*.AppImage YUView.AppImage
+        cp YUView.AppImage $GITHUB_WORKSPAC/artifacts
+      if: matrix.os == 'ubuntu-16.04'
     - name: Deploy Windows
       run: |
         mkdir deploy
