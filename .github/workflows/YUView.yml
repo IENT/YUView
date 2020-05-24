@@ -19,29 +19,29 @@ jobs:
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
             UNZIP_COMMAND: unzip -qa
-          # - os: windows-2019
-          #   auto_update: true
-          #   QT_FILE: qtBase_5.14.2_win.zip
-          #   QT_DEPLOY: qtTools_5.14.2_win.zip
-          #   LIBDE265_REMOTE: libde265.dll
-          #   LIBDE265_LOCAL: libde265.dll
-          #   ARTIFACT_NAME: YUView-Win.zip
-          #   UNZIP_COMMAND: 7z x
-          # - os: windows-2019
-          #   auto_update: false
-          #   QT_FILE: qtBase_5.14.2_win.zip
-          #   QT_DEPLOY: qtTools_5.14.2_win.zip
-          #   LIBDE265_REMOTE: libde265.dll
-          #   LIBDE265_LOCAL: libde265.dll
-          #   ARTIFACT_NAME: YUView-Win-noautoupdate.zip
-          #   UNZIP_COMMAND: 7z x
-          # - os: macos-10.15
-          #   QT_FILE: qtBase_5.14.2_mac.zip
-          #   QT_DEPLOY: qtTools_5.14.2_mac.zip
-          #   LIBDE265_REMOTE: libde265.dylib
-          #   LIBDE265_LOCAL: libde265-internals.dylib
-          #   ARTIFACT_NAME: YUView-Mac.zip
-          #   UNZIP_COMMAND: unzip -qa
+          - os: windows-2019
+            auto_update: true
+            QT_FILE: qtBase_5.14.2_win.zip
+            QT_DEPLOY: qtTools_5.14.2_win.zip
+            LIBDE265_REMOTE: libde265.dll
+            LIBDE265_LOCAL: libde265.dll
+            ARTIFACT_NAME: YUView-Win.zip
+            UNZIP_COMMAND: 7z x
+          - os: windows-2019
+            auto_update: false
+            QT_FILE: qtBase_5.14.2_win.zip
+            QT_DEPLOY: qtTools_5.14.2_win.zip
+            LIBDE265_REMOTE: libde265.dll
+            LIBDE265_LOCAL: libde265.dll
+            ARTIFACT_NAME: YUView-Win-noautoupdate.zip
+            UNZIP_COMMAND: 7z x
+          - os: macos-10.15
+            QT_FILE: qtBase_5.14.2_mac.zip
+            QT_DEPLOY: qtTools_5.14.2_mac.zip
+            LIBDE265_REMOTE: libde265.dylib
+            LIBDE265_LOCAL: libde265-internals.dylib
+            ARTIFACT_NAME: YUView-Mac.zip
+            UNZIP_COMMAND: unzip -qa
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
@@ -165,7 +165,7 @@ jobs:
         "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
         "${WIX}\bin\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "${WIX}\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
         cd $GITHUB_WORKSPACE
-        cp deployment/wix/bin/Release/YUViewSetup.msi ./artifacts
+        cp deployment/wix/bin/Release/YUViewSetup.msi ./
       shell: bash
       if: matrix.os == 'windows-2019' && matrix.auto_update == true
     - name: Upload Artifact
@@ -173,6 +173,13 @@ jobs:
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
+      if: matrix.os != 'ubuntu-18.04'
+    - name: Upload Windows installer Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: YUViewSetup.msi
+        path: ./YUViewSetup.msi
+      if: matrix.os == 'windows-2019'
 
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
