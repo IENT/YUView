@@ -72,7 +72,7 @@ jobs:
       if: matrix.os == 'ubuntu-16.04'
     - name: Install Linux packages
       run: |
-        sudo apt install libgl1-mesa-dev
+        sudo apt install libgl1-mesa-dev libxkbcommon-x11-0
       if: matrix.os == 'ubuntu-16.04'
     - name: Install libde265
       run: |
