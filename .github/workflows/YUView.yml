@@ -130,7 +130,8 @@ jobs:
         cp ${{matrix.LIBDE265_LOCAL}} build/YUViewApp/YUView.app/Contents/MacOS/.
         cd build/YUViewApp
         # Zip
-        zip -r $GITHUB_WORKSPACE/artifacts/${{matrix.ARTIFACT_NAME}} YUView.app
+        zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
+        cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts
       if: matrix.os == 'macos-10.15'
     - name: Build Appimage (Linux)
       run: |
