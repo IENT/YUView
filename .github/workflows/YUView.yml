@@ -74,7 +74,7 @@ jobs:
     - name: Install Linux packages
       run: |
         sudo apt install libgl1-mesa-dev libxkbcommon-x11-0
-      if: matrix.os == 'ubuntu-16.04'
+      if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04'
     - name: Install libde265
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
