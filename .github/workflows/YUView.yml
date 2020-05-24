@@ -126,11 +126,12 @@ jobs:
       if: matrix.os == 'windows-2019'
     - name: Build Appimage (Linux)
       run: |
+        cwd
         cd build
         make INSTALL_ROOT=appdir install
-        $GITHUB_WORKSPAC/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
+        $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
         mv YUView-*.AppImage YUView.AppImage
-        cp YUView.AppImage $GITHUB_WORKSPAC/artifacts
+        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts
       if: matrix.os == 'ubuntu-16.04'
     - name: Deploy Windows
       run: |
