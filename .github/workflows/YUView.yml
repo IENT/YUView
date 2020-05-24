@@ -8,65 +8,52 @@ jobs:
     strategy:
       matrix:
         include: 
-          # - os: ubuntu-16.04
-          #   QT_FILE: qtBase_5.14.2_xenial.zip
-          #   LIBDE265_REMOTE: libde265.so
-          #   LIBDE265_LOCAL: libde265-internals.so
-          #   ARTIFACT_NAME: YUView.AppImage
-          #   UNZIP_COMMAND: unzip -qa
+          - os: ubuntu-16.04
+            QT_FILE: qtBase_5.14.2_xenial.zip
+            LIBDE265_REMOTE: libde265.so
+            LIBDE265_LOCAL: libde265-internals.so
+            ARTIFACT_NAME: YUView.AppImage
+            UNZIP_COMMAND: unzip -qa
           - os: windows-2019
+            auto_update: true
             QT_FILE: qtBase_5.14.2_win.zip
             QT_DEPLOY: qtTools_5.14.2_win.zip
             LIBDE265_REMOTE: libde265.dll
             LIBDE265_LOCAL: libde265.dll
             ARTIFACT_NAME: YUView-Win.zip
             UNZIP_COMMAND: 7z x
-            auto_update: true
           - os: windows-2019
+            auto_update: false
             QT_FILE: qtBase_5.14.2_win.zip
             QT_DEPLOY: qtTools_5.14.2_win.zip
             LIBDE265_REMOTE: libde265.dll
             LIBDE265_LOCAL: libde265.dll
             ARTIFACT_NAME: YUView-Win-noautoupdate.zip
             UNZIP_COMMAND: 7z x
-            auto_update: false
-          # - os: macos-10.15
-          #   QT_FILE: qtBase_5.14.2_mac.zip
-          #   QT_DEPLOY: qtTools_5.14.2_mac.zip
-          #   LIBDE265_REMOTE: libde265.dylib
-          #   LIBDE265_LOCAL: libde265-internals.dylib
-          #   ARTIFACT_NAME: YUView-Mac.zip
-          #   UNZIP_COMMAND: unzip -qa
+          - os: macos-10.15
+            QT_FILE: qtBase_5.14.2_mac.zip
+            QT_DEPLOY: qtTools_5.14.2_mac.zip
+            LIBDE265_REMOTE: libde265.dylib
+            LIBDE265_LOCAL: libde265-internals.dylib
+            ARTIFACT_NAME: YUView-Mac.zip
+            UNZIP_COMMAND: unzip -qa
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
     - name: Install Qt base
       run: |
-        echo GITHUB_WORKSPACE: $GITHUB_WORKSPACE
-        echo HOME: $HOME
-        echo "::debug GITHUB_WORKSPACE: $GITHUB_WORKSPACE HOME: $HOME"
-        cd $GITHUB_WORKSPACE
-        pwd
         cd ../../
-        pwd
-        mkdir YUViewQt
-        cd YUViewQt
-        mkdir YUViewQt
-        cd YUViewQt
-        pwd
-        ls
+        mkdir -p YUViewQt/YUViewQt
+        cd YUViewQt/YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.14.2/${{matrix.QT_FILE}} -o Qt.zip
-        ls
         ${{matrix.UNZIP_COMMAND}} Qt.zip
         echo "::add-path::$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin"
       shell: bash
     - name: Install Qt deploy tools
       run: |
         cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
-        pwd
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.14.2/${{matrix.QT_DEPLOY}} -o deployQt.zip
         ${{matrix.UNZIP_COMMAND}} deployQt.zip
-        ls
       shell: bash
       if: matrix.os == 'macos-10.15' || matrix.os == 'windows-2019'
     - name: Install Macdeploy Qt
@@ -87,8 +74,6 @@ jobs:
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
-        pwd
-        ls
       shell: bash
     - name: Install jom (Windows only)
       run: |
@@ -105,16 +90,12 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1g/openSSL_1_1_1g_win.zip -o openSSL.zip
         ${{matrix.UNZIP_COMMAND}} openSSL.zip
         cd ..
-        pwd
-        ls
       if: matrix.os == 'windows-2019'
       shell: bash
     - name: Build Linux/Mac
       run: |
-        echo $LD_LIBRARY_PATH
         cd $GITHUB_WORKSPACE
         export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
-        echo $PATH
         mkdir build
         cd build
         qmake ..
@@ -127,7 +108,6 @@ jobs:
       if: matrix.os == 'windows-2019' && matrix.auto_update == true
     - name: Build Windows
       run: |
-        echo %Path%
         mkdir build
         cd build
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
