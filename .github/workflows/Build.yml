@@ -1,4 +1,4 @@
-name: C/C++ CI Linux/Mac
+name: CI build
 
 on: [push]
 
