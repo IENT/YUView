@@ -34,6 +34,8 @@
 
 #include "common/parserMacros.h"
 
+#include <stdexcept>
+
 bool checkByteParity(int val)
 {
   int nrOneBits = 0;
