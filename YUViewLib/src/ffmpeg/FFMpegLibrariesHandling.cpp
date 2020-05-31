@@ -1196,7 +1196,7 @@ void FFmpegVersionHandler::avLogCallback(void *ptr, int level, const char *fmt, 
 {
   Q_UNUSED(ptr);
   QString msg;
-  msg.vsprintf(fmt, vargs);
+  msg.vasprintf(fmt, vargs);
   QDateTime now = QDateTime::currentDateTime();
   FFmpegVersionHandler::logListFFmpeg.append(now.toString("hh:mm:ss.zzz") + QString(" - L%1 - ").arg(level) + msg);
 }

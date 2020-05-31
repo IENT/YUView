@@ -476,7 +476,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   }
 
   // Check the image buffer size before we write to it
-  assert(outputImage.byteCount() >= curFrameSize.width() * curFrameSize.height() * 4);
+  assert(outputImage.sizeInBytes() >= curFrameSize.width() * curFrameSize.height() * 4);
 
   convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits());
 
@@ -729,7 +729,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
   if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
   {
     // First get the pointer to the first value of each channel.
-    unsigned short *srcR, *srcG, *srcB, *srcA;
+    unsigned short *srcR = nullptr, *srcG = nullptr, *srcB = nullptr, *srcA = nullptr;
     if (srcPixelFormat.planar)
     {
       srcR = (unsigned short*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
@@ -756,7 +756,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
   else if (srcPixelFormat.bitsPerValue == 8)
   {
     // First get the pointer to the first value of each channel.
-    unsigned char *srcR, *srcG, *srcB, *srcA;
+    unsigned char *srcR = nullptr, *srcG = nullptr, *srcB = nullptr, *srcA = nullptr;
     if (srcPixelFormat.planar)
     {
       srcR = (unsigned char*)currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());

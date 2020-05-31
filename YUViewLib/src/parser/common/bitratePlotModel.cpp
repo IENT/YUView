@@ -75,7 +75,7 @@ PlotModel::Point BitratePlotModel::getPlotPoint(unsigned plotIndex, unsigned poi
   if (!this->dataPerStream.contains(streamIndex))
     return {};
 
-  if (pointIndex < this->dataPerStream[streamIndex].size())
+  if (pointIndex < unsigned(this->dataPerStream[streamIndex].size()))
   {
     PlotModel::Point point;
     point.x = pointIndex;
@@ -95,7 +95,6 @@ PlotModel::Point BitratePlotModel::getPlotPoint(unsigned plotIndex, unsigned poi
 QString BitratePlotModel::getPointInfo(unsigned plotIndex, unsigned pointIndex) const
 {
   const auto streamIndex = plotIndex / 2;
-  const bool average = (plotIndex % 2 == 0);
 
   if (plotIndex == 0)
   {
@@ -121,8 +120,6 @@ QString BitratePlotModel::getPointInfo(unsigned plotIndex, unsigned pointIndex) 
 void BitratePlotModel::addBitratePoint(int streamIndex, bitrateEntry &entry)
 {
   QMutexLocker locker(&this->dataMutex);
-
-  auto &graphData = this->dataPerStream[streamIndex];
 
   rangeDts.min = qMin(rangeDts.min, entry.dts);
   rangeDts.max = qMax(rangeDts.max, entry.dts);

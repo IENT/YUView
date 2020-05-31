@@ -296,7 +296,7 @@ void MoveAndZoomableView::mousePressEvent(QMouseEvent *mouse_event)
 
 void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
 {
-  if (this->viewAction == ViewAction::DRAGGING || this->viewAction == ViewAction::DRAGGING_MOUSE_MOVED && 
+  if ((this->viewAction == ViewAction::DRAGGING || this->viewAction == ViewAction::DRAGGING_MOUSE_MOVED) && 
     ((mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) ||
      (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)))
   {
@@ -427,8 +427,6 @@ bool MoveAndZoomableView::event(QEvent *event)
       event->accept();
       this->update();
     }
-
-    return true;
   }
   else if (event->type() == QEvent::TouchBegin || event->type() == QEvent::TouchUpdate || event->type() == QEvent::TouchEnd || event->type() == QEvent::TouchCancel)
   {
@@ -483,6 +481,8 @@ bool MoveAndZoomableView::event(QEvent *event)
     //DEBUG_VIEW("MoveAndZoomableView::event unhandled event type " << event->type());
     return QWidget::event(event);
   }
+
+  return true;
 }
 
 void MoveAndZoomableView::update()

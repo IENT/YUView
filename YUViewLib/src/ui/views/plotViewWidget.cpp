@@ -372,13 +372,11 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
   if (!this->model)
     return;
 
-  const auto zeroPointX = plotRect.bottomLeft().x() + fadeBoxThickness;
-  const auto zeroPointY = plotRect.bottomLeft().y() - fadeBoxThickness;
   const bool detailedPainting = this->zoomFactor >= 0.5;
 
   // TODO: Use the painter list operations for painting. They are much faster.
   //       Also get the range of things that must be drawn for speedup.
-  for (int plotIndex = 0; plotIndex < this->model->getNrPlots(); plotIndex++)
+  for (unsigned int plotIndex = 0; plotIndex < this->model->getNrPlots(); plotIndex++)
   {
     auto param = this->model->getPlotParameter(plotIndex);
     if (param.type == PlotModel::PlotType::Bar)
@@ -416,7 +414,7 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
     else if (param.type == PlotModel::PlotType::Line)
     {
       const auto nrLineSegments = param.nrpoints - 1;
-      for (int i = 0; i < nrLineSegments; i++)
+      for (unsigned int i = 0; i < nrLineSegments; i++)
       {
         const auto valueStart = model->getPlotPoint(plotIndex, unsigned(i));
         const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));
