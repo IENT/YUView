@@ -376,6 +376,9 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
 
   // TODO: Use the painter list operations for painting. They are much faster.
   //       Also get the range of things that must be drawn for speedup.
+  //       For that, the plotRect will become handy.
+  Q_UNUSED(plotRect);
+
   for (unsigned int plotIndex = 0; plotIndex < this->model->getNrPlots(); plotIndex++)
   {
     auto param = this->model->getPlotParameter(plotIndex);
