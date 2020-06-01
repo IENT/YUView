@@ -85,21 +85,21 @@ namespace YUView
 // Convenience macro definitions which can be used in if clauses:
 // if (is_Q_OS_MAC) ...
 #ifdef Q_OS_MAC
-enum { is_Q_OS_MAC = 1 };
+const bool is_Q_OS_MAC = true;
 #else
-enum { is_Q_OS_MAC = 0 };
+const bool is_Q_OS_MAC = false;
 #endif
 
 #ifdef Q_OS_WIN
-enum { is_Q_OS_WIN = 1 };
+const bool is_Q_OS_WIN = true;
 #else
-enum { is_Q_OS_WIN = 0 };
+const bool is_Q_OS_WIN = false;
 #endif
 
 #ifdef Q_OS_LINUX
-enum { is_Q_OS_LINUX = 1 };
+const bool is_Q_OS_LINUX = true;
 #else
-enum { is_Q_OS_LINUX = 0 };
+const bool is_Q_OS_LINUX = false;
 #endif
 
 // Set this to one to enable the code that handles single instances.

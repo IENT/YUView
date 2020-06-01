@@ -35,6 +35,8 @@
 #include "common/parserMacros.h"
 #include "common/readerHelper.h"
 
+#include <stdexcept>
+
 bool parsePageCompositionSegment(readerHelper &reader, unsigned int segment_length)
 {
     reader_sub_level s(reader, "page_composition_segment()");

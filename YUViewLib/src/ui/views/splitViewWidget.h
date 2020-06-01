@@ -195,7 +195,7 @@ protected:
   void    setZoomFactor(double zoom) override;
   QFont   zoomFactorFont;                   //!< The font to use for the zoom factor indicator
   QPoint  zoomFactorFontPos;                //!< The position where the zoom factor indication will be shown
-  void    onZoomIn() { this->update(false, true); }
+  void    onZoomIn() override { this->update(false, true); }
 
   // The zoom box(es)
   bool   drawZoomBox {false};               //!< If set to true, the paint event will draw the zoom box(es)

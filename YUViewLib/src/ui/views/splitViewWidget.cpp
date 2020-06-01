@@ -72,10 +72,6 @@ const QString SPLITVIEWWIDGET_PIXEL_VALUES_FONT = "helvetica";
 const int SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE = 10;
 // When zooming in or out, you can only step by factors of x
 const int SPLITVIEWWIDGET_ZOOM_STEP_FACTOR = 2;
-// Set the zooming behavior. If zooming out, two approaches can be taken:
-// 0: After the zoom out operation, the item point in the center of the widget will still be in the center of the widget.
-// 1: After the zoom out operation, the item point under the mouse cursor will still be under the mouse.
-const int SPLITVIEWWIDGET_ZOOM_OUT_MOUSE = 1;
 // What message is shown when a playlist item is loading.
 const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 

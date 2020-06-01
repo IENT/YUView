@@ -126,7 +126,7 @@ QList<infoItem> fileSource::getFileInfoList() const
   infoList.append(infoItem("File Path", fileInfo.absoluteFilePath()));
 
   // The file creation time
-  QString createdtime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
+  QString createdtime = fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss");
   infoList.append(infoItem("Time Created", createdtime));
 
   // The last modification time
