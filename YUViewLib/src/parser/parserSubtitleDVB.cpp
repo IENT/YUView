@@ -33,11 +33,11 @@
 #include "parserSubtitleDVB.h"
 
 #include "common/parserMacros.h"
-#include "common/readerHelper.h"
+#include "common/ReaderHelper.h"
 
 #include <stdexcept>
 
-bool parsePageCompositionSegment(readerHelper &reader, unsigned int segment_length)
+bool parsePageCompositionSegment(ReaderHelper &reader, unsigned int segment_length)
 {
     reader_sub_level s(reader, "page_composition_segment()");
 
@@ -67,7 +67,7 @@ bool parsePageCompositionSegment(readerHelper &reader, unsigned int segment_leng
     return true;
 }
 
-bool parseRegionCompositionSegment(readerHelper &reader, unsigned int segment_length)
+bool parseRegionCompositionSegment(ReaderHelper &reader, unsigned int segment_length)
 {
     reader_sub_level s(reader, "region_composition_segment()");
 
@@ -129,7 +129,7 @@ bool parseRegionCompositionSegment(readerHelper &reader, unsigned int segment_le
     return true;
 }
 
-bool parseCLUTDefinitionSegment(readerHelper &reader, unsigned int segment_length)
+bool parseCLUTDefinitionSegment(ReaderHelper &reader, unsigned int segment_length)
 {
     reader_sub_level s(reader, "CLUT_definition_segment()");
 
@@ -182,7 +182,7 @@ bool parseCLUTDefinitionSegment(readerHelper &reader, unsigned int segment_lengt
     return true;
 }
 
-bool parse_2_bit_pixel_code_string(readerHelper &reader, bool &end, unsigned int &bitsRead)
+bool parse_2_bit_pixel_code_string(ReaderHelper &reader, bool &end, unsigned int &bitsRead)
 {
   reader_sub_level s(reader, "2-bit/pixel_code_string()");
 
@@ -240,7 +240,7 @@ bool parse_2_bit_pixel_code_string(readerHelper &reader, bool &end, unsigned int
   return true;
 }
 
-bool parse_4_bit_pixel_code_string(readerHelper &reader, bool &end, unsigned int &bitsRead)
+bool parse_4_bit_pixel_code_string(ReaderHelper &reader, bool &end, unsigned int &bitsRead)
 {
   reader_sub_level s(reader, "4-bit/pixel_code_string()");
 
@@ -300,7 +300,7 @@ bool parse_4_bit_pixel_code_string(readerHelper &reader, bool &end, unsigned int
   return true;
 }
 
-bool parse_8_bit_pixel_code_string(readerHelper &reader, bool &end, unsigned int &bitsRead)
+bool parse_8_bit_pixel_code_string(ReaderHelper &reader, bool &end, unsigned int &bitsRead)
 {
   reader_sub_level s(reader, "8-bit/pixel_code_string()");
 
@@ -332,7 +332,7 @@ bool parse_8_bit_pixel_code_string(readerHelper &reader, bool &end, unsigned int
   return true;
 }
 
-bool parsePixelDataSubBlock(readerHelper &reader, unsigned int &processed_length)
+bool parsePixelDataSubBlock(ReaderHelper &reader, unsigned int &processed_length)
 {
   reader_sub_level s(reader, "pixel-data_sub-block()");
 
@@ -421,7 +421,7 @@ bool parsePixelDataSubBlock(readerHelper &reader, unsigned int &processed_length
   return true;
 }
 
-bool parseProgressivePixelBlock(readerHelper &reader)
+bool parseProgressivePixelBlock(ReaderHelper &reader)
 {
   reader_sub_level s(reader, "progressive_pixel_block()");
 
@@ -442,7 +442,7 @@ bool parseProgressivePixelBlock(readerHelper &reader)
   return true;
 }
 
-bool parseObjectDataSegment(readerHelper &reader, unsigned int segment_length)
+bool parseObjectDataSegment(ReaderHelper &reader, unsigned int segment_length)
 {
     reader_sub_level s(reader, "object_data_segment()");
 
@@ -507,7 +507,7 @@ bool parseObjectDataSegment(readerHelper &reader, unsigned int segment_length)
     return true;
 }
 
-bool parseDisplayDefinitionSegment(readerHelper &reader)
+bool parseDisplayDefinitionSegment(ReaderHelper &reader)
 {
     reader_sub_level s(reader, "display_definition_segment()");
 
@@ -537,7 +537,7 @@ bool parseDisplayDefinitionSegment(readerHelper &reader)
     return true;
 }
 
-bool parserDisparityShiftUpdateSequence(readerHelper &reader)
+bool parserDisparityShiftUpdateSequence(ReaderHelper &reader)
 {
   reader_sub_level s(reader, "disparity_shift_update_sequence()");
 
@@ -558,7 +558,7 @@ bool parserDisparityShiftUpdateSequence(readerHelper &reader)
   return true;
 }
 
-bool parseDisparitySignalingSegment(readerHelper &reader)
+bool parseDisparitySignalingSegment(ReaderHelper &reader)
 {
     reader_sub_level s(reader, "display_definition_segment()");
 
@@ -624,7 +624,7 @@ bool parseDisparitySignalingSegment(readerHelper &reader)
     return true;
 }
 
-bool parseCLUTParameters(readerHelper &reader, unsigned int &output_bit_depth)
+bool parseCLUTParameters(ReaderHelper &reader, unsigned int &output_bit_depth)
 {
   reader_sub_level s(reader, "CLUT_parameters()");
 
@@ -642,7 +642,7 @@ bool parseCLUTParameters(readerHelper &reader, unsigned int &output_bit_depth)
   return true;
 }
 
-bool parseAlternativeCLUTSegment(readerHelper &reader, unsigned int segment_length)
+bool parseAlternativeCLUTSegment(ReaderHelper &reader, unsigned int segment_length)
 {
     reader_sub_level s(reader, "alternative_CLUT_segment()");
 
@@ -698,7 +698,7 @@ int subtitle_dvb::parseDVBSubtitleSegment(QByteArray data, TreeItem *parent, QSt
     return -1;
 
   // Create a sub byte parser to access the bits
-  readerHelper reader(data, parent, "subtitling_segment()");
+  ReaderHelper reader(data, parent, "subtitling_segment()");
   if (data.length() < 6)
     return reader.addErrorMessageChildItem("The subtitling_segment header must have at least six byte");
     

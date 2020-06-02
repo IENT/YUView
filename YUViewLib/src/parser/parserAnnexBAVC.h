@@ -34,7 +34,7 @@
 
 #include <QSharedPointer>
 
-#include "common/readerHelper.h"
+#include "common/ReaderHelper.h"
 #include "parserAnnexB.h"
 #include "video/videoHandlerYUV.h"
 
@@ -165,7 +165,7 @@ protected:
 
     struct vui_parameters_struct
     {
-      bool parse_vui(readerHelper &reader, int BitDeptYC, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag);
+      bool parse_vui(ReaderHelper &reader, int BitDeptYC, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag);
 
       bool aspect_ratio_info_present_flag;
       unsigned int aspect_ratio_idc {0};
@@ -194,7 +194,7 @@ protected:
 
       struct hrd_parameters_struct
       {
-        bool parse_hrd(readerHelper &reader);
+        bool parse_hrd(ReaderHelper &reader);
 
         unsigned int cpb_cnt_minus1;
         unsigned int bit_rate_scale;
@@ -342,7 +342,7 @@ protected:
 
     struct ref_pic_list_mvc_modification_struct
     {
-      bool parse_ref_pic_list_mvc_modification(readerHelper &reader, slice_type_enum slicy_type);
+      bool parse_ref_pic_list_mvc_modification(ReaderHelper &reader, slice_type_enum slicy_type);
 
       bool ref_pic_list_modification_flag_l0;
       QList<unsigned int> modification_of_pic_nums_idc_l0;
@@ -360,7 +360,7 @@ protected:
 
     struct ref_pic_list_modification_struct
     {
-      bool parse_ref_pic_list_modification(readerHelper &reader, slice_type_enum slicy_type);
+      bool parse_ref_pic_list_modification(ReaderHelper &reader, slice_type_enum slicy_type);
 
       bool ref_pic_list_modification_flag_l0;
       QList<int> modification_of_pic_nums_idc_l0;
@@ -376,7 +376,7 @@ protected:
 
     struct pred_weight_table_struct
     {
-      bool parse_pred_weight_table(readerHelper & reader, slice_type_enum slicy_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1);
+      bool parse_pred_weight_table(ReaderHelper & reader, slice_type_enum slicy_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1);
 
       unsigned int luma_log2_weight_denom;
       unsigned int chroma_log2_weight_denom;
@@ -397,7 +397,7 @@ protected:
 
     struct dec_ref_pic_marking_struct
     {
-      bool parse_dec_ref_pic_marking(readerHelper & reader, bool IdrPicFlag);
+      bool parse_dec_ref_pic_marking(ReaderHelper & reader, bool IdrPicFlag);
 
       bool no_output_of_prior_pics_flag;
       bool long_term_reference_flag;
@@ -525,7 +525,7 @@ protected:
     bool parse_internal(QByteArray &sliceHeaderData, TreeItem *root);
   };
 
-  static bool read_scaling_list(readerHelper &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag);
+  static bool read_scaling_list(ReaderHelper &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag);
 
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.

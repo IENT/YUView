@@ -35,7 +35,7 @@
 #include <QAbstractItemModel>
 #include <QSortFilterProxyModel>
 
-#include "treeItem.h"
+#include "TreeItem.h"
 
 // The item model which is used to display packets from the bitstream. This can be AVPackets or other units from the bitstream (NAL units e.g.)
 class PacketItemModel : public QAbstractItemModel

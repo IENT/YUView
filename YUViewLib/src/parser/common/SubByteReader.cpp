@@ -30,11 +30,11 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "subByteReader.h"
+#include "SubByteReader.h"
 
 #include <stdexcept>
 
-unsigned int subByteReader::readBits(int nrBits, QString &bitsRead)
+unsigned int SubByteReader::readBits(int nrBits, QString &bitsRead)
 {
   int out = 0;
   int nrBitsRead = nrBits;
@@ -98,7 +98,7 @@ unsigned int subByteReader::readBits(int nrBits, QString &bitsRead)
   return out;
 }
 
-uint64_t subByteReader::readBits64(int nrBits, QString &bitsRead)
+uint64_t SubByteReader::readBits64(int nrBits, QString &bitsRead)
 {
   if (nrBits > 64)
     throw std::logic_error("Trying to read more than 64 bits at once from the bitstream.");
@@ -113,7 +113,7 @@ uint64_t subByteReader::readBits64(int nrBits, QString &bitsRead)
   return ret;
 }
 
-QByteArray subByteReader::readBytes(int nrBytes)
+QByteArray SubByteReader::readBytes(int nrBytes)
 {
   if (skipEmulationPrevention)
     throw std::logic_error("Reading bytes with emulation prevention active is not supported.");
@@ -138,7 +138,7 @@ QByteArray subByteReader::readBytes(int nrBytes)
   return retArray;
 }
 
-unsigned int subByteReader::readUE_V(QString &bitsRead, int &bit_count)
+unsigned int SubByteReader::readUE_V(QString &bitsRead, int &bit_count)
 {
   int readBit = readBits(1, bitsRead);
   bit_count++;
@@ -163,7 +163,7 @@ unsigned int subByteReader::readUE_V(QString &bitsRead, int &bit_count)
   return val;
 }
 
-int subByteReader::readSE_V(QString &bitsRead, int &bit_count)
+int SubByteReader::readSE_V(QString &bitsRead, int &bit_count)
 {
   int val = readUE_V(bitsRead, bit_count);
   if (val%2 == 0) 
@@ -172,7 +172,7 @@ int subByteReader::readSE_V(QString &bitsRead, int &bit_count)
     return (val+1)/2;
 }
 
-uint64_t subByteReader::readLeb128(QString &bitsRead, int &bit_count)
+uint64_t SubByteReader::readLeb128(QString &bitsRead, int &bit_count)
 {
   // We will read full bytes (up to 8)
   // The highest bit indicates if we need to read another bit. The rest of the bits is added to the counter (shifted accordingly)
@@ -189,7 +189,7 @@ uint64_t subByteReader::readLeb128(QString &bitsRead, int &bit_count)
   return value;
 }
 
-uint64_t subByteReader::readUVLC(QString &bitsRead, int &bit_count)
+uint64_t SubByteReader::readUVLC(QString &bitsRead, int &bit_count)
 {
   int leadingZeros = 0;
   while (1)
@@ -206,7 +206,7 @@ uint64_t subByteReader::readUVLC(QString &bitsRead, int &bit_count)
   return value + ((uint64_t)1 << leadingZeros) - 1;
 }
 
-int subByteReader::readNS(int maxVal, QString &bitsRead, int &bit_count)
+int SubByteReader::readNS(int maxVal, QString &bitsRead, int &bit_count)
 {
   // FloorLog2
   int floorVal;
@@ -232,7 +232,7 @@ int subByteReader::readNS(int maxVal, QString &bitsRead, int &bit_count)
   return (v << 1) - m + extra_bit;
 }
 
-int subByteReader::readSU(int nrBits, QString &bitsRead)
+int SubByteReader::readSU(int nrBits, QString &bitsRead)
 {
   int value = readBits(nrBits, bitsRead);
   int signMask = 1 << (nrBits - 1);
@@ -243,7 +243,7 @@ int subByteReader::readSU(int nrBits, QString &bitsRead)
 
 /* Is there more data? There is no more data if the next bit is the terminating bit and all
 * following bits are 0. */
-bool subByteReader::more_rbsp_data()
+bool SubByteReader::more_rbsp_data()
 {
   unsigned int posBytes = posInBuffer_bytes;
   unsigned int posBits  = posInBuffer_bits;
@@ -292,13 +292,13 @@ bool subByteReader::more_rbsp_data()
    the position of the payload_bit_equal_to_one syntax element), the return value of payload_extension_present( )
    is equal to TRUE.
  */
-bool subByteReader::payload_extension_present()
+bool SubByteReader::payload_extension_present()
 {
   // TODO: What is the difference to this?
   return more_rbsp_data();
 }
 
-bool subByteReader::testReadingBits(int nrBits)
+bool SubByteReader::testReadingBits(int nrBits)
 {
   const int curBitsLeft = 8 - posInBuffer_bits;
   const int entireBytesLeft = byteArray.size() - posInBuffer_bytes - 1;
@@ -307,7 +307,7 @@ bool subByteReader::testReadingBits(int nrBits)
   return nrBits <= nrBitsLeftToRead;
 }
 
-bool subByteReader::gotoNextByte()
+bool SubByteReader::gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
   if (posInBuffer_bytes >= unsigned(byteArray.length()))

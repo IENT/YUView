@@ -35,8 +35,8 @@
 #include <QList>
 #include <QTreeWidgetItem>
 
-#include "common/bitratePlotModel.h"
-#include "common/treeItem.h"
+#include "common/BitratePlotModel.h"
+#include "common/TreeItem.h"
 #include "filesource/fileSourceAnnexBFile.h"
 #include "parserBase.h"
 #include "video/videoHandlerYUV.h"

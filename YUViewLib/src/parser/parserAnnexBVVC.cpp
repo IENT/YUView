@@ -36,7 +36,7 @@
 #include <cmath>
 
 #include "common/parserMacros.h"
-#include "common/readerHelper.h"
+#include "common/ReaderHelper.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -134,7 +134,7 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     {
       const bool curFrameIsRandomAccess = (counterAU == 1);
       if (!addFrameToList(counterAU, curFrameFileStartEndPos, curFrameIsRandomAccess))
-        return readerHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
+        return ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
       DEBUG_VVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, counterAU, curFrameIsRandomAccess ? " - ra" : "");
     }
     curFrameFileStartEndPos = nalStartEndPosFile;
@@ -163,7 +163,7 @@ QByteArray parserAnnexBVVC::nal_unit_vvc::getNALHeader() const
 bool parserAnnexBVVC::nal_unit_vvc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
-  readerHelper reader(parameterSetData, root, "nal_unit_header()");
+  ReaderHelper reader(parameterSetData, root, "nal_unit_header()");
 
   READZEROBITS(1, "forbidden_zero_bit");
   READZEROBITS(1, "nuh_reserved_zero_bit");

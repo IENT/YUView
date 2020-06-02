@@ -34,8 +34,8 @@
 
 #include <QByteArray>
 
-#include "common/readerHelper.h"
-#include "common/treeItem.h"
+#include "common/ReaderHelper.h"
+#include "common/TreeItem.h"
 
 namespace subtitle_608
 {
@@ -43,5 +43,5 @@ namespace subtitle_608
     int parse608SubtitlePacket(QByteArray data, TreeItem *parent);
 
     // Parse the 608 subtitle encoded in ATSC CC Data packet format with 3 bytes
-    int parse608DataPayloadCCDataPacket(readerHelper &reader, unsigned int &ccData);
+    int parse608DataPayloadCCDataPacket(ReaderHelper &reader, unsigned int &ccData);
 }

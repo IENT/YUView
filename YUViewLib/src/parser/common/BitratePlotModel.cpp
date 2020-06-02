@@ -39,7 +39,7 @@
 #define DEBUG_PLOT(msg) ((void)0)
 #endif
 
-#include "bitratePlotModel.h"
+#include "BitratePlotModel.h"
 
 unsigned int BitratePlotModel::getNrPlots() const 
 { 

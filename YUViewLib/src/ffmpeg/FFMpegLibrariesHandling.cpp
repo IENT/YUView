@@ -38,7 +38,7 @@
 #include <QSettings>
 
 #include "common/typedef.h"
-#include "parser/common/subByteReader.h"
+#include "parser/common/SubByteReader.h"
 
 #define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG
@@ -3128,7 +3128,7 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
     int posInData = 0;
     while (posInData + 2 <= data.length())
     {
-      subByteReader reader(data, posInData);
+      SubByteReader reader(data, posInData);
 
       QString bitsRead;
       bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);

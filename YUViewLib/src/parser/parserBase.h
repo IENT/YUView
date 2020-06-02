@@ -37,8 +37,8 @@
 #include <QString>
 #include <QTreeWidgetItem>
 
-#include "common/packetItemModel.h"
-#include "common/bitratePlotModel.h"
+#include "common/PacketItemModel.h"
+#include "common/BitratePlotModel.h"
 
 // If the file parsing limit is enabled (setParsingLimitEnabled) parsing will be aborted after
 // 500 frames have been parsed. This should be enough in most situations and full parsing can be

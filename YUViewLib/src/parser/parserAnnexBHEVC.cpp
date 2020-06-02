@@ -313,7 +313,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
     {
       // Save the info of the last frame
       if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
-        return readerHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
+        return ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
       DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", unsigned(curFrameFileStartEndPos.first), unsigned(curFrameFileStartEndPos.second), curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
     }
     // The file ended
@@ -485,7 +485,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
         {
           // Save the info of the last frame
           if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
-            return readerHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
+            return ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
           DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", unsigned(curFrameFileStartEndPos.first), unsigned (curFrameFileStartEndPos.second), curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
@@ -516,7 +516,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
   else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
   {
     // An SEI NAL. Each SEI NAL may contain multiple sei_payloads
-    subByteReader seiReader(payload);
+    SubByteReader seiReader(payload);
     auto new_sei = QSharedPointer<sei>(new sei(nal_hevc));
     
     int sei_count = 0;
@@ -653,7 +653,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
   return true;
 }
 
-bool parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(readerHelper &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
+bool parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(ReaderHelper &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
 {
   reader_sub_level s(reader, "profile_tier_level()");
 
@@ -771,7 +771,7 @@ bool parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(readerHelper
   return true;
 }
 
-bool parserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(readerHelper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, bool SubPicHrdFlag, unsigned int bit_rate_scale, unsigned int cpb_size_scale, unsigned int cpb_size_du_scale)
+bool parserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(ReaderHelper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, bool SubPicHrdFlag, unsigned int bit_rate_scale, unsigned int cpb_size_scale, unsigned int cpb_size_du_scale)
 {
   Q_UNUSED(subLayerId);
   reader_sub_level s(reader, "sub_layer_hrd_parameters()");
@@ -836,7 +836,7 @@ bool parserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(
   return true;
 }
 
-bool parserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(readerHelper &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1)
+bool parserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(ReaderHelper &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1)
 {
   reader_sub_level s(reader, "hrd_parameters()");
   
@@ -910,7 +910,7 @@ bool parserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(readerHelper &reader
   return true;
 }
 
-bool parserAnnexBHEVC::pred_weight_table::parse_pred_weight_table(readerHelper &reader, sps *actSPS, slice *actSlice)
+bool parserAnnexBHEVC::pred_weight_table::parse_pred_weight_table(ReaderHelper &reader, sps *actSPS, slice *actSlice)
 {
   reader_sub_level s(reader, "pred_weight_table()");
   
@@ -971,7 +971,7 @@ bool parserAnnexBHEVC::st_ref_pic_set::UsedByCurrPicS0[65][16];
 bool parserAnnexBHEVC::st_ref_pic_set::UsedByCurrPicS1[65][16];
 unsigned int parserAnnexBHEVC::st_ref_pic_set::NumDeltaPocs[65];
 
-bool parserAnnexBHEVC::st_ref_pic_set::parse_st_ref_pic_set(readerHelper &reader, unsigned int stRpsIdx, sps *actSPS)
+bool parserAnnexBHEVC::st_ref_pic_set::parse_st_ref_pic_set(ReaderHelper &reader, unsigned int stRpsIdx, sps *actSPS)
 {
   reader_sub_level s(reader, "st_ref_pic_set()");
   
@@ -1122,7 +1122,7 @@ int parserAnnexBHEVC::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *act
   return NumPicTotalCurr;
 }
 
-bool parserAnnexBHEVC::vui_parameters::parse_vui_parameters(readerHelper &reader, sps *actSPS)
+bool parserAnnexBHEVC::vui_parameters::parse_vui_parameters(ReaderHelper &reader, sps *actSPS)
 {
   reader_sub_level s(reader, "vui_parameters()");
 
@@ -1214,7 +1214,7 @@ bool parserAnnexBHEVC::vui_parameters::parse_vui_parameters(readerHelper &reader
   return true;
 }
 
-bool parserAnnexBHEVC::scaling_list_data::parse_scaling_list_data(readerHelper &reader)
+bool parserAnnexBHEVC::scaling_list_data::parse_scaling_list_data(ReaderHelper &reader)
 {
   reader_sub_level s(reader, "scaling_list_data()");
   
@@ -1255,7 +1255,7 @@ bool parserAnnexBHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeIt
 {
   nalPayload = parameterSetData;
 
-  readerHelper reader(parameterSetData, root, "video_parameter_set_rbsp()");
+  ReaderHelper reader(parameterSetData, root, "video_parameter_set_rbsp()");
 
   READBITS(vps_video_parameter_set_id, 4);
   READFLAG(vps_base_layer_internal_flag);
@@ -1330,7 +1330,7 @@ bool parserAnnexBHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIt
 {
   nalPayload = parameterSetData;
 
-  readerHelper reader(parameterSetData, root, "seq_parameter_set_rbsp()");
+  ReaderHelper reader(parameterSetData, root, "seq_parameter_set_rbsp()");
 
   READBITS(sps_video_parameter_set_id,4);
   READBITS(sps_max_sub_layers_minus1, 3);
@@ -1480,7 +1480,7 @@ bool parserAnnexBHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIt
 {
   nalPayload = parameterSetData;
 
-  readerHelper reader(parameterSetData, root, "pic_parameter_set_rbsp()");
+  ReaderHelper reader(parameterSetData, root, "pic_parameter_set_rbsp()");
 
   READUEV(pps_pic_parameter_set_id);
   READUEV(pps_seq_parameter_set_id);
@@ -1578,7 +1578,7 @@ bool parserAnnexBHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIt
   return true;
 }
 
-bool parserAnnexBHEVC::pps_range_extension::parse_pps_range_extension(readerHelper &reader, pps *actPPS)
+bool parserAnnexBHEVC::pps_range_extension::parse_pps_range_extension(ReaderHelper &reader, pps *actPPS)
 {
   reader_sub_level s(reader, "pps_range_extension()");
   
@@ -1602,7 +1602,7 @@ bool parserAnnexBHEVC::pps_range_extension::parse_pps_range_extension(readerHelp
   return true;
 }
 
-bool parserAnnexBHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modification(readerHelper &reader, slice *actSlice, int NumPicTotalCurr)
+bool parserAnnexBHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modification(ReaderHelper &reader, slice *actSlice, int NumPicTotalCurr)
 {
   reader_sub_level s(reader, "ref_pic_lists_modification()");
   
@@ -1655,7 +1655,7 @@ parserAnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 QStringList slice_type_meaning = QStringList() << "B-Slice" << "P-Slice" << "I-Slice";
 bool parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
 {
-  readerHelper reader(sliceHeaderData, root, "slice_segment_header()");
+  ReaderHelper reader(sliceHeaderData, root, "slice_segment_header()");
 
   READFLAG(first_slice_segment_in_pic_flag);
 
@@ -1939,7 +1939,7 @@ QByteArray parserAnnexBHEVC::nal_unit_hevc::getNALHeader() const
 bool parserAnnexBHEVC::nal_unit_hevc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
-  readerHelper reader(parameterSetData, root, "nal_unit_header()");
+  ReaderHelper reader(parameterSetData, root, "nal_unit_header()");
 
   READZEROBITS(1, "forbidden_zero_bit");
 
@@ -2039,9 +2039,9 @@ bool parserAnnexBHEVC::nal_unit_hevc::isSlice()
     nal_type == RASL_R); 
 }
 
-int parserAnnexBHEVC::sei::parse_sei_header(subByteReader &sei_reader, TreeItem *root)
+int parserAnnexBHEVC::sei::parse_sei_header(SubByteReader &sei_reader, TreeItem *root)
 {
-  readerHelper reader(sei_reader, root, "sei_message()");
+  ReaderHelper reader(sei_reader, root, "sei_message()");
 
   payloadType = 0;
   {
@@ -2292,7 +2292,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_d
 
 bool parserAnnexBHEVC::alternative_transfer_characteristics_sei::parse_internal(QByteArray &data, TreeItem *root)
 {
-  readerHelper reader(data, root, "alternative transfer characteristics");
+  ReaderHelper reader(data, root, "alternative transfer characteristics");
   // For all SEI messages, the emulation prevention is already removed one level up
   reader.disableEmulationPrevention();
 
@@ -2326,7 +2326,7 @@ bool parserAnnexBHEVC::dolbyVisionMetadata::parse_metadata(const QByteArray &dat
 
 parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &data, const vps_map &active_VPS_list, TreeItem *root)
 {
-  this->reader = readerHelper(data, root, "active parameter sets");
+  this->reader = ReaderHelper(data, root, "active parameter sets");
   // For all SEI messages, the emulation prevention is already removed one level up
   this->reader.disableEmulationPrevention();
   if (!parse_vps_id())
@@ -2340,7 +2340,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::active_parameter_sets_sei::
 
 bool parserAnnexBHEVC::mastering_display_colour_volume_sei::parse_internal(QByteArray &seiPayload, TreeItem *root)
 {
-  readerHelper reader(seiPayload, root, "mastering_display_colour_volume");
+  ReaderHelper reader(seiPayload, root, "mastering_display_colour_volume");
   // For all SEI messages, the emulation prevention is already removed one level up
   reader.disableEmulationPrevention();
 
@@ -2359,7 +2359,7 @@ bool parserAnnexBHEVC::mastering_display_colour_volume_sei::parse_internal(QByte
 
 bool parserAnnexBHEVC::content_light_level_info_sei::parse_internal(QByteArray &seiPayload, TreeItem *root)
 {
-  readerHelper reader(seiPayload, root, "content_light_level_info");
+  ReaderHelper reader(seiPayload, root, "content_light_level_info");
   // For all SEI messages, the emulation prevention is already removed one level up
   reader.disableEmulationPrevention();
 
@@ -2397,7 +2397,7 @@ bool parserAnnexBHEVC::active_parameter_sets_sei::parse_internal(const vps_map &
 
 parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
 {
-  this->reader = readerHelper(data, root, "buffering period");
+  this->reader = ReaderHelper(data, root, "buffering period");
   // For all SEI messages, the emulation prevention is already removed one level up
   this->reader.disableEmulationPrevention();
   if (!parse_sps_id())
@@ -2510,7 +2510,7 @@ bool parserAnnexBHEVC::pic_timing_sei::parse_internal(const vps_map &active_VPS_
   if (is_reparse_needed(active_VPS_list, active_SPS_list))
     return false;
 
-  readerHelper reader(sei_data_storage, rootItem, "picture timing");
+  ReaderHelper reader(sei_data_storage, rootItem, "picture timing");
   // For all SEI messages, the emulation prevention is already removed one level up
   reader.disableEmulationPrevention();
 

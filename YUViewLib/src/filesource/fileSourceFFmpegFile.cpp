@@ -35,7 +35,7 @@
 #include <QSettings>
 #include <QProgressDialog>
 
-#include "parser/common/subByteReader.h"
+#include "parser/common/SubByteReader.h"
 
 #define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
@@ -153,7 +153,7 @@ QByteArray fileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pt
   }
   else if (packetDataFormat == packetFormatOBU)
   {
-    subByteReader reader(currentPacketData, posInData);
+    SubByteReader reader(currentPacketData, posInData);
 
     try
     {

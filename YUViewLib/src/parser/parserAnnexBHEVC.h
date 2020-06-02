@@ -34,7 +34,7 @@
 
 #include <QSharedPointer>
 
-#include "common/readerHelper.h"
+#include "common/ReaderHelper.h"
 #include "parserAnnexB.h"
 #include "video/videoHandlerYUV.h"
 
@@ -106,7 +106,7 @@ protected:
   // The profile tier level syntax elements. 7.3.3
   struct profile_tier_level
   {
-    bool parse_profile_tier_level(readerHelper &reader, bool profilePresentFlag, int maxNumSubLayersMinus1);
+    bool parse_profile_tier_level(ReaderHelper &reader, bool profilePresentFlag, int maxNumSubLayersMinus1);
 
     unsigned int general_profile_space {0};
     bool general_tier_flag {false};
@@ -161,7 +161,7 @@ protected:
   // E.2.3 Sub-layer HRD parameters syntax
   struct sub_layer_hrd_parameters
   {
-    bool parse_sub_layer_hrd_parameters(readerHelper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, bool SubPicHrdFlag, unsigned int bit_rate_scale, unsigned int cpb_size_scale, unsigned int cpb_size_du_scale);
+    bool parse_sub_layer_hrd_parameters(ReaderHelper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, bool SubPicHrdFlag, unsigned int bit_rate_scale, unsigned int cpb_size_scale, unsigned int cpb_size_du_scale);
 
     QList<unsigned int> bit_rate_value_minus1;
     QList<unsigned int> cpb_size_value_minus1;
@@ -176,7 +176,7 @@ protected:
   // E.2.2 HRD parameters syntax
   struct hrd_parameters
   {
-    bool parse_hrd_parameters(readerHelper &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1);
+    bool parse_hrd_parameters(ReaderHelper &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1);
 
     bool nal_hrd_parameters_present_flag {false};
     bool vcl_hrd_parameters_present_flag {false};
@@ -210,7 +210,7 @@ protected:
   // 7.3.4 Scaling list data syntax
   struct scaling_list_data
   {
-    bool parse_scaling_list_data(readerHelper &reader);
+    bool parse_scaling_list_data(ReaderHelper &reader);
 
     bool scaling_list_pred_mode_flag[4][6];
     unsigned int scaling_list_pred_matrix_id_delta[4][6];
@@ -222,7 +222,7 @@ protected:
   struct slice;
   struct pred_weight_table
   {
-    bool parse_pred_weight_table(readerHelper &reader, sps *actSPS, slice *actSlice);
+    bool parse_pred_weight_table(ReaderHelper &reader, sps *actSPS, slice *actSlice);
 
     unsigned int luma_log2_weight_denom;
     int delta_chroma_log2_weight_denom;
@@ -244,7 +244,7 @@ protected:
   // 7.3.7 Short-term reference picture set syntax
   struct st_ref_pic_set
   {
-    bool parse_st_ref_pic_set(readerHelper &reader, unsigned int stRpsIdx, sps *actSPS);
+    bool parse_st_ref_pic_set(ReaderHelper &reader, unsigned int stRpsIdx, sps *actSPS);
     int NumPicTotalCurr(int CurrRpsIdx, slice *actSlice);
 
     bool inter_ref_pic_set_prediction_flag;
@@ -273,7 +273,7 @@ protected:
 
   struct vui_parameters
   {
-    bool parse_vui_parameters(readerHelper &reader, sps *actSPS);
+    bool parse_vui_parameters(ReaderHelper &reader, sps *actSPS);
 
     bool aspect_ratio_info_present_flag;
     unsigned int aspect_ratio_idc;
@@ -324,7 +324,7 @@ protected:
 
   struct ref_pic_lists_modification
   {
-    bool parse_ref_pic_lists_modification(readerHelper &reader, slice *actSlice, int NumPicTotalCurr);
+    bool parse_ref_pic_lists_modification(ReaderHelper &reader, slice *actSlice, int NumPicTotalCurr);
 
     bool ref_pic_list_modification_flag_l0;
     QList<unsigned int> list_entry_l0;
@@ -454,7 +454,7 @@ protected:
   struct pps;
   struct pps_range_extension
   {
-    bool parse_pps_range_extension(readerHelper &reader, pps *actPPS);
+    bool parse_pps_range_extension(ReaderHelper &reader, pps *actPPS);
 
     unsigned int log2_max_transform_skip_block_size_minus2;
     bool cross_component_prediction_enabled_flag;
@@ -623,7 +623,7 @@ protected:
     sei(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
     sei(QSharedPointer<sei> sei_src) : nal_unit_hevc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; payloadTypeName = sei_src->payloadTypeName; }
     // Parse the SEI and return how many bytes were read. -1 if an error occured.
-    int parse_sei_header(subByteReader &sei_reader, TreeItem *root);
+    int parse_sei_header(SubByteReader &sei_reader, TreeItem *root);
     // If parsing of a special SEI is not implemented, this function can just parse/show the raw bytes.
     sei_parsing_return_t parser_sei_bytes(QByteArray &data, TreeItem *root);
 
@@ -664,7 +664,7 @@ protected:
     bool parse_internal(const vps_map &active_VPS_list);
     bool parse_vps_id();
     bool is_reparse_needed(const vps_map &active_VPS_list) { return !active_VPS_list.contains(active_video_parameter_set_id); }
-    readerHelper reader;
+    ReaderHelper reader;
   };
 
   class mastering_display_colour_volume_sei : public sei
@@ -730,7 +730,7 @@ protected:
     bool parse_internal(const sps_map &active_SPS_list);
     bool parse_sps_id();
     bool is_reparse_needed(const sps_map &active_SPS_list) { return !active_SPS_list.contains(bp_seq_parameter_set_id); }
-    readerHelper reader;
+    ReaderHelper reader;
   };
 
   class pic_timing_sei : public sei

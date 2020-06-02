@@ -140,7 +140,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     {
       // Save the info of the last frame
       if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
-        return readerHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
+        return ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
       DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
     }
     // The file ended
@@ -266,7 +266,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
         {
           // Save the info of the last frame
           if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
-            return readerHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
+            return ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
           DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
@@ -432,7 +432,7 @@ const QStringList parserAnnexBAVC::nal_unit_type_toString = QStringList()
 bool parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
-  readerHelper reader(header_byte, root, "nal_unit_header()");
+  ReaderHelper reader(header_byte, root, "nal_unit_header()");
   if (header_byte.length() != 1)
     return reader.addErrorMessageChildItem("The AVC header must have only one byte.");
 
@@ -473,7 +473,7 @@ bool parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &head
   return true;
 }
 
-bool parserAnnexBAVC::read_scaling_list(readerHelper &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag)
+bool parserAnnexBAVC::read_scaling_list(ReaderHelper &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag)
 {
   int lastScale = 8;
   int nextScale = 8;
@@ -495,7 +495,7 @@ bool parserAnnexBAVC::read_scaling_list(readerHelper &reader, int *scalingList, 
 bool parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
-  readerHelper reader(parameterSetData, root, "seq_parameter_set_rbsp()");
+  ReaderHelper reader(parameterSetData, root, "seq_parameter_set_rbsp()");
 
   QMap<int, QString> meaningMap;
   meaningMap.insert(44, "CAVLC 4:4:4 Intra Profile");
@@ -699,7 +699,7 @@ bool parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   return true;
 }
 
-bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(readerHelper &reader, int BitDepthY, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag)
+bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(ReaderHelper &reader, int BitDepthY, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag)
 {
   reader_sub_level s(reader, "vui_parameters()");
   
@@ -846,7 +846,7 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(readerHelper &reader
   return true;
 }
 
-bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_hrd(readerHelper &reader)
+bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_hrd(ReaderHelper &reader)
 {
   READUEV(cpb_cnt_minus1);
   if (cpb_cnt_minus1 > 31)
@@ -875,7 +875,7 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_h
 bool parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list)
 {
   nalPayload = parameterSetData;
-  readerHelper reader(parameterSetData, root, "pic_parameter_set_rbsp()");
+  ReaderHelper reader(parameterSetData, root, "pic_parameter_set_rbsp()");
 
   READUEV(pic_parameter_set_id);
   if (pic_parameter_set_id > 255)
@@ -981,7 +981,7 @@ QStringList slice_type_id_meaning = QStringList()
     << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)" << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)";
 bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
 {
-  readerHelper reader(sliceHeaderData, root, "slice_header()");
+  ReaderHelper reader(sliceHeaderData, root, "slice_header()");
 
   READUEV(first_mb_in_slice);
   READUEV_M(slice_type_id, slice_type_id_meaning);
@@ -1327,7 +1327,7 @@ QString parserAnnexBAVC::slice_header::getSliceTypeString() const
   return slice_type_id_meaning[slice_type_id];
 }
 
-bool parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::parse_ref_pic_list_mvc_modification(readerHelper & reader, slice_type_enum slice_type)
+bool parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::parse_ref_pic_list_mvc_modification(ReaderHelper & reader, slice_type_enum slice_type)
 {
   if (slice_type != SLICE_I && slice_type != SLICE_SI)
   {
@@ -1390,7 +1390,7 @@ bool parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::parse_
   return true;
 }
 
-bool parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::parse_ref_pic_list_modification(readerHelper & reader, slice_type_enum slice_type)
+bool parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::parse_ref_pic_list_modification(ReaderHelper & reader, slice_type_enum slice_type)
 {
   if (slice_type != SLICE_I && slice_type != SLICE_SI)
   {
@@ -1441,7 +1441,7 @@ bool parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::parse_ref_
   return true;
 }
 
-bool parserAnnexBAVC::slice_header::pred_weight_table_struct::parse_pred_weight_table(readerHelper & reader, slice_type_enum slice_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1)
+bool parserAnnexBAVC::slice_header::pred_weight_table_struct::parse_pred_weight_table(ReaderHelper & reader, slice_type_enum slice_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1)
 {
   READUEV(luma_log2_weight_denom);
   if (ChromaArrayType != 0)
@@ -1496,7 +1496,7 @@ bool parserAnnexBAVC::slice_header::pred_weight_table_struct::parse_pred_weight_
   return true;
 }
 
-bool parserAnnexBAVC::slice_header::dec_ref_pic_marking_struct::parse_dec_ref_pic_marking(readerHelper & reader, bool IdrPicFlag)
+bool parserAnnexBAVC::slice_header::dec_ref_pic_marking_struct::parse_dec_ref_pic_marking(ReaderHelper & reader, bool IdrPicFlag)
 {
   if (IdrPicFlag)
   {
@@ -1536,7 +1536,7 @@ QByteArray parserAnnexBAVC::nal_unit_avc::getNALHeader() const
 
 int parserAnnexBAVC::sei::parse_sei_header(QByteArray &sliceHeaderData, TreeItem *root)
 {
-  readerHelper reader(sliceHeaderData, root, "sei_message()");
+  ReaderHelper reader(sliceHeaderData, root, "sei_message()");
 
   payloadType = 0;
   {
@@ -1723,7 +1723,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBAVC::buffering_period_sei::parse_
 
 bool parserAnnexBAVC::buffering_period_sei::parse(const sps_map &active_SPS_list, bool reparse)
 {
-  readerHelper reader(sei_data_storage, itemTree);
+  ReaderHelper reader(sei_data_storage, itemTree);
 
   READUEV(seq_parameter_set_id);
   if (!active_SPS_list.contains(seq_parameter_set_id))
@@ -1772,7 +1772,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBAVC::pic_timing_sei::parse_pic_ti
 
 bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, bool reparse)
 {
-  readerHelper reader(sei_data_storage, itemTree);
+  ReaderHelper reader(sei_data_storage, itemTree);
   
   // TODO: Is this really the correct sps? I did not really understand everything.
   const int seq_parameter_set_id = 0;

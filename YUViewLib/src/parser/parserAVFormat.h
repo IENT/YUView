@@ -68,14 +68,14 @@ private:
 
   struct hvcC_nalUnit
   {
-    bool parse_hvcC_nalUnit(int unitID, readerHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     unsigned int nalUnitLength;
   };
 
   struct hvcC_naluArray
   {
-    bool parse_hvcC_naluArray(int arrayID, readerHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     bool array_completeness;
     bool reserved_flag_false;

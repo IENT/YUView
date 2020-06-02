@@ -39,11 +39,11 @@
     * This class can "read out" the emulation prevention bytes. This is enabled by default but can be disabled
     * if needed.
     */
-class subByteReader
+class SubByteReader
 {
 public:
-  subByteReader() {};
-  subByteReader(const QByteArray &inArr, unsigned int inArrOffset = 0) : byteArray(inArr), posInBuffer_bytes(inArrOffset), initialPosInBuffer(inArrOffset) {}
+  SubByteReader() {};
+  SubByteReader(const QByteArray &inArr, unsigned int inArrOffset = 0) : byteArray(inArr), posInBuffer_bytes(inArrOffset), initialPosInBuffer(inArrOffset) {}
   
   void set_input(const QByteArray &inArr, unsigned int inArrOffset = 0) { byteArray = inArr; posInBuffer_bytes = inArrOffset; initialPosInBuffer = inArrOffset; }
   

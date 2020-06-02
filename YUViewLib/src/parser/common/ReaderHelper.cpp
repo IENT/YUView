@@ -30,9 +30,9 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "readerHelper.h"
+#include "ReaderHelper.h"
 
-readerHelper::readerHelper(subByteReader &reader, TreeItem *item, QString new_sub_item_name)
+ReaderHelper::ReaderHelper(SubByteReader &reader, TreeItem *item, QString new_sub_item_name)
 {
   this->reader = reader;
   if (item)
@@ -45,9 +45,9 @@ readerHelper::readerHelper(subByteReader &reader, TreeItem *item, QString new_su
   itemHierarchy.append(currentTreeLevel);
 }
 
-readerHelper::readerHelper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name)
+ReaderHelper::ReaderHelper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name)
 {
-  this->reader = subByteReader(inArr);
+  this->reader = SubByteReader(inArr);
   if (item)
   {
     if (new_sub_item_name.isEmpty())
@@ -58,7 +58,7 @@ readerHelper::readerHelper(const QByteArray &inArr, TreeItem *item, QString new_
   itemHierarchy.append(currentTreeLevel);
 }
 
-void readerHelper::addLogSubLevel(const QString name)
+void ReaderHelper::addLogSubLevel(const QString name)
 {
   assert(!name.isEmpty());
   if (itemHierarchy.last() == nullptr)
@@ -67,7 +67,7 @@ void readerHelper::addLogSubLevel(const QString name)
   itemHierarchy.append(currentTreeLevel);
 }
 
-void readerHelper::removeLogSubLevel()
+void ReaderHelper::removeLogSubLevel()
 {
   if (itemHierarchy.length() <= 1)
     // Don't remove the root
@@ -77,7 +77,7 @@ void readerHelper::removeLogSubLevel()
 }
 
 // TODO: Fixed length / variable length codes logging
-bool readerHelper::readBits(int numBits, unsigned int &into, QString intoName, QString meaning)
+bool ReaderHelper::readBits(int numBits, unsigned int &into, QString intoName, QString meaning)
 {
   QString code;
   if (!readBits_catch(into, numBits, code))
@@ -87,7 +87,7 @@ bool readerHelper::readBits(int numBits, unsigned int &into, QString intoName, Q
   return true;
 }
 
-bool readerHelper::readBits(int numBits, uint64_t &into, QString intoName, QString meaning)
+bool ReaderHelper::readBits(int numBits, uint64_t &into, QString intoName, QString meaning)
 {
   QString code;
   if (!readBits64_catch(into, numBits, code))
@@ -97,7 +97,7 @@ bool readerHelper::readBits(int numBits, uint64_t &into, QString intoName, QStri
   return true;
 }
 
-bool readerHelper::readBits(int numBits, unsigned int &into, QString intoName, QStringList meanings)
+bool ReaderHelper::readBits(int numBits, unsigned int &into, QString intoName, QStringList meanings)
 {
   QString code;
   if (!readBits_catch(into, numBits, code))
@@ -107,7 +107,7 @@ bool readerHelper::readBits(int numBits, unsigned int &into, QString intoName, Q
   return true;
 }
 
-bool readerHelper::readBits(int numBits, unsigned int &into, QString intoName, QMap<int,QString> meanings)
+bool ReaderHelper::readBits(int numBits, unsigned int &into, QString intoName, QMap<int,QString> meanings)
 {
   QString code;
   if (!readBits_catch(into, numBits, code))
@@ -117,7 +117,7 @@ bool readerHelper::readBits(int numBits, unsigned int &into, QString intoName, Q
   return true;
 }
 
-bool readerHelper::readBits(int numBits, unsigned int &into, QString intoName, meaning_callback_function pMeaning)
+bool ReaderHelper::readBits(int numBits, unsigned int &into, QString intoName, meaning_callback_function pMeaning)
 {
   QString code;
   if (!readBits_catch(into, numBits, code))
@@ -127,7 +127,7 @@ bool readerHelper::readBits(int numBits, unsigned int &into, QString intoName, m
   return true;
 }
 
-bool readerHelper::readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx)
+bool ReaderHelper::readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx)
 {
   QString code;
   unsigned int val;
@@ -141,7 +141,7 @@ bool readerHelper::readBits(int numBits, QList<unsigned int> &into, QString into
   return true;
 }
 
-bool readerHelper::readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx, meaning_callback_function pMeaning)
+bool ReaderHelper::readBits(int numBits, QList<unsigned int> &into, QString intoName, int idx, meaning_callback_function pMeaning)
 {
   QString code;
   unsigned int val;
@@ -155,7 +155,7 @@ bool readerHelper::readBits(int numBits, QList<unsigned int> &into, QString into
   return true;
 }
 
-bool readerHelper::readBits(int numBits, QByteArray &into, QString intoName, int idx)
+bool ReaderHelper::readBits(int numBits, QByteArray &into, QString intoName, int idx)
 {
   assert(numBits <= 8);
   QString code;
@@ -170,7 +170,7 @@ bool readerHelper::readBits(int numBits, QByteArray &into, QString intoName, int
   return true;
 }
 
-bool readerHelper::readBits(int numBits, unsigned int &into, QMap<int, QString> intoNames)
+bool ReaderHelper::readBits(int numBits, unsigned int &into, QMap<int, QString> intoNames)
 {
   QString code;
   if (!readBits_catch(into, numBits, code))
@@ -180,7 +180,7 @@ bool readerHelper::readBits(int numBits, unsigned int &into, QMap<int, QString> 
   return true;
 }
 
-bool readerHelper::readZeroBits(int numBits, QString intoName)
+bool ReaderHelper::readZeroBits(int numBits, QString intoName)
 {
   QString code;
   bool allZero = true;
@@ -203,7 +203,7 @@ bool readerHelper::readZeroBits(int numBits, QString intoName)
   return allZero;
 }
 
-bool readerHelper::ignoreBits(int numBits)
+bool ReaderHelper::ignoreBits(int numBits)
 {
   unsigned int into;
   QString code;
@@ -212,7 +212,7 @@ bool readerHelper::ignoreBits(int numBits)
   return true;
 }
 
-bool readerHelper::readFlag(bool &into, QString intoName, QString meaning)
+bool ReaderHelper::readFlag(bool &into, QString intoName, QString meaning)
 {
   QString code;
   unsigned int read_val;
@@ -224,7 +224,7 @@ bool readerHelper::readFlag(bool &into, QString intoName, QString meaning)
   return true;
 }
 
-bool readerHelper::readFlag(QList<bool> &into, QString intoName, int idx, QString meaning)
+bool ReaderHelper::readFlag(QList<bool> &into, QString intoName, int idx, QString meaning)
 {
   QString code;
   unsigned int read_val;
@@ -239,7 +239,7 @@ bool readerHelper::readFlag(QList<bool> &into, QString intoName, int idx, QStrin
   return true;
 }
 
-bool readerHelper::readFlag(bool &into, QString intoName, QStringList meanings)
+bool ReaderHelper::readFlag(bool &into, QString intoName, QStringList meanings)
 {
   QString code;
   unsigned int read_val;
@@ -251,7 +251,7 @@ bool readerHelper::readFlag(bool &into, QString intoName, QStringList meanings)
   return true;
 }
 
-bool readerHelper::readUEV(unsigned int &into, QString intoName, QStringList meanings)
+bool ReaderHelper::readUEV(unsigned int &into, QString intoName, QStringList meanings)
 {
   QString code;
   int bit_count = 0;
@@ -262,7 +262,7 @@ bool readerHelper::readUEV(unsigned int &into, QString intoName, QStringList mea
   return true;
 }
 
-bool readerHelper::readUEV(unsigned int &into, QString intoName, QString meaning)
+bool ReaderHelper::readUEV(unsigned int &into, QString intoName, QString meaning)
 {
   QString code;
   int bit_count = 0;
@@ -273,7 +273,7 @@ bool readerHelper::readUEV(unsigned int &into, QString intoName, QString meaning
   return true;
 }
 
-bool readerHelper::readUEV(QList<quint32> &into, QString intoName, int idx, QString meaning)
+bool ReaderHelper::readUEV(QList<quint32> &into, QString intoName, int idx, QString meaning)
 {
   QString code;
   int bit_count = 0;
@@ -288,7 +288,7 @@ bool readerHelper::readUEV(QList<quint32> &into, QString intoName, int idx, QStr
   return true;
 }
 
-bool readerHelper::readSEV(int &into, QString intoName, QStringList meanings)
+bool ReaderHelper::readSEV(int &into, QString intoName, QStringList meanings)
 {
   QString code;
   int bit_count = 0;
@@ -299,7 +299,7 @@ bool readerHelper::readSEV(int &into, QString intoName, QStringList meanings)
   return true;
 }
 
-bool readerHelper::readSEV(QList<int> into, QString intoName, int idx)
+bool ReaderHelper::readSEV(QList<int> into, QString intoName, int idx)
 {
   QString code;
   int bit_count = 0;
@@ -314,7 +314,7 @@ bool readerHelper::readSEV(QList<int> into, QString intoName, int idx)
   return true;
 }
 
-bool readerHelper::readLeb128(uint64_t &into, QString intoName)
+bool ReaderHelper::readLeb128(uint64_t &into, QString intoName)
 {
   QString code;
   int bit_count = 0;
@@ -325,7 +325,7 @@ bool readerHelper::readLeb128(uint64_t &into, QString intoName)
   return true;
 }
 
-bool readerHelper::readUVLC(uint64_t &into, QString intoName)
+bool ReaderHelper::readUVLC(uint64_t &into, QString intoName)
 {
   QString code;
   int bit_count = 0;
@@ -336,7 +336,7 @@ bool readerHelper::readUVLC(uint64_t &into, QString intoName)
   return true;
 }
 
-bool readerHelper::readNS(int &into, QString intoName, int maxVal)
+bool ReaderHelper::readNS(int &into, QString intoName, int maxVal)
 {
   QString code;
   int bit_count = 0;
@@ -347,7 +347,7 @@ bool readerHelper::readNS(int &into, QString intoName, int maxVal)
   return true;
 }
 
-bool readerHelper::readSU(int &into, QString intoName, int nrBits)
+bool ReaderHelper::readSU(int &into, QString intoName, int nrBits)
 {
   QString code;
   if (!readSU_catch(into, nrBits, code))
@@ -357,31 +357,31 @@ bool readerHelper::readSU(int &into, QString intoName, int nrBits)
   return true;
 }
 
-void readerHelper::logValue(int value, QString valueName, QString meaning)
+void ReaderHelper::logValue(int value, QString valueName, QString meaning)
 {
   if (currentTreeLevel)
     new TreeItem(valueName, value, "calc", meaning, currentTreeLevel);
 }
 
-void readerHelper::logValue(int value, QString valueName, QString coding, QString code, QString meaning)
+void ReaderHelper::logValue(int value, QString valueName, QString coding, QString code, QString meaning)
 {
   if (currentTreeLevel)
     new TreeItem(valueName, value, coding, code, meaning, currentTreeLevel);
 }
 
-void readerHelper::logValue(QString value, QString valueName, QString meaning)
+void ReaderHelper::logValue(QString value, QString valueName, QString meaning)
 {
   if (currentTreeLevel)
     new TreeItem(valueName, value, "calc", meaning, currentTreeLevel);
 }
 
-void readerHelper::logInfo(QString info)
+void ReaderHelper::logInfo(QString info)
 {
   if (currentTreeLevel)
     new TreeItem(info, currentTreeLevel);
 }
 
-bool readerHelper::addErrorMessageChildItem(QString errorMessage, TreeItem *item)
+bool ReaderHelper::addErrorMessageChildItem(QString errorMessage, TreeItem *item)
 {
   if (item)
   {
@@ -391,7 +391,7 @@ bool readerHelper::addErrorMessageChildItem(QString errorMessage, TreeItem *item
   return false;
 }
 
-bool readerHelper::readBits_catch(unsigned int &into, int numBits, QString &code)
+bool ReaderHelper::readBits_catch(unsigned int &into, int numBits, QString &code)
 {
   try
   {
@@ -405,7 +405,7 @@ bool readerHelper::readBits_catch(unsigned int &into, int numBits, QString &code
   return true;
 }
 
-bool readerHelper::readBits64_catch(uint64_t &into, int numBits, QString &code)
+bool ReaderHelper::readBits64_catch(uint64_t &into, int numBits, QString &code)
 {
   try
   {
@@ -419,7 +419,7 @@ bool readerHelper::readBits64_catch(uint64_t &into, int numBits, QString &code)
   return true;
 }
 
-bool readerHelper::readUEV_catch(unsigned int &into, int &bit_count, QString &code)
+bool ReaderHelper::readUEV_catch(unsigned int &into, int &bit_count, QString &code)
 {
   try
   {
@@ -433,7 +433,7 @@ bool readerHelper::readUEV_catch(unsigned int &into, int &bit_count, QString &co
   return true;
 }
 
-bool readerHelper::readSEV_catch(int &into, int &bit_count, QString &code)
+bool ReaderHelper::readSEV_catch(int &into, int &bit_count, QString &code)
 {
   try
   {
@@ -447,7 +447,7 @@ bool readerHelper::readSEV_catch(int &into, int &bit_count, QString &code)
   return true;
 }
 
-bool readerHelper::readLeb128_catch(uint64_t &into, int &bit_count, QString &code)
+bool ReaderHelper::readLeb128_catch(uint64_t &into, int &bit_count, QString &code)
 {
   try
   {
@@ -461,7 +461,7 @@ bool readerHelper::readLeb128_catch(uint64_t &into, int &bit_count, QString &cod
   return true;
 }
 
-bool readerHelper::readUVLC_catch(uint64_t &into, int &bit_count, QString &code)
+bool ReaderHelper::readUVLC_catch(uint64_t &into, int &bit_count, QString &code)
 {
   try
   {
@@ -475,7 +475,7 @@ bool readerHelper::readUVLC_catch(uint64_t &into, int &bit_count, QString &code)
   return true;
 }
 
-bool readerHelper::readNS_catch(int &into, int maxVal, int &bit_count, QString &code)
+bool ReaderHelper::readNS_catch(int &into, int maxVal, int &bit_count, QString &code)
 {
   try
   {
@@ -489,7 +489,7 @@ bool readerHelper::readNS_catch(int &into, int maxVal, int &bit_count, QString &
   return true;
 }
 
-bool readerHelper::readSU_catch(int &into, int numBits, QString &code)
+bool ReaderHelper::readSU_catch(int &into, int numBits, QString &code)
 {
   try
   {
@@ -503,7 +503,7 @@ bool readerHelper::readSU_catch(int &into, int numBits, QString &code)
   return true;
 }
 
-QString readerHelper::getMeaningValue(QStringList &meanings, unsigned int val)
+QString ReaderHelper::getMeaningValue(QStringList &meanings, unsigned int val)
 {
   if (val < (unsigned int)meanings.length())
     return meanings.at(val);
@@ -512,7 +512,7 @@ QString readerHelper::getMeaningValue(QStringList &meanings, unsigned int val)
   return "";
 }
 
-QString readerHelper::getMeaningValue(QMap<int,QString> &meanings, int val)
+QString ReaderHelper::getMeaningValue(QMap<int,QString> &meanings, int val)
 {
   if (meanings.contains(val))
     return meanings.value(val);

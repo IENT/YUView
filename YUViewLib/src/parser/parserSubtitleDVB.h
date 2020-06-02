@@ -35,7 +35,7 @@
 #include <QByteArray>
 #include <QString>
 
-#include "common/treeItem.h"
+#include "common/TreeItem.h"
 
 namespace subtitle_dvb
 {

@@ -181,7 +181,7 @@ int subtitle_608::parse608SubtitlePacket(QByteArray data, TreeItem *parent)
     return -1;
 
   // Create a sub byte parser to access the bits
-  readerHelper reader(data, parent, "subtitling_608()");
+  ReaderHelper reader(data, parent, "subtitling_608()");
 
   if (data.size() != 10 && data.size() != 20)
     throw std::logic_error("Unknown packt length. Length should be 10 or 20 bytes");
@@ -223,7 +223,7 @@ int subtitle_608::parse608SubtitlePacket(QByteArray data, TreeItem *parent)
   return reader.nrBytesRead();
 }
 
-int subtitle_608::parse608DataPayloadCCDataPacket(readerHelper &reader, unsigned int &ccData)
+int subtitle_608::parse608DataPayloadCCDataPacket(ReaderHelper &reader, unsigned int &ccData)
 {
     READBITS_M(ccData, 24, &getCCDataPacketMeaning);
     return 3;

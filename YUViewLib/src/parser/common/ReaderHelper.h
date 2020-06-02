@@ -34,18 +34,18 @@
 
 #include <QMap>
 
-#include "subByteReader.h"
-#include "treeItem.h"
+#include "SubByteReader.h"
+#include "TreeItem.h"
 
 typedef QString (*meaning_callback_function)(unsigned int);
 
 // This is a wrapper around the sub_byte_reader that adds the functionality to log the read symbold to TreeItems
-class readerHelper
+class ReaderHelper
 {
 public:
-  readerHelper() = default;
-  readerHelper(subByteReader &reader, TreeItem *item, QString new_sub_item_name = "");
-  readerHelper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "");
+  ReaderHelper() = default;
+  ReaderHelper(SubByteReader &reader, TreeItem *item, QString new_sub_item_name = "");
+  ReaderHelper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "");
 
   // Add another hierarchical log level to the tree or go back up. Don't call these directly but use the reader_sub_level wrapper.
   void addLogSubLevel(QString name);
@@ -128,15 +128,15 @@ private:
 
   QList<TreeItem*> itemHierarchy;
   TreeItem *currentTreeLevel { nullptr };
-  subByteReader reader;
+  SubByteReader reader;
 };
 
-// A simple wrapper for readerHelper.addLogSubLevel / readerHelper->removeLogSubLevel
+// A simple wrapper for ReaderHelper.addLogSubLevel / ReaderHelper->removeLogSubLevel
 class reader_sub_level
 {
 public:
-  reader_sub_level(readerHelper &reader, QString name) { reader.addLogSubLevel(name); r = &reader; }
+  reader_sub_level(ReaderHelper &reader, QString name) { reader.addLogSubLevel(name); r = &reader; }
   ~reader_sub_level() { r->removeLogSubLevel(); }
 private:
-  readerHelper *r;
+  ReaderHelper *r;
 };
