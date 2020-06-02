@@ -2365,6 +2365,8 @@ bool parserAnnexBHEVC::content_light_level_info_sei::parse_internal(QByteArray &
 
   READBITS(this->max_content_light_level, 16);
   READBITS(this->max_pic_average_light_level, 16);
+
+  return true;
 }
 
 bool parserAnnexBHEVC::active_parameter_sets_sei::parse_vps_id()
