@@ -6,7 +6,7 @@ YUView is a QT based, cross-platform YUV player with an advanced analytic toolse
 
 Master branch | Development branch
 ------------ | -------------
-[![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=master)](https://travis-ci.org/IENT/YUView) [![Codeship Status](https://app.codeship.com/projects/0527b270-5bb7-0137-0dd0-2e547607d91e/status?branch=master)](https://app.codeship.com/projects/342701) | [![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=development)](https://travis-ci.org/IENT/YUView) [![Codeship Status](https://app.codeship.com/projects/0527b270-5bb7-0137-0dd0-2e547607d91e/status?branch=development)](https://app.codeship.com/projects/342701)
+[![CI build](https://github.com/IENT/YUView/workflows/CI%20build/badge.svg?branch=development) | ![CI build](https://github.com/IENT/YUView/workflows/CI%20build/badge.svg?branch=master)]
 
 ## Description
 
