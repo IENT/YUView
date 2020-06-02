@@ -516,7 +516,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
   else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
   {
     // An SEI NAL. Each SEI NAL may contain multiple sei_payloads
-    sub_byte_reader seiReader(payload);
+    subByteReader seiReader(payload);
     auto new_sei = QSharedPointer<sei>(new sei(nal_hevc));
     
     int sei_count = 0;
@@ -2039,9 +2039,9 @@ bool parserAnnexBHEVC::nal_unit_hevc::isSlice()
     nal_type == RASL_R); 
 }
 
-int parserAnnexBHEVC::sei::parse_sei_header(parserCommon::sub_byte_reader &sei_reader, TreeItem *root)
+int parserAnnexBHEVC::sei::parse_sei_header(subByteReader &sei_reader, TreeItem *root)
 {
-  reader_helper reader(sei_reader, root, "sei_message()");
+  readerHelper reader(sei_reader, root, "sei_message()");
 
   payloadType = 0;
   {
@@ -2292,7 +2292,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_d
 
 bool parserAnnexBHEVC::alternative_transfer_characteristics_sei::parse_internal(QByteArray &data, TreeItem *root)
 {
-  reader_helper reader(data, root, "alternative transfer characteristics");
+  readerHelper reader(data, root, "alternative transfer characteristics");
   // For all SEI messages, the emulation prevention is already removed one level up
   reader.disableEmulationPrevention();
 
@@ -2326,7 +2326,7 @@ bool parserAnnexBHEVC::dolbyVisionMetadata::parse_metadata(const QByteArray &dat
 
 parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &data, const vps_map &active_VPS_list, TreeItem *root)
 {
-  this->reader = reader_helper(data, root, "active parameter sets");
+  this->reader = readerHelper(data, root, "active parameter sets");
   // For all SEI messages, the emulation prevention is already removed one level up
   this->reader.disableEmulationPrevention();
   if (!parse_vps_id())
@@ -2338,9 +2338,9 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::active_parameter_sets_sei::
   return SEI_PARSING_OK;
 }
 
-bool parserAnnexBHEVC::mastering_display_colour_volume_sei::parse_internal(QByteArray &seiPayload, parserCommon::TreeItem *root)
+bool parserAnnexBHEVC::mastering_display_colour_volume_sei::parse_internal(QByteArray &seiPayload, TreeItem *root)
 {
-  reader_helper reader(seiPayload, root, "mastering_display_colour_volume");
+  readerHelper reader(seiPayload, root, "mastering_display_colour_volume");
   // For all SEI messages, the emulation prevention is already removed one level up
   reader.disableEmulationPrevention();
 
@@ -2357,9 +2357,9 @@ bool parserAnnexBHEVC::mastering_display_colour_volume_sei::parse_internal(QByte
   return SEI_PARSING_OK;
 }
 
-bool parserAnnexBHEVC::content_light_level_info_sei::parse_internal(QByteArray &seiPayload, parserCommon::TreeItem *root)
+bool parserAnnexBHEVC::content_light_level_info_sei::parse_internal(QByteArray &seiPayload, TreeItem *root)
 {
-  reader_helper reader(seiPayload, root, "content_light_level_info");
+  readerHelper reader(seiPayload, root, "content_light_level_info");
   // For all SEI messages, the emulation prevention is already removed one level up
   reader.disableEmulationPrevention();
 
@@ -2397,7 +2397,7 @@ bool parserAnnexBHEVC::active_parameter_sets_sei::parse_internal(const vps_map &
 
 parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
 {
-  this->reader = reader_helper(data, root, "buffering period");
+  this->reader = readerHelper(data, root, "buffering period");
   // For all SEI messages, the emulation prevention is already removed one level up
   this->reader.disableEmulationPrevention();
   if (!parse_sps_id())
@@ -2510,7 +2510,7 @@ bool parserAnnexBHEVC::pic_timing_sei::parse_internal(const vps_map &active_VPS_
   if (is_reparse_needed(active_VPS_list, active_SPS_list))
     return false;
 
-  reader_helper reader(sei_data_storage, rootItem, "picture timing");
+  readerHelper reader(sei_data_storage, rootItem, "picture timing");
   // For all SEI messages, the emulation prevention is already removed one level up
   reader.disableEmulationPrevention();
 

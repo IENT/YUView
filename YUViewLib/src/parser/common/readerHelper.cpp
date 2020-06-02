@@ -32,9 +32,22 @@
 
 #include "readerHelper.h"
 
-void readerHelper::init(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name)
+readerHelper::readerHelper(subByteReader &reader, TreeItem *item, QString new_sub_item_name)
 {
-  set_input(inArr);
+  this->reader = reader;
+  if (item)
+  {
+    if (new_sub_item_name.isEmpty())
+      currentTreeLevel = item;
+    else
+      currentTreeLevel = new TreeItem(new_sub_item_name, item);
+  }
+  itemHierarchy.append(currentTreeLevel);
+}
+
+readerHelper::readerHelper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name)
+{
+  this->reader = subByteReader(inArr);
   if (item)
   {
     if (new_sub_item_name.isEmpty())
@@ -382,7 +395,7 @@ bool readerHelper::readBits_catch(unsigned int &into, int numBits, QString &code
 {
   try
   {
-    into = subByteReader::readBits(numBits, code);
+    into = this->reader.readBits(numBits, code);
   }
   catch (const std::exception& ex)
   {
@@ -396,7 +409,7 @@ bool readerHelper::readBits64_catch(uint64_t &into, int numBits, QString &code)
 {
   try
   {
-    into = subByteReader::readBits64(numBits, code);
+    into = this->reader.readBits64(numBits, code);
   }
   catch (const std::exception& ex)
   {
@@ -410,7 +423,7 @@ bool readerHelper::readUEV_catch(unsigned int &into, int &bit_count, QString &co
 {
   try
   {
-    into = subByteReader::readUE_V(code, bit_count);
+    into = this->reader.readUE_V(code, bit_count);
   }
   catch (const std::exception& ex)
   {
@@ -424,7 +437,7 @@ bool readerHelper::readSEV_catch(int &into, int &bit_count, QString &code)
 {
   try
   {
-    into = subByteReader::readSE_V(code, bit_count);
+    into = this->reader.readSE_V(code, bit_count);
   }
   catch (const std::exception& ex)
   {
@@ -438,7 +451,7 @@ bool readerHelper::readLeb128_catch(uint64_t &into, int &bit_count, QString &cod
 {
   try
   {
-    into = subByteReader::readLeb128(code, bit_count);
+    into = this->reader.readLeb128(code, bit_count);
   }
   catch (const std::exception& ex)
   {
@@ -452,7 +465,7 @@ bool readerHelper::readUVLC_catch(uint64_t &into, int &bit_count, QString &code)
 {
   try
   {
-    into = subByteReader::readUVLC(code, bit_count);
+    into = this->reader.readUVLC(code, bit_count);
   }
   catch (const std::exception& ex)
   {
@@ -466,7 +479,7 @@ bool readerHelper::readNS_catch(int &into, int maxVal, int &bit_count, QString &
 {
   try
   {
-    into = subByteReader::readNS(maxVal, code, bit_count);
+    into = this->reader.readNS(maxVal, code, bit_count);
   }
   catch (const std::exception& ex)
   {
@@ -480,7 +493,7 @@ bool readerHelper::readSU_catch(int &into, int numBits, QString &code)
 {
   try
   {
-    into = subByteReader::readSU(numBits, code);
+    into = this->reader.readSU(numBits, code);
   }
   catch (const std::exception& ex)
   {

@@ -39,14 +39,13 @@
 
 typedef QString (*meaning_callback_function)(unsigned int);
 
-// This is a wrapper around the subByteReader that adds the functionality to log the read symbold to TreeItems
-class readerHelper : protected subByteReader
+// This is a wrapper around the sub_byte_reader that adds the functionality to log the read symbold to TreeItems
+class readerHelper
 {
 public:
-  readerHelper() : subByteReader() {};
-  readerHelper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "") : subByteReader(inArr) { init(inArr, item, new_sub_item_name); }
-
-  void init(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "");
+  readerHelper() = default;
+  readerHelper(subByteReader &reader, TreeItem *item, QString new_sub_item_name = "");
+  readerHelper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "");
 
   // Add another hierarchical log level to the tree or go back up. Don't call these directly but use the reader_sub_level wrapper.
   void addLogSubLevel(QString name);
@@ -90,15 +89,16 @@ public:
 
   TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
-  // Some functions passed thourgh from the subByteReader
-  bool          more_rbsp_data()             { return subByteReader::more_rbsp_data();             }
-  bool          payload_extension_present()  { return subByteReader::payload_extension_present();  }
-  unsigned int  nrBytesRead()                { return subByteReader::nrBytesRead();                }
-  unsigned int  nrBytesLeft()                { return subByteReader::nrBytesLeft();                }
-  bool          testReadingBits(int nrBits)  { return subByteReader::testReadingBits(nrBits);      }
-  void          disableEmulationPrevention() {        subByteReader::disableEmulationPrevention(); }
-  QByteArray    readBytes(int nrBytes)       { return subByteReader::readBytes(nrBytes);           }
-protected:
+  // Some functions passed thourgh from the sub_byte_reader
+  bool          more_rbsp_data()             { return reader.more_rbsp_data();             }
+  bool          payload_extension_present()  { return reader.payload_extension_present();  }
+  unsigned int  nrBytesRead()                { return reader.nrBytesRead();                }
+  unsigned int  nrBytesLeft()                { return reader.nrBytesLeft();                }
+  bool          testReadingBits(int nrBits)  { return reader.testReadingBits(nrBits);      }
+  void          disableEmulationPrevention() {        reader.disableEmulationPrevention(); }
+  QByteArray    readBytes(int nrBytes)       { return reader.readBytes(nrBytes);           }
+
+private:
   // TODO: This is just too much. Replace by one function maybe ...
   /*
   template <typename F, typename...Args>
@@ -128,6 +128,7 @@ protected:
 
   QList<TreeItem*> itemHierarchy;
   TreeItem *currentTreeLevel { nullptr };
+  subByteReader reader;
 };
 
 // A simple wrapper for readerHelper.addLogSubLevel / readerHelper->removeLogSubLevel
