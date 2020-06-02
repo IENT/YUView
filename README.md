@@ -6,7 +6,7 @@ YUView is a QT based, cross-platform YUV player with an advanced analytic toolse
 
 Master branch | Development branch
 ------------ | -------------
-![CI build](https://github.com/IENT/YUView/workflows/CI%20build/badge.svg?branch=development) | ![CI build](https://github.com/IENT/YUView/workflows/CI%20build/badge.svg?branch=master)
+![CI build](https://github.com/IENT/YUView/workflows/CI%20build/badge.svg?branch=master) | ![CI build](https://github.com/IENT/YUView/workflows/CI%20build/badge.svg?branch=development)
 
 ## Description
 
