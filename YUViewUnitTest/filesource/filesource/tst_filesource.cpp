@@ -94,6 +94,11 @@ void fileSourceTest::testFormatFromFilename_data()
   QTest::newRow("testPackedIndicator2") << "something_1920x1080_packed-something.yuv" << 1920 << 1080 << -1 << -1 << true;
   QTest::newRow("testPackedIndicator3") << "something_1920x1080packed.yuv" << 1920 << 1080 << -1 << -1 << false;
   QTest::newRow("testPackedIndicator4") << "packed_something_1920x1080.yuv" << 1920 << 1080 << -1 << -1 << false;
+
+  // Issue 211
+  QTest::newRow("testIssue211") << "sample_1280x720_16bit_444_packed_20200109_114812.yuv" << 1280 << 720 << -1 << 16 << true;
+  QTest::newRow("testIssue211") << "sample_1280x720_16b_yuv44416le_packed_20200109_114812.yuv" << 1280 << 720 << -1 << 16 << true;
+  QTest::newRow("testIssue211") << "sample_1280x720_16b_yuv16le_packed_444_20200109_114812" << 1280 << 720 << -1 << 16 << true;
 }
 
 void fileSourceTest::testFormatFromFilename()

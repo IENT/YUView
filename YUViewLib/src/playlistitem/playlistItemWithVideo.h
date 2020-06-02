@@ -97,7 +97,7 @@ protected:
   bool isFrameLoading;
   bool isFrameLoadingDoubleBuffer;
 
-  // Set if an unresolvable error occured. In this case, we just draw an error text.
+  // Set if an unresolvable error occurred. In this case, we just draw an error text.
   bool unresolvableError;
   bool setError(QString error) { unresolvableError = true; infoText = error; return false; }
 

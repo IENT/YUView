@@ -65,7 +65,9 @@ public:
 private:
   bool parse_internal(QByteArray &data, TreeItem *root)
   {
-    readerHelper reader(data, root, "user_data_registered_itu_t_t35()");
+    parserCommon::reader_helper reader(data, root, "user_data_registered_itu_t_t35()");
+    // For all SEI messages, the emulation prevention is already removed one level up
+    reader.disableEmulationPrevention();
 
     if (data.length() < 2)
       return reader.addErrorMessageChildItem("Invalid length of user_data_registered_itu_t_t35 SEI.");

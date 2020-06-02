@@ -117,7 +117,7 @@ QString getCCDataBytesMeaning(unsigned int byte1, unsigned int byte2)
   else if (byte1 >= 0x11 && byte1 <= 0x13) 
   {
     if (byte1 == 0x11)
-      return "Special North American chracter";
+      return "Special North American character";
     if (byte2 == 0x12)
       return "Special Spanish/French or miscellaneous character";
     if (byte2 == 0x13)

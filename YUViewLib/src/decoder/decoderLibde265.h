@@ -135,7 +135,7 @@ private:
   // If this is true, a frame is waiting from that step and decodeNextFrame will not actually decode a new frame.
   bool decodedFrameWaiting {false};
 
-  // Try to decode a frame. If successfull, the frame will be pointed to by curImage.
+  // Try to decode a frame. If successful, the frame will be pointed to by curImage.
   bool decodeFrame();
   const de265_image* curImage {nullptr};
 

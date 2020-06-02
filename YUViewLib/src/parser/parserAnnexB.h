@@ -102,7 +102,7 @@ public:
   enum sei_parsing_return_t
   {
     SEI_PARSING_OK,                      // Parsing is done
-    SEI_PARSING_ERROR,                   // A parsing error occured
+    SEI_PARSING_ERROR,                   // A parsing error occurred
     SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
   };
 

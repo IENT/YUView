@@ -1520,7 +1520,7 @@ void splitViewWidget::createMenuActions()
     configureCheckableAction(actionSeparateView, nullptr, "&Show Separate Window", false, &splitViewWidget::toggleSeparateWindow, Qt::CTRL + Qt::Key_W);
     configureCheckableAction(actionSeparateViewLink, nullptr, "Link Views", false, &MoveAndZoomableView::setLinkState, {}, false);
     configureCheckableAction(actionSeparateViewPlaybackBoth, nullptr, "Playback in both Views", false, &splitViewWidget::toggleSeparateWindowPlaybackBoth, {}, false);
-    actionSeparateView.setToolTip("Show a second window with another view to the same item. Especially helpfull for multi screen setups.");
+    actionSeparateView.setToolTip("Show a second window with another view to the same item. Especially helpful for multi screen setups.");
     actionSeparateViewLink.setToolTip("Link the second view so that any change in one view is also applied in the other view.");
     actionSeparateViewPlaybackBoth.setToolTip("For performance reasons playback only runs in one (the second) view. Activate this to run playback in both views siultaneously.");
   }

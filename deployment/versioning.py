@@ -65,7 +65,7 @@ def main():
     if args.directory is not None and args.output is not None:
         md5andversionallfiles(args.directory,args.output)
     else:
-        print('An error occured. Did you specify the path and the output file?')
+        print('An error occurred. Did you specify the path and the output file?')
             
 
 if __name__ == "__main__":
