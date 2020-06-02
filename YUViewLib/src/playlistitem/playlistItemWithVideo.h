@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMWITHVIDEO_H
-#define PLAYLISTITEMWITHVIDEO_H
+#pragma once
 
 #include "playlistItem.h"
 #include "video/videoHandlerRGB.h"
@@ -103,5 +102,3 @@ protected:
   bool setError(QString error) { unresolvableError = true; infoText = error; return false; }
 
 };
-
-#endif

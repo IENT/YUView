@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FUNCTIONS_H
-#define FUNCTIONS_H
+#pragma once
 
 #include <QImage>
 
@@ -118,5 +117,3 @@ QIcon convertIcon(QString iconPath);
 QPixmap convertPixmap(QString pixmapPath);
 
 } // namespace functions
-
-#endif // FUNCTIONS_H

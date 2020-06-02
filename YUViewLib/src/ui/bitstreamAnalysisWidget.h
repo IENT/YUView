@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef BITSTREAMANALYSISDIALOG_H
-#define BITSTREAMANALYSISDIALOG_H
+#pragma once
 
 #include <QWidget>
 #include <QtConcurrent>
@@ -89,5 +88,3 @@ private:
   // -1: Show all streams. Otherwise only show the given stream index.
   int showOnlyStream {-1};
 };
-
-#endif // BITSTREAMANALYSISDIALOG_H

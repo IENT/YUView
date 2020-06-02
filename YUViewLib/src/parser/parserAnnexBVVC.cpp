@@ -35,9 +35,8 @@
 #include <algorithm>
 #include <cmath>
 
-#include "parserCommonMacros.h"
-
-using namespace parserCommon;
+#include "common/parserMacros.h"
+#include "common/ReaderHelper.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -84,7 +83,7 @@ QPair<int,int> parserAnnexBVVC::getSampleAspectRatio()
   return QPair<int,int>(1,1);
 }
 
-bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   Q_UNUSED(nalTypeName);
   
@@ -124,7 +123,7 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
   {
     DEBUG_VVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
     
-    BitrateItemModel::bitrateEntry entry;
+    BitratePlotModel::bitrateEntry entry;
     entry.pts = counterAU;
     entry.dts = counterAU;  // TODO: Not true. We need to parse the VVC header data
     entry.bitrate = sizeCurrentAU;
@@ -135,7 +134,7 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItem
     {
       const bool curFrameIsRandomAccess = (counterAU == 1);
       if (!addFrameToList(counterAU, curFrameFileStartEndPos, curFrameIsRandomAccess))
-        return reader_helper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
+        return ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
       DEBUG_VVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, counterAU, curFrameIsRandomAccess ? " - ra" : "");
     }
     curFrameFileStartEndPos = nalStartEndPosFile;
@@ -164,7 +163,7 @@ QByteArray parserAnnexBVVC::nal_unit_vvc::getNALHeader() const
 bool parserAnnexBVVC::nal_unit_vvc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
-  reader_helper reader(parameterSetData, root, "nal_unit_header()");
+  ReaderHelper reader(parameterSetData, root, "nal_unit_header()");
 
   READZEROBITS(1, "forbidden_zero_bit");
   READZEROBITS(1, "nuh_reserved_zero_bit");

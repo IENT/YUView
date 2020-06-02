@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMSTATISTICSCSVFILE_H
-#define PLAYLISTITEMSTATISTICSCSVFILE_H
+#pragma once
 
 #include <QBasicTimer>
 #include <QFuture>
@@ -87,5 +86,3 @@ private:
   //! This is performed in the background using a QFuture.
   void readFrameAndTypePositionsFromFile();
 };
-
-#endif // PLAYLISTITEMSTATISTICSCSVFILE_H

@@ -32,9 +32,8 @@
 
 #pragma once
 
+#include "common/parserMacros.h"
 #include "parserAnnexB.h"
-#include "parserCommon.h"
-#include "parserCommonMacros.h"
 #include "parserSubtitle608.h"
 
 template <class T>
@@ -44,7 +43,7 @@ class user_data_registered_itu_t_t35_sei : public T
     
 public:
   user_data_registered_itu_t_t35_sei(QSharedPointer<T> sei_src) : T(sei_src) {};
-  parserAnnexB::sei_parsing_return_t parse_user_data_registered_itu_t_t35(QByteArray &data, parserCommon::TreeItem *root) { return parse_internal(data, root) ? parserAnnexB::SEI_PARSING_OK : parserAnnexB::SEI_PARSING_ERROR; }
+  parserAnnexB::sei_parsing_return_t parse_user_data_registered_itu_t_t35(QByteArray &data, TreeItem *root) { return parse_internal(data, root) ? parserAnnexB::SEI_PARSING_OK : parserAnnexB::SEI_PARSING_ERROR; }
 
   unsigned int itu_t_t35_country_code;
   unsigned int itu_t_t35_country_code_extension_byte;
@@ -64,9 +63,9 @@ public:
   QList<unsigned int> ATSC_reserved_user_data;
 
 private:
-  bool parse_internal(QByteArray &data, parserCommon::TreeItem *root)
+  bool parse_internal(QByteArray &data, TreeItem *root)
   {
-    parserCommon::reader_helper reader(data, root, "user_data_registered_itu_t_t35()");
+    ReaderHelper reader(data, root, "user_data_registered_itu_t_t35()");
     // For all SEI messages, the emulation prevention is already removed one level up
     reader.disableEmulationPrevention();
 
@@ -125,9 +124,9 @@ private:
 
     return true;
   }
-  bool parse_ATSC1_data(parserCommon::reader_helper &reader)
+  bool parse_ATSC1_data(ReaderHelper &reader)
   {
-    parserCommon::reader_sub_level s(reader, "ATSC1_data");
+    reader_sub_level s(reader, "ATSC1_data");
 
     QMap<int, QString> user_data_type_code_meaning;
     user_data_type_code_meaning.insert(3, "cc_data() / DTV CC");

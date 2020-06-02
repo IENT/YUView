@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMCONTAINER_H
-#define PLAYLISTITEMCONTAINER_H
+#pragma once
 
 #include <QVBoxLayout>
 #include "playlistItem.h"
@@ -99,5 +98,3 @@ protected:
   // Save all child items to playlist
   void savePlaylistChildren(QDomElement &root, const QDir &playlistDir) const;
 };
-
-#endif // PLAYLISTITEMCONTAINER_H

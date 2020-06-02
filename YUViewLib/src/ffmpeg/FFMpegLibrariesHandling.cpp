@@ -38,7 +38,7 @@
 #include <QSettings>
 
 #include "common/typedef.h"
-#include "parser/parserCommon.h"
+#include "parser/common/SubByteReader.h"
 
 #define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG
@@ -1196,7 +1196,7 @@ void FFmpegVersionHandler::avLogCallback(void *ptr, int level, const char *fmt, 
 {
   Q_UNUSED(ptr);
   QString msg;
-  msg.vsprintf(fmt, vargs);
+  msg.vasprintf(fmt, vargs);
   QDateTime now = QDateTime::currentDateTime();
   FFmpegVersionHandler::logListFFmpeg.append(now.toString("hh:mm:ss.zzz") + QString(" - L%1 - ").arg(level) + msg);
 }
@@ -3128,7 +3128,7 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
     int posInData = 0;
     while (posInData + 2 <= data.length())
     {
-      parserCommon::sub_byte_reader reader(data, posInData);
+      SubByteReader reader(data, posInData);
 
       QString bitsRead;
       bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);

@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TYPEDEF_H
-#define TYPEDEF_H
+#pragma once
 
 #include <cassert>
 #include <cstring>
@@ -86,21 +85,21 @@ namespace YUView
 // Convenience macro definitions which can be used in if clauses:
 // if (is_Q_OS_MAC) ...
 #ifdef Q_OS_MAC
-enum { is_Q_OS_MAC = 1 };
+const bool is_Q_OS_MAC = true;
 #else
-enum { is_Q_OS_MAC = 0 };
+const bool is_Q_OS_MAC = false;
 #endif
 
 #ifdef Q_OS_WIN
-enum { is_Q_OS_WIN = 1 };
+const bool is_Q_OS_WIN = true;
 #else
-enum { is_Q_OS_WIN = 0 };
+const bool is_Q_OS_WIN = false;
 #endif
 
 #ifdef Q_OS_LINUX
-enum { is_Q_OS_LINUX = 1 };
+const bool is_Q_OS_LINUX = true;
 #else
-enum { is_Q_OS_LINUX = 0 };
+const bool is_Q_OS_LINUX = false;
 #endif
 
 // Set this to one to enable the code that handles single instances.
@@ -232,10 +231,11 @@ typedef QPair<int,int> indexRange;  // QPair of integers (minimum and maximum)
 typedef QPair<int,int> QIntPair;
 typedef QPair<unsigned int, unsigned int> QUIntPair;
 
-struct RangeInt
+template<typename T>
+struct Range
 {
-  int min;
-  int max;
+  T min;
+  T max;
 };
 
 // A list of value pair lists, where every list has a string (title)
@@ -346,5 +346,3 @@ struct QOverload : QConstOverload<Args...>, QNonConstOverload<Args...>
     { return ptr; }
 };
 #endif
-
-#endif // TYPEDEF_H

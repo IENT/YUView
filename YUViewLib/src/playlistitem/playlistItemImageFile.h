@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMIMAGE_H
-#define PLAYLISTITEMIMAGE_H
+#pragma once
 
 #include <QFileSystemWatcher>
 #include <QFuture>
@@ -106,5 +105,3 @@ private:
   // Does the image need to be loaded? Is it currently loading?
   bool needToLoadImage, imageLoading;
 };
-
-#endif // PLAYLISTITEMIMAGE_H

@@ -110,9 +110,6 @@ void BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged(int index)
   if (this->parser)
   {
     this->parser->setBitrateSortingIndex(index);
-    // Note: This was the only way I found to update the bar graph. None of the emit signal ways worked.
-    this->ui.bitrateBarChart->setModel(nullptr);
-    this->ui.bitrateBarChart->setModel(this->parser->getBitrateItemModel());
   }
 }
 
@@ -131,6 +128,9 @@ void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)
 
 void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
 {
+  if (this->parser.isNull())
+    return;
+
   this->disconnect(this->parser.data(), &parserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
   this->disconnect(this->parser.data(), &parserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
   this->disconnect(this->parser.data(), &parserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
@@ -183,7 +183,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
     this->updateParsingStatusText(-1);
     this->ui.streamInfoTreeWidget->clear();
     this->ui.dataTreeView->setModel(nullptr);
-    this->ui.bitrateBarChart->setModel(nullptr);
+    this->ui.plotViewWidget->setModel(nullptr);
     this->parser.reset();
     return;
   }
@@ -194,7 +194,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   this->ui.dataTreeView->setColumnWidth(0, 600);
   this->ui.dataTreeView->setColumnWidth(1, 100);
   this->ui.dataTreeView->setColumnWidth(2, 120);
-  this->ui.bitrateBarChart->setModel(this->parser->getBitrateItemModel());
+  this->ui.plotViewWidget->setModel(this->parser->getBitrateItemModel());
 
   this->updateStreamInfo();
 
@@ -205,7 +205,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
 
 void BitstreamAnalysisWidget::createAndConnectNewParser(inputFormat inputFormatType)
 {
-  Q_ASSERT_X(!this->parser, "BitstreamAnalysisWidget::restartParsingOfCurrentItem", "Error reinitlaizing parser. The current parser is not null.");
+  Q_ASSERT_X(!this->parser, Q_FUNC_INFO, "Error reinitlaizing parser. The current parser is not null.");
   if (inputFormatType == inputAnnexBHEVC)
     this->parser.reset(new parserAnnexBHEVC(this));
   if (inputFormatType == inputAnnexBVVC)

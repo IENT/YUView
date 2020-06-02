@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMTEXT_H
-#define PLAYLISTITEMTEXT_H
+#pragma once
 
 #include "playlistItem.h"
 #include "common/typedef.h"
@@ -87,5 +86,3 @@ private slots:
   void on_textEdit_textChanged();
 
 };
-
-#endif // PLAYLISTITEMTEXT_H

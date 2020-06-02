@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PARSERAVFORMAT_H
-#define PARSERAVFORMAT_H
+#pragma once
 
 #include "parserBase.h"
 #include "parserAnnexB.h"
@@ -69,14 +68,14 @@ private:
 
   struct hvcC_nalUnit
   {
-    bool parse_hvcC_nalUnit(int unitID, parserCommon::reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser, parserCommon::BitrateItemModel *bitrateModel);
+    bool parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     unsigned int nalUnitLength;
   };
 
   struct hvcC_naluArray
   {
-    bool parse_hvcC_naluArray(int arrayID, parserCommon::reader_helper &reader, QScopedPointer<parserAnnexB> &annexBParser, parserCommon::BitrateItemModel *bitrateModel);
+    bool parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     bool array_completeness;
     bool reserved_flag_false;
@@ -87,7 +86,7 @@ private:
 
   struct hvcC
   {
-    bool parse_hvcC(QByteArray &hvcCData, parserCommon::TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser, parserCommon::BitrateItemModel *bitrateModel);
+    bool parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     unsigned int configurationVersion;
     unsigned int general_profile_space;
@@ -132,5 +131,3 @@ private:
 
   int videoStreamIndex { -1 };
 };
-
-#endif // PARSERAVFORMAT_H

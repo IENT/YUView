@@ -32,9 +32,8 @@
 
 #include "parserAnnexBMpeg2.h"
 
-#include "parserCommonMacros.h"
-
-using namespace parserCommon;
+#include "common/parserMacros.h"
+#include "common/ReaderHelper.h"
 
 #define PARSER_MPEG2_DEBUG_OUTPUT 0
 #if PARSER_MPEG2_DEBUG_OUTPUT && !NDEBUG
@@ -60,7 +59,7 @@ parserAnnexBMpeg2::nal_unit_mpeg2::nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2>
 bool parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
-  reader_helper reader(header_byte, root, "header_code()");
+  ReaderHelper reader(header_byte, root, "header_code()");
 
   if (header_byte.length() != 1)
     return reader.addErrorMessageChildItem("The header code must be one byte only.");
@@ -131,7 +130,7 @@ void parserAnnexBMpeg2::nal_unit_mpeg2::interpreteStartCodeValue()
     nal_unit_type = UNSPECIFIED;
 }
 
-bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateItemModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   // Skip the NAL unit header
   int skip = 0;
@@ -285,18 +284,18 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
   {
     DEBUG_MPEG2("Start of new AU. Adding bitrate %d for last AU (#%d).", sizeCurrentAU, counterAU);
 
-    BitrateItemModel::bitrateEntry entry;
+    BitratePlotModel::bitrateEntry entry;
     entry.pts = lastFramePOC;
     entry.dts = counterAU;
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
-    entry.frameType = currentAUAllSliceTypes;
+    entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
     bitrateModel->addBitratePoint(0, entry);
 
     sizeCurrentAU = 0;
     counterAU++;
     currentAUAllSlicesIntra = true;
-    currentAUAllSliceTypes = "";
+    this->currentAUSliceTypes.clear();
   }
   if (lastFramePOC != curFramePOC)
     lastFramePOC = curFramePOC;
@@ -310,7 +309,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
   {
     if (!currentSliceIntra)
       currentAUAllSlicesIntra = false;
-    currentAUAllSliceTypes += currentSliceType + " ";
+    this->currentAUSliceTypes[currentSliceType]++;
   }
   
   if (nalRoot)
@@ -323,7 +322,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitrateIt
 bool parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
-  reader_helper reader(parameterSetData, root, "sequence_header()");
+  ReaderHelper reader(parameterSetData, root, "sequence_header()");
 
   READBITS(horizontal_size_value, 12);
   READBITS(vertical_size_value, 12);
@@ -374,7 +373,7 @@ QStringList picture_coding_type_meaning = QStringList()
 bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
-  reader_helper reader(parameterSetData, root, "picture_header");
+  ReaderHelper reader(parameterSetData, root, "picture_header");
 
   READBITS(temporal_reference, 10);
   
@@ -417,7 +416,7 @@ QString parserAnnexBMpeg2::picture_header::getPictureTypeString() const
 bool parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
-  reader_helper reader(parameterSetData, root, "group_of_pictures_header()");
+  ReaderHelper reader(parameterSetData, root, "group_of_pictures_header()");
 
   READBITS(time_code, 25);
   READFLAG(closed_gop);
@@ -451,7 +450,7 @@ bool parserAnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterS
 
 bool parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & extension_payload, TreeItem * itemTree)
 {
-  reader_helper reader(extension_payload, itemTree);
+  ReaderHelper reader(extension_payload, itemTree);
 
   QStringList extension_start_code_identifier_meaning = QStringList()
     << "Reserved"
@@ -522,7 +521,7 @@ QString parserAnnexBMpeg2::nal_extension::get_extension_function_name()
 bool parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
-  reader_helper reader(parameterSetData, root);
+  ReaderHelper reader(parameterSetData, root);
   
   IGNOREBITS(4);  // The extension_start_code_identifier was already read
   READBITS(profile_and_level_indication, 8);
@@ -566,7 +565,7 @@ bool parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByte
 bool parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, TreeItem *itemTree)
 {
   nalPayload = parameterSetData;
-  reader_helper reader(parameterSetData, itemTree);
+  ReaderHelper reader(parameterSetData, itemTree);
 
   IGNOREBITS(4);  // The extension_start_code_identifier was already read
   READBITS(f_code[0][0], 4); // forward horizontal

@@ -92,7 +92,7 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
   }
   
   bool alternativeUpdateSource = false;
-  if ((is_Q_OS_WIN && args.size() == 2 && (args.last() == "-debugUpdateFromTestDeploy") || args.last() == "updateElevatedAltSource"))
+  if (is_Q_OS_WIN && args.size() == 2 && (args.last() == "-debugUpdateFromTestDeploy" || args.last() == "updateElevatedAltSource"))
   {
     // Do an update from the alternative URL. This way we can test upcoming updates from 
     // an alternative source before deploying it to everybody.

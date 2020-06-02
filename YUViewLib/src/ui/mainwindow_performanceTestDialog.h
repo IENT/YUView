@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MAINWINDOW_PERFORMANCETESTDIALOG_H
-#define MAINWINDOW_PERFORMANCETESTDIALOG_H
+#pragma once
 
 #include <QDialog>
 #include <QLabel>
@@ -65,6 +64,3 @@ public:
 private:
   Ui::performanceTestDialog ui;
 };
-
-
-#endif // MAINWINDOW_PERFORMANCETESTDIALOG_H

@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PROPERTIESWIDGET_H
-#define PROPERTIESWIDGET_H
+#pragma once
 
 #include <QStackedWidget>
 #include <QVBoxLayout>
@@ -62,5 +61,3 @@ private:
   QStackedWidget stack;
   QWidget emptyWidget;
 };
-
-#endif // PROPERTIESWIDGET_H

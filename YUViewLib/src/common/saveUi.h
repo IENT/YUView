@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SAVEUI_H
-#define SAVEUI_H
+#pragma once
 
 #include <QLabel>
 #include <QLayout>
@@ -116,5 +115,3 @@ private:
 
   bool m_created;
 };
-
-#endif // SAVEUI_H

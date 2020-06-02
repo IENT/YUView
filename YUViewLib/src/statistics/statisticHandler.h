@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef STATISTICSOURCE_H
-#define STATISTICSOURCE_H
+#pragma once
 
 #include <QPointer>
 #include <QVector>
@@ -159,5 +158,3 @@ private slots:
   void onStyleButtonClicked(int id);
   void updateStatisticItem() { emit updateItem(true); }
 };
-
-#endif

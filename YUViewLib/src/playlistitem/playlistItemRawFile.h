@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMRAWFILE_H
-#define PLAYLISTITEMRAWFILE_H
+#pragma once
 
 #include <QFuture>
 #include <QString>
@@ -115,5 +114,3 @@ private:
 
   QString pixelFormatAfterLoading;
 };
-
-#endif // PLAYLISTITEMRAWFILE_H

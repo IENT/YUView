@@ -50,14 +50,14 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(con
 
   // Put all the colors from the colorMap into the table widget
   int count = 0;
-  for (auto i = colorMap.begin(); i != colorMap.end(); ++i)
+  for (const auto &entry : colorMap.toStdMap())
   {
     QTableWidgetItem *newItem = new QTableWidgetItem();
-    newItem->setData(Qt::EditRole, i.key());
+    newItem->setData(Qt::EditRole, entry.first);
     ui.colorMapTable->setItem(count, 0, newItem);
     
     newItem = new QTableWidgetItem();
-    newItem->setBackgroundColor(i.value());
+    newItem->setBackground(QBrush(entry.second));
     ui.colorMapTable->setItem(count, 1, newItem);
 
     count++;
@@ -69,7 +69,7 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(con
   ui.colorMapTable->setItem(count, 0, newItem);
   // with a white color value.
   newItem = new QTableWidgetItem();
-  newItem->setBackgroundColor(other);
+  newItem->setBackground(QBrush(other));
   ui.colorMapTable->setItem(count, 1, newItem);
   
   // Connect the signals for editing
@@ -90,7 +90,7 @@ QMap<int, QColor> StatisticsStyleControl_ColorMapEditor::getColorMap()
     if (item0->text() != "Other")
     {
       int val = item0->data(Qt::EditRole).toInt();
-      QColor color = item1->backgroundColor();
+      QColor color = item1->background().color();
 
       colorMap.insert(val, color);
     }
@@ -103,7 +103,7 @@ QColor StatisticsStyleControl_ColorMapEditor::getOtherColor()
 {
   // This should be the last entry in the list
   int row = ui.colorMapTable->rowCount() - 1;
-  return ui.colorMapTable->item(row, 1)->backgroundColor();
+  return ui.colorMapTable->item(row, 1)->background().color();
 }
 
 void StatisticsStyleControl_ColorMapEditor::slotItemChanged(QTableWidgetItem *item)
@@ -126,7 +126,7 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
     newValue = ui.colorMapTable->item(rowCount-2, 0)->data(Qt::EditRole).toInt() + 1;
 
   // Save the color of the "other" entry
-  QColor otherColor = ui.colorMapTable->item(rowCount - 1, 1)->backgroundColor();
+  QColor otherColor = ui.colorMapTable->item(rowCount - 1, 1)->background().color();
 
   // Add a new item
   ui.colorMapTable->insertRow(rowCount);
@@ -136,7 +136,7 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
   ui.colorMapTable->setItem(rowCount-1, 0, newItem);
 
   newItem = new QTableWidgetItem();
-  newItem->setBackgroundColor(Qt::black);
+  newItem->setBackground(QBrush(Qt::black));
   ui.colorMapTable->setItem(rowCount-1, 1, newItem);
 
   // Add the "other" item at the last position again
@@ -145,7 +145,7 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
   ui.colorMapTable->setItem(rowCount, 0, newItem);
   // with the same color as it was before.
   newItem = new QTableWidgetItem();
-  newItem->setBackgroundColor(otherColor);
+  newItem->setBackground(QBrush(otherColor));
   ui.colorMapTable->setItem(rowCount, 1, newItem);
 
   ui.colorMapTable->sortItems(0);
@@ -174,12 +174,12 @@ void StatisticsStyleControl_ColorMapEditor::slotItemClicked(QTableWidgetItem *it
   if (item->column() != 1)
     return;
 
-  QColor oldColor = item->backgroundColor();
+  QColor oldColor = item->background().color();
   QColor newColor = QColorDialog::getColor(oldColor, this, tr("Select color range maximum"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && newColor != oldColor)
   {
     // Set the new color
-    item->setBackgroundColor(newColor);
+    item->setBackground(QBrush(newColor));
   }
 }
 

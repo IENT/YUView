@@ -1027,7 +1027,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
   if (!recreateControlsOnly)
   {
     // Absolutely always only do this once
-    Q_ASSERT_X(!ui.created(), "statisticHandler::createStatisticsHandlerControls", "The primary statistics controls must only be created once.");
+    Q_ASSERT_X(!ui.created(), Q_FUNC_INFO, "The primary statistics controls must only be created once.");
     ui.setupUi();
   }
 

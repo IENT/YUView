@@ -2465,7 +2465,7 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
   }
 
   // Check the image buffer size before we write to it
-  assert(outputImage.byteCount() >= curFrameSize.width() * curFrameSize.height() * 4);
+  assert(outputImage.sizeInBytes() >= curFrameSize.width() * curFrameSize.height() * 4);
   
   // Convert the source to RGB
   bool convOK = true;

@@ -455,7 +455,6 @@ void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
   if (item.row() == -1 && item.column() == -1)
   {
     clearSelection();
-    const QModelIndex index;
     emit currentItemChanged(nullptr, nullptr);
   }
 }

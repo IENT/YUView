@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILESOURCE_H
-#define FILESOURCE_H
+#pragma once
 
 #include <QFile>
 #include <QFileInfo>
@@ -128,5 +127,3 @@ private:
   // protect the read function with a mutex
   QMutex readMutex;
 };
-
-#endif

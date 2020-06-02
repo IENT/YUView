@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILEINFO_H
-#define FILEINFO_H
+#pragma once
 
 #include <QList>
 #include <QString>
@@ -62,5 +61,3 @@ struct infoData
   QList<infoItem> items;
 };
 Q_DECLARE_METATYPE(infoData)
-
-#endif // FILEINFO_H
