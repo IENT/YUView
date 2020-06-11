@@ -817,9 +817,11 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, b
   
   if (!fmt.isValid())
   {
-    // Guessing failed. Set YUV 4:2:0 8 bit so that we can show something.
+    // Guessing failed. Set NV21 (YVU 4:2:0 8 bit) so that we can show something.
+	// Since NV21 is default in Android
     // This will probably be wrong but we are out of options
-    fmt = yuvPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YUV);
+    fmt = yuvPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YVU);
+    fmt.uvInterleaved = true;
   }
 
   setSrcPixelFormat(fmt, false);
