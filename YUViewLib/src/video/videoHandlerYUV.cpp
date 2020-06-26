@@ -779,7 +779,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
           valText = QString("Y%1").arg(YString);
         else
           // We also draw the U and V value at this position
-          valText = QString("Y%1\nU%2\nV%3").arg(YString, VString, VString);
+          valText = QString("Y%1\nU%2\nV%3").arg(YString, UString, VString);
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
 
         if (chromaOffsetHalfX || chromaOffsetHalfY)
