@@ -193,16 +193,16 @@ yuvPixelFormat::yuvPixelFormat(const QString &name)
     if (newFormat.isValid())
     {
       // Set all the values from the new format
-      subsampling = newFormat.subsampling;
-      bitsPerSample = newFormat.bitsPerSample;
-      bigEndian = newFormat.bigEndian;
-      planar = newFormat.planar;
-      planeOrder = newFormat.planeOrder;
-      uvInterleaved = newFormat.uvInterleaved;
-      packingOrder = newFormat.packingOrder;
-      bytePacking = newFormat.bytePacking;
-      chromaOffset[0] = newFormat.chromaOffset[0];
-      chromaOffset[1] = newFormat.chromaOffset[1];
+      this->subsampling = newFormat.subsampling;
+      this->bitsPerSample = newFormat.bitsPerSample;
+      this->bigEndian = newFormat.bigEndian;
+      this->planar = newFormat.planar;
+      this->planeOrder = newFormat.planeOrder;
+      this->uvInterleaved = newFormat.uvInterleaved;
+      this->packingOrder = newFormat.packingOrder;
+      this->bytePacking = newFormat.bytePacking;
+      this->chromaOffset[0] = newFormat.chromaOffset[0];
+      this->chromaOffset[1] = newFormat.chromaOffset[1];
     }
   }
 }
@@ -242,9 +242,9 @@ bool yuvPixelFormat::isValid() const
   if (subsampling != Subsampling::YUV_400)
   {
     // There are chroma components. Check the chroma offsets.
-    if (chromaOffset[0] < 0 || chromaOffset[0] > getMaxPossibleChromaOffsetValues(true, subsampling))
+    if (this->chromaOffset[0] < 0 || this->chromaOffset[0] > getMaxPossibleChromaOffsetValues(true, subsampling))
       return false;
-    if (chromaOffset[1] < 0 || chromaOffset[1] > getMaxPossibleChromaOffsetValues(false, subsampling))
+    if (this->chromaOffset[1] < 0 || this->chromaOffset[1] > getMaxPossibleChromaOffsetValues(false, subsampling))
       return false;
   }
   // Check the bit depth
@@ -297,44 +297,44 @@ bool yuvPixelFormat::canConvertToRGB(QSize imageSize, QString *whyNot) const
 // Generate a unique name for the YUV format
 QString yuvPixelFormat::getName() const
 {
-  if (!isValid())
+  if (!this->isValid())
     return "Invalid";
 
   QString name;
 
   // Start with the YUV order
-  if (planar)
+  if (this->planar)
   {
-    int idx = int(planeOrder);
+    const auto idx = int(planeOrder);
     static const QString orderNames[] = {"YUV", "YVU", "YUVA", "YVUA"};
     Q_ASSERT(idx >= 0 && idx < 4);
     name += orderNames[idx];
 
-    if (uvInterleaved)
+    if (this->uvInterleaved)
       name += "(IL)";
   }
   else
-    name += getPackingFormatString(packingOrder);
+    name += getPackingFormatString(this->packingOrder);
 
   // Next add the subsampling
-  Q_ASSERT(subsampling != Subsampling::UNKNOWN);
-  name += " " + subsamplingTextList[subsamplingList.indexOf(subsampling)];
+  Q_ASSERT(this->subsampling != Subsampling::UNKNOWN);
+  name += " " + subsamplingTextList[subsamplingList.indexOf(this->subsampling)];
 
   // Add the bits
-  name += QString(" %1-bit").arg(bitsPerSample);
+  name += QString(" %1-bit").arg(this->bitsPerSample);
 
   // Add the endianess (if the bit depth is greater 8)
-  if (bitsPerSample > 8)
-    name += (bigEndian) ? " BE" : " LE";
+  if (this->bitsPerSample > 8)
+    name += (this->bigEndian) ? " BE" : " LE";
 
-  if (!planar && subsampling != Subsampling::YUV_400)
-    name += bytePacking ? " packed-B" : " packed";
+  if (!this->planar && this->subsampling != Subsampling::YUV_400)
+    name += this->bytePacking ? " packed-B" : " packed";
 
   // Add the Chroma offsets (if it is not the default offset)
-  if (!isDefaultChromaFormat(chromaOffset[0], true, subsampling))
-    name += QString(" Cx%1").arg(chromaOffset[0]);
-  if (!isDefaultChromaFormat(chromaOffset[1], false, subsampling))
-    name += QString(" Cy%1").arg(chromaOffset[1]);
+  if (!isDefaultChromaFormat(this->chromaOffset[0], true, subsampling))
+    name += QString(" Cx%1").arg(this->chromaOffset[0]);
+  if (!isDefaultChromaFormat(this->chromaOffset[1], false, subsampling))
+    name += QString(" Cy%1").arg(this->chromaOffset[1]);
 
   return name;
 }

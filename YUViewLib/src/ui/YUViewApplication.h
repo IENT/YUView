@@ -30,17 +30,14 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef YUVIEWAPPLICATION_H
-#define YUVIEWAPPLICATION_H
+#pragma once
 
 #include <QApplication>
 
 class YUViewApplication : public QApplication
 {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    YUViewApplication(int argc, char *argv[]);
-    int returnCode{0};
+  YUViewApplication(int argc, char *argv[]);
+  int returnCode{0};
 };
-
-#endif // YUVIEWAPPLICATION_H

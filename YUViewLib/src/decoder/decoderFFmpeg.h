@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DECODERFFMPEG_H
-#define DECODERFFMPEG_H
+#pragma once
 
 #include "decoderBase.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
@@ -73,7 +72,7 @@ protected:
   AVCodecContextWrapper decCtx;     //< The decoder context
   AVFrameWrapper frame;             //< The frame that we use for decoding
 
-  // Try to decode a frame. If successfull, the frame will be in "frame" and return true.
+  // Try to decode a frame. If successful, the frame will be in "frame" and return true.
   bool decodeFrame();
 
   // Statistics caching
@@ -88,5 +87,3 @@ protected:
   // An array of AV_INPUT_BUFFER_PADDING_SIZE zeros to be added as padding in pushData
   QByteArray avPacketPaddingData;
 };
-
-#endif // DECODERFFMPEG_H

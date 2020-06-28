@@ -73,7 +73,7 @@ rgbPixelFormat::rgbPixelFormat(const QString &name)
 
 bool rgbPixelFormat::isValid() const 
 { 
-  if (bitsPerValue <= 0 || bitsPerValue > 16)
+  if (bitsPerValue < 8 || bitsPerValue > 16)
     return false;
 
   if (posR == posG || posR == posB || posG == posB)

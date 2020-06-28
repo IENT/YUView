@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VIDEOHANDLERDIFFERENCE_H
-#define VIDEOHANDLERDIFFERENCE_H
+#pragma once
 
 #include <QPointer>
 
@@ -98,5 +97,3 @@ private:
   SafeUi<Ui::videoHandlerDifference> ui;
 
 };
-
-#endif //VIDEOHANDLERDIFFERENCE_H

@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef STATISTICSSTYLECONTROL_COLORMAPEDITOR_H
-#define STATISTICSSTYLECONTROL_COLORMAPEDITOR_H
+#pragma once
 
 #include <QDialog>
 
@@ -62,5 +61,3 @@ protected:
 
   virtual void keyPressEvent(QKeyEvent *keyEvent) Q_DECL_OVERRIDE;
 };
-
-#endif // STATISTICSSTYLECONTROL_COLORMAPEDITOR_H

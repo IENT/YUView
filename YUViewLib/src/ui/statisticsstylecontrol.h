@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef STATISTICSSTYLECONTROL_H
-#define STATISTICSSTYLECONTROL_H
+#pragma once
 
 #include <QDialog>
 
@@ -91,5 +90,3 @@ private:
   // Static list of pen stlyes to convert from Qt::PenStyle to an index and back.
   static const QList<Qt::PenStyle> penStyleList;
 };
-
-#endif // STATISTICSSTYLECONTROL_H

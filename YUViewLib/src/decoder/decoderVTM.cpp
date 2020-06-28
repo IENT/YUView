@@ -253,7 +253,6 @@ bool decoderVTM::getNextFrameFromDecoder()
   int bitDepth = libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
-  int poc = libVTMDec_get_POC(currentVTMPic);
 
   if (!frameSize.isValid() && !formatYUV.isValid())
   {
@@ -265,14 +264,14 @@ bool decoderVTM::getNextFrameFromDecoder()
   {
     // Check the values against the previously set values
     if (frameSize != picSize)
-      return setErrorB("Recieved a frame of different size");
+      return setErrorB("Received a frame of different size");
     if (formatYUV.subsampling != subsampling)
-      return setErrorB("Recieved a frame with different subsampling");
+      return setErrorB("Received a frame with different subsampling");
     if (formatYUV.bitsPerSample != bitDepth)
-      return setErrorB("Recieved a frame with different bit depth");
+      return setErrorB("Received a frame with different bit depth");
   }
   
-  DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame wit POC " << poc);
+  DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame wit POC " << libVTMDec_get_POC(currentVTMPic));
   currentOutputBuffer.clear();
   return true;
 }
@@ -426,6 +425,8 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
 
 void decoderVTM::cacheStatistics(libVTMDec_picture *img)
 {
+  Q_UNUSED(img);
+
   if (!internalsSupported)
     return;
 
@@ -434,21 +435,21 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
   // Clear the local statistics cache
   curPOCStats.clear();
 
-  // Conversion from intra prediction mode to vector.
-  // Coordinates are in x,y with the axes going right and down.
-  static const int vectorTable[35][2] = 
-  {
-    {0,0}, {0,0},
-    {32, -32},
-    {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
-    {32,   0},
-    {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
-    {32,  32},
-    {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
-    {0,   32},
-    {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
-    {-32, 32} 
-  };
+  // // Conversion from intra prediction mode to vector.
+  // // Coordinates are in x,y with the axes going right and down.
+  // static const int vectorTable[35][2] = 
+  // {
+  //   {0,0}, {0,0},
+  //   {32, -32},
+  //   {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
+  //   {32,   0},
+  //   {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
+  //   {32,  32},
+  //   {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
+  //   {0,   32},
+  //   {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
+  //   {-32, 32} 
+  // };
 
   //// Get all the statistics
   //// TODO: Could we only retrieve the statistics that are active/displayed?
@@ -491,6 +492,8 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
 
 void decoderVTM::fillStatisticList(statisticHandler &statSource) const
 {
+  Q_UNUSED(statSource);
+  
   // Ask the decoder how many internals types there are
   // unsigned int nrTypes = libVTMDec_get_internal_type_number();
 

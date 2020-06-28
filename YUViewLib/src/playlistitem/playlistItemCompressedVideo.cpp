@@ -768,7 +768,7 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToDTS,
 void playlistItemCompressedVideo::createPropertiesWidget()
 {
   // Absolutely always only call this once
-  Q_ASSERT_X(!propertiesWidget, "playlistItemCompressedVideo::createPropertiesWidget", "Always create the properties only once!");
+  Q_ASSERT_X(!propertiesWidget, Q_FUNC_INFO, "Always create the properties only once!");
 
   if (!video)
   {

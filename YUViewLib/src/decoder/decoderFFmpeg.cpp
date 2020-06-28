@@ -389,15 +389,15 @@ bool decoderFFmpeg::decodeFrame()
   if (retRecieve == 0)
   {
     // We recieved a frame.
-    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame.get_width(), frame.get_height(), frame.get_pts(), frame.get_pict_type(), frame.get_key_frame() ? "key frame" : "");
+    DEBUG_FFMPEG("Received frame: Size(%dx%d) PTS %ld type %d %s", frame.get_width(), frame.get_height(), frame.get_pts(), frame.get_pict_type(), frame.get_key_frame() ? "key frame" : "");
     // Checkt the size of the retrieved image
     if (frameSize != frame.get_size())
-      return setErrorB("Recieved a frame of different size");
+      return setErrorB("Received a frame of different size");
     return true;
   }
   else if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
   {
-    // An error occured
+    // An error occurred
     DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Error reading frame.");
     return setErrorB(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
   }

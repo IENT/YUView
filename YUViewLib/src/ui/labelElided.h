@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LABELELIDED_H
-#define LABELELIDED_H
+#pragma once
 
 #include <QLabel>
 
@@ -84,5 +83,3 @@ private:
   QString m_text;
   QString m_toolTip;
 };
-
-#endif // LABELELIDED_H

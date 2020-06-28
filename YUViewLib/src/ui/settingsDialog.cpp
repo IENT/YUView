@@ -192,9 +192,9 @@ void SettingsDialog::on_pushButtonDecoderSelectPath_clicked()
   QSettings settings;
 
   // Use the currently selected dir or the dir to YUView if this one does not exist.
-  QDir curDir = QDir(settings.value("SearchPath", "").toString());
+  auto curDir = QDir(settings.value("SearchPath", "").toString());
   if (!curDir.exists())
-    curDir = QDir::currentPath();
+    curDir = QDir::current();
 
   QFileDialog pathDialog(this);
   pathDialog.setDirectory(curDir);
@@ -214,9 +214,9 @@ QStringList SettingsDialog::getLibraryPath(QString currentFile, QString caption,
   
   // Use the currently selected dir or the dir to YUView if this one does not exist.
   QFileInfo curFile(currentFile);
-  QDir curDir = curFile.absolutePath();
+  QDir curDir = curFile.absoluteDir();
   if (!curDir.exists())
-    curDir = QDir::currentPath();
+    curDir = QDir::current();
 
   QFileDialog fileDialog(this, caption);
   fileDialog.setDirectory(curDir);

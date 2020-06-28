@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DECODERDAV1D_H
-#define DECODERDAV1D_H
+#pragma once
 
 #include <QLibrary>
 
@@ -116,7 +115,7 @@ private:
 
   static YUV_Internals::Subsampling convertFromInternalSubsampling(Dav1dPixelLayout layout);
 
-  // Try to decode a frame. If successfull, the frame will be in curPicture.
+  // Try to decode a frame. If successful, the frame will be in curPicture.
   bool decodeFrame();
 
   class Dav1dPictureWrapper
@@ -176,5 +175,3 @@ private:
   QIntPair calculateIntraPredDirection(IntraPredMode predMode, int angleDelta);
   unsigned int subBlockSize {0};
 };
-
-#endif // DECODERDAV1D_H

@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMHANDLER_H
-#define PLAYLISTITEMHANDLER_H
+#pragma once
 
 #include "playlistItemCompressedVideo.h"
 #include "playlistItemDifference.h"
@@ -62,5 +61,3 @@ namespace playlistItems
   // Append all loaded playlist items to the list plItemAndIDList (alongside the IDs that were saved in the playlist file)
   playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath);
 }
-
-#endif // PLAYLISTITEMHANDLER_H

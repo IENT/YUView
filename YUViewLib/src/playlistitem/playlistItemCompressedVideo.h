@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMCOMPRESSEDVIDEO_H
-#define PLAYLISTITEMCOMPRESSEDVIDEO_H
+#pragma once
 
 #include "decoder/decoderBase.h"
 #include "filesource/fileSourceFFmpegFile.h"
@@ -196,5 +195,3 @@ private slots:
 
   void pixelFormatChangedAfterFirstDecodedFrame(bool caching);
 };
-
-#endif // PLAYLISTITEMCOMPRESSEDVIDEO_H

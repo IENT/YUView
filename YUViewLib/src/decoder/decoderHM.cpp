@@ -246,11 +246,11 @@ bool decoderHM::getNextFrameFromDecoder()
   {
     // Check the values against the previously set values
     if (frameSize != picSize)
-      return setErrorB("Recieved a frame of different size");
+      return setErrorB("Received a frame of different size");
     if (formatYUV.subsampling != subsampling)
-      return setErrorB("Recieved a frame with different subsampling");
+      return setErrorB("Received a frame with different subsampling");
     if (formatYUV.bitsPerSample != bitDepth)
-      return setErrorB("Recieved a frame with different bit depth");
+      return setErrorB("Received a frame with different bit depth");
   }
   
   DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got a valid frame");

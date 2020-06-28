@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DECODERLIBDE265_H
-#define DECODERLIBDE265_H
+#pragma once
 
 #include <QLibrary>
 
@@ -135,7 +134,7 @@ private:
   // If this is true, a frame is waiting from that step and decodeNextFrame will not actually decode a new frame.
   bool decodedFrameWaiting {false};
 
-  // Try to decode a frame. If successfull, the frame will be pointed to by curImage.
+  // Try to decode a frame. If successful, the frame will be pointed to by curImage.
   bool decodeFrame();
   const de265_image* curImage {nullptr};
 
@@ -160,5 +159,3 @@ private:
   void copyImgToByteArray(const de265_image *src, QByteArray &dst);   // Copy the raw data from the de265_image source *src to the byte array
 #endif
 };
-
-#endif // DECODERLIBDE265_H

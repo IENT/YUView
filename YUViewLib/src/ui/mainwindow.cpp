@@ -80,8 +80,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   connect(ui.displaySplitView, &splitViewWidget::signalToggleFullScreen, this, &MainWindow::toggleFullscreen);
 
   // Setup primary/separate splitView
-  ui.displaySplitView->setSeparateWidget(&separateViewWindow.splitView);
-  separateViewWindow.splitView.setPrimaryWidget(ui.displaySplitView);
+  ui.displaySplitView->addSlaveView(&separateViewWindow.splitView);
   connect(ui.displaySplitView, &splitViewWidget::signalShowSeparateWindow, &separateViewWindow, &QWidget::setVisible);
 
   // Connect the playlistWidget signals to some slots
@@ -182,7 +181,7 @@ void MainWindow::loadFiles(const QStringList &files)
 
 void MainWindow::createMenusAndActions()
 {
-  // Create the menu actions and connect them. Qt>=5.6 allows to conveniontly use delta functions and function pointers
+  // Create the menu actions and connect them. Qt>=5.6 allows you to conveniontly use delta functions and function pointers
   // in ->addAction(...). However, we also want to be able to compile with Qt 5.5 (and possibly lower). Because of
   // this, we use the old SLOT(...) mechanism.
 
@@ -760,7 +759,7 @@ void MainWindow::resetWindowLayout()
   settings.setValue("mainWindow/windowState", saveState());
 
   // Reset the split view
-  ui.displaySplitView->resetViews();
+  ui.displaySplitView->resetView();
 }
 
 void MainWindow::closeAndClearSettings()

@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef YUVIEWDOMELEMENT_H
-#define YUVIEWDOMELEMENT_H
+#pragma once
 
 #include <QDomElement>
 
@@ -53,5 +52,3 @@ public:
   
   void appendProperiteChild(const QString &type, const QString &name, const QStringPairList &attributes=QStringPairList());
 };
-
-#endif // YUVIEWDOMELEMENT_H

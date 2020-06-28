@@ -141,7 +141,7 @@ public:
   yuvPixelFormat() = default;
   yuvPixelFormat(const QString &name);  // Set the pixel format by name. The name should have the format that is returned by getName().
   yuvPixelFormat(Subsampling subsampling, int bitsPerSample, PlaneOrder planeOrder=PlaneOrder::YUV, bool bigEndian=false);
-  yuvPixelFormat(Subsampling subsampling, int bitsPerSample, PackingOrder packingOrder, bool bytePacking, bool bigEndian=false);
+  yuvPixelFormat(Subsampling subsampling, int bitsPerSample, PackingOrder packingOrder, bool bytePacking=false, bool bigEndian=false);
 
   bool isValid() const;
   bool canConvertToRGB(QSize frameSize, QString *whyNot = nullptr) const;

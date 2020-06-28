@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SETTINGSDIALOG_H
-#define SETTINGSDIALOG_H
+#pragma once
 
 #include <QDialog>
 
@@ -85,5 +84,3 @@ private:
 
   Ui::SettingsDialog ui;
 };
-
-#endif // SETTINGSDIALOG_H

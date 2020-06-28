@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILEINFOWIDGET_H
-#define FILEINFOWIDGET_H
+#pragma once
 
 #include <QGridLayout>
 #include <QPixmap>
@@ -74,5 +73,3 @@ private:
   // The warning icon. This is shown instead of a text if the name of the infoItem is "Warning"
   QPixmap warningIcon;
 };
-
-#endif

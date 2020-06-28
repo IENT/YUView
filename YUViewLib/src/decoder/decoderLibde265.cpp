@@ -299,11 +299,11 @@ bool decoderLibde265::decodeFrame()
     {
       // Check the values against the previously set values
       if (frameSize != s)
-        return setErrorB("Recieved a frame of different size");
+        return setErrorB("Received a frame of different size");
       if (formatYUV.subsampling != subsampling)
-        return setErrorB("Recieved a frame with different subsampling");
+        return setErrorB("Received a frame with different subsampling");
       if (formatYUV.bitsPerSample != bitDepth)
-        return setErrorB("Recieved a frame with different bit depth");
+        return setErrorB("Received a frame with different bit depth");
     }
     DEBUG_LIBDE265("decoderLibde265::decodeFrame Picture decoded");
 
