@@ -103,7 +103,7 @@ videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
   // preset internal values
-  setSrcPixelFormat(rgbPixelFormat());
+  setSrcPixelFormat(rgbPixelFormat(8, false));
 
   // Set the order of the RGB formats in the combo box
   orderRGBList << "RGB" << "RBG" << "GRB" << "GBR" << "BRG" << "BGR";
