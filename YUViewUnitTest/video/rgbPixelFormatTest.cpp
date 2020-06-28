@@ -12,13 +12,14 @@ public:
 
 private slots:
   void testFormatFromToString();
+  void testInvalidFormats();
 };
 
 QList<RGB_Internals::rgbPixelFormat> getAllFormats()
 {
   QList<RGB_Internals::rgbPixelFormat> allFormats;
 
-  for (int bitsPerPixel = 1; bitsPerPixel <= 16; bitsPerPixel++)
+  for (int bitsPerPixel = 8; bitsPerPixel <= 16; bitsPerPixel++)
   {
     for (auto planar : {false, true})
     {
@@ -72,6 +73,28 @@ void rgbPixelFormatTest::testFormatFromToString()
       QFAIL(QString("Alpha channel indicated wrong - %1").arg(name).toLocal8Bit().data());
     }
   }
+}
+
+void rgbPixelFormatTest::testInvalidFormats()
+{
+  QList<RGB_Internals::rgbPixelFormat> invalidFormats;
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(0, false));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(1, false));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(7, false));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(17, false));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(200, false));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(8, false, 0, 0, 0));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(8, false, 0, 1, 1));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(8, false, 1, 2, 2));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(8, false, 1, 2, 3));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(8, false, 0, 1, 4));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(8, false, 8, 0, 1));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(8, false, 0, 1, 2, 1));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(8, false, 0, 1, 2, 4));
+  invalidFormats.append(RGB_Internals::rgbPixelFormat(8, false, 0, 22, 2, 3));
+
+  for (auto fmt : invalidFormats)
+    QVERIFY(!fmt.isValid());
 }
 
 QTEST_MAIN(rgbPixelFormatTest)

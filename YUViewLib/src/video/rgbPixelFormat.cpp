@@ -47,8 +47,6 @@ namespace RGB_Internals
 rgbPixelFormat::rgbPixelFormat(int bitsPerValue, bool planar, int posR, int posG, int posB, int posA)
   : posR(posR), posG(posG), posB(posB), posA(posA), bitsPerValue(bitsPerValue), planar(planar)
 {
-  Q_ASSERT_X(posR != posG && posR != posB && posG != posB, "rgbPixelFormat", "Invalid RGB format set"); 
-  Q_ASSERT_X(posA != posR && posA != posG && posA != posB, "rgbPixelFormat", "Invalid alpha component for RGB format set"); 
 }
 
 rgbPixelFormat::rgbPixelFormat(const QString &name)
@@ -71,7 +69,7 @@ rgbPixelFormat::rgbPixelFormat(const QString &name)
   }
 }
 
-bool rgbPixelFormat::isValid() const 
+bool rgbPixelFormat::isValid() const
 { 
   if (bitsPerValue < 8 || bitsPerValue > 16)
     return false;
@@ -79,7 +77,19 @@ bool rgbPixelFormat::isValid() const
   if (posR == posG || posR == posB || posG == posB)
     return false;
 
-  if (posA != -1 && (posA == posR || posA == posG || posA == posB))
+  const auto hasAlpha = (posA != -1);
+
+  if (hasAlpha && posA == posR || posA == posG || posA == posB)
+    return false;
+
+  const auto valueLimit = hasAlpha ? 4 : 3;
+
+  if (posR < 0 || posR >= valueLimit || 
+      posG < 0 || posG >= valueLimit ||
+      posB < 0 || posB >= valueLimit)
+    return false;
+  
+  if (hasAlpha && (posA < 0 || posA >= valueLimit))
     return false;
 
   return true;
@@ -87,7 +97,7 @@ bool rgbPixelFormat::isValid() const
 
 QString rgbPixelFormat::getName() const
 {
-  if (bitsPerValue == 0)
+  if (!this->isValid())
     return "Unknown Pixel Format";
 
   QString name = getRGBFormatString();
