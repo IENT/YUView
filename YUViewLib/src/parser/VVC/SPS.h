@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*
+*   
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -30,53 +30,12 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserBase.h"
+#pragma once
 
-#include <assert.h>
-
-#define PARSERBASE_DEBUG_OUTPUT 0
-#if PARSERBASE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_PARSER qDebug
-#else
-#define DEBUG_PARSER(fmt,...) ((void)0)
-#endif
-
-/// --------------- parserBase ---------------------
-
-parserBase::parserBase(QObject *parent) : QObject(parent)
+namespace VVC
 {
-  packetModel.reset(new PacketItemModel(parent));
-  bitrateItemModel.reset(new BitratePlotModel());
-  streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
-  streamIndexFilter->setSourceModel(packetModel.data());
-}
 
-parserBase::~parserBase()
-{
-}
+  // The sequence parameter set.
+  struct sps : nal_unit_hevc
 
-void parserBase::enableModel()
-{
-  if (packetModel->isNull())
-    packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
-}
-
-void parserBase::updateNumberModelItems()
-{ 
-  packetModel->updateNumberModelItems();
-}
-
-QString parserBase::convertSliceTypeMapToString(QMap<QString, unsigned int> &sliceTypes)
-{
-  QString text;
-  for (auto key : sliceTypes.keys())
-  {
-    text += key;
-    const auto value = sliceTypes.value(key);
-    if (value > 1)
-      text += QString("(%1x)").arg(value);
-    text += " ";
-  }
-  return text;
 }

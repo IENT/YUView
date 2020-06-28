@@ -32,15 +32,16 @@
 
 #pragma once
 
-#include "parserAnnexB.h"
+#include "parser/common/ParserAnnexB.h"
+#include "parser/common/NalUnit.h"
 
-class parserAnnexBMpeg2 : public parserAnnexB
+class ParserAnnexBMpeg2 : public ParserAnnexB
 {
   Q_OBJECT
   
 public:
-  parserAnnexBMpeg2(QObject *parent = nullptr) : parserAnnexB(parent) {};
-  ~parserAnnexBMpeg2() {};
+  ParserAnnexBMpeg2(QObject *parent = nullptr) : ParserAnnexB(parent) {};
+  ~ParserAnnexBMpeg2() {};
 
   // Get properties
   double getFramerate() const Q_DECL_OVERRIDE;
@@ -77,9 +78,9 @@ private:
   /* The basic Mpeg2 NAL unit. Technically, there is no concept of NAL units in mpeg2 (h262) but there are start codes for some units
    * and there is a start code so we internally use the NAL concept.
    */
-  struct nal_unit_mpeg2 : nal_unit
+  struct nal_unit_mpeg2 : NalUnit
   {
-    nal_unit_mpeg2(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx) {}
+    nal_unit_mpeg2(QUint64Pair filePosStartEnd, int nal_idx) : NalUnit(filePosStartEnd, nal_idx) {}
     nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src);
     virtual ~nal_unit_mpeg2() {}
 

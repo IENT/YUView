@@ -37,8 +37,8 @@
 #include <QString>
 #include <QTreeWidgetItem>
 
-#include "common/PacketItemModel.h"
-#include "common/BitratePlotModel.h"
+#include "PacketItemModel.h"
+#include "BitratePlotModel.h"
 
 // If the file parsing limit is enabled (setParsingLimitEnabled) parsing will be aborted after
 // 500 frames have been parsed. This should be enough in most situations and full parsing can be
@@ -47,13 +47,13 @@
 
 /* Abstract base class that prvides features which are common to all parsers
  */
-class parserBase : public QObject
+class ParserBase : public QObject
 {
   Q_OBJECT
 
 public:
-  parserBase(QObject *parent);
-  virtual ~parserBase() = 0;
+  ParserBase(QObject *parent);
+  virtual ~ParserBase() = 0;
 
   QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
   BitratePlotModel *getBitrateItemModel() { return bitrateItemModel.data(); }

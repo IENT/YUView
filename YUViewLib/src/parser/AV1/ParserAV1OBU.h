@@ -32,19 +32,19 @@
 
 #pragma once
 
-#include "common/ReaderHelper.h"
-#include "parserBase.h"
+#include "parser/common/ReaderHelper.h"
+#include "parser/common/ParserBase.h"
 #include "video/videoHandlerYUV.h"
 
 using namespace YUV_Internals;
 
-class parserAV1OBU : public parserBase
+class ParserAV1OBU : public ParserBase
 {
   Q_OBJECT
 
 public:
-    parserAV1OBU(QObject *parent = nullptr);
-    ~parserAV1OBU() {}
+    ParserAV1OBU(QObject *parent = nullptr);
+    ~ParserAV1OBU() {}
 
     unsigned int parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
 

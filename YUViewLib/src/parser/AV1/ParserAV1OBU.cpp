@@ -30,12 +30,12 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserAV1OBU.h"
+#include "ParserAV1OBU.h"
 
 #include <algorithm>
 
-#include "common/parserMacros.h"
-#include "common/ReaderHelper.h"
+#include "parser/common/parserMacros.h"
+#include "parser/common/ReaderHelper.h"
 
 #define READDELTAQ(into) do { if (!read_delta_q(#into, into, reader)) return false; } while(0)
 
@@ -70,18 +70,18 @@
 #define MAX_TILE_COLS 64
 #define MAX_TILE_ROWS 64
 
-const QStringList parserAV1OBU::obu_type_toString = QStringList()
+const QStringList ParserAV1OBU::obu_type_toString = QStringList()
   << "RESERVED" << "OBU_SEQUENCE_HEADER" << "OBU_TEMPORAL_DELIMITER" << "OBU_FRAME_HEADER" << "OBU_TILE_GROUP" 
   << "OBU_METADATA" << "OBU_FRAME" << "OBU_REDUNDANT_FRAME_HEADER" << "OBU_TILE_LIST" << "OBU_PADDING";
 
-parserAV1OBU::parserAV1OBU(QObject *parent) : parserBase(parent)
+ParserAV1OBU::ParserAV1OBU(QObject *parent) : ParserBase(parent)
 {
-  // Reset all values in parserAV1OBU
+  // Reset all values in ParserAV1OBU
   memset(&decValues, 0, sizeof(global_decoding_values));
   decValues.PrevFrameID = -1;
 }
 
-parserAV1OBU::obu_unit::obu_unit(QSharedPointer<obu_unit> obu_src)
+ParserAV1OBU::obu_unit::obu_unit(QSharedPointer<obu_unit> obu_src)
 {
   // Copy all members but the payload. The payload is only saved for specific obus.
   filePosStartEnd = obu_src->filePosStartEnd;
@@ -94,7 +94,7 @@ parserAV1OBU::obu_unit::obu_unit(QSharedPointer<obu_unit> obu_src)
   obu_size = obu_src->obu_size;
 }
 
-bool parserAV1OBU::obu_unit::parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, TreeItem *root)
+bool ParserAV1OBU::obu_unit::parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   ReaderHelper reader(header_data, root, "obu_header()");
@@ -154,7 +154,7 @@ bool parserAV1OBU::obu_unit::parse_obu_header(const QByteArray &header_data, uns
   return true;
 }
 
-unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile, QString *obuTypeName)
+unsigned int ParserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile, QString *obuTypeName)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active). 
   // We don't set data (a name) for this item yet. 
@@ -207,7 +207,7 @@ unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *
   return nrBytesHeader + (int)obu.obu_size;
 }
 
-bool parserAV1OBU::sequence_header::parse_sequence_header(const QByteArray &sequenceHeaderData, TreeItem *root)
+bool ParserAV1OBU::sequence_header::parse_sequence_header(const QByteArray &sequenceHeaderData, TreeItem *root)
 {
   obuPayload = sequenceHeaderData;
   ReaderHelper reader(sequenceHeaderData, root, "sequence_header_obu()");
@@ -443,7 +443,7 @@ bool parserAV1OBU::sequence_header::parse_sequence_header(const QByteArray &sequ
   return true;
 }
 
-bool parserAV1OBU::sequence_header::timing_info_struct::parse_timing_info(ReaderHelper &reader)
+bool ParserAV1OBU::sequence_header::timing_info_struct::parse_timing_info(ReaderHelper &reader)
 {
   reader_sub_level r(reader, "timing_info()");
 
@@ -456,7 +456,7 @@ bool parserAV1OBU::sequence_header::timing_info_struct::parse_timing_info(Reader
   return true;
 }
 
-bool parserAV1OBU::sequence_header::decoder_model_info_struct::parse_decoder_model(ReaderHelper &reader)
+bool ParserAV1OBU::sequence_header::decoder_model_info_struct::parse_decoder_model(ReaderHelper &reader)
 {
   reader_sub_level r(reader, "decoder_model_info()");
 
@@ -468,7 +468,7 @@ bool parserAV1OBU::sequence_header::decoder_model_info_struct::parse_decoder_mod
   return true;
 }
 
-bool parserAV1OBU::sequence_header::operating_parameters_info_struct::parse_operating_parameters_info(ReaderHelper &reader, int op, decoder_model_info_struct &dmodel)
+bool ParserAV1OBU::sequence_header::operating_parameters_info_struct::parse_operating_parameters_info(ReaderHelper &reader, int op, decoder_model_info_struct &dmodel)
 {
   reader_sub_level r(reader, "operating_parameters_info()");
 
@@ -480,7 +480,7 @@ bool parserAV1OBU::sequence_header::operating_parameters_info_struct::parse_oper
   return false;
 }
 
-bool parserAV1OBU::sequence_header::color_config_struct::parse_color_config(ReaderHelper &reader, int seq_profile)
+bool ParserAV1OBU::sequence_header::color_config_struct::parse_color_config(ReaderHelper &reader, int seq_profile)
 {
   reader_sub_level r(reader, "color_config()");
 
@@ -643,7 +643,7 @@ bool parserAV1OBU::sequence_header::color_config_struct::parse_color_config(Read
   return true;
 }
 
-bool parserAV1OBU::frame_header::parse_frame_header(const QByteArray &frameHeaderData, TreeItem *root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
+bool ParserAV1OBU::frame_header::parse_frame_header(const QByteArray &frameHeaderData, TreeItem *root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
 {
   obuPayload = frameHeaderData;
   ReaderHelper reader(frameHeaderData, root, "frame_header_obu()");
@@ -675,7 +675,7 @@ bool parserAV1OBU::frame_header::parse_frame_header(const QByteArray &frameHeade
   return true;
 }
 
-bool parserAV1OBU::frame_header::parse_uncompressed_header(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
+bool ParserAV1OBU::frame_header::parse_uncompressed_header(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
 {
   reader_sub_level r(reader, "uncompressed_header()");
   
@@ -989,7 +989,7 @@ bool parserAV1OBU::frame_header::parse_uncompressed_header(ReaderHelper &reader,
   return true;
 }
 
-void parserAV1OBU::frame_header::mark_ref_frames(int idLen, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
+void ParserAV1OBU::frame_header::mark_ref_frames(int idLen, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
 {
   unsigned int diffLen = seq_header->delta_frame_id_length_minus_2 + 2;
   for (unsigned int i = 0; i < NUM_REF_FRAMES; i++)
@@ -1007,7 +1007,7 @@ void parserAV1OBU::frame_header::mark_ref_frames(int idLen, QSharedPointer<seque
   }
 }
 
-bool parserAV1OBU::frame_header::parse_frame_size(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
+bool ParserAV1OBU::frame_header::parse_frame_size(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
 {
   reader_sub_level r(reader, "frame_size()");
 
@@ -1034,7 +1034,7 @@ bool parserAV1OBU::frame_header::parse_frame_size(ReaderHelper &reader, QSharedP
   return true;
 }
 
-bool parserAV1OBU::frame_header::parse_superres_params(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
+bool ParserAV1OBU::frame_header::parse_superres_params(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
 {
   reader_sub_level r(reader, "superres_params()");
   
@@ -1058,13 +1058,13 @@ bool parserAV1OBU::frame_header::parse_superres_params(ReaderHelper &reader, QSh
   return true;
 }
 
-void parserAV1OBU::frame_header::compute_image_size()
+void ParserAV1OBU::frame_header::compute_image_size()
 {
   MiCols = 2 * ((FrameWidth + 7 ) >> 3);
   MiRows = 2 * ((FrameHeight + 7 ) >> 3);
 }
 
-bool parserAV1OBU::frame_header::parse_render_size(ReaderHelper &reader)
+bool ParserAV1OBU::frame_header::parse_render_size(ReaderHelper &reader)
 {
   reader_sub_level r(reader, "render_size()");
   
@@ -1087,7 +1087,7 @@ bool parserAV1OBU::frame_header::parse_render_size(ReaderHelper &reader)
   return true;
 }
 
-bool parserAV1OBU::frame_header::parse_frame_size_with_refs(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
+bool ParserAV1OBU::frame_header::parse_frame_size_with_refs(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues)
 {
   reader_sub_level r(reader, "frame_size_with_refs()");
   
@@ -1128,7 +1128,7 @@ bool parserAV1OBU::frame_header::parse_frame_size_with_refs(ReaderHelper &reader
   return true;
 }
 
-bool parserAV1OBU::frame_header::frame_refs_struct::set_frame_refs(ReaderHelper &reader, int OrderHintBits, bool enable_order_hint, int last_frame_idx, int gold_frame_idx, int OrderHint, global_decoding_values &decValues)
+bool ParserAV1OBU::frame_header::frame_refs_struct::set_frame_refs(ReaderHelper &reader, int OrderHintBits, bool enable_order_hint, int last_frame_idx, int gold_frame_idx, int OrderHint, global_decoding_values &decValues)
 {
   for (int i = 0; i < REFS_PER_FRAME; i++)
     ref_frame_idx[i] = -1;
@@ -1208,7 +1208,7 @@ bool parserAV1OBU::frame_header::frame_refs_struct::set_frame_refs(ReaderHelper 
   return true;
 }
 
-int parserAV1OBU::frame_header::frame_refs_struct::find_latest_backward(int curFrameHint)
+int ParserAV1OBU::frame_header::frame_refs_struct::find_latest_backward(int curFrameHint)
 {
   int ref = -1;
   for (int i = 0; i < NUM_REF_FRAMES; i++) 
@@ -1223,7 +1223,7 @@ int parserAV1OBU::frame_header::frame_refs_struct::find_latest_backward(int curF
   return ref;
 }
 
-int parserAV1OBU::frame_header::frame_refs_struct::find_earliest_backward(int curFrameHint)
+int ParserAV1OBU::frame_header::frame_refs_struct::find_earliest_backward(int curFrameHint)
 {
   int ref = -1;
   for (int i = 0; i < NUM_REF_FRAMES; i++)
@@ -1238,7 +1238,7 @@ int parserAV1OBU::frame_header::frame_refs_struct::find_earliest_backward(int cu
   return ref;
 }
 
-int parserAV1OBU::frame_header::frame_refs_struct::find_latest_forward(int curFrameHint)
+int ParserAV1OBU::frame_header::frame_refs_struct::find_latest_forward(int curFrameHint)
 {
   int ref = -1;
   for (int i = 0; i < NUM_REF_FRAMES; i++)
@@ -1253,7 +1253,7 @@ int parserAV1OBU::frame_header::frame_refs_struct::find_latest_forward(int curFr
   return ref;
 }
 
-int parserAV1OBU::frame_header::frame_refs_struct::get_relative_dist(int a, int b, bool enable_order_hint, int OrderHintBits)
+int ParserAV1OBU::frame_header::frame_refs_struct::get_relative_dist(int a, int b, bool enable_order_hint, int OrderHintBits)
 {
   if (!enable_order_hint)
     return 0;
@@ -1264,7 +1264,7 @@ int parserAV1OBU::frame_header::frame_refs_struct::get_relative_dist(int a, int 
   return diff;
 }
 
-bool parserAV1OBU::frame_header::read_interpolation_filter(ReaderHelper &reader)
+bool ParserAV1OBU::frame_header::read_interpolation_filter(ReaderHelper &reader)
 {
   reader_sub_level r(reader, "read_interpolation_filter()");
 
@@ -1289,7 +1289,7 @@ int tile_log2(int blkSize, int target)
   return k;
 }
 
-bool parserAV1OBU::frame_header::tile_info_struct::parse_tile_info(int MiCols, int MiRows, ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
+bool ParserAV1OBU::frame_header::tile_info_struct::parse_tile_info(int MiCols, int MiRows, ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
 {
   reader_sub_level r(reader, "tile_info()");
   
@@ -1396,7 +1396,7 @@ bool parserAV1OBU::frame_header::tile_info_struct::parse_tile_info(int MiCols, i
   return true;
 }
 
-bool parserAV1OBU::frame_header::quantization_params_struct::parse_quantization_params(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
+bool ParserAV1OBU::frame_header::quantization_params_struct::parse_quantization_params(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
 {
   reader_sub_level r(reader, "quantization_params()");
   
@@ -1441,7 +1441,7 @@ bool parserAV1OBU::frame_header::quantization_params_struct::parse_quantization_
   return true;
 }
 
-bool parserAV1OBU::frame_header::quantization_params_struct::read_delta_q(QString deltaValName, int &delta_q, ReaderHelper &reader)
+bool ParserAV1OBU::frame_header::quantization_params_struct::read_delta_q(QString deltaValName, int &delta_q, ReaderHelper &reader)
 {
   reader_sub_level r(reader, deltaValName);
 
@@ -1455,7 +1455,7 @@ bool parserAV1OBU::frame_header::quantization_params_struct::read_delta_q(QStrin
   return true;
 }
 
-bool parserAV1OBU::frame_header::segmentation_params_struct::parse_segmentation_params(int primary_ref_frame, ReaderHelper &reader)
+bool ParserAV1OBU::frame_header::segmentation_params_struct::parse_segmentation_params(int primary_ref_frame, ReaderHelper &reader)
 {
   reader_sub_level r(reader, "segmentation_params()");
 
@@ -1540,7 +1540,7 @@ bool parserAV1OBU::frame_header::segmentation_params_struct::parse_segmentation_
   return true;
 }
 
-bool parserAV1OBU::frame_header::delta_q_params_struct::parse_delta_q_params(int base_q_idx, ReaderHelper &reader)
+bool ParserAV1OBU::frame_header::delta_q_params_struct::parse_delta_q_params(int base_q_idx, ReaderHelper &reader)
 {
   reader_sub_level r(reader, "delta_q_params()");
   
@@ -1554,7 +1554,7 @@ bool parserAV1OBU::frame_header::delta_q_params_struct::parse_delta_q_params(int
   return true;
 }
 
-bool parserAV1OBU::frame_header::delta_lf_params_struct::parse_delta_lf_params(bool delta_q_present, bool allow_intrabc, ReaderHelper &reader)
+bool ParserAV1OBU::frame_header::delta_lf_params_struct::parse_delta_lf_params(bool delta_q_present, bool allow_intrabc, ReaderHelper &reader)
 {
   reader_sub_level r(reader, "delta_lf_params()");
   
@@ -1575,7 +1575,7 @@ bool parserAV1OBU::frame_header::delta_lf_params_struct::parse_delta_lf_params(b
   return true;
 }
 
-int parserAV1OBU::frame_header::get_qindex(bool ignoreDeltaQ, int segmentId) const
+int ParserAV1OBU::frame_header::get_qindex(bool ignoreDeltaQ, int segmentId) const
 {
   // TODO: This must be set somewhere!
   int CurrentQIndex = 0;
@@ -1593,7 +1593,7 @@ int parserAV1OBU::frame_header::get_qindex(bool ignoreDeltaQ, int segmentId) con
   return quantization_params.base_q_idx;
 }
 
-bool parserAV1OBU::frame_header::loop_filter_params_struct::parse_loop_filter_params(bool CodedLossless, bool allow_intrabc, ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
+bool ParserAV1OBU::frame_header::loop_filter_params_struct::parse_loop_filter_params(bool CodedLossless, bool allow_intrabc, ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
 {
   reader_sub_level r(reader, "loop_filter_params()");
   
@@ -1650,7 +1650,7 @@ bool parserAV1OBU::frame_header::loop_filter_params_struct::parse_loop_filter_pa
   return true;
 }
 
-bool parserAV1OBU::frame_header::cdef_params_struct::parse_cdef_params(bool CodedLossless, bool allow_intrabc, ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
+bool ParserAV1OBU::frame_header::cdef_params_struct::parse_cdef_params(bool CodedLossless, bool allow_intrabc, ReaderHelper &reader, QSharedPointer<sequence_header> seq_header)
 {
   reader_sub_level r(reader, "cdef_params()");
   

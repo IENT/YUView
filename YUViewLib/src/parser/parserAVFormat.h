@@ -32,9 +32,9 @@
 
 #pragma once
 
-#include "parserBase.h"
-#include "parserAnnexB.h"
-#include "parserAV1OBU.h"
+#include "common/ParserBase.h"
+#include "common/ParserAnnexB.h"
+#include "AV1/ParserAV1OBU.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
 #include "filesource/fileSourceFFmpegFile.h"
 
@@ -42,13 +42,13 @@
  * If the bitstream within the container is a supported annexB bitstream, this parser can use that parser
  * to even parser deeper.
  */
-class parserAVFormat : public parserBase
+class ParserAVFormat : public ParserBase
 {
   Q_OBJECT
 
 public:
-  parserAVFormat(QObject *parent = nullptr);
-  ~parserAVFormat() {}
+  ParserAVFormat(QObject *parent = nullptr);
+  ~ParserAVFormat() {}
 
   QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE;
   unsigned int getNrStreams() Q_DECL_OVERRIDE { return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1; }
@@ -68,14 +68,14 @@ private:
 
   struct hvcC_nalUnit
   {
-    bool parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     unsigned int nalUnitLength;
   };
 
   struct hvcC_naluArray
   {
-    bool parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     bool array_completeness;
     bool reserved_flag_false;
@@ -86,7 +86,7 @@ private:
 
   struct hvcC
   {
-    bool parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     unsigned int configurationVersion;
     unsigned int general_profile_space;
@@ -111,9 +111,9 @@ private:
   };
 
   // Used for parsing if the packets contain an annexB file that we can parse.
-  QScopedPointer<parserAnnexB> annexBParser;
+  QScopedPointer<ParserAnnexB> annexBParser;
   // Used for parsing if the packets contain an obu file that we can parse.
-  QScopedPointer<parserAV1OBU> obuParser;
+  QScopedPointer<ParserAV1OBU> obuParser;
 
   bool parseExtradata_generic(QByteArray &extradata);
   bool parseExtradata_AVC(QByteArray &extradata);

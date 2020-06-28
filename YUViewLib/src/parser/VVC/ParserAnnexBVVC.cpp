@@ -30,62 +30,65 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserAnnexBVVC.h"
+#include "ParserAnnexBVVC.h"
 
 #include <algorithm>
 #include <cmath>
 
-#include "common/parserMacros.h"
-#include "common/ReaderHelper.h"
+#include "parser/common/parserMacros.h"
+#include "parser/common/ReaderHelper.h"
+#include "NalUnitVVC.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_VVC(msg) qDebug << msg
+#define DEBUG_VVC(msg) qDebug() << msg
 #else
 #define DEBUG_VVC(msg) ((void)0)
 #endif
 
-double parserAnnexBVVC::getFramerate() const
+using namespace VVC;
+
+double ParserAnnexBVVC::getFramerate() const
 {
   return DEFAULT_FRAMERATE;
 }
 
-QSize parserAnnexBVVC::getSequenceSizeSamples() const
+QSize ParserAnnexBVVC::getSequenceSizeSamples() const
 {
   return {};
 }
 
-yuvPixelFormat parserAnnexBVVC::getPixelFormat() const
+yuvPixelFormat ParserAnnexBVVC::getPixelFormat() const
 {
   // Return invalid format. It will be updated once the first
   // frame was decoded. However, this should be correct once we add VVC bitstream parsing.
   return {};
 }
 
-QList<QByteArray> parserAnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+QList<QByteArray> ParserAnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   Q_UNUSED(iFrameNr);
   Q_UNUSED(filePos);
   return {};
 }
 
-QByteArray parserAnnexBVVC::getExtradata()
+QByteArray ParserAnnexBVVC::getExtradata()
 {
   return {};
 }
 
-QPair<int,int> parserAnnexBVVC::getProfileLevel()
+QPair<int,int> ParserAnnexBVVC::getProfileLevel()
 {
   return QPair<int,int>(0,0);
 }
 
-QPair<int,int> parserAnnexBVVC::getSampleAspectRatio()
+QPair<int,int> ParserAnnexBVVC::getSampleAspectRatio()
 {
   return QPair<int,int>(1,1);
 }
 
-bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
 {
   Q_UNUSED(nalTypeName);
   
@@ -121,11 +124,11 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     nalRoot = new TreeItem(this->packetModel->getRootItem());
 
   // Create a nal_unit and read the header
-  nal_unit_vvc nal_vvc(nalStartEndPosFile, nalID);
-  if (!nal_vvc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
+  NalUnitVVC nal(nalStartEndPosFile, nalID);
+  if (!nal.parse_nal_unit_header(nalHeaderBytes, nalRoot))
     return false;
 
-  if (nal_vvc.isAUDelimiter())
+  if (nal.isAUDelimiter())
   {
     DEBUG_VVC("Start of new AU. Adding bitrate " << this->sizeCurrentAU);
     
@@ -154,79 +157,8 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_vvc.nal_idx).arg(nal_vvc.nal_unit_type_id) + specificDescription);
+    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal.nal_idx).arg(nal.nal_unit_type_id) + specificDescription);
 
   return true;
 }
 
-QByteArray parserAnnexBVVC::nal_unit_vvc::getNALHeader() const
-{ 
-  int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
-  char c[2] = { (char)(out >> 8), (char)out };
-  return QByteArray(c, 2);
-}
-
-bool parserAnnexBVVC::nal_unit_vvc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
-{
-  // Create a sub byte parser to access the bits
-  ReaderHelper reader(parameterSetData, root, "nal_unit_header()");
-
-  READZEROBITS(1, "forbidden_zero_bit");
-  READZEROBITS(1, "nuh_reserved_zero_bit");
-  READBITS(nuh_layer_id, 6);
-  // Read nal unit type
-  QStringList nal_unit_type_id_meaning = QStringList()
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "AUD_NUT Access unit delimiter access_unit_delimiter_rbsp( )"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unknown"
-    << "Unspecified";
-  READBITS_M(nal_unit_type_id, 5, nal_unit_type_id_meaning);
-  READBITS(nuh_temporal_id_plus1, 3);
-
-  return true;
-}

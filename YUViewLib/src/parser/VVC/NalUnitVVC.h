@@ -32,12 +32,37 @@
 
 #pragma once
 
-#include <QByteArray>
-#include <QString>
+#include "parser/common/NalUnit.h"
 
-#include "common/TreeItem.h"
-
-namespace subtitle_dvb
+namespace VVC
 {
-    int parseDVBSubtitleSegment(QByteArray data, TreeItem *parent, QString *segmentTypeName);
-}
+
+enum NalUnitType
+{
+  TRAIL_NUT, STSA_NUT, RADL_NUT, RASL_NUT, RSV_VCL_4, RSV_VCL_5, RSV_VCL_6, IDR_W_RADL, IDR_N_LP, CRA_NUT, 
+  GDR_NUT, RSV_IRAP_11, RSV_IRAP_12, DCI_NUT, VPS_NUT, SPS_NUT, PPS_NUT, PREFIX_APS_NUT, SUFFIX_APS_NUT, PH_NUT,
+  AUD_NUT, EOS_NUT, EOB_NUT, PREFIX_SEI_NUT, SUFFIX_SEI_NUT, FD_NUT, RSV_NVCL_26, RSV_NVCL_27, UNSPEC_28, UNSPEC_29,
+  UNSPEC_30, UNSPEC_31, UNSPECIFIED
+};
+
+/* The basic VVC NAL unit. Additionally to the basic NAL unit, it knows the VVC nal unit types.
+  */
+struct NalUnitVVC : NalUnit
+{
+  NalUnitVVC(QUint64Pair filePosStartEnd, int nal_idx) : NalUnit(filePosStartEnd, nal_idx) {}
+  NalUnitVVC(QSharedPointer<NalUnitVVC> nal_src) : NalUnit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_unit_type_id = nal_src->nal_unit_type_id; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+  virtual ~NalUnitVVC() {}
+
+  virtual QByteArray getNALHeader() const override;
+  virtual bool isParameterSet() const override { return false; }  // We don't know yet
+  bool parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) override;
+
+  bool isAUDelimiter() { return nal_unit_type_id == 20; }
+
+  // The information of the NAL unit header
+  unsigned int nuh_layer_id;
+  unsigned int nuh_temporal_id_plus1;
+  NalUnitType nal_unit_type;
+};
+
+} // Namespace VVC

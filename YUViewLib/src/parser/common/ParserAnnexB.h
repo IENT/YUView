@@ -35,23 +35,24 @@
 #include <QList>
 #include <QTreeWidgetItem>
 
-#include "common/BitratePlotModel.h"
-#include "common/TreeItem.h"
+#include "BitratePlotModel.h"
+#include "NalUnit.h"
+#include "TreeItem.h"
 #include "filesource/fileSourceAnnexBFile.h"
-#include "parserBase.h"
+#include "ParserBase.h"
 #include "video/videoHandlerYUV.h"
 
 using namespace YUV_Internals;
 
 /* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, VVC) that we can parse.
 */
-class parserAnnexB : public parserBase
+class ParserAnnexB : public ParserBase
 {
   Q_OBJECT
 
 public:
-  parserAnnexB(QObject *parent = nullptr) : parserBase(parent) {};
-  virtual ~parserAnnexB() {};
+  ParserAnnexB(QObject *parent = nullptr) : ParserBase(parent) {};
+  virtual ~ParserAnnexB() {};
 
   // How many POC's have been found in the file
   int getNumberPOCs() const { return frameList.size(); }
@@ -106,37 +107,6 @@ public:
     SEI_PARSING_WAIT_FOR_PARAMETER_SETS  // We have to wait for valid parameter sets before we can parse this SEI
   };
 
-  /* The basic NAL unit. Contains the NAL header and the file position of the unit.
-  */
-  struct nal_unit
-  {
-    nal_unit(QUint64Pair filePosStartEnd, int nal_idx) : filePosStartEnd(filePosStartEnd), nal_idx(nal_idx), nal_unit_type_id(-1) {}
-    virtual ~nal_unit() {} // This class is meant to be derived from.
-
-    // Parse the header from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    virtual bool parse_nal_unit_header(const QByteArray &header_data, TreeItem *root) = 0;
-
-    // Pointer to the first byte of the start code of the NAL unit
-    QUint64Pair filePosStartEnd;
-
-    // The index of the nal within the bitstream
-    int nal_idx;
-
-    // Get the NAL header including the start code
-    virtual QByteArray getNALHeader() const = 0;
-    virtual bool isParameterSet() const = 0;
-    virtual int  getPOC() const { return -1; }
-    // Get the raw NAL unit (excluding a start code, including nal unit header and payload)
-    // This only works if the payload was saved of course
-    QByteArray getRawNALData() const { return getNALHeader() + nalPayload; }
-
-    // Each nal unit (in all known standards) has a type id
-    unsigned int nal_unit_type_id;
-
-    // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
-    QByteArray nalPayload;
-  };
-
 protected:
   
   struct annexBFrame
@@ -159,7 +129,7 @@ protected:
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.
   // So basically all information we need to seek in the stream and get the active parameter sets to start the decoder at a certain position.
-  QList<QSharedPointer<nal_unit>> nalUnitList;
+  QList<QSharedPointer<NalUnit>> nalUnitList;
 
   int pocOfFirstRandomAccessFrame {-1};
 

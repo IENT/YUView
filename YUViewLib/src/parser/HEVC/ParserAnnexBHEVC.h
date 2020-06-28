@@ -34,20 +34,21 @@
 
 #include <QSharedPointer>
 
-#include "common/ReaderHelper.h"
-#include "parserAnnexB.h"
+#include "parser/common/NalUnit.h"
+#include "parser/common/ReaderHelper.h"
+#include "parser/common/ParserAnnexB.h"
 #include "video/videoHandlerYUV.h"
 
 using namespace YUV_Internals;
 
 // This class knows how to parse the bitrstream of HEVC annexB files
-class parserAnnexBHEVC : public parserAnnexB
+class ParserAnnexBHEVC : public ParserAnnexB
 {
   Q_OBJECT
   
 public:
-  parserAnnexBHEVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); }
-  ~parserAnnexBHEVC() {};
+  ParserAnnexBHEVC(QObject *parent = nullptr) : ParserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); }
+  ~ParserAnnexBHEVC() {};
 
   // Get some properties
   double getFramerate() const Q_DECL_OVERRIDE;
@@ -79,10 +80,10 @@ protected:
 
   /* The basic HEVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
   */
-  struct nal_unit_hevc : nal_unit
+  struct nal_unit_hevc : NalUnit
   {
-    nal_unit_hevc(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx) {}
-    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+    nal_unit_hevc(QUint64Pair filePosStartEnd, int nal_idx) : NalUnit(filePosStartEnd, nal_idx) {}
+    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : NalUnit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
     virtual ~nal_unit_hevc() {}
 
     virtual QByteArray getNALHeader() const override;
@@ -767,7 +768,7 @@ protected:
   {
   public:
     alternative_transfer_characteristics_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    parserAnnexB::sei_parsing_return_t parse_alternative_transfer_characteristics_sei(QByteArray &seiPayload, TreeItem *root) { return parse_internal(seiPayload, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
+    ParserAnnexB::sei_parsing_return_t parse_alternative_transfer_characteristics_sei(QByteArray &seiPayload, TreeItem *root) { return parse_internal(seiPayload, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     unsigned int preferred_transfer_characteristics;
   private:

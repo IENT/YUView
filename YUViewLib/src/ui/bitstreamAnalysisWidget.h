@@ -37,7 +37,7 @@
 
 #include "ui_bitstreamAnalysisWidget.h"
 
-#include "parser/parserBase.h"
+#include "parser/common/ParserBase.h"
 #include "playlistitem/playlistItem.h"
 #include "playlistitem/playlistItemCompressedVideo.h"
 #include "common/typedef.h"
@@ -79,7 +79,7 @@ private:
   void restartParsingOfCurrentItem();
   void createAndConnectNewParser(YUView::inputFormat inputFormatType);
 
-  QScopedPointer<parserBase> parser;
+  QScopedPointer<ParserBase> parser;
   QFuture<void> backgroundParserFuture;
   void backgroundParsingFunction();
 

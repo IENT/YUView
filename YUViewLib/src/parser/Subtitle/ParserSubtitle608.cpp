@@ -32,7 +32,7 @@
 
 #include "parserSubtitle608.h"
 
-#include "common/parserMacros.h"
+#include "parser/common/parserMacros.h"
 
 #include <stdexcept>
 

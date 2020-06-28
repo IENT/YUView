@@ -34,19 +34,19 @@
 
 #include <QSharedPointer>
 
-#include "parserAnnexB.h"
+#include "parser/common/ParserAnnexB.h"
 #include "video/videoHandlerYUV.h"
 
 using namespace YUV_Internals;
 
 // This class knows how to parse the bitrstream of VVC annexB files
-class parserAnnexBVVC : public parserAnnexB
+class ParserAnnexBVVC : public ParserAnnexB
 {
   Q_OBJECT
   
 public:
-  parserAnnexBVVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); }
-  ~parserAnnexBVVC() {};
+  ParserAnnexBVVC(QObject *parent = nullptr) : ParserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); }
+  ~ParserAnnexBVVC() {};
 
   // Get some properties
   double getFramerate() const override;
@@ -61,26 +61,6 @@ public:
   bool parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
 protected:
-  // ----- Some nested classes that are only used in the scope of this file handler class
-
-  /* The basic VVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
-  */
-  struct nal_unit_vvc : nal_unit
-  {
-    nal_unit_vvc(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx) {}
-    nal_unit_vvc(QSharedPointer<nal_unit_vvc> nal_src) : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_unit_type_id = nal_src->nal_unit_type_id; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
-    virtual ~nal_unit_vvc() {}
-
-    virtual QByteArray getNALHeader() const override;
-    virtual bool isParameterSet() const override { return false; }  // We don't know yet
-    bool parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) override;
-
-    bool isAUDelimiter() { return nal_unit_type_id == 20; }
-
-    // The information of the NAL unit header
-    unsigned int nuh_layer_id;
-    unsigned int nuh_temporal_id_plus1;
-  };
 
   // Since full parsing is not implemented yet, we will just look for AU delimiters (they must be enabled in the bitstream and are by default).
   // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
