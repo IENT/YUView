@@ -105,6 +105,8 @@ jobs:
             auto_update: false
             ARTIFACT_NAME: YUView-Win-noautoupdate.zip
     steps:
+    - name: debug print payload
+      uses: Dovyski/payload-info-action@master
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
     - name: Install Qt base
@@ -201,12 +203,10 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: artifacts
-        asset_name: ${{matrix.ARTIFACT_NAME}}
+        asset_path: artifacts/YUView-Win.zip
+        asset_name: YUView-Win.zip
         asset_content_type: binary/octet-stream
       if: github.event_name == 'release'
-    - name: debug print payload
-      uses: Dovyski/payload-info-action@master
     
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
