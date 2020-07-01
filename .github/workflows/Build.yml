@@ -205,6 +205,8 @@ jobs:
         asset_name: ${{matrix.ARTIFACT_NAME}}
         asset_content_type: binary/octet-stream
       if: github.event_name == 'release'
+    - name: debug print payload
+      uses: Dovyski/payload-info-action@master
     
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
