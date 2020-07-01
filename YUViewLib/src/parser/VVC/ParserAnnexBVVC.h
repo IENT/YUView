@@ -37,6 +37,8 @@
 #include "parser/common/ParserAnnexB.h"
 #include "video/videoHandlerYUV.h"
 
+#include "SPS.h"
+
 using namespace YUV_Internals;
 
 // This class knows how to parse the bitrstream of VVC annexB files
@@ -65,6 +67,10 @@ protected:
   // Since full parsing is not implemented yet, we will just look for AU delimiters (they must be enabled in the bitstream and are by default).
   // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
   QUint64Pair curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+
+  using SPSMap = QMap<int, QSharedPointer<VVC::SPS>>;
+
+  SPSMap activeSPSMap;
 
   unsigned int counterAU{ 0 };
   unsigned int sizeCurrentAU{ 0 };

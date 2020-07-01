@@ -32,10 +32,43 @@
 
 #pragma once
 
+#include "NalUnitVVC.h"
+#include "ProfileTierLevel.h"
+
 namespace VVC
 {
 
-  // The sequence parameter set.
-  struct sps : nal_unit_hevc
+// The sequence parameter set.
+struct SPS : NalUnitVVC
+{
+  SPS(const NalUnitVVC &nal) : NalUnitVVC(nal) {}
+  bool parse(const QByteArray &parameterSetData, TreeItem *root);
+
+  unsigned int sps_seq_parameter_set_id;
+  unsigned int sps_video_parameter_set_id;
+  unsigned int sps_max_sublayers_minus1;
+  unsigned int sps_reserved_zero_4bits;
+  bool sps_ptl_dpb_hrd_params_present_flag;
+
+  ProfileTierLevel profileTierLevel;
+
+  bool sps_gdr_enabled_flag;
+  unsigned int sps_chroma_format_idc;
+  bool sps_separate_colour_plane_flag;
+  bool sps_ref_pic_resampling_enabled_flag;
+  bool sps_res_change_in_clvs_allowed_flag;
+
+  unsigned int sps_pic_width_max_in_luma_samples;
+  unsigned int sps_pic_height_max_in_luma_samples;
+  bool sps_conformance_window_flag;
+
+  unsigned int sps_conf_win_left_offset;
+  unsigned int sps_conf_win_right_offset;
+  unsigned int sps_conf_win_top_offset;
+  unsigned int sps_conf_win_bottom_offset;
+
+  unsigned int sps_log2_ctu_size_minus5;
+  bool sps_subpic_info_present_flag;
+};
 
 }

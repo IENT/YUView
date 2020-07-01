@@ -581,7 +581,7 @@ bool ParserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QSco
 
 bool ParserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
 {
-  reader_sub_level sub_level_adder(reader, QString("nal unit array %1").arg(arrayID));
+  ReaderSubLevel sub_level_adder(reader, QString("nal unit array %1").arg(arrayID));
 
   // The next 3 bytes contain info about the array
   READFLAG(array_completeness);
@@ -604,7 +604,7 @@ bool ParserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, ReaderHel
 
 bool ParserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
 {
-  reader_sub_level sub_level_adder(reader, QString("nal unit %1").arg(unitID));
+  ReaderSubLevel sub_level_adder(reader, QString("nal unit %1").arg(unitID));
 
   READBITS(nalUnitLength, 16);
 

@@ -127,7 +127,7 @@ private:
   }
   bool parse_ATSC1_data(ReaderHelper &reader)
   {
-    reader_sub_level s(reader, "ATSC1_data");
+    ReaderSubLevel s(reader, "ATSC1_data");
 
     QMap<int, QString> user_data_type_code_meaning;
     user_data_type_code_meaning.insert(3, "cc_data() / DTV CC");

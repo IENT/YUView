@@ -795,9 +795,9 @@ protected:
   
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
-  vps_map active_VPS_list;
-  sps_map active_SPS_list;
-  pps_map active_PPS_list;
+  vps_map activeVPSMap;
+  sps_map activeSPSMap;
+  pps_map activePPSMap;
   // We keept a pointer to the last slice with first_slice_segment_in_pic_flag set. 
   // All following slices with dependent_slice_segment_flag set need this slice to infer some values.
   QSharedPointer<slice> lastFirstSliceSegmentInPic;

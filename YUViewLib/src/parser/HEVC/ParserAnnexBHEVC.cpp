@@ -155,9 +155,9 @@ QList<QByteArray> ParserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64
   int seekPOC = POCList[iFrameNr];
 
   // Collect the active parameter sets
-  vps_map active_VPS_list;
-  sps_map active_SPS_list;
-  pps_map active_PPS_list;
+  vps_map activeVPSMap;
+  sps_map activeSPSMap;
+  pps_map activePPSMap;
 
   for (auto nal : nalUnitList)
   {
@@ -177,11 +177,11 @@ QList<QByteArray> ParserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
 
-        for (auto v : active_VPS_list)
+        for (auto v : activeVPSMap)
           paramSets.append(v->getRawNALData());
-        for (auto s : active_SPS_list)
+        for (auto s : activeSPSMap)
           paramSets.append(s->getRawNALData());
-        for (auto p : active_PPS_list)
+        for (auto p : activePPSMap)
           paramSets.append(p->getRawNALData());
 
         return paramSets;
@@ -191,19 +191,19 @@ QList<QByteArray> ParserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64
     {
       // Add vps (replace old one if existed)
       auto v = nal_hevc.dynamicCast<vps>();
-      active_VPS_list.insert(v->vps_video_parameter_set_id, v);
+      activeVPSMap.insert(v->vps_video_parameter_set_id, v);
     }
     else if (nal_hevc->nal_type == SPS_NUT) 
     {
       // Add sps (replace old one if existed)
       auto s = nal_hevc.dynamicCast<sps>();
-      active_SPS_list.insert(s->sps_seq_parameter_set_id, s);
+      activeSPSMap.insert(s->sps_seq_parameter_set_id, s);
     }
     else if (nal_hevc->nal_type == PPS_NUT) 
     {
       // Add pps (replace old one if existed)
       auto p = nal_hevc.dynamicCast<pps>();
-      active_PPS_list.insert(p->pps_pic_parameter_set_id, p);
+      activePPSMap.insert(p->pps_pic_parameter_set_id, p);
     }
   }
 
@@ -363,17 +363,17 @@ bool ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
       if (sei->payloadType == 0)
       {
         auto buffering_period = sei.dynamicCast<buffering_period_sei>();
-        buffering_period->reparse_buffering_period_sei(active_SPS_list);
+        buffering_period->reparse_buffering_period_sei(activeSPSMap);
       }
       else if (sei->payloadType == 1)
       {
         auto pic_timing = sei.dynamicCast<pic_timing_sei>();
-        pic_timing->reparse_pic_timing_sei(active_VPS_list, active_SPS_list);
+        pic_timing->reparse_pic_timing_sei(activeVPSMap, activeSPSMap);
       }
       else if (sei->payloadType == 129)
       {
         auto active_param_set_sei = sei.dynamicCast<active_parameter_sets_sei>();
-        active_param_set_sei->reparse_active_parameter_sets_sei(active_VPS_list);
+        active_param_set_sei->reparse_active_parameter_sets_sei(activeVPSMap);
       }
     }
   }
@@ -389,7 +389,7 @@ bool ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
     nalUnitList.append(new_vps);
 
     // Add vps (replace old one if existed)
-    active_VPS_list.insert(new_vps->vps_video_parameter_set_id, new_vps);
+    activeVPSMap.insert(new_vps->vps_video_parameter_set_id, new_vps);
 
     // Add the VPS ID
     specificDescription = parsingSuccess ? QString(" VPS_NUT ID %1").arg(new_vps->vps_video_parameter_set_id) : " VPS_NUT ERR";
@@ -405,7 +405,7 @@ bool ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
     parsingSuccess = new_sps->parse_sps(payload, nalRoot);
 
     // Add sps (replace old one if existed)
-    active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
+    activeSPSMap.insert(new_sps->sps_seq_parameter_set_id, new_sps);
 
     // Also add sps to list of all nals
     nalUnitList.append(new_sps);
@@ -424,7 +424,7 @@ bool ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
     parsingSuccess = new_pps->parse_pps(payload, nalRoot);
 
     // Add pps (replace old one if existed)
-    active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
+    activePPSMap.insert(new_pps->pps_pic_parameter_set_id, new_pps);
 
     // Also add pps to list of all nals
     nalUnitList.append(new_pps);
@@ -440,7 +440,7 @@ bool ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
   {
     // Create a new slice unit
     auto new_slice = QSharedPointer<slice>(new slice(nal_hevc));
-    parsingSuccess = new_slice->parse_slice(payload, active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
+    parsingSuccess = new_slice->parse_slice(payload, activeSPSMap, activePPSMap, lastFirstSliceSegmentInPic, nalRoot);
 
     int POC = -1;
     if (parsingSuccess)
@@ -539,13 +539,13 @@ bool ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
       if (new_sei->payloadType == 0)
       {
         auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
-        result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, active_SPS_list, message_tree);
+        result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, activeSPSMap, message_tree);
         reparse = new_buffering_period_sei;
       }
       else if (new_sei->payloadType == 1)
       {
         auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
-        result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, active_VPS_list, active_SPS_list, message_tree);
+        result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, activeVPSMap, activeSPSMap, message_tree);
         reparse = new_pic_timing_sei;
       }
       else if (new_sei->payloadType == 4)
@@ -561,7 +561,7 @@ bool ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
       else if (new_sei->payloadType == 129)
       {
         auto new_active_parameter_sets_sei = QSharedPointer<active_parameter_sets_sei>(new active_parameter_sets_sei(new_sei));
-        result = new_active_parameter_sets_sei->parse_active_parameter_sets_sei(sub_sei_data, active_VPS_list, message_tree);
+        result = new_active_parameter_sets_sei->parse_active_parameter_sets_sei(sub_sei_data, activeVPSMap, message_tree);
         reparse = new_active_parameter_sets_sei;
       }
       else if (new_sei->payloadType == 137)
@@ -655,7 +655,7 @@ bool ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
 
 bool ParserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(ReaderHelper &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
 {
-  reader_sub_level s(reader, "profile_tier_level()");
+  ReaderSubLevel s(reader, "profile_tier_level()");
 
   // Profile tier level
   if (profilePresentFlag) 
@@ -774,7 +774,7 @@ bool ParserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(ReaderHelper
 bool ParserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(ReaderHelper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, bool SubPicHrdFlag, unsigned int bit_rate_scale, unsigned int cpb_size_scale, unsigned int cpb_size_du_scale)
 {
   Q_UNUSED(subLayerId);
-  reader_sub_level s(reader, "sub_layer_hrd_parameters()");
+  ReaderSubLevel s(reader, "sub_layer_hrd_parameters()");
 
   if (CpbCnt >= 32)
     return reader.addErrorMessageChildItem("The value of CpbCnt must be in the range of 0 to 31");
@@ -838,7 +838,7 @@ bool ParserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(
 
 bool ParserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(ReaderHelper &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1)
 {
-  reader_sub_level s(reader, "hrd_parameters()");
+  ReaderSubLevel s(reader, "hrd_parameters()");
   
   sub_pic_hrd_params_present_flag = false;
 
@@ -912,7 +912,7 @@ bool ParserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(ReaderHelper &reader
 
 bool ParserAnnexBHEVC::pred_weight_table::parse_pred_weight_table(ReaderHelper &reader, sps *actSPS, slice *actSlice)
 {
-  reader_sub_level s(reader, "pred_weight_table()");
+  ReaderSubLevel s(reader, "pred_weight_table()");
   
   READUEV(luma_log2_weight_denom);
   if (actSPS->ChromaArrayType != 0)
@@ -973,7 +973,7 @@ unsigned int ParserAnnexBHEVC::st_ref_pic_set::NumDeltaPocs[65];
 
 bool ParserAnnexBHEVC::st_ref_pic_set::parse_st_ref_pic_set(ReaderHelper &reader, unsigned int stRpsIdx, sps *actSPS)
 {
-  reader_sub_level s(reader, "st_ref_pic_set()");
+  ReaderSubLevel s(reader, "st_ref_pic_set()");
   
   if (stRpsIdx > 64)
     return reader.addErrorMessageChildItem("Error while parsing short term ref pic set. The stRpsIdx must be in the range [0..64].");
@@ -1124,7 +1124,7 @@ int ParserAnnexBHEVC::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *act
 
 bool ParserAnnexBHEVC::vui_parameters::parse_vui_parameters(ReaderHelper &reader, sps *actSPS)
 {
-  reader_sub_level s(reader, "vui_parameters()");
+  ReaderSubLevel s(reader, "vui_parameters()");
 
   READFLAG(aspect_ratio_info_present_flag);
   if(aspect_ratio_info_present_flag)
@@ -1216,7 +1216,7 @@ bool ParserAnnexBHEVC::vui_parameters::parse_vui_parameters(ReaderHelper &reader
 
 bool ParserAnnexBHEVC::scaling_list_data::parse_scaling_list_data(ReaderHelper &reader)
 {
-  reader_sub_level s(reader, "scaling_list_data()");
+  ReaderSubLevel s(reader, "scaling_list_data()");
   
   for(int sizeId=0; sizeId<4; sizeId++)
   {
@@ -1336,7 +1336,6 @@ bool ParserAnnexBHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIt
   READBITS(sps_max_sub_layers_minus1, 3);
   READFLAG(sps_temporal_id_nesting_flag);
 
-  // parse profile tier level
   if (!ptl.parse_profile_tier_level(reader, true, sps_max_sub_layers_minus1))
     return false;
 
@@ -1580,7 +1579,7 @@ bool ParserAnnexBHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIt
 
 bool ParserAnnexBHEVC::pps_range_extension::parse_pps_range_extension(ReaderHelper &reader, pps *actPPS)
 {
-  reader_sub_level s(reader, "pps_range_extension()");
+  ReaderSubLevel s(reader, "pps_range_extension()");
   
   if(actPPS->transform_skip_enabled_flag)
     READUEV(log2_max_transform_skip_block_size_minus2);
@@ -1604,7 +1603,7 @@ bool ParserAnnexBHEVC::pps_range_extension::parse_pps_range_extension(ReaderHelp
 
 bool ParserAnnexBHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modification(ReaderHelper &reader, slice *actSlice, int NumPicTotalCurr)
 {
-  reader_sub_level s(reader, "ref_pic_lists_modification()");
+  ReaderSubLevel s(reader, "ref_pic_lists_modification()");
   
   int nrBits = ceil(log2(NumPicTotalCurr));
 
@@ -1653,7 +1652,7 @@ ParserAnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
 QStringList slice_type_meaning = QStringList() << "B-Slice" << "P-Slice" << "I-Slice";
-bool ParserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
+bool ParserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &activeSPSMap, const pps_map &activePPSMap, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
 {
   ReaderHelper reader(sliceHeaderData, root, "slice_segment_header()");
 
@@ -1668,14 +1667,14 @@ bool ParserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
     return reader.addErrorMessageChildItem("The variable slice_pic_parameter_set_id is out of range.");
 
   // Get the active PPS
-  if (!active_PPS_list.contains(slice_pic_parameter_set_id))
+  if (!activePPSMap.contains(slice_pic_parameter_set_id))
     return reader.addErrorMessageChildItem("The signaled PPS was not found in the bitstream.");
-  actPPS = active_PPS_list.value(slice_pic_parameter_set_id);
+  actPPS = activePPSMap.value(slice_pic_parameter_set_id);
 
   // Get the active SPS
-  if (!active_SPS_list.contains(actPPS->pps_seq_parameter_set_id))
+  if (!activeSPSMap.contains(actPPS->pps_seq_parameter_set_id))
     return reader.addErrorMessageChildItem("The signaled SPS was not found in the bitstream.");
-  actSPS = active_SPS_list.value(actPPS->pps_seq_parameter_set_id);
+  actSPS = activeSPSMap.value(actPPS->pps_seq_parameter_set_id);
 
   if (!first_slice_segment_in_pic_flag)
   {
@@ -2323,16 +2322,16 @@ bool ParserAnnexBHEVC::dolbyVisionMetadata::parse_metadata(const QByteArray &dat
   return true;
 }
 
-ParserAnnexB::sei_parsing_return_t ParserAnnexBHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &data, const vps_map &active_VPS_list, TreeItem *root)
+ParserAnnexB::sei_parsing_return_t ParserAnnexBHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &data, const vps_map &activeVPSMap, TreeItem *root)
 {
   this->reader = ReaderHelper(data, root, "active parameter sets");
   // For all SEI messages, the emulation prevention is already removed one level up
   this->reader.disableEmulationPrevention();
   if (!parse_vps_id())
     return SEI_PARSING_ERROR;
-  if (is_reparse_needed(active_VPS_list))
+  if (is_reparse_needed(activeVPSMap))
     return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
-  if (!parse_internal(active_VPS_list))
+  if (!parse_internal(activeVPSMap))
     return SEI_PARSING_ERROR;
   return SEI_PARSING_OK;
 }
@@ -2374,14 +2373,14 @@ bool ParserAnnexBHEVC::active_parameter_sets_sei::parse_vps_id()
   return true;
 }
 
-bool ParserAnnexBHEVC::active_parameter_sets_sei::parse_internal(const vps_map &active_VPS_list)
+bool ParserAnnexBHEVC::active_parameter_sets_sei::parse_internal(const vps_map &activeVPSMap)
 {
-  if (is_reparse_needed(active_VPS_list))
+  if (is_reparse_needed(activeVPSMap))
     return false;
 
-  if (!active_VPS_list.contains(active_video_parameter_set_id))
+  if (!activeVPSMap.contains(active_video_parameter_set_id))
     return reader.addErrorMessageChildItem("The signaled VPS was not found in the bitstream.");
-  QSharedPointer<vps> actVPS = active_VPS_list.value(active_video_parameter_set_id);
+  QSharedPointer<vps> actVPS = activeVPSMap.value(active_video_parameter_set_id);
 
   READFLAG(self_contained_cvs_flag);
   READFLAG(no_parameter_set_update_flag);
@@ -2396,16 +2395,16 @@ bool ParserAnnexBHEVC::active_parameter_sets_sei::parse_internal(const vps_map &
   return true;
 }
 
-ParserAnnexBHEVC::sei_parsing_return_t ParserAnnexBHEVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
+ParserAnnexBHEVC::sei_parsing_return_t ParserAnnexBHEVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &activeSPSMap, TreeItem *root)
 {
   this->reader = ReaderHelper(data, root, "buffering period");
   // For all SEI messages, the emulation prevention is already removed one level up
   this->reader.disableEmulationPrevention();
   if (!parse_sps_id())
     return SEI_PARSING_ERROR;
-  if (is_reparse_needed(active_SPS_list))
+  if (is_reparse_needed(activeSPSMap))
     return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
-  if (!parse_internal(active_SPS_list))
+  if (!parse_internal(activeSPSMap))
     return SEI_PARSING_ERROR;
   return SEI_PARSING_OK;
 }
@@ -2418,14 +2417,14 @@ bool ParserAnnexBHEVC::buffering_period_sei::parse_sps_id()
   return true;
 }
 
-bool ParserAnnexBHEVC::buffering_period_sei::parse_internal(const sps_map &active_SPS_list)
+bool ParserAnnexBHEVC::buffering_period_sei::parse_internal(const sps_map &activeSPSMap)
 {
-  if (is_reparse_needed(active_SPS_list))
+  if (is_reparse_needed(activeSPSMap))
     return false;
 
-  if (!active_SPS_list.contains(bp_seq_parameter_set_id))
+  if (!activeSPSMap.contains(bp_seq_parameter_set_id))
     return reader.addErrorMessageChildItem("The signaled SPS was not found in the bitstream.");
-  QSharedPointer<sps> actSPS = active_SPS_list.value(bp_seq_parameter_set_id);
+  QSharedPointer<sps> actSPS = activeSPSMap.value(bp_seq_parameter_set_id);
 
   // Get the hrd parameters. TODO: It this really always correct?
   hrd_parameters hrd;
@@ -2485,38 +2484,38 @@ bool ParserAnnexBHEVC::buffering_period_sei::parse_internal(const sps_map &activ
   return true;
 }
 
-ParserAnnexBHEVC::sei_parsing_return_t ParserAnnexBHEVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &seiPayload, const vps_map &active_VPS_list, const sps_map &active_SPS_list, TreeItem *root)
+ParserAnnexBHEVC::sei_parsing_return_t ParserAnnexBHEVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &seiPayload, const vps_map &activeVPSMap, const sps_map &activeSPSMap, TreeItem *root)
 {
   rootItem = root;
   sei_data_storage = seiPayload;
-  if (is_reparse_needed(active_VPS_list, active_SPS_list))
+  if (is_reparse_needed(activeVPSMap, activeSPSMap))
     return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
-  if (!parse_internal(active_VPS_list, active_SPS_list))
+  if (!parse_internal(activeVPSMap, activeSPSMap))
     return SEI_PARSING_ERROR;
   return SEI_PARSING_OK;
 }
 
-bool ParserAnnexBHEVC::pic_timing_sei::is_reparse_needed(const vps_map &active_VPS_list, const sps_map &active_SPS_list)
+bool ParserAnnexBHEVC::pic_timing_sei::is_reparse_needed(const vps_map &activeVPSMap, const sps_map &activeSPSMap)
 {
   // TODO: Is this really ID 0? The standard does not really say which one (or I did not find it).
-  if (!active_SPS_list.contains(0))
+  if (!activeSPSMap.contains(0))
     return true;
-  if (!active_VPS_list.contains(0))
+  if (!activeVPSMap.contains(0))
     return true;
   return false;
 }
 
-bool ParserAnnexBHEVC::pic_timing_sei::parse_internal(const vps_map &active_VPS_list, const sps_map &active_SPS_list)
+bool ParserAnnexBHEVC::pic_timing_sei::parse_internal(const vps_map &activeVPSMap, const sps_map &activeSPSMap)
 {
-  if (is_reparse_needed(active_VPS_list, active_SPS_list))
+  if (is_reparse_needed(activeVPSMap, activeSPSMap))
     return false;
 
   ReaderHelper reader(sei_data_storage, rootItem, "picture timing");
   // For all SEI messages, the emulation prevention is already removed one level up
   reader.disableEmulationPrevention();
 
-  QSharedPointer<sps> actSPS = active_SPS_list.value(0);
-  QSharedPointer<vps> actVPS = active_VPS_list.value(0);
+  QSharedPointer<sps> actSPS = activeSPSMap.value(0);
+  QSharedPointer<vps> actVPS = activeVPSMap.value(0);
 
   if (actSPS->sps_vui_parameters.frame_field_info_present_flag)
   {

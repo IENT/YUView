@@ -37,7 +37,6 @@
 
 #include "parser/common/parserMacros.h"
 #include "parser/common/ReaderHelper.h"
-#include "NalUnitVVC.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -127,6 +126,27 @@ bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
   NalUnitVVC nal(nalStartEndPosFile, nalID);
   if (!nal.parse_nal_unit_header(nalHeaderBytes, nalRoot))
     return false;
+
+  bool parsingSuccess = true;
+  if (nal.nal_unit_type == SPS_NUT)
+  {
+    // A sequence parameter set
+    auto newSPS = QSharedPointer<SPS>(new SPS(nal));
+    parsingSuccess = newSPS->parse(payload, nalRoot);
+
+    // Add sps (replace old one if existed)
+    activeSPSMap.insert(newSPS->sps_seq_parameter_set_id, newSPS);
+
+    // Also add sps to list of all nals
+    nalUnitList.append(newSPS);
+
+    // Add the SPS ID
+    specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(newSPS->sps_seq_parameter_set_id) : " SPS_NUT ERR";
+    if (nalTypeName)
+      *nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(newSPS->sps_seq_parameter_set_id) : "SPS(ERR)";
+
+    DEBUG_VVC("ParserAnnexBVVC::parseAndAddNALUnit SPS ID %d", newSPS->sps_seq_parameter_set_id);
+  }
 
   if (nal.isAUDelimiter())
   {

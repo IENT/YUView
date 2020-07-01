@@ -39,7 +39,7 @@
 
 bool parsePageCompositionSegment(ReaderHelper &reader, unsigned int segment_length)
 {
-    reader_sub_level s(reader, "page_composition_segment()");
+    ReaderSubLevel s(reader, "page_composition_segment()");
 
     unsigned int page_time_out;
     READBITS(page_time_out, 8);
@@ -69,7 +69,7 @@ bool parsePageCompositionSegment(ReaderHelper &reader, unsigned int segment_leng
 
 bool parseRegionCompositionSegment(ReaderHelper &reader, unsigned int segment_length)
 {
-    reader_sub_level s(reader, "region_composition_segment()");
+    ReaderSubLevel s(reader, "region_composition_segment()");
 
     unsigned int region_id;
     unsigned int region_version_number;
@@ -131,7 +131,7 @@ bool parseRegionCompositionSegment(ReaderHelper &reader, unsigned int segment_le
 
 bool parseCLUTDefinitionSegment(ReaderHelper &reader, unsigned int segment_length)
 {
-    reader_sub_level s(reader, "CLUT_definition_segment()");
+    ReaderSubLevel s(reader, "CLUT_definition_segment()");
 
     unsigned int CLUT_id;
     READBITS(CLUT_id, 8);
@@ -184,7 +184,7 @@ bool parseCLUTDefinitionSegment(ReaderHelper &reader, unsigned int segment_lengt
 
 bool parse_2_bit_pixel_code_string(ReaderHelper &reader, bool &end, unsigned int &bitsRead)
 {
-  reader_sub_level s(reader, "2-bit/pixel_code_string()");
+  ReaderSubLevel s(reader, "2-bit/pixel_code_string()");
 
   unsigned int next_bits;
   READBITS(next_bits, 2);
@@ -242,7 +242,7 @@ bool parse_2_bit_pixel_code_string(ReaderHelper &reader, bool &end, unsigned int
 
 bool parse_4_bit_pixel_code_string(ReaderHelper &reader, bool &end, unsigned int &bitsRead)
 {
-  reader_sub_level s(reader, "4-bit/pixel_code_string()");
+  ReaderSubLevel s(reader, "4-bit/pixel_code_string()");
 
   unsigned int next_bits;
   READBITS(next_bits, 4);
@@ -302,7 +302,7 @@ bool parse_4_bit_pixel_code_string(ReaderHelper &reader, bool &end, unsigned int
 
 bool parse_8_bit_pixel_code_string(ReaderHelper &reader, bool &end, unsigned int &bitsRead)
 {
-  reader_sub_level s(reader, "8-bit/pixel_code_string()");
+  ReaderSubLevel s(reader, "8-bit/pixel_code_string()");
 
   unsigned int next_bits;
   READBITS(next_bits, 8);
@@ -334,7 +334,7 @@ bool parse_8_bit_pixel_code_string(ReaderHelper &reader, bool &end, unsigned int
 
 bool parsePixelDataSubBlock(ReaderHelper &reader, unsigned int &processed_length)
 {
-  reader_sub_level s(reader, "pixel-data_sub-block()");
+  ReaderSubLevel s(reader, "pixel-data_sub-block()");
 
   QMap<int,QString> data_type_meaning;
   data_type_meaning[0x10] = "2-bit/pixel code string";
@@ -423,7 +423,7 @@ bool parsePixelDataSubBlock(ReaderHelper &reader, unsigned int &processed_length
 
 bool parseProgressivePixelBlock(ReaderHelper &reader)
 {
-  reader_sub_level s(reader, "progressive_pixel_block()");
+  ReaderSubLevel s(reader, "progressive_pixel_block()");
 
   unsigned int bitmap_width;
   unsigned int bitmap_height;
@@ -444,7 +444,7 @@ bool parseProgressivePixelBlock(ReaderHelper &reader)
 
 bool parseObjectDataSegment(ReaderHelper &reader, unsigned int segment_length)
 {
-    reader_sub_level s(reader, "object_data_segment()");
+    ReaderSubLevel s(reader, "object_data_segment()");
 
     unsigned int object_id;
     unsigned int object_version_number;
@@ -509,7 +509,7 @@ bool parseObjectDataSegment(ReaderHelper &reader, unsigned int segment_length)
 
 bool parseDisplayDefinitionSegment(ReaderHelper &reader)
 {
-    reader_sub_level s(reader, "display_definition_segment()");
+    ReaderSubLevel s(reader, "display_definition_segment()");
 
     unsigned int dds_version_number;
     READBITS(dds_version_number, 4);
@@ -539,7 +539,7 @@ bool parseDisplayDefinitionSegment(ReaderHelper &reader)
 
 bool parserDisparityShiftUpdateSequence(ReaderHelper &reader)
 {
-  reader_sub_level s(reader, "disparity_shift_update_sequence()");
+  ReaderSubLevel s(reader, "disparity_shift_update_sequence()");
 
   unsigned int disparity_shift_update_sequence_length;
   READBITS(disparity_shift_update_sequence_length, 8);
@@ -560,7 +560,7 @@ bool parserDisparityShiftUpdateSequence(ReaderHelper &reader)
 
 bool parseDisparitySignalingSegment(ReaderHelper &reader)
 {
-    reader_sub_level s(reader, "display_definition_segment()");
+    ReaderSubLevel s(reader, "display_definition_segment()");
 
     unsigned int sync_byte;
     unsigned int segment_type;
@@ -626,7 +626,7 @@ bool parseDisparitySignalingSegment(ReaderHelper &reader)
 
 bool parseCLUTParameters(ReaderHelper &reader, unsigned int &output_bit_depth)
 {
-  reader_sub_level s(reader, "CLUT_parameters()");
+  ReaderSubLevel s(reader, "CLUT_parameters()");
 
   unsigned int CLUT_entry_max_number;
   unsigned int colour_component_type;
@@ -644,7 +644,7 @@ bool parseCLUTParameters(ReaderHelper &reader, unsigned int &output_bit_depth)
 
 bool parseAlternativeCLUTSegment(ReaderHelper &reader, unsigned int segment_length)
 {
-    reader_sub_level s(reader, "alternative_CLUT_segment()");
+    ReaderSubLevel s(reader, "alternative_CLUT_segment()");
 
     unsigned int CLUT_id;
     READBITS(CLUT_id, 8);

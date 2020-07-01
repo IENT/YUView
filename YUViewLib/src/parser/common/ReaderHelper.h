@@ -47,7 +47,7 @@ public:
   ReaderHelper(SubByteReader &reader, TreeItem *item, QString new_sub_item_name = "");
   ReaderHelper(const QByteArray &inArr, TreeItem *item, QString new_sub_item_name = "");
 
-  // Add another hierarchical log level to the tree or go back up. Don't call these directly but use the reader_sub_level wrapper.
+  // Add another hierarchical log level to the tree or go back up. Don't call these directly but use the ReaderSubLevel wrapper.
   void addLogSubLevel(QString name);
   void removeLogSubLevel();
 
@@ -132,11 +132,11 @@ private:
 };
 
 // A simple wrapper for ReaderHelper.addLogSubLevel / ReaderHelper->removeLogSubLevel
-class reader_sub_level
+class ReaderSubLevel
 {
 public:
-  reader_sub_level(ReaderHelper &reader, QString name) { reader.addLogSubLevel(name); r = &reader; }
-  ~reader_sub_level() { r->removeLogSubLevel(); }
+  ReaderSubLevel(ReaderHelper &reader, QString name) { reader.addLogSubLevel(name); r = &reader; }
+  ~ReaderSubLevel() { r->removeLogSubLevel(); }
 private:
   ReaderHelper *r;
 };
