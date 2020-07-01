@@ -99,7 +99,7 @@ extern "C" {
  */
 typedef enum
 {
-  LIBHMDEC_OK = 0,            ///< No error occured
+  LIBHMDEC_OK = 0,            ///< No error occurred
   LIBHMDEC_ERROR,             ///< There was an unspecified error
   LIBHMDEC_ERROR_READ_ERROR   ///< There was an error reading the provided data
 } libHMDec_error;
@@ -121,7 +121,7 @@ HM_DEC_API libHMDec_context* libHMDec_new_decoder(void);
 
 /** Destroy an existing decoder.
  * \param decCtx The decoder context to destroy that was created with libHMDec_new_decoder
- * \return Return an error code or LIBHMDEC_OK if no error occured.
+ * \return Return an error code or LIBHMDEC_OK if no error occurred.
  */
 HM_DEC_API libHMDec_error libHMDec_free_decoder(libHMDec_context* decCtx);
 
@@ -148,7 +148,7 @@ HM_DEC_API void libHMDec_set_max_temporal_layer(libHMDec_context* decCtx, int ma
  * \param eof Is this NAL the last one in the bitstream?
  * \param bNewPicture This bool is set by the function if the NAL unit must be pushed to the decoder again after reading frames.
  * \param checkOutputPictures This bool is set by the function if pictures might be available (see libHMDec_get_picture).
- * \return An error code or LIBHMDEC_OK if no error occured
+ * \return An error code or LIBHMDEC_OK if no error occurred
  */
 HM_DEC_API libHMDec_error libHMDec_push_nal_unit(libHMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
 
@@ -323,7 +323,7 @@ HM_DEC_API libHMDec_BlockValue *libHMDEC_get_internal_info(libHMDec_context *dec
 /** Clear the internal storage for the internal info (the pointer returned by libHMDEC_get_internal_info).
  * If you no longer need the info in the internals vector, you can call this to free some space.
  * \param decCtx The decoder context that was created with libHMDec_new_decoder
- * \return An error code or LIBHMDEC_OK if no error occured
+ * \return An error code or LIBHMDEC_OK if no error occurred
  */
 HM_DEC_API libHMDec_error libHMDEC_clear_internal_info(libHMDec_context *decCtx);
 

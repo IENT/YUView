@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PARSERANNEXBVVC_H
-#define PARSERANNEXBVVC_H
+#pragma once
 
 #include <QSharedPointer>
 
@@ -59,7 +58,7 @@ public:
   QPair<int,int> getProfileLevel() override;
   QPair<int,int> getSampleAspectRatio() override;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  bool parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -74,7 +73,7 @@ protected:
 
     virtual QByteArray getNALHeader() const override;
     virtual bool isParameterSet() const override { return false; }  // We don't know yet
-    bool parse_nal_unit_header(const QByteArray &parameterSetData, parserCommon::TreeItem *root) override;
+    bool parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) override;
 
     bool isAUDelimiter() { return nal_unit_type_id == 19; }
 
@@ -90,5 +89,3 @@ protected:
   unsigned int counterAU{ 0 };
   unsigned int sizeCurrentAU{ 0 };
 };
-
-#endif //PARSERANNEXBVVC_H

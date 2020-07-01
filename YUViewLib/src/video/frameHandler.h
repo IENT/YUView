@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FRAMEHANDLER_H
-#define FRAMEHANDLER_H
+#pragma once
 
 #include <QImage>
 #include <QObject>
@@ -78,6 +77,9 @@ public:
   // valid but more specialized implementations may also check other things: For example the videoHandlerYUV also
   // checks if a valid YUV format is set.
   virtual bool isFormatValid() const { return frameSize.width() > 0 && frameSize.height() > 0; }
+
+  virtual QString getFormatAsString() const { return QString("%1;%2").arg(this->frameSize.width()).arg(this->frameSize.height()); }
+  virtual bool setFormatFromString(QString format);
 
   // Calculate the difference of this frameHandler to another frameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
@@ -137,5 +139,3 @@ protected slots:
   // All the valueChanged() signals from the controls are connected here.
   virtual void slotVideoControlChanged();
 };
-
-#endif // FRAMEHANDLER_H

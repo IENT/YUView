@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTTREEWIDGET_H
-#define PLAYLISTTREEWIDGET_H
+#pragma once
 
 #include <array>
 #include <QPointer>
@@ -206,5 +205,3 @@ private:
   void autoSavePlaylist();
   QTimer autosaveTimer;
 };
-
-#endif // PLAYLISTTREEWIDGET_H

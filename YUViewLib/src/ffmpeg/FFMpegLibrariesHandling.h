@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FFMPEGDECODERLIBHANDLING_H
-#define FFMPEGDECODERLIBHANDLING_H
+#pragma once
 
 #include <stdint.h>
 #include <assert.h>
@@ -448,7 +447,7 @@ enum class PacketType
   AUDIO,
   SUBTITLE_DVB,
   SUBTITLE_608,
-  SUBTITLE_OTHER
+  OTHER
 };
 
 // A wrapper around the different versions of the AVPacket versions.
@@ -891,5 +890,3 @@ private:
   static QStringList logListFFmpeg;
   static void avLogCallback(void *ptr, int level, const char *fmt, va_list vargs);
 };
-
-#endif // FFMPEGDECODERLIBHANDLING_H

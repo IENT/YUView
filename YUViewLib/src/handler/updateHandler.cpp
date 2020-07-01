@@ -32,6 +32,8 @@
 
 #include "updateHandler.h"
 
+#include "updateHandlerFile.h"
+
 #include <QCheckBox>
 #include <QDir>
 #include <QDirIterator>
@@ -51,159 +53,26 @@
 #include <ShellAPI.h> // without space also
 #endif
 
+// Don't abort in case a connection is not encrypted. 
+// ONLY USE THIS FOR DEBGGING
+#define ALLOW_UNENCRYPTED_CONNECTIONS 1
+
 #define UPDATER_DEBUG_OUTPUT 0
 #if UPDATER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_UPDATE qDebug
+#define DEBUG_UPDATE(msg) qDebug() << msg
 #else
-#define DEBUG_UPDATE(fmt,...) ((void)0)
+#define DEBUG_UPDATE(msg) ((void)0)
 #endif
 
-typedef QPair<QString, int> downloadFile;
-
-// ------------------ updateFileHandler helper class -----------------
 #define UPDATEFILEHANDLER_FILE_NAME "versioninfo.txt"
+#if ALLOW_UNENCRYPTED_CONNECTIONS
 #define UPDATEFILEHANDLER_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/master/win/autoupdate/"
 #define UPDATEFILEHANDLER_TESTDEPLOY_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/dev/win/autoupdate/"
-
-class updateFileHandler
-{
-public:
-  updateFileHandler() : loaded(false) {}
-  updateFileHandler(QString fileName) : loaded(false) { readFromFile(fileName); }
-  updateFileHandler(QByteArray &byteArray) : loaded(false) { readRemoteFromData(byteArray); }
-  // Parse the local file list and add all files that exist locally to the list of files
-  // which potentially might require an update.
-  void readFromFile(QString fileName)
-  {
-    DEBUG_UPDATE("updateFileHandler::readFromFile Current working dir %s", QDir::currentPath().toStdString().c_str());
-
-    // Open the file and get all files and their current version (int) from the file.
-    QFileInfo updateFileInfo(fileName);
-    if (!updateFileInfo.exists() || !updateFileInfo.isFile())
-    {
-      DEBUG_UPDATE("updateFileHandler::readFromFile local update file %s not found", fileName.toStdString().c_str());
-      return;
-    }
-
-    // Read all lines from the file
-    QFile updateFile(fileName);
-    if (updateFile.open(QIODevice::ReadOnly))
-    {
-      QTextStream in(&updateFile);
-      while (!in.atEnd())
-      {
-        // Convert the line into a file/version pair (they should be separated by a space)
-        QString line = in.readLine();
-        parseOneLine(line, true);
-      }
-      updateFile.close();
-    }
-    loaded = true;
-  }
-  // Parse the remote file from the given QByteArray. Remote files will not be checked for
-  // existence on the remote side. We assume that all files listed in the remote file list
-  // also exist on the remote side and can be downloaded.
-  void readRemoteFromData(QByteArray &arr)
-  {
-    QString reply = QString(arr);
-    QStringList lines = reply.split("\n");
-    for (QString line : lines)
-      parseOneLine(line);
-  }
-  // Parse one line from the update file list (remote or local)
-  void parseOneLine(QString &line, bool checkExistence=false)
-  {
-    QStringList lineSplit = line.split(" ");
-    if (line.startsWith("Last Commit"))
-    {
-      if (line.startsWith("Last Commit: "))
-        DEBUG_UPDATE("updateFileHandler::parseOneLine Local file last commit: %s", lineSplit[2].toStdString().c_str());
-      return;
-    }
-    // Ignore all lines that start with %, / or #
-    if (line.startsWith("%") || line.startsWith("/") || line.startsWith("#"))
-      return;
-    if (lineSplit.count() == 4)
-    {
-      fileListEntry entry(lineSplit);
-      
-      if (checkExistence)
-      {
-        // Check if the file exists locally
-        QFileInfo fInfo(entry.filePath);
-        if (fInfo.exists() && fInfo.isFile())
-          updateFileList.append(entry);
-        else
-          // The file does not exist locally. That is strange since it is in the update info file.
-          // Files that do not exist locally should always be downloaded so we don't put them into the list.
-          DEBUG_UPDATE("updateFileHandler::parseOneLine The local file %s could not be found.", fInfo.absoluteFilePath().toStdString().c_str());
-      }
-      else
-        // Do not check if the file exists
-        updateFileList.append(entry);
-    }
-  }
-  // Call this on the remote file list with a reference to the local file list to get a list
-  // of files that require an update (that need to be downloaded).
-  QList<downloadFile> getFilesToUpdate(updateFileHandler &localFiles)
-  {
-    QList<downloadFile> updateList;
-    for (auto remoteFile : updateFileList)
-    {
-      bool fileFound = false;
-      bool updateNeeded = false;
-      for(auto localFile : localFiles.updateFileList)
-      {
-        if (localFile.filePath.toLower() == remoteFile.filePath.toLower())
-        {
-          // File found. Do we need to update it?
-          updateNeeded = (localFile.version != remoteFile.version) || (localFile.hash != remoteFile.hash);
-          fileFound = true;
-          break;
-        }
-      }
-      if (!fileFound || updateNeeded)
-        updateList.append(downloadFile(remoteFile.filePath, remoteFile.fileSize));
-    }
-    // No matter what, we will update the "versioninfo.txt" file (assume it to be 10kbyte)
-    updateList.append(downloadFile(UPDATEFILEHANDLER_FILE_NAME, 10000));
-    return updateList;
-  }
-private:
-  // For every entry in the "versioninfo.txt" file, these entries present:
-  class fileListEntry
-  {
-  public:
-    fileListEntry(QStringList lineSplit)
-    {
-      filePath = lineSplit[0];
-      if (filePath.endsWith(","))
-        // There is a comma at the end. Remove it.
-        filePath.chop(1);
-      version = lineSplit[1];
-      if (version.endsWith(","))
-        version.chop(1);
-      hash = lineSplit[2];
-      if (hash.endsWith(","))
-        hash.chop(1);
-      QString sizeString = lineSplit[3];
-      if (sizeString.endsWith(","))
-        sizeString.chop(1);
-      fileSize = sizeString.toInt();
-    }
-    QString filePath; //< The file name and path
-    QString version;  //< The version of the file
-    QString hash;     //< A hash of the file (unused so far)
-    int fileSize;     //< The size of the file in bytes
-  };
-
-  // For every entry, there is the file path/name and a version string
-  QList<fileListEntry> updateFileList;
-  bool loaded;
-};
-
-// ------------------ updateHandler -----------------
+#else
+#define UPDATEFILEHANDLER_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/master/win/autoupdate/"
+#define UPDATEFILEHANDLER_TESTDEPLOY_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/dev/win/autoupdate/"
+#endif
 
 updateHandler::updateHandler(QWidget *mainWindow, bool useAltSources) :
   mainWidget(mainWindow)
@@ -211,7 +80,7 @@ updateHandler::updateHandler(QWidget *mainWindow, bool useAltSources) :
   // We always perform the update in the path that the current executable is located in
   // and not in the current working directory.
   QFileInfo info(QCoreApplication::applicationFilePath());
-  updatePath = info.absolutePath() + "/";
+  this->updatePath = info.absolutePath() + "/";
   useAlternativeSources = useAltSources;
 
   connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::replyFinished);
@@ -222,7 +91,7 @@ void updateHandler::sslErrors(QNetworkReply *reply, const QList<QSslError> &erro
 {
   Q_UNUSED(reply);
   Q_UNUSED(errors);
-  QMessageBox::information(mainWidget, "SSL Connection error", "An error occured while trying to establish a secure coonection to the server raw.githubusercontent.com.");
+  QMessageBox::information(mainWidget, "SSL Connection error", "An error occurred while trying to establish a secure coonection to the server raw.githubusercontent.com.");
   
   // Abort
   forceUpdate = false;
@@ -273,10 +142,17 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool force)
     // We are on windows and the update feature is available.
     // Check the Github repository branch binariesAutoUpdate if there is a new version of the YUView executable available.
     // First we will try to establish a secure connection to raw.githubusercontent.com
+#if ALLOW_UNENCRYPTED_CONNECTIONS
+    DEBUG_UPDATE("updateHandler::startCheckForNewVersion connectToHost raw.githubusercontent.com");
+    updaterStatus = updaterEstablishConnection;
+    userCheckRequest = userRequest;
+    networkManager.connectToHost("raw.githubusercontent.com");
+#else
     DEBUG_UPDATE("updateHandler::startCheckForNewVersion connectToHostEncrypted raw.githubusercontent.com");
     updaterStatus = updaterEstablishConnection;
     userCheckRequest = userRequest;
     networkManager.connectToHostEncrypted("raw.githubusercontent.com");
+#endif
   }
   else if (VERSION_CHECK)
   {
@@ -307,7 +183,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   QString errorString;
   if (error)
     errorString = reply->error();
-  DEBUG_UPDATE("updateHandler::replyFinished %s %d", error ? "error" : "", reply->error());
+  DEBUG_UPDATE("updateHandler::replyFinished " << (error ? "error " : "") << reply->error());
 
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN)
   {
@@ -329,47 +205,58 @@ void updateHandler::replyFinished(QNetworkReply *reply)
     }
     else if (updaterStatus == updaterChecking && !error)
     {
+#if !ALLOW_UNENCRYPTED_CONNECTIONS
       bool connectionEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
       if (!connectionEncrypted)
         return abortUpdate("The " UPDATEFILEHANDLER_FILE_NAME " file could not be downloaded using a secure connection.");
+#endif
 
       // We recieved the version info file. See what it contains.
       QByteArray updateFileInfo = reply->readAll();
-      updateFileHandler remoteFile(updateFileInfo);
 
-      // Next, also load the corresponding local file
-      updateFileHandler localFile(updatePath + UPDATEFILEHANDLER_FILE_NAME);
-
-      // Now compare the two so that we can download all files that require an update.
-      // A file will be updated if:
-      // - The version number of the remote and local file differ
-      // - If the remote file does not exist locally
-      // - If the file name is versioninfo.txt
-      downloadFiles = remoteFile.getFilesToUpdate(localFile);
-
-      if (downloadFiles.count() > 1)
+      if (updateFileInfo.size() == 0)
       {
-        // There are files to update besides the versioninfo.txt file.
-        // There is a new YUView version available. Do we ask the user first or do we just install?
-        QSettings settings;
-        settings.beginGroup("updates");
-        QString updateBehavior = settings.value("updateBehavior", "ask").toString();
-        if (updateBehavior == "auto" || forceUpdate)
-          // Don't ask. Just update.
-          downloadAndInstallUpdate();
-        else
+        error = true;
+        errorString = "The download of ther version info file was empty.";
+      }
+      else
+      {
+        updateFileHandler remoteFile(updateFileInfo);
+
+        // Next, also load the corresponding local file
+        updateFileHandler localFile(updatePath + UPDATEFILEHANDLER_FILE_NAME, this->updatePath);
+
+        // Now compare the two so that we can download all files that require an update.
+        // A file will be updated if:
+        // - The version number of the remote and local file differ
+        // - If the remote file does not exist locally
+        // - If the file name is versioninfo.txt
+        downloadFiles = remoteFile.getFilesToUpdate(localFile);
+
+        if (downloadFiles.count() > 1)
         {
-          // Ask the user if he wants to update.
-          UpdateDialog update(mainWidget);
-          if (update.exec() == QDialog::Accepted)
-            // The user pressed 'update'
+          // There are files to update besides the versioninfo.txt file.
+          // There is a new YUView version available. Do we ask the user first or do we just install?
+          QSettings settings;
+          settings.beginGroup("updates");
+          QString updateBehavior = settings.value("updateBehavior", "ask").toString();
+          if (updateBehavior == "auto" || forceUpdate)
+            // Don't ask. Just update.
             downloadAndInstallUpdate();
           else
-            updaterStatus = updaterIdle;
-        }
+          {
+            // Ask the user if he wants to update.
+            UpdateDialog update(mainWidget);
+            if (update.exec() == QDialog::Accepted)
+              // The user pressed 'update'
+              downloadAndInstallUpdate();
+            else
+              updaterStatus = updaterIdle;
+          }
 
-        reply->deleteLater();
-        return;
+          reply->deleteLater();
+          return;
+        }
       }
     }
   }
@@ -421,7 +308,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   {
     // Inform the user about the outcome of the check because he requested the check.
     if (error)
-      return abortUpdate("An error occured while checking for updates. Are you connected to the internet? " + errorString);
+      return abortUpdate("An error occurred while checking for updates. Are you connected to the internet? " + errorString);
     else
     {
       // The software is up to date but the user requested this check so tell him that no update is required.
@@ -438,7 +325,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
         // Suggest to activate automatic update checking
         QMessageBox msgBox(mainWidget);
         msgBox.setText("Your YUView version is up to date.");
-        msgBox.setInformativeText("Currently, automatic checking for updates is disabled. If you want to obtain the latest bugfixes and enhancements, we recomend to activate automatic update checks.");
+        msgBox.setInformativeText("Currently, automatic checking for updates is disabled. If you want to obtain the latest bugfixes and enhancements, we recommend to activate automatic update checks.");
         msgBox.setCheckBox(new QCheckBox("Check for updates"));
         msgBox.exec();
 
@@ -566,7 +453,7 @@ void updateHandler::downloadNextFile()
       currentDownloadFile.first[i] = '/';
   }
 
-  DEBUG_UPDATE("updateHandler::downloadNextFile %s", currentDownloadFile.first.toStdString().c_str());
+  DEBUG_UPDATE("updateHandler::downloadNextFile " << currentDownloadFile.first);
   QString fullURL;
   if (useAlternativeSources)
     fullURL = UPDATEFILEHANDLER_TESTDEPLOY_URL + currentDownloadFile.first;
@@ -584,9 +471,9 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
   bool error = (reply->error() != QNetworkReply::NoError);
   auto err = reply->error();
   bool downloadEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
-  DEBUG_UPDATE("updateHandler::downloadFinished %s %s %d", error ? "error" : "", downloadEncrypted ? "encrypted" : "not encrypted", reply->error());
+  DEBUG_UPDATE("updateHandler::downloadFinished " << (error ? "error " : "") << (downloadEncrypted ? "encrypted " : "not encrypted ") << reply->error());
   if (error)
-    return abortUpdate(QString("An error occured while downloading file %1. Error code %2 (%3).").arg(currentDownloadFile.first).arg(err).arg(reply->errorString()));
+    return abortUpdate(QString("An error occurred while downloading file %1. Error code %2 (%3).").arg(currentDownloadFile.first).arg(err).arg(reply->errorString()));
   else if (!downloadEncrypted)
     return abortUpdate(QString("File %1 could not be downloaded through a secure connection.").arg(currentDownloadFile.first));
   else
@@ -619,10 +506,10 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
             return abortUpdate(QString("YUView was unable to remove the file %1.").arg(renamedFilePath));
         if (!oldFile.rename(newName))
           return abortUpdate(QString("YUView was unable to remove or rename the file %1.").arg(fileInfo.fileName()));
-        DEBUG_UPDATE("updateHandler::downloadFinished The old file could not be deleted but was renamed to %s", newName.toStdString().c_str());
+        DEBUG_UPDATE("updateHandler::downloadFinished The old file could not be deleted but was renamed to " << newName);
       }
       else
-        DEBUG_UPDATE("updateHandler::downloadFinished Successfully deleted old file %s", fileInfo.fileName().toStdString().c_str());
+        DEBUG_UPDATE("updateHandler::downloadFinished Successfully deleted old file " << fileInfo.fileName());
     }
 
     // Second check: Is the file located in a subirectory that does not exist?
@@ -643,12 +530,12 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
     {
       newFile.write(data);
       newFile.close();
-      DEBUG_UPDATE("updateHandler::downloadFinished Written downloaded data to %s", currentDownloadFile.first.toStdString().c_str());
+      DEBUG_UPDATE("updateHandler::downloadFinished Written downloaded data to " << currentDownloadFile.first);
 
       if (downloadFiles.isEmpty())
       {
-        // No more files to download. Update successfull.
-        QMessageBox::information(mainWidget, "Update successfull.", "Update was successfull. We will now start the new version of YUView.");
+        // No more files to download. Update successfully.
+        QMessageBox::information(mainWidget, "Update successfully.", "Update was successful. We will now start the new version of YUView.");
 
         // Disconnect/delete the update progress dialog.
         if (downloadProgress)

@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VIDEOHANDLER_H
-#define VIDEOHANDLER_H
+#pragma once
 
 #include <QBasicTimer>
 #include <QFileInfo>
@@ -194,5 +193,3 @@ private slots:
   // Override the slotVideoControlChanged slot. For a videoHandler, also the number of frames might have changed.
   void slotVideoControlChanged() Q_DECL_OVERRIDE;
 };
-
-#endif // VIDEOHANDLER_H

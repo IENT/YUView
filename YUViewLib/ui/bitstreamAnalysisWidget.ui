@@ -149,7 +149,7 @@
         </layout>
        </item>
        <item>
-        <widget class="BitrateBarChart" name="bitrateBarChart" native="true"/>
+        <widget class="PlotViewWidget" name="plotViewWidget" native="true"/>
        </item>
       </layout>
      </widget>
@@ -170,9 +170,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>BitrateBarChart</class>
+   <class>PlotViewWidget</class>
    <extends>QWidget</extends>
-   <header>ui/bitstreamAnalysisBitratePlot.h</header>
+   <header>ui/views/plotViewWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

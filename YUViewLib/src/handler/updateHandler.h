@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef UPDATEHANDLER_H
-#define UPDATEHANDLER_H
+#pragma once
 
 #include <QNetworkAccessManager>
 #include <QPointer>
@@ -142,4 +141,3 @@ private:
   QString updatePath;
 };
 
-#endif // UPDATEHANDLER_H

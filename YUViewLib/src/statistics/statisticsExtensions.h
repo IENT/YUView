@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef STATISTICSEXTENSIONS_H
-#define STATISTICSEXTENSIONS_H
+#pragma once
 
 #include <QColor>
 #include <QMap>
@@ -252,6 +251,3 @@ public:
   // What is the size (area) of the biggest block)? This is needed for scaling the blocks according to their size.
   unsigned int maxBlockSize;
 };
-
-#endif // STATISTICSEXTENSIONS_H
-

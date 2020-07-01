@@ -37,7 +37,13 @@
 #include "common/functions.h"
 #include "playlistitem/playlistItem.h"
 
-// ------ Initialize the static list of frame size presets ----------
+// Activate this if you want to know when which buffer is loaded/converted to image and so on.
+#define FRAMEHANDLER_DEBUG_LOADING 0
+#if FRAMEHANDLER_DEBUG_LOADING && !NDEBUG
+#define DEBUG_FRAME qDebug
+#else
+#define DEBUG_FRAME(fmt,...) ((void)0)
+#endif
 
 class frameHandler::frameSizePresetList
 {
@@ -79,16 +85,6 @@ QStringList frameHandler::frameSizePresetList::getFormattedNames() const
 }
 
 frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
-
-// ---------------- frameHandler ---------------------------------
-
-// Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define FRAMEHANDLER_DEBUG_LOADING 0
-#if FRAMEHANDLER_DEBUG_LOADING && !NDEBUG
-#define DEBUG_FRAME qDebug
-#else
-#define DEBUG_FRAME(fmt,...) ((void)0)
-#endif
 
 frameHandler::frameHandler()
 {
@@ -401,4 +397,23 @@ QStringPairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameId
   }
 
   return values;
+}
+
+bool frameHandler::setFormatFromString(QString format)
+{
+  auto split = format.split(";");
+  if (split.length() != 2)
+    return false;
+
+  bool ok;
+  auto newWidth = split[0].toInt(&ok);
+  if (!ok)
+    return false;
+
+  auto newHeight = split[1].toInt(&ok);
+  if (!ok)
+    return false;
+
+  this->setFrameSize(QSize(newWidth, newHeight));
+  return true;
 }

@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEM_H
-#define PLAYLISTITEM_H
+#pragma once
 
 #include <QDir>
 #include <QTreeWidgetItem>
@@ -304,5 +303,3 @@ private:
   // The UI
   SafeUi<Ui::playlistItem> ui;
 };
-
-#endif // PLAYLISTITEM_H

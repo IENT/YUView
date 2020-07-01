@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DECODERVTM_H
-#define DECODERVTM_H
+#pragma once
 
 #include <QLibrary>
 
@@ -125,7 +124,7 @@ private:
   int nrSignals { 0 };
 
   // Convert from libde265 types to YUView types
-  YUVSubsamplingType convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt);
+  YUV_Internals::Subsampling convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt);
 
   // Add the statistics supported by the HM decoder
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
@@ -140,5 +139,3 @@ private:
   void copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst);   // Copy the raw data from the de265_image source *src to the byte array
 #endif  
 };
-
-#endif // DECODERVTM_H

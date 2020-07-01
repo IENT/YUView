@@ -459,7 +459,7 @@
             </item>
             <item>
              <property name="text">
-              <string>Always aks before an update</string>
+              <string>Always ask before an update</string>
              </property>
             </item>
            </widget>
@@ -706,10 +706,10 @@
          <item row="0" column="2">
           <widget class="QPushButton" name="pushButtonDecoderSelectPath">
            <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="whatsThis">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
             <string/>
@@ -726,10 +726,10 @@
          <item row="0" column="1">
           <widget class="QLineEdit" name="lineEditDecoderPath">
            <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="whatsThis">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -739,10 +739,10 @@
          <item row="0" column="0">
           <widget class="QLabel" name="labelDecoderPath">
            <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="whatsThis">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given sepcific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
             <string>Decoder Search Path</string>

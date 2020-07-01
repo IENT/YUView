@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PARSERANNEXBMPEG2_H
-#define PARSERANNEXBMPEG2_H
+#pragma once
 
 #include "parserAnnexB.h"
 
@@ -48,7 +47,7 @@ public:
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, parserCommon::BitrateItemModel *bitrateModel, parserCommon::TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  bool parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
 
   // TODO: Reading from raw mpeg2 streams not supported (yet? Is this even defined / possible?)
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE { Q_UNUSED(iFrameNr); Q_UNUSED(filePos); return QList<QByteArray>(); }
@@ -84,8 +83,8 @@ private:
     nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src);
     virtual ~nal_unit_mpeg2() {}
 
-    // Parse the parameter set from the given data bytes. If a parserCommon::TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parse_nal_unit_header(const QByteArray &header_byte, parserCommon::TreeItem *root) Q_DECL_OVERRIDE;
+    // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
+    bool parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root) Q_DECL_OVERRIDE;
 
     virtual QByteArray getNALHeader() const override;
     virtual bool isParameterSet() const override { return nal_unit_type == SEQUENCE_HEADER; }
@@ -102,7 +101,7 @@ private:
   struct sequence_header : nal_unit_mpeg2
   {
     sequence_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
-    bool parse_sequence_header(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool parse_sequence_header(const QByteArray &parameterSetData, TreeItem *root);
 
     unsigned int sequence_header_code;
     unsigned int horizontal_size_value;
@@ -122,7 +121,7 @@ private:
   struct picture_header : nal_unit_mpeg2
   {
     picture_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
-    bool parse_picture_header(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool parse_picture_header(const QByteArray &parameterSetData, TreeItem *root);
     bool isIntraPicture() const { return picture_coding_type == 1; };
     QString getPictureTypeString() const;
 
@@ -139,7 +138,7 @@ private:
   struct group_of_pictures_header : nal_unit_mpeg2
   {
     group_of_pictures_header(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {};
-    bool parse_group_of_pictures_header(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool parse_group_of_pictures_header(const QByteArray &parameterSetData, TreeItem *root);
 
     unsigned int time_code;
     bool closed_gop;
@@ -149,7 +148,7 @@ private:
   struct user_data : nal_unit_mpeg2
   {
     user_data(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
-    bool parse_user_data(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool parse_user_data(const QByteArray &parameterSetData, TreeItem *root);
   };
 
   enum nal_extension_type
@@ -171,7 +170,7 @@ private:
     nal_extension(const nal_unit_mpeg2 &nal) : nal_unit_mpeg2(nal) {}
     nal_extension(QSharedPointer<nal_extension> src) : nal_unit_mpeg2(src) { extension_start_code_identifier = src->extension_start_code_identifier; extension_type = src->extension_type; }
     // Peek the extension start code identifier (4 bits) in the payload
-    bool parse_extension_start_code(QByteArray &extension_payload, parserCommon::TreeItem *root);
+    bool parse_extension_start_code(QByteArray &extension_payload, TreeItem *root);
 
     unsigned int extension_start_code_identifier;
     nal_extension_type extension_type;
@@ -181,7 +180,7 @@ private:
   struct sequence_extension : nal_extension
   {
     sequence_extension(const nal_extension &nal) : nal_extension(nal) {}
-    bool parse_sequence_extension(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool parse_sequence_extension(const QByteArray &parameterSetData, TreeItem *root);
 
     unsigned int profile_and_level_indication;
     bool progressive_sequence;
@@ -202,7 +201,7 @@ private:
   struct picture_coding_extension : nal_extension
   {
     picture_coding_extension(const nal_extension &nal) : nal_extension(nal) {}
-    bool parse_picture_coding_extension(const QByteArray &parameterSetData, parserCommon::TreeItem *root);
+    bool parse_picture_coding_extension(const QByteArray &parameterSetData, TreeItem *root);
 
     unsigned int f_code[2][2];
     unsigned int intra_dc_precision;
@@ -235,8 +234,6 @@ private:
   unsigned int counterAU{ 0 };
   bool lastAUStartBySequenceHeader{ false };
   bool currentAUAllSlicesIntra {true};
-  QString currentAUAllSliceTypes;
+  QMap<QString, unsigned int> currentAUSliceTypes;
   QSharedPointer<picture_header> lastPictureHeader;
 };
-
-#endif // PARSERANNEXBMPEG2_H

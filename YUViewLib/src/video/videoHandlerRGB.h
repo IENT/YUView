@@ -30,57 +30,11 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VIDEOHANDLERRGB_H
-#define VIDEOHANDLERRGB_H
+#pragma once
 
 #include "ui_videoHandlerRGB.h"
-#include "ui_videoHandlerRGB_CustomFormatDialog.h"
 #include "videoHandler.h"
-
-namespace RGB_Internals
-{
-  // This class defines a specific RGB format with all properties like order of R/G/B, bitsPerValue, planarity...
-  class rgbPixelFormat
-  {
-  public:
-    // The default constructor (will create an "Unknown Pixel Format")
-    rgbPixelFormat() {}
-    rgbPixelFormat(int bitsPerValue, bool planar, int posR=0, int posG=1, int posB=2, int posA=-1);
-    bool operator==(const rgbPixelFormat &a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
-    bool operator!=(const rgbPixelFormat &a) const { return getName()!= a.getName(); }
-    bool operator==(const QString &a) const { return getName() == a; }
-    bool operator!=(const QString &a) const { return getName() != a; }
-    bool isValid() const { return bitsPerValue > 0 && posR != posG && posR != posB && posG != posB; }
-    int  nrChannels() const { return posA == -1 ? 3 : 4; }
-    bool hasAlphaChannel() const { return posA != -1; }
-    // Get a name representation of this item (this will be unique for the set parameters)
-    QString getName() const;
-    void setFromName(const QString &name);
-    // Get/Set the RGB format from string (accepted string are: "RGB", "BGR", ...)
-    QString getRGBFormatString() const;
-    void setRGBFormatFromString(const QString &sFormat);
-    // Get the number of bytes for a frame with this rgbPixelFormat and the given size
-    int64_t bytesPerFrame(const QSize &frameSize) const;
-    // The order of each component (E.g. for GBR this is posR=2,posG=0,posB=1)
-    int posR {0};
-    int posG {1};
-    int posB {2};
-    int posA {-1};  // The position of alpha can be -1 (no alpha channel)
-    int bitsPerValue {-1};
-    bool planar {false};
-  };
-}
-
-class videoHandlerRGB_CustomFormatDialog : public QDialog, private Ui::CustomRGBFormatDialog
-{
-  Q_OBJECT
-
-public:
-  videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar);
-  QString getRGBFormat() const;
-  int getBitDepth() const { return bitDepthSpinBox->value(); }
-  bool getPlanar() const { return planarCheckBox->isChecked(); }
-};
+#include "rgbPixelFormat.h"
 
 /** The videoHandlerRGB can be used in any playlistItem to read/display RGB data. A playlistItem could even provide multiple RGB videos.
   * A videoHandlerRGB supports handling of RGB data and can return a specific frame as a image by calling getOneFrame.
@@ -107,6 +61,9 @@ public:
   // If a file size is given, it is tested if the RGB format and the file size match.
   virtual void setFormatFromCorrelation(const QByteArray &rawRGBData, int64_t fileSize=-1) Q_DECL_OVERRIDE { /* TODO */ Q_UNUSED(rawRGBData); Q_UNUSED(fileSize); }
 
+  virtual QString getFormatAsString() const override { return frameHandler::getFormatAsString() + ";RGB;" + this->srcPixelFormat.getName(); }
+  virtual bool setFormatFromString(QString format) override;
+
   // Create the RGB controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change.
@@ -116,8 +73,8 @@ public:
   virtual QString getRawRGBPixelFormatName() const { return srcPixelFormat.getName(); }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, RECACHE_NONE); }
-  void setRGBPixelFormat(const RGB_Internals::rgbPixelFormat &format, bool emitSignal=false) { setSrcPixelFormat(format); if (emitSignal) emit signalHandlerChanged(true, RECACHE_NONE); }
+  virtual void setRGBPixelFormat(const RGB_Internals::rgbPixelFormat &format, bool emitSignal=false) { setSrcPixelFormat(format); if (emitSignal) emit signalHandlerChanged(true, RECACHE_NONE); }
+  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { this->setRGBPixelFormat(RGB_Internals::rgbPixelFormat(name), emitSignal); }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
@@ -215,5 +172,3 @@ private slots:
   void slotDisplayOptionsChanged();
 
 };
-
-#endif // VIDEOHANDLERRGB_H

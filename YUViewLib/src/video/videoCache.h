@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VIDEOCACHE_H
-#define VIDEOCACHE_H
+#pragma once
 
 #include <QDockWidget>
 #include <QElapsedTimer>
@@ -198,5 +197,3 @@ private:
   QElapsedTimer testDuration;                   //< Used to obtain the duration of the test
   void testFinished();                          //< Report the test results and stop the testProgrssUpdateTimer
 };
-
-#endif // VIDEOCACHE_H

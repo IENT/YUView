@@ -30,9 +30,9 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PARSERAV1OBU_H
-#define PARSERAV1OBU_H
+#pragma once
 
+#include "common/ReaderHelper.h"
 #include "parserBase.h"
 #include "video/videoHandlerYUV.h"
 
@@ -46,7 +46,7 @@ public:
     parserAV1OBU(QObject *parent = nullptr);
     ~parserAV1OBU() {}
 
-    unsigned int parseAndAddOBU(int obuID, QByteArray data, parserCommon::TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
+    unsigned int parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
 
     // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
     // When parsing of raw OBU files is added, we will need this.
@@ -91,7 +91,7 @@ protected:
     virtual ~obu_unit() {} // This class is meant to be derived from.
 
     // Parse the header the given data bytes.
-    bool parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, parserCommon::TreeItem *root);
+    bool parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, TreeItem *root);
 
     // Pointer to the first byte of the start code of the NAL unit
     QUint64Pair filePosStartEnd;
@@ -122,7 +122,7 @@ protected:
   struct sequence_header : obu_unit
   {
     sequence_header(const obu_unit &obu) : obu_unit(obu) {};
-    bool parse_sequence_header(const QByteArray &sequenceHeaderData, parserCommon::TreeItem *root);
+    bool parse_sequence_header(const QByteArray &sequenceHeaderData, TreeItem *root);
 
     unsigned int seq_profile;
     bool still_picture;
@@ -141,7 +141,7 @@ protected:
 
     struct timing_info_struct
     {
-      bool parse_timing_info(parserCommon::reader_helper &reader);
+      bool parse_timing_info(ReaderHelper &reader);
 
       unsigned int num_units_in_display_tick;
       unsigned int time_scale;
@@ -152,7 +152,7 @@ protected:
 
     struct decoder_model_info_struct
     {
-      bool parse_decoder_model(parserCommon::reader_helper &reader);
+      bool parse_decoder_model(ReaderHelper &reader);
 
       unsigned int buffer_delay_length_minus_1;
       unsigned int num_units_in_decoding_tick;
@@ -163,7 +163,7 @@ protected:
 
     struct operating_parameters_info_struct
     {
-      bool parse_operating_parameters_info(parserCommon::reader_helper &reader, int op, decoder_model_info_struct &dmodel);
+      bool parse_operating_parameters_info(ReaderHelper &reader, int op, decoder_model_info_struct &dmodel);
 
       QList<unsigned int> decoder_buffer_delay;
       QList<unsigned int> encoder_buffer_delay;
@@ -206,7 +206,7 @@ protected:
 
     struct color_config_struct
     {
-      bool parse_color_config(parserCommon::reader_helper &reader, int seq_profile);
+      bool parse_color_config(ReaderHelper &reader, int seq_profile);
 
       bool high_bitdepth;
       bool twelve_bit;
@@ -319,9 +319,9 @@ protected:
   struct frame_header : obu_unit
   {
     frame_header(const obu_unit &obu) : obu_unit(obu) {};
-    bool parse_frame_header(const QByteArray &sequenceHeaderData, parserCommon::TreeItem *root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
+    bool parse_frame_header(const QByteArray &sequenceHeaderData, TreeItem *root, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
 
-    bool parse_uncompressed_header(parserCommon::reader_helper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
+    bool parse_uncompressed_header(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
     void mark_ref_frames(int idLen, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
 
     bool show_existing_frame;
@@ -358,14 +358,14 @@ protected:
 
     QList<unsigned int> ref_order_hint;
 
-    bool parse_frame_size(parserCommon::reader_helper &reader, QSharedPointer<sequence_header> seq_header);
-    bool parse_frame_size_with_refs(parserCommon::reader_helper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
+    bool parse_frame_size(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header);
+    bool parse_frame_size_with_refs(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header, global_decoding_values &decValues);
     unsigned int frame_width_minus_1;
     unsigned int frame_height_minus_1;
     unsigned int FrameWidth;
     unsigned int FrameHeight;
 
-    bool parse_superres_params(parserCommon::reader_helper &reader, QSharedPointer<sequence_header> seq_header);
+    bool parse_superres_params(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header);
     bool use_superres;
     unsigned int coded_denom;
     unsigned int SuperresDenom;
@@ -375,7 +375,7 @@ protected:
     int MiCols;
     int MiRows;
 
-    bool parse_render_size(parserCommon::reader_helper &reader);
+    bool parse_render_size(ReaderHelper &reader);
     bool render_and_frame_size_different;
     unsigned int render_width_minus_1;
     unsigned int render_height_minus_1;
@@ -389,7 +389,7 @@ protected:
 
     struct frame_refs_struct
     {
-      bool set_frame_refs(parserCommon::reader_helper &reader, int OrderHintBits, bool enable_order_hint, int last_frame_idx, int gold_frame_idx, int OrderHint, global_decoding_values &decValues);
+      bool set_frame_refs(ReaderHelper &reader, int OrderHintBits, bool enable_order_hint, int last_frame_idx, int gold_frame_idx, int OrderHint, global_decoding_values &decValues);
 
       int find_latest_backward(int curFrameHint);
       int find_earliest_backward(int curFrameHint);
@@ -411,7 +411,7 @@ protected:
 
     bool disable_frame_end_update_cdf;
 
-    bool read_interpolation_filter(parserCommon::reader_helper &reader);
+    bool read_interpolation_filter(ReaderHelper &reader);
     bool is_filter_switchable;
     enum interpolation_filter_enum
     {
@@ -425,7 +425,7 @@ protected:
 
     struct tile_info_struct
     {
-      bool parse_tile_info(int MiCols, int MiRows, parserCommon::reader_helper &reader, QSharedPointer<sequence_header> seq_header);
+      bool parse_tile_info(int MiCols, int MiRows, ReaderHelper &reader, QSharedPointer<sequence_header> seq_header);
 
       int sbCols, sbRows;
       int sbShift;
@@ -460,8 +460,8 @@ protected:
 
     struct quantization_params_struct
     {
-      bool parse_quantization_params(parserCommon::reader_helper &reader, QSharedPointer<sequence_header> seq_header);
-      bool read_delta_q(QString deltaValName, int &delta_q, parserCommon::reader_helper &reader);
+      bool parse_quantization_params(ReaderHelper &reader, QSharedPointer<sequence_header> seq_header);
+      bool read_delta_q(QString deltaValName, int &delta_q, ReaderHelper &reader);
 
       unsigned int base_q_idx;
       bool diff_uv_delta;
@@ -479,7 +479,7 @@ protected:
 
     struct segmentation_params_struct
     {
-      bool parse_segmentation_params(int primary_ref_frame, parserCommon::reader_helper &reader);
+      bool parse_segmentation_params(int primary_ref_frame, ReaderHelper &reader);
 
       bool segmentation_enabled;
       bool segmentation_update_map;
@@ -496,7 +496,7 @@ protected:
 
     struct delta_q_params_struct
     {
-      bool parse_delta_q_params(int base_q_idx, parserCommon::reader_helper &reader);
+      bool parse_delta_q_params(int base_q_idx, ReaderHelper &reader);
 
       unsigned int delta_q_res;
       bool delta_q_present;
@@ -505,7 +505,7 @@ protected:
 
     struct delta_lf_params_struct
     {
-      bool parse_delta_lf_params(bool delta_q_present, bool allow_intrabc, parserCommon::reader_helper &reader);
+      bool parse_delta_lf_params(bool delta_q_present, bool allow_intrabc, ReaderHelper &reader);
 
       bool delta_lf_present;
       unsigned int  delta_lf_res;
@@ -523,7 +523,7 @@ protected:
 
     struct loop_filter_params_struct
     {
-      bool parse_loop_filter_params(bool CodedLossless, bool allow_intrabc, parserCommon::reader_helper &reader, QSharedPointer<sequence_header> seq_header);
+      bool parse_loop_filter_params(bool CodedLossless, bool allow_intrabc, ReaderHelper &reader, QSharedPointer<sequence_header> seq_header);
 
       unsigned int loop_filter_level[4];
       int loop_filter_ref_deltas[8];
@@ -538,7 +538,7 @@ protected:
 
     struct cdef_params_struct
     {
-      bool parse_cdef_params(bool CodedLossless, bool allow_intrabc, parserCommon::reader_helper &reader, QSharedPointer<sequence_header> seq_header);
+      bool parse_cdef_params(bool CodedLossless, bool allow_intrabc, ReaderHelper &reader, QSharedPointer<sequence_header> seq_header);
 
       unsigned int cdef_bits;
       unsigned int cdef_y_pri_strength[16];
@@ -557,5 +557,3 @@ protected:
 
   QSharedPointer<sequence_header> active_sequence_header;
 };
-
-#endif // PARSERAV1OBU_H

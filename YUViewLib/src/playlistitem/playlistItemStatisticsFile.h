@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMSTATISTICSFILE_H
-#define PLAYLISTITEMSTATISTICSFILE_H
+#pragma once
 
 #include <QBasicTimer>
 #include <QFuture>
@@ -123,5 +122,3 @@ protected:
 
   int currentDrawnFrameIdx;
 };
-
-#endif // PLAYLISTITEMSTATISTICSFILE_H

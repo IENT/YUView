@@ -228,12 +228,11 @@ bool decoderVTM::getNextFrameFromDecoder()
   if (!picSize.isValid())
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
   auto subsampling = convertFromInternalSubsampling(libVTMDec_get_chroma_format(currentVTMPic));
-  if (subsampling == YUV_NUM_SUBSAMPLINGS)
+  if (subsampling == Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
   int bitDepth = libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
-  int poc = libVTMDec_get_POC(currentVTMPic);
 
   if (!frameSize.isValid() && !formatYUV.isValid())
   {
@@ -245,14 +244,14 @@ bool decoderVTM::getNextFrameFromDecoder()
   {
     // Check the values against the previously set values
     if (frameSize != picSize)
-      return setErrorB("Recieved a frame of different size");
+      return setErrorB("Received a frame of different size");
     if (formatYUV.subsampling != subsampling)
-      return setErrorB("Recieved a frame with different subsampling");
+      return setErrorB("Received a frame with different subsampling");
     if (formatYUV.bitsPerSample != bitDepth)
-      return setErrorB("Recieved a frame with different bit depth");
+      return setErrorB("Received a frame with different bit depth");
   }
   
-  DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame wit POC %d", poc);
+  DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame wit POC %d", libVTMDec_get_POC(currentVTMPic));
   currentOutputBuffer.clear();
   return true;
 }
@@ -267,7 +266,7 @@ bool decoderVTM::pushData(QByteArray &data)
 
   bool endOfFile = (data.length() == 0);
   if (endOfFile)
-    DEBUG_DECVTM("decoderVTM::pushData: Recieved empty packet. Setting EOF.");
+    DEBUG_DECVTM("decoderVTM::pushData: Received empty packet. Setting EOF.");
 
   // Push the data of the NAL unit. The function libVTMDec_push_nal_unit can handle data 
   // with a start code and without.
@@ -397,6 +396,8 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
 
 void decoderVTM::cacheStatistics(libVTMDec_picture *img)
 {
+  Q_UNUSED(img);
+
   if (!internalsSupported)
     return;
 
@@ -405,21 +406,21 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
   // Clear the local statistics cache
   curPOCStats.clear();
 
-  // Conversion from intra prediction mode to vector.
-  // Coordinates are in x,y with the axes going right and down.
-  static const int vectorTable[35][2] = 
-  {
-    {0,0}, {0,0},
-    {32, -32},
-    {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
-    {32,   0},
-    {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
-    {32,  32},
-    {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
-    {0,   32},
-    {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
-    {-32, 32} 
-  };
+  // // Conversion from intra prediction mode to vector.
+  // // Coordinates are in x,y with the axes going right and down.
+  // static const int vectorTable[35][2] = 
+  // {
+  //   {0,0}, {0,0},
+  //   {32, -32},
+  //   {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
+  //   {32,   0},
+  //   {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
+  //   {32,  32},
+  //   {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
+  //   {0,   32},
+  //   {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
+  //   {-32, 32} 
+  // };
 
   //// Get all the statistics
   //// TODO: Could we only retrieve the statistics that are active/displayed?
@@ -462,6 +463,8 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
 
 void decoderVTM::fillStatisticList(statisticHandler &statSource) const
 {
+  Q_UNUSED(statSource);
+  
   // Ask the decoder how many internals types there are
   // unsigned int nrTypes = libVTMDec_get_internal_type_number();
 
@@ -575,17 +578,16 @@ bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)
   return !testDecoder.errorInDecoder();
 }
 
-YUVSubsamplingType decoderVTM::convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt)
+Subsampling decoderVTM::convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt)
 {
   if (fmt == LIBVTMDEC_CHROMA_400)
-    return YUV_400;
+    return Subsampling::YUV_400;
   if (fmt == LIBVTMDEC_CHROMA_420)
-    return YUV_420;
+    return Subsampling::YUV_420;
   if (fmt == LIBVTMDEC_CHROMA_422)
-    return YUV_422;
+    return Subsampling::YUV_422;
   if (fmt == LIBVTMDEC_CHROMA_444)
-    return YUV_444;
+    return Subsampling::YUV_444;
 
-  // Invalid
-  return YUV_NUM_SUBSAMPLINGS;
+  return Subsampling::UNKNOWN;
 }

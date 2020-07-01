@@ -41,6 +41,7 @@
 #include "common/typedef.h"
 
 using namespace YUView;
+using namespace YUV_Internals;
 
 // Debug the decoder (0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define DECODERDAV1D_DEBUG_OUTPUT 0
@@ -254,7 +255,7 @@ bool decoderDav1d::decodeFrame()
     if (!s.isValid())
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid frame size");
     auto subsampling = curPicture.getSubsampling();
-    if (subsampling == YUV_NUM_SUBSAMPLINGS)
+    if (subsampling == Subsampling::UNKNOWN)
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid subsampling");
     int bitDepth = curPicture.getBitDepth();
     if (bitDepth < 8 || bitDepth > 16)
@@ -270,11 +271,11 @@ bool decoderDav1d::decodeFrame()
     {
       // Check the values against the previously set values
       if (frameSize != s)
-        return setErrorB("Recieved a frame of different size");
+        return setErrorB("Received a frame of different size");
       if (formatYUV.subsampling != subsampling)
-        return setErrorB("Recieved a frame with different subsampling");
+        return setErrorB("Received a frame with different subsampling");
       if (formatYUV.bitsPerSample != bitDepth)
-        return setErrorB("Recieved a frame with different bit depth");
+        return setErrorB("Received a frame with different bit depth");
     }
     DEBUG_DAV1D("decoderDav1d::decodeFrame Picture decoded - switching to retrieve frame mode");
 
@@ -352,7 +353,7 @@ bool decoderDav1d::pushData(QByteArray &data)
       if (!s.isValid())
         DEBUG_DAV1D("decoderDav1d::pushData got invalid frame size");
       auto subsampling = convertFromInternalSubsampling(seq.layout);
-      if (subsampling == YUV_NUM_SUBSAMPLINGS)
+      if (subsampling == Subsampling::UNKNOWN)
         DEBUG_DAV1D("decoderDav1d::pushData got invalid subsampling");
       int bitDepth = (seq.hbd == 0 ? 8 : (seq.hbd == 1 ? 10 : (seq.hbd == 2 ? 12 : -1)));
       if (bitDepth < 8 || bitDepth > 16)
@@ -413,18 +414,18 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
 #endif
 {
   // How many image planes are there?
-  int nrPlanes = (src.getSubsampling() == YUV_400) ? 1 : 3;
+  int nrPlanes = (src.getSubsampling() == Subsampling::YUV_400) ? 1 : 3;
   
   // At first get how many bytes we are going to write
-  const int nrBytesPerSample = (src.getBitDepth() > 8) ? 2 : 1;
-  const QSize framSize = src.getFrameSize();
+  const auto nrBytesPerSample = (src.getBitDepth() > 8) ? 2 : 1;
+  const auto framSize = src.getFrameSize();
   int nrBytes = frameSize.width() * frameSize.height() * nrBytesPerSample;
-  YUVSubsamplingType layout = src.getSubsampling();
-  if (layout == YUV_420)
+  auto layout = src.getSubsampling();
+  if (layout == Subsampling::YUV_420)
     nrBytes += (frameSize.width() / 2) * (frameSize.height() / 2) * 2 * nrBytesPerSample;
-  else if (layout == YUV_422)
+  else if (layout == Subsampling::YUV_422)
     nrBytes += (frameSize.width() / 2) * frameSize.height() * 2 * nrBytesPerSample;
-  else if (layout == YUV_444)
+  else if (layout == Subsampling::YUV_444)
     nrBytes += frameSize.width() * frameSize.height() * 2 * nrBytesPerSample;
 
   DEBUG_DAV1D("decoderDav1d::copyImgToByteArray nrBytes %d", nrBytes);
@@ -442,9 +443,9 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
     int height = framSize.height();
     if (c != 0)
     {
-      if (layout == YUV_420 || layout == YUV_422)
+      if (layout == Subsampling::YUV_420 || layout == Subsampling::YUV_422)
         width /= 2;
-      if (layout == YUV_420)
+      if (layout == Subsampling::YUV_420)
         height /= 2;
     }
     const size_t widthInBytes = width * nrBytesPerSample;
@@ -514,19 +515,18 @@ QStringList decoderDav1d::getLibraryNames()
     return QStringList() << "libdav1d-internals" << "libdav1d";
 }
 
-YUVSubsamplingType decoderDav1d::convertFromInternalSubsampling(Dav1dPixelLayout layout)
+Subsampling decoderDav1d::convertFromInternalSubsampling(Dav1dPixelLayout layout)
 {
   if (layout == DAV1D_PIXEL_LAYOUT_I400)
-    return YUV_400;
+    return Subsampling::YUV_400;
   else if (layout == DAV1D_PIXEL_LAYOUT_I420)
-    return YUV_420;
+    return Subsampling::YUV_420;
   else if (layout == DAV1D_PIXEL_LAYOUT_I422)
-    return YUV_422;
+    return Subsampling::YUV_422;
   else if (layout == DAV1D_PIXEL_LAYOUT_I444)
-    return YUV_444;
+    return Subsampling::YUV_444;
 
-  // Invalid
-  return YUV_NUM_SUBSAMPLINGS;
+  return Subsampling::UNKNOWN;
 }
 
 void decoderDav1d::fillStatisticList(statisticHandler &statSource) const

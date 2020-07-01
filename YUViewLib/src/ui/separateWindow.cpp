@@ -35,7 +35,7 @@
 #include <QSettings>
 
 SeparateWindow::SeparateWindow() :
-  splitView(this, true)
+  splitView(this)
 {
   setCentralWidget(&splitView);
   splitView.setAttribute(Qt::WA_AcceptTouchEvents);

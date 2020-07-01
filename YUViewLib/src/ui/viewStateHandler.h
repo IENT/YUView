@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VIEWSTATEHANDLER_H
-#define VIEWSTATEHANDLER_H
+#pragma once
 
 #include <QPoint>
 #include <QPointer>
@@ -118,5 +117,3 @@ private:
   QPointer<splitViewWidget> splitView[2];
   QPointer<PlaylistTreeWidget> playlist;
 };
-
-#endif // VIEWSTATEHANDLER_H

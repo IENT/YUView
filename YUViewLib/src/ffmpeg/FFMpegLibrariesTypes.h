@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FFMPEGLIBRARYTYPES_H
-#define FFMPEGLIBRARYTYPES_H
+#pragma once
 
 #include <stdint.h>
 #include <errno.h>
@@ -341,5 +340,3 @@ namespace FFmpeg
     AV_SAMPLE_FMT_NB           ///< Number of sample formats. DO NOT USE if linking dynamically
   };
 }
-
-#endif // FFMPEGLIBRARYTYPES_H

@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILESOURCEFFMPEGFILE_H
-#define FILESOURCEFFMPEGFILE_H
+#pragma once
 
 #include "fileSource.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
@@ -186,5 +185,3 @@ protected:
   // We will keep the last buffer in case the reader wants to get it again
   QByteArray lastReturnArray;
 };
-
-#endif // FILESOURCEFFMPEGFILE_H

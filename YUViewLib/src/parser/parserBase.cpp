@@ -34,8 +34,6 @@
 
 #include <assert.h>
 
-using namespace parserCommon;
-
 #define PARSERBASE_DEBUG_OUTPUT 0
 #if PARSERBASE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -49,7 +47,7 @@ using namespace parserCommon;
 parserBase::parserBase(QObject *parent) : QObject(parent)
 {
   packetModel.reset(new PacketItemModel(parent));
-  bitrateItemModel.reset(new BitrateItemModel(parent));
+  bitrateItemModel.reset(new BitratePlotModel());
   streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
   streamIndexFilter->setSourceModel(packetModel.data());
 }
@@ -67,5 +65,18 @@ void parserBase::enableModel()
 void parserBase::updateNumberModelItems()
 { 
   packetModel->updateNumberModelItems();
-  bitrateItemModel->updateNumberModelItems();
+}
+
+QString parserBase::convertSliceTypeMapToString(QMap<QString, unsigned int> &sliceTypes)
+{
+  QString text;
+  for (auto key : sliceTypes.keys())
+  {
+    text += key;
+    const auto value = sliceTypes.value(key);
+    if (value > 1)
+      text += QString("(%1x)").arg(value);
+    text += " ";
+  }
+  return text;
 }

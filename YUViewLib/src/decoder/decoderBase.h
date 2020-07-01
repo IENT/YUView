@@ -30,8 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DECODERBASE_H
-#define DECODERBASE_H
+#pragma once
 
 #include <QLibrary>
 
@@ -159,5 +158,3 @@ protected:
   QLibrary library;
   QString libraryPath;
 };
-
-#endif // DECODERBASE_H

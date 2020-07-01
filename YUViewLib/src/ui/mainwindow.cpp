@@ -80,8 +80,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   connect(ui.displaySplitView, &splitViewWidget::signalToggleFullScreen, this, &MainWindow::toggleFullscreen);
 
   // Setup primary/separate splitView
-  ui.displaySplitView->setSeparateWidget(&separateViewWindow.splitView);
-  separateViewWindow.splitView.setPrimaryWidget(ui.displaySplitView);
+  ui.displaySplitView->addSlaveView(&separateViewWindow.splitView);
   connect(ui.displaySplitView, &splitViewWidget::signalShowSeparateWindow, &separateViewWindow, &QWidget::setVisible);
 
   // Connect the playlistWidget signals to some slots
@@ -182,7 +181,7 @@ void MainWindow::loadFiles(const QStringList &files)
 
 void MainWindow::createMenusAndActions()
 {
-  // Create the menu actions and connect them. Qt>=5.6 allows to conveniontly use delta functions and function pointers
+  // Create the menu actions and connect them. Qt>=5.6 allows you to conveniontly use delta functions and function pointers
   // in ->addAction(...). However, we also want to be able to compile with Qt 5.5 (and possibly lower). Because of
   // this, we use the old SLOT(...) mechanism.
 
@@ -284,26 +283,28 @@ void MainWindow::createMenusAndActions()
 void MainWindow::updateRecentFileActions()
 {
   QSettings settings;
-  QStringList files = settings.value("recentFileList").toStringList();
-
-  int numRecentFiles = qMin(files.size(), MAX_RECENT_FILES);
+  auto files = settings.value("recentFileList").toStringList();
 
   int fileIdx = 0;
-  for (int i = 0; i < numRecentFiles; ++i)
+  auto it = files.begin(); 
+  while (it != files.end())
   {
-    if (!(QFile(files[i]).exists()))
-      continue;
-
-    //QString text = tr("&%1 %2").arg(fileIdx++).arg(QFileInfo(files[i]).fileName());
-    QString text = tr("&%1 %2").arg(fileIdx+1).arg(files[i]);
-    recentFileActions[fileIdx]->setText(text);
-    recentFileActions[fileIdx]->setData(files[i]);
-    recentFileActions[fileIdx]->setVisible(true);
-
-    fileIdx++;
+    if ((QFile(*it).exists()))
+    {
+      QString text = tr("&%1 %2").arg(fileIdx+1).arg(*it);
+      recentFileActions[fileIdx]->setText(text);
+      recentFileActions[fileIdx]->setData(*it);
+      recentFileActions[fileIdx]->setVisible(true);
+      fileIdx++;
+      it++;
+    }
+    else
+      it = files.erase(it);
   }
   for (int j = fileIdx; j < MAX_RECENT_FILES; ++j)
     recentFileActions[j]->setVisible(false);
+  
+  settings.setValue("recentFileList", files);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -758,7 +759,7 @@ void MainWindow::resetWindowLayout()
   settings.setValue("mainWindow/windowState", saveState());
 
   // Reset the split view
-  ui.displaySplitView->resetViews();
+  ui.displaySplitView->resetView();
 }
 
 void MainWindow::closeAndClearSettings()

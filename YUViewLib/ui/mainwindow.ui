@@ -278,7 +278,7 @@
   <customwidget>
    <class>splitViewWidget</class>
    <extends>QWidget</extends>
-   <header>ui/splitViewWidget.h</header>
+   <header>ui/views/splitViewWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
