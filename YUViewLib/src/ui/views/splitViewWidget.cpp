@@ -183,10 +183,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     painter.fillRect(boxRect,Qt::white);
     painter.drawRect(boxRect);
 
-    // Draw the text
     painter.drawText(textRect, Qt::AlignCenter, text);
 
-    // Update the mouse cursor
     MoveAndZoomableView::updateMouseCursor();
 
     return;
@@ -480,7 +478,6 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     painter.drawPixmap(pos, waitingForCachingPixmap);
   }
 
-  // Update the mouse cursor
   MoveAndZoomableView::updateMouseCursor();
 
   if (testMode)
@@ -864,6 +861,8 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 
     update();
   }
+
+  MoveAndZoomableView::updateMouseCursor();
 }
 
 void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
@@ -1002,6 +1001,14 @@ void splitViewWidget::setZoomFactor(double zoom)
   }
 }
 
+void splitViewWidget::updateMouseTracking()
+{
+  if (isViewFrozen)
+    this->setMouseTracking(false);
+  else
+    this->setMouseTracking(viewSplitMode != DISABLED || this->drawZoomBox);
+}
+
 bool splitViewWidget::updateMouseCursor(const QPoint &mousePos)
 {
   if (!MoveAndZoomableView::updateMouseCursor(mousePos))
@@ -1063,7 +1070,7 @@ void splitViewWidget::toggleZoomBox(bool checked)
 { 
   Q_UNUSED(checked); 
   this->drawZoomBox = !this->drawZoomBox;
-  this->setMouseTracking(this->drawZoomBox);
+  this->updateMouseTracking();
   update(); 
 }
 
@@ -1197,6 +1204,8 @@ void splitViewWidget::setViewSplitMode(ViewSplitMode mode, bool setOtherViewIfLi
     QSignalBlocker actionSplitViewBlocker(actionSplitView[i]);
     actionSplitView[i].setChecked(viewSplitMode == ViewSplitMode(i));
   }
+
+  this->updateMouseTracking();
   
   if (callUpdate)
     update();
@@ -1408,7 +1417,7 @@ void splitViewWidget::freezeView(bool freeze)
   {
     // View is frozen and should be unfrozen
     isViewFrozen = false;
-    setMouseTracking(true);
+    this->updateMouseTracking();
     update();
   }
   if (!isViewFrozen && freeze)
@@ -1418,7 +1427,7 @@ void splitViewWidget::freezeView(bool freeze)
     if (this->isMasterView && isSeparateViewEnabled && !playbackPrimary)
     {
       isViewFrozen = true;
-      setMouseTracking(false);
+      this->updateMouseTracking();
       update();
     }
   }

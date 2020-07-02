@@ -172,6 +172,7 @@ protected:
   QAction actionSeparateViewPlaybackBoth;
   QAction actionZoomBox;
 
+  void updateMouseTracking();
   virtual bool updateMouseCursor(const QPoint &srcMousePos) override;
 
   // When the splitView is set as a center widget this will assert that after the adding operation the widget will have a
