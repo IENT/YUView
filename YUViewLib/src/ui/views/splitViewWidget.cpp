@@ -1801,3 +1801,17 @@ QPointer<splitViewWidget> splitViewWidget::getOtherWidget() const
     return QPointer<splitViewWidget>(qobject_cast<splitViewWidget*>(this->masterView));
   }
 }
+
+void splitViewWidget::getStateFromMaster()
+{
+  const auto mainView = this->getOtherWidget();
+  this->setViewSplitMode(mainView->viewSplitMode, false);
+  this->setSplittingPoint(mainView->splittingPoint, false);
+  this->setRegularGridSize(mainView->regularGridSize, false);
+  
+  this->drawZoomBox = mainView->drawZoomBox;
+  this->updateMouseTracking();
+  update();
+
+  MoveAndZoomableView::getStateFromMaster();
+}

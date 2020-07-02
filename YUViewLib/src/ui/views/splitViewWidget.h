@@ -265,6 +265,7 @@ protected:
   void testFinished(bool canceled);             //< Report the test results and stop the testProgrssUpdateTimer
 
   QPointer<splitViewWidget> getOtherWidget() const;
+  void getStateFromMaster() override;
 };
 
 #endif // SPLITVIEWWIDGET_H
