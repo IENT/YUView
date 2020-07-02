@@ -34,7 +34,9 @@
 
 #include <algorithm>
 #include <cstdio>
+#if SSE_CONVERSION_420_ALT
 #include <xmmintrin.h>
+#endif
 #include <QDir>
 #include <QPainter>
 
