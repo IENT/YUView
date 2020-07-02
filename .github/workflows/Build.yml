@@ -105,10 +105,9 @@ jobs:
             auto_update: false
             ARTIFACT_NAME: YUView-Win-noautoupdate.zip
     steps:
-    - name: debug print payload
-      uses: Dovyski/payload-info-action@master
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
+    - uses: Dovyski/payload-info-action@master
     - name: Install Qt base
       run: |
         cd ../../
