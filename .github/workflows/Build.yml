@@ -90,6 +90,7 @@ jobs:
         $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
         mv YUView-*.AppImage YUView.AppImage
         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts
+        ls $GITHUB_WORKSPACE/artifacts
       if: matrix.os == 'ubuntu-16.04'
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
@@ -103,7 +104,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
+        asset_path: $GITHUB_WORKSPACE/artifacts/${{matrix.ARTIFACT_NAME}}
         asset_name: ${{matrix.ARTIFACT_NAME}}
         asset_content_type: application/zip
       if: github.event_name == 'release' && matrix.os != 'ubuntu-18.04'
@@ -215,7 +216,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
+        asset_path: artifacts/YUView-Win.zip
         asset_name: ${{matrix.ARTIFACT_NAME}}
         asset_content_type: application/zip
       if: github.event_name == 'release'
