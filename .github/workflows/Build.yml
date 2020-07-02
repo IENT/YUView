@@ -109,7 +109,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: $GITHUB_WORKSPACE/artifacts/${{matrix.ARTIFACT_NAME}}
+        asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
         asset_name: ${{matrix.ARTIFACT_NAME}}
         asset_content_type: application/zip
       if: github.event_name == 'release' && matrix.os != 'ubuntu-18.04'
