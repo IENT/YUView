@@ -1,6 +1,10 @@
 name: CI build
 
-on: [push, release]
+on:
+  push:
+  release:
+    types:
+      - created
 
 jobs:
   build-unix:
@@ -203,8 +207,10 @@ jobs:
         upload_url: ${{ github.event.release.upload_url }}
         asset_path: artifacts/YUView-Win.zip
         asset_name: YUView-Win.zip
-        asset_content_type: binary/octet-stream
+        asset_content_type: application/zip
       if: github.event_name == 'release'
     
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
+  # Mime type list
+  # https://www.iana.org/assignments/media-types/media-types.xhtml
