@@ -81,7 +81,8 @@ jobs:
         cd build/YUViewApp
         # Zip
         zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
-        cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
       if: matrix.os == 'macos-10.15'
     - name: Build Appimage (Linux)
       run: |
@@ -89,7 +90,8 @@ jobs:
         make INSTALL_ROOT=appdir install
         $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
         mv YUView-*.AppImage YUView.AppImage
-        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
         cd $GITHUB_WORKSPACE
         ls -l
         cd $GITHUB_WORKSPACE/artifacts
