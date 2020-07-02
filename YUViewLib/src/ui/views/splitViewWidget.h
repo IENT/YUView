@@ -206,6 +206,7 @@ protected:
 
   //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
   void   updatePixelPositions();
+  void   setZoomBoxPixelUnderCursor(QPoint posA, QPoint posB, bool setOtherViewIfLinked = true, bool callUpdate = false);
   QPoint zoomBoxPixelUnderCursor[2];        //!< The above function will update this. (The position of the pixel under the cursor (per item))
 
   // Regular grid

@@ -537,6 +537,7 @@ void splitViewWidget::updatePixelPositions()
     // We now have the pixel difference value for the item under the cursor.
     // We now draw one zoom box per view
     const auto viewNum = (isSplitting() && item[1]) ? 2 : 1;
+    QPoint positions[2];
     for (int view = 0; view < viewNum; view++)
     {
       // Get the size of the item
@@ -553,10 +554,24 @@ void splitViewWidget::updatePixelPositions()
         if (pixelPoxY < 0)
           pixelPoxY -= 1;
 
-        zoomBoxPixelUnderCursor[view] = QPoint(pixelPosX, pixelPoxY);
+        positions[view] = QPoint(pixelPosX, pixelPoxY);
       }
     }
+
+    setZoomBoxPixelUnderCursor(positions[0], positions[1], true);
   }
+}
+
+void splitViewWidget::setZoomBoxPixelUnderCursor(QPoint posA, QPoint posB, bool setOtherViewIfLinked, bool callUpdate)
+{
+  if (this->enableLink && setOtherViewIfLinked)
+    this->getOtherWidget()->setZoomBoxPixelUnderCursor(posA, posB, false, true);
+
+  this->zoomBoxPixelUnderCursor[0] = posA;
+  this->zoomBoxPixelUnderCursor[1] = posB;
+
+  if (callUpdate)
+    update();
 }
 
 void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing)
