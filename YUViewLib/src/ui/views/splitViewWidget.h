@@ -203,6 +203,7 @@ protected:
   QPoint zoomBoxMousePosition;              //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
   QColor zoomBoxBackgroundColor;            //!< The color of the zoom box background (read from settings)
   void   paintZoomBox(int view, QPainter &painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing);
+  void   setDrawZoomBox(bool drawZoomBox, bool setOtherViewIfLinked = true, bool callUpdate = false);
 
   //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
   void   updatePixelPositions();

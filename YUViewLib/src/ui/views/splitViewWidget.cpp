@@ -700,6 +700,20 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
   }
 }
 
+void splitViewWidget::setDrawZoomBox(bool drawZoomBox, bool setOtherViewIfLinked, bool callUpdate)
+{
+  if (this->enableLink && setOtherViewIfLinked)
+    this->getOtherWidget()->setDrawZoomBox(drawZoomBox, false, callUpdate);
+
+  this->drawZoomBox = drawZoomBox;
+  QSignalBlocker actionZoomBoxBlocker(this->actionZoomBox);
+  this->actionZoomBox.setChecked(drawZoomBox);
+  this->updateMouseTracking();
+
+  if (callUpdate)
+    update();
+}
+
 void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
 {
   if (regularGridSize == 0)
@@ -1083,10 +1097,8 @@ void splitViewWidget::gridSetCustom(bool checked)
 
 void splitViewWidget::toggleZoomBox(bool checked)
 { 
-  Q_UNUSED(checked); 
-  this->drawZoomBox = !this->drawZoomBox;
-  this->updateMouseTracking();
-  update(); 
+  Q_UNUSED(checked);
+  this->setDrawZoomBox(!this->drawZoomBox, true, true);
 }
 
 void splitViewWidget::toggleSeparateWindow(bool checked) 
@@ -1823,8 +1835,8 @@ void splitViewWidget::getStateFromMaster()
   this->setViewSplitMode(mainView->viewSplitMode, false);
   this->setSplittingPoint(mainView->splittingPoint, false);
   this->setRegularGridSize(mainView->regularGridSize, false);
+  this->setDrawZoomBox(mainView->drawZoomBox, false);
   
-  this->drawZoomBox = mainView->drawZoomBox;
   this->updateMouseTracking();
   update();
 
