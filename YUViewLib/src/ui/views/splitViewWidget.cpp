@@ -183,10 +183,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     painter.fillRect(boxRect,Qt::white);
     painter.drawRect(boxRect);
 
-    // Draw the text
     painter.drawText(textRect, Qt::AlignCenter, text);
 
-    // Update the mouse cursor
     MoveAndZoomableView::updateMouseCursor();
 
     return;
@@ -480,7 +478,6 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     painter.drawPixmap(pos, waitingForCachingPixmap);
   }
 
-  // Update the mouse cursor
   MoveAndZoomableView::updateMouseCursor();
 
   if (testMode)
@@ -540,6 +537,7 @@ void splitViewWidget::updatePixelPositions()
     // We now have the pixel difference value for the item under the cursor.
     // We now draw one zoom box per view
     const auto viewNum = (isSplitting() && item[1]) ? 2 : 1;
+    QPoint positions[2];
     for (int view = 0; view < viewNum; view++)
     {
       // Get the size of the item
@@ -556,10 +554,24 @@ void splitViewWidget::updatePixelPositions()
         if (pixelPoxY < 0)
           pixelPoxY -= 1;
 
-        zoomBoxPixelUnderCursor[view] = QPoint(pixelPosX, pixelPoxY);
+        positions[view] = QPoint(pixelPosX, pixelPoxY);
       }
     }
+
+    setZoomBoxPixelUnderCursor(positions[0], positions[1], true);
   }
+}
+
+void splitViewWidget::setZoomBoxPixelUnderCursor(QPoint posA, QPoint posB, bool setOtherViewIfLinked, bool callUpdate)
+{
+  if (this->enableLink && setOtherViewIfLinked)
+    this->getOtherWidget()->setZoomBoxPixelUnderCursor(posA, posB, false, true);
+
+  this->zoomBoxPixelUnderCursor[0] = posA;
+  this->zoomBoxPixelUnderCursor[1] = posB;
+
+  if (callUpdate)
+    update();
 }
 
 void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing)
@@ -686,6 +698,20 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
 
     painter.resetTransform();
   }
+}
+
+void splitViewWidget::setDrawZoomBox(bool drawZoomBox, bool setOtherViewIfLinked, bool callUpdate)
+{
+  if (this->enableLink && setOtherViewIfLinked)
+    this->getOtherWidget()->setDrawZoomBox(drawZoomBox, false, callUpdate);
+
+  this->drawZoomBox = drawZoomBox;
+  QSignalBlocker actionZoomBoxBlocker(this->actionZoomBox);
+  this->actionZoomBox.setChecked(drawZoomBox);
+  this->updateMouseTracking();
+
+  if (callUpdate)
+    update();
 }
 
 void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
@@ -864,6 +890,8 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 
     update();
   }
+
+  MoveAndZoomableView::updateMouseCursor();
 }
 
 void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
@@ -1002,6 +1030,14 @@ void splitViewWidget::setZoomFactor(double zoom)
   }
 }
 
+void splitViewWidget::updateMouseTracking()
+{
+  if (isViewFrozen)
+    this->setMouseTracking(false);
+  else
+    this->setMouseTracking(viewSplitMode != DISABLED || this->drawZoomBox);
+}
+
 bool splitViewWidget::updateMouseCursor(const QPoint &mousePos)
 {
   if (!MoveAndZoomableView::updateMouseCursor(mousePos))
@@ -1061,10 +1097,8 @@ void splitViewWidget::gridSetCustom(bool checked)
 
 void splitViewWidget::toggleZoomBox(bool checked)
 { 
-  Q_UNUSED(checked); 
-  this->drawZoomBox = !this->drawZoomBox;
-  this->setMouseTracking(this->drawZoomBox);
-  update(); 
+  Q_UNUSED(checked);
+  this->setDrawZoomBox(!this->drawZoomBox, true, true);
 }
 
 void splitViewWidget::toggleSeparateWindow(bool checked) 
@@ -1197,6 +1231,8 @@ void splitViewWidget::setViewSplitMode(ViewSplitMode mode, bool setOtherViewIfLi
     QSignalBlocker actionSplitViewBlocker(actionSplitView[i]);
     actionSplitView[i].setChecked(viewSplitMode == ViewSplitMode(i));
   }
+
+  this->updateMouseTracking();
   
   if (callUpdate)
     update();
@@ -1408,7 +1444,7 @@ void splitViewWidget::freezeView(bool freeze)
   {
     // View is frozen and should be unfrozen
     isViewFrozen = false;
-    setMouseTracking(true);
+    this->updateMouseTracking();
     update();
   }
   if (!isViewFrozen && freeze)
@@ -1418,7 +1454,7 @@ void splitViewWidget::freezeView(bool freeze)
     if (this->isMasterView && isSeparateViewEnabled && !playbackPrimary)
     {
       isViewFrozen = true;
-      setMouseTracking(false);
+      this->updateMouseTracking();
       update();
     }
   }
@@ -1791,4 +1827,18 @@ QPointer<splitViewWidget> splitViewWidget::getOtherWidget() const
     Q_ASSERT_X(this->masterView, Q_FUNC_INFO, "The master view is not set.");
     return QPointer<splitViewWidget>(qobject_cast<splitViewWidget*>(this->masterView));
   }
+}
+
+void splitViewWidget::getStateFromMaster()
+{
+  const auto mainView = this->getOtherWidget();
+  this->setViewSplitMode(mainView->viewSplitMode, false);
+  this->setSplittingPoint(mainView->splittingPoint, false);
+  this->setRegularGridSize(mainView->regularGridSize, false);
+  this->setDrawZoomBox(mainView->drawZoomBox, false);
+  
+  this->updateMouseTracking();
+  update();
+
+  MoveAndZoomableView::getStateFromMaster();
 }

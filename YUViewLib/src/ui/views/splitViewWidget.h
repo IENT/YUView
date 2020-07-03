@@ -172,6 +172,7 @@ protected:
   QAction actionSeparateViewPlaybackBoth;
   QAction actionZoomBox;
 
+  void updateMouseTracking();
   virtual bool updateMouseCursor(const QPoint &srcMousePos) override;
 
   // When the splitView is set as a center widget this will assert that after the adding operation the widget will have a
@@ -202,9 +203,11 @@ protected:
   QPoint zoomBoxMousePosition;              //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
   QColor zoomBoxBackgroundColor;            //!< The color of the zoom box background (read from settings)
   void   paintZoomBox(int view, QPainter &painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing);
+  void   setDrawZoomBox(bool drawZoomBox, bool setOtherViewIfLinked = true, bool callUpdate = false);
 
   //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
   void   updatePixelPositions();
+  void   setZoomBoxPixelUnderCursor(QPoint posA, QPoint posB, bool setOtherViewIfLinked = true, bool callUpdate = false);
   QPoint zoomBoxPixelUnderCursor[2];        //!< The above function will update this. (The position of the pixel under the cursor (per item))
 
   // Regular grid
@@ -264,6 +267,7 @@ protected:
   void testFinished(bool canceled);             //< Report the test results and stop the testProgrssUpdateTimer
 
   QPointer<splitViewWidget> getOtherWidget() const;
+  void getStateFromMaster() override;
 };
 
 #endif // SPLITVIEWWIDGET_H

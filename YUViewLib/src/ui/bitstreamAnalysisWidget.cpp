@@ -184,7 +184,6 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
     this->ui.streamInfoTreeWidget->clear();
     this->ui.dataTreeView->setModel(nullptr);
     this->ui.plotViewWidget->setModel(nullptr);
-    this->parser.reset();
     return;
   }
 

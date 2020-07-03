@@ -115,24 +115,24 @@ uint64_t SubByteReader::readBits64(int nrBits, QString &bitsRead)
 
 QByteArray SubByteReader::readBytes(int nrBytes)
 {
-  if (skipEmulationPrevention)
-    throw std::logic_error("Reading bytes with emulation prevention active is not supported.");
   if (posInBuffer_bits != 0 && posInBuffer_bits != 8)
     throw std::logic_error("When reading bytes from the bitstream, it should be byte alligned.");
 
   if (posInBuffer_bits == 8)
-    if (!gotoNextByte())
+    if (!this->gotoNextByte())
       // We are at the end of the buffer but we need to read more. Error.
       throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
 
   QByteArray retArray;
   for (int i = 0; i < nrBytes; i++)
   {
-    if (posInBuffer_bytes >= (unsigned int)byteArray.size())
-      throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
-
     retArray.append(byteArray[posInBuffer_bytes]);
-    posInBuffer_bytes++;
+    
+    if (!this->gotoNextByte())
+    {
+      if (i < nrBytes - 1)
+        throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
+    }
   }
 
   return retArray;
@@ -322,7 +322,7 @@ bool SubByteReader::gotoNextByte()
 
   if (posInBuffer_bytes >= (unsigned int)byteArray.size()) 
     // The next byte is outside of the current buffer. Error.
-    return false;    
+    return false;
 
   if (skipEmulationPrevention)
   {
