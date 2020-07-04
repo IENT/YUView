@@ -1023,15 +1023,15 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
       unsigned short *srcR1, *srcG1, *srcB1;
       if (srcPixelFormat.planar)
       {
-        srcR1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
-        srcG1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
-        srcB1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+        srcR1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + (rgbItem2->srcPixelFormat.posR * rgbItem2->frameSize.width() * rgbItem2->frameSize.height());
+        srcG1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + (rgbItem2->srcPixelFormat.posG * rgbItem2->frameSize.width() * rgbItem2->frameSize.height());
+        srcB1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + (rgbItem2->srcPixelFormat.posB * rgbItem2->frameSize.width() * rgbItem2->frameSize.height());
       }
       else
       {
-        srcR1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posR;
-        srcG1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posG;
-        srcB1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posB;
+        srcR1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + rgbItem2->srcPixelFormat.posR;
+        srcG1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + rgbItem2->srcPixelFormat.posG;
+        srcB1 = (unsigned short*)rgbItem2->currentFrameRawData.data() + rgbItem2->srcPixelFormat.posB;
       }
 
       for (int y = 0; y < height; y++)
@@ -1096,15 +1096,15 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
       unsigned char *srcR1, *srcG1, *srcB1;
       if (srcPixelFormat.planar)
       {
-        srcR1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
-        srcG1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
-        srcB1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+        srcR1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + (rgbItem2->srcPixelFormat.posR * rgbItem2->frameSize.width() * rgbItem2->frameSize.height());
+        srcG1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + (rgbItem2->srcPixelFormat.posG * rgbItem2->frameSize.width() * rgbItem2->frameSize.height());
+        srcB1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + (rgbItem2->srcPixelFormat.posB * rgbItem2->frameSize.width() * rgbItem2->frameSize.height());
       }
       else
       {
-        srcR1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posR;
-        srcG1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posG;
-        srcB1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + srcPixelFormat.posB;
+        srcR1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + rgbItem2->srcPixelFormat.posR;
+        srcG1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + rgbItem2->srcPixelFormat.posG;
+        srcB1 = (unsigned char*)rgbItem2->currentFrameRawData.data() + rgbItem2->srcPixelFormat.posB;
       }
 
       for (int y = 0; y < height; y++)

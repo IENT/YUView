@@ -148,6 +148,8 @@ protected:
   const QPen   ZOOM_RECT_PEN   = QPen(QColor(50, 50, 255, 150));
   const QBrush ZOOM_RECT_BRUSH = QBrush(QColor(50, 50, 255, 50));
 
+  virtual void getStateFromMaster();
+
 private:
   QPoint viewDraggingMousePosStart;
   QPoint viewDraggingStartOffset;
@@ -161,5 +163,4 @@ private:
   void slaveSetZoomFactor(double zoom);
   //void slaveSetPinchValues(double scaleFactor, QPointF centerPointOffset);
   void slaveUpdateWidget();
-  void getStateFromMaster();
 };

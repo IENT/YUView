@@ -622,7 +622,7 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
   // Open the file but don't parse it yet.
   QScopedPointer<fileSourceFFmpegFile> ffmpegFile(new fileSourceFFmpegFile());
- if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
+  if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
   {
     emit backgroundParsingDone("Error opening the ffmpeg file.");
     return false;
@@ -650,12 +650,26 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
   // ffmpegFile->seekFileToBeginning();
 
   // First get the extradata and push it to the parser
-  QByteArray extradata = ffmpegFile->getExtradata();
-  parseExtradata(extradata);
-
-  // Parse the metadata
-  QStringPairList metadata = ffmpegFile->getMetadata();
-  parseMetadata(metadata);
+  try
+  {
+    QByteArray extradata = ffmpegFile->getExtradata();
+    parseExtradata(extradata);
+  }
+  catch (...)
+  {
+    emit backgroundParsingDone("Error parsing Extradata from container");
+    return false;
+  }
+  try
+  {
+    QStringPairList metadata = ffmpegFile->getMetadata();
+    parseMetadata(metadata);
+  }
+  catch (...)
+  {
+    emit backgroundParsingDone("Error parsing Metadata from container");
+    return false;
+  }
 
   // After opening the file, we can get information on it
   streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();

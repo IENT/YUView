@@ -1,6 +1,10 @@
 name: CI build
 
-on: [push]
+on:
+  push:
+  release:
+    types:
+      - created
 
 jobs:
   build-unix:
@@ -77,7 +81,8 @@ jobs:
         cd build/YUViewApp
         # Zip
         zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
-        cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
       if: matrix.os == 'macos-10.15'
     - name: Build Appimage (Linux)
       run: |
@@ -85,7 +90,12 @@ jobs:
         make INSTALL_ROOT=appdir install
         $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
         mv YUView-*.AppImage YUView.AppImage
-        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
+        cd $GITHUB_WORKSPACE
+        ls -l
+        cd $GITHUB_WORKSPACE/artifacts
+        ls -l
       if: matrix.os == 'ubuntu-16.04'
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
@@ -93,6 +103,16 @@ jobs:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
       if: matrix.os != 'ubuntu-18.04'
+    - name: Upload Release
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
+        asset_name: ${{matrix.ARTIFACT_NAME}}
+        asset_content_type: application/zip
+      if: github.event_name == 'release' && matrix.os != 'ubuntu-18.04'
   build-windows:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -195,6 +215,28 @@ jobs:
         name: YUViewSetup.msi
         path: ./YUViewSetup.msi
       if: matrix.auto_update == true
+    - name: Upload Windows zip to Release
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: artifacts/YUView-Win.zip
+        asset_name: ${{matrix.ARTIFACT_NAME}}
+        asset_content_type: application/zip
+      if: github.event_name == 'release'
+    - name: Upload Windows installer to Release
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: YUViewSetup.msi
+        asset_name: YUViewSetup.msi
+        asset_content_type: application/zip
+      if: github.event_name == 'release' && matrix.auto_update == true
     
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
+  # Mime type list
+  # https://www.iana.org/assignments/media-types/media-types.xhtml
