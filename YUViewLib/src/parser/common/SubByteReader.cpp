@@ -243,7 +243,7 @@ int SubByteReader::readSU(int nrBits, QString &bitsRead)
 
 /* Is there more data? There is no more data if the next bit is the terminating bit and all
 * following bits are 0. */
-bool SubByteReader::more_rbsp_data()
+bool SubByteReader::more_rbsp_data() const
 {
   unsigned int posBytes = posInBuffer_bytes;
   unsigned int posBits  = posInBuffer_bits;
@@ -292,13 +292,13 @@ bool SubByteReader::more_rbsp_data()
    the position of the payload_bit_equal_to_one syntax element), the return value of payload_extension_present( )
    is equal to TRUE.
  */
-bool SubByteReader::payload_extension_present()
+bool SubByteReader::payload_extension_present() const
 {
   // TODO: What is the difference to this?
   return more_rbsp_data();
 }
 
-bool SubByteReader::testReadingBits(int nrBits)
+bool SubByteReader::testReadingBits(int nrBits) const
 {
   const int curBitsLeft = 8 - posInBuffer_bits;
   const int entireBytesLeft = byteArray.size() - posInBuffer_bytes - 1;

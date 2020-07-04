@@ -36,9 +36,9 @@
 #include <QString>
 
 /* This class provides the ability to read a byte array bit wise. Reading of ue(v) symbols is also supported.
-    * This class can "read out" the emulation prevention bytes. This is enabled by default but can be disabled
-    * if needed.
-    */
+* This class can "read out" the emulation prevention bytes. This is enabled by default but can be disabled
+* if needed.
+*/
 class SubByteReader
 {
 public:
@@ -65,13 +65,14 @@ public:
   int readSU(int nrBits, QString &bitsRead);
 
   // Is there more RBSP data or are we at the end?
-  bool more_rbsp_data();
-  bool payload_extension_present();
+  bool more_rbsp_data() const;
+  bool payload_extension_present() const;
   // Will reading of the given number of bits succeed?
-  bool testReadingBits(int nrBits);
+  bool testReadingBits(int nrBits) const;
   // How many full bytes were read/are left from the reader?
-  unsigned int nrBytesRead() { return posInBuffer_bytes - initialPosInBuffer + (posInBuffer_bits != 0 ? 1 : 0); }
-  unsigned int nrBytesLeft() { return (unsigned int)(std::max(0, byteArray.size() - int(posInBuffer_bytes) - 1)); }
+  unsigned int nrBytesRead() const { return posInBuffer_bytes - initialPosInBuffer + (posInBuffer_bits != 0 ? 1 : 0); }
+  unsigned int nrBytesLeft() const { return (unsigned int)(std::max(0, byteArray.size() - int(posInBuffer_bytes) - 1)); }
+  bool isByteAligned() const { return posInBuffer_bits == 0 || posInBuffer_bits == 8; }
 
   void disableEmulationPrevention() { skipEmulationPrevention = false; }
 

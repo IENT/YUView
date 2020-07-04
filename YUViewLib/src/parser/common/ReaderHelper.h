@@ -90,13 +90,14 @@ public:
   TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
   // Some functions passed thourgh from the sub_byte_reader
-  bool          more_rbsp_data()             { return reader.more_rbsp_data();             }
-  bool          payload_extension_present()  { return reader.payload_extension_present();  }
-  unsigned int  nrBytesRead()                { return reader.nrBytesRead();                }
-  unsigned int  nrBytesLeft()                { return reader.nrBytesLeft();                }
-  bool          testReadingBits(int nrBits)  { return reader.testReadingBits(nrBits);      }
-  void          disableEmulationPrevention() {        reader.disableEmulationPrevention(); }
-  QByteArray    readBytes(int nrBytes)       { return reader.readBytes(nrBytes);           }
+  bool          more_rbsp_data()              const { return reader.more_rbsp_data();             }
+  bool          payload_extension_present()   const { return reader.payload_extension_present();  }
+  unsigned int  nrBytesRead()                 const { return reader.nrBytesRead();                }
+  unsigned int  nrBytesLeft()                 const { return reader.nrBytesLeft();                }
+  bool          isByteAligned()               const { return reader.isByteAligned();              }
+  bool          testReadingBits(int nrBits)   const { return reader.testReadingBits(nrBits);      }
+  void          disableEmulationPrevention()        {        reader.disableEmulationPrevention(); }
+  QByteArray    readBytes(int nrBytes)              { return reader.readBytes(nrBytes);           }
 
 private:
   // TODO: This is just too much. Replace by one function maybe ...
