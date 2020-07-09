@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "NalUnitVVC.h"
+#include "NalUnit.h"
 
 #include "parser/common/parserMacros.h"
 #include "parser/common/ReaderHelper.h"
@@ -46,14 +46,14 @@
 namespace VVC
 {
 
-QByteArray NalUnitVVC::getNALHeader() const
+QByteArray NalUnit::getNALHeader() const
 { 
   int out = ((int)this->nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
   char c[2] = { (char)(out >> 8), (char)out };
   return QByteArray(c, 2);
 }
 
-bool NalUnitVVC::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+bool NalUnit::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   ReaderHelper reader(parameterSetData, root, "nal_unit_header()");
@@ -103,6 +103,12 @@ bool NalUnitVVC::parse_nal_unit_header(const QByteArray &parameterSetData, TreeI
   DEBUG_VVC_NAL("VVC Nal type " << this->nal_unit_type_id);
 
   return true;
+}
+
+bool NalUnit::isSlice() const
+{
+  static const auto sliceNalTypes = QList<NalUnitType>() << TRAIL_NUT << STSA_NUT << RADL_NUT << RASL_NUT << IDR_W_RADL << IDR_N_LP << CRA_NUT << GDR_NUT;
+  return sliceNalTypes.contains(this->nal_unit_type);
 }
 
 } // namespace VVC

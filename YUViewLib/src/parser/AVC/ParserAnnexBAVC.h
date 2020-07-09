@@ -34,7 +34,7 @@
 
 #include <QSharedPointer>
 
-#include "parser/common/NalUnit.h"
+#include "parser/common/NalUnitBase.h"
 #include "parser/common/ParserAnnexB.h"
 #include "parser/common/ReaderHelper.h"
 #include "video/videoHandlerYUV.h"
@@ -97,10 +97,10 @@ protected:
 
   /* The basic HEVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
   */
-  struct nal_unit_avc : NalUnit
+  struct nal_unit_avc : NalUnitBase
   {
-    nal_unit_avc(QUint64Pair filePosStartEnd, int nal_idx) : NalUnit(filePosStartEnd, nal_idx) {}
-    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : NalUnit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
+    nal_unit_avc(QUint64Pair filePosStartEnd, int nal_idx) : NalUnitBase(filePosStartEnd, nal_idx) {}
+    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : NalUnitBase(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.

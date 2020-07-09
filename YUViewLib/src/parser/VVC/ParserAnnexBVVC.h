@@ -37,6 +37,7 @@
 #include "parser/common/ParserAnnexB.h"
 #include "video/videoHandlerYUV.h"
 
+#include "PPS.h"
 #include "SPS.h"
 
 using namespace YUV_Internals;
@@ -68,10 +69,19 @@ protected:
   // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
   QUint64Pair curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
 
-  using SPSMap = QMap<int, QSharedPointer<VVC::SPS>>;
-
-  SPSMap activeSPSMap;
+  SPS::SPSMap activeSPSMap;
+  PPS::PPSMap activePPSMap;
 
   unsigned int counterAU{ 0 };
   unsigned int sizeCurrentAU{ 0 };
+
+  struct auDelimiterDetector_t
+  {
+    bool isStartOfNewAU(NalUnit &nal, QSharedPointer<NalUnit> parsedNal);
+    bool primaryCodedPictureInAuEncountered {false};
+
+    bool ph_pic_order_cnt_lsb_set{false};
+    unsigned int ph_pic_order_cnt_lsb_last{0};
+  };
+  auDelimiterDetector_t auDelimiterDetector;
 };

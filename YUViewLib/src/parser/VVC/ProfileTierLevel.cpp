@@ -104,9 +104,17 @@ bool GeneralConstraintInfo::parse(ReaderHelper &reader)
   READFLAG(this->no_gdr_constraint_flag);
   READFLAG(this->no_aps_constraint_flag);
 
-  while(!reader.isByteAligned())
+  while (!reader.isByteAligned())
   {
-    
+    bool gci_alignment_zero_bit;
+    READFLAG(gci_alignment_zero_bit);
+    if (gci_alignment_zero_bit)
+      return reader.addErrorMessageChildItem("gci_alignment_zero_bit should be zero");
+  }
+  READBITS(gci_num_reserved_bytes, 8);
+  for (int i = 0; i < gci_num_reserved_bytes; i++)
+  {
+    READBITS_A(gci_reserved_byte, 8, i);
   }
 
   return true;
@@ -123,7 +131,33 @@ bool ProfileTierLevel::parse(ReaderHelper &reader, bool profilePresentFlag, int 
     general_constraint_info.parse(reader);
   }
 
-
+  READBITS(general_level_idc, 8);
+  if (profilePresentFlag)
+  {
+    READBITS(ptl_num_sub_profiles, 8);
+    for (int i = 0; i < ptl_num_sub_profiles; i++)
+    {
+      READBITS_A(general_sub_profile_idc, 32, i);
+    }
+  }
+  for (int i = 0; i < maxNumSubLayersMinus1; i++)
+  {
+    READFLAG_A(ptl_sublayer_level_present_flag, i);
+  }
+  while (!reader.isByteAligned())
+  {
+    bool ptl_alignment_zero_bit;
+    READFLAG(ptl_alignment_zero_bit);
+    if (ptl_alignment_zero_bit)
+      return reader.addErrorMessageChildItem("ptl_alignment_zero_bit should be zero");
+  }
+  for (int i = 0; i < maxNumSubLayersMinus1; i++)
+  {
+    if (ptl_sublayer_level_present_flag[i])
+    {
+      READBITS_A(sublayer_level_idc, 8, i);
+    }
+  }
 
   return true;
 }

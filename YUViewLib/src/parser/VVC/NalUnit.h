@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/NalUnit.h"
+#include "parser/common/NalUnitBase.h"
 
 namespace VVC
 {
@@ -47,17 +47,17 @@ enum NalUnitType
 
 /* The basic VVC NAL unit. Additionally to the basic NAL unit, it knows the VVC nal unit types.
   */
-struct NalUnitVVC : NalUnit
+struct NalUnit : NalUnitBase
 {
-  NalUnitVVC(QUint64Pair filePosStartEnd, int nal_idx) : NalUnit(filePosStartEnd, nal_idx) {}
-  NalUnitVVC(QSharedPointer<NalUnitVVC> nal_src) : NalUnit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_unit_type_id = nal_src->nal_unit_type_id; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
-  virtual ~NalUnitVVC() {}
+  NalUnit(QUint64Pair filePosStartEnd, int nal_idx) : NalUnitBase(filePosStartEnd, nal_idx) {}
+  NalUnit(QSharedPointer<NalUnit> nal_src) : NalUnitBase(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_unit_type_id = nal_src->nal_unit_type_id; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+  virtual ~NalUnit() {}
 
   virtual QByteArray getNALHeader() const override;
   virtual bool isParameterSet() const override { return false; }  // We don't know yet
   bool parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) override;
 
-  bool isAUDelimiter() { return nal_unit_type_id == 20; }
+  bool isSlice() const;
 
   // The information of the NAL unit header
   unsigned int nuh_layer_id;

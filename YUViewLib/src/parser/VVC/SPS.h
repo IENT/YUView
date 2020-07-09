@@ -32,17 +32,25 @@
 
 #pragma once
 
-#include "NalUnitVVC.h"
+#include "NalUnit.h"
 #include "ProfileTierLevel.h"
 
 namespace VVC
 {
 
-// The sequence parameter set.
-struct SPS : NalUnitVVC
+struct extra_ph_bits_struct_t
 {
-  SPS(const NalUnitVVC &nal) : NalUnitVVC(nal) {}
+  bool parse(ReaderHelper &reader, unsigned int numExtraBtyes);
+  QList<bool> extra_ph_bit_present_flag;
+};
+
+// The sequence parameter set.
+struct SPS : NalUnit
+{
+  SPS(const NalUnit &nal) : NalUnit(nal) {}
   bool parse(const QByteArray &parameterSetData, TreeItem *root);
+
+  using SPSMap = QMap<int, QSharedPointer<VVC::SPS>>;
 
   unsigned int sps_seq_parameter_set_id;
   unsigned int sps_video_parameter_set_id;
@@ -69,6 +77,38 @@ struct SPS : NalUnitVVC
 
   unsigned int sps_log2_ctu_size_minus5;
   bool sps_subpic_info_present_flag;
+  unsigned int sps_num_subpics_minus1;
+  bool sps_independent_subpics_flag;
+
+  QList<unsigned int> sps_subpic_ctu_top_left_x;
+  QList<unsigned int> sps_subpic_ctu_top_left_y;
+  QList<unsigned int> sps_subpic_width_minus1;
+  QList<unsigned int> sps_subpic_height_minus1;
+  QList<bool> sps_subpic_treated_as_pic_flag;
+  QList<bool> sps_loop_filter_across_subpic_enabled_flag;
+
+  unsigned int sps_subpic_id_len_minus1;
+  bool sps_subpic_id_mapping_explicitly_signalled_flag;
+  bool sps_subpic_id_mapping_present_flag;
+  QList<unsigned int> sps_subpic_id;
+
+  unsigned int sps_bit_depth_minus8;
+  bool sps_entropy_coding_sync_enabled_flag;
+  bool sps_entry_point_offsets_present_flag;
+  unsigned int sps_log2_max_pic_order_cnt_lsb_minus4;
+  bool sps_poc_msb_cycle_flag;
+
+  unsigned int sps_poc_msb_cycle_len_minus1;
+  unsigned int sps_num_extra_ph_bits_bytes;
+
+  extra_ph_bits_struct_t extra_ph_bits_struct; 
+
+  // Calculated values
+  unsigned int CtbLog2SizeY;
+  unsigned int CtbSizeY;
+  unsigned int NumExtraPhBits;
+  unsigned int MaxPicOrderCntLsb;
+
 };
 
 }

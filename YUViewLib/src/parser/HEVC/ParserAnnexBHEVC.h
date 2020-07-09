@@ -34,7 +34,7 @@
 
 #include <QSharedPointer>
 
-#include "parser/common/NalUnit.h"
+#include "parser/common/NalUnitBase.h"
 #include "parser/common/ReaderHelper.h"
 #include "parser/common/ParserAnnexB.h"
 #include "video/videoHandlerYUV.h"
@@ -80,10 +80,10 @@ protected:
 
   /* The basic HEVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
   */
-  struct nal_unit_hevc : NalUnit
+  struct nal_unit_hevc : NalUnitBase
   {
-    nal_unit_hevc(QUint64Pair filePosStartEnd, int nal_idx) : NalUnit(filePosStartEnd, nal_idx) {}
-    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : NalUnit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+    nal_unit_hevc(QUint64Pair filePosStartEnd, int nal_idx) : NalUnitBase(filePosStartEnd, nal_idx) {}
+    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : NalUnitBase(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
     virtual ~nal_unit_hevc() {}
 
     virtual QByteArray getNALHeader() const override;

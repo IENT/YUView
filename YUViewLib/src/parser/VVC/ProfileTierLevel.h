@@ -103,6 +103,9 @@ struct GeneralConstraintInfo
   bool no_cra_constraint_flag;
   bool no_gdr_constraint_flag;
   bool no_aps_constraint_flag;
+
+  unsigned int gci_num_reserved_bytes;
+  QList<unsigned int> gci_reserved_byte;
 };
 
 struct ProfileTierLevel
@@ -112,7 +115,11 @@ struct ProfileTierLevel
   unsigned int general_profile_idc;
   bool general_tier_flag;
   GeneralConstraintInfo general_constraint_info ;
-
+  unsigned int general_level_idc;
+  unsigned int ptl_num_sub_profiles;
+  QList<unsigned int> general_sub_profile_idc;
+  QList<bool> ptl_sublayer_level_present_flag;
+  QList<unsigned int> sublayer_level_idc;
 };
 
 }

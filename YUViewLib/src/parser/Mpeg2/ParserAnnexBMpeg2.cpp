@@ -48,7 +48,7 @@ const QStringList ParserAnnexBMpeg2::nal_unit_type_toString = QStringList()
   << "GROUP_START" << "SYSTEM_START_CODE" << "RESERVED";
 
 ParserAnnexBMpeg2::nal_unit_mpeg2::nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src) 
-  : NalUnit(nal_src->filePosStartEnd, nal_src->nal_idx)
+  : NalUnitBase(nal_src->filePosStartEnd, nal_src->nal_idx)
 {
   nal_unit_type = nal_src->nal_unit_type;
   slice_id = nal_src->slice_id;

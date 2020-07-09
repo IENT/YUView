@@ -37,6 +37,7 @@
 
 #include "parser/common/parserMacros.h"
 #include "parser/common/ReaderHelper.h"
+#include "PictureHeader.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -123,22 +124,20 @@ bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     nalRoot = new TreeItem(this->packetModel->getRootItem());
 
   // Create a nal_unit and read the header
-  NalUnitVVC nal(nalStartEndPosFile, nalID);
+  VVC::NalUnit nal(nalStartEndPosFile, nalID);
   if (!nal.parse_nal_unit_header(nalHeaderBytes, nalRoot))
     return false;
 
   bool parsingSuccess = true;
+  QSharedPointer<NalUnit> parsedNal;
   if (nal.nal_unit_type == SPS_NUT)
   {
-    // A sequence parameter set
     auto newSPS = QSharedPointer<SPS>(new SPS(nal));
     parsingSuccess = newSPS->parse(payload, nalRoot);
 
-    // Add sps (replace old one if existed)
-    activeSPSMap.insert(newSPS->sps_seq_parameter_set_id, newSPS);
-
-    // Also add sps to list of all nals
-    nalUnitList.append(newSPS);
+    this->activeSPSMap.insert(newSPS->sps_seq_parameter_set_id, newSPS); // Replace if it exists
+    this->nalUnitList.append(newSPS);
+    parsedNal = newSPS;
 
     // Add the SPS ID
     specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(newSPS->sps_seq_parameter_set_id) : " SPS_NUT ERR";
@@ -147,8 +146,36 @@ bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
 
     DEBUG_VVC("ParserAnnexBVVC::parseAndAddNALUnit SPS ID %d", newSPS->sps_seq_parameter_set_id);
   }
+  else if (nal.nal_unit_type == PPS_NUT)
+  {
+    auto newPPS = QSharedPointer<PPS>(new PPS(nal));
+    parsingSuccess = newPPS->parse(payload, nalRoot);
 
-  if (nal.isAUDelimiter())
+    this->activePPSMap.insert(newPPS->pps_pic_parameter_set_id, newPPS); // Replace if it exists
+    this->nalUnitList.append(newPPS);
+    parsedNal = newPPS;
+
+    // Add the SPS ID
+    specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(newPPS->pps_pic_parameter_set_id) : " PPS_NUT ERR";
+    if (nalTypeName)
+      *nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(newPPS->pps_pic_parameter_set_id) : "PPS(ERR)";
+
+    DEBUG_VVC("ParserAnnexBVVC::parseAndAddNALUnit SPS ID %d", newPPS->pps_pic_parameter_set_id);
+  }
+  else if (nal.isSlice())
+  {
+    auto newPictureHeader = QSharedPointer<PictureHeader>(new PictureHeader(nal));
+    parsingSuccess = newPictureHeader->parse(payload, this->activeSPSMap, this->activePPSMap, nalRoot);
+
+    parsedNal = newPictureHeader;
+
+    // Calculate and add POC
+    
+
+  }
+
+
+  if (auDelimiterDetector.isStartOfNewAU(nal, parsedNal))
   {
     DEBUG_VVC("Start of new AU. Adding bitrate " << this->sizeCurrentAU);
     
@@ -182,3 +209,28 @@ bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
   return true;
 }
 
+bool ParserAnnexBVVC::auDelimiterDetector_t::isStartOfNewAU(NalUnit &nal, QSharedPointer<NalUnit> parsedNal)
+{
+  bool isStart = false;
+  if (this->primaryCodedPictureInAuEncountered)
+  {
+    static const auto startAUTypes = QList<NalUnitType>() << AUD_NUT << DCI_NUT << VPS_NUT << SPS_NUT << PPS_NUT << PREFIX_APS_NUT << PH_NUT << PREFIX_SEI_NUT << RSV_NVCL_26 << UNSPEC_28 << UNSPEC_29;
+
+    if (nal.nuh_layer_id == 0 && startAUTypes.contains(nal.nal_unit_type))
+      isStart = true;
+
+    if (nal.isSlice())
+    {
+      nal.
+    }
+      isStart = true;
+  }
+
+  if (nal.isSlice())
+    this->primaryCodedPictureInAuEncountered = true;
+
+  if (isStart && !nal.isSlice())
+    primaryCodedPictureInAuEncountered = false;
+
+  return isStart;
+}

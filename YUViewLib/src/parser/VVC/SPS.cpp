@@ -37,6 +37,16 @@
 namespace VVC
 {
 
+bool extra_ph_bits_struct_t::parse(ReaderHelper &reader, unsigned int numExtraBtyes)
+{
+  ReaderSubLevel s(reader, "extra_ph_bits_struct()");
+  for(int i = 0; i < (numExtraBtyes * 8 ); i++)
+  {
+    READFLAG_A(extra_ph_bit_present_flag, i);
+  }
+  return true;
+}
+
 bool SPS::parse(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
@@ -73,10 +83,91 @@ bool SPS::parse(const QByteArray &parameterSetData, TreeItem *root)
     READUEV(this->sps_conf_win_bottom_offset);
   }
   READBITS(this->sps_log2_ctu_size_minus5, 2);
+
+  CtbLog2SizeY = sps_log2_ctu_size_minus5 + 5;
+  CtbSizeY = 1 << CtbLog2SizeY;
+
   READFLAG(this->sps_subpic_info_present_flag);
+  if (sps_subpic_info_present_flag)
+  {
+    READUEV(sps_num_subpics_minus1);
+    if (sps_num_subpics_minus1 > 0)
+    {
+      READFLAG(sps_independent_subpics_flag);
+    }
+    for(int i = 0; sps_num_subpics_minus1 > 0 && i <= sps_num_subpics_minus1; i++)
+    {
+      if (i > 0 && sps_pic_width_max_in_luma_samples > CtbSizeY)
+      {
+        auto nrBits = ceil(log2((sps_pic_width_max_in_luma_samples + CtbSizeY - 1) >> CtbLog2SizeY));
+        READBITS_A(sps_subpic_ctu_top_left_x, nrBits, i);
+      }
+      if (i > 0 && sps_pic_height_max_in_luma_samples > CtbSizeY)
+      {
+        auto nrBits = ceil(log2((sps_pic_height_max_in_luma_samples + CtbSizeY - 1) >> CtbLog2SizeY));
+        READBITS_A(sps_subpic_ctu_top_left_y, nrBits, i);
+      }
+      if (i < sps_num_subpics_minus1 && sps_pic_width_max_in_luma_samples > CtbSizeY)
+      {
+        auto nrBits = ceil(log2((sps_pic_width_max_in_luma_samples + CtbSizeY - 1) >> CtbLog2SizeY));
+        READBITS_A(sps_subpic_width_minus1, nrBits, i);
+      }
+      if (i < sps_num_subpics_minus1 && sps_pic_height_max_in_luma_samples > CtbSizeY)
+      {
+        auto nrBits = ceil(log2((sps_pic_height_max_in_luma_samples + CtbSizeY - 1) >> CtbLog2SizeY));
+        READBITS_A(sps_subpic_height_minus1, nrBits, i);
+      }
+      if (!sps_independent_subpics_flag)
+      {
+        READFLAG_A(sps_subpic_treated_as_pic_flag, i);
+        READFLAG_A(sps_loop_filter_across_subpic_enabled_flag, i);
+      }
+    }
+  }
+
+  READUEV(sps_subpic_id_len_minus1);
+  READFLAG(sps_subpic_id_mapping_explicitly_signalled_flag);
+  if (sps_subpic_id_mapping_explicitly_signalled_flag)
+  {
+    READFLAG(sps_subpic_id_mapping_present_flag);
+    if (sps_subpic_id_mapping_present_flag)
+    {
+      for (int i = 0; i <= sps_num_subpics_minus1; i++)
+      {
+        auto nrBits = sps_subpic_id_len_minus1 + 1;
+        READBITS_A(sps_subpic_id, nrBits, i);
+      }
+    }
+  }
+
+  READUEV(sps_bit_depth_minus8);
+  READFLAG(sps_entropy_coding_sync_enabled_flag);
+  READFLAG(sps_entry_point_offsets_present_flag);
+  READBITS(sps_log2_max_pic_order_cnt_lsb_minus4, 4);
+  READFLAG(sps_poc_msb_cycle_flag);
+
+  if (sps_poc_msb_cycle_flag)
+  {
+    READUEV(sps_poc_msb_cycle_len_minus1);
+  }
+  READBITS(sps_num_extra_ph_bits_bytes, 2);
+  if (!extra_ph_bits_struct.parse(reader, sps_num_extra_ph_bits_bytes))
+    return reader.addErrorMessageChildItem("Error parsing extra_ph_bits_struct");
 
   // ....
-  // TODO: There is more to parse
+  // TODO: There is more to parse. But we don't need more for now.
+
+  // Calculate some values
+  NumExtraPhBits = 0;
+  for (int i = 0; i < (sps_num_extra_ph_bits_bytes * 8); i++)
+  {
+    if (extra_ph_bits_struct.extra_ph_bit_present_flag[i])
+      NumExtraPhBits++;
+  }
+
+  MaxPicOrderCntLsb = pow(sps_log2_max_pic_order_cnt_lsb_minus4 + 4, 2);
+
+  return false;
 }
 
 } // namespace VVC

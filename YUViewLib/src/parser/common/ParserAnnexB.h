@@ -36,7 +36,7 @@
 #include <QTreeWidgetItem>
 
 #include "BitratePlotModel.h"
-#include "NalUnit.h"
+#include "NalUnitBase.h"
 #include "TreeItem.h"
 #include "filesource/fileSourceAnnexBFile.h"
 #include "ParserBase.h"
@@ -129,7 +129,7 @@ protected:
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.
   // So basically all information we need to seek in the stream and get the active parameter sets to start the decoder at a certain position.
-  QList<QSharedPointer<NalUnit>> nalUnitList;
+  QList<QSharedPointer<NalUnitBase>> nalUnitList;
 
   int pocOfFirstRandomAccessFrame {-1};
 

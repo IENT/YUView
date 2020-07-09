@@ -30,38 +30,43 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
+#include "PPS.h"
+#include "parser/common/parserMacros.h"
+#include "parser/common/ReaderHelper.h"
 
-#include "common/typedef.h"
-#include "TreeItem.h"
-
- /* The basic NAL unit. Contains the NAL header and the file position of the unit.
-  */
-struct NalUnit
+namespace VVC
 {
-  NalUnit(QUint64Pair filePosStartEnd, int nal_idx) : filePosStartEnd(filePosStartEnd), nal_idx(nal_idx), nal_unit_type_id(-1) {}
-  virtual ~NalUnit() {} // This class is meant to be derived from.
 
-  // Parse the header from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-  virtual bool parse_nal_unit_header(const QByteArray &header_data, TreeItem *root) = 0;
+bool PPS::parse(const QByteArray &parameterSetData, TreeItem *root)
+{
+  nalPayload = parameterSetData;
 
-  // Pointer to the first byte of the start code of the NAL unit
-  QUint64Pair filePosStartEnd;
+  ReaderHelper reader(parameterSetData, root, "pic_parameter_set_rbsp()");
 
-  // The index of the nal within the bitstream
-  int nal_idx;
+  READBITS(pps_pic_parameter_set_id, 6);
+  READBITS(pps_seq_parameter_set_id, 4);
+  READFLAG(pps_mixed_nalu_types_in_pic_flag);
+  READUEV(pps_pic_width_in_luma_samples);
+  READUEV(pps_pic_height_in_luma_samples);
+  READFLAG(pps_conformance_window_flag);
+  if (pps_conformance_window_flag)
+  {
+    READUEV(pps_conf_win_left_offset);
+    READUEV(pps_conf_win_right_offset);
+    READUEV(pps_conf_win_top_offset);
+    READUEV(pps_conf_win_bottom_offset);
+  }
+  READFLAG(pps_scaling_window_explicit_signalling_flag);
+  if (pps_scaling_window_explicit_signalling_flag)
+  {
+    READSEV(pps_scaling_win_left_offset);
+    READSEV(pps_scaling_win_right_offset);
+    READSEV(pps_scaling_win_top_offset);
+    READSEV(pps_scaling_win_bottom_offset);
+  }
 
-  // Get the NAL header including the start code
-  virtual QByteArray getNALHeader() const = 0;
-  virtual bool isParameterSet() const = 0;
-  virtual int  getPOC() const { return -1; }
-  // Get the raw NAL unit (excluding a start code, including nal unit header and payload)
-  // This only works if the payload was saved of course
-  QByteArray getRawNALData() const { return getNALHeader() + nalPayload; }
+  // ....
+  // TODO: There is more to parse. But we don't need more for now.
+}
 
-  // Each nal unit (in all known standards) has a type id
-  unsigned int nal_unit_type_id;
-
-  // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
-  QByteArray nalPayload;
-};
+} // namespace VVC

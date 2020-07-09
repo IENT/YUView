@@ -33,7 +33,7 @@
 #pragma once
 
 #include "parser/common/ParserAnnexB.h"
-#include "parser/common/NalUnit.h"
+#include "parser/common/NalUnitBase.h"
 
 class ParserAnnexBMpeg2 : public ParserAnnexB
 {
@@ -78,9 +78,9 @@ private:
   /* The basic Mpeg2 NAL unit. Technically, there is no concept of NAL units in mpeg2 (h262) but there are start codes for some units
    * and there is a start code so we internally use the NAL concept.
    */
-  struct nal_unit_mpeg2 : NalUnit
+  struct nal_unit_mpeg2 : NalUnitBase
   {
-    nal_unit_mpeg2(QUint64Pair filePosStartEnd, int nal_idx) : NalUnit(filePosStartEnd, nal_idx) {}
+    nal_unit_mpeg2(QUint64Pair filePosStartEnd, int nal_idx) : NalUnitBase(filePosStartEnd, nal_idx) {}
     nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src);
     virtual ~nal_unit_mpeg2() {}
 

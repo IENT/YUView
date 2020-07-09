@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/NalUnit.h"
+#include "parser/common/NalUnitBase.h"
 #include "parser/common/ParserMacros.h"
 #include "parser/common/ParserAnnexB.h"
 #include "ParserSubtitle608.h"
@@ -40,7 +40,7 @@
 template <class T>
 class user_data_registered_itu_t_t35_sei : public T
 {
-  static_assert(std::is_base_of<NalUnit, T>::value, "T must derive from NalUnit");
+  static_assert(std::is_base_of<NalUnitBase, T>::value, "T must derive from NalUnitBase");
     
 public:
   user_data_registered_itu_t_t35_sei(QSharedPointer<T> sei_src) : T(sei_src) {};
