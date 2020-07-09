@@ -193,7 +193,7 @@ jobs:
         7z a artifacts/YUView-Win.zip ./deploy/*
       shell: cmd
     - name: Debug wix
-      run |
+      run: |
         cd "C:\Program Files (x86)\Common Files\Merge Modules"
         dir
         cd "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\"
@@ -202,6 +202,7 @@ jobs:
         dir
         cd "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC"
         dir
+      shell: cmd
     - name: Wix Windows
       run: |
         cd $GITHUB_WORKSPACE/deployment/wix
