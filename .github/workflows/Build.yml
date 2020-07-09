@@ -18,17 +18,9 @@ jobs:
     steps:
     - name: Debug wix
       run: |
-        cd "C:\Program Files (x86)\Common Files\Merge Modules"
-        cd
-        dir "C:\Program Files (x86)\Common Files\Merge Modules"
-        cd "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\"
-        cd
-        dir "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\"
-        cd "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist"
-        dir
-        cd "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC"
-        cd
-        dir "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC"
+        dir "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC\v142"
+        dir "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC\14.26.28720"
+        dir "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC\14.25.28508"
       shell: cmd
     
   # How to upload files to the release:
