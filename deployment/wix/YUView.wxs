@@ -28,7 +28,7 @@
       </Component>
     </DirectoryRef>
     <DirectoryRef Id="TARGETDIR">
-      <Merge Id="VCRedist" SourceFile="Microsoft_VC140_CRT_x64.msm" DiskId="1" Language="0"/>
+      <Merge Id="VCRedist" SourceFile="Microsoft_VC142_CRT_x64.msm" DiskId="1" Language="0"/>
     </DirectoryRef>
 
     <Feature Id='ProductFeature' Title='YUView' Level='1'>
