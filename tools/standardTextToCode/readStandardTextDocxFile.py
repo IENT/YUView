@@ -1,32 +1,39 @@
 from docx import Document
-from enum import Enum, unique, auto
 from typing import List, NewType
+from codingType import Coding, CodingType, isCodingType
+import re
 
-@unique
-class Coding(Enum):
-    FIXED_CODE = auto()        # f(x) - fixed code to assert
-    UNSIGNED_FIXED = auto()    # u(x) - unsigned int with a fixed number of bits
-    UNSIGNED_VARIABLE = auto() # u(v) - unsigned int with a variable number of bits
-    UNSIGNED_EXP = auto()      # ue(v) - unsigned int wit exp golomb coding
-    SIGNED_EXP = auto()        # se(v) - signed int with exp golomb coding
+def getEntryType(text : str):
+    if isVariableName(text):
+        return "Variable"
+    if text.startswith("for"):
+        return "for"
+    if text.startswith("if"):
+        return "if"
 
 class Variable:
     def __init__(self, name : str, descriptor : str):
         self.name = name
-        if (descriptor.startswith("f(")):
-            self.type = Coding.FIXED_CODE
-            self.fixedLength = int(descriptor[2:-1])
-        elif (descriptor.startswith("u(v)")):
-            self.type = Coding.UNSIGNED_VARIABLE
-        elif (descriptor.startswith("u(")):
-            self.type = Coding.UNSIGNED_FIXED
-            self.fixedLength = int(descriptor[2:-1])
-        elif (descriptor.startswith("ue(v)")):
-            self.type = Coding.UNSIGNED_EXP
-        elif (descriptor.startswith("se(v)")):
-            self.type = Coding.SIGNED_EXP
-        else:
-            raise SyntaxError("Unknown descriptor type " + descriptor)
+        self.coding = CodingType(descriptor)
+    def __str__(self):
+        return f"{self.name} --> {self.coding}"
+
+def isVariableName(text : str):
+    return re.fullmatch("[a-z][a-z0-9]*(_[a-z0-9]*)+", text)
+
+class ContainerIf:
+    def __init__(self, depth: int, description : str):
+        self.condition = None
+        self.depth = depth
+        # TODO
+
+class ContainerFor:
+    def __init__(self, depth: int, description : str):
+        self.variableName = None
+        self.depth = depth
+        self.breakCondition = None
+        self.increment = None
+        # TODO
 
 class parsingClass:
     def __init__(self, table):
@@ -46,19 +53,33 @@ class parsingClass:
             self.arguments.append(a.strip())
     def parseCode(self, table):
         # In case the table is not perfectly aligned on the right (as it is in the VVC standard text),
-        # the table seems to be malformed here. 
-        nrColumns = len(table.columns)
-        if (nrColumns == 2):
-            useColumns = (0, 1)
-        elif (nrColumns == 3):
-            useColumns = (1, 2)
-        else:
-            raise SyntaxError("Invalid number of columns in table")
-        for row in range(1, len(table.rows)):
-            text = table.cell(row, useColumns[0]).text.strip()
-            descriptor = table.cell(row, useColumns[1]).text.strip()
-            if (len(descriptor) > 0):
-                self.variables.append(Variable(text, descriptor))
+        # the table seems to be malformed here. So we iterate through all items in the table
+        # and just try to make the best of it.
+        print(f"Parsing {self.name}")
+        try:
+            i = 2
+            while (True):
+                t0 = table.cell(0, i).text.strip()
+                t1 = table.cell(0, i+1).text.strip()
+                if (t0.startswith("nal_unit(")):
+                    continue
+                entryType = getEntryType(t0)
+                if (entryType == "Variable"):
+                    v = Variable(t0, t1)
+                    print(f"V {v}")
+                    self.variables.append(v)
+                try:
+                    t2 = table.cell(0, i+2).text.strip()
+                except IndexError:
+                    # No more data
+                    return
+                if (t2 == t1):
+                    # Skip identical entries. This may be the aforementioned glitch.
+                    i += 1
+                i += 2
+        except Exception as ex:
+            print(f"Error parsing {self.name}: {ex}")
+            return
 
 def main():
     filename = "JVET-R2001-vB.docx"
