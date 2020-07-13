@@ -59,11 +59,11 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(const yuvPi
     if (idx == -1)
       idx = 0;
     comboBoxBitDepth->setCurrentIndex(idx);
-    comboBoxEndianess->setEnabled(idx != 0);
+    comboBoxEndianness->setEnabled(idx != 0);
   }
 
-  // Endianess
-  comboBoxEndianess->setCurrentIndex(yuvFormat.bigEndian ? 0 : 1);
+  // Endianness
+  comboBoxEndianness->setCurrentIndex(yuvFormat.bigEndian ? 0 : 1);
 
   // Chroma offsets
   comboBoxChromaOffsetX->setCurrentIndex(yuvFormat.chromaOffset[0]);
@@ -159,8 +159,8 @@ yuvPixelFormat videoHandlerYUVCustomFormatDialog::getYUVFormat() const
   Q_ASSERT(idx >= 0);
   format.bitsPerSample = bitDepthList[idx];
 
-  // Set the endianess
-  format.bigEndian = (comboBoxEndianess->currentIndex() == 0);
+  // Set the endianness
+  format.bigEndian = (comboBoxEndianness->currentIndex() == 0);
 
   // Set the chroma offset
   format.chromaOffset[0] = comboBoxChromaOffsetX->currentIndex();
@@ -189,7 +189,7 @@ yuvPixelFormat videoHandlerYUVCustomFormatDialog::getYUVFormat() const
 
 void videoHandlerYUVCustomFormatDialog::on_comboBoxBitDepth_currentIndexChanged(int idx)
 {
-  // Endianess only makes sense when the bit depth is > 8bit.
+  // Endianness only makes sense when the bit depth is > 8bit.
   bool bitDepth8 = (idx == 0);
-  comboBoxEndianess->setEnabled(!bitDepth8);
+  comboBoxEndianness->setEnabled(!bitDepth8);
 }

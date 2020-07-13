@@ -116,7 +116,7 @@ uint64_t SubByteReader::readBits64(int nrBits, QString &bitsRead)
 QByteArray SubByteReader::readBytes(int nrBytes)
 {
   if (posInBuffer_bits != 0 && posInBuffer_bits != 8)
-    throw std::logic_error("When reading bytes from the bitstream, it should be byte alligned.");
+    throw std::logic_error("When reading bytes from the bitstream, it should be byte aligned.");
 
   if (posInBuffer_bits == 8)
     if (!this->gotoNextByte())

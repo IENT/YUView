@@ -80,7 +80,7 @@ void yuvPixelFormatTest::testFormatFromToString()
     }
     if (fmt.bitsPerSample > 8 && fmt.bigEndian != fmtNew.bigEndian)
     {
-      QFAIL(QString("Comparison of parameters failed. Endianess wrong. Names: %1").arg(name).toLocal8Bit().data());
+      QFAIL(QString("Comparison of parameters failed. Endianness wrong. Names: %1").arg(name).toLocal8Bit().data());
     }
   }
 }

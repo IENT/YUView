@@ -175,7 +175,7 @@ yuvPixelFormat::yuvPixelFormat(const QString &name)
       return;
     newFormat.bitsPerSample = bitDepth;
 
-    // Get the endianess. If not in the name, assume LE
+    // Get the endianness. If not in the name, assume LE
     newFormat.bigEndian = (rxYUVFormat.cap(4) == "BE");
 
     // Get the chroma offsets
@@ -323,7 +323,7 @@ QString yuvPixelFormat::getName() const
   // Add the bits
   name += QString(" %1-bit").arg(this->bitsPerSample);
 
-  // Add the endianess (if the bit depth is greater 8)
+  // Add the endianness (if the bit depth is greater 8)
   if (this->bitsPerSample > 8)
     name += (this->bigEndian) ? " BE" : " LE";
 
