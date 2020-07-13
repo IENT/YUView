@@ -2982,7 +2982,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
   const int subH = srcPixelFormat.getSubsamplingHor();
   const int subV = srcPixelFormat.getSubsamplingVer();
 
-  // Get the endianess of the inputs
+  // Get the endianness of the inputs
   const bool bigEndian[2] = {srcPixelFormat.bigEndian, yuvItem2->srcPixelFormat.bigEndian};
 
   // Get pointers to the inputs
