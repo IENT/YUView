@@ -5,23 +5,64 @@ import re
 from abc import ABC, abstractmethod
 
 def isVariableName(text : str):
+    if ("[" in text and "]" in text):
+        text = text.split("[")[0]  # Array indices are ok
     return re.fullmatch("[a-z][a-z0-9]*(_[a-z0-9]+)+", text)
 def isFunctionCall(text : str):
     if (not "(" in text or not ")" in text):
         return False
     return isVariableName(text.split("(")[0].strip())
+def removeComments(text : str):
+    commentStart = text.find("/*")
+    while (commentStart != -1):
+        commentEnd = text.find("*/")
+        if (commentEnd == -1):
+            return text
+        if (commentEnd <= commentStart):
+            raise SyntaxError("Error removing comment. End before start. Line: " + text)
+        text = text[0:commentStart] + text[commentEnd+2:]
+        commentStart = text.find("/*")
+    return text.strip()
+def cleanCondition(text : str):
+    text = text.strip()
+    text = text.replace("=\xa0=", "==")
+    text = text.replace("|\xa0|", "||")
+    text = text.replace("[\xa0", "[")
+    text = text.replace("\xa0]", "]")
+    text = text.replace("  ", " ")
+    text = text.replace("\n", "")
+    text = text.replace("\t", "")
+    return text
+def cleanArgument(text : str):
+    text = text.strip()
+    text = text.replace("[\xa0", "[")
+    text = text.replace("\xa0]", "]")
+    return text
+def cleanComment(text : str):
+    text = text.strip()
+    text = text.replace("=\xa0=", "==")
+    text = text.replace("[\xa0", "[")
+    text = text.replace("\xa0]", "]")
+    text = text.replace("\n", " ")
+    text = text.replace("\t", "")
+    text = text.replace("( ", "(")
+    text = text.replace(" )", ")")
+    return text
 
 def getEntryType(text : str):
+    text = removeComments(text)
     if isVariableName(text):
         return "Variable"
     if isFunctionCall(text):
         return "FunctionCall"
     if text.startswith("for"):
         return "for"
-    if text.startswith("if"):
+    if text.startswith("if") or text.startswith("else if") or text.startswith("} else") or text.startswith("else"):
         return "if"
     if text.startswith("while"):
         return "while"
+    if text.startswith("do"):
+        return "do"
 
 class ParsingItem:
     def __init__(self, parent):
@@ -31,15 +72,44 @@ class Variable(ParsingItem):
     def __init__(self, parent):
         super().__init__(parent)
         self.name = None
+        self.arrayIndex = None
         self.coding = None
     def fromText(self, name : str, descriptor : str):
-        self.name = name
+        if ("[" in name and "]" in name):
+            self.arrayIndex = []
+            openBracket = name.find("[")
+            self.name = name[0:openBracket]
+            while (True):
+                closeBracket = name.find("]")
+                newIndex = name[openBracket+1:closeBracket].strip()
+                self.arrayIndex.append(newIndex)
+                name = name[closeBracket+1:]
+                openBracket = name.find("[")
+                if (openBracket == -1):
+                    break
+        else:
+            self.name = name
         self.coding = CodingType(descriptor)
     def __str__(self):
-        spaces = ""
+        s = ""
         for _ in range(self.parent.depth):
-            spaces += "  "
-        return f"{spaces}{self.name} --> {self.coding}"
+            s += "  "
+        s += self.name
+        if (self.arrayIndex):
+            s += str(self.arrayIndex)
+        return f"{s} --> {self.coding}"
+
+class CommentEntry(ParsingItem):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.text = None
+    def fromText(self, text : str):
+        self.text = cleanComment(text)
+    def __str__(self):
+        s = ""
+        for _ in range(self.parent.depth):
+            s += "  "
+        return f"{s}//{self.text}"
 
 class FunctionCall(ParsingItem):
     def __init__(self, parent):
@@ -48,7 +118,12 @@ class FunctionCall(ParsingItem):
         self.arguments = None
     def fromText(self, name : str):
         self.functionName = name.split("(")[0]
-        self.arguments = name.split("(")[1].split(")")[0].split(",")
+        self.arguments = []
+        for argument in (name.split("(")[1].split(")")[0].split(",")):
+            c = cleanArgument(argument)
+            if (len(c) > 0):
+                self.arguments.append(cleanArgument(argument))
+        debugStop = 234
     def __str__(self):
         spaces = ""
         for _ in range(self.parent.depth):
@@ -104,7 +179,7 @@ class Container(ParsingItem):
                     f = ContainerFor(self)
                     f.fromText(t0)
                     print(f"{f}")
-                    self.children.append(v)
+                    self.children.append(f)
                     tableIndex = f.parseChildren(table, tableIndex)
                 elif (entryType == "if"):
                     i = ContainerIf(self)
@@ -118,8 +193,22 @@ class Container(ParsingItem):
                     print(f"{w}")
                     self.children.append(w)
                     tableIndex = w.parseChildren(table, tableIndex)
+                elif (entryType == "do"):
+                    d = ContainerDo(self)
+                    d.fromText(t0)
+                    print(d.getDoText())
+                    tableIndex = d.parseChildren(table, tableIndex)
+                    tableIndex = d.parseClosingWhile(table, tableIndex)
+                    print(f"{d}")
+                    self.children.append(d)
                 elif (entryType != None):
                     debugStop = 2222
+                else:
+                    if (t0.strip() != "}"):
+                        c = CommentEntry(self)
+                        c.fromText(t0)
+                        print(f"{c}")
+                        self.children.append(c)
 
                 if (lastEntry):
                     return tableIndex
@@ -152,15 +241,29 @@ class ContainerIf(Container):
     def __init__(self, parent):
         super().__init__(parent)
         self.condition = None
+        self.isElseIf = False
+        self.isElse = False
     def fromText(self, text : str):
-        split = re.split(";|\)|\(", text)
-        if (split[0].strip() != "if"):
-            raise SyntaxError("If container does not start with if")
-        self.condition = split[1].strip()
+        if (not text.startswith("if") and not text.startswith("else if") and not text.startswith("} else") and not text.startswith("else")):
+            raise SyntaxError("If container does not start with if or else if")
+        if (text.startswith("else if")):
+            self.isElseIf = True
+        if (text.startswith("} else") or text.startswith("else")):
+            self.isElse = True
+            return
+        start = text.find("(")
+        end = text.rfind(")")
+        if (start == -1 or end == -1):
+            raise SyntaxError("If condition does not contain brackets")
+        self.condition = cleanCondition(text[start+1:end])
     def __str__(self):
         spaces = ""
         for _ in range(self.parent.depth):
             spaces += "  "
+        if (self.isElse):
+            return f"{spaces}else"
+        if (self.isElseIf):
+            return f"{spaces}else if({self.condition})"
         return f"{spaces}if({self.condition})"
 
 class ContainerWhile(Container):
@@ -168,15 +271,57 @@ class ContainerWhile(Container):
         super().__init__(parent)
         self.condition = None
     def fromText(self, text : str):
-        split = re.split(";|\)|\(", text)
-        if (split[0].strip() != "while"):
+        if (not text.startswith("while")):
             raise SyntaxError("While container does not start with while")
-        self.condition = split[1].strip()
+        start = text.find("(")
+        end = text.rfind(")")
+        if (start == -1 or end == -1):
+            raise SyntaxError("While loop does not contain brackets")
+        self.condition = cleanCondition(text[start+1:end])
     def __str__(self):
         spaces = ""
         for _ in range(self.parent.depth):
             spaces += "  "
         return f"{spaces}while({self.condition})"
+
+class ContainerDo(Container):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.condition = None
+    def fromText(self, text : str):
+        if (not text.startswith("do")):
+            raise SyntaxError("Do container does not start with do")
+    def parseClosingWhile(self, table, tableIndex : int):
+        t0_full = table.cell(0, tableIndex).text
+        text = t0_full.strip()
+        if (not text.startswith("} while")):
+            raise SyntaxError("do does not end with while")
+        start = text.find("(")
+        end = text.rfind(")")
+        if (start == -1 or end == -1):
+            raise SyntaxError("Do ... while loop does not contain brackets")
+        self.condition = cleanCondition(text[start+1:end])
+        t1 = table.cell(0, tableIndex+1).text.strip()
+        try:
+            t2 = table.cell(0, tableIndex+2).text.strip()
+            if (t2 == t1):
+                # Skip identical entries. This may be the aforementioned glitch.
+                tableIndex += 1
+        except IndexError:
+            # No more data
+            pass
+        tableIndex += 2
+        return tableIndex
+    def getDoText(self):
+        spaces = ""
+        for _ in range(self.parent.depth):
+            spaces += "  "
+        return f"{spaces}do"
+    def __str__(self):
+        spaces = ""
+        for _ in range(self.parent.depth):
+            spaces += "  "
+        return f"{spaces}while ({self.condition})"
 
 class ContainerFor(Container):
     def __init__(self, parent):
@@ -190,8 +335,8 @@ class ContainerFor(Container):
         if (split[0].strip() != "for"):
             raise SyntaxError("For container does not start with for")
         self.variableName = split[1].strip().split("=")[0].strip()
-        self.initialValue = int(split[1].strip().split("=")[1].strip())
-        self.breakCondition = split[2].strip().strip()
+        self.initialValue = split[1].strip().split("=")[1].strip()
+        self.breakCondition = cleanCondition(split[2].strip().strip())
         self.increment = split[3].strip().strip()
     def __str__(self):
         spaces = ""
@@ -205,7 +350,9 @@ def main():
     document = Document(filename)
 
     # From where to where to parse. The last entry will not be included.
-    firstLastEntry = ["nal_unit_header", "slice_data"]
+    #firstLastEntry = ["nal_unit_header", "slice_data"]
+    firstLastEntry = ["sei_payload", ""]
+    skipEntries = ["sei_rbsp"]
 
     firstEntryFound = False
     parsedTables = []
@@ -215,13 +362,12 @@ def main():
             firstEntryFound = True
         if (firstEntryFound and entryName == firstLastEntry[1]):
             break
+        if (entryName in skipEntries):
+            continue
         if firstEntryFound:
             tableItem = ContainerTable()
             tableItem.parseContainer(table)
             parsedTables.append(tableItem)
-        if (len(parsedTables) > 3):
-            # TODO: REMOVE
-            break
     
     print ("Read {} classes".format(len(parsedTables)))
     for i, c in enumerate(parsedTables):
