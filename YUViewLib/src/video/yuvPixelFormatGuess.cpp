@@ -209,7 +209,7 @@ yuvPixelFormat guessFormatFromSizeAndName(const QSize size, int bitDepth, bool p
   auto dirName = fileInfo.absoluteDir().dirName();
   checkStrings.append(dirName);
 
-  if (fileInfo.suffix() == "nv21")
+  if (fileInfo.suffix().toLower() == "nv21")
   {
     // This should be a 8 bit planar yuv 4:2:0 file with interleaved UV components and YVU order
     auto fmt = yuvPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YVU);
