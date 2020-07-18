@@ -50,6 +50,10 @@ PlaybackController::PlaybackController()
 {
   setupUi(this);
 
+  if (is_Q_OS_MAC)
+    // There is a bug in Qt that significantly slows down drawing QSlider ticks on Mac
+    this->frameSlider->setTickPosition(QSlider::NoTicks);
+
   // Default fps
   fpsLabel->setText("0");
   fpsLabel->setStyleSheet("");
