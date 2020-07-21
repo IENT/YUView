@@ -34,6 +34,10 @@
 
 #include <cmath>
 #include <QPainter>
+#include <QtGlobal>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+    #include <QPainterPath>
+#endif
 #include <QtMath>
 
 #include "common/functions.h"
