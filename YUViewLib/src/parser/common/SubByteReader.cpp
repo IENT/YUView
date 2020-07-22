@@ -33,6 +33,7 @@
 #include "SubByteReader.h"
 
 #include <stdexcept>
+#include <cassert>
 
 unsigned int SubByteReader::readBits(int nrBits, QString &bitsRead)
 {
