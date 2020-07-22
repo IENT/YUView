@@ -379,59 +379,88 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
   //       For that, the plotRect will become handy.
   Q_UNUSED(plotRect);
 
+  const auto plotXMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft()).x() - 0.5;
+  const auto plotXMax = this->convertPixelPosToPlotPos(plotRect.bottomRight()).x() + 0.5;
+
+  DEBUG_PLOT("PlotViewWidget::drawPlot start");
   for (unsigned int plotIndex = 0; plotIndex < this->model->getNrPlots(); plotIndex++)
   {
     auto param = this->model->getPlotParameter(plotIndex);
     if (param.type == PlotModel::PlotType::Bar)
     {
-      const auto nrBars = param.xRange.max - param.xRange.min;
-      for (int i = 0; i < nrBars; i++)
+      auto setPainterColor = [&painter, &detailedPainting](bool isIntra, bool isHighlight)
+      {
+        QColor color = isIntra ? QColor(200, 100, 0, 100) : QColor(0, 0, 200, 100);
+        if (isHighlight)
+          color = color.lighter(150);
+        if (detailedPainting)
+          painter.setPen(color);
+        else
+          painter.setPen(Qt::NoPen);
+        painter.setBrush(color);
+      };
+
+      QVector<QRectF> normalBars;
+      QVector<QRectF> intraBars;
+      for (int i = 0; i < param.nrpoints; i++)
       {
         const auto value = model->getPlotPoint(plotIndex, unsigned(i));
+
+        if (value.x < plotXMin || value.x > plotXMax)
+          continue;
 
         const auto barTopLeft = this->convertPlotPosToPixelPos(QPointF(value.x - 0.5, value.y));
         const auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + 0.5, 0));
         
-        const QColor barColor = QColor(0, 0, 200);
-        const QColor barColorIntra = QColor(200, 100, 0);
-
         const bool isHoveredBar = this->currentlyHoveredModelIndex != -1 && this->currentlyHoveredModelIndex == i;
-        QColor c = value.intra ? barColorIntra : barColor;
+        
+        const auto r = QRectF(barTopLeft, barBottomRight);
         if (isHoveredBar)
         {
-          int h, s, v, a;
-          c.getHsv(&h, &s, &v, &a);
-          h += 90;
-          c.setHsv(h, s, v, a);
+          setPainterColor(value.intra, true);
+          painter.drawRect(r);
         }
-        if (detailedPainting)
-          painter.setPen(c);
         else
-          painter.setPen(Qt::NoPen);
-        c.setAlpha(100);
-        painter.setBrush(c);
-
-        painter.drawRect(QRectF(barTopLeft, barBottomRight));
+        {
+          if (value.intra)
+            intraBars.append(r);
+          else
+            normalBars.append(r);
+        }
       }
+
+      DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing " << normalBars.size() << " bars");
+      setPainterColor(false, false);
+      painter.drawRects(normalBars);
+
+      DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing " << intraBars.size() << " intra bars");
+      setPainterColor(true, false);
+      painter.drawRects(intraBars);
     }
     else if (param.type == PlotModel::PlotType::Line)
     {
-      const auto nrLineSegments = param.nrpoints - 1;
-      for (unsigned int i = 0; i < nrLineSegments; i++)
+      QPolygonF linePoints;
+      for (unsigned int i = 0; i < param.nrpoints; i++)
       {
         const auto valueStart = model->getPlotPoint(plotIndex, unsigned(i));
         const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));
-        const auto valueEnd = model->getPlotPoint(plotIndex, unsigned(i + 1));
-        const auto linePointEnd = this->convertPlotPosToPixelPos(QPointF(valueEnd.x, valueEnd.y));
-        
-        QPen linePen(QColor(255, 200, 30));
-        linePen.setWidthF(detailedPainting ? 2.0 : 1.0);
-        painter.setPen(linePen);
-        painter.drawLine(linePointStart, linePointEnd);
-        if (detailedPainting)
-          painter.drawEllipse(linePointStart, 2.0, 2.0);
+
+        if (valueStart.x < plotXMin || valueStart.x > plotXMax)
+          continue;
+
+        linePoints.append(linePointStart);
       }
+
+      DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing line with " << linePoints.size() << " points");
+      QPen linePen(QColor(255, 200, 30));
+      linePen.setWidthF(detailedPainting ? 2.0 : 1.0);
+      painter.setPen(linePen);
+      painter.drawPolyline(linePoints);
+
+      // if (detailedPainting)
+      //   painter.drawEllipse(linePointStart, 2.0, 2.0);
     }
+
   }
 }
 
