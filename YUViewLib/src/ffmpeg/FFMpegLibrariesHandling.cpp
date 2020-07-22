@@ -3304,7 +3304,7 @@ void AVMotionVectorWrapper::update()
     assert(false);
 }
 
-AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descriptor, FFmpegLibraryVersion libVer) : fmtDescriptor(descriptor)
+AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descriptor, FFmpegLibraryVersion libVer)
 {
   if (libVer.avutil == 54)
   {

@@ -71,7 +71,6 @@ void yuvPixelFormatGuessTest::testFormatGuessFromFilename()
   QFETCH(unsigned, fileSize);
   QFETCH(int, width);
   QFETCH(int, height);
-  QFETCH(int, framerate);
   QFETCH(int, bitDepth);
   QFETCH(bool, packed);
   QFETCH(QString, expectedFormatName);
