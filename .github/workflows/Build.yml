@@ -17,9 +17,9 @@ jobs:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
     - name: Install Linux packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+      run: |
+        sudo apt-get update
+        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
     - name: Build
       run: |
         cd $GITHUB_WORKSPACE
