@@ -475,7 +475,9 @@ void PlotViewWidget::drawInfoBox(QPainter &painter, const QRectF &plotRect) cons
   const auto xRange = this->model->getPlotParameter(0).xRange;
   if (this->currentlyHoveredModelIndex < xRange.min || this->currentlyHoveredModelIndex >= xRange.max)
     return;
-  
+  if (this->currentlyHoveredModelIndex < 0 || this->currentlyHoveredModelIndex > int(this->model->getNrPlots()))
+    return;
+
   auto infoString = this->model->getPointInfo(0, this->currentlyHoveredModelIndex);
 
   // Create a QTextDocument. This object can tell us the size of the rendered text.
