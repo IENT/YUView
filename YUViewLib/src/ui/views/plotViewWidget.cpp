@@ -402,9 +402,9 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
 
       QVector<QRectF> normalBars;
       QVector<QRectF> intraBars;
-      for (int i = 0; i < param.nrpoints; i++)
+      for (unsigned int i = 0; i < param.nrpoints; i++)
       {
-        const auto value = model->getPlotPoint(plotIndex, unsigned(i));
+        const auto value = model->getPlotPoint(plotIndex, i);
 
         if (value.x < plotXMin || value.x > plotXMax)
           continue;
@@ -412,7 +412,7 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
         const auto barTopLeft = this->convertPlotPosToPixelPos(QPointF(value.x - 0.5, value.y));
         const auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + 0.5, 0));
         
-        const bool isHoveredBar = this->currentlyHoveredModelIndex != -1 && this->currentlyHoveredModelIndex == i;
+        const bool isHoveredBar = this->currentlyHoveredModelIndex != -1 && this->currentlyHoveredModelIndex == int(i);
         
         const auto r = QRectF(barTopLeft, barBottomRight);
         if (isHoveredBar)
