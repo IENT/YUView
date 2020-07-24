@@ -166,8 +166,11 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 
       TreeItem *subTree = sps_size_reader.getCurrentItemTree();
       QByteArray rawNAL = extradata.mid(pos+2, sps_size);
-      if (!annexBParser->parseAndAddNALUnit(nalID, rawNAL, this->bitrateItemModel.data(), subTree))
+      auto parseResult = annexBParser->parseAndAddNALUnit(nalID, rawNAL, {}, {}, subTree);
+      if (!parseResult.success)
         subTree->setError();
+      else if (parseResult.bitrateEntry)
+        this->bitrateItemModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
       nalID++;
       pos += sps_size + 2;
     }
@@ -183,8 +186,11 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 
       TreeItem *subTree = pps_size_reader.getCurrentItemTree();
       QByteArray rawNAL = extradata.mid(pos+2, pps_size);
-      if (!annexBParser->parseAndAddNALUnit(nalID, rawNAL, this->bitrateItemModel.data(), subTree))
+      auto parseResult = annexBParser->parseAndAddNALUnit(nalID, rawNAL, {}, {}, subTree);
+      if (!parseResult.success)
         subTree->setError();
+      else if (parseResult.bitrateEntry)
+        this->bitrateItemModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
       nalID++;
       pos += pps_size + 2;
     }
@@ -225,8 +231,11 @@ bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
       int length = nextStartCode - posInData;
       QByteArray nalData = (nextStartCode >= 0) ? extradata.mid(posInData, length) : extradata.mid(posInData);
       // Let the hevc annexB parser parse this
-      if (!annexBParser->parseAndAddNALUnit(nalID, nalData, this->bitrateItemModel.data(), extradataRoot))
+      auto parseResult = annexBParser->parseAndAddNALUnit(nalID, nalData, {}, {}, extradataRoot);
+      if (!parseResult.success)
         extradataRoot->setError();
+      else if (parseResult.bitrateEntry)
+        this->bitrateItemModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
       nalID++;
       posInData = nextStartCode + 3;
     }
@@ -261,8 +270,11 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
       int length = nextStartCode - posInData;
       QByteArray nalData = (nextStartCode >= 0) ? extradata.mid(posInData, length) : extradata.mid(posInData);
       // Let the hevc annexB parser parse this
-      if (!annexBParser->parseAndAddNALUnit(nalID, nalData, this->bitrateItemModel.data(), extradataRoot))
+      auto parseResult = annexBParser->parseAndAddNALUnit(nalID, nalData, {}, {}, extradataRoot);
+      if (!parseResult.success)
         extradataRoot->setError();
+      else if (parseResult.bitrateEntry)
+        this->bitrateItemModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
       nalID++;
       posInData = nextStartCode + 3;
     }
@@ -395,12 +407,17 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
         }
 
         // Parse the NAL data
-        QString nalTypeName;
-        QUint64Pair nalStartEndPosFile; // Not used
-        if (!annexBParser->parseAndAddNALUnit(nalID, nalData, this->bitrateItemModel.data(), itemTree, nalStartEndPosFile, &nalTypeName))
+        BitratePlotModel::BitrateEntry packetBitrateEntry;
+        packetBitrateEntry.dts = packet.get_dts();
+        packetBitrateEntry.pts = packet.get_pts();
+        auto parseResult = annexBParser->parseAndAddNALUnit(nalID, nalData, packetBitrateEntry, {}, itemTree);
+
+        if (!parseResult.success)
           itemTree->setError();
-        if (!nalTypeName.isEmpty())
-          nalNames.append(nalTypeName);
+        else if (parseResult.bitrateEntry)
+          this->bitrateItemModel->addBitratePoint(packet.get_stream_index(), *parseResult.bitrateEntry);
+        if (parseResult.nalTypeName)
+          nalNames.append(*parseResult.nalTypeName);
         nalID++;
       }
 
@@ -422,7 +439,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
       while (posInData + MIN_OBU_SIZE <= avpacketData.length())
       {
         QString obuTypeName;
-        QUint64Pair obuStartEndPosFile; // Not used
+        pairUint64 obuStartEndPosFile; // Not used
         try
         {  
           int nrBytesRead = obuParser->parseAndAddOBU(obuID, avpacketData.mid(posInData), itemTree, obuStartEndPosFile, &obuTypeName);
@@ -505,7 +522,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
       new TreeItem(QString("Byte %1").arg(i), val, "b(8)", code, rawDataRoot);
     }
 
-    BitratePlotModel::bitrateEntry entry;
+    BitratePlotModel::BitrateEntry entry;
     entry.pts = packet.get_pts();
     entry.dts = packet.get_dts();
     entry.bitrate = packet.get_data_size();
@@ -612,8 +629,11 @@ bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, ReaderHelper &
   QByteArray nalData = reader.readBytes(nalUnitLength);
 
   // Let the hevc annexB parser parse this
-  if (!annexBParser->parseAndAddNALUnit(unitID, nalData, bitrateModel, reader.getCurrentItemTree()))
+  auto parseResult = annexBParser->parseAndAddNALUnit(unitID, nalData, {}, {}, reader.getCurrentItemTree());
+  if (!parseResult.success)
     return false;
+  else if (bitrateModel != nullptr && parseResult.bitrateEntry)
+    bitrateModel->addBitratePoint(0, *parseResult.bitrateEntry);
 
   return true;
 }

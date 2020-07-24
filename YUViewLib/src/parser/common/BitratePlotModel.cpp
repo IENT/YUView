@@ -95,19 +95,20 @@ PlotModel::Point BitratePlotModel::getPlotPoint(unsigned plotIndex, unsigned poi
 QString BitratePlotModel::getPointInfo(unsigned plotIndex, unsigned pointIndex) const
 {
   const auto streamIndex = plotIndex / 2;
-
-  if (plotIndex == 0)
+  const auto isAveragePlot = plotIndex % 2 == 0;
+  if (isAveragePlot)
   {
     QMutexLocker locker(&this->dataMutex);
     auto &entry = this->dataPerStream[streamIndex][pointIndex];
-    return QString("<h4>Frame</h4>"
+    return QString("<h4>Stream %1</h4>"
                    "<table width=\"100%\">"
-                   "<tr><td>PTS:</td><td align=\"right\">%1</td></tr>"
-                   "<tr><td>DTS:</td><td align=\"right\">%2</td></tr>"
-                   "<tr><td>Bitrate:</td><td align=\"right\">%3</td></tr>"
-                   "<tr><td>Average:</td><td align=\"right\">%4</td></tr>"
-                   "<tr><td>Type:</td><td align=\"right\">%5</td></tr>"
+                   "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
+                   "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
+                   "<tr><td>Bitrate:</td><td align=\"right\">%4</td></tr>"
+                   "<tr><td>Average:</td><td align=\"right\">%5</td></tr>"
+                   "<tr><td>Type:</td><td align=\"right\">%6</td></tr>"
                    "</table>")
+        .arg(streamIndex)
         .arg(entry.pts)
         .arg(entry.dts)
         .arg(entry.bitrate)
@@ -117,7 +118,7 @@ QString BitratePlotModel::getPointInfo(unsigned plotIndex, unsigned pointIndex) 
   return {};
 }
 
-void BitratePlotModel::addBitratePoint(int streamIndex, bitrateEntry &entry)
+void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)
 {
   QMutexLocker locker(&this->dataMutex);
 
@@ -132,7 +133,7 @@ void BitratePlotModel::addBitratePoint(int streamIndex, bitrateEntry &entry)
 
   // Keep the list sorted
   const auto currentSortMode = this->sortMode;
-  auto compareFunctionLessThen = [currentSortMode](const bitrateEntry &a, const bitrateEntry &b) 
+  auto compareFunctionLessThen = [currentSortMode](const BitrateEntry &a, const BitrateEntry &b) 
   {
     if (currentSortMode == SortMode::DECODE_ORDER)
       return a.dts < b.dts;
@@ -153,7 +154,7 @@ void BitratePlotModel::setBitrateSortingIndex(int index)
   this->sortMode = newSortMode;
 
   const auto currentSortMode = this->sortMode;
-  auto compareFunctionLessThen = [currentSortMode](const bitrateEntry &a, const bitrateEntry &b) 
+  auto compareFunctionLessThen = [currentSortMode](const BitrateEntry &a, const BitrateEntry &b) 
   {
     if (currentSortMode == SortMode::DECODE_ORDER)
       return a.dts < b.dts;

@@ -52,7 +52,7 @@ public:
   
   QString getItemInfoText(int index);
 
-  struct bitrateEntry
+  struct BitrateEntry
   {
     int dts {0};
     int pts {0};
@@ -61,7 +61,7 @@ public:
     QString frameType;
   };
 
-  void addBitratePoint(int streamIndex, bitrateEntry &entry);
+  void addBitratePoint(int streamIndex, BitrateEntry &entry);
   void setBitrateSortingIndex(int index);
 
 private:
@@ -73,7 +73,7 @@ private:
   };
   SortMode sortMode { SortMode::DECODE_ORDER };
 
-  QMap<unsigned int, QList<bitrateEntry>> dataPerStream;
+  QMap<unsigned int, QList<BitrateEntry>> dataPerStream;
   mutable QMutex dataMutex;
 
   unsigned int calculateAverageValue(unsigned streamIndex, unsigned pointIndex) const;

@@ -41,9 +41,9 @@
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_VVC qDebug
+#define DEBUG_VVC(msg) qDebug() << msg
 #else
-#define DEBUG_VVC(fmt,...) ((void)0)
+#define DEBUG_VVC(msg) ((void)0)
 #endif
 
 double parserAnnexBVVC::getFramerate() const
@@ -83,12 +83,12 @@ QPair<int,int> parserAnnexBVVC::getSampleAspectRatio()
   return QPair<int,int>(1,1);
 }
 
-bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+parserAnnexB::ParseResult parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
-  Q_UNUSED(nalTypeName);
+  parserAnnexB::ParseResult parseResult;
   
   if (nalID == -1 && data.isEmpty())
-    return false;
+    return parseResult;
 
   // Skip the NAL unit header
   int skip = 0;
@@ -115,34 +115,40 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     nalRoot = new TreeItem(packetModel->getRootItem());
 
   // Create a nal_unit and read the header
-  nal_unit_vvc nal_vvc(nalStartEndPosFile, nalID);
+  nal_unit_vvc nal_vvc(nalID, nalStartEndPosFile);
   if (!nal_vvc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
-    return false;
+    return parseResult;
 
   if (nal_vvc.isAUDelimiter())
   {
     DEBUG_VVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
     
-    BitratePlotModel::bitrateEntry entry;
+    BitratePlotModel::BitrateEntry entry;
     entry.pts = counterAU;
     entry.dts = counterAU;  // TODO: Not true. We need to parse the VVC header data
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = false; // TODO: Also not correct. We need parsing.
-    bitrateModel->addBitratePoint(0, entry);
+    parseResult.bitrateEntry = entry;
 
     if (counterAU > 0)
     {
       const bool curFrameIsRandomAccess = (counterAU == 1);
       if (!addFrameToList(counterAU, curFrameFileStartEndPos, curFrameIsRandomAccess))
-        return ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
-      DEBUG_VVC("Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, counterAU, curFrameIsRandomAccess ? " - ra" : "");
+      {
+        ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
+        return parseResult;
+      }
+      if (curFrameFileStartEndPos)
+        DEBUG_VVC("Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << counterAU << (curFrameIsRandomAccess ? " - ra" : ""));
+      else
+        DEBUG_VVC("Adding start/end %d/%d - POC NA/NA" << (curFrameIsRandomAccess ? " - ra" : ""));
     }
     curFrameFileStartEndPos = nalStartEndPosFile;
     sizeCurrentAU = 0;
     counterAU++;
   }
-  else
-    curFrameFileStartEndPos.second = nalStartEndPosFile.second;
+  else if (curFrameFileStartEndPos && nalStartEndPosFile)
+    curFrameFileStartEndPos->second = nalStartEndPosFile->second;
 
   sizeCurrentAU += data.size();
 
@@ -150,7 +156,8 @@ bool parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     // Set a useful name of the TreeItem (the root for this NAL)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_vvc.nal_idx).arg(nal_vvc.nal_unit_type_id) + specificDescription);
 
-  return true;
+  parseResult.success = true;
+  return parseResult;
 }
 
 QByteArray parserAnnexBVVC::nal_unit_vvc::getNALHeader() const

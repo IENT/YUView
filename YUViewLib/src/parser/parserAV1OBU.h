@@ -46,7 +46,7 @@ public:
     parserAV1OBU(QObject *parent = nullptr);
     ~parserAV1OBU() {}
 
-    unsigned int parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile = QUint64Pair(-1,-1), QString *obuTypeName=nullptr);
+    unsigned int parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, pairUint64 obuStartEndPosFile = pairUint64(-1,-1), QString *obuTypeName=nullptr);
 
     // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
     // When parsing of raw OBU files is added, we will need this.
@@ -86,7 +86,7 @@ protected:
   */
   struct obu_unit
   {
-    obu_unit(QUint64Pair filePosStartEnd, int obu_idx) : filePosStartEnd(filePosStartEnd), obu_idx(obu_idx) {}
+    obu_unit(pairUint64 filePosStartEnd, int obu_idx) : filePosStartEnd(filePosStartEnd), obu_idx(obu_idx) {}
     obu_unit(QSharedPointer<obu_unit> obu_src);
     virtual ~obu_unit() {} // This class is meant to be derived from.
 
@@ -94,7 +94,7 @@ protected:
     bool parse_obu_header(const QByteArray &header_data, unsigned int &nrBytesHeader, TreeItem *root);
 
     // Pointer to the first byte of the start code of the NAL unit
-    QUint64Pair filePosStartEnd;
+    pairUint64 filePosStartEnd;
 
     // The index of the obu within the bitstream
     int obu_idx;

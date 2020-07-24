@@ -553,10 +553,10 @@ void playlistItemCompressedVideo::loadRawData(int frameIdxInternal, bool caching
       {
         // We are reading from a raw annexB file and use ffmpeg for decoding
         // Get the data of the next frame (which might be multiple NAL units)
-        QUint64Pair frameStartEndFilePos = inputFileAnnexBParser->getFrameStartEndPos(readAnnexBFrameCounterCodingOrder);
-        QByteArray data;
-        if (frameStartEndFilePos != QUint64Pair(-1, -1))
-          data = caching ? inputFileAnnexBCaching->getFrameData(frameStartEndFilePos) : inputFileAnnexBLoading->getFrameData(frameStartEndFilePos);
+        auto frameStartEndFilePos = inputFileAnnexBParser->getFrameStartEndPos(readAnnexBFrameCounterCodingOrder);
+        Q_ASSERT_X(frameStartEndFilePos, "playlistItemCompressedVideo::loadRawData", "frameStartEndFilePos could not be retrieved. This should always work for a raw AnnexB file.");
+
+        QByteArray data = caching ? inputFileAnnexBCaching->getFrameData(*frameStartEndFilePos) : inputFileAnnexBLoading->getFrameData(*frameStartEndFilePos);
         DEBUG_COMPRESSED("playlistItemCompressedVideo::loadYUVData retrived frame data from file - AnnexBCnt %d startEnd %lu-%lu - size %d", readAnnexBFrameCounterCodingOrder, frameStartEndFilePos.first, frameStartEndFilePos.second, data.size());
         if (!dec->pushData(data))
         {
