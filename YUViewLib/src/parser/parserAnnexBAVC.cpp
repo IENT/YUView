@@ -397,8 +397,16 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate " << sizeCurrentAU);
 
       BitratePlotModel::BitrateEntry entry;
-      entry.pts = lastFramePOC;
-      entry.dts = counterAU;
+      if (bitrateEntry)
+      {
+        entry.pts = bitrateEntry->pts;
+        entry.dts = bitrateEntry->dts;
+      }
+      else
+      {
+        entry.pts = lastFramePOC;
+        entry.dts = counterAU;
+      }
       entry.bitrate = sizeCurrentAU;
       entry.keyframe = currentAUAllSlicesIntra;
       entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);

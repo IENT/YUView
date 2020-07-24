@@ -124,8 +124,16 @@ parserAnnexB::ParseResult parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteAr
     DEBUG_VVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
     
     BitratePlotModel::BitrateEntry entry;
-    entry.pts = counterAU;
-    entry.dts = counterAU;  // TODO: Not true. We need to parse the VVC header data
+    if (bitrateEntry)
+    {
+      entry.pts = bitrateEntry->pts;
+      entry.dts = bitrateEntry->dts;
+    }
+    else
+    {
+      entry.pts = counterAU;
+      entry.dts = counterAU;  // TODO: Not true. We need to parse the VVC header data
+    }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = false; // TODO: Also not correct. We need parsing.
     parseResult.bitrateEntry = entry;
