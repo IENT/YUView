@@ -41,36 +41,33 @@
 
 #include "BitratePlotModel.h"
 
-unsigned int BitratePlotModel::getNrPlots() const 
-{ 
-  return this->dataPerStream.size() * 2;
+unsigned BitratePlotModel::getNrStreams() const
+{
+  return this->dataPerStream.size();
 }
 
-PlotModel::PlotParameter BitratePlotModel::getPlotParameter(unsigned plotIndex) const 
+PlotModel::StreamParameter BitratePlotModel::getStreamParameter(unsigned streamIndex) const
 {
   QMutexLocker locker(&this->dataMutex);
 
-  const auto streamIndex = plotIndex / 2;
-  const bool average = (plotIndex % 2 == 0);
-
   if (this->dataPerStream.contains(streamIndex))
   {
-    PlotModel::PlotParameter parameter;
-    parameter.nrpoints = this->dataPerStream[streamIndex].size();
-    parameter.xRange = (sortMode == SortMode::DECODE_ORDER) ? this->rangeDts : this->rangePts;
-    parameter.yRange = this->rangeBitratePerStream[streamIndex];
-    parameter.type = average ? PlotType::Line : PlotType::Bar;
-    return parameter;
+    PlotModel::StreamParameter streamParameter;
+    streamParameter.xRange = (sortMode == SortMode::DECODE_ORDER) ? this->rangeDts : this->rangePts;
+    streamParameter.yRange = this->rangeBitratePerStream[streamIndex];
+
+    const auto nrPoints = unsigned(this->dataPerStream[streamIndex].size());
+    streamParameter.plotParameters.append({PlotType::Bar, nrPoints});
+    streamParameter.plotParameters.append({PlotType::Line, nrPoints});
+
+    return streamParameter;
   }
   return {};
 }
 
-PlotModel::Point BitratePlotModel::getPlotPoint(unsigned plotIndex, unsigned pointIndex) const
+PlotModel::Point BitratePlotModel::getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
 {
   QMutexLocker locker(&this->dataMutex);
-
-  const auto streamIndex = plotIndex / 2;
-  const bool average = (plotIndex % 2 == 0);
 
   if (!this->dataPerStream.contains(streamIndex))
     return {};
@@ -78,13 +75,18 @@ PlotModel::Point BitratePlotModel::getPlotPoint(unsigned plotIndex, unsigned poi
   if (pointIndex < unsigned(this->dataPerStream[streamIndex].size()))
   {
     PlotModel::Point point;
-    point.x = pointIndex;
+    if (this->sortMode == SortMode::DECODE_ORDER)
+      point.x = this->dataPerStream[streamIndex][pointIndex].dts;
+    else
+      point.x = this->dataPerStream[streamIndex][pointIndex].pts;
     point.intra = this->dataPerStream[streamIndex][pointIndex].keyframe;
     
-    if (average)
+    const auto isAveragePlot = (plotIndex == 1);
+    if (isAveragePlot)
       point.y = this->calculateAverageValue(streamIndex, pointIndex);
     else
       point.y = this->dataPerStream[streamIndex][pointIndex].bitrate;
+    point.width = this->dataPerStream[streamIndex][pointIndex].duration;
 
     return point;
   }
@@ -92,40 +94,57 @@ PlotModel::Point BitratePlotModel::getPlotPoint(unsigned plotIndex, unsigned poi
   return {};
 }
 
-QString BitratePlotModel::getPointInfo(unsigned plotIndex, unsigned pointIndex) const
+QString BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
 {
-  const auto streamIndex = plotIndex / 2;
-  const auto isAveragePlot = plotIndex % 2 == 0;
+  QMutexLocker locker(&this->dataMutex);
+  auto &entry = this->dataPerStream[streamIndex][pointIndex];
+  const auto isAveragePlot = (plotIndex == 1);
+
   if (isAveragePlot)
-  {
-    QMutexLocker locker(&this->dataMutex);
-    auto &entry = this->dataPerStream[streamIndex][pointIndex];
     return QString("<h4>Stream %1</h4>"
-                   "<table width=\"100%\">"
-                   "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
-                   "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
-                   "<tr><td>Bitrate:</td><td align=\"right\">%4</td></tr>"
-                   "<tr><td>Average:</td><td align=\"right\">%5</td></tr>"
-                   "<tr><td>Type:</td><td align=\"right\">%6</td></tr>"
-                   "</table>")
+                  "<table width=\"100%\">"
+                  "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
+                  "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
+                  "<tr><td>Average:</td><td align=\"right\">%4</td></tr>"
+                  "<tr><td>Type:</td><td align=\"right\">%5</td></tr>"
+                  "</table>")
+      .arg(streamIndex)
+      .arg(entry.pts)
+      .arg(entry.dts)
+      .arg(this->calculateAverageValue(streamIndex, pointIndex))
+      .arg(entry.frameType);
+  else
+    return QString("<h4>Average Stream %1</h4>"
+                    "<table width=\"100%\">"
+                    "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
+                    "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
+                    "<tr><td>Average:</td><td align=\"right\">%4</td></tr>"
+                    "</table>")
         .arg(streamIndex)
         .arg(entry.pts)
         .arg(entry.dts)
-        .arg(entry.bitrate)
-        .arg(this->calculateAverageValue(streamIndex, pointIndex))
-        .arg(entry.frameType);
-  }
-  return {};
+        .arg(this->calculateAverageValue(streamIndex, pointIndex));
 }
 
 void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)
 {
   QMutexLocker locker(&this->dataMutex);
 
-  rangeDts.min = qMin(rangeDts.min, entry.dts);
-  rangeDts.max = qMax(rangeDts.max, entry.dts);
-  rangePts.min = qMin(rangePts.min, entry.pts);
-  rangePts.max = qMax(rangePts.max, entry.pts);
+  if (this->dataPerStream[streamIndex].empty())
+  {
+    rangeDts.min = entry.dts;
+    rangeDts.max = entry.dts;
+    rangePts.min = entry.pts;
+    rangePts.max = entry.pts;
+  }
+  else
+  {
+    rangeDts.min = qMin(rangeDts.min, entry.dts);
+    rangeDts.max = qMax(rangeDts.max, entry.dts);
+    rangePts.min = qMin(rangePts.min, entry.pts);
+    rangePts.max = qMax(rangePts.max, entry.pts);
+  }
+  
   rangeBitratePerStream[streamIndex].min = qMin(rangeBitratePerStream[streamIndex].min, int(entry.bitrate));
   rangeBitratePerStream[streamIndex].max = qMax(rangeBitratePerStream[streamIndex].max, int(entry.bitrate));
 

@@ -121,7 +121,7 @@ parserAnnexB::ParseResult parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteAr
 
   if (nal_vvc.isAUDelimiter())
   {
-    DEBUG_VVC("Start of new AU. Adding bitrate %d", sizeCurrentAU);
+    DEBUG_VVC("Start of new AU. Adding bitrate " << sizeCurrentAU);
     
     BitratePlotModel::BitrateEntry entry;
     if (bitrateEntry)

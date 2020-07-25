@@ -219,7 +219,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   auto parseResult = parseAndAddNALUnit(-1, QByteArray(), {}, {});
   if (!parseResult.success)
     DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
-  DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Parsing done. Found " << POCList.length() << " POCs", );
+  DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Parsing done. Found " << POCList.length() << " POCs");
 
   if (packetModel)
     emit modelDataUpdated();

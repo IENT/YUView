@@ -54,42 +54,56 @@ public:
       this->graphData.append({double(dis100(gen)), double(dis1000(gen))});
   }
 
-  unsigned int getNrPlots() const override
-  { 
-    return 3; 
+  unsigned int getNrStreams() const override
+  {
+    return 3;
   }
 
-  PlotParameter getPlotParameter(unsigned plotIndex) const override
+  StreamParameter getStreamParameter(unsigned streamIndex) const override
   {
-    if (plotIndex == 0)
-      return {PlotType::Bar, {0, 99}, {0, 500}, unsigned(barData.size())};
-    if (plotIndex == 1)
-      return {PlotType::Line, {0, 99}, {0, 1000}, unsigned(graphData.size())};
-    if (plotIndex == 2)
-      return {PlotType::ConstValue, {-1, -1}, {300, 99}, 1};
-    return {};
+    StreamParameter streamParameter;
+    if (streamIndex == 0)
+    {
+      streamParameter.xRange = {0, 99};
+      streamParameter.yRange = {0, 500};
+      streamParameter.plotParameters.append({PlotType::Bar, unsigned(barData.size())});
+    }
+    else if (streamIndex == 1)
+    {
+      streamParameter.xRange = {0, 99};
+      streamParameter.yRange = {0, 1000};
+      streamParameter.plotParameters.append({PlotType::Line, unsigned(graphData.size())});
+    }
+    else if (streamIndex == 2)
+    {
+      streamParameter.xRange = {-1, -1};
+      streamParameter.yRange = {300, 99};
+      streamParameter.plotParameters.append({PlotType::ConstValue, 1});
+    }
+    return streamParameter;
   }
 
-  Point getPlotPoint(unsigned plotIndex, unsigned pointIndex) const override
+  Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override
   {
-    if (plotIndex == 0)
+    if (streamIndex == 0 && plotIndex == 0)
       return {double(pointIndex), double(barData[pointIndex])};
-    if (plotIndex == 1)
+    if (streamIndex == 1 && plotIndex == 0)
       return graphData[pointIndex];
     return {};
   }
 
-  QString getPointInfo(unsigned plotIndex, unsigned pointIndex) const override
+  QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override
   {
-    auto point = this->getPlotPoint(plotIndex, pointIndex);
-    return QString("<h4>Frame</h4>"
+    Q_UNUSED(plotIndex);
+    auto point = this->getPlotPoint(streamIndex, 0, pointIndex);
+    return QString("<h4>Stream %1</h4>"
                    "<table width=\"100%\">"
-                   "<tr><td>PTS:</td><td align=\"right\">%1</td></tr>"
-                   "<tr><td>DTS:</td><td align=\"right\">%1</td></tr>"
-                   "<tr><td>Bitrate:</td><td align=\"right\">%2</td></tr>"
-                   "<tr><td>Type:</td><td align=\"right\">%3</td></tr>"
+                   "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
+                   "<tr><td>DTS:</td><td align=\"right\">%2</td></tr>"
+                   "<tr><td>Bitrate:</td><td align=\"right\">%3</td></tr>"
+                   "<tr><td>Type:</td><td align=\"right\">%4</td></tr>"
                    "</table>"
-                   ).arg(point.x).arg(point.y).arg("Inter");
+                   ).arg(streamIndex).arg(point.x).arg(point.y).arg("Inter");
   }
 
 private:

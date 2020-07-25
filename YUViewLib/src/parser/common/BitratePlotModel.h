@@ -45,10 +45,10 @@ public:
   BitratePlotModel() = default;
   virtual ~BitratePlotModel() = default;
 
-  virtual unsigned int getNrPlots() const override;
-  virtual PlotModel::PlotParameter getPlotParameter(unsigned plotIndex) const override;
-  virtual PlotModel::Point getPlotPoint(unsigned plotIndex, unsigned pointIndex) const override;
-  virtual QString getPointInfo(unsigned plotIndex, unsigned pointIndex) const override;
+  unsigned getNrStreams() const override;
+  PlotModel::StreamParameter getStreamParameter(unsigned streamIndex) const override;
+  PlotModel::Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
+  QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
   
   QString getItemInfoText(int index);
 
@@ -56,6 +56,7 @@ public:
   {
     int dts {0};
     int pts {0};
+    int duration {1};
     unsigned int bitrate {0};
     bool keyframe {false};
     QString frameType;

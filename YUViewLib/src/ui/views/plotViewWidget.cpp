@@ -68,8 +68,20 @@ PlotViewWidget::PlotViewWidget(QWidget *parent)
 void PlotViewWidget::setModel(PlotModel *model)
 {
   this->model = model;
+  this->updateStreamInfo();
   if (this->model)
     this->update();
+}
+
+void PlotViewWidget::updateStreamInfo()
+{
+  this->showStreamList.clear();
+  if (this->model)
+  {
+    for (unsigned int i = 0; i < model->getNrStreams(); i++)
+      this->showStreamList.append(i);
+  }
+  DEBUG_PLOT("PlotViewWidget::updateStreamInfo showStreamList " << this->showStreamList);
 }
 
 void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text)
@@ -144,24 +156,27 @@ void PlotViewWidget::mouseMoveEvent(QMouseEvent *mouseMoveEvent)
   const auto plotIndex = 0;
   MoveAndZoomableView::mouseMoveEvent(mouseMoveEvent);
 
-  int newHoveredModelIndex = -1;
+  QMap<unsigned, QMap<unsigned, unsigned>> newHoverePointIndexPerStreamAndPlot;
   if (this->model)
   {
-    auto pos = mouseMoveEvent->pos();
-    auto mouseHoverPos = this->convertPixelPosToPlotPos(pos);
-    auto param = model->getPlotParameter(plotIndex);
-    if (mouseHoverPos.x() + 0.5 > param.xRange.min && mouseHoverPos.x() - 0.5 < param.xRange.max)
+    const auto pos = mouseMoveEvent->pos();
+    const auto mouseHoverPos = this->convertPixelPosToPlotPos(pos);
+    for (unsigned streamIndex = 0; streamIndex < this->model->getNrStreams(); streamIndex++)
     {
-      const auto barIndex = unsigned(std::round(mouseHoverPos.x()));
-      if (mouseHoverPos.y() >= 0 && mouseHoverPos.y())
-        newHoveredModelIndex = barIndex;
+      const auto streamParam = model->getStreamParameter(streamIndex);
+      for (unsigned plotIndex = 0; plotIndex < streamParam.getNrPlots(); plotIndex++)
+      {
+        const auto pointIndex = model->getPointIndex(streamIndex, plotIndex, mouseHoverPos.x());
+        if (pointIndex)
+          newHoverePointIndexPerStreamAndPlot[streamIndex][plotIndex] = *pointIndex;
+      }
     }
     mouseMoveEvent->accept();
   }
 
-  if (this->currentlyHoveredModelIndex != newHoveredModelIndex)
+  if (this->currentlyHoveredPointPerStreamAndPlot != newHoverePointIndexPerStreamAndPlot)
   {
-    this->currentlyHoveredModelIndex = newHoveredModelIndex;
+    this->currentlyHoveredPointPerStreamAndPlot = newHoverePointIndexPerStreamAndPlot;
     update();
   }
 }
@@ -174,15 +189,20 @@ void PlotViewWidget::setMoveOffset(QPoint offset)
     return;
   }
 
-  auto plotParam = this->model->getPlotParameter(0);
-
-  const auto clipLeft = int((plotParam.xRange.min + 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
+  auto visibleRange = this->getVisibleRange(Axis::X);
+  if (!visibleRange)
+  {
+    MoveAndZoomableView::setMoveOffset(offset);
+    return;
+  }
+  
+  const auto clipLeft = int(-(visibleRange->min + 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
   const auto axisLengthX = this->propertiesAxis[0].line.p2().x() - this->propertiesAxis[0].line.p1().x();
   const auto axisLengthInValues = axisLengthX / this->zoomToPixelsPerValueX / this->zoomFactor;
-  const auto clipRight = int(-(plotParam.xRange.max - axisLengthInValues - 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
+  const auto clipRight = int(-(visibleRange->max - axisLengthInValues - 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
 
   QPoint offsetClipped;
-  if (axisLengthInValues > (plotParam.xRange.max - plotParam.xRange.min))
+  if (axisLengthInValues > (visibleRange->max - visibleRange->min))
     offsetClipped = QPoint(clip(offset.x(), clipLeft, clipRight) , 0);
   else
     offsetClipped = QPoint(clip(offset.x(), clipRight, clipLeft) , 0);
@@ -374,93 +394,95 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
 
   const bool detailedPainting = this->zoomFactor >= 0.5;
 
-  // TODO: Use the painter list operations for painting. They are much faster.
-  //       Also get the range of things that must be drawn for speedup.
-  //       For that, the plotRect will become handy.
-  Q_UNUSED(plotRect);
-
   const auto plotXMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft()).x() - 0.5;
   const auto plotXMax = this->convertPixelPosToPlotPos(plotRect.bottomRight()).x() + 0.5;
 
   DEBUG_PLOT("PlotViewWidget::drawPlot start");
-  for (unsigned int plotIndex = 0; plotIndex < this->model->getNrPlots(); plotIndex++)
+  for (auto streamIndex : this->showStreamList)
   {
-    auto param = this->model->getPlotParameter(plotIndex);
-    if (param.type == PlotModel::PlotType::Bar)
+    const auto param = this->model->getStreamParameter(streamIndex);
+    for (unsigned int plotIndex = 0; plotIndex < param.getNrPlots(); plotIndex++)
     {
-      auto setPainterColor = [&painter, &detailedPainting](bool isIntra, bool isHighlight)
+      const auto plotParam = param.plotParameters[plotIndex];
+      if (plotParam.type == PlotModel::PlotType::Bar)
       {
-        QColor color = isIntra ? QColor(200, 100, 0, 100) : QColor(0, 0, 200, 100);
-        if (isHighlight)
-          color = color.lighter(150);
-        if (detailedPainting)
-          painter.setPen(color);
-        else
-          painter.setPen(Qt::NoPen);
-        painter.setBrush(color);
-      };
-
-      QVector<QRectF> normalBars;
-      QVector<QRectF> intraBars;
-      for (unsigned int i = 0; i < param.nrpoints; i++)
-      {
-        const auto value = model->getPlotPoint(plotIndex, i);
-
-        if (value.x < plotXMin || value.x > plotXMax)
-          continue;
-
-        const auto barTopLeft = this->convertPlotPosToPixelPos(QPointF(value.x - 0.5, value.y));
-        const auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + 0.5, 0));
-        
-        const bool isHoveredBar = this->currentlyHoveredModelIndex != -1 && this->currentlyHoveredModelIndex == int(i);
-        
-        const auto r = QRectF(barTopLeft, barBottomRight);
-        if (isHoveredBar)
+        auto setPainterColor = [&painter, &detailedPainting](bool isIntra, bool isHighlight)
         {
-          setPainterColor(value.intra, true);
-          painter.drawRect(r);
-        }
-        else
-        {
-          if (value.intra)
-            intraBars.append(r);
+          QColor color = isIntra ? QColor(200, 100, 0, 100) : QColor(0, 0, 200, 100);
+          if (isHighlight)
+            color = color.lighter(150);
+          if (detailedPainting)
+            painter.setPen(color);
           else
-            normalBars.append(r);
+            painter.setPen(Qt::NoPen);
+          painter.setBrush(color);
+        };
+
+        QVector<QRectF> normalBars;
+        QVector<QRectF> intraBars;
+        for (unsigned int i = 0; i < plotParam.nrpoints; i++)
+        {
+          const auto value = model->getPlotPoint(streamIndex, plotIndex, i);
+
+          if (value.x < plotXMin || value.x > plotXMax)
+            continue;
+
+          const auto halfWidth = value.width / 2;
+          const auto barTopLeft = this->convertPlotPosToPixelPos(QPointF(value.x - halfWidth, value.y));
+          const auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + halfWidth, 0));
+          
+          const bool isHoveredBar = 
+            this->currentlyHoveredPointPerStreamAndPlot.contains(streamIndex) && 
+            this->currentlyHoveredPointPerStreamAndPlot[streamIndex].contains(plotIndex) && 
+            this->currentlyHoveredPointPerStreamAndPlot[streamIndex][plotIndex] == i;
+          
+          const auto r = QRectF(barTopLeft, barBottomRight);
+          if (isHoveredBar)
+          {
+            setPainterColor(value.intra, true);
+            painter.drawRect(r);
+          }
+          else
+          {
+            if (value.intra)
+              intraBars.append(r);
+            else
+              normalBars.append(r);
+          }
         }
+
+        DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing " << normalBars.size() << " bars");
+        setPainterColor(false, false);
+        painter.drawRects(normalBars);
+
+        DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing " << intraBars.size() << " intra bars");
+        setPainterColor(true, false);
+        painter.drawRects(intraBars);
       }
-
-      DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing " << normalBars.size() << " bars");
-      setPainterColor(false, false);
-      painter.drawRects(normalBars);
-
-      DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing " << intraBars.size() << " intra bars");
-      setPainterColor(true, false);
-      painter.drawRects(intraBars);
-    }
-    else if (param.type == PlotModel::PlotType::Line)
-    {
-      QPolygonF linePoints;
-      for (unsigned int i = 0; i < param.nrpoints; i++)
+      else if (plotParam.type == PlotModel::PlotType::Line)
       {
-        const auto valueStart = model->getPlotPoint(plotIndex, unsigned(i));
-        const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));
+        QPolygonF linePoints;
+        for (unsigned i = 0; i < plotParam.nrpoints; i++)
+        {
+          const auto valueStart = model->getPlotPoint(streamIndex, plotIndex, i);
+          const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));
 
-        if (valueStart.x < plotXMin || valueStart.x > plotXMax)
-          continue;
+          if (valueStart.x < plotXMin || valueStart.x > plotXMax)
+            continue;
 
-        linePoints.append(linePointStart);
+          linePoints.append(linePointStart);
+        }
+
+        DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing line with " << linePoints.size() << " points");
+        QPen linePen(QColor(255, 200, 30));
+        linePen.setWidthF(detailedPainting ? 2.0 : 1.0);
+        painter.setPen(linePen);
+        painter.drawPolyline(linePoints);
+
+        // if (detailedPainting)
+        //   painter.drawEllipse(linePointStart, 2.0, 2.0);
       }
-
-      DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing line with " << linePoints.size() << " points");
-      QPen linePen(QColor(255, 200, 30));
-      linePen.setWidthF(detailedPainting ? 2.0 : 1.0);
-      painter.setPen(linePen);
-      painter.drawPolyline(linePoints);
-
-      // if (detailedPainting)
-      //   painter.drawEllipse(linePointStart, 2.0, 2.0);
     }
-
   }
 }
 
@@ -473,13 +495,20 @@ void PlotViewWidget::drawInfoBox(QPainter &painter, const QRectF &plotRect) cons
   const auto padding = 6;
 
   QString infoString;
-  for (unsigned int plotIndex = 0; plotIndex < this->model->getNrPlots(); plotIndex += 2)
+  for (auto streamIndex : this->showStreamList)
   {
-    const auto modelParams = this->model->getPlotParameter(plotIndex);
-    if (this->currentlyHoveredModelIndex < 0 || this->currentlyHoveredModelIndex >= int(modelParams.nrpoints))
+    if (!this->currentlyHoveredPointPerStreamAndPlot.contains(streamIndex))
       continue;
 
-    infoString += this->model->getPointInfo(plotIndex, this->currentlyHoveredModelIndex);
+    const auto streamParam = this->model->getStreamParameter(streamIndex);
+    for (unsigned plotIndex = 0; plotIndex < streamParam.getNrPlots(); plotIndex++)
+    {
+      if (!this->currentlyHoveredPointPerStreamAndPlot[streamIndex].contains(plotIndex))
+        continue;
+
+      const auto pointIndex = this->currentlyHoveredPointPerStreamAndPlot[streamIndex][plotIndex];
+      infoString += this->model->getPointInfo(streamIndex, plotIndex, pointIndex);
+    }
   }
 
   // Create a QTextDocument. This object can tell us the size of the rendered text.
@@ -571,8 +600,10 @@ void PlotViewWidget::updateAxis(const QRectF &plotRect)
   this->zoomToPixelsPerValueY = double(zoomToPixelsPerValueX);
   if (this->model)
   {
-    const auto &parameters = this->model->getPlotParameter(0);
-    const auto rangeY = double(parameters.yRange.max - parameters.yRange.min);
+    
+
+    const auto &streamParam = this->model->getStreamParameter(0);
+    const auto rangeY = double(streamParam.yRange.max - streamParam.yRange.min);
     this->zoomToPixelsPerValueY = (this->propertiesAxis[1].line.p1().y() - this->propertiesAxis[1].line.p2().y()) / rangeY;
   }
   
@@ -624,4 +655,26 @@ void PlotViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additi
   this->setMoveOffset(newMoveOffset);
 
   DEBUG_PLOT("MoveAndZoomableView::mouseReleaseEvent end zoom box - zoomRectCenterOffset " << zoomRectCenterOffset << " newMoveOffset " << newMoveOffset);
+}
+
+std::optional<Range<int>> PlotViewWidget::getVisibleRange(const Axis axis) const
+{
+  if (this->showStreamList.empty())
+    return {};
+
+  Range<int> visibleRange;
+  for (int i = 0; i < this->showStreamList.size(); i++)
+  {
+    const auto streamIndex = this->showStreamList.at(i);
+    const auto streamParam = this->model->getStreamParameter(streamIndex);
+    const auto range = axis == Axis::X ? streamParam.xRange : streamParam.yRange;
+    if (i == 0)
+      visibleRange = range;
+    else
+    {
+      visibleRange.min = std::min(visibleRange.min, range.min);
+      visibleRange.max = std::max(visibleRange.max, range.max);
+    }
+  }
+  return visibleRange;
 }

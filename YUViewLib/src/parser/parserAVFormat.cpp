@@ -410,6 +410,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
         BitratePlotModel::BitrateEntry packetBitrateEntry;
         packetBitrateEntry.dts = packet.get_dts();
         packetBitrateEntry.pts = packet.get_pts();
+        packetBitrateEntry.duration = packet.get_duration();
         auto parseResult = annexBParser->parseAndAddNALUnit(nalID, nalData, packetBitrateEntry, {}, itemTree);
 
         if (!parseResult.success)
@@ -525,6 +526,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
     BitratePlotModel::BitrateEntry entry;
     entry.pts = packet.get_pts();
     entry.dts = packet.get_dts();
+    entry.duration = packet.get_duration();
     entry.bitrate = packet.get_data_size();
     entry.keyframe = packet.get_flag_keyframe();
     bitrateItemModel->addBitratePoint(packet.get_stream_index(), entry);
