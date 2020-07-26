@@ -105,7 +105,7 @@ QString BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex,
                   "<table width=\"100%\">"
                   "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
                   "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
-                  "<tr><td>Duration:</td><td align=\"right\">%4</td></tr>"
+                  "<tr><td>Average:</td><td align=\"right\">%4</td></tr>"
                   "<tr><td>Type:</td><td align=\"right\">%5</td></tr>"
                   "</table>")
       .arg(streamIndex)
@@ -118,7 +118,7 @@ QString BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex,
                     "<table width=\"100%\">"
                     "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
                     "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
-                    "<tr><td>Average:</td><td align=\"right\">%4</td></tr>"
+                    "<tr><td>Duration:</td><td align=\"right\">%4</td></tr>"
                     "<tr><td>Bitrate:</td><td align=\"right\">%5</td></tr>"
                     "</table>")
         .arg(streamIndex)
