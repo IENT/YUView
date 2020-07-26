@@ -55,7 +55,7 @@ QString ParserAnnexB::getShortStreamDescription(int streamIndex) const
   return info;
 }
 
-bool parserAnnexB::addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint)
+bool ParserAnnexB::addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint)
 {
   if (POCList.contains(poc))
     return false;
@@ -110,7 +110,7 @@ int ParserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingO
   return POCList.indexOf(bestSeekPOC);
 }
 
-std::optional<pairUint64> parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
+std::optional<pairUint64> ParserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
 {
   if (codingOrderFrameIdx < 0 || codingOrderFrameIdx >= frameList.size())
     return {};

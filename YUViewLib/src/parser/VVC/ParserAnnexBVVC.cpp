@@ -88,15 +88,18 @@ QPair<int,int> ParserAnnexBVVC::getSampleAspectRatio()
   return QPair<int,int>(1,1);
 }
 
-bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+ParserAnnexB::ParseResult ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
-  Q_UNUSED(nalTypeName);
-  
+  ParserAnnexB::ParseResult parseResult;
+
   if (nalID == -1 && data.isEmpty())
   {
     if (!addFrameToList(this->counterAU, this->curFrameFileStartEndPos, false))
-      return ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
-    return true;
+    {
+      ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
+      return parseResult;
+    }
+    return parseResult;
   }
 
   // Skip the NAL unit header
@@ -124,9 +127,9 @@ bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     nalRoot = new TreeItem(this->packetModel->getRootItem());
 
   // Create a nal_unit and read the header
-  VVC::NalUnit nal(nalStartEndPosFile, nalID);
+  VVC::NalUnit nal(nalID, nalStartEndPosFile);
   if (!nal.parse_nal_unit_header(nalHeaderBytes, nalRoot))
-    return false;
+    return parseResult;
 
   bool parsingSuccess = true;
   QSharedPointer<NalUnit> parsedNal;
@@ -141,10 +144,9 @@ bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
 
     // Add the SPS ID
     specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(newSPS->sps_seq_parameter_set_id) : " SPS_NUT ERR";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(newSPS->sps_seq_parameter_set_id) : "SPS(ERR)";
+    parseResult.nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(newSPS->sps_seq_parameter_set_id) : "SPS(ERR)";
 
-    DEBUG_VVC("ParserAnnexBVVC::parseAndAddNALUnit SPS ID %d", newSPS->sps_seq_parameter_set_id);
+    DEBUG_VVC("ParserAnnexBVVC::parseAndAddNALUnit SPS ID " << newSPS->sps_seq_parameter_set_id);
   }
   else if (nal.nal_unit_type == PPS_NUT)
   {
@@ -157,15 +159,14 @@ bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
 
     // Add the SPS ID
     specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(newPPS->pps_pic_parameter_set_id) : " PPS_NUT ERR";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(newPPS->pps_pic_parameter_set_id) : "PPS(ERR)";
+    parseResult.nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(newPPS->pps_pic_parameter_set_id) : "PPS(ERR)";
 
-    DEBUG_VVC("ParserAnnexBVVC::parseAndAddNALUnit SPS ID %d", newPPS->pps_pic_parameter_set_id);
+    DEBUG_VVC("ParserAnnexBVVC::parseAndAddNALUnit SPS ID " << newPPS->pps_pic_parameter_set_id);
   }
   else if (nal.isSlice())
   {
     auto newPictureHeader = QSharedPointer<PictureHeader>(new PictureHeader(nal));
-    parsingSuccess = newPictureHeader->parse(payload, this->activeSPSMap, this->activePPSMap, nalRoot);
+    parsingSuccess = newPictureHeader->parse(payload, this->activeSPSMap, this->activePPSMap, false, nalRoot);
 
     parsedNal = newPictureHeader;
 
@@ -174,31 +175,35 @@ bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
 
   }
 
-
   if (auDelimiterDetector.isStartOfNewAU(nal, parsedNal))
   {
     DEBUG_VVC("Start of new AU. Adding bitrate " << this->sizeCurrentAU);
     
-    BitratePlotModel::bitrateEntry entry;
+    BitratePlotModel::BitrateEntry entry;
     entry.pts = this->counterAU;
     entry.dts = this->counterAU;  // TODO: Not true. We need to parse the VVC header data
     entry.bitrate = this->sizeCurrentAU;
     entry.keyframe = false; // TODO: Also not correct. We need parsing.
-    bitrateModel->addBitratePoint(0, entry);
+    parseResult.bitrateEntry = entry;
 
     if (this->counterAU > 0)
     {
       const bool curFrameIsRandomAccess = (this->counterAU == 1);
       if (!addFrameToList(this->counterAU, this->curFrameFileStartEndPos, curFrameIsRandomAccess))
-        return ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
+      {
+        ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."), parent);
+        return parseResult;
+      }
       DEBUG_VVC("Adding start/end " << this->curFrameFileStartEndPos << " - POC " << this->counterAU << (curFrameIsRandomAccess ? " - ra" : ""));
     }
     this->curFrameFileStartEndPos = nalStartEndPosFile;
     this->sizeCurrentAU = 0;
     this->counterAU++;
   }
-  else
-    this->curFrameFileStartEndPos.second = nalStartEndPosFile.second;
+  else if (this->curFrameFileStartEndPos && nalStartEndPosFile)
+    // Another slice NAL which belongs to the last frame
+    // Update the end position
+    this->curFrameFileStartEndPos->second = nalStartEndPosFile->second;
 
   this->sizeCurrentAU += data.size();
 
@@ -206,7 +211,8 @@ bool ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     // Set a useful name of the TreeItem (the root for this NAL)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal.nal_idx).arg(nal.nal_unit_type_id) + specificDescription);
 
-  return true;
+  parseResult.success = true;
+  return parseResult;
 }
 
 bool ParserAnnexBVVC::auDelimiterDetector_t::isStartOfNewAU(NalUnit &nal, QSharedPointer<NalUnit> parsedNal)
@@ -221,9 +227,9 @@ bool ParserAnnexBVVC::auDelimiterDetector_t::isStartOfNewAU(NalUnit &nal, QShare
 
     if (nal.isSlice())
     {
-      nal.
+      // ...
     }
-      isStart = true;
+    isStart = true;
   }
 
   if (nal.isSlice())

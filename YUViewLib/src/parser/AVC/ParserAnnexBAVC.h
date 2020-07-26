@@ -47,8 +47,8 @@ class ParserAnnexBAVC : public ParserAnnexB
   Q_OBJECT
   
 public:
-  parserAnnexBAVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); };
-  ~parserAnnexBAVC() {};
+  ParserAnnexBAVC(QObject *parent = nullptr) : ParserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); };
+  ~ParserAnnexBAVC() {};
 
   // Get properties
   double getFramerate() const Q_DECL_OVERRIDE;
@@ -99,8 +99,8 @@ protected:
   */
   struct nal_unit_avc : NalUnitBase
   {
-    nal_unit_avc(int nal_idx, std::optional<pairUint64> filePosStartEnd) : nal_unit(nal_idx, filePosStartEnd) {}
-    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
+    nal_unit_avc(int nal_idx, std::optional<pairUint64> filePosStartEnd) : NalUnitBase(nal_idx, filePosStartEnd) {}
+    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : NalUnitBase(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.

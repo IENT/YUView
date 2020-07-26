@@ -47,8 +47,8 @@ const QStringList ParserAnnexBMpeg2::nal_unit_type_toString = QStringList()
   << "UNSPECIFIED" << "PICTURE" << "SLICE" << "USER_DATA" << "SEQUENCE_HEADER" << "SEQUENCE_ERROR" << "EXTENSION_START" << "SEQUENCE_END"
   << "GROUP_START" << "SYSTEM_START_CODE" << "RESERVED";
 
-parserAnnexBMpeg2::nal_unit_mpeg2::nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src) 
-  : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd)
+ParserAnnexBMpeg2::nal_unit_mpeg2::nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src) 
+  : NalUnitBase(nal_src->nal_idx, nal_src->filePosStartEnd)
 {
   nal_unit_type = nal_src->nal_unit_type;
   slice_id = nal_src->slice_id;
@@ -130,9 +130,9 @@ void ParserAnnexBMpeg2::nal_unit_mpeg2::interpreteStartCodeValue()
     nal_unit_type = UNSPECIFIED;
 }
 
-parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
+ParserAnnexB::ParseResult ParserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
-  parserAnnexB::ParseResult parseResult;
+  ParserAnnexB::ParseResult parseResult;
 
   // Skip the NAL unit header
   int skip = 0;
@@ -294,7 +294,7 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
     }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
-    entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
+    entry.frameType = ParserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
     parseResult.bitrateEntry = entry;
 
     sizeCurrentAU = 0;

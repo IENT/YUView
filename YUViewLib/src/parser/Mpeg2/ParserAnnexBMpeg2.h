@@ -80,7 +80,7 @@ private:
    */
   struct nal_unit_mpeg2 : NalUnitBase
   {
-    nal_unit_mpeg2(int nal_idx, std::optional<pairUint64> filePosStartEnd) : nal_unit(nal_idx, filePosStartEnd) {}
+    nal_unit_mpeg2(int nal_idx, std::optional<pairUint64> filePosStartEnd) : NalUnitBase(nal_idx, filePosStartEnd) {}
     nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src);
     virtual ~nal_unit_mpeg2() {}
 

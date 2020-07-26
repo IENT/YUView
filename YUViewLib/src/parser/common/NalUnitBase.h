@@ -35,18 +35,20 @@
 #include "common/typedef.h"
 #include "TreeItem.h"
 
+#include <optional>
+
  /* The basic NAL unit. Contains the NAL header and the file position of the unit.
   */
 struct NalUnitBase
 {
-  NalUnitBase(QUint64Pair filePosStartEnd, int nal_idx) : filePosStartEnd(filePosStartEnd), nal_idx(nal_idx), nal_unit_type_id(-1) {}
+  NalUnitBase(int nal_idx, std::optional<pairUint64> filePosStartEnd) : filePosStartEnd(filePosStartEnd), nal_idx(nal_idx), nal_unit_type_id(-1) {}
   virtual ~NalUnitBase() {} // This class is meant to be derived from.
 
   // Parse the header from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
   virtual bool parse_nal_unit_header(const QByteArray &header_data, TreeItem *root) = 0;
 
   // Pointer to the first byte of the start code of the NAL unit
-  QUint64Pair filePosStartEnd;
+  std::optional<pairUint64> filePosStartEnd;
 
   // The index of the nal within the bitstream
   int nal_idx;

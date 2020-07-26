@@ -132,9 +132,9 @@ yuvPixelFormat ParserAnnexBAVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
+ParserAnnexB::ParseResult ParserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
-  parserAnnexB::ParseResult parseResult;
+  ParserAnnexB::ParseResult parseResult;
 
   if (nalID == -1 && data.isEmpty())
   {
@@ -411,7 +411,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       }
       entry.bitrate = sizeCurrentAU;
       entry.keyframe = currentAUAllSlicesIntra;
-      entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
+      entry.frameType = ParserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
       parseResult.bitrateEntry = entry;
     }
     sizeCurrentAU = 0;

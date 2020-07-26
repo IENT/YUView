@@ -47,8 +47,8 @@ class ParserAnnexBHEVC : public ParserAnnexB
   Q_OBJECT
   
 public:
-  parserAnnexBHEVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
-  ~parserAnnexBHEVC() {};
+  ParserAnnexBHEVC(QObject *parent = nullptr) : ParserAnnexB(parent) {}
+  ~ParserAnnexBHEVC() {};
 
   // Get some properties
   double getFramerate() const Q_DECL_OVERRIDE;
@@ -82,8 +82,8 @@ protected:
   */
   struct nal_unit_hevc : NalUnitBase
   {
-    nal_unit_hevc(int nal_idx, std::optional<pairUint64> filePosStartEnd) : nal_unit(nal_idx, filePosStartEnd) {}
-    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+    nal_unit_hevc(int nal_idx, std::optional<pairUint64> filePosStartEnd) : NalUnitBase(nal_idx, filePosStartEnd) {}
+    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : NalUnitBase(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
     virtual ~nal_unit_hevc() {}
 
     virtual QByteArray getNALHeader() const override;

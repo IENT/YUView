@@ -37,10 +37,11 @@
 
 #include <optional>
 
-#include "common/BitratePlotModel.h"
-#include "common/TreeItem.h"
+#include "parser/common/BitratePlotModel.h"
+#include "parser/common/ParserBase.h"
+#include "parser/common/NalUnitBase.h"
+#include "parser/common/TreeItem.h"
 #include "filesource/fileSourceAnnexBFile.h"
-#include "ParserBase.h"
 #include "video/videoHandlerYUV.h"
 
 using namespace YUV_Internals;

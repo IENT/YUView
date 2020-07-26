@@ -306,9 +306,9 @@ QPair<int,int> ParserAnnexBHEVC::getSampleAspectRatio()
   return QPair<int,int>(1,1);
 }
 
-parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
+ParserAnnexB::ParseResult ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
-  parserAnnexB::ParseResult parseResult;
+  ParserAnnexB::ParseResult parseResult;
 
   if (nalID == -1 && data.isEmpty())
   {
@@ -321,9 +321,9 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
         return parseResult;
       }
       if (curFrameFileStartEndPos)
-        DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+        DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
       else
-        DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+        DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
     }
     // The file ended
     std::sort(POCList.begin(), POCList.end());
@@ -645,7 +645,7 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
     }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
-    entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
+    entry.frameType = ParserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
     parseResult.bitrateEntry = entry;
 
     sizeCurrentAU = 0;

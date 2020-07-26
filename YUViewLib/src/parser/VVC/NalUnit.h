@@ -49,8 +49,8 @@ enum NalUnitType
   */
 struct NalUnit : NalUnitBase
 {
-  NalUnit(QUint64Pair filePosStartEnd, int nal_idx) : NalUnitBase(filePosStartEnd, nal_idx) {}
-  NalUnit(QSharedPointer<NalUnit> nal_src) : NalUnitBase(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_unit_type_id = nal_src->nal_unit_type_id; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+  NalUnit(int nal_idx, std::optional<pairUint64> filePosStartEnd) : NalUnitBase(nal_idx, filePosStartEnd) {}
+  NalUnit(QSharedPointer<NalUnit> nal_src) : NalUnitBase(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_unit_type_id = nal_src->nal_unit_type_id; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
   virtual ~NalUnit() {}
 
   virtual QByteArray getNALHeader() const override;

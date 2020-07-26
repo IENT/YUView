@@ -77,7 +77,7 @@ bool PictureHeader::parse(const QByteArray &parameterSetData, const SPS::SPSMap 
   {
     READUEV(ph_recovery_poc_cnt);
   }
-  for (int i = 0; i < actSPS->NumExtraPhBits; i++)
+  for (unsigned i = 0; i < actSPS->NumExtraPhBits; i++)
   {
     READFLAG_A(ph_extra_bit, i);
   }
@@ -107,12 +107,12 @@ bool PictureHeader::parse(const QByteArray &parameterSetData, const SPS::SPSMap 
   }
   else
   {
-    if ((ph_pic_order_cnt_lsb < prevPicOrderCntLsb) && ((prevPicOrderCntLsb - ph_pic_order_cnt_lsb) >= (actSPS->MaxPicOrderCntLsb / 2)))
-      PicOrderCntMsb = prevPicOrderCntMsb + actSPS->MaxPicOrderCntLsb;
-    else if ((ph_pic_order_cnt_lsb > prevPicOrderCntLsb) && ((ph_pic_order_cnt_lsb - prevPicOrderCntLsb) > (actSPS->MaxPicOrderCntLsb / 2)))
-      PicOrderCntMsb = prevPicOrderCntMsb - actSPS->MaxPicOrderCntLsb;
-    else
-      PicOrderCntMsb = prevPicOrderCntMsb;
+    // if ((ph_pic_order_cnt_lsb < prevPicOrderCntLsb) && ((prevPicOrderCntLsb - ph_pic_order_cnt_lsb) >= (actSPS->MaxPicOrderCntLsb / 2)))
+    //   PicOrderCntMsb = prevPicOrderCntMsb + actSPS->MaxPicOrderCntLsb;
+    // else if ((ph_pic_order_cnt_lsb > prevPicOrderCntLsb) && ((ph_pic_order_cnt_lsb - prevPicOrderCntLsb) > (actSPS->MaxPicOrderCntLsb / 2)))
+    //   PicOrderCntMsb = prevPicOrderCntMsb - actSPS->MaxPicOrderCntLsb;
+    // else
+    //   PicOrderCntMsb = prevPicOrderCntMsb;
 
   }
   PicOrderCntVal = PicOrderCntMsb + ph_pic_order_cnt_lsb;

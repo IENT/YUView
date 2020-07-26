@@ -37,6 +37,7 @@
 #include "parser/common/ParserAnnexB.h"
 #include "video/videoHandlerYUV.h"
 
+#include "NalUnit.h"
 #include "PPS.h"
 #include "SPS.h"
 
@@ -48,8 +49,8 @@ class ParserAnnexBVVC : public ParserAnnexB
   Q_OBJECT
   
 public:
-  parserAnnexBVVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
-  ~parserAnnexBVVC() {};
+  ParserAnnexBVVC(QObject *parent = nullptr) : ParserAnnexB(parent) {};
+  ~ParserAnnexBVVC() {};
 
   // Get some properties
   double getFramerate() const override;
@@ -69,15 +70,15 @@ protected:
   // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
   std::optional<pairUint64> curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
 
-  SPS::SPSMap activeSPSMap;
-  PPS::PPSMap activePPSMap;
+  VVC::SPS::SPSMap activeSPSMap;
+  VVC::PPS::PPSMap activePPSMap;
 
   unsigned int counterAU{ 0 };
   unsigned int sizeCurrentAU{ 0 };
 
   struct auDelimiterDetector_t
   {
-    bool isStartOfNewAU(NalUnit &nal, QSharedPointer<NalUnit> parsedNal);
+    bool isStartOfNewAU(VVC::NalUnit &nal, QSharedPointer<VVC::NalUnit> parsedNal);
     bool primaryCodedPictureInAuEncountered {false};
 
     bool ph_pic_order_cnt_lsb_set{false};
