@@ -468,9 +468,6 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
   if (!this->model)
     return;
 
-  // TODO: This is wrong. We need to find out (per plot) how many items are visible
-  const bool detailedPainting = this->zoomFactor >= 0.5;
-
   const auto plotXMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft()).x() - 0.5;
   const auto plotXMax = this->convertPixelPosToPlotPos(plotRect.bottomRight()).x() + 0.5;
 
@@ -481,6 +478,14 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
     for (unsigned int plotIndex = 0; plotIndex < param.getNrPlots(); plotIndex++)
     {
       const auto plotParam = param.plotParameters[plotIndex];
+      bool detailedPainting = false;
+      if (plotParam.nrpoints > 0)
+      {
+        const auto firstPoint = model->getPlotPoint(streamIndex, plotIndex, 0);
+        if (firstPoint.width * this->zoomFactor > 1)
+          detailedPainting = true;
+      }
+
       if (plotParam.type == PlotModel::PlotType::Bar)
       {
         auto setPainterColor = [&painter, &detailedPainting](bool isIntra, bool isHighlight)
