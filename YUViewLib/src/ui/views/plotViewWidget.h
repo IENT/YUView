@@ -42,7 +42,13 @@ class PlotViewWidget : public MoveAndZoomableView
 public:
   PlotViewWidget(QWidget *parent = 0);
   void setModel(PlotModel *model);
-  void updateStreamInfo();
+
+private slots:
+  void modelDataChanged();
+  void modelNrStreamsChanged();
+
+protected slots:
+  virtual void zoomToFit(bool checked = false) override;
 
 protected:
 
@@ -117,6 +123,9 @@ private:
   QMap<unsigned, QMap<unsigned, unsigned>> currentlyHoveredPointPerStreamAndPlot;
 
   QList<unsigned int> showStreamList;
+
+  void initViewFromModel();
+  bool viewInitializedForModel {false};
 
   bool fixYAxis {true};
 };

@@ -101,11 +101,11 @@ QString BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex,
   const auto isAveragePlot = (plotIndex == 1);
 
   if (isAveragePlot)
-    return QString("<h4>Stream %1</h4>"
+    return QString("<h4>Stream Average %1</h4>"
                   "<table width=\"100%\">"
                   "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
                   "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
-                  "<tr><td>Average:</td><td align=\"right\">%4</td></tr>"
+                  "<tr><td>Duration:</td><td align=\"right\">%4</td></tr>"
                   "<tr><td>Type:</td><td align=\"right\">%5</td></tr>"
                   "</table>")
       .arg(streamIndex)
@@ -114,21 +114,25 @@ QString BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex,
       .arg(this->calculateAverageValue(streamIndex, pointIndex))
       .arg(entry.frameType);
   else
-    return QString("<h4>Average Stream %1</h4>"
+    return QString("<h4>Stream %1</h4>"
                     "<table width=\"100%\">"
                     "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
                     "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
                     "<tr><td>Average:</td><td align=\"right\">%4</td></tr>"
+                    "<tr><td>Bitrate:</td><td align=\"right\">%5</td></tr>"
                     "</table>")
         .arg(streamIndex)
         .arg(entry.pts)
         .arg(entry.dts)
-        .arg(this->calculateAverageValue(streamIndex, pointIndex));
+        .arg(entry.duration)
+        .arg(entry.bitrate);
 }
 
 void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)
 {
   QMutexLocker locker(&this->dataMutex);
+
+  const auto newStream = !this->dataPerStream.contains(streamIndex);
 
   if (this->dataPerStream[streamIndex].empty())
   {
@@ -162,6 +166,9 @@ void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)
 
   auto insertIterator = std::upper_bound(this->dataPerStream[streamIndex].begin(), this->dataPerStream[streamIndex].end(), entry, compareFunctionLessThen);
   this->dataPerStream[streamIndex].insert(insertIterator, entry);
+  this->eventSubsampler.postEvent();
+  if (newStream)
+    emit nrStreamsChanged();
 }
 
 void BitratePlotModel::setBitrateSortingIndex(int index)

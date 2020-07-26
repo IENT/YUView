@@ -33,12 +33,27 @@
 #pragma once
 
 #include "common/typedef.h"
+#include "common/EventSubsampler.h"
+
+#include <QObject>
+#include <QTimer>
 
 #include <optional>
 
-class PlotModel
+class PlotModel : public QObject
 {
+  Q_OBJECT
+
+signals:
+  void dataChanged();
+  void nrStreamsChanged();
+
 public:
+  PlotModel()
+  {
+    this->connect(&this->eventSubsampler, &EventSubsampler::subsampledEvent, this, &PlotModel::dataChanged);
+  }
+
   enum class PlotType
   {
     Bar,
@@ -85,4 +100,7 @@ public:
     }
     return {};
   }
+
+protected:
+  EventSubsampler eventSubsampler;
 };

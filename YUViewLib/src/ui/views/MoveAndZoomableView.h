@@ -122,6 +122,7 @@ protected:
   virtual void onSwipeDown() {}
 
   double zoomFactor {1.0};
+  const int ZOOM_STEP_FACTOR = 2;
 
   QPoint moveOffset;                 //!< The offset that the view was moved
   QPoint viewZoomingMousePosStart;

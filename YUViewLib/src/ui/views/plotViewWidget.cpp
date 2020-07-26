@@ -68,12 +68,27 @@ PlotViewWidget::PlotViewWidget(QWidget *parent)
 void PlotViewWidget::setModel(PlotModel *model)
 {
   this->model = model;
-  this->updateStreamInfo();
+  this->modelNrStreamsChanged();
   if (this->model)
+  {
+    this->viewInitializedForModel = false;
+    this->initViewFromModel();
+    this->connect(model, &PlotModel::dataChanged, this, &PlotViewWidget::modelDataChanged);
+    this->connect(model, &PlotModel::nrStreamsChanged, this, &PlotViewWidget::modelNrStreamsChanged);
     this->update();
+  }
 }
 
-void PlotViewWidget::updateStreamInfo()
+void PlotViewWidget::modelDataChanged()
+{
+  if (this->model)
+  {
+    this->initViewFromModel();
+    this->update();
+  }
+}
+
+void PlotViewWidget::modelNrStreamsChanged()
 {
   this->showStreamList.clear();
   if (this->model)
@@ -82,6 +97,67 @@ void PlotViewWidget::updateStreamInfo()
       this->showStreamList.append(i);
   }
   DEBUG_PLOT("PlotViewWidget::updateStreamInfo showStreamList " << this->showStreamList);
+}
+
+void PlotViewWidget::zoomToFit(bool checked)
+{
+  Q_UNUSED(checked);
+
+  if (!this->model)
+    return;
+
+  const auto widgetRect = QRectF(this->rect());
+  const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
+  this->updateAxis(plotRect);
+
+  const auto axisLengthX = this->propertiesAxis[0].line.p2().x() - this->propertiesAxis[0].line.p1().x();
+  const auto axisLengthInValues = axisLengthX / this->zoomToPixelsPerValueX / this->zoomFactor;
+  
+  bool modelContainsDataYet = false;
+  double minZoomFactor = -1;
+  for (auto streamIndex : this->showStreamList)
+  {
+    const auto param = this->model->getStreamParameter(streamIndex);
+    for (unsigned int plotIndex = 0; plotIndex < param.getNrPlots(); plotIndex++)
+    {
+      const auto plotParam = param.plotParameters[plotIndex];
+      if (plotParam.nrpoints > 0)
+      {
+        modelContainsDataYet = true;
+        const auto firstPointWidth = model->getPlotPoint(streamIndex, plotIndex, 0).width;
+        
+        double newZoomFactor = this->zoomFactor;
+        if (firstPointWidth * newZoomFactor > 1)
+        {
+          while (firstPointWidth * newZoomFactor > 1)
+            newZoomFactor /= ZOOM_STEP_FACTOR;
+        }
+        else
+        {
+          while (firstPointWidth * newZoomFactor < 1)
+            newZoomFactor *= ZOOM_STEP_FACTOR;
+        }
+        if (minZoomFactor == -1)
+          minZoomFactor = newZoomFactor;
+        else
+          minZoomFactor = std::min(minZoomFactor, newZoomFactor);
+      }
+    }
+  }
+
+  if (!modelContainsDataYet)
+    return;
+
+  // Zoom the view so that we can see a certain amount of items
+  this->setZoomFactor(minZoomFactor);
+
+  // Move the view so that the first value is at the left
+  auto visibleRange = this->getVisibleRange(Axis::X);
+  if (!visibleRange)
+    return;
+  const auto moveOffset = int(-(visibleRange->min + 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
+
+  this->viewInitializedForModel = true;
 }
 
 void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text)
@@ -392,6 +468,7 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
   if (!this->model)
     return;
 
+  // TODO: This is wrong. We need to find out (per plot) how many items are visible
   const bool detailedPainting = this->zoomFactor >= 0.5;
 
   const auto plotXMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft()).x() - 0.5;
@@ -600,8 +677,6 @@ void PlotViewWidget::updateAxis(const QRectF &plotRect)
   this->zoomToPixelsPerValueY = double(zoomToPixelsPerValueX);
   if (this->model)
   {
-    
-
     const auto &streamParam = this->model->getStreamParameter(0);
     const auto rangeY = double(streamParam.yRange.max - streamParam.yRange.min);
     this->zoomToPixelsPerValueY = (this->propertiesAxis[1].line.p1().y() - this->propertiesAxis[1].line.p2().y()) / rangeY;
@@ -677,4 +752,12 @@ std::optional<Range<int>> PlotViewWidget::getVisibleRange(const Axis axis) const
     }
   }
   return visibleRange;
+}
+
+void PlotViewWidget::initViewFromModel()
+{
+  if (this->viewInitializedForModel || !this->model)
+    return;
+
+  this->zoomToFit();
 }

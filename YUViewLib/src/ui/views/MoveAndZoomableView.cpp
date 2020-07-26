@@ -40,8 +40,6 @@
 #include <QPinchGesture>
 #include <QSwipeGesture>
 
-const int ZOOM_STEP_FACTOR = 2;
-
 #define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 0
 #if MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT
 #include <QDebug>

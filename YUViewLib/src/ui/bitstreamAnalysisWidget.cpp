@@ -99,8 +99,6 @@ void BitstreamAnalysisWidget::updateStreamInfo()
       }
     }
   }
-
-  this->ui.plotViewWidget->updateStreamInfo();
 }
 
 void BitstreamAnalysisWidget::backgroundParsingDone(QString error)
