@@ -120,9 +120,13 @@ void decoderVTM::logCallbackLogMessage(int logLevel, QString message)
 {
   QStringList logLevels = QStringList() << "INFO" << "WARN" << "VERBOSE" << "ERROR";
   if (logLevel >= 0 && logLevel < 4)
+  {
     DEBUG_DECVTM("decoderVTM::logCallbackLogMessage " << logLevels[logLevel] << " " << message.simplified());
+  }
   else
+  {
     DEBUG_DECVTM("decoderVTM::logCallbackLogMessage UNKNOWN " << message.simplified());
+  }
 }
 
 void decoderVTM::resolveLibraryFunctionPointers()
