@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserSubtitle608.h"
+#include "ParserSubtitle608.h"
 
 #include "parser/common/ParserMacros.h"
 

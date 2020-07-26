@@ -116,6 +116,8 @@ bool PictureHeader::parse(const QByteArray &parameterSetData, const SPS::SPSMap 
 
   }
   PicOrderCntVal = PicOrderCntMsb + ph_pic_order_cnt_lsb;
+
+  return true;
 }
 
 } // namespace VVC
