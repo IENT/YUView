@@ -128,11 +128,13 @@ parserAnnexB::ParseResult parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteAr
     {
       entry.pts = bitrateEntry->pts;
       entry.dts = bitrateEntry->dts;
+      entry.duration = bitrateEntry->duration;
     }
     else
     {
       entry.pts = counterAU;
       entry.dts = counterAU;  // TODO: Not true. We need to parse the VVC header data
+      entry.duration = 1;
     }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = false; // TODO: Also not correct. We need parsing.

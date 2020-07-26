@@ -635,11 +635,13 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
     {
       entry.pts = bitrateEntry->pts;
       entry.dts = bitrateEntry->dts;
+      entry.duration = bitrateEntry->duration;
     }
     else
     {
       entry.pts = lastFramePOC;
       entry.dts = counterAU;
+      entry.duration = 1;
     }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
