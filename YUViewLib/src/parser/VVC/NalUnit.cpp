@@ -32,7 +32,7 @@
 
 #include "NalUnit.h"
 
-#include "parser/common/parserMacros.h"
+#include "parser/common/ParserMacros.h"
 #include "parser/common/ReaderHelper.h"
 
 #define PARSER_VVC_NAL_DEBUG_OUTPUT 1

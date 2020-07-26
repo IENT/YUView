@@ -32,7 +32,7 @@
 
 #include "GroupOfPicturesHeader.h"
 
-#include "parser/common/parserMacros.h"
+#include "parser/common/ParserMacros.h"
 #include "parser/common/ReaderHelper.h"
 
 namespace MPEG2

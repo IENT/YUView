@@ -32,7 +32,7 @@
 
 #include "ProfileTierLevel.h"
 
-#include "parser/common/parserMacros.h"
+#include "parser/common/ParserMacros.h"
 
 namespace VVC
 {

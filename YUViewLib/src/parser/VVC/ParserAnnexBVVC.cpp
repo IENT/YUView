@@ -35,7 +35,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "parser/common/parserMacros.h"
+#include "parser/common/ParserMacros.h"
 #include "parser/common/ReaderHelper.h"
 #include "PictureHeader.h"
 
