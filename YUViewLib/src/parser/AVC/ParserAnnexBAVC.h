@@ -47,15 +47,15 @@ class ParserAnnexBAVC : public ParserAnnexB
   Q_OBJECT
   
 public:
-  ParserAnnexBAVC(QObject *parent = nullptr) : ParserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); };
-  ~ParserAnnexBAVC() {};
+  parserAnnexBAVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); };
+  ~parserAnnexBAVC() {};
 
   // Get properties
   double getFramerate() const Q_DECL_OVERRIDE;
   QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
   yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) Q_DECL_OVERRIDE;
 
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
   QByteArray getExtradata() Q_DECL_OVERRIDE;
@@ -99,8 +99,8 @@ protected:
   */
   struct nal_unit_avc : NalUnitBase
   {
-    nal_unit_avc(QUint64Pair filePosStartEnd, int nal_idx) : NalUnitBase(filePosStartEnd, nal_idx) {}
-    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : NalUnitBase(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
+    nal_unit_avc(int nal_idx, std::optional<pairUint64> filePosStartEnd) : nal_unit(nal_idx, filePosStartEnd) {}
+    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
@@ -548,9 +548,10 @@ protected:
 
   bool CpbDpbDelaysPresentFlag {false};
 
-  // For every frame, we save the file position where the NAL unit of the first slice starts and where the NAL of the last slice ends.
+  // For every frame, we save the file position where the NAL unit of the first slice starts and where the NAL of the last slice ends (if known).
   // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
-  QUint64Pair curFrameFileStartEndPos;  //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+  std::optional<pairUint64> curFrameFileStartEndPos;  //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+
   // The POC of the current frame. We save this when we encounter a NAL from the next POC; then we add it.
   int curFramePOC {-1};
   bool curFrameIsRandomAccess {false};

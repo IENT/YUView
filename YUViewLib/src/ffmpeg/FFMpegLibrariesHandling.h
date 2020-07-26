@@ -779,8 +779,6 @@ public:
   bool operator==(const AVPixFmtDescriptorWrapper &a);
 
 private:
-
-  AVPixFmtDescriptor *fmtDescriptor {nullptr};
   bool flagsSupported();
 };
 

@@ -2462,7 +2462,11 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
   }
 
   // Check the image buffer size before we write to it
+#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
+  assert(outputImage.byteCount() >= curFrameSize.width() * curFrameSize.height() * 4);
+#else
   assert(outputImage.sizeInBytes() >= curFrameSize.width() * curFrameSize.height() * 4);
+#endif
   
   // Convert the source to RGB
   bool convOK = true;
@@ -2977,7 +2981,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
   const int subH = srcPixelFormat.getSubsamplingHor();
   const int subV = srcPixelFormat.getSubsamplingVer();
 
-  // Get the endianess of the inputs
+  // Get the endianness of the inputs
   const bool bigEndian[2] = {srcPixelFormat.bigEndian, yuvItem2->srcPixelFormat.bigEndian};
 
   // Get pointers to the inputs

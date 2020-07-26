@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -32,54 +32,57 @@
 
 #pragma once
 
-#include <QMap>
-#include <QMutex>
-#include <QString>
+#include <QObject>
+#include <QTimer>
 
-#include "common/typedef.h"
-#include "ui/views/plotModel.h"
-
-class BitratePlotModel : public PlotModel
+class EventSubsampler : public QObject
 {
+  Q_OBJECT
+
 public:
-  BitratePlotModel() = default;
-  virtual ~BitratePlotModel() = default;
+  EventSubsampler(unsigned eventsPerSecond = 5) : eventsPerSecond(eventsPerSecond) {}
 
-  unsigned getNrStreams() const override;
-  PlotModel::StreamParameter getStreamParameter(unsigned streamIndex) const override;
-  PlotModel::Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
-  QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
-  
-  QString getItemInfoText(int index);
+signals:
+  void subsampledEvent();
 
-  struct BitrateEntry
+public slots:
+  void postEvent()
   {
-    int dts {0};
-    int pts {0};
-    int duration {1};
-    unsigned int bitrate {0};
-    bool keyframe {false};
-    QString frameType;
-  };
+    if (this->state == State::Idle)
+    {
+      const auto timeoutMs = 1000 / this->eventsPerSecond;
+      QTimer::singleShot(timeoutMs, this, &EventSubsampler::timerTimeout);
+      this->state = State::CoolDown;
+      emit subsampledEvent();
+    }
+    else if (this->state == State::CoolDown)
+    {
+      this->state = State::PendingEvent;
+    }
+  }
 
-  void addBitratePoint(int streamIndex, BitrateEntry &entry);
-  void setBitrateSortingIndex(int index);
+private slots:
+  void timerTimeout()
+  {
+    if (this->state == State::PendingEvent)
+    {
+      const auto timeoutMs = 1000 / this->eventsPerSecond;
+      QTimer::singleShot(timeoutMs, this, &EventSubsampler::timerTimeout);
+      emit subsampledEvent();
+      this->state = State::CoolDown;
+    }
+    else
+      this->state = State::Idle;
+  }
 
 private:
-
-  enum class SortMode
+  enum class State
   {
-    DECODE_ORDER,
-    PRESENTATION_ORDER
+    Idle,         // No event occured yet. Time inactive.
+    CoolDown,     // Timer running but no additional event yet
+    PendingEvent  // Timer running and an additional event was also recieved
   };
-  SortMode sortMode { SortMode::DECODE_ORDER };
+  State state {State::Idle};
 
-  QMap<unsigned int, QList<BitrateEntry>> dataPerStream;
-  mutable QMutex dataMutex;
-
-  unsigned int calculateAverageValue(unsigned streamIndex, unsigned pointIndex) const;
-
-  Range<int> rangeDts;
-  Range<int> rangePts;
-  QMap<unsigned int, Range<int>> rangeBitratePerStream;
+  unsigned eventsPerSecond {1};
 };

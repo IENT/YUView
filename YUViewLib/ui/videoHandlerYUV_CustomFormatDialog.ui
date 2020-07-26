@@ -71,7 +71,7 @@
       </widget>
      </item>
      <item row="2" column="0">
-      <widget class="QLabel" name="labelEndianess">
+      <widget class="QLabel" name="labelEndianness">
        <property name="toolTip">
         <string>If the bit depth is greater 8 (there are multiple byte per value), what is the order of these bytes? Big endian (most significant byte first) or little endian (least significant byte first).</string>
        </property>
@@ -79,7 +79,7 @@
         <string>If the bit depth is greater 8 (there are multiple byte per value), what is the order of these bytes? Big endian (most significant byte first) or little endian (least significant byte first).</string>
        </property>
        <property name="text">
-        <string>Endianess</string>
+        <string>Endianness</string>
        </property>
       </widget>
      </item>
@@ -125,7 +125,7 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QComboBox" name="comboBoxEndianess">
+      <widget class="QComboBox" name="comboBoxEndianness">
        <property name="toolTip">
         <string>If the bit depth is greater 8 (there are multiple byte per value), what is the order of these bytes? Big endian (most significant byte first) or little endian (least significant byte first).</string>
        </property>
@@ -341,7 +341,7 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
  <tabstops>
   <tabstop>comboBoxChromaSubsampling</tabstop>
   <tabstop>comboBoxBitDepth</tabstop>
-  <tabstop>comboBoxEndianess</tabstop>
+  <tabstop>comboBoxEndianness</tabstop>
   <tabstop>comboBoxChromaOffsetX</tabstop>
   <tabstop>comboBoxChromaOffsetY</tabstop>
   <tabstop>groupBoxPlanar</tabstop>

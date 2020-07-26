@@ -48,8 +48,8 @@ class ParserAnnexBVVC : public ParserAnnexB
   Q_OBJECT
   
 public:
-  ParserAnnexBVVC(QObject *parent = nullptr) : ParserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); }
-  ~ParserAnnexBVVC() {};
+  parserAnnexBVVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
+  ~parserAnnexBVVC() {};
 
   // Get some properties
   double getFramerate() const override;
@@ -61,13 +61,13 @@ public:
   QPair<int,int> getProfileLevel() override;
   QPair<int,int> getSampleAspectRatio() override;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) Q_DECL_OVERRIDE;
 
 protected:
 
   // Since full parsing is not implemented yet, we will just look for AU delimiters (they must be enabled in the bitstream and are by default).
   // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
-  QUint64Pair curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+  std::optional<pairUint64> curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
 
   SPS::SPSMap activeSPSMap;
   PPS::PPSMap activePPSMap;

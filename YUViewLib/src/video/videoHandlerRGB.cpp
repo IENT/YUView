@@ -33,7 +33,7 @@
 #include "videoHandlerRGB.h"
 
 #include <QPainter>
-
+#include <QtGlobal>
 #include "common/functions.h"
 #include "common/fileInfo.h"
 #include "videoHandlerRGBCustomFormatDialog.h"
@@ -476,7 +476,11 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   }
 
   // Check the image buffer size before we write to it
+#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
+  assert(outputImage.byteCount() >= curFrameSize.width() * curFrameSize.height() * 4);
+#else
   assert(outputImage.sizeInBytes() >= curFrameSize.width() * curFrameSize.height() * 4);
+#endif
 
   convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits());
 

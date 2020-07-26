@@ -36,6 +36,7 @@
 #include <QDir>
 #include <QRegExp>
 #include <QSettings>
+#include <QtGlobal>
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
@@ -126,7 +127,11 @@ QList<infoItem> fileSource::getFileInfoList() const
   infoList.append(infoItem("File Path", fileInfo.absoluteFilePath()));
 
   // The file creation time
+#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
+  QString createdtime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
+#else
   QString createdtime = fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss");
+#endif
   infoList.append(infoItem("Time Created", createdtime));
 
   // The last modification time

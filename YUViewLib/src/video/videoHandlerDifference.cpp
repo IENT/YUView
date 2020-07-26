@@ -377,7 +377,7 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int x, int y, int blockSize
   const int subH = diffYUVFormat.getSubsamplingHor();
   const int subV = diffYUVFormat.getSubsamplingVer();
 
-  // Get the endianess of the inputs
+  // Get the endianness of the inputs
   const bool bigEndian = diffYUVFormat.bigEndian;
 
   // Get/Set the bit depth of the input

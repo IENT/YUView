@@ -35,9 +35,10 @@
 #include <QList>
 #include <QTreeWidgetItem>
 
-#include "BitratePlotModel.h"
-#include "NalUnitBase.h"
-#include "TreeItem.h"
+#include <optional>
+
+#include "common/BitratePlotModel.h"
+#include "common/TreeItem.h"
 #include "filesource/fileSourceAnnexBFile.h"
 #include "ParserBase.h"
 #include "video/videoHandlerYUV.h"
@@ -64,10 +65,24 @@ public:
   unsigned int getNrStreams() Q_DECL_OVERRIDE { return 1; }
   QString getShortStreamDescription(int streamIndex) const override;
 
-  // This function must be overloaded and parse the NAL unit header and whatever the NAL unit may contain.
-  // It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).
-  // When there are no more NAL units in the file (the file ends), call this function one last time with empty data and a nalID of -1.
-  virtual bool parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) = 0;
+  /* Parse the NAL unit and what it contains
+   * 
+   * It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).
+   * When there are no more NAL units in the file (the file ends), call this function one last time with empty data and a nalID of -1.
+   * \nalID A counter (ID) of the nal
+   * \data The raw data of the NAL. May include the start code or not.
+   * \bitrateEntry Pass the bitrate entry data into the function that may already be known. E.g. the ffmpeg parser already decodes the DTS/PTS values from the container.
+   * \parent The tree item of the parent where the items will be appended.
+   * \nalStartEndPosFile The position of the first and last byte of the NAL.
+  */
+  struct ParseResult
+  {
+    ParseResult() = default;
+    bool success {false};
+    std::optional<QString> nalTypeName;
+    std::optional<BitratePlotModel::BitrateEntry> bitrateEntry;
+  };
+  virtual ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) = 0;
   
   // Get some format properties
   virtual double getFramerate() const = 0;
@@ -91,7 +106,7 @@ public:
   virtual QPair<int,int> getProfileLevel() = 0;
   virtual QPair<int,int> getSampleAspectRatio() = 0;
 
-  QUint64Pair getFrameStartEndPos(int codingOrderFrameIdx);
+  std::optional<pairUint64> getFrameStartEndPos(int codingOrderFrameIdx);
 
   bool parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QWidget *mainWindow=nullptr);
 
@@ -109,22 +124,23 @@ public:
 
 protected:
   
-  struct annexBFrame
+  struct AnnexBFrame
   {
-    int poc;                     //< The poc of this frame
-    QUint64Pair fileStartEndPos; //< The start and end position of all slice NAL units
-    bool randomAccessPoint;      //< Can we start decoding here?
+    AnnexBFrame() = default;
+    int poc {-1};                               //< The poc of this frame
+    std::optional<pairUint64> fileStartEndPos;  //< The start and end position of all slice NAL units (if known)
+    bool randomAccessPoint {false};             //< Can we start decoding here?
   };
 
   // A list of all frames in the sequence (in coding order) with POC and the file positions of all slice NAL units associated with a frame.
   // POC's don't have to be consecutive, so the only way to know how many pictures are in a sequences is to keep a list of all POCs.
-  QList<annexBFrame> frameList;
+  QList<AnnexBFrame> frameList;
 
   // We also keep a sorted list of POC values in order to map from frame indices to POC
   QList<int> POCList;
 
   // Returns false if the POC was already present int the list
-  bool addFrameToList(int poc, QUint64Pair fileStartEndPos, bool randomAccessPoint);
+  bool addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint);
 
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.
