@@ -83,7 +83,7 @@ jobs:
       if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04'
     - name: Install Newer GCC Ubuntu 16.04
       run: |
-        add-apt-repository ppa:ubuntu-toolchain-r/test
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
         sudo apt-get update
         apt-get install gcc-9 g++-9
         update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
