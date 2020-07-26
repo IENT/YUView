@@ -85,7 +85,7 @@ void fileSourceAnnexBFile::seekToFirstNAL()
   }
 }
 
-QByteArray fileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, QUint64Pair *startEndPosInFile)
+QByteArray fileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, pairUint64 *startEndPosInFile)
 {
   if (getLastDataAgain)
     return lastReturnArray;
@@ -165,7 +165,7 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, QUint64Pa
   return lastReturnArray;
 }
 
-QByteArray fileSourceAnnexBFile::getFrameData(QUint64Pair startEndFilePos)
+QByteArray fileSourceAnnexBFile::getFrameData(pairUint64 startEndFilePos)
 {
   // Get all data for the frame (all NAL units in the raw format with start codes).
   // We don't need to convert the format to the mp4 ISO format. The ffmpeg decoder can also accept raw NAL units.

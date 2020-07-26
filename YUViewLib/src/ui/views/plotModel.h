@@ -33,10 +33,27 @@
 #pragma once
 
 #include "common/typedef.h"
+#include "common/EventSubsampler.h"
 
-class PlotModel
+#include <QObject>
+#include <QTimer>
+
+#include <optional>
+
+class PlotModel : public QObject
 {
+  Q_OBJECT
+
+signals:
+  void dataChanged();
+  void nrStreamsChanged();
+
 public:
+  PlotModel()
+  {
+    this->connect(&this->eventSubsampler, &EventSubsampler::subsampledEvent, this, &PlotModel::dataChanged);
+  }
+
   enum class PlotType
   {
     Bar,
@@ -47,19 +64,43 @@ public:
   struct PlotParameter
   {
     PlotType type;
+    unsigned nrpoints;
+  };
+
+  struct StreamParameter
+  {
+    unsigned getNrPlots() const { return unsigned(this->plotParameters.size()); }
     Range<int> xRange;
     Range<int> yRange;
-    unsigned int nrpoints;
+    QList<PlotParameter> plotParameters;
   };
 
   struct Point
   {
-    double x, y;
+    double x, y, width;
     bool intra;
   };
 
-  virtual unsigned int getNrPlots() const = 0;
-  virtual PlotParameter getPlotParameter(unsigned plotIndex) const = 0;
-  virtual Point getPlotPoint(unsigned plotIndex, unsigned pointIndex) const = 0;
-  virtual QString getPointInfo(unsigned plotIndex, unsigned pointIndex) const = 0;
+  virtual unsigned getNrStreams() const = 0;
+  virtual StreamParameter getStreamParameter(unsigned streamIndex) const = 0;
+  virtual Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
+  virtual QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
+
+  std::optional<unsigned> getPointIndex(unsigned streamIndex, unsigned plotIndex, double x) const
+  {
+    const auto streamParam = this->getStreamParameter(streamIndex);
+    if (plotIndex >= unsigned(streamParam.plotParameters.size()))
+      return {};
+    const auto nrPoints = this->getStreamParameter(streamIndex).plotParameters[plotIndex].nrpoints;
+    for (unsigned pointIndex = 0; pointIndex < nrPoints; pointIndex++)
+    {
+      const auto point = this->getPlotPoint(streamIndex, plotIndex, pointIndex);
+      if (x > point.x - point.width / 2 && x <= point.x + point.width / 2)
+        return pointIndex;
+    }
+    return {};
+  }
+
+protected:
+  EventSubsampler eventSubsampler;
 };

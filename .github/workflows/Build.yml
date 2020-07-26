@@ -81,6 +81,14 @@ jobs:
         sudo apt-get update
         sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0
       if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04'
+    - name: Install Newer GCC Ubuntu 16.04
+      run: |
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+        sudo apt-get update
+        sudo apt-get install gcc-9 g++-9
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+        sudo update-alternatives --config gcc
+      if: matrix.os == 'ubuntu-16.04'
     - name: Install libde265
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}

@@ -41,9 +41,9 @@
 #define PARSER_HEVC_DEBUG_OUTPUT 0
 #if PARSER_HEVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_HEVC qDebug
+#define DEBUG_HEVC(msg) qDebug() << msg
 #else
-#define DEBUG_HEVC(fmt,...) ((void)0)
+#define DEBUG_HEVC(msg) ((void)0)
 #endif
 
 const QStringList parserAnnexBHEVC::nal_unit_type_toString = QStringList()
@@ -172,7 +172,8 @@ QList<QByteArray> parserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64
       if (s->globalPOC == seekPOC)
       {
         // Seek here
-        filePos = s->filePosStartEnd.first;
+        if (s->filePosStartEnd)
+          filePos = s->filePosStartEnd->first;
 
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
@@ -305,20 +306,28 @@ QPair<int,int> parserAnnexBHEVC::getSampleAspectRatio()
   return QPair<int,int>(1,1);
 }
 
-bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
+  parserAnnexB::ParseResult parseResult;
+
   if (nalID == -1 && data.isEmpty())
   {
     if (curFramePOC != -1)
     {
       // Save the info of the last frame
       if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
-        return ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
-      DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", unsigned(curFrameFileStartEndPos.first), unsigned(curFrameFileStartEndPos.second), curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+      {
+        ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
+        return parseResult;
+      }
+      if (curFrameFileStartEndPos)
+        DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+      else
+        DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
     }
     // The file ended
     std::sort(POCList.begin(), POCList.end());
-    return false;
+    return parseResult;
   }
 
   // Skip the NAL unit header
@@ -346,9 +355,9 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
     nalRoot = new TreeItem(packetModel->getRootItem());
 
   // Create a nal_unit and read the header
-  nal_unit_hevc nal_hevc(nalStartEndPosFile, nalID);
+  nal_unit_hevc nal_hevc(nalID, nalStartEndPosFile);
   if (!nal_hevc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
-    return false;
+    return parseResult;
 
   bool first_slice_segment_in_pic_flag = false;
   bool currentSliceIntra = false;
@@ -393,10 +402,9 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
 
     // Add the VPS ID
     specificDescription = parsingSuccess ? QString(" VPS_NUT ID %1").arg(new_vps->vps_video_parameter_set_id) : " VPS_NUT ERR";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("VPS(%1)").arg(new_vps->vps_video_parameter_set_id) : "VPS(ERR)";
+    parseResult.nalTypeName = parsingSuccess ? QString("VPS(%1)").arg(new_vps->vps_video_parameter_set_id) : "VPS(ERR)";
 
-    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit VPS ID %d", new_vps->vps_video_parameter_set_id);
+    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit VPS ID " << new_vps->vps_video_parameter_set_id);
   }
   else if (nal_hevc.nal_type == SPS_NUT)
   {
@@ -412,10 +420,9 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
 
     // Add the SPS ID
     specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(new_sps->sps_seq_parameter_set_id) : " SPS_NUT ERR";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(new_sps->sps_seq_parameter_set_id) : "SPS(ERR)";
+    parseResult.nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(new_sps->sps_seq_parameter_set_id) : "SPS(ERR)";
 
-    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit SPS ID %d", new_sps->sps_seq_parameter_set_id);
+    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit SPS ID " << new_sps->sps_seq_parameter_set_id);
   }
   else if (nal_hevc.nal_type == PPS_NUT) 
   {
@@ -431,10 +438,9 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
 
     // Add the PPS ID
     specificDescription = parsingSuccess ? QString(" PPS_NUT ID %1").arg(new_pps->pps_pic_parameter_set_id) : " PPS_NUT ERR";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->pps_pic_parameter_set_id) : "PPS(ERR)";
+    parseResult.nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->pps_pic_parameter_set_id) : "PPS(ERR)";
 
-    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit PPS ID %d", new_pps->pps_pic_parameter_set_id);
+    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit PPS ID " << new_pps->pps_pic_parameter_set_id);
   }
   else if (nal_hevc.isSlice())
   {
@@ -485,17 +491,23 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
         {
           // Save the info of the last frame
           if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
-            return ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
-          DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", unsigned(curFrameFileStartEndPos.first), unsigned (curFrameFileStartEndPos.second), curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+          {
+            ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
+            return parseResult;
+          }
+          if (curFrameFileStartEndPos)
+            DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+          else
+            DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
         curFramePOC = new_slice->globalPOC;
         curFrameIsRandomAccess = new_slice->isIRAP();
       }
-      else
+      else if (curFrameFileStartEndPos && nalStartEndPosFile)
         // Another slice NAL which belongs to the last frame
         // Update the end position
-        curFrameFileStartEndPos.second = nalStartEndPosFile.second;
+        curFrameFileStartEndPos->second = nalStartEndPosFile->second;
 
       if (nal_hevc.isIRAP())
       {
@@ -508,10 +520,9 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
     }
 
     specificDescription = parsingSuccess ? QString(" POC %1").arg(POC) : " POC ERR";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(POC) : "Slice(ERR)";
+    parseResult.nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(POC) : "Slice(ERR)";
 
-    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Slice POC %d - pocCounterOffset %d maxPOCCount %d%s%s%s", POC, pocCounterOffset, maxPOCCount, (new_slice->isIRAP() ? " - IRAP" : ""), (new_slice->NoRaslOutputFlag ? "" : " - RASL"), (parsingSuccess ? "" : " ERROR"));
+    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Slice POC " << POC << " - pocCounterOffset " << pocCounterOffset << " maxPOCCount " << maxPOCCount << (new_slice->isIRAP() ? " - IRAP" : "") << (new_slice->NoRaslOutputFlag ? "" : " - RASL") << (parsingSuccess ? "" : " ERROR"));
   }
   else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
   {
@@ -526,7 +537,7 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
 
       int nrBytes = new_sei->parse_sei_header(seiReader, message_tree);
       if (nrBytes == -1)
-        return false;
+        return parseResult;
 
       if (message_tree)
         message_tree->itemData[0] = QString("sei_message %1 - %2").arg(sei_count).arg(new_sei->payloadTypeName);
@@ -590,18 +601,16 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
         parsingSuccess = false;
 
       sei_count++;
-      DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit SEI payload type %d", new_sei->payloadType);
+      DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit SEI payload type " << new_sei->payloadType);
     }
 
     specificDescription = QString(" Number Messages: %1").arg(sei_count);
-    if (nalTypeName)
-      *nalTypeName = QString("SEI(#%1)").arg(sei_count);
+    parseResult.nalTypeName = QString("SEI(#%1)").arg(sei_count);
   }
   else if (nal_hevc.nal_type == FD_NUT)
   {
     specificDescription = "Filler";
-    if (nalTypeName)
-      *nalTypeName = "FILLER";
+    parseResult.nalTypeName = "FILLER";
     DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Filler");
   }
   else if (nal_hevc.nal_type == UNSPEC62 || nal_hevc.nal_type == UNSPEC63)
@@ -613,22 +622,31 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
     parsingSuccess = new_dolbyVisionMetadata->parse_metadata(payload, nalRoot);
 
     specificDescription = "Dolby Vision";
-    if (nalTypeName)
-      *nalTypeName = "Dolby Vision";
+    parseResult.nalTypeName = "Dolby Vision";
     DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Dolby Vision Metadata");
   }
 
   if (auDelimiterDetector.isStartOfNewAU(nal_hevc, first_slice_segment_in_pic_flag))
   {
-    DEBUG_HEVC("Start of new AU. Adding bitrate %d for last AU (#%d).", sizeCurrentAU, counterAU);
+    DEBUG_HEVC("Start of new AU. Adding bitrate " << sizeCurrentAU << " for last AU (#" << counterAU << ").");
 
-    BitratePlotModel::bitrateEntry entry;
-    entry.pts = lastFramePOC;
-    entry.dts = counterAU;
+    BitratePlotModel::BitrateEntry entry;
+    if (bitrateEntry)
+    {
+      entry.pts = bitrateEntry->pts;
+      entry.dts = bitrateEntry->dts;
+      entry.duration = bitrateEntry->duration;
+    }
+    else
+    {
+      entry.pts = lastFramePOC;
+      entry.dts = counterAU;
+      entry.duration = 1;
+    }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
     entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
-    bitrateModel->addBitratePoint(0, entry);
+    parseResult.bitrateEntry = entry;
 
     sizeCurrentAU = 0;
     counterAU++;
@@ -650,7 +668,8 @@ bool parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlo
     // Set a useful name of the TreeItem (the root for this NAL)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
 
-  return true;
+  parseResult.success = true;
+  return parseResult;
 }
 
 bool parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(ReaderHelper &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)

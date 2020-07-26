@@ -43,6 +43,13 @@ public:
   PlotViewWidget(QWidget *parent = 0);
   void setModel(PlotModel *model);
 
+private slots:
+  void modelDataChanged();
+  void modelNrStreamsChanged();
+
+protected slots:
+  virtual void zoomToFit(bool checked = false) override;
+
 protected:
 
   // Override some events from the widget
@@ -105,13 +112,20 @@ private:
 
   void onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) override;
 
+  std::optional<Range<int>> getVisibleRange(const Axis axis) const;
+
   PlotModel *model {nullptr};
 
   // At zoom 1.0 (no zoom) we will show values with this distance on the x axis
   double zoomToPixelsPerValueX {10.0};
   double zoomToPixelsPerValueY {10.0};
 
-  int currentlyHoveredModelIndex {-1};
+  QMap<unsigned, QMap<unsigned, unsigned>> currentlyHoveredPointPerStreamAndPlot;
+
+  QList<unsigned int> showStreamList;
+
+  void initViewFromModel();
+  bool viewInitializedForModel {false};
 
   bool fixYAxis {true};
 };
