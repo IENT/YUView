@@ -40,11 +40,7 @@ class EventSubsampler : public QObject
   Q_OBJECT
 
 public:
-  EventSubsampler(unsigned eventsPerSecond = 5) : eventsPerSecond(eventsPerSecond)
-  {
-    this->timer.setSingleShot(true);
-    this->connect(&this->timer, &QTimer::timeout, this, &EventSubsampler::timerTimeout);
-  }
+  EventSubsampler(unsigned eventsPerSecond = 5) : eventsPerSecond(eventsPerSecond) {}
 
 signals:
   void subsampledEvent();
@@ -55,10 +51,11 @@ public slots:
     if (this->state == State::Idle)
     {
       const auto timeoutMs = 1000 / this->eventsPerSecond;
-      timer.start(timeoutMs);
+      QTimer::singleShot(timeoutMs, this, &EventSubsampler::timerTimeout);
+      this->state = State::CoolDown;
       emit subsampledEvent();
     }
-    if (this->state == State::CoolDown)
+    else if (this->state == State::CoolDown)
     {
       this->state = State::PendingEvent;
     }
@@ -70,7 +67,7 @@ private slots:
     if (this->state == State::PendingEvent)
     {
       const auto timeoutMs = 1000 / this->eventsPerSecond;
-      timer.start(timeoutMs);
+      QTimer::singleShot(timeoutMs, this, &EventSubsampler::timerTimeout);
       emit subsampledEvent();
       this->state = State::CoolDown;
     }
@@ -88,5 +85,4 @@ private:
   State state {State::Idle};
 
   unsigned eventsPerSecond {1};
-  QTimer timer;
 };
