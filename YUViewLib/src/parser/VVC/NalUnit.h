@@ -55,7 +55,7 @@ struct NalUnit : NalUnitBase
 
   virtual QByteArray getNALHeader() const override;
   virtual bool isParameterSet() const override { return false; }  // We don't know yet
-  bool parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) override;
+  bool parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root) override;
 
   bool isSlice() const;
 

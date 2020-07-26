@@ -30,40 +30,24 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
+#include "GroupOfPicturesHeader.h"
 
-#include "common/typedef.h"
-#include "TreeItem.h"
+#include "parser/common/parserMacros.h"
+#include "parser/common/ReaderHelper.h"
 
-#include <optional>
-
- /* The basic NAL unit. Contains the NAL header and the file position of the unit.
-  */
-struct NalUnitBase
+namespace MPEG2
 {
-  NalUnitBase(int nal_idx, std::optional<pairUint64> filePosStartEnd) : filePosStartEnd(filePosStartEnd), nal_idx(nal_idx), nal_unit_type_id(-1) {}
-  virtual ~NalUnitBase() {} // This class is meant to be derived from.
 
-  // Parse the header from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-  virtual bool parseNalUnitHeader(const QByteArray &header_data, TreeItem *root) = 0;
+bool GroupOfPicturesHeader::parse(const QByteArray & parameterSetData, TreeItem * root)
+{
+  this->nalPayload = parameterSetData;
+  ReaderHelper reader(parameterSetData, root, "group_of_pictures_header()");
 
-  // Pointer to the first byte of the start code of the NAL unit
-  std::optional<pairUint64> filePosStartEnd;
+  READBITS(time_code, 25);
+  READFLAG(closed_gop);
+  READFLAG(broken_link);
 
-  // The index of the nal within the bitstream
-  int nal_idx;
+  return true;
+}
 
-  // Get the NAL header including the start code
-  virtual QByteArray getNALHeader() const = 0;
-  virtual bool isParameterSet() const = 0;
-  virtual int  getPOC() const { return -1; }
-  // Get the raw NAL unit (excluding a start code, including nal unit header and payload)
-  // This only works if the payload was saved of course
-  QByteArray getRawNALData() const { return getNALHeader() + nalPayload; }
-
-  // Each nal unit (in all known standards) has a type id
-  unsigned int nal_unit_type_id;
-
-  // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
-  QByteArray nalPayload;
-};
+} // namespace MPEG2

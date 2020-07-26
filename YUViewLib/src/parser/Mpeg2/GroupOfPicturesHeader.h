@@ -32,38 +32,19 @@
 
 #pragma once
 
-#include "common/typedef.h"
-#include "TreeItem.h"
+#include "NalUnit.h"
 
-#include <optional>
-
- /* The basic NAL unit. Contains the NAL header and the file position of the unit.
-  */
-struct NalUnitBase
+namespace MPEG2
 {
-  NalUnitBase(int nal_idx, std::optional<pairUint64> filePosStartEnd) : filePosStartEnd(filePosStartEnd), nal_idx(nal_idx), nal_unit_type_id(-1) {}
-  virtual ~NalUnitBase() {} // This class is meant to be derived from.
 
-  // Parse the header from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-  virtual bool parseNalUnitHeader(const QByteArray &header_data, TreeItem *root) = 0;
+struct GroupOfPicturesHeader : NalUnit
+{
+  GroupOfPicturesHeader(const NalUnit &nal) : NalUnit(nal) {};
+  bool parse(const QByteArray &parameterSetData, TreeItem *root);
 
-  // Pointer to the first byte of the start code of the NAL unit
-  std::optional<pairUint64> filePosStartEnd;
-
-  // The index of the nal within the bitstream
-  int nal_idx;
-
-  // Get the NAL header including the start code
-  virtual QByteArray getNALHeader() const = 0;
-  virtual bool isParameterSet() const = 0;
-  virtual int  getPOC() const { return -1; }
-  // Get the raw NAL unit (excluding a start code, including nal unit header and payload)
-  // This only works if the payload was saved of course
-  QByteArray getRawNALData() const { return getNALHeader() + nalPayload; }
-
-  // Each nal unit (in all known standards) has a type id
-  unsigned int nal_unit_type_id;
-
-  // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
-  QByteArray nalPayload;
+  unsigned int time_code;
+  bool closed_gop;
+  bool broken_link;
 };
+
+} // namespace MPEG2

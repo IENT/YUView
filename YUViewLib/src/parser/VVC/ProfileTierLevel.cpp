@@ -112,7 +112,7 @@ bool GeneralConstraintInfo::parse(ReaderHelper &reader)
       return reader.addErrorMessageChildItem("gci_alignment_zero_bit should be zero");
   }
   READBITS(gci_num_reserved_bytes, 8);
-  for (int i = 0; i < gci_num_reserved_bytes; i++)
+  for (unsigned i = 0; i < gci_num_reserved_bytes; i++)
   {
     READBITS_A(gci_reserved_byte, 8, i);
   }
@@ -127,7 +127,7 @@ bool ProfileTierLevel::parse(ReaderHelper &reader, bool profilePresentFlag, int 
   if (profilePresentFlag)
   {
     READBITS(this->general_profile_idc, 7);
-    READFLAG(this->general_tier_flag, 1);
+    READFLAG(this->general_tier_flag);
     general_constraint_info.parse(reader);
   }
 
@@ -135,7 +135,7 @@ bool ProfileTierLevel::parse(ReaderHelper &reader, bool profilePresentFlag, int 
   if (profilePresentFlag)
   {
     READBITS(ptl_num_sub_profiles, 8);
-    for (int i = 0; i < ptl_num_sub_profiles; i++)
+    for (unsigned i = 0; i < ptl_num_sub_profiles; i++)
     {
       READBITS_A(general_sub_profile_idc, 32, i);
     }

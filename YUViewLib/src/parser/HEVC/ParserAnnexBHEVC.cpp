@@ -356,7 +356,7 @@ ParserAnnexB::ParseResult ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
 
   // Create a nal_unit and read the header
   nal_unit_hevc nal_hevc(nalID, nalStartEndPosFile);
-  if (!nal_hevc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
+  if (!nal_hevc.parseNalUnitHeader(nalHeaderBytes, nalRoot))
     return parseResult;
 
   bool first_slice_segment_in_pic_flag = false;
@@ -1954,7 +1954,7 @@ QByteArray ParserAnnexBHEVC::nal_unit_hevc::getNALHeader() const
   return QByteArray(c, 2);
 }
 
-bool ParserAnnexBHEVC::nal_unit_hevc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+bool ParserAnnexBHEVC::nal_unit_hevc::parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   ReaderHelper reader(parameterSetData, root, "nal_unit_header()");

@@ -182,7 +182,7 @@ ParserAnnexB::ParseResult ParserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
 
   // Create a nal_unit and read the header
   nal_unit_avc nal_avc(nalID, nalStartEndPosFile);
-  if (!nal_avc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
+  if (!nal_avc.parseNalUnitHeader(nalHeaderBytes, nalRoot))
     return parseResult;
 
   if (nal_avc.isSlice())
@@ -448,7 +448,7 @@ const QStringList ParserAnnexBAVC::nal_unit_type_toString = QStringList()
 << "RESERVED_22" << "RESERVED_23" << "UNSPCIFIED_24" << "UNSPCIFIED_25" << "UNSPCIFIED_26" << "UNSPCIFIED_27" << "UNSPCIFIED_28" << "UNSPCIFIED_29" 
 << "UNSPCIFIED_30" << "UNSPCIFIED_31";
 
-bool ParserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
+bool ParserAnnexBAVC::nal_unit_avc::parseNalUnitHeader(const QByteArray &header_byte, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   ReaderHelper reader(header_byte, root, "nal_unit_header()");

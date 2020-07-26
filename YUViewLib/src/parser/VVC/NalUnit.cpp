@@ -53,7 +53,7 @@ QByteArray NalUnit::getNALHeader() const
   return QByteArray(c, 2);
 }
 
-bool NalUnit::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+bool NalUnit::parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   ReaderHelper reader(parameterSetData, root, "nal_unit_header()");

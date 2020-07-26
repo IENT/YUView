@@ -30,44 +30,60 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "PPS.h"
+#include "SequenceHeader.h"
+
 #include "parser/common/parserMacros.h"
 #include "parser/common/ReaderHelper.h"
 
-namespace VVC
+namespace MPEG2
 {
 
-bool PPS::parse(const QByteArray &parameterSetData, TreeItem *root)
+bool SequenceHeader::parse(const QByteArray & parameterSetData, TreeItem * root)
 {
-  nalPayload = parameterSetData;
+  this->nalPayload = parameterSetData;
+  ReaderHelper reader(parameterSetData, root, "sequence_header()");
 
-  ReaderHelper reader(parameterSetData, root, "pic_parameter_set_rbsp()");
-
-  READBITS(pps_pic_parameter_set_id, 6);
-  READBITS(pps_seq_parameter_set_id, 4);
-  READFLAG(pps_mixed_nalu_types_in_pic_flag);
-  READUEV(pps_pic_width_in_luma_samples);
-  READUEV(pps_pic_height_in_luma_samples);
-  READFLAG(pps_conformance_window_flag);
-  if (pps_conformance_window_flag)
+  READBITS(horizontal_size_value, 12);
+  READBITS(vertical_size_value, 12);
+  QStringList aspect_ratio_information_meaning = QStringList()
+    << "Forbidden"
+    << "SAR 1.0 (Square Sample)"
+    << "DAR 3:4"
+    << "DAR 9:16"
+    << "DAR 1:2.21"
+    << "Reserved";
+  READBITS_M(aspect_ratio_information, 4, aspect_ratio_information_meaning);
+  QStringList frame_rate_code_meaning = QStringList()
+    << "Forbidden"
+    << "24000:1001 (23.976...)"
+    << "24"
+    << "25"
+    << "30000:1001 (29.97...)"
+    << "30"
+    << "50"
+    << "60000:1001 (59.94)"
+    << "60"
+    << "Reserved";
+  READBITS_M(frame_rate_code, 4, frame_rate_code_meaning);
+  READBITS_M(bit_rate_value, 18, "The lower 18 bits of bit_rate.");
+  READFLAG(marker_bit);
+  if (!marker_bit)
+    reader.addErrorMessageChildItem("The marker_bit shall be set to 1 to prevent emulation of start codes.");
+  READBITS_M(vbv_buffer_size_value, 10, "the lower 10 bits of vbv_buffer_size");
+  READFLAG(constrained_parameters_flag);
+  READFLAG(load_intra_quantiser_matrix);
+  if (load_intra_quantiser_matrix)
   {
-    READUEV(pps_conf_win_left_offset);
-    READUEV(pps_conf_win_right_offset);
-    READUEV(pps_conf_win_top_offset);
-    READUEV(pps_conf_win_bottom_offset);
+    for (int i=0; i<64; i++)
+      READBITS(intra_quantiser_matrix[i], 8);
   }
-  READFLAG(pps_scaling_window_explicit_signalling_flag);
-  if (pps_scaling_window_explicit_signalling_flag)
+  READFLAG(load_non_intra_quantiser_matrix);
+  if (load_non_intra_quantiser_matrix)
   {
-    READSEV(pps_scaling_win_left_offset);
-    READSEV(pps_scaling_win_right_offset);
-    READSEV(pps_scaling_win_top_offset);
-    READSEV(pps_scaling_win_bottom_offset);
+    for (int i=0; i<64; i++)
+      READBITS(non_intra_quantiser_matrix[i], 8);
   }
-
-  // ....
-  // TODO: There is more to parse. But we don't need more for now.
   return true;
 }
 
-} // namespace VVC
+} // namespace MPEG2

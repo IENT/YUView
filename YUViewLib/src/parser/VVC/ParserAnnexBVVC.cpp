@@ -128,7 +128,7 @@ ParserAnnexB::ParseResult ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteAr
 
   // Create a nal_unit and read the header
   VVC::NalUnit nal(nalID, nalStartEndPosFile);
-  if (!nal.parse_nal_unit_header(nalHeaderBytes, nalRoot))
+  if (!nal.parseNalUnitHeader(nalHeaderBytes, nalRoot))
     return parseResult;
 
   bool parsingSuccess = true;

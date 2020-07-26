@@ -40,7 +40,7 @@ namespace VVC
 bool extra_ph_bits_struct_t::parse(ReaderHelper &reader, unsigned int numExtraBtyes)
 {
   ReaderSubLevel s(reader, "extra_ph_bits_struct()");
-  for(int i = 0; i < (numExtraBtyes * 8 ); i++)
+  for(unsigned i = 0; i < (numExtraBtyes * 8 ); i++)
   {
     READFLAG_A(extra_ph_bit_present_flag, i);
   }
@@ -95,7 +95,7 @@ bool SPS::parse(const QByteArray &parameterSetData, TreeItem *root)
     {
       READFLAG(sps_independent_subpics_flag);
     }
-    for(int i = 0; sps_num_subpics_minus1 > 0 && i <= sps_num_subpics_minus1; i++)
+    for(unsigned i = 0; sps_num_subpics_minus1 > 0 && i <= sps_num_subpics_minus1; i++)
     {
       if (i > 0 && sps_pic_width_max_in_luma_samples > CtbSizeY)
       {
@@ -132,7 +132,7 @@ bool SPS::parse(const QByteArray &parameterSetData, TreeItem *root)
     READFLAG(sps_subpic_id_mapping_present_flag);
     if (sps_subpic_id_mapping_present_flag)
     {
-      for (int i = 0; i <= sps_num_subpics_minus1; i++)
+      for (unsigned i = 0; i <= sps_num_subpics_minus1; i++)
       {
         auto nrBits = sps_subpic_id_len_minus1 + 1;
         READBITS_A(sps_subpic_id, nrBits, i);
@@ -159,7 +159,7 @@ bool SPS::parse(const QByteArray &parameterSetData, TreeItem *root)
 
   // Calculate some values
   NumExtraPhBits = 0;
-  for (int i = 0; i < (sps_num_extra_ph_bits_bytes * 8); i++)
+  for (unsigned i = 0; i < (sps_num_extra_ph_bits_bytes * 8); i++)
   {
     if (extra_ph_bits_struct.extra_ph_bit_present_flag[i])
       NumExtraPhBits++;

@@ -90,7 +90,7 @@ protected:
     virtual bool isParameterSet() const override { return nal_type == VPS_NUT || nal_type == SPS_NUT || nal_type == PPS_NUT; }
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
+    bool parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
 
     bool isIRAP();
     bool isSLNR();
