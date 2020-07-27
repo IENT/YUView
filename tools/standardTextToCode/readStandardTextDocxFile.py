@@ -3,6 +3,7 @@ from typing import List, NewType
 from codingType import Coding, CodingType, isCodingType
 import re
 from abc import ABC, abstractmethod
+from parseVariableDescriptions import parseDocForVariableDescriptions
 
 def isVariableName(text : str):
     if ("[" in text and "]" in text):
@@ -343,11 +344,21 @@ class ContainerFor(Container):
         for _ in range(self.parent.depth):
             spaces += "  "
         return f"{spaces}for({self.variableName} = {self.initialValue}; {self.breakCondition}; {self.increment})"
+
+
     
 def main():
     filename = "JVET-R2001-vB.docx"
     print("Opening file " + filename)
     document = Document(filename)
+
+    variableDescriptions = parseDocForVariableDescriptions(document)
+
+    print(f"Parsed {len(variableDescriptions)} variable descriptions: ")
+    for desc in variableDescriptions:
+        print(desc)
+
+    return
 
     # From where to where to parse. The last entry will not be included.
     #firstLastEntry = ["nal_unit_header", "slice_data"]
@@ -370,8 +381,6 @@ def main():
             parsedTables.append(tableItem)
     
     print ("Read {} classes".format(len(parsedTables)))
-    for i, c in enumerate(parsedTables):
-        print (str(i) + " - " + str(c))
 
 if __name__ == "__main__":
     main()
