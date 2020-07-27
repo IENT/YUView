@@ -34,6 +34,8 @@
 #include "parser/common/ParserMacros.h"
 #include "parser/common/ReaderHelper.h"
 
+#include <cmath>
+
 namespace VVC
 {
 
