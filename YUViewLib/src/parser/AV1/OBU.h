@@ -32,34 +32,55 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelper.h"
-#include "parser/common/ParserBase.h"
-#include "video/videoHandlerYUV.h"
+#include "common/typedef.h"
+#include "parser/common/TreeItem.h"
 
-#include "GlobalDecodingValues.h"
-#include "SequenceHeader.h"
+#include "CommonTypes.h"
 
-using namespace YUV_Internals;
+#include <QString>
+#include <QSharedPointer>
+#include <optional>
 
-class ParserAV1OBU : public ParserBase
+namespace AV1
 {
-  Q_OBJECT
 
-public:
-    ParserAV1OBU(QObject *parent = nullptr);
-    ~ParserAV1OBU() {}
+QString obuTypeToString(OBUType obuType);
 
-    unsigned int parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, std::optional<pairUint64> obuStartEndPosFile = pairUint64(-1,-1), QString *obuTypeName=nullptr);
+/* The basic Open bitstream unit. Contains the OBU header and the file position of the unit.
+*/
+struct OBU
+{
+  OBU(std::optional<pairUint64> filePosStartEnd, int obuIdx) : filePosStartEnd(filePosStartEnd), obuIdx(obuIdx) {}
+  OBU(QSharedPointer<OBU> obu_src);
+  virtual ~OBU() {} // This class is meant to be derived from.
 
-    // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
-    // When parsing of raw OBU files is added, we will need this.
-    bool runParsingOfFile(QString fileName) Q_DECL_OVERRIDE { Q_UNUSED(fileName); assert(false); return false; }
-    QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE { return QList<QTreeWidgetItem*>(); }
-    unsigned int getNrStreams() Q_DECL_OVERRIDE { return 1; }
-    QString getShortStreamDescription(int streamIndex) const override { Q_UNUSED(streamIndex); return "Video"; }
+  // Parse the header the given data bytes.
+  bool parseHeader(const QByteArray &header_data, unsigned int &nrBytesHeader, TreeItem *root);
 
-protected:
+  // Pointer to the first byte of the start code of the NAL unit
+  std::optional<pairUint64> filePosStartEnd;
 
-  AV1::GlobalDecodingValues decValues;
-  QSharedPointer<AV1::SequenceHeader> activeSequenceHeader;
+  // The index of the obu within the bitstream
+  int obuIdx;
+
+  virtual bool isParameterSet() { return false; }
+  // Get the raw OBU unit
+  // This only works if the payload was saved of course
+  //QByteArray getRawOBUData() const { return getOBUHeader() + obuPayload; }
+
+  // Each obu (in all known standards) has a type id
+  OBUType obuType           {OBUType::UNSPECIFIED};
+  bool    obu_extension_flag {false};
+  bool    obu_has_size_field {false};
+  
+  // OBU extension header
+  unsigned int temporal_id {0};
+  unsigned int spatial_id  {0};
+
+  uint64_t obu_size {0};
+
+  // Optionally, the OBU unit can store it's payload. A parameter set, for example, can thusly be saved completely.
+  QByteArray obuPayload;
 };
+
+} // namespace MPEG2

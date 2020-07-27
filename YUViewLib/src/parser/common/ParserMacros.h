@@ -33,6 +33,7 @@
 #define READBITS(into,numBits) do { if (!reader.readBits(numBits, into, #into)) return false; } while(0)
 #define READBITS_M(into,numBits,meanings) do { if (!reader.readBits(numBits, into, #into, meanings)) return false; } while(0)
 #define READBITS_M_E(into,numBits,meanings,type) do { unsigned int val; if (!reader.readBits(numBits, val, #into, meanings)) return false; into = (type)val; } while (0)
+#define READBITS_M_F(into,numBits,meanings,function) do { unsigned int val; if (!reader.readBits(numBits, val, #into, meanings)) return false; into = function(val); } while (0)
 #define READBITS_A(into,numBits,idx) do { if (!reader.readBits(numBits, into, #into, idx)) return false; } while(0)
 #define READBITS_A_M(into,numBits,idx,meanings) do { if (!reader.readBits(numBits, into, #into, idx, meanings)) return false; } while(0)
 #define READZEROBITS(numBits,name) do { if (!reader.readZeroBits(numBits, name)) return false; } while(0)

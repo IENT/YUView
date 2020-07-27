@@ -32,34 +32,33 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelper.h"
-#include "parser/common/ParserBase.h"
-#include "video/videoHandlerYUV.h"
-
-#include "GlobalDecodingValues.h"
-#include "SequenceHeader.h"
-
-using namespace YUV_Internals;
-
-class ParserAV1OBU : public ParserBase
+namespace AV1
 {
-  Q_OBJECT
 
-public:
-    ParserAV1OBU(QObject *parent = nullptr);
-    ~ParserAV1OBU() {}
-
-    unsigned int parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, std::optional<pairUint64> obuStartEndPosFile = pairUint64(-1,-1), QString *obuTypeName=nullptr);
-
-    // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
-    // When parsing of raw OBU files is added, we will need this.
-    bool runParsingOfFile(QString fileName) Q_DECL_OVERRIDE { Q_UNUSED(fileName); assert(false); return false; }
-    QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE { return QList<QTreeWidgetItem*>(); }
-    unsigned int getNrStreams() Q_DECL_OVERRIDE { return 1; }
-    QString getShortStreamDescription(int streamIndex) const override { Q_UNUSED(streamIndex); return "Video"; }
-
-protected:
-
-  AV1::GlobalDecodingValues decValues;
-  QSharedPointer<AV1::SequenceHeader> activeSequenceHeader;
+// All the different types of OBUs
+enum class OBUType
+{
+  UNSPECIFIED = -1,
+  RESERVED,
+  OBU_SEQUENCE_HEADER,
+  OBU_TEMPORAL_DELIMITER,
+  OBU_FRAME_HEADER,
+  OBU_TILE_GROUP,
+  OBU_METADATA,
+  OBU_FRAME,
+  OBU_REDUNDANT_FRAME_HEADER,
+  OBU_TILE_LIST,
+  OBU_PADDING
 };
+
+enum class FrameType
+{
+  UNSPECIFIED = -1,
+  KEY_FRAME,
+  INTER_FRAME,
+  INTRA_ONLY_FRAME,
+  SWITCH_FRAME
+};
+
+
+}

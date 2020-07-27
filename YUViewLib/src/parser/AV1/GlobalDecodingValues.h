@@ -32,34 +32,28 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelper.h"
-#include "parser/common/ParserBase.h"
-#include "video/videoHandlerYUV.h"
+#include "CommonTypes.h"
 
-#include "GlobalDecodingValues.h"
-#include "SequenceHeader.h"
-
-using namespace YUV_Internals;
-
-class ParserAV1OBU : public ParserBase
+namespace AV1
 {
-  Q_OBJECT
 
-public:
-    ParserAV1OBU(QObject *parent = nullptr);
-    ~ParserAV1OBU() {}
+struct GlobalDecodingValues
+{
+  FrameType RefFrameType[8] {FrameType::UNSPECIFIED};
+  bool RefValid[8] {false};
+  unsigned int RefOrderHint[8] {0};
+  unsigned int OrderHints[8] {0};
+  int RefFrameId[8] {0};
 
-    unsigned int parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, std::optional<pairUint64> obuStartEndPosFile = pairUint64(-1,-1), QString *obuTypeName=nullptr);
+  bool SeenFrameHeader {false};
+  int PrevFrameID {-1};
+  int current_frame_id {0};
 
-    // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
-    // When parsing of raw OBU files is added, we will need this.
-    bool runParsingOfFile(QString fileName) Q_DECL_OVERRIDE { Q_UNUSED(fileName); assert(false); return false; }
-    QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE { return QList<QTreeWidgetItem*>(); }
-    unsigned int getNrStreams() Q_DECL_OVERRIDE { return 1; }
-    QString getShortStreamDescription(int streamIndex) const override { Q_UNUSED(streamIndex); return "Video"; }
-
-protected:
-
-  AV1::GlobalDecodingValues decValues;
-  QSharedPointer<AV1::SequenceHeader> activeSequenceHeader;
+  // TODO: These need to be set at the end of the "decoding" process
+  int RefUpscaledWidth[8] {0};
+  int RefFrameHeight[8] {0};
+  int RefRenderWidth[8] {0};
+  int RefRenderHeight[8] {0};
 };
+
+}
