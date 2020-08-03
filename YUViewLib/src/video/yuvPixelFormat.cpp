@@ -79,7 +79,7 @@ QList<PackingOrder> getSupportedPackingFormats(Subsampling subsampling)
   if (subsampling == Subsampling::YUV_422)
     return QList<PackingOrder>() << PackingOrder::UYVY << PackingOrder::VYUY << PackingOrder::YUYV << PackingOrder::YVYU;
   if (subsampling == Subsampling::YUV_444)
-    return QList<PackingOrder>() << PackingOrder::YUV << PackingOrder::YVU << PackingOrder::AYUV << PackingOrder::YUVA;
+    return QList<PackingOrder>() << PackingOrder::YUV << PackingOrder::YVU << PackingOrder::AYUV << PackingOrder::YUVA << PackingOrder::VUYA;
 
   return QList<PackingOrder>();
 }
@@ -224,7 +224,7 @@ bool yuvPixelFormat::isValid() const
   if (!planar)
   {
     // Check the packing mode
-    if ((packingOrder == PackingOrder::YUV || packingOrder == PackingOrder::YVU || packingOrder == PackingOrder::AYUV || packingOrder == PackingOrder::YUVA) && subsampling != Subsampling::YUV_444)
+    if ((packingOrder == PackingOrder::YUV || packingOrder == PackingOrder::YVU || packingOrder == PackingOrder::AYUV || packingOrder == PackingOrder::YUVA || packingOrder == PackingOrder::VUYA) && subsampling != Subsampling::YUV_444)
       return false;
     if ((packingOrder == PackingOrder::UYVY || packingOrder == PackingOrder::VYUY || packingOrder == PackingOrder::YUYV || packingOrder == PackingOrder::YVYU) && subsampling != Subsampling::YUV_422)
       return false;
@@ -368,7 +368,7 @@ int64_t yuvPixelFormat::bytesPerFrame(const QSize &frameSize) const
     if (planar && (planeOrder == PlaneOrder::YUVA || planeOrder == PlaneOrder::YVUA))
       // There is an additional alpha plane. The alpha plane is not subsampled
       bytes += frameSize.width() * frameSize.height() * bytesPerSample; // Alpha plane
-    if (!planar && subsampling == Subsampling::YUV_444 && (packingOrder == PackingOrder::AYUV || packingOrder == PackingOrder::YUVA))
+    if (!planar && subsampling == Subsampling::YUV_444 && (packingOrder == PackingOrder::AYUV || packingOrder == PackingOrder::YUVA || packingOrder == PackingOrder::VUYA))
       // There is an additional alpha plane. The alpha plane is not subsampled
       bytes += frameSize.width() * frameSize.height() * bytesPerSample; // Alpha plane
   }
@@ -385,7 +385,7 @@ int64_t yuvPixelFormat::bytesPerFrame(const QSize &frameSize) const
     if (subsampling == Subsampling::YUV_444)
     {
       int bitsPerPixel = bitsPerSample * 3;
-      if (packingOrder == PackingOrder::AYUV || packingOrder == PackingOrder::YUVA)
+      if (packingOrder == PackingOrder::AYUV || packingOrder == PackingOrder::YUVA || packingOrder == PackingOrder::VUYA)
         bitsPerPixel += bitsPerSample;
       return ((bitsPerPixel + 7) / 8) * frameSize.width() * frameSize.height();
     }

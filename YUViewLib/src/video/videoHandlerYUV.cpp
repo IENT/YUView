@@ -2231,9 +2231,9 @@ bool videoHandlerYUV::convertYUVPackedToPlanar(const QByteArray &sourceBuffer, Q
   else if (format.subsampling == Subsampling::YUV_444)
   {
     // What are the offsets withing the 3 or 4 bytes per sample?
-    const int oY = (packing == PackingOrder::AYUV) ? 1 : 0;
-    const int oU = (packing == PackingOrder::YUV || packing == PackingOrder::YUVA) ? 1 : 2;
-    const int oV = (packing == PackingOrder::YVU) ? 1 : (packing == PackingOrder::AYUV) ? 3 : 2;
+    const int oY = (packing == PackingOrder::AYUV) ? 1 : (packing == PackingOrder::VUYA) ? 2 : 0;
+    const int oU = (packing == PackingOrder::YUV || packing == PackingOrder::YUVA || packing == PackingOrder::VUYA) ? 1 : 2;
+    const int oV = (packing == PackingOrder::YVU) ? 1 : (packing == PackingOrder::AYUV) ? 3 : (packing == PackingOrder::VUYA) ? 0 : 2;
 
     // How many samples to the next sample?
     const int offsetNext = (packing == PackingOrder::YUV || packing == PackingOrder::YVU ? 3 : 4);
@@ -2587,9 +2587,9 @@ videoHandlerYUV::yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) co
     {
       // The samples are packed in 4:4:4.
       // What are the offsets withing the 3 or 4 bytes per sample?
-      const int oY = (packing == PackingOrder::AYUV) ? 1 : 0;
-      const int oU = (packing == PackingOrder::YUV || packing == PackingOrder::YUVA) ? 1 : 2;
-      const int oV = (packing == PackingOrder::YVU) ? 1 : (packing == PackingOrder::AYUV) ? 3 : 2;
+      const int oY = (packing == PackingOrder::AYUV) ? 1 : (packing == PackingOrder::VUYA) ? 2 : 0;
+      const int oU = (packing == PackingOrder::YUV || packing == PackingOrder::YUVA || packing == PackingOrder::VUYA) ? 1 : 2;
+      const int oV = (packing == PackingOrder::YVU) ? 1 : (packing == PackingOrder::AYUV) ? 3 : (packing == PackingOrder::VUYA) ? 0 : 2;
 
       // How many bytes to the next sample?
       const int offsetNext = (packing == PackingOrder::YUV || packing == PackingOrder::YVU ? 3 : 4) * (format.bitsPerSample > 8 ? 2 : 1);
