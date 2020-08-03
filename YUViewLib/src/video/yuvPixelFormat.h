@@ -88,6 +88,7 @@ enum class PackingOrder
   YVU,      // 444
   AYUV,     // 444
   YUVA,     // 444
+  VUYA,     // 444
   UYVY,     // 422
   VYUY,     // 422
   YUYV,     // 422
@@ -98,8 +99,8 @@ enum class PackingOrder
   //VYYUYY    // 420
   UNKNOWN
 };
-const auto packingOrderList = QList<PackingOrder>() << PackingOrder::YUV << PackingOrder::YVU << PackingOrder::AYUV << PackingOrder::YUVA << PackingOrder::UYVY << PackingOrder::VYUY << PackingOrder::YUYV << PackingOrder::YVYU;
-const auto packingOrderNameList = QStringList() << "YUV" << "YVU" << "AYUV" << "YUVA" << "UYVY" << "VYUY" << "YUYV" << "YVYU";
+const auto packingOrderList = QList<PackingOrder>() << PackingOrder::YUV << PackingOrder::YVU << PackingOrder::AYUV << PackingOrder::YUVA << PackingOrder::VUYA << PackingOrder::UYVY << PackingOrder::VYUY << PackingOrder::YUYV << PackingOrder::YVYU;
+const auto packingOrderNameList = QStringList() << "YUV" << "YVU" << "AYUV" << "YUVA" << "VUYA" << "UYVY" << "VYUY" << "YUYV" << "YVYU";
 QString getPackingFormatString(PackingOrder packing);
 
 enum class Subsampling
