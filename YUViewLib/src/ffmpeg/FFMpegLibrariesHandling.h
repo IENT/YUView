@@ -74,6 +74,8 @@ public:
   AVCodecContext    *(*avcodec_alloc_context3)   (const AVCodec *codec);
   int                (*avcodec_open2)            (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
   void               (*avcodec_free_context)     (AVCodecContext **avctx);
+  AVPacket          *(*av_packet_alloc)          (void);
+  void               (*av_packet_free)           (AVPacket **pkt);
   void               (*av_init_packet)           (AVPacket *pkt);
   void               (*av_packet_unref)          (AVPacket *pkt);
   void               (*avcodec_flush_buffers)    (AVCodecContext *avctx);
@@ -461,7 +463,7 @@ public:
   // Create a new paket and initilize it using av_init_packet.
   void allocate_paket(FFmpegVersionHandler &ff);
   void unref_packet(FFmpegVersionHandler &ff);
-  void free_packet();
+  void free_packet(FFmpegVersionHandler &ff);
   void set_data(QByteArray &set_data);
   void set_pts(int64_t pts);
   void set_dts(int64_t dts);

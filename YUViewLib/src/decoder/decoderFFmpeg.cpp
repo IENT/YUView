@@ -111,7 +111,7 @@ decoderFFmpeg::~decoderFFmpeg()
   if (frame)
     frame.free_frame(ff);
   if (raw_pkt)
-    raw_pkt.free_packet();
+    raw_pkt.free_packet(ff);
 }
 
 void decoderFFmpeg::resetDecoder()

@@ -110,9 +110,6 @@ void PlotViewWidget::zoomToFit(bool checked)
   const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
   this->updateAxis(plotRect);
 
-  const auto axisLengthX = this->propertiesAxis[0].line.p2().x() - this->propertiesAxis[0].line.p1().x();
-  const auto axisLengthInValues = axisLengthX / this->zoomToPixelsPerValueX / this->zoomFactor;
-  
   bool modelContainsDataYet = false;
   double minZoomFactor = -1;
   for (auto streamIndex : this->showStreamList)
@@ -155,7 +152,6 @@ void PlotViewWidget::zoomToFit(bool checked)
   auto visibleRange = this->getVisibleRange(Axis::X);
   if (!visibleRange)
     return;
-  const auto moveOffset = int(-(visibleRange->min + 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
 
   this->viewInitializedForModel = true;
 }
@@ -229,7 +225,6 @@ void PlotViewWidget::resizeEvent(QResizeEvent *event)
 
 void PlotViewWidget::mouseMoveEvent(QMouseEvent *mouseMoveEvent)
 {
-  const auto plotIndex = 0;
   MoveAndZoomableView::mouseMoveEvent(mouseMoveEvent);
 
   QMap<unsigned, QMap<unsigned, unsigned>> newHoverePointIndexPerStreamAndPlot;
@@ -742,7 +737,7 @@ std::optional<Range<int>> PlotViewWidget::getVisibleRange(const Axis axis) const
   if (this->showStreamList.empty())
     return {};
 
-  Range<int> visibleRange;
+  Range<int> visibleRange {0, 0};
   for (int i = 0; i < this->showStreamList.size(); i++)
   {
     const auto streamIndex = this->showStreamList.at(i);

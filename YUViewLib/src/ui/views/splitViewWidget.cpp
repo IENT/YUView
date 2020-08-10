@@ -153,7 +153,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     QPalette Pal(palette());
     QSettings settings;
     QColor bgColor = settings.value("Background/Color").value<QColor>();
-    Pal.setColor(QPalette::Background, bgColor);
+    Pal.setColor(QPalette::Window, bgColor);
     setAutoFillBackground(true);
     setPalette(Pal);
     paletteNeedsUpdate = false;

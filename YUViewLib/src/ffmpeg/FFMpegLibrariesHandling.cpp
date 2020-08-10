@@ -853,6 +853,8 @@ FFmpegLibraryFunctions::FFmpegLibraryFunctions()
   avcodec_open2 = nullptr;
   avcodec_free_context = nullptr;
   av_init_packet = nullptr;
+  av_packet_alloc = nullptr;
+  av_packet_free = nullptr;
   av_packet_unref = nullptr;
   avcodec_flush_buffers = nullptr;
   avcodec_version = nullptr;
@@ -892,6 +894,8 @@ bool FFmpegLibraryFunctions::bindFunctionsFromAVCodecLib()
   if (!resolveAvCodec(avcodec_open2, "avcodec_open2")) return false;
   if (!resolveAvCodec(avcodec_free_context, "avcodec_free_context")) return false;
   if (!resolveAvCodec(av_init_packet, "av_init_packet")) return false;
+  if (!resolveAvCodec(av_packet_alloc, "av_packet_alloc")) return false;
+  if (!resolveAvCodec(av_packet_free, "av_packet_free")) return false;
   if (!resolveAvCodec(av_packet_unref, "av_packet_unref")) return false;
   if (!resolveAvCodec(avcodec_flush_buffers, "avcodec_flush_buffers")) return false;
   if (!resolveAvCodec(avcodec_version, "avcodec_version")) return false;
@@ -1110,14 +1114,14 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
   // avutil, swresample, avcodec, avformat.
   libAvutil.setFileName(avUtilLib);
   bool success = libAvutil.load();
-  LOG("Try to load libAvutil " + libAvutil.fileName() + (success ? " success" : " fail"));
+  LOG("Try to load libAvutil " + libAvutil.fileName() + (success ? " success" : " fail: " + libAvutil.errorString()));
 
   // Next, the swresample library.
   libSwresample.setFileName(swResampleLib);
   if (success)
   {
     success = libSwresample.load();
-    LOG("Try to load libSwresample " + libSwresample.fileName() + (success ? " success" : " fail"));
+    LOG("Try to load libSwresample " + libSwresample.fileName() + (success ? " success" : " fail: " + libSwresample.errorString()));
   } 
 
   // avcodec
@@ -1125,7 +1129,7 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
   if (success)
   {
     success = libAvcodec.load();
-    LOG("Try to load libAvcodec " + libAvcodec.fileName() + (success ? " success" : " fail"));
+    LOG("Try to load libAvcodec " + libAvcodec.fileName() + (success ? " success" : " fail: " + libAvcodec.errorString()));
   } 
 
   // avformat
@@ -1133,7 +1137,7 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QStr
   if (success)
   {
     success = libAvformat.load();
-    LOG("Try to load libAvformat " + libAvformat.fileName() + (success ? " success" : " fail"));
+    LOG("Try to load libAvformat " + libAvformat.fileName() + (success ? " success" : " fail: " + libAvformat.errorString()));
   } 
 
   if (!success)
@@ -2957,14 +2961,14 @@ void AVPacketWrapper::allocate_paket(FFmpegVersionHandler &ff)
 
   if (libVer.avcodec == 56)
   {
-    AVPacket_56 *p = new AVPacket_56;
+    AVPacket_56 *p = reinterpret_cast<AVPacket_56*>(ff.lib.av_packet_alloc());
     p->data = nullptr;
     p->size = 0;
     pkt = reinterpret_cast<AVPacket*>(p);
   }
   else if (libVer.avcodec == 57 || libVer.avcodec == 58)
   {
-    AVPacket_57_58 *p = new AVPacket_57_58;
+    AVPacket_57_58 *p = reinterpret_cast<AVPacket_57_58*>(ff.lib.av_packet_alloc());
     p->data = nullptr;
     p->size = 0;
     pkt = reinterpret_cast<AVPacket*>(p);
@@ -2981,21 +2985,9 @@ void AVPacketWrapper::unref_packet(FFmpegVersionHandler &ff)
   ff.lib.av_packet_unref(pkt);
 }
 
-void AVPacketWrapper::free_packet()
+void AVPacketWrapper::free_packet(FFmpegVersionHandler &ff)
 {
-  if (libVer.avcodec == 56)
-  {
-    AVPacket_56 *p = reinterpret_cast<AVPacket_56*>(pkt);
-    delete p;
-  }
-  else if (libVer.avcodec == 57 || libVer.avcodec == 58)
-  {
-    AVPacket_57_58 *p = reinterpret_cast<AVPacket_57_58*>(pkt);
-    delete p;
-  }
-  else
-    assert(false);
-  
+  ff.lib.av_packet_free(&pkt);
   pkt = nullptr;
 }
 
