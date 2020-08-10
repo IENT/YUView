@@ -322,7 +322,7 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
 fileSourceFFmpegFile::~fileSourceFFmpegFile()
 {
   if (pkt)
-    pkt.free_packet();
+    pkt.free_packet(ff);
 }
 
 bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow, fileSourceFFmpegFile *other, bool parseFile)
