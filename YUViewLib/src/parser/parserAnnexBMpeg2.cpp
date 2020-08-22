@@ -169,6 +169,9 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
+  // Log NAL size
+  new TreeItem("size", data.size(), nalRoot);
+
   // Create a nal_unit and read the header
   nal_unit_mpeg2 nal_mpeg2(nalID, nalStartEndPosFile);
   if (!nal_mpeg2.parse_nal_unit_header(nalHeaderBytes, nalRoot))

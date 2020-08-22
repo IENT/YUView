@@ -166,6 +166,9 @@ unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *
   else if (!packetModel->isNull())
     obuRoot = new TreeItem(packetModel->getRootItem());
 
+  // Log OBU size
+  new TreeItem("size", data.size(), obuRoot);
+
   // Read the OBU header
   obu_unit obu(obuStartEndPosFile, obuID);
   unsigned int nrBytesHeader;
