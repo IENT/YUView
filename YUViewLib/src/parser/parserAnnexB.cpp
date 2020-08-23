@@ -76,6 +76,20 @@ bool parserAnnexB::addFrameToList(int poc, std::optional<pairUint64> fileStartEn
   return true;
 }
 
+void parserAnnexB::logNALSize(QByteArray &data, TreeItem *root)
+{
+  int startCodeSize = 0;
+  if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
+    startCodeSize = 4;
+  if (data[0] == char(0) && data[1] == char(0) && data[2] == char(1))
+    startCodeSize = 3;
+
+  if (startCodeSize > 0)
+    new TreeItem("Start code size", startCodeSize, root);
+
+  new TreeItem("Payload size", data.size() - startCodeSize, root);
+}
+
 int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const
 {
   // Get the POC for the frame number
