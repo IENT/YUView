@@ -2227,9 +2227,9 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   const bool cbr_flag = sps->vui_parameters.nal_hrd.cbr_flag[SchedSelIdx];
 
   /* Some notation:
-      t_ai: The time at which the first bit of access unit n begins to enter the CPB is
-      referred to as the initial arrival time. t_r_nominal_n: the nominal removal time of the
-      access unit from the CPB t_r_n: The removal time of access unit n
+    t_ai: The time at which the first bit of access unit n begins to enter the CPB is
+    referred to as the initial arrival time. t_r_nominal_n: the nominal removal time of the
+    access unit from the CPB t_r_n: The removal time of access unit n
   */
 
   // Annex C: The variable t c is derived as follows and is called a clock tick:
@@ -2239,10 +2239,10 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   // Part 1: the nominal removal time of the access unit from the CPB
   time_t t_r_nominal_n;
   if (this->au_n == 0)
-      t_r_nominal_n = time_t(initial_cpb_removal_delay) / 90000;
+    t_r_nominal_n = time_t(initial_cpb_removal_delay) / 90000;
   else
-      // n is not equal to 0. The removal time depends on the removal time of the previous AU.
-      t_r_nominal_n = this->t_r_nominal_n_first + t_c * (unsigned int) lastPicTimingSEI->cpb_removal_delay;
+    // n is not equal to 0. The removal time depends on the removal time of the previous AU.
+    t_r_nominal_n = this->t_r_nominal_n_first + t_c * (unsigned int) lastPicTimingSEI->cpb_removal_delay;
 
   if (isFirstAUInBufferingPeriod)
     this->t_r_nominal_n_first = t_r_nominal_n;
@@ -2250,7 +2250,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   // ITU-T Rec H.264 (04/2017) - C.1.1 - Timing of bitstream arrival
   time_t t_ai;
   if (this->au_n == 0)
-      t_ai = 0;
+    t_ai = 0;
   else
   {
     if (cbr_flag)
@@ -2318,8 +2318,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   // The time windows we have to process is from t_af_nm1 to t_af (t_ai is in between
   // these two).
 
-  // 1: Process the time from t_af_nm1 (>) to t_ai (<=) (previously processed AUs might be
-  // removed
+  // 1: Process the time from t_af_nm1 (>) to t_ai (<=) (previously processed AUs might be removed
   //    in this time window (tr_n)). In this time, no data is added to the buffer (no
   //    frame is being received) but frames may be removed from the buffer. This time can
   //    be zero.
@@ -2355,10 +2354,10 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   auto relevant_frames = this->popRemoveFramesInTimeInterval(t_ai, t_af);
   unsigned int au_buffer_add = auBits;
   {
-      // time_t au_time_expired = t_af - t_ai;
-      // uint64_t au_bits_add   = (uint64_t)(au_time_expired * (unsigned int) bitrate);
-      // assert(au_buffer_add == au_bits_add || au_buffer_add == au_bits_add + 1 ||
-      // au_buffer_add + 1 == au_bits_add);
+    // time_t au_time_expired = t_af - t_ai;
+    // uint64_t au_bits_add   = (uint64_t)(au_time_expired * (unsigned int) bitrate);
+    // assert(au_buffer_add == au_bits_add || au_buffer_add == au_bits_add + 1 ||
+    // au_buffer_add + 1 == au_bits_add);
   }
   if (relevant_frames.empty())
   {
