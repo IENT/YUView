@@ -354,6 +354,8 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
+  parserAnnexB::logNALSize(data, nalRoot);
+
   // Create a nal_unit and read the header
   nal_unit_hevc nal_hevc(nalID, nalStartEndPosFile);
   if (!nal_hevc.parse_nal_unit_header(nalHeaderBytes, nalRoot))

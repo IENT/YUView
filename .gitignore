@@ -8,6 +8,7 @@ YUView.pro.user
 *.vcxproj*
 /.vs
 /build
+/buildRelease
 /GeneratedFiles
 /x64
 /deploy
