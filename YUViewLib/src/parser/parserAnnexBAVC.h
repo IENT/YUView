@@ -543,6 +543,9 @@ protected:
   // parameter sets. Here we keep a list of seis that need to be parsed after the parameter sets were recieved.
   QList<QSharedPointer<sei>> reparse_sei;
 
+  QSharedPointer<buffering_period_sei> lastBufferingPeriodSEI;
+  QSharedPointer<pic_timing_sei> lastPicTimingSEI;
+
   // In an SEI, the number of bytes indicated do not consider the emulation prevention. This function
   // can determine the real number of bytes that we need to read from the input considering the emulation prevention
   int determineRealNumberOfBytesSEIEmulationPrevention(QByteArray &in, int nrBytes);
@@ -576,8 +579,9 @@ protected:
   {
   public:
     HRD() = default;
-    void addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, bool isFirstAUInBufferingPeriod);
+    void addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, HRDPlotModel *plotModel);
   
+    bool isFirstAUInBufferingPeriod {true};
   private:
     typedef long double time_t;
 
@@ -603,8 +607,8 @@ protected:
     time_t t_r_nominal_n_first;
 
     QList<HRDFrameToRemove> popRemoveFramesInTimeInterval(time_t from, time_t to);
-    void addToBufferAndCheck(unsigned bufferAdd, unsigned bufferAddFractional, unsigned bufferSize, int SchedSelIdx, int poc, time_t t_begin, time_t t_end, int bits, int bitrate);
-    void removeFromBufferAndCheck(HRDFrameToRemove &frame, int SchedSelIdx, int poc, int bits, int bitrate);
+    void addToBufferAndCheck(unsigned bufferAdd, unsigned bufferAddFractional, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel);
+    void removeFromBufferAndCheck(HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel);
 
     int64_t decodingBufferLevel {0};
   };

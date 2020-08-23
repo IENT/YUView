@@ -54,8 +54,11 @@ public:
 
   struct HRDEntry
   {
+    int cbp_fullness_start {0};
     int cbp_fullness_end {0};
-    int time_offset_end {0};
+    double time_offset_start {0};
+    double time_offset_end {0};
+    int poc;
   };
 
   void addHRDEntry(HRDEntry &entry);

@@ -197,12 +197,12 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       if (sei->payloadType == 0)
       {
         auto buffering_period = sei.dynamicCast<buffering_period_sei>();
-        buffering_period->reparse_buffering_period_sei(active_SPS_list);
+        buffering_period->reparse_buffering_period_sei(this->active_SPS_list);
       }
       if (sei->payloadType == 1)
       {
         auto pic_timing = sei.dynamicCast<pic_timing_sei>();
-        pic_timing->reparse_pic_timing_sei(active_SPS_list, CpbDpbDelaysPresentFlag);
+        pic_timing->reparse_pic_timing_sei(this->active_SPS_list, CpbDpbDelaysPresentFlag);
       }
     }
   }
@@ -217,7 +217,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
     parsingSuccess = new_sps->parse_sps(payload, nalRoot);
 
     // Add sps (replace old one if existed)
-    active_SPS_list.insert(new_sps->seq_parameter_set_id, new_sps);
+    this->active_SPS_list.insert(new_sps->seq_parameter_set_id, new_sps);
 
     // Also add sps to list of all nals
     nalUnitList.append(new_sps);
@@ -235,7 +235,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
   {
     // A picture parameter set
     auto new_pps = QSharedPointer<pps>(new pps(nal_avc));
-    parsingSuccess = new_pps->parse_pps(payload, nalRoot, active_SPS_list);
+    parsingSuccess = new_pps->parse_pps(payload, nalRoot, this->active_SPS_list);
 
     // Add pps (replace old one if existed)
     active_PPS_list.insert(new_pps->pic_parameter_set_id, new_pps);
@@ -253,7 +253,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
   {
     // Create a new slice unit
     auto new_slice = QSharedPointer<slice_header>(new slice_header(nal_avc));
-    parsingSuccess = new_slice->parse_slice_header(payload, active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
+    parsingSuccess = new_slice->parse_slice_header(payload, this->active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
 
     if (parsingSuccess && !new_slice->bottom_field_flag && 
       (last_picture_first_slice.isNull() || new_slice->TopFieldOrderCnt != last_picture_first_slice->TopFieldOrderCnt || new_slice->isRandomAccess()) &&
@@ -337,14 +337,17 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       if (new_sei->payloadType == 0)
       {
         auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
-        result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, active_SPS_list, message_tree);
+        result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, this->active_SPS_list, message_tree);
         reparse = new_buffering_period_sei;
+        this->lastBufferingPeriodSEI = new_buffering_period_sei;
+        this->hrd.isFirstAUInBufferingPeriod = true;
       }
       else if (new_sei->payloadType == 1)
       {
         auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
-        result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, message_tree);
+        result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, this->active_SPS_list, CpbDpbDelaysPresentFlag, message_tree);
         reparse = new_pic_timing_sei;
+        this->lastPicTimingSEI = new_pic_timing_sei;
       }
       else if (new_sei->payloadType == 4)
       {
@@ -394,9 +397,9 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
 
   if (auDelimiterDetector.isStartOfNewAU(nal_avc, curFramePOC))
   {
-    if (sizeCurrentAU > 0)
+    if (this->sizeCurrentAU > 0)
     {
-      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate " << sizeCurrentAU);
+      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate " << this->sizeCurrentAU);
 
       BitratePlotModel::BitrateEntry entry;
       if (bitrateEntry)
@@ -407,28 +410,30 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       }
       else
       {
-        entry.pts = lastFramePOC;
-        entry.dts = counterAU;
+        entry.pts = this->lastFramePOC;
+        entry.dts = this->counterAU;
         entry.duration = 1;
       }
-      entry.bitrate = sizeCurrentAU;
-      entry.keyframe = currentAUAllSlicesIntra;
+      entry.bitrate = this->sizeCurrentAU;
+      entry.keyframe = this->currentAUAllSlicesIntra;
       entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
       parseResult.bitrateEntry = entry;
+
+      this->hrd.addAU(this->sizeCurrentAU, curFramePOC, this->active_SPS_list[0], this->lastBufferingPeriodSEI, this->lastPicTimingSEI, this->getHRDPlotModel());
     }
-    sizeCurrentAU = 0;
-    counterAU++;
-    currentAUAllSlicesIntra = true;
+    this->sizeCurrentAU = 0;
+    this->counterAU++;
+    this->currentAUAllSlicesIntra = true;
     this->currentAUSliceTypes.clear();
   }
-  if (lastFramePOC != curFramePOC)
-    lastFramePOC = curFramePOC;
-  sizeCurrentAU += data.size();
+  if (this->lastFramePOC != curFramePOC)
+    this->lastFramePOC = curFramePOC;
+  this->sizeCurrentAU += data.size();
 
   if (nal_avc.isSlice())
   {
     if (!currentSliceIntra)
-      currentAUAllSlicesIntra = false;
+      this->currentAUAllSlicesIntra = false;
     this->currentAUSliceTypes[currentSliceType]++;
   }
 
@@ -2004,7 +2009,7 @@ QList<QByteArray> parserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
 
-        for (auto s : active_SPS_list)
+        for (auto s : this->active_SPS_list)
           paramSets.append(s->getRawNALData());
         for (auto p : active_PPS_list)
           paramSets.append(p->getRawNALData());
@@ -2016,7 +2021,7 @@ QList<QByteArray> parserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_
     {
       // Add sps (replace old one if existed)
       auto s = nal_avc.dynamicCast<sps>();
-      active_SPS_list.insert(s->seq_parameter_set_id, s);
+      this->active_SPS_list.insert(s->seq_parameter_set_id, s);
     }
     else if (nal_avc->nal_unit_type == PPS)
     {
@@ -2212,9 +2217,9 @@ bool parserAnnexBAVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_avc &nal_av
   return false;
 }
 
-void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, bool isFirstAUInBufferingPeriod)
+void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, HRDPlotModel *plotModel)
 {
-  
+  Q_ASSERT(plotModel != nullptr);
   if (!sps->vui_parameters_present_flag || !sps->vui_parameters.nal_hrd_parameters_present_flag)
     return;
 
@@ -2332,13 +2337,13 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
       {
         // This should not happen (all frames prior to t_af_nm1 should have been
         // removed from the buffer already). Remove now and warn.
-        this->removeFromBufferAndCheck((*it), SchedSelIdx, poc, auBits, bitrate);
+        this->removeFromBufferAndCheck((*it), poc, (*it).t_r, plotModel);
         it = this->framesToRemove.erase(it);
         DEBUG_AVC("  HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Removing frame with removal time (" << (*it).t_r << ") before final arrival time (" << t_af_nm1[SchedSelIdx] << "). Buffer underflow");
       }
       else if ((*it).t_r <= t_ai)
       {
-        this->removeFromBufferAndCheck((*it), SchedSelIdx, poc, auBits, bitrate);
+        this->removeFromBufferAndCheck((*it), poc, (*it).t_r, plotModel);
         it = this->framesToRemove.erase(it);
       }
       else
@@ -2363,7 +2368,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   {
     time_t au_time_expired            = t_af - t_ai;
     long double buffer_add_fractional = (au_time_expired * (unsigned int) bitrate);
-    this->addToBufferAndCheck(au_buffer_add, buffer_add_fractional, buffer_size, SchedSelIdx, poc, t_ai, t_af, auBits, bitrate);
+    this->addToBufferAndCheck(au_buffer_add, buffer_add_fractional, buffer_size, poc, t_ai, t_af, plotModel);
   }
   else
   {
@@ -2382,8 +2387,8 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
       unsigned int buffer_add = floor(buffer_add_fractional);
       buffer_add_remainder    = buffer_add_fractional - buffer_add;
       buffer_add_sum += buffer_add;
-      this->addToBufferAndCheck(buffer_add, buffer_add_fractional, buffer_size, SchedSelIdx, poc, t_ai_sub, frame.t_r, auBits, bitrate);
-      this->removeFromBufferAndCheck(frame, SchedSelIdx, poc, auBits, bitrate);
+      this->addToBufferAndCheck(buffer_add, buffer_add_fractional, buffer_size, poc, t_ai_sub, frame.t_r, plotModel);
+      this->removeFromBufferAndCheck(frame, poc, frame.t_r, plotModel);
       t_ai_sub = frame.t_r;
     }
     // The last interval from t_ai_sub to t_af
@@ -2397,7 +2402,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
       // assert(buffer_add_sum == au_buffer_add || buffer_add_sum + 1 == au_buffer_add
       // || buffer_add_sum == au_buffer_add + 1);
     }
-    this->addToBufferAndCheck(buffer_add_remain, buffer_add_fractional, buffer_size, SchedSelIdx, poc, t_ai_sub, t_af, auBits, bitrate);
+    this->addToBufferAndCheck(buffer_add_remain, buffer_add_fractional, buffer_size, poc, t_ai_sub, t_af, plotModel);
   }
 
   if (t_r_n <= t_af)
@@ -2438,18 +2443,19 @@ QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFra
   return l;
 }
 
-void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned bufferAddFractional, unsigned bufferSize, int SchedSelIdx, int poc, time_t t_begin, time_t t_end, int bits, int bitrate)
+void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned bufferAddFractional, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
 {
   const auto bufferOld = this->decodingBufferLevel;
   this->decodingBufferLevel += bufferAdd;
   
   {
-    // TODO: Add values to graph
-    // cout << "  HRD SchedSelIdx " << SchedSelIdx << " AU " << au_n << " POC " << poc
-    //       << " - Decoding buffer time " << t_begin << " to " << t_end << " buffer old "
-    //       << buffer_old << " buffer new " << this->decodingBufferLevel << " added bits "
-    //       << bufferAdd << "(" << bufferAddFractional << ") time_offset " << t_end - t_begin
-    //       << "\n";
+    HRDPlotModel::HRDEntry entry;
+    entry.cbp_fullness_start = bufferOld;
+    entry.cbp_fullness_end = this->decodingBufferLevel;
+    entry.time_offset_start = t_begin;
+    entry.time_offset_end = t_end;
+    entry.poc = poc;
+    plotModel->addHRDEntry(entry);
   }
   long double fractional_bits = bufferAddFractional - bufferAdd;
   if (this->decodingBufferLevel >= bufferSize && fractional_bits > 0)
@@ -2460,18 +2466,20 @@ void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned buff
   }
 }
 
-void parserAnnexBAVC::HRD::removeFromBufferAndCheck(HRDFrameToRemove &frame, int SchedSelIdx, int poc, int bits, int bitrate)
+void parserAnnexBAVC::HRD::removeFromBufferAndCheck(HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel)
 {
   // Remove the frame from the buffer
     unsigned int bufferSub = frame.bits;
     const auto bufferOld   = this->decodingBufferLevel;
     this->decodingBufferLevel -= bufferSub;
     {
-      // TODO: Add values to graph
-      // cout << "  HRD SchedSelIdx " << SchedSelIdx << " AU " << au_n << " POC " << poc
-      //      << " - Decoding buffer time " << frame.t_r << " to " << frame.t_r << " buffer old "
-      //      << buffer_old << " buffer new " << this->decodingBufferLevel
-      //      << " removed poc " << frame.poc << " bits " << frame.bits << "\n";
+      HRDPlotModel::HRDEntry entry;
+      entry.cbp_fullness_start = bufferOld;
+      entry.cbp_fullness_end = this->decodingBufferLevel;
+      entry.time_offset_start = removalTime;
+      entry.time_offset_end = removalTime;
+      entry.poc = poc;
+      plotModel->addHRDEntry(entry);
     }
     if (this->decodingBufferLevel < 0)
     {
