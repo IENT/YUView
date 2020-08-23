@@ -170,7 +170,7 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
       if (!parseResult.success)
         subTree->setError();
       else if (parseResult.bitrateEntry)
-        this->bitrateItemModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
+        this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
       nalID++;
       pos += sps_size + 2;
     }
@@ -190,7 +190,7 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
       if (!parseResult.success)
         subTree->setError();
       else if (parseResult.bitrateEntry)
-        this->bitrateItemModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
+        this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
       nalID++;
       pos += pps_size + 2;
     }
@@ -209,7 +209,7 @@ bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
     // The extradata is using the hvcC format
     TreeItem *extradataRoot = new TreeItem("Extradata (HEVC hvcC format)", packetModel->getRootItem());
     hvcC h;
-    if (!h.parse_hvcC(extradata, extradataRoot, annexBParser, this->bitrateItemModel.data()))
+    if (!h.parse_hvcC(extradata, extradataRoot, annexBParser, this->bitratePlotModel.data()))
       return false;
   }
   else if (extradata.at(0) == 0)
@@ -235,7 +235,7 @@ bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
       if (!parseResult.success)
         extradataRoot->setError();
       else if (parseResult.bitrateEntry)
-        this->bitrateItemModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
+        this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
       nalID++;
       posInData = nextStartCode + 3;
     }
@@ -274,7 +274,7 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
       if (!parseResult.success)
         extradataRoot->setError();
       else if (parseResult.bitrateEntry)
-        this->bitrateItemModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
+        this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
       nalID++;
       posInData = nextStartCode + 3;
     }
@@ -416,7 +416,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
         if (!parseResult.success)
           itemTree->setError();
         else if (parseResult.bitrateEntry)
-          this->bitrateItemModel->addBitratePoint(packet.get_stream_index(), *parseResult.bitrateEntry);
+          this->bitratePlotModel->addBitratePoint(packet.get_stream_index(), *parseResult.bitrateEntry);
         if (parseResult.nalTypeName)
           nalNames.append(*parseResult.nalTypeName);
         nalID++;
@@ -529,7 +529,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
     entry.duration = packet.get_duration();
     entry.bitrate = packet.get_data_size();
     entry.keyframe = packet.get_flag_keyframe();
-    bitrateItemModel->addBitratePoint(packet.get_stream_index(), entry);
+    bitratePlotModel->addBitratePoint(packet.get_stream_index(), entry);
   }
 
   // Set a useful name of the TreeItem (the root for this NAL)

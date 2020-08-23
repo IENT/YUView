@@ -198,6 +198,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
     this->ui.streamInfoTreeWidget->clear();
     this->ui.dataTreeView->setModel(nullptr);
     this->ui.plotViewWidget->setModel(nullptr);
+    this->ui.hrdPlotWidget->setModel(nullptr);
     return;
   }
 
@@ -207,7 +208,8 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   this->ui.dataTreeView->setColumnWidth(0, 600);
   this->ui.dataTreeView->setColumnWidth(1, 100);
   this->ui.dataTreeView->setColumnWidth(2, 120);
-  this->ui.plotViewWidget->setModel(this->parser->getBitrateItemModel());
+  this->ui.plotViewWidget->setModel(this->parser->getBitratePlotModel());
+  this->ui.hrdPlotWidget->setModel(this->parser->getHRDPlotModel());
 
   this->updateStreamInfo();
 

@@ -201,6 +201,8 @@ protected:
         unsigned int cpb_size_scale;
         QList<quint32> bit_rate_value_minus1;
         QList<quint32> cpb_size_value_minus1;
+        QList<unsigned> BitRate;
+        QList<unsigned> CpbSize;
         QList<bool> cbr_flag;
         unsigned int initial_cpb_removal_delay_length_minus1 {23};
         unsigned int cpb_removal_delay_length_minus1;
@@ -569,4 +571,42 @@ protected:
   int counterAU {0};
   bool currentAUAllSlicesIntra {true};
   QMap<QString, unsigned int> currentAUSliceTypes;
+
+  class HRD
+  {
+  public:
+    HRD() = default;
+    void addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, bool isFirstAUInBufferingPeriod);
+  
+  private:
+    typedef long double time_t;
+
+    // We keep a list of frames which will be removed in the future
+    struct HRDFrameToRemove
+    {
+        HRDFrameToRemove(time_t t_r, int bits, int poc)
+            : t_r(t_r)
+            , bits(bits)
+            , poc(poc)
+        {}
+        time_t t_r;
+        unsigned int bits;
+        int poc;
+    };
+    QList<HRDFrameToRemove> framesToRemove;
+
+    // The access unit count (n) for this HRD. The HRD is initialized with au n=0.
+    uint64_t au_n {0};
+    // Final arrival time (t_af for n minus 1)
+    time_t t_af_nm1 {0};
+    // t_r,n(nb) is the nominal removal time of the first access unit of the previous buffering period
+    time_t t_r_nominal_n_first;
+
+    QList<HRDFrameToRemove> popRemoveFramesInTimeInterval(time_t from, time_t to);
+    void addToBufferAndCheck(unsigned bufferAdd, unsigned bufferAddFractional, unsigned bufferSize, int SchedSelIdx, int poc, time_t t_begin, time_t t_end, int bits, int bitrate);
+    void removeFromBufferAndCheck(HRDFrameToRemove &frame, int SchedSelIdx, int poc, int bits, int bitrate);
+
+    int64_t decodingBufferLevel {0};
+  };
+  HRD hrd;
 };

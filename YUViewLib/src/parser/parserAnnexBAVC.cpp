@@ -867,6 +867,8 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(ReaderHelper &reader
 
 bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_hrd(ReaderHelper &reader)
 {
+  reader_sub_level s(reader, "hrd_parameters()");
+
   READUEV(cpb_cnt_minus1);
   if (cpb_cnt_minus1 > 31)
     return reader.addErrorMessageChildItem("The value of cpb_cnt_minus1 shall be in the range of 0 to 31, inclusive.");
@@ -882,6 +884,16 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_h
     if (cpb_size_value_minus1[SchedSelIdx] > val_max)
       return reader.addErrorMessageChildItem("cpb_size_value_minus1[ SchedSelIdx ] shall be in the range of 0 to 2^32-2, inclusive.");
     READFLAG_A(cbr_flag, SchedSelIdx);
+    {
+      int value = (bit_rate_value_minus1[SchedSelIdx] + 1) * (1 << (6 + bit_rate_scale));
+      BitRate.append(value);
+      LOGVAL(BitRate[SchedSelIdx]);
+    }
+    {
+      int value = (cpb_size_value_minus1[SchedSelIdx] + 1) * (1 << (4 + cpb_size_scale));
+      CpbSize.append(value);
+      LOGVAL(CpbSize[SchedSelIdx]);
+    }
   }
   READBITS(initial_cpb_removal_delay_length_minus1, 5);
   READBITS(cpb_removal_delay_length_minus1, 5);
@@ -2196,4 +2208,275 @@ bool parserAnnexBAVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_avc &nal_av
   lastNalSlicePoc = curFramePOC;
   lastNalType = nal_avc.nal_unit_type;
   return false;
+}
+
+void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, bool isFirstAUInBufferingPeriod)
+{
+  
+  if (!sps->vui_parameters_present_flag || !sps->vui_parameters.nal_hrd_parameters_present_flag)
+    return;
+
+  // There could be multiple but we currently only support one.
+  const auto SchedSelIdx = 0;
+
+  const auto initial_cpb_removal_delay = lastBufferingPeriodSEI->initial_cpb_removal_delay[SchedSelIdx];
+  const auto initial_cpb_removal_delay_offset = lastBufferingPeriodSEI->initial_cpb_removal_delay[SchedSelIdx];
+
+  const bool cbr_flag = sps->vui_parameters.nal_hrd.cbr_flag[SchedSelIdx];
+
+  /* Some notation:
+      t_ai: The time at which the first bit of access unit n begins to enter the CPB is
+      referred to as the initial arrival time. t_r_nominal_n: the nominal removal time of the
+      access unit from the CPB t_r_n: The removal time of access unit n
+  */
+
+  // Annex C: The variable t c is derived as follows and is called a clock tick:
+  time_t t_c = time_t(sps->vui_parameters.num_units_in_tick) / sps->vui_parameters.time_scale;
+
+  // ITU-T Rec H.264 (04/2017) - C.1.2 - Timing of coded picture removal
+  // Part 1: the nominal removal time of the access unit from the CPB
+  time_t t_r_nominal_n;
+  if (this->au_n == 0)
+      t_r_nominal_n = time_t(initial_cpb_removal_delay) / 90000;
+  else
+      // n is not equal to 0. The removal time depends on the removal time of the previous AU.
+      t_r_nominal_n = this->t_r_nominal_n_first + t_c * (unsigned int) lastPicTimingSEI->cpb_removal_delay;
+
+  if (isFirstAUInBufferingPeriod)
+    this->t_r_nominal_n_first = t_r_nominal_n;
+
+  // ITU-T Rec H.264 (04/2017) - C.1.1 - Timing of bitstream arrival
+  time_t t_ai;
+  if (this->au_n == 0)
+      t_ai = 0;
+  else
+  {
+    if (cbr_flag)
+      t_ai = this->t_af_nm1;
+    else
+    {
+      time_t t_ai_earliest = 0;
+      if (isFirstAUInBufferingPeriod)
+      {
+        time_t init_delay = time_t(initial_cpb_removal_delay) / 90000;
+        if (init_delay < t_r_nominal_n)
+          t_ai_earliest = t_r_nominal_n - init_delay;
+      }
+      else
+      {
+        time_t init_delay = time_t(initial_cpb_removal_delay + initial_cpb_removal_delay_offset) / 90000;
+        if (init_delay < t_r_nominal_n)
+          t_ai_earliest = t_r_nominal_n - init_delay;
+      }
+      t_ai = std::max(this->t_af_nm1, t_ai_earliest);
+    }
+  }
+
+  // The final arrival time for access unit n is derived by:
+  const int bitrate = sps->vui_parameters.nal_hrd.BitRate[SchedSelIdx];
+  time_t t_af       = t_ai + time_t(auBits) / bitrate;
+
+  // ITU-T Rec H.264 (04/2017) - C.1.2 - Timing of coded picture removal
+  // Part 2: The removal time of access unit n is specified as follows:
+  time_t t_r_n;
+  if (!sps->vui_parameters.low_delay_hrd_flag || t_r_nominal_n >= t_af)
+    t_r_n = t_r_nominal_n;
+  else
+    // NOTE: This indicates that the size of access unit n, b(n), is so large that it
+    // prevents removal at the nominal removal time.
+    t_r_n = t_r_nominal_n * t_c * (t_af - t_r_nominal_n) / t_c;
+
+  // C.3 - Bitstream conformance
+  // 1.
+  if (this->au_n > 0 && isFirstAUInBufferingPeriod)
+  {
+    time_t t_g_90 = (t_r_nominal_n - this->t_af_nm1) * 90000;
+    time_t initial_cpb_removal_delay_time(initial_cpb_removal_delay);
+    if (!cbr_flag && initial_cpb_removal_delay_time > ceil(t_g_90))
+    {
+      // TODO: These logs should go somewhere!
+      DEBUG_AVC("  HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be <= ceil(t_g_90) " << ceil(t_g_90));
+    }
+
+    if (cbr_flag && initial_cpb_removal_delay_time < floor(t_g_90))
+    {
+      DEBUG_AVC("  HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be >= floor(t_g_90) " << floor(t_g_90));
+    }
+  }
+
+  // C.3. - 2 Check the decoding buffer fullness
+
+  // Calculate the fill state of the decoding buffer. This works like this:
+  // For each frame (AU), the buffer is fileed from t_ai to t_af (which indicate) from
+  // when to when bits are recieved for a frame. time t_r, the access unit is removed from
+  // the buffer. If none of this applies, the buffer fill stays constant.
+  // (All values are scaled by 90000 to avoid any rounding errors)
+  const auto buffer_size = (uint64_t) sps->vui_parameters.nal_hrd.CpbSize[SchedSelIdx];
+
+  // The time windows we have to process is from t_af_nm1 to t_af (t_ai is in between
+  // these two).
+
+  // 1: Process the time from t_af_nm1 (>) to t_ai (<=) (previously processed AUs might be
+  // removed
+  //    in this time window (tr_n)). In this time, no data is added to the buffer (no
+  //    frame is being received) but frames may be removed from the buffer. This time can
+  //    be zero.
+  //    In case of a CBR encode, no time of constant bitrate should occur.
+  if (this->t_af_nm1 < t_ai)
+  {
+    auto it = this->framesToRemove.begin();
+    while (it != this->framesToRemove.end())
+    {
+      if ((*it).t_r < this->t_af_nm1)
+      {
+        // This should not happen (all frames prior to t_af_nm1 should have been
+        // removed from the buffer already). Remove now and warn.
+        this->removeFromBufferAndCheck((*it), SchedSelIdx, poc, auBits, bitrate);
+        it = this->framesToRemove.erase(it);
+        DEBUG_AVC("  HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Removing frame with removal time (" << (*it).t_r << ") before final arrival time (" << t_af_nm1[SchedSelIdx] << "). Buffer underflow");
+      }
+      else if ((*it).t_r <= t_ai)
+      {
+        this->removeFromBufferAndCheck((*it), SchedSelIdx, poc, auBits, bitrate);
+        it = this->framesToRemove.erase(it);
+      }
+      else
+        break;
+    }
+  }
+
+  // 2. For the time from t_ai to t_af, the buffer is filled with the signaled bitrate.
+  //    The overall bits which are added in this time period correspond to the size
+  //    of the frame in bits which will be later removed again.
+  //    Also, previously received frames can be removed in this time interval.
+  assert(t_af > t_ai);
+  auto relevant_frames = this->popRemoveFramesInTimeInterval(t_ai, t_af);
+  unsigned int au_buffer_add = auBits;
+  {
+      // time_t au_time_expired = t_af - t_ai;
+      // uint64_t au_bits_add   = (uint64_t)(au_time_expired * (unsigned int) bitrate);
+      // assert(au_buffer_add == au_bits_add || au_buffer_add == au_bits_add + 1 ||
+      // au_buffer_add + 1 == au_bits_add);
+  }
+  if (relevant_frames.empty())
+  {
+    time_t au_time_expired            = t_af - t_ai;
+    long double buffer_add_fractional = (au_time_expired * (unsigned int) bitrate);
+    this->addToBufferAndCheck(au_buffer_add, buffer_add_fractional, buffer_size, SchedSelIdx, poc, t_ai, t_af, auBits, bitrate);
+  }
+  else
+  {
+    // While bits are coming into the buffer, frames are removed as well.
+    // For each period, we add the bits (and check the buffer state) and remove the
+    // frames from the buffer (and check the buffer state).
+    auto t_ai_sub                  = t_ai;
+    unsigned int buffer_add_sum      = 0;
+    long double buffer_add_remainder = 0;
+    for (auto frame : relevant_frames)
+    {
+      assert(frame.t_r >= t_ai_sub && frame.t_r < t_af);
+      time_t time_expired               = frame.t_r - t_ai_sub;
+      long double buffer_add_fractional = bitrate * time_expired
+                                          + buffer_add_remainder;
+      unsigned int buffer_add = floor(buffer_add_fractional);
+      buffer_add_remainder    = buffer_add_fractional - buffer_add;
+      buffer_add_sum += buffer_add;
+      this->addToBufferAndCheck(buffer_add, buffer_add_fractional, buffer_size, SchedSelIdx, poc, t_ai_sub, frame.t_r, auBits, bitrate);
+      this->removeFromBufferAndCheck(frame, SchedSelIdx, poc, auBits, bitrate);
+      t_ai_sub = frame.t_r;
+    }
+    // The last interval from t_ai_sub to t_af
+    unsigned int buffer_add_remain = au_buffer_add - buffer_add_sum;
+    // The sum should correspond to the size of the complete AU
+    time_t time_expired               = t_af - t_ai_sub;
+    long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
+    {
+      unsigned int buffer_add = round(buffer_add_fractional);
+      buffer_add_sum += buffer_add;
+      // assert(buffer_add_sum == au_buffer_add || buffer_add_sum + 1 == au_buffer_add
+      // || buffer_add_sum == au_buffer_add + 1);
+    }
+    this->addToBufferAndCheck(buffer_add_remain, buffer_add_fractional, buffer_size, SchedSelIdx, poc, t_ai_sub, t_af, auBits, bitrate);
+  }
+
+  if (t_r_n <= t_af)
+  {
+    // The picture is removed from the buffer before the last bit of it could be
+    // received. This is a buffer underflow. However, technically the values we have to
+    // compare for underflow detection is the nominal removal time. This is done
+    // further down.
+  }
+  framesToRemove.push_back(HRDFrameToRemove(t_r_n, auBits, poc));
+
+  this->t_af_nm1 = t_af;
+
+  // C.3 - 3. A CPB underflow is specified as the condition in which t_r,n(n) is less than
+  // t_af(n). When low_delay_hrd_flag is equal to 0, the CPB shall never underflow.
+  if (t_r_nominal_n < t_af && !sps->vui_parameters.low_delay_hrd_flag)
+  {
+    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Decoding Buffer underflow t_r_n " << t_r_n << " t_af " << t_af);
+  }
+
+  this->au_n++;
+}
+
+QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFramesInTimeInterval(time_t from, time_t to)
+{
+  QList<parserAnnexBAVC::HRD::HRDFrameToRemove> l;
+  auto it = this->framesToRemove.begin();
+  while (it != this->framesToRemove.end())
+  {
+    if ((*it).t_r >= from && (*it).t_r < to)
+    {
+      l.push_back((*it));
+      it = this->framesToRemove.erase(it);
+    }
+    if ((*it).t_r >= to)
+      break;
+  }
+  return l;
+}
+
+void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned bufferAddFractional, unsigned bufferSize, int SchedSelIdx, int poc, time_t t_begin, time_t t_end, int bits, int bitrate)
+{
+  const auto bufferOld = this->decodingBufferLevel;
+  this->decodingBufferLevel += bufferAdd;
+  
+  {
+    // TODO: Add values to graph
+    // cout << "  HRD SchedSelIdx " << SchedSelIdx << " AU " << au_n << " POC " << poc
+    //       << " - Decoding buffer time " << t_begin << " to " << t_end << " buffer old "
+    //       << buffer_old << " buffer new " << this->decodingBufferLevel << " added bits "
+    //       << bufferAdd << "(" << bufferAddFractional << ") time_offset " << t_end - t_begin
+    //       << "\n";
+  }
+  long double fractional_bits = bufferAddFractional - bufferAdd;
+  if (this->decodingBufferLevel >= bufferSize && fractional_bits > 0)
+  {
+    const int overflow_bits   = int(this->decodingBufferLevel) - bufferSize;
+    this->decodingBufferLevel = bufferSize;
+    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << t_end << " Decoding Buffer overflow by " << overflow_bits << "bits" << " added bits " << bufferAdd << "(" << bufferAddFractional << ")");
+  }
+}
+
+void parserAnnexBAVC::HRD::removeFromBufferAndCheck(HRDFrameToRemove &frame, int SchedSelIdx, int poc, int bits, int bitrate)
+{
+  // Remove the frame from the buffer
+    unsigned int bufferSub = frame.bits;
+    const auto bufferOld   = this->decodingBufferLevel;
+    this->decodingBufferLevel -= bufferSub;
+    {
+      // TODO: Add values to graph
+      // cout << "  HRD SchedSelIdx " << SchedSelIdx << " AU " << au_n << " POC " << poc
+      //      << " - Decoding buffer time " << frame.t_r << " to " << frame.t_r << " buffer old "
+      //      << buffer_old << " buffer new " << this->decodingBufferLevel
+      //      << " removed poc " << frame.poc << " bits " << frame.bits << "\n";
+    }
+    if (this->decodingBufferLevel < 0)
+    {
+      // The buffer did underflow; i.e. we need to decode a pictures
+      // at the time but there is not enough data in the buffer to do so (to take the AU
+      // out of the buffer).
+      DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << frame.t_r << " Decoding Buffer underflow by " << this->decodingBufferLevel << "bits");
+    }
 }

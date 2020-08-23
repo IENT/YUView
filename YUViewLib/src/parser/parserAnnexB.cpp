@@ -164,7 +164,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
       }
       else if (parsingResult.bitrateEntry)
       {
-        this->bitrateItemModel->addBitratePoint(0, *parsingResult.bitrateEntry);
+        this->bitratePlotModel->addBitratePoint(0, *parsingResult.bitrateEntry);
       }
     }
     catch (const std::exception &exc)

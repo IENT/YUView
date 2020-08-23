@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*
+*   
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -30,54 +30,42 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserBase.h"
+#pragma once
 
-#include <assert.h>
+#include <QList>
+#include <QMutex>
+#include <QString>
 
-#define PARSERBASE_DEBUG_OUTPUT 0
-#if PARSERBASE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_PARSER qDebug
-#else
-#define DEBUG_PARSER(fmt,...) ((void)0)
-#endif
+#include "common/typedef.h"
+#include "ui/views/plotModel.h"
 
-/// --------------- parserBase ---------------------
-
-parserBase::parserBase(QObject *parent) : QObject(parent)
+class HRDPlotModel : public PlotModel
 {
-  packetModel.reset(new PacketItemModel(parent));
-  bitratePlotModel.reset(new BitratePlotModel());
-  hrdItemModel.reset(new HRDPlotModel());
-  streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
-  streamIndexFilter->setSourceModel(packetModel.data());
-}
+public:
+  HRDPlotModel() = default;
+  virtual ~HRDPlotModel() = default;
 
-parserBase::~parserBase()
-{
-}
+  unsigned getNrStreams() const override { return 1; }
+  PlotModel::StreamParameter getStreamParameter(unsigned streamIndex) const override;
+  PlotModel::Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
+  QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
+  
+  QString getItemInfoText(int index);
 
-void parserBase::enableModel()
-{
-  if (packetModel->isNull())
-    packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
-}
-
-void parserBase::updateNumberModelItems()
-{ 
-  packetModel->updateNumberModelItems();
-}
-
-QString parserBase::convertSliceTypeMapToString(QMap<QString, unsigned int> &sliceTypes)
-{
-  QString text;
-  for (auto key : sliceTypes.keys())
+  struct HRDEntry
   {
-    text += key;
-    const auto value = sliceTypes.value(key);
-    if (value > 1)
-      text += QString("(%1x)").arg(value);
-    text += " ";
-  }
-  return text;
-}
+    int cbp_fullness_end {0};
+    int time_offset_end {0};
+  };
+
+  void addHRDEntry(HRDEntry &entry);
+  void setCPBBufferSize(unsigned size);
+
+private:
+
+  QList<HRDEntry> data;
+  mutable QMutex dataMutex;
+
+  int cpb_buffer_size {0};
+  int time_offset_max {0};
+};
