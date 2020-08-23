@@ -41,6 +41,12 @@
 
 #include "HRDPlotModel.h"
 
+int timestampToInt(double timestamp)
+{
+  // Doubles are not really supported for plotting. Lets just scale everything by 90000
+  return int(timestamp * 90000);
+}
+
 PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex) const
 {
   if (streamIndex > 0)
@@ -49,10 +55,10 @@ PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex
   QMutexLocker locker(&this->dataMutex);
 
   PlotModel::StreamParameter streamParameter;
-  streamParameter.xRange = {0, this->time_offset_max};
-  streamParameter.yRange = {0, this->cpb_buffer_size};
+  streamParameter.xRange = {0, timestampToInt(this->time_offset_max)};
+  streamParameter.yRange = {0, this->cpb_buffer_size * 8};
 
-  const auto nrPoints = unsigned(this->data.size() + 1);
+  const auto nrPoints = this->data.empty() ? 0 : unsigned(this->data.size() + 1);
   streamParameter.plotParameters.append({PlotType::Line, nrPoints});
 
   return streamParameter;
@@ -72,7 +78,7 @@ PlotModel::Point HRDPlotModel::getPlotPoint(unsigned streamIndex, unsigned plotI
     return {};
 
   PlotModel::Point point;
-  point.x = this->data[pointIndex - 1].time_offset_end;
+  point.x = timestampToInt(this->data[pointIndex - 1].time_offset_end);
   point.y = this->data[pointIndex - 1].cbp_fullness_end;
   
   return point;
@@ -90,11 +96,15 @@ QString HRDPlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, uns
 
   return QString("<h4>HRD</h4>"
                   "<table width=\"100%\">"
-                  "<tr><td>cpb_fullness:</td><td align=\"right\">%1</td></tr>"
-                  "<tr><td>Time offset:</td><td align=\"right\">%2</td></tr>"
+                  "<tr><td>cpb_fullness:</td><td align=\"right\">%1-%2</td></tr>"
+                  "<tr><td>Time offset:</td><td align=\"right\">%3-%4</td></tr>"
+                  "<tr><td>POC:</td><td align=\"right\">%5</td></tr>"
                   "</table>")
+      .arg(entry.cbp_fullness_start)
       .arg(entry.cbp_fullness_end)
-      .arg(entry.time_offset_end);
+      .arg(entry.time_offset_start)
+      .arg(entry.time_offset_end)
+      .arg(entry.poc);
 }
 
 void HRDPlotModel::addHRDEntry(HRDPlotModel::HRDEntry &entry)
@@ -109,11 +119,17 @@ void HRDPlotModel::addHRDEntry(HRDPlotModel::HRDEntry &entry)
   DEBUG_PLOT("HRDPlotModel::addHRDEntry time_offset_end " << entry.time_offset_end << " cbp_fullness_end " << entry.cbp_fullness_end);
 
   this->eventSubsampler.postEvent();
+  if (this->data.size() == 1)
+    // Technically the number of streams did not change but with this we can inform the view to start drawing.
+    emit nrStreamsChanged();
 }
 
 void HRDPlotModel::setCPBBufferSize(unsigned size)
 {
-  QMutexLocker locker(&this->dataMutex);
-  this->cpb_buffer_size = size;
-  this->eventSubsampler.postEvent();
+  if (size > this->cpb_buffer_size)
+  {
+    QMutexLocker locker(&this->dataMutex);
+    this->cpb_buffer_size = size;
+    this->eventSubsampler.postEvent();
+  }
 }

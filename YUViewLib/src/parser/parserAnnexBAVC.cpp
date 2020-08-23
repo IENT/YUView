@@ -229,6 +229,11 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
     if (new_sps->vui_parameters.nal_hrd_parameters_present_flag || new_sps->vui_parameters.vcl_hrd_parameters_present_flag)
       CpbDpbDelaysPresentFlag = true;
 
+    if (new_sps->vui_parameters_present_flag && new_sps->vui_parameters.nal_hrd_parameters_present_flag)
+    {
+      this->hrdItemModel->setCPBBufferSize(new_sps->vui_parameters.nal_hrd.CpbSize[0]);
+    }
+
     DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parse SPS ID " << new_sps->seq_parameter_set_id);
   }
   else if (nal_avc.nal_unit_type == PPS) 
@@ -419,7 +424,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
       parseResult.bitrateEntry = entry;
 
-      this->hrd.addAU(this->sizeCurrentAU, curFramePOC, this->active_SPS_list[0], this->lastBufferingPeriodSEI, this->lastPicTimingSEI, this->getHRDPlotModel());
+      this->hrd.addAU(this->sizeCurrentAU * 8, curFramePOC, this->active_SPS_list[0], this->lastBufferingPeriodSEI, this->lastPicTimingSEI, this->getHRDPlotModel());
     }
     this->sizeCurrentAU = 0;
     this->counterAU++;
@@ -2302,12 +2307,12 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
     if (!cbr_flag && initial_cpb_removal_delay_time > ceil(t_g_90))
     {
       // TODO: These logs should go somewhere!
-      DEBUG_AVC("  HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be <= ceil(t_g_90) " << ceil(t_g_90));
+      DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be <= ceil(t_g_90) " << ceil(t_g_90));
     }
 
     if (cbr_flag && initial_cpb_removal_delay_time < floor(t_g_90))
     {
-      DEBUG_AVC("  HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be >= floor(t_g_90) " << floor(t_g_90));
+      DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be >= floor(t_g_90) " << floor(t_g_90));
     }
   }
 
@@ -2339,7 +2344,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
         // removed from the buffer already). Remove now and warn.
         this->removeFromBufferAndCheck((*it), poc, (*it).t_r, plotModel);
         it = this->framesToRemove.erase(it);
-        DEBUG_AVC("  HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Removing frame with removal time (" << (*it).t_r << ") before final arrival time (" << t_af_nm1[SchedSelIdx] << "). Buffer underflow");
+        DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Removing frame with removal time (" << (*it).t_r << ") before final arrival time (" << t_af_nm1[SchedSelIdx] << "). Buffer underflow");
       }
       else if ((*it).t_r <= t_ai)
       {

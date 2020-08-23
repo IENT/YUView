@@ -70,5 +70,5 @@ private:
   mutable QMutex dataMutex;
 
   int cpb_buffer_size {0};
-  int time_offset_max {0};
+  double time_offset_max {0};
 };

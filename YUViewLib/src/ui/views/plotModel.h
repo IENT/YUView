@@ -91,12 +91,27 @@ public:
     const auto streamParam = this->getStreamParameter(streamIndex);
     if (plotIndex >= unsigned(streamParam.plotParameters.size()))
       return {};
-    const auto nrPoints = this->getStreamParameter(streamIndex).plotParameters[plotIndex].nrpoints;
-    for (unsigned pointIndex = 0; pointIndex < nrPoints; pointIndex++)
+    const auto plotParam = this->getStreamParameter(streamIndex).plotParameters[plotIndex];
+    if (plotParam.type == PlotModel::PlotType::Line)
     {
-      const auto point = this->getPlotPoint(streamIndex, plotIndex, pointIndex);
-      if (x > point.x - point.width / 2 && x <= point.x + point.width / 2)
-        return pointIndex;
+      if (plotParam.nrpoints <= 1)
+        return {};
+      auto prevPointX = this->getPlotPoint(streamIndex, plotIndex, 0).x;
+      for (unsigned pointIndex = 1; pointIndex < plotParam.nrpoints; pointIndex++)
+      {
+        const auto pointX = this->getPlotPoint(streamIndex, plotIndex, pointIndex).x;
+        if (x > prevPointX && x <= pointX)
+          return pointIndex;
+      }
+    }
+    else
+    {
+      for (unsigned pointIndex = 0; pointIndex < plotParam.nrpoints; pointIndex++)
+      {
+        const auto point = this->getPlotPoint(streamIndex, plotIndex, pointIndex);
+        if (x > point.x - point.width / 2 && x <= point.x + point.width / 2)
+          return pointIndex;
+      }
     }
     return {};
   }

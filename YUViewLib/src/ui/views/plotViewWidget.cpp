@@ -118,27 +118,46 @@ void PlotViewWidget::zoomToFit(bool checked)
     for (unsigned int plotIndex = 0; plotIndex < param.getNrPlots(); plotIndex++)
     {
       const auto plotParam = param.plotParameters[plotIndex];
-      if (plotParam.nrpoints > 0)
+
+      double firstPointWidth = 0;
+      if (plotParam.type == PlotModel::PlotType::Line)
       {
-        modelContainsDataYet = true;
-        const auto firstPointWidth = model->getPlotPoint(streamIndex, plotIndex, 0).width;
+        if (plotParam.nrpoints < 2)
+          break;
         
-        double newZoomFactor = this->zoomFactor;
-        if (firstPointWidth * newZoomFactor > 1)
+        auto x0 = model->getPlotPoint(streamIndex, plotIndex, 0).x;
+        for (int i = 0; i < plotParam.nrpoints && firstPointWidth > 0; i++)
         {
-          while (firstPointWidth * newZoomFactor > 1)
-            newZoomFactor /= ZOOM_STEP_FACTOR;
+          firstPointWidth = model->getPlotPoint(streamIndex, plotIndex, i).x - x0;
         }
-        else
-        {
-          while (firstPointWidth * newZoomFactor < 1)
-            newZoomFactor *= ZOOM_STEP_FACTOR;
-        }
-        if (minZoomFactor == -1)
-          minZoomFactor = newZoomFactor;
-        else
-          minZoomFactor = std::min(minZoomFactor, newZoomFactor);
       }
+      else
+      {
+        if (plotParam.nrpoints < 1)
+          break;
+        firstPointWidth = model->getPlotPoint(streamIndex, plotIndex, 0).width;
+      }
+
+      if (firstPointWidth <= 0)
+        break;
+
+      modelContainsDataYet = true;
+      
+      double newZoomFactor = this->zoomFactor;
+      if (firstPointWidth * newZoomFactor > 1)
+      {
+        while (firstPointWidth * newZoomFactor > 1)
+          newZoomFactor /= ZOOM_STEP_FACTOR;
+      }
+      else
+      {
+        while (firstPointWidth * newZoomFactor < 1)
+          newZoomFactor *= ZOOM_STEP_FACTOR;
+      }
+      if (minZoomFactor == -1)
+        minZoomFactor = newZoomFactor;
+      else
+        minZoomFactor = std::min(minZoomFactor, newZoomFactor);
     }
   }
 
@@ -555,6 +574,26 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
         linePen.setWidthF(detailedPainting ? 2.0 : 1.0);
         painter.setPen(linePen);
         painter.drawPolyline(linePoints);
+
+        // Draw the currently hovered line in a different color
+        if (this->currentlyHoveredPointPerStreamAndPlot.contains(streamIndex) && 
+            this->currentlyHoveredPointPerStreamAndPlot[streamIndex].contains(plotIndex))
+        {
+          const auto index = this->currentlyHoveredPointPerStreamAndPlot[streamIndex][plotIndex];
+          if (index > 1)
+          {
+            const auto valueStart = model->getPlotPoint(streamIndex, plotIndex, index - 1);
+            const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));
+            const auto valueEnd = model->getPlotPoint(streamIndex, plotIndex, index);
+            const auto linePointEnd = this->convertPlotPosToPixelPos(QPointF(valueEnd.x, valueEnd.y));
+
+            DEBUG_PLOT("PlotViewWidget::drawPlot Draw hovered line");
+            QPen linePen(QColor(50, 50, 200));
+            linePen.setWidthF(detailedPainting ? 2.0 : 1.0);
+            painter.setPen(linePen);
+            painter.drawLine(linePointStart, linePointEnd);
+          }
+        }
 
         // if (detailedPainting)
         //   painter.drawEllipse(linePointStart, 2.0, 2.0);
