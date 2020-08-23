@@ -173,6 +173,8 @@ protected:
   // Returns false if the POC was already present int the list
   bool addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint);
 
+  static void logNALSize(QByteArray &data, TreeItem *root);
+
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.
   // So basically all information we need to seek in the stream and get the active parameter sets to start the decoder at a certain position.

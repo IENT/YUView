@@ -180,8 +180,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
-  // Log NAL size
-  new TreeItem("size", data.size(), nalRoot);
+  parserAnnexB::logNALSize(data, nalRoot);
 
   // Create a nal_unit and read the header
   nal_unit_avc nal_avc(nalID, nalStartEndPosFile);
