@@ -580,6 +580,7 @@ protected:
   public:
     HRD() = default;
     void addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, HRDPlotModel *plotModel);
+    void endOfFile(HRDPlotModel *plotModel);
   
     bool isFirstAUInBufferingPeriod {true};
   private:
@@ -608,7 +609,7 @@ protected:
 
     QList<HRDFrameToRemove> popRemoveFramesInTimeInterval(time_t from, time_t to);
     void addToBufferAndCheck(unsigned bufferAdd, double bufferAddFractional, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel);
-    void removeFromBufferAndCheck(HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel);
+    void removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel);
     void addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel);
 
     int64_t decodingBufferLevel {0};

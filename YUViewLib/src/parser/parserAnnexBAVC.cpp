@@ -153,6 +153,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
     }
     // The file ended
     std::sort(POCList.begin(), POCList.end());
+    hrd.endOfFile(this->getHRDPlotModel());
     return parseResult;
   }
 
@@ -2408,6 +2409,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
       t_ai_sub = frame.t_r;
     }
     // The last interval from t_ai_sub to t_af
+    assert(au_buffer_add >= buffer_add_sum);
     unsigned int buffer_add_remain = au_buffer_add - buffer_add_sum;
     // The sum should correspond to the size of the complete AU
     time_t time_expired               = t_af - t_ai_sub;
@@ -2442,6 +2444,19 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   this->au_n++;
 }
 
+void parserAnnexBAVC::HRD::endOfFile(HRDPlotModel *plotModel)
+{
+  // From time this->t_af_nm1 onwards, just remove all of the frames which have not been removed yet.
+  auto lastFrameTime = this->t_af_nm1;
+  for (const auto &frame : this->framesToRemove)
+  {
+    this->addConstantBufferLine(frame.poc, lastFrameTime, frame.t_r, plotModel);
+    this->removeFromBufferAndCheck(frame, frame.poc, frame.t_r, plotModel);
+    lastFrameTime = frame.t_r;
+  }
+  this->framesToRemove.clear();
+}
+
 QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFramesInTimeInterval(time_t from, time_t to)
 {
   QList<parserAnnexBAVC::HRD::HRDFrameToRemove> l;
@@ -2473,8 +2488,8 @@ void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, double buffer
     entry.poc = poc;
     plotModel->addHRDEntry(entry);
   }
-  long double fractional_bits = bufferAddFractional - bufferAdd;
-  if (this->decodingBufferLevel >= bufferSize && fractional_bits > 0)
+  //long double fractional_bits = bufferAddFractional - bufferAdd;
+  if (this->decodingBufferLevel >= bufferSize)
   {
     const int overflow_bits   = int(this->decodingBufferLevel) - bufferSize;
     this->decodingBufferLevel = bufferSize;
@@ -2482,7 +2497,7 @@ void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, double buffer
   }
 }
 
-void parserAnnexBAVC::HRD::removeFromBufferAndCheck(HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel)
+void parserAnnexBAVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel)
 {
   // Remove the frame from the buffer
     unsigned int bufferSub = frame.bits;
