@@ -2383,8 +2383,6 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   }
   if (relevant_frames.empty())
   {
-    time_t au_time_expired            = t_af - t_ai;
-    long double buffer_add_fractional = (au_time_expired * (unsigned int) bitrate);
     this->addToBufferAndCheck(au_buffer_add, buffer_size, poc, t_ai, t_af, plotModel);
   }
   else
