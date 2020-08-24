@@ -608,7 +608,7 @@ protected:
     time_t t_r_nominal_n_first;
 
     QList<HRDFrameToRemove> popRemoveFramesInTimeInterval(time_t from, time_t to);
-    void addToBufferAndCheck(unsigned bufferAdd, double bufferAddFractional, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel);
+    void addToBufferAndCheck(unsigned bufferAdd, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel);
     void removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel);
     void addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel);
 

@@ -2265,7 +2265,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
     // n is not equal to 0. The removal time depends on the removal time of the previous AU.
     t_r_nominal_n = this->t_r_nominal_n_first + t_c * (unsigned int) lastPicTimingSEI->cpb_removal_delay;
 
-  if (isFirstAUInBufferingPeriod)
+  if (this->isFirstAUInBufferingPeriod)
     this->t_r_nominal_n_first = t_r_nominal_n;
 
   // ITU-T Rec H.264 (04/2017) - C.1.1 - Timing of bitstream arrival
@@ -2279,7 +2279,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
     else
     {
       time_t t_ai_earliest = 0;
-      if (isFirstAUInBufferingPeriod)
+      if (this->isFirstAUInBufferingPeriod)
       {
         time_t init_delay = time_t(initial_cpb_removal_delay) / 90000;
         if (init_delay < t_r_nominal_n)
@@ -2311,7 +2311,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
 
   // C.3 - Bitstream conformance
   // 1.
-  if (this->au_n > 0 && isFirstAUInBufferingPeriod)
+  if (this->au_n > 0 && this->isFirstAUInBufferingPeriod)
   {
     time_t t_g_90 = (t_r_nominal_n - this->t_af_nm1) * 90000;
     time_t initial_cpb_removal_delay_time(initial_cpb_removal_delay);
@@ -2385,7 +2385,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   {
     time_t au_time_expired            = t_af - t_ai;
     long double buffer_add_fractional = (au_time_expired * (unsigned int) bitrate);
-    this->addToBufferAndCheck(au_buffer_add, buffer_add_fractional, buffer_size, poc, t_ai, t_af, plotModel);
+    this->addToBufferAndCheck(au_buffer_add, buffer_size, poc, t_ai, t_af, plotModel);
   }
   else
   {
@@ -2404,7 +2404,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
       unsigned int buffer_add = floor(buffer_add_fractional);
       buffer_add_remainder    = buffer_add_fractional - buffer_add;
       buffer_add_sum += buffer_add;
-      this->addToBufferAndCheck(buffer_add, buffer_add_fractional, buffer_size, poc, t_ai_sub, frame.t_r, plotModel);
+      this->addToBufferAndCheck(buffer_add, buffer_size, poc, t_ai_sub, frame.t_r, plotModel);
       this->removeFromBufferAndCheck(frame, poc, frame.t_r, plotModel);
       t_ai_sub = frame.t_r;
     }
@@ -2420,7 +2420,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
       // assert(buffer_add_sum == au_buffer_add || buffer_add_sum + 1 == au_buffer_add
       // || buffer_add_sum == au_buffer_add + 1);
     }
-    this->addToBufferAndCheck(buffer_add_remain, buffer_add_fractional, buffer_size, poc, t_ai_sub, t_af, plotModel);
+    this->addToBufferAndCheck(buffer_add_remain, buffer_size, poc, t_ai_sub, t_af, plotModel);
   }
 
   if (t_r_n <= t_af)
@@ -2442,6 +2442,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   }
 
   this->au_n++;
+  this->isFirstAUInBufferingPeriod = false;
 }
 
 void parserAnnexBAVC::HRD::endOfFile(HRDPlotModel *plotModel)
@@ -2474,7 +2475,7 @@ QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFra
   return l;
 }
 
-void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, double bufferAddFractional, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
+void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
 {
   const auto bufferOld = this->decodingBufferLevel;
   this->decodingBufferLevel += bufferAdd;
@@ -2488,7 +2489,6 @@ void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, double buffer
     entry.poc = poc;
     plotModel->addHRDEntry(entry);
   }
-  //long double fractional_bits = bufferAddFractional - bufferAdd;
   if (this->decodingBufferLevel >= bufferSize)
   {
     const int overflow_bits   = int(this->decodingBufferLevel) - bufferSize;

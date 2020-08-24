@@ -56,7 +56,7 @@ PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex
 
   PlotModel::StreamParameter streamParameter;
   streamParameter.xRange = {0, timestampToInt(this->time_offset_max)};
-  streamParameter.yRange = {0, this->cpb_buffer_size * 8};
+  streamParameter.yRange = {0, this->maxBufferLevel};
 
   const auto nrPoints = this->data.empty() ? 0 : unsigned(this->data.size() + 1);
   streamParameter.plotParameters.append({PlotType::Line, nrPoints});
@@ -119,6 +119,10 @@ void HRDPlotModel::addHRDEntry(HRDPlotModel::HRDEntry &entry)
 
   if (entry.time_offset_end > this->time_offset_max)
     this->time_offset_max = entry.time_offset_end;
+  if (entry.cbp_fullness_end > this->maxBufferLevel)
+    this->maxBufferLevel = entry.cbp_fullness_end;
+  if (entry.cbp_fullness_start > this->maxBufferLevel)
+    this->maxBufferLevel = entry.cbp_fullness_start;
 
   DEBUG_PLOT("HRDPlotModel::addHRDEntry time_offset_end " << entry.time_offset_end << " cbp_fullness_end " << entry.cbp_fullness_end);
 
