@@ -2236,6 +2236,16 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
 
   const bool cbr_flag = sps->vui_parameters.nal_hrd.cbr_flag[SchedSelIdx];
 
+  // TODO: Investigate the difference between our results and the results from stream-Eye
+  // I noticed that the results from stream eye differ by a (seemingly random) additional
+  // number of bits that stream eye counts for au 0.
+  // For one example I investigated it looked like the parameter sets (SPS + PPS) were counted twice for the
+  // first AU.
+  if (this->au_n == 0)
+  {
+    auBits += 48 * 8;
+  }
+
   /* Some notation:
     t_ai: The time at which the first bit of access unit n begins to enter the CPB is
     referred to as the initial arrival time. t_r_nominal_n: the nominal removal time of the
@@ -2336,20 +2346,21 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   if (this->t_af_nm1 < t_ai)
   {
     auto it = this->framesToRemove.begin();
+    auto lastFrameTime = this->t_af_nm1;
     while (it != this->framesToRemove.end())
     {
-      if ((*it).t_r < this->t_af_nm1)
+      if ((*it).t_r < this->t_af_nm1 || (*it).t_r <= t_ai)
       {
-        // This should not happen (all frames prior to t_af_nm1 should have been
-        // removed from the buffer already). Remove now and warn.
+        if ((*it).t_r < this->t_af_nm1)
+        {
+          // This should not happen (all frames prior to t_af_nm1 should have been
+          // removed from the buffer already). Remove now and warn.
+          DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Removing frame with removal time (" << (*it).t_r << ") before final arrival time (" << t_af_nm1[SchedSelIdx] << "). Buffer underflow");
+        }
+        this->addConstantBufferLine(poc, lastFrameTime, (*it).t_r, plotModel);
         this->removeFromBufferAndCheck((*it), poc, (*it).t_r, plotModel);
         it = this->framesToRemove.erase(it);
-        DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Removing frame with removal time (" << (*it).t_r << ") before final arrival time (" << t_af_nm1[SchedSelIdx] << "). Buffer underflow");
-      }
-      else if ((*it).t_r <= t_ai)
-      {
-        this->removeFromBufferAndCheck((*it), poc, (*it).t_r, plotModel);
-        it = this->framesToRemove.erase(it);
+        lastFrameTime = (*it).t_r;
       }
       else
         break;
@@ -2448,7 +2459,7 @@ QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFra
   return l;
 }
 
-void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned bufferAddFractional, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
+void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, double bufferAddFractional, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
 {
   const auto bufferOld = this->decodingBufferLevel;
   this->decodingBufferLevel += bufferAdd;
@@ -2493,4 +2504,15 @@ void parserAnnexBAVC::HRD::removeFromBufferAndCheck(HRDFrameToRemove &frame, int
       // out of the buffer).
       DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << frame.t_r << " Decoding Buffer underflow by " << this->decodingBufferLevel << "bits");
     }
+}
+
+void parserAnnexBAVC::HRD::addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
+{
+  HRDPlotModel::HRDEntry entry;
+  entry.cbp_fullness_start = this->decodingBufferLevel;
+  entry.cbp_fullness_end = this->decodingBufferLevel;
+  entry.time_offset_start = t_begin;
+  entry.time_offset_end = t_end;
+  entry.poc = poc;
+  plotModel->addHRDEntry(entry);
 }

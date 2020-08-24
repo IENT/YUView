@@ -482,6 +482,8 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
   if (!this->model)
     return;
 
+  painter.setRenderHint(QPainter::Antialiasing);
+
   const auto plotXMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft()).x() - 0.5;
   const auto plotXMax = this->convertPixelPosToPlotPos(plotRect.bottomRight()).x() + 0.5;
 
@@ -528,8 +530,8 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
           const auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + halfWidth, 0));
           
           const bool isHoveredBar = 
-            this->currentlyHoveredPointPerStreamAndPlot.contains(streamIndex) && 
-            this->currentlyHoveredPointPerStreamAndPlot[streamIndex].contains(plotIndex) && 
+            this->currentlyHoveredPointPerStreamAndPlot.contains(streamIndex) &&
+            this->currentlyHoveredPointPerStreamAndPlot[streamIndex].contains(plotIndex) &&
             this->currentlyHoveredPointPerStreamAndPlot[streamIndex][plotIndex] == i;
           
           const auto r = QRectF(barTopLeft, barBottomRight);
@@ -558,15 +560,28 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
       else if (plotParam.type == PlotModel::PlotType::Line)
       {
         QPolygonF linePoints;
+        QPointF lastPoint;
         for (unsigned i = 0; i < plotParam.nrpoints; i++)
         {
           const auto valueStart = model->getPlotPoint(streamIndex, plotIndex, i);
           const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));
 
-          if (valueStart.x < plotXMin || valueStart.x > plotXMax)
+          if (valueStart.x < plotXMin)
+          {
+            lastPoint = linePointStart;
             continue;
+          }
 
+          if (linePoints.size() == 0 && i > 0)
+            linePoints.append(lastPoint);
           linePoints.append(linePointStart);
+
+          if (valueStart.x > plotXMax)
+            // This means that no graph can "go back" on the x-axis. That is ok for now. 
+            // If we ever need this, this needs to be smarter here.
+            break;
+
+          lastPoint = linePointStart;
         }
 
         DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing line with " << linePoints.size() << " points");
@@ -580,7 +595,7 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
             this->currentlyHoveredPointPerStreamAndPlot[streamIndex].contains(plotIndex))
         {
           const auto index = this->currentlyHoveredPointPerStreamAndPlot[streamIndex][plotIndex];
-          if (index > 1)
+          if (index > 0)
           {
             const auto valueStart = model->getPlotPoint(streamIndex, plotIndex, index - 1);
             const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));

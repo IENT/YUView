@@ -93,17 +93,21 @@ QString HRDPlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, uns
     return {};
 
   const auto &entry = this->data[pointIndex - 1];
+  const auto timeScale = 1000;  // This results in the time being in ms
 
   return QString("<h4>HRD</h4>"
                   "<table width=\"100%\">"
                   "<tr><td>cpb_fullness:</td><td align=\"right\">%1-%2</td></tr>"
-                  "<tr><td>Time offset:</td><td align=\"right\">%3-%4</td></tr>"
-                  "<tr><td>POC:</td><td align=\"right\">%5</td></tr>"
+                  "<tr><td>Duration:</td><td align=\"right\">%3</td></tr>"
+                  "<tr><td>Time start:</td><td align=\"right\">%4</td></tr>"
+                  "<tr><td>Time end:</td><td align=\"right\">%5</td></tr>"
+                  "<tr><td>POC:</td><td align=\"right\">%6</td></tr>"
                   "</table>")
       .arg(entry.cbp_fullness_start)
       .arg(entry.cbp_fullness_end)
-      .arg(entry.time_offset_start)
-      .arg(entry.time_offset_end)
+      .arg((entry.time_offset_end - entry.time_offset_start) * timeScale)
+      .arg(entry.time_offset_start * timeScale)
+      .arg(entry.time_offset_end * timeScale)
       .arg(entry.poc);
 }
 
