@@ -66,6 +66,8 @@ PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex
 
 PlotModel::Point HRDPlotModel::getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
 {
+  Q_UNUSED(plotIndex);
+
   if (streamIndex > 0)
     return {};
 
@@ -86,6 +88,8 @@ PlotModel::Point HRDPlotModel::getPlotPoint(unsigned streamIndex, unsigned plotI
 
 QString HRDPlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
 {
+  Q_UNUSED(plotIndex);
+
   if (streamIndex > 0)
     return {};
 
@@ -95,20 +99,43 @@ QString HRDPlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, uns
   const auto &entry = this->data[pointIndex - 1];
   const auto timeScale = 1000;  // This results in the time being in ms
 
-  return QString("<h4>HRD</h4>"
-                  "<table width=\"100%\">"
-                  "<tr><td>cpb_fullness:</td><td align=\"right\">%1-%2</td></tr>"
-                  "<tr><td>Duration:</td><td align=\"right\">%3</td></tr>"
-                  "<tr><td>Time start:</td><td align=\"right\">%4</td></tr>"
-                  "<tr><td>Time end:</td><td align=\"right\">%5</td></tr>"
-                  "<tr><td>POC:</td><td align=\"right\">%6</td></tr>"
-                  "</table>")
-      .arg(entry.cbp_fullness_start)
-      .arg(entry.cbp_fullness_end)
-      .arg((entry.time_offset_end - entry.time_offset_start) * timeScale)
-      .arg(entry.time_offset_start * timeScale)
-      .arg(entry.time_offset_end * timeScale)
-      .arg(entry.poc);
+  const auto cpbDiff = entry.cbp_fullness_end - entry.cbp_fullness_start;
+  if (entry.type == HRDEntry::EntryType::Adding)
+  {
+    return QString("<h4>HRD</h4>"
+                    "<table width=\"100%\">"
+                    "<tr><td>cpb start:</td><td align=\"right\">%1</td></tr>"
+                    "<tr><td>cpb end:</td><td align=\"right\">%2</td></tr>"
+                    "<tr><td>cpb diff:</td><td align=\"right\">%3</td></tr>"
+                    "<tr><td>Duration (ms):</td><td align=\"right\">%4</td></tr>"
+                    "<tr><td>Time start:</td><td align=\"right\">%5</td></tr>"
+                    "<tr><td>Time end:</td><td align=\"right\">%6</td></tr>"
+                    "<tr><td>POC:</td><td align=\"right\">%7</td></tr>"
+                    "</table>")
+        .arg(entry.cbp_fullness_start)
+        .arg(entry.cbp_fullness_end)
+        .arg(cpbDiff)
+        .arg((entry.time_offset_end - entry.time_offset_start) * timeScale)
+        .arg(entry.time_offset_start * timeScale)
+        .arg(entry.time_offset_end * timeScale)
+        .arg(entry.poc);
+  }
+  else
+  {
+    return QString("<h4>HRD</h4>"
+                    "<table width=\"100%\">"
+                    "<tr><td>cpb start:</td><td align=\"right\">%1</td></tr>"
+                    "<tr><td>cpb end:</td><td align=\"right\">%2</td></tr>"
+                    "<tr><td>cpb diff:</td><td align=\"right\">%3</td></tr>"
+                    "<tr><td>Removal time:</td><td align=\"right\">%4</td></tr>"
+                    "<tr><td>POC:</td><td align=\"right\">%5</td></tr>"
+                    "</table>")
+        .arg(entry.cbp_fullness_start)
+        .arg(entry.cbp_fullness_end)
+        .arg(cpbDiff)
+        .arg(entry.time_offset_start * timeScale)
+        .arg(entry.poc);
+  }
 }
 
 void HRDPlotModel::addHRDEntry(HRDPlotModel::HRDEntry &entry)
@@ -132,7 +159,7 @@ void HRDPlotModel::addHRDEntry(HRDPlotModel::HRDEntry &entry)
     emit nrStreamsChanged();
 }
 
-void HRDPlotModel::setCPBBufferSize(unsigned size)
+void HRDPlotModel::setCPBBufferSize(int size)
 {
   if (size > this->cpb_buffer_size)
   {

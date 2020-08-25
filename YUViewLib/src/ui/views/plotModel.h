@@ -49,10 +49,7 @@ signals:
   void nrStreamsChanged();
 
 public:
-  PlotModel()
-  {
-    this->connect(&this->eventSubsampler, &EventSubsampler::subsampledEvent, this, &PlotModel::dataChanged);
-  }
+  PlotModel();
 
   enum class PlotType
   {
@@ -86,35 +83,7 @@ public:
   virtual Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
   virtual QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
 
-  std::optional<unsigned> getPointIndex(unsigned streamIndex, unsigned plotIndex, double x) const
-  {
-    const auto streamParam = this->getStreamParameter(streamIndex);
-    if (plotIndex >= unsigned(streamParam.plotParameters.size()))
-      return {};
-    const auto plotParam = this->getStreamParameter(streamIndex).plotParameters[plotIndex];
-    if (plotParam.type == PlotModel::PlotType::Line)
-    {
-      if (plotParam.nrpoints <= 1)
-        return {};
-      auto prevPointX = this->getPlotPoint(streamIndex, plotIndex, 0).x;
-      for (unsigned pointIndex = 1; pointIndex < plotParam.nrpoints; pointIndex++)
-      {
-        const auto pointX = this->getPlotPoint(streamIndex, plotIndex, pointIndex).x;
-        if (x > prevPointX && x <= pointX)
-          return pointIndex;
-      }
-    }
-    else
-    {
-      for (unsigned pointIndex = 0; pointIndex < plotParam.nrpoints; pointIndex++)
-      {
-        const auto point = this->getPlotPoint(streamIndex, plotIndex, pointIndex);
-        if (x > point.x - point.width / 2 && x <= point.x + point.width / 2)
-          return pointIndex;
-      }
-    }
-    return {};
-  }
+  std::optional<unsigned> getPointIndex(unsigned streamIndex, unsigned plotIndex, QPointF point) const;
 
 protected:
   EventSubsampler eventSubsampler;

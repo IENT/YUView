@@ -54,6 +54,18 @@ public:
 
   struct HRDEntry
   {
+    // There are two types of entries. 
+    // Adding: We are adding bits to the buffer or the buffer stays constant over time.
+    //         `poc` is the POC of the frame that the adding corresponds to.
+    // Removal: We remove a frame from the buffer. `time_offset_end` and `time_offset_start`
+    //          will be identical. The `poc` is the POC of the frame that is being removed.
+    enum class EntryType
+    {
+      Adding,
+      Removal
+    };
+    EntryType type {EntryType::Adding};
+
     int cbp_fullness_start {0};
     int cbp_fullness_end {0};
     double time_offset_start {0};
@@ -62,7 +74,7 @@ public:
   };
 
   void addHRDEntry(HRDEntry &entry);
-  void setCPBBufferSize(unsigned size);
+  void setCPBBufferSize(int size);
 
 private:
 

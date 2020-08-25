@@ -2480,6 +2480,7 @@ void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned buff
   
   {
     HRDPlotModel::HRDEntry entry;
+    entry.type = HRDPlotModel::HRDEntry::EntryType::Adding;
     entry.cbp_fullness_start = bufferOld;
     entry.cbp_fullness_end = this->decodingBufferLevel;
     entry.time_offset_start = t_begin;
@@ -2503,6 +2504,7 @@ void parserAnnexBAVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &fram
     this->decodingBufferLevel -= bufferSub;
     {
       HRDPlotModel::HRDEntry entry;
+      entry.type = HRDPlotModel::HRDEntry::EntryType::Removal;
       entry.cbp_fullness_start = bufferOld;
       entry.cbp_fullness_end = this->decodingBufferLevel;
       entry.time_offset_start = removalTime;
@@ -2522,6 +2524,7 @@ void parserAnnexBAVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &fram
 void parserAnnexBAVC::HRD::addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
 {
   HRDPlotModel::HRDEntry entry;
+  entry.type = HRDPlotModel::HRDEntry::EntryType::Adding;
   entry.cbp_fullness_start = this->decodingBufferLevel;
   entry.cbp_fullness_end = this->decodingBufferLevel;
   entry.time_offset_start = t_begin;

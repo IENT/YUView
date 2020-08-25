@@ -256,7 +256,7 @@ void PlotViewWidget::mouseMoveEvent(QMouseEvent *mouseMoveEvent)
       const auto streamParam = model->getStreamParameter(streamIndex);
       for (unsigned plotIndex = 0; plotIndex < streamParam.getNrPlots(); plotIndex++)
       {
-        const auto pointIndex = model->getPointIndex(streamIndex, plotIndex, mouseHoverPos.x());
+        const auto pointIndex = model->getPointIndex(streamIndex, plotIndex, mouseHoverPos);
         if (pointIndex)
           newHoverePointIndexPerStreamAndPlot[streamIndex][plotIndex] = *pointIndex;
       }
