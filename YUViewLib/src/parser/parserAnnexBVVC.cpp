@@ -114,7 +114,7 @@ parserAnnexB::ParseResult parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteAr
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
-  parserAnnexB::logNALSize(data, nalRoot);
+  parserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   // Create a nal_unit and read the header
   nal_unit_vvc nal_vvc(nalID, nalStartEndPosFile);

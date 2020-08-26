@@ -181,7 +181,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
-  parserAnnexB::logNALSize(data, nalRoot);
+  parserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   // Create a nal_unit and read the header
   nal_unit_avc nal_avc(nalID, nalStartEndPosFile);
@@ -211,6 +211,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
   bool parsingSuccess = true;
   bool currentSliceIntra = false;
   QString currentSliceType;
+  QSharedPointer<buffering_period_sei> currentBufferingPeriodSEI;
   if (nal_avc.nal_unit_type == SPS)
   {
     // A sequence parameter set
@@ -345,7 +346,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
         auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
         result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, this->active_SPS_list, message_tree);
         reparse = new_buffering_period_sei;
-        this->lastBufferingPeriodSEI = new_buffering_period_sei;
+        currentBufferingPeriodSEI = new_buffering_period_sei;
         this->hrd.isFirstAUInBufferingPeriod = true;
       }
       else if (new_sei->payloadType == 1)
@@ -442,6 +443,9 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       this->currentAUAllSlicesIntra = false;
     this->currentAUSliceTypes[currentSliceType]++;
   }
+
+  if (currentBufferingPeriodSEI)
+    this->lastBufferingPeriodSEI = currentBufferingPeriodSEI;
 
   if (nalRoot)
   {
@@ -2504,27 +2508,29 @@ void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned buff
 
 void parserAnnexBAVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel)
 {
+  Q_UNUSED(poc);
+  
   // Remove the frame from the buffer
-    unsigned int bufferSub = frame.bits;
-    const auto bufferOld   = this->decodingBufferLevel;
-    this->decodingBufferLevel -= bufferSub;
-    {
-      HRDPlotModel::HRDEntry entry;
-      entry.type = HRDPlotModel::HRDEntry::EntryType::Removal;
-      entry.cbp_fullness_start = bufferOld;
-      entry.cbp_fullness_end = this->decodingBufferLevel;
-      entry.time_offset_start = removalTime;
-      entry.time_offset_end = removalTime;
-      entry.poc = poc;
-      plotModel->addHRDEntry(entry);
-    }
-    if (this->decodingBufferLevel < 0)
-    {
-      // The buffer did underflow; i.e. we need to decode a pictures
-      // at the time but there is not enough data in the buffer to do so (to take the AU
-      // out of the buffer).
-      DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << frame.t_r << " Decoding Buffer underflow by " << this->decodingBufferLevel << "bits");
-    }
+  unsigned int bufferSub = frame.bits;
+  const auto bufferOld   = this->decodingBufferLevel;
+  this->decodingBufferLevel -= bufferSub;
+  {
+    HRDPlotModel::HRDEntry entry;
+    entry.type = HRDPlotModel::HRDEntry::EntryType::Removal;
+    entry.cbp_fullness_start = bufferOld;
+    entry.cbp_fullness_end = this->decodingBufferLevel;
+    entry.time_offset_start = removalTime;
+    entry.time_offset_end = removalTime;
+    entry.poc = frame.poc;
+    plotModel->addHRDEntry(entry);
+  }
+  if (this->decodingBufferLevel < 0)
+  {
+    // The buffer did underflow; i.e. we need to decode a pictures
+    // at the time but there is not enough data in the buffer to do so (to take the AU
+    // out of the buffer).
+    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << frame.t_r << " Decoding Buffer underflow by " << this->decodingBufferLevel << "bits");
+  }
 }
 
 void parserAnnexBAVC::HRD::addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)

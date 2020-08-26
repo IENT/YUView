@@ -76,7 +76,7 @@ bool parserAnnexB::addFrameToList(int poc, std::optional<pairUint64> fileStartEn
   return true;
 }
 
-void parserAnnexB::logNALSize(QByteArray &data, TreeItem *root)
+void parserAnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
 {
   int startCodeSize = 0;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
@@ -88,6 +88,8 @@ void parserAnnexB::logNALSize(QByteArray &data, TreeItem *root)
     new TreeItem("Start code size", startCodeSize, root);
 
   new TreeItem("Payload size", data.size() - startCodeSize, root);
+  if (nalStartEndPos)
+    new TreeItem("Start pos", (*nalStartEndPos).first, root);
 }
 
 int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const
