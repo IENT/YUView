@@ -64,12 +64,27 @@ public:
     unsigned nrpoints;
   };
 
+  // A limit can be used to draw a horizontal/vertical line at a certain position (x/y)
+  struct Limit
+  {
+    enum class Type
+    {
+      X,
+      Y
+    };
+
+    QString name;
+    int value;
+    Type type;
+  };
+
   struct StreamParameter
   {
     unsigned getNrPlots() const { return unsigned(this->plotParameters.size()); }
     Range<int> xRange;
     Range<int> yRange;
     QList<PlotParameter> plotParameters;
+    QList<Limit> limits; 
   };
 
   struct Point

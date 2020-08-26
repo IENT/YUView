@@ -201,6 +201,7 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
   Q_UNUSED(paint_event);
 
   QPainter painter(this);
+  painter.setRenderHint(QPainter::Antialiasing);
 
   const auto widgetRect = QRectF(this->rect());
   const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
@@ -214,6 +215,7 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
   this->drawGridLines(painter, this->propertiesAxis[0], plotRect, valuesX);
   this->drawGridLines(painter, this->propertiesAxis[1], plotRect, valuesY);
 
+  this->drawLimits(painter, plotRect);
   this->drawPlot(painter, plotRect);
   this->drawZoomRect(painter, plotRect);
 
@@ -477,12 +479,48 @@ void PlotViewWidget::drawFadeBoxes(QPainter &painter, const QRectF plotRect, con
   painter.drawRect(QRectF(0, plotRect.top(), widgetRect.width(), fadeBoxThickness));
 }
 
+void PlotViewWidget::drawLimits(QPainter &painter, const QRectF &plotRect) const
+{
+  const auto plotMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft());
+  const auto plotMax = this->convertPixelPosToPlotPos(plotRect.topRight());
+
+  DEBUG_PLOT("PlotViewWidget::drawLimits");
+  for (auto streamIndex : this->showStreamList)
+  {
+    const auto param = this->model->getStreamParameter(streamIndex);
+    for (const auto &limit : param.limits)
+    {
+      // Only draw visible limits
+      QLineF line;
+      if (limit.type == PlotModel::Limit::Type::X)
+      {
+        if (limit.value < plotMin.x() || limit.value > plotMax.x())
+          continue;
+        const auto dummyPointForX = this->convertPlotPosToPixelPos(QPointF(limit.value, 0));
+        line.setP1(QPointF(dummyPointForX.x(), 0));
+        line.setP2(QPointF(dummyPointForX.x(), plotRect.height()));
+      }
+      else
+      {
+        if (limit.value < plotMin.y() || limit.value > plotMax.y())
+          continue;
+        const auto dummyPointForY = this->convertPlotPosToPixelPos(QPointF(0, limit.value));
+        line.setP1(QPointF(0, dummyPointForY.y()));
+        line.setP2(QPointF(plotRect.width(), dummyPointForY.y()));
+      }
+
+      QPen limitPen(Qt::black);
+      limitPen.setWidth(2);
+      painter.setPen(limitPen);
+      painter.drawLine(line);
+    }
+  }
+}
+
 void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
 {
   if (!this->model)
     return;
-
-  painter.setRenderHint(QPainter::Antialiasing);
 
   const auto plotXMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft()).x() - 0.5;
   const auto plotXMax = this->convertPixelPosToPlotPos(plotRect.bottomRight()).x() + 0.5;

@@ -101,6 +101,7 @@ private:
 
   void updateAxis(const QRectF &plotRect);
 
+  void drawLimits(QPainter &painter, const QRectF &plotRect) const;
   void drawPlot(QPainter &painter, const QRectF &plotRect) const;
   void drawInfoBox(QPainter &painter, const QRectF &plotRect) const;
   void drawDebugBox(QPainter &painter, const QRectF &plotRect) const;

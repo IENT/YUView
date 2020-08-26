@@ -57,6 +57,15 @@ PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex
   PlotModel::StreamParameter streamParameter;
   streamParameter.xRange = {0, timestampToInt(this->time_offset_max)};
   streamParameter.yRange = {0, this->maxBufferLevel};
+  
+  if (this->cpb_buffer_size > 0)
+  {
+    PlotModel::Limit cpbLimit;
+    cpbLimit.name = "cpb size";
+    cpbLimit.type = PlotModel::Limit::Type::Y;
+    cpbLimit.value = this->cpb_buffer_size;
+    streamParameter.limits.append(cpbLimit);
+  }
 
   const auto nrPoints = this->data.empty() ? 0 : unsigned(this->data.size() + 1);
   streamParameter.plotParameters.append({PlotType::Line, nrPoints});
