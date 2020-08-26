@@ -432,6 +432,9 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
   if (ui.created())
   {
     // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
+    QSignalBlocker blocker1(ui.chromaInterpolationComboBox);
+    QSignalBlocker blocker2(ui.lumaOffsetSpinBox);
+    QSignalBlocker blocker3(ui.chromaOffsetSpinBox);
     ui.chromaInterpolationComboBox->setEnabled(format.isChromaSubsampled());
     ui.lumaOffsetSpinBox->setValue(mathParameters[Component::Luma].offset);
     ui.chromaOffsetSpinBox->setValue(mathParameters[Component::Chroma].offset);
