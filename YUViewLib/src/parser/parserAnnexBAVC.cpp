@@ -2481,9 +2481,11 @@ QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFra
     {
       l.push_back((*it));
       it = this->framesToRemove.erase(it);
+      continue;
     }
     if ((*it).t_r >= to)
       break;
+    // Prevent an infinite loop in case of wrong data. We should never reach this if all timings are correct.
     it++;
   }
   return l;
