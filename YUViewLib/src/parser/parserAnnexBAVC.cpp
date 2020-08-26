@@ -212,6 +212,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
   bool currentSliceIntra = false;
   QString currentSliceType;
   QSharedPointer<buffering_period_sei> currentBufferingPeriodSEI;
+  QSharedPointer<pic_timing_sei> currentPicTimingSEI;
   if (nal_avc.nal_unit_type == SPS)
   {
     // A sequence parameter set
@@ -354,7 +355,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
         auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
         result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, this->active_SPS_list, CpbDpbDelaysPresentFlag, message_tree);
         reparse = new_pic_timing_sei;
-        this->lastPicTimingSEI = new_pic_timing_sei;
+        currentPicTimingSEI = new_pic_timing_sei;
       }
       else if (new_sei->payloadType == 4)
       {
@@ -446,6 +447,8 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
 
   if (currentBufferingPeriodSEI)
     this->lastBufferingPeriodSEI = currentBufferingPeriodSEI;
+  if (currentPicTimingSEI)
+    this->lastPicTimingSEI = currentPicTimingSEI;
 
   if (nalRoot)
   {
@@ -2271,8 +2274,11 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   if (this->au_n == 0)
     t_r_nominal_n = time_t(initial_cpb_removal_delay) / 90000;
   else
+  {
     // n is not equal to 0. The removal time depends on the removal time of the previous AU.
-    t_r_nominal_n = this->t_r_nominal_n_first + t_c * (unsigned int) lastPicTimingSEI->cpb_removal_delay;
+    const auto cpb_removal_delay = unsigned(lastPicTimingSEI->cpb_removal_delay);
+    t_r_nominal_n = this->t_r_nominal_n_first + t_c * cpb_removal_delay;
+  }
 
   if (this->isFirstAUInBufferingPeriod)
     this->t_r_nominal_n_first = t_r_nominal_n;
@@ -2509,7 +2515,7 @@ void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned buff
 void parserAnnexBAVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel)
 {
   Q_UNUSED(poc);
-  
+
   // Remove the frame from the buffer
   unsigned int bufferSub = frame.bits;
   const auto bufferOld   = this->decodingBufferLevel;
