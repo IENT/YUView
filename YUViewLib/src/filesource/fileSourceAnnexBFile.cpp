@@ -96,10 +96,11 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, pairUint6
     startEndPosInFile->first = bufferStartPosInFile + posInBuffer;
 
   int nextStartCodePos = -1;
+  int searchOffset = 3;
   bool startCodeFound = false;
   while (!startCodeFound)
   {
-    nextStartCodePos = fileBuffer.indexOf(startCode, posInBuffer + 3);
+    nextStartCodePos = fileBuffer.indexOf(startCode, posInBuffer + searchOffset);
 
     if (nextStartCodePos < 0 || (uint64_t)nextStartCodePos > fileBufferSize)
     {
@@ -146,6 +147,8 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, pairUint6
           nextStartCodePos = lastByteZero2 ? -1 : 0;
         }
       }
+
+      searchOffset = 0;
     }
     else
     {
