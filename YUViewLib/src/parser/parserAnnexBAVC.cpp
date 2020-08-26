@@ -2188,39 +2188,44 @@ int parserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray
 
 bool parserAnnexBAVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_avc &nal_avc, int curFramePOC)
 {
-  // TODO: This is not complete. Check and finish.
-  if (nal_avc.nal_unit_type == AUD)
-  {
-    delimiterPresent = true;
-    return true;
-  }
-
-  if (this->delimiterPresent)
-    // AUD messages were found in the bitstream. Only react to these.
-    return false;
-  
   const bool isSlice = (nal_avc.nal_unit_type == CODED_SLICE_NON_IDR || nal_avc.nal_unit_type == CODED_SLICE_IDR);
-  const bool isLastSlice = (lastNalType == CODED_SLICE_NON_IDR || lastNalType == CODED_SLICE_IDR);
-  if (isSlice && lastNalSlicePoc != -1 && lastNalSlicePoc != curFramePOC)
+  
+  // 7.4.1.2.3 Order of NAL units and coded pictures and association to access units
+  bool isStart = false;
+  if (this->primaryCodedPictureInAuEncountered)
   {
-    lastNalSlicePoc = curFramePOC;
-    lastNalType = nal_avc.nal_unit_type;
-    return true;
+    // The first of any of the following NAL units after the last VCL NAL unit of a primary coded picture specifies the start of a new access unit:
+    if (nal_avc.nal_unit_type == AUD)
+      isStart = true;
+
+    if (nal_avc.nal_unit_type == SPS || nal_avc.nal_unit_type == PPS)
+      isStart = true;
+
+    if (nal_avc.nal_unit_type == SEI)
+      isStart = true;
+
+    const bool fourteenToEigtheen = (nal_avc.nal_unit_type == PREFIX_NAL ||
+                                     nal_avc.nal_unit_type == SUBSET_SPS ||
+                                     nal_avc.nal_unit_type == DEPTH_PARAMETER_SET ||
+                                     nal_avc.nal_unit_type == RESERVED_17 ||
+                                     nal_avc.nal_unit_type == RESERVED_18);
+    if (fourteenToEigtheen)
+      isStart = true;
+
+    if (isSlice && curFramePOC != this->lastSlicePoc)
+    {
+      isStart = true;
+      this->lastSlicePoc = curFramePOC;
+    }
   }
   
-  const bool isParameterSet = (nal_avc.nal_unit_type == SEI || 
-                               nal_avc.nal_unit_type == SPS ||
-                               nal_avc.nal_unit_type == PPS);
-  if (isParameterSet && isLastSlice)
-  {
-    lastNalSlicePoc = curFramePOC;
-    lastNalType = nal_avc.nal_unit_type;
-    return true;
-  }
+  if (isSlice)
+    this->primaryCodedPictureInAuEncountered = true;
 
-  lastNalSlicePoc = curFramePOC;
-  lastNalType = nal_avc.nal_unit_type;
-  return false;
+  if (isStart && !isSlice)
+    this->primaryCodedPictureInAuEncountered = false;
+
+  return isStart;
 }
 
 void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, HRDPlotModel *plotModel)
@@ -2244,7 +2249,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   // first AU.
   if (this->au_n == 0)
   {
-    auBits += 48 * 8;
+    auBits += 47 * 8;
   }
 
   /* Some notation:
@@ -2469,6 +2474,7 @@ QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFra
     }
     if ((*it).t_r >= to)
       break;
+    it++;
   }
   return l;
 }

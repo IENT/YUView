@@ -563,9 +563,8 @@ protected:
   struct auDelimiterDetector_t
   {
     bool isStartOfNewAU(nal_unit_avc &nal_avc, int curFramePOC);
-    nal_unit_type_enum lastNalType {UNSPECIFIED};
-    int lastNalSlicePoc {-1};
-    bool delimiterPresent {false};
+    int lastSlicePoc {-1};
+    bool primaryCodedPictureInAuEncountered {false};
   };
   auDelimiterDetector_t auDelimiterDetector;
 

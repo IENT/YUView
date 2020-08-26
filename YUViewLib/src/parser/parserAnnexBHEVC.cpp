@@ -2692,7 +2692,7 @@ QStringList parserAnnexBHEVC::get_matrix_coefficients_meaning()
 bool parserAnnexBHEVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_hevc &nal, bool first_slice_segment_in_pic_flag)
 {
   bool isStart = false;
-  if (this->primary_coded_picture_in_au_encountered)
+  if (this->primaryCodedPictureInAuEncountered)
   {
     if (nal.nal_type == AUD_NUT && nal.nuh_layer_id == 0)
       isStart = true;
@@ -2714,10 +2714,10 @@ bool parserAnnexBHEVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_hevc &nal,
   }
 
   if (nal.isSlice())
-    this->primary_coded_picture_in_au_encountered = true;
+    this->primaryCodedPictureInAuEncountered = true;
 
   if (isStart && !nal.isSlice())
-    primary_coded_picture_in_au_encountered = false;
+    this->primaryCodedPictureInAuEncountered = false;
 
   return isStart;
 }
