@@ -2254,10 +2254,10 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   // number of bits that stream eye counts for au 0.
   // For one example I investigated it looked like the parameter sets (SPS + PPS) were counted twice for the
   // first AU.
-  if (this->au_n == 0)
-  {
-    auBits += 47 * 8;
-  }
+  // if (this->au_n == 0)
+  // {
+  //   auBits += 47 * 8;
+  // }
 
   /* Some notation:
     t_ai: The time at which the first bit of access unit n begins to enter the CPB is
