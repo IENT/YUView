@@ -126,7 +126,7 @@ void PlotViewWidget::zoomToFit(bool checked)
           break;
         
         auto x0 = model->getPlotPoint(streamIndex, plotIndex, 0).x;
-        for (int i = 0; i < plotParam.nrpoints && firstPointWidth > 0; i++)
+        for (unsigned i = 0; i < plotParam.nrpoints && firstPointWidth > 0; i++)
         {
           firstPointWidth = model->getPlotPoint(streamIndex, plotIndex, i).x - x0;
         }
@@ -192,7 +192,6 @@ void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text)
   painter.fillRect(boxRect,Qt::white);
   painter.drawRect(boxRect);
 
-  // Draw the text
   painter.drawText(textRect, Qt::AlignCenter, text);
 }
 
@@ -506,7 +505,19 @@ void PlotViewWidget::drawLimits(QPainter &painter, const QRectF &plotRect) const
           continue;
         const auto dummyPointForY = this->convertPlotPosToPixelPos(QPointF(0, limit.value));
         line.setP1(QPointF(0, dummyPointForY.y()));
-        line.setP2(QPointF(plotRect.width(), dummyPointForY.y()));
+        line.setP2(QPointF(plotRect.right(), dummyPointForY.y()));
+
+        // Set the QRect where to show the text
+        QFont displayFont = painter.font();
+        QFontMetrics metrics(displayFont);
+        QSize textSize = metrics.size(0, limit.name);
+
+        QRect textRect;
+        textRect.setSize(textSize);
+        textRect.moveTop(dummyPointForY.y());
+        textRect.moveRight(plotRect.right() - fadeBoxThickness);
+        painter.setPen(Qt::black);
+        painter.drawText(textRect, Qt::AlignCenter, limit.name);
       }
 
       QPen limitPen(Qt::black);
