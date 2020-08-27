@@ -113,12 +113,12 @@ QString HRDPlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, uns
   {
     return QString("<h4>HRD</h4>"
                     "<table width=\"100%\">"
-                    "<tr><td>cpb start:</td><td align=\"right\">%1</td></tr>"
-                    "<tr><td>cpb end:</td><td align=\"right\">%2</td></tr>"
-                    "<tr><td>cpb diff:</td><td align=\"right\">%3</td></tr>"
-                    "<tr><td>Duration (ms):</td><td align=\"right\">%4</td></tr>"
-                    "<tr><td>Time start:</td><td align=\"right\">%5</td></tr>"
-                    "<tr><td>Time end:</td><td align=\"right\">%6</td></tr>"
+                    "<tr><td>cpb&nbsp;start:</td><td align=\"right\">%1</td></tr>"
+                    "<tr><td>cpb&nbsp;end:</td><td align=\"right\">%2</td></tr>"
+                    "<tr><td>cpb&nbsp;diff:</td><td align=\"right\">%3</td></tr>"
+                    "<tr><td>Duration&nbsp;(ms):</td><td align=\"right\">%4</td></tr>"
+                    "<tr><td>Time&nbsp;start:</td><td align=\"right\">%5</td></tr>"
+                    "<tr><td>Time&nbsp;end:</td><td align=\"right\">%6</td></tr>"
                     "<tr><td>POC:</td><td align=\"right\">%7</td></tr>"
                     "</table>")
         .arg(entry.cbp_fullness_start)
@@ -133,10 +133,10 @@ QString HRDPlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, uns
   {
     return QString("<h4>HRD</h4>"
                     "<table width=\"100%\">"
-                    "<tr><td>cpb start:</td><td align=\"right\">%1</td></tr>"
-                    "<tr><td>cpb end:</td><td align=\"right\">%2</td></tr>"
-                    "<tr><td>cpb diff:</td><td align=\"right\">%3</td></tr>"
-                    "<tr><td>Removal time:</td><td align=\"right\">%4</td></tr>"
+                    "<tr><td>cpb&nbsp;start:</td><td align=\"right\">%1</td></tr>"
+                    "<tr><td>cpb&nbsp;end:</td><td align=\"right\">%2</td></tr>"
+                    "<tr><td>cpb&nbsp;diff:</td><td align=\"right\">%3</td></tr>"
+                    "<tr><td>Removal&nbsp;time:</td><td align=\"right\">%4</td></tr>"
                     "<tr><td>POC:</td><td align=\"right\">%5</td></tr>"
                     "</table>")
         .arg(entry.cbp_fullness_start)

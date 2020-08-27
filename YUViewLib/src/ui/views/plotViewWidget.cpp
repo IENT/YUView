@@ -698,7 +698,22 @@ void PlotViewWidget::drawInfoBox(QPainter &painter, const QRectF &plotRect) cons
   textDocument.setTextWidth(textDocument.size().width());
 
   // Translate to the position where the text box shall be
-  painter.translate(plotRect.bottomRight().x() - axisMaxValueMargin - margin - textDocument.size().width() - padding * 2 + 1, plotRect.bottomRight().y() - axisMaxValueMargin - margin - textDocument.size().height() - padding * 2 + 1);
+  // Consider where the mouse is and move the box out of the way if the mouse is here
+  if (!QCursor::pos().isNull())
+  {
+    const auto mousePos = mapFromGlobal(QCursor::pos());
+    auto posX = plotRect.bottomRight().x() - axisMaxValueMargin - margin - textDocument.size().width() - padding * 2 + 1;
+    auto posY = plotRect.bottomRight().y() - axisMaxValueMargin - margin - textDocument.size().height() - padding * 2 + 1;
+
+    const auto margin = 5;
+    if (mousePos.x() >= posX - margin && mousePos.x() < posX + textDocument.size().width() + margin)
+    {
+      posX -= margin * 2 + textDocument.size().width();
+      posX = std::max(posX, plotRect.left());
+    }
+
+    painter.translate(posX, posY);
+  }
 
   // Draw a black rectangle and then the text on top of that
   QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
