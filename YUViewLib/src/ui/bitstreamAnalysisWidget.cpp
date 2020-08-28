@@ -63,6 +63,16 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
   this->currentSelectedItemsChanged(nullptr, nullptr, false);
 }
 
+MoveAndZoomableView *BitstreamAnalysisWidget::getCurrentActiveView()
+{
+  const auto idx = this->ui.analysisTab->currentIndex();
+  if (idx == 2)
+    return this->ui.plotViewWidget;
+  if (idx == 3)
+    return this->ui.hrdPlotWidget;
+  return {};
+}
+
 void BitstreamAnalysisWidget::updateParserItemModel()
 {
   this->parser->updateNumberModelItems();

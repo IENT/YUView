@@ -54,10 +54,6 @@ public:
 
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   
-private:
-  Ui::MainWindow ui;
-  
-public:
   // Check for a new update (if we do this automatically)
   void autoUpdateCheck() { updater->startCheckForNewVersion(false, false); }
   // The application was restarted with elevated rights. Force an update now.
@@ -66,9 +62,15 @@ public:
 
   // Get the main window from the QApplication
   static QWidget *getMainWindow();
+
+  void loadFiles(const QStringList &files);
   
 public slots:
-  void loadFiles(const QStringList &files);
+
+  // A new item was selected. Update the window title.
+  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
+
+private slots:
 
   void toggleFullscreen();
   void deleteSelectedItems();
@@ -80,18 +82,15 @@ public slots:
   void resetWindowLayout();
   void closeAndClearSettings();
 
-  // A new item was selected. Update the window title.
-  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
-
-protected:
-
-  virtual bool eventFilter(QObject *watched, QEvent *event) Q_DECL_OVERRIDE;
-  virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
-
-  // Check if one of the loaded files has changed (if activated in the settings)
-  virtual void focusInEvent(QFocusEvent *event) Q_DECL_OVERRIDE;
-
-private slots:
+  void onMenuResetView(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->resetView(checked); }
+  void onMenuZoomToFit(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomToFit(checked); }
+  void onMenuZoomIn(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomIn(checked); }
+  void onMenuZoomOut(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomOut(checked); }
+  void onMenuZoomTo50(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomTo50(checked); }
+  void onMenuZoomTo100(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomTo100(checked); }
+  void onMenuZoomTo200(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomTo200(checked); }
+  void onMenuZoomToCustom(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomToCustom(checked); }
+  void onMenuFullScreen(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->toggleFullScreen(checked); }
   
   void openRecentFile();
 
@@ -110,6 +109,18 @@ private slots:
 
 private:
 
+  Ui::MainWindow ui;
+
+  virtual bool eventFilter(QObject *watched, QEvent *event) Q_DECL_OVERRIDE;
+  virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+
+  // Check if one of the loaded files has changed (if activated in the settings)
+  virtual void focusInEvent(QFocusEvent *event) Q_DECL_OVERRIDE;
+
+  MoveAndZoomableView *getCurrentActiveView();
+
+private:
+
   void createMenusAndActions();
   void updateRecentFileActions();
 
@@ -120,7 +131,7 @@ private:
   QScopedPointer<videoCache> cache;
   bool saveWindowsStateOnExit;
   QScopedPointer<updateHandler> updater;
-  viewStateHandler stateHandler;
+  ViewStateHandler stateHandler;
   SeparateWindow separateViewWindow;
   bool showNormalMaximized; // When going to full screen: Was this windows maximized?  
   bool panelsVisible[5] {false};  // Which panels are visible when going to full-screen mode?

@@ -42,18 +42,18 @@ class playlistItem;
 class PlaylistTreeWidget;
 class splitViewWidget;
 
-/* The viewStateHandler saves all values that are needed to restore a certain state of YUView. This is used when the user presses
+/* The ViewStateHandler saves all values that are needed to restore a certain state of YUView. This is used when the user presses
  * 1...8 (Ctrl+1..8 to save). Saving a state means that we save the following:
  * - Which items are currently selected
  * - The state of the splitViewWidget (zoom factor, position, splitting, splitPosition, viewMode...)
  * - Which frame is currently selected
  */
-class viewStateHandler : public QObject
+class ViewStateHandler : public QObject
 {
   Q_OBJECT
 
 public:
-  viewStateHandler();
+  ViewStateHandler();
 
   // Set the controls which we save/load the states from/to.
   void setConctrols(PlaybackController *play, PlaylistTreeWidget *plist, splitViewWidget *primaryView, splitViewWidget *secondaryView);

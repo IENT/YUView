@@ -39,7 +39,7 @@
 
 #include "playlistitem/playlistItem.h"
 #include "common/typedef.h"
-#include "viewStateHandler.h"
+#include "ViewStateHandler.h"
 
 class QDomElement;
 
@@ -79,7 +79,7 @@ public:
   // Check if the source of the items is still up to date. If not aske the user if he wants to reload the item.
   void checkAndUpdateItems();
 
-  void setViewStateHandler(viewStateHandler *handler) { stateHandler = handler; }
+  void setViewStateHandler(ViewStateHandler *handler) { stateHandler = handler; }
 
   // The settings were changed by the user. Reload all settings that affect the tree and the playlist items.
   void updateSettings();
@@ -98,6 +98,7 @@ public slots:
   // Slots for going to the next item. WrapAround = if the current item is the last one in the list, 
   // goto the first item in the list. Return if there is a next item.
   // callByPlayback is true if this call is caused by the playback function going to the next item.
+  void onSelectNextItem(bool checked) { Q_UNUSED(checked); this->selectNextItem(false, false); }
   bool selectNextItem(bool wrapAround=false, bool callByPlayback=false);
   // Goto the previous item
   void selectPreviousItem();
@@ -199,8 +200,8 @@ private:
   // Clone the selected item as often as the user wants
   void cloneSelectedItem();
 
-  // We have a pointer to the viewStateHandler to load/save the view states to playlist
-  QPointer<viewStateHandler> stateHandler;
+  // We have a pointer to the ViewStateHandler to load/save the view states to playlist
+  QPointer<ViewStateHandler> stateHandler;
 
   void autoSavePlaylist();
   QTimer autosaveTimer;

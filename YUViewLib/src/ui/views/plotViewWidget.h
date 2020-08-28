@@ -47,9 +47,6 @@ private slots:
   void modelDataChanged();
   void modelNrStreamsChanged();
 
-protected slots:
-  virtual void zoomToFit(bool checked = false) override;
-
 protected:
 
   // Override some events from the widget
@@ -111,6 +108,7 @@ private:
   QPointF convertPlotPosToPixelPos(const QPointF &plotPos, std::optional<double> zoomFactor = {}) const;
   QPointF convertPixelPosToPlotPos(const QPointF &pixelPos, std::optional<double> zoomFactor = {}) const;
 
+  void zoomToFitInternal() override;
   void onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) override;
 
   std::optional<Range<int>> getVisibleRange(const Axis axis) const;

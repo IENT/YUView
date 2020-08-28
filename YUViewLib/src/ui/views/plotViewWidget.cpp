@@ -99,10 +99,8 @@ void PlotViewWidget::modelNrStreamsChanged()
   DEBUG_PLOT("PlotViewWidget::updateStreamInfo showStreamList " << this->showStreamList);
 }
 
-void PlotViewWidget::zoomToFit(bool checked)
+void PlotViewWidget::zoomToFitInternal()
 {
-  Q_UNUSED(checked);
-
   if (!this->model)
     return;
 
@@ -157,6 +155,7 @@ void PlotViewWidget::zoomToFit(bool checked)
     return;
 
   this->viewInitializedForModel = true;
+  this->update();
 }
 
 void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text)
@@ -867,5 +866,5 @@ void PlotViewWidget::initViewFromModel()
   if (this->viewInitializedForModel || !this->model)
     return;
 
-  this->zoomToFit();
+  this->zoomToFitInternal();
 }

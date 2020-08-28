@@ -50,6 +50,8 @@ public:
   BitstreamAnalysisWidget(QWidget *parent = nullptr);
   ~BitstreamAnalysisWidget() { stopAndDeleteParserBlocking(); }
 
+  MoveAndZoomableView *getCurrentActiveView();
+
 public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
 

@@ -86,7 +86,7 @@ public:
   QImage getScreenshot(bool fullItem=false);
 
   // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
-  bool handleKeyPress(QKeyEvent *event);
+  bool handleKeyPress(QKeyEvent *event) override;
 
   // Get and set the current state (center point and zoom, is splitting active? if yes the split line position)
   void getViewState(QPoint &offset, double &zoom, double &splitPoint, int &mode) const;
@@ -102,8 +102,10 @@ public:
   // Test the drawing speed with the currently selected item
   void testDrawingSpeed();
 
-  // Add the split views menu items to the given menu. Used for the main menu bar and the context menu.
-  void addMenuActions(QMenu *menu) override;
+  // Add the split views menu items to the given menu. This is called from the main window.
+  void addMenuActions(QMenu *menu);
+
+  virtual void resetViewInternal() override;
 
 signals:
   
@@ -118,11 +120,7 @@ public slots:
 
   void triggerActionSeparateView() { actionSeparateView.trigger(); }
 
-  virtual void resetView(bool checked = false) override;
-
 private slots:
-
-  virtual void zoomToFit(bool checked = false) override;
 
   void splitViewDisable(bool checked) { Q_UNUSED(checked); setViewSplitMode(DISABLED, true, true); }
   void splitViewSideBySide(bool checked) { Q_UNUSED(checked); setViewSplitMode(SIDE_BY_SIDE, true, true); }
@@ -155,7 +153,6 @@ protected:
   virtual void mousePressEvent(QMouseEvent *event) override;
   virtual void mouseReleaseEvent(QMouseEvent *event) override;
   virtual void wheelEvent (QWheelEvent *event) override;
-  virtual void keyPressEvent(QKeyEvent *event) override;
 
   virtual void onSwipeLeft() override;
   virtual void onSwipeRight() override;
@@ -163,6 +160,7 @@ protected:
   virtual void onSwipeDown() override;
 
   void createMenuActions();
+  virtual void addContextMenuActions(QMenu *menu) override;
   QScopedPointer<QActionGroup> actionSplitViewGroup;
   QScopedPointer<QActionGroup> actionGridGroup;
   QAction actionSplitView[3];
@@ -193,6 +191,7 @@ protected:
 
   QRect   viewActiveArea;                   //!< The active area, where the picture is drawn into
 
+  void    zoomToFitInternal() override;
   void    setZoomFactor(double zoom) override;
   QFont   zoomFactorFont;                   //!< The font to use for the zoom factor indicator
   QPoint  zoomFactorFontPos;                //!< The position where the zoom factor indication will be shown
