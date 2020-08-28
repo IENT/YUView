@@ -108,6 +108,10 @@ void PlotViewWidget::zoomToFit(bool checked)
 
   const auto widgetRect = QRectF(this->rect());
   const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
+  const auto plotXMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft(), 1.0).x() - 0.5;
+  const auto plotXMax = this->convertPixelPosToPlotPos(plotRect.bottomRight(), 1.0).x() + 0.5;
+  const auto widthInPlotSpace = plotXMax - plotXMin;
+
   this->updateAxis(plotRect);
 
   bool modelContainsDataYet = false;
@@ -115,50 +119,30 @@ void PlotViewWidget::zoomToFit(bool checked)
   for (auto streamIndex : this->showStreamList)
   {
     const auto param = this->model->getStreamParameter(streamIndex);
-    for (unsigned int plotIndex = 0; plotIndex < param.getNrPlots(); plotIndex++)
+
+    bool streamContainsData = false;
+    for (const auto &plotParam : param.plotParameters)
+      streamContainsData |= plotParam.nrpoints > 0;
+
+    if (!streamContainsData)
+      continue;
+
+    modelContainsDataYet = true;
+    const auto streamXRange = param.xRange.max - param.xRange.min;
+
+    double newZoomFactor = 1.0;
+    while (streamXRange * newZoomFactor > widthInPlotSpace)
+      newZoomFactor /= ZOOM_STEP_FACTOR;
+    if (newZoomFactor == 1.0)
     {
-      const auto plotParam = param.plotParameters[plotIndex];
-
-      double firstPointWidth = 0;
-      if (plotParam.type == PlotModel::PlotType::Line)
-      {
-        if (plotParam.nrpoints < 2)
-          break;
-        
-        auto x0 = model->getPlotPoint(streamIndex, plotIndex, 0).x;
-        for (unsigned i = 0; i < plotParam.nrpoints && firstPointWidth > 0; i++)
-        {
-          firstPointWidth = model->getPlotPoint(streamIndex, plotIndex, i).x - x0;
-        }
-      }
-      else
-      {
-        if (plotParam.nrpoints < 1)
-          break;
-        firstPointWidth = model->getPlotPoint(streamIndex, plotIndex, 0).width;
-      }
-
-      if (firstPointWidth <= 0)
-        break;
-
-      modelContainsDataYet = true;
-      
-      double newZoomFactor = this->zoomFactor;
-      if (firstPointWidth * newZoomFactor > 1)
-      {
-        while (firstPointWidth * newZoomFactor > 1)
-          newZoomFactor /= ZOOM_STEP_FACTOR;
-      }
-      else
-      {
-        while (firstPointWidth * newZoomFactor < 1)
-          newZoomFactor *= ZOOM_STEP_FACTOR;
-      }
-      if (minZoomFactor == -1)
-        minZoomFactor = newZoomFactor;
-      else
-        minZoomFactor = std::min(minZoomFactor, newZoomFactor);
+      while (streamXRange * newZoomFactor < widthInPlotSpace)
+        newZoomFactor *= ZOOM_STEP_FACTOR;
     }
+
+    if (minZoomFactor == -1)
+      minZoomFactor = newZoomFactor;
+    else
+      minZoomFactor = std::min(minZoomFactor, newZoomFactor);
   }
 
   if (!modelContainsDataYet)
@@ -803,9 +787,12 @@ void PlotViewWidget::updateAxis(const QRectF &plotRect)
   DEBUG_PLOT("PlotViewWidget::updateAxis lineX " << this->propertiesAxis[0].line << " lineY " << this->propertiesAxis[1].line);
 }
 
-QPointF PlotViewWidget::convertPlotPosToPixelPos(const QPointF &plotPos) const
+QPointF PlotViewWidget::convertPlotPosToPixelPos(const QPointF &plotPos, std::optional<double> zoomFactor) const
 {
-  const auto pixelPosX = this->propertiesAxis[0].line.p1().x() + (plotPos.x() * this->zoomToPixelsPerValueX) * this->zoomFactor + this->moveOffset.x();
+  if (!zoomFactor)
+    zoomFactor = this->zoomFactor;
+
+  const auto pixelPosX = this->propertiesAxis[0].line.p1().x() + (plotPos.x() * this->zoomToPixelsPerValueX) * (*zoomFactor) + this->moveOffset.x();
   
   if (this->fixYAxis)
   {
@@ -814,14 +801,17 @@ QPointF PlotViewWidget::convertPlotPosToPixelPos(const QPointF &plotPos) const
   }
   else
   {
-    const auto pixelPosY = this->propertiesAxis[1].line.p1().y() - (plotPos.y() * this->zoomToPixelsPerValueY) * this->zoomFactor + this->moveOffset.y();
+    const auto pixelPosY = this->propertiesAxis[1].line.p1().y() - (plotPos.y() * this->zoomToPixelsPerValueY) * (*zoomFactor) + this->moveOffset.y();
     return {pixelPosX, pixelPosY};
   }
 }
 
-QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos) const
+QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos, std::optional<double> zoomFactor) const
 {
-  const auto valueX = ((pixelPos.x() - this->propertiesAxis[0].line.p1().x() - this->moveOffset.x()) / this->zoomFactor) / this->zoomToPixelsPerValueX;
+  if (!zoomFactor)
+    zoomFactor = this->zoomFactor;
+  
+  const auto valueX = ((pixelPos.x() - this->propertiesAxis[0].line.p1().x() - this->moveOffset.x()) / (*zoomFactor)) / this->zoomToPixelsPerValueX;
 
   if (this->fixYAxis)
   {
@@ -830,7 +820,7 @@ QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos) const
   }
   else
   {
-    const auto valueY = ((- pixelPos.y() + this->propertiesAxis[1].line.p1().y() + this->moveOffset.y()) / this->zoomFactor) / this->zoomToPixelsPerValueY;
+    const auto valueY = ((- pixelPos.y() + this->propertiesAxis[1].line.p1().y() + this->moveOffset.y()) / (*zoomFactor)) / this->zoomToPixelsPerValueY;
     return {valueX, valueY};
   }
 }

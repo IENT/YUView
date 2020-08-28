@@ -108,8 +108,8 @@ private:
   void drawZoomRect(QPainter &painter, const QRectF plotRect) const;
 
   // Convert a position in the 2D coordinate system of the plot into a pixel position and vise versa
-  QPointF convertPlotPosToPixelPos(const QPointF &plotPos) const;
-  QPointF convertPixelPosToPlotPos(const QPointF &pixelPos) const;
+  QPointF convertPlotPosToPixelPos(const QPointF &plotPos, std::optional<double> zoomFactor = {}) const;
+  QPointF convertPixelPosToPlotPos(const QPointF &pixelPos, std::optional<double> zoomFactor = {}) const;
 
   void onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) override;
 
