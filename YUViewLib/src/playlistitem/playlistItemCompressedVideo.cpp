@@ -107,9 +107,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     // Open file
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Open annexB file");
-    inputFileAnnexBLoading.reset(new fileSourceAnnexBFile(compressedFilePath));
+    inputFileAnnexBLoading.reset(new FileSourceAnnexBFile(compressedFilePath));
     if (cachingEnabled)
-      inputFileAnnexBCaching.reset(new fileSourceAnnexBFile(compressedFilePath));
+      inputFileAnnexBCaching.reset(new FileSourceAnnexBFile(compressedFilePath));
     // inputFormatType a parser
     if (inputFormatType == inputAnnexBHEVC)
     {
@@ -150,7 +150,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     // Try ffmpeg to open the file
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Open file using ffmpeg");
-    inputFileFFmpegLoading.reset(new fileSourceFFmpegFile());
+    inputFileFFmpegLoading.reset(new FileSourceFFmpegFile());
     if (!inputFileFFmpegLoading->openFile(compressedFilePath, mainWindow))
     {
       setError("Error opening file using libavcodec.");
@@ -187,7 +187,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     if (cachingEnabled)
     {
       // Open the file again for caching
-      inputFileFFmpegCaching.reset(new fileSourceFFmpegFile());
+      inputFileFFmpegCaching.reset(new FileSourceFFmpegFile());
       if (!inputFileFFmpegCaching->openFile(compressedFilePath, mainWindow, inputFileFFmpegLoading.data()))
       {
         setError("Error opening file a second time using libavcodec for caching.");
@@ -325,7 +325,7 @@ playlistItemCompressedVideo *playlistItemCompressedVideo::newPlaylistItemCompres
   int displaySignal = root.findChildValue("displayComponent").toInt();
 
   // check if file with absolute path exists, otherwise check relative path
-  QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+  QString filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
     return nullptr;
 

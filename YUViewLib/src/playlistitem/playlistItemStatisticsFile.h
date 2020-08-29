@@ -34,7 +34,7 @@
 
 #include <QBasicTimer>
 #include <QFuture>
-#include "filesource/fileSource.h"
+#include "filesource/FileSource.h"
 #include "playlistItem.h"
 #include "statistics/statisticHandler.h"
 
@@ -118,7 +118,7 @@ protected:
   // If an error occurred while parsing, this error text will be set and can be shown
   QString parsingError;
 
-  fileSource file;
+  FileSource file;
 
   int currentDrawnFrameIdx;
 };

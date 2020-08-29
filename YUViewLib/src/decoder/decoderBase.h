@@ -34,7 +34,7 @@
 
 #include <QLibrary>
 
-#include "filesource/fileSourceAnnexBFile.h"
+#include "filesource/FileSourceAnnexBFile.h"
 #include "statistics/statisticHandler.h"
 #include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"

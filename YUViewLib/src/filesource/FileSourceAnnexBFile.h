@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "fileSource.h"
+#include "FileSource.h"
 #include "video/videoHandlerYUV.h"
 
 using namespace YUV_Internals;
@@ -40,18 +40,18 @@ using namespace YUV_Internals;
 // Internally, we use a buffer which we only update if necessary
 #define BUFFER_SIZE 500000
 
-/* This class is a normal fileSource for opening of raw AnnexBFiles.
+/* This class is a normal FileSource for opening of raw AnnexBFiles.
  * Basically it understands that this is a binary file where each unit starts with a start code (0x0000001)
  * TODO: The reading / parsing could be performed in a background thread in order to increase the performance
 */
-class fileSourceAnnexBFile : public fileSource
+class FileSourceAnnexBFile : public FileSource
 {
   Q_OBJECT
 
 public:
-  fileSourceAnnexBFile();
-  fileSourceAnnexBFile(const QString &filePath) : fileSourceAnnexBFile() { openFile(filePath); }
-  ~fileSourceAnnexBFile() {};
+  FileSourceAnnexBFile();
+  FileSourceAnnexBFile(const QString &filePath) : FileSourceAnnexBFile() { openFile(filePath); }
+  ~FileSourceAnnexBFile() {};
 
   // Open the given file. If another file is given, 
   bool openFile(const QString &filePath) Q_DECL_OVERRIDE;

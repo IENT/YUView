@@ -39,7 +39,7 @@
 
 #include "common/BitratePlotModel.h"
 #include "common/TreeItem.h"
-#include "filesource/fileSourceAnnexBFile.h"
+#include "filesource/FileSourceAnnexBFile.h"
 #include "parserBase.h"
 #include "video/videoHandlerYUV.h"
 
@@ -108,7 +108,7 @@ public:
 
   std::optional<pairUint64> getFrameStartEndPos(int codingOrderFrameIdx);
 
-  bool parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QWidget *mainWindow=nullptr);
+  bool parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow=nullptr);
 
   // Called from the bitstream analyzer. This function can run in a background process.
   bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;

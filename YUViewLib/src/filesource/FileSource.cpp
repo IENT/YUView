@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "fileSource.h"
+#include "FileSource.h"
 
 #include <QDateTime>
 #include <QDir>
@@ -48,15 +48,15 @@
 #include <QThread>
 #endif
 
-fileSource::fileSource()
+FileSource::FileSource()
 {
   fileChanged = false;
   isFileOpened = false;
 
-  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSource::fileSystemWatcherFileChanged);
+  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &FileSource::fileSystemWatcherFileChanged);
 }
 
-bool fileSource::openFile(const QString &filePath)
+bool FileSource::openFile(const QString &filePath)
 {
   // Check if the file exists
   fileInfo.setFile(filePath);
@@ -84,7 +84,7 @@ bool fileSource::openFile(const QString &filePath)
 
 #if SSE_CONVERSION
 // Resize the target array if necessary and read the given number of bytes to the data array
-void fileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int64_t nrBytes)
+void FileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
   if(!isOk())
     return;
@@ -98,7 +98,7 @@ void fileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int
 #endif
 
 // Resize the target array if necessary and read the given number of bytes to the data array
-int64_t fileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes)
+int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
   if(!isOk())
     return 0;
@@ -116,7 +116,7 @@ int64_t fileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_
   return srcFile.read(targetBuffer.data(), nrBytes);
 }
 
-QList<infoItem> fileSource::getFileInfoList() const
+QList<infoItem> FileSource::getFileInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -145,9 +145,9 @@ QList<infoItem> fileSource::getFileInfoList() const
   return infoList;
 }
 
-fileSource::fileFormat_t fileSource::formatFromFilename(QFileInfo fileInfo)
+FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
 {
-  fileSource::fileFormat_t format;
+  FileSource::fileFormat_t format;
 
   // We are going to check two strings (one after the other) for indicators on the frames size, fps and bit depth.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -298,7 +298,7 @@ fileSource::fileFormat_t fileSource::formatFromFilename(QFileInfo fileInfo)
 // If you are loading a playlist and you have an absolute path and a relative path, this function will return
 // the absolute path (if a file with that absolute path exists) or convert the relative path to an absolute
 // one and return that (if that file exists). If neither exists the empty string is returned.
-QString fileSource::getAbsPathFromAbsAndRel(const QString &currentPath, const QString &absolutePath, const QString &relativePath)
+QString FileSource::getAbsPathFromAbsAndRel(const QString &currentPath, const QString &absolutePath, const QString &relativePath)
 {
   QFileInfo checkAbsoluteFile(absolutePath);
   if (checkAbsoluteFile.exists())
@@ -315,7 +315,7 @@ QString fileSource::getAbsPathFromAbsAndRel(const QString &currentPath, const QS
   return QString();
 }
 
-void fileSource::updateFileWatchSetting()
+void FileSource::updateFileWatchSetting()
 {
   // Install a file watcher if file watching is active in the settings.
   // The addPath/removePath functions will do nothing if called twice for the same file.
@@ -326,7 +326,7 @@ void fileSource::updateFileWatchSetting()
     fileWatcher.removePath(fullFilePath);
 }
 
-void fileSource::clearFileCache()
+void FileSource::clearFileCache()
 {
   if (!isFileOpened)
     return;

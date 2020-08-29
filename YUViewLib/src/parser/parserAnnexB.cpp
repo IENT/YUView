@@ -133,7 +133,7 @@ std::optional<pairUint64> parserAnnexB::getFrameStartEndPos(int codingOrderFrame
   return frameList[codingOrderFrameIdx].fileStartEndPos;
 }
 
-bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QWidget *mainWindow)
+bool parserAnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow)
 {
   DEBUG_ANNEXB("parserAnnexB::parseAnnexBFile");
 
@@ -252,7 +252,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
 bool parserAnnexB::runParsingOfFile(QString compressedFilePath)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
-  QScopedPointer<fileSourceAnnexBFile> file(new fileSourceAnnexBFile(compressedFilePath));
+  QScopedPointer<FileSourceAnnexBFile> file(new FileSourceAnnexBFile(compressedFilePath));
   return parseAnnexBFile(file);
 }
 

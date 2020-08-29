@@ -480,7 +480,7 @@ public:
   uint8_t *get_data()          { update(); return data; }
   int      get_data_size()     { update(); return size; }
 
-  // This info is set externally (in fileSourceFFmpegFile) based on the stream info
+  // This info is set externally (in FileSourceFFmpegFile) based on the stream info
   PacketType getPacketType()                      { return packetType; }
   void       setPacketType(PacketType packetType) { this->packetType = packetType; }
   

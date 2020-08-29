@@ -1,14 +1,14 @@
 #include <QtTest>
 
-#include <filesource/fileSource.h>
+#include <filesource/FileSource.h>
 
-class fileSourceTest : public QObject
+class FileSourceTest : public QObject
 {
   Q_OBJECT
 
 public:
-  fileSourceTest();
-  ~fileSourceTest();
+  FileSourceTest();
+  ~FileSourceTest();
 
 private slots:
   void testFormatFromFilename_data();
@@ -16,15 +16,15 @@ private slots:
 
 };
 
-fileSourceTest::fileSourceTest()
+FileSourceTest::FileSourceTest()
 {
 }
 
-fileSourceTest::~fileSourceTest()
+FileSourceTest::~FileSourceTest()
 {
 }
 
-void fileSourceTest::testFormatFromFilename_data()
+void FileSourceTest::testFormatFromFilename_data()
 {
   QTest::addColumn<QString>("filename");
   QTest::addColumn<int>("width");
@@ -101,7 +101,7 @@ void fileSourceTest::testFormatFromFilename_data()
   QTest::newRow("testIssue211") << "sample_1280x720_16b_yuv16le_packed_444_20200109_114812" << 1280 << 720 << -1 << 16 << true;
 }
 
-void fileSourceTest::testFormatFromFilename()
+void FileSourceTest::testFormatFromFilename()
 {
   QFETCH(QString, filename);
   QFETCH(int, width);
@@ -111,7 +111,7 @@ void fileSourceTest::testFormatFromFilename()
   QFETCH(bool, packed);
 
   QFileInfo fileInfo(filename);
-  auto fileFormat = fileSource::formatFromFilename(fileInfo);
+  auto fileFormat = FileSource::formatFromFilename(fileInfo);
 
   QCOMPARE(fileFormat.frameSize.width(), width);
   QCOMPARE(fileFormat.frameSize.height(), height);
@@ -120,6 +120,6 @@ void fileSourceTest::testFormatFromFilename()
   QCOMPARE(fileFormat.packed, packed);
 }
 
-QTEST_MAIN(fileSourceTest)
+QTEST_MAIN(FileSourceTest)
 
 #include "tst_filesource.moc"

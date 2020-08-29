@@ -37,7 +37,7 @@
 #include <QUrl>
 
 #include "common/functions.h"
-#include "filesource/fileSource.h"
+#include "filesource/FileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
   : playlistItemWithVideo(rawFilePath, playlistItem_Indexed)
@@ -217,7 +217,7 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
       break;
   
     // check if file with absolute path exists, otherwise check relative path
-    QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+    QString filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
     
     // Check if the file exists
     QFileInfo fileInfo(filePath);

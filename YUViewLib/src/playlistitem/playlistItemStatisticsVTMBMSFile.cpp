@@ -79,7 +79,7 @@ void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
   {
     // Open the file (again). Since this is a background process, we open the file again to
     // not disturb any reading from not background code.
-    fileSource inputFile;
+    FileSource inputFile;
     if (!inputFile.openFile(file.absoluteFilePath()))
       return;
 
@@ -593,7 +593,7 @@ playlistItemStatisticsVTMBMSFile *playlistItemStatisticsVTMBMSFile::newplaylistI
   QString relativePath = root.findChildValue("relativePath");
 
   // check if file with absolute path exists, otherwise check relative path
-  QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+  QString filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
     return nullptr;
 

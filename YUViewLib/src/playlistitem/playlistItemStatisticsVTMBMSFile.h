@@ -36,7 +36,7 @@
 #include <QFuture>
 #include <QRegularExpression>
 
-#include "filesource/fileSource.h"
+#include "filesource/FileSource.h"
 #include "playlistItemStatisticsFile.h"
 #include "statistics/statisticHandler.h"
 
