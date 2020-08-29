@@ -153,8 +153,7 @@ void PlotViewWidget::zoomToFitInternal()
   auto visibleRange = this->getVisibleRange(Axis::X);
   if (!visibleRange)
     return;
-
-  this->viewInitializedForModel = true;
+  
   this->update();
 }
 
@@ -866,5 +865,10 @@ void PlotViewWidget::initViewFromModel()
   if (this->viewInitializedForModel || !this->model)
     return;
 
-  this->zoomToFitInternal();
+  const auto range = this->model->getReasonabelRangeToShowOnXAxisPer100Pixels();
+  if (range)
+  {
+    this->zoomToPixelsPerValueX = 100.0 / double(*range);
+    this->update();
+  }
 }

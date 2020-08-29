@@ -97,6 +97,7 @@ public:
   virtual StreamParameter getStreamParameter(unsigned streamIndex) const = 0;
   virtual Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
   virtual QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
+  virtual std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const = 0;
 
   std::optional<unsigned> getPointIndex(unsigned streamIndex, unsigned plotIndex, QPointF point) const;
 

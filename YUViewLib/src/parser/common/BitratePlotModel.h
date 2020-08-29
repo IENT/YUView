@@ -49,6 +49,7 @@ public:
   PlotModel::StreamParameter getStreamParameter(unsigned streamIndex) const override;
   PlotModel::Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
   QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
+  std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const override;
   
   QString getItemInfoText(int index);
 
