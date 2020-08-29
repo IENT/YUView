@@ -90,7 +90,6 @@ private slots:
   void onMenuZoomTo100(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomTo100(checked); }
   void onMenuZoomTo200(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomTo200(checked); }
   void onMenuZoomToCustom(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomToCustom(checked); }
-  void onMenuFullScreen(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->toggleFullScreen(checked); }
   
   void openRecentFile();
 

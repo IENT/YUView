@@ -1116,6 +1116,12 @@ void splitViewWidget::toggleSeparateWindow(bool checked)
   emit signalShowSeparateWindow(checked);
 }
 
+void splitViewWidget::toggleFullScreen(bool checked) 
+{ 
+  Q_UNUSED(checked);
+  emit this->signalToggleFullScreen();
+}
+
 void splitViewWidget::resetViewInternal()
 {
   this->setSplittingPoint(0.5);
@@ -1556,6 +1562,8 @@ void splitViewWidget::createMenuActions()
     actionSeparateViewLink.setToolTip("Link the second view so that any change in one view is also applied in the other view.");
     actionSeparateViewPlaybackBoth.setToolTip("For performance reasons playback only runs in one (the second) view. Activate this to run playback in both views siultaneously.");
   }
+
+  configureCheckableAction(actionFullScreen, nullptr, "&Fullscreen Mode", false, &splitViewWidget::toggleFullScreen, Qt::CTRL + Qt::Key_F);
 }
 
 void splitViewWidget::addContextMenuActions(QMenu *menu)
@@ -1748,6 +1756,8 @@ void splitViewWidget::addMenuActions(QMenu *menu)
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewLink : &actionSeparateViewLink);
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewPlaybackBoth : &actionSeparateViewPlaybackBoth);
   separateViewMenu->setToolTipsVisible(true);
+
+  menu->addAction(&this->actionFullScreen);
 
   menu->setToolTipsVisible(true);
 }

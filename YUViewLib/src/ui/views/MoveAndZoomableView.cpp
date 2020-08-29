@@ -70,18 +70,15 @@ void MoveAndZoomableView::addSlaveView(MoveAndZoomableView *view)
 
 void MoveAndZoomableView::addContextMenuActions(QMenu *menu)
 {
-  QMenu *zoomMenu = menu->addMenu("Zoom");
-  zoomMenu->addAction("Zoom to 1:1", this, &MoveAndZoomableView::resetView, Qt::CTRL + Qt::Key_0);
-  zoomMenu->addAction("Zoom to Fit", this, &MoveAndZoomableView::zoomToFit, Qt::CTRL + Qt::Key_9);
-  zoomMenu->addAction("Zoom in", this, &MoveAndZoomableView::zoomIn, Qt::CTRL + Qt::Key_Plus);
-  zoomMenu->addAction("Zoom out", this, &MoveAndZoomableView::zoomOut, Qt::CTRL + Qt::Key_Minus);
-  zoomMenu->addSeparator();
-  zoomMenu->addAction("Zoom to 50%", this, &MoveAndZoomableView::zoomTo50);
-  zoomMenu->addAction("Zoom to 100%", this, &MoveAndZoomableView::zoomTo100);
-  zoomMenu->addAction("Zoom to 200%", this, &MoveAndZoomableView::zoomTo200);
-  zoomMenu->addAction("Zoom to ...", this, &MoveAndZoomableView::zoomToCustom);
-  
-  menu->addAction("Full Screen", this, &MoveAndZoomableView::toggleFullScreen);
+  menu->addAction("Zoom to 1:1", this, &MoveAndZoomableView::resetView, Qt::CTRL + Qt::Key_0);
+  menu->addAction("Zoom to Fit", this, &MoveAndZoomableView::zoomToFit, Qt::CTRL + Qt::Key_9);
+  menu->addAction("Zoom in", this, &MoveAndZoomableView::zoomIn, Qt::CTRL + Qt::Key_Plus);
+  menu->addAction("Zoom out", this, &MoveAndZoomableView::zoomOut, Qt::CTRL + Qt::Key_Minus);
+  menu->addSeparator();
+  menu->addAction("Zoom to 50%", this, &MoveAndZoomableView::zoomTo50);
+  menu->addAction("Zoom to 100%", this, &MoveAndZoomableView::zoomTo100);
+  menu->addAction("Zoom to 200%", this, &MoveAndZoomableView::zoomTo200);
+  menu->addAction("Zoom to ...", this, &MoveAndZoomableView::zoomToCustom);
 }
 
 // Handle the key press event (if this widgets handles it). If not, return false.
@@ -644,12 +641,6 @@ void MoveAndZoomableView::zoomToCustom(bool checked)
   int newValue = QInputDialog::getInt(this, "Zoom to custom value", "Please select a zoom factor in percent", 100, 1, 2147483647, 1, &ok);
   if (ok)
     zoom(ZoomMode::TO_VALUE, QPoint(), double(newValue) / 100);
-}
-
-void MoveAndZoomableView::toggleFullScreen(bool checked) 
-{ 
-  Q_UNUSED(checked);
-  emit this->signalToggleFullScreen();
 }
 
 void MoveAndZoomableView::setLinkState(bool enabled)

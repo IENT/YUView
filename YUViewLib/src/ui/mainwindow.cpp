@@ -261,8 +261,6 @@ void MainWindow::createMenusAndActions()
   zoomMenu->addAction("Zoom to 200%", this, &MainWindow::onMenuZoomTo200);
   zoomMenu->addAction("Zoom to ...", this, &MainWindow::onMenuZoomToCustom);
   
-  viewMenu->addAction("Full Screen", this, &MainWindow::onMenuFullScreen);
-
   // The playback menu
   QMenu *playbackMenu = menuBar()->addMenu(tr("&Playback"));
   playbackMenu->addAction("Play/Pause", ui.playbackController, &PlaybackController::on_playPauseButton_clicked, Qt::Key_Space);
@@ -409,13 +407,14 @@ bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
   {
     if (isFullScreen())
     {
-      this->onMenuFullScreen(true);
+
+      ui.displaySplitView->toggleFullScreenAction();
       return true;
     }
   }
   else if (key == Qt::Key_F && controlOnly)
   {
-    this->onMenuFullScreen(isFullScreen());
+    ui.displaySplitView->toggleFullScreenAction();
     return true;
   }
   else if (key == Qt::Key_Space)

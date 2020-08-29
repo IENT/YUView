@@ -55,9 +55,6 @@ public:
   // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
   virtual bool handleKeyPress(QKeyEvent *event);
 
-signals:
-  void signalToggleFullScreen();
-
 public slots:
   void setLinkState(bool enabled);
 
@@ -70,14 +67,11 @@ public slots:
   void zoomTo200(bool checked) { Q_UNUSED(checked); this->zoom(ZoomMode::TO_VALUE, QPoint(), 2.0); }
   void zoomToCustom(bool checked);
 
-  void toggleFullScreen(bool checked);
-
 protected:
   virtual void mouseMoveEvent(QMouseEvent *event) override;
   virtual void mousePressEvent(QMouseEvent *event) override;
   virtual void mouseReleaseEvent(QMouseEvent *event) override;
   virtual void wheelEvent (QWheelEvent *event) override;
-  virtual void mouseDoubleClickEvent(QMouseEvent *event) override { this->toggleFullScreen(false); event->accept(); }
   virtual void keyPressEvent(QKeyEvent *event) override;
   virtual void resizeEvent(QResizeEvent *event) override;
   virtual bool event(QEvent *event) override; ///< Handle touch event

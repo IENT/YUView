@@ -112,6 +112,8 @@ signals:
   // Show (or hide) the separate window
   void signalShowSeparateWindow(bool show);
 
+  void signalToggleFullScreen();
+
 public slots:
 
   // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
@@ -119,6 +121,7 @@ public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
 
   void triggerActionSeparateView() { actionSeparateView.trigger(); }
+  void toggleFullScreenAction() { actionFullScreen.trigger(); }
 
 private slots:
 
@@ -134,9 +137,9 @@ private slots:
   void gridSetCustom(bool checked);
 
   void toggleZoomBox(bool checked);
-
   void toggleSeparateWindow(bool checked);
   void toggleSeparateWindowPlaybackBoth(bool checked) { Q_UNUSED(checked); };
+  void toggleFullScreen(bool checked);
 
 protected:
   
@@ -153,6 +156,7 @@ protected:
   virtual void mousePressEvent(QMouseEvent *event) override;
   virtual void mouseReleaseEvent(QMouseEvent *event) override;
   virtual void wheelEvent (QWheelEvent *event) override;
+  virtual void mouseDoubleClickEvent(QMouseEvent *event) override { this->actionFullScreen.trigger(); event->accept(); }
 
   virtual void onSwipeLeft() override;
   virtual void onSwipeRight() override;
@@ -169,6 +173,7 @@ protected:
   QAction actionSeparateViewLink;
   QAction actionSeparateViewPlaybackBoth;
   QAction actionZoomBox;
+  QAction actionFullScreen;
 
   void updateMouseTracking();
   virtual bool updateMouseCursor(const QPoint &srcMousePos) override;
