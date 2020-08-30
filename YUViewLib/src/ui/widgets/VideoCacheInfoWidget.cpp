@@ -44,11 +44,9 @@
 #define DEBUG_CACHINGINFO(fmt,...) ((void)0)
 #endif
 
-/// ----------------------- videoCacheStatusWidget -------------------------
+using namespace VideoCacheStatusWidgetNamespace;
 
-using namespace videoCacheStatusWidgetNamespace;
-
-void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
+void VideoCacheStatusWidget::paintEvent(QPaintEvent *event)
 {
   Q_UNUSED(event);
 
@@ -92,7 +90,7 @@ void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
   painter.drawRect(0, 0, width-1, height-1);
 }
 
-void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned int cacheRate)
+void VideoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned int cacheRate)
 {
   // Get all items from the playlist
   QList<playlistItem*> allItems = playlist->getAllPlaylistItems();
@@ -116,7 +114,7 @@ void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned
     int nrFrames = item->getNumberCachedFrames();
     unsigned int frameSize = item->getCachingFrameSize();
     int64_t itemCacheSize = nrFrames * frameSize;
-    DEBUG_CACHINGINFO("videoCacheStatusWidget::updateStatus Item %d frames %d * size %d = %d", i, nrFrames, frameSize, (int)itemCacheSize);
+    DEBUG_CACHINGINFO("VideoCacheStatusWidget::updateStatus Item %d frames %d * size %d = %d", i, nrFrames, frameSize, (int)itemCacheSize);
 
     float endVal = (float)(cacheLevel + itemCacheSize) / cacheLevelMax;
     relativeValsEnd.append(endVal);
@@ -136,7 +134,7 @@ void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned
 VideoCacheInfoWidget::VideoCacheInfoWidget(QWidget *parent) : QWidget(parent)
 {
   // Create the video cache status widget
-  statusWidget = new videoCacheStatusWidget(this);
+  statusWidget = new VideoCacheStatusWidget(this);
   statusWidget->setMinimumHeight(20);
 
   // Create a QGroupBox with text label inside

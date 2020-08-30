@@ -33,12 +33,7 @@
 #pragma once
 
 #include "FileSource.h"
-#include "video/videoHandlerYUV.h"
-
-using namespace YUV_Internals;
-
-// Internally, we use a buffer which we only update if necessary
-#define BUFFER_SIZE 500000
+#include "common/typedef.h"
 
 /* This class is a normal FileSource for opening of raw AnnexBFiles.
  * Basically it understands that this is a binary file where each unit starts with a start code (0x0000001)
@@ -53,11 +48,10 @@ public:
   FileSourceAnnexBFile(const QString &filePath) : FileSourceAnnexBFile() { openFile(filePath); }
   ~FileSourceAnnexBFile() {};
 
-  // Open the given file. If another file is given, 
-  bool openFile(const QString &filePath) Q_DECL_OVERRIDE;
+  bool openFile(const QString &filePath) override;
 
   // Is the file at the end?
-  bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize < BUFFER_SIZE && posInBuffer >= fileBufferSize; }
+  bool atEnd() const override;
 
   // --- Retrieving of data from the file ---
   // You can either read a file NAL by NAL or frame by frame. Do not mix the two interfaces.
@@ -73,7 +67,9 @@ public:
   QByteArray getFrameData(pairUint64 startEndFilePos);
   
   // Seek the file to the given byte position. Update the buffer.
-  bool seek(int64_t pos) Q_DECL_OVERRIDE;
+  bool seek(int64_t pos) override;
+
+  uint64_t getNrBytesBeforeFirstNAL() const { return this->nrBytesBeforeFirstNAL; }
 
 protected:
 
@@ -85,9 +81,6 @@ protected:
   // So if the start code is 0001 it will point to the first byte (the first 0). If the start code is 001, it will point to the first 0 here.
   unsigned int posInBuffer {0};
 
-  // The start code pattern
-  QByteArray startCode;
-
   // load the next buffer
   bool updateBuffer();
 
@@ -96,4 +89,6 @@ protected:
 
   // We will keep the last buffer in case the reader wants to get it again
   QByteArray lastReturnArray;
+
+  uint64_t nrBytesBeforeFirstNAL {0};
 };

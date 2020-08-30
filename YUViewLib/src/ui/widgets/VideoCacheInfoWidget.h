@@ -37,14 +37,14 @@
 #include "playlistTreeWidget.h"
 #include "video/videoCache.h"
 
-namespace videoCacheStatusWidgetNamespace
+namespace VideoCacheStatusWidgetNamespace
 {
-  class videoCacheStatusWidget : public QWidget
+  class VideoCacheStatusWidget : public QWidget
   {
     Q_OBJECT
 
     public:
-    videoCacheStatusWidget(QWidget *parent) : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0) {}
+    VideoCacheStatusWidget(QWidget *parent) : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0) {}
     // Override the paint event
     virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
     void updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
@@ -73,7 +73,7 @@ private slots:
   void onGroupBoxToggled(bool on);
 
 private:
-  videoCacheStatusWidgetNamespace::videoCacheStatusWidget *statusWidget {nullptr};
+  VideoCacheStatusWidgetNamespace::VideoCacheStatusWidget *statusWidget {nullptr};
   QLabel *cachingInfoLabel {nullptr};
 
   PlaylistTreeWidget *playlist {nullptr};

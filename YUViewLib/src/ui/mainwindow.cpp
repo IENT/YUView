@@ -44,7 +44,7 @@
 #include "mainwindow_performanceTestDialog.h"
 #include "playlistitem/playlistItems.h"
 #include "settingsDialog.h"
-#include "ui/playlistTreeWidget.h"
+#include "ui/widgets/PlaylistTreeWidget.h"
 
 MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindow(parent)
 {

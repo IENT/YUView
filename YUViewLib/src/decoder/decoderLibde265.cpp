@@ -283,7 +283,7 @@ bool decoderLibde265::decodeFrame()
     if (!s.isValid())
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(de265_get_chroma_format(curImage));
-    if (subsampling == Subsampling::UNKNOWN)
+    if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid subsampling");
     int bitDepth = de265_get_bits_per_pixel(curImage, 0);
     if (bitDepth < 8 || bitDepth > 16)
@@ -293,7 +293,7 @@ bool decoderLibde265::decodeFrame()
     {
       // Set the values
       frameSize = s;
-      formatYUV = yuvPixelFormat(subsampling, bitDepth);
+      formatYUV = YUV_Internals::yuvPixelFormat(subsampling, bitDepth);
     }
     else
     {
@@ -915,16 +915,16 @@ QStringList decoderLibde265::getLibraryNames()
   return libNames;
 }
 
-Subsampling decoderLibde265::convertFromInternalSubsampling(de265_chroma fmt)
+YUV_Internals::Subsampling decoderLibde265::convertFromInternalSubsampling(de265_chroma fmt)
 {
   if (fmt == de265_chroma_mono)
-    return Subsampling::YUV_400;
+    return YUV_Internals::Subsampling::YUV_400;
   else if (fmt == de265_chroma_420)
-    return Subsampling::YUV_420;
+    return YUV_Internals::Subsampling::YUV_420;
   else if (fmt == de265_chroma_422)
-    return Subsampling::YUV_422;
+    return YUV_Internals::Subsampling::YUV_422;
   else if (fmt == de265_chroma_444)
-    return Subsampling::YUV_444;
+    return YUV_Internals::Subsampling::YUV_444;
   
-  return Subsampling::UNKNOWN;
+  return YUV_Internals::Subsampling::UNKNOWN;
 }

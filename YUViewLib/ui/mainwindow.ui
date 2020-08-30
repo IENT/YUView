@@ -273,7 +273,7 @@
   <customwidget>
    <class>PlaylistTreeWidget</class>
    <extends>QTreeWidget</extends>
-   <header>ui/playlistTreeWidget.h</header>
+   <header>ui/widgets/PlaylistTreeWidget.h</header>
   </customwidget>
   <customwidget>
    <class>splitViewWidget</class>
@@ -290,25 +290,25 @@
   <customwidget>
    <class>FileInfoWidget</class>
    <extends>QWidget</extends>
-   <header>ui/fileInfoWidget.h</header>
+   <header>ui/widgets/FileInfoWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PropertiesWidget</class>
    <extends>QWidget</extends>
-   <header>ui/propertiesWidget.h</header>
+   <header>ui/widgets/PropertiesWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>VideoCacheInfoWidget</class>
    <extends>QWidget</extends>
-   <header>ui/videoCacheInfoWidget.h</header>
+   <header>ui/widgets/VideoCacheInfoWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>BitstreamAnalysisWidget</class>
    <extends>QWidget</extends>
-   <header>ui/bitstreamAnalysisWidget.h</header>
+   <header>ui/widgets/BitstreamAnalysisWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

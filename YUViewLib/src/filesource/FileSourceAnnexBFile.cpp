@@ -35,116 +35,125 @@
 #define ANNEXBFILE_DEBUG_OUTPUT 0
 #if ANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_ANNEXBFILEFILE qDebug
+#define DEBUG_ANNEXBFILEFILE(f) qDebug() << f
 #else
-#define DEBUG_ANNEXBFILE(fmt,...) ((void)0)
+#define DEBUG_ANNEXBFILE(f) ((void)0)
 #endif
+
+const auto BUFFERSIZE = 500000;
+const auto STARTCODE = QByteArrayLiteral("\x00\x00\x01");
 
 FileSourceAnnexBFile::FileSourceAnnexBFile()
 {
-  fileBuffer.resize(BUFFER_SIZE);
-  
-  // Set the start code to look for (0x00 0x00 0x01)
-  startCode.append((char)0);
-  startCode.append((char)0);
-  startCode.append((char)1);
+  this->fileBuffer.resize(BUFFERSIZE);
 }
 
 // Open the file and fill the read buffer. 
 bool FileSourceAnnexBFile::openFile(const QString &fileName)
 {
-  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::openFile fileName %s", fileName);
+  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::openFile fileName " << fileName);
 
   // Open the input file (again)
   FileSource::openFile(fileName);
 
   // Fill the buffer
-  fileBufferSize = srcFile.read(fileBuffer.data(), BUFFER_SIZE);
-  if (fileBufferSize == 0)
+  this->fileBufferSize = srcFile.read(this->fileBuffer.data(), BUFFERSIZE);
+  if (this->fileBufferSize == 0)
     // The file is empty of there was an error reading from the file.
     return false;
 
   // Discard all bytes until we find a start code
-  seekToFirstNAL();
+  this->seekToFirstNAL();
   return true;
+}
+
+bool FileSourceAnnexBFile::atEnd() const
+{ 
+  return this->fileBufferSize < BUFFERSIZE && this->posInBuffer >= this->fileBufferSize; 
 }
 
 void FileSourceAnnexBFile::seekToFirstNAL()
 {
-  int nextStartCodePos = fileBuffer.indexOf(startCode, posInBuffer);
+  int nextStartCodePos = this->fileBuffer.indexOf(STARTCODE, this->posInBuffer);
   if (nextStartCodePos == -1)
     // The first buffer does not contain a start code. This is very unusual. Use the normal getNextNALUnit to seek
-    getNextNALUnit();
+    this->getNextNALUnit();
   else
   {
     // For 0001 or 001 point to the first 0 byte
-    if (nextStartCodePos > 0 && fileBuffer.at(nextStartCodePos-1) ==(char)0)
-      posInBuffer = nextStartCodePos - 1;
+    if (nextStartCodePos > 0 && this->fileBuffer.at(nextStartCodePos-1) ==(char)0)
+      this->posInBuffer = nextStartCodePos - 1;
     else
-      posInBuffer = nextStartCodePos;
+      this->posInBuffer = nextStartCodePos;
   }
+
+  this->nrBytesBeforeFirstNAL = this->bufferStartPosInFile + this->posInBuffer;
 }
 
 QByteArray FileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, pairUint64 *startEndPosInFile)
 {
   if (getLastDataAgain)
-    return lastReturnArray;
+    return this->lastReturnArray;
 
-  lastReturnArray.clear();
+  this->lastReturnArray.clear();
 
   if (startEndPosInFile)
-    startEndPosInFile->first = bufferStartPosInFile + posInBuffer;
+    startEndPosInFile->first = this->bufferStartPosInFile + this->posInBuffer;
 
   int nextStartCodePos = -1;
   int searchOffset = 3;
   bool startCodeFound = false;
   while (!startCodeFound)
   {
-    nextStartCodePos = fileBuffer.indexOf(startCode, posInBuffer + searchOffset);
+    nextStartCodePos = this->fileBuffer.indexOf(STARTCODE, this->posInBuffer + searchOffset);
 
-    if (nextStartCodePos < 0 || (uint64_t)nextStartCodePos > fileBufferSize)
+    if (nextStartCodePos < 0 || (uint64_t)nextStartCodePos > this->fileBufferSize)
     {
       // No start code found ... append all data in the current buffer.
-      lastReturnArray += fileBuffer.mid(posInBuffer, fileBufferSize - posInBuffer);
-      DEBUG_ANNEXBFILE("FileSourceHEVCAnnexBFile::getNextNALUnit no start code found - ret size %d", retArray.size());
+      this->lastReturnArray += this->fileBuffer.mid(this->posInBuffer, this->fileBufferSize - this->posInBuffer);
+      DEBUG_ANNEXBFILE("FileSourceHEVCAnnexBFile::getNextNALUnit no start code found - ret size " << this->lastReturnArray.size());
 
-      if (fileBufferSize < BUFFER_SIZE)
+      if (this->fileBufferSize < BUFFERSIZE)
       {
         // We are out of file and could not find a next position
-        posInBuffer = BUFFER_SIZE;
+        this->posInBuffer = BUFFERSIZE;
         if (startEndPosInFile)
-          startEndPosInFile->second = bufferStartPosInFile + fileBufferSize - 1;
-        return lastReturnArray;
+          startEndPosInFile->second = this->bufferStartPosInFile + this->fileBufferSize - 1;
+        return this->lastReturnArray;
       }
 
       // Before we load the next bytes: The start code might be located at the boundary to the next buffer
-      const bool lastByteZero0 = fileBuffer.at(fileBufferSize - 3) == (char)0;
-      const bool lastByteZero1 = fileBuffer.at(fileBufferSize - 2) == (char)0;
-      const bool lastByteZero2 = fileBuffer.at(fileBufferSize - 1) == (char)0;
+      const auto lastByteZero0 = this->fileBuffer.at(this->fileBufferSize - 3) == (char)0;
+      const auto lastByteZero1 = this->fileBuffer.at(this->fileBufferSize - 2) == (char)0;
+      const auto lastByteZero2 = this->fileBuffer.at(this->fileBufferSize - 1) == (char)0;
 
       // We have to continue searching - get the next buffer
       updateBuffer();
       
-      if (fileBufferSize > 2)
+      if (this->fileBufferSize > 2)
       {
         // Now look for the special boundary case:
-        if (fileBuffer.at(0) == (char)1 && lastByteZero2 && lastByteZero1)
+        if (this->fileBuffer.at(0) == (char)1 && lastByteZero2 && lastByteZero1)
         {
           // Found a start code - the 1 byte is here and the two (or three) 0 bytes were in the last buffer
           startCodeFound = true;
           nextStartCodePos = lastByteZero0 ? -3 : -2;
+          this->lastReturnArray.chop(lastByteZero0 ? 3 : 2);
         }
-        else if (fileBuffer.at(0) == (char)0 && fileBuffer.at(1) == (char)1 && lastByteZero2)
+        else if (this->fileBuffer.at(0) == (char)0 && this->fileBuffer.at(1) == (char)1 && lastByteZero2)
         {
           // Found a start code - the 01 bytes are here and the one (or two) 0 bytes were in the last buffer
           startCodeFound = true;
           nextStartCodePos = lastByteZero1 ? -2 : -1;
+          this->lastReturnArray.chop(lastByteZero0 ? 1 : 1);
         }
-        else if (fileBuffer.at(0) == (char)0 && fileBuffer.at(1) == (char)0 && fileBuffer.at(2) == (char)1)
+        else if (this->fileBuffer.at(0) == (char)0 && this->fileBuffer.at(1) == (char)0 && this->fileBuffer.at(2) == (char)1)
         {
           // Found a start code - the 001 bytes are here. Check the last byte of the last buffer
           startCodeFound = true;
           nextStartCodePos = lastByteZero2 ? -1 : 0;
+          if (lastByteZero2)
+            this->lastReturnArray.chop(1);
         }
       }
 
@@ -154,18 +163,23 @@ QByteArray FileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, pairUint6
     {
       // Start code found. Check if the start code is 001 or 0001
       startCodeFound = true;
-      if (fileBuffer.at(nextStartCodePos - 1) == (char)0)
+      if (this->fileBuffer.at(nextStartCodePos - 1) == (char)0)
         nextStartCodePos--;
     }
   }
 
   // Position found
   if (startEndPosInFile)
-    startEndPosInFile->second = bufferStartPosInFile + nextStartCodePos;
-  lastReturnArray += fileBuffer.mid(posInBuffer, nextStartCodePos - posInBuffer);
-  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::getNextNALUnit start code found - ret size %d", lastReturnArray.size());
-  posInBuffer = nextStartCodePos;
-  return lastReturnArray;
+    startEndPosInFile->second = this->bufferStartPosInFile + nextStartCodePos;
+  
+  int diff = nextStartCodePos - int(this->posInBuffer);
+  if (nextStartCodePos > int(this->posInBuffer))
+    this->lastReturnArray += this->fileBuffer.mid(this->posInBuffer, nextStartCodePos - this->posInBuffer);
+  
+  
+  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::getNextNALUnit start code found - ret size " << this->lastReturnArray.size());
+  this->posInBuffer = nextStartCodePos;
+  return this->lastReturnArray;
 }
 
 QByteArray FileSourceAnnexBFile::getFrameData(pairUint64 startEndFilePos)
@@ -175,16 +189,16 @@ QByteArray FileSourceAnnexBFile::getFrameData(pairUint64 startEndFilePos)
   // When the extradata is set as raw NAL units, the AVPackets must also be raw NAL units.
   QByteArray retArray;
   
-  uint64_t start = startEndFilePos.first;
-  uint64_t end = startEndFilePos.second;
+  auto start = startEndFilePos.first;
+  auto end = startEndFilePos.second;
 
   // Seek the source file to the start position
-  seek(start);
+  this->seek(start);
 
   // Retrieve NAL units (and repackage them) until we reached out end position
-  while (end > bufferStartPosInFile + posInBuffer)
+  while (end > this->bufferStartPosInFile + this->posInBuffer)
   {
-    QByteArray nalData = getNextNALUnit();
+    auto nalData = getNextNALUnit();
 
     int headerOffset = 0;
     if (nalData.at(0) == (char)0 && nalData.at(1) == (char)0)
@@ -198,7 +212,7 @@ QByteArray FileSourceAnnexBFile::getFrameData(pairUint64 startEndFilePos)
     if (headerOffset == 3)
       retArray.append((char)0);
 
-    DEBUG_ANNEXBFILE("FileSourceAnnexBFile::getFrameData Load NAL - size %d", nalData.length());
+    DEBUG_ANNEXBFILE("FileSourceAnnexBFile::getFrameData Load NAL - size " << nalData.length());
     retArray += nalData;
   }
 
@@ -208,13 +222,13 @@ QByteArray FileSourceAnnexBFile::getFrameData(pairUint64 startEndFilePos)
 bool FileSourceAnnexBFile::updateBuffer()
 {
   // Save the position of the first byte in this new buffer
-  bufferStartPosInFile += fileBufferSize;
+  this->bufferStartPosInFile += this->fileBufferSize;
 
-  fileBufferSize = srcFile.read(fileBuffer.data(), BUFFER_SIZE);
-  posInBuffer = 0;
+  this->fileBufferSize = srcFile.read(this->fileBuffer.data(), BUFFERSIZE);
+  this->posInBuffer = 0;
 
-  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::updateBuffer fileBufferSize %d", fileBufferSize);
-  return (fileBufferSize > 0);
+  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::updateBuffer this->fileBufferSize " << this->fileBufferSize);
+  return (this->fileBufferSize > 0);
 }
 
 bool FileSourceAnnexBFile::seek(int64_t pos)
@@ -222,24 +236,24 @@ bool FileSourceAnnexBFile::seek(int64_t pos)
   if (!isFileOpened)
     return false;
 
-  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::seek ot %d", pos);
+  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::seek ot " << pos);
   // Seek the file and update the buffer
   srcFile.seek(pos);
-  fileBufferSize = srcFile.read(fileBuffer.data(), BUFFER_SIZE);
-  if (fileBufferSize == 0)
+  this->fileBufferSize = srcFile.read(this->fileBuffer.data(), BUFFERSIZE);
+  if (this->fileBufferSize == 0)
     // The file is empty of there was an error reading from the file.
     return false;
-  bufferStartPosInFile = pos;
-  posInBuffer = 0;
+  this->bufferStartPosInFile = pos;
+  this->posInBuffer = 0;
 
   if (pos == 0)
-    seekToFirstNAL();
+    this->seekToFirstNAL();
   else
   {
     // Check if we are at a start code position (001 or 0001)
-    if (fileBuffer.at(0) == (char)0 && fileBuffer.at(1) == (char)0 && fileBuffer.at(2) == (char)0 && fileBuffer.at(3) == (char)1)
+    if (this->fileBuffer.at(0) == (char)0 && this->fileBuffer.at(1) == (char)0 && this->fileBuffer.at(2) == (char)0 && this->fileBuffer.at(3) == (char)1)
       return true;
-    if (fileBuffer.at(0) == (char)0 && fileBuffer.at(1) == (char)0 && fileBuffer.at(2) == (char)1)
+    if (this->fileBuffer.at(0) == (char)0 && this->fileBuffer.at(1) == (char)0 && this->fileBuffer.at(2) == (char)1)
       return true;
 
     DEBUG_ANNEXBFILE("FileSourceAnnexBFile::seek could not find start code at seek position");

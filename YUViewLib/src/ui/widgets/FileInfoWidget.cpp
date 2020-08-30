@@ -37,7 +37,7 @@
 #include <QGridLayout>
 #include <QVariant>
 
-#include "labelElided.h"
+#include "QLabelElided.h"
 
 static const char kInfoIndex[] = "fi_infoIndex";
 static const char kInfoButtonID[] = "fi_buttonID";
@@ -110,7 +110,7 @@ int FileInfoWidget::addInfo(const infoData &data, int row, int infoIndex)
 
     if (!info.button)
     {
-      auto text = widgetAt<labelElided>(&grid, row, 1);
+      auto text = widgetAt<QLabelElided>(&grid, row, 1);
       text->setText(info.text);
       text->setToolTip(info.toolTip);
     }

@@ -130,7 +130,7 @@
   <customwidget>
    <class>QLabelClickable</class>
    <extends>QLabel</extends>
-   <header>common/typedef.h</header>
+   <header>ui/widgets/QLabelClickable.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

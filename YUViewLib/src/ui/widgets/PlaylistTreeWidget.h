@@ -39,7 +39,7 @@
 
 #include "playlistitem/playlistItem.h"
 #include "common/typedef.h"
-#include "ViewStateHandler.h"
+#include "ui/ViewStateHandler.h"
 
 class QDomElement;
 
