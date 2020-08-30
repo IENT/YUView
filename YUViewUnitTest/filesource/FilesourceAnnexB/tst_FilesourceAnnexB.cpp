@@ -14,8 +14,8 @@ public:
   ~FileSourceAnnexBTest();
 
 private slots:
-  void testFormatFromFilename_data();
-  void testFormatFromFilename();
+  void testNalUnitParsing_data();
+  void testNalUnitParsing();
 };
 
 FileSourceAnnexBTest::FileSourceAnnexBTest()
@@ -26,51 +26,51 @@ FileSourceAnnexBTest::~FileSourceAnnexBTest()
 {
 }
 
-void FileSourceAnnexBTest::testFormatFromFilename_data()
+void FileSourceAnnexBTest::testNalUnitParsing_data()
 {
-  QTest::addColumn<size_t>("startCodeLength");
-  QTest::addColumn<size_t>("totalDataLength");
-  QTest::addColumn<QList<size_t>>("startCodePositions");
+  QTest::addColumn<unsigned>("startCodeLength");
+  QTest::addColumn<unsigned>("totalDataLength");
+  QTest::addColumn<QList<unsigned>>("startCodePositions");
 
-  QTest::newRow("testNormalPosition1") << size_t(3) << size_t(10000) << QList<size_t>({80, 208, 500});
-  QTest::newRow("testNormalPosition2") << size_t(3) << size_t(10000) << QList<size_t>({0, 80, 208, 500});
-  QTest::newRow("testNormalPosition3") << size_t(3) << size_t(10000) << QList<size_t>({1, 80, 208, 500});
-  QTest::newRow("testNormalPosition4") << size_t(3) << size_t(10000) << QList<size_t>({2, 80, 208, 500});
-  QTest::newRow("testNormalPosition5") << size_t(3) << size_t(10000) << QList<size_t>({3, 80, 208, 500});
-  QTest::newRow("testNormalPosition6") << size_t(3) << size_t(10000) << QList<size_t>({4, 80, 208, 500});
-  QTest::newRow("testNormalPosition7") << size_t(3) << size_t(10000) << QList<size_t>({4, 80, 208, 9990});
-  QTest::newRow("testNormalPosition8") << size_t(3) << size_t(10000) << QList<size_t>({4, 80, 208, 9997});
+  QTest::newRow("testNormalPosition1") << unsigned(3) << unsigned(10000) << QList<unsigned>({80, 208, 500});
+  QTest::newRow("testNormalPosition2") << unsigned(3) << unsigned(10000) << QList<unsigned>({0, 80, 208, 500});
+  QTest::newRow("testNormalPosition3") << unsigned(3) << unsigned(10000) << QList<unsigned>({1, 80, 208, 500});
+  QTest::newRow("testNormalPosition4") << unsigned(3) << unsigned(10000) << QList<unsigned>({2, 80, 208, 500});
+  QTest::newRow("testNormalPosition5") << unsigned(3) << unsigned(10000) << QList<unsigned>({3, 80, 208, 500});
+  QTest::newRow("testNormalPosition6") << unsigned(3) << unsigned(10000) << QList<unsigned>({4, 80, 208, 500});
+  QTest::newRow("testNormalPosition7") << unsigned(3) << unsigned(10000) << QList<unsigned>({4, 80, 208, 9990});
+  QTest::newRow("testNormalPosition8") << unsigned(3) << unsigned(10000) << QList<unsigned>({4, 80, 208, 9997});
 
   // Test cases where a buffer reload is needed (the buffer is 500k)
-  QTest::newRow("testBufferReload") << size_t(3) << size_t(1000000) << QList<size_t>({80, 208, 500, 50000, 800000});
+  QTest::newRow("testBufferReload") << unsigned(3) << unsigned(1000000) << QList<unsigned>({80, 208, 500, 50000, 800000});
 
   // The buffer is 500k in size. Test all variations with a start code around this position
-  QTest::newRow("testBufferEdge1") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 499997});
-  QTest::newRow("testBufferEdge2") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 499998});
-  QTest::newRow("testBufferEdge3") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 499999});
-  QTest::newRow("testBufferEdge4") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 500000});
-  QTest::newRow("testBufferEdge5") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 500001});
-  QTest::newRow("testBufferEdge6") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 500002});
+  QTest::newRow("testBufferEdge1") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 499997});
+  QTest::newRow("testBufferEdge2") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 499998});
+  QTest::newRow("testBufferEdge3") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 499999});
+  QTest::newRow("testBufferEdge4") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 500000});
+  QTest::newRow("testBufferEdge5") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 500001});
+  QTest::newRow("testBufferEdge6") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 500002});
 
-  QTest::newRow("testBufferEnd1") << size_t(3) << size_t(10000) << QList<size_t>({80, 208, 500, 9995});
-  QTest::newRow("testBufferEnd2") << size_t(3) << size_t(10000) << QList<size_t>({80, 208, 500, 9996});
-  QTest::newRow("testBufferEnd3") << size_t(3) << size_t(10000) << QList<size_t>({80, 208, 500, 9997});
+  QTest::newRow("testBufferEnd1") << unsigned(3) << unsigned(10000) << QList<unsigned>({80, 208, 500, 9995});
+  QTest::newRow("testBufferEnd2") << unsigned(3) << unsigned(10000) << QList<unsigned>({80, 208, 500, 9996});
+  QTest::newRow("testBufferEnd3") << unsigned(3) << unsigned(10000) << QList<unsigned>({80, 208, 500, 9997});
 }
 
-void FileSourceAnnexBTest::testFormatFromFilename()
+void FileSourceAnnexBTest::testNalUnitParsing()
 {
-  QFETCH(size_t, startCodeLength);
-  QFETCH(size_t, totalDataLength);
-  QFETCH(QList<uint64_t>, startCodePositions);
+  QFETCH(unsigned, startCodeLength);
+  QFETCH(unsigned, totalDataLength);
+  QFETCH(QList<unsigned>, startCodePositions);
 
   QVERIFY(startCodeLength == 3 || startCodeLength == 4);
 
   QByteArray data;
-  std::optional<size_t> lastStartPos;
-  QList<size_t> nalSizes;
+  std::optional<unsigned> lastStartPos;
+  QList<unsigned> nalSizes;
   for (const auto pos : startCodePositions)
   {
-    size_t nonStartCodeBytesToAdd;
+    unsigned nonStartCodeBytesToAdd;
     if (lastStartPos)
     {
       QVERIFY(pos > *lastStartPos + startCodeLength);  // Start codes can not be closer together
