@@ -69,13 +69,13 @@ bool FileSourceAnnexBFile::openFile(const QString &fileName)
 
 bool FileSourceAnnexBFile::atEnd() const
 { 
-  return this->fileBufferSize < BUFFERSIZE && this->posInBuffer >= this->fileBufferSize; 
+  return this->fileBufferSize < BUFFERSIZE && this->posInBuffer >= int64_t(this->fileBufferSize);
 }
 
 void FileSourceAnnexBFile::seekToFirstNAL()
 {
-  int nextStartCodePos = this->fileBuffer.indexOf(STARTCODE, this->posInBuffer);
-  if (nextStartCodePos == -1)
+  auto nextStartCodePos = this->fileBuffer.indexOf(STARTCODE);
+  if (nextStartCodePos < 0)
     // The first buffer does not contain a start code. This is very unusual. Use the normal getNextNALUnit to seek
     this->getNextNALUnit();
   else
@@ -87,7 +87,8 @@ void FileSourceAnnexBFile::seekToFirstNAL()
       this->posInBuffer = nextStartCodePos;
   }
 
-  this->nrBytesBeforeFirstNAL = this->bufferStartPosInFile + this->posInBuffer;
+  assert(this->posInBuffer >= 0);
+  this->nrBytesBeforeFirstNAL = this->bufferStartPosInFile + uint64_t(this->posInBuffer);
 }
 
 QByteArray FileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, pairUint64 *startEndPosInFile)
@@ -98,13 +99,19 @@ QByteArray FileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, pairUint6
   this->lastReturnArray.clear();
 
   if (startEndPosInFile)
-    startEndPosInFile->first = this->bufferStartPosInFile + this->posInBuffer;
+    startEndPosInFile->first = this->bufferStartPosInFile + uint64_t(this->posInBuffer);
 
   int nextStartCodePos = -1;
   int searchOffset = 3;
   bool startCodeFound = false;
   while (!startCodeFound)
   {
+    if (this->posInBuffer < 0)
+    {
+      // Part of the start code was in the last buffer (see special boundary cases below). Add those parts.
+      const auto nrZeroBytesMissing = std::abs(this->posInBuffer);
+      this->lastReturnArray.append(nrZeroBytesMissing, char(0));
+    }
     nextStartCodePos = this->fileBuffer.indexOf(STARTCODE, this->posInBuffer + searchOffset);
 
     if (nextStartCodePos < 0 || (uint64_t)nextStartCodePos > this->fileBufferSize)
@@ -171,14 +178,10 @@ QByteArray FileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain, pairUint6
   // Position found
   if (startEndPosInFile)
     startEndPosInFile->second = this->bufferStartPosInFile + nextStartCodePos;
-  
-  int diff = nextStartCodePos - int(this->posInBuffer);
   if (nextStartCodePos > int(this->posInBuffer))
     this->lastReturnArray += this->fileBuffer.mid(this->posInBuffer, nextStartCodePos - this->posInBuffer);
-  
-  
-  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::getNextNALUnit start code found - ret size " << this->lastReturnArray.size());
   this->posInBuffer = nextStartCodePos;
+  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::getNextNALUnit start code found - ret size " << this->lastReturnArray.size());
   return this->lastReturnArray;
 }
 

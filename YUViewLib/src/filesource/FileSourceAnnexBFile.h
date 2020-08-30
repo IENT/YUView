@@ -79,7 +79,8 @@ protected:
 
   // The current position in the input buffer in bytes. This always points to the first byte of a start code.
   // So if the start code is 0001 it will point to the first byte (the first 0). If the start code is 001, it will point to the first 0 here.
-  unsigned int posInBuffer {0};
+  // Note: The pos may be negative if we update the buffer and the start of the start code was in the previous buffer
+  int64_t posInBuffer {0};
 
   // load the next buffer
   bool updateBuffer();

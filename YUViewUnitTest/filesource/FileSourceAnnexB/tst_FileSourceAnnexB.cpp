@@ -32,26 +32,29 @@ void FileSourceAnnexBTest::testFormatFromFilename_data()
   QTest::addColumn<size_t>("totalDataLength");
   QTest::addColumn<QList<size_t>>("startCodePositions");
 
-  // QTest::newRow("testNormalPosition1") << size_t(3) << size_t(10000) << QList<size_t>({80, 208, 500});
-  // QTest::newRow("testNormalPosition2") << size_t(3) << size_t(10000) << QList<size_t>({0, 80, 208, 500});
-  // QTest::newRow("testNormalPosition3") << size_t(3) << size_t(10000) << QList<size_t>({1, 80, 208, 500});
-  // QTest::newRow("testNormalPosition4") << size_t(3) << size_t(10000) << QList<size_t>({2, 80, 208, 500});
-  // QTest::newRow("testNormalPosition5") << size_t(3) << size_t(10000) << QList<size_t>({3, 80, 208, 500});
-  // QTest::newRow("testNormalPosition6") << size_t(3) << size_t(10000) << QList<size_t>({4, 80, 208, 500});
-  // QTest::newRow("testNormalPosition7") << size_t(3) << size_t(10000) << QList<size_t>({4, 80, 208, 9990});
-  // QTest::newRow("testNormalPosition8") << size_t(3) << size_t(10000) << QList<size_t>({4, 80, 208, 9997});
+  QTest::newRow("testNormalPosition1") << size_t(3) << size_t(10000) << QList<size_t>({80, 208, 500});
+  QTest::newRow("testNormalPosition2") << size_t(3) << size_t(10000) << QList<size_t>({0, 80, 208, 500});
+  QTest::newRow("testNormalPosition3") << size_t(3) << size_t(10000) << QList<size_t>({1, 80, 208, 500});
+  QTest::newRow("testNormalPosition4") << size_t(3) << size_t(10000) << QList<size_t>({2, 80, 208, 500});
+  QTest::newRow("testNormalPosition5") << size_t(3) << size_t(10000) << QList<size_t>({3, 80, 208, 500});
+  QTest::newRow("testNormalPosition6") << size_t(3) << size_t(10000) << QList<size_t>({4, 80, 208, 500});
+  QTest::newRow("testNormalPosition7") << size_t(3) << size_t(10000) << QList<size_t>({4, 80, 208, 9990});
+  QTest::newRow("testNormalPosition8") << size_t(3) << size_t(10000) << QList<size_t>({4, 80, 208, 9997});
 
-  // // Test cases where a buffer reload is needed (the buffer is 500k)
-  // QTest::newRow("testBufferReload") << size_t(3) << size_t(1000000) << QList<size_t>({80, 208, 500, 50000, 800000});
+  // Test cases where a buffer reload is needed (the buffer is 500k)
+  QTest::newRow("testBufferReload") << size_t(3) << size_t(1000000) << QList<size_t>({80, 208, 500, 50000, 800000});
 
-  // // The buffer is 500k in size. Test all variations with a start code around this position
-  // QTest::newRow("testBufferEdge1") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 499997});
+  // The buffer is 500k in size. Test all variations with a start code around this position
+  QTest::newRow("testBufferEdge1") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 499997});
   QTest::newRow("testBufferEdge2") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 499998});
-  // QTest::newRow("testBufferEdge3") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 499999});
-  // QTest::newRow("testBufferEdge4") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 500000});
-  // QTest::newRow("testBufferEdge5") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 500001});
-  // QTest::newRow("testBufferEdge6") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 500002});
+  QTest::newRow("testBufferEdge3") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 499999});
+  QTest::newRow("testBufferEdge4") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 500000});
+  QTest::newRow("testBufferEdge5") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 500001});
+  QTest::newRow("testBufferEdge6") << size_t(3) << size_t(800000) << QList<size_t>({80, 208, 500, 50000, 500002});
 
+  QTest::newRow("testBufferEnd1") << size_t(3) << size_t(10000) << QList<size_t>({80, 208, 500, 9995});
+  QTest::newRow("testBufferEnd2") << size_t(3) << size_t(10000) << QList<size_t>({80, 208, 500, 9996});
+  QTest::newRow("testBufferEnd3") << size_t(3) << size_t(10000) << QList<size_t>({80, 208, 500, 9997});
 }
 
 void FileSourceAnnexBTest::testFormatFromFilename()
@@ -78,8 +81,7 @@ void FileSourceAnnexBTest::testFormatFromFilename()
       nonStartCodeBytesToAdd = pos;
     lastStartPos = pos;
 
-    for (size_t i = 0; i < nonStartCodeBytesToAdd; i++)
-      data.append(char(128));
+    data.append(int(nonStartCodeBytesToAdd), char(128));
     
     // Append start code
     if (startCodeLength == 4)
@@ -90,8 +92,7 @@ void FileSourceAnnexBTest::testFormatFromFilename()
   }
   const auto remainder = totalDataLength - *lastStartPos - startCodeLength;
   nalSizes.append(remainder + startCodeLength);
-  for (size_t i = 0; i < remainder; i++)
-    data.append(char(128));
+  data.append(int(remainder), char(128));
 
   // Write the data to file
   QTemporaryFile f;
