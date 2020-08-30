@@ -107,7 +107,7 @@ void FileSourceAnnexBTest::testNalUnitParsing()
   unsigned counter = 0;
   while (nalData.size() > 0)
   {
-    QCOMPARE(nalSizes[counter++], uint64_t(nalData.size()));
+    QCOMPARE(nalSizes[counter++], unsigned(nalData.size()));
     nalData = annexBFile.getNextNALUnit();
   }
 }
