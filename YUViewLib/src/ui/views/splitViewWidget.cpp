@@ -83,6 +83,7 @@ const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 // Activate this if you want to know when which item is triggered to load and draw
 #define SPLITVIEWWIDGET_DEBUG_LOAD_DRAW 0
 #if SPLITVIEWWIDGET_DEBUG_LOAD_DRAW && !NDEBUG
+#include <QDebug>
 #define DEBUG_LOAD_DRAW(fmt) qDebug() << fmt
 #else
 #define DEBUG_LOAD_DRAW(fmt) ((void)0)
@@ -1115,22 +1116,27 @@ void splitViewWidget::toggleSeparateWindow(bool checked)
   emit signalShowSeparateWindow(checked);
 }
 
-void splitViewWidget::resetView(bool checked)
-{
-  this->setSplittingPoint(0.5);
-  MoveAndZoomableView::resetView(checked);
+void splitViewWidget::toggleFullScreen(bool checked) 
+{ 
+  Q_UNUSED(checked);
+  emit this->signalToggleFullScreen();
 }
 
-void splitViewWidget::zoomToFit(bool checked)
+void splitViewWidget::resetViewInternal()
 {
-  Q_UNUSED(checked);
-  if (!playlist)
+  this->setSplittingPoint(0.5);
+  MoveAndZoomableView::resetViewInternal();
+}
+
+void splitViewWidget::zoomToFitInternal()
+{
+  if (!this->playlist)
     // The playlist was not initialized yet. Nothing to draw (yet)
     return;
 
   this->setMoveOffset(QPoint(0,0));
 
-  auto item = playlist->getSelectedItems();
+  auto item = this->playlist->getSelectedItems();
 
   if (item[0] == nullptr)
     // We cannot zoom to anything
@@ -1216,7 +1222,7 @@ void splitViewWidget::zoomToFit(bool checked)
 
   // Set new zoom factor and update
   this->setZoomFactor(newZoomFactor);
-  update();
+  this->update();
 }
 
 void splitViewWidget::setViewSplitMode(ViewSplitMode mode, bool setOtherViewIfLinked, bool callUpdate)
@@ -1489,14 +1495,6 @@ void splitViewWidget::setViewState(const QPoint &offset, double zoom, double spl
   update();
 }
 
-void splitViewWidget::keyPressEvent(QKeyEvent *event)
-{
-  if (!handleKeyPress(event))
-    // If this widget does not handle the key press event, pass it up to the widget so that
-    // it is propagated to the parent.
-    QWidget::keyPressEvent(event);
-}
-
 void splitViewWidget::onSwipeLeft()
 { 
   playback->nextFrame();
@@ -1564,12 +1562,21 @@ void splitViewWidget::createMenuActions()
     actionSeparateViewLink.setToolTip("Link the second view so that any change in one view is also applied in the other view.");
     actionSeparateViewPlaybackBoth.setToolTip("For performance reasons playback only runs in one (the second) view. Activate this to run playback in both views siultaneously.");
   }
+
+  configureCheckableAction(actionFullScreen, nullptr, "&Fullscreen Mode", false, &splitViewWidget::toggleFullScreen, Qt::CTRL + Qt::Key_F);
+}
+
+void splitViewWidget::addContextMenuActions(QMenu *menu)
+{
+  this->addMenuActions(menu);
+  menu->addSeparator();
+  MoveAndZoomableView::addContextMenuActions(menu);
 }
 
 // Handle the key press event (if this widgets handles it). If not, return false.
 bool splitViewWidget::handleKeyPress(QKeyEvent *event)
 {
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
+  DEBUG_LOAD_DRAW(QTime::currentTime().toString("hh:mm:ss.zzz") << "Key: " << event);
 
   int key = event->key();
   bool controlOnly = event->modifiers() == Qt::ControlModifier;
@@ -1580,34 +1587,8 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
       emit signalShowSeparateWindow(false);
     return true;
   }
-  else if (key == Qt::Key_0 && controlOnly)
-  {
-    this->resetView();
-    return true;
-  }
-  else if (key == Qt::Key_9 && controlOnly)
-  {
-    zoomToFit();
-    return true;
-  }
-  else if (key == Qt::Key_Plus && controlOnly)
-  {
-    this->zoom(ZoomMode::IN);
-    return true;
-  }
-  else if (key == Qt::Key_BracketRight && controlOnly)
-  {
-    // This seems to be a bug in the Qt localization routine. On the German keyboard layout this key is returned if Ctrl + is pressed.
-    this->zoom(ZoomMode::IN);
-    return true;
-  }
-  else if (key == Qt::Key_Minus && controlOnly)
-  {
-    this->zoom(ZoomMode::OUT);
-    return true;
-  }
-
-  return false;
+  
+  return MoveAndZoomableView::handleKeyPress(event);
 }
 
 QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playlistItem *item2)
@@ -1769,14 +1750,14 @@ void splitViewWidget::addMenuActions(QMenu *menu)
     drawGridMenu->addAction(&actionGrid[i]);
 
   menu->addAction(&actionZoomBox);
-  MoveAndZoomableView::addMenuActions(menu);
-  menu->addSeparator();
 
   QMenu *separateViewMenu = menu->addMenu("Separate View");
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateView : &actionSeparateView);
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewLink : &actionSeparateViewLink);
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewPlaybackBoth : &actionSeparateViewPlaybackBoth);
   separateViewMenu->setToolTipsVisible(true);
+
+  menu->addAction(&this->actionFullScreen);
 
   menu->setToolTipsVisible(true);
 }

@@ -88,8 +88,8 @@ void SeparateWindow::keyPressEvent(QKeyEvent *event)
   {
     // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
     if (!splitView.handleKeyPress(event))
-      emit unhandledKeyPress(event);    
+      emit unhandledKeyPress(event);
 
     //QWidget::keyPressEvent(event);
-  }  
+  }
 }

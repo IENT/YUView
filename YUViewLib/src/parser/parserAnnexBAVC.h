@@ -201,6 +201,8 @@ protected:
         unsigned int cpb_size_scale;
         QList<quint32> bit_rate_value_minus1;
         QList<quint32> cpb_size_value_minus1;
+        QList<unsigned> BitRate;
+        QList<unsigned> CpbSize;
         QList<bool> cbr_flag;
         unsigned int initial_cpb_removal_delay_length_minus1 {23};
         unsigned int cpb_removal_delay_length_minus1;
@@ -541,6 +543,9 @@ protected:
   // parameter sets. Here we keep a list of seis that need to be parsed after the parameter sets were recieved.
   QList<QSharedPointer<sei>> reparse_sei;
 
+  QSharedPointer<buffering_period_sei> lastBufferingPeriodSEI;
+  QSharedPointer<pic_timing_sei> lastPicTimingSEI;
+
   // In an SEI, the number of bytes indicated do not consider the emulation prevention. This function
   // can determine the real number of bytes that we need to read from the input considering the emulation prevention
   int determineRealNumberOfBytesSEIEmulationPrevention(QByteArray &in, int nrBytes);
@@ -558,9 +563,8 @@ protected:
   struct auDelimiterDetector_t
   {
     bool isStartOfNewAU(nal_unit_avc &nal_avc, int curFramePOC);
-    nal_unit_type_enum lastNalType {UNSPECIFIED};
-    int lastNalSlicePoc {-1};
-    bool delimiterPresent {false};
+    int lastSlicePoc {-1};
+    bool primaryCodedPictureInAuEncountered {false};
   };
   auDelimiterDetector_t auDelimiterDetector;
 
@@ -569,4 +573,45 @@ protected:
   int counterAU {0};
   bool currentAUAllSlicesIntra {true};
   QMap<QString, unsigned int> currentAUSliceTypes;
+
+  class HRD
+  {
+  public:
+    HRD() = default;
+    void addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, HRDPlotModel *plotModel);
+    void endOfFile(HRDPlotModel *plotModel);
+  
+    bool isFirstAUInBufferingPeriod {true};
+  private:
+    typedef long double time_t;
+
+    // We keep a list of frames which will be removed in the future
+    struct HRDFrameToRemove
+    {
+        HRDFrameToRemove(time_t t_r, int bits, int poc)
+            : t_r(t_r)
+            , bits(bits)
+            , poc(poc)
+        {}
+        time_t t_r;
+        unsigned int bits;
+        int poc;
+    };
+    QList<HRDFrameToRemove> framesToRemove;
+
+    // The access unit count (n) for this HRD. The HRD is initialized with au n=0.
+    uint64_t au_n {0};
+    // Final arrival time (t_af for n minus 1)
+    time_t t_af_nm1 {0};
+    // t_r,n(nb) is the nominal removal time of the first access unit of the previous buffering period
+    time_t t_r_nominal_n_first;
+
+    QList<HRDFrameToRemove> popRemoveFramesInTimeInterval(time_t from, time_t to);
+    void addToBufferAndCheck(unsigned bufferAdd, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel);
+    void removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel);
+    void addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel);
+
+    int64_t decodingBufferLevel {0};
+  };
+  HRD hrd;
 };

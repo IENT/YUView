@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "bitstreamAnalysisWidget.h"
+#include "BitstreamAnalysisWidget.h"
 
 #include "parser/parserAnnexBAVC.h"
 #include "parser/parserAnnexBHEVC.h"
@@ -61,6 +61,16 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
   this->connect(this->ui.bitratePlotOrderComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged);
 
   this->currentSelectedItemsChanged(nullptr, nullptr, false);
+}
+
+MoveAndZoomableView *BitstreamAnalysisWidget::getCurrentActiveView()
+{
+  const auto idx = this->ui.analysisTab->currentIndex();
+  if (idx == 2)
+    return this->ui.plotViewWidget;
+  if (idx == 3)
+    return this->ui.hrdPlotWidget;
+  return {};
 }
 
 void BitstreamAnalysisWidget::updateParserItemModel()
@@ -198,6 +208,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
     this->ui.streamInfoTreeWidget->clear();
     this->ui.dataTreeView->setModel(nullptr);
     this->ui.plotViewWidget->setModel(nullptr);
+    this->ui.hrdPlotWidget->setModel(nullptr);
     return;
   }
 
@@ -207,7 +218,8 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   this->ui.dataTreeView->setColumnWidth(0, 600);
   this->ui.dataTreeView->setColumnWidth(1, 100);
   this->ui.dataTreeView->setColumnWidth(2, 120);
-  this->ui.plotViewWidget->setModel(this->parser->getBitrateItemModel());
+  this->ui.plotViewWidget->setModel(this->parser->getBitratePlotModel());
+  this->ui.hrdPlotWidget->setModel(this->parser->getHRDPlotModel());
 
   this->updateStreamInfo();
 

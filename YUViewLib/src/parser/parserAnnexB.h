@@ -39,7 +39,7 @@
 
 #include "common/BitratePlotModel.h"
 #include "common/TreeItem.h"
-#include "filesource/fileSourceAnnexBFile.h"
+#include "filesource/FileSourceAnnexBFile.h"
 #include "parserBase.h"
 #include "video/videoHandlerYUV.h"
 
@@ -108,7 +108,7 @@ public:
 
   std::optional<pairUint64> getFrameStartEndPos(int codingOrderFrameIdx);
 
-  bool parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QWidget *mainWindow=nullptr);
+  bool parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow=nullptr);
 
   // Called from the bitstream analyzer. This function can run in a background process.
   bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
@@ -173,7 +173,7 @@ protected:
   // Returns false if the POC was already present int the list
   bool addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint);
 
-  static void logNALSize(QByteArray &data, TreeItem *root);
+  static void logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos);
 
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.

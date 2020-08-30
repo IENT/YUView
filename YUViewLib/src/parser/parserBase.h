@@ -39,6 +39,7 @@
 
 #include "common/PacketItemModel.h"
 #include "common/BitratePlotModel.h"
+#include "common/HRDPlotModel.h"
 
 // If the file parsing limit is enabled (setParsingLimitEnabled) parsing will be aborted after
 // 500 frames have been parsed. This should be enough in most situations and full parsing can be
@@ -56,7 +57,8 @@ public:
   virtual ~parserBase() = 0;
 
   QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
-  BitratePlotModel *getBitrateItemModel() { return bitrateItemModel.data(); }
+  BitratePlotModel *getBitratePlotModel() { return bitratePlotModel.data(); }
+  HRDPlotModel *getHRDPlotModel() { return hrdItemModel.data(); }
   
   void updateNumberModelItems();
   void enableModel();
@@ -76,7 +78,7 @@ public:
   void setStreamColorCoding(bool colorCoding) { packetModel->setUseColorCoding(colorCoding); }
   void setFilterStreamIndex(int streamIndex) { streamIndexFilter->setFilterStreamIndex(streamIndex); }
   void setParsingLimitEnabled(bool limitEnabled) { parsingLimitEnabled = limitEnabled; }
-  void setBitrateSortingIndex(int sortingIndex) { bitrateItemModel->setBitrateSortingIndex(sortingIndex); }
+  void setBitrateSortingIndex(int sortingIndex) { bitratePlotModel->setBitrateSortingIndex(sortingIndex); }
 
 signals:
   // Some data was updated and the models can be updated to reflec this. This is called regularly
@@ -90,7 +92,8 @@ signals:
 protected:
   QScopedPointer<PacketItemModel> packetModel;
   QScopedPointer<FilterByStreamIndexProxyModel> streamIndexFilter;
-  QScopedPointer<BitratePlotModel> bitrateItemModel;
+  QScopedPointer<BitratePlotModel> bitratePlotModel;
+  QScopedPointer<HRDPlotModel> hrdItemModel;
 
   static QString convertSliceTypeMapToString(QMap<QString, unsigned int> &currentAUSliceTypes);
 

@@ -814,7 +814,7 @@ protected:
   struct auDelimiterDetector_t
   {
     bool isStartOfNewAU(nal_unit_hevc &nal, bool first_slice_segment_in_pic_flag);
-    bool primary_coded_picture_in_au_encountered {false};
+    bool primaryCodedPictureInAuEncountered {false};
   };
   auDelimiterDetector_t auDelimiterDetector;
 

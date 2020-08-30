@@ -228,7 +228,7 @@ bool decoderVTM::getNextFrameFromDecoder()
   if (!picSize.isValid())
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
   auto subsampling = convertFromInternalSubsampling(libVTMDec_get_chroma_format(currentVTMPic));
-  if (subsampling == Subsampling::UNKNOWN)
+  if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
   int bitDepth = libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
@@ -238,7 +238,7 @@ bool decoderVTM::getNextFrameFromDecoder()
   {
     // Set the values
     frameSize = picSize;
-    formatYUV = yuvPixelFormat(subsampling, bitDepth);
+    formatYUV = YUV_Internals::yuvPixelFormat(subsampling, bitDepth);
   }
   else
   {
@@ -578,16 +578,16 @@ bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)
   return !testDecoder.errorInDecoder();
 }
 
-Subsampling decoderVTM::convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt)
+YUV_Internals::Subsampling decoderVTM::convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt)
 {
   if (fmt == LIBVTMDEC_CHROMA_400)
-    return Subsampling::YUV_400;
+    return YUV_Internals::Subsampling::YUV_400;
   if (fmt == LIBVTMDEC_CHROMA_420)
-    return Subsampling::YUV_420;
+    return YUV_Internals::Subsampling::YUV_420;
   if (fmt == LIBVTMDEC_CHROMA_422)
-    return Subsampling::YUV_422;
+    return YUV_Internals::Subsampling::YUV_422;
   if (fmt == LIBVTMDEC_CHROMA_444)
-    return Subsampling::YUV_444;
+    return YUV_Internals::Subsampling::YUV_444;
 
-  return Subsampling::UNKNOWN;
+  return YUV_Internals::Subsampling::UNKNOWN;
 }

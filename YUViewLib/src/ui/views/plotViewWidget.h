@@ -47,9 +47,6 @@ private slots:
   void modelDataChanged();
   void modelNrStreamsChanged();
 
-protected slots:
-  virtual void zoomToFit(bool checked = false) override;
-
 protected:
 
   // Override some events from the widget
@@ -101,15 +98,17 @@ private:
 
   void updateAxis(const QRectF &plotRect);
 
+  void drawLimits(QPainter &painter, const QRectF &plotRect) const;
   void drawPlot(QPainter &painter, const QRectF &plotRect) const;
   void drawInfoBox(QPainter &painter, const QRectF &plotRect) const;
   void drawDebugBox(QPainter &painter, const QRectF &plotRect) const;
   void drawZoomRect(QPainter &painter, const QRectF plotRect) const;
 
   // Convert a position in the 2D coordinate system of the plot into a pixel position and vise versa
-  QPointF convertPlotPosToPixelPos(const QPointF &plotPos) const;
-  QPointF convertPixelPosToPlotPos(const QPointF &pixelPos) const;
+  QPointF convertPlotPosToPixelPos(const QPointF &plotPos, std::optional<double> zoomFactor = {}) const;
+  QPointF convertPixelPosToPlotPos(const QPointF &pixelPos, std::optional<double> zoomFactor = {}) const;
 
+  void zoomToFitInternal() override;
   void onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) override;
 
   std::optional<Range<int>> getVisibleRange(const Axis axis) const;

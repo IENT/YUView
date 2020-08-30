@@ -49,10 +49,7 @@ signals:
   void nrStreamsChanged();
 
 public:
-  PlotModel()
-  {
-    this->connect(&this->eventSubsampler, &EventSubsampler::subsampledEvent, this, &PlotModel::dataChanged);
-  }
+  PlotModel();
 
   enum class PlotType
   {
@@ -67,12 +64,27 @@ public:
     unsigned nrpoints;
   };
 
+  // A limit can be used to draw a horizontal/vertical line at a certain position (x/y)
+  struct Limit
+  {
+    enum class Type
+    {
+      X,
+      Y
+    };
+
+    QString name;
+    int value;
+    Type type;
+  };
+
   struct StreamParameter
   {
     unsigned getNrPlots() const { return unsigned(this->plotParameters.size()); }
     Range<int> xRange;
     Range<int> yRange;
     QList<PlotParameter> plotParameters;
+    QList<Limit> limits; 
   };
 
   struct Point
@@ -85,21 +97,9 @@ public:
   virtual StreamParameter getStreamParameter(unsigned streamIndex) const = 0;
   virtual Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
   virtual QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
+  virtual std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const = 0;
 
-  std::optional<unsigned> getPointIndex(unsigned streamIndex, unsigned plotIndex, double x) const
-  {
-    const auto streamParam = this->getStreamParameter(streamIndex);
-    if (plotIndex >= unsigned(streamParam.plotParameters.size()))
-      return {};
-    const auto nrPoints = this->getStreamParameter(streamIndex).plotParameters[plotIndex].nrpoints;
-    for (unsigned pointIndex = 0; pointIndex < nrPoints; pointIndex++)
-    {
-      const auto point = this->getPlotPoint(streamIndex, plotIndex, pointIndex);
-      if (x > point.x - point.width / 2 && x <= point.x + point.width / 2)
-        return pointIndex;
-    }
-    return {};
-  }
+  std::optional<unsigned> getPointIndex(unsigned streamIndex, unsigned plotIndex, QPointF point) const;
 
 protected:
   EventSubsampler eventSubsampler;

@@ -99,15 +99,17 @@ void PlotViewWidget::modelNrStreamsChanged()
   DEBUG_PLOT("PlotViewWidget::updateStreamInfo showStreamList " << this->showStreamList);
 }
 
-void PlotViewWidget::zoomToFit(bool checked)
+void PlotViewWidget::zoomToFitInternal()
 {
-  Q_UNUSED(checked);
-
   if (!this->model)
     return;
 
   const auto widgetRect = QRectF(this->rect());
   const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
+  const auto plotXMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft(), 1.0).x() - 0.5;
+  const auto plotXMax = this->convertPixelPosToPlotPos(plotRect.bottomRight(), 1.0).x() + 0.5;
+  const auto widthInPlotSpace = plotXMax - plotXMin;
+
   this->updateAxis(plotRect);
 
   bool modelContainsDataYet = false;
@@ -115,31 +117,30 @@ void PlotViewWidget::zoomToFit(bool checked)
   for (auto streamIndex : this->showStreamList)
   {
     const auto param = this->model->getStreamParameter(streamIndex);
-    for (unsigned int plotIndex = 0; plotIndex < param.getNrPlots(); plotIndex++)
+
+    bool streamContainsData = false;
+    for (const auto &plotParam : param.plotParameters)
+      streamContainsData |= plotParam.nrpoints > 0;
+
+    if (!streamContainsData)
+      continue;
+
+    modelContainsDataYet = true;
+    const auto streamXRange = param.xRange.max - param.xRange.min;
+
+    double newZoomFactor = 1.0;
+    while (streamXRange * newZoomFactor > widthInPlotSpace)
+      newZoomFactor /= ZOOM_STEP_FACTOR;
+    if (newZoomFactor == 1.0)
     {
-      const auto plotParam = param.plotParameters[plotIndex];
-      if (plotParam.nrpoints > 0)
-      {
-        modelContainsDataYet = true;
-        const auto firstPointWidth = model->getPlotPoint(streamIndex, plotIndex, 0).width;
-        
-        double newZoomFactor = this->zoomFactor;
-        if (firstPointWidth * newZoomFactor > 1)
-        {
-          while (firstPointWidth * newZoomFactor > 1)
-            newZoomFactor /= ZOOM_STEP_FACTOR;
-        }
-        else
-        {
-          while (firstPointWidth * newZoomFactor < 1)
-            newZoomFactor *= ZOOM_STEP_FACTOR;
-        }
-        if (minZoomFactor == -1)
-          minZoomFactor = newZoomFactor;
-        else
-          minZoomFactor = std::min(minZoomFactor, newZoomFactor);
-      }
+      while (streamXRange * newZoomFactor < widthInPlotSpace)
+        newZoomFactor *= ZOOM_STEP_FACTOR;
     }
+
+    if (minZoomFactor == -1)
+      minZoomFactor = newZoomFactor;
+    else
+      minZoomFactor = std::min(minZoomFactor, newZoomFactor);
   }
 
   if (!modelContainsDataYet)
@@ -152,8 +153,8 @@ void PlotViewWidget::zoomToFit(bool checked)
   auto visibleRange = this->getVisibleRange(Axis::X);
   if (!visibleRange)
     return;
-
-  this->viewInitializedForModel = true;
+  
+  this->update();
 }
 
 void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text)
@@ -173,7 +174,6 @@ void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text)
   painter.fillRect(boxRect,Qt::white);
   painter.drawRect(boxRect);
 
-  // Draw the text
   painter.drawText(textRect, Qt::AlignCenter, text);
 }
 
@@ -182,6 +182,7 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
   Q_UNUSED(paint_event);
 
   QPainter painter(this);
+  painter.setRenderHint(QPainter::Antialiasing);
 
   const auto widgetRect = QRectF(this->rect());
   const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
@@ -195,6 +196,7 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
   this->drawGridLines(painter, this->propertiesAxis[0], plotRect, valuesX);
   this->drawGridLines(painter, this->propertiesAxis[1], plotRect, valuesY);
 
+  this->drawLimits(painter, plotRect);
   this->drawPlot(painter, plotRect);
   this->drawZoomRect(painter, plotRect);
 
@@ -237,7 +239,7 @@ void PlotViewWidget::mouseMoveEvent(QMouseEvent *mouseMoveEvent)
       const auto streamParam = model->getStreamParameter(streamIndex);
       for (unsigned plotIndex = 0; plotIndex < streamParam.getNrPlots(); plotIndex++)
       {
-        const auto pointIndex = model->getPointIndex(streamIndex, plotIndex, mouseHoverPos.x());
+        const auto pointIndex = model->getPointIndex(streamIndex, plotIndex, mouseHoverPos);
         if (pointIndex)
           newHoverePointIndexPerStreamAndPlot[streamIndex][plotIndex] = *pointIndex;
       }
@@ -458,6 +460,56 @@ void PlotViewWidget::drawFadeBoxes(QPainter &painter, const QRectF plotRect, con
   painter.drawRect(QRectF(0, plotRect.top(), widgetRect.width(), fadeBoxThickness));
 }
 
+void PlotViewWidget::drawLimits(QPainter &painter, const QRectF &plotRect) const
+{
+  const auto plotMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft());
+  const auto plotMax = this->convertPixelPosToPlotPos(plotRect.topRight());
+
+  DEBUG_PLOT("PlotViewWidget::drawLimits");
+  for (auto streamIndex : this->showStreamList)
+  {
+    const auto param = this->model->getStreamParameter(streamIndex);
+    for (const auto &limit : param.limits)
+    {
+      // Only draw visible limits
+      QLineF line;
+      if (limit.type == PlotModel::Limit::Type::X)
+      {
+        if (limit.value < plotMin.x() || limit.value > plotMax.x())
+          continue;
+        const auto dummyPointForX = this->convertPlotPosToPixelPos(QPointF(limit.value, 0));
+        line.setP1(QPointF(dummyPointForX.x(), 0));
+        line.setP2(QPointF(dummyPointForX.x(), plotRect.height()));
+      }
+      else
+      {
+        if (limit.value < plotMin.y() || limit.value > plotMax.y())
+          continue;
+        const auto dummyPointForY = this->convertPlotPosToPixelPos(QPointF(0, limit.value));
+        line.setP1(QPointF(0, dummyPointForY.y()));
+        line.setP2(QPointF(plotRect.right(), dummyPointForY.y()));
+
+        // Set the QRect where to show the text
+        QFont displayFont = painter.font();
+        QFontMetrics metrics(displayFont);
+        QSize textSize = metrics.size(0, limit.name);
+
+        QRect textRect;
+        textRect.setSize(textSize);
+        textRect.moveTop(dummyPointForY.y());
+        textRect.moveRight(plotRect.right() - fadeBoxThickness);
+        painter.setPen(Qt::black);
+        painter.drawText(textRect, Qt::AlignCenter, limit.name);
+      }
+
+      QPen limitPen(Qt::black);
+      limitPen.setWidth(2);
+      painter.setPen(limitPen);
+      painter.drawLine(line);
+    }
+  }
+}
+
 void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
 {
   if (!this->model)
@@ -509,8 +561,8 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
           const auto barBottomRight = this->convertPlotPosToPixelPos(QPointF(value.x + halfWidth, 0));
           
           const bool isHoveredBar = 
-            this->currentlyHoveredPointPerStreamAndPlot.contains(streamIndex) && 
-            this->currentlyHoveredPointPerStreamAndPlot[streamIndex].contains(plotIndex) && 
+            this->currentlyHoveredPointPerStreamAndPlot.contains(streamIndex) &&
+            this->currentlyHoveredPointPerStreamAndPlot[streamIndex].contains(plotIndex) &&
             this->currentlyHoveredPointPerStreamAndPlot[streamIndex][plotIndex] == i;
           
           const auto r = QRectF(barTopLeft, barBottomRight);
@@ -539,15 +591,28 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
       else if (plotParam.type == PlotModel::PlotType::Line)
       {
         QPolygonF linePoints;
+        QPointF lastPoint;
         for (unsigned i = 0; i < plotParam.nrpoints; i++)
         {
           const auto valueStart = model->getPlotPoint(streamIndex, plotIndex, i);
           const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));
 
-          if (valueStart.x < plotXMin || valueStart.x > plotXMax)
+          if (valueStart.x < plotXMin)
+          {
+            lastPoint = linePointStart;
             continue;
+          }
 
+          if (linePoints.size() == 0 && i > 0)
+            linePoints.append(lastPoint);
           linePoints.append(linePointStart);
+
+          if (valueStart.x > plotXMax)
+            // This means that no graph can "go back" on the x-axis. That is ok for now. 
+            // If we ever need this, this needs to be smarter here.
+            break;
+
+          lastPoint = linePointStart;
         }
 
         DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing line with " << linePoints.size() << " points");
@@ -555,6 +620,26 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
         linePen.setWidthF(detailedPainting ? 2.0 : 1.0);
         painter.setPen(linePen);
         painter.drawPolyline(linePoints);
+
+        // Draw the currently hovered line in a different color
+        if (this->currentlyHoveredPointPerStreamAndPlot.contains(streamIndex) && 
+            this->currentlyHoveredPointPerStreamAndPlot[streamIndex].contains(plotIndex))
+        {
+          const auto index = this->currentlyHoveredPointPerStreamAndPlot[streamIndex][plotIndex];
+          if (index > 0)
+          {
+            const auto valueStart = model->getPlotPoint(streamIndex, plotIndex, index - 1);
+            const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));
+            const auto valueEnd = model->getPlotPoint(streamIndex, plotIndex, index);
+            const auto linePointEnd = this->convertPlotPosToPixelPos(QPointF(valueEnd.x, valueEnd.y));
+
+            DEBUG_PLOT("PlotViewWidget::drawPlot Draw hovered line");
+            QPen linePen(QColor(50, 50, 200));
+            linePen.setWidthF(detailedPainting ? 2.0 : 1.0);
+            painter.setPen(linePen);
+            painter.drawLine(linePointStart, linePointEnd);
+          }
+        }
 
         // if (detailedPainting)
         //   painter.drawEllipse(linePointStart, 2.0, 2.0);
@@ -595,7 +680,22 @@ void PlotViewWidget::drawInfoBox(QPainter &painter, const QRectF &plotRect) cons
   textDocument.setTextWidth(textDocument.size().width());
 
   // Translate to the position where the text box shall be
-  painter.translate(plotRect.bottomRight().x() - axisMaxValueMargin - margin - textDocument.size().width() - padding * 2 + 1, plotRect.bottomRight().y() - axisMaxValueMargin - margin - textDocument.size().height() - padding * 2 + 1);
+  // Consider where the mouse is and move the box out of the way if the mouse is here
+  if (!QCursor::pos().isNull())
+  {
+    const auto mousePos = mapFromGlobal(QCursor::pos());
+    auto posX = plotRect.bottomRight().x() - axisMaxValueMargin - margin - textDocument.size().width() - padding * 2 + 1;
+    auto posY = plotRect.bottomRight().y() - axisMaxValueMargin - margin - textDocument.size().height() - padding * 2 + 1;
+
+    const auto margin = 5;
+    if (mousePos.x() >= posX - margin && mousePos.x() < posX + textDocument.size().width() + margin)
+    {
+      posX -= margin * 2 + textDocument.size().width();
+      posX = std::max(posX, plotRect.left());
+    }
+
+    painter.translate(posX, posY);
+  }
 
   // Draw a black rectangle and then the text on top of that
   QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
@@ -685,9 +785,12 @@ void PlotViewWidget::updateAxis(const QRectF &plotRect)
   DEBUG_PLOT("PlotViewWidget::updateAxis lineX " << this->propertiesAxis[0].line << " lineY " << this->propertiesAxis[1].line);
 }
 
-QPointF PlotViewWidget::convertPlotPosToPixelPos(const QPointF &plotPos) const
+QPointF PlotViewWidget::convertPlotPosToPixelPos(const QPointF &plotPos, std::optional<double> zoomFactor) const
 {
-  const auto pixelPosX = this->propertiesAxis[0].line.p1().x() + (plotPos.x() * this->zoomToPixelsPerValueX) * this->zoomFactor + this->moveOffset.x();
+  if (!zoomFactor)
+    zoomFactor = this->zoomFactor;
+
+  const auto pixelPosX = this->propertiesAxis[0].line.p1().x() + (plotPos.x() * this->zoomToPixelsPerValueX) * (*zoomFactor) + this->moveOffset.x();
   
   if (this->fixYAxis)
   {
@@ -696,14 +799,17 @@ QPointF PlotViewWidget::convertPlotPosToPixelPos(const QPointF &plotPos) const
   }
   else
   {
-    const auto pixelPosY = this->propertiesAxis[1].line.p1().y() - (plotPos.y() * this->zoomToPixelsPerValueY) * this->zoomFactor + this->moveOffset.y();
+    const auto pixelPosY = this->propertiesAxis[1].line.p1().y() - (plotPos.y() * this->zoomToPixelsPerValueY) * (*zoomFactor) + this->moveOffset.y();
     return {pixelPosX, pixelPosY};
   }
 }
 
-QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos) const
+QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos, std::optional<double> zoomFactor) const
 {
-  const auto valueX = ((pixelPos.x() - this->propertiesAxis[0].line.p1().x() - this->moveOffset.x()) / this->zoomFactor) / this->zoomToPixelsPerValueX;
+  if (!zoomFactor)
+    zoomFactor = this->zoomFactor;
+  
+  const auto valueX = ((pixelPos.x() - this->propertiesAxis[0].line.p1().x() - this->moveOffset.x()) / (*zoomFactor)) / this->zoomToPixelsPerValueX;
 
   if (this->fixYAxis)
   {
@@ -712,7 +818,7 @@ QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos) const
   }
   else
   {
-    const auto valueY = ((- pixelPos.y() + this->propertiesAxis[1].line.p1().y() + this->moveOffset.y()) / this->zoomFactor) / this->zoomToPixelsPerValueY;
+    const auto valueY = ((- pixelPos.y() + this->propertiesAxis[1].line.p1().y() + this->moveOffset.y()) / (*zoomFactor)) / this->zoomToPixelsPerValueY;
     return {valueX, valueY};
   }
 }
@@ -759,5 +865,10 @@ void PlotViewWidget::initViewFromModel()
   if (this->viewInitializedForModel || !this->model)
     return;
 
-  this->zoomToFit();
+  const auto range = this->model->getReasonabelRangeToShowOnXAxisPer100Pixels();
+  if (range)
+  {
+    this->zoomToPixelsPerValueX = 100.0 / double(*range);
+    this->update();
+  }
 }

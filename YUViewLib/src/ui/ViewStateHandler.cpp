@@ -30,29 +30,29 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "viewStateHandler.h"
+#include "ViewStateHandler.h"
 
 #include <QKeyEvent>
 
 #include "ui/playbackController.h"
 #include "playlistitem/playlistItem.h"
 
-viewStateHandler::viewStateHandler()
+ViewStateHandler::ViewStateHandler()
 {
 }
 
-int viewStateHandler::playbackStateFrameIdx(int i) const
+int ViewStateHandler::playbackStateFrameIdx(int i) const
 {
   return (selectionStates[i][0] || selectionStates[i][1]) ? playbackStateFrameIdxData[i] : -1;
 }
 
-int & viewStateHandler::playbackStateFrameIdx(int i) {
+int & ViewStateHandler::playbackStateFrameIdx(int i) {
   if (!selectionStates[i][0] && !selectionStates[i][1])
     playbackStateFrameIdxData[i] = -1;
   return playbackStateFrameIdxData[i];
 }
 
-void viewStateHandler::setConctrols(PlaybackController *play, PlaylistTreeWidget *plist, splitViewWidget *primaryView, splitViewWidget *secondaryView)
+void ViewStateHandler::setConctrols(PlaybackController *play, PlaylistTreeWidget *plist, splitViewWidget *primaryView, splitViewWidget *secondaryView)
 {
   playback = play; 
   splitView[0] = primaryView;
@@ -61,7 +61,7 @@ void viewStateHandler::setConctrols(PlaybackController *play, PlaylistTreeWidget
 
 }
 
-bool viewStateHandler::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
+bool ViewStateHandler::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
 {
   int key = event->key();
   bool controlOnly = (event->modifiers() == Qt::ControlModifier);
@@ -82,7 +82,7 @@ bool viewStateHandler::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView
   return false;
 }
 
-void viewStateHandler::saveViewState(int slot, bool saveOnSeparateView)
+void ViewStateHandler::saveViewState(int slot, bool saveOnSeparateView)
 {
   if (slot < 0 || slot >= 8)
     // Only eight slots
@@ -105,7 +105,7 @@ void viewStateHandler::saveViewState(int slot, bool saveOnSeparateView)
 
 // Load the view state for a specific slot. If the views are linked, the behavior is different if loading was toggled
 // from the primary, or the separate view (loadOnSeparateView).
-void viewStateHandler::loadViewState(int slot, bool loadOnSeparateView)
+void ViewStateHandler::loadViewState(int slot, bool loadOnSeparateView)
 {
   if (slot < 0 || slot >= 8)
     // Only eight slots
@@ -127,7 +127,7 @@ void viewStateHandler::loadViewState(int slot, bool loadOnSeparateView)
     splitView[0]->setViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
 }
 
-void viewStateHandler::savePlaylist(QDomElement &root)
+void ViewStateHandler::savePlaylist(QDomElement &root)
 {
   for (int i = 0; i < 8; i++)
   {
@@ -186,7 +186,7 @@ void viewStateHandler::savePlaylist(QDomElement &root)
 
 }
 
-void viewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
+void ViewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
 {
   // In order to get the pointers to the right playlist items, we need a list of all playlist items
   QList<playlistItem*> allPlaylistItems = playlist->getAllPlaylistItems();

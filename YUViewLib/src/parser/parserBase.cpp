@@ -47,7 +47,8 @@
 parserBase::parserBase(QObject *parent) : QObject(parent)
 {
   packetModel.reset(new PacketItemModel(parent));
-  bitrateItemModel.reset(new BitratePlotModel());
+  bitratePlotModel.reset(new BitratePlotModel());
+  hrdItemModel.reset(new HRDPlotModel());
   streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
   streamIndexFilter->setSourceModel(packetModel.data());
 }

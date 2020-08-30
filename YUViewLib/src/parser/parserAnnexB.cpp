@@ -76,7 +76,7 @@ bool parserAnnexB::addFrameToList(int poc, std::optional<pairUint64> fileStartEn
   return true;
 }
 
-void parserAnnexB::logNALSize(QByteArray &data, TreeItem *root)
+void parserAnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
 {
   int startCodeSize = 0;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
@@ -88,6 +88,8 @@ void parserAnnexB::logNALSize(QByteArray &data, TreeItem *root)
     new TreeItem("Start code size", startCodeSize, root);
 
   new TreeItem("Payload size", data.size() - startCodeSize, root);
+  if (nalStartEndPos)
+    new TreeItem("Start pos", (*nalStartEndPos).first, root);
 }
 
 int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const
@@ -131,7 +133,7 @@ std::optional<pairUint64> parserAnnexB::getFrameStartEndPos(int codingOrderFrame
   return frameList[codingOrderFrameIdx].fileStartEndPos;
 }
 
-bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QWidget *mainWindow)
+bool parserAnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow)
 {
   DEBUG_ANNEXB("parserAnnexB::parseAnnexBFile");
 
@@ -178,7 +180,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
       }
       else if (parsingResult.bitrateEntry)
       {
-        this->bitrateItemModel->addBitratePoint(0, *parsingResult.bitrateEntry);
+        this->bitratePlotModel->addBitratePoint(0, *parsingResult.bitrateEntry);
       }
     }
     catch (const std::exception &exc)
@@ -250,7 +252,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
 bool parserAnnexB::runParsingOfFile(QString compressedFilePath)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
-  QScopedPointer<fileSourceAnnexBFile> file(new fileSourceAnnexBFile(compressedFilePath));
+  QScopedPointer<FileSourceAnnexBFile> file(new FileSourceAnnexBFile(compressedFilePath));
   return parseAnnexBFile(file);
 }
 

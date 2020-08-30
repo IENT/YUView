@@ -34,7 +34,7 @@
 
 #include <cassert>
 #include <cstring>
-#include <QLabel>
+#include <QObject>
 #include <QList>
 #include <QPair>
 #include <QRect>
@@ -266,32 +266,6 @@ Q_DECL_CONSTEXPR inline QPoint centerRoundTL(const QRect & r) Q_DECL_NOTHROW
   // The cast avoids overflow on addition.
   return QPoint(int((int64_t(r.left())+r.right()-1)/2), int((int64_t(r.top())+r.bottom()-1)/2));
 }
-
-// A label that emits a 'clicked' signal when clicked.
-class QLabelClickable : public QLabel
-{
-  Q_OBJECT
-
-public:
-  QLabelClickable(QWidget *parent) : QLabel(parent) { pressed = false; }
-  virtual void mousePressEvent(QMouseEvent *event)
-  {
-    Q_UNUSED(event);
-    pressed = true;
-  }
-  virtual void mouseReleaseEvent(QMouseEvent *event)
-  {
-    Q_UNUSED(event);
-    if (pressed)
-      // The mouse was pressed and is now released.
-      emit clicked();
-    pressed = false;
-  }
-signals:
-  void clicked();
-private:
-  bool pressed;
-};
 
 // When asking the playlist item if it needs loading, there are some states that the item can return
 enum itemLoadingState

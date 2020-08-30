@@ -33,58 +33,51 @@
 #pragma once
 
 #include <QWidget>
-#include <QtConcurrent>
 
-#include "ui_bitstreamAnalysisWidget.h"
+#include "PlaylistTreeWidget.h"
+#include "video/videoCache.h"
 
-#include "parser/parserBase.h"
-#include "playlistitem/playlistItem.h"
-#include "playlistitem/playlistItemCompressedVideo.h"
-#include "common/typedef.h"
+namespace VideoCacheStatusWidgetNamespace
+{
+  class VideoCacheStatusWidget : public QWidget
+  {
+    Q_OBJECT
 
-class BitstreamAnalysisWidget : public QWidget
+    public:
+    VideoCacheStatusWidget(QWidget *parent) : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0) {}
+    // Override the paint event
+    virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
+    void updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
+    private:
+    // The floating point values (0 to 1) of the end positions of the blocks to draw
+    QList<float> relativeValsEnd;
+    unsigned int cacheLevelMB;
+    unsigned int cacheRateInBytesPerMs;
+    int64_t cacheLevelMaxMB;
+  };
+}
+
+class VideoCacheInfoWidget : public QWidget
 {
   Q_OBJECT
 
 public:
-  BitstreamAnalysisWidget(QWidget *parent = nullptr);
-  ~BitstreamAnalysisWidget() { stopAndDeleteParserBlocking(); }
+  VideoCacheInfoWidget(QWidget *parent = 0);
+
+  void setPlaylistAndCache(PlaylistTreeWidget *plist, videoCache *vCache) { playlist = plist; cache = vCache; };
 
 public slots:
-  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
+  void onUpdateCacheStatus();
 
 private slots:
-  void updateParserItemModel();
-  void updateStreamInfo();
-  void backgroundParsingDone(QString error);
+  void onGroupBoxToggled(bool on);
 
-  void showOnlyStreamComboBoxIndexChanged(int index);
-  void colorCodeStreamsCheckBoxToggled(bool state) { this->parser->setStreamColorCoding(state); }
-  void parseEntireBitstreamCheckBoxToggled(bool state) { Q_UNUSED(state); this->restartParsingOfCurrentItem(); }
-  void bitratePlotOrderComboBoxIndexChanged(int index);
-
-protected:
-  void hideEvent(QHideEvent *event) override;
-  void showEvent(QShowEvent *event) override;
-  
 private:
-  
-  Ui::bitstreamAnalysisWidget ui;
+  VideoCacheStatusWidgetNamespace::VideoCacheStatusWidget *statusWidget {nullptr};
+  QLabel *cachingInfoLabel {nullptr};
 
-  // -1: No Item selected, 0-99: parsing in progress, 100: parsing done
-  void updateParsingStatusText(int progressValue);
+  PlaylistTreeWidget *playlist {nullptr};
+  videoCache *cache {nullptr};
 
-  void stopAndDeleteParserBlocking();
-
-  void restartParsingOfCurrentItem();
-  void createAndConnectNewParser(YUView::inputFormat inputFormatType);
-
-  QScopedPointer<parserBase> parser;
-  QFuture<void> backgroundParserFuture;
-  void backgroundParsingFunction();
-
-  QPointer<playlistItemCompressedVideo> currentCompressedVideo;
-
-  // -1: Show all streams. Otherwise only show the given stream index.
-  int showOnlyStream {-1};
+  unsigned int cacheRateInBytesPerMs {0};
 };

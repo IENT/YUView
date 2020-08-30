@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,57 +30,30 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
+#include <QLabel>
 
-#include <QMap>
-#include <QMutex>
-#include <QString>
-
-#include "common/typedef.h"
-#include "ui/views/plotModel.h"
-
-class BitratePlotModel : public PlotModel
+// A label that emits a 'clicked' signal when clicked.
+class QLabelClickable : public QLabel
 {
+  Q_OBJECT
+
 public:
-  BitratePlotModel() = default;
-  virtual ~BitratePlotModel() = default;
-
-  unsigned getNrStreams() const override;
-  PlotModel::StreamParameter getStreamParameter(unsigned streamIndex) const override;
-  PlotModel::Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
-  QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
-  std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const override;
-  
-  QString getItemInfoText(int index);
-
-  struct BitrateEntry
+  QLabelClickable(QWidget *parent) : QLabel(parent) { pressed = false; }
+  virtual void mousePressEvent(QMouseEvent *event)
   {
-    int dts {0};
-    int pts {0};
-    int duration {1};
-    unsigned int bitrate {0};
-    bool keyframe {false};
-    QString frameType;
-  };
-
-  void addBitratePoint(int streamIndex, BitrateEntry &entry);
-  void setBitrateSortingIndex(int index);
-
+    Q_UNUSED(event);
+    pressed = true;
+  }
+  virtual void mouseReleaseEvent(QMouseEvent *event)
+  {
+    Q_UNUSED(event);
+    if (pressed)
+      // The mouse was pressed and is now released.
+      emit clicked();
+    pressed = false;
+  }
+signals:
+  void clicked();
 private:
-
-  enum class SortMode
-  {
-    DECODE_ORDER,
-    PRESENTATION_ORDER
-  };
-  SortMode sortMode { SortMode::DECODE_ORDER };
-
-  QMap<unsigned int, QList<BitrateEntry>> dataPerStream;
-  mutable QMutex dataMutex;
-
-  unsigned int calculateAverageValue(unsigned streamIndex, unsigned pointIndex) const;
-
-  Range<int> rangeDts;
-  Range<int> rangePts;
-  QMap<unsigned int, Range<int>> rangeBitratePerStream;
+  bool pressed;
 };

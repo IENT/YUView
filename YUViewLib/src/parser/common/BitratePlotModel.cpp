@@ -128,6 +128,27 @@ QString BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex,
         .arg(entry.bitrate);
 }
 
+std::optional<unsigned> BitratePlotModel::getReasonabelRangeToShowOnXAxisPer100Pixels() const
+{
+  std::optional<unsigned> range;
+  for (auto &list : this->dataPerStream)
+  {
+    if (list.size() >= 2)
+    {
+      const auto minDistance = unsigned(std::abs(list.at(1).dts - list.at(0).dts));
+      // Try to show 10 of these distance steps per 100 px
+      const auto minDistancePer100Pix = minDistance * 10;
+      if (minDistance == 0)
+        continue;
+      if (range)
+        range = std::max(minDistancePer100Pix, *range);
+      else
+        range = minDistancePer100Pix;
+    }
+  }
+  return range;
+}
+
 void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)
 {
   QMutexLocker locker(&this->dataMutex);
