@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "bitstreamAnalysisWidget.h"
+#include "BitstreamAnalysisWidget.h"
 
 #include "parser/parserAnnexBAVC.h"
 #include "parser/parserAnnexBHEVC.h"

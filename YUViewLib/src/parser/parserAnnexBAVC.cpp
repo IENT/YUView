@@ -2508,9 +2508,8 @@ void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned buff
   }
   if (this->decodingBufferLevel >= bufferSize)
   {
-    const int overflow_bits   = int(this->decodingBufferLevel) - bufferSize;
     this->decodingBufferLevel = bufferSize;
-    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << t_end << " Decoding Buffer overflow by " << overflow_bits << "bits" << " added bits " << bufferAdd << "(" << bufferAddFractional << ")");
+    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << t_end << " Decoding Buffer overflow by " << (int(this->decodingBufferLevel) - bufferSize) << "bits" << " added bits " << bufferAdd << "(" << bufferAddFractional << ")");
   }
 }
 
