@@ -34,6 +34,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <QObject>
 #include <QList>
 #include <QPair>
 #include <QRect>
