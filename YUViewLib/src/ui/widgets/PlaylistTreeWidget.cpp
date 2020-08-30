@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "playlistTreeWidget.h"
+#include "PlaylistTreeWidget.h"
 
 #include <QBuffer>
 #include <QFileDialog>

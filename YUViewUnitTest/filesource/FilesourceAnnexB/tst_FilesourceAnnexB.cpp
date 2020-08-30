@@ -1,7 +1,7 @@
 #include <QtTest>
+#include <QTemporaryFile>
 
 #include <filesource/FileSourceAnnexBFile.h>
-#include <QTemporaryFile>
 
 #include <optional>
 
@@ -61,7 +61,7 @@ void FileSourceAnnexBTest::testFormatFromFilename()
 {
   QFETCH(size_t, startCodeLength);
   QFETCH(size_t, totalDataLength);
-  QFETCH(QList<size_t>, startCodePositions);
+  QFETCH(QList<uint64_t>, startCodePositions);
 
   QVERIFY(startCodeLength == 3 || startCodeLength == 4);
 
@@ -107,7 +107,7 @@ void FileSourceAnnexBTest::testFormatFromFilename()
   unsigned counter = 0;
   while (nalData.size() > 0)
   {
-    QCOMPARE(nalSizes[counter++], nalData.size());
+    QCOMPARE(nalSizes[counter++], uint64_t(nalData.size()));
     nalData = annexBFile.getNextNALUnit();
   }
 }

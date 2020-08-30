@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "fileInfoWidget.h"
+#include "FileInfoWidget.h"
 
 #include <QPointer>
 #include <QPushButton>
