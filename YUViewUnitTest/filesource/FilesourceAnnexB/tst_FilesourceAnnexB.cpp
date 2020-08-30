@@ -101,7 +101,7 @@ void FileSourceAnnexBTest::testNalUnitParsing()
   f.close();
 
   FileSourceAnnexBFile annexBFile(f.fileName());
-  QCOMPARE(annexBFile.getNrBytesBeforeFirstNAL(), startCodePositions[0]);
+  QCOMPARE(unsigned(annexBFile.getNrBytesBeforeFirstNAL()), startCodePositions[0]);
 
   auto nalData = annexBFile.getNextNALUnit();
   unsigned counter = 0;
