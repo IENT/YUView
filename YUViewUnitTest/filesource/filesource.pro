@@ -1,3 +1,4 @@
 TEMPLATE = subdirs
 
-SUBDIRS = filesource
+SUBDIRS = Filesource
+SUBDIRS += FilesourceAnnexB
