@@ -46,26 +46,42 @@
 
 parserBase::parserBase(QObject *parent) : QObject(parent)
 {
-  packetModel.reset(new PacketItemModel(parent));
-  bitratePlotModel.reset(new BitratePlotModel());
-  hrdItemModel.reset(new HRDPlotModel());
-  streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
-  streamIndexFilter->setSourceModel(packetModel.data());
+  this->packetModel.reset(new PacketItemModel(parent));
+  this->bitratePlotModel.reset(new BitratePlotModel());
+  this->hrdPlotModel.reset(new HRDPlotModel());
+  this->streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
+  this->streamIndexFilter->setSourceModel(this->packetModel.data());
 }
 
 parserBase::~parserBase()
 {
 }
 
+HRDPlotModel *parserBase::getHRDPlotModel()
+{
+  if (this->redirectPlotModel == nullptr && !this->hrdPlotModel.isNull())
+    return this->hrdPlotModel.get();
+  else if (this->redirectPlotModel != nullptr)
+    return this->redirectPlotModel;
+  return {};
+}
+
+void parserBase::setRedirectPlotModel(HRDPlotModel *plotModel)
+{
+  Q_ASSERT_X(plotModel != nullptr, Q_FUNC_INFO, "Redirect pointer is NULL");
+  this->hrdPlotModel.reset(nullptr);
+  this->redirectPlotModel = plotModel;
+}
+
 void parserBase::enableModel()
 {
-  if (packetModel->isNull())
-    packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
+  if (this->packetModel->isNull())
+    this->packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
 }
 
 void parserBase::updateNumberModelItems()
 { 
-  packetModel->updateNumberModelItems();
+  this->packetModel->updateNumberModelItems();
 }
 
 QString parserBase::convertSliceTypeMapToString(QMap<QString, unsigned int> &sliceTypes)
