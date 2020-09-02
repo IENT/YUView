@@ -234,7 +234,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
 
     if (new_sps->vui_parameters_present_flag && new_sps->vui_parameters.nal_hrd_parameters_present_flag)
     {
-      this->hrdItemModel->setCPBBufferSize(new_sps->vui_parameters.nal_hrd.CpbSize[0]);
+      this->getHRDPlotModel()->setCPBBufferSize(new_sps->vui_parameters.nal_hrd.CpbSize[0]);
     }
 
     DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parse SPS ID " << new_sps->seq_parameter_set_id);

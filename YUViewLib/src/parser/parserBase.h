@@ -58,7 +58,8 @@ public:
 
   QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
   BitratePlotModel *getBitratePlotModel() { return bitratePlotModel.data(); }
-  HRDPlotModel *getHRDPlotModel() { return hrdItemModel.data(); }
+  HRDPlotModel *getHRDPlotModel();
+  void setRedirectPlotModel(HRDPlotModel *plotModel);
   
   void updateNumberModelItems();
   void enableModel();
@@ -93,7 +94,6 @@ protected:
   QScopedPointer<PacketItemModel> packetModel;
   QScopedPointer<FilterByStreamIndexProxyModel> streamIndexFilter;
   QScopedPointer<BitratePlotModel> bitratePlotModel;
-  QScopedPointer<HRDPlotModel> hrdItemModel;
 
   static QString convertSliceTypeMapToString(QMap<QString, unsigned int> &currentAUSliceTypes);
 
@@ -101,4 +101,8 @@ protected:
   bool cancelBackgroundParser {false};
   int  progressPercentValue   {0};
   bool parsingLimitEnabled    {false};
+
+private:
+  QScopedPointer<HRDPlotModel> hrdPlotModel;
+  HRDPlotModel *redirectPlotModel {nullptr};
 };
