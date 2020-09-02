@@ -60,7 +60,7 @@ parserBase::~parserBase()
 HRDPlotModel *parserBase::getHRDPlotModel()
 {
   if (this->redirectPlotModel == nullptr && !this->hrdPlotModel.isNull())
-    return this->hrdPlotModel.get();
+    return this->hrdPlotModel.data();
   else if (this->redirectPlotModel != nullptr)
     return this->redirectPlotModel;
   return {};
