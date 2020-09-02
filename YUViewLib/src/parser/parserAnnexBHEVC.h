@@ -804,6 +804,9 @@ protected:
   // parameter sets. Here we keep a list of seis that need to be parsed after the parameter sets were recieved.
   QList<QSharedPointer<sei>> reparse_sei;
 
+  QSharedPointer<buffering_period_sei> lastBufferingPeriodSEI;
+  QSharedPointer<pic_timing_sei> lastPicTimingSEI;
+
   // For every frame, we save the file position where the NAL unit of the first slice starts and where the NAL of the last slice ends.
   // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
   std::optional<pairUint64> curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (if known) in case the frame has multiple NAL units
@@ -823,4 +826,45 @@ protected:
   unsigned int counterAU {0};
   bool currentAUAllSlicesIntra {true};
   QMap<QString, unsigned int> currentAUSliceTypes;
+
+  class HRD
+  {
+  public:
+    HRD() = default;
+    void addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, HRDPlotModel *plotModel);
+    void endOfFile(HRDPlotModel *plotModel);
+  
+    bool isFirstAUInBufferingPeriod {true};
+  private:
+    typedef long double time_t;
+
+    // We keep a list of frames which will be removed in the future
+    struct HRDFrameToRemove
+    {
+        HRDFrameToRemove(time_t t_r, int bits, int poc)
+            : t_r(t_r)
+            , bits(bits)
+            , poc(poc)
+        {}
+        time_t t_r;
+        unsigned int bits;
+        int poc;
+    };
+    QList<HRDFrameToRemove> framesToRemove;
+
+    // The access unit count (n) for this HRD. The HRD is initialized with au n=0.
+    uint64_t au_n {0};
+    // Final arrival time (t_af for n minus 1)
+    time_t t_af_nm1 {0};
+    // t_r,n(nb) is the nominal removal time of the first access unit of the previous buffering period
+    time_t t_r_nominal_n_first;
+
+    QList<HRDFrameToRemove> popRemoveFramesInTimeInterval(time_t from, time_t to);
+    void addToBufferAndCheck(unsigned bufferAdd, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel);
+    void removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel);
+    void addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel);
+
+    int64_t decodingBufferLevel {0};
+  };
+  HRD hrd;
 };

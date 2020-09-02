@@ -364,6 +364,8 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
   bool first_slice_segment_in_pic_flag = false;
   bool currentSliceIntra = false;
   QString currentSliceType;
+  QSharedPointer<buffering_period_sei> currentBufferingPeriodSEI;
+  QSharedPointer<pic_timing_sei> currentPicTimingSEI;
   if (nal_hevc.isSlice())
   {
     // Reparse the SEI messages that we could not parse so far. This is a slice so all parameter sets should be available now.
@@ -419,6 +421,11 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
 
     // Also add sps to list of all nals
     nalUnitList.append(new_sps);
+
+    if (new_sps->vui_parameters_present_flag && new_sps->sps_vui_parameters.vui_hrd_parameters_present_flag)
+    {
+      this->getHRDPlotModel()->setCPBBufferSize(new_sps->sps_vui_parameters.vui_hrd_parameters.nal_sub_hrd[0].CpbSize[0]);
+    }
 
     // Add the SPS ID
     specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(new_sps->sps_seq_parameter_set_id) : " SPS_NUT ERR";
@@ -554,12 +561,15 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
         auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
         result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, active_SPS_list, message_tree);
         reparse = new_buffering_period_sei;
+        currentBufferingPeriodSEI = new_buffering_period_sei;
+        this->hrd.isFirstAUInBufferingPeriod = true;
       }
       else if (new_sei->payloadType == 1)
       {
         auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
         result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, active_VPS_list, active_SPS_list, message_tree);
         reparse = new_pic_timing_sei;
+        currentPicTimingSEI = new_pic_timing_sei;
       }
       else if (new_sei->payloadType == 4)
       {
@@ -630,34 +640,39 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
 
   if (auDelimiterDetector.isStartOfNewAU(nal_hevc, first_slice_segment_in_pic_flag))
   {
-    DEBUG_HEVC("Start of new AU. Adding bitrate " << sizeCurrentAU << " for last AU (#" << counterAU << ").");
-
-    BitratePlotModel::BitrateEntry entry;
-    if (bitrateEntry)
+    if (this->sizeCurrentAU > 0)
     {
-      entry.pts = bitrateEntry->pts;
-      entry.dts = bitrateEntry->dts;
-      entry.duration = bitrateEntry->duration;
-    }
-    else
-    {
-      entry.pts = lastFramePOC;
-      entry.dts = counterAU;
-      entry.duration = 1;
-    }
-    entry.bitrate = sizeCurrentAU;
-    entry.keyframe = currentAUAllSlicesIntra;
-    entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
-    parseResult.bitrateEntry = entry;
+      DEBUG_HEVC("Start of new AU. Adding bitrate " << this->sizeCurrentAU << " for last AU (#" << counterAU << ").");
 
-    sizeCurrentAU = 0;
+      BitratePlotModel::BitrateEntry entry;
+      if (bitrateEntry)
+      {
+        entry.pts = bitrateEntry->pts;
+        entry.dts = bitrateEntry->dts;
+        entry.duration = bitrateEntry->duration;
+      }
+      else
+      {
+        entry.pts = lastFramePOC;
+        entry.dts = counterAU;
+        entry.duration = 1;
+      }
+      entry.bitrate = this->sizeCurrentAU;
+      entry.keyframe = currentAUAllSlicesIntra;
+      entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
+      parseResult.bitrateEntry = entry;
+
+      this->hrd.addAU(this->sizeCurrentAU * 8, this->curFramePOC, this->active_SPS_list[0], this->lastBufferingPeriodSEI, this->lastPicTimingSEI, this->getHRDPlotModel());
+    }
+
+    this->sizeCurrentAU = 0;
     counterAU++;
     currentAUAllSlicesIntra = true;
     this->currentAUSliceTypes.clear();
   }
-  if (lastFramePOC != curFramePOC)
-    lastFramePOC = curFramePOC;
-  sizeCurrentAU += data.size();
+  if (lastFramePOC != this->curFramePOC)
+    lastFramePOC = this->curFramePOC;
+  this->sizeCurrentAU += data.size();
 
   if (nal_hevc.isSlice())
   { 
@@ -665,6 +680,11 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
       currentAUAllSlicesIntra = false;
     this->currentAUSliceTypes[currentSliceType]++;
   }
+
+  if (currentBufferingPeriodSEI)
+    this->lastBufferingPeriodSEI = currentBufferingPeriodSEI;
+  if (currentPicTimingSEI)
+    this->lastPicTimingSEI = currentPicTimingSEI;
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
@@ -2720,4 +2740,321 @@ bool parserAnnexBHEVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_hevc &nal,
     this->primaryCodedPictureInAuEncountered = false;
 
   return isStart;
+}
+
+void parserAnnexBHEVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, HRDPlotModel *plotModel)
+{
+  Q_ASSERT(plotModel != nullptr);
+  if (!sps->vui_parameters_present_flag || !sps->sps_vui_parameters.vui_hrd_parameters.nal_hrd_parameters_present_flag)
+    return;
+
+  // There could be multiple but we currently only support one.
+  const auto SchedSelIdx = 0;
+
+  const auto initial_cpb_removal_delay = lastBufferingPeriodSEI->vcl_initial_cpb_removal_delay[SchedSelIdx];
+  const auto initial_cpb_removal_delay_offset = lastBufferingPeriodSEI->vcl_initial_cpb_removal_offset[SchedSelIdx];
+
+  const bool cbr_flag = sps->sps_vui_parameters.vui_hrd_parameters.nal_sub_hrd[0].cbr_flag[SchedSelIdx];
+
+  // TODO: Investigate the difference between our results and the results from stream-Eye
+  // I noticed that the results from stream eye differ by a (seemingly random) additional
+  // number of bits that stream eye counts for au 0.
+  // For one example I investigated it looked like the parameter sets (SPS + PPS) were counted twice for the
+  // first AU.
+  // if (this->au_n == 0)
+  // {
+  //   auBits += 47 * 8;
+  // }
+
+  /* Some notation:
+    t_ai: The time at which the first bit of access unit n begins to enter the CPB is
+    referred to as the initial arrival time. t_r_nominal_n: the nominal removal time of the
+    access unit from the CPB t_r_n: The removal time of access unit n
+  */
+
+  // Annex C: The variable t c is derived as follows and is called a clock tick:
+  time_t t_c = time_t(sps->sps_vui_parameters.vui_num_units_in_tick) / sps->sps_vui_parameters.vui_time_scale;
+
+  // ITU-T Rec H.264 (04/2017) - C.1.2 - Timing of coded picture removal
+  // Part 1: the nominal removal time of the access unit from the CPB
+  time_t t_r_nominal_n;
+  if (this->au_n == 0)
+    t_r_nominal_n = time_t(initial_cpb_removal_delay) / 90000;
+  else
+  {
+    // n is not equal to 0. The removal time depends on the removal time of the previous AU.
+    const auto cpb_removal_delay = unsigned(lastPicTimingSEI->cpb_removal_delay);
+    t_r_nominal_n = this->t_r_nominal_n_first + t_c * cpb_removal_delay;
+  }
+
+  if (this->isFirstAUInBufferingPeriod)
+    this->t_r_nominal_n_first = t_r_nominal_n;
+
+  // ITU-T Rec H.264 (04/2017) - C.1.1 - Timing of bitstream arrival
+  time_t t_ai;
+  if (this->au_n == 0)
+    t_ai = 0;
+  else
+  {
+    if (cbr_flag)
+      t_ai = this->t_af_nm1;
+    else
+    {
+      time_t t_ai_earliest = 0;
+      if (this->isFirstAUInBufferingPeriod)
+      {
+        time_t init_delay = time_t(initial_cpb_removal_delay) / 90000;
+        if (init_delay < t_r_nominal_n)
+          t_ai_earliest = t_r_nominal_n - init_delay;
+      }
+      else
+      {
+        time_t init_delay = time_t(initial_cpb_removal_delay + initial_cpb_removal_delay_offset) / 90000;
+        if (init_delay < t_r_nominal_n)
+          t_ai_earliest = t_r_nominal_n - init_delay;
+      }
+      t_ai = std::max(this->t_af_nm1, t_ai_earliest);
+    }
+  }
+
+  // The final arrival time for access unit n is derived by:
+  const int bitrate = sps->sps_vui_parameters.vui_hrd_parameters.BitRate[SchedSelIdx];
+  time_t t_af       = t_ai + time_t(auBits) / bitrate;
+
+  // ITU-T Rec H.264 (04/2017) - C.1.2 - Timing of coded picture removal
+  // Part 2: The removal time of access unit n is specified as follows:
+  time_t t_r_n;
+  if (!sps->vui_parameters.low_delay_hrd_flag || t_r_nominal_n >= t_af)
+    t_r_n = t_r_nominal_n;
+  else
+    // NOTE: This indicates that the size of access unit n, b(n), is so large that it
+    // prevents removal at the nominal removal time.
+    t_r_n = t_r_nominal_n * t_c * (t_af - t_r_nominal_n) / t_c;
+
+  // C.3 - Bitstream conformance
+  // 1.
+  if (this->au_n > 0 && this->isFirstAUInBufferingPeriod)
+  {
+    time_t t_g_90 = (t_r_nominal_n - this->t_af_nm1) * 90000;
+    time_t initial_cpb_removal_delay_time(initial_cpb_removal_delay);
+    if (!cbr_flag && initial_cpb_removal_delay_time > ceil(t_g_90))
+    {
+      // TODO: These logs should go somewhere!
+      DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be <= ceil(t_g_90) " << ceil(t_g_90));
+    }
+
+    if (cbr_flag && initial_cpb_removal_delay_time < floor(t_g_90))
+    {
+      DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be >= floor(t_g_90) " << floor(t_g_90));
+    }
+  }
+
+  // C.3. - 2 Check the decoding buffer fullness
+
+  // Calculate the fill state of the decoding buffer. This works like this:
+  // For each frame (AU), the buffer is fileed from t_ai to t_af (which indicate) from
+  // when to when bits are recieved for a frame. time t_r, the access unit is removed from
+  // the buffer. If none of this applies, the buffer fill stays constant.
+  // (All values are scaled by 90000 to avoid any rounding errors)
+  const auto buffer_size = (uint64_t) sps->sps_vui_parameters.vui_hrd_parameters.CpbSize[SchedSelIdx];
+
+  // The time windows we have to process is from t_af_nm1 to t_af (t_ai is in between
+  // these two).
+
+  // 1: Process the time from t_af_nm1 (>) to t_ai (<=) (previously processed AUs might be removed
+  //    in this time window (tr_n)). In this time, no data is added to the buffer (no
+  //    frame is being received) but frames may be removed from the buffer. This time can
+  //    be zero.
+  //    In case of a CBR encode, no time of constant bitrate should occur.
+  if (this->t_af_nm1 < t_ai)
+  {
+    auto it = this->framesToRemove.begin();
+    auto lastFrameTime = this->t_af_nm1;
+    while (it != this->framesToRemove.end())
+    {
+      if ((*it).t_r < this->t_af_nm1 || (*it).t_r <= t_ai)
+      {
+        if ((*it).t_r < this->t_af_nm1)
+        {
+          // This should not happen (all frames prior to t_af_nm1 should have been
+          // removed from the buffer already). Remove now and warn.
+          DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Removing frame with removal time (" << (*it).t_r << ") before final arrival time (" << t_af_nm1[SchedSelIdx] << "). Buffer underflow");
+        }
+        this->addConstantBufferLine(poc, lastFrameTime, (*it).t_r, plotModel);
+        this->removeFromBufferAndCheck((*it), poc, (*it).t_r, plotModel);
+        it = this->framesToRemove.erase(it);
+        lastFrameTime = (*it).t_r;
+      }
+      else
+        break;
+    }
+  }
+
+  // 2. For the time from t_ai to t_af, the buffer is filled with the signaled bitrate.
+  //    The overall bits which are added in this time period correspond to the size
+  //    of the frame in bits which will be later removed again.
+  //    Also, previously received frames can be removed in this time interval.
+  assert(t_af > t_ai);
+  auto relevant_frames = this->popRemoveFramesInTimeInterval(t_ai, t_af);
+  unsigned int au_buffer_add = auBits;
+  {
+    // time_t au_time_expired = t_af - t_ai;
+    // uint64_t au_bits_add   = (uint64_t)(au_time_expired * (unsigned int) bitrate);
+    // assert(au_buffer_add == au_bits_add || au_buffer_add == au_bits_add + 1 ||
+    // au_buffer_add + 1 == au_bits_add);
+  }
+  if (relevant_frames.empty())
+  {
+    this->addToBufferAndCheck(au_buffer_add, buffer_size, poc, t_ai, t_af, plotModel);
+  }
+  else
+  {
+    // While bits are coming into the buffer, frames are removed as well.
+    // For each period, we add the bits (and check the buffer state) and remove the
+    // frames from the buffer (and check the buffer state).
+    auto t_ai_sub                  = t_ai;
+    unsigned int buffer_add_sum      = 0;
+    long double buffer_add_remainder = 0;
+    for (auto frame : relevant_frames)
+    {
+      assert(frame.t_r >= t_ai_sub && frame.t_r < t_af);
+      time_t time_expired               = frame.t_r - t_ai_sub;
+      long double buffer_add_fractional = bitrate * time_expired
+                                          + buffer_add_remainder;
+      unsigned int buffer_add = floor(buffer_add_fractional);
+      buffer_add_remainder    = buffer_add_fractional - buffer_add;
+      buffer_add_sum += buffer_add;
+      this->addToBufferAndCheck(buffer_add, buffer_size, poc, t_ai_sub, frame.t_r, plotModel);
+      this->removeFromBufferAndCheck(frame, poc, frame.t_r, plotModel);
+      t_ai_sub = frame.t_r;
+    }
+    // The last interval from t_ai_sub to t_af
+    assert(au_buffer_add >= buffer_add_sum);
+    unsigned int buffer_add_remain = au_buffer_add - buffer_add_sum;
+    // The sum should correspond to the size of the complete AU
+    time_t time_expired               = t_af - t_ai_sub;
+    long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
+    {
+      unsigned int buffer_add = round(buffer_add_fractional);
+      buffer_add_sum += buffer_add;
+      // assert(buffer_add_sum == au_buffer_add || buffer_add_sum + 1 == au_buffer_add
+      // || buffer_add_sum == au_buffer_add + 1);
+    }
+    this->addToBufferAndCheck(buffer_add_remain, buffer_size, poc, t_ai_sub, t_af, plotModel);
+  }
+
+  if (t_r_n <= t_af)
+  {
+    // The picture is removed from the buffer before the last bit of it could be
+    // received. This is a buffer underflow. However, technically the values we have to
+    // compare for underflow detection is the nominal removal time. This is done
+    // further down.
+  }
+  framesToRemove.push_back(HRDFrameToRemove(t_r_n, auBits, poc));
+
+  this->t_af_nm1 = t_af;
+
+  // C.3 - 3. A CPB underflow is specified as the condition in which t_r,n(n) is less than
+  // t_af(n). When low_delay_hrd_flag is equal to 0, the CPB shall never underflow.
+  if (t_r_nominal_n < t_af && !sps->vui_parameters.low_delay_hrd_flag)
+  {
+    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Decoding Buffer underflow t_r_n " << t_r_n << " t_af " << t_af);
+  }
+
+  this->au_n++;
+  this->isFirstAUInBufferingPeriod = false;
+}
+
+void parserAnnexBHEVC::HRD::endOfFile(HRDPlotModel *plotModel)
+{
+  // From time this->t_af_nm1 onwards, just remove all of the frames which have not been removed yet.
+  auto lastFrameTime = this->t_af_nm1;
+  for (const auto &frame : this->framesToRemove)
+  {
+    this->addConstantBufferLine(frame.poc, lastFrameTime, frame.t_r, plotModel);
+    this->removeFromBufferAndCheck(frame, frame.poc, frame.t_r, plotModel);
+    lastFrameTime = frame.t_r;
+  }
+  this->framesToRemove.clear();
+}
+
+QList<parserAnnexBHEVC::HRD::HRDFrameToRemove> parserAnnexBHEVC::HRD::popRemoveFramesInTimeInterval(time_t from, time_t to)
+{
+  QList<parserAnnexBAVC::HRD::HRDFrameToRemove> l;
+  auto it = this->framesToRemove.begin();
+  while (it != this->framesToRemove.end())
+  {
+    if ((*it).t_r >= from && (*it).t_r < to)
+    {
+      l.push_back((*it));
+      it = this->framesToRemove.erase(it);
+      continue;
+    }
+    if ((*it).t_r >= to)
+      break;
+    // Prevent an infinite loop in case of wrong data. We should never reach this if all timings are correct.
+    it++;
+  }
+  return l;
+}
+
+void parserAnnexBHEVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
+{
+  const auto bufferOld = this->decodingBufferLevel;
+  this->decodingBufferLevel += bufferAdd;
+  
+  {
+    HRDPlotModel::HRDEntry entry;
+    entry.type = HRDPlotModel::HRDEntry::EntryType::Adding;
+    entry.cbp_fullness_start = bufferOld;
+    entry.cbp_fullness_end = this->decodingBufferLevel;
+    entry.time_offset_start = t_begin;
+    entry.time_offset_end = t_end;
+    entry.poc = poc;
+    plotModel->addHRDEntry(entry);
+  }
+  if (this->decodingBufferLevel >= bufferSize)
+  {
+    this->decodingBufferLevel = bufferSize;
+    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << t_end << " Decoding Buffer overflow by " << (int(this->decodingBufferLevel) - bufferSize) << "bits" << " added bits " << bufferAdd << "(" << bufferAddFractional << ")");
+  }
+}
+
+void parserAnnexBHEVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel)
+{
+  Q_UNUSED(poc);
+
+  // Remove the frame from the buffer
+  unsigned int bufferSub = frame.bits;
+  const auto bufferOld   = this->decodingBufferLevel;
+  this->decodingBufferLevel -= bufferSub;
+  {
+    HRDPlotModel::HRDEntry entry;
+    entry.type = HRDPlotModel::HRDEntry::EntryType::Removal;
+    entry.cbp_fullness_start = bufferOld;
+    entry.cbp_fullness_end = this->decodingBufferLevel;
+    entry.time_offset_start = removalTime;
+    entry.time_offset_end = removalTime;
+    entry.poc = frame.poc;
+    plotModel->addHRDEntry(entry);
+  }
+  if (this->decodingBufferLevel < 0)
+  {
+    // The buffer did underflow; i.e. we need to decode a pictures
+    // at the time but there is not enough data in the buffer to do so (to take the AU
+    // out of the buffer).
+    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << frame.t_r << " Decoding Buffer underflow by " << this->decodingBufferLevel << "bits");
+  }
+}
+
+void parserAnnexBHEVC::HRD::addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
+{
+  HRDPlotModel::HRDEntry entry;
+  entry.type = HRDPlotModel::HRDEntry::EntryType::Adding;
+  entry.cbp_fullness_start = this->decodingBufferLevel;
+  entry.cbp_fullness_end = this->decodingBufferLevel;
+  entry.time_offset_start = t_begin;
+  entry.time_offset_end = t_end;
+  entry.poc = poc;
+  plotModel->addHRDEntry(entry);
 }

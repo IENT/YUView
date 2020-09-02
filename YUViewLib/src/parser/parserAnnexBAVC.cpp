@@ -2245,7 +2245,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   const auto SchedSelIdx = 0;
 
   const auto initial_cpb_removal_delay = lastBufferingPeriodSEI->initial_cpb_removal_delay[SchedSelIdx];
-  const auto initial_cpb_removal_delay_offset = lastBufferingPeriodSEI->initial_cpb_removal_delay[SchedSelIdx];
+  const auto initial_cpb_removal_delay_offset = lastBufferingPeriodSEI->initial_cpb_removal_delay_offset[SchedSelIdx];
 
   const bool cbr_flag = sps->vui_parameters.nal_hrd.cbr_flag[SchedSelIdx];
 
