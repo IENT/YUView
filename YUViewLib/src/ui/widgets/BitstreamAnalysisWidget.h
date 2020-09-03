@@ -54,6 +54,7 @@ public:
 
 public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
+  void updateSettings();
 
 private slots:
   void updateParserItemModel();

@@ -41,6 +41,8 @@
 
 #include "BitratePlotModel.h"
 
+#include <QLocale>
+
 unsigned BitratePlotModel::getNrStreams() const
 {
   return this->dataPerStream.size();
@@ -53,8 +55,10 @@ PlotModel::StreamParameter BitratePlotModel::getStreamParameter(unsigned streamI
   if (this->dataPerStream.contains(streamIndex))
   {
     PlotModel::StreamParameter streamParameter;
-    streamParameter.xRange = (sortMode == SortMode::DECODE_ORDER) ? this->rangeDts : this->rangePts;
-    streamParameter.yRange = this->rangeBitratePerStream[streamIndex];
+    streamParameter.xRange.min = (sortMode == SortMode::DECODE_ORDER) ? double(this->rangeDts.min) : double(this->rangePts.min);
+    streamParameter.xRange.max = (sortMode == SortMode::DECODE_ORDER) ? double(this->rangeDts.max) : double(this->rangePts.max);
+    streamParameter.yRange.min = double(this->rangeBitratePerStream[streamIndex].min);
+    streamParameter.yRange.max = double(this->rangeBitratePerStream[streamIndex].max);
 
     const auto nrPoints = unsigned(this->dataPerStream[streamIndex].size());
     streamParameter.plotParameters.append({PlotType::Bar, nrPoints});
@@ -147,6 +151,21 @@ std::optional<unsigned> BitratePlotModel::getReasonabelRangeToShowOnXAxisPer100P
     }
   }
   return range;
+}
+
+QString BitratePlotModel::formatValue(Axis axis, double value) const
+{
+  if (axis == Axis::X)
+  {
+    // The value is a timestamp. We could convert this to a time but for now a total value will do
+    return QString("%1").arg(value);
+  }
+  else
+  {
+    // The value is bytes
+    const auto bytes = qint64(value);
+    return QLocale().formattedDataSize(bytes);
+  }
 }
 
 void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)

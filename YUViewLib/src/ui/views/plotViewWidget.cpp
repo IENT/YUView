@@ -181,6 +181,8 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
 {
   Q_UNUSED(paint_event);
 
+  MoveAndZoomableView::updatePaletteIfNeeded();
+
   QPainter painter(this);
   painter.setRenderHint(QPainter::Antialiasing);
 
@@ -191,10 +193,10 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
 
   this->updateAxis(plotRect);
 
-  auto valuesX = this->getAxisValuesToShow(Axis::X);
-  auto valuesY = this->getAxisValuesToShow(Axis::Y);
-  this->drawGridLines(painter, this->propertiesAxis[0], plotRect, valuesX);
-  this->drawGridLines(painter, this->propertiesAxis[1], plotRect, valuesY);
+  auto ticksX = this->getAxisTicksToShow(Axis::X);
+  auto ticksY = this->getAxisTicksToShow(Axis::Y);
+  this->drawGridLines(painter, this->propertiesAxis[0], plotRect, ticksX);
+  this->drawGridLines(painter, this->propertiesAxis[1], plotRect, ticksY);
 
   this->drawLimits(painter, plotRect);
   this->drawPlot(painter, plotRect);
@@ -203,15 +205,18 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
   this->drawWhiteBoarders(painter, plotRect, widgetRect);
   this->drawAxis(painter, plotRect);
 
-  this->drawAxisTicksAndValues(painter, this->propertiesAxis[0], valuesX);
-  this->drawAxisTicksAndValues(painter, this->propertiesAxis[1], valuesY);
+  if (this->model)
+  {
+    this->drawAxisTicksAndValues(painter, this->propertiesAxis[0], ticksX, this->model);
+    this->drawAxisTicksAndValues(painter, this->propertiesAxis[1], ticksY, this->model);
+  }
 
   this->drawInfoBox(painter, plotRect);
   //this->drawDebugBox(painter, plotRect);
 
   this->drawFadeBoxes(painter, plotRect, widgetRect);
 
-  if (!this->model)
+  if (this->model == nullptr)
   {
     drawTextInCenterOfArea(painter, this->rect(), "Please select an item");
   }
@@ -269,10 +274,10 @@ void PlotViewWidget::setMoveOffset(QPoint offset)
     return;
   }
   
-  const auto clipLeft = int(-(visibleRange->min + 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
+  const auto clipLeft = int(-(visibleRange->min) * this->zoomToPixelsPerValueX * this->zoomFactor);
   const auto axisLengthX = this->propertiesAxis[0].line.p2().x() - this->propertiesAxis[0].line.p1().x();
   const auto axisLengthInValues = axisLengthX / this->zoomToPixelsPerValueX / this->zoomFactor;
-  const auto clipRight = int(-(visibleRange->max - axisLengthInValues - 0.5) * this->zoomToPixelsPerValueX * this->zoomFactor);
+  const auto clipRight = int(-(visibleRange->max - axisLengthInValues) * this->zoomToPixelsPerValueX * this->zoomFactor);
 
   QPoint offsetClipped;
   if (axisLengthInValues > (visibleRange->max - visibleRange->min))
@@ -309,7 +314,7 @@ void PlotViewWidget::drawWhiteBoarders(QPainter &painter, const QRectF &plotRect
   painter.drawRect(QRectF(QPointF(0, plotRect.bottom()), widgetRect.bottomRight()));
 }
 
-QList<PlotViewWidget::TickValue> PlotViewWidget::getAxisValuesToShow(const PlotViewWidget::Axis axis) const
+QList<PlotViewWidget::TickValue> PlotViewWidget::getAxisTicksToShow(const Axis axis) const
 {
   const auto &properties = this->propertiesAxis[(axis == Axis::X) ? 0 : 1];
   const auto axisVector = (axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
@@ -323,23 +328,23 @@ QList<PlotViewWidget::TickValue> PlotViewWidget::getAxisValuesToShow(const PlotV
     rangeMax = (axis == Axis::X) ? lineEndInPlot.x() : lineEndInPlot.y();
   }
   const auto valueRange = rangeMax - rangeMin;
+  if (valueRange == 0)
+    return {};
 
   const int minPixelDistanceBetweenValues = 50;
-  const auto nrValuesToShowMax = double(axisLengthInPixels) / minPixelDistanceBetweenValues;
-
-  auto nrWholeValuesInRange = int(std::floor(valueRange));
+  const auto nrTicksToShowMax = double(axisLengthInPixels) / minPixelDistanceBetweenValues;
 
   double factorMajor = 1.0;
-  while (factorMajor * 10 * nrWholeValuesInRange < nrValuesToShowMax)
+  while (factorMajor * 10 * valueRange < nrTicksToShowMax)
     factorMajor *= 10;
-  while (factorMajor * nrWholeValuesInRange > nrValuesToShowMax)
+  while (factorMajor * valueRange > nrTicksToShowMax)
     factorMajor /= 10;
 
   double factorMinor = factorMajor;
-  while (factorMinor * nrWholeValuesInRange * 2 < nrValuesToShowMax)
+  while (factorMinor * valueRange * 2 < nrTicksToShowMax)
     factorMinor *= 2;
 
-  DEBUG_PLOT("PlotViewWidget::getAxisValuesToShow nrWholeValuesInRange " << nrWholeValuesInRange << " nrValuesToShowMax " << nrValuesToShowMax << " factorMajor " << factorMajor << " factorMinor " << factorMinor);
+  DEBUG_PLOT("PlotViewWidget::getAxisTicksToShow valueRange " << valueRange << " nrTicksToShowMax " << nrTicksToShowMax << " factorMajor " << factorMajor << " factorMinor " << factorMinor);
 
   auto getValuesForFactor = [rangeMin, rangeMax](double factor)
   {
@@ -373,24 +378,24 @@ void PlotViewWidget::drawAxis(QPainter &painter, const QRectF &plotRect)
   painter.drawLine(plotRect.bottomLeft(), plotRect.bottomRight());
 }
 
-void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QList<PlotViewWidget::TickValue> &values)
+void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QList<PlotViewWidget::TickValue> &ticks, const PlotModel *plotModel)
 {
   const auto tickLine = (properties.axis == Axis::X) ? QPointF(0, tickLength) : QPointF(-tickLength, 0);
 
   QFont displayFont = painter.font();
   QFontMetricsF metrics(displayFont);
   painter.setPen(QPen(Qt::black, 1));
-  for (auto v : values)
+  for (auto tick : ticks)
   {
     //auto pixelPosOnAxis = ((v.value - properties.minValue) / valueRange) * axisLengthInPixels;
     QPointF p = properties.line.p1();
     if (properties.axis == Axis::X)
-      p.setX(v.pixelPosInWidget);
+      p.setX(tick.pixelPosInWidget);
     else
-      p.setY(v.pixelPosInWidget);
+      p.setY(tick.pixelPosInWidget);
     painter.drawLine(p, p + tickLine);
 
-    auto text = QString("%1").arg(v.value);
+    const auto text = plotModel->formatValue(properties.axis, tick.value);
     auto textSize = metrics.size(0, text);
     QRectF textRect;
     textRect.setSize(textSize);
@@ -404,25 +409,25 @@ void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWid
   }
 }
 
-void PlotViewWidget::drawGridLines(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QRectF &plotRect, const QList<TickValue> &values)
+void PlotViewWidget::drawGridLines(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QRectF &plotRect, const QList<TickValue> &ticks)
 {
   auto drawStart = (properties.axis == Axis::X) ? plotRect.topLeft() : plotRect.bottomLeft();
   auto drawEnd = (properties.axis == Axis::X) ? plotRect.bottomLeft() : plotRect.bottomRight();
 
-  for (auto v : values)
+  for (auto tick : ticks)
   {
     if (properties.axis == Axis::X)
     {
-      drawStart.setX(v.pixelPosInWidget);
-      drawEnd.setX(v.pixelPosInWidget);
+      drawStart.setX(tick.pixelPosInWidget);
+      drawEnd.setX(tick.pixelPosInWidget);
     }
     else
     {
-      drawStart.setY(v.pixelPosInWidget);
-      drawEnd.setY(v.pixelPosInWidget);
+      drawStart.setY(tick.pixelPosInWidget);
+      drawEnd.setY(tick.pixelPosInWidget);
     }
 
-    painter.setPen(v.minorTick ? gridLineMinor : gridLineMajor);
+    painter.setPen(tick.minorTick ? gridLineMinor : gridLineMajor);
     painter.drawLine(drawStart, drawEnd);
   }
 }
@@ -473,7 +478,7 @@ void PlotViewWidget::drawLimits(QPainter &painter, const QRectF &plotRect) const
     {
       // Only draw visible limits
       QLineF line;
-      if (limit.type == PlotModel::Limit::Type::X)
+      if (limit.axis == Axis::X)
       {
         if (limit.value < plotMin.x() || limit.value > plotMax.x())
           continue;
@@ -838,12 +843,12 @@ void PlotViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additi
   DEBUG_PLOT("MoveAndZoomableView::mouseReleaseEvent end zoom box - zoomRectCenterOffset " << zoomRectCenterOffset << " newMoveOffset " << newMoveOffset);
 }
 
-std::optional<Range<int>> PlotViewWidget::getVisibleRange(const Axis axis) const
+std::optional<Range<double>> PlotViewWidget::getVisibleRange(const Axis axis) const
 {
   if (this->showStreamList.empty())
     return {};
 
-  Range<int> visibleRange {0, 0};
+  Range<double> visibleRange {0, 0};
   for (int i = 0; i < this->showStreamList.size(); i++)
   {
     const auto streamIndex = this->showStreamList.at(i);

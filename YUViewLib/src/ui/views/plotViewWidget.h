@@ -59,11 +59,6 @@ protected:
   void   setZoomFactor(double zoom) override;
   
 private:
-  enum class Axis
-  {
-    X,
-    Y
-  };
 
   struct TickValue
   {
@@ -89,11 +84,11 @@ private:
   };
   AxisProperties propertiesAxis[2];
 
-  QList<TickValue> getAxisValuesToShow(const Axis axis) const;
+  QList<TickValue> getAxisTicksToShow(const Axis axis) const;
   static void drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect);
   static void drawAxis(QPainter &painter, const QRectF &plotRect);
-  static void drawAxisTicksAndValues(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &values);
-  static void drawGridLines(QPainter &painter, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &values);
+  static void drawAxisTicksAndValues(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &ticks, const PlotModel *plotModel);
+  static void drawGridLines(QPainter &painter, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &ticks);
   static void drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect);
 
   void updateAxis(const QRectF &plotRect);
@@ -111,7 +106,7 @@ private:
   void zoomToFitInternal() override;
   void onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) override;
 
-  std::optional<Range<int>> getVisibleRange(const Axis axis) const;
+  std::optional<Range<double>> getVisibleRange(const Axis axis) const;
 
   PlotModel *model {nullptr};
 

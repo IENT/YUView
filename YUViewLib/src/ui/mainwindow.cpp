@@ -56,7 +56,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
 
   // set some defaults
   if (!settings.contains("Background/Color"))
-    settings.setValue("Background/Color", QColor(128, 128, 128));
+    settings.setValue("Background/Color", QColor(255, 255, 255));
   if (!settings.contains("OverlayGrid/Color"))
     settings.setValue("OverlayGrid/Color", QColor(0, 0, 0));
 
@@ -639,6 +639,7 @@ void MainWindow::updateSettings()
   ui.displaySplitView->updateSettings();
   separateViewWindow.splitView.updateSettings();
   ui.playlistTreeWidget->updateSettings();
+  ui.bitstreamAnalysis->updateSettings();
   cache->updateSettings();
   ui.playbackController->updateSettings();
 }

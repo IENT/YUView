@@ -41,11 +41,8 @@
 
 #include "HRDPlotModel.h"
 
-int timestampToInt(double timestamp)
-{
-  // Doubles are not really supported for plotting. Lets just scale everything by 90000
-  return int(timestamp * 90000);
-}
+#include <QTime>
+#include <QLocale>
 
 PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex) const
 {
@@ -55,14 +52,14 @@ PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex
   QMutexLocker locker(&this->dataMutex);
 
   PlotModel::StreamParameter streamParameter;
-  streamParameter.xRange = {0, timestampToInt(this->time_offset_max)};
-  streamParameter.yRange = {0, this->maxBufferLevel};
+  streamParameter.xRange = {0, this->time_offset_max};
+  streamParameter.yRange = {0, double(this->maxBufferLevel)};
   
   if (this->cpb_buffer_size > 0)
   {
     PlotModel::Limit cpbLimit;
     cpbLimit.name = "cpb size";
-    cpbLimit.type = PlotModel::Limit::Type::Y;
+    cpbLimit.axis = Axis::Y;
     cpbLimit.value = this->cpb_buffer_size;
     streamParameter.limits.append(cpbLimit);
   }
@@ -89,7 +86,7 @@ PlotModel::Point HRDPlotModel::getPlotPoint(unsigned streamIndex, unsigned plotI
     return {};
 
   PlotModel::Point point;
-  point.x = timestampToInt(this->data[pointIndex - 1].time_offset_end);
+  point.x = this->data[pointIndex - 1].time_offset_end;
   point.y = this->data[pointIndex - 1].cbp_fullness_end;
   
   return point;
@@ -144,6 +141,23 @@ QString HRDPlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, uns
         .arg(cpbDiff)
         .arg(entry.time_offset_start * timeScale)
         .arg(entry.poc);
+  }
+}
+
+QString HRDPlotModel::formatValue(Axis axis, double value) const
+{
+  if (axis == Axis::X)
+  {
+    const auto timeScale = 1000;  // This results in the time being in ms
+    const auto milliseconds = int(value * timeScale);
+    return QTime(0, 0).addMSecs(milliseconds).toString("hh:mm:ss.zzz");
+  }
+  else
+  {
+    // The value is bytes
+    const auto bytes = qint64(value);
+    QLocale locale;
+    return locale.formattedDataSize(bytes);
   }
 }
 

@@ -40,6 +40,12 @@
 
 #include <optional>
 
+enum class Axis
+{
+  X,
+  Y
+};
+
 class PlotModel : public QObject
 {
   Q_OBJECT
@@ -67,24 +73,18 @@ public:
   // A limit can be used to draw a horizontal/vertical line at a certain position (x/y)
   struct Limit
   {
-    enum class Type
-    {
-      X,
-      Y
-    };
-
     QString name;
     int value;
-    Type type;
+    Axis axis;
   };
 
   struct StreamParameter
   {
     unsigned getNrPlots() const { return unsigned(this->plotParameters.size()); }
-    Range<int> xRange;
-    Range<int> yRange;
+    Range<double> xRange;
+    Range<double> yRange;
     QList<PlotParameter> plotParameters;
-    QList<Limit> limits; 
+    QList<Limit> limits;
   };
 
   struct Point
@@ -98,6 +98,7 @@ public:
   virtual Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
   virtual QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
   virtual std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const = 0;
+  virtual QString formatValue(Axis axis, double value) const = 0;
 
   std::optional<unsigned> getPointIndex(unsigned streamIndex, unsigned plotIndex, QPointF point) const;
 
