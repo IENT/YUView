@@ -87,7 +87,7 @@ private:
   QList<TickValue> getAxisTicksToShow(const Axis axis) const;
   static void drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect);
   static void drawAxis(QPainter &painter, const QRectF &plotRect);
-  static void drawAxisTicksAndValues(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &ticks, const PlotModel *plotModel);
+  void drawAxisTicksAndValues(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &ticks) const;
   static void drawGridLines(QPainter &painter, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &ticks);
   static void drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect);
 

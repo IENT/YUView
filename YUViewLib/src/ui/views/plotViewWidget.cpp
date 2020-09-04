@@ -205,11 +205,8 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
   this->drawWhiteBoarders(painter, plotRect, widgetRect);
   this->drawAxis(painter, plotRect);
 
-  if (this->model)
-  {
-    this->drawAxisTicksAndValues(painter, this->propertiesAxis[0], ticksX, this->model);
-    this->drawAxisTicksAndValues(painter, this->propertiesAxis[1], ticksY, this->model);
-  }
+  this->drawAxisTicksAndValues(painter, this->propertiesAxis[0], ticksX);
+  this->drawAxisTicksAndValues(painter, this->propertiesAxis[1], ticksY);
 
   this->drawInfoBox(painter, plotRect);
   //this->drawDebugBox(painter, plotRect);
@@ -378,8 +375,11 @@ void PlotViewWidget::drawAxis(QPainter &painter, const QRectF &plotRect)
   painter.drawLine(plotRect.bottomLeft(), plotRect.bottomRight());
 }
 
-void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QList<PlotViewWidget::TickValue> &ticks, const PlotModel *plotModel)
+void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QList<PlotViewWidget::TickValue> &ticks) const
 {
+  if (ticks.isEmpty() || this->model == nullptr)
+    return;
+
   const auto tickLine = (properties.axis == Axis::X) ? QPointF(0, tickLength) : QPointF(-tickLength, 0);
 
   QFont displayFont = painter.font();
@@ -387,16 +387,78 @@ void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWid
   painter.setPen(QPen(Qt::black, 1));
   for (auto tick : ticks)
   {
-    //auto pixelPosOnAxis = ((v.value - properties.minValue) / valueRange) * axisLengthInPixels;
+    //auto pixelPosOnAxis = ((tick.value - properties.minValue) / valueRange) * axisLengthInPixels;
     QPointF p = properties.line.p1();
     if (properties.axis == Axis::X)
       p.setX(tick.pixelPosInWidget);
     else
       p.setY(tick.pixelPosInWidget);
     painter.drawLine(p, p + tickLine);
+  }
 
-    const auto text = plotModel->formatValue(properties.axis, tick.value);
+  QList<PlotViewWidget::TickValue> ticksToDrawTextFor;
+  if (properties.axis == Axis::Y)
+  {
+    auto visibleRange = this->getVisibleRange(Axis::Y);
+    if (!visibleRange)
+      ticksToDrawTextFor = ticks;
+    else
+    {
+      for (auto tick : ticks)
+      {
+        if (tick.value >= (*visibleRange).min && tick.value <= (*visibleRange).max)
+          ticksToDrawTextFor.append(tick);
+      }
+    }
+  }
+  else
+  {
+    auto visibleRange = this->getVisibleRange(Axis::X);
+    if (ticks.count() < 2)
+    {
+      if (!visibleRange || (ticks[0].value >= (*visibleRange).min && ticks[0].value <= (*visibleRange).max))
+        ticksToDrawTextFor.append(ticks[0]);
+    }
+    else
+    {
+      double maxTextWidthInPixels = 0;
+      for (auto tick : ticks)
+      {
+        const auto text = this->model->formatValue(properties.axis, tick.value);
+        auto textSize = metrics.size(0, text);
+        if (textSize.width() > maxTextWidthInPixels)
+          maxTextWidthInPixels = textSize.width();
+      }
+      const auto distanceBetweenLabels = 20;
+      const double minDistanceBetweenTicks = maxTextWidthInPixels + distanceBetweenLabels;
+      const double tickDistanceInValues = ticks[1].value - ticks[0].value;
+      const auto tickDistanceInPixels = convertPlotPosToPixelPos(QPointF(ticks[1].value, 0)).x() - convertPlotPosToPixelPos(QPointF(ticks[0].value, 0)).x();
+      auto drawEveryNthTick = 1;
+      while (tickDistanceInPixels * drawEveryNthTick < minDistanceBetweenTicks)
+        drawEveryNthTick *= 2;
+
+      for (auto tick : ticks)
+      {
+        const auto indexOfTickFrom0 = int(std::round(tick.value / tickDistanceInValues));
+        const auto isTickVisibleBySubsampling = indexOfTickFrom0 % drawEveryNthTick == 0;
+        const auto isTickWithinVisibleRange = !visibleRange || (tick.value >= (*visibleRange).min && tick.value <= (*visibleRange).max);
+        if (isTickVisibleBySubsampling && isTickWithinVisibleRange)
+          ticksToDrawTextFor.append(tick);
+      }
+    }
+  }
+  
+  for (auto tick : ticksToDrawTextFor)
+  {
+    const auto text = this->model->formatValue(properties.axis, tick.value);
     auto textSize = metrics.size(0, text);
+    
+    QPointF p = properties.line.p1();
+    if (properties.axis == Axis::X)
+      p.setX(tick.pixelPosInWidget);
+    else
+      p.setY(tick.pixelPosInWidget);
+    
     QRectF textRect;
     textRect.setSize(textSize);
     textRect.moveCenter(p);
@@ -404,7 +466,7 @@ void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWid
       textRect.moveTop(p.y() + tickLength + 2);
     else
       textRect.moveRight(p.x() - tickLength - 2);
-    
+
     painter.drawText(textRect, Qt::AlignCenter, text);
   }
 }
