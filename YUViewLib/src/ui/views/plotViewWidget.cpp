@@ -46,11 +46,12 @@
 #define DEBUG_PLOT(fmt,...) ((void)0)
 #endif
 
-const QPoint marginTopLeft(30, 5);
-const QPoint marginBottomRight(5, 30);
+const auto marginTop = 5;
+const auto marginRight = 5;
 
 const int axisMaxValueMargin = 10;
-const int tickLength = 5;
+const int tickLength = 3;
+const int tickToTextSpace = 2;
 const int fadeBoxThickness = 10;
 
 const QColor gridLineMajor(180, 180, 180);
@@ -104,13 +105,9 @@ void PlotViewWidget::zoomToFitInternal()
   if (!this->model)
     return;
 
-  const auto widgetRect = QRectF(this->rect());
-  const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
-  const auto plotXMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft(), 1.0).x() - 0.5;
-  const auto plotXMax = this->convertPixelPosToPlotPos(plotRect.bottomRight(), 1.0).x() + 0.5;
+  const auto plotXMin = this->convertPixelPosToPlotPos(this->plotRect.bottomLeft(), 1.0).x() - 0.5;
+  const auto plotXMax = this->convertPixelPosToPlotPos(this->plotRect.bottomRight(), 1.0).x() + 0.5;
   const auto widthInPlotSpace = plotXMax - plotXMin;
-
-  this->updateAxis(plotRect);
 
   bool modelContainsDataYet = false;
   double minZoomFactor = -1;
@@ -187,44 +184,42 @@ void PlotViewWidget::paintEvent(QPaintEvent *paint_event)
   painter.setRenderHint(QPainter::Antialiasing);
 
   const auto widgetRect = QRectF(this->rect());
-  const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
 
-  DEBUG_PLOT("PlotViewWidget::paintEvent widget " << widgetRect << " plot rect " << plotRect);
+  DEBUG_PLOT("PlotViewWidget::paintEvent widget " << widgetRect);
 
-  this->updateAxis(plotRect);
+  this->updatePlotRectAndAxis(painter);
+  
+  const auto axisRangeX = getAxisRange(Axis::X, this->propertiesAxis[0]);
+  const auto axisRangeY = getAxisRange(Axis::Y, this->propertiesAxis[1]);
 
-  auto ticksX = this->getAxisTicksToShow(Axis::X);
-  auto ticksY = this->getAxisTicksToShow(Axis::Y);
-  this->drawGridLines(painter, this->propertiesAxis[0], plotRect, ticksX);
-  this->drawGridLines(painter, this->propertiesAxis[1], plotRect, ticksY);
+  const auto ticksX = this->getAxisTicksToShow(Axis::X, axisRangeX);
+  const auto ticksY = this->getAxisTicksToShow(Axis::Y, axisRangeY);
 
-  this->drawLimits(painter, plotRect);
-  this->drawPlot(painter, plotRect);
-  this->drawZoomRect(painter, plotRect);
+  this->drawGridLines(painter, this->propertiesAxis[0], ticksX, axisRangeX);
+  this->drawGridLines(painter, this->propertiesAxis[1], ticksY, axisRangeY);
 
-  this->drawWhiteBoarders(painter, plotRect, widgetRect);
-  this->drawAxis(painter, plotRect);
+  this->drawLimits(painter);
+  this->drawPlot(painter);
+  this->drawZoomRect(painter);
+  
+  this->drawWhiteBoarders(painter, widgetRect);
+  this->drawAxis(painter);
 
-  this->drawAxisTicksAndValues(painter, this->propertiesAxis[0], ticksX);
-  this->drawAxisTicksAndValues(painter, this->propertiesAxis[1], ticksY);
+  this->drawAxisTicks(painter, this->propertiesAxis[0], ticksX);
+  this->drawAxisTicks(painter, this->propertiesAxis[1], ticksY);
+  this->drawAxisTickLabels(painter, this->propertiesAxis[0], ticksX, axisRangeX);
+  this->drawAxisTickLabels(painter, this->propertiesAxis[1], ticksY, axisRangeY);
 
-  this->drawInfoBox(painter, plotRect);
+  this->drawInfoBox(painter);
   //this->drawDebugBox(painter, plotRect);
 
-  this->drawFadeBoxes(painter, plotRect, widgetRect);
+  this->drawFadeBoxes(painter, widgetRect);
+  this->drawWhiteBoxesInLabelArea(painter, widgetRect);
 
   if (this->model == nullptr)
   {
     drawTextInCenterOfArea(painter, this->rect(), "Please select an item");
   }
-}
-
-void PlotViewWidget::resizeEvent(QResizeEvent *event)
-{
-  const auto widgetRect = QRectF(this->rect());
-  const auto plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
-  this->updateAxis(plotRect);
-  MoveAndZoomableView::resizeEvent(event);
 }
 
 void PlotViewWidget::mouseMoveEvent(QMouseEvent *mouseMoveEvent)
@@ -289,9 +284,7 @@ void PlotViewWidget::setMoveOffset(QPoint offset)
 QPoint PlotViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint) const
 {
   Q_UNUSED(zoomPoint);
-  const auto widgetRect = QRect(this->rect());
-  const auto plotRect = QRect(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
-  const auto plotRectBottomLeft = plotRect.bottomLeft();
+  const auto plotRectBottomLeft = this->plotRect.bottomLeft();
   return QPoint(plotRectBottomLeft.x() + fadeBoxThickness, plotRectBottomLeft.y() - fadeBoxThickness);
 }
 
@@ -301,53 +294,60 @@ void PlotViewWidget::setZoomFactor(double zoom)
   this->setMoveOffset(this->moveOffset);
 }
 
-void PlotViewWidget::drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect)
+void PlotViewWidget::drawWhiteBoarders(QPainter &painter, const QRectF &widgetRect) const
 {
   painter.setBrush(Qt::white);
   painter.setPen(Qt::NoPen);
-  painter.drawRect(QRectF(QPointF(0, 0), QPointF(plotRect.left(), widgetRect.bottom())));
-  painter.drawRect(QRectF(QPointF(0, 0), QPointF(widgetRect.right(), plotRect.top())));
-  painter.drawRect(QRectF(QPointF(plotRect.right(), 0), widgetRect.bottomRight()));
-  painter.drawRect(QRectF(QPointF(0, plotRect.bottom()), widgetRect.bottomRight()));
+  painter.drawRect(QRectF(QPointF(0, 0), QPointF(this->plotRect.left(), widgetRect.bottom())));
+  painter.drawRect(QRectF(QPointF(0, 0), QPointF(widgetRect.right(), this->plotRect.top())));
+  painter.drawRect(QRectF(QPointF(this->plotRect.right(), 0), widgetRect.bottomRight()));
+  painter.drawRect(QRectF(QPointF(0, this->plotRect.bottom()), widgetRect.bottomRight()));
 }
 
-QList<PlotViewWidget::TickValue> PlotViewWidget::getAxisTicksToShow(const Axis axis) const
+QList<PlotViewWidget::TickValue> PlotViewWidget::getAxisTicksToShow(const Axis axis, Range<double> visibleRange) const
 {
   const auto &properties = this->propertiesAxis[(axis == Axis::X) ? 0 : 1];
   const auto axisVector = (axis == Axis::X) ? QPointF(1, 0) : QPointF(0, -1);
   const auto axisLengthInPixels = QPointF::dotProduct(properties.line.p2() - properties.line.p1(), axisVector);
 
-  double rangeMin, rangeMax;
-  {
-    const auto lineStartInPlot = this->convertPixelPosToPlotPos(properties.line.p1());
-    rangeMin = (axis == Axis::X) ? lineStartInPlot.x() : lineStartInPlot.y();
-    auto lineEndInPlot = this->convertPixelPosToPlotPos(properties.line.p2());
-    rangeMax = (axis == Axis::X) ? lineEndInPlot.x() : lineEndInPlot.y();
-  }
-  const auto valueRange = rangeMax - rangeMin;
-  if (valueRange == 0)
+  const auto rangeWidth = visibleRange.max - visibleRange.min;
+  if (rangeWidth == 0)
     return {};
 
   const int minPixelDistanceBetweenValues = 50;
   const auto nrTicksToShowMax = double(axisLengthInPixels) / minPixelDistanceBetweenValues;
 
   double factorMajor = 1.0;
-  while (factorMajor * 10 * valueRange < nrTicksToShowMax)
+  while (factorMajor * 10 * rangeWidth < nrTicksToShowMax)
     factorMajor *= 10;
-  while (factorMajor * valueRange > nrTicksToShowMax)
+  while (factorMajor * rangeWidth > nrTicksToShowMax)
     factorMajor /= 10;
 
   double factorMinor = factorMajor;
-  while (factorMinor * valueRange * 2 < nrTicksToShowMax)
+  while (factorMinor * rangeWidth * 2 < nrTicksToShowMax)
     factorMinor *= 2;
 
-  DEBUG_PLOT("PlotViewWidget::getAxisTicksToShow valueRange " << valueRange << " nrTicksToShowMax " << nrTicksToShowMax << " factorMajor " << factorMajor << " factorMinor " << factorMinor);
+  DEBUG_PLOT("PlotViewWidget::getAxisTicksToShow rangeWidth " << rangeWidth << " nrTicksToShowMax " << nrTicksToShowMax << " factorMajor " << factorMajor << " factorMinor " << factorMinor);
 
-  auto getValuesForFactor = [rangeMin, rangeMax](double factor)
+  /* Get the actual values to show between min and max. However, we want some more values to the left
+   * and the right for correct display of the tick labels. Unfortunately we don't know how wide the labels will be
+   * so we will just use a worst case assumption and add half the width of the view left and right.
+   */
+  auto rangeToReturn = visibleRange;
+  rangeToReturn.min -= rangeWidth / 2;
+  rangeToReturn.max += rangeWidth / 2;
+  const auto plotRange = this->getVisibleRange(axis);
+  if (plotRange)
+  {
+    rangeToReturn.min = std::max(rangeToReturn.min, plotRange->min);
+    rangeToReturn.max = std::min(rangeToReturn.max, plotRange->max);
+  }
+
+  auto getValuesForFactor = [rangeToReturn](double factor)
   {
     QList<double> values;
-    int min = std::ceil(rangeMin * factor);
-    int max = std::floor(rangeMax * factor);
+    int min = std::ceil(rangeToReturn.min * factor);
+    int max = std::floor(rangeToReturn.max * factor);
     for (int i = min; i <= max; i++)
       values.append(double(i) / factor);
     return values;
@@ -368,26 +368,23 @@ QList<PlotViewWidget::TickValue> PlotViewWidget::getAxisTicksToShow(const Axis a
   return values;
 }
 
-void PlotViewWidget::drawAxis(QPainter &painter, const QRectF &plotRect)
+void PlotViewWidget::drawAxis(QPainter &painter) const
 {
   painter.setPen(QPen(Qt::black, 1));
-  painter.drawLine(plotRect.bottomLeft(), plotRect.topLeft());
-  painter.drawLine(plotRect.bottomLeft(), plotRect.bottomRight());
+  painter.drawLine(this->plotRect.bottomLeft(), this->plotRect.topLeft());
+  painter.drawLine(this->plotRect.bottomLeft(), this->plotRect.bottomRight());
 }
 
-void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QList<PlotViewWidget::TickValue> &ticks) const
+void PlotViewWidget::drawAxisTicks(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QList<PlotViewWidget::TickValue> &ticks) const
 {
   if (ticks.isEmpty() || this->model == nullptr)
     return;
 
   const auto tickLine = (properties.axis == Axis::X) ? QPointF(0, tickLength) : QPointF(-tickLength, 0);
 
-  QFont displayFont = painter.font();
-  QFontMetricsF metrics(displayFont);
   painter.setPen(QPen(Qt::black, 1));
   for (auto tick : ticks)
   {
-    //auto pixelPosOnAxis = ((tick.value - properties.minValue) / valueRange) * axisLengthInPixels;
     QPointF p = properties.line.p1();
     if (properties.axis == Axis::X)
       p.setX(tick.pixelPosInWidget);
@@ -395,42 +392,43 @@ void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWid
       p.setY(tick.pixelPosInWidget);
     painter.drawLine(p, p + tickLine);
   }
+}
 
+void PlotViewWidget::drawAxisTickLabels(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QList<PlotViewWidget::TickValue> &ticks, Range<double> visibleRange) const
+{
+  if (ticks.isEmpty() || this->model == nullptr)
+    return;
+
+  painter.setPen(QPen(Qt::black, 1));
+  QFont displayFont = painter.font();
+  QFontMetricsF metrics(displayFont);
+
+  // For drawing the labels we extend the visible range by 1/2 left and right because these might still be visible
+  const auto visibleRangeWidthHalf = (visibleRange.max - visibleRange.min) / 2;
+  visibleRange.min -= visibleRangeWidthHalf;
+  visibleRange.max += visibleRangeWidthHalf;
+  
   QList<PlotViewWidget::TickValue> ticksToDrawTextFor;
   if (properties.axis == Axis::Y)
   {
-    auto visibleRange = this->getVisibleRange(Axis::Y);
-    if (!visibleRange)
-      ticksToDrawTextFor = ticks;
-    else
+    for (auto tick : ticks)
     {
-      for (auto tick : ticks)
-      {
-        if (tick.value >= (*visibleRange).min && tick.value <= (*visibleRange).max)
-          ticksToDrawTextFor.append(tick);
-      }
+      if (tick.value >= visibleRange.min && tick.value <= visibleRange.max)
+        ticksToDrawTextFor.append(tick);
     }
   }
   else
   {
-    auto visibleRange = this->getVisibleRange(Axis::X);
     if (ticks.count() < 2)
     {
-      if (!visibleRange || (ticks[0].value >= (*visibleRange).min && ticks[0].value <= (*visibleRange).max))
+      if (ticks[0].value >= visibleRange.min && ticks[0].value <= visibleRange.max)
         ticksToDrawTextFor.append(ticks[0]);
     }
     else
     {
-      double maxTextWidthInPixels = 0;
-      for (auto tick : ticks)
-      {
-        const auto text = this->model->formatValue(properties.axis, tick.value);
-        auto textSize = metrics.size(0, text);
-        if (textSize.width() > maxTextWidthInPixels)
-          maxTextWidthInPixels = textSize.width();
-      }
+      const auto maxLabelSize = this->getMaxLabelDrawSize(painter, properties.axis, ticks);
       const auto distanceBetweenLabels = 20;
-      const double minDistanceBetweenTicks = maxTextWidthInPixels + distanceBetweenLabels;
+      const double minDistanceBetweenTicks = maxLabelSize.width() + distanceBetweenLabels;
       const double tickDistanceInValues = ticks[1].value - ticks[0].value;
       const auto tickDistanceInPixels = convertPlotPosToPixelPos(QPointF(ticks[1].value, 0)).x() - convertPlotPosToPixelPos(QPointF(ticks[0].value, 0)).x();
       auto drawEveryNthTick = 1;
@@ -441,7 +439,7 @@ void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWid
       {
         const auto indexOfTickFrom0 = int(std::round(tick.value / tickDistanceInValues));
         const auto isTickVisibleBySubsampling = indexOfTickFrom0 % drawEveryNthTick == 0;
-        const auto isTickWithinVisibleRange = !visibleRange || (tick.value >= (*visibleRange).min && tick.value <= (*visibleRange).max);
+        const auto isTickWithinVisibleRange = (tick.value >= visibleRange.min && tick.value <= visibleRange.max);
         if (isTickVisibleBySubsampling && isTickWithinVisibleRange)
           ticksToDrawTextFor.append(tick);
       }
@@ -463,21 +461,25 @@ void PlotViewWidget::drawAxisTicksAndValues(QPainter &painter, const PlotViewWid
     textRect.setSize(textSize);
     textRect.moveCenter(p);
     if (properties.axis == Axis::X)
-      textRect.moveTop(p.y() + tickLength + 2);
+      textRect.moveTop(p.y() + tickLength + tickToTextSpace);
     else
-      textRect.moveRight(p.x() - tickLength - 2);
+      textRect.moveRight(p.x() - tickLength - tickToTextSpace);
 
     painter.drawText(textRect, Qt::AlignCenter, text);
   }
 }
 
-void PlotViewWidget::drawGridLines(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QRectF &plotRect, const QList<TickValue> &ticks)
+void PlotViewWidget::drawGridLines(QPainter &painter, const PlotViewWidget::AxisProperties &properties, const QList<TickValue> &ticks, Range<double> visibleRange) const
 {
-  auto drawStart = (properties.axis == Axis::X) ? plotRect.topLeft() : plotRect.bottomLeft();
-  auto drawEnd = (properties.axis == Axis::X) ? plotRect.bottomLeft() : plotRect.bottomRight();
+  auto drawStart = (properties.axis == Axis::X) ? this->plotRect.topLeft() : this->plotRect.bottomLeft();
+  auto drawEnd = (properties.axis == Axis::X) ? this->plotRect.bottomLeft() : this->plotRect.bottomRight();
 
   for (auto tick : ticks)
   {
+    // The ticks list contains more ticks then we have to draw lines for (because of the labels)
+    if (tick.value < visibleRange.min || tick.value > visibleRange.max)
+      continue;
+
     if (properties.axis == Axis::X)
     {
       drawStart.setX(tick.pixelPosInWidget);
@@ -494,7 +496,7 @@ void PlotViewWidget::drawGridLines(QPainter &painter, const PlotViewWidget::Axis
   }
 }
 
-void PlotViewWidget::drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect)
+void PlotViewWidget::drawFadeBoxes(QPainter &painter, const QRectF &widgetRect) const
 {
   QLinearGradient gradient;
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
@@ -506,7 +508,8 @@ void PlotViewWidget::drawFadeBoxes(QPainter &painter, const QRectF plotRect, con
 
   painter.setPen(Qt::NoPen);
 
-  auto setGradientBrush = [&gradient, &painter](bool inverse) {
+  auto setGradientBrush = [&gradient, &painter](bool inverse)
+  {
     gradient.setColorAt(inverse ? 1 : 0, Qt::white);
     gradient.setColorAt(inverse ? 0 : 1, Qt::transparent);
     painter.setBrush(gradient);
@@ -515,22 +518,32 @@ void PlotViewWidget::drawFadeBoxes(QPainter &painter, const QRectF plotRect, con
   // Vertival
   gradient.setFinalStop(QPointF(1.0, 0));
   setGradientBrush(false);
-  painter.drawRect(QRectF(plotRect.left(), 0, fadeBoxThickness, widgetRect.height()));
+  painter.drawRect(QRectF(this->plotRect.left(), 0, fadeBoxThickness, widgetRect.height()));
   setGradientBrush(true);
-  painter.drawRect(QRectF(plotRect.right(), 0, -fadeBoxThickness, widgetRect.height()));
+  painter.drawRect(QRectF(this->plotRect.right(), 0, -fadeBoxThickness, widgetRect.height()));
 
   // Horizontal
   gradient.setFinalStop(QPointF(0.0, 1.0));
   setGradientBrush(true);
-  painter.drawRect(QRectF(0, plotRect.bottom(), widgetRect.width(), -fadeBoxThickness));
+  painter.drawRect(QRectF(0, this->plotRect.bottom(), widgetRect.width(), -fadeBoxThickness));
   setGradientBrush(false);
-  painter.drawRect(QRectF(0, plotRect.top(), widgetRect.width(), fadeBoxThickness));
+  painter.drawRect(QRectF(0, this->plotRect.top(), widgetRect.width(), fadeBoxThickness));
 }
 
-void PlotViewWidget::drawLimits(QPainter &painter, const QRectF &plotRect) const
+void PlotViewWidget::drawWhiteBoxesInLabelArea(QPainter &painter, const QRectF &widgetRect) const
 {
-  const auto plotMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft());
-  const auto plotMax = this->convertPixelPosToPlotPos(plotRect.topRight());
+  painter.setBrush(Qt::white);
+  painter.setPen(Qt::NoPen);
+  
+  painter.drawRect(QRectF(this->plotRect.bottomRight(), widgetRect.bottomRight()));
+  painter.drawRect(QRectF(this->plotRect.topLeft(), widgetRect.topLeft()));
+  painter.drawRect(QRectF(this->plotRect.bottomLeft(), widgetRect.bottomLeft()));
+}
+
+void PlotViewWidget::drawLimits(QPainter &painter) const
+{
+  const auto plotMin = this->convertPixelPosToPlotPos(this->plotRect.bottomLeft());
+  const auto plotMax = this->convertPixelPosToPlotPos(this->plotRect.topRight());
 
   DEBUG_PLOT("PlotViewWidget::drawLimits");
   for (auto streamIndex : this->showStreamList)
@@ -546,7 +559,7 @@ void PlotViewWidget::drawLimits(QPainter &painter, const QRectF &plotRect) const
           continue;
         const auto dummyPointForX = this->convertPlotPosToPixelPos(QPointF(limit.value, 0));
         line.setP1(QPointF(dummyPointForX.x(), 0));
-        line.setP2(QPointF(dummyPointForX.x(), plotRect.height()));
+        line.setP2(QPointF(dummyPointForX.x(), this->plotRect.height()));
       }
       else
       {
@@ -554,7 +567,7 @@ void PlotViewWidget::drawLimits(QPainter &painter, const QRectF &plotRect) const
           continue;
         const auto dummyPointForY = this->convertPlotPosToPixelPos(QPointF(0, limit.value));
         line.setP1(QPointF(0, dummyPointForY.y()));
-        line.setP2(QPointF(plotRect.right(), dummyPointForY.y()));
+        line.setP2(QPointF(this->plotRect.right(), dummyPointForY.y()));
 
         // Set the QRect where to show the text
         QFont displayFont = painter.font();
@@ -564,7 +577,7 @@ void PlotViewWidget::drawLimits(QPainter &painter, const QRectF &plotRect) const
         QRect textRect;
         textRect.setSize(textSize);
         textRect.moveTop(dummyPointForY.y());
-        textRect.moveRight(plotRect.right() - fadeBoxThickness);
+        textRect.moveRight(this->plotRect.right() - fadeBoxThickness);
         painter.setPen(Qt::black);
         painter.drawText(textRect, Qt::AlignCenter, limit.name);
       }
@@ -577,13 +590,13 @@ void PlotViewWidget::drawLimits(QPainter &painter, const QRectF &plotRect) const
   }
 }
 
-void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
+void PlotViewWidget::drawPlot(QPainter &painter) const
 {
   if (!this->model)
     return;
 
-  const auto plotXMin = this->convertPixelPosToPlotPos(plotRect.bottomLeft()).x() - 0.5;
-  const auto plotXMax = this->convertPixelPosToPlotPos(plotRect.bottomRight()).x() + 0.5;
+  const auto plotXMin = this->convertPixelPosToPlotPos(this->plotRect.bottomLeft()).x() - 0.5;
+  const auto plotXMax = this->convertPixelPosToPlotPos(this->plotRect.bottomRight()).x() + 0.5;
 
   DEBUG_PLOT("PlotViewWidget::drawPlot start");
   for (auto streamIndex : this->showStreamList)
@@ -715,7 +728,7 @@ void PlotViewWidget::drawPlot(QPainter &painter, const QRectF &plotRect) const
   }
 }
 
-void PlotViewWidget::drawInfoBox(QPainter &painter, const QRectF &plotRect) const
+void PlotViewWidget::drawInfoBox(QPainter &painter) const
 {
   if (!this->model)
     return;
@@ -751,14 +764,14 @@ void PlotViewWidget::drawInfoBox(QPainter &painter, const QRectF &plotRect) cons
   if (!QCursor::pos().isNull())
   {
     const auto mousePos = mapFromGlobal(QCursor::pos());
-    auto posX = plotRect.bottomRight().x() - axisMaxValueMargin - margin - textDocument.size().width() - padding * 2 + 1;
-    auto posY = plotRect.bottomRight().y() - axisMaxValueMargin - margin - textDocument.size().height() - padding * 2 + 1;
+    auto posX = this->plotRect.bottomRight().x() - axisMaxValueMargin - margin - textDocument.size().width() - padding * 2 + 1;
+    auto posY = this->plotRect.bottomRight().y() - axisMaxValueMargin - margin - textDocument.size().height() - padding * 2 + 1;
 
     const auto margin = 5;
     if (mousePos.x() >= posX - margin && mousePos.x() < posX + textDocument.size().width() + margin)
     {
       posX -= margin * 2 + textDocument.size().width();
-      posX = std::max(posX, plotRect.left());
+      posX = std::max(posX, this->plotRect.left());
     }
 
     painter.translate(posX, posY);
@@ -777,7 +790,7 @@ void PlotViewWidget::drawInfoBox(QPainter &painter, const QRectF &plotRect) cons
   painter.resetTransform();
 }
 
-void PlotViewWidget::drawDebugBox(QPainter &painter, const QRectF &plotRect) const
+void PlotViewWidget::drawDebugBox(QPainter &painter) const
 {
   const int margin = 6;
   const int padding = 6;
@@ -798,7 +811,7 @@ void PlotViewWidget::drawDebugBox(QPainter &painter, const QRectF &plotRect) con
   textDocument.setTextWidth(textDocument.size().width());
 
   // Translate to the position where the text box shall be
-  painter.translate(plotRect.topLeft().x() + axisMaxValueMargin + margin + 1, plotRect.topLeft().y() + axisMaxValueMargin + margin + 1);
+  painter.translate(this->plotRect.topLeft().x() + axisMaxValueMargin + margin + 1, this->plotRect.topLeft().y() + axisMaxValueMargin + margin + 1);
 
   // Draw a black rectangle and then the text on top of that
   QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
@@ -813,7 +826,7 @@ void PlotViewWidget::drawDebugBox(QPainter &painter, const QRectF &plotRect) con
   painter.resetTransform();
 }
 
-void PlotViewWidget::drawZoomRect(QPainter &painter, const QRectF plotRect) const
+void PlotViewWidget::drawZoomRect(QPainter &painter) const
 {
   if (this->viewAction != ViewAction::ZOOM_RECT)
     return;
@@ -824,8 +837,8 @@ void PlotViewWidget::drawZoomRect(QPainter &painter, const QRectF plotRect) cons
     return;
   }
 
-  auto yTop    = plotRect.top() + fadeBoxThickness;
-  auto yBottom = plotRect.bottom() - fadeBoxThickness;
+  auto yTop    = this->plotRect.top() + fadeBoxThickness;
+  auto yBottom = this->plotRect.bottom() - fadeBoxThickness;
   const auto mouseRect = QRectF(QPointF(viewZoomingMousePosStart.x(), yTop), QPointF(viewZoomingMousePos.x(), yBottom));
 
   painter.setPen(ZOOM_RECT_PEN);
@@ -833,23 +846,47 @@ void PlotViewWidget::drawZoomRect(QPainter &painter, const QRectF plotRect) cons
   painter.drawRect(mouseRect);
 }
 
-void PlotViewWidget::updateAxis(const QRectF &plotRect)
-{ 
+void PlotViewWidget::updatePlotRectAndAxis(QPainter &painter)
+{
   const QPointF thicknessDirectionX(fadeBoxThickness, 0);
-  this->propertiesAxis[0].line = {plotRect.bottomLeft() + thicknessDirectionX, plotRect.bottomRight() - thicknessDirectionX};
-  
   const QPointF thicknessDirectionY(0, fadeBoxThickness);
-  this->propertiesAxis[1].line = {plotRect.bottomLeft() - thicknessDirectionY, plotRect.topLeft() + thicknessDirectionY};
+  const auto widgetRect = QRectF(this->rect());
+  
+  // Update axis based on the widget rect first (we don't know the plotRect yet)
+  this->propertiesAxis[0].line = {widgetRect.bottomLeft() + thicknessDirectionX, widgetRect.bottomRight() - thicknessDirectionX};
+  this->propertiesAxis[1].line = {widgetRect.bottomLeft() - thicknessDirectionY, widgetRect.topLeft() + thicknessDirectionY};
 
-  this->zoomToPixelsPerValueY = double(zoomToPixelsPerValueX);
-  if (this->model)
   {
-    const auto &streamParam = this->model->getStreamParameter(0);
-    const auto rangeY = double(streamParam.yRange.max - streamParam.yRange.min);
-    this->zoomToPixelsPerValueY = (this->propertiesAxis[1].line.p1().y() - this->propertiesAxis[1].line.p2().y()) / rangeY;
+    const auto axisRangeX = getAxisRange(Axis::X, this->propertiesAxis[0]);
+    const auto axisRangeY = getAxisRange(Axis::Y, this->propertiesAxis[1]);
+
+    const auto ticksX = this->getAxisTicksToShow(Axis::X, axisRangeX);
+    const auto ticksY = this->getAxisTicksToShow(Axis::Y, axisRangeY);
+
+    const auto maxLabelSizeX = this->getMaxLabelDrawSize(painter, Axis::X, ticksX);
+    const auto maxLabelSizeY = this->getMaxLabelDrawSize(painter, Axis::Y, ticksY);
+
+    const auto marginTopLeft = QPointF(maxLabelSizeY.width() + tickLength + tickToTextSpace, marginTop);
+    const auto marginBottomRight = QPointF(marginRight, maxLabelSizeX.height() + tickLength + tickToTextSpace);
+
+    this->plotRect = QRectF(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
+  }
+
+  {
+    // Now we can use the plotRect for the axis update
+    this->propertiesAxis[0].line = {this->plotRect.bottomLeft() + thicknessDirectionX, this->plotRect.bottomRight() - thicknessDirectionX};
+    this->propertiesAxis[1].line = {this->plotRect.bottomLeft() - thicknessDirectionY, this->plotRect.topLeft() + thicknessDirectionY};
+
+    this->zoomToPixelsPerValueY = double(zoomToPixelsPerValueX);
+    if (this->model)
+    {
+      const auto &streamParam = this->model->getStreamParameter(0);
+      const auto rangeY = double(streamParam.yRange.max - streamParam.yRange.min);
+      this->zoomToPixelsPerValueY = (this->propertiesAxis[1].line.p1().y() - this->propertiesAxis[1].line.p2().y()) / rangeY;
+    }
   }
   
-  DEBUG_PLOT("PlotViewWidget::updateAxis lineX " << this->propertiesAxis[0].line << " lineY " << this->propertiesAxis[1].line);
+  DEBUG_PLOT("PlotViewWidget::updatePlotRectAndAxis plotRect " << this->plotRect << " lineX " << this->propertiesAxis[0].line << " lineY " << this->propertiesAxis[1].line);
 }
 
 QPointF PlotViewWidget::convertPlotPosToPixelPos(const QPointF &plotPos, std::optional<double> zoomFactor) const
@@ -892,13 +929,11 @@ QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos, std::o
 
 void PlotViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor)
 {
-  const auto widgetRect = QRect(this->rect());
-  const auto plotRect = QRect(marginTopLeft, widgetRect.bottomRight() - marginBottomRight);
-  const auto plotRectBottomLeft = plotRect.bottomLeft();
+  const auto plotRectBottomLeft = this->plotRect.bottomLeft();
   auto moveOrigin = QPoint(plotRectBottomLeft.x() + fadeBoxThickness, plotRectBottomLeft.y() - fadeBoxThickness);
 
   const QPoint zoomRectCenterOffset = zoomRect.center() - moveOrigin;
-  auto newMoveOffset = (this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor + plotRect.center();
+  auto newMoveOffset = ((this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor + this->plotRect.center()).toPoint();
   this->setZoomFactor(this->zoomFactor * additionalZoomFactor);
   this->setMoveOffset(newMoveOffset);
 
@@ -925,6 +960,35 @@ std::optional<Range<double>> PlotViewWidget::getVisibleRange(const Axis axis) co
     }
   }
   return visibleRange;
+}
+
+Range<double> PlotViewWidget::getAxisRange(Axis axis, AxisProperties axisProperties) const
+{
+  Range<double> range;
+  const auto lineStartInPlot = this->convertPixelPosToPlotPos(axisProperties.line.p1());
+  range.min = (axis == Axis::X) ? lineStartInPlot.x() : lineStartInPlot.y();
+  auto lineEndInPlot = this->convertPixelPosToPlotPos(axisProperties.line.p2());
+  range.max = (axis == Axis::X) ? lineEndInPlot.x() : lineEndInPlot.y();
+  return range;
+}
+
+QRectF PlotViewWidget::getMaxLabelDrawSize(QPainter &painter, Axis axis, const QList<TickValue> &ticks) const
+{
+  painter.setPen(QPen(Qt::black, 1));
+  painter.setBrush(Qt::NoBrush);
+  QFont displayFont = painter.font();
+  QFontMetricsF metrics(displayFont);
+  QRectF maxSize;
+  for (auto tick : ticks)
+  {
+    const auto text = this->model->formatValue(axis, tick.value);
+    auto textSize = metrics.size(0, text);
+    if (textSize.width() > maxSize.width())
+      maxSize.setWidth(textSize.width());
+    if (textSize.height() > maxSize.height())
+      maxSize.setHeight(textSize.height());
+  }
+  return maxSize;
 }
 
 void PlotViewWidget::initViewFromModel()

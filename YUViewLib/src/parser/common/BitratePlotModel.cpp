@@ -164,7 +164,7 @@ QString BitratePlotModel::formatValue(Axis axis, double value) const
   {
     // The value is bytes
     const auto bytes = qint64(value);
-    return QLocale().formattedDataSize(bytes);
+    return QLocale().formattedDataSize(bytes, 2, QLocale::DataSizeSIFormat);
   }
 }
 

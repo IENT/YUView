@@ -155,9 +155,9 @@ QString HRDPlotModel::formatValue(Axis axis, double value) const
   else
   {
     // The value is bytes
-    const auto bytes = qint64(value);
+    const auto bytes = qint64(std::round(value));
     QLocale locale;
-    return locale.formattedDataSize(bytes);
+    return locale.formattedDataSize(bytes, 2, QLocale::DataSizeSIFormat);
   }
 }
 
