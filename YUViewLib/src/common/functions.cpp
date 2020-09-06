@@ -297,3 +297,26 @@ QString functions::pixelFormatToString(QImage::Format f)
     return "Format_Grayscale8";
   return "Unknown";
 }
+
+QString functions::formatDataSize(double size, bool isBits)
+{
+  unsigned divCounter = 0;
+  while (divCounter < 5 && size >= 1000)
+  {
+    size = size / 1000;
+    divCounter++;
+  }
+  auto valueString = QString("%1").arg(size, 0, 'f', 2);
+  
+  if (divCounter > 0 && divCounter < 5)
+  {
+    const auto bitsUnits = QStringList() << "kbit" << "Mbit" << "Gbit" << "Tbit";
+    const auto bytesUnits = QStringList() << "kB" << "MB" << "GB" << "TB";
+    if (isBits)
+      return QString("%1 %2").arg(valueString).arg(bitsUnits[divCounter - 1]);
+    else
+      return QString("%1 %2").arg(valueString).arg(bytesUnits[divCounter - 1]);
+  }
+
+  return valueString;
+}

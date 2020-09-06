@@ -41,7 +41,7 @@
 
 #include "BitratePlotModel.h"
 
-#include <QLocale>
+#include <common/functions.h>
 
 unsigned BitratePlotModel::getNrStreams() const
 {
@@ -161,11 +161,8 @@ QString BitratePlotModel::formatValue(Axis axis, double value) const
     return QString("%1").arg(value);
   }
   else
-  {
     // The value is bytes
-    const auto bytes = qint64(value);
-    return QLocale().formattedDataSize(bytes, 2, QLocale::DataSizeSIFormat);
-  }
+    return functions::formatDataSize(value, false);
 }
 
 void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)

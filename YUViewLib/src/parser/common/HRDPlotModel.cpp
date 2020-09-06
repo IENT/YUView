@@ -42,7 +42,7 @@
 #include "HRDPlotModel.h"
 
 #include <QTime>
-#include <QLocale>
+#include <common/functions.h>
 
 PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex) const
 {
@@ -153,12 +153,8 @@ QString HRDPlotModel::formatValue(Axis axis, double value) const
     return QTime(0, 0).addMSecs(milliseconds).toString("hh:mm:ss.zzz");
   }
   else
-  {
     // The value is bytes
-    const auto bytes = qint64(std::round(value));
-    QLocale locale;
-    return locale.formattedDataSize(bytes, 2, QLocale::DataSizeSIFormat);
-  }
+    return functions::formatDataSize(value, false);
 }
 
 void HRDPlotModel::addHRDEntry(HRDPlotModel::HRDEntry &entry)
