@@ -40,6 +40,8 @@
 #include <QPointer>
 #include <QMenu>
 
+#include <common/typedef.h>
+
 class MoveAndZoomableView : public QWidget
 {
   Q_OBJECT
@@ -91,6 +93,7 @@ protected:
   virtual void zoomToFitInternal();
   void drawZoomRect(QPainter &painter) const;
   virtual void onZoomIn() {}
+  static const Range<double> ZOOMINGLIMIT;
 
   virtual void setMoveOffset(QPoint offset);
   virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint = {}) const = 0;

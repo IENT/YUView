@@ -48,7 +48,9 @@
 #define DEBUG_VIEW(fmt,...) ((void)0)
 #endif
 
-MoveAndZoomableView::MoveAndZoomableView(QWidget *parent) 
+const Range<double> MoveAndZoomableView::ZOOMINGLIMIT = {0.00001, 100000};
+
+MoveAndZoomableView::MoveAndZoomableView(QWidget *parent)
   : QWidget(parent)
 {
   grabGesture(Qt::SwipeGesture);
@@ -158,7 +160,7 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
   {
     if (this->zoomFactor > 1.0)
     {
-      double inf = std::numeric_limits<double>::infinity();
+      const double inf = std::numeric_limits<double>::infinity();
       while (newZoom <= this->zoomFactor && newZoom < inf)
         newZoom *= ZOOM_STEP_FACTOR;
     }
@@ -187,6 +189,10 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
   {
     newZoom = newZoomFactor;
   }
+
+  if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
+    return;
+
   // So what is the zoom factor that we use in this step?
   double stepZoomFactor = newZoom / this->zoomFactor;
 
@@ -455,20 +461,32 @@ bool MoveAndZoomableView::event(QEvent *event)
         this->pinchStartCenterPoint = pinch->centerPoint();
       }
 
+      const auto newZoom = this->pinchStartZoomFactor * pinch->totalScaleFactor();
+      bool doZoom = true;
       if (pinch->state() == Qt::GestureStarted || pinch->state() == Qt::GestureUpdated)
       {
         // See what changed in this pinch gesture (the scale factor and/or the position)
         QPinchGesture::ChangeFlags changeFlags = pinch->changeFlags();
         if (changeFlags & QPinchGesture::ScaleFactorChanged || changeFlags & QPinchGesture::CenterPointChanged)
         {
-          setZoomFactor(this->pinchStartZoomFactor * pinch->totalScaleFactor());
-          setMoveOffset((this->pinchStartMoveOffset * pinch->totalScaleFactor() + pinch->centerPoint() - this->pinchStartCenterPoint).toPoint());
+          if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
+            doZoom = false;
+          else
+          {
+            setZoomFactor(newZoom);
+            setMoveOffset((this->pinchStartMoveOffset * pinch->totalScaleFactor() + pinch->centerPoint() - this->pinchStartCenterPoint).toPoint());
+          }
         }
       }
       else if (pinch->state() == Qt::GestureFinished)
       {
-        setZoomFactor(this->pinchStartZoomFactor * pinch->totalScaleFactor());
-        setMoveOffset((this->pinchStartMoveOffset * pinch->totalScaleFactor() + pinch->centerPoint() - this->pinchStartCenterPoint).toPoint());
+        if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
+          doZoom = false;
+        else
+        {
+          setZoomFactor(this->pinchStartZoomFactor * pinch->totalScaleFactor());
+          setMoveOffset((this->pinchStartMoveOffset * pinch->totalScaleFactor() + pinch->centerPoint() - this->pinchStartCenterPoint).toPoint());
+        }
         
         this->pinchStartMoveOffset = QPointF();
         this->pinchStartZoomFactor = 1.0;
@@ -477,7 +495,8 @@ bool MoveAndZoomableView::event(QEvent *event)
       }
 
       event->accept();
-      this->update();
+      if (doZoom)
+        this->update();
     }
   }
   else if (event->type() == QEvent::TouchBegin || event->type() == QEvent::TouchUpdate || event->type() == QEvent::TouchEnd || event->type() == QEvent::TouchCancel)
