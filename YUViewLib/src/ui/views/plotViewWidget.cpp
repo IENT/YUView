@@ -60,6 +60,7 @@ const QColor gridLineMinor(230, 230, 230);
 PlotViewWidget::PlotViewWidget(QWidget *parent)
   : MoveAndZoomableView(parent)
 {
+  paletteBackgroundColorSettingsTag = "Plot/BackgroundColor";
   this->setMouseTracking(true);
 
   this->propertiesAxis[0].axis = Axis::X;
@@ -974,6 +975,9 @@ Range<double> PlotViewWidget::getAxisRange(Axis axis, AxisProperties axisPropert
 
 QRectF PlotViewWidget::getMaxLabelDrawSize(QPainter &painter, Axis axis, const QList<TickValue> &ticks) const
 {
+  if (!this->model)
+    return {};
+
   painter.setPen(QPen(Qt::black, 1));
   painter.setBrush(Qt::NoBrush);
   QFont displayFont = painter.font();

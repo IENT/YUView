@@ -133,8 +133,7 @@ void MoveAndZoomableView::updatePaletteIfNeeded()
     // load the background color from settings and set it
     QPalette pal(palette());
     QSettings settings;
-    QColor bgColor = settings.value("Background/Color").value<QColor>();
-    pal.setColor(QPalette::Window, bgColor);
+    pal.setColor(QPalette::Window, settings.value(paletteBackgroundColorSettingsTag).value<QColor>());
     this->setAutoFillBackground(true);
     this->setPalette(pal);
     this->paletteNeedsUpdate = false;

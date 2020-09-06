@@ -91,181 +91,6 @@
           <string>UI</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0">
-          <item row="1" column="1">
-           <widget class="QComboBox" name="comboBoxSplitLineStyle">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="whatsThis">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <item>
-             <property name="text">
-              <string>Solid Line</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Handlers</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="labelMouseMode">
-            <property name="toolTip">
-             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
-            </property>
-            <property name="whatsThis">
-             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
-            </property>
-            <property name="text">
-             <string>Mouse button behavior</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="labelGridLineColor">
-            <property name="toolTip">
-             <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
-            </property>
-            <property name="text">
-             <string>Grid Line Color</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="1">
-           <widget class="QCheckBox" name="checkBoxShowFilePathSplitMode">
-            <property name="palette">
-             <palette>
-              <active>
-               <colorrole role="WindowText">
-                <brush brushstyle="SolidPattern">
-                 <color alpha="0">
-                  <red>191</red>
-                  <green>64</green>
-                  <blue>64</blue>
-                 </color>
-                </brush>
-               </colorrole>
-              </active>
-              <inactive>
-               <colorrole role="WindowText">
-                <brush brushstyle="SolidPattern">
-                 <color alpha="0">
-                  <red>191</red>
-                  <green>64</green>
-                  <blue>64</blue>
-                 </color>
-                </brush>
-               </colorrole>
-              </inactive>
-              <disabled>
-               <colorrole role="WindowText">
-                <brush brushstyle="SolidPattern">
-                 <color alpha="255">
-                  <red>190</red>
-                  <green>190</green>
-                  <blue>190</blue>
-                 </color>
-                </brush>
-               </colorrole>
-              </disabled>
-             </palette>
-            </property>
-            <property name="toolTip">
-             <string>Show the file path of each item at the top when two items are selected</string>
-            </property>
-            <property name="whatsThis">
-             <string>Show the file path of each item at the top when two items are selected</string>
-            </property>
-            <property name="text">
-             <string>invisibleText</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="0">
-           <widget class="QLabel" name="labelShowFilePathSplitView">
-            <property name="toolTip">
-             <string>Show the file path of each item at the top when two items are selected</string>
-            </property>
-            <property name="whatsThis">
-             <string>Show the file path of each item at the top when two items are selected</string>
-            </property>
-            <property name="text">
-             <string>Show file path in split view</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <layout class="QHBoxLayout" name="horizontalLayoutGridLineColor" stretch="1,0">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="showColorWidget" name="frameGridLineColor">
-              <property name="toolTip">
-               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
-              </property>
-              <property name="whatsThis">
-               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
-              </property>
-              <property name="frameShape">
-               <enum>QFrame::StyledPanel</enum>
-              </property>
-              <property name="frameShadow">
-               <enum>QFrame::Raised</enum>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="pushButtonEditGridColor">
-              <property name="toolTip">
-               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
-              </property>
-              <property name="whatsThis">
-               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset resource="../images/images.qrc">
-                <normaloff>:/img_edit.png</normaloff>:/img_edit.png</iconset>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="labelHidePlaybackControlFullScreen">
-            <property name="toolTip">
-             <string>Show the playback control (the navigation panel at the bottom) also in full screen mode.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Show the playback control (the navigation panel at the bottom) also in full screen mode.</string>
-            </property>
-            <property name="text">
-             <string>Show playback control in full screen</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelSplitLineStyle">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="whatsThis">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="text">
-             <string>Split line style</string>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="1">
            <widget class="QComboBox" name="comboBoxMouseMode">
             <property name="toolTip">
@@ -286,8 +111,25 @@
             </item>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QComboBox" name="comboBoxTheme"/>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelTheme">
+            <property name="text">
+             <string>Theme</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelSplitLineStyle">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="whatsThis">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="text">
+             <string>Split line style</string>
+            </property>
+           </widget>
           </item>
           <item row="3" column="1">
            <layout class="QHBoxLayout" name="horizontalLayoutBackgroundColor" stretch="1,0">
@@ -295,7 +137,7 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="showColorWidget" name="frameBackgroundColor">
+             <widget class="showColorWidget" name="viewBackgroundColor">
               <property name="toolTip">
                <string>Set the background color of the central view widget.</string>
               </property>
@@ -311,7 +153,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButtonEditBackgroundColor">
+             <widget class="QPushButton" name="pushButtonEditViewBackgroundColor">
               <property name="toolTip">
                <string>Set the background color of the central view widget.</string>
               </property>
@@ -329,14 +171,20 @@
             </item>
            </layout>
           </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelTheme">
+          <item row="3" column="0">
+           <widget class="QLabel" name="labelBackgroundColor">
+            <property name="toolTip">
+             <string>Set the background color of the central view widget.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Set the background color of the central view widget.</string>
+            </property>
             <property name="text">
-             <string>Theme</string>
+             <string>View Background Color</string>
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
+          <item row="7" column="1">
            <widget class="QCheckBox" name="checkBoxPlaybackControlFullScreen">
             <property name="palette">
              <palette>
@@ -386,32 +234,222 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="labelBackgroundColor">
+          <item row="1" column="1">
+           <widget class="QComboBox" name="comboBoxSplitLineStyle">
             <property name="toolTip">
-             <string>Set the background color of the central view widget.</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="whatsThis">
-             <string>Set the background color of the central view widget.</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Solid Line</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Handlers</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelMouseMode">
+            <property name="toolTip">
+             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+            </property>
+            <property name="whatsThis">
+             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
             </property>
             <property name="text">
-             <string>View Background Color</string>
+             <string>Mouse button behavior</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <widget class="QCheckBox" name="checkBoxShowFilePathSplitMode">
+            <property name="palette">
+             <palette>
+              <active>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </active>
+              <inactive>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </inactive>
+              <disabled>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>190</red>
+                  <green>190</green>
+                  <blue>190</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
+             </palette>
+            </property>
+            <property name="toolTip">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
+            <property name="whatsThis">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
+            <property name="text">
+             <string>invisibleText</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="1">
+           <widget class="QCheckBox" name="checkBoxPixelValuesHex">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="labelShowFilePathSplitView">
+            <property name="toolTip">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
+            <property name="whatsThis">
+             <string>Show the file path of each item at the top when two items are selected</string>
+            </property>
+            <property name="text">
+             <string>Show file path in split view</string>
             </property>
            </widget>
           </item>
           <item row="7" column="0">
+           <widget class="QLabel" name="labelHidePlaybackControlFullScreen">
+            <property name="toolTip">
+             <string>Show the playback control (the navigation panel at the bottom) also in full screen mode.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Show the playback control (the navigation panel at the bottom) also in full screen mode.</string>
+            </property>
+            <property name="text">
+             <string>Show playback control in full screen</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="comboBoxTheme"/>
+          </item>
+          <item row="9" column="0">
            <widget class="QLabel" name="labelPixelValuesHex">
             <property name="text">
              <string>Show pixel values as Hex values</string>
             </property>
            </widget>
           </item>
-          <item row="7" column="1">
-           <widget class="QCheckBox" name="checkBoxPixelValuesHex">
+          <item row="5" column="0">
+           <widget class="QLabel" name="plotBackgroundColorLabel">
             <property name="text">
-             <string/>
+             <string>Plot Background Color</string>
             </property>
            </widget>
+          </item>
+          <item row="5" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0">
+            <item>
+             <widget class="showColorWidget" name="plotBackgroundColor">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonEditPlotBackgroundColor">
+              <property name="toolTip">
+               <string>Set the background color of the plot widgets.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Set the background color of the plot widgets.</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../images/images.qrc">
+                <normaloff>:/img_edit.png</normaloff>:/img_edit.png</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="labelGridLineColor">
+            <property name="toolTip">
+             <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+            </property>
+            <property name="text">
+             <string>View Grid Line Color</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayoutGridLineColor" stretch="1,0">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="showColorWidget" name="viewGridLineColor">
+              <property name="toolTip">
+               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonEditViewGridLineColor">
+              <property name="toolTip">
+               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../images/images.qrc">
+                <normaloff>:/img_edit.png</normaloff>:/img_edit.png</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </widget>
@@ -1210,8 +1248,8 @@
   <tabstop>comboBoxTheme</tabstop>
   <tabstop>comboBoxSplitLineStyle</tabstop>
   <tabstop>comboBoxMouseMode</tabstop>
-  <tabstop>pushButtonEditBackgroundColor</tabstop>
-  <tabstop>pushButtonEditGridColor</tabstop>
+  <tabstop>pushButtonEditViewBackgroundColor</tabstop>
+  <tabstop>pushButtonEditViewGridLineColor</tabstop>
   <tabstop>checkBoxPlaybackControlFullScreen</tabstop>
   <tabstop>groupBoxUpdates</tabstop>
   <tabstop>comboBoxUpdateSettings</tabstop>

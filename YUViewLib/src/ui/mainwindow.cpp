@@ -51,14 +51,10 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   Q_INIT_RESOURCE(images);
   Q_INIT_RESOURCE(docs);
 
+  SettingsDialog::initializeDefaults();
+
   QSettings settings;
   qRegisterMetaType<indexRange>("indexRange");
-
-  // set some defaults
-  if (!settings.contains("Background/Color"))
-    settings.setValue("Background/Color", QColor(255, 255, 255));
-  if (!settings.contains("OverlayGrid/Color"))
-    settings.setValue("OverlayGrid/Color", QColor(0, 0, 0));
 
   ui.setupUi(this);
 
