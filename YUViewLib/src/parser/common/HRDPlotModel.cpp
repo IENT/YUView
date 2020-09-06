@@ -64,6 +64,14 @@ PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex
     streamParameter.limits.append(cpbLimit);
   }
 
+  {
+    PlotModel::Limit zeroLimit;
+    zeroLimit.name = "Buffer empty";
+    zeroLimit.axis = Axis::Y;
+    zeroLimit.value = 0;
+    streamParameter.limits.append(zeroLimit);
+  }
+
   const auto nrPoints = this->data.empty() ? 0 : unsigned(this->data.size() + 1);
   streamParameter.plotParameters.append({PlotType::Line, nrPoints});
 

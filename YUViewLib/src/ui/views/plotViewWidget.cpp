@@ -930,8 +930,8 @@ QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos, std::o
   if (this->fixYAxis)
   {
     const auto lineLength = this->propertiesAxis[1].line.p1().y() - this->propertiesAxis[1].line.p2().y();
-    const double relativePos = pixelPos.y() / lineLength;
-    const auto valueY = yRange.max - relativePos * rangeY;
+    const double relativePos = (this->propertiesAxis[1].line.p1().y() - pixelPos.y()) / lineLength;
+    const auto valueY = yRange.min + relativePos * rangeY;
     return {valueX, valueY};
   }
   else
