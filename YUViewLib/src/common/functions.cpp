@@ -301,12 +301,18 @@ QString functions::pixelFormatToString(QImage::Format f)
 QString functions::formatDataSize(double size, bool isBits)
 {
   unsigned divCounter = 0;
+  bool isNegative = size < 0;
+  if (isNegative)
+    size = -size;
   while (divCounter < 5 && size >= 1000)
   {
     size = size / 1000;
     divCounter++;
   }
-  auto valueString = QString("%1").arg(size, 0, 'f', 2);
+  QString valueString;
+  if (isNegative)
+    valueString += "-";
+  valueString += QString("%1").arg(size, 0, 'f', 2);
   
   if (divCounter > 0 && divCounter < 5)
   {
