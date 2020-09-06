@@ -191,6 +191,12 @@ void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, p
   this->restartParsingOfCurrentItem();
 }
 
+void BitstreamAnalysisWidget::updateSettings()
+{
+  this->ui.plotViewWidget->updateSettings();
+  this->ui.hrdPlotWidget->updateSettings();
+}
+
 void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
 {
   if (!this->isVisible())

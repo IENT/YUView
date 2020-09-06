@@ -254,9 +254,6 @@ protected:
   // This pixmap is drawn in the lower left corner if playback is paused because we are waiting for caching.
   QPixmap waitingForCachingPixmap;
 
-  // This is set to true by the update function so that the palette is updated in the next draw event.
-  bool paletteNeedsUpdate;
-
   QStringPair determineItemNamesToDraw(playlistItem *item1, playlistItem *item2);
   void drawItemPathAndName(QPainter *painter, int posX, int width, QString path);
   bool drawItemPathAndNameEnabled {true};

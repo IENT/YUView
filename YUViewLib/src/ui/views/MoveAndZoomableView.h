@@ -31,7 +31,7 @@
 */
 #pragma once
 
-#include <QtWidgets/QWidget>
+#include <QWidget>
 
 #include <QAction>
 #include <QWheelEvent>
@@ -57,6 +57,7 @@ public:
 
 public slots:
   void setLinkState(bool enabled);
+  virtual void updateSettings();
 
   void resetView(bool checked) { Q_UNUSED(checked); this->resetViewInternal(); }
   void zoomToFit(bool checked) { Q_UNUSED(checked); this->zoomToFitInternal(); }
@@ -78,6 +79,8 @@ protected:
 
   void update();
   virtual void resetViewInternal();
+  void updatePaletteIfNeeded();
+  QString paletteBackgroundColorSettingsTag;
 
   void updateMouseCursor();
   virtual bool updateMouseCursor(const QPoint &srcMousePos);
@@ -102,8 +105,6 @@ protected:
     PINCHING,
     ZOOM_RECT
   };
-  
-  virtual void updateSettings();
 
   virtual void addContextMenuActions(QMenu *menu);
 
@@ -141,6 +142,9 @@ protected:
   const QBrush ZOOM_RECT_BRUSH = QBrush(QColor(50, 50, 255, 50));
 
   virtual void getStateFromMaster();
+
+  // This is set to true by the update function so that the palette is updated in the next draw event.
+  bool paletteNeedsUpdate;
 
 private:
   QPoint viewDraggingMousePosStart;

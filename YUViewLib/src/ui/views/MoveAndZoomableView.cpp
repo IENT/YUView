@@ -126,6 +126,20 @@ void MoveAndZoomableView::resetViewInternal()
   update();
 }
 
+void MoveAndZoomableView::updatePaletteIfNeeded()
+{
+  if (this->paletteNeedsUpdate)
+  {
+    // load the background color from settings and set it
+    QPalette pal(palette());
+    QSettings settings;
+    pal.setColor(QPalette::Window, settings.value(paletteBackgroundColorSettingsTag).value<QColor>());
+    this->setAutoFillBackground(true);
+    this->setPalette(pal);
+    this->paletteNeedsUpdate = false;
+  }
+}
+
 /* Zoom in/out by one step or to a specific zoom value
  * 
  * Zooming is performed in steps of ZOOM_STEP_FACTOR. However, the zoom factor can not be a multiple of
@@ -618,6 +632,10 @@ void MoveAndZoomableView::setMoveOffset(QPoint offset)
 void MoveAndZoomableView::updateSettings()
 {
   QSettings settings;
+
+  // Update the palette in the next draw event.
+  // We don't do this here because Qt overwrites the setting if the theme is changed.
+  paletteNeedsUpdate = true;
 
   // Load the mouse mode
   QString mouseModeString = settings.value("MouseMode", "Left Zoom, Right Move").toString();

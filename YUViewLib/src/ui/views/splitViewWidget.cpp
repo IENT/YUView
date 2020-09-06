@@ -92,6 +92,8 @@ const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 splitViewWidget::splitViewWidget(QWidget *parent)
   : MoveAndZoomableView(parent)
 {
+  paletteBackgroundColorSettingsTag = "View/BackgroundColor";
+
   setFocusPolicy(Qt::NoFocus);
   setViewSplitMode(DISABLED);
   updateSettings();
@@ -122,13 +124,9 @@ void splitViewWidget::updateSettings()
 {
   MoveAndZoomableView::updateSettings();
 
-  // Update the palette in the next draw event.
-  // We don't do this here because Qt overwrites the setting if the theme is changed.
-  paletteNeedsUpdate = true;
-
   // Get the color of the regular grid
   QSettings settings;
-  regularGridColor = settings.value("OverlayGrid/Color").value<QColor>();
+  regularGridColor = settings.value("View/GridColor").value<QColor>();
 
   // Load the split line style from the settings and set it
   QString splittingStyleString = settings.value("SplitViewLineStyle").toString();
@@ -137,7 +135,7 @@ void splitViewWidget::updateSettings()
   else
     splittingLineStyle = SOLID_LINE;
 
-  zoomBoxBackgroundColor = settings.value("Background/Color").value<QColor>();
+  zoomBoxBackgroundColor = settings.value(paletteBackgroundColorSettingsTag).value<QColor>();
   drawItemPathAndNameEnabled = settings.value("ShowFilePathInSplitMode", true).toBool();
 
   // Something about how we draw might have been changed
@@ -148,17 +146,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 {
   Q_UNUSED(paint_event);
 
-  if (paletteNeedsUpdate)
-  {
-    // load the background color from settings and set it
-    QPalette Pal(palette());
-    QSettings settings;
-    QColor bgColor = settings.value("Background/Color").value<QColor>();
-    Pal.setColor(QPalette::Window, bgColor);
-    setAutoFillBackground(true);
-    setPalette(Pal);
-    paletteNeedsUpdate = false;
-  }
+  MoveAndZoomableView::updatePaletteIfNeeded();
 
   if (!playlist)
     // The playlist was not initialized yet. Nothing to draw (yet)

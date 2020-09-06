@@ -116,4 +116,8 @@ QStringList getThemeColors(QString themeName);
 QIcon convertIcon(QString iconPath);
 QPixmap convertPixmap(QString pixmapPath);
 
+// Format the data size as a huma readable string. If isBits is set, assumes bits, oterwise bytes.
+// From Qt 5.10 there is a built in function (QLocale::formattedDataSize). But we want to be 5.9 compatible.
+QString formatDataSize(double size, bool isBits = false);
+
 } // namespace functions
