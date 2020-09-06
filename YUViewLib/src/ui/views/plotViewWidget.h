@@ -117,7 +117,6 @@ private:
 
   // At zoom 1.0 (no zoom) we will show values with this distance on the x axis
   double zoomToPixelsPerValueX {10.0};
-  double zoomToPixelsPerValueY {10.0};
 
   QMap<unsigned, QMap<unsigned, unsigned>> currentlyHoveredPointPerStreamAndPlot;
 

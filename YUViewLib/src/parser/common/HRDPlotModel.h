@@ -85,5 +85,5 @@ private:
 
   int cpb_buffer_size {0};
   double time_offset_max {0};
-  int maxBufferLevel {0};
+  Range<int> bufferLevelLimits {0, 0};
 };

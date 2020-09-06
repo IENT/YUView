@@ -880,14 +880,6 @@ void PlotViewWidget::updatePlotRectAndAxis(QPainter &painter)
     // Now we can use the plotRect for the axis update
     this->propertiesAxis[0].line = {this->plotRect.bottomLeft() + thicknessDirectionX, this->plotRect.bottomRight() - thicknessDirectionX};
     this->propertiesAxis[1].line = {this->plotRect.bottomLeft() - thicknessDirectionY, this->plotRect.topLeft() + thicknessDirectionY};
-
-    this->zoomToPixelsPerValueY = double(zoomToPixelsPerValueX);
-    if (this->model)
-    {
-      const auto &streamParam = this->model->getStreamParameter(0);
-      const auto rangeY = double(streamParam.yRange.max - streamParam.yRange.min);
-      this->zoomToPixelsPerValueY = (this->propertiesAxis[1].line.p1().y() - this->propertiesAxis[1].line.p2().y()) / rangeY;
-    }
   }
   
   DEBUG_PLOT("PlotViewWidget::updatePlotRectAndAxis plotRect " << this->plotRect << " lineX " << this->propertiesAxis[0].line << " lineY " << this->propertiesAxis[1].line);
@@ -898,16 +890,26 @@ QPointF PlotViewWidget::convertPlotPosToPixelPos(const QPointF &plotPos, std::op
   if (!zoomFactor)
     zoomFactor = this->zoomFactor;
 
+  Range<double> yRange = {0, 100};
+  if (this->model)
+    yRange = this->model->getStreamParameter(0).yRange;
+  const auto rangeY = double(yRange.max - yRange.min);
+  
   const auto pixelPosX = this->propertiesAxis[0].line.p1().x() + (plotPos.x() * this->zoomToPixelsPerValueX) * (*zoomFactor) + this->moveOffset.x();
   
+  // line.p1 maps to the maximum y value and line.p2 to the lowest value
   if (this->fixYAxis)
   {
-    const auto pixelPosY = this->propertiesAxis[1].line.p1().y() - (plotPos.y() * this->zoomToPixelsPerValueY);
+    const auto lineLength = this->propertiesAxis[1].line.p1().y() - this->propertiesAxis[1].line.p2().y();
+    const auto relativePos = (plotPos.y() - yRange.min) / rangeY;
+    const auto pixelPosY = this->propertiesAxis[1].line.p1().y() - (relativePos * lineLength);
     return {pixelPosX, pixelPosY};
   }
   else
   {
-    const auto pixelPosY = this->propertiesAxis[1].line.p1().y() - (plotPos.y() * this->zoomToPixelsPerValueY) * (*zoomFactor) + this->moveOffset.y();
+    const auto rangeY = double(yRange.max - yRange.min);
+    const auto zoomToPixelsPerValueY = (this->propertiesAxis[1].line.p1().y() - this->propertiesAxis[1].line.p2().y()) / rangeY;
+    const auto pixelPosY = this->propertiesAxis[1].line.p1().y() - (plotPos.y() * zoomToPixelsPerValueY) * (*zoomFactor) + this->moveOffset.y();
     return {pixelPosX, pixelPosY};
   }
 }
@@ -916,17 +918,26 @@ QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos, std::o
 {
   if (!zoomFactor)
     zoomFactor = this->zoomFactor;
+
+  Range<double> yRange = {0, 100};
+  if (this->model)
+    yRange = this->model->getStreamParameter(0).yRange;
+  const auto rangeY = double(yRange.max - yRange.min);
   
   const auto valueX = ((pixelPos.x() - this->propertiesAxis[0].line.p1().x() - this->moveOffset.x()) / (*zoomFactor)) / this->zoomToPixelsPerValueX;
 
+  // line.p1 maps to the maximum y value and line.p2 to the lowest value
   if (this->fixYAxis)
   {
-    const auto valueY = (- pixelPos.y() + this->propertiesAxis[1].line.p1().y()) / this->zoomToPixelsPerValueY;
+    const auto lineLength = this->propertiesAxis[1].line.p1().y() - this->propertiesAxis[1].line.p2().y();
+    const double relativePos = pixelPos.y() / lineLength;
+    const auto valueY = yRange.max - relativePos * rangeY;
     return {valueX, valueY};
   }
   else
   {
-    const auto valueY = ((- pixelPos.y() + this->propertiesAxis[1].line.p1().y() + this->moveOffset.y()) / (*zoomFactor)) / this->zoomToPixelsPerValueY;
+    const auto zoomToPixelsPerValueY = (this->propertiesAxis[1].line.p1().y() - this->propertiesAxis[1].line.p2().y()) / rangeY;
+    const auto valueY = ((- pixelPos.y() + this->propertiesAxis[1].line.p1().y() + this->moveOffset.y()) / (*zoomFactor)) / zoomToPixelsPerValueY;
     return {valueX, valueY};
   }
 }

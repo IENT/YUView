@@ -2245,7 +2245,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   const auto SchedSelIdx = 0;
 
   const auto initial_cpb_removal_delay = lastBufferingPeriodSEI->initial_cpb_removal_delay[SchedSelIdx];
-  const auto initial_cpb_removal_delay_offset = lastBufferingPeriodSEI->initial_cpb_removal_delay[SchedSelIdx];
+  const auto initial_cpb_removal_delay_offset = lastBufferingPeriodSEI->initial_cpb_removal_delay_offset[SchedSelIdx];
 
   const bool cbr_flag = sps->vui_parameters.nal_hrd.cbr_flag[SchedSelIdx];
 
@@ -2333,12 +2333,12 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
     if (!cbr_flag && initial_cpb_removal_delay_time > ceil(t_g_90))
     {
       // TODO: These logs should go somewhere!
-      DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be <= ceil(t_g_90) " << ceil(t_g_90));
+      DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be <= ceil(t_g_90) " << double(ceil(t_g_90)));
     }
 
     if (cbr_flag && initial_cpb_removal_delay_time < floor(t_g_90))
     {
-      DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be >= floor(t_g_90) " << floor(t_g_90));
+      DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be >= floor(t_g_90) " << double(floor(t_g_90)));
     }
   }
 
@@ -2365,13 +2365,13 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
     auto lastFrameTime = this->t_af_nm1;
     while (it != this->framesToRemove.end())
     {
-      if ((*it).t_r < this->t_af_nm1 || (*it).t_r <= t_ai)
+      if (it->t_r < this->t_af_nm1 || (*it).t_r <= t_ai)
       {
-        if ((*it).t_r < this->t_af_nm1)
+        if (it->t_r < this->t_af_nm1)
         {
           // This should not happen (all frames prior to t_af_nm1 should have been
           // removed from the buffer already). Remove now and warn.
-          DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Removing frame with removal time (" << (*it).t_r << ") before final arrival time (" << t_af_nm1[SchedSelIdx] << "). Buffer underflow");
+          DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Removing frame with removal time (" << double(it->t_r) << ") before final arrival time (" << double(t_af_nm1) << "). Buffer underflow");
         }
         this->addConstantBufferLine(poc, lastFrameTime, (*it).t_r, plotModel);
         this->removeFromBufferAndCheck((*it), poc, (*it).t_r, plotModel);
@@ -2389,6 +2389,16 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   //    Also, previously received frames can be removed in this time interval.
   assert(t_af > t_ai);
   auto relevant_frames = this->popRemoveFramesInTimeInterval(t_ai, t_af);
+
+  bool underflowRemoveCurrentAU = false;
+  if (t_r_n <= t_af)
+  {
+    // The picture is removed from the buffer before the last bit of it could be
+    // received. This is a buffer underflow. We handle this by aborting transmission of bits for that AU
+    // when the frame is recieved.
+    underflowRemoveCurrentAU = true;
+  }
+
   unsigned int au_buffer_add = auBits;
   {
     // time_t au_time_expired = t_af - t_ai;
@@ -2411,9 +2421,8 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
     for (auto frame : relevant_frames)
     {
       assert(frame.t_r >= t_ai_sub && frame.t_r < t_af);
-      time_t time_expired               = frame.t_r - t_ai_sub;
-      long double buffer_add_fractional = bitrate * time_expired
-                                          + buffer_add_remainder;
+      const time_t time_expired         = frame.t_r - t_ai_sub;
+      long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
       unsigned int buffer_add = floor(buffer_add_fractional);
       buffer_add_remainder    = buffer_add_fractional - buffer_add;
       buffer_add_sum += buffer_add;
@@ -2421,29 +2430,42 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
       this->removeFromBufferAndCheck(frame, poc, frame.t_r, plotModel);
       t_ai_sub = frame.t_r;
     }
-    // The last interval from t_ai_sub to t_af
-    assert(au_buffer_add >= buffer_add_sum);
-    unsigned int buffer_add_remain = au_buffer_add - buffer_add_sum;
-    // The sum should correspond to the size of the complete AU
-    time_t time_expired               = t_af - t_ai_sub;
-    long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
+    if (underflowRemoveCurrentAU)
     {
-      unsigned int buffer_add = round(buffer_add_fractional);
-      buffer_add_sum += buffer_add;
-      // assert(buffer_add_sum == au_buffer_add || buffer_add_sum + 1 == au_buffer_add
-      // || buffer_add_sum == au_buffer_add + 1);
+      if (t_r_n < t_ai_sub)
+      {
+        // The removal time is even before the previous frame?!? Is this even possible?
+        int debugStop = 234;
+      }
+      // The last interval from t_ai_sub to t_r_n. After t_r_n we stop the current frame.
+      const time_t time_expired         = t_r_n - t_ai_sub;
+      long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
+      unsigned int buffer_add = floor(buffer_add_fractional);
+      this->addToBufferAndCheck(buffer_add, buffer_size, poc, t_ai_sub, t_r_n, plotModel);
+      this->removeFromBufferAndCheck(HRDFrameToRemove(t_r_n, auBits, poc), poc, t_r_n, plotModel);
+      // "Stop transmission" at this point. We have removed the frame so transmission of more bytes for it make no sense.
+      t_af = t_r_n;
     }
-    this->addToBufferAndCheck(buffer_add_remain, buffer_size, poc, t_ai_sub, t_af, plotModel);
+    else
+    {
+      // The last interval from t_ai_sub to t_af
+      assert(au_buffer_add >= buffer_add_sum);
+      unsigned int buffer_add_remain = au_buffer_add - buffer_add_sum;
+      // The sum should correspond to the size of the complete AU
+      time_t time_expired               = t_af - t_ai_sub;
+      long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
+      {
+        unsigned int buffer_add = round(buffer_add_fractional);
+        buffer_add_sum += buffer_add;
+        // assert(buffer_add_sum == au_buffer_add || buffer_add_sum + 1 == au_buffer_add
+        // || buffer_add_sum == au_buffer_add + 1);
+      }
+      this->addToBufferAndCheck(buffer_add_remain, buffer_size, poc, t_ai_sub, t_af, plotModel);
+    }
   }
 
-  if (t_r_n <= t_af)
-  {
-    // The picture is removed from the buffer before the last bit of it could be
-    // received. This is a buffer underflow. However, technically the values we have to
-    // compare for underflow detection is the nominal removal time. This is done
-    // further down.
-  }
-  framesToRemove.push_back(HRDFrameToRemove(t_r_n, auBits, poc));
+  if (!underflowRemoveCurrentAU)
+    framesToRemove.push_back(HRDFrameToRemove(t_r_n, auBits, poc));
 
   this->t_af_nm1 = t_af;
 
@@ -2451,7 +2473,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   // t_af(n). When low_delay_hrd_flag is equal to 0, the CPB shall never underflow.
   if (t_r_nominal_n < t_af && !sps->vui_parameters.low_delay_hrd_flag)
   {
-    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Decoding Buffer underflow t_r_n " << t_r_n << " t_af " << t_af);
+    DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Decoding Buffer underflow t_r_n " << double(t_r_n) << " t_af " << double(t_af));
   }
 
   this->au_n++;
@@ -2506,10 +2528,10 @@ void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned buff
     entry.poc = poc;
     plotModel->addHRDEntry(entry);
   }
-  if (this->decodingBufferLevel >= bufferSize)
+  if (this->decodingBufferLevel > bufferSize)
   {
     this->decodingBufferLevel = bufferSize;
-    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << t_end << " Decoding Buffer overflow by " << (int(this->decodingBufferLevel) - bufferSize) << "bits" << " added bits " << bufferAdd << "(" << bufferAddFractional << ")");
+    DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Time " << double(t_end) << " Decoding Buffer overflow by " << (int(this->decodingBufferLevel) - bufferSize) << "bits" << " added bits " << bufferAdd << ")");
   }
 }
 
@@ -2536,7 +2558,7 @@ void parserAnnexBAVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &fram
     // The buffer did underflow; i.e. we need to decode a pictures
     // at the time but there is not enough data in the buffer to do so (to take the AU
     // out of the buffer).
-    DEBUG_AVC("HRD " << id << " AU " << this->au_n << " POC " << poc << " - Warning: Time " << frame.t_r << " Decoding Buffer underflow by " << this->decodingBufferLevel << "bits");
+    DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Time " << double(frame.t_r) << " Decoding Buffer underflow by " << this->decodingBufferLevel << "bits");
   }
 }
 
