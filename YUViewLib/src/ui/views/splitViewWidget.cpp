@@ -989,9 +989,13 @@ QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoi
 
 void splitViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor)
 {
+  const auto newZoom = this->zoomFactor * additionalZoomFactor;
+  if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
+    return;
+
   const QPoint zoomRectCenterOffset = zoomRect.center() - this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
   this->setMoveOffset((this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor);
-  this->setZoomFactor(this->zoomFactor * additionalZoomFactor);
+  this->setZoomFactor(newZoom);
 }
 
 void splitViewWidget::setSplittingPoint(double point, bool setLinkedViews)
@@ -1207,6 +1211,9 @@ void splitViewWidget::zoomToFitInternal()
     while (newZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR < fracZoom)
       newZoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
   }
+
+  if (newZoomFactor < ZOOMINGLIMIT.min || newZoomFactor > ZOOMINGLIMIT.max)
+    return;
 
   // Set new zoom factor and update
   this->setZoomFactor(newZoomFactor);

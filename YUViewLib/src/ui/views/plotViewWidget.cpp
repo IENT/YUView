@@ -144,6 +144,9 @@ void PlotViewWidget::zoomToFitInternal()
   if (!modelContainsDataYet)
     return;
 
+  if (minZoomFactor < ZOOMINGLIMIT.min || minZoomFactor > ZOOMINGLIMIT.max)
+    return;
+
   // Zoom the view so that we can see a certain amount of items
   this->setZoomFactor(minZoomFactor);
 
@@ -930,12 +933,16 @@ QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos, std::o
 
 void PlotViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor)
 {
+  const auto newZoom = this->zoomFactor * additionalZoomFactor;
+  if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
+    return;
+
   const auto plotRectBottomLeft = this->plotRect.bottomLeft();
   auto moveOrigin = QPoint(plotRectBottomLeft.x() + fadeBoxThickness, plotRectBottomLeft.y() - fadeBoxThickness);
 
   const QPoint zoomRectCenterOffset = zoomRect.center() - moveOrigin;
   auto newMoveOffset = ((this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor + this->plotRect.center()).toPoint();
-  this->setZoomFactor(this->zoomFactor * additionalZoomFactor);
+  this->setZoomFactor(newZoom);
   this->setMoveOffset(newMoveOffset);
 
   DEBUG_PLOT("MoveAndZoomableView::mouseReleaseEvent end zoom box - zoomRectCenterOffset " << zoomRectCenterOffset << " newMoveOffset " << newMoveOffset);
