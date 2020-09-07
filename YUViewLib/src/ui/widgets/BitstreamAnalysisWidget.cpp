@@ -75,8 +75,11 @@ MoveAndZoomableView *BitstreamAnalysisWidget::getCurrentActiveView()
 
 void BitstreamAnalysisWidget::updateParserItemModel()
 {
-  this->parser->updateNumberModelItems();
-  this->updateParsingStatusText(this->parser->getParsingProgressPercent());
+  if (this->parser)
+  {
+    this->parser->updateNumberModelItems();
+    this->updateParsingStatusText(this->parser->getParsingProgressPercent());
+  }
 }
 
 void BitstreamAnalysisWidget::updateStreamInfo()
