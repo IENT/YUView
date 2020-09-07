@@ -2406,7 +2406,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
     // assert(au_buffer_add == au_bits_add || au_buffer_add == au_bits_add + 1 ||
     // au_buffer_add + 1 == au_bits_add);
   }
-  if (relevant_frames.empty())
+  if (relevant_frames.empty() && !underflowRemoveCurrentAU)
   {
     this->addToBufferAndCheck(au_buffer_add, buffer_size, poc, t_ai, t_af, plotModel);
   }
