@@ -2435,7 +2435,6 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
       if (t_r_n < t_ai_sub)
       {
         // The removal time is even before the previous frame?!? Is this even possible?
-        int debugStop = 234;
       }
       // The last interval from t_ai_sub to t_r_n. After t_r_n we stop the current frame.
       const time_t time_expired         = t_r_n - t_ai_sub;
