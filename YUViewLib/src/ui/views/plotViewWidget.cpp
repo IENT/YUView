@@ -674,11 +674,30 @@ void PlotViewWidget::drawPlot(QPainter &painter) const
       }
       else if (plotParam.type == PlotModel::PlotType::Line)
       {
+        // We can assume that the points are sorted (i.e. there is not graph that suddenly goes back)
+        auto getStartIndexBinarySearch = [](unsigned nrpoints, PlotModel *model, unsigned streamIndex, unsigned plotIndex, double plotXMin)
+        {
+          unsigned intervalLeft = 0;
+          unsigned intervalRight = nrpoints;
+          while (true)
+          {
+            unsigned pointToCheck = intervalLeft + (intervalRight - intervalLeft) / 2;
+            auto valuePoint = model->getPlotPoint(streamIndex, plotIndex, pointToCheck);
+            if (valuePoint.x < plotXMin)    // Choose right interval
+              intervalLeft = pointToCheck;
+            else                            // Left interval
+              intervalRight = pointToCheck;
+            if (intervalLeft + 1 == intervalRight)
+              return intervalLeft;
+          }
+        };
+
         QPolygonF linePoints;
         QPointF lastPoint;
+        const auto startIndex = getStartIndexBinarySearch(plotParam.nrpoints, this->model, streamIndex, plotIndex, plotXMin);
         for (unsigned i = 0; i < plotParam.nrpoints; i++)
         {
-          const auto valueStart = model->getPlotPoint(streamIndex, plotIndex, i);
+          const auto valueStart = this->model->getPlotPoint(streamIndex, plotIndex, i);
           const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));
 
           if (valueStart.x < plotXMin)
