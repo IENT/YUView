@@ -695,7 +695,7 @@ void PlotViewWidget::drawPlot(QPainter &painter) const
         QPolygonF linePoints;
         QPointF lastPoint;
         const auto startIndex = getStartIndexBinarySearch(plotParam.nrpoints, this->model, streamIndex, plotIndex, plotXMin);
-        for (unsigned i = 0; i < plotParam.nrpoints; i++)
+        for (unsigned i = startIndex; i < plotParam.nrpoints; i++)
         {
           const auto valueStart = this->model->getPlotPoint(streamIndex, plotIndex, i);
           const auto linePointStart = this->convertPlotPosToPixelPos(QPointF(valueStart.x, valueStart.y));

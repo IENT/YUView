@@ -86,7 +86,7 @@ decoderVTM::decoderVTM(int signalID, bool cachingDecoder) :
   loadDecoderLibrary(settings.value("libVTMFile", "").toString());
   settings.endGroup();
 
-  if (decoderState != decoderError)
+  if (decoderState != DecoderState::Error)
     allocateNewDecoder();
 }
 
@@ -191,7 +191,7 @@ void decoderVTM::allocateNewDecoder()
 
 bool decoderVTM::decodeNextFrame()
 {
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DECVTM("decoderVTM::decodeNextFrame: Wrong decoder state.");
     return false;
@@ -219,7 +219,7 @@ bool decoderVTM::getNextFrameFromDecoder()
   currentVTMPic = libVTMDec_get_picture(decoder);
   if (currentVTMPic == nullptr)
   {
-    decoderState = decoderNeedsMoreData;
+    decoderState = DecoderState::NeedsMoreData;
     return false;
   }
 
@@ -258,7 +258,7 @@ bool decoderVTM::getNextFrameFromDecoder()
 
 bool decoderVTM::pushData(QByteArray &data)
 {
-  if (decoderState != decoderNeedsMoreData)
+  if (decoderState != DecoderState::NeedsMoreData)
   {
     DEBUG_DECVTM("decoderVTM::pushData: Wrong decoder state.");
     return false;
@@ -280,7 +280,7 @@ bool decoderVTM::pushData(QByteArray &data)
   if (checkOutputPictures && getNextFrameFromDecoder())
   {
     decodedFrameWaiting = true;
-    decoderState = decoderRetrieveFrames;
+    decoderState = DecoderState::RetrieveFrames;
     currentOutputBuffer.clear();
   }
 
@@ -294,7 +294,7 @@ QByteArray decoderVTM::getRawFrameData()
 {
   if (currentVTMPic == nullptr)
     return QByteArray();
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DECVTM("decoderVTM::getRawFrameData: Wrong decoder state.");
     return QByteArray();
@@ -556,7 +556,7 @@ void decoderVTM::fillStatisticList(statisticHandler &statSource) const
 
 QString decoderVTM::getDecoderName() const
 {
-  return (decoderState == decoderError) ? "VTM" : libVTMDec_get_version();
+  return (decoderState == DecoderState::Error) ? "VTM" : libVTMDec_get_version();
 }
 
 bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)

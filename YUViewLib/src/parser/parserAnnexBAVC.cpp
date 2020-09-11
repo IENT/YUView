@@ -2294,18 +2294,12 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
     else
     {
       time_t t_ai_earliest = 0;
+      time_t init_delay;
       if (this->isFirstAUInBufferingPeriod)
-      {
-        time_t init_delay = time_t(initial_cpb_removal_delay) / 90000;
-        if (init_delay < t_r_nominal_n)
-          t_ai_earliest = t_r_nominal_n - init_delay;
-      }
+        init_delay = time_t(initial_cpb_removal_delay) / 90000;
       else
-      {
-        time_t init_delay = time_t(initial_cpb_removal_delay + initial_cpb_removal_delay_offset) / 90000;
-        if (init_delay < t_r_nominal_n)
-          t_ai_earliest = t_r_nominal_n - init_delay;
-      }
+        init_delay = time_t(initial_cpb_removal_delay + initial_cpb_removal_delay_offset) / 90000;
+      t_ai_earliest = t_r_nominal_n - init_delay;
       t_ai = std::max(this->t_af_nm1, t_ai_earliest);
     }
   }
