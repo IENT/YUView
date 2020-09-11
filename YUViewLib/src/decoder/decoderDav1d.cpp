@@ -175,7 +175,7 @@ void decoderDav1d::allocateNewDecoder()
     DEBUG_DAV1D("decoderDav1d::allocateNewDecoder Error a decoder was already allocated");
     return;
   }
-  if (decoderState == decoderError)
+  if (decoderState == DecoderState::Error)
     return;
 
   DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - decodeSignal %d", decodeSignal);
@@ -186,7 +186,7 @@ void decoderDav1d::allocateNewDecoder()
   int err = dav1d_open(&decoder, &settings);
   if (err != 0)
   {
-    decoderState = decoderError;
+    decoderState = DecoderState::Error;
     setError("Error opening new decoder (dav1d_open)");
     return;
   }
@@ -225,7 +225,7 @@ void decoderDav1d::allocateNewDecoder()
 
 bool decoderDav1d::decodeNextFrame()
 {
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DAV1D("decoderLibde265::decodeNextFrame: Wrong decoder state.");
     return false;
@@ -279,16 +279,16 @@ bool decoderDav1d::decodeFrame()
     }
     DEBUG_DAV1D("decoderDav1d::decodeFrame Picture decoded - switching to retrieve frame mode");
 
-    decoderState = decoderRetrieveFrames;
+    decoderState = DecoderState::RetrieveFrames;
     currentOutputBuffer.clear();
     return true;
   }
   else if (res != -EAGAIN)
       return setErrorB("Error retrieving frame from decoder.");
 
-  if (decoderState != decoderNeedsMoreData)
+  if (decoderState != DecoderState::NeedsMoreData)
     DEBUG_DAV1D("decoderDav1d::decodeFrame No frame available - switching back to data push mode");
-  decoderState = decoderNeedsMoreData;
+  decoderState = DecoderState::NeedsMoreData;
   return false;
 }
 
@@ -300,7 +300,7 @@ QByteArray decoderDav1d::getRawFrameData()
     DEBUG_DAV1D("decoderDav1d::getRawFrameData: Current picture has invalid size.");
     return QByteArray();
   }
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DAV1D("decoderDav1d::getRawFrameData: Wrong decoder state.");
     return QByteArray();
@@ -322,7 +322,7 @@ QByteArray decoderDav1d::getRawFrameData()
 
 bool decoderDav1d::pushData(QByteArray &data) 
 {
-  if (decoderState != decoderNeedsMoreData)
+  if (decoderState != DecoderState::NeedsMoreData)
   {
     DEBUG_DAV1D("decoderDav1d::pushData: Wrong decoder state.");
     return false;

@@ -86,7 +86,7 @@ decoderHM::decoderHM(int signalID, bool cachingDecoder) :
   loadDecoderLibrary(settings.value("libHMFile", "").toString());
   settings.endGroup();
 
-  if (decoderState != decoderError)
+  if (decoderState != DecoderState::Error)
     allocateNewDecoder();
 }
 
@@ -191,7 +191,7 @@ void decoderHM::allocateNewDecoder()
 
 bool decoderHM::decodeNextFrame()
 {
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DECHM("decoderHM::decodeNextFrame: Wrong decoder state.");
     return false;
@@ -219,7 +219,7 @@ bool decoderHM::getNextFrameFromDecoder()
   currentHMPic = libHMDec_get_picture(decoder);
   if (currentHMPic == nullptr)
   {
-    decoderState = decoderNeedsMoreData;
+    decoderState = DecoderState::NeedsMoreData;
     return false;
   }
 
@@ -257,7 +257,7 @@ bool decoderHM::getNextFrameFromDecoder()
 
 bool decoderHM::pushData(QByteArray &data) 
 {
-  if (decoderState != decoderNeedsMoreData)
+  if (decoderState != DecoderState::NeedsMoreData)
   {
     DEBUG_DECHM("decoderHM::pushData: Wrong decoder state.");
     return false;
@@ -279,7 +279,7 @@ bool decoderHM::pushData(QByteArray &data)
   if (checkOutputPictures && getNextFrameFromDecoder())
   {
     decodedFrameWaiting = true;
-    decoderState = decoderRetrieveFrames;
+    decoderState = DecoderState::RetrieveFrames;
     currentOutputBuffer.clear();
   }
 
@@ -293,7 +293,7 @@ QByteArray decoderHM::getRawFrameData()
 {
   if (currentHMPic == nullptr)
     return QByteArray();
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DECHM("decoderHM::getRawFrameData: Wrong decoder state.");
     return QByteArray();
@@ -556,7 +556,7 @@ void decoderHM::fillStatisticList(statisticHandler &statSource) const
 
 QString decoderHM::getDecoderName() const
 {
-  return (decoderState == decoderError) ? "HM" : libHMDec_get_version();
+  return (decoderState == DecoderState::Error) ? "HM" : libHMDec_get_version();
 }
 
 bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)

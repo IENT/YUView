@@ -1563,7 +1563,7 @@ YUV_Internals::yuvPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
       // Varying bit depths for components is not supported
       return YUV_Internals::yuvPixelFormat();
   
-  if (flagIsBitWisePacked() || !flagIsPlanar())
+  if (this->flagIsBitWisePacked() || !this->flagIsPlanar())
     // Maybe this could be supported but I don't think that any decoder actually uses this.
     // If you encounter a format that does not work because of this check please let us know.
     return YUV_Internals::yuvPixelFormat();
@@ -1582,13 +1582,13 @@ RGB_Internals::rgbPixelFormat AVPixFmtDescriptorWrapper::getRGBPixelFormat()
       // Varying bit depths for components is not supported
       return RGB_Internals::rgbPixelFormat();
 
-  if (flagIsBitWisePacked() || !flagIsPlanar())
+  if (this->flagIsBitWisePacked())
     // Maybe this could be supported but I don't think that any decoder actually uses this.
     // If you encounter a format that does not work because of this check please let us know.
     return RGB_Internals::rgbPixelFormat();
 
   // The only possible order of planes seems to be RGB(A)
-  return RGB_Internals::rgbPixelFormat(bitsPerSample, true, 0, 1, 2, flagHasAlphaPlane() ? 3 : -1);
+  return RGB_Internals::rgbPixelFormat(bitsPerSample, this->flagIsPlanar(), 0, 1, 2, flagHasAlphaPlane() ? 3 : -1);
 }
 
 bool AVPixFmtDescriptorWrapper::setValuesFromYUVPixelFormat(YUV_Internals::yuvPixelFormat fmt)

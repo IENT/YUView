@@ -148,8 +148,9 @@ public:
   bool canConvertToRGB(QSize frameSize, QString *whyNot = nullptr) const;
   int64_t bytesPerFrame(const QSize &frameSize) const;
   QString getName() const;
-  int getSubsamplingHor() const;
-  int getSubsamplingVer() const;
+  unsigned getNrPlanes() const;
+  int getSubsamplingHor(Component component = Component::Chroma) const;
+  int getSubsamplingVer(Component component = Component::Chroma) const;
   void setDefaultChromaOffset();
   bool isChromaSubsampled() const { return subsampling != Subsampling::YUV_444; }
 

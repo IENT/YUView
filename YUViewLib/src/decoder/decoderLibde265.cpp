@@ -179,7 +179,7 @@ void decoderLibde265::allocateNewDecoder()
 {
   if (decoder != nullptr)
     return;
-  if (decoderState == decoderError)
+  if (decoderState == DecoderState::Error)
     return;
 
   DEBUG_LIBDE265("decoderLibde265::allocateNewDecoder - decodeSignal %d", decodeSignal);
@@ -188,7 +188,7 @@ void decoderLibde265::allocateNewDecoder()
   decoder = de265_new_decoder();
   if (!decoder)
   {
-    decoderState = decoderError;
+    decoderState = DecoderState::Error;
     setError("Error allocating decoder (de265_new_decoder)");
     return;
   }
@@ -235,7 +235,7 @@ void decoderLibde265::allocateNewDecoder()
 
 bool decoderLibde265::decodeNextFrame()
 {
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_LIBDE265("decoderLibde265::decodeNextFrame: Wrong decoder state.");
     return false;
@@ -260,7 +260,7 @@ bool decoderLibde265::decodeFrame()
 
     if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA)
     {
-      decoderState = decoderNeedsMoreData;
+      decoderState = DecoderState::NeedsMoreData;
       return false;
     }
     else if (err != DE265_OK)
@@ -272,7 +272,7 @@ bool decoderLibde265::decodeFrame()
   if (more == 0 && curImage == nullptr)
   {
     // Decoding ended
-    decoderState = decoderEndOfBitstream;
+    decoderState = DecoderState::EndOfBitstream;
     return false;
   }
 
@@ -307,7 +307,7 @@ bool decoderLibde265::decodeFrame()
     }
     DEBUG_LIBDE265("decoderLibde265::decodeFrame Picture decoded");
 
-    decoderState = decoderRetrieveFrames;
+    decoderState = DecoderState::RetrieveFrames;
     currentOutputBuffer.clear();
     return true;
   }
@@ -318,7 +318,7 @@ QByteArray decoderLibde265::getRawFrameData()
 {
   if (curImage == nullptr)
     return QByteArray();
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_LIBDE265("decoderLibde265::getRawFrameData: Wrong decoder state.");
     return QByteArray();
@@ -340,7 +340,7 @@ QByteArray decoderLibde265::getRawFrameData()
 
 bool decoderLibde265::pushData(QByteArray &data) 
 {
-  if (decoderState != decoderNeedsMoreData)
+  if (decoderState != DecoderState::NeedsMoreData)
   {
     DEBUG_LIBDE265("decoderLibde265::pushData: Wrong decoder state.");
     return false;

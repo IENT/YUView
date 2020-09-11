@@ -63,7 +63,7 @@ decoderBase::decoderBase(bool cachingDecoder)
 void decoderBase::resetDecoder()
 {
   DEBUG_DECODERBASE("decoderBase::resetDecoder");
-  decoderState = decoderNeedsMoreData;
+  decoderState = DecoderState::NeedsMoreData;
   statsCacheCurPOC = -1;
   frameSize = QSize();
   formatYUV = YUV_Internals::yuvPixelFormat();
