@@ -75,7 +75,8 @@ class Variable(ParsingItem):
         self.name = None
         self.arrayIndex = None
         self.coding = None
-    def fromText(self, name : str, descriptor : str):
+        self.description = None
+    def fromText(self, name : str, descriptor : str, variableDescriptions : dict):
         if ("[" in name and "]" in name):
             self.arrayIndex = []
             openBracket = name.find("[")
@@ -90,6 +91,8 @@ class Variable(ParsingItem):
                     break
         else:
             self.name = name
+        if (self.name in variableDescriptions):
+            self.description = variableDescriptions[self.name]
         self.coding = CodingType(descriptor)
     def __str__(self):
         s = ""
@@ -137,7 +140,7 @@ class Container(ParsingItem):
         self.children = []
         self.depth = 0
         self.depth = 0
-    def parseChildren(self, table, tableIndex):
+    def parseChildren(self, table, tableIndex, variableDescriptions):
         # Get the initial depth
         t0_full = table.cell(0, tableIndex).text
         self.depth = len(t0_full) - len(t0_full.lstrip("\t"))
@@ -168,39 +171,39 @@ class Container(ParsingItem):
 
                 if (entryType == "Variable"):
                     v = Variable(self)
-                    v.fromText(t0, t1)
-                    print(f"{v}")
+                    v.fromText(t0, t1, variableDescriptions)
+                    #print(f"{v}")
                     self.children.append(v)
                 elif (entryType == "FunctionCall"):
                     f = FunctionCall(self)
                     f.fromText(t0)
-                    print(f"{f}")
+                    #print(f"{f}")
                     self.children.append(f)
                 elif (entryType == "for"):
                     f = ContainerFor(self)
                     f.fromText(t0)
-                    print(f"{f}")
+                    #print(f"{f}")
                     self.children.append(f)
-                    tableIndex = f.parseChildren(table, tableIndex)
+                    tableIndex = f.parseChildren(table, tableIndex, variableDescriptions)
                 elif (entryType == "if"):
                     i = ContainerIf(self)
                     i.fromText(t0)
-                    print(f"{i}")
+                    #print(f"{i}")
                     self.children.append(i)
-                    tableIndex = i.parseChildren(table, tableIndex)
+                    tableIndex = i.parseChildren(table, tableIndex, variableDescriptions)
                 elif (entryType == "while"):
                     w = ContainerWhile(self)
                     w.fromText(t0)
-                    print(f"{w}")
+                    #print(f"{w}")
                     self.children.append(w)
-                    tableIndex = w.parseChildren(table, tableIndex)
+                    tableIndex = w.parseChildren(table, tableIndex, variableDescriptions)
                 elif (entryType == "do"):
                     d = ContainerDo(self)
                     d.fromText(t0)
-                    print(d.getDoText())
-                    tableIndex = d.parseChildren(table, tableIndex)
+                    #print(d.getDoText())
+                    tableIndex = d.parseChildren(table, tableIndex, variableDescriptions)
                     tableIndex = d.parseClosingWhile(table, tableIndex)
-                    print(f"{d}")
+                    #print(f"{d}")
                     self.children.append(d)
                 elif (entryType != None):
                     debugStop = 2222
@@ -208,7 +211,7 @@ class Container(ParsingItem):
                     if (t0.strip() != "}"):
                         c = CommentEntry(self)
                         c.fromText(t0)
-                        print(f"{c}")
+                        #print(f"{c}")
                         self.children.append(c)
 
                 if (lastEntry):
@@ -220,14 +223,14 @@ class Container(ParsingItem):
 class ContainerTable(Container):
     def __init__(self):
         super().__init__(None)
-    def parseContainer(self, table):
+    def parseContainer(self, table, variableDescriptions):
         self.parseHeader(table.cell(0, 0).text)
         t1 = table.cell(0, 1).text.strip()
         t2 = table.cell(0, 2).text.strip()
         if (t2 == t1):
-            self.parseChildren(table, 3)
+            self.parseChildren(table, 3, variableDescriptions)
         else:
-            self.parseChildren(table, 2)
+            self.parseChildren(table, 2, variableDescriptions)
     def parseHeader(self, header):
         header = header.replace(u'\xa0', u' ')
         bracketOpen = header.find("(")
@@ -345,28 +348,13 @@ class ContainerFor(Container):
             spaces += "  "
         return f"{spaces}for({self.variableName} = {self.initialValue}; {self.breakCondition}; {self.increment})"
 
-
-    
-def main():
-    filename = "JVET-R2001-vB.docx"
-    print("Opening file " + filename)
-    document = Document(filename)
-
-    variableDescriptions = parseDocForVariableDescriptions(document)
-
-    print(f"Parsed {len(variableDescriptions)} variable descriptions: ")
-    for desc in variableDescriptions:
-        print(desc)
-
-    return
-
-    # From where to where to parse. The last entry will not be included.
-    #firstLastEntry = ["nal_unit_header", "slice_data"]
-    firstLastEntry = ["sei_payload", ""]
-    skipEntries = ["sei_rbsp"]
-
-    firstEntryFound = False
+def parseDocumentTablesForParsing(document, variableDescriptions):
     parsedTables = []
+
+    firstLastEntry = ["nal_unit_header", "slice_data"]
+    skipEntries = ["sei_rbsp"]
+    
+    firstEntryFound = False
     for table in document.tables:
         entryName = table.cell(0, 0).text.split("(")[0]
         if (not firstEntryFound and entryName == firstLastEntry[0]):
@@ -377,9 +365,24 @@ def main():
             continue
         if firstEntryFound:
             tableItem = ContainerTable()
-            tableItem.parseContainer(table)
+            tableItem.parseContainer(table, variableDescriptions)
             parsedTables.append(tableItem)
+    return parsedTables
     
+def main():
+    filename = "JVET-R2001-vB.docx"
+    print("Opening file " + filename)
+    document = Document(filename)
+
+    variableDescriptions = parseDocForVariableDescriptions(document)
+
+    print(f"Parsed {len(variableDescriptions)} variable descriptions: ")
+    # for desc in variableDescriptions:
+    #     print(desc)
+
+    # From where to where to parse. The last entry will not be included.
+    
+    parsedTables = parseDocumentTablesForParsing(document, variableDescriptions)
     print ("Read {} classes".format(len(parsedTables)))
 
 if __name__ == "__main__":
