@@ -49,20 +49,20 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray ex
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading 
   // the libraries which is slow and uses a lot of memory.
-  if (!ff.loadFFmpegLibraries())
+  if (!this->ff.loadFFmpegLibraries())
     return;
 
   // Create the cofiguration parameters
-  AVCodecParametersWrapper codecpar = ff.alloc_code_parameters();
+  AVCodecParametersWrapper codecpar = this->ff.alloc_code_parameters();
   codecpar.setAVMediaType(AVMEDIA_TYPE_VIDEO);
-  codecpar.setAVCodecID(ff.getCodecIDFromWrapper(codecID));
+  codecpar.setAVCodecID(this->ff.getCodecIDFromWrapper(codecID));
   codecpar.setSize(size.width(), size.height());
   codecpar.setExtradata(extradata);
   
-  AVPixelFormat f = ff.getAVPixelFormatFromYUVPixelFormat(fmt);
+  AVPixelFormat f = this->ff.getAVPixelFormatFromYUVPixelFormat(fmt);
   if (f == AV_PIX_FMT_NONE)
   {
-    setError("Error determining the AVPixelFormat.");
+    this->setError("Error determining the AVPixelFormat.");
     return;
   }
   codecpar.setAVPixelFormat(f);
@@ -72,15 +72,15 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray ex
 
   if (!createDecoder(codecID, codecpar))
   {
-    setError("Error creating the needed decoder.");
+    this->setError("Error creating the needed decoder.");
     return;
   }
 
-  flushing = false;
-  internalsSupported = true;
+  this->flushing = false;
+  this->internalsSupported = true;
   // Fill the padding array
-  for (int i=0; i<AV_INPUT_BUFFER_PADDING_SIZE; i++)
-    avPacketPaddingData.append((char)0);
+  for (int i = 0; i < AV_INPUT_BUFFER_PADDING_SIZE; i++)
+    this->avPacketPaddingData.append((char)0);
 
   DEBUG_FFMPEG("Created new FFmpeg decoder - codec %s%s", this->getCodecName(), cachingDecoder ? " - caching" : "");
 }
@@ -90,44 +90,44 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading 
   // the libraries which is slow and uses a lot of memory.
-  if (!ff.loadFFmpegLibraries())
+  if (!this->ff.loadFFmpegLibraries())
     return;
 
-  AVCodecIDWrapper codecID = ff.getCodecIDWrapper(codecpar.getCodecID());
-  if (!createDecoder(codecID, codecpar))
+  AVCodecIDWrapper codecID = this->ff.getCodecIDWrapper(codecpar.getCodecID());
+  if (!this->createDecoder(codecID, codecpar))
   {
-    setError("Error creating the needed decoder.");
+    this->setError("Error creating the needed decoder.");
     return ;
   }
 
-  flushing = false;
-  internalsSupported = true;
+  this->flushing = false;
+  this-> internalsSupported = true;
 
   DEBUG_FFMPEG("Created new FFmpeg decoder - codec %s%s", this->getCodecName(), cachingDecoder ? " - caching" : "");
 }
 
 decoderFFmpeg::~decoderFFmpeg()
 {
-  if (frame)
-    frame.free_frame(ff);
-  if (raw_pkt)
-    raw_pkt.free_packet();
+  if (this->frame)
+    this->frame.free_frame(this->ff);
+  if (this->raw_pkt)
+    this->raw_pkt.free_packet(this->ff);
 }
 
 void decoderFFmpeg::resetDecoder()
 {
-  if (decoderState == decoderError)
+  if (this->decoderState == DecoderState::Error)
     return;
     
   DEBUG_FFMPEG("decoderFFmpeg::resetDecoder");
-  ff.flush_buffers(decCtx);
-  decoderState = decoderNeedsMoreData;
-  flushing = false;
+  this->ff.flush_buffers(this->decCtx);
+  this->decoderState = DecoderState::NeedsMoreData;
+  this->flushing = false;
 }
 
 bool decoderFFmpeg::decodeNextFrame()
 {
-  if (decoderState != decoderRetrieveFrames)
+  if (this->decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame: Wrong decoder state.");
     return false;
@@ -149,7 +149,7 @@ bool decoderFFmpeg::decodeNextFrame()
 
 QByteArray decoderFFmpeg::getRawFrameData()
 {
-  if (decoderState != decoderRetrieveFrames)
+  if (this->decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_FFMPEG("decoderFFmpeg::getYUVFrameData: Wrong decoder state.");
     return QByteArray();
@@ -157,10 +157,10 @@ QByteArray decoderFFmpeg::getRawFrameData()
 
   DEBUG_FFMPEG("decoderFFmpeg::getYUVFrameData Copy frame");
 
-  if (currentOutputBuffer.isEmpty())
+  if (this->currentOutputBuffer.isEmpty())
     DEBUG_FFMPEG("decoderFFmpeg::loadYUVFrameData empty buffer");
 
-  return currentOutputBuffer;
+  return this->currentOutputBuffer;
 }
 
 void decoderFFmpeg::copyCurImageToBuffer()
@@ -169,101 +169,86 @@ void decoderFFmpeg::copyCurImageToBuffer()
     return;
 
   //// get metadata
-  //AVDictionaryWrapper dict = ff.get_metadata(frame);
-  //QStringPairList values = ff.get_dictionary_entries(dict, "", 0);
+  //AVDictionaryWrapper dict = this->ff.get_metadata(frame);
+  //QStringPairList values = this->ff.get_dictionary_entries(dict, "", 0);
 
-  if (rawFormat == raw_YUV)
+  if (this->rawFormat == raw_YUV)
   {
     // At first get how many bytes we are going to write
-    const yuvPixelFormat pixFmt = getYUVPixelFormat();
-    const int nrBytesPerSample = pixFmt.bitsPerSample <= 8 ? 1 : 2;
-    const int nrBytesY = frameSize.width() * frameSize.height() * nrBytesPerSample;
-    const int nrBytesC = frameSize.width() / pixFmt.getSubsamplingHor() * frameSize.height() / pixFmt.getSubsamplingVer() * nrBytesPerSample;
-    const int nrBytes = nrBytesY + 2 * nrBytesC;
+    const yuvPixelFormat pixFmt = this->getYUVPixelFormat();
+    const auto nrBytesPerSample = pixFmt.bitsPerSample <= 8 ? 1 : 2;
+    const auto nrBytesY = this->frameSize.width() * this->frameSize.height() * nrBytesPerSample;
+    const auto nrBytesC = this->frameSize.width() / pixFmt.getSubsamplingHor() * this->frameSize.height() / pixFmt.getSubsamplingVer() * nrBytesPerSample;
+    const auto nrBytes = nrBytesY + 2 * nrBytesC;
 
     // Is the output big enough?
-    if (currentOutputBuffer.capacity() < nrBytes)
-      currentOutputBuffer.resize(nrBytes);
+    if (this->currentOutputBuffer.capacity() < nrBytes)
+      this->currentOutputBuffer.resize(nrBytes);
 
     // Copy line by line. The linesize of the source may be larger than the width of the frame.
     // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
     // resolution may be larger than the output frame size.
-    uint8_t *src = frame.get_data(0);
-    int linesize = frame.get_line_size(0);
-    char* dst = currentOutputBuffer.data();
-    int wDst = frameSize.width() * nrBytesPerSample;
-    int hDst = frameSize.height();
-    for (int y = 0; y < hDst; y++)
+    for (unsigned plane = 0; plane < pixFmt.getNrPlanes(); plane++)
     {
-      // Copy one line
-      memcpy(dst, src, wDst);
-      // Goto the next line in input and output (these offsets/strides may differ)
-      dst += wDst;
-      src += linesize;
-    }
-
-    // Chroma
-    wDst = frameSize.width() / pixFmt.getSubsamplingHor() * nrBytesPerSample;
-    hDst = frameSize.height() / pixFmt.getSubsamplingVer();
-    for (int c = 0; c < 2; c++)
-    {
-      uint8_t *src = frame.get_data(c+1);
-      linesize = frame.get_line_size(c+1);
-      dst = currentOutputBuffer.data();
-      dst += (nrBytesY + ((c == 0) ? 0 : nrBytesC));
-      for (int y = 0; y < hDst; y++)
+      const auto component = (plane == 0) ? Component::Luma : Component::Chroma;
+      auto *src = frame.get_data(plane);
+      const auto srcLinesize = frame.get_line_size(plane);
+      auto dst = this->currentOutputBuffer.data();
+      if (plane > 0)
+        dst += (nrBytesY + (plane - 1) * nrBytesC);
+      const auto dstLinesize = this->frameSize.width() / pixFmt.getSubsamplingHor(component) * nrBytesPerSample;
+      const auto height = this->frameSize.height() / pixFmt.getSubsamplingVer(component);
+      for (int y = 0; y < height; y++)
       {
-        memcpy(dst, src, wDst);
-        // Goto the next line
-        dst += wDst;
-        src += linesize;
+        memcpy(dst, src, dstLinesize);
+        dst += dstLinesize;
+        src += srcLinesize;
       }
     }
   }
-  else if (rawFormat == raw_RGB)
+  else if (this->rawFormat == raw_RGB)
   {
-    const rgbPixelFormat pixFmt = getRGBPixelFormat();
-    const int nrBytesPerSample = pixFmt.bitsPerValue <= 8 ? 1 : 2;
-    const int nrBytesPerComponent = frameSize.width() * frameSize.height() * nrBytesPerSample;
-    const int nrBytes = 3 * nrBytesPerComponent;
+    const rgbPixelFormat pixFmt = this->getRGBPixelFormat();
+    const auto nrBytesPerSample = pixFmt.bitsPerValue <= 8 ? 1 : 2;
+    const auto nrBytesPerComponent = this->frameSize.width() * this->frameSize.height() * nrBytesPerSample;
+    const auto nrBytes = 3 * nrBytesPerComponent;
 
     // Is the output big enough?
-    if (currentOutputBuffer.capacity() < nrBytes)
-      currentOutputBuffer.resize(nrBytes);
+    if (this->currentOutputBuffer.capacity() < nrBytes)
+      this->currentOutputBuffer.resize(nrBytes);
 
-    char* dst = currentOutputBuffer.data();
-    int hDst = frameSize.height();
+    char* dst = this->currentOutputBuffer.data();
+    const auto hDst = this->frameSize.height();
     if (pixFmt.planar)
     {
       // Copy line by line. The linesize of the source may be larger than the width of the frame.
       // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
       // resolution may be larger than the output frame size.
-      const int wDst = frameSize.width() * nrBytesPerSample;
+      const auto wDst = this->frameSize.width() * nrBytesPerSample;
       for (int i = 0; i < 3; i++)
       {
-        uint8_t *src = frame.get_data(i);
-        int linesize = frame.get_line_size(i);
+        auto src = frame.get_data(i);
+        const auto srcLinesize = frame.get_line_size(i);
         for (int y = 0; y < hDst; y++)
         {
           memcpy(dst, src, wDst);
           // Goto the next line
           dst += wDst;
-          src += linesize;
+          src += srcLinesize;
         }
       }
     }
     else
     {
       // We only need to iterate over the image once and copy all values per line at once (RGB(A))
-      const int wDst = frameSize.width() * nrBytesPerSample * pixFmt.nrChannels();
+      const auto wDst = this->frameSize.width() * nrBytesPerSample * pixFmt.nrChannels();
+      auto src = frame.get_data(0);
+      const auto srcLinesize = frame.get_line_size(0);
       for (int y = 0; y < hDst; y++)
       {
-        uint8_t *src = frame.get_data(0);
-        int linesize = frame.get_line_size(0);
         memcpy(dst, src, wDst);
-        // Goto the next line
         dst += wDst;
-        src += linesize;
+        src += srcLinesize;
       }
     }
   }
@@ -275,13 +260,13 @@ void decoderFFmpeg::cacheCurStatistics()
   DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
 
   // Clear the local statistics cache
-  curPOCStats.clear();
+  this->curPOCStats.clear();
 
   // Try to get the motion information
-  AVFrameSideDataWrapper sd = ff.get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+  AVFrameSideDataWrapper sd = this->ff.get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
   if (sd)
   { 
-    const int nrMVs = sd.get_number_motion_vectors();
+    const auto nrMVs = sd.get_number_motion_vectors();
     for (int i = 0; i < nrMVs; i++)
     {
       AVMotionVectorWrapper mvs = sd.get_motion_vector(i);
@@ -292,39 +277,39 @@ void decoderFFmpeg::cacheCurStatistics()
       const int16_t mvX = mvs.dst_x - mvs.src_x;
       const int16_t mvY = mvs.dst_y - mvs.src_y;
 
-      curPOCStats[mvs.source < 0 ? 0 : 1].addBlockValue(blockX, blockY, mvs.w, mvs.h, (int)mvs.source);
-      curPOCStats[mvs.source < 0 ? 2 : 3].addBlockVector(blockX, blockY, mvs.w, mvs.h, mvX, mvY);
+      this->curPOCStats[mvs.source < 0 ? 0 : 1].addBlockValue(blockX, blockY, mvs.w, mvs.h, (int)mvs.source);
+      this->curPOCStats[mvs.source < 0 ? 2 : 3].addBlockVector(blockX, blockY, mvs.w, mvs.h, mvX, mvY);
     }
   }
 }
 
 bool decoderFFmpeg::pushData(QByteArray &data)
 {
-  if (!raw_pkt)
-    raw_pkt.allocate_paket(ff);
+  if (!this->raw_pkt)
+    this->raw_pkt.allocate_paket(ff);
   if (data.length() == 0)
   {
     // Push an empty packet to indicate that the file has ended
     DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing an empty packet");
     AVPacketWrapper emptyPacket;
-    return pushAVPacket(emptyPacket);
+    return this->pushAVPacket(emptyPacket);
   }
   else
     DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing data length %d", data.length());
 
   // Add some padding
-  data.append(avPacketPaddingData);
+  data.append(this->avPacketPaddingData);
 
-  raw_pkt.set_data(data);
-  raw_pkt.set_dts(AV_NOPTS_VALUE);
-  raw_pkt.set_pts(AV_NOPTS_VALUE);
+  this->raw_pkt.set_data(data);
+  this->raw_pkt.set_dts(AV_NOPTS_VALUE);
+  this->raw_pkt.set_pts(AV_NOPTS_VALUE);
 
-  return pushAVPacket(raw_pkt);
+  return this->pushAVPacket(this->raw_pkt);
 }
 
 bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
 {
-  if (decoderState != decoderNeedsMoreData)
+  if (this->decoderState != DecoderState::NeedsMoreData)
   {
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Wrong decoder state.");
     return false;
@@ -332,18 +317,18 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
   if (!pkt)
   {
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Received empty packet. Swithing to flushing.");
-    flushing = true;
-    decoderState = decoderRetrieveFrames;
+    this->flushing = true;
+    this->decoderState = DecoderState::RetrieveFrames;
     return false;
   }
-  if (flushing)
+  if (this->flushing)
   {
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Error no new packets should be pushed in flushing mode.");
     return false;
   }
 
   // Push the packet to the decoder
-  int retPush = ff.pushPacketToDecoder(decCtx, pkt);
+  int retPush = this->ff.pushPacketToDecoder(decCtx, pkt);
 
   if (retPush < 0 && retPush != AVERROR(EAGAIN))
   {
@@ -365,7 +350,7 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
       qDebug() << meaning;
     }
 #endif
-    setError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
+    this->setError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
     return false;
   }
   else
@@ -375,7 +360,7 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
   {
     // Enough data pushed. Decode and retrieve frames now.
     DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Enough data pushed. Decode and retrieve frames now.");
-    decoderState = decoderRetrieveFrames;
+    this->decoderState = DecoderState::RetrieveFrames;
     return false;
   }
 
@@ -385,35 +370,35 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
 bool decoderFFmpeg::decodeFrame()
 {
   // Try to retrive a next frame from the decoder (don't copy it yet).
-  int retRecieve = ff.getFrameFromDecoder(decCtx, frame);
+  int retRecieve = this->ff.getFrameFromDecoder(decCtx, frame);
   if (retRecieve == 0)
   {
     // We recieved a frame.
     DEBUG_FFMPEG("Received frame: Size(%dx%d) PTS %ld type %d %s", frame.get_width(), frame.get_height(), frame.get_pts(), frame.get_pict_type(), frame.get_key_frame() ? "key frame" : "");
     // Checkt the size of the retrieved image
     if (frameSize != frame.get_size())
-      return setErrorB("Received a frame of different size");
+      return this->setErrorB("Received a frame of different size");
     return true;
   }
   else if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
   {
     // An error occurred
     DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Error reading frame.");
-    return setErrorB(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
+    return this->setErrorB(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
   }
   else if (retRecieve == AVERROR(EAGAIN))
   {
-    if (flushing)
+    if (this->flushing)
     {
       // There is no more data
-      decoderState = decoderEndOfBitstream;
+      this->decoderState = DecoderState::EndOfBitstream;
       DEBUG_FFMPEG("decoderFFmpeg::decodeFrame End of bitstream.");
     }
     else
     {
-      decoderState = decoderNeedsMoreData;
+      this->decoderState = DecoderState::NeedsMoreData;
       DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Need more data.");
-    }    
+    }
   }
   return false;
 }
@@ -436,56 +421,56 @@ void decoderFFmpeg::fillStatisticList(statisticHandler &statSource) const
 bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWrapper codecpar)
 {
   // Allocate the decoder context
-  if (videoCodec)
-    return setErrorB(QStringLiteral("Video codec already allocated."));
-  videoCodec = ff.find_decoder(codecID);
-  if(!videoCodec)
-    return setErrorB(QStringLiteral("Could not find a video decoder for the given codec ") + codecID.getCodecName());
+  if (this->videoCodec)
+    return this->setErrorB(QStringLiteral("Video codec already allocated."));
+  this->videoCodec = this->ff.find_decoder(codecID);
+  if(!this->videoCodec)
+    return this->setErrorB(QStringLiteral("Could not find a video decoder for the given codec ") + codecID.getCodecName());
 
-  if (decCtx)
-    return setErrorB(QStringLiteral("Decoder context already allocated."));
-  decCtx = ff.alloc_decoder(videoCodec);
-  if(!decCtx)
-    return setErrorB(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
+  if (this->decCtx)
+    return this->setErrorB(QStringLiteral("Decoder context already allocated."));
+  this->decCtx = this->ff.alloc_decoder(this->videoCodec);
+  if(!this->decCtx)
+    return this->setErrorB(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
 
   if (codecpar)
   {
-    if (!ff.configureDecoder(decCtx, codecpar))
-      return setErrorB(QStringLiteral("Unable to configure decoder from codecpar"));
+    if (!this->ff.configureDecoder(decCtx, codecpar))
+      return this->setErrorB(QStringLiteral("Unable to configure decoder from codecpar"));
   }
 
   // Get some parameters from the decoder context
-  frameSize = QSize(decCtx.get_width(), decCtx.get_height());
+  this->frameSize = QSize(decCtx.get_width(), decCtx.get_height());
 
-  AVPixFmtDescriptorWrapper ffmpegPixFormat = ff.getAvPixFmtDescriptionFromAvPixelFormat(decCtx.get_pixel_format());
-  rawFormat = ffmpegPixFormat.getRawFormat();
-  if (rawFormat == raw_YUV)
-    formatYUV = ffmpegPixFormat.getYUVPixelFormat();
-  else if (rawFormat == raw_RGB)
-    formatRGB = ffmpegPixFormat.getRGBPixelFormat();
+  AVPixFmtDescriptorWrapper ffmpegPixFormat = this->ff.getAvPixFmtDescriptionFromAvPixelFormat(decCtx.get_pixel_format());
+  this->rawFormat = ffmpegPixFormat.getRawFormat();
+  if (this->rawFormat == raw_YUV)
+    this->formatYUV = ffmpegPixFormat.getYUVPixelFormat();
+  else if (this->rawFormat == raw_RGB)
+    this->formatRGB = ffmpegPixFormat.getRGBPixelFormat();
 
   // Ask the decoder to provide motion vectors (if possible)
   AVDictionaryWrapper opts;
-  int ret = ff.av_dict_set(opts, "flags2", "+export_mvs", 0);
+  int ret = this->ff.av_dict_set(opts, "flags2", "+export_mvs", 0);
   if (ret < 0)
-    return setErrorB(QStringLiteral("Could not request motion vector retrieval. Return code %1").arg(ret));
+    return this->setErrorB(QStringLiteral("Could not request motion vector retrieval. Return code %1").arg(ret));
 
   // Open codec
-  ret = ff.avcodec_open2(decCtx, videoCodec, opts);
+  ret = this->ff.avcodec_open2(decCtx, videoCodec, opts);
   if (ret < 0)
-    return setErrorB(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
+    return this->setErrorB(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
 
-  frame.allocate_frame(ff);
+  this->frame.allocate_frame(ff);
   if (!frame)
-    return setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
+    return this->setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 
   return true;
 }
 
 QString decoderFFmpeg::getCodecName()
 {
-  if (!decCtx)
+  if (!this->decCtx)
     return "";
 
-  return ff.getCodecIDWrapper(decCtx.getCodecID()).getCodecName();
+  return this->ff.getCodecIDWrapper(this->decCtx.getCodecID()).getCodecName();
 }

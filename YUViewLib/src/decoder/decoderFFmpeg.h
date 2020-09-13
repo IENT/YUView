@@ -38,7 +38,7 @@
 class decoderFFmpeg : public decoderBase
 {
 public:
-  decoderFFmpeg(AVCodecIDWrapper codec, QSize frameSize, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder=false);
+  decoderFFmpeg(AVCodecIDWrapper codec, QSize frameSize, QByteArray extradata, YUV_Internals::yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder=false);
   decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder=false);
   ~decoderFFmpeg();
 
@@ -49,7 +49,7 @@ public:
   QByteArray getRawFrameData() Q_DECL_OVERRIDE;
   
   // Push an AVPacket or raw data. When this returns false, pushing the given packet failed. Probably the 
-  // decoder switched to decoderRetrieveFrames. Don't forget to push the given packet again later.
+  // decoder switched to DecoderState::RetrieveFrames. Don't forget to push the given packet again later.
   bool pushAVPacket(AVPacketWrapper &pkt);
   bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
 
@@ -82,7 +82,7 @@ protected:
   void copyCurImageToBuffer();   // Copy the raw data from the de265_image source *src to the byte array
 
   // At the end of the file, when no more data is available, we will swith to flushing. After all
-  // remaining frames were decoding, we will not request more data but switch to decoderEndOfBitstream.
+  // remaining frames were decoding, we will not request more data but switch to DecoderState::EndOfBitstream.
   bool flushing;
 
   // When pushing raw data to the decoder, we need to package it into AVPackets

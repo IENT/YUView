@@ -79,7 +79,7 @@ bool rgbPixelFormat::isValid() const
 
   const auto hasAlpha = (posA != -1);
 
-  if (hasAlpha && posA == posR || posA == posG || posA == posB)
+  if (hasAlpha && (posA == posR || posA == posG || posA == posB))
     return false;
 
   const auto valueLimit = hasAlpha ? 4 : 3;

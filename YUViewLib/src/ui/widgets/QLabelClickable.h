@@ -30,54 +30,30 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
+#include <QLabel>
 
-#include <QWidget>
-
-#include "playlistTreeWidget.h"
-#include "video/videoCache.h"
-
-namespace videoCacheStatusWidgetNamespace
-{
-  class videoCacheStatusWidget : public QWidget
-  {
-    Q_OBJECT
-
-    public:
-    videoCacheStatusWidget(QWidget *parent) : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0) {}
-    // Override the paint event
-    virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-    void updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
-    private:
-    // The floating point values (0 to 1) of the end positions of the blocks to draw
-    QList<float> relativeValsEnd;
-    unsigned int cacheLevelMB;
-    unsigned int cacheRateInBytesPerMs;
-    int64_t cacheLevelMaxMB;
-  };
-}
-
-class VideoCacheInfoWidget : public QWidget
+// A label that emits a 'clicked' signal when clicked.
+class QLabelClickable : public QLabel
 {
   Q_OBJECT
 
 public:
-  VideoCacheInfoWidget(QWidget *parent = 0);
-
-  void setPlaylistAndCache(PlaylistTreeWidget *plist, videoCache *vCache) { playlist = plist; cache = vCache; };
-
-public slots:
-  void onUpdateCacheStatus();
-
-private slots:
-  void onGroupBoxToggled(bool on);
-
+  QLabelClickable(QWidget *parent) : QLabel(parent) { pressed = false; }
+  virtual void mousePressEvent(QMouseEvent *event)
+  {
+    Q_UNUSED(event);
+    pressed = true;
+  }
+  virtual void mouseReleaseEvent(QMouseEvent *event)
+  {
+    Q_UNUSED(event);
+    if (pressed)
+      // The mouse was pressed and is now released.
+      emit clicked();
+    pressed = false;
+  }
+signals:
+  void clicked();
 private:
-  videoCacheStatusWidgetNamespace::videoCacheStatusWidget *statusWidget {nullptr};
-  QLabel *cachingInfoLabel {nullptr};
-
-  PlaylistTreeWidget *playlist {nullptr};
-  videoCache *cache {nullptr};
-
-  unsigned int cacheRateInBytesPerMs {0};
+  bool pressed;
 };

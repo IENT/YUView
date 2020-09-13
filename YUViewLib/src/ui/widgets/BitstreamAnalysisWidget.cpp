@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "bitstreamAnalysisWidget.h"
+#include "BitstreamAnalysisWidget.h"
 
 #include "parser/parserAnnexBAVC.h"
 #include "parser/parserAnnexBHEVC.h"
@@ -41,9 +41,9 @@
 #define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 0
 #if BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
-#define DEBUG_ANALYSIS qDebug
+#define DEBUG_ANALYSIS(msg) qDebug() << msg
 #else
-#define DEBUG_ANALYSIS(fmt,...) ((void)0)
+#define DEBUG_ANALYSIS(msg) ((void)0)
 #endif
 
 using namespace YUView;
@@ -63,10 +63,23 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) :
   this->currentSelectedItemsChanged(nullptr, nullptr, false);
 }
 
+MoveAndZoomableView *BitstreamAnalysisWidget::getCurrentActiveView()
+{
+  const auto idx = this->ui.analysisTab->currentIndex();
+  if (idx == 2)
+    return this->ui.plotViewWidget;
+  if (idx == 3)
+    return this->ui.hrdPlotWidget;
+  return {};
+}
+
 void BitstreamAnalysisWidget::updateParserItemModel()
 {
-  this->parser->updateNumberModelItems();
-  this->updateParsingStatusText(this->parser->getParsingProgressPercent());
+  if (this->parser)
+  {
+    this->parser->updateNumberModelItems();
+    this->updateParsingStatusText(this->parser->getParsingProgressPercent());
+  }
 }
 
 void BitstreamAnalysisWidget::updateStreamInfo()
@@ -75,14 +88,28 @@ void BitstreamAnalysisWidget::updateStreamInfo()
   this->ui.streamInfoTreeWidget->addTopLevelItems(this->parser->getStreamInfo());
   this->ui.streamInfoTreeWidget->expandAll();
 
-  if (this->ui.showStreamComboBox->count() + 1 != int(this->parser->getNrStreams()))
+  DEBUG_ANALYSIS("BitstreamAnalysisWidget::updateStreamInfo comboBox entries " << this->ui.showStreamComboBox->count() << 
+                 " parser->getNrStreams " << this->parser->getNrStreams());
+  int nrSelections = this->parser->getNrStreams();
+  if (this->parser->getNrStreams() > 1)
+    nrSelections += 1;
+  if (this->ui.showStreamComboBox->count() != nrSelections)
   {
     this->ui.showStreamComboBox->clear();
-    this->ui.showStreamComboBox->addItem("Show all streams");
-    for (unsigned int i = 0; i < this->parser->getNrStreams(); i++)
+    if (nrSelections == 1)
     {
-      QString info = this->parser->getShortStreamDescription(i);
-      this->ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) + info);
+      this->ui.showStreamComboBox->addItem("Show stream 0");
+      this->ui.showStreamComboBox->setEnabled(false);
+    }
+    else
+    {
+      this->ui.showStreamComboBox->setEnabled(true);
+      this->ui.showStreamComboBox->addItem("Show all streams");
+      for (unsigned int i = 0; i < this->parser->getNrStreams(); i++)
+      {
+        QString info = this->parser->getShortStreamDescription(i);
+        this->ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) + info);
+      }
     }
   }
 }
@@ -167,6 +194,12 @@ void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, p
   this->restartParsingOfCurrentItem();
 }
 
+void BitstreamAnalysisWidget::updateSettings()
+{
+  this->ui.plotViewWidget->updateSettings();
+  this->ui.hrdPlotWidget->updateSettings();
+}
+
 void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
 {
   if (!this->isVisible())
@@ -184,6 +217,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
     this->ui.streamInfoTreeWidget->clear();
     this->ui.dataTreeView->setModel(nullptr);
     this->ui.plotViewWidget->setModel(nullptr);
+    this->ui.hrdPlotWidget->setModel(nullptr);
     return;
   }
 
@@ -193,7 +227,8 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   this->ui.dataTreeView->setColumnWidth(0, 600);
   this->ui.dataTreeView->setColumnWidth(1, 100);
   this->ui.dataTreeView->setColumnWidth(2, 120);
-  this->ui.plotViewWidget->setModel(this->parser->getBitrateItemModel());
+  this->ui.plotViewWidget->setModel(this->parser->getBitratePlotModel());
+  this->ui.hrdPlotWidget->setModel(this->parser->getHRDPlotModel());
 
   this->updateStreamInfo();
 

@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*
+*   
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -32,76 +32,57 @@
 
 #pragma once
 
-#include "common/typedef.h"
-#include "common/EventSubsampler.h"
-
 #include <QObject>
 #include <QTimer>
 
-#include <optional>
-
-enum class Axis
-{
-  X,
-  Y
-};
-
-class PlotModel : public QObject
+class EventSubsampler : public QObject
 {
   Q_OBJECT
 
-signals:
-  void dataChanged();
-  void nrStreamsChanged();
-
 public:
-  PlotModel();
+  EventSubsampler(unsigned eventsPerSecond = 5) : eventsPerSecond(eventsPerSecond) {}
 
-  enum class PlotType
+signals:
+  void subsampledEvent();
+
+public slots:
+  void postEvent()
   {
-    Bar,
-    Line,
-    ConstValue
-  };
+    if (this->state == State::Idle)
+    {
+      const auto timeoutMs = 1000 / this->eventsPerSecond;
+      QTimer::singleShot(timeoutMs, this, &EventSubsampler::timerTimeout);
+      this->state = State::CoolDown;
+      emit subsampledEvent();
+    }
+    else if (this->state == State::CoolDown)
+    {
+      this->state = State::PendingEvent;
+    }
+  }
 
-  struct PlotParameter
+private slots:
+  void timerTimeout()
   {
-    PlotType type;
-    unsigned nrpoints;
-  };
+    if (this->state == State::PendingEvent)
+    {
+      const auto timeoutMs = 1000 / this->eventsPerSecond;
+      QTimer::singleShot(timeoutMs, this, &EventSubsampler::timerTimeout);
+      emit subsampledEvent();
+      this->state = State::CoolDown;
+    }
+    else
+      this->state = State::Idle;
+  }
 
-  // A limit can be used to draw a horizontal/vertical line at a certain position (x/y)
-  struct Limit
+private:
+  enum class State
   {
-    QString name;
-    int value;
-    Axis axis;
+    Idle,         // No event occured yet. Time inactive.
+    CoolDown,     // Timer running but no additional event yet
+    PendingEvent  // Timer running and an additional event was also recieved
   };
+  State state {State::Idle};
 
-  struct StreamParameter
-  {
-    unsigned getNrPlots() const { return unsigned(this->plotParameters.size()); }
-    Range<double> xRange;
-    Range<double> yRange;
-    QList<PlotParameter> plotParameters;
-    QList<Limit> limits;
-  };
-
-  struct Point
-  {
-    double x, y, width;
-    bool intra;
-  };
-
-  virtual unsigned getNrStreams() const = 0;
-  virtual StreamParameter getStreamParameter(unsigned streamIndex) const = 0;
-  virtual Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
-  virtual QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
-  virtual std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const = 0;
-  virtual QString formatValue(Axis axis, double value) const = 0;
-
-  std::optional<unsigned> getPointIndex(unsigned streamIndex, unsigned plotIndex, QPointF point) const;
-
-protected:
-  EventSubsampler eventSubsampler;
+  unsigned eventsPerSecond {1};
 };

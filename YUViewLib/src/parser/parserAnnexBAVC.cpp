@@ -40,9 +40,9 @@
 #define PARSER_AVC_DEBUG_OUTPUT 0
 #if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_AVC qDebug
+#define DEBUG_AVC(msg) qDebug() << msg
 #else
-#define DEBUG_AVC(fmt,...) ((void)0)
+#define DEBUG_AVC(fmt) ((void)0)
 #endif
 
 double parserAnnexBAVC::getFramerate() const
@@ -132,20 +132,29 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
+  parserAnnexB::ParseResult parseResult;
+
   if (nalID == -1 && data.isEmpty())
   {
     if (curFramePOC != -1)
     {
       // Save the info of the last frame
       if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
-        return ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
-      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+      {
+        ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
+        return parseResult;
+      }
+      if (curFrameFileStartEndPos)
+        DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+      else
+        DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
     }
     // The file ended
     std::sort(POCList.begin(), POCList.end());
-    return false;
+    hrd.endOfFile(this->getHRDPlotModel());
+    return parseResult;
   }
 
   // Skip the NAL unit header
@@ -172,10 +181,12 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
+  parserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+
   // Create a nal_unit and read the header
-  nal_unit_avc nal_avc(nalStartEndPosFile, nalID);
+  nal_unit_avc nal_avc(nalID, nalStartEndPosFile);
   if (!nal_avc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
-    return false;
+    return parseResult;
 
   if (nal_avc.isSlice())
   {
@@ -187,12 +198,12 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
       if (sei->payloadType == 0)
       {
         auto buffering_period = sei.dynamicCast<buffering_period_sei>();
-        buffering_period->reparse_buffering_period_sei(active_SPS_list);
+        buffering_period->reparse_buffering_period_sei(this->active_SPS_list);
       }
       if (sei->payloadType == 1)
       {
         auto pic_timing = sei.dynamicCast<pic_timing_sei>();
-        pic_timing->reparse_pic_timing_sei(active_SPS_list, CpbDpbDelaysPresentFlag);
+        pic_timing->reparse_pic_timing_sei(this->active_SPS_list, CpbDpbDelaysPresentFlag);
       }
     }
   }
@@ -200,6 +211,8 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
   bool parsingSuccess = true;
   bool currentSliceIntra = false;
   QString currentSliceType;
+  QSharedPointer<buffering_period_sei> currentBufferingPeriodSEI;
+  QSharedPointer<pic_timing_sei> currentPicTimingSEI;
   if (nal_avc.nal_unit_type == SPS)
   {
     // A sequence parameter set
@@ -207,26 +220,30 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     parsingSuccess = new_sps->parse_sps(payload, nalRoot);
 
     // Add sps (replace old one if existed)
-    active_SPS_list.insert(new_sps->seq_parameter_set_id, new_sps);
+    this->active_SPS_list.insert(new_sps->seq_parameter_set_id, new_sps);
 
     // Also add sps to list of all nals
     nalUnitList.append(new_sps);
 
     // Add the SPS ID
     specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(new_sps->seq_parameter_set_id) : " SPS_NUT ERR";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(new_sps->seq_parameter_set_id) : "SPS(ERR)";
-
+    parseResult.nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(new_sps->seq_parameter_set_id) : "SPS(ERR)";
+    
     if (new_sps->vui_parameters.nal_hrd_parameters_present_flag || new_sps->vui_parameters.vcl_hrd_parameters_present_flag)
       CpbDpbDelaysPresentFlag = true;
 
-    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parse SPS ID %d", new_sps->seq_parameter_set_id);
+    if (new_sps->vui_parameters_present_flag && new_sps->vui_parameters.nal_hrd_parameters_present_flag)
+    {
+      this->getHRDPlotModel()->setCPBBufferSize(new_sps->vui_parameters.nal_hrd.CpbSize[0]);
+    }
+
+    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parse SPS ID " << new_sps->seq_parameter_set_id);
   }
   else if (nal_avc.nal_unit_type == PPS) 
   {
     // A picture parameter set
     auto new_pps = QSharedPointer<pps>(new pps(nal_avc));
-    parsingSuccess = new_pps->parse_pps(payload, nalRoot, active_SPS_list);
+    parsingSuccess = new_pps->parse_pps(payload, nalRoot, this->active_SPS_list);
 
     // Add pps (replace old one if existed)
     active_PPS_list.insert(new_pps->pic_parameter_set_id, new_pps);
@@ -236,16 +253,15 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
 
     // Add the PPS ID
     specificDescription = parsingSuccess ? QString(" PPS_NUT ID %1").arg(new_pps->pic_parameter_set_id) : "PPS_NUT ERR";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->pic_parameter_set_id) : "PPS(ERR)";
+    parseResult.nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->pic_parameter_set_id) : "PPS(ERR)";
 
-    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parse PPS ID %d", new_pps->pic_parameter_set_id);
+    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parse PPS ID " << new_pps->pic_parameter_set_id);
   }
   else if (nal_avc.isSlice())
   {
     // Create a new slice unit
     auto new_slice = QSharedPointer<slice_header>(new slice_header(nal_avc));
-    parsingSuccess = new_slice->parse_slice_header(payload, active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
+    parsingSuccess = new_slice->parse_slice_header(payload, this->active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
 
     if (parsingSuccess && !new_slice->bottom_field_flag && 
       (last_picture_first_slice.isNull() || new_slice->TopFieldOrderCnt != last_picture_first_slice->TopFieldOrderCnt || new_slice->isRandomAccess()) &&
@@ -254,8 +270,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
 
     // Add the POC of the slice
     specificDescription = parsingSuccess ? QString(" POC %1").arg(new_slice->globalPOC) : " ERR";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(new_slice->globalPOC) : "Slice(ERR)";
+    parseResult.nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(new_slice->globalPOC) : "Slice(ERR)";
 
     if (parsingSuccess)
     {
@@ -266,17 +281,23 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
         {
           // Save the info of the last frame
           if (!addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
-            return ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
-          DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end %d/%d - POC %d%s", curFrameFileStartEndPos.first, curFrameFileStartEndPos.second, curFramePOC, curFrameIsRandomAccess ? " - ra" : "");
+          {
+            ReaderHelper::addErrorMessageChildItem(QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), nalRoot);
+            return parseResult;
+          }
+          if (curFrameFileStartEndPos)
+            DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+          else
+            DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
         curFramePOC = new_slice->globalPOC;
         curFrameIsRandomAccess = new_slice->isRandomAccess();
       }
-      else
+      else if (curFrameFileStartEndPos && nalStartEndPosFile)
         // Another slice NAL which belongs to the last frame
         // Update the end position
-        curFrameFileStartEndPos.second = nalStartEndPosFile.second;
+        curFrameFileStartEndPos->second = nalStartEndPosFile->second;
 
       if (new_slice->isRandomAccess() && new_slice->first_mb_in_slice == 0)
       {
@@ -287,7 +308,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
       currentSliceIntra = new_slice->isRandomAccess();
       currentSliceType = new_slice->getSliceTypeString();
 
-      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Slice POC %d", new_slice->globalPOC);
+      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Slice POC " << new_slice->globalPOC);
     }
     else
     {
@@ -308,7 +329,7 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
       // Parse the SEI header and remove it from the data array
       int nrBytes = new_sei->parse_sei_header(sei_data, message_tree);
       if (nrBytes == -1)
-        return false;
+        return parseResult;
       sei_data.remove(0, nrBytes);
 
       if (message_tree)
@@ -324,14 +345,17 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
       if (new_sei->payloadType == 0)
       {
         auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
-        result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, active_SPS_list, message_tree);
+        result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, this->active_SPS_list, message_tree);
         reparse = new_buffering_period_sei;
+        currentBufferingPeriodSEI = new_buffering_period_sei;
+        this->hrd.isFirstAUInBufferingPeriod = true;
       }
       else if (new_sei->payloadType == 1)
       {
         auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
-        result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, message_tree);
+        result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, this->active_SPS_list, CpbDpbDelaysPresentFlag, message_tree);
         reparse = new_pic_timing_sei;
+        currentPicTimingSEI = new_pic_timing_sei;
       }
       else if (new_sei->payloadType == 4)
       {
@@ -364,53 +388,67 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     }
 
     specificDescription = parsingSuccess ? QString(" (#%1)").arg(sei_count) : QString(" (#%1-ERR)").arg(sei_count);
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? QString("SEI(#%1)").arg(sei_count) : "SEI(ERR)";
+    parseResult.nalTypeName = parsingSuccess ? QString("SEI(#%1)").arg(sei_count) : "SEI(ERR)";
 
-    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed SEI (%d messages)", sei_count);
+    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed SEI (" << sei_count << " messages)");
   }
   else if (nal_avc.nal_unit_type == FILLER)
   {
-    if (nalTypeName)
-      *nalTypeName = "FILLER";
+    parseResult.nalTypeName = "FILLER";
     DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Filler data");
   }
   else if (nal_avc.nal_unit_type == AUD)
   {
-    if (nalTypeName)
-      *nalTypeName = "AUD";
+    parseResult.nalTypeName = "AUD";
     DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Access Unit Delimiter (AUD)");
   }
 
   if (auDelimiterDetector.isStartOfNewAU(nal_avc, curFramePOC))
   {
-    if (sizeCurrentAU > 0)
+    if (this->sizeCurrentAU > 0)
     {
-      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate %d", sizeCurrentAU);
+      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate " << this->sizeCurrentAU);
 
-      BitratePlotModel::bitrateEntry entry;
-      entry.pts = lastFramePOC;
-      entry.dts = counterAU;
-      entry.bitrate = sizeCurrentAU;
-      entry.keyframe = currentAUAllSlicesIntra;
+      BitratePlotModel::BitrateEntry entry;
+      if (bitrateEntry)
+      {
+        entry.pts = bitrateEntry->pts;
+        entry.dts = bitrateEntry->dts;
+        entry.duration = bitrateEntry->duration;
+      }
+      else
+      {
+        entry.pts = this->lastFramePOC;
+        entry.dts = this->counterAU;
+        entry.duration = 1;
+      }
+      entry.bitrate = this->sizeCurrentAU;
+      entry.keyframe = this->currentAUAllSlicesIntra;
       entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
-      bitrateModel->addBitratePoint(0, entry);
+      parseResult.bitrateEntry = entry;
+
+      this->hrd.addAU(this->sizeCurrentAU * 8, curFramePOC, this->active_SPS_list[0], this->lastBufferingPeriodSEI, this->lastPicTimingSEI, this->getHRDPlotModel());
     }
-    sizeCurrentAU = 0;
-    counterAU++;
-    currentAUAllSlicesIntra = true;
+    this->sizeCurrentAU = 0;
+    this->counterAU++;
+    this->currentAUAllSlicesIntra = true;
     this->currentAUSliceTypes.clear();
   }
-  if (lastFramePOC != curFramePOC)
-    lastFramePOC = curFramePOC;
-  sizeCurrentAU += data.size();
+  if (this->lastFramePOC != curFramePOC)
+    this->lastFramePOC = curFramePOC;
+  this->sizeCurrentAU += data.size();
 
   if (nal_avc.isSlice())
   {
     if (!currentSliceIntra)
-      currentAUAllSlicesIntra = false;
+      this->currentAUAllSlicesIntra = false;
     this->currentAUSliceTypes[currentSliceType]++;
   }
+
+  if (currentBufferingPeriodSEI)
+    this->lastBufferingPeriodSEI = currentBufferingPeriodSEI;
+  if (currentPicTimingSEI)
+    this->lastPicTimingSEI = currentPicTimingSEI;
 
   if (nalRoot)
   {
@@ -419,7 +457,8 @@ bool parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlot
     nalRoot->setError(!parsingSuccess);
   }
 
-  return parsingSuccess;
+  parseResult.success = true;
+  return parseResult;
 }
 
 const QStringList parserAnnexBAVC::nal_unit_type_toString = QStringList()
@@ -848,6 +887,8 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(ReaderHelper &reader
 
 bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_hrd(ReaderHelper &reader)
 {
+  reader_sub_level s(reader, "hrd_parameters()");
+
   READUEV(cpb_cnt_minus1);
   if (cpb_cnt_minus1 > 31)
     return reader.addErrorMessageChildItem("The value of cpb_cnt_minus1 shall be in the range of 0 to 31, inclusive.");
@@ -863,6 +904,16 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_h
     if (cpb_size_value_minus1[SchedSelIdx] > val_max)
       return reader.addErrorMessageChildItem("cpb_size_value_minus1[ SchedSelIdx ] shall be in the range of 0 to 2^32-2, inclusive.");
     READFLAG_A(cbr_flag, SchedSelIdx);
+    {
+      int value = (bit_rate_value_minus1[SchedSelIdx] + 1) * (1 << (6 + bit_rate_scale));
+      BitRate.append(value);
+      LOGVAL(BitRate[SchedSelIdx]);
+    }
+    {
+      int value = (cpb_size_value_minus1[SchedSelIdx] + 1) * (1 << (4 + cpb_size_scale));
+      CpbSize.append(value);
+      LOGVAL(CpbSize[SchedSelIdx]);
+    }
   }
   READBITS(initial_cpb_removal_delay_length_minus1, 5);
   READBITS(cpb_removal_delay_length_minus1, 5);
@@ -1279,14 +1330,14 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
 
       globalPOC_highestGlobalPOCLastGOP = globalPOC;
       globalPOC_lastIDR = 0;
-      DEBUG_AVC("slice_header::parse_slice_header POC - First pic non IDR but I - global POC %d", globalPOC);
+      DEBUG_AVC("slice_header::parse_slice_header POC - First pic non IDR but I - global POC " << globalPOC);
     }
     else
     {
       globalPOC = 0;
       globalPOC_lastIDR = 0;
       globalPOC_highestGlobalPOCLastGOP = 0;
-      DEBUG_AVC("slice_header::parse_slice_header POC - First pic - global POC %d", globalPOC);
+      DEBUG_AVC("slice_header::parse_slice_header POC - First pic - global POC " << globalPOC);
     }
   }
   else
@@ -1296,14 +1347,14 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
       globalPOC = prev_pic->globalPOC;
       globalPOC_lastIDR = prev_pic->globalPOC_lastIDR;
       globalPOC_highestGlobalPOCLastGOP = prev_pic->globalPOC_highestGlobalPOCLastGOP;
-      DEBUG_AVC("slice_header::parse_slice_header POC - additional slice - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
+      DEBUG_AVC("slice_header::parse_slice_header POC - additional slice - global POC " << globalPOC << " - last IDR " << globalPOC_lastIDR << " - highest POC " << globalPOC_highestGlobalPOCLastGOP);
     }
     else if (IdrPicFlag)
     {
       globalPOC = prev_pic->globalPOC_highestGlobalPOCLastGOP + 2;
       globalPOC_lastIDR = globalPOC;
       globalPOC_highestGlobalPOCLastGOP = globalPOC;
-      DEBUG_AVC("slice_header::parse_slice_header POC - IDR - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
+      DEBUG_AVC("slice_header::parse_slice_header POC - IDR - global POC " << globalPOC << " - last IDR " << globalPOC_lastIDR << " - highest POC " << globalPOC_highestGlobalPOCLastGOP);
     }
     else
     {
@@ -1316,7 +1367,7 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
       if (globalPOC > globalPOC_highestGlobalPOCLastGOP)
         globalPOC_highestGlobalPOCLastGOP = globalPOC;
       globalPOC_lastIDR = prev_pic->globalPOC_lastIDR;
-      DEBUG_AVC("slice_header::parse_slice_header POC - first slice - global POC %d - last IDR %d - highest POC %d", globalPOC, globalPOC_lastIDR, globalPOC_highestGlobalPOCLastGOP);
+      DEBUG_AVC("slice_header::parse_slice_header POC - first slice - global POC " << globalPOC << " - last IDR " << globalPOC_lastIDR << " - highest POC " << globalPOC_highestGlobalPOCLastGOP);
     }
   }
   return true;
@@ -1965,12 +2016,13 @@ QList<QByteArray> parserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_
       if (s->globalPOC == seekPOC)
       {
         // Seek here
-        filePos = s->filePosStartEnd.first;
+        if (s->filePosStartEnd)
+          filePos = s->filePosStartEnd->first;
 
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
 
-        for (auto s : active_SPS_list)
+        for (auto s : this->active_SPS_list)
           paramSets.append(s->getRawNALData());
         for (auto p : active_PPS_list)
           paramSets.append(p->getRawNALData());
@@ -1982,7 +2034,7 @@ QList<QByteArray> parserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_
     {
       // Add sps (replace old one if existed)
       auto s = nal_avc.dynamicCast<sps>();
-      active_SPS_list.insert(s->seq_parameter_set_id, s);
+      this->active_SPS_list.insert(s->seq_parameter_set_id, s);
     }
     else if (nal_avc->nal_unit_type == PPS)
     {
@@ -2143,37 +2195,374 @@ int parserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray
 
 bool parserAnnexBAVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_avc &nal_avc, int curFramePOC)
 {
-  // TODO: This is not complete. Check and finish.
-  if (nal_avc.nal_unit_type == AUD)
-  {
-    delimiterPresent = true;
-    return true;
-  }
-
-  if (this->delimiterPresent)
-    // AUD messages were found in the bitstream. Only react to these.
-    return false;
-  
   const bool isSlice = (nal_avc.nal_unit_type == CODED_SLICE_NON_IDR || nal_avc.nal_unit_type == CODED_SLICE_IDR);
-  const bool isLastSlice = (lastNalType == CODED_SLICE_NON_IDR || lastNalType == CODED_SLICE_IDR);
-  if (isSlice && lastNalSlicePoc != -1 && lastNalSlicePoc != curFramePOC)
+  
+  // 7.4.1.2.3 Order of NAL units and coded pictures and association to access units
+  bool isStart = false;
+  if (this->primaryCodedPictureInAuEncountered)
   {
-    lastNalSlicePoc = curFramePOC;
-    lastNalType = nal_avc.nal_unit_type;
-    return true;
+    // The first of any of the following NAL units after the last VCL NAL unit of a primary coded picture specifies the start of a new access unit:
+    if (nal_avc.nal_unit_type == AUD)
+      isStart = true;
+
+    if (nal_avc.nal_unit_type == SPS || nal_avc.nal_unit_type == PPS)
+      isStart = true;
+
+    if (nal_avc.nal_unit_type == SEI)
+      isStart = true;
+
+    const bool fourteenToEigtheen = (nal_avc.nal_unit_type == PREFIX_NAL ||
+                                     nal_avc.nal_unit_type == SUBSET_SPS ||
+                                     nal_avc.nal_unit_type == DEPTH_PARAMETER_SET ||
+                                     nal_avc.nal_unit_type == RESERVED_17 ||
+                                     nal_avc.nal_unit_type == RESERVED_18);
+    if (fourteenToEigtheen)
+      isStart = true;
+
+    if (isSlice && curFramePOC != this->lastSlicePoc)
+    {
+      isStart = true;
+      this->lastSlicePoc = curFramePOC;
+    }
   }
   
-  const bool isParameterSet = (nal_avc.nal_unit_type == SEI || 
-                               nal_avc.nal_unit_type == SPS ||
-                               nal_avc.nal_unit_type == PPS);
-  if (isParameterSet && isLastSlice)
+  if (isSlice)
+    this->primaryCodedPictureInAuEncountered = true;
+
+  if (isStart && !isSlice)
+    this->primaryCodedPictureInAuEncountered = false;
+
+  return isStart;
+}
+
+void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, HRDPlotModel *plotModel)
+{
+  Q_ASSERT(plotModel != nullptr);
+  if (!sps->vui_parameters_present_flag || !sps->vui_parameters.nal_hrd_parameters_present_flag)
+    return;
+
+  // There could be multiple but we currently only support one.
+  const auto SchedSelIdx = 0;
+
+  const auto initial_cpb_removal_delay = lastBufferingPeriodSEI->initial_cpb_removal_delay[SchedSelIdx];
+  const auto initial_cpb_removal_delay_offset = lastBufferingPeriodSEI->initial_cpb_removal_delay_offset[SchedSelIdx];
+
+  const bool cbr_flag = sps->vui_parameters.nal_hrd.cbr_flag[SchedSelIdx];
+
+  // TODO: Investigate the difference between our results and the results from stream-Eye
+  // I noticed that the results from stream eye differ by a (seemingly random) additional
+  // number of bits that stream eye counts for au 0.
+  // For one example I investigated it looked like the parameter sets (SPS + PPS) were counted twice for the
+  // first AU.
+  // if (this->au_n == 0)
+  // {
+  //   auBits += 47 * 8;
+  // }
+
+  /* Some notation:
+    t_ai: The time at which the first bit of access unit n begins to enter the CPB is
+    referred to as the initial arrival time. t_r_nominal_n: the nominal removal time of the
+    access unit from the CPB t_r_n: The removal time of access unit n
+  */
+
+  // Annex C: The variable t c is derived as follows and is called a clock tick:
+  time_t t_c = time_t(sps->vui_parameters.num_units_in_tick) / sps->vui_parameters.time_scale;
+
+  // ITU-T Rec H.264 (04/2017) - C.1.2 - Timing of coded picture removal
+  // Part 1: the nominal removal time of the access unit from the CPB
+  time_t t_r_nominal_n;
+  if (this->au_n == 0)
+    t_r_nominal_n = time_t(initial_cpb_removal_delay) / 90000;
+  else
   {
-    lastNalSlicePoc = curFramePOC;
-    lastNalType = nal_avc.nal_unit_type;
-    return true;
+    // n is not equal to 0. The removal time depends on the removal time of the previous AU.
+    const auto cpb_removal_delay = unsigned(lastPicTimingSEI->cpb_removal_delay);
+    t_r_nominal_n = this->t_r_nominal_n_first + t_c * cpb_removal_delay;
   }
 
-  lastNalSlicePoc = curFramePOC;
-  lastNalType = nal_avc.nal_unit_type;
-  return false;
+  if (this->isFirstAUInBufferingPeriod)
+    this->t_r_nominal_n_first = t_r_nominal_n;
+
+  // ITU-T Rec H.264 (04/2017) - C.1.1 - Timing of bitstream arrival
+  time_t t_ai;
+  if (this->au_n == 0)
+    t_ai = 0;
+  else
+  {
+    if (cbr_flag)
+      t_ai = this->t_af_nm1;
+    else
+    {
+      time_t t_ai_earliest = 0;
+      time_t init_delay;
+      if (this->isFirstAUInBufferingPeriod)
+        init_delay = time_t(initial_cpb_removal_delay) / 90000;
+      else
+        init_delay = time_t(initial_cpb_removal_delay + initial_cpb_removal_delay_offset) / 90000;
+      t_ai_earliest = t_r_nominal_n - init_delay;
+      t_ai = std::max(this->t_af_nm1, t_ai_earliest);
+    }
+  }
+
+  // The final arrival time for access unit n is derived by:
+  const int bitrate = sps->vui_parameters.nal_hrd.BitRate[SchedSelIdx];
+  time_t t_af       = t_ai + time_t(auBits) / bitrate;
+
+  // ITU-T Rec H.264 (04/2017) - C.1.2 - Timing of coded picture removal
+  // Part 2: The removal time of access unit n is specified as follows:
+  time_t t_r_n;
+  if (!sps->vui_parameters.low_delay_hrd_flag || t_r_nominal_n >= t_af)
+    t_r_n = t_r_nominal_n;
+  else
+    // NOTE: This indicates that the size of access unit n, b(n), is so large that it
+    // prevents removal at the nominal removal time.
+    t_r_n = t_r_nominal_n * t_c * (t_af - t_r_nominal_n) / t_c;
+
+  // C.3 - Bitstream conformance
+  // 1.
+  if (this->au_n > 0 && this->isFirstAUInBufferingPeriod)
+  {
+    time_t t_g_90 = (t_r_nominal_n - this->t_af_nm1) * 90000;
+    time_t initial_cpb_removal_delay_time(initial_cpb_removal_delay);
+    if (!cbr_flag && initial_cpb_removal_delay_time > ceil(t_g_90))
+    {
+      // TODO: These logs should go somewhere!
+      DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be <= ceil(t_g_90) " << double(ceil(t_g_90)));
+    }
+
+    if (cbr_flag && initial_cpb_removal_delay_time < floor(t_g_90))
+    {
+      DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Conformance fail. initial_cpb_removal_delay " << initial_cpb_removal_delay << " - should be >= floor(t_g_90) " << double(floor(t_g_90)));
+    }
+  }
+
+  // C.3. - 2 Check the decoding buffer fullness
+
+  // Calculate the fill state of the decoding buffer. This works like this:
+  // For each frame (AU), the buffer is fileed from t_ai to t_af (which indicate) from
+  // when to when bits are recieved for a frame. time t_r, the access unit is removed from
+  // the buffer. If none of this applies, the buffer fill stays constant.
+  // (All values are scaled by 90000 to avoid any rounding errors)
+  const auto buffer_size = (uint64_t) sps->vui_parameters.nal_hrd.CpbSize[SchedSelIdx];
+
+  // The time windows we have to process is from t_af_nm1 to t_af (t_ai is in between
+  // these two).
+
+  // 1: Process the time from t_af_nm1 (>) to t_ai (<=) (previously processed AUs might be removed
+  //    in this time window (tr_n)). In this time, no data is added to the buffer (no
+  //    frame is being received) but frames may be removed from the buffer. This time can
+  //    be zero.
+  //    In case of a CBR encode, no time of constant bitrate should occur.
+  if (this->t_af_nm1 < t_ai)
+  {
+    auto it = this->framesToRemove.begin();
+    auto lastFrameTime = this->t_af_nm1;
+    while (it != this->framesToRemove.end())
+    {
+      if (it->t_r < this->t_af_nm1 || (*it).t_r <= t_ai)
+      {
+        if (it->t_r < this->t_af_nm1)
+        {
+          // This should not happen (all frames prior to t_af_nm1 should have been
+          // removed from the buffer already). Remove now and warn.
+          DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Removing frame with removal time (" << double(it->t_r) << ") before final arrival time (" << double(t_af_nm1) << "). Buffer underflow");
+        }
+        this->addConstantBufferLine(poc, lastFrameTime, (*it).t_r, plotModel);
+        this->removeFromBufferAndCheck((*it), poc, (*it).t_r, plotModel);
+        it = this->framesToRemove.erase(it);
+        lastFrameTime = (*it).t_r;
+      }
+      else
+        break;
+    }
+  }
+
+  // 2. For the time from t_ai to t_af, the buffer is filled with the signaled bitrate.
+  //    The overall bits which are added in this time period correspond to the size
+  //    of the frame in bits which will be later removed again.
+  //    Also, previously received frames can be removed in this time interval.
+  assert(t_af > t_ai);
+  auto relevant_frames = this->popRemoveFramesInTimeInterval(t_ai, t_af);
+
+  bool underflowRemoveCurrentAU = false;
+  if (t_r_n <= t_af)
+  {
+    // The picture is removed from the buffer before the last bit of it could be
+    // received. This is a buffer underflow. We handle this by aborting transmission of bits for that AU
+    // when the frame is recieved.
+    underflowRemoveCurrentAU = true;
+  }
+
+  unsigned int au_buffer_add = auBits;
+  {
+    // time_t au_time_expired = t_af - t_ai;
+    // uint64_t au_bits_add   = (uint64_t)(au_time_expired * (unsigned int) bitrate);
+    // assert(au_buffer_add == au_bits_add || au_buffer_add == au_bits_add + 1 ||
+    // au_buffer_add + 1 == au_bits_add);
+  }
+  if (relevant_frames.empty() && !underflowRemoveCurrentAU)
+  {
+    this->addToBufferAndCheck(au_buffer_add, buffer_size, poc, t_ai, t_af, plotModel);
+  }
+  else
+  {
+    // While bits are coming into the buffer, frames are removed as well.
+    // For each period, we add the bits (and check the buffer state) and remove the
+    // frames from the buffer (and check the buffer state).
+    auto t_ai_sub                  = t_ai;
+    unsigned int buffer_add_sum      = 0;
+    long double buffer_add_remainder = 0;
+    for (auto frame : relevant_frames)
+    {
+      assert(frame.t_r >= t_ai_sub && frame.t_r < t_af);
+      const time_t time_expired         = frame.t_r - t_ai_sub;
+      long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
+      unsigned int buffer_add = floor(buffer_add_fractional);
+      buffer_add_remainder    = buffer_add_fractional - buffer_add;
+      buffer_add_sum += buffer_add;
+      this->addToBufferAndCheck(buffer_add, buffer_size, poc, t_ai_sub, frame.t_r, plotModel);
+      this->removeFromBufferAndCheck(frame, poc, frame.t_r, plotModel);
+      t_ai_sub = frame.t_r;
+    }
+    if (underflowRemoveCurrentAU)
+    {
+      if (t_r_n < t_ai_sub)
+      {
+        // The removal time is even before the previous frame?!? Is this even possible?
+      }
+      // The last interval from t_ai_sub to t_r_n. After t_r_n we stop the current frame.
+      const time_t time_expired         = t_r_n - t_ai_sub;
+      long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
+      unsigned int buffer_add = floor(buffer_add_fractional);
+      this->addToBufferAndCheck(buffer_add, buffer_size, poc, t_ai_sub, t_r_n, plotModel);
+      this->removeFromBufferAndCheck(HRDFrameToRemove(t_r_n, auBits, poc), poc, t_r_n, plotModel);
+      // "Stop transmission" at this point. We have removed the frame so transmission of more bytes for it make no sense.
+      t_af = t_r_n;
+    }
+    else
+    {
+      // The last interval from t_ai_sub to t_af
+      assert(au_buffer_add >= buffer_add_sum);
+      unsigned int buffer_add_remain = au_buffer_add - buffer_add_sum;
+      // The sum should correspond to the size of the complete AU
+      time_t time_expired               = t_af - t_ai_sub;
+      long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
+      {
+        unsigned int buffer_add = round(buffer_add_fractional);
+        buffer_add_sum += buffer_add;
+        // assert(buffer_add_sum == au_buffer_add || buffer_add_sum + 1 == au_buffer_add
+        // || buffer_add_sum == au_buffer_add + 1);
+      }
+      this->addToBufferAndCheck(buffer_add_remain, buffer_size, poc, t_ai_sub, t_af, plotModel);
+    }
+  }
+
+  if (!underflowRemoveCurrentAU)
+    framesToRemove.push_back(HRDFrameToRemove(t_r_n, auBits, poc));
+
+  this->t_af_nm1 = t_af;
+
+  // C.3 - 3. A CPB underflow is specified as the condition in which t_r,n(n) is less than
+  // t_af(n). When low_delay_hrd_flag is equal to 0, the CPB shall never underflow.
+  if (t_r_nominal_n < t_af && !sps->vui_parameters.low_delay_hrd_flag)
+  {
+    DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Decoding Buffer underflow t_r_n " << double(t_r_n) << " t_af " << double(t_af));
+  }
+
+  this->au_n++;
+  this->isFirstAUInBufferingPeriod = false;
+}
+
+void parserAnnexBAVC::HRD::endOfFile(HRDPlotModel *plotModel)
+{
+  // From time this->t_af_nm1 onwards, just remove all of the frames which have not been removed yet.
+  auto lastFrameTime = this->t_af_nm1;
+  for (const auto &frame : this->framesToRemove)
+  {
+    this->addConstantBufferLine(frame.poc, lastFrameTime, frame.t_r, plotModel);
+    this->removeFromBufferAndCheck(frame, frame.poc, frame.t_r, plotModel);
+    lastFrameTime = frame.t_r;
+  }
+  this->framesToRemove.clear();
+}
+
+QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFramesInTimeInterval(time_t from, time_t to)
+{
+  QList<parserAnnexBAVC::HRD::HRDFrameToRemove> l;
+  auto it = this->framesToRemove.begin();
+  while (it != this->framesToRemove.end())
+  {
+    if ((*it).t_r >= from && (*it).t_r < to)
+    {
+      l.push_back((*it));
+      it = this->framesToRemove.erase(it);
+      continue;
+    }
+    if ((*it).t_r >= to)
+      break;
+    // Prevent an infinite loop in case of wrong data. We should never reach this if all timings are correct.
+    it++;
+  }
+  return l;
+}
+
+void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
+{
+  const auto bufferOld = this->decodingBufferLevel;
+  this->decodingBufferLevel += bufferAdd;
+  
+  {
+    HRDPlotModel::HRDEntry entry;
+    entry.type = HRDPlotModel::HRDEntry::EntryType::Adding;
+    entry.cbp_fullness_start = bufferOld;
+    entry.cbp_fullness_end = this->decodingBufferLevel;
+    entry.time_offset_start = t_begin;
+    entry.time_offset_end = t_end;
+    entry.poc = poc;
+    plotModel->addHRDEntry(entry);
+  }
+  if (this->decodingBufferLevel > bufferSize)
+  {
+    this->decodingBufferLevel = bufferSize;
+    DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Time " << double(t_end) << " Decoding Buffer overflow by " << (int(this->decodingBufferLevel) - bufferSize) << "bits" << " added bits " << bufferAdd << ")");
+  }
+}
+
+void parserAnnexBAVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel)
+{
+  Q_UNUSED(poc);
+
+  // Remove the frame from the buffer
+  unsigned int bufferSub = frame.bits;
+  const auto bufferOld   = this->decodingBufferLevel;
+  this->decodingBufferLevel -= bufferSub;
+  {
+    HRDPlotModel::HRDEntry entry;
+    entry.type = HRDPlotModel::HRDEntry::EntryType::Removal;
+    entry.cbp_fullness_start = bufferOld;
+    entry.cbp_fullness_end = this->decodingBufferLevel;
+    entry.time_offset_start = removalTime;
+    entry.time_offset_end = removalTime;
+    entry.poc = frame.poc;
+    plotModel->addHRDEntry(entry);
+  }
+  if (this->decodingBufferLevel < 0)
+  {
+    // The buffer did underflow; i.e. we need to decode a pictures
+    // at the time but there is not enough data in the buffer to do so (to take the AU
+    // out of the buffer).
+    DEBUG_AVC("HRD AU " << this->au_n << " POC " << poc << " - Warning: Time " << double(frame.t_r) << " Decoding Buffer underflow by " << this->decodingBufferLevel << "bits");
+  }
+}
+
+void parserAnnexBAVC::HRD::addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
+{
+  HRDPlotModel::HRDEntry entry;
+  entry.type = HRDPlotModel::HRDEntry::EntryType::Adding;
+  entry.cbp_fullness_start = this->decodingBufferLevel;
+  entry.cbp_fullness_end = this->decodingBufferLevel;
+  entry.time_offset_start = t_begin;
+  entry.time_offset_end = t_end;
+  entry.poc = poc;
+  plotModel->addHRDEntry(entry);
 }

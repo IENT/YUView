@@ -41,7 +41,7 @@
 #include <QTimer>
 #include <QWidget>
 
-#include "ui/playlistTreeWidget.h"
+#include "ui/widgets/PlaylistTreeWidget.h"
 
 class videoHandler;
 class videoCache;

@@ -38,7 +38,7 @@
 // The label initializes with a minimum width of 20pixels. However, it can get as big as the text
 // is wide. The QLabelElided will also show the full text as tool-tip if it was elided.
 // See http://stackoverflow.com/q/21284720/1329652 for alternate implementation using styles.
-class labelElided : public QLabel
+class QLabelElided : public QLabel
 {
   Q_OBJECT
   Q_PROPERTY(QString text READ text WRITE setText)
@@ -46,8 +46,8 @@ class labelElided : public QLabel
 public:
   // The constructor will set the label to a very small minimum size. If you want the label
   // to be bigger by default, you have to set the minimum size manually.
-  explicit labelElided(QWidget *parent = 0) : QLabel(parent) { setMinimumSize(20, 1); }
-  explicit labelElided(const QString &newText, QWidget *parent = 0) : QLabel(parent) { setMinimumSize(20,1); setText(newText); }
+  explicit QLabelElided(QWidget *parent = 0) : QLabel(parent) { setMinimumSize(20, 1); }
+  explicit QLabelElided(const QString &newText, QWidget *parent = 0) : QLabel(parent) { setMinimumSize(20,1); setText(newText); }
   QString text() const { return m_text; }
   void setText(const QString &newText)
   {

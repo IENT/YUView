@@ -38,9 +38,9 @@
 #define PARSER_MPEG2_DEBUG_OUTPUT 0
 #if PARSER_MPEG2_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_MPEG2 qDebug
+#define DEBUG_MPEG2(msg) qDebug() << msg
 #else
-#define DEBUG_MPEG2(fmt,...) ((void)0)
+#define DEBUG_MPEG2(msg) ((void)0)
 #endif
 
 const QStringList parserAnnexBMpeg2::nal_unit_type_toString = QStringList()
@@ -48,7 +48,7 @@ const QStringList parserAnnexBMpeg2::nal_unit_type_toString = QStringList()
   << "GROUP_START" << "SYSTEM_START_CODE" << "RESERVED";
 
 parserAnnexBMpeg2::nal_unit_mpeg2::nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src) 
-  : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx)
+  : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd)
 {
   nal_unit_type = nal_src->nal_unit_type;
   slice_id = nal_src->slice_id;
@@ -130,8 +130,10 @@ void parserAnnexBMpeg2::nal_unit_mpeg2::interpreteStartCodeValue()
     nal_unit_type = UNSPECIFIED;
 }
 
-bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent, QUint64Pair nalStartEndPosFile, QString *nalTypeName)
+parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
+  parserAnnexB::ParseResult parseResult;
+
   // Skip the NAL unit header
   int skip = 0;
   if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
@@ -167,10 +169,12 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
+  parserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+
   // Create a nal_unit and read the header
-  nal_unit_mpeg2 nal_mpeg2(nalStartEndPosFile, nalID);
+  nal_unit_mpeg2 nal_mpeg2(nalID, nalStartEndPosFile);
   if (!nal_mpeg2.parse_nal_unit_header(nalHeaderBytes, nalRoot))
-    return false;
+    return parseResult;
 
   bool parsingSuccess = true;
   bool currentSliceIntra = false;
@@ -182,8 +186,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
     parsingSuccess = new_sequence_header->parse_sequence_header(payload, nalRoot);
 
     specificDescription = parsingSuccess ? " Sequence Header" : " Sequence Header (Error)";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? " SeqHeader" : " SeqHeader(Err)";
+    parseResult.nalTypeName = parsingSuccess ? " SeqHeader" : " SeqHeader(Err)";
     if (parsingSuccess && !first_sequence_header)
       first_sequence_header = new_sequence_header;
 
@@ -209,8 +212,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
     }
 
     specificDescription = parsingSuccess ? " Picture Header" : " Picture Header (Error)";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? " PicHeader" : " picHeader(Err)";
+    parseResult.nalTypeName = parsingSuccess ? " PicHeader" : " picHeader(Err)";
   }
   else if (nal_mpeg2.nal_unit_type == GROUP_START)
   {
@@ -218,8 +220,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
     parsingSuccess = new_group_of_pictures_header->parse_group_of_pictures_header(payload, nalRoot);
 
     specificDescription = parsingSuccess ? " Group of Pictures" : " Group of Pictures (Error)";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? " PicGroup" : " PicGroup(Err)";
+    parseResult.nalTypeName = parsingSuccess ? " PicGroup" : " PicGroup(Err)";
 
     DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Group Start");
   }
@@ -229,8 +230,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
     parsingSuccess = new_user_data->parse_user_data(payload, nalRoot);
 
     specificDescription = parsingSuccess ? " User Data" : " User Data (Error)";
-    if (nalTypeName)
-      *nalTypeName = parsingSuccess ? " UserData" : " UserData(Err)";
+    parseResult.nalTypeName = parsingSuccess ? " UserData" : " UserData(Err)";
 
     DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit User Data");
   }
@@ -241,7 +241,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
     // An extension
     auto new_extension = QSharedPointer<nal_extension>(new nal_extension(nal_mpeg2));
     if (!new_extension->parse_extension_start_code(payload, message_tree))
-      return false;
+      return parseResult;
 
     if (message_tree)
       message_tree->itemData[0] = new_extension->get_extension_function_name();
@@ -252,8 +252,7 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
       parsingSuccess = new_sequence_extension->parse_sequence_extension(payload, message_tree);
 
       specificDescription = parsingSuccess ? " Sequence Extension": " Sequence Extension (Error)";
-      if (nalTypeName)
-        *nalTypeName = parsingSuccess ? " SeqExt" : " SeqExt(Err)";
+      parseResult.nalTypeName = parsingSuccess ? " SeqExt" : " SeqExt(Err)";
       
       if (!first_sequence_extension)
         first_sequence_extension = new_sequence_extension;
@@ -266,15 +265,13 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
       parsingSuccess = new_picture_coding_extension->parse_picture_coding_extension(payload, message_tree);
 
       specificDescription = parsingSuccess ? " Picture Coding Extension" : " Picture Coding Extension (Error)";
-      if (nalTypeName)
-        *nalTypeName = parsingSuccess ? " PicCodExt" : " PicCodExt(Err)";
+      parseResult.nalTypeName = parsingSuccess ? " PicCodExt" : " PicCodExt(Err)";
 
       DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Picture Coding Extension");
     }
     else
     {
-      if (nalTypeName)
-        *nalTypeName = QString(" Ext");
+      parseResult.nalTypeName = QString(" Ext");
       specificDescription = QString(" Extension");
     }
   }
@@ -282,15 +279,25 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
   const bool isStartOfNewAU = (nal_mpeg2.nal_unit_type == SEQUENCE_HEADER || (nal_mpeg2.nal_unit_type == PICTURE && !lastAUStartBySequenceHeader));
   if (isStartOfNewAU && lastFramePOC >= 0)
   {
-    DEBUG_MPEG2("Start of new AU. Adding bitrate %d for last AU (#%d).", sizeCurrentAU, counterAU);
+    DEBUG_MPEG2("Start of new AU. Adding bitrate " << sizeCurrentAU << " for last AU (#" << counterAU << ").");
 
-    BitratePlotModel::bitrateEntry entry;
-    entry.pts = lastFramePOC;
-    entry.dts = counterAU;
+    BitratePlotModel::BitrateEntry entry;
+    if (bitrateEntry)
+    {
+      entry.pts = bitrateEntry->pts;
+      entry.dts = bitrateEntry->dts;
+      entry.duration = bitrateEntry->duration;
+    }
+    else
+    {
+      entry.pts = lastFramePOC;
+      entry.dts = counterAU;
+      entry.duration = 1;
+    }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
     entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
-    bitrateModel->addBitratePoint(0, entry);
+    parseResult.bitrateEntry = entry;
 
     sizeCurrentAU = 0;
     counterAU++;
@@ -316,7 +323,8 @@ bool parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, BitratePl
     // Set a useful name of the TreeItem (the root for this NAL)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_mpeg2.nal_idx).arg(nal_unit_type_toString.value(nal_mpeg2.nal_unit_type)) + specificDescription);
 
-  return parsingSuccess;
+  parseResult.success = true;
+  return parseResult;
 }
 
 bool parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray & parameterSetData, TreeItem * root)

@@ -46,7 +46,7 @@ class parserAnnexBHEVC : public parserAnnexB
   Q_OBJECT
   
 public:
-  parserAnnexBHEVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); }
+  parserAnnexBHEVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
   ~parserAnnexBHEVC() {};
 
   // Get some properties
@@ -59,7 +59,7 @@ public:
   QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE;
   QPair<int,int> getSampleAspectRatio() Q_DECL_OVERRIDE;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -81,8 +81,8 @@ protected:
   */
   struct nal_unit_hevc : nal_unit
   {
-    nal_unit_hevc(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx) {}
-    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+    nal_unit_hevc(int nal_idx, std::optional<pairUint64> filePosStartEnd) : nal_unit(nal_idx, filePosStartEnd) {}
+    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
     virtual ~nal_unit_hevc() {}
 
     virtual QByteArray getNALHeader() const override;
@@ -806,7 +806,7 @@ protected:
 
   // For every frame, we save the file position where the NAL unit of the first slice starts and where the NAL of the last slice ends.
   // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
-  QUint64Pair curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+  std::optional<pairUint64> curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (if known) in case the frame has multiple NAL units
   // The POC of the current frame. We save this we encounter a NAL from the next POC; then we add it.
   int curFramePOC {-1};
   bool curFrameIsRandomAccess {false};
@@ -814,7 +814,7 @@ protected:
   struct auDelimiterDetector_t
   {
     bool isStartOfNewAU(nal_unit_hevc &nal, bool first_slice_segment_in_pic_flag);
-    bool primary_coded_picture_in_au_encountered {false};
+    bool primaryCodedPictureInAuEncountered {false};
   };
   auDelimiterDetector_t auDelimiterDetector;
 

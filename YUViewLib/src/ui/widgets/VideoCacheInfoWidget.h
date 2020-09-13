@@ -30,66 +30,54 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "separateWindow.h"
+#pragma once
 
-#include <QSettings>
+#include <QWidget>
 
-SeparateWindow::SeparateWindow() :
-  splitView(this)
+#include "PlaylistTreeWidget.h"
+#include "video/videoCache.h"
+
+namespace VideoCacheStatusWidgetNamespace
 {
-  setCentralWidget(&splitView);
-  splitView.setAttribute(Qt::WA_AcceptTouchEvents);
+  class VideoCacheStatusWidget : public QWidget
+  {
+    Q_OBJECT
 
-  connect(&splitView, &splitViewWidget::signalToggleFullScreen, this, &SeparateWindow::toggleFullscreen);
-  connect(&splitView, &splitViewWidget::signalShowSeparateWindow, this, &SeparateWindow::splitViewShowSeparateWindow);
+    public:
+    VideoCacheStatusWidget(QWidget *parent) : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0) {}
+    // Override the paint event
+    virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
+    void updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
+    private:
+    // The floating point values (0 to 1) of the end positions of the blocks to draw
+    QList<float> relativeValsEnd;
+    unsigned int cacheLevelMB;
+    unsigned int cacheRateInBytesPerMs;
+    int64_t cacheLevelMaxMB;
+  };
 }
 
-void SeparateWindow::toggleFullscreen()
+class VideoCacheInfoWidget : public QWidget
 {
-  QSettings settings;
-  if (isFullScreen())
-  {
-    // Show the window normal or maximized (depending on how it was shown before)
-    if (showNormalMaximized)
-      showMaximized();
-    else
-      showNormal();
-  }
-  else
-  {
-    // Save if the window is currently maximized
-    showNormalMaximized = isMaximized();
+  Q_OBJECT
 
-    showFullScreen();
-  }
-}
+public:
+  VideoCacheInfoWidget(QWidget *parent = 0);
 
-void SeparateWindow::closeEvent(QCloseEvent *event)
-{
-  // This window cannot be closed. Signal that we want to go to single window mode.
-  // The main window will then hide this window.
-  event->ignore();
-  emit signalSingleWindowMode();
-}
+  void setPlaylistAndCache(PlaylistTreeWidget *plist, videoCache *vCache) { playlist = plist; cache = vCache; };
 
-void SeparateWindow::keyPressEvent(QKeyEvent *event)
-{
-  int key = event->key();
-  bool controlOnly = (event->modifiers() == Qt::ControlModifier);
+public slots:
+  void onUpdateCacheStatus();
 
-  if (key == Qt::Key_Escape)
-  {
-    if (isFullScreen())
-      toggleFullscreen();
-  }
-  else if (key == Qt::Key_F && controlOnly)
-    toggleFullscreen();
-  else
-  {
-    // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
-    if (!splitView.handleKeyPress(event))
-      emit unhandledKeyPress(event);
+private slots:
+  void onGroupBoxToggled(bool on);
 
-    //QWidget::keyPressEvent(event);
-  }
-}
+private:
+  VideoCacheStatusWidgetNamespace::VideoCacheStatusWidget *statusWidget {nullptr};
+  QLabel *cachingInfoLabel {nullptr};
+
+  PlaylistTreeWidget *playlist {nullptr};
+  videoCache *cache {nullptr};
+
+  unsigned int cacheRateInBytesPerMs {0};
+};

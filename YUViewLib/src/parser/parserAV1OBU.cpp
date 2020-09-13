@@ -154,7 +154,7 @@ bool parserAV1OBU::obu_unit::parse_obu_header(const QByteArray &header_data, uns
   return true;
 }
 
-unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, QUint64Pair obuStartEndPosFile, QString *obuTypeName)
+unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, pairUint64 obuStartEndPosFile, QString *obuTypeName)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active). 
   // We don't set data (a name) for this item yet. 
@@ -165,6 +165,9 @@ unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *
     obuRoot = new TreeItem(parent);
   else if (!packetModel->isNull())
     obuRoot = new TreeItem(packetModel->getRootItem());
+
+  // Log OBU size
+  new TreeItem("size", data.size(), obuRoot);
 
   // Read the OBU header
   obu_unit obu(obuStartEndPosFile, obuID);

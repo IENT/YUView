@@ -31,6 +31,7 @@
 */
 
 #include "ReaderHelper.h"
+#include <cassert>
 
 ReaderHelper::ReaderHelper(SubByteReader &reader, TreeItem *item, QString new_sub_item_name)
 {

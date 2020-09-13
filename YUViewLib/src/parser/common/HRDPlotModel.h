@@ -32,56 +32,58 @@
 
 #pragma once
 
-#include <QMap>
+#include <QList>
 #include <QMutex>
 #include <QString>
 
 #include "common/typedef.h"
 #include "ui/views/plotModel.h"
 
-class BitratePlotModel : public PlotModel
+class HRDPlotModel : public PlotModel
 {
 public:
-  BitratePlotModel() = default;
-  virtual ~BitratePlotModel() = default;
+  HRDPlotModel() = default;
+  virtual ~HRDPlotModel() = default;
 
-  unsigned getNrStreams() const override;
+  unsigned getNrStreams() const override { return 1; }
   PlotModel::StreamParameter getStreamParameter(unsigned streamIndex) const override;
   PlotModel::Point getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
   QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
-  std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const override;
+  std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const override { return 1; }
   QString formatValue(Axis axis, double value) const override;
   
   QString getItemInfoText(int index);
 
-  struct BitrateEntry
+  struct HRDEntry
   {
-    int dts {0};
-    int pts {0};
-    int duration {1};
-    unsigned int bitrate {0};
-    bool keyframe {false};
-    QString frameType;
+    // There are two types of entries. 
+    // Adding: We are adding bits to the buffer or the buffer stays constant over time.
+    //         `poc` is the POC of the frame that the adding corresponds to.
+    // Removal: We remove a frame from the buffer. `time_offset_end` and `time_offset_start`
+    //          will be identical. The `poc` is the POC of the frame that is being removed.
+    enum class EntryType
+    {
+      Adding,
+      Removal
+    };
+    EntryType type {EntryType::Adding};
+
+    int cbp_fullness_start {0};
+    int cbp_fullness_end {0};
+    double time_offset_start {0};
+    double time_offset_end {0};
+    int poc;
   };
 
-  void addBitratePoint(int streamIndex, BitrateEntry &entry);
-  void setBitrateSortingIndex(int index);
+  void addHRDEntry(HRDEntry &entry);
+  void setCPBBufferSize(int size);
 
 private:
 
-  enum class SortMode
-  {
-    DECODE_ORDER,
-    PRESENTATION_ORDER
-  };
-  SortMode sortMode { SortMode::DECODE_ORDER };
-
-  QMap<unsigned int, QList<BitrateEntry>> dataPerStream;
+  QList<HRDEntry> data;
   mutable QMutex dataMutex;
 
-  unsigned int calculateAverageValue(unsigned streamIndex, unsigned pointIndex) const;
-
-  Range<int> rangeDts;
-  Range<int> rangePts;
-  QMap<unsigned int, Range<int>> rangeBitratePerStream;
+  int cpb_buffer_size {0};
+  double time_offset_max {0};
+  Range<int> bufferLevelLimits {0, 0};
 };

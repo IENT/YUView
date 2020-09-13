@@ -40,8 +40,6 @@
 #include <QPinchGesture>
 #include <QSwipeGesture>
 
-const int ZOOM_STEP_FACTOR = 2;
-
 #define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 0
 #if MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
@@ -50,14 +48,15 @@ const int ZOOM_STEP_FACTOR = 2;
 #define DEBUG_VIEW(fmt,...) ((void)0)
 #endif
 
-MoveAndZoomableView::MoveAndZoomableView(QWidget *parent) 
+const Range<double> MoveAndZoomableView::ZOOMINGLIMIT = {0.00001, 100000};
+
+MoveAndZoomableView::MoveAndZoomableView(QWidget *parent)
   : QWidget(parent)
 {
   grabGesture(Qt::SwipeGesture);
   grabGesture(Qt::PinchGesture);
 
   this->updateSettings();
-  this->createMenuActions();
 }
 
 void MoveAndZoomableView::addSlaveView(MoveAndZoomableView *view)
@@ -71,29 +70,76 @@ void MoveAndZoomableView::addSlaveView(MoveAndZoomableView *view)
   this->slaveViews.append(view);
 }
 
-void MoveAndZoomableView::addMenuActions(QMenu *menu)
+void MoveAndZoomableView::addContextMenuActions(QMenu *menu)
 {
-  QMenu *zoomMenu = menu->addMenu("Zoom");
-  zoomMenu->addAction("Zoom to 1:1", this, &MoveAndZoomableView::resetView, Qt::CTRL + Qt::Key_0);
-  zoomMenu->addAction("Zoom to Fit", this, &MoveAndZoomableView::zoomToFit, Qt::CTRL + Qt::Key_9);
-  zoomMenu->addAction("Zoom in", this, &MoveAndZoomableView::zoomIn, Qt::CTRL + Qt::Key_Plus);
-  zoomMenu->addAction("Zoom out", this, &MoveAndZoomableView::zoomOut, Qt::CTRL + Qt::Key_Minus);
-  zoomMenu->addSeparator();
-  zoomMenu->addAction("Zoom to 50%", this, &MoveAndZoomableView::zoomTo50);
-  zoomMenu->addAction("Zoom to 100%", this, &MoveAndZoomableView::zoomTo100);
-  zoomMenu->addAction("Zoom to 200%", this, &MoveAndZoomableView::zoomTo200);
-  zoomMenu->addAction("Zoom to ...", this, &MoveAndZoomableView::zoomToCustom);
-  
-  menu->addAction(&actionFullScreen);
+  menu->addAction("Zoom to 1:1", this, &MoveAndZoomableView::resetView, Qt::CTRL + Qt::Key_0);
+  menu->addAction("Zoom to Fit", this, &MoveAndZoomableView::zoomToFit, Qt::CTRL + Qt::Key_9);
+  menu->addAction("Zoom in", this, &MoveAndZoomableView::zoomIn, Qt::CTRL + Qt::Key_Plus);
+  menu->addAction("Zoom out", this, &MoveAndZoomableView::zoomOut, Qt::CTRL + Qt::Key_Minus);
+  menu->addSeparator();
+  menu->addAction("Zoom to 50%", this, &MoveAndZoomableView::zoomTo50);
+  menu->addAction("Zoom to 100%", this, &MoveAndZoomableView::zoomTo100);
+  menu->addAction("Zoom to 200%", this, &MoveAndZoomableView::zoomTo200);
+  menu->addAction("Zoom to ...", this, &MoveAndZoomableView::zoomToCustom);
 }
 
-void MoveAndZoomableView::resetView(bool checked)
+// Handle the key press event (if this widgets handles it). If not, return false.
+bool MoveAndZoomableView::handleKeyPress(QKeyEvent *event)
 {
-  Q_UNUSED(checked);
+  DEBUG_VIEW(QTime::currentTime().toString("hh:mm:ss.zzz") << "Key: " << event);
+
+  int key = event->key();
+  bool controlOnly = event->modifiers() == Qt::ControlModifier;
+
+  if (key == Qt::Key_0 && controlOnly)
+  {
+    this->resetView(false);
+    return true;
+  }
+  else if (key == Qt::Key_9 && controlOnly)
+  {
+    this->zoomToFitInternal();
+    return true;
+  }
+  else if (key == Qt::Key_Plus && controlOnly)
+  {
+    this->zoom(ZoomMode::IN);
+    return true;
+  }
+  else if (key == Qt::Key_BracketRight && controlOnly)
+  {
+    // This seems to be a bug in the Qt localization routine. On the German keyboard layout this key is returned if Ctrl + is pressed.
+    this->zoom(ZoomMode::IN);
+    return true;
+  }
+  else if (key == Qt::Key_Minus && controlOnly)
+  {
+    this->zoom(ZoomMode::OUT);
+    return true;
+  }
+
+  return false;
+}
+
+void MoveAndZoomableView::resetViewInternal()
+{
   this->setMoveOffset(QPoint(0,0));
   this->setZoomFactor(1.0);
-
   update();
+}
+
+void MoveAndZoomableView::updatePaletteIfNeeded()
+{
+  if (this->paletteNeedsUpdate)
+  {
+    // load the background color from settings and set it
+    QPalette pal(palette());
+    QSettings settings;
+    pal.setColor(QPalette::Window, settings.value(paletteBackgroundColorSettingsTag).value<QColor>());
+    this->setAutoFillBackground(true);
+    this->setPalette(pal);
+    this->paletteNeedsUpdate = false;
+  }
 }
 
 /* Zoom in/out by one step or to a specific zoom value
@@ -114,7 +160,7 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
   {
     if (this->zoomFactor > 1.0)
     {
-      double inf = std::numeric_limits<double>::infinity();
+      const double inf = std::numeric_limits<double>::infinity();
       while (newZoom <= this->zoomFactor && newZoom < inf)
         newZoom *= ZOOM_STEP_FACTOR;
     }
@@ -143,6 +189,10 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
   {
     newZoom = newZoomFactor;
   }
+
+  if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
+    return;
+
   // So what is the zoom factor that we use in this step?
   double stepZoomFactor = newZoom / this->zoomFactor;
 
@@ -177,6 +227,14 @@ void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
   QPoint p = event->pos();
   event->accept();
   this->zoom(event->delta() > 0 ? ZoomMode::IN : ZoomMode::OUT, p);
+}
+
+void MoveAndZoomableView::keyPressEvent(QKeyEvent *event)
+{
+  if (!handleKeyPress(event))
+    // If this widget does not handle the key press event, pass it up to the widget so that
+    // it is propagated to the parent.
+    QWidget::keyPressEvent(event);
 }
 
 void MoveAndZoomableView::resizeEvent(QResizeEvent *event)
@@ -303,7 +361,7 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
     if (mouse_event->button() == Qt::RightButton && this->viewAction == ViewAction::DRAGGING)
     {
       QMenu menu(this);
-      this->addMenuActions(&menu);
+      this->addContextMenuActions(&menu);
       menu.exec(mouse_event->globalPos());
     }
 
@@ -403,20 +461,32 @@ bool MoveAndZoomableView::event(QEvent *event)
         this->pinchStartCenterPoint = pinch->centerPoint();
       }
 
+      const auto newZoom = this->pinchStartZoomFactor * pinch->totalScaleFactor();
+      bool doZoom = true;
       if (pinch->state() == Qt::GestureStarted || pinch->state() == Qt::GestureUpdated)
       {
         // See what changed in this pinch gesture (the scale factor and/or the position)
         QPinchGesture::ChangeFlags changeFlags = pinch->changeFlags();
         if (changeFlags & QPinchGesture::ScaleFactorChanged || changeFlags & QPinchGesture::CenterPointChanged)
         {
-          setZoomFactor(this->pinchStartZoomFactor * pinch->totalScaleFactor());
-          setMoveOffset((this->pinchStartMoveOffset * pinch->totalScaleFactor() + pinch->centerPoint() - this->pinchStartCenterPoint).toPoint());
+          if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
+            doZoom = false;
+          else
+          {
+            setZoomFactor(newZoom);
+            setMoveOffset((this->pinchStartMoveOffset * pinch->totalScaleFactor() + pinch->centerPoint() - this->pinchStartCenterPoint).toPoint());
+          }
         }
       }
       else if (pinch->state() == Qt::GestureFinished)
       {
-        setZoomFactor(this->pinchStartZoomFactor * pinch->totalScaleFactor());
-        setMoveOffset((this->pinchStartMoveOffset * pinch->totalScaleFactor() + pinch->centerPoint() - this->pinchStartCenterPoint).toPoint());
+        if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
+          doZoom = false;
+        else
+        {
+          setZoomFactor(this->pinchStartZoomFactor * pinch->totalScaleFactor());
+          setMoveOffset((this->pinchStartMoveOffset * pinch->totalScaleFactor() + pinch->centerPoint() - this->pinchStartCenterPoint).toPoint());
+        }
         
         this->pinchStartMoveOffset = QPointF();
         this->pinchStartZoomFactor = 1.0;
@@ -425,7 +495,8 @@ bool MoveAndZoomableView::event(QEvent *event)
       }
 
       event->accept();
-      this->update();
+      if (doZoom)
+        this->update();
     }
   }
   else if (event->type() == QEvent::TouchBegin || event->type() == QEvent::TouchUpdate || event->type() == QEvent::TouchEnd || event->type() == QEvent::TouchCancel)
@@ -511,37 +582,6 @@ void MoveAndZoomableView::update()
   }
 }
 
-void MoveAndZoomableView::createMenuActions()
-{
-  const bool menuActionsNoteCreatedYet = actionFullScreen.text().isEmpty();
-  Q_ASSERT_X(menuActionsNoteCreatedYet, Q_FUNC_INFO, "Only call this initialization function once.");
-
-  auto configureCheckableAction = [this](QAction &action, QActionGroup *actionGroup, QString text, bool checked, void(MoveAndZoomableView::*func)(bool), const QKeySequence &shortcut = {}, bool isEnabled = true)
-  {
-    action.setParent(this);
-    action.setCheckable(true);
-    action.setChecked(checked);
-    action.setText(text);
-    action.setShortcut(shortcut);
-    if (actionGroup)
-      actionGroup->addAction(&action);
-    if (!isEnabled)
-      action.setEnabled(false);
-    connect(&action, &QAction::triggered, this, func);
-  };
-
-  configureCheckableAction(actionZoom[0], nullptr, "Zoom to 1:1", false, &MoveAndZoomableView::resetView, Qt::CTRL + Qt::Key_0);
-  configureCheckableAction(actionZoom[1], nullptr, "Zoom to Fit", false, &MoveAndZoomableView::zoomToFit, Qt::CTRL + Qt::Key_9);
-  configureCheckableAction(actionZoom[2], nullptr, "Zoom in", false, &MoveAndZoomableView::zoomIn, Qt::CTRL + Qt::Key_Plus);
-  configureCheckableAction(actionZoom[3], nullptr, "Zoom out", false, &MoveAndZoomableView::zoomOut, Qt::CTRL + Qt::Key_Minus);
-  configureCheckableAction(actionZoom[4], nullptr, "Zoom to 50%", false, &MoveAndZoomableView::zoomTo50);
-  configureCheckableAction(actionZoom[5], nullptr, "Zoom to 100%", false, &MoveAndZoomableView::zoomTo100);
-  configureCheckableAction(actionZoom[6], nullptr, "Zoom to 200%", false, &MoveAndZoomableView::zoomTo200);
-  configureCheckableAction(actionZoom[7], nullptr, "Zoom to ...", false, &MoveAndZoomableView::zoomToCustom);
-
-  configureCheckableAction(actionFullScreen, nullptr, "&Fullscreen Mode", false, &MoveAndZoomableView::toggleFullScreen, Qt::CTRL + Qt::Key_F);
-}
-
 void MoveAndZoomableView::setZoomFactor(double zoom)
 {
   if (this->enableLink)
@@ -612,6 +652,10 @@ void MoveAndZoomableView::updateSettings()
 {
   QSettings settings;
 
+  // Update the palette in the next draw event.
+  // We don't do this here because Qt overwrites the setting if the theme is changed.
+  paletteNeedsUpdate = true;
+
   // Load the mouse mode
   QString mouseModeString = settings.value("MouseMode", "Left Zoom, Right Move").toString();
   if (mouseModeString == "Left Zoom, Right Move")
@@ -620,11 +664,8 @@ void MoveAndZoomableView::updateSettings()
     this->mouseMode = MOUSE_LEFT_MOVE;
 }
 
-void MoveAndZoomableView::zoomToFit(bool checked)
+void MoveAndZoomableView::zoomToFitInternal()
 {
-  Q_UNUSED(checked);
-
-  // TODO: Zoom to fit for graphs
   this->setMoveOffset(QPoint(0,0));
   this->setZoomFactor(1.0);
   update();
@@ -637,12 +678,6 @@ void MoveAndZoomableView::zoomToCustom(bool checked)
   int newValue = QInputDialog::getInt(this, "Zoom to custom value", "Please select a zoom factor in percent", 100, 1, 2147483647, 1, &ok);
   if (ok)
     zoom(ZoomMode::TO_VALUE, QPoint(), double(newValue) / 100);
-}
-
-void MoveAndZoomableView::toggleFullScreen(bool checked) 
-{ 
-  Q_UNUSED(checked);
-  emit this->signalToggleFullScreen();
 }
 
 void MoveAndZoomableView::setLinkState(bool enabled)

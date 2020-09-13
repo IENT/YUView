@@ -35,7 +35,7 @@
 #include <QFuture>
 #include <QString>
 
-#include "filesource/fileSource.h"
+#include "filesource/FileSource.h"
 #include "playlistItemWithVideo.h"
 #include "common/typedef.h"
 
@@ -101,7 +101,7 @@ private:
 
   virtual int64_t getNumberFrames() const;
   
-  fileSource dataSource;
+  FileSource dataSource;
 
   int64_t getBytesPerFrame() const { return video->getBytesPerFrame(); }
 

@@ -74,6 +74,8 @@ public:
   AVCodecContext    *(*avcodec_alloc_context3)   (const AVCodec *codec);
   int                (*avcodec_open2)            (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
   void               (*avcodec_free_context)     (AVCodecContext **avctx);
+  AVPacket          *(*av_packet_alloc)          (void);
+  void               (*av_packet_free)           (AVPacket **pkt);
   void               (*av_init_packet)           (AVPacket *pkt);
   void               (*av_packet_unref)          (AVPacket *pkt);
   void               (*avcodec_flush_buffers)    (AVCodecContext *avctx);
@@ -461,7 +463,7 @@ public:
   // Create a new paket and initilize it using av_init_packet.
   void allocate_paket(FFmpegVersionHandler &ff);
   void unref_packet(FFmpegVersionHandler &ff);
-  void free_packet();
+  void free_packet(FFmpegVersionHandler &ff);
   void set_data(QByteArray &set_data);
   void set_pts(int64_t pts);
   void set_dts(int64_t dts);
@@ -478,7 +480,7 @@ public:
   uint8_t *get_data()          { update(); return data; }
   int      get_data_size()     { update(); return size; }
 
-  // This info is set externally (in fileSourceFFmpegFile) based on the stream info
+  // This info is set externally (in FileSourceFFmpegFile) based on the stream info
   PacketType getPacketType()                      { return packetType; }
   void       setPacketType(PacketType packetType) { this->packetType = packetType; }
   
@@ -745,16 +747,16 @@ public:
 
   // The flags. Fortunately, these do not change with the version of AVUtil.
   int flags {0};
-  bool flagIsBigEndian()           { return flags & (1 << 0); } // Pixel format is big-endian.
-  bool flagIsPallette()            { return flags & (1 << 1); } // Pixel format has a palette in data[1], values are indexes in this palette.
-  bool flagIsBitWisePacked()       { return flags & (1 << 2); } // All values of a component are bit-wise packed end to end.
-  bool flagIsHWAcceleratedFormat() { return flags & (1 << 3); } // Pixel format is an HW accelerated format.
-  bool flagIsPlanar()              { return flags & (1 << 4); } // At least one pixel component is not in the first data plane.
-  bool flagIsRGB()                 { return flags & (1 << 5); } // The pixel format contains RGB-like data (as opposed to YUV/grayscale).
-  bool flagIsIsPseudoPallette()    { return flags & (1 << 6); } // The pixel format is "pseudo-paletted".
-  bool flagHasAlphaPlane()         { return flags & (1 << 7); } // The pixel format has an alpha channel. This is set on all formats that support alpha in some way, including AV_PIX_FMT_PAL8. The alpha is always straight, never pre-multiplied.
-  bool flagIsBayerPattern()        { return flags & (1 << 8); } // The pixel format is following a Bayer pattern
-  bool flagIsFloat()               { return flags & (1 << 9); } // The pixel format contains IEEE-754 floating point values.
+  bool flagIsBigEndian()           { return this->flags & (1 << 0); } // Pixel format is big-endian.
+  bool flagIsPallette()            { return this->flags & (1 << 1); } // Pixel format has a palette in data[1], values are indexes in this palette.
+  bool flagIsBitWisePacked()       { return this->flags & (1 << 2); } // All values of a component are bit-wise packed end to end.
+  bool flagIsHWAcceleratedFormat() { return this->flags & (1 << 3); } // Pixel format is an HW accelerated format.
+  bool flagIsPlanar()              { return this->flags & (1 << 4); } // At least one pixel component is not in the first data plane.
+  bool flagIsRGB()                 { return this->flags & (1 << 5); } // The pixel format contains RGB-like data (as opposed to YUV/grayscale).
+  bool flagIsIsPseudoPallette()    { return this->flags & (1 << 6); } // The pixel format is "pseudo-paletted".
+  bool flagHasAlphaPlane()         { return this->flags & (1 << 7); } // The pixel format has an alpha channel. This is set on all formats that support alpha in some way, including AV_PIX_FMT_PAL8. The alpha is always straight, never pre-multiplied.
+  bool flagIsBayerPattern()        { return this->flags & (1 << 8); } // The pixel format is following a Bayer pattern
+  bool flagIsFloat()               { return this->flags & (1 << 9); } // The pixel format contains IEEE-754 floating point values.
 
   /**
     * Parameters that describe how pixels are packed.
@@ -779,8 +781,6 @@ public:
   bool operator==(const AVPixFmtDescriptorWrapper &a);
 
 private:
-
-  AVPixFmtDescriptor *fmtDescriptor {nullptr};
   bool flagsSupported();
 };
 

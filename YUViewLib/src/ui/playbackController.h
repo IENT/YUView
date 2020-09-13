@@ -37,7 +37,7 @@
 #include <QTime>
 #include <QWidget>
 
-#include "playlistTreeWidget.h"
+#include "widgets/PlaylistTreeWidget.h"
 #include "views/splitViewWidget.h"
 #include "common/typedef.h"
 

@@ -45,7 +45,7 @@ class parserAnnexBVVC : public parserAnnexB
   Q_OBJECT
   
 public:
-  parserAnnexBVVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = QUint64Pair(-1, -1); }
+  parserAnnexBVVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
   ~parserAnnexBVVC() {};
 
   // Get some properties
@@ -58,7 +58,7 @@ public:
   QPair<int,int> getProfileLevel() override;
   QPair<int,int> getSampleAspectRatio() override;
 
-  bool parseAndAddNALUnit(int nalID, QByteArray data, BitratePlotModel *bitrateModel, TreeItem *parent=nullptr, QUint64Pair nalStartEndPosFile = QUint64Pair(-1,-1), QString *nalTypeName=nullptr) Q_DECL_OVERRIDE;
+  ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -67,8 +67,8 @@ protected:
   */
   struct nal_unit_vvc : nal_unit
   {
-    nal_unit_vvc(QUint64Pair filePosStartEnd, int nal_idx) : nal_unit(filePosStartEnd, nal_idx) {}
-    nal_unit_vvc(QSharedPointer<nal_unit_vvc> nal_src) : nal_unit(nal_src->filePosStartEnd, nal_src->nal_idx) { nal_unit_type_id = nal_src->nal_unit_type_id; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+    nal_unit_vvc(int nal_idx, std::optional<pairUint64> filePosStartEnd) : nal_unit(nal_idx, filePosStartEnd) {}
+    nal_unit_vvc(QSharedPointer<nal_unit_vvc> nal_src) : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_unit_type_id = nal_src->nal_unit_type_id; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
     virtual ~nal_unit_vvc() {}
 
     virtual QByteArray getNALHeader() const override;
@@ -84,7 +84,7 @@ protected:
 
   // Since full parsing is not implemented yet, we will just look for AU delimiters (they must be enabled in the bitstream and are by default).
   // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
-  QUint64Pair curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
+  std::optional<pairUint64> curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
 
   unsigned int counterAU{ 0 };
   unsigned int sizeCurrentAU{ 0 };

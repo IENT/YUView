@@ -37,6 +37,10 @@
 #include <QDockWidget>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QtGlobal>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+    #include <QPainterPath>
+#endif
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
@@ -79,6 +83,7 @@ const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 // Activate this if you want to know when which item is triggered to load and draw
 #define SPLITVIEWWIDGET_DEBUG_LOAD_DRAW 0
 #if SPLITVIEWWIDGET_DEBUG_LOAD_DRAW && !NDEBUG
+#include <QDebug>
 #define DEBUG_LOAD_DRAW(fmt) qDebug() << fmt
 #else
 #define DEBUG_LOAD_DRAW(fmt) ((void)0)
@@ -87,6 +92,8 @@ const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 splitViewWidget::splitViewWidget(QWidget *parent)
   : MoveAndZoomableView(parent)
 {
+  paletteBackgroundColorSettingsTag = "View/BackgroundColor";
+
   setFocusPolicy(Qt::NoFocus);
   setViewSplitMode(DISABLED);
   updateSettings();
@@ -117,13 +124,9 @@ void splitViewWidget::updateSettings()
 {
   MoveAndZoomableView::updateSettings();
 
-  // Update the palette in the next draw event.
-  // We don't do this here because Qt overwrites the setting if the theme is changed.
-  paletteNeedsUpdate = true;
-
   // Get the color of the regular grid
   QSettings settings;
-  regularGridColor = settings.value("OverlayGrid/Color").value<QColor>();
+  regularGridColor = settings.value("View/GridColor").value<QColor>();
 
   // Load the split line style from the settings and set it
   QString splittingStyleString = settings.value("SplitViewLineStyle").toString();
@@ -132,7 +135,7 @@ void splitViewWidget::updateSettings()
   else
     splittingLineStyle = SOLID_LINE;
 
-  zoomBoxBackgroundColor = settings.value("Background/Color").value<QColor>();
+  zoomBoxBackgroundColor = settings.value(paletteBackgroundColorSettingsTag).value<QColor>();
   drawItemPathAndNameEnabled = settings.value("ShowFilePathInSplitMode", true).toBool();
 
   // Something about how we draw might have been changed
@@ -143,17 +146,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 {
   Q_UNUSED(paint_event);
 
-  if (paletteNeedsUpdate)
-  {
-    // load the background color from settings and set it
-    QPalette Pal(palette());
-    QSettings settings;
-    QColor bgColor = settings.value("Background/Color").value<QColor>();
-    Pal.setColor(QPalette::Background, bgColor);
-    setAutoFillBackground(true);
-    setPalette(Pal);
-    paletteNeedsUpdate = false;
-  }
+  MoveAndZoomableView::updatePaletteIfNeeded();
 
   if (!playlist)
     // The playlist was not initialized yet. Nothing to draw (yet)
@@ -996,9 +989,13 @@ QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoi
 
 void splitViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor)
 {
+  const auto newZoom = this->zoomFactor * additionalZoomFactor;
+  if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
+    return;
+
   const QPoint zoomRectCenterOffset = zoomRect.center() - this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
   this->setMoveOffset((this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor);
-  this->setZoomFactor(this->zoomFactor * additionalZoomFactor);
+  this->setZoomFactor(newZoom);
 }
 
 void splitViewWidget::setSplittingPoint(double point, bool setLinkedViews)
@@ -1111,22 +1108,27 @@ void splitViewWidget::toggleSeparateWindow(bool checked)
   emit signalShowSeparateWindow(checked);
 }
 
-void splitViewWidget::resetView(bool checked)
-{
-  this->setSplittingPoint(0.5);
-  MoveAndZoomableView::resetView(checked);
+void splitViewWidget::toggleFullScreen(bool checked) 
+{ 
+  Q_UNUSED(checked);
+  emit this->signalToggleFullScreen();
 }
 
-void splitViewWidget::zoomToFit(bool checked)
+void splitViewWidget::resetViewInternal()
 {
-  Q_UNUSED(checked);
-  if (!playlist)
+  this->setSplittingPoint(0.5);
+  MoveAndZoomableView::resetViewInternal();
+}
+
+void splitViewWidget::zoomToFitInternal()
+{
+  if (!this->playlist)
     // The playlist was not initialized yet. Nothing to draw (yet)
     return;
 
   this->setMoveOffset(QPoint(0,0));
 
-  auto item = playlist->getSelectedItems();
+  auto item = this->playlist->getSelectedItems();
 
   if (item[0] == nullptr)
     // We cannot zoom to anything
@@ -1210,9 +1212,12 @@ void splitViewWidget::zoomToFit(bool checked)
       newZoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
   }
 
+  if (newZoomFactor < ZOOMINGLIMIT.min || newZoomFactor > ZOOMINGLIMIT.max)
+    return;
+
   // Set new zoom factor and update
   this->setZoomFactor(newZoomFactor);
-  update();
+  this->update();
 }
 
 void splitViewWidget::setViewSplitMode(ViewSplitMode mode, bool setOtherViewIfLinked, bool callUpdate)
@@ -1485,14 +1490,6 @@ void splitViewWidget::setViewState(const QPoint &offset, double zoom, double spl
   update();
 }
 
-void splitViewWidget::keyPressEvent(QKeyEvent *event)
-{
-  if (!handleKeyPress(event))
-    // If this widget does not handle the key press event, pass it up to the widget so that
-    // it is propagated to the parent.
-    QWidget::keyPressEvent(event);
-}
-
 void splitViewWidget::onSwipeLeft()
 { 
   playback->nextFrame();
@@ -1560,12 +1557,21 @@ void splitViewWidget::createMenuActions()
     actionSeparateViewLink.setToolTip("Link the second view so that any change in one view is also applied in the other view.");
     actionSeparateViewPlaybackBoth.setToolTip("For performance reasons playback only runs in one (the second) view. Activate this to run playback in both views siultaneously.");
   }
+
+  configureCheckableAction(actionFullScreen, nullptr, "&Fullscreen Mode", false, &splitViewWidget::toggleFullScreen, Qt::CTRL + Qt::Key_F);
+}
+
+void splitViewWidget::addContextMenuActions(QMenu *menu)
+{
+  this->addMenuActions(menu);
+  menu->addSeparator();
+  MoveAndZoomableView::addContextMenuActions(menu);
 }
 
 // Handle the key press event (if this widgets handles it). If not, return false.
 bool splitViewWidget::handleKeyPress(QKeyEvent *event)
 {
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
+  DEBUG_LOAD_DRAW(QTime::currentTime().toString("hh:mm:ss.zzz") << "Key: " << event);
 
   int key = event->key();
   bool controlOnly = event->modifiers() == Qt::ControlModifier;
@@ -1576,34 +1582,8 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
       emit signalShowSeparateWindow(false);
     return true;
   }
-  else if (key == Qt::Key_0 && controlOnly)
-  {
-    this->resetView();
-    return true;
-  }
-  else if (key == Qt::Key_9 && controlOnly)
-  {
-    zoomToFit();
-    return true;
-  }
-  else if (key == Qt::Key_Plus && controlOnly)
-  {
-    this->zoom(ZoomMode::IN);
-    return true;
-  }
-  else if (key == Qt::Key_BracketRight && controlOnly)
-  {
-    // This seems to be a bug in the Qt localization routine. On the German keyboard layout this key is returned if Ctrl + is pressed.
-    this->zoom(ZoomMode::IN);
-    return true;
-  }
-  else if (key == Qt::Key_Minus && controlOnly)
-  {
-    this->zoom(ZoomMode::OUT);
-    return true;
-  }
-
-  return false;
+  
+  return MoveAndZoomableView::handleKeyPress(event);
 }
 
 QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playlistItem *item2)
@@ -1765,14 +1745,14 @@ void splitViewWidget::addMenuActions(QMenu *menu)
     drawGridMenu->addAction(&actionGrid[i]);
 
   menu->addAction(&actionZoomBox);
-  MoveAndZoomableView::addMenuActions(menu);
-  menu->addSeparator();
 
   QMenu *separateViewMenu = menu->addMenu("Separate View");
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateView : &actionSeparateView);
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewLink : &actionSeparateViewLink);
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewPlaybackBoth : &actionSeparateViewPlaybackBoth);
   separateViewMenu->setToolTipsVisible(true);
+
+  menu->addAction(&this->actionFullScreen);
 
   menu->setToolTipsVisible(true);
 }

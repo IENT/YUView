@@ -42,6 +42,7 @@ class SettingsDialog : public QDialog
 
 public:
   explicit SettingsDialog(QWidget *parent = 0);
+  static void initializeDefaults();
   
   // Get settings
   unsigned int getCacheSizeInMB() const;
@@ -55,10 +56,12 @@ private slots:
   void on_checkBoxEnablePlaybackCaching_stateChanged(int state);
 
   // Colors buttons
-  void on_pushButtonEditBackgroundColor_clicked();
-  void on_frameBackgroundColor_clicked() { on_pushButtonEditBackgroundColor_clicked(); }
-  void on_pushButtonEditGridColor_clicked();
-  void on_frameGridLineColor_clicked() { on_pushButtonEditGridColor_clicked(); }
+  void on_pushButtonEditViewBackgroundColor_clicked();
+  void on_viewBackgroundColor_clicked() { this->on_pushButtonEditViewBackgroundColor_clicked(); }
+  void on_pushButtonEditViewGridLineColor_clicked();
+  void on_viewGridLineColor_clicked() { this->on_pushButtonEditViewGridLineColor_clicked(); }
+  void on_pushButtonEditPlotBackgroundColor_clicked();
+  void on_plotBackgroundColor_clicked() { this->on_pushButtonEditPlotBackgroundColor_clicked(); }
 
   // "Decoders" tab
   void on_pushButtonDecoderSelectPath_clicked();

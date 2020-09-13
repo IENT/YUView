@@ -66,37 +66,36 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection", false).toBool());
   ui.checkBoxSavePositionPerItem->setChecked(settings.value("SavePositionAndZoomPerItem", false).toBool());
   // UI
-  QString theme = settings.value("Theme", "Default").toString();
+  const auto theme = settings.value("Theme", "Default").toString();
   int themeIdx = functions::getThemeNameList().indexOf(theme);
   if (themeIdx < 0)
     themeIdx = 0;
   ui.comboBoxTheme->addItems(functions::getThemeNameList());
   ui.comboBoxTheme->setCurrentIndex(themeIdx);
   // Central view settings
-  QString splittingStyleString = settings.value("SplitViewLineStyle", "Solid Line").toString();
+  const auto splittingStyleString = settings.value("SplitViewLineStyle", "Solid Line").toString();
   if (splittingStyleString == "Handlers")
     ui.comboBoxSplitLineStyle->setCurrentIndex(1);
   else
     ui.comboBoxSplitLineStyle->setCurrentIndex(0);
-  QString mouseModeString = settings.value("MouseMode", "Left Zoom, Right Move").toString();
+  const auto mouseModeString = settings.value("MouseMode", "Left Zoom, Right Move").toString();
   if (mouseModeString == "Left Zoom, Right Move")
     ui.comboBoxMouseMode->setCurrentIndex(0);
   else
     ui.comboBoxMouseMode->setCurrentIndex(1);
-  QColor backgroundColor = settings.value("Background/Color").value<QColor>();
-  QColor gridLineColor = settings.value("OverlayGrid/Color").value<QColor>();
-  ui.frameBackgroundColor->setPlainColor(backgroundColor);
-  ui.frameGridLineColor->setPlainColor(gridLineColor);
+  ui.viewBackgroundColor->setPlainColor(settings.value("View/BackgroundColor").value<QColor>());
+  ui.viewGridLineColor->setPlainColor(settings.value("View/GridColor").value<QColor>());
+  ui.plotBackgroundColor->setPlainColor(settings.value("Plot/BackgroundColor").value<QColor>());
   ui.checkBoxPlaybackControlFullScreen->setChecked(settings.value("ShowPlaybackControlFullScreen", false).toBool());
   ui.checkBoxShowFilePathSplitMode->setChecked(settings.value("ShowFilePathInSplitMode", true).toBool());
   ui.checkBoxPixelValuesHex->setChecked(settings.value("ShowPixelValuesHex", false).toBool());
   // Updates settings
   settings.beginGroup("updates");
-  bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
+  const auto checkForUpdates = settings.value("checkForUpdates", true).toBool();
   ui.groupBoxUpdates->setChecked(checkForUpdates);
   if (UPDATE_FEATURE_ENABLE)
   {
-    QString updateBehavior = settings.value("updateBehavior", "ask").toString();
+    const auto updateBehavior = settings.value("updateBehavior", "ask").toString();
     if (updateBehavior == "ask")
       ui.comboBoxUpdateSettings->setCurrentIndex(1);
     else if (updateBehavior == "auto")
@@ -122,7 +121,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.spinBoxNrThreads->setEnabled(ui.checkBoxNrThreads->isChecked());
   // Playback
   ui.checkBoxPausPlaybackForCaching->setChecked(settings.value("PlaybackPauseCaching", true).toBool());
-  bool playbackCaching = settings.value("PlaybackCachingEnabled", false).toBool();
+  const bool playbackCaching = settings.value("PlaybackCachingEnabled", false).toBool();
   ui.checkBoxEnablePlaybackCaching->setChecked(playbackCaching);
   ui.spinBoxThreadLimit->setValue(settings.value("PlaybackCachingThreadLimit", 1).toInt());
   ui.spinBoxThreadLimit->setEnabled(playbackCaching);
@@ -147,14 +146,23 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   settings.endGroup();
 }
 
+void SettingsDialog::initializeDefaults()
+{
+  // All default values are defined here and will be initialized at every startup.
+  QSettings settings;
+  if (!settings.contains("View/BackgroundColor"))
+    settings.setValue("View/BackgroundColor", QColor(128, 128, 128));
+  if (!settings.contains("View/GridColor"))
+    settings.setValue("View/GridColor", QColor(0, 0, 0));
+  if (!settings.contains("Plot/BackgroundColor"))
+    settings.setValue("Plot/BackgroundColor", QColor(255, 255, 255));
+}
+
 unsigned int SettingsDialog::getCacheSizeInMB() const
 {
-  unsigned int useMem = 0;
-  // update video cache
-  if (ui.groupBoxCaching->isChecked())
-    useMem = functions::systemMemorySizeInMB() * (ui.sliderThreshold->value()+1) / 100;
-
-  return std::max(useMem, MIN_CACHE_SIZE_IN_MB);
+  if (!ui.groupBoxCaching->isChecked())
+    return 0;
+  return std::max(functions::systemMemorySizeInMB() * (ui.sliderThreshold->value()+1) / 100, MIN_CACHE_SIZE_IN_MB);
 }
 
 void SettingsDialog::on_checkBoxNrThreads_stateChanged(int newState)
@@ -170,29 +178,34 @@ void SettingsDialog::on_checkBoxEnablePlaybackCaching_stateChanged(int state)
   ui.spinBoxThreadLimit->setEnabled(state != Qt::Unchecked);
 }
 
-void SettingsDialog::on_pushButtonEditBackgroundColor_clicked()
+void SettingsDialog::on_pushButtonEditViewBackgroundColor_clicked()
 {
-  QColor currentColor = ui.frameBackgroundColor->getPlainColor();
+  QColor currentColor = ui.viewBackgroundColor->getPlainColor();
   QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && currentColor != newColor)
-    ui.frameBackgroundColor->setPlainColor(newColor);
+    ui.viewBackgroundColor->setPlainColor(newColor);
 }
 
-void SettingsDialog::on_pushButtonEditGridColor_clicked()
+void SettingsDialog::on_pushButtonEditViewGridLineColor_clicked()
 {
-  QColor currentColor = ui.frameGridLineColor->getPlainColor();
+  QColor currentColor = ui.viewGridLineColor->getPlainColor();
   QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && currentColor != newColor)
-    ui.frameGridLineColor->setPlainColor(newColor);
+    ui.viewGridLineColor->setPlainColor(newColor);
+}
+
+void SettingsDialog::on_pushButtonEditPlotBackgroundColor_clicked()
+{
+  QColor currentColor = ui.plotBackgroundColor->getPlainColor();
+  QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
+  if (newColor.isValid() && currentColor != newColor)
+    ui.plotBackgroundColor->setPlainColor(newColor);
 }
 
 void SettingsDialog::on_pushButtonDecoderSelectPath_clicked()
 {
-  // Open a path selection dialog
-  QSettings settings;
-
   // Use the currently selected dir or the dir to YUView if this one does not exist.
-  auto curDir = QDir(settings.value("SearchPath", "").toString());
+  auto curDir = QDir(QSettings().value("SearchPath", "").toString());
   if (!curDir.exists())
     curDir = QDir::current();
 
@@ -210,8 +223,6 @@ void SettingsDialog::on_pushButtonDecoderSelectPath_clicked()
 
 QStringList SettingsDialog::getLibraryPath(QString currentFile, QString caption, bool multipleFiles)
 {
-  // Open a file selection dialog
-  
   // Use the currently selected dir or the dir to YUView if this one does not exist.
   QFileInfo curFile(currentFile);
   QDir curDir = curFile.absoluteDir();
@@ -231,12 +242,12 @@ QStringList SettingsDialog::getLibraryPath(QString currentFile, QString caption,
   if (fileDialog.exec())
     return fileDialog.selectedFiles();
   
-  return QStringList();
+  return {};
 }
 
 void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
 {
-  QStringList newFiles = getLibraryPath(ui.lineEditLibde265File->text(), "Please select the libde265 library file to use.");
+  QStringList newFiles = this->getLibraryPath(ui.lineEditLibde265File->text(), "Please select the libde265 library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
@@ -248,7 +259,7 @@ void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
 
 void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
 {
-  QStringList newFiles = getLibraryPath(ui.lineEditLibHMFile->text(), "Please select the libHMDecoder library file to use.");
+  QStringList newFiles = this->getLibraryPath(ui.lineEditLibHMFile->text(), "Please select the libHMDecoder library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
@@ -260,7 +271,7 @@ void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
 
 void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
 {
-  QStringList newFiles = getLibraryPath(ui.lineEditLibDav1d->text(), "Please select the libDav1d library file to use.");
+  QStringList newFiles = this->getLibraryPath(ui.lineEditLibDav1d->text(), "Please select the libDav1d library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
@@ -272,7 +283,7 @@ void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
 
 void SettingsDialog::on_pushButtonLibVTMSelectFile_clicked()
 {
-  QStringList newFiles = getLibraryPath(ui.lineEditLibVTMFile->text(), "Please select the libVTMDecoder library file to use.");
+  QStringList newFiles = this->getLibraryPath(ui.lineEditLibVTMFile->text(), "Please select the libVTMDecoder library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
@@ -284,7 +295,7 @@ void SettingsDialog::on_pushButtonLibVTMSelectFile_clicked()
 
 void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 {
-  QStringList newFiles = getLibraryPath(ui.lineEditAVFormat->text(), "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.", true);
+  QStringList newFiles = this->getLibraryPath(ui.lineEditAVFormat->text(), "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.", true);
   if (newFiles.empty())
     return;
   
@@ -292,7 +303,7 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
   QString avCodecLib, avFormatLib, avUtilLib, swResampleLib;
   if (newFiles.count() == 4)
   {
-    for (QString file : newFiles)
+    for (auto file : newFiles)
     {
       QFileInfo fileInfo(file);
       if (fileInfo.baseName().contains("avcodec", Qt::CaseInsensitive))
@@ -318,7 +329,7 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
     QMessageBox::StandardButton b = QMessageBox::question(this, "Error opening the library", "The selected file does not appear to be a usable ffmpeg avFormat library. \nWe have collected a more detailed log. Do you want to save it to disk?");
     if (b == QMessageBox::Yes)
     {
-      QString filePath = QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
+      const auto filePath = QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
       QFile logFile(filePath);
       logFile.open(QIODevice::WriteOnly);
       if (logFile.isOpen())
@@ -354,8 +365,9 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("Theme", ui.comboBoxTheme->currentText());
   settings.setValue("SplitViewLineStyle", ui.comboBoxSplitLineStyle->currentText());
   settings.setValue("MouseMode", ui.comboBoxMouseMode->currentText());
-  settings.setValue("Background/Color", ui.frameBackgroundColor->getPlainColor());
-  settings.setValue("OverlayGrid/Color", ui.frameGridLineColor->getPlainColor());
+  settings.setValue("View/BackgroundColor", ui.viewBackgroundColor->getPlainColor());
+  settings.setValue("View/GridColor", ui.viewGridLineColor->getPlainColor());
+  settings.setValue("Plot/BackgroundColor", ui.plotBackgroundColor->getPlainColor());
   settings.setValue("ShowPlaybackControlFullScreen", ui.checkBoxPlaybackControlFullScreen->isChecked());
   settings.setValue("ShowFilePathInSplitMode", ui.checkBoxShowFilePathSplitMode->isChecked());
   settings.setValue("ShowPixelValuesHex", ui.checkBoxPixelValuesHex->isChecked());

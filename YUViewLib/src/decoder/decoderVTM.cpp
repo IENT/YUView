@@ -86,7 +86,7 @@ decoderVTM::decoderVTM(int signalID, bool cachingDecoder) :
   loadDecoderLibrary(settings.value("libVTMFile", "").toString());
   settings.endGroup();
 
-  if (decoderState != decoderError)
+  if (decoderState != DecoderState::Error)
     allocateNewDecoder();
 }
 
@@ -191,7 +191,7 @@ void decoderVTM::allocateNewDecoder()
 
 bool decoderVTM::decodeNextFrame()
 {
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DECVTM("decoderVTM::decodeNextFrame: Wrong decoder state.");
     return false;
@@ -219,7 +219,7 @@ bool decoderVTM::getNextFrameFromDecoder()
   currentVTMPic = libVTMDec_get_picture(decoder);
   if (currentVTMPic == nullptr)
   {
-    decoderState = decoderNeedsMoreData;
+    decoderState = DecoderState::NeedsMoreData;
     return false;
   }
 
@@ -228,7 +228,7 @@ bool decoderVTM::getNextFrameFromDecoder()
   if (!picSize.isValid())
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
   auto subsampling = convertFromInternalSubsampling(libVTMDec_get_chroma_format(currentVTMPic));
-  if (subsampling == Subsampling::UNKNOWN)
+  if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
   int bitDepth = libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
@@ -238,7 +238,7 @@ bool decoderVTM::getNextFrameFromDecoder()
   {
     // Set the values
     frameSize = picSize;
-    formatYUV = yuvPixelFormat(subsampling, bitDepth);
+    formatYUV = YUV_Internals::yuvPixelFormat(subsampling, bitDepth);
   }
   else
   {
@@ -258,7 +258,7 @@ bool decoderVTM::getNextFrameFromDecoder()
 
 bool decoderVTM::pushData(QByteArray &data)
 {
-  if (decoderState != decoderNeedsMoreData)
+  if (decoderState != DecoderState::NeedsMoreData)
   {
     DEBUG_DECVTM("decoderVTM::pushData: Wrong decoder state.");
     return false;
@@ -280,7 +280,7 @@ bool decoderVTM::pushData(QByteArray &data)
   if (checkOutputPictures && getNextFrameFromDecoder())
   {
     decodedFrameWaiting = true;
-    decoderState = decoderRetrieveFrames;
+    decoderState = DecoderState::RetrieveFrames;
     currentOutputBuffer.clear();
   }
 
@@ -294,7 +294,7 @@ QByteArray decoderVTM::getRawFrameData()
 {
   if (currentVTMPic == nullptr)
     return QByteArray();
-  if (decoderState != decoderRetrieveFrames)
+  if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DECVTM("decoderVTM::getRawFrameData: Wrong decoder state.");
     return QByteArray();
@@ -556,7 +556,7 @@ void decoderVTM::fillStatisticList(statisticHandler &statSource) const
 
 QString decoderVTM::getDecoderName() const
 {
-  return (decoderState == decoderError) ? "VTM" : libVTMDec_get_version();
+  return (decoderState == DecoderState::Error) ? "VTM" : libVTMDec_get_version();
 }
 
 bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)
@@ -578,16 +578,16 @@ bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)
   return !testDecoder.errorInDecoder();
 }
 
-Subsampling decoderVTM::convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt)
+YUV_Internals::Subsampling decoderVTM::convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt)
 {
   if (fmt == LIBVTMDEC_CHROMA_400)
-    return Subsampling::YUV_400;
+    return YUV_Internals::Subsampling::YUV_400;
   if (fmt == LIBVTMDEC_CHROMA_420)
-    return Subsampling::YUV_420;
+    return YUV_Internals::Subsampling::YUV_420;
   if (fmt == LIBVTMDEC_CHROMA_422)
-    return Subsampling::YUV_422;
+    return YUV_Internals::Subsampling::YUV_422;
   if (fmt == LIBVTMDEC_CHROMA_444)
-    return Subsampling::YUV_444;
+    return YUV_Internals::Subsampling::YUV_444;
 
-  return Subsampling::UNKNOWN;
+  return YUV_Internals::Subsampling::UNKNOWN;
 }

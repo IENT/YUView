@@ -109,11 +109,11 @@ yuvPixelFormat testFormatFromSizeAndNamePlanar(QString name, const QSize size, i
     {
       for (int bitDepth : bitDepthList)
       {
-        auto endianessList = QStringList() << "le";
+        auto endiannessList = QStringList() << "le";
         if (bitDepth > 8)
-          endianessList << "be";
+          endiannessList << "be";
 
-        for (const QString &endianess : endianessList)
+        for (const QString &endianness : endiannessList)
         {
           for (QString interlacedString : {"UVI", "interlaced", ""})
           {
@@ -121,9 +121,9 @@ yuvPixelFormat testFormatFromSizeAndNamePlanar(QString name, const QSize size, i
             {
               QString formatName = planarYUVOrderList[o] + subsamplingToString(subsampling) + "p";
               if (bitDepth > 8)
-                formatName += QString::number(bitDepth) + endianess;
+                formatName += QString::number(bitDepth) + endianness;
               formatName += interlacedString;
-              auto fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
+              auto fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianness=="be");
               fmt.uvInterleaved = interlaced;
               if (name.contains(formatName) && checkFormat(fmt, size, fileSize))
                 return fmt;
@@ -134,9 +134,9 @@ yuvPixelFormat testFormatFromSizeAndNamePlanar(QString name, const QSize size, i
               // Also try the string without the subsampling indicator (which we already detected)
               QString formatName = planarYUVOrderList[o] + "p";
               if (bitDepth > 8)
-                formatName += QString::number(bitDepth) + endianess;
+                formatName += QString::number(bitDepth) + endianness;
               formatName += interlacedString;
-              auto fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
+              auto fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianness=="be");
               fmt.uvInterleaved = interlaced;
               if (name.contains(formatName) && checkFormat(fmt, size, fileSize))
                 return fmt;
@@ -161,17 +161,17 @@ yuvPixelFormat testFormatFromSizeAndNamePacked(QString name, const QSize size, i
     {
       for (int bitDepth : bitDepthList)
       {
-        auto endianessList = QStringList() << "le";
+        auto endiannessList = QStringList() << "le";
         if (bitDepth > 8)
-          endianessList << "be";
+          endiannessList << "be";
 
-        for (const QString &endianess : endianessList)
+        for (const QString &endianness : endiannessList)
         {
           {
             QString formatName = getPackingFormatString(packing).toLower() + subsamplingToString(subsampling);
             if (bitDepth > 8)
-              formatName += QString::number(bitDepth) + endianess;
-            auto fmt = yuvPixelFormat(subsampling, bitDepth, packing, false, endianess=="be");
+              formatName += QString::number(bitDepth) + endianness;
+            auto fmt = yuvPixelFormat(subsampling, bitDepth, packing, false, endianness=="be");
             if (name.contains(formatName) && checkFormat(fmt, size, fileSize))
               return fmt;
           }
@@ -181,8 +181,8 @@ yuvPixelFormat testFormatFromSizeAndNamePacked(QString name, const QSize size, i
             // Also try the string without the subsampling indicator (which we already detected)
             QString formatName = getPackingFormatString(packing).toLower();
             if (bitDepth > 8)
-              formatName += QString::number(bitDepth) + endianess;
-            auto fmt = yuvPixelFormat(subsampling, bitDepth, packing, false, endianess=="be");
+              formatName += QString::number(bitDepth) + endianness;
+            auto fmt = yuvPixelFormat(subsampling, bitDepth, packing, false, endianness=="be");
             if (name.contains(formatName) && checkFormat(fmt, size, fileSize))
               return fmt;
           }
@@ -209,7 +209,7 @@ yuvPixelFormat guessFormatFromSizeAndName(const QSize size, int bitDepth, bool p
   auto dirName = fileInfo.absoluteDir().dirName();
   checkStrings.append(dirName);
 
-  if (fileInfo.suffix() == "nv21")
+  if (fileInfo.suffix().toLower() == "nv21")
   {
     // This should be a 8 bit planar yuv 4:2:0 file with interleaved UV components and YVU order
     auto fmt = yuvPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YVU);

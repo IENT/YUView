@@ -103,7 +103,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   }
   else if (frameSize == QSize(-1,-1) && sourcePixelFormat.isEmpty())
   {
-    // Try to get the frame format from the file name. The fileSource can guess this.
+    // Try to get the frame format from the file name. The FileSource can guess this.
     setFormatFromFileName();
 
     if (!video->isFormatValid())
@@ -368,7 +368,7 @@ bool playlistItemRawFile::parseY4MFile()
 void playlistItemRawFile::setFormatFromFileName()
 {
   // Try to extract info on the width/height/rate/bitDepth from the file name
-  auto fileFormat = fileSource::formatFromFilename(dataSource.getFileInfo());
+  auto fileFormat = FileSource::formatFromFilename(dataSource.getFileInfo());
 
   if(fileFormat.frameSize.isValid())
   {
@@ -446,7 +446,7 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const YUViewDom
   QString type = root.findChildValue("type");
 
   // check if file with absolute path exists, otherwise check relative path
-  QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+  QString filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
     return nullptr;
 

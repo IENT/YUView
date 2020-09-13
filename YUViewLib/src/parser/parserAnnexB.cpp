@@ -39,9 +39,9 @@
 #define PARSERANNEXB_DEBUG_OUTPUT 0
 #if PARSERANNEXB_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_ANNEXB qDebug
+#define DEBUG_ANNEXB(msg) qDebug() << msg
 #else
-#define DEBUG_ANNEXB(fmt,...) ((void)0)
+#define DEBUG_ANNEXB(msg) ((void)0)
 #endif
 
 QString parserAnnexB::getShortStreamDescription(int streamIndex) const
@@ -55,7 +55,7 @@ QString parserAnnexB::getShortStreamDescription(int streamIndex) const
   return info;
 }
 
-bool parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool randomAccessPoint)
+bool parserAnnexB::addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint)
 {
   if (POCList.contains(poc))
     return false;
@@ -65,7 +65,7 @@ bool parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool ran
   if (poc >= pocOfFirstRandomAccessFrame)
   {
     // We don't add frames which we can not decode because they are before the first RA (I) frame
-    annexBFrame newFrame;
+    AnnexBFrame newFrame;
     newFrame.poc = poc;
     newFrame.fileStartEndPos = fileStartEndPos;
     newFrame.randomAccessPoint = randomAccessPoint;
@@ -76,6 +76,22 @@ bool parserAnnexB::addFrameToList(int poc, QUint64Pair fileStartEndPos, bool ran
   return true;
 }
 
+void parserAnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
+{
+  int startCodeSize = 0;
+  if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
+    startCodeSize = 4;
+  if (data[0] == char(0) && data[1] == char(0) && data[2] == char(1))
+    startCodeSize = 3;
+
+  if (startCodeSize > 0)
+    new TreeItem("Start code size", startCodeSize, root);
+
+  new TreeItem("Payload size", data.size() - startCodeSize, root);
+  if (nalStartEndPos)
+    new TreeItem("Start pos", (*nalStartEndPos).first, root);
+}
+
 int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const
 {
   // Get the POC for the frame number
@@ -84,7 +100,7 @@ int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingO
   int bestSeekPOC = -1;
   for (int i=0; i<frameList.length(); i++)
   {
-    annexBFrame f = frameList[i];
+    auto f = frameList[i];
     if (f.randomAccessPoint)
     {
       if (bestSeekPOC == -1)
@@ -110,14 +126,14 @@ int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingO
   return POCList.indexOf(bestSeekPOC);
 }
 
-QUint64Pair parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
+std::optional<pairUint64> parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
 {
   if (codingOrderFrameIdx < 0 || codingOrderFrameIdx >= frameList.size())
-    return QUint64Pair(-1, -1);
+    return {};
   return frameList[codingOrderFrameIdx].fileStartEndPos;
 }
 
-bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, QWidget *mainWindow)
+bool parserAnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow)
 {
   DEBUG_ANNEXB("parserAnnexB::parseAnnexBFile");
 
@@ -143,7 +159,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   // Just push all NAL units from the annexBFile into the annexBParser
   QByteArray nalData;
   int nalID = 0;
-  QUint64Pair nalStartEndPosFile;
+  pairUint64 nalStartEndPosFile;
   bool abortParsing = false;
   QElapsedTimer signalEmitTimer;
   signalEmitTimer.start();
@@ -157,9 +173,14 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
     try
     {
       nalData = file->getNextNALUnit(false, &nalStartEndPosFile);
-      if (!parseAndAddNALUnit(nalID, nalData, this->bitrateItemModel.data(), nullptr, nalStartEndPosFile))
+      auto parsingResult = parseAndAddNALUnit(nalID, nalData, {}, nalStartEndPosFile, nullptr);
+      if (!parsingResult.success)
       {
-        DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Error parsing NAL %d", nalID);
+        DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Error parsing NAL " << nalID);
+      }
+      else if (parsingResult.bitrateEntry)
+      {
+        this->bitratePlotModel->addBitratePoint(0, *parsingResult.bitrateEntry);
       }
     }
     catch (const std::exception &exc)
@@ -167,11 +188,11 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
       Q_UNUSED(exc);
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Exception thrown parsing NAL %d - %s", nalID, exc.what());
+      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID << " - " << exc.what());
     }
     catch (...)
     {
-      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Exception thrown parsing NAL %d", nalID);
+      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID);
     }
 
     nalID++;
@@ -211,8 +232,10 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
   }
 
   // We are done.
-  parseAndAddNALUnit(-1, QByteArray(), this->bitrateItemModel.data());
-  DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Parsing done. Found %d POCs.", POCList.length());
+  auto parseResult = parseAndAddNALUnit(-1, QByteArray(), {}, {});
+  if (!parseResult.success)
+    DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
+  DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Parsing done. Found " << POCList.length() << " POCs");
 
   if (packetModel)
     emit modelDataUpdated();
@@ -229,7 +252,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<fileSourceAnnexBFile> &file, Q
 bool parserAnnexB::runParsingOfFile(QString compressedFilePath)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
-  QScopedPointer<fileSourceAnnexBFile> file(new fileSourceAnnexBFile(compressedFilePath));
+  QScopedPointer<FileSourceAnnexBFile> file(new FileSourceAnnexBFile(compressedFilePath));
   return parseAnnexBFile(file);
 }
 

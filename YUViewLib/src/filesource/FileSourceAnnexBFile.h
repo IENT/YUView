@@ -32,32 +32,26 @@
 
 #pragma once
 
-#include "fileSource.h"
-#include "video/videoHandlerYUV.h"
+#include "FileSource.h"
+#include "common/typedef.h"
 
-using namespace YUV_Internals;
-
-// Internally, we use a buffer which we only update if necessary
-#define BUFFER_SIZE 500000
-
-/* This class is a normal fileSource for opening of raw AnnexBFiles.
+/* This class is a normal FileSource for opening of raw AnnexBFiles.
  * Basically it understands that this is a binary file where each unit starts with a start code (0x0000001)
  * TODO: The reading / parsing could be performed in a background thread in order to increase the performance
 */
-class fileSourceAnnexBFile : public fileSource
+class FileSourceAnnexBFile : public FileSource
 {
   Q_OBJECT
 
 public:
-  fileSourceAnnexBFile();
-  fileSourceAnnexBFile(const QString &filePath) : fileSourceAnnexBFile() { openFile(filePath); }
-  ~fileSourceAnnexBFile() {};
+  FileSourceAnnexBFile();
+  FileSourceAnnexBFile(const QString &filePath) : FileSourceAnnexBFile() { openFile(filePath); }
+  ~FileSourceAnnexBFile() {};
 
-  // Open the given file. If another file is given, 
-  bool openFile(const QString &filePath) Q_DECL_OVERRIDE;
+  bool openFile(const QString &filePath) override;
 
   // Is the file at the end?
-  bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize < BUFFER_SIZE && posInBuffer >= fileBufferSize; }
+  bool atEnd() const override;
 
   // --- Retrieving of data from the file ---
   // You can either read a file NAL by NAL or frame by frame. Do not mix the two interfaces.
@@ -66,14 +60,16 @@ public:
   // Get the next NAL unit (everything including the start code)
   // Also return the start and end position of the NAL unit in the file so you can seek to it.
   // startEndPosInFile: The file positions of the first byte in the NAL header and the end position of the last byte
-  QByteArray getNextNALUnit(bool getLastDataAgain=false, QUint64Pair *startEndPosInFile = nullptr);
+  QByteArray getNextNALUnit(bool getLastDataAgain=false, pairUint64 *startEndPosInFile = nullptr);
 
   // Get all bytes that are needed to decode the next frame (from the given start to the given end position)
   // The data will be returned in the ISO/IEC 14496-15 format (4 bytes size followed by the payload).
-  QByteArray getFrameData(QUint64Pair startEndFilePos);
+  QByteArray getFrameData(pairUint64 startEndFilePos);
   
   // Seek the file to the given byte position. Update the buffer.
-  bool seek(int64_t pos) Q_DECL_OVERRIDE;
+  bool seek(int64_t pos) override;
+
+  uint64_t getNrBytesBeforeFirstNAL() const { return this->nrBytesBeforeFirstNAL; }
 
 protected:
 
@@ -83,10 +79,8 @@ protected:
 
   // The current position in the input buffer in bytes. This always points to the first byte of a start code.
   // So if the start code is 0001 it will point to the first byte (the first 0). If the start code is 001, it will point to the first 0 here.
-  unsigned int posInBuffer {0};
-
-  // The start code pattern
-  QByteArray startCode;
+  // Note: The pos may be negative if we update the buffer and the start of the start code was in the previous buffer
+  int64_t posInBuffer {0};
 
   // load the next buffer
   bool updateBuffer();
@@ -96,4 +90,6 @@ protected:
 
   // We will keep the last buffer in case the reader wants to get it again
   QByteArray lastReturnArray;
+
+  uint64_t nrBytesBeforeFirstNAL {0};
 };

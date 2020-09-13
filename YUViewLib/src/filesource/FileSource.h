@@ -42,16 +42,16 @@
 
 #include "common/fileInfo.h"
 
-/* The fileSource class provides functions for accessing files. Besides the reading of
+/* The FileSource class provides functions for accessing files. Besides the reading of
  * certain blocks of the file, it also directly provides information on the file for the
  * fileInfoWidget. It also adds functions for guessing the format from the filename.
  */
-class fileSource : public QObject
+class FileSource : public QObject
 {
   Q_OBJECT
 
 public:
-  fileSource();
+  FileSource();
 
   // Try to open the given file and install a watcher for the file.
   virtual bool openFile(const QString &filePath);

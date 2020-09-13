@@ -34,7 +34,7 @@
 
 #include <QLibrary>
 
-#include "filesource/fileSourceAnnexBFile.h"
+#include "filesource/FileSourceAnnexBFile.h"
 #include "statistics/statisticHandler.h"
 #include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"
@@ -79,8 +79,8 @@ public:
   virtual bool pushData(QByteArray &data) = 0;
 
   // The state of the decoder
-  bool decodeFrames() const { return decoderState == decoderRetrieveFrames; }
-  bool needsMoreData() const { return decoderState == decoderNeedsMoreData; }
+  bool decodeFrames() const { return decoderState == DecoderState::RetrieveFrames; }
+  bool needsMoreData() const { return decoderState == DecoderState::NeedsMoreData; }
 
   // Get the statistics values for the current frame. In order to enable statistics retrievel, 
   // activate it, reset the decoder and decode to the current frame again.
@@ -91,7 +91,7 @@ public:
   virtual void fillStatisticList(statisticHandler &statSource) const { Q_UNUSED(statSource); };
 
   // Error handling
-  bool errorInDecoder() const { return decoderState == decoderError; }
+  bool errorInDecoder() const { return decoderState == DecoderState::Error; }
   QString decoderErrorString() const { return errorString; }
 
   // Get the name, filename and full path to the decoder library(s) that is/are being used.
@@ -106,15 +106,14 @@ public:
 protected:
 
   // Each decoder is in one of two states:
-  // decoderNeedsMoreData:  Push it using pushData. 
-  enum decoderStateType
+  enum class DecoderState
   {
-    decoderNeedsMoreData,   ///< The decoder needs more data (pushData). When there is no more data, push an empty QByteArray. 
-    decoderRetrieveFrames,  ///< Retrieve frames from the decoder (decodeNextFrame)
-    decoderEndOfBitstream,  ///< Decoding has ended.
-    decoderError
+    NeedsMoreData,   ///< The decoder needs more data (pushData). When there is no more data, push an empty QByteArray. 
+    RetrieveFrames,  ///< Retrieve frames from the decoder (decodeNextFrame)
+    EndOfBitstream,  ///< Decoding has ended.
+    Error
   };
-  decoderStateType decoderState;
+  DecoderState decoderState;
   
   int decodeSignal { 0 }; ///< Which signal should be decoded?
   bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
@@ -129,7 +128,7 @@ protected:
   RGB_Internals::rgbPixelFormat formatRGB;
   
   // Error handling
-  void setError(const QString &reason) { decoderState = decoderError; errorString = reason; }
+  void setError(const QString &reason) { decoderState = DecoderState::Error; errorString = reason; }
   bool setErrorB(const QString &reason) { setError(reason); return false; }
   QString errorString;
   

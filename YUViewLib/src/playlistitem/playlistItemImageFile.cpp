@@ -38,7 +38,7 @@
 #include <QUrl>
 
 #include "common/functions.h"
-#include "filesource/fileSource.h"
+#include "filesource/FileSource.h"
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
 
@@ -108,7 +108,7 @@ playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(const YUV
   QString relativePath = root.findChildValue("relativePath");
   
   // check if file with absolute path exists, otherwise check relative path
-  QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+  QString filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
     return nullptr;
 

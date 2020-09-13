@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "fileSourceFFmpegFile.h"
+#include "FileSourceFFmpegFile.h"
 
 #include <QSettings>
 #include <QProgressDialog>
@@ -48,17 +48,17 @@
 using namespace YUView;
 using namespace YUV_Internals;
 
-fileSourceFFmpegFile::fileSourceFFmpegFile()
+FileSourceFFmpegFile::FileSourceFFmpegFile()
 {
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
   startCode.append((char)0);
   startCode.append((char)1);
 
-  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSourceFFmpegFile::fileSystemWatcherFileChanged);
+  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &FileSourceFFmpegFile::fileSystemWatcherFileChanged);
 }
 
-AVPacketWrapper fileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool videoPacket)
+AVPacketWrapper FileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool videoPacket)
 {
   if (getLastPackage)
     return pkt;
@@ -73,7 +73,7 @@ AVPacketWrapper fileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool vi
   return pkt;
 }
 
-QByteArray fileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pts)
+QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pts)
 {
   if (getLastDataAgain)
     return lastReturnArray;
@@ -212,7 +212,7 @@ QByteArray fileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pt
   return lastReturnArray;
 }
 
-QByteArray fileSourceFFmpegFile::getExtradata()
+QByteArray FileSourceFFmpegFile::getExtradata()
 {
   // Get the video stream
   if (!video_stream)
@@ -223,14 +223,14 @@ QByteArray fileSourceFFmpegFile::getExtradata()
   return codec.get_extradata();
 }
 
-QStringPairList fileSourceFFmpegFile::getMetadata()
+QStringPairList FileSourceFFmpegFile::getMetadata()
 {
   if (!fmt_ctx)
     return QStringPairList();
   return ff.get_dictionary_entries(fmt_ctx.get_metadata(), "", 0);
 }
 
-QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
+QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
 {
   if (!isFileOpened)
     return {};
@@ -319,13 +319,13 @@ QList<QByteArray> fileSourceFFmpegFile::getParameterSets()
   return retArray;
 }
 
-fileSourceFFmpegFile::~fileSourceFFmpegFile()
+FileSourceFFmpegFile::~FileSourceFFmpegFile()
 {
   if (pkt)
-    pkt.free_packet();
+    pkt.free_packet(ff);
 }
 
-bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow, fileSourceFFmpegFile *other, bool parseFile)
+bool FileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow, FileSourceFFmpegFile *other, bool parseFile)
 {
   // Check if the file exists
   fileInfo.setFile(filePath);
@@ -367,7 +367,7 @@ bool fileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow
 }
 
 // Check if we are supposed to watch the file for changes. If no, remove the file watcher. If yes, install one.
-void fileSourceFFmpegFile::updateFileWatchSetting()
+void FileSourceFFmpegFile::updateFileWatchSetting()
 {
   // Install a file watcher if file watching is active in the settings.
   // The addPath/removePath functions will do nothing if called twice for the same file.
@@ -378,7 +378,7 @@ void fileSourceFFmpegFile::updateFileWatchSetting()
     fileWatcher.removePath(fullFilePath);
 }
 
-int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const
+int FileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const
 {
   // We are always be able to seek to the beginning of the file
   int bestSeekDTS = keyFrameList[0].dts;
@@ -402,7 +402,7 @@ int fileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToF
   return bestSeekDTS;
 }
 
-bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
+bool FileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
 {
   if (!isFileOpened)
     return false;
@@ -424,7 +424,7 @@ bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
   nrFrames = 0;
   while (goToNextPacket(true))
   {
-    DEBUG_FFMPEG("fileSourceFFmpegFile::scanBitstream: frame %d pts %d dts %d%s", nrFrames, (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
+    DEBUG_FFMPEG("FileSourceFFmpegFile::scanBitstream: frame %d pts %d dts %d%s", nrFrames, (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
 
     if (pkt.get_flag_keyframe())
       keyFrameList.append(pictureIdx(nrFrames, pkt.get_dts()));
@@ -445,11 +445,11 @@ bool fileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
     nrFrames++;
   }
 
-  DEBUG_FFMPEG("fileSourceFFmpegFile::scanBitstream: Scan done. Found %d frames and %d keyframes.", nrFrames, keyFrameList.length());
+  DEBUG_FFMPEG("FileSourceFFmpegFile::scanBitstream: Scan done. Found %d frames and %d keyframes.", nrFrames, keyFrameList.length());
   return !progress->wasCanceled();
 }
 
-void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
+void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
 {
   isFileOpened = false;
 
@@ -525,7 +525,7 @@ void fileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   isFileOpened = true;
 }
 
-bool fileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
+bool FileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
 {
   //Load the next video stream packet into the packet buffer
   int ret = 0;
@@ -556,7 +556,7 @@ bool fileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
     return false;
   }
 
-  DEBUG_FFMPEG("fileSourceFFmpegFile::goToNextPacket: Return: stream %d pts %d dts %d%s", (int)pkt.get_stream_index(), (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
+  DEBUG_FFMPEG("FileSourceFFmpegFile::goToNextPacket: Return: stream %d pts %d dts %d%s", (int)pkt.get_stream_index(), (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
 
   if (packetDataFormat == packetFormatUnknown)
     // This is the first video package that we find and we don't know what the format of the packet data is.
@@ -567,7 +567,7 @@ bool fileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
   return true;
 }
 
-bool fileSourceFFmpegFile::seekToDTS(int64_t dts)
+bool FileSourceFFmpegFile::seekToDTS(int64_t dts)
 {
   if (!isFileOpened)
     return false;
@@ -586,7 +586,7 @@ bool fileSourceFFmpegFile::seekToDTS(int64_t dts)
   return true;
 }
 
-bool fileSourceFFmpegFile::seekFileToBeginning()
+bool FileSourceFFmpegFile::seekFileToBeginning()
 {
   if (!isFileOpened)
     return false;
@@ -605,7 +605,7 @@ bool fileSourceFFmpegFile::seekFileToBeginning()
   return true;
 }
 
-int64_t fileSourceFFmpegFile::getMaxTS() 
+int64_t FileSourceFFmpegFile::getMaxTS() 
 { 
   if (!isFileOpened)
     return -1; 
@@ -615,7 +615,7 @@ int64_t fileSourceFFmpegFile::getMaxTS()
   return duration / AV_TIME_BASE * timeBase.den / timeBase.num;
 }
 
-indexRange fileSourceFFmpegFile::getDecodableFrameLimits() const
+indexRange FileSourceFFmpegFile::getDecodableFrameLimits() const
 {
   if (this->keyFrameList.isEmpty() || nrFrames == 0)
     return {};
@@ -626,7 +626,7 @@ indexRange fileSourceFFmpegFile::getDecodableFrameLimits() const
   return range;
 }
 
-QList<QStringPairList> fileSourceFFmpegFile::getFileInfoForAllStreams()
+QList<QStringPairList> FileSourceFFmpegFile::getFileInfoForAllStreams()
 {
   QList<QStringPairList> info;
 
@@ -641,7 +641,7 @@ QList<QStringPairList> fileSourceFFmpegFile::getFileInfoForAllStreams()
   return info;
 }
 
-QList<AVRational> fileSourceFFmpegFile::getTimeBaseAllStreams()
+QList<AVRational> FileSourceFFmpegFile::getTimeBaseAllStreams()
 {
   QList<AVRational> timeBaseList;
 
@@ -654,7 +654,7 @@ QList<AVRational> fileSourceFFmpegFile::getTimeBaseAllStreams()
   return timeBaseList;
 }
 
-QList<QString> fileSourceFFmpegFile::getShortStreamDescriptionAllStreams()
+QList<QString> FileSourceFFmpegFile::getShortStreamDescriptionAllStreams()
 {
   QList<QString> descriptions;
 

@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "propertiesWidget.h"
+#include "PropertiesWidget.h"
 
 #include "playlistitem/playlistItem.h"
 

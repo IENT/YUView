@@ -43,11 +43,14 @@ public:
   PlotViewWidget(QWidget *parent = 0);
   void setModel(PlotModel *model);
 
+private slots:
+  void modelDataChanged();
+  void modelNrStreamsChanged();
+
 protected:
 
   // Override some events from the widget
   void paintEvent(QPaintEvent *event) override;
-  void resizeEvent(QResizeEvent *event) override;
   void mouseMoveEvent(QMouseEvent *event) override;
 
   void   setMoveOffset(QPoint offset) override;
@@ -55,11 +58,6 @@ protected:
   void   setZoomFactor(double zoom) override;
   
 private:
-  enum class Axis
-  {
-    X,
-    Y
-  };
 
   struct TickValue
   {
@@ -85,33 +83,47 @@ private:
   };
   AxisProperties propertiesAxis[2];
 
-  QList<TickValue> getAxisValuesToShow(const Axis axis) const;
-  static void drawWhiteBoarders(QPainter &painter, const QRectF &plotRect, const QRectF &widgetRect);
-  static void drawAxis(QPainter &painter, const QRectF &plotRect);
-  static void drawAxisTicksAndValues(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &values);
-  static void drawGridLines(QPainter &painter, const AxisProperties &propertiesThis, const QRectF &plotRect, const QList<TickValue> &values);
-  static void drawFadeBoxes(QPainter &painter, const QRectF plotRect, const QRectF &widgetRect);
+  QRectF plotRect;
 
-  void updateAxis(const QRectF &plotRect);
+  QList<TickValue> getAxisTicksToShow(const Axis axis, Range<double> visibleRange) const;
+  void drawWhiteBoarders(QPainter &painter, const QRectF &widgetRect) const;
+  void drawAxis(QPainter &painter) const;
+  void drawAxisTicks(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &ticks) const;
+  void drawAxisTickLabels(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &ticks, Range<double> visibleRange) const;
+  void drawGridLines(QPainter &painter, const AxisProperties &properties, const QList<TickValue> &ticks, Range<double> visibleRange) const;
+  void drawFadeBoxes(QPainter &painter, const QRectF &widgetRect) const;
+  void drawWhiteBoxesInLabelArea(QPainter &painter, const QRectF &widgetRect) const;
 
-  void drawPlot(QPainter &painter, const QRectF &plotRect) const;
-  void drawInfoBox(QPainter &painter, const QRectF &plotRect) const;
-  void drawDebugBox(QPainter &painter, const QRectF &plotRect) const;
-  void drawZoomRect(QPainter &painter, const QRectF plotRect) const;
+  void updatePlotRectAndAxis(QPainter &painter);
+
+  void drawLimits(QPainter &painter) const;
+  void drawPlot(QPainter &painter) const;
+  void drawInfoBox(QPainter &painter) const;
+  void drawDebugBox(QPainter &painter) const;
+  void drawZoomRect(QPainter &painter) const;
 
   // Convert a position in the 2D coordinate system of the plot into a pixel position and vise versa
-  QPointF convertPlotPosToPixelPos(const QPointF &plotPos) const;
-  QPointF convertPixelPosToPlotPos(const QPointF &pixelPos) const;
+  QPointF convertPlotPosToPixelPos(const QPointF &plotPos, std::optional<double> zoomFactor = {}) const;
+  QPointF convertPixelPosToPlotPos(const QPointF &pixelPos, std::optional<double> zoomFactor = {}) const;
 
+  void zoomToFitInternal() override;
   void onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) override;
+
+  std::optional<Range<double>> getVisibleRange(const Axis axis) const;
+  Range<double> getAxisRange(Axis axis, AxisProperties axisProperties) const;
+  QRectF getMaxLabelDrawSize(QPainter &painter, Axis axis, const QList<TickValue> &ticks) const;
 
   PlotModel *model {nullptr};
 
   // At zoom 1.0 (no zoom) we will show values with this distance on the x axis
   double zoomToPixelsPerValueX {10.0};
-  double zoomToPixelsPerValueY {10.0};
 
-  int currentlyHoveredModelIndex {-1};
+  QMap<unsigned, QMap<unsigned, unsigned>> currentlyHoveredPointPerStreamAndPlot;
+
+  QList<unsigned int> showStreamList;
+
+  void initViewFromModel();
+  bool viewInitializedForModel {false};
 
   bool fixYAxis {true};
 };

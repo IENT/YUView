@@ -33,7 +33,7 @@
 #pragma once
 
 #include "decoder/decoderBase.h"
-#include "filesource/fileSourceFFmpegFile.h"
+#include "filesource/FileSourceFFmpegFile.h"
 #include "parser/parserAnnexB.h"
 #include "playlistItemWithVideo.h"
 #include "statistics/statisticHandler.h"
@@ -128,10 +128,10 @@ protected:
   // In order to parse raw annexB files, we need a file reader (that can read NAL units)
   // and a parser that can understand what the NAL units mean. We open the file source twice (once for interactive loading,
   // once for the background caching). The parser is only needed once and can be used for both loading and caching tasks.
-  QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBLoading;
-  QScopedPointer<fileSourceAnnexBFile> inputFileAnnexBCaching;
+  QScopedPointer<FileSourceAnnexBFile> inputFileAnnexBLoading;
+  QScopedPointer<FileSourceAnnexBFile> inputFileAnnexBCaching;
   QScopedPointer<parserAnnexB> inputFileAnnexBParser;
-  // When reading annex B data using the fileSourceAnnexBFile::getFrameData function, we need to count how many frames we already read.
+  // When reading annex B data using the FileSourceAnnexBFile::getFrameData function, we need to count how many frames we already read.
   int readAnnexBFrameCounterCodingOrder { -1 };
   
   // Which type is the input?
@@ -140,8 +140,8 @@ protected:
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a supported format, we can
   // read the NAL units from the compressed file.
-  QScopedPointer<fileSourceFFmpegFile> inputFileFFmpegLoading;
-  QScopedPointer<fileSourceFFmpegFile> inputFileFFmpegCaching;
+  QScopedPointer<FileSourceFFmpegFile> inputFileFFmpegLoading;
+  QScopedPointer<FileSourceFFmpegFile> inputFileFFmpegCaching;
   
   // Is the loadFrame function currently loading?
   bool isFrameLoading { false };

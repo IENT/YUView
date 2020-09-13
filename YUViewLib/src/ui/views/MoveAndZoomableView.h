@@ -31,7 +31,7 @@
 */
 #pragma once
 
-#include <QtWidgets/QWidget>
+#include <QWidget>
 
 #include <QAction>
 #include <QWheelEvent>
@@ -39,6 +39,8 @@
 #include <QPainter>
 #include <QPointer>
 #include <QMenu>
+
+#include <common/typedef.h>
 
 class MoveAndZoomableView : public QWidget
 {
@@ -52,44 +54,35 @@ public:
    */
   void addSlaveView(MoveAndZoomableView *view);
 
-  // Add the split views menu items to the given menu. Used for the main menu bar and the context menu.
-  virtual void addMenuActions(QMenu *menu);
-
-signals:
-  void signalToggleFullScreen();
+  // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
+  virtual bool handleKeyPress(QKeyEvent *event);
 
 public slots:
-  virtual void resetView(bool checked = false);
-  void toggleFullScreenAction() { actionFullScreen.trigger(); }
   void setLinkState(bool enabled);
+  virtual void updateSettings();
 
-protected slots:
-  virtual void zoomToFit(bool checked = false);
-  void zoomIn(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::IN); }
-  void zoomOut(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::OUT); }
-  void zoomTo50(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::TO_VALUE, QPoint(), 0.5); }
-  void zoomTo100(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::TO_VALUE, QPoint(), 1.0); }
-  void zoomTo200(bool checked) { Q_UNUSED(checked); zoom(ZoomMode::TO_VALUE, QPoint(), 2.0); }
+  void resetView(bool checked) { Q_UNUSED(checked); this->resetViewInternal(); }
+  void zoomToFit(bool checked) { Q_UNUSED(checked); this->zoomToFitInternal(); }
+  void zoomIn(bool checked) { Q_UNUSED(checked); this->zoom(ZoomMode::IN); }
+  void zoomOut(bool checked) { Q_UNUSED(checked); this->zoom(ZoomMode::OUT); }
+  void zoomTo50(bool checked) { Q_UNUSED(checked); this->zoom(ZoomMode::TO_VALUE, QPoint(), 0.5); }
+  void zoomTo100(bool checked) { Q_UNUSED(checked); this->zoom(ZoomMode::TO_VALUE, QPoint(), 1.0); }
+  void zoomTo200(bool checked) { Q_UNUSED(checked); this->zoom(ZoomMode::TO_VALUE, QPoint(), 2.0); }
   void zoomToCustom(bool checked);
 
-  void toggleFullScreen(bool checked);
-
 protected:
-
   virtual void mouseMoveEvent(QMouseEvent *event) override;
   virtual void mousePressEvent(QMouseEvent *event) override;
   virtual void mouseReleaseEvent(QMouseEvent *event) override;
   virtual void wheelEvent (QWheelEvent *event) override;
-  virtual void mouseDoubleClickEvent(QMouseEvent *event) override { actionFullScreen.trigger(); event->accept(); }
-  virtual void keyPressEvent(QKeyEvent *event) override { event->ignore(); }
+  virtual void keyPressEvent(QKeyEvent *event) override;
   virtual void resizeEvent(QResizeEvent *event) override;
   virtual bool event(QEvent *event) override; ///< Handle touch event
 
   void update();
-
-  void createMenuActions();
-  QAction actionZoom[8];
-  QAction actionFullScreen;
+  virtual void resetViewInternal();
+  void updatePaletteIfNeeded();
+  QString paletteBackgroundColorSettingsTag;
 
   void updateMouseCursor();
   virtual bool updateMouseCursor(const QPoint &srcMousePos);
@@ -97,8 +90,10 @@ protected:
   enum class ZoomMode {IN, OUT, TO_VALUE};
   void zoom(ZoomMode zoomMode, QPoint zoomPoint = QPoint(), double newZoomFactor = 0.0);
   virtual void setZoomFactor(double zoom);
+  virtual void zoomToFitInternal();
   void drawZoomRect(QPainter &painter) const;
   virtual void onZoomIn() {}
+  static const Range<double> ZOOMINGLIMIT;
 
   virtual void setMoveOffset(QPoint offset);
   virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint = {}) const = 0;
@@ -113,8 +108,8 @@ protected:
     PINCHING,
     ZOOM_RECT
   };
-  
-  virtual void updateSettings();
+
+  virtual void addContextMenuActions(QMenu *menu);
 
   virtual void onSwipeLeft() {}
   virtual void onSwipeRight() {}
@@ -122,6 +117,7 @@ protected:
   virtual void onSwipeDown() {}
 
   double zoomFactor {1.0};
+  const int ZOOM_STEP_FACTOR = 2;
 
   QPoint moveOffset;                 //!< The offset that the view was moved
   QPoint viewZoomingMousePosStart;
@@ -149,6 +145,9 @@ protected:
   const QBrush ZOOM_RECT_BRUSH = QBrush(QColor(50, 50, 255, 50));
 
   virtual void getStateFromMaster();
+
+  // This is set to true by the update function so that the palette is updated in the next draw event.
+  bool paletteNeedsUpdate;
 
 private:
   QPoint viewDraggingMousePosStart;
