@@ -26,24 +26,30 @@ def cleanCondition(text : str):
     text = text.replace("|\xa0|", "||")
     text = text.replace("[\xa0", "[")
     text = text.replace("\xa0]", "]")
+    text = text.replace("\xa0", " ")
     text = text.replace("  ", " ")
     text = text.replace("\n", "")
     text = text.replace("\t", "")
+    text = text.replace("\u2212", "-")
     return text
 def cleanArgument(text : str):
     text = text.strip()
     text = text.replace("[\xa0", "[")
     text = text.replace("\xa0]", "]")
+    text = text.replace("\xa0", " ")
+    text = text.replace("\u2212", "-")
     return text
 def cleanComment(text : str):
     text = text.strip()
     text = text.replace("=\xa0=", "==")
     text = text.replace("[\xa0", "[")
     text = text.replace("\xa0]", "]")
+    text = text.replace("\xa0", " ")
     text = text.replace("\n", " ")
     text = text.replace("\t", "")
     text = text.replace("( ", "(")
     text = text.replace(" )", ")")
+    text = text.replace("\u2212", "-")
     return text
 
 def getEntryType(text : str):
@@ -79,7 +85,7 @@ class Variable(ParsingItem):
             self.name = name[0:openBracket]
             while (True):
                 closeBracket = name.find("]")
-                newIndex = name[openBracket+1:closeBracket].strip()
+                newIndex = cleanArgument(name[openBracket+1:closeBracket].strip())
                 self.arrayIndex.append(newIndex)
                 name = name[closeBracket+1:]
                 openBracket = name.find("[")
@@ -331,13 +337,15 @@ class ContainerFor(Container):
         self.breakCondition = None
         self.increment = None
     def fromText(self, text : str):
-        split = re.split(";|\)|\(", text)
-        if (split[0].strip() != "for"):
+        split = text.split(";")
+        if (not split[0].startswith("for")):
             raise SyntaxError("For container does not start with for")
-        self.variableName = split[1].strip().split("=")[0].strip()
-        self.initialValue = split[1].strip().split("=")[1].strip()
-        self.breakCondition = cleanCondition(split[2].strip().strip())
-        self.increment = split[3].strip().strip()
+        
+        firstPart = split[0][split[0].find("(") + 1:]
+        self.variableName = firstPart.split("=")[0].strip()
+        self.initialValue = firstPart.split("=")[1].strip()
+        self.breakCondition = cleanCondition(split[1])
+        self.increment = split[2][0:split[2].find(")")].strip()
     def __str__(self):
         spaces = ""
         for _ in range(self.parent.depth):
