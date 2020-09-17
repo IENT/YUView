@@ -77,8 +77,8 @@ void PlotViewWidget::setModel(PlotModel *model)
     this->initViewFromModel();
     this->connect(model, &PlotModel::dataChanged, this, &PlotViewWidget::modelDataChanged);
     this->connect(model, &PlotModel::nrStreamsChanged, this, &PlotViewWidget::modelNrStreamsChanged);
-    this->update();
   }
+  this->update();
 }
 
 void PlotViewWidget::modelDataChanged()
