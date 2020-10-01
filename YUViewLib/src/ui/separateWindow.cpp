@@ -35,13 +35,34 @@
 #include <QSettings>
 
 SeparateWindow::SeparateWindow() :
-  splitView(this)
+  openGLView(this)
 {
-  setCentralWidget(&splitView);
-  splitView.setAttribute(Qt::WA_AcceptTouchEvents);
 
-  connect(&splitView, &splitViewWidget::signalToggleFullScreen, this, &SeparateWindow::toggleFullscreen);
-  connect(&splitView, &splitViewWidget::signalShowSeparateWindow, this, &SeparateWindow::splitViewShowSeparateWindow);
+    QSurfaceFormat format;
+    // asks for a OpenGL 3.2 debug context using the Core profile
+    format.setMajorVersion(3);
+    format.setMinorVersion(2);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    format.setOption(QSurfaceFormat::DebugContext);
+
+    QOpenGLContext *context = new QOpenGLContext;
+    context->setFormat(format);
+    context->create();
+
+
+    QOpenGLContext *ctx = QOpenGLContext::currentContext();
+    logger = new QOpenGLDebugLogger(this);
+
+    logger->initialize(); // initializes in the current context, i.e. ctx
+
+    connect(logger, &QOpenGLDebugLogger::messageLogged, this, &SeparateWindow::handleOepnGLLoggerMessages);
+    logger->startLogging();
+
+//  setCentralWidget(&splitView);
+//  splitView.setAttribute(Qt::WA_AcceptTouchEvents);
+
+//  connect(&splitView, &splitViewWidget::signalToggleFullScreen, this, &SeparateWindow::toggleFullscreen);
+//  connect(&splitView, &splitViewWidget::signalShowSeparateWindow, this, &SeparateWindow::splitViewShowSeparateWindow);
 }
 
 void SeparateWindow::toggleFullscreen()
@@ -62,6 +83,11 @@ void SeparateWindow::toggleFullscreen()
 
     showFullScreen();
   }
+}
+
+void SeparateWindow::handleOepnGLLoggerMessages( QOpenGLDebugMessage message )
+{
+    qDebug() << message;
 }
 
 void SeparateWindow::closeEvent(QCloseEvent *event)
@@ -87,8 +113,8 @@ void SeparateWindow::keyPressEvent(QKeyEvent *event)
   else
   {
     // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
-    if (!splitView.handleKeyPress(event))
-      emit unhandledKeyPress(event);
+//    if (!splitView.handleKeyPress(event))
+//      emit unhandledKeyPress(event);
 
     //QWidget::keyPressEvent(event);
   }

@@ -30,45 +30,81 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
+#ifndef OPENGLVIEWWIDGET_H
+#define OPENGLVIEWWIDGET_H
 
-#include <QMainWindow>
 
-#include "views/splitViewWidget.h"
-#include "views/openGLViewWidget.h"
+#include <QOpenGLFunctions>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLBuffer>
 
+
+#include <QOpenGLWidget>
+#include <QOpenGLFunctions>
+#include <QMatrix4x4>
+#include <QQuaternion>
+#include <QVector2D>
+#include <QBasicTimer>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLTexture>
 #include <QOpenGLDebugLogger>
 
-class SeparateWindow : public QMainWindow
+class GeometryEngine : protected QOpenGLFunctions
 {
-  Q_OBJECT
-
 public:
-  explicit SeparateWindow();
-  OpenGLViewWidget openGLView;
+    GeometryEngine();
+    virtual ~GeometryEngine();
 
-signals:
-  // Signal that the user wants to go back to single window mode
-  void signalSingleWindowMode();
-  
-  // There was a key event in the separate window, but the separate view did not handle it.
-  // The signal should be processed by the main window (maybe it is a nex/prev frame key event or something...).
-  void unhandledKeyPress(QKeyEvent *event);
-
-public slots:
-  void toggleFullscreen();
-  void handleOepnGLLoggerMessages( QOpenGLDebugMessage message );
-
-protected:
-  void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
-  void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
-
-protected slots:
-  void splitViewShowSeparateWindow(bool show) { if (!show) emit signalSingleWindowMode(); }
+    void drawCubeGeometry(QOpenGLShaderProgram *program);
 
 private:
-  // If the window is shown full screen, this saves if it was maximized before going to full screen
-  bool showNormalMaximized;
-  QOpenGLDebugLogger *logger;
+    void initCubeGeometry();
+
+    QOpenGLBuffer arrayBuf;
+    QOpenGLBuffer indexBuf;
+};
+
+
+class OpenGLViewWidget : public QOpenGLWidget, protected QOpenGLFunctions
+{
+    Q_OBJECT
+
+public:
+    using QOpenGLWidget::QOpenGLWidget;
+    ~OpenGLViewWidget();
+
+public slots:
+    void handleOepnGLLoggerMessages( QOpenGLDebugMessage message );
+
+protected:
+    void mousePressEvent(QMouseEvent *e) override;
+    void mouseReleaseEvent(QMouseEvent *e) override;
+    void timerEvent(QTimerEvent *e) override;
+
+    void initializeGL() override;
+    void resizeGL(int w, int h) override;
+    void paintGL() override;
+
+    void initShaders();
+    void initTextures();
+
+private:
+    QBasicTimer timer;
+    QOpenGLShaderProgram program;
+    GeometryEngine *geometries = nullptr;
+
+    QOpenGLTexture *texture = nullptr;
+
+    QMatrix4x4 projection;
+
+    QVector2D mousePressPosition;
+    QVector3D rotationAxis;
+    qreal angularSpeed = 0;
+    QQuaternion rotation;
+
+
+    QOpenGLDebugLogger *logger;
 
 };
+
+#endif // OPENGLVIEWWIDGET_H

@@ -14,7 +14,9 @@ INCLUDEPATH += src/
 
 RESOURCES += \
     images/images.qrc \
-    docs/docs.qrc
+    docs/docs.qrc \
+    images/textures.qrc \
+    shaders/shaders.qrc
 
 contains(QT_ARCH, x86_32|i386) {
     warning("You are building for a 32 bit system. This is untested and not supported.")
