@@ -38,27 +38,41 @@ SeparateWindow::SeparateWindow() :
   openGLView(this)
 {
 
-    QSurfaceFormat format;
-    // asks for a OpenGL 3.2 debug context using the Core profile
-    format.setMajorVersion(3);
-    format.setMinorVersion(2);
-    format.setProfile(QSurfaceFormat::CoreProfile);
-    format.setOption(QSurfaceFormat::DebugContext);
 
-    QOpenGLContext *context = new QOpenGLContext;
-    context->setFormat(format);
-    context->create();
+    // https://doc.qt.io/qt-5/qopenglwidget.html
+    //As described above, it is simpler and more robust to set the requested format globally so
+    //  that it applies to all windows and contexts during the lifetime of the application.
+      QSurfaceFormat format;
+      // asks for a OpenGL 3.2 debug context using the Core profile
+      format.setMajorVersion(3);
+      format.setMinorVersion(2);
+      format.setDepthBufferSize(24);
+      format.setStencilBufferSize(8);
+      format.setProfile(QSurfaceFormat::CoreProfile);
+      format.setOption(QSurfaceFormat::DebugContext);
+      QSurfaceFormat::setDefaultFormat(format);
+
+//    QSurfaceFormat format;
+//    // asks for a OpenGL 3.2 debug context using the Core profile
+//    format.setMajorVersion(3);
+//    format.setMinorVersion(2);
+//    format.setProfile(QSurfaceFormat::CoreProfile);
+//    format.setOption(QSurfaceFormat::DebugContext);
+
+//    QOpenGLContext *context = new QOpenGLContext;
+//    context->setFormat(format);
+//    context->create();
 
 
-    QOpenGLContext *ctx = QOpenGLContext::currentContext();
-    logger = new QOpenGLDebugLogger(this);
+//    QOpenGLContext *ctx = QOpenGLContext::currentContext();
+//    logger = new QOpenGLDebugLogger(this);
 
-    logger->initialize(); // initializes in the current context, i.e. ctx
+//    logger->initialize(); // initializes in the current context, i.e. ctx
 
-    connect(logger, &QOpenGLDebugLogger::messageLogged, this, &SeparateWindow::handleOepnGLLoggerMessages);
-    logger->startLogging();
+//    connect(logger, &QOpenGLDebugLogger::messageLogged, this, &SeparateWindow::handleOepnGLLoggerMessages);
+//    logger->startLogging();
 
-//  setCentralWidget(&splitView);
+  setCentralWidget(&openGLView);
 //  splitView.setAttribute(Qt::WA_AcceptTouchEvents);
 
 //  connect(&splitView, &splitViewWidget::signalToggleFullScreen, this, &SeparateWindow::toggleFullscreen);

@@ -67,6 +67,13 @@ void OpenGLViewWidget::timerEvent(QTimerEvent *)
 
 void OpenGLViewWidget::initializeGL()
 {
+    logger = new QOpenGLDebugLogger(this);
+
+    logger->initialize(); // initializes in the current context, i.e. ctx
+
+    connect(logger, &QOpenGLDebugLogger::messageLogged, this, &OpenGLViewWidget::handleOepnGLLoggerMessages);
+    logger->startLogging();
+
     initializeOpenGLFunctions();
 
     glClearColor(0, 0, 0, 1);
@@ -83,13 +90,6 @@ void OpenGLViewWidget::initializeGL()
 //! [2]
 
     geometries = new GeometryEngine;
-
-    logger = new QOpenGLDebugLogger(this);
-
-    logger->initialize(); // initializes in the current context, i.e. ctx
-
-    connect(logger, &QOpenGLDebugLogger::messageLogged, this, &OpenGLViewWidget::handleOepnGLLoggerMessages);
-    logger->startLogging();
 
     // Use QBasicTimer because its faster than QTimer
     timer.start(12, this);
