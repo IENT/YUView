@@ -85,8 +85,7 @@ private:
     void computeLumaTextureCoordinates(int frameWidth, int frameHeight);
     void computeChromaTextureCoordinates(int frameWidth, int frameHeight);
     void setupVertexAttribs();
-    void setupMatrices();
-    glm::mat4 getProjectionFromCamCalibration(glm::mat3 &calibrationMatrix, float clipFar, float clipNear);
+    void setupMatricesForCamViewport();
 
     QBasicTimer timer;
     QOpenGLShaderProgram program;

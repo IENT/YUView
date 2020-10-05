@@ -167,7 +167,7 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
 
     //recompute opengl matrices
 
-    setupMatrices();
+    setupMatricesForCamViewport();
 
     // setup texture objects
 
@@ -273,7 +273,7 @@ void OpenGLViewWidget::initializeGL()
     // Accept fragment if it closer to the camera than the former one
     glDepthFunc(GL_LESS);
 
-    setupMatrices();
+    setupMatricesForCamViewport();
 
     // Create a vertex array object. In OpenGL ES 2.0 and OpenGL 2.x
     // implementations this is optional and support may not be present
@@ -374,25 +374,26 @@ void OpenGLViewWidget::setupVertexAttribs()
 
 }
 
-void OpenGLViewWidget::setupMatrices()
+void OpenGLViewWidget::setupMatricesForCamViewport()
 {
+    // the video is mapped to a rectangle in 3d space with corners
+    // (-1,-1,0),    (1,1,0),     (-1,1,0),    (1,-1,0)
+    // here we set up the view/camera of openGl such that it is looking
+    // exaclty at this rectangle -> the renderend openGl viewport will be
+    // only our video
+
     glm::mat3 K_view = glm::mat3(1.f);
-
+    float clipFar = 1000;
+    float clipNear = 1;
     // Our ModelViewProjection : projection of model to different view and then to image
-    m_MVP = getProjectionFromCamCalibration(K_view,1000,1);
 
-    //    std::cout << "MVP: " << glm::to_string(m_MVP) << std::endl;
-}
-
-glm::mat4 OpenGLViewWidget::getProjectionFromCamCalibration(glm::mat3 &calibrationMatrix, float clipFar, float clipNear)
-{
-    calibrationMatrix[0] = -1.f * calibrationMatrix[0];
-    calibrationMatrix[1] = -1.f * calibrationMatrix[1];
-    calibrationMatrix[2] = -1.f * calibrationMatrix[2];
+    K_view[0] = -1.f * K_view[0];
+    K_view[1] = -1.f * K_view[1];
+    K_view[2] = -1.f * K_view[2];
     clipFar = -1.0 * clipFar;
     clipNear = -1.0 * clipNear;
 
-    glm::mat4 perspective(calibrationMatrix);
+    glm::mat4 perspective(K_view);
     perspective[2][2] = clipNear + clipFar;
     perspective[3][2] = clipNear * clipFar;
     perspective[2][3] = -1.f;
@@ -400,14 +401,7 @@ glm::mat4 OpenGLViewWidget::getProjectionFromCamCalibration(glm::mat3 &calibrati
 
     glm::mat4 toNDC = glm::ortho(0.f,(float) m_frameWidth,(float) m_frameHeight,0.f,clipNear,clipFar);
 
-    glm::mat4 Projection2 = toNDC * perspective;
-
-
-//    std::cout << "perspective: " << glm::to_string(perspective) << std::endl;
-//    std::cout << "toNDC: " << glm::to_string(toNDC) << std::endl;
-//    std::cout << "Projection2: " << glm::to_string(Projection2) << std::endl;
-
-    return Projection2;
+    m_MVP = toNDC * perspective;
 }
 
 void OpenGLViewWidget::paintGL()
