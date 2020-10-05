@@ -35,9 +35,6 @@
 #include <QMainWindow>
 
 #include "views/splitViewWidget.h"
-#include "views/openGLViewWidget.h"
-
-#include <QOpenGLDebugLogger>
 
 class SeparateWindow : public QMainWindow
 {
@@ -45,7 +42,7 @@ class SeparateWindow : public QMainWindow
 
 public:
   explicit SeparateWindow();
-  OpenGLViewWidget openGLView;
+  splitViewWidget splitView;
 
 signals:
   // Signal that the user wants to go back to single window mode
@@ -57,7 +54,6 @@ signals:
 
 public slots:
   void toggleFullscreen();
-  void handleOepnGLLoggerMessages( QOpenGLDebugMessage message );
 
 protected:
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
@@ -69,6 +65,4 @@ protected slots:
 private:
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;
-  QOpenGLDebugLogger *logger;
-
 };

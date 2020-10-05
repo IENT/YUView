@@ -73,14 +73,14 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   separateViewWindow.setWindowTitle("Separate View");
   separateViewWindow.setGeometry(0, 0, 300, 600);
 
-  // Initialize the separate window
+  // Initialize the OpenGL window
   openGLWindow.setWindowTitle("OpenGL View");
   openGLWindow.setGeometry(0, 0, 300, 600);
 
   connect(ui.displaySplitView, &splitViewWidget::signalToggleFullScreen, this, &MainWindow::toggleFullscreen);
 
   // Setup primary/separate splitView
-//  ui.displaySplitView->addSlaveView(&separateViewWindow.splitView);
+  ui.displaySplitView->addSlaveView(&separateViewWindow.splitView);
   connect(ui.displaySplitView, &splitViewWidget::signalShowSeparateWindow, &separateViewWindow, &QWidget::setVisible);
 
   // Setup openGL view
@@ -118,14 +118,14 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
 
   createMenusAndActions();
 
-//  ui.playbackController->setSplitViews(ui.displaySplitView, &separateViewWindow.splitView);
+  ui.playbackController->setSplitViews(ui.displaySplitView, &separateViewWindow.splitView);
   ui.playbackController->setPlaylist(ui.playlistTreeWidget);
   ui.displaySplitView->setPlaybackController(ui.playbackController);
   ui.displaySplitView->setPlaylistTreeWidget(ui.playlistTreeWidget);
   ui.displaySplitView->setVideoCache(cache.data());
   ui.cachingInfoWidget->setPlaylistAndCache(ui.playlistTreeWidget, cache.data());
-//  separateViewWindow.splitView.setPlaybackController(ui.playbackController);
-//  separateViewWindow.splitView.setPlaylistTreeWidget(ui.playlistTreeWidget);
+  separateViewWindow.splitView.setPlaybackController(ui.playbackController);
+  separateViewWindow.splitView.setPlaylistTreeWidget(ui.playlistTreeWidget);
 
   if (!settings.contains("mainWindow/geometry"))
     // There is no previously saved window layout. This is possibly the first time YUView is started.
@@ -147,7 +147,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   connect(&separateViewWindow, &SeparateWindow::unhandledKeyPress, this, &MainWindow::handleKeyPressFromSeparateView);
 
   // Set the controls in the state handler. This way, the state handler can save/load the current state of the view.
-//  stateHandler.setConctrols(ui.playbackController, ui.playlistTreeWidget, ui.displaySplitView, &separateViewWindow.splitView);
+  stateHandler.setConctrols(ui.playbackController, ui.playlistTreeWidget, ui.displaySplitView, &separateViewWindow.splitView);
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
   ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
 
@@ -642,7 +642,7 @@ void MainWindow::updateSettings()
   qApp->setStyleSheet(styleSheet);
 
   ui.displaySplitView->updateSettings();
-//  separateViewWindow.splitView.updateSettings();
+  separateViewWindow.splitView.updateSettings();
   ui.playlistTreeWidget->updateSettings();
   ui.bitstreamAnalysis->updateSettings();
   cache->updateSettings();
