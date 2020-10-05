@@ -72,8 +72,10 @@ SeparateWindow::SeparateWindow() :
 //    connect(logger, &QOpenGLDebugLogger::messageLogged, this, &SeparateWindow::handleOepnGLLoggerMessages);
 //    logger->startLogging();
 
-  setCentralWidget(&openGLView);
+    setCentralWidget(&openGLView);
 //  splitView.setAttribute(Qt::WA_AcceptTouchEvents);
+
+
 
 //  connect(&splitView, &splitViewWidget::signalToggleFullScreen, this, &SeparateWindow::toggleFullscreen);
 //  connect(&splitView, &splitViewWidget::signalShowSeparateWindow, this, &SeparateWindow::splitViewShowSeparateWindow);
