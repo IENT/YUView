@@ -1,8 +1,7 @@
 
 #include "openGLViewWidget.h"
 
-#include <QMouseEvent>
-
+#include <QFile>
 
 #include <QVector2D>
 #include <QVector3D>
@@ -24,13 +23,6 @@ OpenGLViewWidget::OpenGLViewWidget(QWidget *parent)
       m_texture_Vdata(0),
       m_program(0)
 {
-//    m_core = QCoreApplication::arguments().contains(QStringLiteral("--coreprofile"));
-//    // --transparent causes the clear color to be transparent. Therefore, on systems that
-//    // support it, the widget will become transparent apart from the logo.
-//    m_transparent = QCoreApplication::arguments().contains(QStringLiteral("--transparent"));
-//    if (m_transparent)
-//        setAttribute(Qt::WA_TranslucentBackground);
-
 //    QSizePolicy p(sizePolicy());
 ////    p.setHorizontalPolicy(QSizePolicy::Fixed);
 ////    p.setVerticalPolicy(QSizePolicy::Fixed);
@@ -52,111 +44,13 @@ OpenGLViewWidget::~OpenGLViewWidget()
     doneCurrent();
 }
 
-//! [0]
-void OpenGLViewWidget::mousePressEvent(QMouseEvent *e)
-{
-    // Save mouse press position
-    mousePressPosition = QVector2D(e->localPos());
-}
 
-void OpenGLViewWidget::mouseReleaseEvent(QMouseEvent *e)
-{
-    // Mouse release position - mouse press position
-    QVector2D diff = QVector2D(e->localPos()) - mousePressPosition;
-
-    // Rotation axis is perpendicular to the mouse position difference
-    // vector
-    QVector3D n = QVector3D(diff.y(), diff.x(), 0.0).normalized();
-
-    // Accelerate angular speed relative to the length of the mouse sweep
-    qreal acc = diff.length() / 100.0;
-
-    // Calculate new rotation axis as weighted sum
-    rotationAxis = (rotationAxis * angularSpeed + n * acc).normalized();
-
-    // Increase angular speed
-    angularSpeed += acc;
-}
-//! [0]
-
-//! [1]
-void OpenGLViewWidget::timerEvent(QTimerEvent *)
-{
-    // Decrease angular speed (friction)
-    angularSpeed *= 0.99;
-
-    // Stop rotation when speed goes below threshold
-    if (angularSpeed < 0.01) {
-        angularSpeed = 0.0;
-    } else {
-        // Update rotation
-        rotation = QQuaternion::fromAxisAndAngle(rotationAxis, angularSpeed) * rotation;
-
-        // Request an update
-        update();
-    }
-}
-//! [1]
 
 void OpenGLViewWidget::handleOepnGLLoggerMessages( QOpenGLDebugMessage message )
 {
     qDebug() << message;
 }
 
-////! [3]
-//void OpenGLViewWidget::initShaders()
-//{
-
-////    file:///home/sauer/Software/YUViewStuff/YUView/YUViewLib/shaders/fshader.glsl
-////    file:///home/sauer/Software/YUViewStuff/YUView/YUViewLib/shaders/vshader.glsl
-
-////    QFile file(":/vshader.glsl");
-//    QFile file("/home/sauer/Software/YUViewStuff/YUView/YUViewLib/shaders/vshader.glsl");
-
-////    bool t = file.exists();
-////    QByteArray test =  file.readAll();
-
-//    // Compile vertex shader
-////    if (!program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader.glsl"))
-//    if (!program.addShaderFromSourceFile(QOpenGLShader::Vertex, "/home/sauer/Software/YUViewStuff/YUView/YUViewLib/shaders/vshader.glsl"))
-//        close();
-
-//    // Compile fragment shader
-//    if (!program.addShaderFromSourceFile(QOpenGLShader::Fragment, "/home/sauer/Software/YUViewStuff/YUView/YUViewLib/shaders/fshader.glsl"))
-////    if (!program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader.glsl"))
-//        close();
-
-//    // Link shader pipeline
-//    if (!program.link())
-//        close();
-
-//    // Bind shader pipeline for use
-//    if (!program.bind())
-//        close();
-//}
-////! [3]
-
-////! [4]
-//void OpenGLViewWidget::initTextures()
-//{
-//    // Load cube.png image
-////    texture = new QOpenGLTexture(QImage(":/cube.png").mirrored());
-//    texture = new QOpenGLTexture(QImage("/home/sauer/Software/YUViewStuff/YUView/YUViewLib/images/cube.png").mirrored());
-////    file:///home/sauer/Software/YUViewStuff/YUView/YUViewLib/images/cube.png
-
-//    // Set nearest filtering mode for texture minification
-//    texture->setMinificationFilter(QOpenGLTexture::Nearest);
-
-//    // Set bilinear filtering mode for texture magnification
-//    texture->setMagnificationFilter(QOpenGLTexture::Linear);
-
-//    // Wrap texture coordinates by repeating
-//    // f.ex. texture coordinate (1.1, 1.2) is same as (0.1, 0.2)
-//    texture->setWrapMode(QOpenGLTexture::Repeat);
-//}
-//! [4]
-
-//! [5]
 void OpenGLViewWidget::resizeGL(int w, int h)
 {
     // Calculate aspect ratio
@@ -171,45 +65,8 @@ void OpenGLViewWidget::resizeGL(int w, int h)
     // Set perspective projection
     projection.perspective(fov, aspect, zNear, zFar);
 }
-//! [5]
-
-//void OpenGLViewWidget::paintGL()
-//{
-//    // Clear color and depth buffer
-//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-//    texture->bind();
-
-////! [6]
-//    // Calculate model view transformation
-//    QMatrix4x4 matrix;
-//    matrix.translate(0.0, 0.0, -5.0);
-//    matrix.rotate(rotation);
-
-//    // Set modelview-projection matrix
-//    program.setUniformValue("mvp_matrix", projection * matrix);
-////! [6]
-
-//    // Use texture unit 0 which contains cube.png
-//    program.setUniformValue("texture", 0);
-
-//    // Draw cube geometry
-//    geometries->drawCubeGeometry(&program);
-//}
 
 
-
-
-
-
-
-
-
-struct VertexData
-{
-    QVector3D position;
-    QVector2D texCoord;
-};
 
 
 void OpenGLViewWidget::updateFrame(const QByteArray &textureData)
@@ -601,113 +458,4 @@ void OpenGLViewWidget::paintGL()
 //    qDebug() << "Painting took" << timer.elapsed() << "milliseconds";
 //    int msSinceLastPaint = m_measureFPSTimer.restart();
 //    emit msSinceLastPaintChanged(msSinceLastPaint);
-}
-
-// function to generate the vertices corresponding to the pixels of a frame. Each vertex is centered at a pixel, borders are padded.
-void OpenGLViewWidget::computeFrameVertices(int frameWidth, int frameHeight)
-{
-
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(-1,-1,0));
-
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(1,1,0));
-
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(-1,1,0));
-
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(1,-1,0));
-
-
-    /*for( int h = 0; h < frameHeight; h++)
-    {
-        for(int w = 0; w < frameWidth; w++)
-        {
-
-            m_videoFrameTriangles_vertices.push_back(glm::vec3(w,h,0));
-        }
-    }*/
-}
-
-// function to create a mesh by connecting the vertices to triangles
-void OpenGLViewWidget::computeFrameMesh(int frameWidth, int frameHeight)
-{
-    m_videoFrameTriangles_indices.clear();
-
-    m_videoFrameTriangles_indices.push_back(2);
-    m_videoFrameTriangles_indices.push_back(0);
-    m_videoFrameTriangles_indices.push_back(1);
-    // second triangle
-    m_videoFrameTriangles_indices.push_back(0);
-    m_videoFrameTriangles_indices.push_back(3);
-    m_videoFrameTriangles_indices.push_back(1);
-
-    /*for( int h = 0; h < frameHeight; h++)
-    {
-        for(int w = 0; w < frameWidth; w++)
-        {
-            //tblr: top bottom left right
-            int index_pixel_tl = h*(frameWidth) + w;
-            int index_pixel_tr = index_pixel_tl + 1;
-            int index_pixel_bl = (h+1)*(frameWidth) + w;
-            int index_pixel_br = index_pixel_bl + 1;
-
-            // each pixel generates two triangles, specify them so orientation is counter clockwise
-            // first triangle
-            m_videoFrameTriangles_indices.push_back(index_pixel_tl);
-            m_videoFrameTriangles_indices.push_back(index_pixel_bl);
-            m_videoFrameTriangles_indices.push_back(index_pixel_tr);
-            // second triangle
-            m_videoFrameTriangles_indices.push_back(index_pixel_bl);
-            m_videoFrameTriangles_indices.push_back(index_pixel_br);
-            m_videoFrameTriangles_indices.push_back(index_pixel_tr);
-        }
-    }*/
-}
-
-// Function to fill Vector which will hold the texture coordinates which maps the texture (the video data) to the frame's vertices.
-void OpenGLViewWidget::computeLumaTextureCoordinates(int chromaWidth, int chromaHeight)
-{
-    m_videoFrameDataPoints_Luma.clear();
-
-    for( int h = 0; h < chromaHeight; h++)
-    {
-        for(int w = 0; w < chromaWidth; w++)
-        {
-
-            float x,y;
-            x = (w + 0.5)/chromaWidth;  //center of pixel
-            y = (h + 0.5)/chromaHeight;  //center of pixel
-
-            // set u for the pixel
-            m_videoFrameDataPoints_Luma.push_back(x);
-            // set v for the pixel
-            m_videoFrameDataPoints_Luma.push_back(y);
-            // set u for the pixel
-        }
-    }
-}
-
-void OpenGLViewWidget::computeChromaTextureCoordinates(int chromaframeWidth, int chromaframeHeight)
-{
-    m_videoFrameDataPoints_Chroma.clear();
-
-    for( int h = 0; h < chromaframeHeight; h++)
-    {
-        for(int i = 0; (i < m_pixelFormat.getSubsamplingVer()); i++)
-        {
-            for(int w = 0; w < chromaframeWidth; w++)
-            {
-                float x,y;
-                x = (w + 0.5)/chromaframeWidth;  //center of pixel
-                y = (h + 0.5)/chromaframeHeight;  //center of pixel
-
-                //Load extra coordinates dependent on subsampling
-                for(int j = 0; (j < m_pixelFormat.getSubsamplingHor()); j++)
-                {
-                    // set x for the pixel
-                    m_videoFrameDataPoints_Chroma.push_back(x);
-                    // set y for the pixel
-                    m_videoFrameDataPoints_Chroma.push_back(y);
-                }
-            }
-        }
-    }
 }

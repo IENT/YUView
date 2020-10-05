@@ -71,9 +71,6 @@ public slots:
     void updateFormat(int frameWidth, int frameHeight, YUV_Internals::yuvPixelFormat PxlFormat);
 
 protected:
-    void mousePressEvent(QMouseEvent *e) override;
-    void mouseReleaseEvent(QMouseEvent *e) override;
-    void timerEvent(QTimerEvent *e) override;
 
     void initializeGL() override;
     void resizeGL(int w, int h) override;
