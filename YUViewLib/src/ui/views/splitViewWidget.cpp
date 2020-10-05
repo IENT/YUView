@@ -1108,6 +1108,12 @@ void splitViewWidget::toggleSeparateWindow(bool checked)
   emit signalShowSeparateWindow(checked);
 }
 
+void splitViewWidget::toggleOpenGLWindow(bool checked)
+{
+  Q_ASSERT_X(this->isMasterView, Q_FUNC_INFO, "This should only be toggled in the main widget.");
+  emit signalShowOpenGLWindow(checked);
+}
+
 void splitViewWidget::toggleFullScreen(bool checked) 
 { 
   Q_UNUSED(checked);
@@ -1550,12 +1556,15 @@ void splitViewWidget::createMenuActions()
 
   if (this->isMasterView)
   {
-    configureCheckableAction(actionSeparateView, nullptr, "&Show Separate Window", false, &splitViewWidget::toggleSeparateWindow, Qt::CTRL + Qt::Key_W);
+    configureCheckableAction(actionSeparateView, nullptr, "&Show Separate Window", false, &splitViewWidget::toggleSeparateWindow, Qt::CTRL + Qt::Key_W);    
     configureCheckableAction(actionSeparateViewLink, nullptr, "Link Views", false, &MoveAndZoomableView::setLinkState, {}, false);
     configureCheckableAction(actionSeparateViewPlaybackBoth, nullptr, "Playback in both Views", false, &splitViewWidget::toggleSeparateWindowPlaybackBoth, {}, false);
     actionSeparateView.setToolTip("Show a second window with another view to the same item. Especially helpful for multi screen setups.");
     actionSeparateViewLink.setToolTip("Link the second view so that any change in one view is also applied in the other view.");
     actionSeparateViewPlaybackBoth.setToolTip("For performance reasons playback only runs in one (the second) view. Activate this to run playback in both views siultaneously.");
+
+    configureCheckableAction(actionOpenGLView, nullptr, "&Show OpenGLWindow", false, &splitViewWidget::toggleOpenGLWindow, Qt::CTRL + Qt::Key_G);
+    actionOpenGLView.setToolTip("Show a second window with OpenGL accelerated playback.");
   }
 
   configureCheckableAction(actionFullScreen, nullptr, "&Fullscreen Mode", false, &splitViewWidget::toggleFullScreen, Qt::CTRL + Qt::Key_F);
@@ -1750,6 +1759,7 @@ void splitViewWidget::addMenuActions(QMenu *menu)
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateView : &actionSeparateView);
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewLink : &actionSeparateViewLink);
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewPlaybackBoth : &actionSeparateViewPlaybackBoth);
+  separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionOpenGLView : &actionOpenGLView);
   separateViewMenu->setToolTipsVisible(true);
 
   menu->addAction(&this->actionFullScreen);

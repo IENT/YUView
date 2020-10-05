@@ -111,6 +111,7 @@ signals:
   
   // Show (or hide) the separate window
   void signalShowSeparateWindow(bool show);
+  void signalShowOpenGLWindow(bool show);
 
   void signalToggleFullScreen();
 
@@ -121,6 +122,7 @@ public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
 
   void triggerActionSeparateView() { actionSeparateView.trigger(); }
+//  void triggerActionOpenGLView() { actionOpenGLView.trigger(); }
   void toggleFullScreenAction() { actionFullScreen.trigger(); }
 
 private slots:
@@ -140,7 +142,7 @@ private slots:
   void toggleSeparateWindow(bool checked);
   void toggleSeparateWindowPlaybackBoth(bool checked) { Q_UNUSED(checked); };
   void toggleFullScreen(bool checked);
-
+  void toggleOpenGLWindow(bool checked);
 protected:
   
   // Set the widget to the given view mode
@@ -170,6 +172,7 @@ protected:
   QAction actionSplitView[3];
   QAction actionGrid[6];
   QAction actionSeparateView;
+  QAction actionOpenGLView;
   QAction actionSeparateViewLink;
   QAction actionSeparateViewPlaybackBoth;
   QAction actionZoomBox;

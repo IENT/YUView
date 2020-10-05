@@ -73,11 +73,20 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   separateViewWindow.setWindowTitle("Separate View");
   separateViewWindow.setGeometry(0, 0, 300, 600);
 
+  // Initialize the separate window
+  openGLWindow.setWindowTitle("OpenGL View");
+  openGLWindow.setGeometry(0, 0, 300, 600);
+
   connect(ui.displaySplitView, &splitViewWidget::signalToggleFullScreen, this, &MainWindow::toggleFullscreen);
 
   // Setup primary/separate splitView
 //  ui.displaySplitView->addSlaveView(&separateViewWindow.splitView);
   connect(ui.displaySplitView, &splitViewWidget::signalShowSeparateWindow, &separateViewWindow, &QWidget::setVisible);
+
+  // Setup openGL view
+//  ui.displaySplitView->addSlaveView(&separateViewWindow.splitView);
+  connect(ui.displaySplitView, &splitViewWidget::signalShowOpenGLWindow, &openGLWindow, &QWidget::setVisible);
+
 
   // Connect the playlistWidget signals to some slots
   auto const fileInfoAdapter = [this]{

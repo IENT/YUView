@@ -37,6 +37,7 @@
 #include <QSettings>
 
 #include "ui/separateWindow.h"
+#include "ui/openGLWindow.h"
 #include "handler/updateHandler.h"
 #include "video/videoCache.h"
 
@@ -132,6 +133,7 @@ private:
   QScopedPointer<updateHandler> updater;
   ViewStateHandler stateHandler;
   SeparateWindow separateViewWindow;
+  OpenGLWindow openGLWindow;
   bool showNormalMaximized; // When going to full screen: Was this windows maximized?  
   bool panelsVisible[5] {false};  // Which panels are visible when going to full-screen mode?
 };
