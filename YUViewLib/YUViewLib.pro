@@ -15,7 +15,6 @@ INCLUDEPATH += src/
 RESOURCES += \
     images/images.qrc \
     docs/docs.qrc \
-    images/textures.qrc \
     shaders/shaders.qrc
 
 contains(QT_ARCH, x86_32|i386) {
