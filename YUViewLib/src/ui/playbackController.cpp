@@ -35,6 +35,7 @@
 #include <QSettings>
 
 #include "playlistitem/playlistItem.h"
+#include "playlistitem/playlistItemRawFile.h"
 #include "common/functions.h"
 #include "common/typedef.h"
 
@@ -367,7 +368,12 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
     updated = setCurrentFrame(frameSlider->maximum());
   else if (currentFrameIdx < frameSlider->minimum())
     updated = setCurrentFrame(frameSlider->minimum());
-  
+
+  // todo: this needs to be changed. just hacked it in to test opengl playback
+  QPointer<playlistItemRawFile> videoItem = (playlistItemRawFile*) currentItem[0].data();
+  QPointer<videoHandlerYUV> srcYUV = (videoHandlerYUV*)  videoItem->video.data();
+  openGLView->updateFormat(srcYUV->getFrameSize().width(), srcYUV->getFrameSize().height(), srcYUV->srcPixelFormat);
+
   if (redraw && !updated)
   {
     splitViewPrimary->update(false, true);

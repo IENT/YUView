@@ -86,7 +86,10 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
     video->loadFrame(frameIdxInternal);
     isFrameLoading = false;
     if (emitSignals)
+    {
       emit signalItemChanged(true, RECACHE_NONE);
+      emit signalNewFrame(video->currentFrameRawData);
+    }
   }
   
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
@@ -100,7 +103,10 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
+      {
         emit signalItemDoubleBufferLoaded();
+        emit signalNewFrame(video->currentFrameRawData);
+      }
     }
   }
 }

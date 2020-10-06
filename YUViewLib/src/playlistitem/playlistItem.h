@@ -230,6 +230,9 @@ signals:
   // This will trigger the tree widget to update it's contents.
   void signalItemChanged(bool redraw, recacheIndicator recache);
 
+  // for sending new data to openGL view
+  void signalNewFrame(const QByteArray &newPicture);
+
   // The item finished loading a frame into the double buffer. This is relevant if playback is paused and waiting
   // for the item to load the next frame into the double buffer. This will restart the timer. 
   void signalItemDoubleBufferLoaded();
