@@ -313,22 +313,7 @@ void OpenGLViewWidget::initializeGL()
     // Store the vertex attribute bindings for the program.
     setupVertexAttribs();
 
-    m_program->release();
-
-    // for debugging. use first frame of RaceHorsesL_832x480_30fps_8bit_420pf
-    // /home/sauer/Videos/SD/RaceHorsesL_832x480_30fps_8bit_420pf.yuv
-
-    updateFormat(832,480, YUV_Internals::yuvPixelFormat(YUV_Internals::Subsampling::YUV_420, 8, YUV_Internals::PlaneOrder::YUV)); // YUV 4:2:0)
-
-    QFile raceHorsesSeq("/home/sauer/Videos/SD/RaceHorsesL_832x480_30fps_8bit_420pf.yuv");
-
-    if (!raceHorsesSeq.open(QIODevice::ReadOnly ))
-    {
-        qDebug() << "could not open file:" << raceHorsesSeq.fileName();
-    }
-    QByteArray firstFrame = raceHorsesSeq.read(599040);
-
-    updateFrame(firstFrame);
+    m_program->release();    
 }
 
 void OpenGLViewWidget::setupVertexAttribs()
