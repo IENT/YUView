@@ -48,6 +48,10 @@ OpenGLWindow::OpenGLWindow() :
       format.setMinorVersion(2);
       format.setDepthBufferSize(24);
       format.setStencilBufferSize(8);
+      // Setting an interval value of 0 will turn the vertical refresh syncing off, any value
+      // higher than 0 will turn the vertical syncing on. Setting interval to a higher value,
+      // for example 10, results in having 10 vertical retraces between every buffer swap.
+      format.setSwapInterval(0); // no effect in windows
       format.setProfile(QSurfaceFormat::CoreProfile);
       format.setOption(QSurfaceFormat::DebugContext);
       QSurfaceFormat::setDefaultFormat(format);
