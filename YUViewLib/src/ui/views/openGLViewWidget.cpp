@@ -23,6 +23,7 @@ OpenGLViewWidget::OpenGLViewWidget(QWidget *parent)
       m_texture_Vdata(0),
       m_program(0)
 {
+  Q_INIT_RESOURCE(shaders);
 //    QSizePolicy p(sizePolicy());
 ////    p.setHorizontalPolicy(QSizePolicy::Fixed);
 ////    p.setVerticalPolicy(QSizePolicy::Fixed);
@@ -283,10 +284,8 @@ void OpenGLViewWidget::initializeGL()
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
 
     m_program = new QOpenGLShaderProgram;
-//    m_program->addShaderFromSourceFile(QOpenGLShader::Vertex,":/vertexshader.glsl");
-//    m_program->addShaderFromSourceFile(QOpenGLShader::Fragment,":fragmentYUV2RGBshader.glsl");
-    m_program->addShaderFromSourceFile(QOpenGLShader::Vertex,"/home/sauer/Software/YUViewStuff/YUView/YUViewLib/shaders/vertexshader.glsl");
-    m_program->addShaderFromSourceFile(QOpenGLShader::Fragment,"/home/sauer/Software/YUViewStuff/YUView/YUViewLib/shaders/fragmentYUV2RGBshader.glsl");
+    m_program->addShaderFromSourceFile(QOpenGLShader::Vertex,":vertexshader.glsl");
+    m_program->addShaderFromSourceFile(QOpenGLShader::Fragment,":fragmentYUV2RGBshader.glsl");
 
     m_program->link();
     m_program->bind();
