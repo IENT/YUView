@@ -270,10 +270,10 @@ void OpenGLViewWidget::initializeGL()
     // 1rst attribute buffer : vertices
     m_vertices_Vbo.create();
     m_vertices_Vbo.bind();
-    m_vertices_Loc = m_program->attributeLocation("vertexPosition_modelspace");
-    glEnableVertexAttribArray(m_vertices_Loc);
+    int vertices_Loc = m_program->attributeLocation("vertexPosition_modelspace");
+    glEnableVertexAttribArray(vertices_Loc);
     glVertexAttribPointer(
-        m_vertices_Loc,     // attribute.
+        vertices_Loc,     // attribute.
         3,                  // size
         GL_FLOAT,           // type
         GL_FALSE,           // normalized?
@@ -319,10 +319,10 @@ void OpenGLViewWidget::initializeGL()
     // 2nd attribute buffer : texture coordinates / UVs
     m_textureLuma_coordinates_Vbo.create();
     m_textureLuma_coordinates_Vbo.bind();
-    m_textureLuma_Loc = m_program->attributeLocation("vertexLuma");
-    glEnableVertexAttribArray(m_textureLuma_Loc);
+    int textureLuma_Loc = m_program->attributeLocation("vertexLuma");
+    glEnableVertexAttribArray(textureLuma_Loc);
     glVertexAttribPointer(
-        m_textureLuma_Loc,                    // attribute.
+        textureLuma_Loc,                    // attribute.
         2,                                // size : U+V => 2
         GL_FLOAT,                         // type
         GL_FALSE,                         // normalized?

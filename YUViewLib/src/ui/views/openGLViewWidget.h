@@ -98,7 +98,6 @@ private:
 
     std::vector<glm::vec3> m_videoFrameTriangles_vertices;  // will hold the frame corners in 3d coordinates
     QOpenGLBuffer m_vertices_Vbo; // will hold the frame corners in 3d coordinates, once transmitted to GPU
-    int m_vertices_Loc; // store the location (in shader) of vertex (frame corners) locations in 3D
 
     // each vector (of 3 unsigned int) holds the indices for one triangle in the video frame
     std::vector<unsigned int> m_videoFrameTriangles_indices;
@@ -107,7 +106,6 @@ private:
     // Vector which will the texture coordinates which maps the texture (the video data) to the frame's vertices.
     std::vector<float> m_videoFrameDataPoints_Luma; // will hold the frame corners in texture coordinates
     QOpenGLBuffer m_textureLuma_coordinates_Vbo; // will hold the frame corners in texture coordinates, once transmitted to GPU
-    int m_textureLuma_Loc; // store the location (in shader) of vertex (frame corners) locations in texture coordinates
 
     // for uploading the video frame as a texture:
     std::shared_ptr<QOpenGLTexture> m_texture_Ydata;
