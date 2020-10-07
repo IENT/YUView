@@ -45,7 +45,7 @@ OpenGLWindow::OpenGLWindow() :
       QSurfaceFormat format;
       // asks for a OpenGL 3.2 debug context using the Core profile
       format.setMajorVersion(3);
-      format.setMinorVersion(2);
+      format.setMinorVersion(3);
       format.setDepthBufferSize(24);
       format.setStencilBufferSize(8);
       // Setting an interval value of 0 will turn the vertical refresh syncing off, any value

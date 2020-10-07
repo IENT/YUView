@@ -112,6 +112,10 @@ private:
     std::shared_ptr<QOpenGLTexture> m_texture_Udata;
     std::shared_ptr<QOpenGLTexture> m_texture_Vdata;
 
+    // texture format and pixel type depend on the input bit depth, keep track of them
+    QOpenGLTexture::TextureFormat m_openGLTextureFormat;
+    QOpenGLTexture::PixelType m_openGLTexturePixelType;
+
     QOpenGLShaderProgram *m_program;
 
 };

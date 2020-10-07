@@ -93,12 +93,9 @@ void OpenGLViewWidget::updateFrame(const QByteArray &textureData)
     const unsigned char *srcV = srcY + m_componentLength + ((1 - m_swapUV) * (m_componentLength / m_pixelFormat.getSubsamplingHor()) / m_pixelFormat.getSubsamplingVer());
 
     // transmitting the YUV data as three different textures
-    // Y on unit 0
-    m_texture_Ydata->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, srcY);
-    // U on unit 1
-    m_texture_Udata->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, srcU);
-    // V on unit 2
-    m_texture_Vdata->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, srcV);
+    m_texture_Ydata->setData(QOpenGLTexture::Red_Integer, m_openGLTexturePixelType, srcY); // Y on unit 0
+    m_texture_Udata->setData(QOpenGLTexture::Red_Integer, m_openGLTexturePixelType, srcU); // U on unit 1
+    m_texture_Vdata->setData(QOpenGLTexture::Red_Integer, m_openGLTexturePixelType, srcV); // V on unit 2
 
     update();
 }
@@ -115,14 +112,29 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
 //    if(m_pixelFormat == YUVC_422YpCrCb8PlanarPixelFormat || m_pixelFormat == YUVC_444YpCrCb8PlanarPixelFormat)
 //        m_swapUV = 1;
 
-    m_componentLength = m_frameWidth*m_frameHeight;
+    const auto bytesPerSample = (m_pixelFormat.bitsPerSample + 7) / 8; // Round to bytes
+
+    m_componentLength = m_frameWidth*m_frameHeight*bytesPerSample;
 
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
 
 
-
     // setup texture objects, the following will only allocate
     // the objects/storage. upload happens in updateFrame
+    if(m_pixelFormat.bitsPerSample == 8)
+    {
+        m_openGLTexturePixelType = QOpenGLTexture::UInt8;
+        m_openGLTextureFormat = QOpenGLTexture::R8U;
+    }
+    else if (m_pixelFormat.bitsPerSample == 10)
+    {
+        m_openGLTexturePixelType = QOpenGLTexture::UInt16;
+        m_openGLTextureFormat = QOpenGLTexture::R16U;
+    }
+
+    m_program->bind();
+    m_program->setUniformValue("sampleMaxVal", float(pow(2,m_pixelFormat.bitsPerSample)));
+    m_program->release();
 
     // transmitting the YUV data as three different textures
     // Y on unit 0
@@ -133,15 +145,16 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     m_texture_Ydata = std::make_shared<QOpenGLTexture>(QOpenGLTexture::Target2D);
     m_texture_Ydata->create();
     m_texture_Ydata->setSize(m_frameWidth,m_frameHeight);
-    m_texture_Ydata->setFormat(QOpenGLTexture::R8_UNorm);
+    m_texture_Ydata->setFormat(m_openGLTextureFormat);
 #if QT_VERSION >= QT_VERSION_CHECK(5,5,0)
-    m_texture_Ydata->allocateStorage(QOpenGLTexture::Red,QOpenGLTexture::UInt8);
+    m_texture_Ydata->allocateStorage(QOpenGLTexture::Red_Integer,m_openGLTexturePixelType);
 #else
     m_texture_Ydata->allocateStorage();
 #endif
     // Set filtering modes for texture minification and  magnification
     m_texture_Ydata->setMinificationFilter(QOpenGLTexture::Nearest);
-    m_texture_Ydata->setMagnificationFilter(QOpenGLTexture::Linear);
+    // need to use Nearest, see https://stackoverflow.com/questions/35705682/qt-5-with-qopengltexture-and-16-bits-integers-images
+    m_texture_Ydata->setMagnificationFilter(QOpenGLTexture::Nearest);
     // Wrap texture coordinates by repeating the border values. GL_CLAMP_TO_EDGE: the texture coordinate is clamped to the [0, 1] range.
     m_texture_Ydata->setWrapMode(QOpenGLTexture::ClampToEdge);
 
@@ -153,15 +166,15 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     m_texture_Udata = std::make_shared<QOpenGLTexture>(QOpenGLTexture::Target2D);
     m_texture_Udata->create();
     m_texture_Udata->setSize(m_frameWidth/m_pixelFormat.getSubsamplingHor(),m_frameHeight/m_pixelFormat.getSubsamplingVer());
-    m_texture_Udata->setFormat(QOpenGLTexture::R8_UNorm);
+    m_texture_Udata->setFormat(m_openGLTextureFormat);
 #if QT_VERSION >= QT_VERSION_CHECK(5,5,0)
-    m_texture_Udata->allocateStorage(QOpenGLTexture::Red,QOpenGLTexture::UInt8);
+    m_texture_Udata->allocateStorage(QOpenGLTexture::Red_Integer,m_openGLTexturePixelType);
 #else
     m_texture_Udata->allocateStorage();
 #endif
     // Set filtering modes for texture minification and  magnification
     m_texture_Udata->setMinificationFilter(QOpenGLTexture::Nearest);
-    m_texture_Udata->setMagnificationFilter(QOpenGLTexture::Linear);
+    m_texture_Udata->setMagnificationFilter(QOpenGLTexture::Nearest);
     // Wrap texture coordinates by repeating the border values. GL_CLAMP_TO_EDGE: the texture coordinate is clamped to the [0, 1] range.
     m_texture_Udata->setWrapMode(QOpenGLTexture::ClampToEdge);
 
@@ -175,17 +188,18 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     m_texture_Vdata = std::make_shared<QOpenGLTexture>(QOpenGLTexture::Target2D);
     m_texture_Vdata->create();
     m_texture_Vdata->setSize(m_frameWidth/m_pixelFormat.getSubsamplingHor(), m_frameHeight/m_pixelFormat.getSubsamplingVer());
-    m_texture_Vdata->setFormat(QOpenGLTexture::R8_UNorm);
+    m_texture_Vdata->setFormat(m_openGLTextureFormat);
 #if QT_VERSION >= QT_VERSION_CHECK(5,5,0)
-    m_texture_Vdata->allocateStorage(QOpenGLTexture::Red,QOpenGLTexture::UInt8);
+    m_texture_Vdata->allocateStorage(QOpenGLTexture::Red_Integer,m_openGLTexturePixelType);
 #else
     m_texture_Vdata->allocateStorage();
 #endif
     //Set filtering modes for texture minification and  magnification
     m_texture_Vdata->setMinificationFilter(QOpenGLTexture::Nearest);
-    m_texture_Vdata->setMagnificationFilter(QOpenGLTexture::Linear);
+    m_texture_Vdata->setMagnificationFilter(QOpenGLTexture::Nearest);
     // Wrap texture coordinates by repeating the border values. GL_CLAMP_TO_EDGE: the texture coordinate is clamped to the [0, 1] range.
     m_texture_Vdata->setWrapMode(QOpenGLTexture::ClampToEdge);
+
 
     update();
 
