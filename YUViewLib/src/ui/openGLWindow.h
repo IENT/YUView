@@ -55,7 +55,6 @@ signals:
 
 public slots:
   void toggleFullscreen();
-  void handleOepnGLLoggerMessages( QOpenGLDebugMessage message );
 
 protected:
   void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
@@ -63,6 +62,5 @@ protected:
 private:
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;
-  QOpenGLDebugLogger *logger;
 
 };

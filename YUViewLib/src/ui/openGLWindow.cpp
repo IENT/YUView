@@ -86,10 +86,6 @@ void OpenGLWindow::toggleFullscreen()
   }
 }
 
-void OpenGLWindow::handleOepnGLLoggerMessages( QOpenGLDebugMessage message )
-{
-    qDebug() << message;
-}
 
 void OpenGLWindow::keyPressEvent(QKeyEvent *event)
 {
