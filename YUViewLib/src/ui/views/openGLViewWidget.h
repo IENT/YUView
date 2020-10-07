@@ -71,33 +71,15 @@ public slots:
     void updateFormat(int frameWidth, int frameHeight, YUV_Internals::yuvPixelFormat PxlFormat);
 
 protected:
-
     void initializeGL() override;
     void resizeGL(int w, int h) override;
     void paintGL() override;
 
-    void initShaders();
-    void initTextures();
-
 private:
-    void computeFrameVertices(int frameWidth, int frameHeight);
-    void computeFrameMesh(int frameWidth, int frameHeight);
-    void computeLumaTextureCoordinates(int frameWidth, int frameHeight);
-    void computeChromaTextureCoordinates(int frameWidth, int frameHeight);
-    void setupVertexAttribs();
-    void setupMatricesForCamViewport();
-
     QBasicTimer timer;
     QOpenGLShaderProgram program;
 
-    QOpenGLTexture *texture = nullptr;
-
-    QMatrix4x4 projection;
-
-    QVector2D mousePressPosition;
-    QVector3D rotationAxis;
-    qreal angularSpeed = 0;
-    QQuaternion rotation;
+//    QMatrix4x4 projection;
 
 
     QOpenGLDebugLogger *logger;
@@ -109,38 +91,30 @@ private:
     YUV_Internals::yuvPixelFormat m_pixelFormat;
     int m_swapUV;
 
+    // Vertex Array Object (VAO) is an OpenGL Object that stores all of the state needed to supply vertex data.
+    // It stores the format of the vertex data as well as the Buffer Objects  (vertex coords, indices, texture coords)
+    // providing the vertex data arrays.
     QOpenGLVertexArrayObject m_vao;
-    QOpenGLBuffer m_vertices_Vbo;
-    QOpenGLBuffer m_vertice_indices_Vbo;
-    //QOpenGLBuffer m_texture_coordinates_Vbo;
-    QOpenGLBuffer m_textureLuma_coordinates_Vbo;
-    QOpenGLBuffer m_textureChroma_coordinates_Vbo;
-    //QOpenGLBuffer m_depth_Vbo;
 
+    std::vector<glm::vec3> m_videoFrameTriangles_vertices;  // will hold the frame corners in 3d coordinates
+    QOpenGLBuffer m_vertices_Vbo; // will hold the frame corners in 3d coordinates, once transmitted to GPU
+    int m_vertices_Loc; // store the location (in shader) of vertex (frame corners) locations in 3D
 
+    // each vector (of 3 unsigned int) holds the indices for one triangle in the video frame
+    std::vector<unsigned int> m_videoFrameTriangles_indices;
+    QOpenGLBuffer m_vertice_indices_Vbo; // will hold the indices, once transmitted to GPU
+
+    // Vector which will the texture coordinates which maps the texture (the video data) to the frame's vertices.
+    std::vector<float> m_videoFrameDataPoints_Luma; // will hold the frame corners in texture coordinates
+    QOpenGLBuffer m_textureLuma_coordinates_Vbo; // will hold the frame corners in texture coordinates, once transmitted to GPU
+    int m_textureLuma_Loc; // store the location (in shader) of vertex (frame corners) locations in texture coordinates
+
+    // for uploading the video frame as a texture:
     std::shared_ptr<QOpenGLTexture> m_texture_Ydata;
     std::shared_ptr<QOpenGLTexture> m_texture_Udata;
     std::shared_ptr<QOpenGLTexture> m_texture_Vdata;
-    QImage::Format m_textureFormat;
-    QVector<GLfloat> m_vertices_data;
 
     QOpenGLShaderProgram *m_program;
-
-    int m_matMVP_Loc;
-    // handles for texture, vertices and depth
-    int m_vertices_Loc;
-    int m_textureLuma_Loc;
-    int m_textureChroma_Loc;
-    glm::mat4 m_MVP;
-
-
-    std::vector<glm::vec3> m_videoFrameTriangles_vertices;
-    // each vector (of 3 unsigned int) holds the indices for one triangle in the video frame
-    std::vector<unsigned int> m_videoFrameTriangles_indices;
-    // Vector which will the texture coordinates which maps the texture (the video data) to the frame's vertices.
-    std::vector<float> m_videoFrameDataPoints_Luma;
-
-    std::vector<float> m_videoFrameDataPoints_Chroma;
 
 };
 

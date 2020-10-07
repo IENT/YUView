@@ -17,13 +17,18 @@ OpenGLViewWidget::OpenGLViewWidget(QWidget *parent)
     : QOpenGLWidget(parent),
       m_frameWidth(1),
       m_frameHeight(1),
+      // during rendering, for each index in the IndexBuffer, a vertex from
+      // the vertex buffer (with that index) is selected
       m_vertice_indices_Vbo(QOpenGLBuffer::IndexBuffer),
       m_texture_Ydata(0),
       m_texture_Udata(0),
       m_texture_Vdata(0),
       m_program(0)
 {
+  // needed in order to ensure the shadres are available as Qresources
   Q_INIT_RESOURCE(shaders);
+
+
 //    QSizePolicy p(sizePolicy());
 ////    p.setHorizontalPolicy(QSizePolicy::Fixed);
 ////    p.setVerticalPolicy(QSizePolicy::Fixed);
@@ -41,7 +46,8 @@ OpenGLViewWidget::~OpenGLViewWidget()
     // Make sure the context is current when deleting the texture
     // and the buffers.
     makeCurrent();
-    delete texture;
+
+
     doneCurrent();
 }
 
@@ -54,17 +60,17 @@ void OpenGLViewWidget::handleOepnGLLoggerMessages( QOpenGLDebugMessage message )
 
 void OpenGLViewWidget::resizeGL(int w, int h)
 {
-    // Calculate aspect ratio
-    qreal aspect = qreal(w) / qreal(h ? h : 1);
+//    // Calculate aspect ratio
+//    qreal aspect = qreal(w) / qreal(h ? h : 1);
 
-    // Set near plane to 3.0, far plane to 7.0, field of view 45 degrees
-    const qreal zNear = 3.0, zFar = 7.0, fov = 45.0;
+//    // Set near plane to 3.0, far plane to 7.0, field of view 45 degrees
+//    const qreal zNear = 3.0, zFar = 7.0, fov = 45.0;
 
-    // Reset projection
-    projection.setToIdentity();
+//    // Reset projection
+//    projection.setToIdentity();
 
-    // Set perspective projection
-    projection.perspective(fov, aspect, zNear, zFar);
+//    // Set perspective projection
+//    projection.perspective(fov, aspect, zNear, zFar);
 }
 
 
@@ -78,8 +84,6 @@ void OpenGLViewWidget::updateFrame(const QByteArray &textureData)
         return;
     }
 
-//    QElapsedTimer timer;
-//    timer.start();
 
     m_swapUV = 0; // todo
 
@@ -96,9 +100,6 @@ void OpenGLViewWidget::updateFrame(const QByteArray &textureData)
     // V on unit 2
     m_texture_Vdata->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, srcV);
 
-
-//    qDebug() << "Moving data to graphics card took" << timer.elapsed() << "milliseconds";
-
     update();
 }
 
@@ -106,7 +107,6 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
 {
     m_frameWidth = frameWidth;
     m_frameHeight = frameHeight;
-    m_textureFormat = QImage::Format_RGB32;
 
     m_pixelFormat = PxlFormat;
 
@@ -121,56 +121,8 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
 
 
 
-    // just put video on two triangles forming a rectangle
-    // compute frame vertices and copy to buffer
-
-    m_videoFrameTriangles_vertices.clear();
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(-1,-1,0));
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(1,1,0));
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(-1,1,0));
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(1,-1,0));
-
-
-    // triangle definition using indices.
-    // we use GL_TRIANGLE_STRIP: Every group of 3 adjacent vertices forms a triangle.
-    // Hence need only 4 indices to make our rectangle for the video.
-    m_videoFrameTriangles_indices.clear();
-    //First Triangle
-    m_videoFrameTriangles_indices.push_back(2);
-    m_videoFrameTriangles_indices.push_back(0);
-    m_videoFrameTriangles_indices.push_back(1);
-    // second triangle
-    m_videoFrameTriangles_indices.push_back(3);
-
-    m_videoFrameDataPoints_Luma.clear();
-    m_videoFrameDataPoints_Luma.push_back(0.f);
-    m_videoFrameDataPoints_Luma.push_back(0.f);
-    m_videoFrameDataPoints_Luma.push_back(1.f);
-    m_videoFrameDataPoints_Luma.push_back(1.f);
-    m_videoFrameDataPoints_Luma.push_back(0.f);
-    m_videoFrameDataPoints_Luma.push_back(1.f);
-    m_videoFrameDataPoints_Luma.push_back(1.f);
-    m_videoFrameDataPoints_Luma.push_back(0.f);
-    m_vertices_Vbo.create();
-    m_vertices_Vbo.bind();
-    m_vertices_Vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
-    m_vertices_Vbo.allocate(&m_videoFrameTriangles_vertices[0], m_videoFrameTriangles_vertices.size()* sizeof(glm::vec3));
-    // compute indices of vertices and copy to buffer
-//    std::cout << "nr of triangles:" << m_videoFrameTriangles_indices.size() / 3 << std::endl;
-    m_vertice_indices_Vbo.create();
-    m_vertice_indices_Vbo.bind();
-    m_vertice_indices_Vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
-    m_vertice_indices_Vbo.allocate(&m_videoFrameTriangles_indices[0], m_videoFrameTriangles_indices.size() * sizeof(unsigned int));
-    m_textureLuma_coordinates_Vbo.create();
-    m_textureLuma_coordinates_Vbo.bind();
-    m_textureLuma_coordinates_Vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
-    m_textureLuma_coordinates_Vbo.allocate(&m_videoFrameDataPoints_Luma[0], m_videoFrameDataPoints_Luma.size() * sizeof(float));
-
-    //recompute opengl matrices
-
-    setupMatricesForCamViewport();
-
-    // setup texture objects
+    // setup texture objects, the following will only allocate
+    // the objects/storage. upload happens in updateFrame
 
     // transmitting the YUV data as three different textures
     // Y on unit 0
@@ -192,9 +144,6 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     m_texture_Ydata->setMagnificationFilter(QOpenGLTexture::Linear);
     // Wrap texture coordinates by repeating the border values. GL_CLAMP_TO_EDGE: the texture coordinate is clamped to the [0, 1] range.
     m_texture_Ydata->setWrapMode(QOpenGLTexture::ClampToEdge);
-
-
-
 
     // U on unit 1
     if(m_texture_Udata)
@@ -263,18 +212,17 @@ void OpenGLViewWidget::initializeGL()
     logger->startLogging();
 
 
-    initializeOpenGLFunctions();
-    const bool is_transparent = false;
-    glClearColor(0, 0, 0, is_transparent ? 0 : 1);
-    // Dark blue background
+    initializeOpenGLFunctions();   
+    // Gray level background
     glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
 
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
     // Accept fragment if it closer to the camera than the former one
     glDepthFunc(GL_LESS);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
 
-    setupMatricesForCamViewport();
 
     // Create a vertex array object. In OpenGL ES 2.0 and OpenGL 2.x
     // implementations this is optional and support may not be present
@@ -290,40 +238,41 @@ void OpenGLViewWidget::initializeGL()
     m_program->link();
     m_program->bind();
 
-    m_matMVP_Loc = m_program->uniformLocation("MVP");
 
     m_program->setUniformValue("textureSamplerRed", 0);
     m_program->setUniformValue("textureSamplerGreen", 1);
     m_program->setUniformValue("textureSamplerBlue", 2);
 
-    m_vertices_Loc = m_program->attributeLocation("vertexPosition_modelspace");
-    m_textureLuma_Loc = m_program->attributeLocation("vertexLuma");
-    m_textureChroma_Loc = m_program->attributeLocation("vertexChroma");
-    /*m_vertices_Loc = m_program->attributeLocation("vertexPosition_modelspace");
-    m_texture_Loc = m_program->attributeLocation("vertexUV");*/
 
-    // Create vertex buffer objects
-    m_vertices_Vbo.create();
-    m_vertice_indices_Vbo.create();
-    // m_texture_coordinates_Vbo.create();
-    m_textureLuma_coordinates_Vbo.create();
-    m_textureChroma_coordinates_Vbo.create();
+    // just put video on two triangles forming a rectangle as follows.
+    // The trianlges are formed  by the vertice v0 to v3
+    // v2------v1
+    // |       /|
+    // |      / |
+    // |     /  |
+    // |    /   |
+    // |   /    |
+    // |  /     |
+    // | /      |
+    // |/       |
+    // v0------v3
+    // the vertices are setup to be aligned with openGL clip coordinates.
+    // Thus no further coordinate transform will be necessary.
+    // Further, textrue coordinates can be obtained by dropping the z-axis coordinate.
+    // https://learnopengl.com/Getting-started/Coordinate-Systems
 
-    // Store the vertex attribute bindings for the program.
-    setupVertexAttribs();
-
-    m_program->release();    
-}
-
-void OpenGLViewWidget::setupVertexAttribs()
-{
-
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
+    // creating an array witht the vertices v0 to v3
+    m_videoFrameTriangles_vertices.clear();
+    m_videoFrameTriangles_vertices.push_back(glm::vec3(-1,-1,0));
+    m_videoFrameTriangles_vertices.push_back(glm::vec3(1,1,0));
+    m_videoFrameTriangles_vertices.push_back(glm::vec3(-1,1,0));
+    m_videoFrameTriangles_vertices.push_back(glm::vec3(1,-1,0));
     // 1rst attribute buffer : vertices
+    m_vertices_Vbo.create();
     m_vertices_Vbo.bind();
-    f->glEnableVertexAttribArray(m_vertices_Loc);
-    f->glVertexAttribPointer(
+    m_vertices_Loc = m_program->attributeLocation("vertexPosition_modelspace");
+    glEnableVertexAttribArray(m_vertices_Loc);
+    glVertexAttribPointer(
         m_vertices_Loc,     // attribute.
         3,                  // size
         GL_FLOAT,           // type
@@ -331,11 +280,48 @@ void OpenGLViewWidget::setupVertexAttribs()
         0,                  // stride
         (void*)0            // array buffer offset
     );
+    // transmit vertices to vertice buffer object
+    m_vertices_Vbo.create();
+    m_vertices_Vbo.bind();
+    m_vertices_Vbo.setUsagePattern(QOpenGLBuffer::StaticDraw); //The data will be set once and used many times for drawing operations.
+    m_vertices_Vbo.allocate(&m_videoFrameTriangles_vertices[0], m_videoFrameTriangles_vertices.size()* sizeof(glm::vec3));
 
-    // 2nd attribute buffer : UVs
+
+    // triangle definition using indices.
+    // we use GL_TRIANGLE_STRIP: Every group of 3 adjacent vertices forms a triangle.
+    // Hence need only 4 indices to make our rectangle for the video.
+    m_videoFrameTriangles_indices.clear();
+    //First Triangle
+    m_videoFrameTriangles_indices.push_back(2);
+    m_videoFrameTriangles_indices.push_back(0);
+    m_videoFrameTriangles_indices.push_back(1);
+    // second triangle
+    m_videoFrameTriangles_indices.push_back(3);
+    // transmit inideces to  buffer object
+    m_vertice_indices_Vbo.create();
+    m_vertice_indices_Vbo.bind();
+    m_vertice_indices_Vbo.setUsagePattern(QOpenGLBuffer::StaticDraw); //The data will be set once and used many times for drawing operations.
+    m_vertice_indices_Vbo.allocate(&m_videoFrameTriangles_indices[0], m_videoFrameTriangles_indices.size() * sizeof(unsigned int));
+
+
+    // setting up texture coordinates for each vertex.
+    // This links the rectangle corners to the corners of the uploaeded
+    // texture / frame.
+    m_videoFrameDataPoints_Luma.clear();
+    m_videoFrameDataPoints_Luma.push_back(0.f);
+    m_videoFrameDataPoints_Luma.push_back(0.f);
+    m_videoFrameDataPoints_Luma.push_back(1.f);
+    m_videoFrameDataPoints_Luma.push_back(1.f);
+    m_videoFrameDataPoints_Luma.push_back(0.f);
+    m_videoFrameDataPoints_Luma.push_back(1.f);
+    m_videoFrameDataPoints_Luma.push_back(1.f);
+    m_videoFrameDataPoints_Luma.push_back(0.f);
+    // 2nd attribute buffer : texture coordinates / UVs
+    m_textureLuma_coordinates_Vbo.create();
     m_textureLuma_coordinates_Vbo.bind();
-    f->glEnableVertexAttribArray(m_textureLuma_Loc);
-    f->glVertexAttribPointer(
+    m_textureLuma_Loc = m_program->attributeLocation("vertexLuma");
+    glEnableVertexAttribArray(m_textureLuma_Loc);
+    glVertexAttribPointer(
         m_textureLuma_Loc,                    // attribute.
         2,                                // size : U+V => 2
         GL_FLOAT,                         // type
@@ -343,97 +329,48 @@ void OpenGLViewWidget::setupVertexAttribs()
         0,                                // stride
         (void*)0                          // array buffer offset
     );
+    // transmit texture coordinates to  buffer object
+    m_textureLuma_coordinates_Vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    m_textureLuma_coordinates_Vbo.allocate(&m_videoFrameDataPoints_Luma[0], m_videoFrameDataPoints_Luma.size() * sizeof(float));
 
-//    // 3nd attribute buffer : UVs Chroma
-//    m_textureChroma_coordinates_Vbo.bind();
-//    f->glEnableVertexAttribArray(m_textureChroma_Loc);
-//    f->glVertexAttribPointer(
-//        m_textureChroma_Loc,              // attribute.
-//        2,                                // size : U+V => 2
-//        GL_FLOAT,                         // type
-//        GL_FALSE,                         // normalized?
-//        0,                                // stride
-//        (void*)0                          // array buffer offset
-//    );
-
+    m_program->release();    
 }
 
-void OpenGLViewWidget::setupMatricesForCamViewport()
-{
-    // the video is mapped to a rectangle in 3d space with corners
-    // (-1,-1,0),    (1,1,0),     (-1,1,0),    (1,-1,0)
-    // here we set up the view/camera of openGl such that it is looking
-    // exaclty at this rectangle -> the renderend openGl viewport will be
-    // only our video
-
-    glm::mat3 K_view = glm::mat3(1.f);
-    float clipFar = 1000;
-    float clipNear = 1;
-    // Our ModelViewProjection : projection of model to different view and then to image
-
-    K_view[0] = -1.f * K_view[0];
-    K_view[1] = -1.f * K_view[1];
-    K_view[2] = -1.f * K_view[2];
-    clipFar = -1.0 * clipFar;
-    clipNear = -1.0 * clipNear;
-
-    glm::mat4 perspective(K_view);
-    perspective[2][2] = clipNear + clipFar;
-    perspective[3][2] = clipNear * clipFar;
-    perspective[2][3] = -1.f;
-    perspective[3][3] = 0.f;
-
-    glm::mat4 toNDC = glm::ortho(0.f,(float) m_frameWidth,(float) m_frameHeight,0.f,clipNear,clipFar);
-
-    m_MVP = toNDC * perspective;
-}
 
 void OpenGLViewWidget::paintGL()
 {
-//    qDebug() << "Function Name: " << Q_FUNC_INFO;
-//    QElapsedTimer timer;
-//    timer.start();
-
-    // nothing loaded yet
+    // nothing loaded yet, do nothing
     if(m_texture_Ydata == NULL || m_texture_Udata == NULL || m_texture_Vdata == NULL) return;
-//    if(m_texture_red_data == NULL ) return;
 
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
     m_program->bind();
 
+    // clear remove last frame. might be unnecessary, since we overwrite the whole viewport with the new frame
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CCW);
 
+    // make the new uploaded frame available
     m_texture_Ydata->bind(0);
     m_texture_Udata->bind(1);
     m_texture_Vdata->bind(2);
 
-//    m_program->setUniformValue("textureSamplerRed", 0);
-//    m_program->setUniformValue("textureSamplerGreen", 1);
-//    m_program->setUniformValue("textureSamplerBlue", 2);
-
-
-
-    glUniformMatrix4fv(m_matMVP_Loc, 1, GL_FALSE, &m_MVP[0][0]);
-
-
+    // make vertices, triangles and texture coordinates available
     m_vertice_indices_Vbo.bind();
     m_vertices_Vbo.bind();
     m_textureLuma_coordinates_Vbo.bind();
-    //m_textureChroma_coordinates_Vbo.bind();
 
+    // draw the new frame
+    // GL_TRIANGLE_STRIP: Every group of 3 adjacent vertices forms a triangle.
+    // The face direction of the strip is determined by the winding of the first triangle.
+    // Each successive triangle will have its effective face order reversed,
+    // so the system compensates for that by testing it in the opposite way.
+    // A vertex stream of n length will generate n-2 triangles.
     glDrawElements(
         GL_TRIANGLE_STRIP,      // mode
         m_videoFrameTriangles_indices.size(),    // count
-        GL_UNSIGNED_INT,   // type
+        GL_UNSIGNED_INT,   // data type (use type of m_videoFrameTriangles_indices)
         (void*)0           // element array buffer offset
     );
 
     m_program->release();
 
-//    qDebug() << "Painting took" << timer.elapsed() << "milliseconds";
-//    int msSinceLastPaint = m_measureFPSTimer.restart();
-//    emit msSinceLastPaintChanged(msSinceLastPaint);
 }

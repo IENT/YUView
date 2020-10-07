@@ -56,25 +56,6 @@ OpenGLWindow::OpenGLWindow() :
       format.setOption(QSurfaceFormat::DebugContext);
       QSurfaceFormat::setDefaultFormat(format);
 
-//    QSurfaceFormat format;
-//    // asks for a OpenGL 3.2 debug context using the Core profile
-//    format.setMajorVersion(3);
-//    format.setMinorVersion(2);
-//    format.setProfile(QSurfaceFormat::CoreProfile);
-//    format.setOption(QSurfaceFormat::DebugContext);
-
-//    QOpenGLContext *context = new QOpenGLContext;
-//    context->setFormat(format);
-//    context->create();
-
-
-//    QOpenGLContext *ctx = QOpenGLContext::currentContext();
-//    logger = new QOpenGLDebugLogger(this);
-
-//    logger->initialize(); // initializes in the current context, i.e. ctx
-
-//    connect(logger, &QOpenGLDebugLogger::messageLogged, this, &OpenGLWindow::handleOepnGLLoggerMessages);
-//    logger->startLogging();
 
     setCentralWidget(&openGLView);
 //  splitView.setAttribute(Qt::WA_AcceptTouchEvents);
