@@ -91,14 +91,6 @@ void OpenGLWindow::handleOepnGLLoggerMessages( QOpenGLDebugMessage message )
     qDebug() << message;
 }
 
-void OpenGLWindow::closeEvent(QCloseEvent *event)
-{
-  // This window cannot be closed. Signal that we want to go to single window mode.
-  // The main window will then hide this window.
-  event->ignore();
-  emit signalSingleWindowMode();
-}
-
 void OpenGLWindow::keyPressEvent(QKeyEvent *event)
 {
   int key = event->key();
@@ -111,12 +103,11 @@ void OpenGLWindow::keyPressEvent(QKeyEvent *event)
   }
   else if (key == Qt::Key_F && controlOnly)
     toggleFullscreen();
+  else if (key == Qt::Key_G && controlOnly)
+    close();
   else
   {
-    // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
-//    if (!splitView.handleKeyPress(event))
-//      emit unhandledKeyPress(event);
-
-    //QWidget::keyPressEvent(event);
+    // pass the event on to the QWidget.
+    QWidget::keyPressEvent(event);
   }
 }

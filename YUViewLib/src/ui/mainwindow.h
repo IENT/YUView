@@ -82,6 +82,7 @@ private slots:
   void showFileOpenDialog();
   void resetWindowLayout();
   void closeAndClearSettings();
+  void showOpenGLWindow();
 
   void onMenuResetView(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->resetView(checked); }
   void onMenuZoomToFit(bool checked) { const auto v = this->getCurrentActiveView(); if (v) v->zoomToFit(checked); }

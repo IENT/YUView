@@ -84,9 +84,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   connect(ui.displaySplitView, &splitViewWidget::signalShowSeparateWindow, &separateViewWindow, &QWidget::setVisible);
 
   // Setup openGL view
-//  ui.displaySplitView->addSlaveView(&separateViewWindow.splitView);
-  connect(ui.displaySplitView, &splitViewWidget::signalShowOpenGLWindow, &openGLWindow, &QWidget::setVisible);
-
+  connect(ui.displaySplitView, &splitViewWidget::signalShowOpenGLWindow, this, &MainWindow::showOpenGLWindow);
 
   // Connect the playlistWidget signals to some slots
   auto const fileInfoAdapter = [this]{
@@ -106,8 +104,6 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.bitstreamAnalysis, &BitstreamAnalysisWidget::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, this, &MainWindow::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemChanged, ui.playbackController, &PlaybackController::selectionPropertiesChanged);
-
-  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::signalNewFrame, &openGLWindow.openGLView, &OpenGLViewWidget::updateFrame );
 
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, ui.propertiesWidget, &PropertiesWidget::itemAboutToBeDeleted);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::openFileDialog, this, &MainWindow::showFileOpenDialog);
@@ -363,6 +359,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
   if (!separateViewWindow.isHidden())
     separateViewWindow.close();
+
+  if (!openGLWindow.isHidden())
+    openGLWindow.close();
 }
 
 void MainWindow::openRecentFile()
@@ -600,6 +599,13 @@ void MainWindow::showAboutHelp(bool showAbout)
   about->setWindowModality(Qt::ApplicationModal);
   about->show();
 }
+
+void MainWindow::showOpenGLWindow()
+{
+    openGLWindow.setVisible(true);
+    connect(ui.playlistTreeWidget, &PlaylistTreeWidget::signalNewFrame, &openGLWindow.openGLView, &OpenGLViewWidget::updateFrame );
+}
+
 
 void MainWindow::showSettingsWindow()
 {

@@ -48,8 +48,6 @@ public:
   OpenGLViewWidget openGLView;
 
 signals:
-  // Signal that the user wants to go back to single window mode
-  void signalSingleWindowMode();
   
   // There was a key event in the separate window, but the separate view did not handle it.
   // The signal should be processed by the main window (maybe it is a nex/prev frame key event or something...).
@@ -60,11 +58,7 @@ public slots:
   void handleOepnGLLoggerMessages( QOpenGLDebugMessage message );
 
 protected:
-  void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
-
-protected slots:
-  void splitViewShowOpenGLWindow(bool show) { if (!show) emit signalSingleWindowMode(); }
 
 private:
   // If the window is shown full screen, this saves if it was maximized before going to full screen

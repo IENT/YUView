@@ -371,8 +371,11 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
 
   // todo: this needs to be changed. just hacked it in to test opengl playback
   QPointer<playlistItemRawFile> videoItem = (playlistItemRawFile*) currentItem[0].data();
-  QPointer<videoHandlerYUV> srcYUV = (videoHandlerYUV*)  videoItem->video.data();
-  openGLView->updateFormat(srcYUV->getFrameSize().width(), srcYUV->getFrameSize().height(), srcYUV->srcPixelFormat);
+  QPointer<videoHandlerYUV> srcYUV = (videoHandlerYUV*)  videoItem->video.data(); 
+  if(openGLView->isVisible()) // initializeGL is not called before it is visible
+  {
+    openGLView->updateFormat(srcYUV->getFrameSize().width(), srcYUV->getFrameSize().height(), srcYUV->srcPixelFormat);
+  }
 
   if (redraw && !updated)
   {
