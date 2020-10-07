@@ -190,8 +190,8 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     // Set filtering modes for texture minification and  magnification
     m_texture_Ydata->setMinificationFilter(QOpenGLTexture::Nearest);
     m_texture_Ydata->setMagnificationFilter(QOpenGLTexture::Linear);
-    // Wrap texture coordinates by repeating
-    m_texture_Ydata->setWrapMode(QOpenGLTexture::ClampToBorder);
+    // Wrap texture coordinates by repeating the border values. GL_CLAMP_TO_EDGE: the texture coordinate is clamped to the [0, 1] range.
+    m_texture_Ydata->setWrapMode(QOpenGLTexture::ClampToEdge);
 
 
 
@@ -213,8 +213,8 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     // Set filtering modes for texture minification and  magnification
     m_texture_Udata->setMinificationFilter(QOpenGLTexture::Nearest);
     m_texture_Udata->setMagnificationFilter(QOpenGLTexture::Linear);
-    // Wrap texture coordinates by repeating
-    m_texture_Udata->setWrapMode(QOpenGLTexture::ClampToBorder);
+    // Wrap texture coordinates by repeating the border values. GL_CLAMP_TO_EDGE: the texture coordinate is clamped to the [0, 1] range.
+    m_texture_Udata->setWrapMode(QOpenGLTexture::ClampToEdge);
 
 
     // V on unit 2
@@ -235,8 +235,8 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     //Set filtering modes for texture minification and  magnification
     m_texture_Vdata->setMinificationFilter(QOpenGLTexture::Nearest);
     m_texture_Vdata->setMagnificationFilter(QOpenGLTexture::Linear);
-    // Wrap texture coordinates by repeating
-    m_texture_Vdata->setWrapMode(QOpenGLTexture::ClampToBorder);
+    // Wrap texture coordinates by repeating the border values. GL_CLAMP_TO_EDGE: the texture coordinate is clamped to the [0, 1] range.
+    m_texture_Vdata->setWrapMode(QOpenGLTexture::ClampToEdge);
 
     update();
 
