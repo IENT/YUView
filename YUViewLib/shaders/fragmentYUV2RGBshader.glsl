@@ -12,7 +12,7 @@
 // Fragment shaders take a single fragment as input and produce a single fragment as output.
 
 // Interpolated values from the vertex shaders
-in vec2 fragmentUVLuma;
+in vec2 texture_coordinate;
 //in vec2 fragmentUVChroma;
 
 // Ouput data
@@ -20,9 +20,9 @@ out vec4 color_0;
 //out vec3 color_1;
 
 // Values that stay constant for the whole mesh.
-uniform usampler2D textureSamplerRed;
-uniform usampler2D textureSamplerGreen;
-uniform usampler2D textureSamplerBlue;
+uniform usampler2D textureSamplerY;
+uniform usampler2D textureSamplerU;
+uniform usampler2D textureSamplerV;
 
 uniform float sampleMaxVal;
 
@@ -37,9 +37,9 @@ void main(){
     // Output color = color of the texture at the specified UV
     vec3 color709;
     //color709.rgb = texture2D( textureSamplerYUV, fragmentUV ).rgb;
-    color709.r = float(texture( textureSamplerRed, fragmentUVLuma ).r);
-    color709.g = float(texture( textureSamplerGreen, fragmentUVLuma ).r);
-    color709.b = float(texture( textureSamplerBlue, fragmentUVLuma ).r);
+    color709.r = float(texture( textureSamplerY, texture_coordinate ).r);
+    color709.g = float(texture( textureSamplerU, texture_coordinate ).r);
+    color709.b = float(texture( textureSamplerV, texture_coordinate ).r);
 
     // normalize color values to the intervall [0, 1]
     color709.r = color709.r / sampleMaxVal;

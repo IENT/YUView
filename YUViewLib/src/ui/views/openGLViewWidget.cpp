@@ -268,9 +268,9 @@ void OpenGLViewWidget::initializeGL()
     m_program->bind();
 
 
-    m_program->setUniformValue("textureSamplerRed", 0);
-    m_program->setUniformValue("textureSamplerGreen", 1);
-    m_program->setUniformValue("textureSamplerBlue", 2);
+    m_program->setUniformValue("textureSamplerY", 0);
+    m_program->setUniformValue("textureSamplerU", 1);
+    m_program->setUniformValue("textureSamplerV", 2);
 
 
     // just put video on two triangles forming a rectangle as follows.

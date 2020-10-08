@@ -12,7 +12,7 @@ layout(location = 0) in vec3 vertexPosition_modelspace;
 layout(location = 1) in vec2 vertexLuma;
 
 // Output data ; will be interpolated for each fragment.
-out vec2 fragmentUVLuma; // texture coordinates
+out vec2 texture_coordinate; // texture coordinates
 
 // Mmodel view projection (MVP) matrix
 // the vertices are setup to be aligned with openGL clip coordinates.
@@ -26,5 +26,5 @@ uniform mat4 mvp_matrix;
 void main(){        
     gl_Position = mvp_matrix * vec4(vertexPosition_modelspace, 1.0f);
     // for texture coordinates we simply discard the z axis, and flip the y axis
-    fragmentUVLuma = vec2(vertexLuma.x, 1.0 - vertexLuma.y);
+    texture_coordinate = vec2(vertexLuma.x, 1.0 - vertexLuma.y);
 }
