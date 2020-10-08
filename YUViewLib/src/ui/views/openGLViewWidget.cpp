@@ -60,17 +60,33 @@ void OpenGLViewWidget::handleOepnGLLoggerMessages( QOpenGLDebugMessage message )
 
 void OpenGLViewWidget::resizeGL(int w, int h)
 {
-//    // Calculate aspect ratio
-//    qreal aspect = qreal(w) / qreal(h ? h : 1);
+    // Calculate aspect ratio
+    qreal aspect_widget = qreal(w) / qreal(h ? h : 1);
+    qreal aspect_frame = qreal(m_frameWidth) / qreal(m_frameHeight ? m_frameHeight : 1);
 
-//    // Set near plane to 3.0, far plane to 7.0, field of view 45 degrees
-//    const qreal zNear = 3.0, zFar = 7.0, fov = 45.0;
+    // Reset projection
+    projection.setToIdentity();
 
-//    // Reset projection
-//    projection.setToIdentity();
+    // compare apsect ratio of widget and frame and decide how to scale
+    if( aspect_widget > aspect_frame )
+    {
+        // need to scale width
+        qreal scale = aspect_frame / aspect_widget;
+        projection.scale(scale, 1.0f);
+    }
+    else
+    {
+        // need to scale width
+        qreal scale = aspect_widget / aspect_frame;
+        projection.scale(1.0f, scale);
+    }
 
-//    // Set perspective projection
-//    projection.perspective(fov, aspect, zNear, zFar);
+    // send updated matrix to the shader
+    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
+    m_program->bind();
+    // Set modelview-projection matrix
+    m_program->setUniformValue("mvp_matrix", projection);
+    m_program->release();
 }
 
 
@@ -85,7 +101,7 @@ void OpenGLViewWidget::updateFrame(const QByteArray &textureData)
     }
 
 
-    m_swapUV = 0; // todo
+    m_swapUV = 0; // todo, this could also be easily done in the fragment shader
 
 
     const unsigned char *srcY = (unsigned char*)textureData.data();
@@ -200,9 +216,8 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     // Wrap texture coordinates by repeating the border values. GL_CLAMP_TO_EDGE: the texture coordinate is clamped to the [0, 1] range.
     m_texture_Vdata->setWrapMode(QOpenGLTexture::ClampToEdge);
 
-
-    update();
-
+    // need to resize, aspect ratio could have changed
+    resizeGL(geometry().width(), geometry().height());
 }
 
 

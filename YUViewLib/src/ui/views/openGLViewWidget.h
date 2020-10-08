@@ -79,7 +79,7 @@ private:
     QBasicTimer timer;
     QOpenGLShaderProgram program;
 
-//    QMatrix4x4 projection;
+    QMatrix4x4 projection;
 
 
     QOpenGLDebugLogger *logger;
