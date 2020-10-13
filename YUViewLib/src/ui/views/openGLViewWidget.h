@@ -66,7 +66,8 @@ public:
 
 public slots:
     void handleOepnGLLoggerMessages( QOpenGLDebugMessage message );
-    void updateFrame(const QByteArray &textureData); // display a new frame
+    void updateFrame(const int frameWidth, const int frameHeight, const YUV_Internals::yuvPixelFormat PxlFormat, const QByteArray &textureData); // display a new frame
+
     // change frame format (width, height, ...
     void updateFormat(int frameWidth, int frameHeight, YUV_Internals::yuvPixelFormat PxlFormat);
 

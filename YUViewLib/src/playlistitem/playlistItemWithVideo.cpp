@@ -88,7 +88,7 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
     if (emitSignals)
     {
       emit signalItemChanged(true, RECACHE_NONE);
-      emit signalNewFrame(video->currentFrameRawData);
+      emit signalNewFrame(video->getFrameSize().width(), video->getFrameSize().height(), video->getFormat(), video->currentFrameRawData);
     }
   }
   
@@ -105,7 +105,7 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
       if (emitSignals)
       {
         emit signalItemDoubleBufferLoaded();
-        emit signalNewFrame(video->currentFrameRawData);
+        emit signalNewFrame(video->getFrameSize().width(), video->getFrameSize().height(), video->getFormat(), video->currentFrameRawData);
       }
     }
   }

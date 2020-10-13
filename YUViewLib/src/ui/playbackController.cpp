@@ -369,14 +369,6 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
   else if (currentFrameIdx < frameSlider->minimum())
     updated = setCurrentFrame(frameSlider->minimum());
 
-  // todo: this needs to be changed. just hacked it in to test opengl playback
-  QPointer<playlistItemRawFile> videoItem = (playlistItemRawFile*) currentItem[0].data();
-  QPointer<videoHandlerYUV> srcYUV = (videoHandlerYUV*)  videoItem->video.data(); 
-  if(openGLView->isVisible()) // initializeGL is not called before it is visible
-  {
-    openGLView->updateFormat(srcYUV->getFrameSize().width(), srcYUV->getFrameSize().height(), srcYUV->srcPixelFormat);
-  }
-
   if (redraw && !updated)
   {
     splitViewPrimary->update(false, true);

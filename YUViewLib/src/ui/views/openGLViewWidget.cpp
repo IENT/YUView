@@ -92,11 +92,16 @@ void OpenGLViewWidget::resizeGL(int w, int h)
 
 
 
-void OpenGLViewWidget::updateFrame(const QByteArray &textureData)
+void OpenGLViewWidget::updateFrame(const int frameWidth, const int frameHeight, const YUV_Internals::yuvPixelFormat PxlFormat, const QByteArray &textureData)
 {
+    if(!(frameHeight == m_frameHeight && frameWidth == m_frameWidth && PxlFormat == m_pixelFormat) )
+    {
+        updateFormat(frameWidth, frameHeight, PxlFormat);
+    }
+
     if(!m_pixelFormat.isValid() || textureData.isEmpty())
     {
-        qDebug() << "Unvalid PixelFormat or empty texture Array";
+        qDebug() << "Invalid PixelFormat or empty texture Array";
         return;
     }
 

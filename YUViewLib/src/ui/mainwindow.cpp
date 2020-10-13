@@ -51,6 +51,8 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   Q_INIT_RESOURCE(images);
   Q_INIT_RESOURCE(docs);
 
+  qRegisterMetaType<YUV_Internals::yuvPixelFormat>();
+
   SettingsDialog::initializeDefaults();
 
   QSettings settings;
