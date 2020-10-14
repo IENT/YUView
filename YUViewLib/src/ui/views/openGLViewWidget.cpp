@@ -94,6 +94,8 @@ void OpenGLViewWidget::resizeGL(int w, int h)
 
 void OpenGLViewWidget::updateFrame(const int frameWidth, const int frameHeight, const YUV_Internals::yuvPixelFormat PxlFormat, const QByteArray &textureData)
 {
+    makeCurrent();
+
     if(!(frameHeight == m_frameHeight && frameWidth == m_frameWidth && PxlFormat == m_pixelFormat) )
     {
         updateFormat(frameWidth, frameHeight, PxlFormat);
@@ -118,11 +120,15 @@ void OpenGLViewWidget::updateFrame(const int frameWidth, const int frameHeight, 
     m_texture_Udata->setData(QOpenGLTexture::Red_Integer, m_openGLTexturePixelType, srcU); // U on unit 1
     m_texture_Vdata->setData(QOpenGLTexture::Red_Integer, m_openGLTexturePixelType, srcV); // V on unit 2
 
+    doneCurrent();
+
     update();
 }
 
 void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Internals::yuvPixelFormat PxlFormat)
 {
+    makeCurrent();
+
     m_frameWidth = frameWidth;
     m_frameHeight = frameHeight;
 
@@ -223,6 +229,7 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
 
     // need to resize, aspect ratio could have changed
     resizeGL(geometry().width(), geometry().height());
+    doneCurrent();
 }
 
 
