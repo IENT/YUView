@@ -78,10 +78,9 @@ public:
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
 
-
+protected:
   // A pointer to the videHandler. In the derived class, don't foret to set this.
   QScopedPointer<videoHandler> video;
-protected:
 
   // The videoHandler can be a videoHandlerRGB or a videoHandlerYUV
   YUView::RawFormat rawFormat;

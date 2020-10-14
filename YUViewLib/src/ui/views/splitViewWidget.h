@@ -122,7 +122,6 @@ public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
 
   void triggerActionSeparateView() { actionSeparateView.trigger(); }
-//  void triggerActionOpenGLView() { actionOpenGLView.trigger(); }
   void toggleFullScreenAction() { actionFullScreen.trigger(); }
 
 private slots:
@@ -143,6 +142,7 @@ private slots:
   void toggleSeparateWindowPlaybackBoth(bool checked) { Q_UNUSED(checked); };
   void toggleFullScreen(bool checked);
   void toggleOpenGLWindow(bool checked);
+
 protected:
   
   // Set the widget to the given view mode

@@ -174,6 +174,7 @@ public:
   PackingOrder packingOrder {PackingOrder::YUV};
   bool bytePacking {false};
 };
+
 } // namespace YUV_Internals
 
 Q_DECLARE_METATYPE(YUV_Internals::yuvPixelFormat)

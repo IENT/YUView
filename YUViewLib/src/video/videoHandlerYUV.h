@@ -145,10 +145,8 @@ protected:
   // Parameters for the YUV transformation (like scaling, invert, offset). For Luma ([0]) and chroma([1]).
   QMap<YUV_Internals::Component, YUV_Internals::MathParameters> mathParameters;
 
-public:
   // The currently selected YUV format
   YUV_Internals::yuvPixelFormat srcPixelFormat;
-protected:
 
   struct yuv_t
   {
