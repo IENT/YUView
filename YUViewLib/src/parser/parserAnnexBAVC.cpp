@@ -37,7 +37,7 @@
 #include "parserAnnexBItuTT35.h"
 #include "common/parserMacros.h"
 
-#define PARSER_AVC_DEBUG_OUTPUT 1
+#define PARSER_AVC_DEBUG_OUTPUT 0
 #if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_AVC(msg) qDebug() << msg
@@ -2502,6 +2502,7 @@ QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFra
 {
   QList<parserAnnexBAVC::HRD::HRDFrameToRemove> l;
   auto it = this->framesToRemove.begin();
+  double t_r_previous = 0;
   while (it != this->framesToRemove.end())
   {
     if ((*it).t_r < from)
@@ -2510,8 +2511,15 @@ QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFra
       it = this->framesToRemove.erase(it);
       continue;
     }
+    if ((*it).t_r < t_r_previous)
+    {
+      DEBUG_AVC("Warning: Frame " << (*it).poc << " has a removal time (" << double((*it).t_r) << ") before the previous frame (" << t_r_previous << "). Dropping it now.");
+      it = this->framesToRemove.erase(it);
+      continue;
+    }
     if ((*it).t_r >= from && (*it).t_r < to)
     {
+      t_r_previous = (*it).t_r;
       l.push_back((*it));
       it = this->framesToRemove.erase(it);
       continue;
