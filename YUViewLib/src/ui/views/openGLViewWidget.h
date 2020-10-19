@@ -40,6 +40,7 @@
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
+#include <QVector3D>
 #include <QMatrix4x4>
 #include <QQuaternion>
 #include <QVector2D>
@@ -47,9 +48,6 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
 #include <QOpenGLDebugLogger>
-
-// Include GLM
-#include <glm/glm.hpp>
 
 #include <video/yuvPixelFormat.h>
 
@@ -97,7 +95,7 @@ private:
     // providing the vertex data arrays.
     QOpenGLVertexArrayObject m_vao;
 
-    std::vector<glm::vec3> m_videoFrameTriangles_vertices;  // will hold the frame corners in 3d coordinates
+    std::vector<QVector3D> m_videoFrameTriangles_vertices;  // will hold the frame corners in 3d coordinates
     QOpenGLBuffer m_vertices_Vbo; // will hold the frame corners in 3d coordinates, once transmitted to GPU
 
     // each vector (of 3 unsigned int) holds the indices for one triangle in the video frame

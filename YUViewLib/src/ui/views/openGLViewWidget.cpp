@@ -7,10 +7,6 @@
 #include <QVector3D>
 
 #include <cmath>
-// Include GLM
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
 
 
 OpenGLViewWidget::OpenGLViewWidget(QWidget *parent)
@@ -304,10 +300,10 @@ void OpenGLViewWidget::initializeGL()
 
     // creating an array witht the vertices v0 to v3
     m_videoFrameTriangles_vertices.clear();
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(-1,-1,0));
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(1,1,0));
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(-1,1,0));
-    m_videoFrameTriangles_vertices.push_back(glm::vec3(1,-1,0));
+    m_videoFrameTriangles_vertices.push_back(QVector3D(-1,-1,0));
+    m_videoFrameTriangles_vertices.push_back(QVector3D(1,1,0));
+    m_videoFrameTriangles_vertices.push_back(QVector3D(-1,1,0));
+    m_videoFrameTriangles_vertices.push_back(QVector3D(1,-1,0));
     // 1rst attribute buffer : vertices
     m_vertices_Vbo.create();
     m_vertices_Vbo.bind();
@@ -325,7 +321,7 @@ void OpenGLViewWidget::initializeGL()
     m_vertices_Vbo.create();
     m_vertices_Vbo.bind();
     m_vertices_Vbo.setUsagePattern(QOpenGLBuffer::StaticDraw); //The data will be set once and used many times for drawing operations.
-    m_vertices_Vbo.allocate(&m_videoFrameTriangles_vertices[0], m_videoFrameTriangles_vertices.size()* sizeof(glm::vec3));
+    m_vertices_Vbo.allocate(&m_videoFrameTriangles_vertices[0], m_videoFrameTriangles_vertices.size()* sizeof(QVector3D));
 
 
     // triangle definition using indices.
