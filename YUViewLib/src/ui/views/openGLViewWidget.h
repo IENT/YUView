@@ -106,10 +106,10 @@ private:
     std::vector<float> m_videoFrameDataPoints_Luma; // will hold the frame corners in texture coordinates
     QOpenGLBuffer m_textureLuma_coordinates_Vbo; // will hold the frame corners in texture coordinates, once transmitted to GPU
 
-    // for uploading the video frame as a texture:
-    std::shared_ptr<QOpenGLTexture> m_texture_Ydata;
-    std::shared_ptr<QOpenGLTexture> m_texture_Udata;
-    std::shared_ptr<QOpenGLTexture> m_texture_Vdata;
+    // for uploading the video frame as a texture:    
+    QScopedPointer<QOpenGLTexture> m_texture_Ydata;
+    QScopedPointer<QOpenGLTexture> m_texture_Udata;
+    QScopedPointer<QOpenGLTexture> m_texture_Vdata;
 
     // texture format and pixel type depend on the input bit depth, keep track of them
     QOpenGLTexture::TextureFormat m_openGLTextureFormat;

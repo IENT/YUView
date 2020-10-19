@@ -165,7 +165,7 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     {
         m_texture_Ydata->destroy();
     }
-    m_texture_Ydata = std::make_shared<QOpenGLTexture>(QOpenGLTexture::Target2D);
+    m_texture_Ydata.reset(new QOpenGLTexture(QOpenGLTexture::Target2D));
     m_texture_Ydata->create();
     m_texture_Ydata->setSize(m_frameWidth,m_frameHeight);
     m_texture_Ydata->setFormat(m_openGLTextureFormat);
@@ -186,7 +186,7 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     {
         m_texture_Udata->destroy();
     }
-    m_texture_Udata = std::make_shared<QOpenGLTexture>(QOpenGLTexture::Target2D);
+    m_texture_Udata.reset(new QOpenGLTexture(QOpenGLTexture::Target2D));
     m_texture_Udata->create();
     m_texture_Udata->setSize(m_frameWidth/m_pixelFormat.getSubsamplingHor(),m_frameHeight/m_pixelFormat.getSubsamplingVer());
     m_texture_Udata->setFormat(m_openGLTextureFormat);
@@ -207,8 +207,7 @@ void OpenGLViewWidget::updateFormat(int frameWidth, int frameHeight, YUV_Interna
     {
         m_texture_Vdata->destroy();
     }
-
-    m_texture_Vdata = std::make_shared<QOpenGLTexture>(QOpenGLTexture::Target2D);
+    m_texture_Vdata.reset(new QOpenGLTexture(QOpenGLTexture::Target2D));
     m_texture_Vdata->create();
     m_texture_Vdata->setSize(m_frameWidth/m_pixelFormat.getSubsamplingHor(), m_frameHeight/m_pixelFormat.getSubsamplingVer());
     m_texture_Vdata->setFormat(m_openGLTextureFormat);
