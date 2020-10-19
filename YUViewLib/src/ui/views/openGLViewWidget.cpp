@@ -39,12 +39,35 @@ OpenGLViewWidget::OpenGLViewWidget(QWidget *parent)
 
 OpenGLViewWidget::~OpenGLViewWidget()
 {
-    // Make sure the context is current when deleting the texture
-    // and the buffers.
-    makeCurrent();
+  // Make sure the context is current when deleting the texture
+  // and the buffers.
+  makeCurrent();
 
+  QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
 
-    doneCurrent();
+  // cleaning up textures
+  if(m_texture_Ydata)
+  {
+    m_texture_Ydata->destroy();
+  }
+  if(m_texture_Udata)
+  {
+    m_texture_Udata->destroy();
+  }
+  if(m_texture_Vdata)
+  {
+    m_texture_Vdata->destroy();
+  }
+
+  // clean up buffers
+  m_vertices_Vbo.destroy();
+  m_vertice_indices_Vbo.destroy();
+  m_textureLuma_coordinates_Vbo.destroy();
+
+  // clean up vertex buffer array object
+  m_vao.destroy();
+
+  doneCurrent();
 }
 
 
