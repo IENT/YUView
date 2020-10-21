@@ -9,7 +9,7 @@ TARGET = tst_filesource
 QT += testlib
 QT -= gui
 
-INCLUDEPATH += $$top_srcdir/YUViewLib/src
-LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
+INCLUDEPATH += ../../../YUViewLib/src
+LIBS += -L../../../YUViewLib -lYUViewLib
 
 SOURCES += tst_filesource.cpp
