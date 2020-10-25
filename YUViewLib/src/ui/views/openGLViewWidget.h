@@ -117,6 +117,9 @@ private:
 
     QOpenGLShaderProgram *m_program;
 
+    void computeFrameVertices();
+    void computeFrameMesh();
+    void computeLumaTextureCoordinates();
 };
 
 #endif // OPENGLVIEWWIDGET_H

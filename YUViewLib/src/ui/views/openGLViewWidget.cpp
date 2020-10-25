@@ -11,8 +11,8 @@
 
 OpenGLViewWidget::OpenGLViewWidget(QWidget *parent)
     : QOpenGLWidget(parent),
-      m_frameWidth(1),
-      m_frameHeight(1),
+      m_frameWidth(100), // atm this determines the number of triangles used (set up only at initilization).
+      m_frameHeight(100), // todo: set a good number automatically, dependening on hardware (how?)
       // during rendering, for each index in the IndexBuffer, a vertex from
       // the vertex buffer (with that index) is selected
       m_vertice_indices_Vbo(QOpenGLBuffer::IndexBuffer),
@@ -275,14 +275,6 @@ void OpenGLViewWidget::initializeGL()
     // Gray level background
     glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
 
-    // Enable depth test
-    glEnable(GL_DEPTH_TEST);
-    // Accept fragment if it closer to the camera than the former one
-    glDepthFunc(GL_LESS);
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CCW);
-
-
     // Create a vertex array object. In OpenGL ES 2.0 and OpenGL 2.x
     // implementations this is optional and support may not be present
     // at all. Nonetheless the below code works in all cases and makes
@@ -303,29 +295,8 @@ void OpenGLViewWidget::initializeGL()
     m_program->setUniformValue("textureSamplerV", 2);
 
 
-    // just put video on two triangles forming a rectangle as follows.
-    // The trianlges are formed  by the vertice v0 to v3
-    // v2------v1
-    // |       /|
-    // |      / |
-    // |     /  |
-    // |    /   |
-    // |   /    |
-    // |  /     |
-    // | /      |
-    // |/       |
-    // v0------v3
-    // the vertices are setup to be aligned with openGL clip coordinates.
-    // Thus no further coordinate transform will be necessary.
-    // Further, textrue coordinates can be obtained by dropping the z-axis coordinate.
-    // https://learnopengl.com/Getting-started/Coordinate-Systems
-
-    // creating an array witht the vertices v0 to v3
-    m_videoFrameTriangles_vertices.clear();
-    m_videoFrameTriangles_vertices.push_back(QVector3D(-1,-1,0));
-    m_videoFrameTriangles_vertices.push_back(QVector3D(1,1,0));
-    m_videoFrameTriangles_vertices.push_back(QVector3D(-1,1,0));
-    m_videoFrameTriangles_vertices.push_back(QVector3D(1,-1,0));
+    // just put video on a rectangle as follows, spanned by a triangle mesh
+    computeFrameVertices();
     // 1rst attribute buffer : vertices
     m_vertices_Vbo.create();
     m_vertices_Vbo.bind();
@@ -346,16 +317,8 @@ void OpenGLViewWidget::initializeGL()
     m_vertices_Vbo.allocate(&m_videoFrameTriangles_vertices[0], m_videoFrameTriangles_vertices.size()* sizeof(QVector3D));
 
 
-    // triangle definition using indices.
-    // we use GL_TRIANGLE_STRIP: Every group of 3 adjacent vertices forms a triangle.
-    // Hence need only 4 indices to make our rectangle for the video.
-    m_videoFrameTriangles_indices.clear();
-    //First Triangle
-    m_videoFrameTriangles_indices.push_back(2);
-    m_videoFrameTriangles_indices.push_back(0);
-    m_videoFrameTriangles_indices.push_back(1);
-    // second triangle
-    m_videoFrameTriangles_indices.push_back(3);
+    // triangle definition using indices.        
+    computeFrameMesh();
     // transmit inideces to  buffer object
     m_vertice_indices_Vbo.create();
     m_vertice_indices_Vbo.bind();
@@ -366,15 +329,7 @@ void OpenGLViewWidget::initializeGL()
     // setting up texture coordinates for each vertex.
     // This links the rectangle corners to the corners of the uploaeded
     // texture / frame.
-    m_videoFrameDataPoints_Luma.clear();
-    m_videoFrameDataPoints_Luma.push_back(0.f);
-    m_videoFrameDataPoints_Luma.push_back(0.f);
-    m_videoFrameDataPoints_Luma.push_back(1.f);
-    m_videoFrameDataPoints_Luma.push_back(1.f);
-    m_videoFrameDataPoints_Luma.push_back(0.f);
-    m_videoFrameDataPoints_Luma.push_back(1.f);
-    m_videoFrameDataPoints_Luma.push_back(1.f);
-    m_videoFrameDataPoints_Luma.push_back(0.f);
+    computeLumaTextureCoordinates();
     // 2nd attribute buffer : texture coordinates / UVs
     m_textureLuma_coordinates_Vbo.create();
     m_textureLuma_coordinates_Vbo.bind();
@@ -418,13 +373,8 @@ void OpenGLViewWidget::paintGL()
     m_textureLuma_coordinates_Vbo.bind();
 
     // draw the new frame
-    // GL_TRIANGLE_STRIP: Every group of 3 adjacent vertices forms a triangle.
-    // The face direction of the strip is determined by the winding of the first triangle.
-    // Each successive triangle will have its effective face order reversed,
-    // so the system compensates for that by testing it in the opposite way.
-    // A vertex stream of n length will generate n-2 triangles.
     glDrawElements(
-        GL_TRIANGLE_STRIP,      // mode
+        GL_TRIANGLES,      // mode
         m_videoFrameTriangles_indices.size(),    // count
         GL_UNSIGNED_INT,   // data type (use type of m_videoFrameTriangles_indices)
         (void*)0           // element array buffer offset
@@ -433,3 +383,107 @@ void OpenGLViewWidget::paintGL()
     m_program->release();
 
 }
+
+
+
+// function to generate the vertices corresponding to the pixels of a frame.
+void OpenGLViewWidget::computeFrameVertices()
+{
+  // just put video on two triangles forming a rectangle as follows:
+  // |--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
+  // | /| /| /| /| /| /| /| /| /| /| /| /| /| /| /|
+  // |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |
+  // |--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
+  // | /| /| /| /| /| /| /| /| /| /| /| /| /| /| /|
+  // |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |
+  // |--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
+  // | /| /| /| /| /| /| /| /| /| /| /| /| /| /| /|
+  // |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |
+  // |--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
+  // | /| /| /| /| /| /| /| /| /| /| /| /| /| /| /|
+  // |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |
+  // |--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
+  // | /| /| /| /| /| /| /| /| /| /| /| /| /| /| /|
+  // |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |/ |
+  // |--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
+  // Each triangle corner is a vertex. While two triangles
+  // would suffice in priciple, this can have bad performance
+  // due to fill rate limitations. A single triangle should not
+  // span too large a region of the video. Neither should triangles be
+  // too small.
+  // See:
+  // - https://www.g-truc.net/post-0662.html
+  // - https://community.khronos.org/t/frame-rate-limited/28400
+  // We will use 2 triangles for each pixel, actually this might already be too small.
+  // Needs some experimentation.
+  //
+  // The corners should correspond to the square spanned by (-1,-1), (1,1)
+  // -> vertices are setup to be aligned with openGL clip coordinates.
+  //    Thus no further coordinate transform will be necessary.
+  // Further, textrue coordinates can be obtained by dropping the z-axis coordinate.
+  // https://learnopengl.com/Getting-started/Coordinate-Systems
+
+  m_videoFrameTriangles_vertices.clear();
+
+  for( int h = 0; h < m_frameHeight + 1; h++)
+  {
+    for(int w = 0; w < m_frameWidth + 1; w++)
+    {
+      float wInClipCoords = (2.0f * w / m_frameWidth) - 1;
+      float hInClipCoords = (2.0f * h / m_frameHeight) - 1;
+      m_videoFrameTriangles_vertices.push_back(QVector3D(wInClipCoords,hInClipCoords,0));
+    }
+  }
+}
+
+// function to create a mesh by connecting the vertices to triangles
+void OpenGLViewWidget::computeFrameMesh()
+{
+    m_videoFrameTriangles_indices.clear();
+
+    for( int h = 0; h < m_frameHeight; h++)
+    {
+        for(int w = 0; w < m_frameWidth; w++)
+        {
+            //tblr: top bottom left right
+            int index_pixel_tl = h*(m_frameWidth+1) + w;
+            int index_pixel_tr = index_pixel_tl + 1;
+            int index_pixel_bl = (h+1)*(m_frameWidth+1) + w;
+            int index_pixel_br = index_pixel_bl + 1;
+
+            // each pixel generates two triangles, specify them so orientation is counter clockwise
+            // first triangle
+            m_videoFrameTriangles_indices.push_back(index_pixel_tl);
+            m_videoFrameTriangles_indices.push_back(index_pixel_bl);
+            m_videoFrameTriangles_indices.push_back(index_pixel_tr);
+            // second triangle
+            m_videoFrameTriangles_indices.push_back(index_pixel_bl);
+            m_videoFrameTriangles_indices.push_back(index_pixel_br);
+            m_videoFrameTriangles_indices.push_back(index_pixel_tr);
+        }
+    }
+}
+
+// Function to fill Vector which will hold the texture coordinates which maps the texture (the video data) to the frame's vertices.
+void OpenGLViewWidget::computeLumaTextureCoordinates()
+{
+    m_videoFrameDataPoints_Luma.clear();
+
+    for( int h = 0; h < m_frameHeight + 1; h++)
+    {
+        for(int w = 0; w < m_frameWidth + 1; w++)
+        {
+
+            float x,y;
+            x = float(w) / m_frameWidth;  //center of pixel
+            y = float(h) / m_frameHeight;  //center of pixel
+
+            // set u for the pixel
+            m_videoFrameDataPoints_Luma.push_back(x);
+            // set v for the pixel
+            m_videoFrameDataPoints_Luma.push_back(y);
+            // set u for the pixel
+        }
+    }
+}
+
