@@ -679,6 +679,8 @@ void PlotViewWidget::drawPlot(QPainter &painter) const
         {
           unsigned intervalLeft = 0;
           unsigned intervalRight = nrpoints;
+          if (nrpoints == 0)
+            return intervalLeft;
           while (true)
           {
             unsigned pointToCheck = intervalLeft + (intervalRight - intervalLeft) / 2;

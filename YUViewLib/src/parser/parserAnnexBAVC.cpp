@@ -211,8 +211,6 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
   bool parsingSuccess = true;
   bool currentSliceIntra = false;
   QString currentSliceType;
-  QSharedPointer<buffering_period_sei> currentBufferingPeriodSEI;
-  QSharedPointer<pic_timing_sei> currentPicTimingSEI;
   if (nal_avc.nal_unit_type == SPS)
   {
     // A sequence parameter set
@@ -347,15 +345,21 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
         auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
         result = new_buffering_period_sei->parse_buffering_period_sei(sub_sei_data, this->active_SPS_list, message_tree);
         reparse = new_buffering_period_sei;
-        currentBufferingPeriodSEI = new_buffering_period_sei;
-        this->hrd.isFirstAUInBufferingPeriod = true;
+        if (this->lastBufferingPeriodSEI.isNull())
+          this->lastBufferingPeriodSEI = new_buffering_period_sei;
+        else
+          this->newBufferingPeriodSEI = new_buffering_period_sei;
+        this->nextAUIsFirstAUInBufferingPeriod = true;
       }
       else if (new_sei->payloadType == 1)
       {
         auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
         result = new_pic_timing_sei->parse_pic_timing_sei(sub_sei_data, this->active_SPS_list, CpbDpbDelaysPresentFlag, message_tree);
         reparse = new_pic_timing_sei;
-        currentPicTimingSEI = new_pic_timing_sei;
+        if (this->lastPicTimingSEI.isNull())
+          this->lastPicTimingSEI = new_pic_timing_sei;
+        else
+          this->newPicTimingSEI = new_pic_timing_sei;
       }
       else if (new_sei->payloadType == 4)
       {
@@ -428,6 +432,11 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       parseResult.bitrateEntry = entry;
 
       this->hrd.addAU(this->sizeCurrentAU * 8, curFramePOC, this->active_SPS_list[0], this->lastBufferingPeriodSEI, this->lastPicTimingSEI, this->getHRDPlotModel());
+
+      if (this->newBufferingPeriodSEI)
+        this->lastBufferingPeriodSEI = this->newBufferingPeriodSEI;
+      if (this->newPicTimingSEI)
+        this->lastPicTimingSEI = this->newPicTimingSEI;
     }
     this->sizeCurrentAU = 0;
     this->counterAU++;
@@ -438,17 +447,19 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
     this->lastFramePOC = curFramePOC;
   this->sizeCurrentAU += data.size();
 
+  if (this->nextAUIsFirstAUInBufferingPeriod)
+  {
+    if (this->counterAU > 0)
+      this->hrd.isFirstAUInBufferingPeriod = true;
+    this->nextAUIsFirstAUInBufferingPeriod = false;
+  }
+
   if (nal_avc.isSlice())
   {
     if (!currentSliceIntra)
       this->currentAUAllSlicesIntra = false;
     this->currentAUSliceTypes[currentSliceType]++;
   }
-
-  if (currentBufferingPeriodSEI)
-    this->lastBufferingPeriodSEI = currentBufferingPeriodSEI;
-  if (currentPicTimingSEI)
-    this->lastPicTimingSEI = currentPicTimingSEI;
 
   if (nalRoot)
   {
@@ -2256,7 +2267,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   // first AU.
   // if (this->au_n == 0)
   // {
-  //   auBits += 47 * 8;
+  //   auBits += 49 * 8;
   // }
 
   /* Some notation:
@@ -2370,7 +2381,8 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
         this->addConstantBufferLine(poc, lastFrameTime, (*it).t_r, plotModel);
         this->removeFromBufferAndCheck((*it), poc, (*it).t_r, plotModel);
         it = this->framesToRemove.erase(it);
-        lastFrameTime = (*it).t_r;
+        if (it != this->framesToRemove.end())
+          lastFrameTime = (*it).t_r;
       }
       else
         break;
@@ -2409,7 +2421,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
     // While bits are coming into the buffer, frames are removed as well.
     // For each period, we add the bits (and check the buffer state) and remove the
     // frames from the buffer (and check the buffer state).
-    auto t_ai_sub                  = t_ai;
+    auto t_ai_sub                    = t_ai;
     unsigned int buffer_add_sum      = 0;
     long double buffer_add_remainder = 0;
     for (auto frame : relevant_frames)
@@ -2490,10 +2502,24 @@ QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFra
 {
   QList<parserAnnexBAVC::HRD::HRDFrameToRemove> l;
   auto it = this->framesToRemove.begin();
+  double t_r_previous = 0;
   while (it != this->framesToRemove.end())
   {
+    if ((*it).t_r < from)
+    {
+      DEBUG_AVC("Warning: Frame " << (*it).poc << " was not removed at the time (" << double((*it).t_r) << ") it should have been. Dropping it now.");
+      it = this->framesToRemove.erase(it);
+      continue;
+    }
+    if ((*it).t_r < t_r_previous)
+    {
+      DEBUG_AVC("Warning: Frame " << (*it).poc << " has a removal time (" << double((*it).t_r) << ") before the previous frame (" << t_r_previous << "). Dropping it now.");
+      it = this->framesToRemove.erase(it);
+      continue;
+    }
     if ((*it).t_r >= from && (*it).t_r < to)
     {
+      t_r_previous = (*it).t_r;
       l.push_back((*it));
       it = this->framesToRemove.erase(it);
       continue;
