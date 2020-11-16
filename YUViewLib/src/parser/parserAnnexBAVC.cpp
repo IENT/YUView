@@ -432,17 +432,16 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       parseResult.bitrateEntry = entry;
 
       this->hrd.addAU(this->sizeCurrentAU * 8, curFramePOC, this->active_SPS_list[0], this->lastBufferingPeriodSEI, this->lastPicTimingSEI, this->getHRDPlotModel());
-
-      if (this->newBufferingPeriodSEI)
-        this->lastBufferingPeriodSEI = this->newBufferingPeriodSEI;
-      if (this->newPicTimingSEI)
-        this->lastPicTimingSEI = this->newPicTimingSEI;
     }
     this->sizeCurrentAU = 0;
     this->counterAU++;
     this->currentAUAllSlicesIntra = true;
     this->currentAUSliceTypes.clear();
   }
+  if (this->newBufferingPeriodSEI)
+    this->lastBufferingPeriodSEI = this->newBufferingPeriodSEI;
+  if (this->newPicTimingSEI)
+    this->lastPicTimingSEI = this->newPicTimingSEI;
   if (this->lastFramePOC != curFramePOC)
     this->lastFramePOC = curFramePOC;
   this->sizeCurrentAU += data.size();
