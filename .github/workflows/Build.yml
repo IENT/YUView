@@ -57,7 +57,7 @@ jobs:
         cd YUViewQt/YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.14.2/${{matrix.QT_FILE}} -o Qt.zip
         unzip -qa Qt.zip
-        echo "::add-path::$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin"
+        echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
     - name: Install MacDeployQT
       run: |
@@ -164,7 +164,7 @@ jobs:
         cd YUViewQt/YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.14.2/qtBase_5.14.2_win.zip -o Qt.zip
         7z x  Qt.zip
-        echo "::add-path::$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin"
+        echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
     - name: Install Qt deploy tools
       run: |
