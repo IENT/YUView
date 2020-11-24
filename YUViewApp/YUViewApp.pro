@@ -53,10 +53,7 @@ contains(QT_ARCH, x86_32|i386) {
 }
 
 macx {
-    QMAKE_MAC_SDK = macosx
-
     ICON = images/YUView.icns
-    QMAKE_INFO_PLIST = Info.plist
     SVNN = $$system("git describe --tags")
 }
 
