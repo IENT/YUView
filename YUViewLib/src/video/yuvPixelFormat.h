@@ -176,3 +176,5 @@ public:
 };
 
 } // namespace YUV_Internals
+
+Q_DECLARE_METATYPE(YUV_Internals::yuvPixelFormat)

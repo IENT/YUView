@@ -35,6 +35,7 @@
 #include <QSettings>
 
 #include "playlistitem/playlistItem.h"
+#include "playlistitem/playlistItemRawFile.h"
 #include "common/functions.h"
 #include "common/typedef.h"
 
@@ -367,7 +368,7 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
     updated = setCurrentFrame(frameSlider->maximum());
   else if (currentFrameIdx < frameSlider->minimum())
     updated = setCurrentFrame(frameSlider->minimum());
-  
+
   if (redraw && !updated)
   {
     splitViewPrimary->update(false, true);

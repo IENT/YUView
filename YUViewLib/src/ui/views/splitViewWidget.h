@@ -111,6 +111,7 @@ signals:
   
   // Show (or hide) the separate window
   void signalShowSeparateWindow(bool show);
+  void signalShowOpenGLWindow(bool show);
 
   void signalToggleFullScreen();
 
@@ -140,6 +141,7 @@ private slots:
   void toggleSeparateWindow(bool checked);
   void toggleSeparateWindowPlaybackBoth(bool checked) { Q_UNUSED(checked); };
   void toggleFullScreen(bool checked);
+  void toggleOpenGLWindow(bool checked);
 
 protected:
   
@@ -170,6 +172,7 @@ protected:
   QAction actionSplitView[3];
   QAction actionGrid[6];
   QAction actionSeparateView;
+  QAction actionOpenGLView;
   QAction actionSeparateViewLink;
   QAction actionSeparateViewPlaybackBoth;
   QAction actionZoomBox;

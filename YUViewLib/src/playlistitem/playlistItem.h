@@ -40,6 +40,7 @@
 #include "common/YUViewDomElement.h"
 
 #include "ui_playlistItem.h"
+#include <video/yuvPixelFormat.h>
 
 class frameHandler;
 class statisticHandler;
@@ -229,6 +230,9 @@ signals:
   // video cache, which will wait for all caching jobs to finish, clear the cache and recache everything.
   // This will trigger the tree widget to update it's contents.
   void signalItemChanged(bool redraw, recacheIndicator recache);
+
+  // for sending new data to openGL view
+  void signalNewFrame(const int frameWidth, const int frameHeight, const YUV_Internals::yuvPixelFormat newFormat,  const QByteArray &newPicture);
 
   // The item finished loading a frame into the double buffer. This is relevant if playback is paused and waiting
   // for the item to load the next frame into the double buffer. This will restart the timer. 

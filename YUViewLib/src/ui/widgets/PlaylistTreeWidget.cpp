@@ -352,6 +352,7 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
 {
   insertTopLevelItem(topLevelItemCount(), item);
   connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
+  connect(item, &playlistItem::signalNewFrame, this, &PlaylistTreeWidget::signalNewFrame );
   connect(item, &playlistItem::signalItemDoubleBufferLoaded, this, &PlaylistTreeWidget::slotItemDoubleBufferLoaded);
   setItemWidget(item, 1, new bufferStatusWidget(item, this));
   header()->resizeSection(1, 50);

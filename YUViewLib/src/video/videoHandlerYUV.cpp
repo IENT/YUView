@@ -982,23 +982,24 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
     // Loading failed or it is still being performed in the background
     return;
 
-  // The data in currentFrameRawData is now up to date. If necessary
-  // convert the data to RGB.
-  if (loadToDoubleBuffer)
-  {
-    QImage newImage;
-    convertYUVToImage(currentFrameRawData, newImage, srcPixelFormat, frameSize);
-    doubleBufferImage = newImage;
-    doubleBufferImageFrameIdx = frameIndex;
-  }
-  else if (currentImageIdx != frameIndex)
-  {
-    QImage newImage;
-    convertYUVToImage(currentFrameRawData, newImage, srcPixelFormat, frameSize);
-    QMutexLocker setLock(&currentImageSetMutex);    
-    currentImage = newImage;
-    currentImageIdx = frameIndex;
-  }
+
+//  // The data in currentFrameRawData is now up to date. If necessary
+//  // convert the data to RGB.
+//  if (loadToDoubleBuffer)
+//  {
+//    QImage newImage;
+//    convertYUVToImage(currentFrameRawData, newImage, srcPixelFormat, frameSize);
+//    doubleBufferImage = newImage;
+//    doubleBufferImageFrameIdx = frameIndex;
+//  }
+//  else if (currentImageIdx != frameIndex)
+//  {
+//    QImage newImage;
+//    convertYUVToImage(currentFrameRawData, newImage, srcPixelFormat, frameSize);
+//    QMutexLocker setLock(&currentImageSetMutex);
+//    currentImage = newImage;
+//    currentImageIdx = frameIndex;
+//  }
 }
 
 void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)

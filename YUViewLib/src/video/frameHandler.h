@@ -40,6 +40,7 @@
 #include "common/typedef.h"
 
 #include "ui_frameHandler.h"
+#include <video/yuvPixelFormat.h>
 
 struct infoItem;
 
@@ -79,6 +80,7 @@ public:
   virtual bool isFormatValid() const { return frameSize.width() > 0 && frameSize.height() > 0; }
 
   virtual QString getFormatAsString() const { return QString("%1;%2").arg(this->frameSize.width()).arg(this->frameSize.height()); }
+  virtual YUV_Internals::yuvPixelFormat  getFormat() const { return YUV_Internals::yuvPixelFormat(); }
   virtual bool setFormatFromString(QString format);
 
   // Calculate the difference of this frameHandler to another frameHandler. This

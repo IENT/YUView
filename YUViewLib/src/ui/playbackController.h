@@ -39,6 +39,7 @@
 
 #include "widgets/PlaylistTreeWidget.h"
 #include "views/splitViewWidget.h"
+#include "views/openGLViewWidget.h"
 #include "common/typedef.h"
 
 #include "ui_playbackController.h"
@@ -56,6 +57,7 @@ public:
 
   void setSplitViews(splitViewWidget *primary, splitViewWidget *separate) { splitViewPrimary = primary; splitViewSeparate = separate; }
   void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
+  void setOpenGLView (OpenGLViewWidget *viewWidget) { openGLView = viewWidget; }
 
   // If playback is running, stop it by pressing the playPauseButton.
   void pausePlayback() { if (playing()) on_playPauseButton_clicked(); }
@@ -190,6 +192,7 @@ private:
   // So when we are using a timer for high framerates, this is the faster option.
   QPointer<splitViewWidget> splitViewPrimary;
   QPointer<splitViewWidget> splitViewSeparate;
+  QPointer<OpenGLViewWidget> openGLView;
 
   // We keep a pointer to the playlist tree so we can select the next item, see if there is a next item and so on.
   QPointer<PlaylistTreeWidget> playlist;

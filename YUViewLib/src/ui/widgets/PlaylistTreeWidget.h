@@ -142,6 +142,9 @@ signals:
   // The selected item finished loading the double buffer.
   void selectedItemDoubleBufferLoad(int itemID);
 
+  // for sending new data to openGL view  
+  void signalNewFrame(const int frameWidth, const int frameHeight, const YUV_Internals::yuvPixelFormat newFormat,  const QByteArray &newPicture);
+
 protected:
   // Overload from QWidget to create a custom context menu
   virtual void contextMenuEvent(QContextMenuEvent *event) Q_DECL_OVERRIDE;

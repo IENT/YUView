@@ -982,7 +982,10 @@ void playlistItemCompressedVideo::loadFrame(int frameIdx, bool playing, bool loa
 
     isFrameLoading = false;
     if (emitSignals)
+    {
       emit signalItemChanged(true, RECACHE_NONE);
+      emit signalNewFrame(video->getFrameSize().width(), video->getFrameSize().height(), video->getFormat(), video->currentFrameRawData);
+    }
   }
 
   if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))
@@ -996,7 +999,10 @@ void playlistItemCompressedVideo::loadFrame(int frameIdx, bool playing, bool loa
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
+      {
         emit signalItemDoubleBufferLoaded();
+        emit signalNewFrame(video->getFrameSize().width(), video->getFrameSize().height(), video->getFormat(), video->currentFrameRawData);
+      }
     }
   }
 }

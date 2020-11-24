@@ -51,6 +51,8 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   Q_INIT_RESOURCE(images);
   Q_INIT_RESOURCE(docs);
 
+  qRegisterMetaType<YUV_Internals::yuvPixelFormat>();
+
   SettingsDialog::initializeDefaults();
 
   QSettings settings;
@@ -73,11 +75,18 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   separateViewWindow.setWindowTitle("Separate View");
   separateViewWindow.setGeometry(0, 0, 300, 600);
 
+  // Initialize the OpenGL window
+  openGLWindow.setWindowTitle("OpenGL View");
+  openGLWindow.setGeometry(0, 0, 300, 600);
+
   connect(ui.displaySplitView, &splitViewWidget::signalToggleFullScreen, this, &MainWindow::toggleFullscreen);
 
   // Setup primary/separate splitView
   ui.displaySplitView->addSlaveView(&separateViewWindow.splitView);
   connect(ui.displaySplitView, &splitViewWidget::signalShowSeparateWindow, &separateViewWindow, &QWidget::setVisible);
+
+  // Setup openGL view
+  connect(ui.displaySplitView, &splitViewWidget::signalShowOpenGLWindow, this, &MainWindow::showOpenGLWindow);
 
   // Connect the playlistWidget signals to some slots
   auto const fileInfoAdapter = [this]{
@@ -97,6 +106,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.bitstreamAnalysis, &BitstreamAnalysisWidget::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, this, &MainWindow::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemChanged, ui.playbackController, &PlaybackController::selectionPropertiesChanged);
+
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, ui.propertiesWidget, &PropertiesWidget::itemAboutToBeDeleted);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::openFileDialog, this, &MainWindow::showFileOpenDialog);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemDoubleBufferLoad, ui.playbackController, &PlaybackController::currentSelectedItemsDoubleBufferLoad);
@@ -110,6 +120,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   createMenusAndActions();
 
   ui.playbackController->setSplitViews(ui.displaySplitView, &separateViewWindow.splitView);
+  ui.playbackController->setOpenGLView( &openGLWindow.openGLView );
   ui.playbackController->setPlaylist(ui.playlistTreeWidget);
   ui.displaySplitView->setPlaybackController(ui.playbackController);
   ui.displaySplitView->setPlaylistTreeWidget(ui.playlistTreeWidget);
@@ -350,6 +361,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
   if (!separateViewWindow.isHidden())
     separateViewWindow.close();
+
+  if (!openGLWindow.isHidden())
+    openGLWindow.close();
 }
 
 void MainWindow::openRecentFile()
@@ -587,6 +601,13 @@ void MainWindow::showAboutHelp(bool showAbout)
   about->setWindowModality(Qt::ApplicationModal);
   about->show();
 }
+
+void MainWindow::showOpenGLWindow()
+{
+    openGLWindow.setVisible(true);
+    connect(ui.playlistTreeWidget, &PlaylistTreeWidget::signalNewFrame, &openGLWindow.openGLView, &OpenGLViewWidget::updateFrame );
+}
+
 
 void MainWindow::showSettingsWindow()
 {

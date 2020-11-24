@@ -78,6 +78,7 @@ public:
   virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, int64_t fileSize=-1) Q_DECL_OVERRIDE;
 
   virtual QString getFormatAsString() const override { return frameHandler::getFormatAsString() + ";YUV;" + this->srcPixelFormat.getName(); }
+  virtual YUV_Internals::yuvPixelFormat  getFormat() const override { return this->srcPixelFormat; }
   virtual bool setFormatFromString(QString format) override;
 
   // Create the YUV controls and return a pointer to the layout.

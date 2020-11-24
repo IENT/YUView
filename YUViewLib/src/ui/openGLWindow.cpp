@@ -30,21 +30,43 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "separateWindow.h"
+#include "openGLWindow.h"
 
 #include <QSettings>
 
-SeparateWindow::SeparateWindow() :
-  splitView(this)
+OpenGLWindow::OpenGLWindow() :
+  openGLView(this)
 {
-  setCentralWidget(&splitView);
-  splitView.setAttribute(Qt::WA_AcceptTouchEvents);
 
-  connect(&splitView, &splitViewWidget::signalToggleFullScreen, this, &SeparateWindow::toggleFullscreen);
-  connect(&splitView, &splitViewWidget::signalShowSeparateWindow, this, &SeparateWindow::splitViewShowSeparateWindow);
+
+    // https://doc.qt.io/qt-5/qopenglwidget.html
+    //As described above, it is simpler and more robust to set the requested format globally so
+    //  that it applies to all windows and contexts during the lifetime of the application.
+      QSurfaceFormat format;
+      // asks for a OpenGL 3.2 debug context using the Core profile
+      format.setMajorVersion(3);
+      format.setMinorVersion(3);
+      format.setDepthBufferSize(24);
+      format.setStencilBufferSize(8);
+      // Setting an interval value of 0 will turn the vertical refresh syncing off, any value
+      // higher than 0 will turn the vertical syncing on. Setting interval to a higher value,
+      // for example 10, results in having 10 vertical retraces between every buffer swap.
+      format.setSwapInterval(0); // no effect in windows
+      format.setProfile(QSurfaceFormat::CoreProfile);
+      format.setOption(QSurfaceFormat::DebugContext);
+      QSurfaceFormat::setDefaultFormat(format);
+
+
+    setCentralWidget(&openGLView);
+//  splitView.setAttribute(Qt::WA_AcceptTouchEvents);
+
+
+
+//  connect(&splitView, &splitViewWidget::signalToggleFullScreen, this, &OpenGLWindow::toggleFullscreen);
+//  connect(&splitView, &splitViewWidget::signalShowOpenGLWindow, this, &OpenGLWindow::splitViewShowOpenGLWindow);
 }
 
-void SeparateWindow::toggleFullscreen()
+void OpenGLWindow::toggleFullscreen()
 {
   QSettings settings;
   if (isFullScreen())
@@ -64,15 +86,8 @@ void SeparateWindow::toggleFullscreen()
   }
 }
 
-void SeparateWindow::closeEvent(QCloseEvent *event)
-{
-  // This window cannot be closed. Signal that we want to go to single window mode.
-  // The main window will then hide this window.
-  event->ignore();
-  emit signalSingleWindowMode();
-}
 
-void SeparateWindow::keyPressEvent(QKeyEvent *event)
+void OpenGLWindow::keyPressEvent(QKeyEvent *event)
 {
   int key = event->key();
   bool controlOnly = (event->modifiers() == Qt::ControlModifier);
@@ -84,12 +99,11 @@ void SeparateWindow::keyPressEvent(QKeyEvent *event)
   }
   else if (key == Qt::Key_F && controlOnly)
     toggleFullscreen();
+  else if (key == Qt::Key_G && controlOnly)
+    close();
   else
   {
-    // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
-    if (!splitView.handleKeyPress(event))
-      emit unhandledKeyPress(event);
-
-    //QWidget::keyPressEvent(event);
+    // pass the event on to the QWidget.
+    QWidget::keyPressEvent(event);
   }
 }
