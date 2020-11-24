@@ -2271,7 +2271,12 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_d
     TreeItem *const itemTree = new TreeItem("x265 user data", root);
     new TreeItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578", itemTree);
 
-    QStringList list = user_data_message.split(QRegExp("[\r\n\t ]+"), QString::SkipEmptyParts);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    auto list = user_data_message.split(QRegExp("[\r\n\t ]+"), Qt::SkipEmptyParts);
+#else
+    auto list = user_data_message.split(QRegExp("[\r\n\t ]+"), QString::SkipEmptyParts);
+#endif
+
     bool options = false;
     QString aggregate_string;
     for (QString val : list)
