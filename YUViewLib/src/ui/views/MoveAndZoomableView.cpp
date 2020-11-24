@@ -224,7 +224,12 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
 
 void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
   auto p = event->position();
+#else
+  auto p = event->pos();
+#endif
+
   event->accept();
   this->zoom(event->angleDelta().y() > 0 ? ZoomMode::IN : ZoomMode::OUT, p.toPoint());
 }
