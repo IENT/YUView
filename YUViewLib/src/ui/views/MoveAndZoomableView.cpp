@@ -224,9 +224,9 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
 
 void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
 {
-  QPoint p = event->pos();
+  auto p = event->position();
   event->accept();
-  this->zoom(event->delta() > 0 ? ZoomMode::IN : ZoomMode::OUT, p);
+  this->zoom(event->angleDelta().y() > 0 ? ZoomMode::IN : ZoomMode::OUT, p.toPoint());
 }
 
 void MoveAndZoomableView::keyPressEvent(QKeyEvent *event)

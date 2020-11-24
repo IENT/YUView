@@ -208,8 +208,8 @@ bool playlistItemRawFile::parseY4MFile()
     if (parameterIndicator == 'W' || parameterIndicator == 'H')
     {
       QByteArray number;
-      QChar c = rawData.at(offset);
-      while (c.isDigit())
+      auto c = rawData.at(offset);
+      while (QChar(c).isDigit())
       {
         number.append(c);
         c = rawData.at(++offset);
@@ -233,8 +233,8 @@ bool playlistItemRawFile::parseY4MFile()
     {
       // The format is: "25:1" (nom:den)
       QByteArray nominator;
-      QChar c = rawData.at(offset);
-      while (c.isDigit())
+      auto c = rawData.at(offset);
+      while (QChar(c).isDigit())
       {
         nominator.append(c);
         c = rawData.at(++offset);
@@ -250,7 +250,7 @@ bool playlistItemRawFile::parseY4MFile()
 
       QByteArray denominator;
       c = rawData.at(++offset);
-      while (c.isDigit())
+      while (QChar(c).isDigit())
       {
         denominator.append(c);
         c = rawData.at(++offset);
