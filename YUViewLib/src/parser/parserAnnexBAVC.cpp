@@ -1962,7 +1962,13 @@ bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData,
     new TreeItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578", itemTree);
 
     // This seems to be x264 user data. These contain the encoder settings which might be useful
+    
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     QStringList list = user_data_message.split(QRegExp("[\r\n\t ]+"), Qt::SkipEmptyParts);
+#else
+    QStringList list = user_data_message.split(QRegExp("[\r\n\t ]+"), QString::SkipEmptyParts);
+#endif
+
     bool options = false;
     QString aggregate_string;
     for (QString val : list)
