@@ -47,6 +47,11 @@ jobs:
             LIBDE265_REMOTE: libde265.dylib
             LIBDE265_LOCAL: libde265-internals.dylib
             ARTIFACT_NAME: YUView-Mac.zip
+          - os: macos-11.0
+            QT_FILE: qtBase_5.15.1_mac.zip
+            LIBDE265_REMOTE: libde265.dylib
+            LIBDE265_LOCAL: libde265-internals.dylib
+            ARTIFACT_NAME: YUView-Mac.zip
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
@@ -65,12 +70,12 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_mac.zip -o deployQt.zip
         unzip -qa deployQt.zip
       shell: bash
-      if: matrix.os == 'macos-10.15'
+      if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.00'
     - name: Install Macdeploy Qt
       run: |
         cp $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qttools/bin/macdeployqt $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
         strip $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
-      if: matrix.os == 'macos-10.15'
+      if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.00'
     - name: Install Linuxdeployqt
       run: |
         curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
@@ -103,7 +108,6 @@ jobs:
         qmake ..
         make -j 2
         make check
-      if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04' || matrix.os == 'macos-10.15'
     - name: Build App (Mac)
       run: |
         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
@@ -113,7 +117,7 @@ jobs:
         zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
         mkdir $GITHUB_WORKSPACE/artifacts
         cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
-      if: matrix.os == 'macos-10.15'
+      if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.00'
     - name: Build Appimage (Linux)
       run: |
         cd build
