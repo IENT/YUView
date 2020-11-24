@@ -92,8 +92,8 @@ bool singleInstanceHandler::isRunning(QString name, QStringList args)
     DEBUG_SINGLEISNTANCE("singleInstanceHandler::isRunning Connected to other instance. Sending data.");
 
     QByteArray buffer;
-    foreach(QString item, args)
-      buffer.append(item + "\n");
+    for (auto &item : args)
+      buffer.append(QString(item + "\n").toLatin1());
     socket.write(buffer);
     socket.waitForBytesWritten();
     return true;

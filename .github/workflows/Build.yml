@@ -34,19 +34,24 @@ jobs:
       matrix:
         include: 
           - os: ubuntu-16.04
-            QT_FILE: qtBase_5.14.2_xenial.zip
+            QT_FILE: qtBase_5.15.1_xenial.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
             ARTIFACT_NAME: YUView.AppImage
           - os: ubuntu-18.04
-            QT_FILE: qtBase_5.14.2_bionic.zip
+            QT_FILE: qtBase_5.15.1_bionic.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
           - os: macos-10.15
-            QT_FILE: qtBase_5.14.2_mac.zip
+            QT_FILE: qtBase_5.15.1_mac.zip
             LIBDE265_REMOTE: libde265.dylib
             LIBDE265_LOCAL: libde265-internals.dylib
             ARTIFACT_NAME: YUView-Mac.zip
+          - os: macos-11.0
+            QT_FILE: qtBase_5.15.1_mac.zip
+            LIBDE265_REMOTE: libde265.dylib
+            LIBDE265_LOCAL: libde265-internals.dylib
+            ARTIFACT_NAME: YUView-Mac-BigSur.zip
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
@@ -55,22 +60,22 @@ jobs:
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.14.2/${{matrix.QT_FILE}} -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/${{matrix.QT_FILE}} -o Qt.zip
         unzip -qa Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
     - name: Install MacDeployQT
       run: |
         cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.14.2/qtTools_5.14.2_mac.zip -o deployQt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_mac.zip -o deployQt.zip
         unzip -qa deployQt.zip
       shell: bash
-      if: matrix.os == 'macos-10.15'
+      if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
     - name: Install Macdeploy Qt
       run: |
         cp $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qttools/bin/macdeployqt $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
         strip $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
-      if: matrix.os == 'macos-10.15'
+      if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
     - name: Install Linuxdeployqt
       run: |
         curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
@@ -79,7 +84,7 @@ jobs:
     - name: Install Linux packages
       run: |
         sudo apt-get update
-        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0
+        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev
       if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04'
     - name: Install Newer GCC Ubuntu 16.04
       run: |
@@ -103,7 +108,6 @@ jobs:
         qmake ..
         make -j 2
         make check
-      if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04' || matrix.os == 'macos-10.15'
     - name: Build App (Mac)
       run: |
         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
@@ -113,7 +117,7 @@ jobs:
         zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
         mkdir $GITHUB_WORKSPACE/artifacts
         cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
-      if: matrix.os == 'macos-10.15'
+      if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
     - name: Build Appimage (Linux)
       run: |
         cd build
@@ -162,14 +166,14 @@ jobs:
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.14.2/qtBase_5.14.2_win.zip -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_win.zip -o Qt.zip
         7z x  Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
     - name: Install Qt deploy tools
       run: |
         cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.14.2/qtTools_5.14.2_win.zip -o deployQt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_win.zip -o deployQt.zip
         7z x deployQt.zip
       shell: bash
     - name: Install libde265
