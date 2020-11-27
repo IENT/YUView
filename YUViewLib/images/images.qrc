@@ -39,6 +39,8 @@
         <file>img_folder@2x.png</file>
         <file>img_x.png</file>
         <file>img_x@2x.png</file>
+        <file>img_resample.png</file>
+        <file>img_resample@2x.png</file>
         <file>YUViewSimple.qss</file>
     </qresource>
 </RCC>
