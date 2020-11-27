@@ -32,33 +32,41 @@
 
 #pragma once
 
-#include "playlistItemCompressedVideo.h"
-#include "playlistItemDifference.h"
-#include "playlistItemResample.h"
-#include "playlistItemStatisticsCSVFile.h"
-#include "playlistItemStatisticsVTMBMSFile.h"
-#include "playlistItemImageFile.h"
-#include "playlistItemImageFileSequence.h"
-#include "playlistItemOverlay.h"
-#include "playlistItemRawFile.h"
-#include "playlistItemText.h"
+#include <QPointer>
 
-/* This namespace contains all functions that are needed for creation of playlist Items. This way, no other
-   function must know, what types of item's there are. If you implement a new playlistItem, it only has to
-   be added here (and in the functions).
-*/
-namespace playlistItems
+#include "common/fileInfo.h"
+#include "videoHandler.h"
+#include "videoHandlerYUV.h"
+
+#include "ui_videoHandlerResample.h"
+
+class videoHandlerResample : public videoHandler
 {
-  // Get a list of all supported file format filets and the extensions. This can be used in a file open dialog.
-  QStringList getSupportedFormatsFilters();
+  Q_OBJECT
+
+public:
+  explicit videoHandlerResample();
+
+  void loadResampledFrame(int frameIndex, int frameIndex0, bool loadToDoubleBuffer=false);
   
-  // Get a list of all supported file extensions (["*.csv", "*.yuv" ...])
-  QStringList getSupportedNameFilters();
+  bool inputValid() const;
 
-  // When given a file, this function will create the correct playlist item (depending on the file extension)
-  playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileName);
+  // Create the YUV controls and return a pointer to the layout.
+  virtual QLayout *createResampleHandlerControls();
 
-  // Load a playlist item (and all of it's children) from the playlist
-  // Append all loaded playlist items to the list plItemAndIDList (alongside the IDs that were saved in the playlist file)
-  playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath);
-}
+  // Set the video input. This will also update the number frames, the controls and the frame size.
+  // The signal signalHandlerChanged will be emitted if a redraw is required.
+  void setInputVideo(frameHandler *childVideo0);
+
+  QList<infoItem> resampleInfoList;
+    
+private slots:
+  void slotResampleControlChanged(int value);
+
+private:
+
+  // The input video we will resample
+  QPointer<frameHandler> inputVideo;
+
+  SafeUi<Ui::videoHandlerResample> ui;
+};

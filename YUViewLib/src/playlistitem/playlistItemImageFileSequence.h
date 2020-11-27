@@ -58,8 +58,7 @@ public:
   // Create a new playlistItemImageFileSequence from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemImageFileSequence *newplaylistItemImageFileSequence(const YUViewDomElement &root, const QString &playlistFilePath);
 
-  // A raw file can be used in a difference
-  virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInProcessing() const Q_DECL_OVERRIDE { return true; }
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video->getPixelValues(pixelPos, getFrameIdxInternal(frameIdx))); }
 

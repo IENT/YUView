@@ -152,8 +152,8 @@ public:
   // A difference item will return values from both items and the differences.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) { Q_UNUSED(pixelPos); Q_UNUSED(frameIdx); return ValuePairListSets(); }
 
-  // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
-  virtual bool canBeUsedInDifference() const { return false; }
+  // If you want your item to be droppable onto a difference/resample object, return true here and return a valid video handler.
+  virtual bool canBeUsedInProcessing() const { return false; }
   virtual frameHandler *getFrameHandler() { return nullptr; }
 
   // If this item provides statistics, return them here so that they can be used correctly in an overlay
