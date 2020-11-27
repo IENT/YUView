@@ -62,6 +62,7 @@ public:
     
 private slots:
   void slotResampleControlChanged(int value);
+  void slotInterpolationModeChanged(int value);
 
 private:
 

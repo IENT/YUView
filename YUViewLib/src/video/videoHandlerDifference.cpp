@@ -176,8 +176,7 @@ QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, i
 
 QLayout *videoHandlerDifference::createDifferenceHandlerControls()
 {
-  // Absolutely always only call this function once!
-  assert(!ui.created());
+  Q_ASSERT_X(!ui.created(), "createResampleHandlerControls", "Controls must only be created once");
 
   ui.setupUi();
 

@@ -62,8 +62,11 @@ void videoHandlerResample::loadResampledFrame(int frameIndex, int frameIndex0, b
     video->loadFrame(frameIndex0);
   
   // Scale the image
-  // QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex0, frameIndex1, differenceInfoList, amplificationFactor, markDifference);
-  auto newFrame = this->inputVideo->getCurrentFrameAsImage();
+  // QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex0, frameIndex1, differenceInfoList, amplificationFactor, markDifference);´
+  auto interpolationMode = Qt::SmoothTransformation;
+  if (ui.created() && ui.comboBoxInterpolation->currentIndex() == 1)
+    interpolationMode = Qt::FastTransformation;
+  auto newFrame = this->inputVideo->getCurrentFrameAsImage().scaled(this->getFrameSize(), Qt::IgnoreAspectRatio, interpolationMode);
 
   if (!newFrame.isNull())
   {
@@ -108,10 +111,13 @@ void videoHandlerResample::setInputVideo(frameHandler *childVideo)
 
 QLayout *videoHandlerResample::createResampleHandlerControls()
 {
-  // Absolutely always only call this function once!
-  assert(!ui.created());
+  Q_ASSERT_X(!ui.created(), "createResampleHandlerControls", "Controls must only be created once");
 
   ui.setupUi();
+
+  ui.comboBoxInterpolation->addItem("Bilinear");
+  ui.comboBoxInterpolation->addItem("Linear");
+  ui.comboBoxInterpolation->setCurrentIndex(0);
 
   auto size = QSize(0, 0);
   if (this->inputVideo)
@@ -122,6 +128,7 @@ QLayout *videoHandlerResample::createResampleHandlerControls()
 
   this->connect(ui.spinBoxWidth, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotResampleControlChanged);
   this->connect(ui.spinBoxHeight, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotResampleControlChanged);
+  this->connect(ui.comboBoxInterpolation, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerResample::slotInterpolationModeChanged);
 
   return ui.topVBoxLayout;
 }
@@ -132,5 +139,16 @@ void videoHandlerResample::slotResampleControlChanged(int value)
 
   auto newSize = QSize(ui.spinBoxWidth->value(), ui.spinBoxHeight->value());
   this->setFrameSize(newSize);
-  emit signalHandlerChanged(true, RECACHE_NONE);
+  this->invalidateAllBuffers();
+  
+  emit signalHandlerChanged(true, RECACHE_CLEAR);
+}
+
+void videoHandlerResample::slotInterpolationModeChanged(int value)
+{
+  Q_UNUSED(value);
+  
+  this->invalidateAllBuffers();
+
+  emit signalHandlerChanged(true, RECACHE_CLEAR);
 }

@@ -57,6 +57,8 @@ playlistItemResample::playlistItemResample()
   this->maxItemCount = 1;
   this->frameLimitsMax = false;
   this->infoText = RESAMPLE_INFO_TEXT;
+
+  connect(&this->video, &frameHandler::signalHandlerChanged, this, &playlistItemResample::signalItemChanged);
 }
 
 /* For a resample item, the info list is just the name of the child item
@@ -121,14 +123,7 @@ void playlistItemResample::createPropertiesWidget()
   // On the top level everything is layout vertically
   auto vAllLaout = new QVBoxLayout(propertiesWidget.data());
 
-  QFrame *line = new QFrame;
-  line->setObjectName(QStringLiteral("line"));
-  line->setFrameShape(QFrame::HLine);
-  line->setFrameShadow(QFrame::Sunken);
-
   // First add the parents controls (first video controls (width/height...) then YUV controls (format,...)
-  vAllLaout->addLayout(this->video.createFrameHandlerControls(true));
-  vAllLaout->addWidget(line);
   vAllLaout->addLayout(this->video.createResampleHandlerControls());
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
@@ -181,7 +176,7 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
     this->isFrameLoading = true;
     // Since every playlist item can have it's own relative indexing, we need two frame indices
     auto idx = getChildPlaylistItem(0)->getFrameIdxInternal(frameIdxInternal);
-    this->video.loadFrame(idx);
+    this->video.loadResampledFrame(frameIdx, idx);
     this->isFrameLoading = false;
     if (emitSignals)
       emit signalItemChanged(true, RECACHE_NONE);
@@ -197,7 +192,7 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
       this->isFrameLoadingDoubleBuffer = true;
       // Since every playlist item can have it's own relative indexing, we need two frame indices
       auto idx = getChildPlaylistItem(0)->getFrameIdxInternal(nextFrameIdx);
-      this->video.loadFrame(idx, true);
+      this->video.loadResampledFrame(frameIdx, idx, true);
       this->isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
         emit signalItemDoubleBufferLoaded();

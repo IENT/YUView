@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>100</width>
-    <height>113</height>
+    <width>227</width>
+    <height>72</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,8 +18,19 @@
     <layout class="QVBoxLayout" name="topVBoxLayout">
      <item>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="1" column="1">
-        <widget class="QSpinBox" name="spinBoxWidth"/>
+       <item row="1" column="3">
+        <widget class="QSpinBox" name="spinBoxHeight">
+         <property name="maximum">
+          <number>9999999</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="labelHeight">
+         <property name="text">
+          <string>Height</string>
+         </property>
+        </widget>
        </item>
        <item row="1" column="0">
         <widget class="QLabel" name="labelWidth">
@@ -28,15 +39,22 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="labelHeight">
-         <property name="text">
-          <string>Height</string>
+       <item row="1" column="1">
+        <widget class="QSpinBox" name="spinBoxWidth">
+         <property name="maximum">
+          <number>9999999</number>
          </property>
         </widget>
        </item>
-       <item row="2" column="1">
-        <widget class="QSpinBox" name="spinBoxHeight"/>
+       <item row="2" column="0" colspan="2">
+        <widget class="QLabel" name="labelInterpolation">
+         <property name="text">
+          <string>Interpolation</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2" colspan="2">
+        <widget class="QComboBox" name="comboBoxInterpolation"/>
        </item>
       </layout>
      </item>
@@ -57,6 +75,11 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>spinBoxWidth</tabstop>
+  <tabstop>spinBoxHeight</tabstop>
+  <tabstop>comboBoxInterpolation</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

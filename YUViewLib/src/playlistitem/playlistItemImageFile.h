@@ -76,8 +76,7 @@ public:
   // Get the frame handler
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &frame; }
 
-  virtual bool   // An image can be used in a difference.
-() const Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInProcessing() const Q_DECL_OVERRIDE { return true; }
 
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }
