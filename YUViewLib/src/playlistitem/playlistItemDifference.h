@@ -81,6 +81,6 @@ private:
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   videoHandlerDifference difference;
-  bool isDifferenceLoading;
-  bool isDifferenceLoadingToDoubleBuffer;
+  bool isDifferenceLoading {false};
+  bool isDifferenceLoadingToDoubleBuffer {false};
 };

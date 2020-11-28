@@ -56,10 +56,6 @@ playlistItemDifference::playlistItemDifference()
   // For a difference item, only 2 items are allowed.
   maxItemCount = 2;
   frameLimitsMax = false;
-  isDifferenceLoading = false;
-  isDifferenceLoadingToDoubleBuffer = false;
-
-  // The text that is shown when no difference can be drawn
   infoText = DIFFERENCE_INFO_TEXT;
 
   connect(&difference, &videoHandlerDifference::signalHandlerChanged, this, &playlistItemDifference::signalItemChanged);

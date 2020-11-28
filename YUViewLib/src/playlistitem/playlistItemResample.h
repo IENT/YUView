@@ -53,7 +53,7 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override { return this->video.needsLoading(getFrameIdxInternal(frameIdx), loadRawData); }
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
   // This is part of the caching interface. The loadFrame function is always called from a different thread.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) override;
   virtual bool isLoading() const override { return this->isFrameLoading; }
@@ -82,6 +82,6 @@ private:
   videoHandlerResample video;
 
   // Is the loadFrame function currently loading?
-  bool isFrameLoading;
-  bool isFrameLoadingDoubleBuffer;
+  bool isFrameLoading {false};
+  bool isFrameLoadingDoubleBuffer {false};
 };

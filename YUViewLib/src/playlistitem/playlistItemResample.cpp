@@ -161,6 +161,11 @@ ValuePairListSets playlistItemResample::getPixelValues(const QPoint &pixelPos, i
   return ValuePairListSets("RGB", this->video.getPixelValues(pixelPos, frameIdx));
 }
 
+itemLoadingState playlistItemResample::needsLoading(int frameIdx, bool loadRawData)
+{
+  return this->video.needsLoading(getFrameIdxInternal(frameIdx), loadRawData); 
+}
+
 void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals) 
 {
   Q_UNUSED(playing);
@@ -172,7 +177,7 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
   if (state == LoadingNeeded)
   {
     // Load the requested current frame
-    DEBUG_RESAMPLE("playlistItemResample::loadFrame loading difference for frame %d", frameIdxInternal);
+    DEBUG_RESAMPLE("playlistItemResample::loadFrame loading resampled frame %d", frameIdxInternal);
     this->isFrameLoading = true;
     // Since every playlist item can have it's own relative indexing, we need two frame indices
     auto idx = getChildPlaylistItem(0)->getFrameIdxInternal(frameIdxInternal);
@@ -188,7 +193,7 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
     int nextFrameIdx = frameIdxInternal + 1;
     if (nextFrameIdx <= startEndFrame.second)
     {
-      DEBUG_RESAMPLE("playlistItemResample::loadFrame loading difference into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
+      DEBUG_RESAMPLE("playlistItemResample::loadFrame loading resampled frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
       this->isFrameLoadingDoubleBuffer = true;
       // Since every playlist item can have it's own relative indexing, we need two frame indices
       auto idx = getChildPlaylistItem(0)->getFrameIdxInternal(nextFrameIdx);
@@ -202,7 +207,7 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
 
 void playlistItemResample::childChanged(bool redraw, recacheIndicator recache)
 {
-  // One of the child items changed and needs to redraw. This means that the difference is out of date
+  // The child item changed and needs to redraw. This means that the resampled frame is out of date
   // and has to be recalculated.
   this->video.invalidateAllBuffers();
   playlistItemContainer::childChanged(redraw, recache);
