@@ -47,7 +47,7 @@
 #define STAT_PARSING_BUFFER_SIZE 1048576
 
 playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOrFileName)
-  : playlistItem(itemNameOrFileName, Type::Indexed)
+  : playlistItem(itemNameOrFileName, Type::Indexed, "Statistics File Properties")
 {
   // Set default variables
   fileSortedByPOC = false;

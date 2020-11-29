@@ -42,8 +42,8 @@ using namespace YUView;
 #define DEBUG_PLVIDEO(fmt,...) ((void)0)
 #endif
 
-playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName)
- : playlistItem(itemNameOrFileName, Type::Indexed)
+playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName, QString propertiesWidgetTitle)
+ : playlistItem(itemNameOrFileName, Type::Indexed, propertiesWidgetTitle)
 {
   // Nothing is currently being loaded
   isFrameLoading = false;

@@ -44,8 +44,6 @@ public:
 
   virtual infoData getInfo() const override;
 
-  virtual QString getPropertiesTitle() const override { return "Resample Properties"; }
-
   // Overload from playlistItemVideo.
   virtual QSize getSize() const override;
   

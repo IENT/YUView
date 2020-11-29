@@ -73,13 +73,17 @@ public:
     int id;
     // The playlist ID is set if the item is loaded from a playlist. Don't forget to reset this after the playlist was loaded.
     int playlistID {0};
+
+    QString propertiesWidgetTitle;
+
+    Type type;
   };
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(const QString &itemNameOrFileName, Type type);
+  playlistItem(const QString &itemNameOrFileName, Type type, QString propertiesWidgetTitle);
   virtual ~playlistItem();
 
   Properties properties() const { return this->prop; };
@@ -98,7 +102,7 @@ public:
   // know how to load/save themselves.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const = 0;
   
-  virtual bool isIndexedByFrame() { return type == Type::Indexed; }
+  virtual bool isIndexedByFrame() const { return this->properties().type == Type::Indexed; }
   virtual bool isFileSource() const { return false; }
 
   // Get the size of the item (in pixels). The default implementation will return
@@ -114,11 +118,6 @@ public:
   // If the playlist item indicates to put a button into the fileInfo, this call back is called if the user presses the button.
   virtual void infoListButtonPressed(int buttonID) { Q_UNUSED(buttonID); }
 
-  /* Get the title of the properties panel. The child class has to overload this.
-   * This can be different depending on the type of playlistItem.
-   * For example a playlistItemYUVFile will return "YUV File properties".
-  */
-  virtual QString getPropertiesTitle() const = 0;
   QWidget *getPropertiesWidget() { if (!propertiesWidget) createPropertiesWidget(); return propertiesWidget.data(); }
   bool propertiesWidgetCreated() const { return propertiesWidget; }
 
@@ -267,7 +266,6 @@ protected:
   static void loadPropertiesFromPlaylist(const YUViewDomElement &root, playlistItem *newItem);
 
   // What is the (current) type of the item?
-  Type type;
   void setType(Type newType);
 
   // ------ playlistItem_Indexed

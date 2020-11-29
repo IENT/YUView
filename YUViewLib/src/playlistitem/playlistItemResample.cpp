@@ -47,7 +47,7 @@
 #define RESAMPLE_INFO_TEXT "Please drop an item onto this item to show a resampled version of it."
 
 playlistItemResample::playlistItemResample()
-  : playlistItemContainer("Resample Item")
+  : playlistItemContainer("Resample Item", "Resample Properties")
 {
   setIcon(0, functions::convertIcon(":img_resample.png"));
 

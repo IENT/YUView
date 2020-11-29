@@ -35,13 +35,14 @@
 
 unsigned int playlistItem::idCounter = 0;
 
-playlistItem::playlistItem(const QString &itemNameOrFileName, Type type)
+playlistItem::playlistItem(const QString &itemNameOrFileName, Type type, QString propertiesWidgetTitle)
 {
-  setName(itemNameOrFileName);
-  setType(type);
+  this->setName(itemNameOrFileName);
+  this->setType(type);
   
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
   this->prop.id = idCounter++;
+  this->prop.propertiesWidgetTitle = propertiesWidgetTitle;
 
   startEndFrame = indexRange(-1, -1);
 }
@@ -112,7 +113,7 @@ void playlistItem::setType(Type newType)
     ui.durationSpinBox->setVisible(showStatic);
   }
 
-  type = newType;
+  this->prop.type = newType;
 }
 
 // For an indexed item we save the start/end, sampling and frame rate to the playlist
@@ -121,7 +122,7 @@ void playlistItem::appendPropertiesToPlaylist(YUViewDomElement &d) const
   // Append the playlist item properties
   d.appendProperiteChild("id", QString::number(this->prop.id));
 
-  if (type == Type::Indexed)
+  if (this->properties().type == Type::Indexed)
   {
     d.appendProperiteChild("startFrame", QString::number(startEndFrame.first));
     d.appendProperiteChild("endFrame", QString::number(startEndFrame.second));
@@ -144,7 +145,7 @@ void playlistItem::loadPropertiesFromPlaylist(const YUViewDomElement &root, play
 {
   newItem->prop.playlistID = root.findChildValue("id").toInt();
 
-  if (newItem->type == Type::Indexed)
+  if (newItem->properties().type == Type::Indexed)
   {
     int startFrame = root.findChildValue("startFrame").toInt();
     int endFrame = root.findChildValue("endFrame").toInt();
@@ -187,7 +188,7 @@ void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
 
 void playlistItem::slotVideoControlChanged()
 {
-  if (type == Type::Static)
+  if (this->properties().type == Type::Static)
   {
     duration = ui.durationSpinBox->value();
   }
@@ -252,7 +253,7 @@ QLayout *playlistItem::createPlaylistItemControls()
   ui.samplingSpinBox->setMaximum(100000);
   ui.samplingSpinBox->setValue(sampling);
 
-  setType(type);
+  this->setType(this->properties().type);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.startSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);

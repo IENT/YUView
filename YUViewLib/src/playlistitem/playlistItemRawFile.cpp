@@ -51,7 +51,7 @@ using namespace YUV_Internals;
 #endif
 
 playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize, const QString &sourcePixelFormat, const QString &fmt)
-  : playlistItemWithVideo(rawFilePath)
+  : playlistItemWithVideo(rawFilePath, "Raw File Properties")
 {
   // High DPI support for icons:
   // Set the Qt::AA_UseHighDpiPixmaps attribute and then just use QIcon(":image.png")

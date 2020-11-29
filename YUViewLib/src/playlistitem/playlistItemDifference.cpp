@@ -47,7 +47,7 @@
 #define DIFFERENCE_INFO_TEXT "Please drop two video item's onto this difference item to calculate the difference."
 
 playlistItemDifference::playlistItemDifference()
-  : playlistItemContainer("Difference Item")
+  : playlistItemContainer("Difference Item", "Difference Properties")
 {
   setIcon(0, functions::convertIcon(":img_difference.png"));
   // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.

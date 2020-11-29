@@ -72,7 +72,7 @@ using namespace functions;
 #define FORWARD_SEEK_THRESHOLD 5
 
 playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compressedFilePath, int displayComponent, inputFormat input, decoderEngine decoder)
-  : playlistItemWithVideo(compressedFilePath)
+  : playlistItemWithVideo(compressedFilePath, "Compressed File Properties")
 {
   // Set the properties of the playlistItem
   // TODO: should this change with the type of video?

@@ -52,7 +52,7 @@
 #define CUSTOM_POS_MAX 100000
 
 playlistItemOverlay::playlistItemOverlay() :
-  playlistItemContainer("Overlay Item")
+  playlistItemContainer("Overlay Item", "Overlay Properties")
 {
   setIcon(0, functions::convertIcon(":img_overlay.png"));
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.

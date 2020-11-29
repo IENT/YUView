@@ -56,12 +56,6 @@ public:
 
   bool isFileSource() const Q_DECL_OVERRIDE { return true; };
 
-  /* Get the title of the properties panel. The child class has to overload this.
-   * This can be different depending on the type of playlistItem.
-   * For example a playlistItemYUVFile will return "YUV File properties".
-  */
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Statistics File Properties"; }
-
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // ------ Statistics ----

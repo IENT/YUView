@@ -48,8 +48,6 @@ public:
 
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Image Properties"; }
-
   bool isFileSource() const Q_DECL_OVERRIDE { return true; };
 
   // Get the text size (using the current text, font/text size ...)

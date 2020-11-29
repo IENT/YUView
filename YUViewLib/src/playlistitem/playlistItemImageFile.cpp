@@ -43,7 +43,7 @@
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
 
 playlistItemImageFile::playlistItemImageFile(const QString &filePath) 
-  : playlistItem(filePath, Type::Static),
+  : playlistItem(filePath, Type::Static, "Image Properties"),
   needToLoadImage(true), imageLoading(false)
 {
   // Set the properties of the playlistItem

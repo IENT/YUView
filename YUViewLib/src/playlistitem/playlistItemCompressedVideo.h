@@ -70,8 +70,6 @@ public:
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
   virtual void infoListButtonPressed(int buttonID) Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Compressed File Properties"; }
-
   // Draw the compressed item using the given painter and zoom factor.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
