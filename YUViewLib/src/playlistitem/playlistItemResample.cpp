@@ -189,7 +189,7 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
     {
       DEBUG_RESAMPLE("playlistItemResample::loadFrame loading resampled frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
       this->isFrameLoadingDoubleBuffer = true;
-      this->video.loadResampledFrame(frameIdx, true);
+      this->video.loadResampledFrame(nextFrameIdx, true);
       this->isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
         emit signalItemDoubleBufferLoaded();

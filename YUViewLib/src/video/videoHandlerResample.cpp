@@ -51,9 +51,6 @@ videoHandlerResample::videoHandlerResample() : videoHandler()
 
 void videoHandlerResample::loadResampledFrame(int frameIndex, bool loadToDoubleBuffer)
 {
-  // No double buffering for resampling items
-  Q_UNUSED(loadToDoubleBuffer);
-
   if (!this->inputValid())
     return;
   
@@ -61,19 +58,27 @@ void videoHandlerResample::loadResampledFrame(int frameIndex, bool loadToDoubleB
   if (video && video->getCurrentImageIndex() != frameIndex)
     video->loadFrame(frameIndex);
   
-  // Scale the image
-  // QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex0, frameIndex1, differenceInfoList, amplificationFactor, markDifference);´
   auto interpolationMode = Qt::SmoothTransformation;
   if (ui.created() && ui.comboBoxInterpolation->currentIndex() == 1)
     interpolationMode = Qt::FastTransformation;
   auto newFrame = this->inputVideo->getCurrentFrameAsImage().scaled(this->getFrameSize(), Qt::IgnoreAspectRatio, interpolationMode);
 
-  if (!newFrame.isNull())
+  if (newFrame.isNull())
+    return;
+
+  if (loadToDoubleBuffer)
+  {
+    doubleBufferImage = newFrame;
+    doubleBufferImageFrameIdx = frameIndex;
+    DEBUG_VIDEO("videoHandlerResample::loadResampledFrame Loaded frame %d to double buffer", frameIndex);
+  }
+  else
   {
     // The new difference frame is ready
     QMutexLocker lock(&this->currentImageSetMutex);
-    currentImageIdx = frameIndex;
     currentImage = newFrame;
+    currentImageIdx = frameIndex;
+    DEBUG_VIDEO("videoHandlerResample::loadResampledFrame Loaded frame %d", frameIndex);
   }
 }
 
