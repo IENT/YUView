@@ -77,8 +77,7 @@ infoData playlistItemResample::getInfo() const
 
 void playlistItemResample::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
-  DEBUG_RESAMPLE("playlistItemResample::drawItem frameIdx %d %s", frameIdxInternal, childLlistUpdateRequired ? "childLlistUpdateRequired" : "");
+  DEBUG_RESAMPLE("playlistItemResample::drawItem frameIdx %d %s", frameIdx, childLlistUpdateRequired ? "childLlistUpdateRequired" : "");
   if (childLlistUpdateRequired)
   {
     // Update the 'childList' and connect the signals/slots
@@ -89,9 +88,6 @@ void playlistItemResample::drawItem(QPainter *painter, int frameIdx, double zoom
       auto frameHandler = getChildPlaylistItem(0)->getFrameHandler();
       this->video.setInputVideo(frameHandler);
     }
-
-    // Update the frame range
-    this->startEndFrame = this->getStartEndFrameLimits();
   }
 
   if (childCount() != 1 || !this->video.inputValid())
@@ -100,8 +96,7 @@ void playlistItemResample::drawItem(QPainter *painter, int frameIdx, double zoom
   else
   {
     // draw the videoHandler
-    int idx0 = getChildPlaylistItem(0)->getFrameIdxInternal(frameIdxInternal);
-    this->video.drawFrame(painter, idx0, zoomFactor, drawRawData);
+    this->video.drawFrame(painter, frameIdx, zoomFactor, drawRawData);
   }
 }
 
@@ -165,7 +160,7 @@ ValuePairListSets playlistItemResample::getPixelValues(const QPoint &pixelPos, i
 
 itemLoadingState playlistItemResample::needsLoading(int frameIdx, bool loadRawData)
 {
-  return this->video.needsLoading(getFrameIdxInternal(frameIdx), loadRawData); 
+  return this->video.needsLoading(frameIdx, loadRawData); 
 }
 
 void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals) 
@@ -173,17 +168,14 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
   Q_UNUSED(playing);
   if (childCount() != 1 || !this->video.inputValid())
     return;
-  const auto frameIdxInternal = this->getFrameIdxInternal(frameIdx);
   
-  auto state = this->video.needsLoading(frameIdxInternal, loadRawData);
+  auto state = this->video.needsLoading(frameIdx, loadRawData);
   if (state == LoadingNeeded)
   {
     // Load the requested current frame
-    DEBUG_RESAMPLE("playlistItemResample::loadFrame loading resampled frame %d", frameIdxInternal);
+    DEBUG_RESAMPLE("playlistItemResample::loadFrame loading resampled frame %d", frameIdx);
     this->isFrameLoading = true;
-    // Since every playlist item can have it's own relative indexing, we need two frame indices
-    auto idx = getChildPlaylistItem(0)->getFrameIdxInternal(frameIdxInternal);
-    this->video.loadResampledFrame(frameIdx, idx);
+    this->video.loadResampledFrame(frameIdx);
     this->isFrameLoading = false;
     if (emitSignals)
       emit signalItemChanged(true, RECACHE_NONE);
@@ -192,14 +184,12 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
   {
     // Load the next frame into the double buffer
-    int nextFrameIdx = frameIdxInternal + 1;
-    if (nextFrameIdx <= startEndFrame.second)
+    int nextFrameIdx = frameIdx + 1;
+    if (nextFrameIdx <= this->properties().startEndRange.second)
     {
       DEBUG_RESAMPLE("playlistItemResample::loadFrame loading resampled frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
       this->isFrameLoadingDoubleBuffer = true;
-      // Since every playlist item can have it's own relative indexing, we need two frame indices
-      auto idx = getChildPlaylistItem(0)->getFrameIdxInternal(nextFrameIdx);
-      this->video.loadResampledFrame(frameIdx, idx, true);
+      this->video.loadResampledFrame(frameIdx, true);
       this->isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
         emit signalItemDoubleBufferLoaded();

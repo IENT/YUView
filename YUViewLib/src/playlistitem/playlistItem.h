@@ -83,8 +83,14 @@ public:
 
     // ------ Type::Static
     double duration {PLAYLISTITEMTEXT_DEFAULT_DURATION};
-
-
+    // ------ Type::Indexed
+    double frameRate {DEFAULT_FRAMERATE};
+    /* If your item type is playlistItem_Indexed, you must
+       provide the absolute minimum and maximum frame indices that the user can set.
+       Normally this is: (0, numFrames-1). This value can change. Just emit a
+       signalItemChanged to update the limits.
+      */
+    indexRange startEndRange {-1, -1};
   };
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
@@ -94,7 +100,7 @@ public:
   playlistItem(const QString &itemNameOrFileName, Type type);
   virtual ~playlistItem();
 
-  Properties properties() const { return this->prop; };
+  virtual Properties properties() const { return this->prop; };
 
   // Set the name of the item. This is also the name that is shown in the tree view
   void setName(const QString &name);
@@ -128,12 +134,6 @@ public:
 
   // Does the playlist item currently accept drops of the given item?
   virtual bool acceptDrops(playlistItem *draggingItem) const { Q_UNUSED(draggingItem); return false; }
-
-  // ----- playlistItem_Indexed
-  // if the item is indexed by frame the following functions return the corresponding values:
-  virtual double     getFrameRate()      const { return frameRate; }
-  virtual int        getSampling()       const { return sampling; }
-  virtual indexRange getFrameIdxRange()  const;
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored. drawRawValues can control if the raw pixel values are drawn. 
@@ -212,17 +212,6 @@ public:
   // install/remove the file watchers if this function is called.
   virtual void updateSettings() {}
 
-  /* If your item type is playlistItem_Indexed, you must
-  provide the absolute minimum and maximum frame indices that the user can set.
-  Normally this is: (0, numFrames-1). This value can change. Just emit a
-  signalItemChanged to update the limits.
-  */
-  virtual indexRange getStartEndFrameLimits() const { return indexRange(-1, -1); }
-
-  // Using the set start frame, get the index within the item.
-  int getFrameIdxInternal(int frameIdx) const { return frameIdx + startEndFrame.first; }
-  int getFrameIdxExternal(int frameIdxInternal) const { return frameIdxInternal - startEndFrame.first; }
-
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
   void saveCenterOffset(QPoint centerOffset, bool primaryView) { savedCenterOffset[primaryView ? 0 : 1] = centerOffset; }
   void saveZoomFactor(double zoom, bool primaryView) { savedZoom[primaryView ? 0 : 1] = zoom; }
@@ -240,8 +229,6 @@ signals:
   void signalItemDoubleBufferLoaded();
   
 protected:
-
-  void setStartEndFrame(indexRange range, bool emitSignal);
 
   // The widget which is put into the stack.
   QScopedPointer<QWidget> propertiesWidget;
@@ -267,11 +254,6 @@ protected:
 
   // What is the (current) type of the item?
   void setType(Type newType);
-
-  // ------ playlistItem_Indexed
-  double      frameRate {DEFAULT_FRAMERATE};
-  int         sampling  {1};
-  indexRange  startEndFrame;
 
   // Create the playlist controls and return a pointer to the root layout
   QLayout *createPlaylistItemControls();

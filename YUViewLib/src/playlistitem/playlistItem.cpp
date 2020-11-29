@@ -42,8 +42,6 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, Type type)
   
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
   this->prop.id = idCounter++;
-
-  startEndFrame = indexRange(-1, -1);
 }
 
 playlistItem::~playlistItem()
@@ -55,14 +53,6 @@ void playlistItem::setName(const QString &name)
   this->prop.name = name;
   // For the text that is shown in the playlist, remove all newline characters.
   setText(0, name.simplified());
-}
-
-indexRange playlistItem::getFrameIdxRange() const
-{
-  if (startEndFrame.second < startEndFrame.first || startEndFrame == indexRange(-1, -1))
-    return indexRange(-1, -1);
-
-  return indexRange(0, startEndFrame.second - startEndFrame.first);
 }
 
 void playlistItem::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
@@ -97,17 +87,11 @@ void playlistItem::setType(Type newType)
   if (ui.created())
   {
     // Show/hide the right controls
-    bool showIndexed = (newType == Type::Indexed);
-    ui.labelStart->setVisible(showIndexed);
-    ui.startSpinBox->setVisible(showIndexed);
-    ui.labelEnd->setVisible(showIndexed);
-    ui.endSpinBox->setVisible(showIndexed);
+    auto showIndexed = (newType == Type::Indexed);
     ui.labelRate->setVisible(showIndexed);
     ui.rateSpinBox->setVisible(showIndexed);
-    ui.labelSampling->setVisible(showIndexed);
-    ui.samplingSpinBox->setVisible(showIndexed);
 
-    bool showStatic  = (newType == Type::Static);
+    auto showStatic  = (newType == Type::Static);
     ui.durationLabel->setVisible(showStatic);
     ui.durationSpinBox->setVisible(showStatic);
   }
@@ -122,12 +106,7 @@ void playlistItem::appendPropertiesToPlaylist(YUViewDomElement &d) const
   d.appendProperiteChild("id", QString::number(this->prop.id));
 
   if (this->properties().type == Type::Indexed)
-  {
-    d.appendProperiteChild("startFrame", QString::number(startEndFrame.first));
-    d.appendProperiteChild("endFrame", QString::number(startEndFrame.second));
-    d.appendProperiteChild("sampling", QString::number(sampling));
-    d.appendProperiteChild("frameRate", QString::number(frameRate));
-  }
+    d.appendProperiteChild("frameRate", QString::number(this->properties().frameRate));
   else
     d.appendProperiteChild("duration", QString::number(this->properties().duration));
 
@@ -145,13 +124,7 @@ void playlistItem::loadPropertiesFromPlaylist(const YUViewDomElement &root, play
   newItem->prop.playlistID = root.findChildValue("id").toInt();
 
   if (newItem->properties().type == Type::Indexed)
-  {
-    int startFrame = root.findChildValue("startFrame").toInt();
-    int endFrame = root.findChildValue("endFrame").toInt();
-    newItem->startEndFrame = indexRange(startFrame, endFrame);
-    newItem->sampling = root.findChildValue("sampling").toInt();
-    newItem->frameRate = root.findChildValue("frameRate").toInt();
-  }
+    newItem->prop.frameRate = root.findChildValue("frameRate").toInt();
   else
     newItem->prop.duration = root.findChildValue("duration").toDouble();
 
@@ -163,28 +136,6 @@ void playlistItem::loadPropertiesFromPlaylist(const YUViewDomElement &root, play
   newItem->savedZoom[1] = root.findChildValueDouble("viewZoomFactorView1", 1.0);
 }
 
-void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
-{
-  // Set the new start/end frame (clip if first)
-  indexRange startEndFrameLimit = getStartEndFrameLimits();
-  startEndFrame.first = std::max(startEndFrameLimit.first, range.first);
-  startEndFrame.second = std::min(startEndFrameLimit.second, range.second);
-
-  if (!ui.created())
-    // spin boxes not created yet
-    return;
-
-  const QSignalBlocker blocker1(emitSignal ? nullptr : ui.startSpinBox);
-  const QSignalBlocker blocker2(emitSignal ? nullptr : ui.endSpinBox);
-
-  ui.startSpinBox->setMinimum(startEndFrameLimit.first);
-  ui.startSpinBox->setMaximum(startEndFrameLimit.second);
-  ui.startSpinBox->setValue(startEndFrame.first);
-  ui.endSpinBox->setMinimum(startEndFrameLimit.first);
-  ui.endSpinBox->setMaximum(startEndFrameLimit.second);
-  ui.endSpinBox->setValue(startEndFrame.second);
-}
-
 void playlistItem::slotVideoControlChanged()
 {
   if (this->properties().type == Type::Static)
@@ -193,31 +144,15 @@ void playlistItem::slotVideoControlChanged()
   }
   else
   {
-    //// Was this the start or end spin box?
-    QObject *sender = QObject::sender();
-    bool startFrameChanged = (sender == ui.startSpinBox);
-    recacheIndicator recache = RECACHE_NONE;
-    if (sender == ui.startSpinBox || sender == ui.endSpinBox)
-      recache = RECACHE_UPDATE;
-
-    // Get the currently set values from the controls
-    startEndFrame.first  = ui.startSpinBox->value();
-    startEndFrame.second = ui.endSpinBox->value();
-    frameRate = ui.rateSpinBox->value();
-    sampling  = ui.samplingSpinBox->value();
-
+    this->prop.frameRate = ui.rateSpinBox->value();
     // The current frame in the buffer is not invalid, but emit that something has changed.
     // Also no frame in the cache is invalid.
-    emit signalItemChanged(startFrameChanged, recache);
+    emit signalItemChanged(false, RECACHE_NONE);
   }
 }
 
 void playlistItem::slotUpdateFrameLimits()
 {
-  // update the spin boxes
-  indexRange startEndFrameLimit = getStartEndFrameLimits();
-  setStartEndFrame(startEndFrameLimit, false);
-  
   // The current frame in the buffer is not invalid, but emit that something has changed.
   // Also no frame in the cache is invalid.
   emit signalItemChanged(false, RECACHE_NONE);
@@ -229,36 +164,18 @@ QLayout *playlistItem::createPlaylistItemControls()
 
   ui.setupUi();
 
-  indexRange startEndFrameLimit = getStartEndFrameLimits();
-  if (startEndFrame == indexRange(-1,-1))
-  {
-    startEndFrame = startEndFrameLimit;
-  }
-
   // Set min/max duration for a playlistItem_Static
   ui.durationSpinBox->setMaximum(100000);
   ui.durationSpinBox->setValue(this->properties().duration);
 
   // Set default values for a playlistItem_Indexed
-  ui.startSpinBox->setMinimum(startEndFrameLimit.first);
-  ui.startSpinBox->setMaximum(startEndFrameLimit.second);
-  ui.startSpinBox->setValue(startEndFrame.first);
-  ui.endSpinBox->setMinimum(startEndFrameLimit.first);
-  ui.endSpinBox->setMaximum(startEndFrameLimit.second);
-  ui.endSpinBox->setValue(startEndFrame.second);
   ui.rateSpinBox->setMaximum(1000);
-  ui.rateSpinBox->setValue(frameRate);
-  ui.samplingSpinBox->setMinimum(1);
-  ui.samplingSpinBox->setMaximum(100000);
-  ui.samplingSpinBox->setValue(sampling);
+  ui.rateSpinBox->setValue(this->properties().frameRate);
 
   this->setType(this->properties().type);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.startSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);
-  connect(ui.endSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);
   connect(ui.rateSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);
-  connect(ui.samplingSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);
   connect(ui.durationSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &playlistItem::slotVideoControlChanged);
 
   return ui.gridLayout;

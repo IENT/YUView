@@ -218,7 +218,7 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
     // Parsing complete
     backgroundParserProgress = 100.0;
 
-    setStartEndFrame(indexRange(0, maxPOC), false);
+    this->prop.startEndRange = indexRange(0, maxPOC);
     emit signalItemChanged(false, RECACHE_NONE);
 
   } // try
@@ -384,7 +384,7 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
         if (width > 0 && height > 0)
           statSource.setFrameSize(QSize(width, height));
         if (rowItemList[6].toDouble() > 0.0)
-          frameRate = rowItemList[6].toDouble();
+          this->prop.frameRate = rowItemList[6].toDouble();
       }
     }
 

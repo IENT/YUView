@@ -46,10 +46,6 @@ public:
   // We accept drops if the maximum number of items is no reached yet
   virtual bool acceptDrops(playlistItem *draggingItem) const Q_DECL_OVERRIDE;
 
-  // Overload from playlistItemVideo. 
-  virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getChildPlaylistItem(0) == nullptr) ? 0 : getChildPlaylistItem(0)->getFrameRate(); }
-  virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getChildPlaylistItem(0) == nullptr) ? 1 : getChildPlaylistItem(0)->getSampling(); }
-
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
   void updateChildItems() { childLlistUpdateRequired = true; emit signalItemChanged(true, RECACHE_NONE); }
@@ -68,9 +64,6 @@ public:
   // Return a list of all the child items (recursively) and remove (takeChild) them from the QTreeWidget tree 
   // structure and from the internal childList.
   QList<playlistItem*> takeAllChildItemsRecursive();
-
-  // Overload from playlistItemIndexed
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
 protected slots:
   virtual void childChanged(bool redraw, recacheIndicator recache);

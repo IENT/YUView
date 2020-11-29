@@ -193,7 +193,7 @@ void PlaybackController::startOrUpdateTimer()
   if (currentItem[0]->properties().isIndexedByFrame() || (currentItem[1] && currentItem[1]->properties().isIndexedByFrame()))
   {
     // One (of the possibly two items) is indexed by frame. Get and set the frame rate
-    double frameRate = currentItem[0]->properties().isIndexedByFrame() ? currentItem[0]->getFrameRate() : currentItem[1]->getFrameRate();
+    double frameRate = currentItem[0]->properties().isIndexedByFrame() ? currentItem[0]->properties().frameRate : currentItem[1]->properties().frameRate;
     if (frameRate < 0.01)
       frameRate = 0.01;
     timerStaticItemCountDown = -1;
@@ -409,12 +409,12 @@ void PlaybackController::updateFrameRange()
   const QSignalBlocker blocker1(frameSpinBox);
   const QSignalBlocker blocker2(frameSlider);
 
-  indexRange range1 = currentItem[0] ? currentItem[0]->getFrameIdxRange() : indexRange(-1,-1);
+  indexRange range1 = currentItem[0] ? currentItem[0]->properties().startEndRange : indexRange(-1,-1);
   indexRange range = range1;
   if (currentItem[1])
   {
     // The index range is that of the longer sequence
-    indexRange range2 = currentItem[1]->getFrameIdxRange();
+    indexRange range2 = currentItem[1]->properties().startEndRange;
     range = indexRange(qMin(range1.first, range2.first), qMax(range1.second, range2.second));
   }
   enableControls(true);
@@ -565,7 +565,7 @@ void PlaybackController::timerEvent(QTimerEvent *event)
     if (currentItem[0]->properties().isIndexedByFrame() || (currentItem[1] && currentItem[1]->properties().isIndexedByFrame()))
     {
       // One (of the possibly two items) is indexed by frame. Get and set the frame rate
-      double frameRate = currentItem[0]->properties().isIndexedByFrame() ? currentItem[0]->getFrameRate() : currentItem[1]->getFrameRate();
+      double frameRate = currentItem[0]->properties().isIndexedByFrame() ? currentItem[0]->properties().frameRate : currentItem[1]->properties().frameRate;
       if (frameRate < 0.01)
         frameRate = 0.01;
 

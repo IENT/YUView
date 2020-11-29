@@ -81,8 +81,6 @@ private slots:
   void slotVideoPropertiesChanged();
 
 protected:
-  // Override from playlistItemIndexed. For a raw file the index range is 0...numFrames-1. 
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames() - 1); }
 
   // Try to get and set the format from file name. If after calling this function isFormatValid()
   // returns false then it failed.
@@ -94,7 +92,7 @@ private:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-  virtual int64_t getNumberFrames() const;
+  int getNumberFrames() const;
   
   FileSource dataSource;
 

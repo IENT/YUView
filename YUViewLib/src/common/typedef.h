@@ -189,7 +189,7 @@ private:
 #endif // SSE_CONVERSION
 
 // The default frame rate that will be used when we could not guess it.
-#define DEFAULT_FRAMERATE 20.0
+#define DEFAULT_FRAMERATE 24.0
 
 // The default duration in seconds of static items (like text, images ...)
 #define PLAYLISTITEMTEXT_DEFAULT_DURATION 5.0

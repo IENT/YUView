@@ -163,10 +163,11 @@ infoData playlistItemImageFileSequence::getInfo() const
 {
   infoData info("Image Sequence Info");
 
-  if (video->isFormatValid())
+  if (this->video->isFormatValid())
   {
-    QSize videoSize = video->getFrameSize();
-    info.items.append(infoItem("Num Frames", QString::number(getNumberFrames())));
+    QSize videoSize = this->video->getFrameSize();
+    auto nrFrames = this->imageFiles.size();
+    info.items.append(infoItem("Num Frames", QString::number(nrFrames)));
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixels (width x height)"));
   }
   else
@@ -282,8 +283,11 @@ void playlistItemImageFileSequence::slotFrameRequest(int frameIdxInternal, bool 
 void playlistItemImageFileSequence::setInternals(const QString &filePath)
 {
   // Set start end frame and frame size if it has not been set yet.
-  if (startEndFrame == indexRange(-1,-1))
-    startEndFrame = getStartEndFrameLimits();
+  if (this->prop.startEndRange == indexRange(-1,-1))
+  {
+    auto nrFrames = this->imageFiles.size();
+    this->prop.startEndRange = {0, nrFrames};
+  }
 
   // Open frame 0 and set the size of it
   QImage frame0 = QImage(imageFiles[0]);

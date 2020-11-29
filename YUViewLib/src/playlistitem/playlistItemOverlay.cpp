@@ -62,8 +62,6 @@ playlistItemOverlay::playlistItemOverlay() :
 
   // This text is drawn if there are no child items in the overlay
   infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
-
-  startEndFrame = indexRange(-1,-1);
 }
 
 /* For an overlay item, the info list is just a list of the names of the

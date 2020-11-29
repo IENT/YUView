@@ -59,7 +59,7 @@ public:
   // ------ Statistics ----
 
   // Do we need to load the statistics first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) Q_DECL_OVERRIDE { Q_UNUSED(loadRawdata); return statSource.needsLoading(getFrameIdxInternal(frameIdx)); }
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) Q_DECL_OVERRIDE { Q_UNUSED(loadRawdata); return statSource.needsLoading(frameIdx); }
   // Load the statistics for the given frame. Emit signalItemChanged(true,false) when done. Always called from a thread.
   virtual void loadFrame(int frameIdx, bool playback, bool loadRawdata, bool emitSignals=true) Q_DECL_OVERRIDE;
   // Are statistics currently being loaded?
@@ -76,7 +76,6 @@ public:
   virtual void updateSettings()   Q_DECL_OVERRIDE { file.updateFileWatchSetting(); statSource.updateSettings(); }
 
 protected:
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
   // Overload from playlistItem. Create a properties widget custom to the statistics item
   // and set propertiesWidget to point to it.

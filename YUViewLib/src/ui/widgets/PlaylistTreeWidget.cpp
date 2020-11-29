@@ -74,8 +74,8 @@ public:
     }
 
     // Draw the cached frames
-    QList<int> frameList = plItem->getCachedFrames();
-    indexRange range = plItem->getFrameIdxRange();
+    auto frameList = plItem->getCachedFrames();
+    auto range = plItem->properties().startEndRange;
     if (frameList.count() > 0)
     {
       int lastPos = frameList[0];

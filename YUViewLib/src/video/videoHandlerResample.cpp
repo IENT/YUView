@@ -49,7 +49,7 @@ videoHandlerResample::videoHandlerResample() : videoHandler()
 {
 }
 
-void videoHandlerResample::loadResampledFrame(int frameIndex, int frameIndex0, bool loadToDoubleBuffer)
+void videoHandlerResample::loadResampledFrame(int frameIndex, bool loadToDoubleBuffer)
 {
   // No double buffering for resampling items
   Q_UNUSED(loadToDoubleBuffer);
@@ -58,8 +58,8 @@ void videoHandlerResample::loadResampledFrame(int frameIndex, int frameIndex0, b
     return;
   
   auto video = dynamic_cast<videoHandler*>(this->inputVideo.data());
-  if (video && video->getCurrentImageIndex() != frameIndex0)
-    video->loadFrame(frameIndex0);
+  if (video && video->getCurrentImageIndex() != frameIndex)
+    video->loadFrame(frameIndex);
   
   // Scale the image
   // QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex0, frameIndex1, differenceInfoList, amplificationFactor, markDifference);´
@@ -140,7 +140,7 @@ void videoHandlerResample::slotResampleControlChanged(int value)
   auto newSize = QSize(ui.spinBoxWidth->value(), ui.spinBoxHeight->value());
   this->setFrameSize(newSize);
   this->invalidateAllBuffers();
-  
+
   emit signalHandlerChanged(true, RECACHE_CLEAR);
 }
 

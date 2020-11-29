@@ -181,7 +181,7 @@ void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
     // Parsing complete
     backgroundParserProgress = 100.0;
 
-    setStartEndFrame(indexRange(0, maxPOC), false);
+    this->prop.startEndRange = indexRange(0, maxPOC);
     emit signalItemChanged(false, RECACHE_NONE);
 
   } // try

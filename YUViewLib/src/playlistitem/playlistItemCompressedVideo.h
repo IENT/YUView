@@ -103,9 +103,6 @@ public:
   YUView::inputFormat getInputFormat() const { return inputFormatType; }
   
 protected:
-  // Override from playlistItemIndexed. The readerEngine can tell us how many frames there are in the sequence.
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
-
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.

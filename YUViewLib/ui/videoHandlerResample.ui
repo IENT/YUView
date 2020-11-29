@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>227</width>
-    <height>72</height>
+    <width>245</width>
+    <height>186</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,46 +17,94 @@
    <item>
     <layout class="QVBoxLayout" name="topVBoxLayout">
      <item>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="1" column="0">
-        <widget class="QLabel" name="labelWidth">
-         <property name="text">
-          <string>Width</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QSpinBox" name="spinBoxWidth">
-         <property name="maximum">
-          <number>9999999</number>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="3">
-        <widget class="QSpinBox" name="spinBoxHeight">
-         <property name="maximum">
-          <number>9999999</number>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="2">
-        <widget class="QLabel" name="labelHeight">
-         <property name="text">
-          <string>Height</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" colspan="2">
-        <widget class="QLabel" name="labelInterpolation">
-         <property name="text">
-          <string>Interpolation</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="2" colspan="2">
-        <widget class="QComboBox" name="comboBoxInterpolation"/>
-       </item>
-      </layout>
+      <widget class="QGroupBox" name="groupBoxScaling">
+       <property name="title">
+        <string>Scaling</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelWidth">
+          <property name="text">
+           <string>Width</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="spinBoxWidth">
+          <property name="maximum">
+           <number>9999999</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QSpinBox" name="spinBoxHeight">
+          <property name="maximum">
+           <number>9999999</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="labelHeight">
+          <property name="text">
+           <string>Height</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" colspan="2">
+         <widget class="QLabel" name="labelInterpolation">
+          <property name="text">
+           <string>Interpolation</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2" colspan="2">
+         <widget class="QComboBox" name="comboBoxInterpolation"/>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBoxSampling">
+       <property name="title">
+        <string>Cut and Sample</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="spinBoxStart"/>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="labelEnd">
+          <property name="text">
+           <string>End</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelStart">
+          <property name="text">
+           <string>Start</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QSpinBox" name="spinBoxEnd"/>
+        </item>
+        <item row="1" column="2" colspan="2">
+         <widget class="QSpinBox" name="spinBoxSampling">
+          <property name="maximum">
+           <number>100000</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" colspan="2">
+         <widget class="QLabel" name="labelSampling">
+          <property name="text">
+           <string>Sampling</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </item>
      <item>
       <spacer name="verticalSpacer">
@@ -75,11 +123,6 @@
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>spinBoxWidth</tabstop>
-  <tabstop>spinBoxHeight</tabstop>
-  <tabstop>comboBoxInterpolation</tabstop>
- </tabstops>
  <resources/>
  <connections/>
 </ui>

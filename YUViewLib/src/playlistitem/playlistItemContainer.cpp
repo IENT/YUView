@@ -59,39 +59,6 @@ bool playlistItemContainer::acceptDrops(playlistItem *draggingItem) const
   return (maxItemCount == -1 || childCount() < maxItemCount);
 }
 
-indexRange playlistItemContainer::getStartEndFrameLimits() const
-{
-  indexRange limits(-1, -1);
-
-  // Go through all items
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *item = getChildPlaylistItem(i);
-    if (item && item->properties().isIndexedByFrame())
-    {
-      indexRange limit = item->getStartEndFrameLimits();
-
-      if (limits == indexRange(-1, -1))
-        limits = limit;
-
-      if (frameLimitsMax)
-      {
-        // As much as any of the items allows
-        limits.first = std::min(limits.first, limit.first);
-        limits.second = std::max(limits.second, limit.second);
-      }
-      else
-      {
-        // Only "overlapping" range
-        limits.first = std::max(limits.first, limit.first);
-        limits.second = std::min(limits.second, limit.second);
-      }
-    }
-  }
-  
-  return limits;
-}
-
 void playlistItemContainer::updateChildList()
 {
   // Disconnect all signalItemChanged events from the children to the "childChanged" function from this container.
@@ -203,28 +170,27 @@ QList<playlistItem*> playlistItemContainer::takeAllChildItemsRecursive()
 
 void playlistItemContainer::childChanged(bool redraw, recacheIndicator recache)
 {
-  // Update the index range 
-  startEndFrame = indexRange(-1,-1);
+  this->prop.startEndRange = indexRange(-1,-1);
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *childItem = getChildPlaylistItem(i);
     if (childItem->properties().isIndexedByFrame())
     {
-      indexRange itemRange = childItem->getStartEndFrameLimits();
-      if (startEndFrame == indexRange(-1, -1))
-        startEndFrame = itemRange;
+      auto itemRange = childItem->properties().startEndRange;
+      if (this->prop.startEndRange == indexRange(-1, -1))
+        this->prop.startEndRange = itemRange;
 
       if (frameLimitsMax)
       {
         // As much as any of the items allows
-        startEndFrame.first = std::min(startEndFrame.first, itemRange.first);
-        startEndFrame.second = std::max(startEndFrame.second, itemRange.second);
+        this->prop.startEndRange.first = std::min(this->prop.startEndRange.first, itemRange.first);
+        this->prop.startEndRange.second = std::max(this->prop.startEndRange.second, itemRange.second);
       }
       else
       {
         // Only "overlapping" range
-        startEndFrame.first = std::max(startEndFrame.first, itemRange.first);
-        startEndFrame.second = std::min(startEndFrame.second, itemRange.second);
+        this->prop.startEndRange.first = std::max(this->prop.startEndRange.first, itemRange.first);
+        this->prop.startEndRange.second = std::min(this->prop.startEndRange.second, itemRange.second);
       }
     }
   }

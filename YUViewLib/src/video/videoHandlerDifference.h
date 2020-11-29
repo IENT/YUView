@@ -48,11 +48,11 @@ public:
 
   // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
   // if the frame with the current frame index is loaded in the background.
-  void drawDifferenceFrame(QPainter *painter, int frameIdx, int frameIdxItem0, int frameIdxItem1, double zoomFactor, bool drawRawValues);
+  void drawDifferenceFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues);
 
   explicit videoHandlerDifference();
 
-  void loadFrameDifference(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer=false);
+  void loadFrameDifference(int frameIndex, bool loadToDoubleBuffer=false);
   
   // Are both inputs valid and can be used?
   bool inputsValid() const;

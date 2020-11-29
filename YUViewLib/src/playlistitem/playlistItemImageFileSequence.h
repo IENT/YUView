@@ -56,7 +56,7 @@ public:
 
   virtual bool canBeUsedInProcessing() const Q_DECL_OVERRIDE { return true; }
 
-  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video->getPixelValues(pixelPos, getFrameIdxInternal(frameIdx))); }
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video->getPixelValues(pixelPos, frameIdx)); }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -81,18 +81,11 @@ private slots:
   // The image file that we loaded was changed.
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
 
-protected:
-
-  // Override from playlistItemIndexed. For a raw file the index range is 0...numFrames-1.
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
-
 private:
 
   // Overload from playlistItem. Create a properties widget custom to the playlistItemImageFileSequence
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
-
-  virtual int64_t getNumberFrames() const { return imageFiles.length(); }
 
   // Set internal values (frame Size, caching, ...). Call this after the imageFiles list has been filled.
   // Get the internal name and set it as text of the playlistItem.

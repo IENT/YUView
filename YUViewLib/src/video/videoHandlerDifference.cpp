@@ -52,7 +52,7 @@ videoHandlerDifference::videoHandlerDifference() : videoHandler()
   codingOrder = CodingOrder_HEVC;
 }
 
-void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx, int frameIdxItem0, int frameIdxItem1, double zoomFactor, bool drawRawValues)
+void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
 {
   if (!inputsValid())
     return;
@@ -94,11 +94,11 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx
   if (drawRawValues && zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR)
   {
     // Draw the pixel values onto the pixels
-    inputVideo[0]->drawPixelValues(painter, frameIdxItem0, videoRect, zoomFactor, inputVideo[1], this->markDifference, frameIdxItem1);
+    inputVideo[0]->drawPixelValues(painter, frameIdx, videoRect, zoomFactor, inputVideo[1], this->markDifference);
   }
 }
 
-void videoHandlerDifference::loadFrameDifference(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer)
+void videoHandlerDifference::loadFrameDifference(int frameIndex, bool loadToDoubleBuffer)
 {
   // No double buffering for difference items
   Q_UNUSED(loadToDoubleBuffer);
@@ -113,11 +113,11 @@ void videoHandlerDifference::loadFrameDifference(int frameIndex, int frameIndex0
   // make sure that the right frame is loaded for the video item.
   videoHandler* video0 = dynamic_cast<videoHandler*>(inputVideo[0].data());
   videoHandler* video1 = dynamic_cast<videoHandler*>(inputVideo[1].data());
-  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex1)
-    video1->loadFrame(frameIndex1);
+  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex)
+    video1->loadFrame(frameIndex);
   
   // Calculate the difference  
-  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex0, frameIndex1, differenceInfoList, amplificationFactor, markDifference);
+  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, frameIndex, differenceInfoList, amplificationFactor, markDifference);
 
   if (!newFrame.isNull())
   {

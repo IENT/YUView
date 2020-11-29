@@ -47,7 +47,7 @@ class videoHandlerResample : public videoHandler
 public:
   explicit videoHandlerResample();
 
-  void loadResampledFrame(int frameIndex, int frameIndex0, bool loadToDoubleBuffer=false);
+  void loadResampledFrame(int frameIndex, bool loadToDoubleBuffer=false);
   
   bool inputValid() const;
 

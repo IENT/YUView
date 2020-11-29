@@ -128,7 +128,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   }
 
   if (video->isFormatValid())
-    startEndFrame = getStartEndFrameLimits();
+    this->prop.startEndRange = indexRange(0, this->getNumberFrames());
 
   // If the videHandler requests raw data, we provide it from the file
   connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemRawFile::loadRawData, Qt::DirectConnection);
@@ -144,7 +144,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   this->cachingEnabled = true;
 }
 
-int64_t playlistItemRawFile::getNumberFrames() const
+int playlistItemRawFile::getNumberFrames() const
 {
   if (!dataSource.isOk() || !video->isFormatValid())
   {
@@ -167,7 +167,8 @@ infoData playlistItemRawFile::getInfo() const
   // At first append the file information part (path, date created, file size...)
   info.items.append(dataSource.getFileInfoList());
 
-  info.items.append(infoItem("Num Frames", QString::number(getNumberFrames())));
+  auto nrFrames = (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
+  info.items.append(infoItem("Num Frames", QString::number(nrFrames)));
   info.items.append(infoItem("Bytes per Frame", QString("%1").arg(getBytesPerFrame())));
 
   if (dataSource.isOk() && video->isFormatValid() && !isY4MFile)
@@ -262,7 +263,7 @@ bool playlistItemRawFile::parseY4MFile()
       if (!ok)
         return setError("Error parsing the Y4M header: Invalid framerate denominator.");
 
-      frameRate = double(nom) / double(den);
+      this->prop.frameRate = double(nom) / double(den);
     }
     else if (parameterIndicator == 'I' || parameterIndicator == 'A' || parameterIndicator == 'X')
     {
@@ -381,7 +382,7 @@ void playlistItemRawFile::setFormatFromFileName()
     // regular expressions. Try to get the pixel format by checking with the file size.
     video->setFormatFromSizeAndName(fileFormat.frameSize, fileFormat.bitDepth, fileFormat.packed, dataSource.getFileSize(), dataSource.getFileInfo());
     if (fileFormat.frameRate != -1)
-      frameRate = fileFormat.frameRate;
+      this->prop.frameRate = fileFormat.frameRate;
   }
 }
 
@@ -499,8 +500,7 @@ void playlistItemRawFile::slotVideoPropertiesChanged()
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
-  return ValuePairListSets((rawFormat == raw_YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdxInternal));
+  return ValuePairListSets((rawFormat == raw_YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdx));
 }
 
 void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)

@@ -110,13 +110,12 @@ void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, doubl
 {
   // drawRawData only controls the drawing of raw pixel values
   Q_UNUSED(drawRawData);
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
   // Tell the statSource to draw the statistics
-  statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
+  statSource.paintStatistics(painter, frameIdx, zoomFactor);
 
   // Currently this frame is drawn.
-  currentDrawnFrameIdx = frameIdxInternal;
+  currentDrawnFrameIdx = frameIdx;
 }
 
 // This timer event is called regularly when the background loading process is running.
@@ -132,7 +131,7 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent *event)
     timer.stop();
   else
   {
-    setStartEndFrame(indexRange(0, maxPOC), false);
+    this->prop.startEndRange = indexRange(0, maxPOC);
     emit signalItemChanged(false, RECACHE_NONE);
   }
 }
@@ -186,12 +185,11 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loa
 {
   Q_UNUSED(playback);
   Q_UNUSED(loadRawdata);
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  if (statSource.needsLoading(frameIdxInternal) == LoadingNeeded)
+  if (statSource.needsLoading(frameIdx) == LoadingNeeded)
   {
     isStatisticsLoading = true;
-    statSource.loadStatistics(frameIdxInternal);
+    statSource.loadStatistics(frameIdx);
     isStatisticsLoading = false;
     if (emitSignals)
       emit signalItemChanged(true, RECACHE_NONE);
