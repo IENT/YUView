@@ -956,7 +956,7 @@ void splitViewWidget::setMoveOffset(QPoint offset)
     {
       if (item[i])
       {
-        DEBUG_LOAD_DRAW("splitViewWidget::setMoveOffset item " << item[i]->getID() << " (" << offset.x() << "," << offset.y() << ")");
+        DEBUG_LOAD_DRAW("splitViewWidget::setMoveOffset item " << item[i]->properties().id << " (" << offset.x() << "," << offset.y() << ")");
         item[i]->saveCenterOffset(this->moveOffset, !isMasterView);
         item[i]->saveCenterOffset(this->getOtherWidget()->moveOffset, isMasterView);
       }
@@ -1019,7 +1019,7 @@ void splitViewWidget::setZoomFactor(double zoom)
     {
       if (item[i])
       {
-        DEBUG_LOAD_DRAW("splitViewWidget::setthis->getZoomFactor() item " << item[0]->getID() << " (" << zoom << ")");
+        DEBUG_LOAD_DRAW("splitViewWidget::setthis->getZoomFactor() item " << item[0]->properties().id << " (" << zoom << ")");
         item[i]->saveZoomFactor(this->zoomFactor, !this->isMasterView);
         item[i]->saveZoomFactor(this->getOtherWidget()->zoomFactor, this->isMasterView);
       }
@@ -1295,7 +1295,7 @@ void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistI
       item2->getZoomAndPosition(moveOffset, this->zoomFactor, false);
       item2->getZoomAndPosition(this->getOtherWidget()->moveOffset, this->getOtherWidget()->zoomFactor, getOtherViewValuesFromOtherSlot);
     }
-    DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item " << item1->getID() << " moveOffset " << this->moveOffset << " zoom " << this->zoomFactor);
+    DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item " << item1->properties().id << " moveOffset " << this->moveOffset << " zoom " << this->zoomFactor);
   }
 }
 

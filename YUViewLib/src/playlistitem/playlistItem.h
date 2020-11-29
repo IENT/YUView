@@ -66,6 +66,13 @@ public:
   struct Properties
   {
     QString name;
+    // Every playlist item has a unique (within the playlist) ID
+    // TODO: This ID is also saved in the playlist. We can append playlists to existing 
+    //       playlists. In this case, we could get items with identical IDs. This must not happen.
+    //       I think we need the playlist item to generate a truely unique ID here (using a timecode and everything).
+    int id;
+    // The playlist ID is set if the item is loaded from a playlist. Don't forget to reset this after the playlist was loaded.
+    int playlistID {0};
   };
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
@@ -75,21 +82,14 @@ public:
   playlistItem(const QString &itemNameOrFileName, Type type);
   virtual ~playlistItem();
 
-  Properties properties() const;
+  Properties properties() const { return this->prop; };
 
   // Set the name of the item. This is also the name that is shown in the tree view
   void setName(const QString &name);
 
-  // Every playlist item has a unique (within the playlist) ID
-  // TODO: This ID is also saved in the playlist. We can append playlists to existing 
-  //       playlists. In this case, we could get items with identical IDs. This must not happen.
-  //       I think we need the playlist item to generate a truely unique ID here (using a timecode and everything).
-  unsigned int getID() const { return id; }
-  // If an item is loaded from a playlist, it also has a palylistID (which it was given when the playlist was saved)
-  unsigned int getPlaylistID() const { return playlistID; }
-  // After loading the playlist, this playlistID has to be reset because it is only valid within this playlist. If another 
+    // After loading the playlist, this playlistID has to be reset because it is only valid within this playlist. If another 
   // playlist is loaded later on, the value has to be invalid.
-  void resetPlaylistID() { playlistID = -1; }
+  void resetPlaylistID() { this->prop.playlistID = -1; }
 
   // Get the parent playlistItem (if any)
   playlistItem *parentPlaylistItem() const { return dynamic_cast<playlistItem*>(QTreeWidgetItem::parent()); }
@@ -295,16 +295,12 @@ private:
   // Every playlist item we create gets an id (automatically). This is saved to the playlist so we can match
   // playlist items to the saved view states.
   static unsigned int idCounter;
-  unsigned int id;
-  // The playlist ID is set if the item is loaded from a playlist. Don't forget to reset this after the playlist was loaded.
-  unsigned int playlistID {0};
 
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
   QPoint savedCenterOffset[2];
   double savedZoom[2] {1.0, 1.0};
 
-  // Save the given item name or filename that is given when constricting a playlistItem.
-  QString plItemNameOrFileName;
+  Properties prop;
 
   // The UI
   SafeUi<Ui::playlistItem> ui;

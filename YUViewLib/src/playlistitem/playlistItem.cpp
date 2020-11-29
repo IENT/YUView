@@ -41,7 +41,7 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, Type type)
   setType(type);
   
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
-  id = idCounter++;
+  this->prop.id = idCounter++;
 
   startEndFrame = indexRange(-1, -1);
 }
@@ -50,16 +50,9 @@ playlistItem::~playlistItem()
 {
 }
 
-playlistItem::Properties playlistItem::properties() const
-{
-  Properties p;
-  p.name = this->plItemNameOrFileName;
-  return p;
-}
-
 void playlistItem::setName(const QString &name)
 { 
-  this->plItemNameOrFileName = name;
+  this->prop.name = name;
   // For the text that is shown in the playlist, remove all newline characters.
   setText(0, name.simplified());
 }
@@ -126,7 +119,7 @@ void playlistItem::setType(Type newType)
 void playlistItem::appendPropertiesToPlaylist(YUViewDomElement &d) const
 {
   // Append the playlist item properties
-  d.appendProperiteChild("id", QString::number(id));
+  d.appendProperiteChild("id", QString::number(this->prop.id));
 
   if (type == Type::Indexed)
   {
@@ -149,7 +142,7 @@ void playlistItem::appendPropertiesToPlaylist(YUViewDomElement &d) const
 // Load the start/end frame, sampling and frame rate from playlist
 void playlistItem::loadPropertiesFromPlaylist(const YUViewDomElement &root, playlistItem *newItem)
 {
-  newItem->playlistID = root.findChildValue("id").toInt();
+  newItem->prop.playlistID = root.findChildValue("id").toInt();
 
   if (newItem->type == Type::Indexed)
   {

@@ -209,7 +209,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
     for (int i = 0; i < childCount(); i++)
     {
       playlistItem *childItem = getChildPlaylistItem(i);
-      if (childItemsIDs[i] != childItem->getID())
+      if (childItemsIDs[i] != childItem->properties().id)
       {
         itemOrderChanged = true;
         break;
@@ -231,7 +231,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
     {
       childItemRects.append(QRect());
       playlistItem *childItem = getChildPlaylistItem(i);
-      childItemsIDs.append(childItem->getID());
+      childItemsIDs.append(childItem->properties().id);
     }
   }
 
