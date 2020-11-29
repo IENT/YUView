@@ -72,7 +72,7 @@ using namespace functions;
 #define FORWARD_SEEK_THRESHOLD 5
 
 playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compressedFilePath, int displayComponent, inputFormat input, decoderEngine decoder)
-  : playlistItemWithVideo(compressedFilePath, playlistItem_Indexed)
+  : playlistItemWithVideo(compressedFilePath)
 {
   // Set the properties of the playlistItem
   // TODO: should this change with the type of video?
@@ -704,8 +704,7 @@ void playlistItemCompressedVideo::seekToPosition(int seekToFrame, int seekToDTS,
 
 void playlistItemCompressedVideo::createPropertiesWidget()
 {
-  // Absolutely always only call this once
-  Q_ASSERT_X(!propertiesWidget, Q_FUNC_INFO, "Always create the properties only once!");
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   if (!video)
   {

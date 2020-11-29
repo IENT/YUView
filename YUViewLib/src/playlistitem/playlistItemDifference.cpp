@@ -139,8 +139,7 @@ QSize playlistItemDifference::getSize() const
 
 void playlistItemDifference::createPropertiesWidget()
 {
-  // Absolutely always only call this once
-  assert(!propertiesWidget);
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   preparePropertiesWidget(QStringLiteral("playlistItemDifference"));
 

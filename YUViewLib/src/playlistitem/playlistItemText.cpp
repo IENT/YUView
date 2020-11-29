@@ -47,45 +47,34 @@
 #endif
 
 playlistItemText::playlistItemText(const QString &initialText)
-  : playlistItem(QString("Text: \"%1\"").arg(initialText), playlistItem_Static)
+  : playlistItem(QString("Text: \"%1\"").arg(initialText), Type::Static)
 {
-  // Set the properties of the playlistItem
   setIcon(0, functions::convertIcon(":img_text.png"));
-  // Nothing can be dropped onto a text item
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
-  color = Qt::black;
-  text = initialText;
+  this->text = initialText;
 }
 
 // The copy constructor. Copy all the setting from the other text item.
 playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
-  : playlistItem(cloneFromTxt->plItemNameOrFileName, playlistItem_Static)
+  : playlistItem(cloneFromTxt->plItemNameOrFileName, Type::Static)
 {
-  // Set the properties of the playlistItem
-  setIcon(0, QIcon(":img_text.png"));
-  // Nothing can be dropped onto a text item
-  setFlags(flags() & ~Qt::ItemIsDropEnabled);
+  this->setIcon(0, QIcon(":img_text.png"));
+  this->setFlags(flags() & ~Qt::ItemIsDropEnabled);
   
-  // Copy playlistItemText properties
-  color = cloneFromTxt->color;
-  text = cloneFromTxt->text;
-  font = cloneFromTxt->font;
-  
-  // Copy playlistItemStatic
-  duration = cloneFromTxt->duration;
+  this->color = cloneFromTxt->color;
+  this->text = cloneFromTxt->text;
+  this->font = cloneFromTxt->font;
+  this->duration = cloneFromTxt->duration;
 }
 
 void playlistItemText::createPropertiesWidget()
 {
-  // Absolutely always only call this once// 
-  assert(!propertiesWidget);
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
   
-  // Create a new widget and populate it with controls
-  preparePropertiesWidget(QStringLiteral("playlistItemText"));
+  this->preparePropertiesWidget(QStringLiteral("playlistItemText"));
 
-  // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
+  QVBoxLayout *vAllLaout = new QVBoxLayout(this->propertiesWidget.data());
 
   QFrame *line = new QFrame;
   line->setObjectName(QStringLiteral("line"));
@@ -96,58 +85,54 @@ void playlistItemText::createPropertiesWidget()
   vAllLaout->addLayout(createPlaylistItemControls());
   vAllLaout->addWidget(line);
   vAllLaout->addLayout(createTextController());
-
-  // Insert a stretch at the bottom of the vertical global layout so that everything
-  // gets 'pushed' to the top
-  vAllLaout->insertStretch(3, 1);
+  vAllLaout->insertStretch(3, 1); // Push controls up
 }
 
 QLayout *playlistItemText::createTextController()
 {
-  // Absolutely always only call this function once!
-  assert(!ui.created());
+  Q_ASSERT_X(!this->ui.created(), "createTextController", "UI already exists");
 
-  ui.setupUi();
+  this->ui.setupUi();
   
   // Set the text
-  ui.textEdit->setPlainText(text);
+  this->ui.textEdit->setPlainText(text);
   
   QSignalBlocker blocker(this);
-  on_textEdit_textChanged();
+  this->on_textEdit_textChanged();
 
   // Connect signals
-  connect(ui.selectFontButton, &QPushButton::clicked, this,  &playlistItemText::on_selectFontButton_clicked);
-  connect(ui.selectColorButton, &QPushButton::clicked, this, &playlistItemText::on_selectColorButton_clicked);
-  connect(ui.textEdit, &QPlainTextEdit::textChanged, this, &playlistItemText::on_textEdit_textChanged);
+  connect(this->ui.selectFontButton, &QPushButton::clicked, this,  &playlistItemText::on_selectFontButton_clicked);
+  connect(this->ui.selectColorButton, &QPushButton::clicked, this, &playlistItemText::on_selectColorButton_clicked);
+  connect(this->ui.textEdit, &QPlainTextEdit::textChanged, this, &playlistItemText::on_textEdit_textChanged);
 
-  return ui.topVBoxLayout;
+  return this->ui.topVBoxLayout;
 }
 
 void playlistItemText::on_selectFontButton_clicked()
 {
   bool ok;
-  QFont newFont = QFontDialog::getFont(&ok, font, nullptr);
+  auto newFont = QFontDialog::getFont(&ok, font, nullptr);
   if (ok)
   {
-    font = newFont;
+    this->font = newFont;
     emit signalItemChanged(true, RECACHE_NONE);
   }
 }
 
 void playlistItemText::on_selectColorButton_clicked()
 {
-  QColor newColor = QColorDialog::getColor(color, nullptr, tr("Select font color"), QColorDialog::ShowAlphaChannel);
+  auto newColor = QColorDialog::getColor(color, nullptr, tr("Select font color"), QColorDialog::ShowAlphaChannel);
   if (newColor != color)
   {
-    color = newColor;
+    this->color = newColor;
     emit signalItemChanged(true, RECACHE_NONE);
   }
 }
 
 void playlistItemText::on_textEdit_textChanged()
 {
-  QString t = ui.textEdit->toPlainText();
-  text = t;
+  auto t = ui.textEdit->toPlainText();
+  this->text = t;
 
   // Only show the first 50 characters in the name
   if (t.length() > 50)
@@ -174,16 +159,15 @@ void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir) 
 {
   Q_UNUSED(playlistDir);
 
-  YUViewDomElement d = root.ownerDocument().createElement("playlistItemText");
+  auto d = YUViewDomElement(root.ownerDocument().createElement("playlistItemText"));
 
-  // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
-  
+
   // Append all the properties of the text item
-  d.appendProperiteChild("color", color.name());
-  d.appendProperiteChild("fontName", font.family());
-  d.appendProperiteChild("fontSize", QString::number(font.pointSize()));
-  d.appendProperiteChild("text", text);
+  d.appendProperiteChild("color", this->color.name());
+  d.appendProperiteChild("fontName", this->font.family());
+  d.appendProperiteChild("fontSize", QString::number(this->font.pointSize()));
+  d.appendProperiteChild("text", this->text);
       
   root.appendChild(d);
 }
@@ -191,14 +175,13 @@ void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir) 
 playlistItemText *playlistItemText::newplaylistItemText(const YUViewDomElement &root)
 {
   // Get the text and create a new playlistItemText
-  QString text = root.findChildValue("text");
-  playlistItemText *newText = new playlistItemText(text);
+  auto text = root.findChildValue("text");
+  auto newText = new playlistItemText(text);
 
-  // Load the playlistItem properties
   playlistItem::loadPropertiesFromPlaylist(root, newText);
   
   // Get and set all the values from the playlist file
-  QString fontName = root.findChildValue("fontName");
+  auto fontName = root.findChildValue("fontName");
   int fontSize = root.findChildValue("fontSize").toInt();
   newText->font = QFont(fontName, fontSize);
   newText->color = QColor(root.findChildValue("color"));
@@ -211,25 +194,20 @@ void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFact
   Q_UNUSED(frameIdx);
   Q_UNUSED(drawRawData);
   
-  // The QTextDocument also supports rich text
   QTextDocument td;
-  td.setHtml(text);
+  td.setHtml(this->text);
 
-  // Set font. Scale the font size with the zoom factor.
-  QFont displayFont = font;
-  displayFont.setPointSizeF(font.pointSizeF() * zoomFactor);
+  auto displayFont = this->font;
+  displayFont.setPointSizeF(this->font.pointSizeF() * zoomFactor);
   td.setDefaultFont(displayFont);
 
-  // Set the color
   QAbstractTextDocumentLayout::PaintContext ctx;
   ctx.palette.setColor(QPalette::Text, color);
 
-  // Get a QRect to center the text 
   QRect textRect;
   textRect.setSize(td.size().toSize());
   textRect.moveCenter(QPoint(0,0));
 
-  // Draw the text centered
   painter->translate(textRect.topLeft());
   td.documentLayout()->draw(painter, ctx);
   painter->translate(textRect.topLeft() * -1);
@@ -237,9 +215,8 @@ void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFact
 
 QSize playlistItemText::getSize() const
 {
-  // Get the size of the text from the QTextDocument
   QTextDocument td;
-  td.setDefaultFont(font);
-  td.setHtml(text);
+  td.setDefaultFont(this->font);
+  td.setHtml(this->text);
   return td.size().toSize();
 }

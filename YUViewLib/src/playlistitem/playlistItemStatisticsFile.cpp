@@ -47,7 +47,7 @@
 #define STAT_PARSING_BUFFER_SIZE 1048576
 
 playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOrFileName)
-  : playlistItem(itemNameOrFileName, playlistItem_Indexed)
+  : playlistItem(itemNameOrFileName, Type::Indexed)
 {
   // Set default variables
   fileSortedByPOC = false;
@@ -135,8 +135,7 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent *event)
 
 void playlistItemStatisticsFile::createPropertiesWidget()
 {
-  // Absolutely always only call this once//
-  assert(!propertiesWidget);
+  Q_ASSERT_X(!propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   // Create a new widget and populate it with controls
   preparePropertiesWidget(getPlaylistTag());

@@ -36,7 +36,8 @@
 #include <QPainter>
 #include "statistics/statisticHandler.h"
 
-playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) : playlistItem(itemNameOrFileName, playlistItem_Indexed)
+playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) 
+  : playlistItem(itemNameOrFileName, Type::Indexed)
 {
   // By default, there is no limit on the number of items
   maxItemCount = -1;

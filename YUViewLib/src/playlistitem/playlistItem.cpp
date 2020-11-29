@@ -35,7 +35,7 @@
 
 unsigned int playlistItem::idCounter = 0;
 
-playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType type)
+playlistItem::playlistItem(const QString &itemNameOrFileName, Type type)
 {
   setName(itemNameOrFileName);
   setType(type);
@@ -92,12 +92,12 @@ QSize playlistItem::getSize() const
   return painter.fontMetrics().size(0, infoText);
 }
 
-void playlistItem::setType(playlistItemType newType)
+void playlistItem::setType(Type newType)
 {
   if (ui.created())
   {
     // Show/hide the right controls
-    bool showIndexed = (newType == playlistItem_Indexed);
+    bool showIndexed = (newType == Type::Indexed);
     ui.labelStart->setVisible(showIndexed);
     ui.startSpinBox->setVisible(showIndexed);
     ui.labelEnd->setVisible(showIndexed);
@@ -107,7 +107,7 @@ void playlistItem::setType(playlistItemType newType)
     ui.labelSampling->setVisible(showIndexed);
     ui.samplingSpinBox->setVisible(showIndexed);
 
-    bool showStatic  = (newType == playlistItem_Static);
+    bool showStatic  = (newType == Type::Static);
     ui.durationLabel->setVisible(showStatic);
     ui.durationSpinBox->setVisible(showStatic);
   }
@@ -121,7 +121,7 @@ void playlistItem::appendPropertiesToPlaylist(YUViewDomElement &d) const
   // Append the playlist item properties
   d.appendProperiteChild("id", QString::number(id));
 
-  if (type == playlistItem_Indexed)
+  if (type == Type::Indexed)
   {
     d.appendProperiteChild("startFrame", QString::number(startEndFrame.first));
     d.appendProperiteChild("endFrame", QString::number(startEndFrame.second));
@@ -144,7 +144,7 @@ void playlistItem::loadPropertiesFromPlaylist(const YUViewDomElement &root, play
 {
   newItem->playlistID = root.findChildValue("id").toInt();
 
-  if (newItem->type == playlistItem_Indexed)
+  if (newItem->type == Type::Indexed)
   {
     int startFrame = root.findChildValue("startFrame").toInt();
     int endFrame = root.findChildValue("endFrame").toInt();
@@ -187,7 +187,7 @@ void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
 
 void playlistItem::slotVideoControlChanged()
 {
-  if (type == playlistItem_Static)
+  if (type == Type::Static)
   {
     duration = ui.durationSpinBox->value();
   }
@@ -225,8 +225,7 @@ void playlistItem::slotUpdateFrameLimits()
 
 QLayout *playlistItem::createPlaylistItemControls()
 {
-  // Absolutely always only call this function once!
-  assert(!ui.created());
+  Q_ASSERT_X(!this->ui.created(), "createTextController", "UI already exists");
 
   ui.setupUi();
 
@@ -267,8 +266,7 @@ QLayout *playlistItem::createPlaylistItemControls()
 
 void playlistItem::createPropertiesWidget()
 {
-  // Absolutely always only call this once// 
-  assert(!propertiesWidget);
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   preparePropertiesWidget(QStringLiteral("playlistItem"));
 

@@ -40,7 +40,7 @@
 #include "filesource/FileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
-  : playlistItemWithVideo(rawFilePath, playlistItem_Indexed)
+  : playlistItemWithVideo(rawFilePath)
 {
   // Set the properties of the playlistItem
   setIcon(0, functions::convertIcon(":img_television.png"));
@@ -141,8 +141,7 @@ void playlistItemImageFileSequence::fillImageFileList(QStringList &imageFiles, c
 
 void playlistItemImageFileSequence::createPropertiesWidget()
 {
-  // Absolutely always only call this once
-  assert(!propertiesWidget);
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   preparePropertiesWidget(QStringLiteral("playlistItemRawFile"));
 

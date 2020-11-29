@@ -367,8 +367,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
 
 void playlistItemOverlay::createPropertiesWidget()
 {
-  // Absolutely always only call this once
-  Q_ASSERT_X(!propertiesWidget, Q_FUNC_INFO, "Always create the properties only once!");
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   // Create a new widget and populate it with controls
   propertiesWidget.reset(new QWidget);

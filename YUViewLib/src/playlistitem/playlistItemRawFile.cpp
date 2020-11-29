@@ -51,7 +51,7 @@ using namespace YUV_Internals;
 #endif
 
 playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize, const QString &sourcePixelFormat, const QString &fmt)
-  : playlistItemWithVideo(rawFilePath, playlistItem_Indexed)
+  : playlistItemWithVideo(rawFilePath)
 {
   // High DPI support for icons:
   // Set the Qt::AA_UseHighDpiPixmaps attribute and then just use QIcon(":image.png")
@@ -384,7 +384,7 @@ void playlistItemRawFile::setFormatFromFileName()
 
 void playlistItemRawFile::createPropertiesWidget()
 {
-  Q_ASSERT(!propertiesWidget);
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   preparePropertiesWidget(QStringLiteral("playlistItemRawFile"));
 

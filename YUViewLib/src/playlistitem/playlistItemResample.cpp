@@ -116,7 +116,7 @@ QSize playlistItemResample::getSize() const
 
 void playlistItemResample::createPropertiesWidget()
 {
-  Q_ASSERT_X(!propertiesWidget, "createPropertiesWidget", "Widgets can only be created once");
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   this->preparePropertiesWidget(QStringLiteral("playlistItemResample"));
 

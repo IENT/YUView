@@ -74,7 +74,7 @@ protected:
 
 private:
 
-  QColor  color;
+  QColor  color {Qt::black};
   QFont   font;
   QString text;
 

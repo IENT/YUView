@@ -57,17 +57,17 @@ public:
   * Indexing is transparent to the internal handling of numbers. The index always ranges from 0 to getEndFrameIdx().
   * Internally, the real index in the sequence is calculated using the set start/end frames. 
   */
-  typedef enum
+  enum class Type
   {
-    playlistItem_Static,    // The playlist item is static
-    playlistItem_Indexed,   // The playlist item is indexed
-  } playlistItemType;
+    Static,    // The playlist item is static
+    Indexed,   // The playlist item is indexed
+  };
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(const QString &itemNameOrFileName, playlistItemType type);
+  playlistItem(const QString &itemNameOrFileName, Type type);
   virtual ~playlistItem();
 
   // Set/Get the name of the item. This is also the name that is shown in the tree view
@@ -92,7 +92,7 @@ public:
   // know how to load/save themselves.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const = 0;
   
-  virtual bool isIndexedByFrame() { return type == playlistItem_Indexed; }
+  virtual bool isIndexedByFrame() { return type == Type::Indexed; }
   virtual bool isFileSource() const { return false; }
 
   // Get the size of the item (in pixels). The default implementation will return
@@ -248,7 +248,7 @@ protected:
   // Overload this function in a child class to create a custom widget.
   virtual void createPropertiesWidget();
 
-  // Create a named default propertiesWidget
+  // Create a new widget and populate it with controls
   void preparePropertiesWidget(const QString &name);
 
   // Is caching enabled for this item? This can be changed at any point.
@@ -264,8 +264,8 @@ protected:
   static void loadPropertiesFromPlaylist(const YUViewDomElement &root, playlistItem *newItem);
 
   // What is the (current) type of the item?
-  playlistItemType type;
-  void setType(playlistItemType newType);
+  Type type;
+  void setType(Type newType);
 
   // ------ playlistItem_Indexed
   double      frameRate {DEFAULT_FRAMERATE};
