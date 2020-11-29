@@ -72,7 +72,7 @@ void playlistItemImageFile::loadFrame(int frameIndex, bool playing, bool loadRaw
   Q_UNUSED(loadRawdata);
 
   imageLoading = true;
-  frame.loadCurrentImageFromFile(plItemNameOrFileName);
+  frame.loadCurrentImageFromFile(this->properties().name);
   imageLoading = false;
   needToLoadImage = false;
 
@@ -82,10 +82,12 @@ void playlistItemImageFile::loadFrame(int frameIndex, bool playing, bool loadRaw
 
 void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
+  const auto filename = this->properties().name;
+
   // Determine the relative path to the raw file. We save both in the playlist.
-  QUrl fileURL(plItemNameOrFileName);
+  QUrl fileURL(filename);
   fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath(plItemNameOrFileName);
+  QString relativePath = playlistDir.relativeFilePath(filename);
 
   YUViewDomElement d = root.ownerDocument().createElement("playlistItemImageFile");
 
@@ -177,7 +179,7 @@ infoData playlistItemImageFile::getInfo() const
 {
   infoData info("Image Info");
 
-  info.items.append(infoItem("File", plItemNameOrFileName));
+  info.items.append(infoItem("File", this->properties().name));
   if (frame.isFormatValid())
   {
     QSize frameSize = frame.getFrameSize();
@@ -198,7 +200,7 @@ void playlistItemImageFile::updateSettings()
   // The addPath/removePath functions will do nothing if called twice for the same file.
   QSettings settings;
   if (settings.value("WatchFiles",true).toBool())
-    fileWatcher.addPath(plItemNameOrFileName);
+    fileWatcher.addPath(this->properties().name);
   else
-    fileWatcher.removePath(plItemNameOrFileName);
+    fileWatcher.removePath(this->properties().name);
 }

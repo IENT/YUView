@@ -572,7 +572,7 @@ void playlistItemStatisticsCSVFile::reloadItemSource()
   statSource.statsCacheFrameIdx = -1;
 
   // Reopen the file
-  file.openFile(plItemNameOrFileName);
+  file.openFile(this->properties().name);
   if (!file.isOk())
     return;
 

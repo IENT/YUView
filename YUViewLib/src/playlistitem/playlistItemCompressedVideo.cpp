@@ -296,10 +296,12 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
 void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
+  auto filename = this->properties().name;
+
   // Determine the relative path to the HEVC file. We save both in the playlist.
-  QUrl fileURL(plItemNameOrFileName);
+  QUrl fileURL(filename);
   fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath(plItemNameOrFileName);
+  QString relativePath = playlistDir.relativeFilePath(filename);
 
   YUViewDomElement d = root.ownerDocument().createElement("playlistItemCompressedVideo");
 

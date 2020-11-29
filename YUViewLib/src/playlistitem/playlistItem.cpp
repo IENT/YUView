@@ -50,9 +50,16 @@ playlistItem::~playlistItem()
 {
 }
 
+playlistItem::Properties playlistItem::properties() const
+{
+  Properties p;
+  p.name = this->plItemNameOrFileName;
+  return p;
+}
+
 void playlistItem::setName(const QString &name)
 { 
-  plItemNameOrFileName = name;
+  this->plItemNameOrFileName = name;
   // For the text that is shown in the playlist, remove all newline characters.
   setText(0, name.simplified());
 }

@@ -1592,8 +1592,8 @@ QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playl
     return QStringPair();
 
   auto sep = QDir::separator();
-  auto name1 = item1->getName().split(sep);
-  auto name2 = item2->getName().split(sep);
+  auto name1 = item1->properties().name.split(sep);
+  auto name2 = item2->properties().name.split(sep);
   if (name1.empty() || name2.empty())
     return QStringPair();
 

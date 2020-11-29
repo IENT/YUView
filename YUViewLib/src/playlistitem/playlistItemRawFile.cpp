@@ -491,7 +491,7 @@ void playlistItemRawFile::slotVideoPropertiesChanged()
 
   auto currentPixelFormat = video->getFormatAsString();
   if (currentPixelFormat != this->pixelFormatAfterLoading)
-    itemMemoryHandler::itemMemoryAddFormat(plItemNameOrFileName, currentPixelFormat);
+    itemMemoryHandler::itemMemoryAddFormat(this->properties().name, currentPixelFormat);
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
@@ -520,7 +520,7 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
 void playlistItemRawFile::reloadItemSource()
 {
   // Reopen the file
-  dataSource.openFile(plItemNameOrFileName);
+  dataSource.openFile(this->properties().name);
   if (!dataSource.isOk())
     // Opening the file failed.
     return;

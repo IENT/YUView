@@ -57,7 +57,7 @@ playlistItemText::playlistItemText(const QString &initialText)
 
 // The copy constructor. Copy all the setting from the other text item.
 playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
-  : playlistItem(cloneFromTxt->plItemNameOrFileName, Type::Static)
+  : playlistItem(cloneFromTxt->properties().name, Type::Static)
 {
   this->setIcon(0, QIcon(":img_text.png"));
   this->setFlags(flags() & ~Qt::ItemIsDropEnabled);
@@ -149,7 +149,7 @@ void playlistItemText::on_textEdit_textChanged()
     t.append("...");
   }
 
-  setName(QString("Text: \"%1\"").arg(t));
+  this->setName(QString("Text: \"%1\"").arg(t));
   DEBUG_TEXT("playlistItemText::on_textEdit_textChanged New test length %d", text.length());
 
   emit signalItemChanged(true, RECACHE_NONE);

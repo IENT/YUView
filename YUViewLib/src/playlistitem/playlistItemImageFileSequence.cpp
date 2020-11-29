@@ -303,7 +303,7 @@ void playlistItemImageFileSequence::setInternals(const QString &filePath)
   }
 
   internalName = QString(fi.path()) + base + "." + fi.suffix();
-  setName(internalName);
+  this->setName(internalName);
 }
 
 void playlistItemImageFileSequence::reloadItemSource()

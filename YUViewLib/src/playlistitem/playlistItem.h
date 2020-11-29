@@ -63,6 +63,11 @@ public:
     Indexed,   // The playlist item is indexed
   };
 
+  struct Properties
+  {
+    QString name;
+  };
+
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
@@ -70,8 +75,9 @@ public:
   playlistItem(const QString &itemNameOrFileName, Type type);
   virtual ~playlistItem();
 
-  // Set/Get the name of the item. This is also the name that is shown in the tree view
-  QString getName() const { return plItemNameOrFileName; }
+  Properties properties() const;
+
+  // Set the name of the item. This is also the name that is shown in the tree view
   void setName(const QString &name);
 
   // Every playlist item has a unique (within the playlist) ID
@@ -238,9 +244,6 @@ protected:
 
   void setStartEndFrame(indexRange range, bool emitSignal);
 
-  // Save the given item name or filename that is given when constricting a playlistItem.
-  QString plItemNameOrFileName;
-
   // The widget which is put into the stack.
   QScopedPointer<QWidget> propertiesWidget;
 
@@ -299,6 +302,9 @@ private:
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
   QPoint savedCenterOffset[2];
   double savedZoom[2] {1.0, 1.0};
+
+  // Save the given item name or filename that is given when constricting a playlistItem.
+  QString plItemNameOrFileName;
 
   // The UI
   SafeUi<Ui::playlistItem> ui;

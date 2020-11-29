@@ -68,7 +68,7 @@ infoData playlistItemResample::getInfo() const
   infoData info("Resample Info");
 
   if (childCount() >= 1)
-    info.items.append(infoItem(QString("File 1"), getChildPlaylistItem(0)->getName()));
+    info.items.append(infoItem(QString("File 1"), getChildPlaylistItem(0)->properties().name));
   
   return info;
 }
