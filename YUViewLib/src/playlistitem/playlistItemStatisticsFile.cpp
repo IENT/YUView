@@ -59,6 +59,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
 
   this->prop.isFileSource = true;
   this->prop.propertiesWidgetTitle = "Statistics File Properties";
+  this->prop.providesStatistics = true;
 
   // Set statistics icon
   setIcon(0, functions::convertIcon(":img_stats.png"));

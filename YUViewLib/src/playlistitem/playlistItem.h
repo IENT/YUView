@@ -78,6 +78,13 @@ public:
     bool isFileSource {false};
 
     Type type;
+    bool isIndexedByFrame() const { return this->type == Type::Indexed; }
+    bool providesStatistics {false};
+
+    // ------ Type::Static
+    double duration {PLAYLISTITEMTEXT_DEFAULT_DURATION};
+
+
   };
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
@@ -102,13 +109,11 @@ public:
   // Save the element to the given XML structure. Has to be overloaded by the child classes which should
   // know how to load/save themselves.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const = 0;
-  
-  virtual bool isIndexedByFrame() const { return this->properties().type == Type::Indexed; }
 
   // Get the size of the item (in pixels). The default implementation will return
   // the size when the infoText is drawn. In your inherited calss, you should return this
   // size if you call the playlistItem::drawItem function to draw the info text.
-  virtual QSize getSize() const; 
+  virtual QSize getSize() const;
 
   virtual void itemAboutToBeDeleted(playlistItem *item) { Q_UNUSED(item); }
 
@@ -125,14 +130,10 @@ public:
   virtual bool acceptDrops(playlistItem *draggingItem) const { Q_UNUSED(draggingItem); return false; }
 
   // ----- playlistItem_Indexed
-  // if the item is indexed by frame (isIndexedByFrame() returns true) the following functions return the corresponding values:
+  // if the item is indexed by frame the following functions return the corresponding values:
   virtual double     getFrameRate()      const { return frameRate; }
   virtual int        getSampling()       const { return sampling; }
   virtual indexRange getFrameIdxRange()  const;
-  
-  // ------ playlistItem_Static
-  // If the item is static, the following functions return the corresponding values:
-  double getDuration() const { return duration; }
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored. drawRawValues can control if the raw pixel values are drawn. 
@@ -162,7 +163,6 @@ public:
   virtual frameHandler *getFrameHandler() { return nullptr; }
 
   // If this item provides statistics, return them here so that they can be used correctly in an overlay
-  virtual bool              providesStatistics()   const { return false; }
   virtual statisticHandler *getStatisticsHandler() { return nullptr; }
 
   // Return true if something is currently being loaded in the background. (As in: When loading is done, the item will update itself and look different)
@@ -272,9 +272,6 @@ protected:
   double      frameRate {DEFAULT_FRAMERATE};
   int         sampling  {1};
   indexRange  startEndFrame;
-
-  // ------ playlistItem_Static
-  double duration {PLAYLISTITEMTEXT_DEFAULT_DURATION};    // The duration that this item is shown for
 
   // Create the playlist controls and return a pointer to the root layout
   QLayout *createPlaylistItemControls();

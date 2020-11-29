@@ -190,10 +190,10 @@ void PlaybackController::startPlayback()
 void PlaybackController::startOrUpdateTimer()
 {
   // Get the frame rate of the current item. Lower limit is 0.01 fps (100 seconds per frame).
-  if (currentItem[0]->isIndexedByFrame() || (currentItem[1] && currentItem[1]->isIndexedByFrame()))
+  if (currentItem[0]->properties().isIndexedByFrame() || (currentItem[1] && currentItem[1]->properties().isIndexedByFrame()))
   {
     // One (of the possibly two items) is indexed by frame. Get and set the frame rate
-    double frameRate = currentItem[0]->isIndexedByFrame() ? currentItem[0]->getFrameRate() : currentItem[1]->getFrameRate();
+    double frameRate = currentItem[0]->properties().isIndexedByFrame() ? currentItem[0]->getFrameRate() : currentItem[1]->getFrameRate();
     if (frameRate < 0.01)
       frameRate = 0.01;
     timerStaticItemCountDown = -1;
@@ -205,7 +205,7 @@ void PlaybackController::startOrUpdateTimer()
     // The item (or both items) are not indexed by frame.
     // Use the duration of item 0
     timerInterval = int(1000 / 10);
-    timerStaticItemCountDown = currentItem[0]->getDuration() * 10;
+    timerStaticItemCountDown = currentItem[0]->properties().duration * 10;
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer duration %d", timerInterval);
   }
   
@@ -264,7 +264,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   currentItem[0] = item1;
   currentItem[1] = item2;
 
-  if (!(item1 && item1->isIndexedByFrame()) && !(item2 && item2->isIndexedByFrame()))
+  if (!(item1 && item1->properties().isIndexedByFrame()) && !(item2 && item2->properties().isIndexedByFrame()))
   {
     // No item selected or the selected item(s) is/are not indexed by a frame (there is no navigation in the item)
     enableControls(false);
@@ -274,13 +274,13 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
       lastValidFrameIdx = currentFrameIdx;
     currentFrameIdx = -1;
 
-    if (item1 && !item1->isIndexedByFrame())
+    if (item1 && !item1->properties().isIndexedByFrame())
     {
       // Setup the frame slider (it is disabled but will display how long we still have to wait)
       // Update the frame slider and spin boxes without emitting more signals
       const QSignalBlocker blocker1(frameSpinBox);
       const QSignalBlocker blocker2(frameSlider);
-      frameSlider->setMaximum(item1->getDuration() * 10);
+      frameSlider->setMaximum(item1->properties().duration * 10);
       frameSlider->setValue(0);
       frameSpinBox->setValue(0);
     }
@@ -447,7 +447,7 @@ void PlaybackController::enableControls(bool enable)
 
 int PlaybackController::getNextFrameIndex()
 {
-  if (currentFrameIdx >= frameSlider->maximum() || (!currentItem[0]->isIndexedByFrame() && (!currentItem[1] || !currentItem[1]->isIndexedByFrame())))
+  if (currentFrameIdx >= frameSlider->maximum() || (!currentItem[0]->properties().isIndexedByFrame() && (!currentItem[1] || !currentItem[1]->properties().isIndexedByFrame())))
   {
     // The sequence is at the end. Check the repeat mode to see what the next frame index is
     if (repeatMode == RepeatModeOne)
@@ -562,10 +562,10 @@ void PlaybackController::timerEvent(QTimerEvent *event)
     }
 
     // Check if the time interval changed (the user changed the rate of the item)
-    if (currentItem[0]->isIndexedByFrame() || (currentItem[1] && currentItem[1]->isIndexedByFrame()))
+    if (currentItem[0]->properties().isIndexedByFrame() || (currentItem[1] && currentItem[1]->properties().isIndexedByFrame()))
     {
       // One (of the possibly two items) is indexed by frame. Get and set the frame rate
-      double frameRate = currentItem[0]->isIndexedByFrame() ? currentItem[0]->getFrameRate() : currentItem[1]->getFrameRate();
+      double frameRate = currentItem[0]->properties().isIndexedByFrame() ? currentItem[0]->getFrameRate() : currentItem[1]->getFrameRate();
       if (frameRate < 0.01)
         frameRate = 0.01;
 
@@ -602,7 +602,7 @@ bool PlaybackController::setCurrentFrame(int frame, bool updateView)
 {
   if (frame == currentFrameIdx)
     return false;
-  if (!currentItem[0] || (!currentItem[0]->isIndexedByFrame() && (!currentItem[1] || !currentItem[1]->isIndexedByFrame())))
+  if (!currentItem[0] || (!currentItem[0]->properties().isIndexedByFrame() && (!currentItem[1] || !currentItem[1]->properties().isIndexedByFrame())))
     // Both items (that are selcted) are not indexed by frame.
     return false;
 

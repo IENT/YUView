@@ -67,7 +67,7 @@ indexRange playlistItemContainer::getStartEndFrameLimits() const
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *item = getChildPlaylistItem(i);
-    if (item && item->isIndexedByFrame())
+    if (item && item->properties().isIndexedByFrame())
     {
       indexRange limit = item->getStartEndFrameLimits();
 
@@ -103,7 +103,7 @@ void playlistItemContainer::updateChildList()
     if (item)
     {
       disconnect(item, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
-      if (item->providesStatistics())
+      if (item->properties().providesStatistics)
         item->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
     }
   }
@@ -126,7 +126,7 @@ void playlistItemContainer::updateChildList()
   {
     playlistItem *item = getChildPlaylistItem(i);
 
-    if (item && item->providesStatistics())
+    if (item && item->properties().providesStatistics)
     {
       // Add a line and the statistics controls also to the overlay widget
       QFrame *line = new QFrame;
@@ -157,7 +157,7 @@ void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
     if (listItem && listItem == item)
     {
       disconnect(listItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
-      if (listItem->providesStatistics())
+      if (listItem->properties().providesStatistics)
         listItem->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
       takeChild(i);
     }
@@ -208,7 +208,7 @@ void playlistItemContainer::childChanged(bool redraw, recacheIndicator recache)
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *childItem = getChildPlaylistItem(i);
-    if (childItem->isIndexedByFrame())
+    if (childItem->properties().isIndexedByFrame())
     {
       indexRange itemRange = childItem->getStartEndFrameLimits();
       if (startEndFrame == indexRange(-1, -1))

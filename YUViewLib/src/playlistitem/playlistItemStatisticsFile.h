@@ -69,7 +69,6 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
 
   // A statistics file source of course provides statistics
-  virtual bool              providesStatistics() const Q_DECL_OVERRIDE { return true; }
   virtual statisticHandler *getStatisticsHandler() Q_DECL_OVERRIDE { return &statSource; }
 
   // ----- Detection of source/file change events -----

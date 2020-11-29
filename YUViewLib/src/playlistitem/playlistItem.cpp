@@ -129,7 +129,7 @@ void playlistItem::appendPropertiesToPlaylist(YUViewDomElement &d) const
     d.appendProperiteChild("frameRate", QString::number(frameRate));
   }
   else
-    d.appendProperiteChild("duration", QString::number(duration));
+    d.appendProperiteChild("duration", QString::number(this->properties().duration));
 
   d.appendProperiteChild("viewCenterOffsetView0X", QString::number(savedCenterOffset[0].x()));
   d.appendProperiteChild("viewCenterOffsetView0Y", QString::number(savedCenterOffset[0].y()));
@@ -153,7 +153,7 @@ void playlistItem::loadPropertiesFromPlaylist(const YUViewDomElement &root, play
     newItem->frameRate = root.findChildValue("frameRate").toInt();
   }
   else
-    newItem->duration = root.findChildValue("duration").toDouble();
+    newItem->prop.duration = root.findChildValue("duration").toDouble();
 
   newItem->savedCenterOffset[0].setX(root.findChildValueInt("viewCenterOffsetView0X", 0));
   newItem->savedCenterOffset[0].setY(root.findChildValueInt("viewCenterOffsetView0Y", 0));
@@ -189,7 +189,7 @@ void playlistItem::slotVideoControlChanged()
 {
   if (this->properties().type == Type::Static)
   {
-    duration = ui.durationSpinBox->value();
+    this->prop.duration = ui.durationSpinBox->value();
   }
   else
   {
@@ -237,7 +237,7 @@ QLayout *playlistItem::createPlaylistItemControls()
 
   // Set min/max duration for a playlistItem_Static
   ui.durationSpinBox->setMaximum(100000);
-  ui.durationSpinBox->setValue(duration);
+  ui.durationSpinBox->setValue(this->properties().duration);
 
   // Set default values for a playlistItem_Indexed
   ui.startSpinBox->setMinimum(startEndFrameLimit.first);

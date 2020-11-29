@@ -59,8 +59,6 @@ public:
   // Return the RGB values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
-  // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
-  // and the given value of frameIdx will be ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // Do we need to load the given frame first?

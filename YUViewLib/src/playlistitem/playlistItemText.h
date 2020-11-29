@@ -58,8 +58,6 @@ public:
   // Create a new playlistItemText from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemText *newplaylistItemText(const YUViewDomElement &stringElement);
 
-  // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
-  // and the given value of frameIdx will be ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
   
 protected:

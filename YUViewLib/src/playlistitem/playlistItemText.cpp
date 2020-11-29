@@ -69,7 +69,8 @@ playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
   this->color = cloneFromTxt->color;
   this->text = cloneFromTxt->text;
   this->font = cloneFromTxt->font;
-  this->duration = cloneFromTxt->duration;
+
+  this->prop.duration = cloneFromTxt->properties().duration;
 }
 
 void playlistItemText::createPropertiesWidget()
