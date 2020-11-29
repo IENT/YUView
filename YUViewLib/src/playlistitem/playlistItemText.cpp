@@ -47,20 +47,24 @@
 #endif
 
 playlistItemText::playlistItemText(const QString &initialText)
-  : playlistItem(QString("Text: \"%1\"").arg(initialText), Type::Static, "Text Properties")
+  : playlistItem(QString("Text: \"%1\"").arg(initialText), Type::Static)
 {
   setIcon(0, functions::convertIcon(":img_text.png"));
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
+
+  this->prop.propertiesWidgetTitle = "Text Properties";
 
   this->text = initialText;
 }
 
 // The copy constructor. Copy all the setting from the other text item.
 playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
-  : playlistItem(cloneFromTxt->properties().name, Type::Static, "Text Properties")
+  : playlistItem(cloneFromTxt->properties().name, Type::Static)
 {
   this->setIcon(0, QIcon(":img_text.png"));
   this->setFlags(flags() & ~Qt::ItemIsDropEnabled);
+
+  this->prop.propertiesWidgetTitle = "Text Properties";
   
   this->color = cloneFromTxt->color;
   this->text = cloneFromTxt->text;

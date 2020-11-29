@@ -72,12 +72,15 @@ using namespace functions;
 #define FORWARD_SEEK_THRESHOLD 5
 
 playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compressedFilePath, int displayComponent, inputFormat input, decoderEngine decoder)
-  : playlistItemWithVideo(compressedFilePath, "Compressed File Properties")
+  : playlistItemWithVideo(compressedFilePath)
 {
   // Set the properties of the playlistItem
   // TODO: should this change with the type of video?
   setIcon(0, functions::convertIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
+
+  this->prop.isFileSource = true;
+  this->prop.propertiesWidgetTitle = "Compressed File Properties";
 
   // An compressed file can be cached if nothing goes wrong
   cachingEnabled = true;

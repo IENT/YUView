@@ -75,6 +75,7 @@ public:
     int playlistID {0};
 
     QString propertiesWidgetTitle;
+    bool isFileSource {false};
 
     Type type;
   };
@@ -83,7 +84,7 @@ public:
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(const QString &itemNameOrFileName, Type type, QString propertiesWidgetTitle);
+  playlistItem(const QString &itemNameOrFileName, Type type);
   virtual ~playlistItem();
 
   Properties properties() const { return this->prop; };
@@ -103,7 +104,6 @@ public:
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const = 0;
   
   virtual bool isIndexedByFrame() const { return this->properties().type == Type::Indexed; }
-  virtual bool isFileSource() const { return false; }
 
   // Get the size of the item (in pixels). The default implementation will return
   // the size when the infoText is drawn. In your inherited calss, you should return this
@@ -283,6 +283,8 @@ protected:
   // to draw an info text on screen.
   QString infoText;
 
+  Properties prop;
+
 protected slots:
   // A control of the playlistitem (start/end/frameRate/sampling,duration) changed
   void slotVideoControlChanged();
@@ -297,8 +299,6 @@ private:
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
   QPoint savedCenterOffset[2];
   double savedZoom[2] {1.0, 1.0};
-
-  Properties prop;
 
   // The UI
   SafeUi<Ui::playlistItem> ui;

@@ -53,6 +53,8 @@ playlistItemStatisticsVTMBMSFile::playlistItemStatisticsVTMBMSFile(const QString
   if (!file.isOk())
     return;
 
+  this->prop.isFileSource = true;
+
   // Read the statistics file header
   readHeaderFromFile();
 

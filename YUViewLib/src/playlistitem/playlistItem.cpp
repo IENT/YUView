@@ -35,14 +35,13 @@
 
 unsigned int playlistItem::idCounter = 0;
 
-playlistItem::playlistItem(const QString &itemNameOrFileName, Type type, QString propertiesWidgetTitle)
+playlistItem::playlistItem(const QString &itemNameOrFileName, Type type)
 {
   this->setName(itemNameOrFileName);
   this->setType(type);
   
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
   this->prop.id = idCounter++;
-  this->prop.propertiesWidgetTitle = propertiesWidgetTitle;
 
   startEndFrame = indexRange(-1, -1);
 }

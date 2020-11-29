@@ -43,7 +43,7 @@
 class playlistItemWithVideo : public playlistItem
 {
 public:
-  playlistItemWithVideo(const QString &itemNameOrFileName, QString propertiesWidgetTitle);
+  playlistItemWithVideo(const QString &itemNameOrFileName);
 
   // Draw the item
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues) Q_DECL_OVERRIDE;

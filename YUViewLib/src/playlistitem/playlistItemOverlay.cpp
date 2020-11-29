@@ -52,11 +52,13 @@
 #define CUSTOM_POS_MAX 100000
 
 playlistItemOverlay::playlistItemOverlay() :
-  playlistItemContainer("Overlay Item", "Overlay Properties")
+  playlistItemContainer("Overlay Item")
 {
   setIcon(0, functions::convertIcon(":img_overlay.png"));
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
   setFlags(flags() | Qt::ItemIsDropEnabled);
+
+  this->prop.propertiesWidgetTitle = "Overlay Properties";
 
   // This text is drawn if there are no child items in the overlay
   infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";

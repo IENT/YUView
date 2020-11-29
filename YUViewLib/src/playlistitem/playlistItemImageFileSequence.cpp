@@ -40,11 +40,14 @@
 #include "filesource/FileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
-  : playlistItemWithVideo(rawFilePath, "Image Sequence Properties")
+  : playlistItemWithVideo(rawFilePath)
 {
   // Set the properties of the playlistItem
   setIcon(0, functions::convertIcon(":img_television.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
+
+  this->prop.isFileSource = true;
+  this->prop.propertiesWidgetTitle = "Image Sequence Properties";
 
   loadPlaylistFrameMissing = false;
   isFrameLoading = false;

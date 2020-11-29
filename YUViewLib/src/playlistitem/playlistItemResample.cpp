@@ -47,12 +47,14 @@
 #define RESAMPLE_INFO_TEXT "Please drop an item onto this item to show a resampled version of it."
 
 playlistItemResample::playlistItemResample()
-  : playlistItemContainer("Resample Item", "Resample Properties")
+  : playlistItemContainer("Resample Item")
 {
   setIcon(0, functions::convertIcon(":img_resample.png"));
 
   // The user can drop one item
   setFlags(flags() | Qt::ItemIsDropEnabled);
+
+  this->prop.propertiesWidgetTitle = "Resample Properties";
 
   this->maxItemCount = 1;
   this->frameLimitsMax = false;

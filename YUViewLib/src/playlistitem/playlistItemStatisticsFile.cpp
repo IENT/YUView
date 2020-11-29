@@ -47,7 +47,7 @@
 #define STAT_PARSING_BUFFER_SIZE 1048576
 
 playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOrFileName)
-  : playlistItem(itemNameOrFileName, Type::Indexed, "Statistics File Properties")
+  : playlistItem(itemNameOrFileName, Type::Indexed)
 {
   // Set default variables
   fileSortedByPOC = false;
@@ -56,6 +56,9 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   currentDrawnFrameIdx = -1;
   maxPOC = 0;
   isStatisticsLoading = false;
+
+  this->prop.isFileSource = true;
+  this->prop.propertiesWidgetTitle = "Statistics File Properties";
 
   // Set statistics icon
   setIcon(0, functions::convertIcon(":img_stats.png"));

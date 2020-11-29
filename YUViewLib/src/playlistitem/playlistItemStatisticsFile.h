@@ -54,8 +54,6 @@ public:
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
-  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
-
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // ------ Statistics ----
