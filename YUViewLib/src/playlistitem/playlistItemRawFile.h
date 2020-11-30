@@ -76,7 +76,7 @@ public:
 private slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  void loadRawData(int frameIdxInternal);
+  void loadRawData(int frameIdx);
 
   void slotVideoPropertiesChanged();
 
@@ -96,7 +96,7 @@ private:
   
   FileSource dataSource;
 
-  int64_t getBytesPerFrame() const { return video->getBytesPerFrame(); }
+  void updateStartEndRange() override;
 
   // A y4m file is a raw YUV file but it adds a header (which has information about the YUV format)
   // and start indicators for every frame. This file will parse the header and save all the byte

@@ -76,7 +76,7 @@ public:
 private slots:
   // Load the given frame from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void slotFrameRequest(int frameIdxInternal, bool caching);
+  virtual void slotFrameRequest(int frameIdx, bool caching);
 
   // The image file that we loaded was changed.
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }

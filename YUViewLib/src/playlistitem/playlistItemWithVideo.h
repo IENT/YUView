@@ -78,6 +78,9 @@ public:
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
 
+private slots:
+  void slotVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache);
+
 protected:
   // A pointer to the videHandler. In the derived class, don't foret to set this.
   QScopedPointer<videoHandler> video;
@@ -92,6 +95,8 @@ protected:
 
   // Connect the basic signals from the video
   void connectVideo();
+
+  virtual void updateStartEndRange() {};
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading;

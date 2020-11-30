@@ -127,12 +127,10 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
       getRGBVideo()->setRGBPixelFormatByName(sourcePixelFormat);
   }
 
-  if (video->isFormatValid())
-    this->prop.startEndRange = indexRange(0, this->getNumberFrames());
+  this->updateStartEndRange();
 
   // If the videHandler requests raw data, we provide it from the file
   connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemRawFile::loadRawData, Qt::DirectConnection);
-  connect(video.data(), &videoHandler::signalUpdateFrameLimits, this, &playlistItemRawFile::slotUpdateFrameLimits);
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
@@ -144,20 +142,29 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   this->cachingEnabled = true;
 }
 
-int playlistItemRawFile::getNumberFrames() const
+void playlistItemRawFile::updateStartEndRange()
 {
   if (!dataSource.isOk() || !video->isFormatValid())
   {
-    // File could not be loaded or there is no valid format set (width/height/rawFormat)
-    return 0;
+    this->prop.startEndRange = indexRange(-1, -1);
+    return;
   }
 
-  if (isY4MFile)
-    return y4mFrameIndices.count();
-
-  // The file was opened successfully
-  int64_t bpf = getBytesPerFrame();
-  return (bpf == 0) ? -1 : dataSource.getFileSize() / bpf;
+  auto nrFrames = 0;
+  if (this->isY4MFile)
+    nrFrames = this->y4mFrameIndices.count();
+  else
+  {
+    auto bpf = this->video->getBytesPerFrame();
+    if (bpf == 0)
+    {
+      this->prop.startEndRange = indexRange(-1, -1);
+      return;
+    }
+    nrFrames = this->dataSource.getFileSize() / bpf;
+  }
+  
+  this->prop.startEndRange = indexRange(0, nrFrames - 1);
 }
 
 infoData playlistItemRawFile::getInfo() const
@@ -169,7 +176,7 @@ infoData playlistItemRawFile::getInfo() const
 
   auto nrFrames = (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
   info.items.append(infoItem("Num Frames", QString::number(nrFrames)));
-  info.items.append(infoItem("Bytes per Frame", QString("%1").arg(getBytesPerFrame())));
+  info.items.append(infoItem("Bytes per Frame", QString("%1").arg(this->video->getBytesPerFrame())));
 
   if (dataSource.isOk() && video->isFormatValid() && !isY4MFile)
   {
@@ -177,7 +184,7 @@ infoData playlistItemRawFile::getInfo() const
     // without any remainder. If not, then there is probably something wrong with the
     // selected YUV format / width / height ...
 
-    int64_t bpf = getBytesPerFrame();
+    auto bpf = this->video->getBytesPerFrame();
     if ((dataSource.getFileSize() % bpf) != 0)
     {
       // Add a warning
@@ -468,25 +475,26 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const YUViewDom
   return newFile;
 }
 
-void playlistItemRawFile::loadRawData(int frameIdxInternal)
+void playlistItemRawFile::loadRawData(int frameIdx)
 {
   if (!video->isFormatValid())
     return;
 
+  auto nrBytes = this->video->getBytesPerFrame();
+
   // Load the raw data for the given frameIdx from file and set it in the video
   int64_t fileStartPos;
   if (isY4MFile)
-    fileStartPos = y4mFrameIndices.at(frameIdxInternal);
+    fileStartPos = y4mFrameIndices.at(frameIdx);
   else
-    fileStartPos = frameIdxInternal * getBytesPerFrame();
-  int64_t nrBytes = getBytesPerFrame();
+    fileStartPos = frameIdx * nrBytes;
 
-  DEBUG_RAWFILE("playlistItemRawFile::loadRawData frame %d bytes %d", frameIdxInternal, int(nrBytes));
+  DEBUG_RAWFILE("playlistItemRawFile::loadRawData frame %d bytes %d", frameIdx, int(nrBytes));
   if (dataSource.readBytes(video->rawData, fileStartPos, nrBytes) < nrBytes)
     return; // Error
-  video->rawData_frameIdx = frameIdxInternal;
+  video->rawData_frameIndex = frameIdx;
 
-  DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d Done", frameIdxInternal);
+  DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d Done", frameIdx);
 }
 
 void playlistItemRawFile::slotVideoPropertiesChanged()

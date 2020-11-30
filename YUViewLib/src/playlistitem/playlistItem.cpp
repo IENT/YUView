@@ -151,13 +151,6 @@ void playlistItem::slotVideoControlChanged()
   }
 }
 
-void playlistItem::slotUpdateFrameLimits()
-{
-  // The current frame in the buffer is not invalid, but emit that something has changed.
-  // Also no frame in the cache is invalid.
-  emit signalItemChanged(false, RECACHE_NONE);
-}
-
 QLayout *playlistItem::createPlaylistItemControls()
 {
   Q_ASSERT_X(!this->ui.created(), "createTextController", "UI already exists");

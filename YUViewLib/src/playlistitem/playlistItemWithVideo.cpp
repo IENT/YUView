@@ -53,10 +53,16 @@ playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName)
   rawFormat = raw_Invalid;
 };
 
+void playlistItemWithVideo::slotVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache)
+{
+  this->updateStartEndRange();
+  emit signalItemChanged(redrawNeeded, recache);
+}
+
 void playlistItemWithVideo::connectVideo()
 {
   // Forward these signals from the video source up
-  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItem::signalItemChanged);
+  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemWithVideo::slotVideoHandlerChanged);
 }
 
 void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)

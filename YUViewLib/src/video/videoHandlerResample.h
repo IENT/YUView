@@ -47,6 +47,10 @@ class videoHandlerResample : public videoHandler
 public:
   explicit videoHandlerResample();
 
+  // We need to override these videoHandler functions in order to map the frameIndex 
+  QImage calculateDifference(frameHandler *item2, const int frameIndex0, const int frameIndex1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) override;
+  itemLoadingState needsLoading(int frameIndex, bool loadRawValues) override;
+
   void loadResampledFrame(int frameIndex, bool loadToDoubleBuffer=false);
   
   bool inputValid() const;
@@ -56,13 +60,14 @@ public:
 
   // Set the video input. This will also update the number frames, the controls and the frame size.
   // The signal signalHandlerChanged will be emitted if a redraw is required.
-  void setInputVideo(frameHandler *childVideo0);
+  void setInputVideo(frameHandler *childVideo, indexRange childFrameRange);
 
   QList<infoItem> resampleInfoList;
-    
+  
 private slots:
   void slotResampleControlChanged(int value);
   void slotInterpolationModeChanged(int value);
+  void slotCutAndSampleControlChanged(int value);
 
 private:
 

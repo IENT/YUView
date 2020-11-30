@@ -39,24 +39,16 @@
 playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName)
   : playlistItem(itemNameOrFileName, Type::Indexed)
 {
-  // By default, there is no limit on the number of items
-  maxItemCount = -1;
-  // No update required (yet)
-  childLlistUpdateRequired = true;
-  // By default, take the maximum limits for all items
-  frameLimitsMax = true;
+  this->setFlags(this->flags() | Qt::ItemIsDropEnabled);
 
-  // Enable dropping for container items
-  setFlags(flags() | Qt::ItemIsDropEnabled);
-
-  containerStatLayout.setContentsMargins(0, 0, 0, 0);
+  this->containerStatLayout.setContentsMargins(0, 0, 0, 0);
 }
 
 // If the maximum number of items is reached, return false.
 bool playlistItemContainer::acceptDrops(playlistItem *draggingItem) const
 {
   Q_UNUSED(draggingItem);
-  return (maxItemCount == -1 || childCount() < maxItemCount);
+  return (this->maxItemCount == -1 || childCount() < this->maxItemCount);
 }
 
 void playlistItemContainer::updateChildList()
@@ -64,9 +56,9 @@ void playlistItemContainer::updateChildList()
   // Disconnect all signalItemChanged events from the children to the "childChanged" function from this container.
   // All the original connections from the items to the playlistTreeWidget will be retained. The user can still select 
   // the child items individually so the individual connections must also be there.
-  for (int i = 0; i < childCount(); i++)
+  for (int i = 0; i < this->childCount(); i++)
   {
-    playlistItem *item = getChildPlaylistItem(i);
+    auto item = this->getChildPlaylistItem(i);
     if (item)
     {
       disconnect(item, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
@@ -78,9 +70,9 @@ void playlistItemContainer::updateChildList()
   // Connect all child items
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = getChildPlaylistItem(i);
+    auto childItem = this->getChildPlaylistItem(i);
     if (childItem)
-      connect(childItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
+      this->connect(childItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
   }
 
   // Remove all widgets (the lines and spacer) that are still in the layout

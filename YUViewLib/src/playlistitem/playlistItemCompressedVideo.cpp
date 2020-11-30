@@ -294,7 +294,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Connect signals for requesting data and statistics
   connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemCompressedVideo::loadRawData, Qt::DirectConnection);
-  connect(video.data(), &videoHandler::signalUpdateFrameLimits, this, &playlistItemCompressedVideo::slotUpdateFrameLimits);
   connect(&statSource, &statisticHandler::updateItem, this, &playlistItemCompressedVideo::updateStatSource);
   connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemCompressedVideo::loadStatisticToCache, Qt::DirectConnection);
 }
@@ -618,7 +617,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
         if (rightFrame)
         {
           video->rawData = dec->getRawFrameData();
-          video->rawData_frameIdx = frameIdx;
+          video->rawData_frameIndex = frameIdx;
         }
       }
     }
@@ -641,7 +640,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       currentFrameIdx[0] = frameIdx;
     // Just set the frame number of the buffer to the current frame so that it will trigger a
     // reload when the frame number changes.
-    video->rawData_frameIdx = frameIdx;
+    video->rawData_frameIndex = frameIdx;
   }
   else if (loadingDecoder->errorInDecoder())
   {

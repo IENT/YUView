@@ -90,7 +90,7 @@ infoData playlistItemDifference::getInfo() const
 
 void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
-  DEBUG_DIFF("playlistItemDifference::drawItem frameIdx %d %s", frameIdxInternal, childLlistUpdateRequired ? "childLlistUpdateRequired" : "");
+  DEBUG_DIFF("playlistItemDifference::drawItem frameIdx %d %s", frameIdx, childLlistUpdateRequired ? "childLlistUpdateRequired" : "");
   if (childLlistUpdateRequired)
   {
     // Update the 'childList' and connect the signals/slots

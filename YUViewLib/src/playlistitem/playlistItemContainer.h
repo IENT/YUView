@@ -71,18 +71,18 @@ protected slots:
 protected:
   
   // How many items can this container contain? (-1 no limit)
-  int maxItemCount;
+  int maxItemCount {-1};
 
   // How do we calculate the frame index ranges? If this is true, the maximum of all items will be used,
   // if it is false, the minimum will be used (the overlapping part)
-  bool frameLimitsMax;
+  bool frameLimitsMax {true};
 
   // Return a pointer to the playlist item or null if the item does not exist (check childCount() first)
   playlistItem *getChildPlaylistItem(int index) const;
 
   // We keep a list of pointers to all child items. This way we can directly connect to the children signals
   void updateChildList();
-  bool childLlistUpdateRequired;
+  bool childLlistUpdateRequired {true};
     
   // Create a layout for the container item. Since this is filled depending on the child items, it is just an empty layout in the beginning.
   QLayout *createContainerItemControls() { return &containerStatLayout; }

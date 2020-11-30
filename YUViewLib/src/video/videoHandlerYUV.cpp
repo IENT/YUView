@@ -443,18 +443,15 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
   if (emitSignal)
   {
     // Set the current buffers to be invalid and emit the signal that this item needs to be redrawn.
-    currentImageIdx = -1;
+    currentImageIndex = -1;
     currentImage_frameIndex = -1;
 
     // Set the cache to invalid until it is cleared an recached
-    setCacheInvalid();
+    this->setCacheInvalid();
 
     if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
       // The number of bytes per frame changed. The raw YUV data buffer is also out of date
-      currentFrameRawData_frameIdx = -1;
-
-    // The number of frames in the sequence might have changed as well
-    emit signalUpdateFrameLimits();
+      currentFrameRawData_frameIndex = -1;
 
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
@@ -487,7 +484,7 @@ void videoHandlerYUV::slotYUVControlChanged()
 
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
-    currentImageIdx = -1;
+    currentImageIndex = -1;
     currentImage_frameIndex = -1;
     setCacheInvalid();
     emit signalHandlerChanged(true, RECACHE_CLEAR);
@@ -499,16 +496,13 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Set the new YUV format
     //setSrcPixelFormat(yuvFormatList.getFromName(ui.yuvFormatComboBox->currentText()));
 
-    // Check if the new format changed the number of frames in the sequence
-    emit signalUpdateFrameLimits();
-
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
-    currentImageIdx = -1;
+    currentImageIndex = -1;
     currentImage_frameIndex = -1;
     if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
       // The number of bytes per frame changed. The raw YUV data buffer also has to be updated.
-      currentFrameRawData_frameIdx = -1;
+      currentFrameRawData_frameIndex = -1;
     setCacheInvalid();
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
@@ -531,7 +525,7 @@ QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int fram
       return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
     // Do not get the pixel values if the buffer for the raw YUV values is out of date.
-    if (currentFrameRawData_frameIdx != frameIdx || yuvItem2->currentFrameRawData_frameIdx != frameIdx1)
+    if (currentFrameRawData_frameIndex != frameIdx || yuvItem2->currentFrameRawData_frameIndex != frameIdx1)
       return QStringPairList();
 
     int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
@@ -586,7 +580,7 @@ QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int fram
     int height = frameSize.height();
 
     // Do not get the pixel values if the buffer for the raw YUV values is out of date.
-    if (currentFrameRawData_frameIdx != frameIdx)
+    if (currentFrameRawData_frameIndex != frameIdx)
       return QStringPairList();
 
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
@@ -649,9 +643,9 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
 
   // Check if the raw YUV values are up to date. If not, do not draw them. Do not trigger loading of data here. The needsLoadingRawValues 
   // function will return that loading is needed. The caching in the background should then trigger loading of them.
-  if (currentFrameRawData_frameIdx != frameIdx)
+  if (currentFrameRawData_frameIndex != frameIdx)
     return;
-  if (yuvItem2 && yuvItem2->currentFrameRawData_frameIdx != frameIdxItem1)
+  if (yuvItem2 && yuvItem2->currentFrameRawData_frameIndex != frameIdxItem1)
     return;
 
   // For difference items, we support difference bit depths for the two items.
@@ -989,15 +983,15 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
     QImage newImage;
     convertYUVToImage(currentFrameRawData, newImage, srcPixelFormat, frameSize);
     doubleBufferImage = newImage;
-    doubleBufferImageFrameIdx = frameIndex;
+    doubleBufferImageFrameIndex = frameIndex;
   }
-  else if (currentImageIdx != frameIndex)
+  else if (currentImageIndex != frameIndex)
   {
     QImage newImage;
     convertYUVToImage(currentFrameRawData, newImage, srcPixelFormat, frameSize);
     QMutexLocker setLock(&currentImageSetMutex);
     currentImage = newImage;
-    currentImageIdx = frameIndex;
+    currentImageIndex = frameIndex;
   }
 }
 
@@ -1014,7 +1008,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   QByteArray tmpBufferRawYUVDataCaching = rawData;
   requestDataMutex.unlock();
 
-  if (frameIndex != rawData_frameIdx)
+  if (frameIndex != rawData_frameIndex)
   {
     // Loading failed
     DEBUG_YUV("videoHandlerYUV::loadFrameForCaching Loading failed");
@@ -1028,7 +1022,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 // Load the raw YUV data for the given frame index into currentFrameRawData.
 bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 {
-  if (currentFrameRawData_frameIdx == frameIndex && cacheValid)
+  if (currentFrameRawData_frameIndex == frameIndex && cacheValid)
     // Buffer already up to date
     return true;
 
@@ -1039,7 +1033,7 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, false);
 
-  if (frameIndex != rawData_frameIdx || rawData.isEmpty())
+  if (frameIndex != rawData_frameIndex || rawData.isEmpty())
   {
     // Loading failed
     DEBUG_YUV("videoHandlerYUV::loadRawYUVData Loading failed");
@@ -1048,7 +1042,7 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   }
 
   currentFrameRawData = rawData;
-  currentFrameRawData_frameIdx = frameIndex;
+  currentFrameRawData_frameIndex = frameIndex;
   requestDataMutex.unlock();
   
   DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex << " Done");

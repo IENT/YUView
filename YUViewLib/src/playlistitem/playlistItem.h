@@ -265,10 +265,9 @@ protected:
   Properties prop;
 
 protected slots:
+
   // A control of the playlistitem (start/end/frameRate/sampling,duration) changed
   void slotVideoControlChanged();
-  // The frame limits of the object have changed. Update the limits (and maybe also the range).
-  virtual void slotUpdateFrameLimits();
 
 private:
   // Every playlist item we create gets an id (automatically). This is saved to the playlist so we can match

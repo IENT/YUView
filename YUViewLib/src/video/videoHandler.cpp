@@ -47,12 +47,12 @@
 videoHandler::videoHandler()
 {
   // Initialize variables
-  currentImageIdx = -1;
+  currentImageIndex = -1;
   currentImage_frameIndex = -1;
-  doubleBufferImageFrameIdx = -1;
+  doubleBufferImageFrameIndex = -1;
   cacheValid = true;
-  currentFrameRawData_frameIdx = -1;
-  rawData_frameIdx = -1;
+  currentFrameRawData_frameIndex = -1;
+  rawData_frameIndex = -1;
 }
 
 void videoHandler::slotVideoControlChanged()
@@ -68,11 +68,8 @@ void videoHandler::slotVideoControlChanged()
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
 
-  // Check if the new resolution changed the number of frames in the sequence
-  emit signalUpdateFrameLimits();
-
   // Set the current frame in the buffer to be invalid
-  currentImageIdx = -1;
+  currentImageIndex = -1;
 
   // The cache is invalid until the item is recached
   setCacheInvalid();
@@ -82,8 +79,8 @@ void videoHandler::setFrameSize(const QSize &size)
 {
   if (size != frameSize)
   {
-    currentFrameRawData_frameIdx = -1;
-    currentImageIdx = -1;
+    currentFrameRawData_frameIndex = -1;
+    currentImageIndex = -1;
   }
 
   frameHandler::setFrameSize(size);
@@ -104,9 +101,9 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
   QMutexLocker lock(&imageCacheAccess);
 
   // The raw values are not needed. 
-  if (frameIdx == currentImageIdx)
+  if (frameIdx == currentImageIndex)
   {
-    if (doubleBufferImageFrameIdx == frameIdx + 1)
+    if (doubleBufferImageFrameIndex == frameIdx + 1)
     {
       DEBUG_VIDEO("videoHandler::needsLoading %d is current and %d found in double buffer", frameIdx, frameIdx+1);
       return LoadingNotNeeded;
@@ -125,7 +122,7 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
   }
 
   // Check the double buffer
-  if (doubleBufferImageFrameIdx == frameIdx)
+  if (doubleBufferImageFrameIndex == frameIdx)
   {
     // The frame in question is in the double buffer...
     if (cacheValid && imageCache.contains(frameIdx + 1))
@@ -148,7 +145,7 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
   if (cacheValid && imageCache.contains(frameIdx))
   {
     // What about the next frame? Is it also in the cache or in the double buffer?
-    if (doubleBufferImageFrameIdx == frameIdx + 1)
+    if (doubleBufferImageFrameIndex == frameIdx + 1)
     {
       DEBUG_VIDEO("videoHandler::needsLoading %d in cache and %d found in double buffer", frameIdx, frameIdx+1);
       return LoadingNotNeeded;
@@ -174,15 +171,15 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
 void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
 {
   // Check if the frameIdx changed and if we have to load a new frame
-  if (frameIdx != currentImageIdx)
+  if (frameIdx != currentImageIndex)
   {
     // The current buffer is out of date. Update it.
 
     // Check the double buffer
-    if (frameIdx == doubleBufferImageFrameIdx)
+    if (frameIdx == doubleBufferImageFrameIndex)
     {
       currentImage = doubleBufferImage;
-      currentImageIdx = frameIdx;
+      currentImageIndex = frameIdx;
       DEBUG_VIDEO("videoHandler::drawFrame %d loaded from double buffer", frameIdx);
     }
     else
@@ -191,7 +188,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
       if (cacheValid && imageCache.contains(frameIdx))
       {
         currentImage = imageCache[frameIdx];
-        currentImageIdx = frameIdx;
+        currentImageIndex = frameIdx;
         DEBUG_VIDEO("videoHandler::drawFrame %d loaded from cache", frameIdx);
       }
     }
@@ -221,16 +218,16 @@ QImage videoHandler::calculateDifference(frameHandler *item2, const int frameIdx
   if (videoItem2 == nullptr)
   {
     // The item2 is not a videoItem but this one is.
-    if (currentImageIdx != frameIdxItem0)
+    if (currentImageIndex != frameIdxItem0)
       loadFrame(frameIdxItem0);
     // Call the frameHandler implementation to calculate the difference
     return frameHandler::calculateDifference(item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
   }
 
   // Load the right images, if not already loaded)
-  if (currentImageIdx != frameIdxItem0)
+  if (currentImageIndex != frameIdxItem0)
     loadFrame(frameIdxItem0);
-  if (videoItem2->currentImageIdx != frameIdxItem1)
+  if (videoItem2->currentImageIndex != frameIdxItem1)
     videoItem2->loadFrame(frameIdxItem1);
 
   return frameHandler::calculateDifference(item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
@@ -337,14 +334,14 @@ void videoHandler::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   {
     // Save the requested frame in the double buffer
     doubleBufferImage = requestedFrame;
-    doubleBufferImageFrameIdx = frameIndex;
+    doubleBufferImageFrameIndex = frameIndex;
   }
   else
   {
     // Set the requested frame as the current frame
     QMutexLocker imageLock(&currentImageSetMutex);
     currentImage = requestedFrame;
-    currentImageIdx = frameIndex;
+    currentImageIndex = frameIndex;
   }
 }
 
@@ -366,14 +363,11 @@ void videoHandler::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 
 void videoHandler::invalidateAllBuffers()
 {
-  currentFrameRawData_frameIdx = -1;
-  rawData_frameIdx = -1;
-
-  // Check if the new resolution changed the number of frames in the sequence
-  emit signalUpdateFrameLimits();
+  currentFrameRawData_frameIndex = -1;
+  rawData_frameIndex = -1;
 
   // Set the current frame in the buffer to be invalid 
-  currentImageIdx = -1;
+  currentImageIndex = -1;
   currentImage_frameIndex = -1;
   currentImageSetMutex.lock();
   currentImage = QImage();
@@ -386,11 +380,11 @@ void videoHandler::invalidateAllBuffers()
 
 void videoHandler::activateDoubleBuffer()
 {
-  if (doubleBufferImageFrameIdx != -1)
+  if (doubleBufferImageFrameIndex != -1)
   {
     currentImage = doubleBufferImage;
-    currentImageIdx = doubleBufferImageFrameIdx;
-    DEBUG_VIDEO("videoHandler::drawFrame %d loaded from double buffer", currentImageIdx);
+    currentImageIndex = doubleBufferImageFrameIndex;
+    DEBUG_VIDEO("videoHandler::drawFrame %d loaded from double buffer", currentImageIndex);
   }
 }
 

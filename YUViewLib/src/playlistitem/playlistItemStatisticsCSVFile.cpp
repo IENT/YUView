@@ -405,7 +405,7 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
   return;
 }
 
-void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, int typeID)
+void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdx, int typeID)
 {
   try
   {
@@ -414,7 +414,7 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
 
     QTextStream in(file.getQFile());
 
-    if (!pocTypeStartList.contains(frameIdxInternal) || !pocTypeStartList[frameIdxInternal].contains(typeID))
+    if (!pocTypeStartList.contains(frameIdx) || !pocTypeStartList[frameIdx].contains(typeID))
     {
       // There are no statistics in the file for the given frame and index.
       statSource.statsCache.insert(typeID, statisticsData());
@@ -422,16 +422,16 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
     }
 
 
-    qint64 startPos = pocTypeStartList[frameIdxInternal][typeID];
+    qint64 startPos = pocTypeStartList[frameIdx][typeID];
     if (fileSortedByPOC)
     {
       // If the statistics file is sorted by POC we have to start at the first entry of this POC and parse the
       // file until another POC is encountered. If this is not done, some information from a different typeID
       // could be ignored during parsing.
 
-      // Get the position of the first line with the given frameIdxInternal
+      // Get the position of the first line with the given frameIdx
       startPos = std::numeric_limits<qint64>::max();
-      for (const qint64 &value : pocTypeStartList[frameIdxInternal])
+      for (const qint64 &value : pocTypeStartList[frameIdx])
         if (value < startPos)
           startPos = value;
     }
@@ -454,7 +454,7 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
       int type = rowItemList[5].toInt();
 
       // if there is a new POC, we are done here!
-      if (poc != frameIdxInternal)
+      if (poc != frameIdx)
         break;
       // if there is a new type and this is a non interleaved file, we are done here.
       if (!fileSortedByPOC && type != typeID)
@@ -488,7 +488,7 @@ void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdxInternal, i
       // Check if block is within the image range
       if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.getFrameSize().width() || posY + height > statSource.getFrameSize().height()))
         // Block not in image. Warn about this.
-        blockOutsideOfFrame_idx = frameIdxInternal;
+        blockOutsideOfFrame_idx = frameIdx;
 
       const StatisticsType *statsType = statSource.getStatisticsType(type);
       Q_ASSERT_X(statsType != nullptr, Q_FUNC_INFO, "Stat type not found.");

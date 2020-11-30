@@ -38,25 +38,43 @@
 #include "videoHandlerYUV.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define VIDEOHANDLERRESAMPLE_DEBUG_LOADING 0
+#define VIDEOHANDLERRESAMPLE_DEBUG_LOADING 1
 #if VIDEOHANDLERRESAMPLE_DEBUG_LOADING && !NDEBUG
-#define DEBUG_VIDEO qDebug
+#define DEBUG_RESAMPLE qDebug
 #else
-#define DEBUG_VIDEO(fmt,...) ((void)0)
+#define DEBUG_RESAMPLE(fmt,...) ((void)0)
 #endif
 
 videoHandlerResample::videoHandlerResample() : videoHandler()
 {
 }
 
+QImage videoHandlerResample::calculateDifference(frameHandler *item2, const int frameIndex0, const int frameIndex1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+{
+  if (!this->inputValid())
+    return {};
+
+  auto mappedIndex = frameIndex0 + (this->ui.created() ? ui.spinBoxStart->value() : 0);
+  return videoHandler::calculateDifference(item2, mappedIndex, frameIndex1, differenceInfoList, amplificationFactor, markDifference);
+}
+
+itemLoadingState videoHandlerResample::needsLoading(int frameIndex, bool loadRawValues)
+{
+  auto mappedIndex = frameIndex + (this->ui.created() ? ui.spinBoxStart->value() : 0);
+  return videoHandler::needsLoading(mappedIndex, loadRawValues);
+}
+
 void videoHandlerResample::loadResampledFrame(int frameIndex, bool loadToDoubleBuffer)
 {
   if (!this->inputValid())
     return;
+
+  auto mappedIndex = frameIndex + (this->ui.created() ? ui.spinBoxStart->value() : 0);
+  DEBUG_RESAMPLE("videoHandlerResample::loadResampledFrame frameIndex %d mapped to %d", frameIndex, mappedIndex);
   
   auto video = dynamic_cast<videoHandler*>(this->inputVideo.data());
-  if (video && video->getCurrentImageIndex() != frameIndex)
-    video->loadFrame(frameIndex);
+  if (video && video->getCurrentImageIndex() != mappedIndex)
+    video->loadFrame(mappedIndex);
   
   auto interpolationMode = Qt::SmoothTransformation;
   if (ui.created() && ui.comboBoxInterpolation->currentIndex() == 1)
@@ -69,16 +87,16 @@ void videoHandlerResample::loadResampledFrame(int frameIndex, bool loadToDoubleB
   if (loadToDoubleBuffer)
   {
     doubleBufferImage = newFrame;
-    doubleBufferImageFrameIdx = frameIndex;
-    DEBUG_VIDEO("videoHandlerResample::loadResampledFrame Loaded frame %d to double buffer", frameIndex);
+    doubleBufferImageFrameIndex = mappedIndex;
+    DEBUG_RESAMPLE("videoHandlerResample::loadResampledFrame Loaded frame %d to double buffer", mappedIndex);
   }
   else
   {
     // The new difference frame is ready
     QMutexLocker lock(&this->currentImageSetMutex);
     currentImage = newFrame;
-    currentImageIdx = frameIndex;
-    DEBUG_VIDEO("videoHandlerResample::loadResampledFrame Loaded frame %d", frameIndex);
+    currentImageIndex = mappedIndex;
+    DEBUG_RESAMPLE("videoHandlerResample::loadResampledFrame Loaded frame %d", mappedIndex);
   }
 }
 
@@ -87,12 +105,13 @@ bool videoHandlerResample::inputValid() const
   return (!this->inputVideo.isNull() && this->inputVideo->isFormatValid());
 }
 
-void videoHandlerResample::setInputVideo(frameHandler *childVideo)
+void videoHandlerResample::setInputVideo(frameHandler *childVideo, indexRange childFrameRange)
 {
   if (this->inputVideo != childVideo)
   {
     // Something changed
     this->inputVideo = childVideo;
+    DEBUG_RESAMPLE("videoHandlerResample::loadResampledFrame setting new vide");
 
     if (this->inputValid())
     {
@@ -104,6 +123,19 @@ void videoHandlerResample::setInputVideo(frameHandler *childVideo)
         QSignalBlocker blockerHeight(ui.spinBoxHeight);
         ui.spinBoxWidth->setValue(size.width());
         ui.spinBoxHeight->setValue(size.height());
+
+        QSignalBlocker blockerSampling(ui.spinBoxSampling);
+        ui.spinBoxSampling->setValue(1);
+
+        QSignalBlocker blockerStart(ui.spinBoxStart);
+        ui.spinBoxStart->setMinimum(childFrameRange.first);
+        ui.spinBoxStart->setMaximum(childFrameRange.second);
+        ui.spinBoxStart->setValue(childFrameRange.first);
+
+        QSignalBlocker blockerEnd(ui.spinBoxEnd);
+        ui.spinBoxEnd->setMinimum(childFrameRange.first);
+        ui.spinBoxEnd->setMaximum(childFrameRange.second);
+        ui.spinBoxEnd->setValue(childFrameRange.second);
       }
       
       this->setFrameSize(size);
@@ -134,6 +166,9 @@ QLayout *videoHandlerResample::createResampleHandlerControls()
   this->connect(ui.spinBoxWidth, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotResampleControlChanged);
   this->connect(ui.spinBoxHeight, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotResampleControlChanged);
   this->connect(ui.comboBoxInterpolation, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerResample::slotInterpolationModeChanged);
+  this->connect(ui.spinBoxStart, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotCutAndSampleControlChanged);
+  this->connect(ui.spinBoxEnd, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotCutAndSampleControlChanged);
+  this->connect(ui.spinBoxSampling, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotCutAndSampleControlChanged);
 
   return ui.topVBoxLayout;
 }
@@ -152,8 +187,14 @@ void videoHandlerResample::slotResampleControlChanged(int value)
 void videoHandlerResample::slotInterpolationModeChanged(int value)
 {
   Q_UNUSED(value);
-  
   this->invalidateAllBuffers();
+  emit signalHandlerChanged(true, RECACHE_CLEAR);
+}
 
+void videoHandlerResample::slotCutAndSampleControlChanged(int value)
+{
+  Q_UNUSED(value);
+  DEBUG_RESAMPLE("videoHandlerResample::slotCutAndSampleControlChanged");
+  this->invalidateAllBuffers();
   emit signalHandlerChanged(true, RECACHE_CLEAR);
 }

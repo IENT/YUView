@@ -49,10 +49,8 @@
 playlistItemResample::playlistItemResample()
   : playlistItemContainer("Resample Item")
 {
-  setIcon(0, functions::convertIcon(":img_resample.png"));
-
-  // The user can drop one item
-  setFlags(flags() | Qt::ItemIsDropEnabled);
+  this->setIcon(0, functions::convertIcon(":img_resample.png"));
+  this->setFlags(flags() | Qt::ItemIsDropEnabled);
 
   this->prop.propertiesWidgetTitle = "Resample Properties";
 
@@ -60,7 +58,7 @@ playlistItemResample::playlistItemResample()
   this->frameLimitsMax = false;
   this->infoText = RESAMPLE_INFO_TEXT;
 
-  connect(&this->video, &frameHandler::signalHandlerChanged, this, &playlistItemResample::signalItemChanged);
+  this->connect(&this->video, &frameHandler::signalHandlerChanged, this, &playlistItemResample::signalItemChanged);
 }
 
 /* For a resample item, the info list is just the name of the child item
@@ -69,8 +67,8 @@ infoData playlistItemResample::getInfo() const
 {
   infoData info("Resample Info");
 
-  if (childCount() >= 1)
-    info.items.append(infoItem(QString("File 1"), getChildPlaylistItem(0)->properties().name));
+  if (this->childCount() >= 1)
+    info.items.append(infoItem(QString("File 1"), this->getChildPlaylistItem(0)->properties().name));
   
   return info;
 }
@@ -78,19 +76,19 @@ infoData playlistItemResample::getInfo() const
 void playlistItemResample::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
   DEBUG_RESAMPLE("playlistItemResample::drawItem frameIdx %d %s", frameIdx, childLlistUpdateRequired ? "childLlistUpdateRequired" : "");
-  if (childLlistUpdateRequired)
+  if (this->childLlistUpdateRequired)
   {
-    // Update the 'childList' and connect the signals/slots
-    updateChildList();
+    this->updateChildList();
     
-    if (childCount() == 1)
+    if (this->childCount() == 1)
     {
-      auto frameHandler = getChildPlaylistItem(0)->getFrameHandler();
-      this->video.setInputVideo(frameHandler);
+      auto frameHandler = this->getChildPlaylistItem(0)->getFrameHandler();
+      auto range = this->getChildPlaylistItem(0)->properties().startEndRange;
+      this->video.setInputVideo(frameHandler, range);
     }
   }
 
-  if (childCount() != 1 || !this->video.inputValid())
+  if (this->childCount() != 1 || !this->video.inputValid())
     // Draw the emptyText
     playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   else
@@ -103,10 +101,7 @@ void playlistItemResample::drawItem(QPainter *painter, int frameIdx, double zoom
 QSize playlistItemResample::getSize() const
 { 
   if (!this->video.inputValid())
-  {
-    // Return the size of the empty text.
     return playlistItemContainer::getSize();
-  }
   
   return this->video.getFrameSize(); 
 }
@@ -160,13 +155,14 @@ ValuePairListSets playlistItemResample::getPixelValues(const QPoint &pixelPos, i
 
 itemLoadingState playlistItemResample::needsLoading(int frameIdx, bool loadRawData)
 {
+
   return this->video.needsLoading(frameIdx, loadRawData); 
 }
 
 void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals) 
 {
   Q_UNUSED(playing);
-  if (childCount() != 1 || !this->video.inputValid())
+  if (this->childCount() != 1 || !this->video.inputValid())
     return;
   
   auto state = this->video.needsLoading(frameIdx, loadRawData);

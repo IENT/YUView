@@ -58,15 +58,15 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx
     return;
 
   // Check if the frameIdx changed and if we have to load a new frame
-  if (frameIdx != currentImageIdx)
+  if (frameIdx != currentImageIndex)
   {
     // The current buffer is out of date. Update it.
 
     // Check the double buffer
-    if (frameIdx == doubleBufferImageFrameIdx)
+    if (frameIdx == doubleBufferImageFrameIndex)
     {
       currentImage = doubleBufferImage;
-      currentImageIdx = frameIdx;
+      currentImageIndex = frameIdx;
       DEBUG_VIDEO("videoHandler::drawFrame %d loaded from double buffer", frameIdx);
     }
     else
@@ -75,7 +75,7 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx
       if (cacheValid && imageCache.contains(frameIdx))
       {
         currentImage = imageCache[frameIdx];
-        currentImageIdx = frameIdx;
+        currentImageIndex = frameIdx;
         DEBUG_VIDEO("videoHandler::drawFrame %d loaded from cache", frameIdx);
       }
     }
@@ -122,7 +122,7 @@ void videoHandlerDifference::loadFrameDifference(int frameIndex, bool loadToDoub
   if (!newFrame.isNull())
   {
     // The new difference frame is ready
-    currentImageIdx = frameIndex;
+    currentImageIndex = frameIndex;
     currentImageSetMutex.lock();
     currentImage = newFrame;
     currentImageSetMutex.unlock();
@@ -204,7 +204,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
     markDifference = ui.markDifferenceCheckBox->isChecked();
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
-    currentImageIdx = -1;
+    currentImageIndex = -1;
     emit signalHandlerChanged(true, RECACHE_NONE);
   }
   else if (sender == ui.codingOrderComboBox)
@@ -219,7 +219,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
     amplificationFactor = ui.amplificationFactorSpinBox->value();
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
-    currentImageIdx = -1;
+    currentImageIndex = -1;
     emit signalHandlerChanged(true, RECACHE_NONE);
   }
 }
