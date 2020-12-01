@@ -104,7 +104,7 @@ public:
   virtual QByteArray getExtradata() = 0;
   // Get some other properties of the bitstream in order to configure the FFMpegDecoder
   virtual QPair<int,int> getProfileLevel() = 0;
-  virtual QPair<int,int> getSampleAspectRatio() = 0;
+  virtual Ratio getSampleAspectRatio() = 0;
 
   std::optional<pairUint64> getFrameStartEndPos(int codingOrderFrameIdx);
 

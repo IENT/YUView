@@ -297,9 +297,9 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
   TreeItem *itemTree = new TreeItem(packetModel->getRootItem());
 
   int posInData = 0;
-  QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.get_data()), packet.get_data_size());
+  QByteArray avpacketData = QByteArray::fromRawData((const char*)(packet.getData()), packet.getDataSize());
 
-  AVRational timeBase = timeBaseAllStreams[packet.get_stream_index()];
+  AVRational timeBase = timeBaseAllStreams[packet.getStreamIndex()];
 
   auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> QString
   {
@@ -334,16 +334,16 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
   };
     
   // Log all the packet info
-  new TreeItem("stream_index", packet.get_stream_index(), itemTree);
-  new TreeItem("pts", formatTimestamp(packet.get_pts(), timeBase), itemTree);
-  new TreeItem("dts", formatTimestamp(packet.get_dts(), timeBase), itemTree);
-  new TreeItem("duration", formatTimestamp(packet.get_duration(), timeBase), itemTree);
-  new TreeItem("flag_keyframe", packet.get_flag_keyframe(), itemTree);
-  new TreeItem("flag_corrupt", packet.get_flag_corrupt(), itemTree);
-  new TreeItem("flag_discard", packet.get_flag_discard(), itemTree);
-  new TreeItem("data_size", packet.get_data_size(), itemTree);
+  new TreeItem("stream_index", packet.getStreamIndex(), itemTree);
+  new TreeItem("pts", formatTimestamp(packet.getPTS(), timeBase), itemTree);
+  new TreeItem("dts", formatTimestamp(packet.getDTS(), timeBase), itemTree);
+  new TreeItem("duration", formatTimestamp(packet.getDuration(), timeBase), itemTree);
+  new TreeItem("flag_keyframe", packet.getFlagKeyframe(), itemTree);
+  new TreeItem("flag_corrupt", packet.getFlagCorrupt(), itemTree);
+  new TreeItem("flag_discard", packet.getFlagDiscard(), itemTree);
+  new TreeItem("data_size", packet.getDataSize(), itemTree);
 
-  itemTree->setStreamIndex(packet.get_stream_index());
+  itemTree->setStreamIndex(packet.getStreamIndex());
 
   if (packet.getPacketType() == PacketType::VIDEO)
   {
@@ -408,15 +408,15 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
 
         // Parse the NAL data
         BitratePlotModel::BitrateEntry packetBitrateEntry;
-        packetBitrateEntry.dts = packet.get_dts();
-        packetBitrateEntry.pts = packet.get_pts();
-        packetBitrateEntry.duration = packet.get_duration();
+        packetBitrateEntry.dts = packet.getDTS();
+        packetBitrateEntry.pts = packet.getPTS();
+        packetBitrateEntry.duration = packet.getDuration();
         auto parseResult = this->annexBParser->parseAndAddNALUnit(nalID, nalData, packetBitrateEntry, {}, itemTree);
 
         if (!parseResult.success)
           itemTree->setError();
         else if (parseResult.bitrateEntry)
-          this->bitratePlotModel->addBitratePoint(packet.get_stream_index(), *parseResult.bitrateEntry);
+          this->bitratePlotModel->addBitratePoint(packet.getStreamIndex(), *parseResult.bitrateEntry);
         if (parseResult.nalTypeName)
           nalNames.append(*parseResult.nalTypeName);
         nalID++;
@@ -524,16 +524,16 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
     }
 
     BitratePlotModel::BitrateEntry entry;
-    entry.pts = packet.get_pts();
-    entry.dts = packet.get_dts();
-    entry.duration = packet.get_duration();
-    entry.bitrate = packet.get_data_size();
-    entry.keyframe = packet.get_flag_keyframe();
-    bitratePlotModel->addBitratePoint(packet.get_stream_index(), entry);
+    entry.pts = packet.getPTS();
+    entry.dts = packet.getDTS();
+    entry.duration = packet.getDuration();
+    entry.bitrate = packet.getDataSize();
+    entry.keyframe = packet.getFlagKeyframe();
+    bitratePlotModel->addBitratePoint(packet.getStreamIndex(), entry);
   }
 
   // Set a useful name of the TreeItem (the root for this NAL)
-  itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.get_flag_keyframe() ? " - Keyframe": "") + specificDescription);
+  itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.getFlagKeyframe() ? " - Keyframe": "") + specificDescription);
 
   return true;
 }
@@ -707,7 +707,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
   // Now iterate over all packets and send them to the parser
   AVPacketWrapper packet = ffmpegFile->getNextPacket(false, false);
-  int64_t start_ts = packet.get_dts();
+  int64_t start_ts = packet.getDTS();
 
   unsigned int packetID = 0;
   unsigned int videoFrameCounter = 0;
@@ -719,7 +719,7 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     if (packet.getPacketType() == PacketType::VIDEO)
     {
       if (max_ts != 0)
-        progressPercentValue = clip(int((packet.get_dts() - start_ts) * 100 / max_ts), 0, 100);
+        progressPercentValue = clip(int((packet.getDTS() - start_ts) * 100 / max_ts), 0, 100);
       videoFrameCounter++;
     }
 

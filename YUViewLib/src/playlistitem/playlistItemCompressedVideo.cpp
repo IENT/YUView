@@ -150,6 +150,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %f", frameRate);
     this->prop.startEndRange = indexRange(0, inputFileAnnexBParser->getNumberPOCs() - 1);
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo startEndRange (0,%d)", inputFileAnnexBParser->getNumberPOCs());
+    this->prop.sampleAspectRatio = inputFileAnnexBParser->getSampleAspectRatio();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo sample aspect ratio (%d,%d)", this->prop.sampleAspectRatio.num, this->prop.sampleAspectRatio.den);
   }
   else
   {
@@ -181,6 +183,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo startEndRange (%d,%d)", this->prop.startEndRange.first, this->prop.startEndRange.second);
     ffmpegCodec = inputFileFFmpegLoading->getVideoStreamCodecID();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec %s", ffmpegCodec.getCodecName().toStdString().c_str());
+    this->prop.sampleAspectRatio = inputFileFFmpegLoading->getVideoCodecPar().getSampleAspectRatio();
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo sample aspect ratio (%d,%d)", this->prop.sampleAspectRatio.num, this->prop.sampleAspectRatio.den);
     if (!ffmpegCodec.isNone())
       possibleDecoders.append(decoderEngineFFMpeg);
     if (ffmpegCodec.isHEVC())
@@ -542,7 +546,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
         AVPacketWrapper pkt = caching ? inputFileFFmpegCaching->getNextPacket(repushData) : inputFileFFmpegLoading->getNextPacket(repushData);
         repushData = false;
         if (pkt)
-          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived packet PTS %" PRId64 "", pkt.get_pts());
+          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived packet PTS %" PRId64 "", pkt.getPTS());
         else
           DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived empty packet");
         decoderFFmpeg *ffmpegDec = (caching ? dynamic_cast<decoderFFmpeg*>(cachingDecoder.data()) : dynamic_cast<decoderFFmpeg*>(loadingDecoder.data()));

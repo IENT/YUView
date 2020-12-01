@@ -78,9 +78,9 @@ QPair<int,int> parserAnnexBVVC::getProfileLevel()
   return QPair<int,int>(0,0);
 }
 
-QPair<int,int> parserAnnexBVVC::getSampleAspectRatio()
+Ratio parserAnnexBVVC::getSampleAspectRatio()
 {
-  return QPair<int,int>(1,1);
+  return Ratio({1, 1});
 }
 
 parserAnnexB::ParseResult parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)

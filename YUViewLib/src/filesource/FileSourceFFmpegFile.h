@@ -91,11 +91,11 @@ public:
   indexRange getDecodableFrameLimits() const;
   
   AVCodecIDWrapper getVideoStreamCodecID() { return ff.getCodecIDWrapper(video_stream.getCodecID()); }
-  AVCodecParametersWrapper getVideoCodecPar() { return video_stream.get_codecpar(); }
+  AVCodecParametersWrapper getVideoCodecPar() { return video_stream.getCodecpar(); }
 
   // Get more general information about the streams
-  unsigned int getNumberOfStreams() { return fmt_ctx ? fmt_ctx.get_nb_streams() : 0; }
-  int getVideoStreamIndex() { return video_stream.get_index(); }
+  unsigned int getNumberOfStreams() { return fmt_ctx ? fmt_ctx.getNbStreams() : 0; }
+  int getVideoStreamIndex() { return video_stream.getIndex(); }
   QList<QStringPairList> getFileInfoForAllStreams();
   QList<AVRational> getTimeBaseAllStreams();
   QList<QString> getShortStreamDescriptionAllStreams();

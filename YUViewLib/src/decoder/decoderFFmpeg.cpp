@@ -44,7 +44,7 @@ using namespace YUView;
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 
-decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, QPair<int,int> sampleAspectRatio, bool cachingDecoder) : 
+decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, Ratio sampleAspectRatio, bool cachingDecoder) : 
   decoderBase(cachingDecoder)
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading 
@@ -53,7 +53,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray ex
     return;
 
   // Create the cofiguration parameters
-  AVCodecParametersWrapper codecpar = this->ff.alloc_code_parameters();
+  AVCodecParametersWrapper codecpar = this->ff.allocCodecParameters();
   codecpar.setAVMediaType(AVMEDIA_TYPE_VIDEO);
   codecpar.setAVCodecID(this->ff.getCodecIDFromWrapper(codecID));
   codecpar.setSize(size.width(), size.height());
@@ -68,7 +68,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray ex
   codecpar.setAVPixelFormat(f);
   
   codecpar.setProfileLevel(profileLevel.first, profileLevel.second);
-  codecpar.setSampleAspectRatio(sampleAspectRatio.first, sampleAspectRatio.second);
+  codecpar.setSampleAspectRatio(sampleAspectRatio.num, sampleAspectRatio.den);
 
   if (!createDecoder(codecID, codecpar))
   {
@@ -109,9 +109,9 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
 decoderFFmpeg::~decoderFFmpeg()
 {
   if (this->frame)
-    this->frame.free_frame(this->ff);
+    this->frame.freeFrame(this->ff);
   if (this->raw_pkt)
-    this->raw_pkt.free_packet(this->ff);
+    this->raw_pkt.freePacket(this->ff);
 }
 
 void decoderFFmpeg::resetDecoder()
@@ -170,7 +170,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
 
   //// get metadata
   //AVDictionaryWrapper dict = this->ff.get_metadata(frame);
-  //QStringPairList values = this->ff.get_dictionary_entries(dict, "", 0);
+  //QStringPairList values = this->ff.getDictionary_entries(dict, "", 0);
 
   if (this->rawFormat == raw_YUV)
   {
@@ -191,8 +191,8 @@ void decoderFFmpeg::copyCurImageToBuffer()
     for (unsigned plane = 0; plane < pixFmt.getNrPlanes(); plane++)
     {
       const auto component = (plane == 0) ? Component::Luma : Component::Chroma;
-      auto *src = frame.get_data(plane);
-      const auto srcLinesize = frame.get_line_size(plane);
+      auto *src = frame.getData(plane);
+      const auto srcLinesize = frame.getLineSize(plane);
       auto dst = this->currentOutputBuffer.data();
       if (plane > 0)
         dst += (nrBytesY + (plane - 1) * nrBytesC);
@@ -227,8 +227,8 @@ void decoderFFmpeg::copyCurImageToBuffer()
       const auto wDst = this->frameSize.width() * nrBytesPerSample;
       for (int i = 0; i < 3; i++)
       {
-        auto src = frame.get_data(i);
-        const auto srcLinesize = frame.get_line_size(i);
+        auto src = frame.getData(i);
+        const auto srcLinesize = frame.getLineSize(i);
         for (int y = 0; y < hDst; y++)
         {
           memcpy(dst, src, wDst);
@@ -242,8 +242,8 @@ void decoderFFmpeg::copyCurImageToBuffer()
     {
       // We only need to iterate over the image once and copy all values per line at once (RGB(A))
       const auto wDst = this->frameSize.width() * nrBytesPerSample * pixFmt.nrChannels();
-      auto src = frame.get_data(0);
-      const auto srcLinesize = frame.get_line_size(0);
+      auto src = frame.getData(0);
+      const auto srcLinesize = frame.getLineSize(0);
       for (int y = 0; y < hDst; y++)
       {
         memcpy(dst, src, wDst);
@@ -263,13 +263,13 @@ void decoderFFmpeg::cacheCurStatistics()
   this->curPOCStats.clear();
 
   // Try to get the motion information
-  AVFrameSideDataWrapper sd = this->ff.get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+  AVFrameSideDataWrapper sd = this->ff.getSideData(frame, AV_FRAME_DATA_MOTION_VECTORS);
   if (sd)
   { 
-    const auto nrMVs = sd.get_number_motion_vectors();
+    const auto nrMVs = sd.getNumberMotionVectors();
     for (int i = 0; i < nrMVs; i++)
     {
-      AVMotionVectorWrapper mvs = sd.get_motion_vector(i);
+      AVMotionVectorWrapper mvs = sd.getMotionVector(i);
 
       // dst marks the center of the current block so the block position is:
       const int blockX = mvs.dst_x - mvs.w/2;
@@ -286,7 +286,7 @@ void decoderFFmpeg::cacheCurStatistics()
 bool decoderFFmpeg::pushData(QByteArray &data)
 {
   if (!this->raw_pkt)
-    this->raw_pkt.allocate_paket(ff);
+    this->raw_pkt.allocatePaket(ff);
   if (data.length() == 0)
   {
     // Push an empty packet to indicate that the file has ended
@@ -300,9 +300,9 @@ bool decoderFFmpeg::pushData(QByteArray &data)
   // Add some padding
   data.append(this->avPacketPaddingData);
 
-  this->raw_pkt.set_data(data);
-  this->raw_pkt.set_dts(AV_NOPTS_VALUE);
-  this->raw_pkt.set_pts(AV_NOPTS_VALUE);
+  this->raw_pkt.setData(data);
+  this->raw_pkt.setDTS(AV_NOPTS_VALUE);
+  this->raw_pkt.setPTS(AV_NOPTS_VALUE);
 
   return this->pushAVPacket(this->raw_pkt);
 }
@@ -339,8 +339,8 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
         meaning += " INDA";
       // Log the first bytes
       meaning += " B(";
-      int nrBytes = std::min(pkt.get_data_size(), 5);
-      uint8_t *data = pkt.get_data();
+      int nrBytes = std::min(pkt.getDataSize(), 5);
+      uint8_t *data = pkt.getData();
       for (int i = 0; i < nrBytes; i++)
       {
         uint8_t b = data[i];
@@ -354,7 +354,7 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
     return false;
   }
   else
-    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Send packet PTS %ld duration %ld flags %d", pkt.get_pts(), pkt.get_duration(), pkt.get_flags());
+    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Send packet PTS %ld duration %ld flags %d", pkt.getPTS(), pkt.getDuration(), pkt.getFlags());
   
   if (retPush == AVERROR(EAGAIN))
   {
@@ -374,9 +374,9 @@ bool decoderFFmpeg::decodeFrame()
   if (retRecieve == 0)
   {
     // We recieved a frame.
-    DEBUG_FFMPEG("Received frame: Size(%dx%d) PTS %ld type %d %s", frame.get_width(), frame.get_height(), frame.get_pts(), frame.get_pict_type(), frame.get_key_frame() ? "key frame" : "");
+    DEBUG_FFMPEG("Received frame: Size(%dx%d) PTS %ld type %d %s", frame.getWidth(), frame.getHeight(), frame.getPTS(), frame.get_pict_type(), frame.get_key_frame() ? "key frame" : "");
     // Checkt the size of the retrieved image
-    if (frameSize != frame.get_size())
+    if (frameSize != frame.getSize())
       return this->setErrorB("Received a frame of different size");
     return true;
   }
@@ -423,13 +423,13 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
   // Allocate the decoder context
   if (this->videoCodec)
     return this->setErrorB(QStringLiteral("Video codec already allocated."));
-  this->videoCodec = this->ff.find_decoder(codecID);
+  this->videoCodec = this->ff.findDecoder(codecID);
   if(!this->videoCodec)
     return this->setErrorB(QStringLiteral("Could not find a video decoder for the given codec ") + codecID.getCodecName());
 
   if (this->decCtx)
     return this->setErrorB(QStringLiteral("Decoder context already allocated."));
-  this->decCtx = this->ff.alloc_decoder(this->videoCodec);
+  this->decCtx = this->ff.allocDecoder(this->videoCodec);
   if(!this->decCtx)
     return this->setErrorB(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
 
@@ -440,9 +440,9 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
   }
 
   // Get some parameters from the decoder context
-  this->frameSize = QSize(decCtx.get_width(), decCtx.get_height());
+  this->frameSize = QSize(decCtx.getWidth(), decCtx.getHeight());
 
-  AVPixFmtDescriptorWrapper ffmpegPixFormat = this->ff.getAvPixFmtDescriptionFromAvPixelFormat(decCtx.get_pixel_format());
+  AVPixFmtDescriptorWrapper ffmpegPixFormat = this->ff.getAvPixFmtDescriptionFromAvPixelFormat(decCtx.getPixelFormat());
   this->rawFormat = ffmpegPixFormat.getRawFormat();
   if (this->rawFormat == raw_YUV)
     this->formatYUV = ffmpegPixFormat.getYUVPixelFormat();
@@ -451,16 +451,16 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
 
   // Ask the decoder to provide motion vectors (if possible)
   AVDictionaryWrapper opts;
-  int ret = this->ff.av_dict_set(opts, "flags2", "+export_mvs", 0);
+  int ret = this->ff.dictSet(opts, "flags2", "+export_mvs", 0);
   if (ret < 0)
     return this->setErrorB(QStringLiteral("Could not request motion vector retrieval. Return code %1").arg(ret));
 
   // Open codec
-  ret = this->ff.avcodec_open2(decCtx, videoCodec, opts);
+  ret = this->ff.avcodecOpen2(decCtx, videoCodec, opts);
   if (ret < 0)
     return this->setErrorB(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
 
-  this->frame.allocate_frame(ff);
+  this->frame.allocateFrame(ff);
   if (!frame)
     return this->setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 

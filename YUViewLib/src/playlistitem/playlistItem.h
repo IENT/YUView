@@ -91,6 +91,8 @@ public:
        signalItemChanged to update the limits.
       */
     indexRange startEndRange {-1, -1};
+
+    Ratio sampleAspectRatio {1, 1};
   };
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and

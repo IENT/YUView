@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <QPainter>
+#include <QPushButton>
 
 #include "videoHandlerYUV.h"
 
@@ -47,6 +48,12 @@
 
 videoHandlerResample::videoHandlerResample() : videoHandler()
 {
+}
+
+void videoHandlerResample::drawFrame(QPainter *painter, int frameIndex, double zoomFactor, bool drawRawValues)
+{
+  auto mappedIndex = this->mapFrameIndex(frameIndex);
+  videoHandler::drawFrame(painter, mappedIndex, zoomFactor, drawRawValues);
 }
 
 QImage videoHandlerResample::calculateDifference(frameHandler *item2, const int frameIndex0, const int frameIndex1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
@@ -114,7 +121,7 @@ indexRange videoHandlerResample::resampledRange() const
   return indexRange(0, nrResampledFrames);
 }
 
-void videoHandlerResample::setInputVideo(frameHandler *childVideo, indexRange childFrameRange)
+void videoHandlerResample::setInputVideo(frameHandler *childVideo, indexRange childFrameRange, Ratio sampleAspectRatio)
 {
   if (this->inputVideo != childVideo)
   {
@@ -125,6 +132,7 @@ void videoHandlerResample::setInputVideo(frameHandler *childVideo, indexRange ch
     if (this->inputValid())
     {
       auto size = this->inputVideo->getFrameSize();
+      this->sampleAspectRatio = sampleAspectRatio;
 
       if (ui.created())
       {
@@ -149,9 +157,20 @@ void videoHandlerResample::setInputVideo(frameHandler *childVideo, indexRange ch
         ui.spinBoxEnd->setMinimum(childFrameRange.first);
         ui.spinBoxEnd->setMaximum(childFrameRange.second);
         ui.spinBoxEnd->setValue(childFrameRange.second);
+
+        auto sarEnabled = sampleAspectRatio.num != sampleAspectRatio.den;
+        ui.labelSAR->setEnabled(sarEnabled);
+        ui.pushButtonSARWidth->setEnabled(sarEnabled);
+        ui.pushButtonSARHeight->setEnabled(sarEnabled);
       }
       
       this->setFrameSize(size);
+    }
+    else
+    {
+      ui.labelSAR->setEnabled(false);
+      ui.pushButtonSARWidth->setEnabled(false);
+      ui.pushButtonSARHeight->setEnabled(false);
     }
 
     // If something changed, we might need a redraw
@@ -165,8 +184,7 @@ QLayout *videoHandlerResample::createResampleHandlerControls()
 
   ui.setupUi();
 
-  ui.comboBoxInterpolation->addItem("Bilinear");
-  ui.comboBoxInterpolation->addItem("Linear");
+  ui.comboBoxInterpolation->addItems(QStringList() << "Bilinear" << "Linear");
   ui.comboBoxInterpolation->setCurrentIndex(0);
 
   auto size = QSize(0, 0);
@@ -176,12 +194,18 @@ QLayout *videoHandlerResample::createResampleHandlerControls()
   ui.spinBoxWidth->setValue(size.width());
   ui.spinBoxHeight->setValue(size.height());
 
+  ui.labelSAR->setEnabled(false);
+  ui.pushButtonSARWidth->setEnabled(false);
+  ui.pushButtonSARHeight->setEnabled(false);
+  
   this->connect(ui.spinBoxWidth, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotResampleControlChanged);
   this->connect(ui.spinBoxHeight, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotResampleControlChanged);
   this->connect(ui.comboBoxInterpolation, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerResample::slotInterpolationModeChanged);
   this->connect(ui.spinBoxStart, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotCutAndSampleControlChanged);
   this->connect(ui.spinBoxEnd, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotCutAndSampleControlChanged);
   this->connect(ui.spinBoxSampling, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerResample::slotCutAndSampleControlChanged);
+  this->connect(ui.pushButtonSARWidth, &QPushButton::clicked, this, &videoHandlerResample::slotButtonSARWidth);
+  this->connect(ui.pushButtonSARHeight, &QPushButton::clicked, this, &videoHandlerResample::slotButtonSARHeight);
 
   return ui.topVBoxLayout;
 }
@@ -221,4 +245,34 @@ int videoHandlerResample::mapFrameIndex(int frameIndex)
   auto mappedIndex = (frameIndex * sampling) + (this->ui.created() ? ui.spinBoxStart->value() : 0);
   DEBUG_RESAMPLE("videoHandlerResample::mapFrameIndex frameIndex %d mapped to %d", frameIndex, mappedIndex);
   return mappedIndex;
+}
+
+void videoHandlerResample::slotButtonSARWidth(bool selected)
+{
+  Q_UNUSED(selected);
+  if (!this->inputVideo)
+    return;
+  
+  auto newHeight = this->inputVideo->getFrameSize().height();
+  auto newWidth = newHeight * this->sampleAspectRatio.den / this->sampleAspectRatio.num;
+
+  // Only the first control has a blocker so that the other `setValue` causes an update
+  QSignalBlocker heightBlocker(ui.spinBoxHeight);
+  ui.spinBoxHeight->setValue(newHeight);
+  ui.spinBoxWidth->setValue(newWidth);
+}
+
+void videoHandlerResample::slotButtonSARHeight(bool selected)
+{
+  Q_UNUSED(selected);
+  if (!this->inputVideo)
+    return;
+  
+  auto newWidth = this->inputVideo->getFrameSize().width();
+  auto newHeight = newWidth * this->sampleAspectRatio.num / this->sampleAspectRatio.den;
+
+  // Only the first control has a blocker so that the other `setValue` causes an update
+  QSignalBlocker heightBlocker(ui.spinBoxHeight);
+  ui.spinBoxHeight->setValue(newHeight);
+  ui.spinBoxWidth->setValue(newWidth);
 }

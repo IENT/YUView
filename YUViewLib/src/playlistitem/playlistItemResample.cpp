@@ -37,7 +37,7 @@
 #include "common/functions.h"
 
 // Activate this if you want to know when which difference is loaded
-#define PLAYLISTITEMRESAMPLE_DEBUG_LOADING 0
+#define PLAYLISTITEMRESAMPLE_DEBUG_LOADING 1
 #if PLAYLISTITEMRESAMPLE_DEBUG_LOADING && !NDEBUG
 #define DEBUG_RESAMPLE qDebug
 #else
@@ -82,9 +82,11 @@ void playlistItemResample::drawItem(QPainter *painter, int frameIdx, double zoom
     
     if (this->childCount() == 1)
     {
-      auto frameHandler = this->getChildPlaylistItem(0)->getFrameHandler();
-      auto range = this->getChildPlaylistItem(0)->properties().startEndRange;
-      this->video.setInputVideo(frameHandler, range);
+      auto child = this->getChildPlaylistItem(0);
+      auto frameHandler = child->getFrameHandler();
+      auto range = child->properties().startEndRange;
+      auto sampleAspectRatio = child->properties().sampleAspectRatio;
+      this->video.setInputVideo(frameHandler, range, sampleAspectRatio);
     }
   }
 

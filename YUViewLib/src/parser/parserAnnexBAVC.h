@@ -59,7 +59,7 @@ public:
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
   QByteArray getExtradata() Q_DECL_OVERRIDE;
   QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE;
-  QPair<int,int> getSampleAspectRatio() Q_DECL_OVERRIDE;
+  Ratio getSampleAspectRatio() Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class

@@ -238,6 +238,12 @@ struct Range
   T max;
 };
 
+struct Ratio
+{
+  int num;
+  int den;
+};
+
 // A list of value pair lists, where every list has a string (title)
 class ValuePairListSets : public QList<QPair<QString, QStringPairList>>
 {

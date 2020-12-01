@@ -87,7 +87,7 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pt
       return QByteArray();
     }
 
-    currentPacketData = QByteArray::fromRawData((const char*)(pkt.get_data()), pkt.get_data_size());
+    currentPacketData = QByteArray::fromRawData((const char*)(pkt.getData()), pkt.getDataSize());
     posInData = 0;
   }
   
@@ -207,7 +207,7 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pt
   }
 
   if (pts)
-    *pts = pkt.get_pts();
+    *pts = pkt.getPTS();
 
   return lastReturnArray;
 }
@@ -220,14 +220,14 @@ QByteArray FileSourceFFmpegFile::getExtradata()
   AVCodecContextWrapper codec = video_stream.getCodec();
   if (!codec)
     return QByteArray();
-  return codec.get_extradata();
+  return codec.getExtradata();
 }
 
 QStringPairList FileSourceFFmpegFile::getMetadata()
 {
   if (!fmt_ctx)
     return QStringPairList();
-  return ff.get_dictionary_entries(fmt_ctx.get_metadata(), "", 0);
+  return ff.getDictionaryEntries(fmt_ctx.getMetadata(), "", 0);
 }
 
 QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
@@ -322,7 +322,7 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
 FileSourceFFmpegFile::~FileSourceFFmpegFile()
 {
   if (pkt)
-    pkt.free_packet(ff);
+    pkt.freePacket(ff);
 }
 
 bool FileSourceFFmpegFile::openFile(const QString &filePath, QWidget *mainWindow, FileSourceFFmpegFile *other, bool parseFile)
@@ -424,17 +424,17 @@ bool FileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
   nrFrames = 0;
   while (goToNextPacket(true))
   {
-    DEBUG_FFMPEG("FileSourceFFmpegFile::scanBitstream: frame %d pts %d dts %d%s", nrFrames, (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
+    DEBUG_FFMPEG("FileSourceFFmpegFile::scanBitstream: frame %d pts %d dts %d%s", nrFrames, (int)pkt.getPTS(), (int)pkt.getDTS(), pkt.getFlagKeyframe() ? " - keyframe" : "");
 
-    if (pkt.get_flag_keyframe())
-      keyFrameList.append(pictureIdx(nrFrames, pkt.get_dts()));
+    if (pkt.getFlagKeyframe())
+      keyFrameList.append(pictureIdx(nrFrames, pkt.getDTS()));
 
     if (progress && progress->wasCanceled())
       return false;
 
     int newPercentValue = 0;
     if (maxPTS != 0)
-      newPercentValue = clip(int(pkt.get_pts() * 100 / maxPTS), 0, 100);
+      newPercentValue = clip(int(pkt.getPTS() * 100 / maxPTS), 0, 100);
     if (newPercentValue != curPercentValue)
     {
       if (progress)
@@ -457,16 +457,16 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
     return;
 
   // Open the input file
-  if (!ff.open_input(fmt_ctx, fileName))
+  if (!ff.openInput(fmt_ctx, fileName))
     return;
   
   // What is the input format?
-  AVInputFormatWrapper inp_format = fmt_ctx.get_input_format();
+  AVInputFormatWrapper inp_format = fmt_ctx.getInputFormat();
 
   // Iterate through all streams
-  for (unsigned int idx=0; idx < fmt_ctx.get_nb_streams(); idx++)
+  for (unsigned int idx=0; idx < fmt_ctx.getNbStreams(); idx++)
   {
-    AVStreamWrapper stream = fmt_ctx.get_stream(idx);
+    AVStreamWrapper stream = fmt_ctx.getStream(idx);
     AVMediaType streamType =  stream.getCodecType();
     AVCodecIDWrapper codeID = ff.getCodecIDWrapper(stream.getCodecID());
     if (streamType == AVMEDIA_TYPE_VIDEO)
@@ -490,28 +490,28 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
     return;
 
   // Initialize an empty packet
-  pkt.allocate_paket(ff);
+  pkt.allocatePaket(ff);
 
   // Get the frame rate, picture size and color conversion mode
-  AVRational avgFrameRate = video_stream.get_avg_frame_rate();
+  AVRational avgFrameRate = video_stream.getAvgFrameRate();
   if (avgFrameRate.den == 0)
     frameRate = -1;
   else
     frameRate = avgFrameRate.num / double(avgFrameRate.den);
 
-  AVPixFmtDescriptorWrapper ffmpegPixFormat = ff.getAvPixFmtDescriptionFromAvPixelFormat(video_stream.getCodec().get_pixel_format());
+  AVPixFmtDescriptorWrapper ffmpegPixFormat = ff.getAvPixFmtDescriptionFromAvPixelFormat(video_stream.getCodec().getPixelFormat());
   rawFormat = ffmpegPixFormat.getRawFormat();
   if (rawFormat == raw_YUV)
     pixelFormat_yuv = ffmpegPixFormat.getYUVPixelFormat();
   else if (rawFormat == raw_RGB)
     pixelFormat_rgb = ffmpegPixFormat.getRGBPixelFormat();
   
-  duration = fmt_ctx.get_duration();
-  timeBase = video_stream.get_time_base();
+  duration = fmt_ctx.getDuration();
+  timeBase = video_stream.getTimeBase();
 
-  AVColorSpace colSpace = video_stream.get_colorspace();
-  int w = video_stream.get_frame_width();
-  int h = video_stream.get_frame_height();
+  AVColorSpace colSpace = video_stream.getColorspace();
+  int w = video_stream.getFrameWidth();
+  int h = video_stream.getFrameHeight();
   frameSize.setWidth(w);
   frameSize.setHeight(h);
 
@@ -533,17 +533,17 @@ bool FileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
   {
     if (pkt)
       // Unref the packet
-      pkt.unref_packet(ff);
+      pkt.unrefPacket(ff);
   
-    ret = fmt_ctx.read_frame(ff, pkt);
+    ret = fmt_ctx.readFrame(ff, pkt);
 
-    if (pkt.get_stream_index() == streamIndices.video)
+    if (pkt.getStreamIndex() == streamIndices.video)
       pkt.setPacketType(PacketType::VIDEO);
-    else if (streamIndices.audio.contains(pkt.get_stream_index()))
+    else if (streamIndices.audio.contains(pkt.getStreamIndex()))
       pkt.setPacketType(PacketType::AUDIO);
-    else if (streamIndices.subtitle.dvb.contains(pkt.get_stream_index()))
+    else if (streamIndices.subtitle.dvb.contains(pkt.getStreamIndex()))
       pkt.setPacketType(PacketType::SUBTITLE_DVB);
-    else if (streamIndices.subtitle.eia608.contains(pkt.get_stream_index()))
+    else if (streamIndices.subtitle.eia608.contains(pkt.getStreamIndex()))
       pkt.setPacketType(PacketType::SUBTITLE_608);
     else
       pkt.setPacketType(PacketType::OTHER);
@@ -556,7 +556,7 @@ bool FileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
     return false;
   }
 
-  DEBUG_FFMPEG("FileSourceFFmpegFile::goToNextPacket: Return: stream %d pts %d dts %d%s", (int)pkt.get_stream_index(), (int)pkt.get_pts(), (int)pkt.get_dts(), pkt.get_flag_keyframe() ? " - keyframe" : "");
+  DEBUG_FFMPEG("FileSourceFFmpegFile::goToNextPacket: Return: stream %d pts %d dts %d%s", (int)pkt.getStreamIndex(), (int)pkt.getPTS(), (int)pkt.getDTS(), pkt.getFlagKeyframe() ? " - keyframe" : "");
 
   if (packetDataFormat == packetFormatUnknown)
     // This is the first video package that we find and we don't know what the format of the packet data is.
@@ -572,7 +572,7 @@ bool FileSourceFFmpegFile::seekToDTS(int64_t dts)
   if (!isFileOpened)
     return false;
 
-  int ret = ff.seek_frame(fmt_ctx, video_stream.get_index(), dts);
+  int ret = ff.seekFrame(fmt_ctx, video_stream.getIndex(), dts);
   if (ret != 0)
   {
     DEBUG_FFMPEG("FFmpegLibraries::seekToDTS Error DTS %ld. Return Code %d", dts, ret);
@@ -591,7 +591,7 @@ bool FileSourceFFmpegFile::seekFileToBeginning()
   if (!isFileOpened)
     return false;
 
-  int ret = ff.seek_beginning(fmt_ctx);
+  int ret = ff.seekBeginning(fmt_ctx);
   if (ret != 0)
   {
     DEBUG_FFMPEG("FFmpegLibraries::seekToBeginning Error. Return Code %d", ret);
@@ -631,9 +631,9 @@ QList<QStringPairList> FileSourceFFmpegFile::getFileInfoForAllStreams()
   QList<QStringPairList> info;
 
   info += fmt_ctx.getInfoText();
-  for(unsigned int i=0; i<fmt_ctx.get_nb_streams(); i++)
+  for(unsigned int i=0; i<fmt_ctx.getNbStreams(); i++)
   {
-    AVStreamWrapper s = fmt_ctx.get_stream(i);
+    AVStreamWrapper s = fmt_ctx.getStream(i);
     AVCodecIDWrapper codecIdWrapper = ff.getCodecIDWrapper(s.getCodecID());
     info += s.getInfoText(codecIdWrapper);
   }
@@ -645,10 +645,10 @@ QList<AVRational> FileSourceFFmpegFile::getTimeBaseAllStreams()
 {
   QList<AVRational> timeBaseList;
 
-  for (unsigned int i = 0; i < fmt_ctx.get_nb_streams(); i++)
+  for (unsigned int i = 0; i < fmt_ctx.getNbStreams(); i++)
   {
-    AVStreamWrapper s = fmt_ctx.get_stream(i);
-    timeBaseList.append(s.get_time_base());
+    AVStreamWrapper s = fmt_ctx.getStream(i);
+    timeBaseList.append(s.getTimeBase());
   }
 
   return timeBaseList;
@@ -658,16 +658,16 @@ QList<QString> FileSourceFFmpegFile::getShortStreamDescriptionAllStreams()
 {
   QList<QString> descriptions;
 
-  for (unsigned int i = 0; i < fmt_ctx.get_nb_streams(); i++)
+  for (unsigned int i = 0; i < fmt_ctx.getNbStreams(); i++)
   {
     QString description;
-    AVStreamWrapper s = fmt_ctx.get_stream(i);
+    AVStreamWrapper s = fmt_ctx.getStream(i);
     description = s.getCodecTypeName();
     
     AVCodecIDWrapper codecID = ff.getCodecIDWrapper(s.getCodecID());
     description += " " + codecID.getCodecName();
 
-    description += QString(" (%1x%2)").arg(s.get_frame_width()).arg(s.get_frame_height());
+    description += QString(" (%1x%2)").arg(s.getFrameWidth()).arg(s.getFrameHeight());
 
     descriptions.append(description);
   }
