@@ -52,8 +52,8 @@ public:
   itemLoadingState needsLoading(int frameIndex, bool loadRawValues) override;
 
   void loadResampledFrame(int frameIndex, bool loadToDoubleBuffer=false);
-  
   bool inputValid() const;
+  auto resampledRange() const -> indexRange;
 
   // Create the YUV controls and return a pointer to the layout.
   virtual QLayout *createResampleHandlerControls();
@@ -70,6 +70,8 @@ private slots:
   void slotCutAndSampleControlChanged(int value);
 
 private:
+
+  int mapFrameIndex(int frameIndex);
 
   // The input video we will resample
   QPointer<frameHandler> inputVideo;

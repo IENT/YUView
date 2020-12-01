@@ -69,7 +69,8 @@ public:
   virtual frameHandler *getFrameHandler() override { return &video; }
 
 protected slots:
-  virtual void childChanged(bool redraw, recacheIndicator recache) override;
+  void childChanged(bool redraw, recacheIndicator recache) override;
+  void resampleVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache);
 
 private:
 

@@ -58,7 +58,7 @@ playlistItemResample::playlistItemResample()
   this->frameLimitsMax = false;
   this->infoText = RESAMPLE_INFO_TEXT;
 
-  this->connect(&this->video, &frameHandler::signalHandlerChanged, this, &playlistItemResample::signalItemChanged);
+  this->connect(&this->video, &frameHandler::signalHandlerChanged, this, &playlistItemResample::resampleVideoHandlerChanged);
 }
 
 /* For a resample item, the info list is just the name of the child item
@@ -120,7 +120,7 @@ void playlistItemResample::createPropertiesWidget()
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
-  vAllLaout->insertStretch(3, 1);
+  vAllLaout->insertStretch(1, 1);
 }
 
 void playlistItemResample::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -198,5 +198,12 @@ void playlistItemResample::childChanged(bool redraw, recacheIndicator recache)
   // The child item changed and needs to redraw. This means that the resampled frame is out of date
   // and has to be recalculated.
   this->video.invalidateAllBuffers();
+  this->prop.startEndRange = video.resampledRange();
   playlistItemContainer::childChanged(redraw, recache);
+}
+
+void playlistItemResample::resampleVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache)
+{
+  this->prop.startEndRange = video.resampledRange();
+  emit signalItemChanged(redrawNeeded, recache);
 }
