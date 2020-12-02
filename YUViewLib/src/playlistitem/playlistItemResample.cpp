@@ -37,7 +37,7 @@
 #include "common/functions.h"
 
 // Activate this if you want to know when which difference is loaded
-#define PLAYLISTITEMRESAMPLE_DEBUG_LOADING 1
+#define PLAYLISTITEMRESAMPLE_DEBUG_LOADING 0
 #if PLAYLISTITEMRESAMPLE_DEBUG_LOADING && !NDEBUG
 #define DEBUG_RESAMPLE qDebug
 #else
@@ -58,7 +58,7 @@ playlistItemResample::playlistItemResample()
   this->frameLimitsMax = false;
   this->infoText = RESAMPLE_INFO_TEXT;
 
-  this->connect(&this->video, &frameHandler::signalHandlerChanged, this, &playlistItemResample::resampleVideoHandlerChanged);
+  this->connect(&this->video, &frameHandler::signalHandlerChanged, this, &playlistItemResample::signalItemChanged);
 }
 
 /* For a resample item, the info list is just the name of the child item
@@ -84,13 +84,70 @@ void playlistItemResample::drawItem(QPainter *painter, int frameIdx, double zoom
     {
       auto child = this->getChildPlaylistItem(0);
       auto frameHandler = child->getFrameHandler();
-      auto range = child->properties().startEndRange;
-      auto sampleAspectRatio = child->properties().sampleAspectRatio;
 
       this->prop.isFileSource = child->properties().isFileSource;
       this->prop.name = child->properties().name + " resampled";
 
-      this->video.setInputVideo(frameHandler, range, sampleAspectRatio);
+      this->video.setInputVideo(frameHandler);
+
+      if (this->video.inputValid())
+      {
+        if (this->useLoadedValues)
+        {
+          // Values are already set from loading
+          this->useLoadedValues = false;
+        }
+        else
+        {
+          this->scaledSize = frameHandler->getFrameSize();
+          this->cutRange = child->properties().startEndRange;
+          this->sampling = 1;
+        }
+
+        if (ui.created())
+        {
+          QSignalBlocker blockerWidth(ui.spinBoxWidth);
+          QSignalBlocker blockerHeight(ui.spinBoxHeight);
+          ui.spinBoxWidth->setValue(this->scaledSize.width());
+          ui.spinBoxHeight->setValue(this->scaledSize.height());
+
+          auto nrFramesInput = this->cutRange.second - this->cutRange.first + 1;
+
+          QSignalBlocker blockerSampling(ui.spinBoxSampling);
+          ui.spinBoxSampling->setMinimum(1);
+          ui.spinBoxSampling->setMaximum(nrFramesInput);
+          ui.spinBoxSampling->setValue(this->sampling);
+
+          QSignalBlocker blockerStart(ui.spinBoxStart);
+          ui.spinBoxStart->setMinimum(this->cutRange.first);
+          ui.spinBoxStart->setMaximum(this->cutRange.second);
+          ui.spinBoxStart->setValue(this->cutRange.first);
+
+          QSignalBlocker blockerEnd(ui.spinBoxEnd);
+          ui.spinBoxEnd->setMinimum(this->cutRange.first);
+          ui.spinBoxEnd->setMaximum(this->cutRange.second);
+          ui.spinBoxEnd->setValue(this->cutRange.second);
+
+          auto sampleAspectRatio = child->properties().sampleAspectRatio;
+          auto sarEnabled = sampleAspectRatio.num != sampleAspectRatio.den;
+          ui.labelSAR->setEnabled(sarEnabled);
+          ui.pushButtonSARWidth->setEnabled(sarEnabled);
+          ui.pushButtonSARHeight->setEnabled(sarEnabled);
+        }
+
+        this->video.setScaledSize(this->scaledSize);
+        auto interpolation = (this->interpolationIndex == 0) ? videoHandlerResample::Interpolation::Bilinear : videoHandlerResample::Interpolation::Fast;
+        this->video.setInterpolation(interpolation);
+        this->video.setCutAndSample(this->cutRange, this->sampling);
+        auto nrFrames = (this->cutRange.second - this->cutRange.first) / this->sampling;
+        this->prop.startEndRange = indexRange(0, nrFrames);
+      }
+      else
+      {
+        ui.labelSAR->setEnabled(false);
+        ui.pushButtonSARWidth->setEnabled(false);
+        ui.pushButtonSARHeight->setEnabled(false);
+      }
     }
   }
 
@@ -121,12 +178,25 @@ void playlistItemResample::createPropertiesWidget()
   // On the top level everything is layout vertically
   auto vAllLaout = new QVBoxLayout(propertiesWidget.data());
 
-  // First add the parents controls (first video controls (width/height...) then YUV controls (format,...)
-  vAllLaout->addLayout(this->video.createResampleHandlerControls());
+  ui.setupUi();
 
-  // Insert a stretch at the bottom of the vertical global layout so that everything
-  // gets 'pushed' to the top
-  vAllLaout->insertStretch(1, 1);
+  ui.comboBoxInterpolation->addItems(QStringList() << "Bilinear" << "Linear");
+  ui.comboBoxInterpolation->setCurrentIndex(0);
+
+  ui.labelSAR->setEnabled(false);
+  ui.pushButtonSARWidth->setEnabled(false);
+  ui.pushButtonSARHeight->setEnabled(false);
+  
+  this->connect(ui.spinBoxWidth, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemResample::slotResampleControlChanged);
+  this->connect(ui.spinBoxHeight, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemResample::slotResampleControlChanged);
+  this->connect(ui.comboBoxInterpolation, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemResample::slotInterpolationModeChanged);
+  this->connect(ui.spinBoxStart, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemResample::slotCutAndSampleControlChanged);
+  this->connect(ui.spinBoxEnd, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemResample::slotCutAndSampleControlChanged);
+  this->connect(ui.spinBoxSampling, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemResample::slotCutAndSampleControlChanged);
+  this->connect(ui.pushButtonSARWidth, &QPushButton::clicked, this, &playlistItemResample::slotButtonSARWidth);
+  this->connect(ui.pushButtonSARHeight, &QPushButton::clicked, this, &playlistItemResample::slotButtonSARHeight);
+  
+  vAllLaout->addLayout(ui.topVBoxLayout);
 }
 
 void playlistItemResample::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -135,6 +205,17 @@ void playlistItemResample::savePlaylist(QDomElement &root, const QDir &playlistD
 
   // Append the indexed item's properties
   playlistItem::appendPropertiesToPlaylist(d);
+
+  if (ui.created())
+  {
+    // Append the video handler properties
+    d.appendProperiteChild("width", QString::number(this->scaledSize.width()));
+    d.appendProperiteChild("height", QString::number(this->scaledSize.height()));
+    d.appendProperiteChild("interpolation", QString::number(this->interpolationIndex));
+    d.appendProperiteChild("cutStart", QString::number(this->cutRange.first));
+    d.appendProperiteChild("cutEnd", QString::number(this->cutRange.second));
+    d.appendProperiteChild("sampling", QString::number(this->sampling));
+  }
 
   playlistItemContainer::savePlaylistChildren(d, playlistDir);
 
@@ -148,9 +229,13 @@ playlistItemResample *playlistItemResample::newPlaylistItemResample(const YUView
   // Load properties from the parent classes
   playlistItem::loadPropertiesFromPlaylist(root, newItemResample);
 
-  // The resample might have one child item that has to be added. After adding the child don't forget
-  // to call updateChildItems().
-    
+  newItemResample->scaledSize = QSize(root.findChildValueInt("width", 0), root.findChildValueInt("height", 0));
+  newItemResample->interpolationIndex = root.findChildValueInt("interpolation", 0);
+  newItemResample->cutRange = indexRange({root.findChildValueInt("cutStart", 0), root.findChildValueInt("cutEnd", 0)});
+  newItemResample->sampling = root.findChildValueInt("sampling", 0);
+  
+  newItemResample->useLoadedValues = true;
+  
   return newItemResample;
 }
 
@@ -203,13 +288,71 @@ void playlistItemResample::childChanged(bool redraw, recacheIndicator recache)
 {
   // The child item changed and needs to redraw. This means that the resampled frame is out of date
   // and has to be recalculated.
+  
+  auto nrFrames = (this->cutRange.second - this->cutRange.first) / this->sampling;
+  this->prop.startEndRange = indexRange(0, nrFrames);
+
   this->video.invalidateAllBuffers();
-  this->prop.startEndRange = video.resampledRange();
   playlistItemContainer::childChanged(redraw, recache);
 }
 
-void playlistItemResample::resampleVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache)
+void playlistItemResample::slotResampleControlChanged(int value)
 {
-  this->prop.startEndRange = video.resampledRange();
-  emit signalItemChanged(redrawNeeded, recache);
+  Q_UNUSED(value);
+  this->scaledSize = QSize(ui.spinBoxWidth->value(), ui.spinBoxHeight->value());
+  this->video.setScaledSize(this->scaledSize);
+}
+
+void playlistItemResample::slotInterpolationModeChanged(int value)
+{
+  Q_UNUSED(value);
+  this->interpolationIndex = ui.comboBoxInterpolation->currentIndex();
+  auto interpolation = (this->interpolationIndex == 0) ? videoHandlerResample::Interpolation::Bilinear : videoHandlerResample::Interpolation::Fast;
+  this->video.setInterpolation(interpolation);
+}
+
+void playlistItemResample::slotCutAndSampleControlChanged(int value)
+{
+  Q_UNUSED(value);
+  this->cutRange = indexRange(ui.spinBoxStart->value(), ui.spinBoxEnd->value());
+  this->sampling = std::max(ui.spinBoxSampling->value(), 1);
+
+  auto nrFrames = (this->cutRange.second - this->cutRange.first) / this->sampling;
+  this->prop.startEndRange = indexRange(0, nrFrames);
+
+  this->video.setCutAndSample(this->cutRange, this->sampling);
+}
+
+void playlistItemResample::slotButtonSARWidth(bool selected)
+{
+  Q_UNUSED(selected);
+
+  if (this->childCount() <= 0)
+    return;
+
+  auto childSize = this->getChildPlaylistItem(0)->getFrameHandler()->getFrameSize();
+  auto childSAR = this->getChildPlaylistItem(0)->properties().sampleAspectRatio;
+  
+  auto newHeight = childSize.height();
+  auto newWidth = newHeight * childSAR.den / childSAR.num;
+
+  this->scaledSize = QSize(newWidth, newHeight);
+  this->video.setScaledSize(this->scaledSize);
+}
+
+void playlistItemResample::slotButtonSARHeight(bool selected)
+{
+  Q_UNUSED(selected);
+  
+  if (this->childCount() <= 0)
+    return;
+
+  auto childSize = this->getChildPlaylistItem(0)->getFrameHandler()->getFrameSize();
+  auto childSAR = this->getChildPlaylistItem(0)->properties().sampleAspectRatio;
+  
+  auto newWidth = childSize.width();
+  auto newHeight = newWidth * childSAR.num / childSAR.den;
+
+  this->scaledSize = QSize(newWidth, newHeight);
+  this->video.setScaledSize(this->scaledSize);
 }

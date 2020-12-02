@@ -35,6 +35,8 @@
 #include "playlistItemContainer.h"
 #include "video/videoHandlerResample.h"
 
+#include "ui_playlistItemResample.h"
+
 class playlistItemResample : public playlistItemContainer
 {
   Q_OBJECT
@@ -70,7 +72,13 @@ public:
 
 protected slots:
   void childChanged(bool redraw, recacheIndicator recache) override;
-  void resampleVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache);
+
+private slots:
+  void slotResampleControlChanged(int value);
+  void slotInterpolationModeChanged(int value);
+  void slotCutAndSampleControlChanged(int value);
+  void slotButtonSARWidth(bool selected);
+  void slotButtonSARHeight(bool selected);
 
 private:
 
@@ -80,7 +88,16 @@ private:
 
   videoHandlerResample video;
 
+  QSize scaledSize {0, 0};
+  int interpolationIndex {0};
+  indexRange cutRange {0, 0};
+  int sampling {1};
+
+  bool useLoadedValues {false};
+
   // Is the loadFrame function currently loading?
   bool isFrameLoading {false};
   bool isFrameLoadingDoubleBuffer {false};
+
+  SafeUi<Ui::playlistItemResample> ui;
 };

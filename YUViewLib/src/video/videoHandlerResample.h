@@ -38,13 +38,18 @@
 #include "videoHandler.h"
 #include "videoHandlerYUV.h"
 
-#include "ui_videoHandlerResample.h"
-
 class videoHandlerResample : public videoHandler
 {
   Q_OBJECT
 
 public:
+
+  enum class Interpolation
+  {
+    Bilinear,
+    Fast
+  };
+
   explicit videoHandlerResample();
 
   // We need to override these videoHandler functions in order to map the frameIndex
@@ -54,23 +59,16 @@ public:
 
   void loadResampledFrame(int frameIndex, bool loadToDoubleBuffer=false);
   bool inputValid() const;
-  auto resampledRange() const -> indexRange;
-
-  // Create the YUV controls and return a pointer to the layout.
-  virtual QLayout *createResampleHandlerControls();
 
   // Set the video input. This will also update the number frames, the controls and the frame size.
   // The signal signalHandlerChanged will be emitted if a redraw is required.
-  void setInputVideo(frameHandler *childVideo, indexRange childFrameRange, Ratio sampleAspectRatio);
+  void setInputVideo(frameHandler *childVideo);
+
+  void setScaledSize(QSize scaledSize);
+  void setInterpolation(Interpolation interpolation);
+  void setCutAndSample(indexRange startEnd, int sampling);
 
   QList<infoItem> resampleInfoList;
-  
-private slots:
-  void slotResampleControlChanged(int value);
-  void slotInterpolationModeChanged(int value);
-  void slotCutAndSampleControlChanged(int value);
-  void slotButtonSARWidth(bool selected);
-  void slotButtonSARHeight(bool selected);
 
 private:
 
@@ -78,7 +76,9 @@ private:
 
   // The input video we will resample
   QPointer<frameHandler> inputVideo;
-  Ratio sampleAspectRatio;
 
-  SafeUi<Ui::videoHandlerResample> ui;
+  QSize scaledSize {0, 0};
+  Interpolation interpolation {Interpolation::Bilinear};
+  indexRange cutRange {0, 0};
+  int sampling {1};
 };
