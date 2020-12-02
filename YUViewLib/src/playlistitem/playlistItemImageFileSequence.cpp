@@ -40,11 +40,14 @@
 #include "filesource/FileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
-  : playlistItemWithVideo(rawFilePath, playlistItem_Indexed)
+  : playlistItemWithVideo(rawFilePath)
 {
   // Set the properties of the playlistItem
   setIcon(0, functions::convertIcon(":img_television.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
+
+  this->prop.isFileSource = true;
+  this->prop.propertiesWidgetTitle = "Image Sequence Properties";
 
   loadPlaylistFrameMissing = false;
   isFrameLoading = false;
@@ -141,8 +144,7 @@ void playlistItemImageFileSequence::fillImageFileList(QStringList &imageFiles, c
 
 void playlistItemImageFileSequence::createPropertiesWidget()
 {
-  // Absolutely always only call this once
-  assert(!propertiesWidget);
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   preparePropertiesWidget(QStringLiteral("playlistItemRawFile"));
 
@@ -161,10 +163,11 @@ infoData playlistItemImageFileSequence::getInfo() const
 {
   infoData info("Image Sequence Info");
 
-  if (video->isFormatValid())
+  if (this->video->isFormatValid())
   {
-    QSize videoSize = video->getFrameSize();
-    info.items.append(infoItem("Num Frames", QString::number(getNumberFrames())));
+    QSize videoSize = this->video->getFrameSize();
+    auto nrFrames = this->imageFiles.size();
+    info.items.append(infoItem("Num Frames", QString::number(nrFrames)));
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixels (width x height)"));
   }
   else
@@ -261,27 +264,30 @@ void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allE
   filters.append(filter);
 }
 
-void playlistItemImageFileSequence::slotFrameRequest(int frameIdxInternal, bool caching)
+void playlistItemImageFileSequence::slotFrameRequest(int frameIdx, bool caching)
 {
   Q_UNUSED(caching);
 
   // Does the index/file exist?
-  if (frameIdxInternal < 0 || frameIdxInternal >= imageFiles.count())
+  if (frameIdx < 0 || frameIdx >= imageFiles.count())
     return;
-  QFileInfo fileInfo(imageFiles[frameIdxInternal]);
+  QFileInfo fileInfo(imageFiles[frameIdx]);
   if (!fileInfo.exists() || !fileInfo.isFile())
     return;
   
   // Load the given frame
-  video->requestedFrame = QImage(imageFiles[frameIdxInternal]);
-  video->requestedFrame_idx = frameIdxInternal;
+  video->requestedFrame = QImage(imageFiles[frameIdx]);
+  video->requestedFrame_idx = frameIdx;
 }
 
 void playlistItemImageFileSequence::setInternals(const QString &filePath)
 {
   // Set start end frame and frame size if it has not been set yet.
-  if (startEndFrame == indexRange(-1,-1))
-    startEndFrame = getStartEndFrameLimits();
+  if (this->prop.startEndRange == indexRange(-1,-1))
+  {
+    auto nrFrames = this->imageFiles.size();
+    this->prop.startEndRange = {0, nrFrames};
+  }
 
   // Open frame 0 and set the size of it
   QImage frame0 = QImage(imageFiles[0]);
@@ -304,7 +310,7 @@ void playlistItemImageFileSequence::setInternals(const QString &filePath)
   }
 
   internalName = QString(fi.path()) + base + "." + fi.suffix();
-  setName(internalName);
+  this->setName(internalName);
 }
 
 void playlistItemImageFileSequence::reloadItemSource()

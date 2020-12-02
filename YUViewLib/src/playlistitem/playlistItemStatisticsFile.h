@@ -54,20 +54,12 @@ public:
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
-  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
-
-  /* Get the title of the properties panel. The child class has to overload this.
-   * This can be different depending on the type of playlistItem.
-   * For example a playlistItemYUVFile will return "YUV File properties".
-  */
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Statistics File Properties"; }
-
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // ------ Statistics ----
 
   // Do we need to load the statistics first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) Q_DECL_OVERRIDE { Q_UNUSED(loadRawdata); return statSource.needsLoading(getFrameIdxInternal(frameIdx)); }
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) Q_DECL_OVERRIDE { Q_UNUSED(loadRawdata); return statSource.needsLoading(frameIdx); }
   // Load the statistics for the given frame. Emit signalItemChanged(true,false) when done. Always called from a thread.
   virtual void loadFrame(int frameIdx, bool playback, bool loadRawdata, bool emitSignals=true) Q_DECL_OVERRIDE;
   // Are statistics currently being loaded?
@@ -77,7 +69,6 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
 
   // A statistics file source of course provides statistics
-  virtual bool              providesStatistics() const Q_DECL_OVERRIDE { return true; }
   virtual statisticHandler *getStatisticsHandler() Q_DECL_OVERRIDE { return &statSource; }
 
   // ----- Detection of source/file change events -----
@@ -85,7 +76,6 @@ public:
   virtual void updateSettings()   Q_DECL_OVERRIDE { file.updateFileWatchSetting(); statSource.updateSettings(); }
 
 protected:
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
   // Overload from playlistItem. Create a properties widget custom to the statistics item
   // and set propertiesWidget to point to it.

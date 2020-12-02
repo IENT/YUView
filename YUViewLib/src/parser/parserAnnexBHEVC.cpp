@@ -276,7 +276,7 @@ QPair<int,int> parserAnnexBHEVC::getProfileLevel()
   return QPair<int,int>(0,0);
 }
 
-QPair<int,int> parserAnnexBHEVC::getSampleAspectRatio()
+Ratio parserAnnexBHEVC::getSampleAspectRatio()
 {
   for (auto nal : nalUnitList)
   {
@@ -295,15 +295,14 @@ QPair<int,int> parserAnnexBHEVC::getSampleAspectRatio()
           int heights[] = {1, 11, 11, 11, 33, 11, 11, 11, 33, 11, 11, 33, 99, 3, 2, 1};
 
           const int i = aspect_ratio_idc - 1;
-          return QPair<int,int>(widths[i], heights[i]);
+          return Ratio({widths[i], heights[i]});
         }
         if (aspect_ratio_idc == 255)
-          return QPair<int,int>(s->sps_vui_parameters.sar_width, s->sps_vui_parameters.sar_height);
-        return QPair<int,int>(0,0);
+          return Ratio({int(s->sps_vui_parameters.sar_width), int(s->sps_vui_parameters.sar_height)});
       }
     }
   }
-  return QPair<int,int>(1,1);
+  return Ratio({1, 1});
 }
 
 parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)

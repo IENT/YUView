@@ -52,21 +52,21 @@ videoHandlerDifference::videoHandlerDifference() : videoHandler()
   codingOrder = CodingOrder_HEVC;
 }
 
-void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx, int frameIdxItem0, int frameIdxItem1, double zoomFactor, bool drawRawValues)
+void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
 {
   if (!inputsValid())
     return;
 
   // Check if the frameIdx changed and if we have to load a new frame
-  if (frameIdx != currentImageIdx)
+  if (frameIdx != currentImageIndex)
   {
     // The current buffer is out of date. Update it.
 
     // Check the double buffer
-    if (frameIdx == doubleBufferImageFrameIdx)
+    if (frameIdx == doubleBufferImageFrameIndex)
     {
       currentImage = doubleBufferImage;
-      currentImageIdx = frameIdx;
+      currentImageIndex = frameIdx;
       DEBUG_VIDEO("videoHandler::drawFrame %d loaded from double buffer", frameIdx);
     }
     else
@@ -75,7 +75,7 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx
       if (cacheValid && imageCache.contains(frameIdx))
       {
         currentImage = imageCache[frameIdx];
-        currentImageIdx = frameIdx;
+        currentImageIndex = frameIdx;
         DEBUG_VIDEO("videoHandler::drawFrame %d loaded from cache", frameIdx);
       }
     }
@@ -94,11 +94,11 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx
   if (drawRawValues && zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR)
   {
     // Draw the pixel values onto the pixels
-    inputVideo[0]->drawPixelValues(painter, frameIdxItem0, videoRect, zoomFactor, inputVideo[1], this->markDifference, frameIdxItem1);
+    inputVideo[0]->drawPixelValues(painter, frameIdx, videoRect, zoomFactor, inputVideo[1], this->markDifference);
   }
 }
 
-void videoHandlerDifference::loadFrameDifference(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer)
+void videoHandlerDifference::loadFrameDifference(int frameIndex, bool loadToDoubleBuffer)
 {
   // No double buffering for difference items
   Q_UNUSED(loadToDoubleBuffer);
@@ -113,16 +113,16 @@ void videoHandlerDifference::loadFrameDifference(int frameIndex, int frameIndex0
   // make sure that the right frame is loaded for the video item.
   videoHandler* video0 = dynamic_cast<videoHandler*>(inputVideo[0].data());
   videoHandler* video1 = dynamic_cast<videoHandler*>(inputVideo[1].data());
-  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex1)
-    video1->loadFrame(frameIndex1);
+  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex)
+    video1->loadFrame(frameIndex);
   
   // Calculate the difference  
-  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex0, frameIndex1, differenceInfoList, amplificationFactor, markDifference);
+  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, frameIndex, differenceInfoList, amplificationFactor, markDifference);
 
   if (!newFrame.isNull())
   {
     // The new difference frame is ready
-    currentImageIdx = frameIndex;
+    currentImageIndex = frameIndex;
     currentImageSetMutex.lock();
     currentImage = newFrame;
     currentImageSetMutex.unlock();
@@ -176,8 +176,7 @@ QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, i
 
 QLayout *videoHandlerDifference::createDifferenceHandlerControls()
 {
-  // Absolutely always only call this function once!
-  assert(!ui.created());
+  Q_ASSERT_X(!ui.created(), "createResampleHandlerControls", "Controls must only be created once");
 
   ui.setupUi();
 
@@ -205,7 +204,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
     markDifference = ui.markDifferenceCheckBox->isChecked();
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
-    currentImageIdx = -1;
+    currentImageIndex = -1;
     emit signalHandlerChanged(true, RECACHE_NONE);
   }
   else if (sender == ui.codingOrderComboBox)
@@ -220,7 +219,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
     amplificationFactor = ui.amplificationFactorSpinBox->value();
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
-    currentImageIdx = -1;
+    currentImageIndex = -1;
     emit signalHandlerChanged(true, RECACHE_NONE);
   }
 }

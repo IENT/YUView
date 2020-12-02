@@ -47,7 +47,7 @@
 #define STAT_PARSING_BUFFER_SIZE 1048576
 
 playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOrFileName)
-  : playlistItem(itemNameOrFileName, playlistItem_Indexed)
+  : playlistItem(itemNameOrFileName, Type::Indexed)
 {
   // Set default variables
   fileSortedByPOC = false;
@@ -56,6 +56,10 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   currentDrawnFrameIdx = -1;
   maxPOC = 0;
   isStatisticsLoading = false;
+
+  this->prop.isFileSource = true;
+  this->prop.propertiesWidgetTitle = "Statistics File Properties";
+  this->prop.providesStatistics = true;
 
   // Set statistics icon
   setIcon(0, functions::convertIcon(":img_stats.png"));
@@ -106,13 +110,12 @@ void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, doubl
 {
   // drawRawData only controls the drawing of raw pixel values
   Q_UNUSED(drawRawData);
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
   // Tell the statSource to draw the statistics
-  statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
+  statSource.paintStatistics(painter, frameIdx, zoomFactor);
 
   // Currently this frame is drawn.
-  currentDrawnFrameIdx = frameIdxInternal;
+  currentDrawnFrameIdx = frameIdx;
 }
 
 // This timer event is called regularly when the background loading process is running.
@@ -128,15 +131,14 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent *event)
     timer.stop();
   else
   {
-    setStartEndFrame(indexRange(0, maxPOC), false);
+    this->prop.startEndRange = indexRange(0, maxPOC);
     emit signalItemChanged(false, RECACHE_NONE);
   }
 }
 
 void playlistItemStatisticsFile::createPropertiesWidget()
 {
-  // Absolutely always only call this once//
-  assert(!propertiesWidget);
+  Q_ASSERT_X(!propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   // Create a new widget and populate it with controls
   preparePropertiesWidget(getPlaylistTag());
@@ -183,12 +185,11 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loa
 {
   Q_UNUSED(playback);
   Q_UNUSED(loadRawdata);
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  if (statSource.needsLoading(frameIdxInternal) == LoadingNeeded)
+  if (statSource.needsLoading(frameIdx) == LoadingNeeded)
   {
     isStatisticsLoading = true;
-    statSource.loadStatistics(frameIdxInternal);
+    statSource.loadStatistics(frameIdx);
     isStatisticsLoading = false;
     if (emitSignals)
       emit signalItemChanged(true, RECACHE_NONE);

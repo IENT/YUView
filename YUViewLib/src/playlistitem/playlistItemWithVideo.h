@@ -43,7 +43,7 @@
 class playlistItemWithVideo : public playlistItem
 {
 public:
-  playlistItemWithVideo(const QString &itemNameOrFileName, playlistItemType type);
+  playlistItemWithVideo(const QString &itemNameOrFileName);
 
   // Draw the item
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues) Q_DECL_OVERRIDE;
@@ -51,7 +51,6 @@ public:
   // All the functions that we have to overload if we are using a video handler
   virtual QSize getSize() const Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return video.data(); }
-  // Activate the double buffer (set it as current frame)
   virtual void activateDoubleBuffer() Q_DECL_OVERRIDE { if (video) video->activateDoubleBuffer(); }
 
   // Do we need to load the frame first?
@@ -59,14 +58,14 @@ public:
 
   // -- Caching
   // Cache the given frame
-  virtual void cacheFrame(int frameIdx, bool testMode) Q_DECL_OVERRIDE { if (!cachingEnabled || unresolvableError) return; video->cacheFrame(getFrameIdxInternal(frameIdx), testMode); }
+  virtual void cacheFrame(int frameIdx, bool testMode) Q_DECL_OVERRIDE { if (!cachingEnabled || unresolvableError) return; video->cacheFrame(frameIdx, testMode); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE;
   virtual int getNumberCachedFrames() const Q_DECL_OVERRIDE { return unresolvableError ? 0 : video->getNumberCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return unresolvableError ? 0 : video->getCachingFrameSize(); }
   // Remove the given frame from the cache
-  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { if (video) video->removeFrameFromCache(getFrameIdxInternal(idx)); }
+  virtual void removeFrameFromCache(int frameIdx) Q_DECL_OVERRIDE { if (video) video->removeFrameFromCache(frameIdx); }
   virtual void removeAllFramesFromCache() Q_DECL_OVERRIDE { if (video) video->removeAllFrameFromCache(); }
   // This item is cachable, if caching is enabled and if the raw format is valid (can be cached).
   virtual bool isCachable() const Q_DECL_OVERRIDE { return !unresolvableError && playlistItem::isCachable() && video->isFormatValid(); }
@@ -77,6 +76,9 @@ public:
   // Is an image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
+
+private slots:
+  void slotVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache);
 
 protected:
   // A pointer to the videHandler. In the derived class, don't foret to set this.
@@ -92,6 +94,8 @@ protected:
 
   // Connect the basic signals from the video
   void connectVideo();
+
+  virtual void updateStartEndRange() {};
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading;

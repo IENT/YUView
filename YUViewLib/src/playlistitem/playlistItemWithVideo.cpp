@@ -42,8 +42,8 @@ using namespace YUView;
 #define DEBUG_PLVIDEO(fmt,...) ((void)0)
 #endif
 
-playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName, playlistItemType type)
- : playlistItem(itemNameOrFileName, type)
+playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName)
+ : playlistItem(itemNameOrFileName, Type::Indexed)
 {
   // Nothing is currently being loaded
   isFrameLoading = false;
@@ -53,10 +53,16 @@ playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName, 
   rawFormat = raw_Invalid;
 };
 
+void playlistItemWithVideo::slotVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache)
+{
+  this->updateStartEndRange();
+  emit signalItemChanged(redrawNeeded, recache);
+}
+
 void playlistItemWithVideo::connectVideo()
 {
   // Forward these signals from the video source up
-  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItem::signalItemChanged);
+  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemWithVideo::slotVideoHandlerChanged);
 }
 
 void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
@@ -67,23 +73,21 @@ void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoo
     return;
   }
 
-  indexRange range = getStartEndFrameLimits();
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
-  if (frameIdxInternal >= range.first && frameIdxInternal <= range.second)
-    video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawValues);
+  auto range = properties().startEndRange;
+  if (frameIdx >= range.first && frameIdx <= range.second)
+    video->drawFrame(painter, frameIdx, zoomFactor, drawRawValues);
 }
 
 void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals)
 {
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
-  auto state = video->needsLoading(frameIdxInternal, loadRawData);
+  auto state = video->needsLoading(frameIdx, loadRawData);
 
   if (state == LoadingNeeded)
   {
     // Load the requested current frame
-    DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame %d%s%s", frameIdxInternal, playing ? " playing" : "", loadRawData ? " raw" : "");
+    DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame %d%s%s", frameIdx, playing ? " playing" : "", loadRawData ? " raw" : "");
     isFrameLoading = true;
-    video->loadFrame(frameIdxInternal);
+    video->loadFrame(frameIdx);
     isFrameLoading = false;
     if (emitSignals)
       emit signalItemChanged(true, RECACHE_NONE);
@@ -92,8 +96,8 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
   {
     // Load the next frame into the double buffer
-    int nextFrameIdx = frameIdxInternal + 1;
-    if (nextFrameIdx <= startEndFrame.second)
+    int nextFrameIdx = frameIdx + 1;
+    if (nextFrameIdx <= properties().startEndRange.second)
     {
       DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame into double buffer %d%s%s", nextFrameIdx, playing ? " playing" : "", loadRawData ? " raw" : "");
       isFrameLoadingDoubleBuffer = true;
@@ -107,27 +111,17 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
 
 itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawValues)
 {
-  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
-
   // See if the item has so many frames
-  indexRange range = getStartEndFrameLimits();
-  if (frameIdxInternal < range.first || frameIdxInternal > range.second)
+  auto range = this->properties().startEndRange;
+  if (frameIdx < range.first || frameIdx > range.second)
     return LoadingNotNeeded;
 
   if (video)
-    return video->needsLoading(frameIdxInternal, loadRawValues);
+    return video->needsLoading(frameIdx, loadRawValues);
   return LoadingNotNeeded;
 }
 
 QList<int> playlistItemWithVideo::getCachedFrames() const
 {
-  // Convert indices from internal to external indices
-  QList<int> retList;
-  if (video)
-  {
-    QList<int> internalIndices = video->getCachedFrames();
-    for (int i : internalIndices)
-      retList.append(getFrameIdxExternal(i));
-  }
-  return retList;
+  return video->getCachedFrames();
 }

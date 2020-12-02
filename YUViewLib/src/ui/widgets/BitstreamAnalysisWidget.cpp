@@ -175,7 +175,7 @@ void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
 void BitstreamAnalysisWidget::backgroundParsingFunction()
 {
   if (this->parser)
-    this->parser->runParsingOfFile(this->currentCompressedVideo->getName());
+    this->parser->runParsingOfFile(this->currentCompressedVideo->properties().name);
 }
 
 void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback)

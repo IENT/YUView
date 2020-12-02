@@ -260,7 +260,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     const bool drawItemNames = (drawItemPathAndNameEnabled && 
                                 item[0] != nullptr && item[1] != nullptr &&
                                 !itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty() &&
-                                item[0]->isFileSource() && item[1]->isFileSource());
+                                item[0]->properties().isFileSource && item[1]->properties().isFileSource);
 
     // Draw two items (or less, if less items are selected)
     if (item[0])
@@ -956,7 +956,7 @@ void splitViewWidget::setMoveOffset(QPoint offset)
     {
       if (item[i])
       {
-        DEBUG_LOAD_DRAW("splitViewWidget::setMoveOffset item " << item[i]->getID() << " (" << offset.x() << "," << offset.y() << ")");
+        DEBUG_LOAD_DRAW("splitViewWidget::setMoveOffset item " << item[i]->properties().id << " (" << offset.x() << "," << offset.y() << ")");
         item[i]->saveCenterOffset(this->moveOffset, !isMasterView);
         item[i]->saveCenterOffset(this->getOtherWidget()->moveOffset, isMasterView);
       }
@@ -1019,7 +1019,7 @@ void splitViewWidget::setZoomFactor(double zoom)
     {
       if (item[i])
       {
-        DEBUG_LOAD_DRAW("splitViewWidget::setthis->getZoomFactor() item " << item[0]->getID() << " (" << zoom << ")");
+        DEBUG_LOAD_DRAW("splitViewWidget::setthis->getZoomFactor() item " << item[0]->properties().id << " (" << zoom << ")");
         item[i]->saveZoomFactor(this->zoomFactor, !this->isMasterView);
         item[i]->saveZoomFactor(this->getOtherWidget()->zoomFactor, this->isMasterView);
       }
@@ -1295,7 +1295,7 @@ void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistI
       item2->getZoomAndPosition(moveOffset, this->zoomFactor, false);
       item2->getZoomAndPosition(this->getOtherWidget()->moveOffset, this->getOtherWidget()->zoomFactor, getOtherViewValuesFromOtherSlot);
     }
-    DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item " << item1->getID() << " moveOffset " << this->moveOffset << " zoom " << this->zoomFactor);
+    DEBUG_LOAD_DRAW("splitViewWidget::currentSelectedItemsChanged restore from item " << item1->properties().id << " moveOffset " << this->moveOffset << " zoom " << this->zoomFactor);
   }
 }
 
@@ -1592,8 +1592,8 @@ QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playl
     return QStringPair();
 
   auto sep = QDir::separator();
-  auto name1 = item1->getName().split(sep);
-  auto name2 = item2->getName().split(sep);
+  auto name1 = item1->properties().name.split(sep);
+  auto name2 = item2->properties().name.split(sep);
   if (name1.empty() || name2.empty())
     return QStringPair();
 
@@ -1601,7 +1601,7 @@ QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playl
   auto it2 = name2.constEnd() - 1;
   
   if (*it1 != *it2)
-    return QStringPair(*it1, *it2);
+    return QStringPair(item1->properties().name, item2->properties().name);
 
   QStringPair ret = QStringPair(*it1, *it2);
   --it1;

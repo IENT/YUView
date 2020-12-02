@@ -50,8 +50,6 @@ public:
 
   virtual infoData getInfo() const Q_DECL_OVERRIDE { return infoData("Text Info"); }
 
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Text Properties"; }
-
   // Get the text size (using the current text, font/text size ...)
   virtual QSize getSize() const Q_DECL_OVERRIDE;
 
@@ -60,8 +58,6 @@ public:
   // Create a new playlistItemText from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemText *newplaylistItemText(const YUViewDomElement &stringElement);
 
-  // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
-  // and the given value of frameIdx will be ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
   
 protected:
@@ -74,7 +70,7 @@ protected:
 
 private:
 
-  QColor  color;
+  QColor  color {Qt::black};
   QFont   font;
   QString text;
 

@@ -105,7 +105,7 @@ int loadingWorker::id_counter = 0;
 void loadingWorker::setJob(playlistItem *item, int frame, bool test)
 {
   Q_ASSERT_X(item != nullptr, Q_FUNC_INFO, "Given item is nullptr");
-  Q_ASSERT_X(frame >= 0 || !item->isIndexedByFrame(), Q_FUNC_INFO, "Given frame index invalid");
+  Q_ASSERT_X(frame >= 0 || !item->properties().isIndexedByFrame(), Q_FUNC_INFO, "Given frame index invalid");
   currentCacheItem = item;
   currentFrame = frame;
   testMode = test;
@@ -126,7 +126,7 @@ void loadingWorker::processLoadingJob(bool playing, bool loadRawData)
 void loadingWorker::processCacheJobInternal()
 {
   Q_ASSERT_X(currentCacheItem != nullptr, Q_FUNC_INFO, "Invalid Job - Item is nullptr");
-  Q_ASSERT_X(currentFrame >= 0 || !currentCacheItem->isIndexedByFrame(), Q_FUNC_INFO, "Given frame index invalid");
+  Q_ASSERT_X(currentFrame >= 0 || !currentCacheItem->properties().isIndexedByFrame(), Q_FUNC_INFO, "Given frame index invalid");
   DEBUG_JOBS("loadingWorker::processCacheJobInternal");
 
   // Just cache the frame that was given to us.
@@ -141,7 +141,7 @@ void loadingWorker::processCacheJobInternal()
 void loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
 {
   Q_ASSERT_X(currentCacheItem != nullptr, Q_FUNC_INFO, "The set job is nullptr");
-  Q_ASSERT_X((!currentCacheItem->isIndexedByFrame() || currentFrame >= 0), Q_FUNC_INFO, "The set frame index is invalid");
+  Q_ASSERT_X((!currentCacheItem->properties().isIndexedByFrame() || currentFrame >= 0), Q_FUNC_INFO, "The set frame index is invalid");
   Q_ASSERT_X(!currentCacheItem->taggedForDeletion(), Q_FUNC_INFO, "The set job was tagged for deletion");
   DEBUG_JOBS(Q_FUNC_INFO);
 
@@ -337,7 +337,7 @@ void videoCache::updateSettings()
 
 void videoCache::loadFrame(playlistItem * item, int frameIndex, int loadingSlot)
 {
-  if (item == nullptr || item->taggedForDeletion() || (frameIndex < 0 && item->isIndexedByFrame()))
+  if (item == nullptr || item->taggedForDeletion() || (frameIndex < 0 && item->properties().isIndexedByFrame()))
     // The item is not loadable (invalid, tagged for deletion, and invalid frame index was given)
     return;
 
@@ -513,7 +513,7 @@ void videoCache::updateCacheQueue()
   int64_t cacheLevel = 0;
   for (playlistItem *item : allItems)
   {
-    indexRange range = item->getFrameIdxRange();
+    indexRange range = item->properties().startEndRange;
     QList<int> cached_frames = item->getCachedFrames();
     for (int i : cached_frames)
       if (i < range.first || i > range.second)
@@ -555,7 +555,7 @@ void videoCache::updateCacheQueue()
   cacheLevelCurrent = cacheLevel;
 
   // How much space do we need to cache the entire item?
-  indexRange range = selection[0]->getFrameIdxRange(); // These are the frames that we want to cache
+  indexRange range = selection[0]->properties().startEndRange; // These are the frames that we want to cache
   int64_t cachingFrameSize = selection[0]->getCachingFrameSize();
   int64_t itemSpaceNeeded = (range.second - range.first + 1) * cachingFrameSize;
   int64_t alreadyCached = selection[0]->getNumberCachedFrames() * cachingFrameSize;
@@ -574,10 +574,10 @@ void videoCache::updateCacheQueue()
     bool adding = true;
     do
     {
-      if (allItems[i]->isIndexedByFrame())
+      if (allItems[i]->properties().isIndexedByFrame())
       {
         // How much space do we need to cache the current item?
-        indexRange itemRange = allItems[i]->getFrameIdxRange();
+        auto itemRange = allItems[i]->properties().startEndRange;
         int64_t itemCacheSize = (itemRange.second - itemRange.first + 1) * int64_t(allItems[i]->getCachingFrameSize());
 
         if (adding && allItems[i]->isCachable())
@@ -666,7 +666,7 @@ void videoCache::updateCacheQueue()
       {
         if (i < 0)
           i = allItems.count() - 1;
-        if (allItems[i]->isIndexedByFrame())
+        if (allItems[i]->properties().isIndexedByFrame())
           break;
         i--;
       }
@@ -676,7 +676,7 @@ void videoCache::updateCacheQueue()
       {
         if (i < 0)
           i = allItems.count() - 1;
-        if (allItems[i]->isIndexedByFrame())
+        if (allItems[i]->properties().isIndexedByFrame())
           break;
         i--;
       }
@@ -788,7 +788,7 @@ void videoCache::updateCacheQueue()
         // Get the cache level without the current item (frames from the current item do not really occupy space in the cache. We want to cache them anyways)
         int64_t cacheLevelWithoutCurrent = cacheLevel - allItems[i]->getNumberCachedFrames() * int64_t(allItems[i]->getCachingFrameSize());
         // How much space do we need to cache the entire item?
-        range = allItems[i]->getFrameIdxRange();
+        range = allItems[i]->properties().startEndRange;
         int64_t itemCacheSize = (range.second - range.first + 1) * int64_t(allItems[i]->getCachingFrameSize());
 
         if ((itemCacheSize + cacheLevelWithoutCurrent) <= cacheLevelMax)
@@ -1114,8 +1114,8 @@ bool videoCache::pushNextJobToCachingThread(loadingThread *thread)
   if (testMode)
   {
     Q_ASSERT_X(testItem, Q_FUNC_INFO, "Test item invalid");
-    indexRange r = testItem->getFrameIdxRange();
-    int frameNr = clip((1000-testLoopCount) % (r.second - r.first) + r.first, r.first, r.second);
+    auto range = testItem->properties().startEndRange;
+    int frameNr = clip((1000-testLoopCount) % (range.second - range.first) + range.first, range.first, range.second);
     if (frameNr < 0)
       frameNr = 0;
     thread->worker()->setJob(testItem, frameNr, true);
@@ -1131,7 +1131,7 @@ bool videoCache::pushNextJobToCachingThread(loadingThread *thread)
   if (playback->playing() && watchingItem == nullptr)
   {
     auto selection = playlist->getSelectedItems();
-    if (selection[0] && selection[0]->isIndexedByFrame())
+    if (selection[0] && selection[0]->properties().isIndexedByFrame())
     {
       // Playback is running and the item that is currently being shown is indexed by frame.
       // In this case, obey the restriction on nr threads while playback is running.

@@ -106,6 +106,7 @@ public slots:
   // Slots for adding text/difference items
   void addTextItem();
   void addDifferenceItem();
+  void addResampleItem();
   void addOverlayItem();
 
 signals:

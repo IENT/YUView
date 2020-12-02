@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>playlistItemResample</class>
+ <widget class="QWidget" name="playlistItemResample">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>253</width>
+    <height>215</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="wrapperLayout">
+   <item>
+    <layout class="QVBoxLayout" name="topVBoxLayout">
+     <item>
+      <widget class="QGroupBox" name="groupBoxScaling">
+       <property name="title">
+        <string>Scaling</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="2" column="0" colspan="2">
+         <widget class="QLabel" name="labelInterpolation">
+          <property name="toolTip">
+           <string>Interpolation mode for scaling</string>
+          </property>
+          <property name="whatsThis">
+           <string>Interpolation mode for scaling</string>
+          </property>
+          <property name="text">
+           <string>Interpolation</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelWidth">
+          <property name="toolTip">
+           <string>Width to scale the item to</string>
+          </property>
+          <property name="whatsThis">
+           <string>Width to scale the item to</string>
+          </property>
+          <property name="text">
+           <string>Width</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="spinBoxWidth">
+          <property name="toolTip">
+           <string>Width to scale the item to</string>
+          </property>
+          <property name="whatsThis">
+           <string>Width to scale the item to</string>
+          </property>
+          <property name="maximum">
+           <number>9999999</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="labelHeight">
+          <property name="toolTip">
+           <string>Height to scale the item to</string>
+          </property>
+          <property name="whatsThis">
+           <string>Height to scale the item to</string>
+          </property>
+          <property name="text">
+           <string>Height</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2" colspan="2">
+         <widget class="QComboBox" name="comboBoxInterpolation">
+          <property name="toolTip">
+           <string>Interpolation mode for scaling</string>
+          </property>
+          <property name="whatsThis">
+           <string>Interpolation mode for scaling</string>
+          </property>
+          <property name="editable">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QSpinBox" name="spinBoxHeight">
+          <property name="toolTip">
+           <string>Height to scale the item to</string>
+          </property>
+          <property name="whatsThis">
+           <string>Height to scale the item to</string>
+          </property>
+          <property name="maximum">
+           <number>9999999</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" colspan="2">
+         <widget class="QLabel" name="labelSAR">
+          <property name="toolTip">
+           <string>Calculate the size from the SAR</string>
+          </property>
+          <property name="whatsThis">
+           <string>Calculate the size from the SAR</string>
+          </property>
+          <property name="text">
+           <string>SAR scale</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QPushButton" name="pushButtonSARWidth">
+          <property name="minimumSize">
+           <size>
+            <width>40</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Width</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="3">
+         <widget class="QPushButton" name="pushButtonSARHeight">
+          <property name="minimumSize">
+           <size>
+            <width>40</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Height</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBoxSampling">
+       <property name="title">
+        <string>Cut and Sample</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="spinBoxStart">
+          <property name="toolTip">
+           <string>Index of first frame to show</string>
+          </property>
+          <property name="whatsThis">
+           <string>Index of first frame to show</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="labelEnd">
+          <property name="toolTip">
+           <string>Index of last frame to show</string>
+          </property>
+          <property name="whatsThis">
+           <string>Index of last frame to show</string>
+          </property>
+          <property name="text">
+           <string>End</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelStart">
+          <property name="toolTip">
+           <string>Index of first frame to show</string>
+          </property>
+          <property name="whatsThis">
+           <string>Index of first frame to show</string>
+          </property>
+          <property name="text">
+           <string>Start</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QSpinBox" name="spinBoxEnd">
+          <property name="toolTip">
+           <string>Index of last frame to show</string>
+          </property>
+          <property name="whatsThis">
+           <string>Index of last frame to show</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2" colspan="2">
+         <widget class="QSpinBox" name="spinBoxSampling">
+          <property name="toolTip">
+           <string>Show ever Nth frame</string>
+          </property>
+          <property name="whatsThis">
+           <string>Show ever Nth frame</string>
+          </property>
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>100000</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" colspan="2">
+         <widget class="QLabel" name="labelSampling">
+          <property name="toolTip">
+           <string>Show ever Nth frame</string>
+          </property>
+          <property name="whatsThis">
+           <string>Show ever Nth frame</string>
+          </property>
+          <property name="text">
+           <string>Sampling</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>spinBoxWidth</tabstop>
+  <tabstop>spinBoxHeight</tabstop>
+  <tabstop>pushButtonSARWidth</tabstop>
+  <tabstop>pushButtonSARHeight</tabstop>
+  <tabstop>comboBoxInterpolation</tabstop>
+  <tabstop>spinBoxStart</tabstop>
+  <tabstop>spinBoxEnd</tabstop>
+  <tabstop>spinBoxSampling</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

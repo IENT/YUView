@@ -1260,7 +1260,7 @@ bool FFmpegVersionHandler::loadFFmpegLibraries()
   return librariesLoaded;
 }
 
-bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
+bool FFmpegVersionHandler::openInput(AVFormatContextWrapper &fmt, QString url)
 {
   AVFormatContext *f_ctx = nullptr;
   int ret = lib.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
@@ -1278,7 +1278,7 @@ bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
   // The wrapper will take ownership of this pointer
   fmt = AVFormatContextWrapper(f_ctx, libVersion);
   
-  ret = lib.avformat_find_stream_info(fmt.get_format_ctx(), nullptr);
+  ret = lib.avformat_find_stream_info(fmt.getFormatCtx(), nullptr);
   if (ret < 0)
   {
     LOG(QStringLiteral("Error opening file (avformat_find_stream_info). Ret code %1").arg(ret));
@@ -1288,12 +1288,12 @@ bool FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
   return true;
 }
 
-AVCodecParametersWrapper FFmpegVersionHandler::alloc_code_parameters()
+AVCodecParametersWrapper FFmpegVersionHandler::allocCodecParameters()
 {
   return AVCodecParametersWrapper(lib.avcodec_parameters_alloc(), libVersion);
 }
 
-AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecIDWrapper codecId)
+AVCodecWrapper FFmpegVersionHandler::findDecoder(AVCodecIDWrapper codecId)
 {
   AVCodecID avCodecID = getCodecIDFromWrapper(codecId);
   AVCodec *c = lib.avcodec_find_decoder(avCodecID);
@@ -1305,24 +1305,24 @@ AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecIDWrapper codecId)
   return AVCodecWrapper(c, libVersion);
 }
 
-AVCodecContextWrapper FFmpegVersionHandler::alloc_decoder(AVCodecWrapper &codec)
+AVCodecContextWrapper FFmpegVersionHandler::allocDecoder(AVCodecWrapper &codec)
 {
   return AVCodecContextWrapper(lib.avcodec_alloc_context3(codec.getAVCodec()), libVersion);
 }
 
-int FFmpegVersionHandler::av_dict_set(AVDictionaryWrapper &dict, const char *key, const char *value, int flags)
+int FFmpegVersionHandler::dictSet(AVDictionaryWrapper &dict, const char *key, const char *value, int flags)
 {
-  AVDictionary *d = dict.get_dictionary();
+  AVDictionary *d = dict.getDictionary();
   int ret = lib.av_dict_set(&d, key, value, flags);
   dict.setDictionary(d);
   return ret;
 }
 
-QStringPairList FFmpegVersionHandler::get_dictionary_entries(AVDictionaryWrapper d, QString key, int flags)
+QStringPairList FFmpegVersionHandler::getDictionaryEntries(AVDictionaryWrapper d, QString key, int flags)
 {
   QStringPairList ret;
   AVDictionaryEntry *tag = NULL;
-  while ((tag = lib.av_dict_get(d.get_dictionary(), key.toLatin1().data(), tag, flags)))
+  while ((tag = lib.av_dict_get(d.getDictionary(), key.toLatin1().data(), tag, flags)))
   {
     QStringPair pair;
     pair.first = QString(tag->key);
@@ -1332,37 +1332,37 @@ QStringPairList FFmpegVersionHandler::get_dictionary_entries(AVDictionaryWrapper
   return ret;
 }
 
-int FFmpegVersionHandler::avcodec_open2(AVCodecContextWrapper &decCtx, AVCodecWrapper &codec, AVDictionaryWrapper &dict)
+int FFmpegVersionHandler::avcodecOpen2(AVCodecContextWrapper &decCtx, AVCodecWrapper &codec, AVDictionaryWrapper &dict)
 {
-  AVDictionary *d = dict.get_dictionary();
-  int ret = lib.avcodec_open2(decCtx.get_codec(), codec.getAVCodec(), &d);
+  AVDictionary *d = dict.getDictionary();
+  int ret = lib.avcodec_open2(decCtx.getCodec(), codec.getAVCodec(), &d);
   dict.setDictionary(d);
   return ret;
 }
 
-AVFrameSideDataWrapper FFmpegVersionHandler::get_side_data(AVFrameWrapper &frame, AVFrameSideDataType type)
+AVFrameSideDataWrapper FFmpegVersionHandler::getSideData(AVFrameWrapper &frame, AVFrameSideDataType type)
 {
-  AVFrameSideData *sd = lib.av_frame_get_side_data(frame.get_frame(), type);
+  AVFrameSideData *sd = lib.av_frame_get_side_data(frame.getFrame(), type);
   return AVFrameSideDataWrapper(sd, libVersion);
 }
 
-AVDictionaryWrapper FFmpegVersionHandler::get_metadata(AVFrameWrapper &frame)
+AVDictionaryWrapper FFmpegVersionHandler::getMetadata(AVFrameWrapper &frame)
 {
-  AVDictionary *dict = lib.av_frame_get_metadata(frame.get_frame());
+  AVDictionary *dict = lib.av_frame_get_metadata(frame.getFrame());
   return AVDictionaryWrapper(dict);
 }
 
-int FFmpegVersionHandler::seek_frame(AVFormatContextWrapper & fmt, int stream_idx, int dts)
+int FFmpegVersionHandler::seekFrame(AVFormatContextWrapper & fmt, int stream_idx, int dts)
 {
-  int ret = lib.av_seek_frame(fmt.get_format_ctx(), stream_idx, dts, AVSEEK_FLAG_BACKWARD);
+  int ret = lib.av_seek_frame(fmt.getFormatCtx(), stream_idx, dts, AVSEEK_FLAG_BACKWARD);
   return ret;
 }
 
-int FFmpegVersionHandler::seek_beginning(AVFormatContextWrapper & fmt)
+int FFmpegVersionHandler::seekBeginning(AVFormatContextWrapper & fmt)
 {
   // This is "borrowed" from the ffmpeg sources (https://ffmpeg.org/doxygen/4.0/ffmpeg_8c_source.html seek_to_start)
-  LOG(QString("seek_beginning time %1").arg(fmt.get_start_time()));
-  int ret = lib.av_seek_frame(fmt.get_format_ctx(), -1, fmt.get_start_time(), 0);
+  LOG(QString("seek_beginning time %1").arg(fmt.getStartTime()));
+  int ret = lib.av_seek_frame(fmt.getFormatCtx(), -1, fmt.getStartTime(), 0);
   return ret;
 }
 
@@ -1814,12 +1814,12 @@ void AVFormatContextWrapper::update()
     assert(false);
 }
 
-int AVFormatContextWrapper::read_frame(FFmpegVersionHandler &ff, AVPacketWrapper &pkt)
+int AVFormatContextWrapper::readFrame(FFmpegVersionHandler &ff, AVPacketWrapper &pkt)
 {
   if (ctx == nullptr || !pkt)
     return -1;
 
-  return ff.lib.av_read_frame(ctx, pkt.get_packet());
+  return ff.lib.av_read_frame(ctx, pkt.getPacket());
 }
 
 QStringPairList AVFormatContextWrapper::getInfoText()
@@ -2349,37 +2349,37 @@ AVCodecID AVStreamWrapper::getCodecID()
     return codecpar.getCodecID();
 }
 
-AVRational AVStreamWrapper::get_time_base()
+AVRational AVStreamWrapper::getTimeBase()
 {
   update();
   if (time_base.den == 0 || time_base.num == 0)
     // The stream time_base seems not to be set. Try the time_base in the codec.
-    return codec.get_time_base();
+    return codec.getTimeBase();
   return time_base;
 }
 
-int AVStreamWrapper::get_frame_width()
+int AVStreamWrapper::getFrameWidth()
 {
   update();
   if (libVer.avformat <= 56 || !codecpar)
-    return codec.get_width();
-  return codecpar.get_width();
+    return codec.getWidth();
+  return codecpar.getWidth();
 }
 
-int AVStreamWrapper::get_frame_height()
+int AVStreamWrapper::getFrameHeight()
 {
   update();
   if (libVer.avformat <= 56 || !codecpar)
-    return codec.get_height();
-  return codecpar.get_height();
+    return codec.getHeight();
+  return codecpar.getHeight();
 }
 
-AVColorSpace AVStreamWrapper::get_colorspace()
+AVColorSpace AVStreamWrapper::getColorspace()
 {
   update();
   if (libVer.avformat <= 56 || !codecpar)
-    return codec.get_colorspace();
-  return codecpar.get_colorspace();
+    return codec.getColorspace();
+  return codecpar.getColorspace();
 }
 
 QStringPairList AVCodecParametersWrapper::getInfoText()
@@ -2851,7 +2851,7 @@ bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCod
     AVCodecParameters *origin_par = codecpar.getCodecParameters();
     if (!origin_par)
       return false;
-    int ret = lib.avcodec_parameters_to_context(decCtx.get_codec(), origin_par);
+    int ret = lib.avcodec_parameters_to_context(decCtx.getCodec(), origin_par);
     if (ret < 0)
     {
       LOG(QString("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
@@ -2864,8 +2864,8 @@ bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCod
 
     // The new parameters API is not available. Perform what the function would do.
     // This is equal to the implementation of avcodec_parameters_to_context.
-    // AVCodecContext *ctxSrc = videoStream.getCodec().get_codec();
-    // int ret = lib.AVCodecContextCopyParameters(ctxSrc, decCtx.get_codec());
+    // AVCodecContext *ctxSrc = videoStream.getCodec().getCodec();
+    // int ret = lib.AVCodecContextCopyParameters(ctxSrc, decCtx.getCodec());
     // return setOpeningError(QStringLiteral("Could not copy decoder parameters from stream decoder."));
   }
   return true;
@@ -2874,14 +2874,14 @@ bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &decCtx, AVCod
 int FFmpegVersionHandler::pushPacketToDecoder(AVCodecContextWrapper & decCtx, AVPacketWrapper & pkt)
 {
   if (!pkt)
-    return lib.avcodec_send_packet(decCtx.get_codec(), nullptr);
+    return lib.avcodec_send_packet(decCtx.getCodec(), nullptr);
   else
-    return lib.avcodec_send_packet(decCtx.get_codec(), pkt.get_packet());
+    return lib.avcodec_send_packet(decCtx.getCodec(), pkt.getPacket());
 }
 
 int FFmpegVersionHandler::getFrameFromDecoder(AVCodecContextWrapper & decCtx, AVFrameWrapper &frame)
 {
-  return lib.avcodec_receive_frame(decCtx.get_codec(), frame.get_frame());
+  return lib.avcodec_receive_frame(decCtx.getCodec(), frame.getFrame());
 }
 
 void AVFrameWrapper::update()
@@ -2937,14 +2937,14 @@ void AVFrameWrapper::update()
     assert(false);
 }
 
-void AVFrameWrapper::allocate_frame(FFmpegVersionHandler &ff) 
+void AVFrameWrapper::allocateFrame(FFmpegVersionHandler &ff) 
 { 
   assert(frame == nullptr);
   libVer = ff.libVersion;
   frame = ff.lib.av_frame_alloc();
 }
 
-void AVFrameWrapper::free_frame(FFmpegVersionHandler &ff) 
+void AVFrameWrapper::freeFrame(FFmpegVersionHandler &ff) 
 { 
   ff.lib.av_frame_free(&frame); 
   frame = nullptr;
@@ -2954,7 +2954,7 @@ AVPacketWrapper::~AVPacketWrapper()
 {
 }
 
-void AVPacketWrapper::allocate_paket(FFmpegVersionHandler &ff)
+void AVPacketWrapper::allocatePaket(FFmpegVersionHandler &ff)
 {
   assert(pkt == nullptr);
   libVer = ff.libVersion;
@@ -2980,18 +2980,18 @@ void AVPacketWrapper::allocate_paket(FFmpegVersionHandler &ff)
   update();
 }
 
-void AVPacketWrapper::unref_packet(FFmpegVersionHandler &ff)
+void AVPacketWrapper::unrefPacket(FFmpegVersionHandler &ff)
 {
   ff.lib.av_packet_unref(pkt);
 }
 
-void AVPacketWrapper::free_packet(FFmpegVersionHandler &ff)
+void AVPacketWrapper::freePacket(FFmpegVersionHandler &ff)
 {
   ff.lib.av_packet_free(&pkt);
   pkt = nullptr;
 }
 
-void AVPacketWrapper::set_data(QByteArray &set_data)
+void AVPacketWrapper::setData(QByteArray &set_data)
 {
   if (libVer.avcodec == 56)
   {
@@ -3013,7 +3013,7 @@ void AVPacketWrapper::set_data(QByteArray &set_data)
     assert(false);
 }
 
-void AVPacketWrapper::set_pts(int64_t p)
+void AVPacketWrapper::setPTS(int64_t p)
 {
   if (libVer.avcodec == 56)
   {
@@ -3031,7 +3031,7 @@ void AVPacketWrapper::set_pts(int64_t p)
     assert(false);
 }
 
-void AVPacketWrapper::set_dts(int64_t d)
+void AVPacketWrapper::setDTS(int64_t d)
 {
   if (libVer.avcodec == 56)
   {
@@ -3054,7 +3054,7 @@ packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
   if (packetFormat != packetFormatUnknown)
     return packetFormat;
 
-  QByteArray avpacketData = QByteArray::fromRawData((const char*)(get_data()), get_data_size());
+  QByteArray avpacketData = QByteArray::fromRawData((const char*)(getData()), getDataSize());
   if (avpacketData.length() < 4)
   {
     packetFormat = packetFormatUnknown;
@@ -3205,7 +3205,7 @@ void AVPacketWrapper::update()
     assert(false);
 }
 
-int AVFrameSideDataWrapper::get_number_motion_vectors()
+int AVFrameSideDataWrapper::getNumberMotionVectors()
 {
   update();
 
@@ -3220,7 +3220,7 @@ int AVFrameSideDataWrapper::get_number_motion_vectors()
     return -1;
 }
 
-AVMotionVectorWrapper AVFrameSideDataWrapper::get_motion_vector(int idx)
+AVMotionVectorWrapper AVFrameSideDataWrapper::getMotionVector(int idx)
 {
   update();
 

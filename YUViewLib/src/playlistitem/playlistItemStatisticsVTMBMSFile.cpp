@@ -53,6 +53,8 @@ playlistItemStatisticsVTMBMSFile::playlistItemStatisticsVTMBMSFile(const QString
   if (!file.isOk())
     return;
 
+  this->prop.isFileSource = true;
+
   // Read the statistics file header
   readHeaderFromFile();
 
@@ -179,7 +181,7 @@ void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
     // Parsing complete
     backgroundParserProgress = 100.0;
 
-    setStartEndFrame(indexRange(0, maxPOC), false);
+    this->prop.startEndRange = indexRange(0, maxPOC);
     emit signalItemChanged(false, RECACHE_NONE);
 
   } // try
@@ -360,7 +362,7 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
   return;
 }
 
-void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal, int typeID)
+void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdx, int typeID)
 {
   try
   {
@@ -369,7 +371,7 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
 
     QTextStream in(file.getQFile());
 
-    if (!pocStartList.contains(frameIdxInternal))
+    if (!pocStartList.contains(frameIdx))
     {
       // There are no statistics in the file for the given frame and index.
       statSource.statsCache.insert(typeID, statisticsData());
@@ -377,7 +379,7 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
     }
 
 
-    qint64 startPos = pocStartList[frameIdxInternal];
+    qint64 startPos = pocStartList[frameIdx];
 
     // fast forward
     in.seek(startPos);
@@ -420,7 +422,7 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
       if (pocMatch.hasMatch())
       {
         int poc = pocMatch.captured(1).toInt();
-        if (poc != frameIdxInternal)
+        if (poc != frameIdx)
         {
           break;
         }
@@ -478,7 +480,7 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
           width = statisitcMatch.captured(4).toInt();
           height = statisitcMatch.captured(5).toInt();
           // if there is a new POC, we are done here!
-          if (poc != frameIdxInternal)
+          if (poc != frameIdx)
             break;
 
           // process block statistics
@@ -490,7 +492,7 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
             // Check if block is within the image range
             if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.getFrameSize().width() || posY + height > statSource.getFrameSize().height()))
               // Block not in image. Warn about this.
-              blockOutsideOfFrame_idx = frameIdxInternal;
+              blockOutsideOfFrame_idx = frameIdx;
 
             if (aType->hasVectorData)
             {
@@ -542,7 +544,7 @@ void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdxInternal
                 // Check if polygon is within the image range
                 if (blockOutsideOfFrame_idx == -1 && (x + width > statSource.getFrameSize().width() || y + height > statSource.getFrameSize().height()))
                   // Block not in image. Warn about this.
-                  blockOutsideOfFrame_idx = frameIdxInternal;
+                  blockOutsideOfFrame_idx = frameIdx;
               }
             }
 
@@ -639,7 +641,7 @@ void playlistItemStatisticsVTMBMSFile::reloadItemSource()
   statSource.statsCacheFrameIdx = -1;
 
   // Reopen the file
-  file.openFile(plItemNameOrFileName);
+  file.openFile(this->properties().name);
   if (!file.isOk())
     return;
 

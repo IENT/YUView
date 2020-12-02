@@ -55,15 +55,10 @@ public:
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
-  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
-
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return (rawFormat == YUView::raw_YUV) ? "YUV File Properties" : "RGB File Properties"; }
-
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemRawFile *newplaylistItemRawFile(const YUViewDomElement &root, const QString &playlistFilePath);
 
-  // A raw file can be used in a difference
-  virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInProcessing() const Q_DECL_OVERRIDE { return true; }
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
@@ -81,13 +76,11 @@ public:
 private slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  void loadRawData(int frameIdxInternal);
+  void loadRawData(int frameIdx);
 
   void slotVideoPropertiesChanged();
 
 protected:
-  // Override from playlistItemIndexed. For a raw file the index range is 0...numFrames-1. 
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames() - 1); }
 
   // Try to get and set the format from file name. If after calling this function isFormatValid()
   // returns false then it failed.
@@ -99,11 +92,11 @@ private:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-  virtual int64_t getNumberFrames() const;
+  int getNumberFrames() const;
   
   FileSource dataSource;
 
-  int64_t getBytesPerFrame() const { return video->getBytesPerFrame(); }
+  void updateStartEndRange() override;
 
   // A y4m file is a raw YUV file but it adds a header (which has information about the YUV format)
   // and start indicators for every frame. This file will parse the header and save all the byte

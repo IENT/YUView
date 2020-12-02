@@ -2150,7 +2150,7 @@ QPair<int,int> parserAnnexBAVC::getProfileLevel()
   return QPair<int,int>(0,0);
 }
 
-QPair<int,int> parserAnnexBAVC::getSampleAspectRatio()
+Ratio parserAnnexBAVC::getSampleAspectRatio()
 {
   for (auto nal : nalUnitList)
   {
@@ -2169,15 +2169,14 @@ QPair<int,int> parserAnnexBAVC::getSampleAspectRatio()
           int heights[] = {1, 11, 11, 11, 33, 11, 11, 11, 33, 11, 11, 33, 99, 3, 2, 1};
 
           const int i = aspect_ratio_idc - 1;
-          return QPair<int,int>(widths[i], heights[i]);
+          return Ratio({widths[i], heights[i]});
         }
         if (aspect_ratio_idc == 255)
-          return QPair<int,int>(s->vui_parameters.sar_width, s->vui_parameters.sar_height);
-        return QPair<int,int>(0,0);
+          return Ratio({int(s->vui_parameters.sar_width), int(s->vui_parameters.sar_height)});
       }
     }
   }
-  return QPair<int,int>(1,1);
+  return Ratio({1, 1});
 }
 
 int parserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray &in, int nrBytes)

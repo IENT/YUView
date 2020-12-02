@@ -64,13 +64,9 @@ public:
   // Create a new playlistItemHEVCFile from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemCompressedVideo *newPlaylistItemCompressedVideo(const YUViewDomElement &root, const QString &playlistFilePath);
 
-  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
-
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
   virtual void infoListButtonPressed(int buttonID) Q_DECL_OVERRIDE;
-
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Compressed File Properties"; }
 
   // Draw the compressed item using the given painter and zoom factor.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
@@ -78,8 +74,7 @@ public:
   // Return the source (YUV and statistics) values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
-  // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
-  virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInProcessing() const Q_DECL_OVERRIDE { return true; }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -108,9 +103,6 @@ public:
   YUView::inputFormat getInputFormat() const { return inputFormatType; }
   
 protected:
-  // Override from playlistItemIndexed. The readerEngine can tell us how many frames there are in the sequence.
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
-
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
@@ -179,7 +171,7 @@ protected:
 private slots:
   // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadRawData(int frameIdxInternal, bool forceDecodingNow);
+  virtual void loadRawData(int frameIdx, bool forceDecodingNow);
 
   // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
   virtual void loadStatisticToCache(int frameIdx, int typeIdx);

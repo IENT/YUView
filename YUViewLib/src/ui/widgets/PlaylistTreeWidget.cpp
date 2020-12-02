@@ -74,8 +74,8 @@ public:
     }
 
     // Draw the cached frames
-    QList<int> frameList = plItem->getCachedFrames();
-    indexRange range = plItem->getFrameIdxRange();
+    auto frameList = plItem->getCachedFrames();
+    auto range = plItem->properties().startEndRange;
     if (frameList.count() > 0)
     {
       int lastPos = frameList[0];
@@ -273,15 +273,15 @@ void PlaylistTreeWidget::addTextItem()
 void PlaylistTreeWidget::addDifferenceItem()
 {
   // Create a new playlistItemDifference and add it at the end of the list
-  playlistItemDifference *newDiff = new playlistItemDifference();
+  auto newDiff = new playlistItemDifference();
 
-  // Get the currently selected items that canBeUsedInDifference
-  QList<QTreeWidgetItem*> selection;
-  for (int i = 0; i < selectedItems().count(); i++)
+  // Get the currently selected items that selectedItems canBeUsedInProcessing
+  QVector<QTreeWidgetItem*> selection;
+  for (int i = 0; i < this->selectedItems().count(); i++)
   {
-    playlistItem *item = dynamic_cast<playlistItem*>(selectedItems()[i]);
-    if (item->canBeUsedInDifference())
-      selection.append(selectedItems()[i]);
+    auto item = dynamic_cast<playlistItem*>(this->selectedItems()[i]);
+    if (item->canBeUsedInProcessing())
+      selection.append(this->selectedItems()[i]);
   }
 
   // If one or two video items are selected right now, add them as children to the difference
@@ -297,22 +297,65 @@ void PlaylistTreeWidget::addDifferenceItem()
 
     for (int i = 0; i < nrItems; i++)
     {
-      QTreeWidgetItem* item = selection[i];
+      auto item = selection[i];
 
-      int index = indexOfTopLevelItem(item);
+      auto index = this->indexOfTopLevelItem(item);
       if (index != INT_INVALID)
       {
-        item = takeTopLevelItem(index);
+        item = this->takeTopLevelItem(index);
         newDiff->addChild(item);
         newDiff->setExpanded(true);
       }
     }
 
-    appendNewItem(newDiff);
+    this->appendNewItem(newDiff);
   }
 
   // Select the new difference item. This will also cause a itemSelectionChanged event to be send.
-  setCurrentItem(newDiff);
+  this->setCurrentItem(newDiff);
+}
+
+void PlaylistTreeWidget::addResampleItem()
+{
+  // Create a new playlistItemResample and add it at the end of the list
+  auto newResample = new playlistItemResample();
+
+  // Get the currently selected items that selectedItems canBeUsedInProcessing
+  QVector<QTreeWidgetItem*> selection;
+  for (int i = 0; i < this->selectedItems().count(); i++)
+  {
+    auto item = dynamic_cast<playlistItem*>(this->selectedItems()[i]);
+    if (item->canBeUsedInProcessing())
+      selection.append(this->selectedItems()[i]);
+  }
+
+  // If one item is selected right now, add it as children to the resample item
+  int nrItems = 1;
+  if (selection.count() == 0 || selection.count() > 1)
+    nrItems = 0;
+
+  // Don't emit the itemSelectionChanged signal until we are done with adding the resample item
+  {
+    const QScopedValueRollback<bool> back(ignoreSlotSelectionChanged, true);
+
+    for (int i = 0; i < nrItems; i++)
+    {
+      auto item = selection[i];
+
+      auto index = this->indexOfTopLevelItem(item);
+      if (index != INT_INVALID)
+      {
+        item = this->takeTopLevelItem(index);
+        newResample->addChild(item);
+        newResample->setExpanded(true);
+      }
+    }
+
+    this->appendNewItem(newResample);
+  }
+
+  // Select the new difference item. This will also cause a itemSelectionChanged event to be send.
+  this->setCurrentItem(newResample);
 }
 
 void PlaylistTreeWidget::addOverlayItem()
@@ -369,6 +412,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   menu.addAction("Open File...", this, &PlaylistTreeWidget::openFileDialog);
   menu.addAction("Add Text Frame", this, &PlaylistTreeWidget::addTextItem);
   menu.addAction("Add Difference Sequence", this, &PlaylistTreeWidget::addDifferenceItem);
+  menu.addAction("Add Resampler", this, &PlaylistTreeWidget::addResampleItem);
   menu.addAction("Add Overlay", this, &PlaylistTreeWidget::addOverlayItem);
 
   QTreeWidgetItem* itemAtPoint = itemAt(event->pos());

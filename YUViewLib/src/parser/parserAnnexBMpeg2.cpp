@@ -664,19 +664,19 @@ yuvPixelFormat parserAnnexBMpeg2::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-QPair<int,int> parserAnnexBMpeg2::getSampleAspectRatio()
+Ratio parserAnnexBMpeg2::getSampleAspectRatio()
 {
   if (first_sequence_header)
   {
     const int ratio = first_sequence_header->aspect_ratio_information;
     if (ratio == 2)
-      return QPair<int,int>(3, 4);
+      return Ratio({3, 4});
     if (ratio == 3)
-      return QPair<int,int>(9, 16);
+      return Ratio({9, 16});
     if (ratio == 4)
-      return QPair<int,int>(100, 221);
+      return Ratio({100, 221});
     if (ratio == 2)
-      return QPair<int,int>(3, 4);
+      return Ratio({3, 4});
   }
-  return QPair<int,int>(1, 1);
+  return Ratio({1, 1});
 }

@@ -58,7 +58,7 @@ void PropertiesWidget::currentSelectedItemsChanged(playlistItem *item1, playlist
   if (parentWidget())
   {
     if (item1)
-      parentWidget()->setWindowTitle(item1->getPropertiesTitle());
+      parentWidget()->setWindowTitle(item1->properties().propertiesWidgetTitle);
     else
       parentWidget()->setWindowTitle(PROPERTIESWIDGET_DEFAULT_WINDOW_TITLE);
   }

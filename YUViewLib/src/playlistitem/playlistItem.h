@@ -57,33 +57,59 @@ public:
   * Indexing is transparent to the internal handling of numbers. The index always ranges from 0 to getEndFrameIdx().
   * Internally, the real index in the sequence is calculated using the set start/end frames. 
   */
-  typedef enum
+  enum class Type
   {
-    playlistItem_Static,    // The playlist item is static
-    playlistItem_Indexed,   // The playlist item is indexed
-  } playlistItemType;
+    Static,    // The playlist item is static
+    Indexed,   // The playlist item is indexed
+  };
+
+  struct Properties
+  {
+    QString name;
+    // Every playlist item has a unique (within the playlist) ID
+    // TODO: This ID is also saved in the playlist. We can append playlists to existing 
+    //       playlists. In this case, we could get items with identical IDs. This must not happen.
+    //       I think we need the playlist item to generate a truely unique ID here (using a timecode and everything).
+    int id;
+    // The playlist ID is set if the item is loaded from a playlist. Don't forget to reset this after the playlist was loaded.
+    int playlistID {0};
+
+    QString propertiesWidgetTitle;
+    bool isFileSource {false};
+
+    Type type;
+    bool isIndexedByFrame() const { return this->type == Type::Indexed; }
+    bool providesStatistics {false};
+
+    // ------ Type::Static
+    double duration {PLAYLISTITEMTEXT_DEFAULT_DURATION};
+    // ------ Type::Indexed
+    double frameRate {DEFAULT_FRAMERATE};
+    /* If your item type is playlistItem_Indexed, you must
+       provide the absolute minimum and maximum frame indices that the user can set.
+       Normally this is: (0, numFrames-1). This value can change. Just emit a
+       signalItemChanged to update the limits.
+      */
+    indexRange startEndRange {-1, -1};
+
+    Ratio sampleAspectRatio {1, 1};
+  };
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(const QString &itemNameOrFileName, playlistItemType type);
+  playlistItem(const QString &itemNameOrFileName, Type type);
   virtual ~playlistItem();
 
-  // Set/Get the name of the item. This is also the name that is shown in the tree view
-  QString getName() const { return plItemNameOrFileName; }
+  virtual Properties properties() const { return this->prop; };
+
+  // Set the name of the item. This is also the name that is shown in the tree view
   void setName(const QString &name);
 
-  // Every playlist item has a unique (within the playlist) ID
-  // TODO: This ID is also saved in the playlist. We can append playlists to existing 
-  //       playlists. In this case, we could get items with identical IDs. This must not happen.
-  //       I think we need the playlist item to generate a truely unique ID here (using a timecode and everything).
-  unsigned int getID() const { return id; }
-  // If an item is loaded from a playlist, it also has a palylistID (which it was given when the playlist was saved)
-  unsigned int getPlaylistID() const { return playlistID; }
-  // After loading the playlist, this playlistID has to be reset because it is only valid within this playlist. If another 
+    // After loading the playlist, this playlistID has to be reset because it is only valid within this playlist. If another 
   // playlist is loaded later on, the value has to be invalid.
-  void resetPlaylistID() { playlistID = -1; }
+  void resetPlaylistID() { this->prop.playlistID = -1; }
 
   // Get the parent playlistItem (if any)
   playlistItem *parentPlaylistItem() const { return dynamic_cast<playlistItem*>(QTreeWidgetItem::parent()); }
@@ -91,14 +117,11 @@ public:
   // Save the element to the given XML structure. Has to be overloaded by the child classes which should
   // know how to load/save themselves.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const = 0;
-  
-  virtual bool isIndexedByFrame() { return type == playlistItem_Indexed; }
-  virtual bool isFileSource() const { return false; }
 
   // Get the size of the item (in pixels). The default implementation will return
   // the size when the infoText is drawn. In your inherited calss, you should return this
   // size if you call the playlistItem::drawItem function to draw the info text.
-  virtual QSize getSize() const; 
+  virtual QSize getSize() const;
 
   virtual void itemAboutToBeDeleted(playlistItem *item) { Q_UNUSED(item); }
 
@@ -108,26 +131,11 @@ public:
   // If the playlist item indicates to put a button into the fileInfo, this call back is called if the user presses the button.
   virtual void infoListButtonPressed(int buttonID) { Q_UNUSED(buttonID); }
 
-  /* Get the title of the properties panel. The child class has to overload this.
-   * This can be different depending on the type of playlistItem.
-   * For example a playlistItemYUVFile will return "YUV File properties".
-  */
-  virtual QString getPropertiesTitle() const = 0;
   QWidget *getPropertiesWidget() { if (!propertiesWidget) createPropertiesWidget(); return propertiesWidget.data(); }
   bool propertiesWidgetCreated() const { return propertiesWidget; }
 
   // Does the playlist item currently accept drops of the given item?
   virtual bool acceptDrops(playlistItem *draggingItem) const { Q_UNUSED(draggingItem); return false; }
-
-  // ----- playlistItem_Indexed
-  // if the item is indexed by frame (isIndexedByFrame() returns true) the following functions return the corresponding values:
-  virtual double     getFrameRate()      const { return frameRate; }
-  virtual int        getSampling()       const { return sampling; }
-  virtual indexRange getFrameIdxRange()  const;
-  
-  // ------ playlistItem_Static
-  // If the item is static, the following functions return the corresponding values:
-  double getDuration() const { return duration; }
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored. drawRawValues can control if the raw pixel values are drawn. 
@@ -152,12 +160,11 @@ public:
   // A difference item will return values from both items and the differences.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) { Q_UNUSED(pixelPos); Q_UNUSED(frameIdx); return ValuePairListSets(); }
 
-  // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
-  virtual bool canBeUsedInDifference() const { return false; }
+  // If you want your item to be droppable onto a difference/resample object, return true here and return a valid video handler.
+  virtual bool canBeUsedInProcessing() const { return false; }
   virtual frameHandler *getFrameHandler() { return nullptr; }
 
   // If this item provides statistics, return them here so that they can be used correctly in an overlay
-  virtual bool              providesStatistics()   const { return false; }
   virtual statisticHandler *getStatisticsHandler() { return nullptr; }
 
   // Return true if something is currently being loaded in the background. (As in: When loading is done, the item will update itself and look different)
@@ -207,17 +214,6 @@ public:
   // install/remove the file watchers if this function is called.
   virtual void updateSettings() {}
 
-  /* If your item type is playlistItem_Indexed, you must
-  provide the absolute minimum and maximum frame indices that the user can set.
-  Normally this is: (0, numFrames-1). This value can change. Just emit a
-  signalItemChanged to update the limits.
-  */
-  virtual indexRange getStartEndFrameLimits() const { return indexRange(-1, -1); }
-
-  // Using the set start frame, get the index within the item.
-  int getFrameIdxInternal(int frameIdx) const { return frameIdx + startEndFrame.first; }
-  int getFrameIdxExternal(int frameIdxInternal) const { return frameIdxInternal - startEndFrame.first; }
-
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
   void saveCenterOffset(QPoint centerOffset, bool primaryView) { savedCenterOffset[primaryView ? 0 : 1] = centerOffset; }
   void saveZoomFactor(double zoom, bool primaryView) { savedZoom[primaryView ? 0 : 1] = zoom; }
@@ -236,11 +232,6 @@ signals:
   
 protected:
 
-  void setStartEndFrame(indexRange range, bool emitSignal);
-
-  // Save the given item name or filename that is given when constricting a playlistItem.
-  QString plItemNameOrFileName;
-
   // The widget which is put into the stack.
   QScopedPointer<QWidget> propertiesWidget;
 
@@ -248,7 +239,7 @@ protected:
   // Overload this function in a child class to create a custom widget.
   virtual void createPropertiesWidget();
 
-  // Create a named default propertiesWidget
+  // Create a new widget and populate it with controls
   void preparePropertiesWidget(const QString &name);
 
   // Is caching enabled for this item? This can be changed at any point.
@@ -264,16 +255,7 @@ protected:
   static void loadPropertiesFromPlaylist(const YUViewDomElement &root, playlistItem *newItem);
 
   // What is the (current) type of the item?
-  playlistItemType type;
-  void setType(playlistItemType newType);
-
-  // ------ playlistItem_Indexed
-  double      frameRate {DEFAULT_FRAMERATE};
-  int         sampling  {1};
-  indexRange  startEndFrame;
-
-  // ------ playlistItem_Static
-  double duration {PLAYLISTITEMTEXT_DEFAULT_DURATION};    // The duration that this item is shown for
+  void setType(Type newType);
 
   // Create the playlist controls and return a pointer to the root layout
   QLayout *createPlaylistItemControls();
@@ -282,19 +264,17 @@ protected:
   // to draw an info text on screen.
   QString infoText;
 
+  Properties prop;
+
 protected slots:
+
   // A control of the playlistitem (start/end/frameRate/sampling,duration) changed
   void slotVideoControlChanged();
-  // The frame limits of the object have changed. Update the limits (and maybe also the range).
-  virtual void slotUpdateFrameLimits();
 
 private:
   // Every playlist item we create gets an id (automatically). This is saved to the playlist so we can match
   // playlist items to the saved view states.
   static unsigned int idCounter;
-  unsigned int id;
-  // The playlist ID is set if the item is loaded from a playlist. Don't forget to reset this after the playlist was loaded.
-  unsigned int playlistID {0};
 
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
   QPoint savedCenterOffset[2];

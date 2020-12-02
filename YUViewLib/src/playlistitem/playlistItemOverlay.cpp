@@ -58,10 +58,10 @@ playlistItemOverlay::playlistItemOverlay() :
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
+  this->prop.propertiesWidgetTitle = "Overlay Properties";
+
   // This text is drawn if there are no child items in the overlay
   infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
-
-  startEndFrame = indexRange(-1,-1);
 }
 
 /* For an overlay item, the info list is just a list of the names of the
@@ -209,7 +209,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
     for (int i = 0; i < childCount(); i++)
     {
       playlistItem *childItem = getChildPlaylistItem(i);
-      if (childItemsIDs[i] != childItem->getID())
+      if (childItemsIDs[i] != childItem->properties().id)
       {
         itemOrderChanged = true;
         break;
@@ -231,7 +231,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
     {
       childItemRects.append(QRect());
       playlistItem *childItem = getChildPlaylistItem(i);
-      childItemsIDs.append(childItem->getID());
+      childItemsIDs.append(childItem->properties().id);
     }
   }
 
@@ -367,8 +367,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
 
 void playlistItemOverlay::createPropertiesWidget()
 {
-  // Absolutely always only call this once
-  Q_ASSERT_X(!propertiesWidget, Q_FUNC_INFO, "Always create the properties only once!");
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   // Create a new widget and populate it with controls
   propertiesWidget.reset(new QWidget);

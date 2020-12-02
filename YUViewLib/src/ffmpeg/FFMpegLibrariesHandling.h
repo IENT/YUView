@@ -195,13 +195,13 @@ public:
 
   AVMediaType getCodecType()  { update(); return codec_type; }
   AVCodecID getCodecID(){ update(); return codec_id; }
-  AVCodecContext *get_codec() { return codec; }
-  AVPixelFormat get_pixel_format() { update(); return pix_fmt; }
-  int get_width() { update(); return width; }
-  int get_height() { update(); return height; }
-  AVColorSpace get_colorspace() { update(); return colorspace; }
-  AVRational get_time_base() { update(); return time_base; }
-  QByteArray get_extradata() { update(); return extradata; }
+  AVCodecContext *getCodec() { return codec; }
+  AVPixelFormat getPixelFormat() { update(); return pix_fmt; }
+  int getWidth() { update(); return width; }
+  int getHeight() { update(); return height; }
+  AVColorSpace getColorspace() { update(); return colorspace; }
+  AVRational getTimeBase() { update(); return time_base; }
+  QByteArray getExtradata() { update(); return extradata; }
 
 private:
   // Update all private values from the AVCodecContext
@@ -305,11 +305,12 @@ public:
   explicit operator bool() const { return param != nullptr; }
   QStringPairList getInfoText();
 
-  AVMediaType getCodecType()          { update(); return codec_type; }
-  AVCodecID getCodecID()              { update(); return codec_id; }
-  int get_width()                     { update(); return width; }
-  int get_height()                    { update(); return height; }
-  AVColorSpace get_colorspace()       { update(); return color_space; }
+  AVMediaType getCodecType()    { update(); return codec_type; }
+  AVCodecID getCodecID()        { update(); return codec_id; }
+  int getWidth()                { update(); return width; }
+  int getHeight()               { update(); return height; }
+  AVColorSpace getColorspace()  { update(); return color_space; }
+  Ratio getSampleAspectRatio()  { update(); return Ratio({sample_aspect_ratio.num, sample_aspect_ratio.den}); }
 
   // Set a default set of (unknown) values
   void setClearValues();
@@ -389,23 +390,23 @@ private:
 class AVStreamWrapper
 {
 public:
-  AVStreamWrapper() { str = nullptr; }
-  AVStreamWrapper(AVStream *src_str, FFmpegLibraryVersion v) { str = src_str; libVer = v; update(); }
-  explicit operator bool() const { return str != nullptr; };
+  AVStreamWrapper() { }
+  AVStreamWrapper(AVStream *src_str, FFmpegLibraryVersion v) { this->str = src_str; this->libVer = v; update(); }
+  explicit operator bool() const { return this->str != nullptr; };
   QStringPairList getInfoText(AVCodecIDWrapper &codecIdWrapper);
 
   AVMediaType getCodecType();
   QString getCodecTypeName();
   AVCodecID getCodecID();
-  AVCodecContextWrapper &getCodec() { update(); return codec; };
-  AVRational get_avg_frame_rate()   { update(); return avg_frame_rate; }
-  AVRational get_time_base();
-  int get_frame_width();
-  int get_frame_height();
-  AVColorSpace get_colorspace();
-  int get_index() { update(); return index; }
+  AVCodecContextWrapper &getCodec() { update(); return this->codec; };
+  AVRational getAvgFrameRate()   { update(); return this->avg_frame_rate; }
+  AVRational getTimeBase();
+  int getFrameWidth();
+  int getFrameHeight();
+  AVColorSpace getColorspace();
+  int getIndex() { update(); return index; }
 
-  AVCodecParametersWrapper get_codecpar() { update(); return codecpar; }
+  AVCodecParametersWrapper getCodecpar() { update(); return this->codecpar; }
 
 private:
   void update();
@@ -428,7 +429,7 @@ private:
   // The AVCodecParameters are present from avformat major version 57 and up.
   AVCodecParametersWrapper codecpar;
 
-  AVStream *str;
+  AVStream *str {nullptr};
   FFmpegLibraryVersion libVer;
 };
 
@@ -457,31 +458,31 @@ enum class PacketType
 class AVPacketWrapper
 {
 public:
-  AVPacketWrapper() { pkt = nullptr; }
-  AVPacketWrapper(FFmpegVersionHandler &ff) { pkt = nullptr; allocate_paket(ff); }
+  AVPacketWrapper() { }
+  AVPacketWrapper(FFmpegVersionHandler &ff) { this->allocatePaket(ff); }
   ~AVPacketWrapper();
   // Create a new paket and initilize it using av_init_packet.
-  void allocate_paket(FFmpegVersionHandler &ff);
-  void unref_packet(FFmpegVersionHandler &ff);
-  void free_packet(FFmpegVersionHandler &ff);
-  void set_data(QByteArray &set_data);
-  void set_pts(int64_t pts);
-  void set_dts(int64_t dts);
-  explicit operator bool() const { return pkt != nullptr; };
-  AVPacket *get_packet()       { update(); return pkt; }
-  int      get_stream_index()  { update(); return stream_index; }
-  int64_t  get_pts()           { update(); return pts; }
-  int64_t  get_dts()           { update(); return dts; }
-  int64_t  get_duration()      { update(); return duration; }
-  int      get_flags()         { update(); return flags; }
-  bool     get_flag_keyframe() { update(); return flags & AV_PKT_FLAG_KEY; }
-  bool     get_flag_corrupt()  { update(); return flags & AV_PKT_FLAG_CORRUPT; }
-  bool     get_flag_discard()  { update(); return flags & AV_PKT_FLAG_DISCARD; }
-  uint8_t *get_data()          { update(); return data; }
-  int      get_data_size()     { update(); return size; }
+  void allocatePaket(FFmpegVersionHandler &ff);
+  void unrefPacket(FFmpegVersionHandler &ff);
+  void freePacket(FFmpegVersionHandler &ff);
+  void setData(QByteArray &set_data);
+  void setPTS(int64_t pts);
+  void setDTS(int64_t dts);
+  explicit operator bool() const { return this->pkt != nullptr; };
+  AVPacket *getPacket()      { update(); return this->pkt; }
+  int      getStreamIndex()  { update(); return this->stream_index; }
+  int64_t  getPTS()          { update(); return this->pts; }
+  int64_t  getDTS()          { update(); return this->dts; }
+  int64_t  getDuration()     { update(); return this->duration; }
+  int      getFlags()        { update(); return this->flags; }
+  bool     getFlagKeyframe() { update(); return this->flags & AV_PKT_FLAG_KEY; }
+  bool     getFlagCorrupt()  { update(); return this->flags & AV_PKT_FLAG_CORRUPT; }
+  bool     getFlagDiscard()  { update(); return this->flags & AV_PKT_FLAG_DISCARD; }
+  uint8_t *getData()         { update(); return this->data; }
+  int      getDataSize()     { update(); return this->size; }
 
   // This info is set externally (in FileSourceFFmpegFile) based on the stream info
-  PacketType getPacketType()                      { return packetType; }
+  PacketType getPacketType()                      { return this->packetType; }
   void       setPacketType(PacketType packetType) { this->packetType = packetType; }
   
   // Guess the format. The actual guessing is only performed if the packetFormat is not set yet.
@@ -510,7 +511,7 @@ private:
 
   PacketType packetType;
 
-  AVPacket *pkt;
+  AVPacket *pkt {nullptr};
   FFmpegLibraryVersion libVer;
   packetDataFormat_t packetFormat {packetFormatUnknown};
 };
@@ -518,14 +519,14 @@ private:
 class AVDictionaryWrapper
 {
 public:
-  AVDictionaryWrapper() { dict = nullptr; }
+  AVDictionaryWrapper() {}
   AVDictionaryWrapper(AVDictionary *dict) : dict(dict) {}
-  void setDictionary(AVDictionary *d) { dict = d; }
-  explicit operator bool() const { return dict != nullptr; }
-  AVDictionary *get_dictionary() { return dict; }
+  void setDictionary(AVDictionary *d) { this->dict = d; }
+  explicit operator bool() const { return this->dict != nullptr; }
+  AVDictionary *getDictionary() { return this->dict; }
   
 private:
-  AVDictionary *dict;
+  AVDictionary *dict {nullptr};
 };
 
 // This is a version independent wrapper for the version dependent ffmpeg AVFormatContext
@@ -534,22 +535,22 @@ class AVFormatContextWrapper
 {
 public:
   AVFormatContextWrapper() {};
-  AVFormatContextWrapper(AVFormatContext *c, FFmpegLibraryVersion v) { ctx = c; libVer = v; update(); }
-  void updateFrom(AVFormatContext *c) { assert(ctx == nullptr); ctx = c; update(); }
+  AVFormatContextWrapper(AVFormatContext *c, FFmpegLibraryVersion v) { this->ctx = c; this->libVer = v; update(); }
+  void updateFrom(AVFormatContext *c) { assert(this->ctx == nullptr); this->ctx = c; update(); }
   void avformat_close_input(FFmpegVersionHandler &ver);
-  explicit operator bool() const { return ctx != nullptr; };
+  explicit operator bool() const { return this->ctx != nullptr; };
   QStringPairList getInfoText();
 
-  unsigned int get_nb_streams() { update(); return nb_streams; }
-  AVStreamWrapper get_stream(int idx) { update(); return streams[idx]; }
-  AVInputFormatWrapper get_input_format() { update(); return iformat; }
-  int64_t get_start_time() { update(); return start_time; }
-  int64_t get_duration() { update(); return duration; }
-  AVFormatContext *get_format_ctx() { return ctx; }
-  AVDictionaryWrapper get_metadata() { update(); return metadata; }
+  unsigned int getNbStreams() { update(); return this->nb_streams; }
+  AVStreamWrapper getStream(int idx) { update(); return this->streams[idx]; }
+  AVInputFormatWrapper getInputFormat() { update(); return this->iformat; }
+  int64_t getStartTime() { update(); return this->start_time; }
+  int64_t getDuration() { update(); return this->duration; }
+  AVFormatContext *getFormatCtx() { return this->ctx; }
+  AVDictionaryWrapper getMetadata() { update(); return this->metadata; }
 
   // Read a frame into the given pacetk (av_read_frame)
-  int read_frame(FFmpegVersionHandler &ff, AVPacketWrapper &pkt);
+  int readFrame(FFmpegVersionHandler &ff, AVPacketWrapper &pkt);
 
 private:
   // Update all private values from the AVFormatContext
@@ -590,11 +591,11 @@ class AVCodecWrapper
 public:
   AVCodecWrapper() {}
   AVCodecWrapper(AVCodec *codec, FFmpegLibraryVersion libVer) : codec(codec), libVer(libVer) {}
-  explicit operator bool() const { return codec != nullptr; }
-  AVCodec *getAVCodec() { return codec; }
-  AVCodecID getCodecID() { update(); return id; }
-  QString getName() { update(); return name; }
-  QString getLongName() { update(); return long_name; }
+  explicit operator bool() const { return this->codec != nullptr; }
+  AVCodec *getAVCodec() { return this->codec; }
+  AVCodecID getCodecID() { update(); return this->id; }
+  QString getName() { update(); return this->name; }
+  QString getLongName() { update(); return this->long_name; }
 
 private:
   void update();
@@ -618,22 +619,21 @@ private:
 class AVFrameWrapper
 {
 public:
-  AVFrameWrapper() { frame = nullptr; }
-  ~AVFrameWrapper() { assert(frame == nullptr); }
-  void allocate_frame(FFmpegVersionHandler &ff);
-  void free_frame(FFmpegVersionHandler &ff);
-  uint8_t *get_data(int component) { update(); return data[component]; }
-  int get_line_size(int component) { update(); return linesize[component]; }
-  AVFrame *get_frame() { return frame; }
-  int get_width() { update(); return width; }
-  int get_height() { update(); return height; }
-  QSize get_size() { update(); return QSize(width, height); }
-  int get_pts() { update(); return pts; }
-  AVPictureType get_pict_type() { update(); return pict_type; }
-  int get_key_frame() { update(); return key_frame; }
+  AVFrameWrapper() { }
+  ~AVFrameWrapper() { assert(this->frame == nullptr); }
+  void allocateFrame(FFmpegVersionHandler &ff);
+  void freeFrame(FFmpegVersionHandler &ff);
+  uint8_t *getData(int component) { update(); return this->data[component]; }
+  int getLineSize(int component) { update(); return this->linesize[component]; }
+  AVFrame *getFrame() { return this->frame; }
+  int getWidth() { update(); return this->width; }
+  int getHeight() { update(); return this->height; }
+  QSize getSize() { update(); return QSize(width, height); }
+  int getPTS() { update(); return this->pts; }
+  AVPictureType getPictType() { update(); return this->pict_type; }
+  int getKeyFrame() { update(); return this->key_frame; }
     
-  explicit operator bool() const { return frame != nullptr; }
-  bool is_valid() const { return frame != nullptr;  }
+  explicit operator bool() const { return this->frame != nullptr; }
 
 private:
   void update();
@@ -654,14 +654,14 @@ private:
   int display_picture_number;
   int quality;
 
-  AVFrame *frame;
+  AVFrame *frame {nullptr};
   FFmpegLibraryVersion libVer;
 };
 
 class AVMotionVectorWrapper
 {
 public:
-  AVMotionVectorWrapper() { vec = nullptr; }
+  AVMotionVectorWrapper() {}
   AVMotionVectorWrapper(AVMotionVector *vec, FFmpegLibraryVersion libVer) : vec(vec), libVer(libVer) { update(); }
 
   // For performance reasons, these are public here. Since update is called at construction, these should be valid.
@@ -679,17 +679,17 @@ public:
 private:
   void update();
 
-  AVMotionVector *vec;
+  AVMotionVector *vec {nullptr};
   FFmpegLibraryVersion libVer;
 };
 
 class AVFrameSideDataWrapper
 {
 public:
-  AVFrameSideDataWrapper() { data = nullptr; }
+  AVFrameSideDataWrapper() {}
   AVFrameSideDataWrapper(AVFrameSideData *sideData, FFmpegLibraryVersion libVer) : sideData(sideData), libVer(libVer) { update(); }
-  int get_number_motion_vectors();
-  AVMotionVectorWrapper get_motion_vector(int idx);
+  int getNumberMotionVectors();
+  AVMotionVectorWrapper getMotionVector(int idx);
 
   explicit operator bool() const { return sideData != nullptr; }
 
@@ -697,7 +697,7 @@ private:
   void update();
   
   enum AVFrameSideDataType type;
-  uint8_t *data;
+  uint8_t *data {nullptr};
   int size;
   AVDictionary *metadata;
   AVBufferRef *buf;
@@ -813,7 +813,7 @@ public:
   // Retrive a frame using avcodec_receive_frame
   int getFrameFromDecoder(AVCodecContextWrapper & decCtx, AVFrameWrapper &frame);
 
-  void flush_buffers(AVCodecContextWrapper &decCtx) { lib.avcodec_flush_buffers(decCtx.get_codec()); }
+  void flush_buffers(AVCodecContextWrapper &decCtx) { lib.avcodec_flush_buffers(decCtx.getCodec()); }
 
   FFmpegLibraryVersion libVersion;
 
@@ -829,27 +829,27 @@ public:
   };
 
   // Open the input file. This will call avformat_open_input and avformat_find_stream_info.
-  bool open_input(AVFormatContextWrapper &fmt, QString url);
+  bool openInput(AVFormatContextWrapper &fmt, QString url);
   // Try to find a decoder for the given codecID
-  AVCodecWrapper find_decoder(AVCodecIDWrapper codecID);
+  AVCodecWrapper findDecoder(AVCodecIDWrapper codecID);
   // Allocate the decoder (avcodec_alloc_context3)
-  AVCodecContextWrapper alloc_decoder(AVCodecWrapper &codec);
+  AVCodecContextWrapper allocDecoder(AVCodecWrapper &codec);
   // Set info in the dictionary
-  int av_dict_set(AVDictionaryWrapper &dict, const char *key, const char *value, int flags);
+  int dictSet(AVDictionaryWrapper &dict, const char *key, const char *value, int flags);
   // Get all entries with the given key (leave empty for all)
-  QStringPairList get_dictionary_entries(AVDictionaryWrapper d, QString key, int flags);
+  QStringPairList getDictionaryEntries(AVDictionaryWrapper d, QString key, int flags);
   // Allocate a new set of codec parameters 
-  AVCodecParametersWrapper alloc_code_parameters();
+  AVCodecParametersWrapper allocCodecParameters();
 
   // Open the codec
-  int avcodec_open2(AVCodecContextWrapper &decCtx, AVCodecWrapper &codec, AVDictionaryWrapper &dict);
+  int avcodecOpen2(AVCodecContextWrapper &decCtx, AVCodecWrapper &codec, AVDictionaryWrapper &dict);
   // Get side/meta data
-  AVFrameSideDataWrapper get_side_data(AVFrameWrapper &frame, AVFrameSideDataType type);
-  AVDictionaryWrapper    get_metadata(AVFrameWrapper &frame);
+  AVFrameSideDataWrapper getSideData(AVFrameWrapper &frame, AVFrameSideDataType type);
+  AVDictionaryWrapper    getMetadata(AVFrameWrapper &frame);
 
   // Seek to a specific frame
-  int seek_frame(AVFormatContextWrapper &fmt, int stream_idx, int dts);
-  int seek_beginning(AVFormatContextWrapper & fmt);
+  int seekFrame(AVFormatContextWrapper &fmt, int stream_idx, int dts);
+  int seekBeginning(AVFormatContextWrapper & fmt);
 
   // All the function pointers of the ffmpeg library
   FFmpegLibraryFunctions lib;
