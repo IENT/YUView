@@ -86,6 +86,10 @@ void playlistItemResample::drawItem(QPainter *painter, int frameIdx, double zoom
       auto frameHandler = child->getFrameHandler();
       auto range = child->properties().startEndRange;
       auto sampleAspectRatio = child->properties().sampleAspectRatio;
+
+      this->prop.isFileSource = child->properties().isFileSource;
+      this->prop.name = child->properties().name + " resampled";
+
       this->video.setInputVideo(frameHandler, range, sampleAspectRatio);
     }
   }

@@ -1601,7 +1601,7 @@ QStringPair splitViewWidget::determineItemNamesToDraw(playlistItem *item1, playl
   auto it2 = name2.constEnd() - 1;
   
   if (*it1 != *it2)
-    return QStringPair(*it1, *it2);
+    return QStringPair(item1->properties().name, item2->properties().name);
 
   QStringPair ret = QStringPair(*it1, *it2);
   --it1;
