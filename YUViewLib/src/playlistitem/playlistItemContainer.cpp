@@ -40,11 +40,9 @@ playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName)
   : playlistItem(itemNameOrFileName, Type::Indexed)
 {
   this->setFlags(this->flags() | Qt::ItemIsDropEnabled);
-
   this->containerStatLayout.setContentsMargins(0, 0, 0, 0);
 }
 
-// If the maximum number of items is reached, return false.
 bool playlistItemContainer::acceptDrops(playlistItem *draggingItem) const
 {
   Q_UNUSED(draggingItem);
@@ -83,12 +81,12 @@ void playlistItemContainer::updateChildList()
   // Now add the statistics controls from all items that can provide statistics
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *item = getChildPlaylistItem(i);
+    auto item = getChildPlaylistItem(i);
 
     if (item && item->properties().providesStatistics)
     {
       // Add a line and the statistics controls also to the overlay widget
-      QFrame *line = new QFrame;
+      auto line = new QFrame;
       line->setObjectName(QStringLiteral("line"));
       line->setFrameShape(QFrame::HLine);
       line->setFrameShadow(QFrame::Sunken);
@@ -112,7 +110,7 @@ void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
   // the video caching handler.
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *listItem = getChildPlaylistItem(i);
+    auto listItem = getChildPlaylistItem(i);
     if (listItem && listItem == item)
     {
       disconnect(listItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
@@ -128,11 +126,11 @@ QList<playlistItem*> playlistItemContainer::getAllChildPlaylistItems() const
   QList<playlistItem*> returnList;
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = getChildPlaylistItem(i);
+    auto childItem = getChildPlaylistItem(i);
     if (childItem)
     {
       returnList.append(childItem);
-      playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer*>(childItem);
+      auto containerItem = dynamic_cast<playlistItemContainer*>(childItem);
       if (containerItem && containerItem->childCount() > 0)
         returnList.append( containerItem->getAllChildPlaylistItems() );
     }
@@ -149,7 +147,7 @@ QList<playlistItem*> playlistItemContainer::takeAllChildItemsRecursive()
     if (childItem)
     {
       // First, take all the children of the children
-      playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer*>(childItem);
+      auto containerItem = dynamic_cast<playlistItemContainer*>(childItem);
       if (containerItem && containerItem->childCount() > 0)
         returnList.append( containerItem->takeAllChildItemsRecursive() );
       // Now add the child and take it from this item
@@ -165,7 +163,7 @@ void playlistItemContainer::childChanged(bool redraw, recacheIndicator recache)
   this->prop.startEndRange = indexRange(-1,-1);
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = getChildPlaylistItem(i);
+    auto childItem = getChildPlaylistItem(i);
     if (childItem->properties().isIndexedByFrame())
     {
       auto itemRange = childItem->properties().startEndRange;
@@ -199,7 +197,7 @@ bool playlistItemContainer::isSourceChanged()
   bool changed = false;
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = getChildPlaylistItem(i);
+    auto childItem = getChildPlaylistItem(i);
     if (childItem->isSourceChanged())
       changed = true;
   }
@@ -211,7 +209,7 @@ void playlistItemContainer::reloadItemSource()
 {
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = getChildPlaylistItem(i);
+    auto childItem = getChildPlaylistItem(i);
     childItem->reloadItemSource();
   }
 }
@@ -220,7 +218,7 @@ void playlistItemContainer::updateSettings()
 {
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = getChildPlaylistItem(i);
+    auto childItem = getChildPlaylistItem(i);
     childItem->updateSettings();
   }
 }
@@ -234,10 +232,9 @@ playlistItem *playlistItemContainer::getChildPlaylistItem(int index) const
 
 void playlistItemContainer::savePlaylistChildren(QDomElement &root, const QDir &playlistDir) const
 {
-  // Append all children
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = getChildPlaylistItem(i);
+    auto childItem = getChildPlaylistItem(i);
     if (childItem)
       childItem->savePlaylist(root, playlistDir);
   }
