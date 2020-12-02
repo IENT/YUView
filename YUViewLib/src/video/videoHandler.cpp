@@ -194,6 +194,8 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
     }
   }
 
+  DEBUG_VIDEO("videoHandler::drawFrame frameIdx %d currentImageIndex %d", frameIdx, currentImageIndex);
+
   // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
   videoRect.setSize(frameSize * zoomFactor);

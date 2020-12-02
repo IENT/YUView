@@ -255,6 +255,8 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
   Q_UNUSED(playing);
   if (this->childCount() != 1 || !this->video.inputValid())
     return;
+
+  DEBUG_RESAMPLE("playlistItemResample::loadFrame frameIdx %d %s", frameIdx, playing ? "(playing)" : "");
   
   auto state = this->video.needsLoading(frameIdx, loadRawData);
   if (state == LoadingNeeded)

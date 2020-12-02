@@ -52,6 +52,8 @@ public:
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two children are not comparable.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
+  virtual void activateDoubleBuffer() override { this->video.activateDoubleBuffer(); }
+
   // Do we need to load the given frame first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
   // This is part of the caching interface. The loadFrame function is always called from a different thread.

@@ -53,6 +53,7 @@ videoHandlerResample::videoHandlerResample() : videoHandler()
 void videoHandlerResample::drawFrame(QPainter *painter, int frameIndex, double zoomFactor, bool drawRawValues)
 {
   auto mappedIndex = this->mapFrameIndex(frameIndex);
+  DEBUG_RESAMPLE("videoHandlerResample::drawFrame idx %d", mappedIndex);
   videoHandler::drawFrame(painter, mappedIndex, zoomFactor, drawRawValues);
 }
 
@@ -100,7 +101,7 @@ void videoHandlerResample::loadResampledFrame(int frameIndex, bool loadToDoubleB
     QMutexLocker lock(&this->currentImageSetMutex);
     currentImage = newFrame;
     currentImageIndex = mappedIndex;
-    DEBUG_RESAMPLE("videoHandlerResample::loadResampledFrame Loaded frame %d", mappedIndex);
+    DEBUG_RESAMPLE("videoHandlerResample::loadResampledFrame Loaded frame %d to current buffer", mappedIndex);
   }
 }
 

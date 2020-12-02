@@ -51,7 +51,6 @@ public:
   // All the functions that we have to overload if we are using a video handler
   virtual QSize getSize() const Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return video.data(); }
-  // Activate the double buffer (set it as current frame)
   virtual void activateDoubleBuffer() Q_DECL_OVERRIDE { if (video) video->activateDoubleBuffer(); }
 
   // Do we need to load the frame first?
