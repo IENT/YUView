@@ -211,7 +211,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     const rgbPixelFormat pixFmt = this->getRGBPixelFormat();
     const auto nrBytesPerSample = pixFmt.bitsPerValue <= 8 ? 1 : 2;
     const auto nrBytesPerComponent = this->frameSize.width() * this->frameSize.height() * nrBytesPerSample;
-    const auto nrBytes = 3 * nrBytesPerComponent;
+    const auto nrBytes = nrBytesPerComponent * pixFmt.nrChannels();
 
     // Is the output big enough?
     if (this->currentOutputBuffer.capacity() < nrBytes)
