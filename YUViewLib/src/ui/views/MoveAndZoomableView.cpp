@@ -40,7 +40,7 @@
 #include <QPinchGesture>
 #include <QSwipeGesture>
 
-#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 0
+#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 1
 #if MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_VIEW(fmt) qDebug() << fmt
@@ -224,6 +224,7 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
 
 void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
 {
+  DEBUG_VIEW("MoveAndZoomableView::wheelEvent delta " << event->angleDelta().y());
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
   auto p = event->position();
   this->zoom(event->angleDelta().y() > 0 ? ZoomMode::IN : ZoomMode::OUT, p.toPoint());
@@ -550,6 +551,7 @@ bool MoveAndZoomableView::event(QEvent *event)
   {
     // TODO #195 - For pinching on mac this would have to be added here...
     // QNativeGestureEvent
+    DEBUG_VIEW("QNativeGestureEvent");
 
     return false;
   }
