@@ -40,7 +40,7 @@
 #include <QPinchGesture>
 #include <QSwipeGesture>
 
-#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 0
+#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 1
 #if MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_VIEW(fmt) qDebug() << fmt
@@ -206,12 +206,9 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
   auto centerMoveOffset = origin + this->moveOffset;
   
   auto movementDelta = centerMoveOffset - zoomPoint;
-  QPoint newMoveOffset;
-  if (stepZoomFactor >= 1)
-    newMoveOffset = this->moveOffset + movementDelta;
-  else
-    newMoveOffset = this->moveOffset - stepZoomFactor * movementDelta;
-
+  QPoint newMoveOffset = this->moveOffset + (1 - stepZoomFactor) * movementDelta;
+  
+  DEBUG_VIEW("MoveAndZoomableView::zoom point debug zoomPoint " << zoomPoint << " viewCenter " << viewCenter << " this->moveOffset " << this->moveOffset << " centerMoveOffset " << centerMoveOffset << " stepZoomFactor " << stepZoomFactor << " movementDelta " << movementDelta);
   DEBUG_VIEW("MoveAndZoomableView::zoom point " << newMoveOffset);
   this->setZoomFactor(newZoom);
   this->setMoveOffset(newMoveOffset);
@@ -224,13 +221,13 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
 
 void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
 {
-  DEBUG_VIEW("MoveAndZoomableView::wheelEvent delta " << event->angleDelta().y() << " pos " << event->pixelDelta());
-
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
   auto p = event->position().toPoint();
 #else
   auto p = event->pos();
 #endif
+
+  DEBUG_VIEW("MoveAndZoomableView::wheelEvent delta " << event->angleDelta().y() << " pos " << p);
 
   auto deltaAbs = std::abs(event->angleDelta().y());
   auto deltaPositive = event->angleDelta().y() > 0;
@@ -438,6 +435,7 @@ bool MoveAndZoomableView::event(QEvent *event)
     if (QGesture *swipeGesture = gestureEvent->gesture(Qt::SwipeGesture))
     {
       auto swipe = static_cast<QSwipeGesture*>(swipeGesture);
+      DEBUG_VIEW("MoveAndZoomableView::event swipe gesture");
 
       if (swipe->state() == Qt::GestureStarted)
         // The gesture was just started. This will prevent (generated) mouse events from being interpreted.
@@ -476,6 +474,7 @@ bool MoveAndZoomableView::event(QEvent *event)
     if (auto pinchGesture = gestureEvent->gesture(Qt::PinchGesture))
     {
       auto pinch = static_cast<QPinchGesture*>(pinchGesture);
+      DEBUG_VIEW("MoveAndZoomableView::event swipe pinch");
 
       if (pinch->state() == Qt::GestureStarted)
       {
