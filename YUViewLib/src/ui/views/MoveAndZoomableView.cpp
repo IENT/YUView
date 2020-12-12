@@ -224,14 +224,23 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
 
 void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
 {
-  DEBUG_VIEW("MoveAndZoomableView::wheelEvent delta " << event->angleDelta().y());
+  DEBUG_VIEW("MoveAndZoomableView::wheelEvent delta " << event->angleDelta().y() << " pos " << event->pixelDelta());
+
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
-  auto p = event->position();
-  this->zoom(event->angleDelta().y() > 0 ? ZoomMode::IN : ZoomMode::OUT, p.toPoint());
+  auto p = event->position().toPoint();
 #else
   auto p = event->pos();
-  this->zoom(event->angleDelta().y() > 0 ? ZoomMode::IN : ZoomMode::OUT, p);
 #endif
+
+  auto deltaAbs = std::abs(event->angleDelta().y());
+  auto deltaPositive = event->angleDelta().y() > 0;
+  if (deltaAbs > 0)
+  {
+    auto deltaScaled = (double(deltaAbs) / 120);
+    auto deltaFactor = (deltaPositive) ? 1.0 + deltaScaled : 1.0 - deltaScaled / 2;
+    auto newZoomFactor = this->zoomFactor * deltaFactor;
+    this->zoom(ZoomMode::TO_VALUE, QPoint{0, 0}, newZoomFactor);
+  }
 
   event->accept();
 }
