@@ -423,13 +423,21 @@ bool MoveAndZoomableView::event(QEvent *event)
   // IMPORTANT:
   // We are not using the QPanGesture as this uses two fingers. This is not documented in the Qt documentation.
 
+  bool isTouchScreenEvent = false;
+  if (event->type() == QEvent::TouchBegin || event->type() == QEvent::TouchUpdate || event->type() == QEvent::TouchEnd || event->type() == QEvent::TouchCancel)
+  {
+    auto touchEvent = static_cast<QTouchEvent*>(event);
+    auto device = touchEvent->device();
+    isTouchScreenEvent = (device->type() == QTouchDevice::TouchScreen);
+  }
+
   if (event->type() == QEvent::Gesture)
   {
-    QGestureEvent *gestureEvent = static_cast<QGestureEvent*>(event);
+    auto gestureEvent = static_cast<QGestureEvent*>(event);
 
     if (QGesture *swipeGesture = gestureEvent->gesture(Qt::SwipeGesture))
     {
-      QSwipeGesture *swipe = static_cast<QSwipeGesture*>(swipeGesture);
+      auto swipe = static_cast<QSwipeGesture*>(swipeGesture);
 
       if (swipe->state() == Qt::GestureStarted)
         // The gesture was just started. This will prevent (generated) mouse events from being interpreted.
@@ -465,9 +473,9 @@ bool MoveAndZoomableView::event(QEvent *event)
       event->accept();
       update();
     }
-    if (QGesture *pinchGesture = gestureEvent->gesture(Qt::PinchGesture))
+    if (auto pinchGesture = gestureEvent->gesture(Qt::PinchGesture))
     {
-      QPinchGesture *pinch = static_cast<QPinchGesture*>(pinchGesture);
+      auto pinch = static_cast<QPinchGesture*>(pinchGesture);
 
       if (pinch->state() == Qt::GestureStarted)
       {
@@ -483,7 +491,7 @@ bool MoveAndZoomableView::event(QEvent *event)
       if (pinch->state() == Qt::GestureStarted || pinch->state() == Qt::GestureUpdated)
       {
         // See what changed in this pinch gesture (the scale factor and/or the position)
-        QPinchGesture::ChangeFlags changeFlags = pinch->changeFlags();
+        auto changeFlags = pinch->changeFlags();
         if (changeFlags & QPinchGesture::ScaleFactorChanged || changeFlags & QPinchGesture::CenterPointChanged)
         {
           if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
@@ -516,9 +524,9 @@ bool MoveAndZoomableView::event(QEvent *event)
         this->update();
     }
   }
-  else if (event->type() == QEvent::TouchBegin || event->type() == QEvent::TouchUpdate || event->type() == QEvent::TouchEnd || event->type() == QEvent::TouchCancel)
+  else if (isTouchScreenEvent)
   {
-    QTouchEvent *touchEvent = static_cast<QTouchEvent*>(event);
+    auto touchEvent = static_cast<QTouchEvent*>(event);
     const auto &touchPoints = touchEvent->touchPoints();
     if (touchPoints.size() >= 1)
     {
