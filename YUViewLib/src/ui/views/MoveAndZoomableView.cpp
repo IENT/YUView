@@ -234,7 +234,8 @@ void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
 
   auto deltaAbs = std::abs(event->angleDelta().y());
   auto deltaPositive = event->angleDelta().y() > 0;
-  if (deltaAbs > 0)
+  auto noAction = (this->viewAction == ViewAction::NONE);
+  if (noAction && deltaAbs > 0)
   {
     auto deltaScaled = (double(deltaAbs) / 120);
     auto deltaFactor = (deltaPositive) ? 1.0 + deltaScaled : 1.0 - deltaScaled / 2;
