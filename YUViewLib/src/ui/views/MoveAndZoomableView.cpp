@@ -240,7 +240,7 @@ void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
     auto deltaScaled = (double(deltaAbs) / 120);
     auto deltaFactor = (deltaPositive) ? 1.0 + deltaScaled : 1.0 - deltaScaled / 2;
     auto newZoomFactor = this->zoomFactor * deltaFactor;
-    this->zoom(ZoomMode::TO_VALUE, QPoint{0, 0}, newZoomFactor);
+    this->zoom(ZoomMode::TO_VALUE, p, newZoomFactor);
   }
 
   event->accept();
