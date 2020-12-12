@@ -40,7 +40,7 @@
 #include <QPinchGesture>
 #include <QSwipeGesture>
 
-#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 1
+#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 0
 #if MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_VIEW(fmt) qDebug() << fmt
