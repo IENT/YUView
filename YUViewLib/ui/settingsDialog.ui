@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>535</width>
+    <width>433</width>
     <height>619</height>
    </rect>
   </property>
@@ -319,8 +319,51 @@
           </item>
           <item row="9" column="1">
            <widget class="QCheckBox" name="checkBoxPixelValuesHex">
+            <property name="palette">
+             <palette>
+              <active>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </active>
+              <inactive>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="0">
+                  <red>191</red>
+                  <green>64</green>
+                  <blue>64</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </inactive>
+              <disabled>
+               <colorrole role="WindowText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>190</red>
+                  <green>190</green>
+                  <blue>190</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
+             </palette>
+            </property>
+            <property name="toolTip">
+             <string>Show pixel vales in hex instead of decimal</string>
+            </property>
+            <property name="whatsThis">
+             <string>Show pixel vales in hex instead of decimal</string>
+            </property>
             <property name="text">
-             <string/>
+             <string>invisibleText</string>
             </property>
            </widget>
           </item>

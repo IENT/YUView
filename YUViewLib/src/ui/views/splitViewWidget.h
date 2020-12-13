@@ -89,8 +89,8 @@ public:
   bool handleKeyPress(QKeyEvent *event) override;
 
   // Get and set the current state (center point and zoom, is splitting active? if yes the split line position)
-  void getViewState(QPoint &offset, double &zoom, double &splitPoint, int &mode) const;
-  void setViewState(const QPoint &offset, double zoom, double splitPoint, int mode);
+  void getViewState(QPointF &offset, double &zoom, double &splitPoint, int &mode) const;
+  void setViewState(const QPointF &offset, double zoom, double splitPoint, int mode);
   bool isSplitting() { return viewSplitMode != DISABLED; }
 
   /// The settings have changed. Reload all settings that affects this widget.
@@ -190,9 +190,9 @@ protected:
   enum       splitStyle {SOLID_LINE, TOP_BOTTOM_HANDLERS};
   splitStyle splittingLineStyle;            //!< The style of the splitting line. This can be set in the settings window.
 
-  void   setMoveOffset(QPoint offset) override;
-  QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint = {}) const override;
-  void   onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) override;
+  void   setMoveOffset(QPointF offset) override;
+  QPoint getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPoint = {}) const override;
+  void   onZoomRectUpdateOffsetAndZoom(QRectF zoomRect, double additionalZoomFactor) override;
 
   QRect   viewActiveArea;                   //!< The active area, where the picture is drawn into
 
@@ -234,8 +234,8 @@ protected:
   bool drawingLoadingMessage[2] {false, false};
 
   // Draw a ruler at the top and left that indicate the x and y position of the visible pixels
-  void paintPixelRulersX(QPainter &painter, playlistItem *item, int xPixMin, int xPixMax, double zoom, QPoint centerPoints, QPoint offset);
-  void paintPixelRulersY(QPainter &painter, playlistItem *item, int yPixMax, int xPos,    double zoom, QPoint centerPoints, QPoint offset);
+  void paintPixelRulersX(QPainter &painter, playlistItem *item, int xPixMin, int xPixMax, double zoom, QPoint centerPoints, QPointF offset);
+  void paintPixelRulersY(QPainter &painter, playlistItem *item, int yPixMax, int xPos,    double zoom, QPoint centerPoints, QPointF offset);
 
   // Class to save the current view statue (center point and zoom, splitting settings) so that we can quickly switch between them 
   // using the keyboard.

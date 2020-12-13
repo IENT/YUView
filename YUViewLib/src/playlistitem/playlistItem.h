@@ -215,9 +215,9 @@ public:
   virtual void updateSettings() {}
 
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
-  void saveCenterOffset(QPoint centerOffset, bool primaryView) { savedCenterOffset[primaryView ? 0 : 1] = centerOffset; }
+  void saveCenterOffset(QPointF centerOffset, bool primaryView) { savedCenterOffset[primaryView ? 0 : 1] = centerOffset; }
   void saveZoomFactor(double zoom, bool primaryView) { savedZoom[primaryView ? 0 : 1] = zoom; }
-  void getZoomAndPosition(QPoint &centerOffset, double &zoom, bool primaryView) { centerOffset = savedCenterOffset[primaryView ? 0 : 1]; zoom = savedZoom[primaryView ? 0 : 1]; }
+  void getZoomAndPosition(QPointF &centerOffset, double &zoom, bool primaryView) { centerOffset = savedCenterOffset[primaryView ? 0 : 1]; zoom = savedZoom[primaryView ? 0 : 1]; }
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -277,7 +277,7 @@ private:
   static unsigned int idCounter;
 
   // Each playlistitem can remember the position/zoom that it was shown in to recall when it is selected again
-  QPoint savedCenterOffset[2];
+  QPointF savedCenterOffset[2];
   double savedZoom[2] {1.0, 1.0};
 
   // The UI

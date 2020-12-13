@@ -244,9 +244,9 @@ void ViewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
     playlistItem *item2 = nullptr;
     for (int i = 0; i < allPlaylistItems.count(); i++)
     {
-      if (itemId1 > -1 && allPlaylistItems[i]->properties().playlistID == (unsigned int)itemId1)
+      if (itemId1 > -1 && allPlaylistItems[i]->properties().playlistID == itemId1)
         item1 = allPlaylistItems[i];
-      if (itemId2 > -1 && allPlaylistItems[i]->properties().playlistID == (unsigned int)itemId2)
+      if (itemId2 > -1 && allPlaylistItems[i]->properties().playlistID == itemId2)
         item2 = allPlaylistItems[i];
     }
 

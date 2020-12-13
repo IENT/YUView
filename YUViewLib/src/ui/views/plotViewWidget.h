@@ -53,8 +53,8 @@ protected:
   void paintEvent(QPaintEvent *event) override;
   void mouseMoveEvent(QMouseEvent *event) override;
 
-  void   setMoveOffset(QPoint offset) override;
-  QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint = {}) const override;
+  void   setMoveOffset(QPointF offset) override;
+  QPoint getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPoint = {}) const override;
   void   setZoomFactor(double zoom) override;
   
 private:
@@ -107,7 +107,7 @@ private:
   QPointF convertPixelPosToPlotPos(const QPointF &pixelPos, std::optional<double> zoomFactor = {}) const;
 
   void zoomToFitInternal() override;
-  void onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) override;
+  void onZoomRectUpdateOffsetAndZoom(QRectF zoomRect, double additionalZoomFactor) override;
 
   std::optional<Range<double>> getVisibleRange(const Axis axis) const;
   Range<double> getAxisRange(Axis axis, AxisProperties axisProperties) const;
