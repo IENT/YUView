@@ -40,7 +40,7 @@
 #include <QPinchGesture>
 #include <QSwipeGesture>
 
-#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 1
+#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 0
 #if MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_VIEW(fmt) qDebug() << fmt
@@ -206,7 +206,7 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
   auto centerMoveOffset = origin + this->moveOffset;
   
   auto movementDelta = centerMoveOffset - zoomPoint;
-  QPoint newMoveOffset = this->moveOffset + (1 - stepZoomFactor) * movementDelta;
+  auto newMoveOffset = this->moveOffset - (1 - stepZoomFactor) * movementDelta;
   
   DEBUG_VIEW("MoveAndZoomableView::zoom point debug zoomPoint " << zoomPoint << " viewCenter " << viewCenter << " this->moveOffset " << this->moveOffset << " centerMoveOffset " << centerMoveOffset << " stepZoomFactor " << stepZoomFactor << " movementDelta " << movementDelta);
   DEBUG_VIEW("MoveAndZoomableView::zoom point " << newMoveOffset);
@@ -394,7 +394,7 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
     mouse_event->accept();
 
     // Zoom so that the whole rectangle is visible and center it in the view.
-    auto zoomRect = QRect(viewZoomingMousePosStart, mouse_event->pos());
+    auto zoomRect = QRectF(viewZoomingMousePosStart, mouse_event->pos());
     if (abs(zoomRect.width()) < 2 && abs(zoomRect.height()) < 2)
     {
       // The user just pressed the button without moving the mouse.
@@ -641,10 +641,10 @@ void MoveAndZoomableView::drawZoomRect(QPainter &painter) const
 
   painter.setPen(ZOOM_RECT_PEN);
   painter.setBrush(ZOOM_RECT_BRUSH);
-  painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
+  painter.drawRect(QRectF(viewZoomingMousePosStart, viewZoomingMousePos));
 }
 
-void MoveAndZoomableView::setMoveOffset(QPoint offset)
+void MoveAndZoomableView::setMoveOffset(QPointF offset)
 {
   if (this->enableLink)
   {
@@ -733,7 +733,7 @@ void MoveAndZoomableView::slaveSetLinkState(bool enabled)
     this->getStateFromMaster();
 }
 
-void MoveAndZoomableView::slaveSetMoveOffset(QPoint offset)
+void MoveAndZoomableView::slaveSetMoveOffset(QPointF offset)
 {
   Q_ASSERT_X(!this->isMasterView, Q_FUNC_INFO, "Not a slave item");
   this->moveOffset = offset;

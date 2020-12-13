@@ -521,7 +521,7 @@ void splitViewWidget::updatePixelPositions()
     const bool mouseInLeftOrRightView = (isSplitting() && (this->zoomBoxMousePosition.x() > xSplit));
 
     // The absolute center point of the item under the cursor
-    const QPoint itemCenterMousePos = (mouseInLeftOrRightView) ? centerPoints[1] + this->moveOffset : centerPoints[0] + this->moveOffset;
+    const auto itemCenterMousePos = (mouseInLeftOrRightView) ? centerPoints[1] + this->moveOffset : centerPoints[0] + this->moveOffset;
 
     // The difference in the item under the mouse (normalized by zoom factor)
     double diffInItem[2] = {(double)(itemCenterMousePos.x() - this->zoomBoxMousePosition.x()) / this->zoomFactor + 0.5,
@@ -735,7 +735,7 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   }
 }
 
-void splitViewWidget::paintPixelRulersX(QPainter &painter, playlistItem *item, int xPixMin, int xPixMax, double zoom, QPoint centerPoints, QPoint offset)
+void splitViewWidget::paintPixelRulersX(QPainter &painter, playlistItem *item, int xPixMin, int xPixMax, double zoom, QPoint centerPoints, QPointF offset)
 {
   if (zoom < 32)
     return;
@@ -747,7 +747,7 @@ void splitViewWidget::paintPixelRulersX(QPainter &painter, playlistItem *item, i
   // Get the pixel values that are visible on screen
   QSize frameSize = item->getSize();
   QSize videoRect = frameSize * zoom;
-  QPoint worldTransform = centerPoints + offset;
+  auto worldTransform = centerPoints + offset;
   int xMin = (videoRect.width() / 2 - worldTransform.x() - xPixMin) / zoom;
   int xMax = (videoRect.width() / 2 - (worldTransform.x() - xPixMax)) / zoom;
   xMin = clip(xMin, 0, frameSize.width());
@@ -783,7 +783,7 @@ void splitViewWidget::paintPixelRulersX(QPainter &painter, playlistItem *item, i
   }
 }
 
-void splitViewWidget::paintPixelRulersY(QPainter &painter, playlistItem *item, int yPixMax, int xPos, double zoom, QPoint centerPoints, QPoint offset)
+void splitViewWidget::paintPixelRulersY(QPainter &painter, playlistItem *item, int yPixMax, int xPos, double zoom, QPoint centerPoints, QPointF offset)
 {
   if (zoom < 32)
     return;
@@ -794,7 +794,7 @@ void splitViewWidget::paintPixelRulersY(QPainter &painter, playlistItem *item, i
 
   QSize frameSize = item->getSize();
   QSize videoRect = frameSize * zoom;
-  QPoint worldTransform = centerPoints + offset;
+  auto worldTransform = centerPoints + offset;
 
   // Get the pixel values that are visible on screen
   int yMin = (videoRect.height() / 2 - worldTransform.y()) / zoom;
@@ -944,7 +944,7 @@ void splitViewWidget::wheelEvent (QWheelEvent *event)
     MoveAndZoomableView::wheelEvent(event);
 }
 
-void splitViewWidget::setMoveOffset(QPoint offset)
+void splitViewWidget::setMoveOffset(QPointF offset)
 {
   MoveAndZoomableView::setMoveOffset(offset);
 
@@ -964,7 +964,7 @@ void splitViewWidget::setMoveOffset(QPoint offset)
   }
 }
 
-QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint) const
+QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPoint) const
 {
   if (viewSplitMode == SIDE_BY_SIDE)
   {
@@ -987,13 +987,13 @@ QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoi
     return QWidget::rect().center();
 }
 
-void splitViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor)
+void splitViewWidget::onZoomRectUpdateOffsetAndZoom(QRectF zoomRect, double additionalZoomFactor)
 {
   const auto newZoom = this->zoomFactor * additionalZoomFactor;
   if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
     return;
 
-  const QPoint zoomRectCenterOffset = zoomRect.center() - this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
+  const auto zoomRectCenterOffset = zoomRect.center() - this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
   this->setMoveOffset((this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor);
   this->setZoomFactor(newZoom);
 }
@@ -1465,7 +1465,7 @@ void splitViewWidget::freezeView(bool freeze)
   }
 }
 
-void splitViewWidget::getViewState(QPoint &offset, double &zoom, double &splitPoint, int &mode) const
+void splitViewWidget::getViewState(QPointF &offset, double &zoom, double &splitPoint, int &mode) const
 {
   offset = this->moveOffset;
   zoom = this->zoomFactor;
@@ -1478,7 +1478,7 @@ void splitViewWidget::getViewState(QPoint &offset, double &zoom, double &splitPo
     mode = 2;
 }
 
-void splitViewWidget::setViewState(const QPoint &offset, double zoom, double splitPoint, int mode)
+void splitViewWidget::setViewState(const QPointF &offset, double zoom, double splitPoint, int mode)
 {
   this->setMoveOffset(offset);
   this->setZoomFactor(zoom);
