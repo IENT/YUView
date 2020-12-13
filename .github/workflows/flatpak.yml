@@ -30,18 +30,18 @@ jobs:
       with:
         bundle: "YUView.flatpak"
         manifest-path: "de.rwth_aachen.ient.YUView.yaml"
-    - name: Upload Artifact
+    - name: Upload artifacts to GitHub
       uses: actions/upload-artifact@v2
       with:
-        name: ${{matrix.ARTIFACT_NAME}}
-        path: artifacts
+        name: YUView.flatpak
+        path: YUView.flatpak        
     - name: Upload Release
       uses: actions/upload-release-asset@v1.0.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
-        asset_name: ${{matrix.ARTIFACT_NAME}}
-        asset_content_type: application/zip
+        asset_path: YUView.flatpak
+        asset_name: YUView.flatpak
+#        asset_content_type: application/zip
       if: github.event_name == 'release' 
