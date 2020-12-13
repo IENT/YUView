@@ -34,6 +34,8 @@
 
 #include "common/functions.h"
 
+#include <cmath>
+
 #include <QSettings>
 #include <QGestureEvent>
 #include <QInputDialog>
@@ -395,7 +397,7 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     // Zoom so that the whole rectangle is visible and center it in the view.
     auto zoomRect = QRectF(viewZoomingMousePosStart, mouse_event->pos());
-    if (abs(zoomRect.width()) < 2 && abs(zoomRect.height()) < 2)
+    if (std::abs(zoomRect.width()) < 2.0 && std::abs(zoomRect.height()) < 2.0)
     {
       // The user just pressed the button without moving the mouse.
       this->viewAction = ViewAction::NONE;
@@ -405,8 +407,8 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     // Now we zoom in as far as possible
     auto additionalZoomFactor = 1.0;
-    while (abs(zoomRect.width())  * additionalZoomFactor * ZOOM_STEP_FACTOR <= width() &&
-           abs(zoomRect.height()) * additionalZoomFactor * ZOOM_STEP_FACTOR <= height())
+    while (std::abs(zoomRect.width())  * additionalZoomFactor * ZOOM_STEP_FACTOR <= width() &&
+           std::abs(zoomRect.height()) * additionalZoomFactor * ZOOM_STEP_FACTOR <= height())
       additionalZoomFactor *= ZOOM_STEP_FACTOR;
 
     this->onZoomRectUpdateOffsetAndZoom(zoomRect, additionalZoomFactor);
