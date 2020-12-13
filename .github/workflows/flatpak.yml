@@ -26,3 +26,19 @@ jobs:
       with:
         bundle: "YUView.flatpak"
         manifest-path: "de.rwth_aachen.ient.YUView.yaml"
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{matrix.ARTIFACT_NAME}}
+        path: artifacts
+      if: matrix.os != 'ubuntu-18.04'
+    - name: Upload Release
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
+        asset_name: ${{matrix.ARTIFACT_NAME}}
+        asset_content_type: application/zip
+      if: github.event_name == 'release' && matrix.os != 'ubuntu-18.04'
