@@ -43,5 +43,5 @@ jobs:
         upload_url: ${{ github.event.release.upload_url }}
         asset_path: YUView.flatpak
         asset_name: YUView.flatpak
-#        asset_content_type: application/zip
+        asset_content_type: application/zip
       if: github.event_name == 'release' 
