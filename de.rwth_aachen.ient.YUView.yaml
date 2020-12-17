@@ -7,6 +7,7 @@ finish-args:
   - --socket=wayland
   - --socket=x11
   - --share=ipc
+  - --share=network  
   - --filesystem=host
   - --env=QT_NO_FT_CACHE=1
 
