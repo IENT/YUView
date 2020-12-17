@@ -49,13 +49,13 @@
 
 #ifdef Q_OS_WIN
 #include <windows.h>
-#pragma comment(lib, "Shell32.lib")    
+#pragma comment(lib, "Shell32.lib")
 #include <ShellAPI.h> // without space also
 #endif
 
-// Don't abort in case a connection is not encrypted. 
+// Don't abort in case a connection is not encrypted.
 // ONLY USE THIS FOR DEBGGING
-#define ALLOW_UNENCRYPTED_CONNECTIONS 1
+#define ALLOW_UNENCRYPTED_CONNECTIONS 0
 
 #define UPDATER_DEBUG_OUTPUT 0
 #if UPDATER_DEBUG_OUTPUT && !NDEBUG
