@@ -11,8 +11,6 @@ def main():
     variableDescriptions = parseDocForVariableDescriptions(document)
 
     print(f"Parsed {len(variableDescriptions)} variable descriptions: ")
-    # for desc in variableDescriptions:
-    #     print(desc)
 
     # From where to where to parse. The last entry will not be included.
     

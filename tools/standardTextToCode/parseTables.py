@@ -31,6 +31,8 @@ def cleanCondition(text : str):
     text = text.replace("\n", "")
     text = text.replace("\t", "")
     text = text.replace("\u2212", "-")
+    if (text.find("\xa0") != -1):
+        raise SyntaxError("There still is a char to replace in the condition. This must be cleaned up first.")
     return text
 def cleanArgument(text : str):
     text = text.strip()
@@ -38,6 +40,8 @@ def cleanArgument(text : str):
     text = text.replace("\xa0]", "]")
     text = text.replace("\xa0", " ")
     text = text.replace("\u2212", "-")
+    if (text.find("\xa0") != -1):
+        raise SyntaxError("There still is a char to replace in the argument. This must be cleaned up first.")
     return text
 def cleanComment(text : str):
     text = text.strip()
@@ -50,6 +54,20 @@ def cleanComment(text : str):
     text = text.replace("( ", "(")
     text = text.replace(" )", ")")
     text = text.replace("\u2212", "-")
+    if (text.find("\xa0") != -1):
+        raise SyntaxError("There still is a char to replace in the comment. This must be cleaned up first.")
+    return text
+def cleanConditionPart(text : str):
+    text = text.strip()
+    text = text.replace("\xa0−\xa0", " - ")
+    if (text.find("\xa0") != -1):
+        raise SyntaxError("There still is a char to replace in the condition. This must be cleaned up first.")
+    return text
+def cleanIncrement(text : str):
+    text = text.strip()
+    text = text.replace("-\xa0-", "--")
+    if (text.find("\xa0") != -1):
+        raise SyntaxError("There still is a char to replace in the increment. This must be cleaned up first.")
     return text
 
 def getEntryType(text : str):
@@ -352,10 +370,10 @@ class ContainerFor(Container):
             raise SyntaxError("For container does not start with for")
         
         firstPart = split[0][split[0].find("(") + 1:]
-        self.variableName = firstPart.split("=")[0].strip()
-        self.initialValue = firstPart.split("=")[1].strip()
+        self.variableName = cleanConditionPart(firstPart.split("=")[0])
+        self.initialValue = cleanConditionPart(firstPart.split("=")[1])
         self.breakCondition = cleanCondition(split[1])
-        self.increment = split[2][0:split[2].find(")")].strip()
+        self.increment = cleanIncrement(split[2][0:split[2].find(")")])
     def __str__(self):
         spaces = ""
         for _ in range(self.parent.depth):
