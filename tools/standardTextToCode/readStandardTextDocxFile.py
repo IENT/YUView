@@ -4,7 +4,7 @@ from parseTables import parseDocumentTables
 import pickle
 
 def main():
-    filename = "JVET-R2001-vB.docx"
+    filename = "JVET-T2001-v2.docx"
     print("Opening file " + filename)
     document = Document(filename)
 

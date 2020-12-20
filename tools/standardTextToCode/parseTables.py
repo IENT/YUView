@@ -145,13 +145,18 @@ class Container(ParsingItem):
     def parseChildren(self, table, tableIndex, variableDescriptions):
         # Get the initial depth
         t0_full = table.cell(0, tableIndex).text
+        while (t0_full.lstrip("\t").startswith("/*")):
+            # Ignore comments
+            tableIndex += 2
+            t0_full = table.cell(0, tableIndex).text
         self.depth = len(t0_full) - len(t0_full.lstrip("\t"))
 
         try:
             while (True):
                 t0_full = table.cell(0, tableIndex).text
                 newDepth = len(t0_full) - len(t0_full.lstrip("\t"))
-                if (newDepth < self.depth):
+                startsWithComment = t0_full.lstrip("\t").startswith("/*")
+                if (newDepth < self.depth and not startsWithComment):
                     # End of container
                     return tableIndex
                 if (newDepth > self.depth):
@@ -207,8 +212,13 @@ class Container(ParsingItem):
                     tableIndex = d.parseClosingWhile(table, tableIndex)
                     #print(f"{d}")
                     self.children.append(d)
+                elif (entryType == "comment"):
+                    c = CommentEntry(self)
+                    c.fromText(t0)
+                    #print(f"{c}")
+                    self.children.append(c)
                 elif (entryType != None):
-                    debugStop = 2222
+                    raise SyntaxError(f"Entry type is unknown. Line: {t0_full}")
                 else:
                     if (t0.strip() != "}"):
                         c = CommentEntry(self)
