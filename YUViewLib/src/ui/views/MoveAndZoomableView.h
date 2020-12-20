@@ -95,9 +95,9 @@ protected:
   virtual void onZoomIn() {}
   static const Range<double> ZOOMINGLIMIT;
 
-  virtual void setMoveOffset(QPoint offset);
-  virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint = {}) const = 0;
-  virtual void onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor) = 0;
+  virtual void setMoveOffset(QPointF offset);
+  virtual QPoint getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPoint = {}) const = 0;
+  virtual void onZoomRectUpdateOffsetAndZoom(QRectF zoomRect, double additionalZoomFactor) = 0;
 
   enum class ViewAction
   {
@@ -119,9 +119,9 @@ protected:
   double zoomFactor {1.0};
   const int ZOOM_STEP_FACTOR = 2;
 
-  QPoint moveOffset;                 //!< The offset that the view was moved
-  QPoint viewZoomingMousePosStart;
-  QPoint viewZoomingMousePos;
+  QPointF moveOffset;                 //!< The offset that the view was moved
+  QPointF viewZoomingMousePosStart;
+  QPointF viewZoomingMousePos;
 
   ViewAction viewAction {ViewAction::NONE};
 
@@ -150,15 +150,15 @@ protected:
   bool paletteNeedsUpdate;
 
 private:
-  QPoint viewDraggingMousePosStart;
-  QPoint viewDraggingStartOffset;
+  QPointF viewDraggingMousePosStart;
+  QPointF viewDraggingStartOffset;
 
   double  pinchStartZoomFactor {1.0};
   QPointF pinchStartMoveOffset;
   QPointF pinchStartCenterPoint;
 
   void slaveSetLinkState(bool enabled);
-  void slaveSetMoveOffset(QPoint offset);
+  void slaveSetMoveOffset(QPointF offset);
   void slaveSetZoomFactor(double zoom);
   //void slaveSetPinchValues(double scaleFactor, QPointF centerPointOffset);
   void slaveUpdateWidget();

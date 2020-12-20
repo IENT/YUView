@@ -48,10 +48,6 @@ public:
 
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Image Properties"; }
-
-  bool isFileSource() const Q_DECL_OVERRIDE { return true; };
-
   // Get the text size (using the current text, font/text size ...)
   virtual QSize getSize() const Q_DECL_OVERRIDE { return frame.getFrameSize(); }
 
@@ -63,8 +59,6 @@ public:
   // Return the RGB values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
-  // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
-  // and the given value of frameIdx will be ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // Do we need to load the given frame first?
@@ -76,8 +70,7 @@ public:
   // Get the frame handler
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &frame; }
 
-  // An image can be used in a difference.
-  virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInProcessing() const Q_DECL_OVERRIDE { return true; }
 
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }

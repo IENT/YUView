@@ -32,33 +32,53 @@
 
 #pragma once
 
-#include "playlistItemCompressedVideo.h"
-#include "playlistItemDifference.h"
-#include "playlistItemResample.h"
-#include "playlistItemStatisticsCSVFile.h"
-#include "playlistItemStatisticsVTMBMSFile.h"
-#include "playlistItemImageFile.h"
-#include "playlistItemImageFileSequence.h"
-#include "playlistItemOverlay.h"
-#include "playlistItemRawFile.h"
-#include "playlistItemText.h"
+#include <QPointer>
 
-/* This namespace contains all functions that are needed for creation of playlist Items. This way, no other
-   function must know, what types of item's there are. If you implement a new playlistItem, it only has to
-   be added here (and in the functions).
-*/
-namespace playlistItems
+#include "common/fileInfo.h"
+#include "videoHandler.h"
+#include "videoHandlerYUV.h"
+
+class videoHandlerResample : public videoHandler
 {
-  // Get a list of all supported file format filets and the extensions. This can be used in a file open dialog.
-  QStringList getSupportedFormatsFilters();
-  
-  // Get a list of all supported file extensions (["*.csv", "*.yuv" ...])
-  QStringList getSupportedNameFilters();
+  Q_OBJECT
 
-  // When given a file, this function will create the correct playlist item (depending on the file extension)
-  playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileName);
+public:
 
-  // Load a playlist item (and all of it's children) from the playlist
-  // Append all loaded playlist items to the list plItemAndIDList (alongside the IDs that were saved in the playlist file)
-  playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath);
-}
+  enum class Interpolation
+  {
+    Bilinear,
+    Fast
+  };
+
+  explicit videoHandlerResample();
+
+  // We need to override these videoHandler functions in order to map the frameIndex
+  void drawFrame(QPainter *painter, int frameIndex, double zoomFactor, bool drawRawValues) override;
+  QImage calculateDifference(frameHandler *item2, const int frameIndex0, const int frameIndex1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) override;
+  itemLoadingState needsLoading(int frameIndex, bool loadRawValues) override;
+
+  void loadResampledFrame(int frameIndex, bool loadToDoubleBuffer=false);
+  bool inputValid() const;
+
+  // Set the video input. This will also update the number frames, the controls and the frame size.
+  // The signal signalHandlerChanged will be emitted if a redraw is required.
+  void setInputVideo(frameHandler *childVideo);
+
+  void setScaledSize(QSize scaledSize);
+  void setInterpolation(Interpolation interpolation);
+  void setCutAndSample(indexRange startEnd, int sampling);
+
+  QList<infoItem> resampleInfoList;
+
+private:
+
+  int mapFrameIndex(int frameIndex);
+
+  // The input video we will resample
+  QPointer<frameHandler> inputVideo;
+
+  QSize scaledSize {0, 0};
+  Interpolation interpolation {Interpolation::Bilinear};
+  indexRange cutRange {0, 0};
+  int sampling {1};
+};

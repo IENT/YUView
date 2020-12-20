@@ -59,7 +59,7 @@ public:
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
   QByteArray getExtradata() Q_DECL_OVERRIDE;
   QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE;
-  QPair<int,int> getSampleAspectRatio() Q_DECL_OVERRIDE;
+  Ratio getSampleAspectRatio() Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -543,8 +543,12 @@ protected:
   // parameter sets. Here we keep a list of seis that need to be parsed after the parameter sets were recieved.
   QList<QSharedPointer<sei>> reparse_sei;
 
+  // When new SEIs come in and they don't initialize the HRD, they are not accessed until the current AU is processed by the HRD.
   QSharedPointer<buffering_period_sei> lastBufferingPeriodSEI;
   QSharedPointer<pic_timing_sei> lastPicTimingSEI;
+  QSharedPointer<buffering_period_sei> newBufferingPeriodSEI;
+  QSharedPointer<pic_timing_sei> newPicTimingSEI;
+  bool nextAUIsFirstAUInBufferingPeriod {false};
 
   // In an SEI, the number of bytes indicated do not consider the emulation prevention. This function
   // can determine the real number of bytes that we need to read from the input considering the emulation prevention

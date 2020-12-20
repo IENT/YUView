@@ -141,9 +141,9 @@ void ViewStateHandler::savePlaylist(QDomElement &root)
       state.appendProperiteChild("frameIdx", QString::number(playbackStateFrameIdx(i)));
       // Append the IDs of the selected items
       if (selectionStates[i][0] != nullptr)
-        state.appendProperiteChild("itemID1",  QString::number(selectionStates[i][0]->getID()));
+        state.appendProperiteChild("itemID1",  QString::number(selectionStates[i][0]->properties().id));
       if (selectionStates[i][1] != nullptr)
-        state.appendProperiteChild("itemID2",  QString::number(selectionStates[i][1]->getID()));
+        state.appendProperiteChild("itemID2",  QString::number(selectionStates[i][1]->properties().id));
       // Append the state of the split view
       state.appendProperiteChild("centerOffsetX", QString::number(viewStates[i].centerOffset.x()));
       state.appendProperiteChild("centerOffsetY", QString::number(viewStates[i].centerOffset.y()));
@@ -167,9 +167,9 @@ void ViewStateHandler::savePlaylist(QDomElement &root)
   // Append the IDs of the selected items
   auto items = playlist->getSelectedItems();
   if (items[0] != nullptr)
-    state.appendProperiteChild("itemID1",  QString::number(items[0]->getID()));
+    state.appendProperiteChild("itemID1",  QString::number(items[0]->properties().id));
   if (items[1] != nullptr)
-    state.appendProperiteChild("itemID2",  QString::number(items[1]->getID()));
+    state.appendProperiteChild("itemID2",  QString::number(items[1]->properties().id));
   
   // Append the state of the split view
   splitViewWidgetState viewState;
@@ -244,9 +244,9 @@ void ViewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
     playlistItem *item2 = nullptr;
     for (int i = 0; i < allPlaylistItems.count(); i++)
     {
-      if (itemId1 > -1 && allPlaylistItems[i]->getPlaylistID() == (unsigned int)itemId1)
+      if (itemId1 > -1 && allPlaylistItems[i]->properties().playlistID == itemId1)
         item1 = allPlaylistItems[i];
-      if (itemId2 > -1 && allPlaylistItems[i]->getPlaylistID() == (unsigned int)itemId2)
+      if (itemId2 > -1 && allPlaylistItems[i]->properties().playlistID == itemId2)
         item2 = allPlaylistItems[i];
     }
 

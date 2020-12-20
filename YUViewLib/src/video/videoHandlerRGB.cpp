@@ -129,7 +129,7 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int fram
       // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
       return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
-    if (currentFrameRawData_frameIdx != frameIdx || rgbItem2->currentFrameRawData_frameIdx != frameIdx1)
+    if (currentFrameRawData_frameIndex != frameIdx || rgbItem2->currentFrameRawData_frameIndex != frameIdx1)
       return QStringPairList();
 
     int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
@@ -163,7 +163,7 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int fram
     int width = frameSize.width();
     int height = frameSize.height();
 
-    if (currentFrameRawData_frameIdx != frameIdx)
+    if (currentFrameRawData_frameIndex != frameIdx)
       return QStringPairList();
 
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
@@ -282,7 +282,7 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
 
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
-  currentImageIdx = -1;
+  currentImageIndex = -1;
   setCacheInvalid();
   emit signalHandlerChanged(true, RECACHE_CLEAR);
 }
@@ -337,7 +337,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
 
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
-  currentImageIdx = -1;
+  currentImageIndex = -1;
   if (nrBytesOldFormat != getBytesPerFrame())
   {
     DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged nr bytes per frame changed");
@@ -371,15 +371,15 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
     QImage newImage;
     convertRGBToImage(currentFrameRawData, newImage);
     doubleBufferImage = newImage;
-    doubleBufferImageFrameIdx = frameIndex;
+    doubleBufferImageFrameIndex = frameIndex;
   }
-  else if (currentImageIdx != frameIndex)
+  else if (currentImageIndex != frameIndex)
   {
     QImage newImage;
     convertRGBToImage(currentFrameRawData, newImage);
     QMutexLocker writeLock(&currentImageSetMutex);
     currentImage = newImage;
-    currentImageIdx = frameIndex;
+    currentImageIndex = frameIndex;
   }
 }
 
@@ -396,10 +396,10 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   tmpBufferRawRGBDataCaching = rawData;
   requestDataMutex.unlock();
 
-  if (frameIndex != rawData_frameIdx)
+  if (frameIndex != rawData_frameIndex)
   {
     // Loading failed
-    currentImageIdx = -1;
+    currentImageIndex = -1;
     rgbFormatMutex.unlock();
     return;
   }
@@ -415,19 +415,19 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 {
   DEBUG_RGB("videoHandlerRGB::loadRawRGBData frame %d", frameIndex);
 
-  if (currentFrameRawData_frameIdx == frameIndex)
+  if (currentFrameRawData_frameIndex == frameIndex)
   {
     DEBUG_RGB("videoHandlerRGB::loadRawRGBData frame %d already in the current buffer - Done", frameIndex);
     return true;
   }
 
-  if (frameIndex == rawData_frameIdx)
+  if (frameIndex == rawData_frameIndex)
   {
     // The raw data was loaded in the background. Now we just have to move it to the current
     // buffer. No actual loading is needed.
     requestDataMutex.lock();
     currentFrameRawData = rawData;
-    currentFrameRawData_frameIdx = frameIndex;
+    currentFrameRawData_frameIndex = frameIndex;
     requestDataMutex.unlock();
     return true;
   }
@@ -438,15 +438,15 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
   // However, only one thread can use this at a time.
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, false);
-  if (frameIndex == rawData_frameIdx)
+  if (frameIndex == rawData_frameIndex)
   {
     currentFrameRawData = rawData;
-    currentFrameRawData_frameIdx = frameIndex;
+    currentFrameRawData_frameIndex = frameIndex;
   }
   requestDataMutex.unlock();
 
-  DEBUG_RGB("videoHandlerRGB::loadRawRGBData %d %s", frameIndex, (frameIndex == rawData_frameIdx) ? "NewDataSet" : "Waiting...");
-  return (currentFrameRawData_frameIdx == frameIndex);
+  DEBUG_RGB("videoHandlerRGB::loadRawRGBData %d %s", frameIndex, (frameIndex == rawData_frameIndex) ? "NewDataSet" : "Waiting...");
+  return (currentFrameRawData_frameIndex == frameIndex);
 }
 
 // Convert the given raw RGB data in sourceBuffer (using srcPixelFormat) to image (RGB-888), using the
@@ -887,9 +887,9 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
 
   // Check if the raw RGB values are up to date. If not, do not draw them. Do not trigger loading of data here. The needsLoadingRawValues 
   // function will return that loading is needed. The caching in the background should then trigger loading of them.
-  if (currentFrameRawData_frameIdx != frameIdx)
+  if (currentFrameRawData_frameIndex != frameIdx)
     return;
-  if (rgbItem2 && rgbItem2->currentFrameRawData_frameIdx != frameIdxItem1)
+  if (rgbItem2 && rgbItem2->currentFrameRawData_frameIndex != frameIdxItem1)
     return;
 
   // The center point of the pixel (0,0).

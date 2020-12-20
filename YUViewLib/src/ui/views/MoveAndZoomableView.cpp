@@ -34,6 +34,8 @@
 
 #include "common/functions.h"
 
+#include <cmath>
+
 #include <QSettings>
 #include <QGestureEvent>
 #include <QInputDialog>
@@ -206,12 +208,9 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
   auto centerMoveOffset = origin + this->moveOffset;
   
   auto movementDelta = centerMoveOffset - zoomPoint;
-  QPoint newMoveOffset;
-  if (stepZoomFactor >= 1)
-    newMoveOffset = this->moveOffset + movementDelta;
-  else
-    newMoveOffset = this->moveOffset - stepZoomFactor * movementDelta;
-
+  auto newMoveOffset = this->moveOffset - (1 - stepZoomFactor) * movementDelta;
+  
+  DEBUG_VIEW("MoveAndZoomableView::zoom point debug zoomPoint " << zoomPoint << " viewCenter " << viewCenter << " this->moveOffset " << this->moveOffset << " centerMoveOffset " << centerMoveOffset << " stepZoomFactor " << stepZoomFactor << " movementDelta " << movementDelta);
   DEBUG_VIEW("MoveAndZoomableView::zoom point " << newMoveOffset);
   this->setZoomFactor(newZoom);
   this->setMoveOffset(newMoveOffset);
@@ -224,9 +223,26 @@ void MoveAndZoomableView::zoom(MoveAndZoomableView::ZoomMode zoomMode, QPoint zo
 
 void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
 {
-  QPoint p = event->pos();
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+  auto p = event->position().toPoint();
+#else
+  auto p = event->pos();
+#endif
+
+  DEBUG_VIEW("MoveAndZoomableView::wheelEvent delta " << event->angleDelta().y() << " pos " << p);
+
+  auto deltaAbs = std::abs(event->angleDelta().y());
+  auto deltaPositive = event->angleDelta().y() > 0;
+  auto noAction = (this->viewAction == ViewAction::NONE);
+  if (noAction && deltaAbs > 0)
+  {
+    auto deltaScaled = (double(deltaAbs) / 120);
+    auto deltaFactor = (deltaPositive) ? 1.0 + deltaScaled : 1.0 - deltaScaled / 2;
+    auto newZoomFactor = this->zoomFactor * deltaFactor;
+    this->zoom(ZoomMode::TO_VALUE, p, newZoomFactor);
+  }
+
   event->accept();
-  this->zoom(event->delta() > 0 ? ZoomMode::IN : ZoomMode::OUT, p);
 }
 
 void MoveAndZoomableView::keyPressEvent(QKeyEvent *event)
@@ -380,8 +396,8 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
     mouse_event->accept();
 
     // Zoom so that the whole rectangle is visible and center it in the view.
-    auto zoomRect = QRect(viewZoomingMousePosStart, mouse_event->pos());
-    if (abs(zoomRect.width()) < 2 && abs(zoomRect.height()) < 2)
+    auto zoomRect = QRectF(viewZoomingMousePosStart, mouse_event->pos());
+    if (std::abs(zoomRect.width()) < 2.0 && std::abs(zoomRect.height()) < 2.0)
     {
       // The user just pressed the button without moving the mouse.
       this->viewAction = ViewAction::NONE;
@@ -391,8 +407,8 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     // Now we zoom in as far as possible
     auto additionalZoomFactor = 1.0;
-    while (abs(zoomRect.width())  * additionalZoomFactor * ZOOM_STEP_FACTOR <= width() &&
-           abs(zoomRect.height()) * additionalZoomFactor * ZOOM_STEP_FACTOR <= height())
+    while (std::abs(zoomRect.width())  * additionalZoomFactor * ZOOM_STEP_FACTOR <= width() &&
+           std::abs(zoomRect.height()) * additionalZoomFactor * ZOOM_STEP_FACTOR <= height())
       additionalZoomFactor *= ZOOM_STEP_FACTOR;
 
     this->onZoomRectUpdateOffsetAndZoom(zoomRect, additionalZoomFactor);
@@ -406,13 +422,22 @@ bool MoveAndZoomableView::event(QEvent *event)
   // IMPORTANT:
   // We are not using the QPanGesture as this uses two fingers. This is not documented in the Qt documentation.
 
+  bool isTouchScreenEvent = false;
+  if (event->type() == QEvent::TouchBegin || event->type() == QEvent::TouchUpdate || event->type() == QEvent::TouchEnd || event->type() == QEvent::TouchCancel)
+  {
+    auto touchEvent = static_cast<QTouchEvent*>(event);
+    auto device = touchEvent->device();
+    isTouchScreenEvent = (device->type() == QTouchDevice::TouchScreen);
+  }
+
   if (event->type() == QEvent::Gesture)
   {
-    QGestureEvent *gestureEvent = static_cast<QGestureEvent*>(event);
+    auto gestureEvent = static_cast<QGestureEvent*>(event);
 
     if (QGesture *swipeGesture = gestureEvent->gesture(Qt::SwipeGesture))
     {
-      QSwipeGesture *swipe = static_cast<QSwipeGesture*>(swipeGesture);
+      auto swipe = static_cast<QSwipeGesture*>(swipeGesture);
+      DEBUG_VIEW("MoveAndZoomableView::event swipe gesture");
 
       if (swipe->state() == Qt::GestureStarted)
         // The gesture was just started. This will prevent (generated) mouse events from being interpreted.
@@ -448,9 +473,10 @@ bool MoveAndZoomableView::event(QEvent *event)
       event->accept();
       update();
     }
-    if (QGesture *pinchGesture = gestureEvent->gesture(Qt::PinchGesture))
+    if (auto pinchGesture = gestureEvent->gesture(Qt::PinchGesture))
     {
-      QPinchGesture *pinch = static_cast<QPinchGesture*>(pinchGesture);
+      auto pinch = static_cast<QPinchGesture*>(pinchGesture);
+      DEBUG_VIEW("MoveAndZoomableView::event swipe pinch");
 
       if (pinch->state() == Qt::GestureStarted)
       {
@@ -466,7 +492,7 @@ bool MoveAndZoomableView::event(QEvent *event)
       if (pinch->state() == Qt::GestureStarted || pinch->state() == Qt::GestureUpdated)
       {
         // See what changed in this pinch gesture (the scale factor and/or the position)
-        QPinchGesture::ChangeFlags changeFlags = pinch->changeFlags();
+        auto changeFlags = pinch->changeFlags();
         if (changeFlags & QPinchGesture::ScaleFactorChanged || changeFlags & QPinchGesture::CenterPointChanged)
         {
           if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
@@ -499,9 +525,9 @@ bool MoveAndZoomableView::event(QEvent *event)
         this->update();
     }
   }
-  else if (event->type() == QEvent::TouchBegin || event->type() == QEvent::TouchUpdate || event->type() == QEvent::TouchEnd || event->type() == QEvent::TouchCancel)
+  else if (isTouchScreenEvent)
   {
-    QTouchEvent *touchEvent = static_cast<QTouchEvent*>(event);
+    auto touchEvent = static_cast<QTouchEvent*>(event);
     const auto &touchPoints = touchEvent->touchPoints();
     if (touchPoints.size() >= 1)
     {
@@ -544,6 +570,7 @@ bool MoveAndZoomableView::event(QEvent *event)
   {
     // TODO #195 - For pinching on mac this would have to be added here...
     // QNativeGestureEvent
+    DEBUG_VIEW("QNativeGestureEvent");
 
     return false;
   }
@@ -616,10 +643,10 @@ void MoveAndZoomableView::drawZoomRect(QPainter &painter) const
 
   painter.setPen(ZOOM_RECT_PEN);
   painter.setBrush(ZOOM_RECT_BRUSH);
-  painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
+  painter.drawRect(QRectF(viewZoomingMousePosStart, viewZoomingMousePos));
 }
 
-void MoveAndZoomableView::setMoveOffset(QPoint offset)
+void MoveAndZoomableView::setMoveOffset(QPointF offset)
 {
   if (this->enableLink)
   {
@@ -708,7 +735,7 @@ void MoveAndZoomableView::slaveSetLinkState(bool enabled)
     this->getStateFromMaster();
 }
 
-void MoveAndZoomableView::slaveSetMoveOffset(QPoint offset)
+void MoveAndZoomableView::slaveSetMoveOffset(QPointF offset)
 {
   Q_ASSERT_X(!this->isMasterView, Q_FUNC_INFO, "Not a slave item");
   this->moveOffset = offset;

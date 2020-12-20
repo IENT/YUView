@@ -191,25 +191,25 @@ namespace playlistItems
       {
         // Raw YUV/RGB File
         QString fmt = (asType == types[0]) ? "yuv" : "rgb";
-        playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName, QSize(-1, -1), QString(), fmt);
+        auto newRawFile = new playlistItemRawFile(fileName, QSize(-1, -1), QString(), fmt);
         return newRawFile;
       }
       else if (asType == types[2])
       {
         // Compressed video
-        playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0);
+        auto newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0);
         return newRawCodedVideo;
       }
       else if (asType == types[3])
       {
         // Statistics File
-        playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsCSVFile(fileName);
+        auto newStatFile = new playlistItemStatisticsCSVFile(fileName);
         return newStatFile;
       }
       else if (asType == types[4])
       {
         // Statistics File
-        playlistItemStatisticsVTMBMSFile *newStatFile = new playlistItemStatisticsVTMBMSFile(fileName);
+        auto newStatFile = new playlistItemStatisticsVTMBMSFile(fileName);
         return newStatFile;
       }
     }
@@ -224,72 +224,68 @@ namespace playlistItems
     playlistItem *newItem = nullptr;
     bool parseChildren = false;
 
-    // Parse the item
-    if (elem.tagName() == "playlistItemRawFile")
+    auto tag = elem.tagName();
+    if (tag == "playlistItemRawFile")
     {
-      // This is a playlistItemYUVFile. Create a new one and add it to the playlist
       newItem = playlistItemRawFile::newplaylistItemRawFile(elem, filePath);
     }
     // For backwards compability (playlistItemCompressedFile used to be called playlistItemRawCodedVideo or playlistItemHEVCFile)
-    else if (elem.tagName() == "playlistItemCompressedVideo" || elem.tagName() == "playlistItemCompressedFile" || elem.tagName() == "playlistItemFFmpegFile" || elem.tagName() == "playlistItemHEVCFile" || elem.tagName() == "playlistItemRawCodedVideo")
+    else if (tag == "playlistItemCompressedVideo" || tag == "playlistItemCompressedFile" || tag == "playlistItemFFmpegFile" || tag == "playlistItemHEVCFile" || tag == "playlistItemRawCodedVideo")
     {
-      // Load the playlistItemHEVCFile
       newItem = playlistItemCompressedVideo::newPlaylistItemCompressedVideo(elem, filePath);
     }
-    else if (elem.tagName() == "playlistItemStatisticsFile" || elem.tagName() == "playlistItemStatisticsCSVFile")
+    else if (tag == "playlistItemStatisticsFile" || tag == "playlistItemStatisticsCSVFile")
     {
-      // Load the playlistItemStatisticsFile
       newItem = playlistItemStatisticsCSVFile::newplaylistItemStatisticsCSVFile(elem, filePath);
     }
-    else if (elem.tagName() == "playlistItemStatisticsVTMBMSFile")
+    else if (tag == "playlistItemStatisticsVTMBMSFile")
     {
-      // Load the playlistItemVTMBMSStatisticsFile
       newItem = playlistItemStatisticsVTMBMSFile::newplaylistItemStatisticsVTMBMSFile(elem, filePath);
     }
-    else if (elem.tagName() == "playlistItemText")
+    else if (tag == "playlistItemText")
     {
-      // This is a playlistItemText. Load it from file.
       newItem = playlistItemText::newplaylistItemText(elem);
     }
-    else if (elem.tagName() == "playlistItemDifference")
+    else if (tag == "playlistItemDifference")
     {
-      // This is a playlistItemDifference. Load it from file.
       newItem = playlistItemDifference::newPlaylistItemDifference(elem);
       parseChildren = true;
     }
-    else if (elem.tagName() == "playlistItemOverlay")
+    else if (tag == "playlistItemOverlay")
     {
-      // This is a playlistItemOverlay. Load it from file.
       newItem = playlistItemOverlay::newPlaylistItemOverlay(elem, filePath);
       parseChildren = true;
     }
-    else if (elem.tagName() == "playlistItemImageFile")
+    else if (tag == "playlistItemImageFile")
     {
-      // This is a playlistItemImageFile. Load it.
       newItem = playlistItemImageFile::newplaylistItemImageFile(elem, filePath);
     }
-    else if (elem.tagName() == "playlistItemImageFileSequence")
+    else if (tag == "playlistItemImageFileSequence")
     {
-      // This is a playlistItemImageFileSequence. Load it.
       newItem = playlistItemImageFileSequence::newplaylistItemImageFileSequence(elem, filePath);
+    }
+    else if (tag == "playlistItemResample")
+    {
+      newItem = playlistItemResample::newPlaylistItemResample(elem);
+      parseChildren = true;
     }
 
     if (newItem != nullptr && parseChildren)
     {
       // The playlistItem can have children. Parse them.
-      QDomNodeList children = elem.childNodes();
+      auto children = elem.childNodes();
 
       for (int i = 0; i < children.length(); i++)
       {
         // Parse the child items
-        QDomElement childElem = children.item(i).toElement();
-        playlistItem *childItem = loadPlaylistItem(childElem, filePath);
+        auto childElem = children.item(i).toElement();
+        auto childItem = loadPlaylistItem(childElem, filePath);
 
         if (childItem)
           newItem->addChild(childItem);
       }
 
-      playlistItemContainer *container = dynamic_cast<playlistItemContainer*>(newItem);
+      auto container = dynamic_cast<playlistItemContainer*>(newItem);
       if (container)
         container->updateChildItems();
     }

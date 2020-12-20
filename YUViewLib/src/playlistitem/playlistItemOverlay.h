@@ -47,8 +47,6 @@ public:
 
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Overlay Properties"; }
-
   // Overload from playlistItemVideo.
   virtual QSize getSize() const Q_DECL_OVERRIDE;
 

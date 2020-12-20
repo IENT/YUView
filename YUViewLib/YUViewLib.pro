@@ -29,10 +29,6 @@ isEmpty(SVNN) {
     SVNN = 0
 }
 
-macx {
-    QMAKE_MAC_SDK = macosx
-    QMAKE_INFO_PLIST = Info.plist
-}
 win32-g++ {
     QMAKE_FLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
     QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse

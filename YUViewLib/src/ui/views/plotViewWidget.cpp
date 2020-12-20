@@ -77,8 +77,8 @@ void PlotViewWidget::setModel(PlotModel *model)
     this->initViewFromModel();
     this->connect(model, &PlotModel::dataChanged, this, &PlotViewWidget::modelDataChanged);
     this->connect(model, &PlotModel::nrStreamsChanged, this, &PlotViewWidget::modelNrStreamsChanged);
-    this->update();
   }
+  this->update();
 }
 
 void PlotViewWidget::modelDataChanged()
@@ -255,7 +255,7 @@ void PlotViewWidget::mouseMoveEvent(QMouseEvent *mouseMoveEvent)
   }
 }
 
-void PlotViewWidget::setMoveOffset(QPoint offset)
+void PlotViewWidget::setMoveOffset(QPointF offset)
 {
   if (!this->model)
   {
@@ -270,22 +270,22 @@ void PlotViewWidget::setMoveOffset(QPoint offset)
     return;
   }
   
-  const auto clipLeft = int(-(visibleRange->min) * this->zoomToPixelsPerValueX * this->zoomFactor);
+  const auto clipLeft = (-(visibleRange->min) * this->zoomToPixelsPerValueX * this->zoomFactor);
   const auto axisLengthX = this->propertiesAxis[0].line.p2().x() - this->propertiesAxis[0].line.p1().x();
   const auto axisLengthInValues = axisLengthX / this->zoomToPixelsPerValueX / this->zoomFactor;
-  const auto clipRight = int(-(visibleRange->max - axisLengthInValues) * this->zoomToPixelsPerValueX * this->zoomFactor);
+  const auto clipRight = (-(visibleRange->max - axisLengthInValues) * this->zoomToPixelsPerValueX * this->zoomFactor);
 
-  QPoint offsetClipped;
+  QPointF offsetClipped;
   if (axisLengthInValues > (visibleRange->max - visibleRange->min))
-    offsetClipped = QPoint(clip(offset.x(), clipLeft, clipRight) , 0);
+    offsetClipped = QPointF(clip(offset.x(), clipLeft, clipRight) , 0);
   else
-    offsetClipped = QPoint(clip(offset.x(), clipRight, clipLeft) , 0);
+    offsetClipped = QPointF(clip(offset.x(), clipRight, clipLeft) , 0);
   
   DEBUG_PLOT("PlotViewWidget::setMoveOffset offset " << offset << " clipped " << offsetClipped);
   MoveAndZoomableView::setMoveOffset(offsetClipped);
 }
 
-QPoint PlotViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPoint zoomPoint) const
+QPoint PlotViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPoint) const
 {
   Q_UNUSED(zoomPoint);
   const auto plotRectBottomLeft = this->plotRect.bottomLeft();
@@ -679,6 +679,8 @@ void PlotViewWidget::drawPlot(QPainter &painter) const
         {
           unsigned intervalLeft = 0;
           unsigned intervalRight = nrpoints;
+          if (nrpoints == 0)
+            return intervalLeft;
           while (true)
           {
             unsigned pointToCheck = intervalLeft + (intervalRight - intervalLeft) / 2;
@@ -961,7 +963,7 @@ QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos, std::o
   }
 }
 
-void PlotViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additionalZoomFactor)
+void PlotViewWidget::onZoomRectUpdateOffsetAndZoom(QRectF zoomRect, double additionalZoomFactor)
 {
   const auto newZoom = this->zoomFactor * additionalZoomFactor;
   if (newZoom < ZOOMINGLIMIT.min || newZoom > ZOOMINGLIMIT.max)
@@ -970,7 +972,7 @@ void PlotViewWidget::onZoomRectUpdateOffsetAndZoom(QRect zoomRect, double additi
   const auto plotRectBottomLeft = this->plotRect.bottomLeft();
   auto moveOrigin = QPoint(plotRectBottomLeft.x() + fadeBoxThickness, plotRectBottomLeft.y() - fadeBoxThickness);
 
-  const QPoint zoomRectCenterOffset = zoomRect.center() - moveOrigin;
+  const auto zoomRectCenterOffset = zoomRect.center() - moveOrigin;
   auto newMoveOffset = ((this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor + this->plotRect.center()).toPoint();
   this->setZoomFactor(newZoom);
   this->setMoveOffset(newMoveOffset);

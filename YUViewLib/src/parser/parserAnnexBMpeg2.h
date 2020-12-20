@@ -53,7 +53,7 @@ public:
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE { Q_UNUSED(iFrameNr); Q_UNUSED(filePos); return QList<QByteArray>(); }
   QByteArray getExtradata() Q_DECL_OVERRIDE { return QByteArray(); }
   QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE;
-  QPair<int,int> getSampleAspectRatio() Q_DECL_OVERRIDE;
+  Ratio getSampleAspectRatio() Q_DECL_OVERRIDE;
 
 private:
 

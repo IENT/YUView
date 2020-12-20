@@ -196,6 +196,9 @@ void HRDPlotModel::setCPBBufferSize(int size)
   {
     QMutexLocker locker(&this->dataMutex);
     this->cpb_buffer_size = size;
+    // this should be our initial guess for the yMax range
+    if (size>0)
+        this->bufferLevelLimits.max = size;
     this->eventSubsampler.postEvent();
   }
 }
