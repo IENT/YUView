@@ -2,3 +2,6 @@
 *.mht
 *.pdf
 *.pyc
+*.p
+
+cpp
