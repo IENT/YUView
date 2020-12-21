@@ -42,8 +42,6 @@ modules:
 
   - name: YUView
     buildsystem: qmake
-    config-opts:
-      - CONFIG+=NOUNITTESTS
     sources:
       - type: dir
         path: .
