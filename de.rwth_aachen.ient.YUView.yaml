@@ -47,5 +47,3 @@ modules:
     sources:
       - type: dir
         path: .
-      - type: patch
-        path: remove_unitTest.patch
