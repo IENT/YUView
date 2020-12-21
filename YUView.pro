@@ -1,9 +1,13 @@
 TEMPLATE = subdirs
-SUBDIRS = YUViewLib YUViewApp YUViewUnitTest
+SUBDIRS = YUViewLib YUViewApp
 
 YUViewApp.subdir = YUViewApp
 YUViewLib.subdir = YUViewLib
-YUViewUnitTest.subdir = YUViewUnitTest
 
 YUViewApp.depends = YUViewLib
-YUViewUnitTest.depends = YUViewLib
+
+UNITTESTS {
+  SUBDIRS += YUViewUnitTest
+  YUViewUnitTest.subdir = YUViewUnitTest
+  YUViewUnitTest.depends = YUViewLib
+}
