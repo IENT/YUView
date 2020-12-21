@@ -25,7 +25,7 @@ jobs:
         cd $GITHUB_WORKSPACE
         mkdir build
         cd build
-        qmake ..
+        qmake CONFIG+=UNITTESTS ..
         make -j 2
         make check
   build-unix:
@@ -105,7 +105,7 @@ jobs:
         export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
         mkdir build
         cd build
-        qmake ..
+        qmake CONFIG+=UNITTESTS ..
         make -j 2
         make check
     - name: Build App (Mac)
@@ -205,7 +205,7 @@ jobs:
         mkdir build
         cd build
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        d:\a\YUViewQt\YUViewQt\Qt\bin\qmake ..
+        d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         jom
         nmake check
         cd ..
