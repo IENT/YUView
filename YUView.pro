@@ -7,3 +7,7 @@ YUViewUnitTest.subdir = YUViewUnitTest
 
 YUViewApp.depends = YUViewLib
 YUViewUnitTest.depends = YUViewLib
+
+NOUNITTESTS {
+  SUBDIRS -= YUViewUnitTest
+}
