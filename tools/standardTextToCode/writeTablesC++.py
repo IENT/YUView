@@ -3,21 +3,13 @@ import pickle
 from parseTables import *
 from pathlib import Path
 
-class OutputFile:
-    def __init__(self, name, classname, dependencies):
-        self.name = name
-        self.classname = classname
-        self.dependencies = dependencies
-        self.tables = []
-
 class HeaderFile:
-    def __init__ (self, path, name, dependencies):
+    def __init__ (self, path, name, namespace):
         self.f = open(f"{path}/{name}.h", "w")
-        self.f.write("""#include "common.h"\n""")
-        self.f.write("""#include <vector>\n\n""")
-        for dep in dependencies:
-            self.f.write(f"""#include "{dep}.h"\n""")
+        self.f.write("""namespace parser::{namespace} {\n\n""")
         self.spaces = 0
+    def __del__(self):
+        self.f.write("""\n}\n""")
     def write(self, s):
         for i in range(self.spaces):
             self.f.write(" ")
@@ -27,8 +19,11 @@ class CppFile:
     def __init__ (self, path, name):
         self.f = open(f"{path}/{name}.cpp", "w")
         self.f.write(f"""#include "{name}.h"\n""")
-        self.f.write("#include <vector>\n\n")
+        self.f.write("""\n""")
+        self.f.write("""namespace parser::{namespace} {\n\n""")
         self.spaces = 0
+    def __del__(self):
+        self.f.write("""\n}\n""")
     def write(self, s):
         for i in range(self.spaces):
             self.f.write(" ")
@@ -154,18 +149,6 @@ def writeTablesToCpp(parsedTables, path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
     writeOutCommonClasses(open(path + "/common.h", "w"))
-
-    # vvcOutputFiles = [
-    #     OutputFile("vps", "video_parameter_set_rbsp", ["ptl", "dpb_parameters", "general_hrd_parameters", "ols_hrd_parameters"]),
-    #     OutputFile("sps", "seq_parameter_set_rbsp", ["ptl", "dpb_parameters", "ref_pic_list_struct", "general_hrd_parameters", "ols_hrd_parameters", "vui"]),
-    #     OutputFile("pps", "pic_parameter_set_rbsp", []),
-    #     OutputFile("ptl", "profile_tier_level", []),
-    #     OutputFile("dpb_parameters", "dpb_parameters", []),
-    #     OutputFile("general_hrd_parameters", "general_hrd_parameters", []),
-    #     OutputFile("ols_hrd_parameters", "ols_hrd_parameters", []),
-    #     OutputFile("vui", "vui_parameters", []),
-    #     OutputFile("other", "", [])
-    # ]
 
     for table in parsedTables:
         assert(type(table) == ContainerTable)
