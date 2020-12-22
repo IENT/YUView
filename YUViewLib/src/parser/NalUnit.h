@@ -32,16 +32,43 @@
 
 #pragma once
 
-#include <QByteArray>
-
-#include "common/ReaderHelper.h"
+#include "common/typedef.h"
 #include "common/TreeItem.h"
 
-namespace subtitle_608
-{
-    // Parse the subtitle in an AVPacket
-    int parse608SubtitlePacket(QByteArray data, TreeItem *parent);
+#include <optional>
 
-    // Parse the 608 subtitle encoded in ATSC CC Data packet format with 3 bytes
-    int parse608DataPayloadCCDataPacket(ReaderHelper &reader, unsigned int &ccData);
-}
+namespace parser
+{
+
+/* The basic NAL unit. Contains the NAL header and the file position of the unit.
+*/
+struct NalUnit
+{
+  NalUnit(int nalIdx, std::optional<pairUint64> filePosStartEnd) : filePosStartEnd(filePosStartEnd), nalIdx(nalIdx), nalUnitTypeID(-1) {}
+  virtual ~NalUnit() {} // This class is meant to be derived from.
+
+  // Parse the header from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
+  virtual bool parseNalUnitHeader(const QByteArray &header_data, TreeItem *root) = 0;
+
+  // Pointer to the first byte of the start code of the NAL unit (if known)
+  std::optional<pairUint64> filePosStartEnd;
+
+  // The index of the nal within the bitstream
+  int nalIdx;
+
+  // Get the NAL header including the start code
+  virtual QByteArray getNALHeader() const = 0;
+  virtual bool isParameterSet() const = 0;
+  virtual int  getPOC() const { return -1; }
+  // Get the raw NAL unit (excluding a start code, including nal unit header and payload)
+  // This only works if the payload was saved of course
+  QByteArray getRawNALData() const { return getNALHeader() + nalPayload; }
+
+  // Each nal unit (in all known standards) has a type id
+  unsigned int nalUnitTypeID;
+
+  // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
+  QByteArray nalPayload;
+};
+
+} // namespace parser

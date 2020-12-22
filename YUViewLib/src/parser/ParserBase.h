@@ -46,15 +46,18 @@
 // enabled manually if needed.
 #define PARSER_FILE_FRAME_NR_LIMIT 500
 
+namespace parser
+{
+
 /* Abstract base class that prvides features which are common to all parsers
  */
-class parserBase : public QObject
+class ParserBase : public QObject
 {
   Q_OBJECT
 
 public:
-  parserBase(QObject *parent);
-  virtual ~parserBase() = 0;
+  ParserBase(QObject *parent);
+  virtual ~ParserBase() = 0;
 
   QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
   BitratePlotModel *getBitratePlotModel() { return bitratePlotModel.data(); }
@@ -106,3 +109,5 @@ private:
   QScopedPointer<HRDPlotModel> hrdPlotModel;
   HRDPlotModel *redirectPlotModel {nullptr};
 };
+
+} // namespace parser

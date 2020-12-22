@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserBase.h"
+#include "ParserBase.h"
 
 #include <assert.h>
 
@@ -42,9 +42,12 @@
 #define DEBUG_PARSER(fmt,...) ((void)0)
 #endif
 
-/// --------------- parserBase ---------------------
+namespace parser
+{
 
-parserBase::parserBase(QObject *parent) : QObject(parent)
+/// --------------- ParserBase ---------------------
+
+ParserBase::ParserBase(QObject *parent) : QObject(parent)
 {
   this->packetModel.reset(new PacketItemModel(parent));
   this->bitratePlotModel.reset(new BitratePlotModel());
@@ -53,11 +56,11 @@ parserBase::parserBase(QObject *parent) : QObject(parent)
   this->streamIndexFilter->setSourceModel(this->packetModel.data());
 }
 
-parserBase::~parserBase()
+ParserBase::~ParserBase()
 {
 }
 
-HRDPlotModel *parserBase::getHRDPlotModel()
+HRDPlotModel *ParserBase::getHRDPlotModel()
 {
   if (this->redirectPlotModel == nullptr && !this->hrdPlotModel.isNull())
     return this->hrdPlotModel.data();
@@ -66,25 +69,25 @@ HRDPlotModel *parserBase::getHRDPlotModel()
   return {};
 }
 
-void parserBase::setRedirectPlotModel(HRDPlotModel *plotModel)
+void ParserBase::setRedirectPlotModel(HRDPlotModel *plotModel)
 {
   Q_ASSERT_X(plotModel != nullptr, Q_FUNC_INFO, "Redirect pointer is NULL");
   this->hrdPlotModel.reset(nullptr);
   this->redirectPlotModel = plotModel;
 }
 
-void parserBase::enableModel()
+void ParserBase::enableModel()
 {
   if (this->packetModel->isNull())
     this->packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
 }
 
-void parserBase::updateNumberModelItems()
+void ParserBase::updateNumberModelItems()
 { 
   this->packetModel->updateNumberModelItems();
 }
 
-QString parserBase::convertSliceTypeMapToString(QMap<QString, unsigned int> &sliceTypes)
+QString ParserBase::convertSliceTypeMapToString(QMap<QString, unsigned int> &sliceTypes)
 {
   QString text;
   for (auto key : sliceTypes.keys())
@@ -97,3 +100,5 @@ QString parserBase::convertSliceTypeMapToString(QMap<QString, unsigned int> &sli
   }
   return text;
 }
+
+} // namespace parser

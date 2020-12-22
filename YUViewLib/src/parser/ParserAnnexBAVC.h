@@ -35,19 +35,23 @@
 #include <QSharedPointer>
 
 #include "common/ReaderHelper.h"
-#include "parserAnnexB.h"
 #include "video/videoHandlerYUV.h"
+#include "ParserAnnexB.h"
+#include "NalUnit.h"
 
 using namespace YUV_Internals;
 
+namespace parser
+{
+
 // This class knows how to parse the bitrstream of HEVC annexB files
-class parserAnnexBAVC : public parserAnnexB
+class ParserAnnexBAVC : public ParserAnnexB
 {
   Q_OBJECT
   
 public:
-  parserAnnexBAVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); };
-  ~parserAnnexBAVC() {};
+  ParserAnnexBAVC(QObject *parent = nullptr) : ParserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); };
+  ~ParserAnnexBAVC() {};
 
   // Get properties
   double getFramerate() const Q_DECL_OVERRIDE;
@@ -96,14 +100,14 @@ protected:
 
   /* The basic HEVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
   */
-  struct nal_unit_avc : nal_unit
+  struct nal_unit_avc : NalUnit
   {
-    nal_unit_avc(int nal_idx, std::optional<pairUint64> filePosStartEnd) : nal_unit(nal_idx, filePosStartEnd) {}
-    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
+    nal_unit_avc(int nalIdx, std::optional<pairUint64> filePosStartEnd) : NalUnit(nalIdx, filePosStartEnd) {}
+    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : NalUnit(nal_src->nalIdx, nal_src->filePosStartEnd) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root) Q_DECL_OVERRIDE;
+    bool parseNalUnitHeader(const QByteArray &header_byte, TreeItem *root) Q_DECL_OVERRIDE;
 
     bool isSlice()        { return nal_unit_type >= CODED_SLICE_NON_IDR && nal_unit_type <= CODED_SLICE_IDR; }
     virtual QByteArray getNALHeader() const override;
@@ -619,3 +623,5 @@ protected:
   };
   HRD hrd;
 };
+
+} //namespace parser

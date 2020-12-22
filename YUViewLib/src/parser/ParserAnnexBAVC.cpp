@@ -30,11 +30,11 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserAnnexBAVC.h"
+#include "ParserAnnexBAVC.h"
 
 #include <cmath>
 
-#include "parserAnnexBItuTT35.h"
+#include "ParserAnnexBItuTT35.h"
 #include "common/parserMacros.h"
 
 #define PARSER_AVC_DEBUG_OUTPUT 0
@@ -45,7 +45,10 @@
 #define DEBUG_AVC(fmt) ((void)0)
 #endif
 
-double parserAnnexBAVC::getFramerate() const
+namespace parser
+{
+
+double ParserAnnexBAVC::getFramerate() const
 {
   // Find the first SPS and return the framerate (if signaled)
   for (auto nal : nalUnitList)
@@ -64,7 +67,7 @@ double parserAnnexBAVC::getFramerate() const
   return 0.0;
 }
 
-QSize parserAnnexBAVC::getSequenceSizeSamples() const
+QSize ParserAnnexBAVC::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
   for (auto nal : nalUnitList)
@@ -91,7 +94,7 @@ QSize parserAnnexBAVC::getSequenceSizeSamples() const
   return QSize(-1,-1);
 }
 
-yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
+yuvPixelFormat ParserAnnexBAVC::getPixelFormat() const
 {
   // Get the subsampling and bit-depth from the sps
   int bitDepthY = -1;
@@ -132,9 +135,9 @@ yuvPixelFormat parserAnnexBAVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
+ParserAnnexB::ParseResult ParserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
-  parserAnnexB::ParseResult parseResult;
+  ParserAnnexB::ParseResult parseResult;
 
   if (nalID == -1 && data.isEmpty())
   {
@@ -147,9 +150,9 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
         return parseResult;
       }
       if (curFrameFileStartEndPos)
-        DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+        DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
       else
-        DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+        DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
     }
     // The file ended
     std::sort(POCList.begin(), POCList.end());
@@ -181,11 +184,11 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
-  parserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  ParserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   // Create a nal_unit and read the header
   nal_unit_avc nal_avc(nalID, nalStartEndPosFile);
-  if (!nal_avc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
+  if (!nal_avc.parseNalUnitHeader(nalHeaderBytes, nalRoot))
     return parseResult;
 
   if (nal_avc.isSlice())
@@ -235,7 +238,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       this->getHRDPlotModel()->setCPBBufferSize(new_sps->vui_parameters.nal_hrd.CpbSize[0]);
     }
 
-    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parse SPS ID " << new_sps->seq_parameter_set_id);
+    DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parse SPS ID " << new_sps->seq_parameter_set_id);
   }
   else if (nal_avc.nal_unit_type == PPS) 
   {
@@ -253,7 +256,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
     specificDescription = parsingSuccess ? QString(" PPS_NUT ID %1").arg(new_pps->pic_parameter_set_id) : "PPS_NUT ERR";
     parseResult.nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->pic_parameter_set_id) : "PPS(ERR)";
 
-    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parse PPS ID " << new_pps->pic_parameter_set_id);
+    DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parse PPS ID " << new_pps->pic_parameter_set_id);
   }
   else if (nal_avc.isSlice())
   {
@@ -284,9 +287,9 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
             return parseResult;
           }
           if (curFrameFileStartEndPos)
-            DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+            DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
           else
-            DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+            DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
         curFramePOC = new_slice->globalPOC;
@@ -306,11 +309,11 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       currentSliceIntra = new_slice->isRandomAccess();
       currentSliceType = new_slice->getSliceTypeString();
 
-      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Slice POC " << new_slice->globalPOC);
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Slice POC " << new_slice->globalPOC);
     }
     else
     {
-      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Slice Error");
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Slice Error");
   }
   }
   else if (nal_avc.nal_unit_type == SEI)
@@ -394,24 +397,24 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
     specificDescription = parsingSuccess ? QString(" (#%1)").arg(sei_count) : QString(" (#%1-ERR)").arg(sei_count);
     parseResult.nalTypeName = parsingSuccess ? QString("SEI(#%1)").arg(sei_count) : "SEI(ERR)";
 
-    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed SEI (" << sei_count << " messages)");
+    DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed SEI (" << sei_count << " messages)");
   }
   else if (nal_avc.nal_unit_type == FILLER)
   {
     parseResult.nalTypeName = "FILLER";
-    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Filler data");
+    DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Filler data");
   }
   else if (nal_avc.nal_unit_type == AUD)
   {
     parseResult.nalTypeName = "AUD";
-    DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Parsed Access Unit Delimiter (AUD)");
+    DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Access Unit Delimiter (AUD)");
   }
 
   if (auDelimiterDetector.isStartOfNewAU(nal_avc, curFramePOC))
   {
     if (this->sizeCurrentAU > 0)
     {
-      DEBUG_AVC("parserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate " << this->sizeCurrentAU);
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate " << this->sizeCurrentAU);
 
       BitratePlotModel::BitrateEntry entry;
       if (bitrateEntry)
@@ -428,7 +431,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
       }
       entry.bitrate = this->sizeCurrentAU;
       entry.keyframe = this->currentAUAllSlicesIntra;
-      entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
+      entry.frameType = ParserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
       parseResult.bitrateEntry = entry;
       if (this->active_SPS_list.size() > 0)
         this->hrd.addAU(this->sizeCurrentAU * 8, curFramePOC, this->active_SPS_list[0], this->lastBufferingPeriodSEI, this->lastPicTimingSEI, this->getHRDPlotModel());
@@ -463,7 +466,7 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
   if (nalRoot)
   {
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_avc.nal_idx).arg(nal_unit_type_toString.value(nal_avc.nal_unit_type)) + specificDescription);
+    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_avc.nalIdx).arg(nal_unit_type_toString.value(nal_avc.nal_unit_type)) + specificDescription);
     nalRoot->setError(!parsingSuccess);
   }
 
@@ -471,14 +474,14 @@ parserAnnexB::ParseResult parserAnnexBAVC::parseAndAddNALUnit(int nalID, QByteAr
   return parseResult;
 }
 
-const QStringList parserAnnexBAVC::nal_unit_type_toString = QStringList()
+const QStringList ParserAnnexBAVC::nal_unit_type_toString = QStringList()
 << "UNSPECIFIED" << "CODED_SLICE_NON_IDR" << "CODED_SLICE_DATA_PARTITION_A" << "CODED_SLICE_DATA_PARTITION_B" << "CODED_SLICE_DATA_PARTITION_C" 
 << "CODED_SLICE_IDR" << "SEI" << "SPS" << "PPS" << "AUD" << "END_OF_SEQUENCE" << "END_OF_STREAM" << "FILLER" << "SPS_EXT" << "PREFIX_NAL" 
 << "SUBSET_SPS" << "DEPTH_PARAMETER_SET" << "RESERVED_17" << "RESERVED_18" << "CODED_SLICE_AUX" << "CODED_SLICE_EXTENSION" << "CODED_SLICE_EXTENSION_DEPTH_MAP" 
 << "RESERVED_22" << "RESERVED_23" << "UNSPCIFIED_24" << "UNSPCIFIED_25" << "UNSPCIFIED_26" << "UNSPCIFIED_27" << "UNSPCIFIED_28" << "UNSPCIFIED_29" 
 << "UNSPCIFIED_30" << "UNSPCIFIED_31";
 
-bool parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
+bool ParserAnnexBAVC::nal_unit_avc::parseNalUnitHeader(const QByteArray &header_byte, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   ReaderHelper reader(header_byte, root, "nal_unit_header()");
@@ -515,14 +518,14 @@ bool parserAnnexBAVC::nal_unit_avc::parse_nal_unit_header(const QByteArray &head
     << "Reserved"
     << "Reserved"
     << "Unspecified";
-  READBITS_M(nal_unit_type_id, 5, nal_unit_type_id_meaning);
+  READBITS_M(nalUnitTypeID, 5, nal_unit_type_id_meaning);
 
   // Set the nal unit type
-  nal_unit_type = (nal_unit_type_id > UNSPCIFIED_31) ? UNSPECIFIED : (nal_unit_type_enum)nal_unit_type_id;
+  nal_unit_type = (nalUnitTypeID > UNSPCIFIED_31) ? UNSPECIFIED : (nal_unit_type_enum)nalUnitTypeID;
   return true;
 }
 
-bool parserAnnexBAVC::read_scaling_list(ReaderHelper &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag)
+bool ParserAnnexBAVC::read_scaling_list(ReaderHelper &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag)
 {
   int lastScale = 8;
   int nextScale = 8;
@@ -541,7 +544,7 @@ bool parserAnnexBAVC::read_scaling_list(ReaderHelper &reader, int *scalingList, 
   return true;
 }
 
-bool parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
+bool ParserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
   ReaderHelper reader(parameterSetData, root, "seq_parameter_set_rbsp()");
@@ -748,7 +751,7 @@ bool parserAnnexBAVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIte
   return true;
 }
 
-bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(ReaderHelper &reader, int BitDepthY, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag)
+bool ParserAnnexBAVC::sps::vui_parameters_struct::parse_vui(ReaderHelper &reader, int BitDepthY, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag)
 {
   reader_sub_level s(reader, "vui_parameters()");
   
@@ -895,7 +898,7 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::parse_vui(ReaderHelper &reader
   return true;
 }
 
-bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_hrd(ReaderHelper &reader)
+bool ParserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_hrd(ReaderHelper &reader)
 {
   reader_sub_level s(reader, "hrd_parameters()");
 
@@ -933,7 +936,7 @@ bool parserAnnexBAVC::sps::vui_parameters_struct::hrd_parameters_struct::parse_h
   return true;
 }
 
-bool parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list)
+bool ParserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const sps_map &active_SPS_list)
 {
   nalPayload = parameterSetData;
   ReaderHelper reader(parameterSetData, root, "pic_parameter_set_rbsp()");
@@ -1040,7 +1043,7 @@ bool parserAnnexBAVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIte
 
 QStringList slice_type_id_meaning = QStringList()
     << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)" << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)";
-bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
+bool ParserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
 {
   ReaderHelper reader(sliceHeaderData, root, "slice_header()");
 
@@ -1383,12 +1386,12 @@ bool parserAnnexBAVC::slice_header::parse_slice_header(const QByteArray &sliceHe
   return true;
 }
 
-QString parserAnnexBAVC::slice_header::getSliceTypeString() const
+QString ParserAnnexBAVC::slice_header::getSliceTypeString() const
 {
   return slice_type_id_meaning[slice_type_id];
 }
 
-bool parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::parse_ref_pic_list_mvc_modification(ReaderHelper & reader, slice_type_enum slice_type)
+bool ParserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::parse_ref_pic_list_mvc_modification(ReaderHelper & reader, slice_type_enum slice_type)
 {
   if (slice_type != SLICE_I && slice_type != SLICE_SI)
   {
@@ -1451,7 +1454,7 @@ bool parserAnnexBAVC::slice_header::ref_pic_list_mvc_modification_struct::parse_
   return true;
 }
 
-bool parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::parse_ref_pic_list_modification(ReaderHelper & reader, slice_type_enum slice_type)
+bool ParserAnnexBAVC::slice_header::ref_pic_list_modification_struct::parse_ref_pic_list_modification(ReaderHelper & reader, slice_type_enum slice_type)
 {
   if (slice_type != SLICE_I && slice_type != SLICE_SI)
   {
@@ -1502,7 +1505,7 @@ bool parserAnnexBAVC::slice_header::ref_pic_list_modification_struct::parse_ref_
   return true;
 }
 
-bool parserAnnexBAVC::slice_header::pred_weight_table_struct::parse_pred_weight_table(ReaderHelper & reader, slice_type_enum slice_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1)
+bool ParserAnnexBAVC::slice_header::pred_weight_table_struct::parse_pred_weight_table(ReaderHelper & reader, slice_type_enum slice_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1)
 {
   READUEV(luma_log2_weight_denom);
   if (ChromaArrayType != 0)
@@ -1557,7 +1560,7 @@ bool parserAnnexBAVC::slice_header::pred_weight_table_struct::parse_pred_weight_
   return true;
 }
 
-bool parserAnnexBAVC::slice_header::dec_ref_pic_marking_struct::parse_dec_ref_pic_marking(ReaderHelper & reader, bool IdrPicFlag)
+bool ParserAnnexBAVC::slice_header::dec_ref_pic_marking_struct::parse_dec_ref_pic_marking(ReaderHelper & reader, bool IdrPicFlag)
 {
   if (IdrPicFlag)
   {
@@ -1586,7 +1589,7 @@ bool parserAnnexBAVC::slice_header::dec_ref_pic_marking_struct::parse_dec_ref_pi
   return true;
 }
 
-QByteArray parserAnnexBAVC::nal_unit_avc::getNALHeader() const
+QByteArray ParserAnnexBAVC::nal_unit_avc::getNALHeader() const
 {
   // TODO: 
   // if ( nal_unit_type = = 14 | | nal_unit_type = = 20 | | nal_unit_type = = 21 ) ...
@@ -1595,7 +1598,7 @@ QByteArray parserAnnexBAVC::nal_unit_avc::getNALHeader() const
   return QByteArray(c, 1);
 }
 
-int parserAnnexBAVC::sei::parse_sei_header(QByteArray &sliceHeaderData, TreeItem *root)
+int ParserAnnexBAVC::sei::parse_sei_header(QByteArray &sliceHeaderData, TreeItem *root)
 {
   ReaderHelper reader(sliceHeaderData, root, "sei_message()");
 
@@ -1748,7 +1751,7 @@ int parserAnnexBAVC::sei::parse_sei_header(QByteArray &sliceHeaderData, TreeItem
   return reader.nrBytesRead();
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBAVC::sei::parser_sei_bytes(QByteArray &data, TreeItem *root)
+ParserAnnexB::sei_parsing_return_t ParserAnnexBAVC::sei::parser_sei_bytes(QByteArray &data, TreeItem *root)
 {
   if (root == nullptr)
     return SEI_PARSING_OK;
@@ -1772,7 +1775,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBAVC::sei::parser_sei_bytes(QByteA
   return SEI_PARSING_OK;
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
+ParserAnnexB::sei_parsing_return_t ParserAnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   itemTree = root ? new TreeItem("buffering_period()", root) : nullptr;
@@ -1782,7 +1785,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBAVC::buffering_period_sei::parse_
   return SEI_PARSING_OK;
 }
 
-bool parserAnnexBAVC::buffering_period_sei::parse(const sps_map &active_SPS_list, bool reparse)
+bool ParserAnnexBAVC::buffering_period_sei::parse(const sps_map &active_SPS_list, bool reparse)
 {
   ReaderHelper reader(sei_data_storage, itemTree);
 
@@ -1821,7 +1824,7 @@ bool parserAnnexBAVC::buffering_period_sei::parse(const sps_map &active_SPS_list
   return true;
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &data, const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
+ParserAnnexB::sei_parsing_return_t ParserAnnexBAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &data, const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
 {
   // Create a new TreeItem root for the item
   itemTree = root ? new TreeItem("pic_timing()", root) : nullptr;
@@ -1831,7 +1834,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBAVC::pic_timing_sei::parse_pic_ti
   return SEI_PARSING_OK;
 }
 
-bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, bool reparse)
+bool ParserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, bool reparse)
 {
   ReaderHelper reader(sei_data_storage, itemTree);
   
@@ -1946,7 +1949,7 @@ bool parserAnnexBAVC::pic_timing_sei::parse(const sps_map &active_SPS_list, bool
   return true;
 }
 
-bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData, TreeItem *root)
+bool ParserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData, TreeItem *root)
 {
   user_data_UUID = sliceHeaderData.mid(0, 16).toHex();
   user_data_message = sliceHeaderData.mid(16);
@@ -2010,7 +2013,7 @@ bool parserAnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData,
   return true;
 }
 
-QList<QByteArray> parserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+QList<QByteArray> ParserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   // Get the POC for the frame number
   int seekPOC = POCList[iFrameNr];
@@ -2063,7 +2066,7 @@ QList<QByteArray> parserAnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_
   return QList<QByteArray>();
 }
 
-QByteArray parserAnnexBAVC::getExtradata()
+QByteArray ParserAnnexBAVC::getExtradata()
 {
   // Convert the SPS and PPS that we found in the bitstream to the libavformat avcc format (see avc.c)
   QByteArray e;
@@ -2134,7 +2137,7 @@ QByteArray parserAnnexBAVC::getExtradata()
   return e;
 }
 
-QPair<int,int> parserAnnexBAVC::getProfileLevel()
+QPair<int,int> ParserAnnexBAVC::getProfileLevel()
 {
   for (auto nal : nalUnitList)
   {
@@ -2150,7 +2153,7 @@ QPair<int,int> parserAnnexBAVC::getProfileLevel()
   return QPair<int,int>(0,0);
 }
 
-Ratio parserAnnexBAVC::getSampleAspectRatio()
+Ratio ParserAnnexBAVC::getSampleAspectRatio()
 {
   for (auto nal : nalUnitList)
   {
@@ -2179,7 +2182,7 @@ Ratio parserAnnexBAVC::getSampleAspectRatio()
   return Ratio({1, 1});
 }
 
-int parserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray &in, int nrBytes)
+int ParserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray &in, int nrBytes)
 {
   if (in.length() <= 0)
     return 0;
@@ -2208,7 +2211,7 @@ int parserAnnexBAVC::determineRealNumberOfBytesSEIEmulationPrevention(QByteArray
   return pos;
 }
 
-bool parserAnnexBAVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_avc &nal_avc, int curFramePOC)
+bool ParserAnnexBAVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_avc &nal_avc, int curFramePOC)
 {
   const bool isSlice = (nal_avc.nal_unit_type == CODED_SLICE_NON_IDR || nal_avc.nal_unit_type == CODED_SLICE_IDR);
   
@@ -2250,7 +2253,7 @@ bool parserAnnexBAVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_avc &nal_av
   return isStart;
 }
 
-void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, HRDPlotModel *plotModel)
+void ParserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<sps> const &sps, QSharedPointer<buffering_period_sei> const &lastBufferingPeriodSEI, QSharedPointer<pic_timing_sei> const &lastPicTimingSEI, HRDPlotModel *plotModel)
 {
   Q_ASSERT(plotModel != nullptr);
   if (!sps->vui_parameters_present_flag || !sps->vui_parameters.nal_hrd_parameters_present_flag)
@@ -2489,7 +2492,7 @@ void parserAnnexBAVC::HRD::addAU(unsigned auBits, unsigned poc, QSharedPointer<s
   this->isFirstAUInBufferingPeriod = false;
 }
 
-void parserAnnexBAVC::HRD::endOfFile(HRDPlotModel *plotModel)
+void ParserAnnexBAVC::HRD::endOfFile(HRDPlotModel *plotModel)
 {
   // From time this->t_af_nm1 onwards, just remove all of the frames which have not been removed yet.
   auto lastFrameTime = this->t_af_nm1;
@@ -2502,9 +2505,9 @@ void parserAnnexBAVC::HRD::endOfFile(HRDPlotModel *plotModel)
   this->framesToRemove.clear();
 }
 
-QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFramesInTimeInterval(time_t from, time_t to)
+QList<ParserAnnexBAVC::HRD::HRDFrameToRemove> ParserAnnexBAVC::HRD::popRemoveFramesInTimeInterval(time_t from, time_t to)
 {
-  QList<parserAnnexBAVC::HRD::HRDFrameToRemove> l;
+  QList<ParserAnnexBAVC::HRD::HRDFrameToRemove> l;
   auto it = this->framesToRemove.begin();
   double t_r_previous = 0;
   while (it != this->framesToRemove.end())
@@ -2536,7 +2539,7 @@ QList<parserAnnexBAVC::HRD::HRDFrameToRemove> parserAnnexBAVC::HRD::popRemoveFra
   return l;
 }
 
-void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
+void ParserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned bufferSize, int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
 {
   const auto bufferOld = this->decodingBufferLevel;
   this->decodingBufferLevel += bufferAdd;
@@ -2558,7 +2561,7 @@ void parserAnnexBAVC::HRD::addToBufferAndCheck(unsigned bufferAdd, unsigned buff
   }
 }
 
-void parserAnnexBAVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel)
+void ParserAnnexBAVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &frame, int poc, time_t removalTime, HRDPlotModel *plotModel)
 {
   Q_UNUSED(poc);
 
@@ -2585,7 +2588,7 @@ void parserAnnexBAVC::HRD::removeFromBufferAndCheck(const HRDFrameToRemove &fram
   }
 }
 
-void parserAnnexBAVC::HRD::addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
+void ParserAnnexBAVC::HRD::addConstantBufferLine(int poc, time_t t_begin, time_t t_end, HRDPlotModel *plotModel)
 {
   HRDPlotModel::HRDEntry entry;
   entry.type = HRDPlotModel::HRDEntry::EntryType::Adding;
@@ -2596,3 +2599,5 @@ void parserAnnexBAVC::HRD::addConstantBufferLine(int poc, time_t t_begin, time_t
   entry.poc = poc;
   plotModel->addHRDEntry(entry);
 }
+
+} //namespace parser

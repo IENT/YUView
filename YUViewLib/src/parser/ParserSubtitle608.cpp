@@ -30,11 +30,14 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserSubtitle608.h"
+#include "ParserSubtitle608.h"
 
 #include "common/parserMacros.h"
 
 #include <stdexcept>
+
+namespace
+{
 
 bool checkByteParity(int val)
 {
@@ -171,6 +174,11 @@ QString getCCDataPacketMeaning(unsigned int cc_packet_data)
   return getCCDataBytesMeaning(byte1, byte2);
 }
 
+} // namespace
+
+namespace parser
+{
+
 int subtitle_608::parse608SubtitlePacket(QByteArray data, TreeItem *parent)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
@@ -228,3 +236,5 @@ int subtitle_608::parse608DataPayloadCCDataPacket(ReaderHelper &reader, unsigned
     READBITS_M(ccData, 24, &getCCDataPacketMeaning);
     return 3;
 }
+
+} // namespace parser

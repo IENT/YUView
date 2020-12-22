@@ -30,16 +30,16 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserAVFormat.h"
+#include "ParserAVFormat.h"
 
 #include <QElapsedTimer>
 
 #include "common/parserMacros.h"
-#include "parserAnnexBAVC.h"
-#include "parserAnnexBHEVC.h"
-#include "parserAnnexBMpeg2.h"
-#include "parserSubtitleDVB.h"
-#include "parserSubtitle608.h"
+#include "ParserAnnexBAVC.h"
+#include "ParserAnnexBHEVC.h"
+#include "ParserAnnexBMpeg2.h"
+#include "ParserSubtitleDVB.h"
+#include "ParserSubtitle608.h"
 
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
@@ -49,7 +49,10 @@
 #define DEBUG_AVFORMAT(fmt,...) ((void)0)
 #endif
 
-parserAVFormat::parserAVFormat(QObject *parent) : parserBase(parent)
+namespace parser
+{
+
+ParserAVFormat::ParserAVFormat(QObject *parent) : ParserBase(parent)
 { 
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
@@ -57,7 +60,7 @@ parserAVFormat::parserAVFormat(QObject *parent) : parserBase(parent)
   startCode.append((char)1);
 }
 
-QList<QTreeWidgetItem*> parserAVFormat::getStreamInfo()
+QList<QTreeWidgetItem*> ParserAVFormat::getStreamInfo()
 {
   // streamInfoAllStreams containse all the info for all streams.
   // The first QStringPairList contains the general info, next all infos for each stream follows
@@ -83,14 +86,14 @@ QList<QTreeWidgetItem*> parserAVFormat::getStreamInfo()
   return info;
 }
 
-QString parserAVFormat::getShortStreamDescription(int streamIndex) const
+QString ParserAVFormat::getShortStreamDescription(int streamIndex) const
 {
   if (streamIndex >= shortStreamInfoAllStreams.count())
     return {};
   return shortStreamInfoAllStreams[streamIndex];
 }
 
-bool parserAVFormat::parseExtradata(QByteArray &extradata)
+bool ParserAVFormat::parseExtradata(QByteArray &extradata)
 {
   if (extradata.isEmpty())
     return true;
@@ -106,7 +109,7 @@ bool parserAVFormat::parseExtradata(QByteArray &extradata)
   return true;
 }
 
-bool parserAVFormat::parseMetadata(QStringPairList &metadata)
+bool ParserAVFormat::parseMetadata(QStringPairList &metadata)
 {
   if (metadata.isEmpty() || packetModel->isNull())
     return true;
@@ -118,7 +121,7 @@ bool parserAVFormat::parseMetadata(QStringPairList &metadata)
   return true;
 }
 
-bool parserAVFormat::parseExtradata_generic(QByteArray &extradata)
+bool ParserAVFormat::parseExtradata_generic(QByteArray &extradata)
 {
   if (extradata.isEmpty() || packetModel->isNull())
     return true;
@@ -134,7 +137,7 @@ bool parserAVFormat::parseExtradata_generic(QByteArray &extradata)
   return true;
 }
 
-bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
+bool ParserAVFormat::parseExtradata_AVC(QByteArray &extradata)
 {
   if (extradata.isEmpty() || packetModel->isNull())
     return true;
@@ -199,7 +202,7 @@ bool parserAVFormat::parseExtradata_AVC(QByteArray &extradata)
   return true;
 }
 
-bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
+bool ParserAVFormat::parseExtradata_hevc(QByteArray &extradata)
 {
   if (extradata.isEmpty() || packetModel->isNull())
     return true;
@@ -246,7 +249,7 @@ bool parserAVFormat::parseExtradata_hevc(QByteArray &extradata)
   return true;
 }
 
-bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
+bool ParserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
 {
   if (extradata.isEmpty() || !packetModel->isNull())
     return true;
@@ -285,7 +288,7 @@ bool parserAVFormat::parseExtradata_mpeg2(QByteArray &extradata)
   return true;
 }
 
-bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
+bool ParserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
 {
   if (packetModel->isNull())
     return true;
@@ -377,14 +380,14 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
           {
             nalData = avpacketData.mid(posInData + offset);
             posInData = avpacketData.length() + 1;
-            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket start code -1 - NAL from %d to %d", posInData + offset, avpacketData.length());
+            DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket start code -1 - NAL from %d to %d", posInData + offset, avpacketData.length());
           }
           else
           {
             const int size = nextStartCodePos - posInData - offset;
             nalData = avpacketData.mid(posInData + offset, size);
             posInData += 3 + size;
-            DEBUG_AVFORMAT("parserAVFormat::parseAVPacket start code %d - NAL from %d to %d", nextStartCodePos, posInData + offset, nextStartCodePos);
+            DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket start code %d - NAL from %d to %d", nextStartCodePos, posInData + offset, nextStartCodePos);
           }
         }
         else
@@ -403,7 +406,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
 
           nalData = avpacketData.mid(posInData, size);
           posInData += size;
-          DEBUG_AVFORMAT("parserAVFormat::parseAVPacket NAL from %d to %d", posInData, posInData + size);
+          DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket NAL from %d to %d", posInData, posInData + size);
         }
 
         // Parse the NAL data
@@ -444,7 +447,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
         try
         {  
           int nrBytesRead = obuParser->parseAndAddOBU(obuID, avpacketData.mid(posInData), itemTree, obuStartEndPosFile, &obuTypeName);
-          DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
+          DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
           posInData += nrBytesRead;
         }
         catch (...)
@@ -459,7 +462,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
 
         if (obuID > 200)
         {
-          DEBUG_AVFORMAT("parserAVFormat::parseAVPacket We encountered more than 200 OBUs in one packet. This is probably an error.");
+          DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket We encountered more than 200 OBUs in one packet. This is probably an error.");
           return false;
         }
       }
@@ -481,7 +484,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
       try
       {  
         int nrBytesRead = subtitle_dvb::parseDVBSubtitleSegment(avpacketData.mid(posInData), itemTree, &segmentTypeName);
-        DEBUG_AVFORMAT("parserAVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
+        DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
         posInData += nrBytesRead;
       }
       catch (...)
@@ -496,7 +499,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
 
       if (segmentID > 200)
       {
-        DEBUG_AVFORMAT("parserAVFormat::parseAVPacket We encountered more than 200 DVB segments in one packet. This is probably an error.");
+        DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket We encountered more than 200 DVB segments in one packet. This is probably an error.");
         return false;
       }
     }
@@ -538,7 +541,7 @@ bool parserAVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packe
   return true;
 }
 
-bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
+bool ParserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
 {
   ReaderHelper reader(hvcCData, root, "hvcC");
   reader.disableEmulationPrevention();
@@ -598,7 +601,7 @@ bool parserAVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QSco
   return true;
 }
 
-bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
+bool ParserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
 {
   reader_sub_level sub_level_adder(reader, QString("nal unit array %1").arg(arrayID));
 
@@ -621,7 +624,7 @@ bool parserAVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, ReaderHel
   return true;
 }
 
-bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<parserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
+bool ParserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel)
 {
   reader_sub_level sub_level_adder(reader, QString("nal unit %1").arg(unitID));
 
@@ -640,7 +643,7 @@ bool parserAVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, ReaderHelper &
   return true;
 }
 
-bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
+bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
   // Open the file but don't parse it yet.
   QScopedPointer<FileSourceFFmpegFile> ffmpegFile(new FileSourceFFmpegFile());
@@ -652,11 +655,11 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
   codecID = ffmpegFile->getVideoStreamCodecID();
   if (codecID.isAVC())
-    this->annexBParser.reset(new parserAnnexBAVC());
+    this->annexBParser.reset(new ParserAnnexBAVC());
   else if (codecID.isHEVC())
-    this->annexBParser.reset(new parserAnnexBHEVC());
+    this->annexBParser.reset(new ParserAnnexBHEVC());
   else if (codecID.isMpeg2())
-    this->annexBParser.reset(new parserAnnexBMpeg2());
+    this->annexBParser.reset(new ParserAnnexBMpeg2());
   else if (codecID.isAV1())
     this->obuParser.reset(new parserAV1OBU());
   else if (codecID.isNone())
@@ -725,11 +728,11 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
     if (!parseAVPacket(packetID, packet))
     {
-      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket error parsing Packet %d", packetID);
+      DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket error parsing Packet %d", packetID);
     }
     else
     {
-      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Packet %d", packetID);
+      DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket Packet %d", packetID);
     }
 
     packetID++;
@@ -747,11 +750,11 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
     if (cancelBackgroundParser)
     {
       abortParsing = true;
-      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Abort parsing by user request");
+      DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket Abort parsing by user request");
     }
     if (parsingLimitEnabled && videoFrameCounter > PARSER_FILE_FRAME_NR_LIMIT)
     {
-      DEBUG_AVFORMAT("parserAVFormat::parseAVPacket Abort parsing because frame limit was reached.");
+      DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket Abort parsing because frame limit was reached.");
       abortParsing = true;
     }
   }
@@ -768,3 +771,5 @@ bool parserAVFormat::runParsingOfFile(QString compressedFilePath)
 
   return !cancelBackgroundParser;
 }
+
+} // namespace parser

@@ -34,7 +34,7 @@
 
 #include "decoder/decoderBase.h"
 #include "filesource/FileSourceFFmpegFile.h"
-#include "parser/parserAnnexB.h"
+#include "parser/ParserAnnexB.h"
 #include "playlistItemWithVideo.h"
 #include "statistics/statisticHandler.h"
 #include "ui_playlistItemCompressedFile.h"
@@ -122,7 +122,7 @@ protected:
   // once for the background caching). The parser is only needed once and can be used for both loading and caching tasks.
   QScopedPointer<FileSourceAnnexBFile> inputFileAnnexBLoading;
   QScopedPointer<FileSourceAnnexBFile> inputFileAnnexBCaching;
-  QScopedPointer<parserAnnexB> inputFileAnnexBParser;
+  QScopedPointer<parser::ParserAnnexB> inputFileAnnexBParser;
   // When reading annex B data using the FileSourceAnnexBFile::getFrameData function, we need to count how many frames we already read.
   int readAnnexBFrameCounterCodingOrder { -1 };
   

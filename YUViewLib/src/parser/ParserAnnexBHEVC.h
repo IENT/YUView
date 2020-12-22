@@ -35,19 +35,23 @@
 #include <QSharedPointer>
 
 #include "common/ReaderHelper.h"
-#include "parserAnnexB.h"
 #include "video/videoHandlerYUV.h"
+#include "ParserAnnexB.h"
+#include "NalUnit.h"
 
 using namespace YUV_Internals;
 
+namespace parser
+{
+
 // This class knows how to parse the bitrstream of HEVC annexB files
-class parserAnnexBHEVC : public parserAnnexB
+class ParserAnnexBHEVC : public ParserAnnexB
 {
   Q_OBJECT
   
 public:
-  parserAnnexBHEVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
-  ~parserAnnexBHEVC() {};
+  ParserAnnexBHEVC(QObject *parent = nullptr) : ParserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
+  ~ParserAnnexBHEVC() {};
 
   // Get some properties
   double getFramerate() const Q_DECL_OVERRIDE;
@@ -79,17 +83,17 @@ protected:
 
   /* The basic HEVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
   */
-  struct nal_unit_hevc : nal_unit
+  struct nal_unit_hevc : NalUnit
   {
-    nal_unit_hevc(int nal_idx, std::optional<pairUint64> filePosStartEnd) : nal_unit(nal_idx, filePosStartEnd) {}
-    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+    nal_unit_hevc(int nalIdx, std::optional<pairUint64> filePosStartEnd) : NalUnit(nalIdx, filePosStartEnd) {}
+    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : NalUnit(nal_src->nalIdx, nal_src->filePosStartEnd) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
     virtual ~nal_unit_hevc() {}
 
     virtual QByteArray getNALHeader() const override;
     virtual bool isParameterSet() const override { return nal_type == VPS_NUT || nal_type == SPS_NUT || nal_type == PPS_NUT; }
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
+    bool parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root) override;
 
     bool isIRAP();
     bool isSLNR();
@@ -767,7 +771,7 @@ protected:
   {
   public:
     alternative_transfer_characteristics_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    parserAnnexB::sei_parsing_return_t parse_alternative_transfer_characteristics_sei(QByteArray &seiPayload, TreeItem *root) { return parse_internal(seiPayload, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
+    ParserAnnexB::sei_parsing_return_t parse_alternative_transfer_characteristics_sei(QByteArray &seiPayload, TreeItem *root) { return parse_internal(seiPayload, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     unsigned int preferred_transfer_characteristics;
   private:
@@ -824,3 +828,5 @@ protected:
   bool currentAUAllSlicesIntra {true};
   QMap<QString, unsigned int> currentAUSliceTypes;
 };
+
+} // namespace parser

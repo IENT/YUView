@@ -70,11 +70,14 @@
 #define MAX_TILE_COLS 64
 #define MAX_TILE_ROWS 64
 
+namespace parser
+{
+
 const QStringList parserAV1OBU::obu_type_toString = QStringList()
   << "RESERVED" << "OBU_SEQUENCE_HEADER" << "OBU_TEMPORAL_DELIMITER" << "OBU_FRAME_HEADER" << "OBU_TILE_GROUP" 
   << "OBU_METADATA" << "OBU_FRAME" << "OBU_REDUNDANT_FRAME_HEADER" << "OBU_TILE_LIST" << "OBU_PADDING";
 
-parserAV1OBU::parserAV1OBU(QObject *parent) : parserBase(parent)
+parserAV1OBU::parserAV1OBU(QObject *parent) : ParserBase(parent)
 {
   // Reset all values in parserAV1OBU
   memset(&decValues, 0, sizeof(global_decoding_values));
@@ -1687,3 +1690,5 @@ bool parserAV1OBU::frame_header::cdef_params_struct::parse_cdef_params(bool Code
 
   return true;
 }
+
+} // namespace parser

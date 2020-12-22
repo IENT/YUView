@@ -33,12 +33,15 @@
 #pragma once
 
 #include "common/ReaderHelper.h"
-#include "parserBase.h"
+#include "ParserBase.h"
 #include "video/videoHandlerYUV.h"
 
 using namespace YUV_Internals;
 
-class parserAV1OBU : public parserBase
+namespace parser
+{
+
+class parserAV1OBU : public ParserBase
 {
   Q_OBJECT
 
@@ -557,3 +560,5 @@ protected:
 
   QSharedPointer<sequence_header> active_sequence_header;
 };
+
+} // namespace parser

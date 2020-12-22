@@ -37,6 +37,9 @@
 
 #include <stdexcept>
 
+namespace
+{
+
 bool parsePageCompositionSegment(ReaderHelper &reader, unsigned int segment_length)
 {
     reader_sub_level s(reader, "page_composition_segment()");
@@ -688,7 +691,9 @@ bool parseAlternativeCLUTSegment(ReaderHelper &reader, unsigned int segment_leng
     return true;
 }
 
-int subtitle_dvb::parseDVBSubtitleSegment(QByteArray data, TreeItem *parent, QString *segmentTypeName)
+} // namespace
+
+int parser::subtitle_dvb::parseDVBSubtitleSegment(QByteArray data, TreeItem *parent, QString *segmentTypeName)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet. 
