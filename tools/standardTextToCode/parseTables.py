@@ -31,6 +31,7 @@ def cleanCondition(text : str):
     text = text.replace("\n", "")
     text = text.replace("\t", "")
     text = text.replace("\u2212", "-")
+    text = text.replace('−', '-')
     if (text.find("\xa0") != -1):
         raise SyntaxError("There still is a char to replace in the condition. This must be cleaned up first.")
     return text
@@ -40,6 +41,7 @@ def cleanArgument(text : str):
     text = text.replace("\xa0]", "]")
     text = text.replace("\xa0", " ")
     text = text.replace("\u2212", "-")
+    text = text.replace('−', '-')
     if (text.find("\xa0") != -1):
         raise SyntaxError("There still is a char to replace in the argument. This must be cleaned up first.")
     return text
@@ -54,18 +56,22 @@ def cleanComment(text : str):
     text = text.replace("( ", "(")
     text = text.replace(" )", ")")
     text = text.replace("\u2212", "-")
+    text = text.replace('−', '-')
     if (text.find("\xa0") != -1):
         raise SyntaxError("There still is a char to replace in the comment. This must be cleaned up first.")
     return text
 def cleanConditionPart(text : str):
     text = text.strip()
     text = text.replace("\xa0−\xa0", " - ")
+    text = text.replace('−', '-')
     if (text.find("\xa0") != -1):
         raise SyntaxError("There still is a char to replace in the condition. This must be cleaned up first.")
     return text
 def cleanIncrement(text : str):
     text = text.strip()
     text = text.replace("-\xa0-", "--")
+    text = text.replace("−\xa0−", "--")
+    text = text.replace('−', '-')
     if (text.find("\xa0") != -1):
         raise SyntaxError("There still is a char to replace in the increment. This must be cleaned up first.")
     return text

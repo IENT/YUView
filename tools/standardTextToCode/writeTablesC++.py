@@ -4,9 +4,9 @@ from parseTables import *
 from pathlib import Path
 
 class OutputFile:
-    def __init__(self, name, classes, dependencies):
+    def __init__(self, name, classname, dependencies):
         self.name = name
-        self.classes = classes
+        self.classname = classname
         self.dependencies = dependencies
         self.tables = []
 
@@ -155,35 +155,24 @@ def writeTablesToCpp(parsedTables, path):
 
     writeOutCommonClasses(open(path + "/common.h", "w"))
 
-    vvcOutputFiles = [
-        OutputFile("vps", ["video_parameter_set_rbsp"], ["ptl", "dpb_parameters", "general_hrd_parameters", "ols_hrd_parameters"]),
-        OutputFile("sps", ["seq_parameter_set_rbsp"], ["ptl", "dpb_parameters", "ref_pic_list_struct", "general_hrd_parameters", "ols_hrd_parameters", "vui"]),
-        OutputFile("pps", ["pic_parameter_set_rbsp"], []),
-        OutputFile("ptl", ["profile_tier_level"], []),
-        OutputFile("dpb_parameters", ["dpb_parameters"], []),
-        OutputFile("general_hrd_parameters", ["general_hrd_parameters"], []),
-        OutputFile("ols_hrd_parameters", ["ols_hrd_parameters"], []),
-        OutputFile("vui", ["vui_parameters"], []),
-        OutputFile("other", [], [])
-    ]
+    # vvcOutputFiles = [
+    #     OutputFile("vps", "video_parameter_set_rbsp", ["ptl", "dpb_parameters", "general_hrd_parameters", "ols_hrd_parameters"]),
+    #     OutputFile("sps", "seq_parameter_set_rbsp", ["ptl", "dpb_parameters", "ref_pic_list_struct", "general_hrd_parameters", "ols_hrd_parameters", "vui"]),
+    #     OutputFile("pps", "pic_parameter_set_rbsp", []),
+    #     OutputFile("ptl", "profile_tier_level", []),
+    #     OutputFile("dpb_parameters", "dpb_parameters", []),
+    #     OutputFile("general_hrd_parameters", "general_hrd_parameters", []),
+    #     OutputFile("ols_hrd_parameters", "ols_hrd_parameters", []),
+    #     OutputFile("vui", "vui_parameters", []),
+    #     OutputFile("other", "", [])
+    # ]
 
     for table in parsedTables:
         assert(type(table) == ContainerTable)
-        print(table.name)
-        # Sort the tables into the output files
-        for outFile in vvcOutputFiles:
-            for includeClass in outFile.classes:
-                if (includeClass == table.name):
-                    outFile.tables.append(table)
-                    break
-            if (outFile.name == "other"):
-                outFile.tables.append(table)
-
-    for outFile in vvcOutputFiles:
-        files = (HeaderFile(path, outFile.name, outFile.dependencies), CppFile(path, outFile.name))
-        for table in outFile.tables:
-            writeTableToFiles(table, files)
-
+        print(f"Writing {table.name}")
+        files = (HeaderFile(path, table.name, []), CppFile(path, table.name))
+        writeTableToFiles(table, files)
+        
 def main():
     parsedTables = pickle.load(open("tempPiclkle.p", "rb"))
     writeTablesToCpp(parsedTables, "cpp")
