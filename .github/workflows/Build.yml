@@ -207,7 +207,8 @@ jobs:
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         jom
-        jom check
+        nmake check
+        call "YUViewUnitTest\filesource\Filesource\tst_Filesource.exe"
         cd ..
       shell: cmd
     - name: WindeployQT
