@@ -30,13 +30,13 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserAnnexBHEVC.h"
+#include "AnnexBHEVC.h"
 
 #include <algorithm>
 #include <cmath>
 
-#include "common/parserMacros.h"
-#include "parserAnnexBItuTT35.h"
+#include "common/Macros.h"
+#include "AnnexBItuTT35.h"
 
 #define PARSER_HEVC_DEBUG_OUTPUT 0
 #if PARSER_HEVC_DEBUG_OUTPUT && !NDEBUG
@@ -46,14 +46,17 @@
 #define DEBUG_HEVC(msg) ((void)0)
 #endif
 
-const QStringList parserAnnexBHEVC::nal_unit_type_toString = QStringList()
+namespace parser
+{
+
+const QStringList AnnexBHEVC::nal_unit_type_toString = QStringList()
 << "TRAIL_N" << "TRAIL_R" << "TSA_N" << "TSA_R" << "STSA_N" << "STSA_R" << "RADL_N" << "RADL_R" << "RASL_N" << "RASL_R" << "RSV_VCL_N10" << "RSV_VCL_N12" << "RSV_VCL_N14" << 
 "RSV_VCL_R11" << "RSV_VCL_R13" << "RSV_VCL_R15" << "BLA_W_LP" << "BLA_W_RADL" << "BLA_N_LP" << "IDR_W_RADL" <<
 "IDR_N_LP" << "CRA_NUT" << "RSV_IRAP_VCL22" << "RSV_IRAP_VCL23" << "RSV_VCL24" << "RSV_VCL25" << "RSV_VCL26" << "RSV_VCL27" << "RSV_VCL28" << "RSV_VCL29" <<
 "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
 "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
-double parserAnnexBHEVC::getFramerate() const
+double AnnexBHEVC::getFramerate() const
 {
   // First try to get the framerate from the parameter sets themselves
   for (auto nal : nalUnitList)
@@ -90,7 +93,7 @@ double parserAnnexBHEVC::getFramerate() const
   return DEFAULT_FRAMERATE;
 }
 
-QSize parserAnnexBHEVC::getSequenceSizeSamples() const
+QSize AnnexBHEVC::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
   for (auto nal : nalUnitList)
@@ -108,7 +111,7 @@ QSize parserAnnexBHEVC::getSequenceSizeSamples() const
   return QSize(-1,-1);
 }
 
-yuvPixelFormat parserAnnexBHEVC::getPixelFormat() const
+yuvPixelFormat AnnexBHEVC::getPixelFormat() const
 {
   // Get the subsampling and bit-depth from the sps
   int bitDepthY = -1;
@@ -149,7 +152,7 @@ yuvPixelFormat parserAnnexBHEVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-QList<QByteArray> parserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   // Get the POC for the frame number
   int seekPOC = POCList[iFrameNr];
@@ -211,7 +214,7 @@ QList<QByteArray> parserAnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64
   return QList<QByteArray>();
 }
 
-QByteArray parserAnnexBHEVC::getExtradata()
+QByteArray AnnexBHEVC::getExtradata()
 {
   // Just return the VPS, SPS and PPS in NAL unit format. From the format in the extradata, ffmpeg will detect that
   // the input file is in raw NAL unit format and accept AVPacets in NAL unit format.
@@ -260,7 +263,7 @@ QByteArray parserAnnexBHEVC::getExtradata()
   return ret;
 }
 
-QPair<int,int> parserAnnexBHEVC::getProfileLevel()
+QPair<int,int> AnnexBHEVC::getProfileLevel()
 {
   for (auto nal : nalUnitList)
   {
@@ -276,7 +279,7 @@ QPair<int,int> parserAnnexBHEVC::getProfileLevel()
   return QPair<int,int>(0,0);
 }
 
-Ratio parserAnnexBHEVC::getSampleAspectRatio()
+Ratio AnnexBHEVC::getSampleAspectRatio()
 {
   for (auto nal : nalUnitList)
   {
@@ -305,9 +308,9 @@ Ratio parserAnnexBHEVC::getSampleAspectRatio()
   return Ratio({1, 1});
 }
 
-parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
+AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
-  parserAnnexB::ParseResult parseResult;
+  AnnexB::ParseResult parseResult;
 
   if (nalID == -1 && data.isEmpty())
   {
@@ -320,9 +323,9 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
         return parseResult;
       }
       if (curFrameFileStartEndPos)
-        DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+        DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
       else
-        DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+        DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
     }
     // The file ended
     std::sort(POCList.begin(), POCList.end());
@@ -353,11 +356,11 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
-  parserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   // Create a nal_unit and read the header
   nal_unit_hevc nal_hevc(nalID, nalStartEndPosFile);
-  if (!nal_hevc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
+  if (!nal_hevc.parseNalUnitHeader(nalHeaderBytes, nalRoot))
     return parseResult;
 
   bool first_slice_segment_in_pic_flag = false;
@@ -405,7 +408,7 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
     specificDescription = parsingSuccess ? QString(" VPS_NUT ID %1").arg(new_vps->vps_video_parameter_set_id) : " VPS_NUT ERR";
     parseResult.nalTypeName = parsingSuccess ? QString("VPS(%1)").arg(new_vps->vps_video_parameter_set_id) : "VPS(ERR)";
 
-    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit VPS ID " << new_vps->vps_video_parameter_set_id);
+    DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit VPS ID " << new_vps->vps_video_parameter_set_id);
   }
   else if (nal_hevc.nal_type == SPS_NUT)
   {
@@ -423,7 +426,7 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
     specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(new_sps->sps_seq_parameter_set_id) : " SPS_NUT ERR";
     parseResult.nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(new_sps->sps_seq_parameter_set_id) : "SPS(ERR)";
 
-    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit SPS ID " << new_sps->sps_seq_parameter_set_id);
+    DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit SPS ID " << new_sps->sps_seq_parameter_set_id);
   }
   else if (nal_hevc.nal_type == PPS_NUT) 
   {
@@ -441,7 +444,7 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
     specificDescription = parsingSuccess ? QString(" PPS_NUT ID %1").arg(new_pps->pps_pic_parameter_set_id) : " PPS_NUT ERR";
     parseResult.nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->pps_pic_parameter_set_id) : "PPS(ERR)";
 
-    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit PPS ID " << new_pps->pps_pic_parameter_set_id);
+    DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit PPS ID " << new_pps->pps_pic_parameter_set_id);
   }
   else if (nal_hevc.isSlice())
   {
@@ -497,9 +500,9 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
             return parseResult;
           }
           if (curFrameFileStartEndPos)
-            DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+            DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Adding start/end " << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
           else
-            DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+            DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
         curFramePOC = new_slice->globalPOC;
@@ -523,7 +526,7 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
     specificDescription = parsingSuccess ? QString(" POC %1").arg(POC) : " POC ERR";
     parseResult.nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(POC) : "Slice(ERR)";
 
-    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Slice POC " << POC << " - pocCounterOffset " << pocCounterOffset << " maxPOCCount " << maxPOCCount << (new_slice->isIRAP() ? " - IRAP" : "") << (new_slice->NoRaslOutputFlag ? "" : " - RASL") << (parsingSuccess ? "" : " ERROR"));
+    DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Slice POC " << POC << " - pocCounterOffset " << pocCounterOffset << " maxPOCCount " << maxPOCCount << (new_slice->isIRAP() ? " - IRAP" : "") << (new_slice->NoRaslOutputFlag ? "" : " - RASL") << (parsingSuccess ? "" : " ERROR"));
   }
   else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
   {
@@ -602,7 +605,7 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
         parsingSuccess = false;
 
       sei_count++;
-      DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit SEI payload type " << new_sei->payloadType);
+      DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit SEI payload type " << new_sei->payloadType);
     }
 
     specificDescription = QString(" Number Messages: %1").arg(sei_count);
@@ -612,7 +615,7 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
   {
     specificDescription = "Filler";
     parseResult.nalTypeName = "FILLER";
-    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Filler");
+    DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Filler");
   }
   else if (nal_hevc.nal_type == UNSPEC62 || nal_hevc.nal_type == UNSPEC63)
   {
@@ -624,7 +627,7 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
 
     specificDescription = "Dolby Vision";
     parseResult.nalTypeName = "Dolby Vision";
-    DEBUG_HEVC("parserAnnexBHEVC::parseAndAddNALUnit Dolby Vision Metadata");
+    DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Dolby Vision Metadata");
   }
 
   if (auDelimiterDetector.isStartOfNewAU(nal_hevc, first_slice_segment_in_pic_flag))
@@ -646,7 +649,7 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
     }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
-    entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
+    entry.frameType = Base::convertSliceTypeMapToString(this->currentAUSliceTypes);
     parseResult.bitrateEntry = entry;
 
     sizeCurrentAU = 0;
@@ -667,13 +670,13 @@ parserAnnexB::ParseResult parserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
+    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nalIdx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
 
   parseResult.success = true;
   return parseResult;
 }
 
-bool parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(ReaderHelper &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
+bool AnnexBHEVC::profile_tier_level::parse_profile_tier_level(ReaderHelper &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
 {
   reader_sub_level s(reader, "profile_tier_level()");
 
@@ -791,7 +794,7 @@ bool parserAnnexBHEVC::profile_tier_level::parse_profile_tier_level(ReaderHelper
   return true;
 }
 
-bool parserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(ReaderHelper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, bool SubPicHrdFlag, unsigned int bit_rate_scale, unsigned int cpb_size_scale, unsigned int cpb_size_du_scale)
+bool AnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(ReaderHelper &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, bool SubPicHrdFlag, unsigned int bit_rate_scale, unsigned int cpb_size_scale, unsigned int cpb_size_du_scale)
 {
   Q_UNUSED(subLayerId);
   reader_sub_level s(reader, "sub_layer_hrd_parameters()");
@@ -856,7 +859,7 @@ bool parserAnnexBHEVC::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(
   return true;
 }
 
-bool parserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(ReaderHelper &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1)
+bool AnnexBHEVC::hrd_parameters::parse_hrd_parameters(ReaderHelper &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1)
 {
   reader_sub_level s(reader, "hrd_parameters()");
   
@@ -930,7 +933,7 @@ bool parserAnnexBHEVC::hrd_parameters::parse_hrd_parameters(ReaderHelper &reader
   return true;
 }
 
-bool parserAnnexBHEVC::pred_weight_table::parse_pred_weight_table(ReaderHelper &reader, sps *actSPS, slice *actSlice)
+bool AnnexBHEVC::pred_weight_table::parse_pred_weight_table(ReaderHelper &reader, sps *actSPS, slice *actSlice)
 {
   reader_sub_level s(reader, "pred_weight_table()");
   
@@ -983,15 +986,15 @@ bool parserAnnexBHEVC::pred_weight_table::parse_pred_weight_table(ReaderHelper &
   return true;
 }
 
-unsigned int parserAnnexBHEVC::st_ref_pic_set::NumNegativePics[65];
-unsigned int parserAnnexBHEVC::st_ref_pic_set::NumPositivePics[65];
-int parserAnnexBHEVC::st_ref_pic_set::DeltaPocS0[65][16];
-int parserAnnexBHEVC::st_ref_pic_set::DeltaPocS1[65][16];
-bool parserAnnexBHEVC::st_ref_pic_set::UsedByCurrPicS0[65][16];
-bool parserAnnexBHEVC::st_ref_pic_set::UsedByCurrPicS1[65][16];
-unsigned int parserAnnexBHEVC::st_ref_pic_set::NumDeltaPocs[65];
+unsigned int AnnexBHEVC::st_ref_pic_set::NumNegativePics[65];
+unsigned int AnnexBHEVC::st_ref_pic_set::NumPositivePics[65];
+int AnnexBHEVC::st_ref_pic_set::DeltaPocS0[65][16];
+int AnnexBHEVC::st_ref_pic_set::DeltaPocS1[65][16];
+bool AnnexBHEVC::st_ref_pic_set::UsedByCurrPicS0[65][16];
+bool AnnexBHEVC::st_ref_pic_set::UsedByCurrPicS1[65][16];
+unsigned int AnnexBHEVC::st_ref_pic_set::NumDeltaPocs[65];
 
-bool parserAnnexBHEVC::st_ref_pic_set::parse_st_ref_pic_set(ReaderHelper &reader, unsigned int stRpsIdx, sps *actSPS)
+bool AnnexBHEVC::st_ref_pic_set::parse_st_ref_pic_set(ReaderHelper &reader, unsigned int stRpsIdx, sps *actSPS)
 {
   reader_sub_level s(reader, "st_ref_pic_set()");
   
@@ -1127,7 +1130,7 @@ bool parserAnnexBHEVC::st_ref_pic_set::parse_st_ref_pic_set(ReaderHelper &reader
 }
 
 // (7-55)
-int parserAnnexBHEVC::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *actSlice)
+int AnnexBHEVC::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *actSlice)
 {
   int NumPicTotalCurr = 0;
   for(unsigned int i = 0; i < NumNegativePics[CurrRpsIdx]; i++)
@@ -1142,7 +1145,7 @@ int parserAnnexBHEVC::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, slice *act
   return NumPicTotalCurr;
 }
 
-bool parserAnnexBHEVC::vui_parameters::parse_vui_parameters(ReaderHelper &reader, sps *actSPS)
+bool AnnexBHEVC::vui_parameters::parse_vui_parameters(ReaderHelper &reader, sps *actSPS)
 {
   reader_sub_level s(reader, "vui_parameters()");
 
@@ -1234,7 +1237,7 @@ bool parserAnnexBHEVC::vui_parameters::parse_vui_parameters(ReaderHelper &reader
   return true;
 }
 
-bool parserAnnexBHEVC::scaling_list_data::parse_scaling_list_data(ReaderHelper &reader)
+bool AnnexBHEVC::scaling_list_data::parse_scaling_list_data(ReaderHelper &reader)
 {
   reader_sub_level s(reader, "scaling_list_data()");
   
@@ -1271,7 +1274,7 @@ bool parserAnnexBHEVC::scaling_list_data::parse_scaling_list_data(ReaderHelper &
   return true;
 }
 
-bool parserAnnexBHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeItem *root)
+bool AnnexBHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
 
@@ -1346,7 +1349,7 @@ bool parserAnnexBHEVC::vps::parse_vps(const QByteArray &parameterSetData, TreeIt
   return true;
 }
 
-bool parserAnnexBHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
+bool AnnexBHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
 
@@ -1496,7 +1499,7 @@ bool parserAnnexBHEVC::sps::parse_sps(const QByteArray &parameterSetData, TreeIt
   return true;
 }
 
-bool parserAnnexBHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root)
+bool AnnexBHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
 
@@ -1598,7 +1601,7 @@ bool parserAnnexBHEVC::pps::parse_pps(const QByteArray &parameterSetData, TreeIt
   return true;
 }
 
-bool parserAnnexBHEVC::pps_range_extension::parse_pps_range_extension(ReaderHelper &reader, pps *actPPS)
+bool AnnexBHEVC::pps_range_extension::parse_pps_range_extension(ReaderHelper &reader, pps *actPPS)
 {
   reader_sub_level s(reader, "pps_range_extension()");
   
@@ -1622,7 +1625,7 @@ bool parserAnnexBHEVC::pps_range_extension::parse_pps_range_extension(ReaderHelp
   return true;
 }
 
-bool parserAnnexBHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modification(ReaderHelper &reader, slice *actSlice, int NumPicTotalCurr)
+bool AnnexBHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modification(ReaderHelper &reader, slice *actSlice, int NumPicTotalCurr)
 {
   reader_sub_level s(reader, "ref_pic_lists_modification()");
   
@@ -1645,11 +1648,11 @@ bool parserAnnexBHEVC::ref_pic_lists_modification::parse_ref_pic_lists_modificat
 }
 
 // Initialize static member. Only true for the first slice instance
-bool parserAnnexBHEVC::slice::bFirstAUInDecodingOrder = true;
-int parserAnnexBHEVC::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
-int parserAnnexBHEVC::slice::prevTid0Pic_PicOrderCntMsb = 0;
+bool AnnexBHEVC::slice::bFirstAUInDecodingOrder = true;
+int AnnexBHEVC::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
+int AnnexBHEVC::slice::prevTid0Pic_PicOrderCntMsb = 0;
 
-parserAnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
+AnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 {
   PicOrderCntVal = -1;
   PicOrderCntMsb = -1;
@@ -1673,7 +1676,7 @@ parserAnnexBHEVC::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
 QStringList slice_type_meaning = QStringList() << "B-Slice" << "P-Slice" << "I-Slice";
-bool parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
+bool AnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root)
 {
   ReaderHelper reader(sliceHeaderData, root, "slice_segment_header()");
 
@@ -1944,19 +1947,19 @@ bool parserAnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, con
   return true;
 }
 
-QString parserAnnexBHEVC::slice::getSliceTypeString() const
+QString AnnexBHEVC::slice::getSliceTypeString() const
 {
   return slice_type_meaning[this->slice_type];
 }
 
-QByteArray parserAnnexBHEVC::nal_unit_hevc::getNALHeader() const
+QByteArray AnnexBHEVC::nal_unit_hevc::getNALHeader() const
 { 
-  int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
+  int out = ((int)nalUnitTypeID << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
   char c[2] = { (char)(out >> 8), (char)out };
   return QByteArray(c, 2);
 }
 
-bool parserAnnexBHEVC::nal_unit_hevc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+bool AnnexBHEVC::nal_unit_hevc::parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   ReaderHelper reader(parameterSetData, root, "nal_unit_header()");
@@ -2014,17 +2017,17 @@ bool parserAnnexBHEVC::nal_unit_hevc::parse_nal_unit_header(const QByteArray &pa
     << "RSV_NVCL46 Reserved"
     << "RSV_NVCL47 Reserved"
     << "Unspecified";
-  READBITS_M(nal_unit_type_id, 6, nal_unit_type_id_meaning);
+  READBITS_M(nalUnitTypeID, 6, nal_unit_type_id_meaning);
   READBITS(nuh_layer_id, 6);
   READBITS(nuh_temporal_id_plus1, 3);
 
   // Set the nal unit type
-  nal_type = (nal_unit_type_id > UNSPECIFIED) ? UNSPECIFIED : (nal_unit_type)nal_unit_type_id;
+  nal_type = (nalUnitTypeID > UNSPECIFIED) ? UNSPECIFIED : (nal_unit_type)nalUnitTypeID;
 
   return true;
 }
 
-bool parserAnnexBHEVC::nal_unit_hevc::isIRAP()
+bool AnnexBHEVC::nal_unit_hevc::isIRAP()
 { 
   return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
     nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
@@ -2032,7 +2035,7 @@ bool parserAnnexBHEVC::nal_unit_hevc::isIRAP()
     nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); 
 }
 
-bool parserAnnexBHEVC::nal_unit_hevc::isSLNR() 
+bool AnnexBHEVC::nal_unit_hevc::isSLNR() 
 { 
   return (nal_type == TRAIL_N     || nal_type == TSA_N       ||
     nal_type == STSA_N      || nal_type == RADL_N      ||
@@ -2040,16 +2043,16 @@ bool parserAnnexBHEVC::nal_unit_hevc::isSLNR()
     nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); 
 }
 
-bool parserAnnexBHEVC::nal_unit_hevc::isRADL() { 
+bool AnnexBHEVC::nal_unit_hevc::isRADL() { 
   return (nal_type == RADL_N || nal_type == RADL_R); 
 }
 
-bool parserAnnexBHEVC::nal_unit_hevc::isRASL() 
+bool AnnexBHEVC::nal_unit_hevc::isRASL() 
 { 
   return (nal_type == RASL_N || nal_type == RASL_R); 
 }
 
-bool parserAnnexBHEVC::nal_unit_hevc::isSlice() 
+bool AnnexBHEVC::nal_unit_hevc::isSlice() 
 { 
   return (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT  ||
     nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
@@ -2059,7 +2062,7 @@ bool parserAnnexBHEVC::nal_unit_hevc::isSlice()
     nal_type == RASL_R); 
 }
 
-int parserAnnexBHEVC::sei::parse_sei_header(SubByteReader &sei_reader, TreeItem *root)
+int AnnexBHEVC::sei::parse_sei_header(SubByteReader &sei_reader, TreeItem *root)
 {
   ReaderHelper reader(sei_reader, root, "sei_message()");
 
@@ -2230,7 +2233,7 @@ int parserAnnexBHEVC::sei::parse_sei_header(SubByteReader &sei_reader, TreeItem 
   return nrBytesRead;
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::sei::parser_sei_bytes(QByteArray &data, TreeItem *root)
+AnnexB::sei_parsing_return_t AnnexBHEVC::sei::parser_sei_bytes(QByteArray &data, TreeItem *root)
 {
   if (root == nullptr)
     return SEI_PARSING_OK;
@@ -2254,7 +2257,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::sei::parser_sei_bytes(QByte
   return SEI_PARSING_OK;
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sei_data, TreeItem *root)
+AnnexB::sei_parsing_return_t AnnexBHEVC::user_data_sei::parse_user_data_sei(QByteArray &sei_data, TreeItem *root)
 {
   user_data_UUID = sei_data.mid(0, 16).toHex();
   user_data_message = sei_data.mid(16);
@@ -2315,7 +2318,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::user_data_sei::parse_user_d
   return SEI_PARSING_OK;
 }
 
-bool parserAnnexBHEVC::alternative_transfer_characteristics_sei::parse_internal(QByteArray &data, TreeItem *root)
+bool AnnexBHEVC::alternative_transfer_characteristics_sei::parse_internal(QByteArray &data, TreeItem *root)
 {
   ReaderHelper reader(data, root, "alternative transfer characteristics");
   // For all SEI messages, the emulation prevention is already removed one level up
@@ -2325,7 +2328,7 @@ bool parserAnnexBHEVC::alternative_transfer_characteristics_sei::parse_internal(
   return true;
 }
 
-bool parserAnnexBHEVC::dolbyVisionMetadata::parse_metadata(const QByteArray &data, TreeItem *root)
+bool AnnexBHEVC::dolbyVisionMetadata::parse_metadata(const QByteArray &data, TreeItem *root)
 {
   if (root == nullptr)
     return false;
@@ -2349,7 +2352,7 @@ bool parserAnnexBHEVC::dolbyVisionMetadata::parse_metadata(const QByteArray &dat
   return true;
 }
 
-parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &data, const vps_map &active_VPS_list, TreeItem *root)
+AnnexB::sei_parsing_return_t AnnexBHEVC::active_parameter_sets_sei::parse_active_parameter_sets_sei(QByteArray &data, const vps_map &active_VPS_list, TreeItem *root)
 {
   this->reader = ReaderHelper(data, root, "active parameter sets");
   // For all SEI messages, the emulation prevention is already removed one level up
@@ -2363,7 +2366,7 @@ parserAnnexB::sei_parsing_return_t parserAnnexBHEVC::active_parameter_sets_sei::
   return SEI_PARSING_OK;
 }
 
-bool parserAnnexBHEVC::mastering_display_colour_volume_sei::parse_internal(QByteArray &seiPayload, TreeItem *root)
+bool AnnexBHEVC::mastering_display_colour_volume_sei::parse_internal(QByteArray &seiPayload, TreeItem *root)
 {
   ReaderHelper reader(seiPayload, root, "mastering_display_colour_volume");
   // For all SEI messages, the emulation prevention is already removed one level up
@@ -2382,7 +2385,7 @@ bool parserAnnexBHEVC::mastering_display_colour_volume_sei::parse_internal(QByte
   return SEI_PARSING_OK;
 }
 
-bool parserAnnexBHEVC::content_light_level_info_sei::parse_internal(QByteArray &seiPayload, TreeItem *root)
+bool AnnexBHEVC::content_light_level_info_sei::parse_internal(QByteArray &seiPayload, TreeItem *root)
 {
   ReaderHelper reader(seiPayload, root, "content_light_level_info");
   // For all SEI messages, the emulation prevention is already removed one level up
@@ -2394,13 +2397,13 @@ bool parserAnnexBHEVC::content_light_level_info_sei::parse_internal(QByteArray &
   return true;
 }
 
-bool parserAnnexBHEVC::active_parameter_sets_sei::parse_vps_id()
+bool AnnexBHEVC::active_parameter_sets_sei::parse_vps_id()
 {
   READBITS(active_video_parameter_set_id, 4);
   return true;
 }
 
-bool parserAnnexBHEVC::active_parameter_sets_sei::parse_internal(const vps_map &active_VPS_list)
+bool AnnexBHEVC::active_parameter_sets_sei::parse_internal(const vps_map &active_VPS_list)
 {
   if (is_reparse_needed(active_VPS_list))
     return false;
@@ -2422,7 +2425,7 @@ bool parserAnnexBHEVC::active_parameter_sets_sei::parse_internal(const vps_map &
   return true;
 }
 
-parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
+AnnexBHEVC::sei_parsing_return_t AnnexBHEVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
 {
   this->reader = ReaderHelper(data, root, "buffering period");
   // For all SEI messages, the emulation prevention is already removed one level up
@@ -2436,7 +2439,7 @@ parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::buffering_period_sei::p
   return SEI_PARSING_OK;
 }
 
-bool parserAnnexBHEVC::buffering_period_sei::parse_sps_id()
+bool AnnexBHEVC::buffering_period_sei::parse_sps_id()
 {
   READUEV(bp_seq_parameter_set_id);
   if (bp_seq_parameter_set_id > 15)
@@ -2444,7 +2447,7 @@ bool parserAnnexBHEVC::buffering_period_sei::parse_sps_id()
   return true;
 }
 
-bool parserAnnexBHEVC::buffering_period_sei::parse_internal(const sps_map &active_SPS_list)
+bool AnnexBHEVC::buffering_period_sei::parse_internal(const sps_map &active_SPS_list)
 {
   if (is_reparse_needed(active_SPS_list))
     return false;
@@ -2511,7 +2514,7 @@ bool parserAnnexBHEVC::buffering_period_sei::parse_internal(const sps_map &activ
   return true;
 }
 
-parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &seiPayload, const vps_map &active_VPS_list, const sps_map &active_SPS_list, TreeItem *root)
+AnnexBHEVC::sei_parsing_return_t AnnexBHEVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &seiPayload, const vps_map &active_VPS_list, const sps_map &active_SPS_list, TreeItem *root)
 {
   rootItem = root;
   sei_data_storage = seiPayload;
@@ -2522,7 +2525,7 @@ parserAnnexBHEVC::sei_parsing_return_t parserAnnexBHEVC::pic_timing_sei::parse_p
   return SEI_PARSING_OK;
 }
 
-bool parserAnnexBHEVC::pic_timing_sei::is_reparse_needed(const vps_map &active_VPS_list, const sps_map &active_SPS_list)
+bool AnnexBHEVC::pic_timing_sei::is_reparse_needed(const vps_map &active_VPS_list, const sps_map &active_SPS_list)
 {
   // TODO: Is this really ID 0? The standard does not really say which one (or I did not find it).
   if (!active_SPS_list.contains(0))
@@ -2532,7 +2535,7 @@ bool parserAnnexBHEVC::pic_timing_sei::is_reparse_needed(const vps_map &active_V
   return false;
 }
 
-bool parserAnnexBHEVC::pic_timing_sei::parse_internal(const vps_map &active_VPS_list, const sps_map &active_SPS_list)
+bool AnnexBHEVC::pic_timing_sei::parse_internal(const vps_map &active_VPS_list, const sps_map &active_SPS_list)
 {
   if (is_reparse_needed(active_VPS_list, active_SPS_list))
     return false;
@@ -2615,7 +2618,7 @@ bool parserAnnexBHEVC::pic_timing_sei::parse_internal(const vps_map &active_VPS_
   return true;
 }
 
-QStringList parserAnnexBHEVC::get_colour_primaries_meaning()
+QStringList AnnexBHEVC::get_colour_primaries_meaning()
 {
   QStringList colour_primaries_meaning = QStringList() 
     << "Reserved For future use by ITU-T | ISO/IEC"
@@ -2645,7 +2648,7 @@ QStringList parserAnnexBHEVC::get_colour_primaries_meaning()
   return colour_primaries_meaning;
 }
 
-QStringList parserAnnexBHEVC::get_transfer_characteristics_meaning()
+QStringList AnnexBHEVC::get_transfer_characteristics_meaning()
 {
   QStringList transfer_characteristics_meaning = QStringList()
     << "Reserved For future use by ITU-T | ISO/IEC"
@@ -2671,7 +2674,7 @@ QStringList parserAnnexBHEVC::get_transfer_characteristics_meaning()
   return transfer_characteristics_meaning;
 }
 
-QStringList parserAnnexBHEVC::get_matrix_coefficients_meaning()
+QStringList AnnexBHEVC::get_matrix_coefficients_meaning()
 {
   QStringList matrix_coefficients_meaning = QStringList()
     << "The identity matrix. RGB IEC 61966-2-1 (sRGB)"
@@ -2693,7 +2696,7 @@ QStringList parserAnnexBHEVC::get_matrix_coefficients_meaning()
   return matrix_coefficients_meaning;
 }
 
-bool parserAnnexBHEVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_hevc &nal, bool first_slice_segment_in_pic_flag)
+bool AnnexBHEVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_hevc &nal, bool first_slice_segment_in_pic_flag)
 {
   bool isStart = false;
   if (this->primaryCodedPictureInAuEncountered)
@@ -2725,3 +2728,5 @@ bool parserAnnexBHEVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_hevc &nal,
 
   return isStart;
 }
+
+} // namespace parser

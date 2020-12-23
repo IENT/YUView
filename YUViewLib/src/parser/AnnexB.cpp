@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserAnnexB.h"
+#include "AnnexB.h"
 
 #include <assert.h>
 #include <QProgressDialog>
@@ -44,7 +44,10 @@
 #define DEBUG_ANNEXB(msg) ((void)0)
 #endif
 
-QString parserAnnexB::getShortStreamDescription(int streamIndex) const
+namespace parser
+{
+
+QString AnnexB::getShortStreamDescription(int streamIndex) const
 {
   Q_UNUSED(streamIndex);
 
@@ -55,7 +58,7 @@ QString parserAnnexB::getShortStreamDescription(int streamIndex) const
   return info;
 }
 
-bool parserAnnexB::addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint)
+bool AnnexB::addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint)
 {
   if (POCList.contains(poc))
     return false;
@@ -76,7 +79,7 @@ bool parserAnnexB::addFrameToList(int poc, std::optional<pairUint64> fileStartEn
   return true;
 }
 
-void parserAnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
+void AnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
 {
   int startCodeSize = 0;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
@@ -92,7 +95,7 @@ void parserAnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pa
     new TreeItem("Start pos", (*nalStartEndPos).first, root);
 }
 
-int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const
+int AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const
 {
   // Get the POC for the frame number
   int seekPOC = POCList[frameIdx];
@@ -126,16 +129,16 @@ int parserAnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingO
   return POCList.indexOf(bestSeekPOC);
 }
 
-std::optional<pairUint64> parserAnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
+std::optional<pairUint64> AnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
 {
   if (codingOrderFrameIdx < 0 || codingOrderFrameIdx >= frameList.size())
     return {};
   return frameList[codingOrderFrameIdx].fileStartEndPos;
 }
 
-bool parserAnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow)
+bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow)
 {
-  DEBUG_ANNEXB("parserAnnexB::parseAnnexBFile");
+  DEBUG_ANNEXB("AnnexB::parseAnnexBFile");
 
   int64_t maxPos = file->getFileSize();
   QScopedPointer<QProgressDialog> progressDialog;
@@ -176,7 +179,7 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, Q
       auto parsingResult = parseAndAddNALUnit(nalID, nalData, {}, nalStartEndPosFile, nullptr);
       if (!parsingResult.success)
       {
-        DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Error parsing NAL " << nalID);
+        DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error parsing NAL " << nalID);
       }
       else if (parsingResult.bitrateEntry)
       {
@@ -188,11 +191,11 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, Q
       Q_UNUSED(exc);
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID << " - " << exc.what());
+      DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID << " - " << exc.what());
     }
     catch (...)
     {
-      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID);
+      DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID);
     }
 
     nalID++;
@@ -221,12 +224,12 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, Q
 
     if (cancelBackgroundParser)
     {
-      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Abort parsing by user request.");
+      DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Abort parsing by user request.");
       abortParsing = true;
     }
     if (parsingLimitEnabled && frameList.size() > PARSER_FILE_FRAME_NR_LIMIT)
     {
-      DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Abort parsing because frame limit was reached.");
+      DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Abort parsing because frame limit was reached.");
       abortParsing = true;
     }
   }
@@ -234,8 +237,8 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, Q
   // We are done.
   auto parseResult = parseAndAddNALUnit(-1, QByteArray(), {}, {});
   if (!parseResult.success)
-    DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
-  DEBUG_ANNEXB("parserAnnexB::parseAndAddNALUnit Parsing done. Found " << POCList.length() << " POCs");
+    DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
+  DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Parsing done. Found " << POCList.length() << " POCs");
 
   if (packetModel)
     emit modelDataUpdated();
@@ -249,14 +252,14 @@ bool parserAnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, Q
   return !cancelBackgroundParser;
 }
 
-bool parserAnnexB::runParsingOfFile(QString compressedFilePath)
+bool AnnexB::runParsingOfFile(QString compressedFilePath)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
   QScopedPointer<FileSourceAnnexBFile> file(new FileSourceAnnexBFile(compressedFilePath));
   return parseAnnexBFile(file);
 }
 
-QList<QTreeWidgetItem*> parserAnnexB::stream_info_type::getStreamInfo()
+QList<QTreeWidgetItem*> AnnexB::stream_info_type::getStreamInfo()
 {
   QList<QTreeWidgetItem*> infoList;
   infoList.append(new QTreeWidgetItem(QStringList() << "File size" << QString::number(file_size)));
@@ -273,3 +276,5 @@ QList<QTreeWidgetItem*> parserAnnexB::stream_info_type::getStreamInfo()
 
   return infoList;
 }
+
+} //namespace parser

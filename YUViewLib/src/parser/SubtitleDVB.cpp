@@ -30,12 +30,15 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserSubtitleDVB.h"
+#include "SubtitleDVB.h"
 
-#include "common/parserMacros.h"
+#include "common/Macros.h"
 #include "common/ReaderHelper.h"
 
 #include <stdexcept>
+
+namespace
+{
 
 bool parsePageCompositionSegment(ReaderHelper &reader, unsigned int segment_length)
 {
@@ -688,7 +691,9 @@ bool parseAlternativeCLUTSegment(ReaderHelper &reader, unsigned int segment_leng
     return true;
 }
 
-int subtitle_dvb::parseDVBSubtitleSegment(QByteArray data, TreeItem *parent, QString *segmentTypeName)
+} // namespace
+
+int parser::subtitle_dvb::parseDVBSubtitleSegment(QByteArray data, TreeItem *parent, QString *segmentTypeName)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet. 

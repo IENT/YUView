@@ -30,9 +30,9 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserAnnexBMpeg2.h"
+#include "AnnexBMpeg2.h"
 
-#include "common/parserMacros.h"
+#include "common/Macros.h"
 #include "common/ReaderHelper.h"
 
 #define PARSER_MPEG2_DEBUG_OUTPUT 0
@@ -43,20 +43,23 @@
 #define DEBUG_MPEG2(msg) ((void)0)
 #endif
 
-const QStringList parserAnnexBMpeg2::nal_unit_type_toString = QStringList()
+namespace parser
+{
+
+const QStringList AnnexBMpeg2::nal_unit_type_toString = QStringList()
   << "UNSPECIFIED" << "PICTURE" << "SLICE" << "USER_DATA" << "SEQUENCE_HEADER" << "SEQUENCE_ERROR" << "EXTENSION_START" << "SEQUENCE_END"
   << "GROUP_START" << "SYSTEM_START_CODE" << "RESERVED";
 
-parserAnnexBMpeg2::nal_unit_mpeg2::nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src) 
-  : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd)
+AnnexBMpeg2::nal_unit_mpeg2::nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src)
+  : NalUnit(nal_src->nalIdx, nal_src->filePosStartEnd)
 {
   nal_unit_type = nal_src->nal_unit_type;
   slice_id = nal_src->slice_id;
   system_start_codes = nal_src->system_start_codes;
-  start_code_value = nal_src->start_code_value;  
+  start_code_value = nal_src->start_code_value;
 }
 
-bool parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root)
+bool AnnexBMpeg2::nal_unit_mpeg2::parseNalUnitHeader(const QByteArray &header_byte, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   ReaderHelper reader(header_byte, root, "header_code()");
@@ -70,14 +73,14 @@ bool parserAnnexBMpeg2::nal_unit_mpeg2::parse_nal_unit_header(const QByteArray &
   return true;
 }
 
-QByteArray parserAnnexBMpeg2::nal_unit_mpeg2::getNALHeader() const
+QByteArray AnnexBMpeg2::nal_unit_mpeg2::getNALHeader() const
 {
   QByteArray ret;
   ret.append(start_code_value);
   return ret;
 }
 
-QStringList parserAnnexBMpeg2::nal_unit_mpeg2::get_start_code_meanings()
+QStringList AnnexBMpeg2::nal_unit_mpeg2::get_start_code_meanings()
 {
   QStringList meanings = QStringList();
   meanings.append("picture_start_code");
@@ -98,7 +101,7 @@ QStringList parserAnnexBMpeg2::nal_unit_mpeg2::get_start_code_meanings()
   return meanings;
 }
 
-void parserAnnexBMpeg2::nal_unit_mpeg2::interpreteStartCodeValue()
+void AnnexBMpeg2::nal_unit_mpeg2::interpreteStartCodeValue()
 {
   if (start_code_value == 0)
     nal_unit_type = PICTURE;
@@ -130,9 +133,9 @@ void parserAnnexBMpeg2::nal_unit_mpeg2::interpreteStartCodeValue()
     nal_unit_type = UNSPECIFIED;
 }
 
-parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
+AnnexB::ParseResult AnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
-  parserAnnexB::ParseResult parseResult;
+  AnnexB::ParseResult parseResult;
 
   // Skip the NAL unit header
   int skip = 0;
@@ -169,11 +172,11 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
-  parserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   // Create a nal_unit and read the header
   nal_unit_mpeg2 nal_mpeg2(nalID, nalStartEndPosFile);
-  if (!nal_mpeg2.parse_nal_unit_header(nalHeaderBytes, nalRoot))
+  if (!nal_mpeg2.parseNalUnitHeader(nalHeaderBytes, nalRoot))
     return parseResult;
 
   bool parsingSuccess = true;
@@ -190,7 +193,7 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
     if (parsingSuccess && !first_sequence_header)
       first_sequence_header = new_sequence_header;
 
-    DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Sequence header");
+    DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Sequence header");
   }
   else if (nal_mpeg2.nal_unit_type == PICTURE)
   {
@@ -208,7 +211,7 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
       lastPictureHeader = new_picture_header;
       currentSliceType = new_picture_header->getPictureTypeString();
       
-      DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Picture");
+      DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Picture");
     }
 
     specificDescription = parsingSuccess ? " Picture Header" : " Picture Header (Error)";
@@ -222,7 +225,7 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
     specificDescription = parsingSuccess ? " Group of Pictures" : " Group of Pictures (Error)";
     parseResult.nalTypeName = parsingSuccess ? " PicGroup" : " PicGroup(Err)";
 
-    DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Group Start");
+    DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Group Start");
   }
   else if (nal_mpeg2.nal_unit_type == USER_DATA)
   {
@@ -232,7 +235,7 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
     specificDescription = parsingSuccess ? " User Data" : " User Data (Error)";
     parseResult.nalTypeName = parsingSuccess ? " UserData" : " UserData(Err)";
 
-    DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit User Data");
+    DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit User Data");
   }
   else if (nal_mpeg2.nal_unit_type == EXTENSION_START)
   {
@@ -257,7 +260,7 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
       if (!first_sequence_extension)
         first_sequence_extension = new_sequence_extension;
 
-      DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Extension Start");
+      DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Extension Start");
     }
     else if (new_extension->extension_type == EXT_PICTURE_CODING)
     {
@@ -267,7 +270,7 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
       specificDescription = parsingSuccess ? " Picture Coding Extension" : " Picture Coding Extension (Error)";
       parseResult.nalTypeName = parsingSuccess ? " PicCodExt" : " PicCodExt(Err)";
 
-      DEBUG_MPEG2("parserAnnexBMpeg2::parseAndAddNALUnit Picture Coding Extension");
+      DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Picture Coding Extension");
     }
     else
     {
@@ -296,7 +299,7 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
     }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
-    entry.frameType = parserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
+    entry.frameType = Base::convertSliceTypeMapToString(this->currentAUSliceTypes);
     parseResult.bitrateEntry = entry;
 
     sizeCurrentAU = 0;
@@ -321,13 +324,13 @@ parserAnnexB::ParseResult parserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
   
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_mpeg2.nal_idx).arg(nal_unit_type_toString.value(nal_mpeg2.nal_unit_type)) + specificDescription);
+    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_mpeg2.nalIdx).arg(nal_unit_type_toString.value(nal_mpeg2.nal_unit_type)) + specificDescription);
 
   parseResult.success = true;
   return parseResult;
 }
 
-bool parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray & parameterSetData, TreeItem * root)
+bool AnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
   ReaderHelper reader(parameterSetData, root, "sequence_header()");
@@ -378,7 +381,7 @@ bool parserAnnexBMpeg2::sequence_header::parse_sequence_header(const QByteArray 
 QStringList picture_coding_type_meaning = QStringList()
     << "Forbidden" << "intra-coded (I)" << "predictive-coded (P)" << "bidirectionally-predictive-coded (B)" << "dc intra-coded (D)" << "Reserved";
 
-bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, TreeItem * root)
+bool AnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
   ReaderHelper reader(parameterSetData, root, "picture_header");
@@ -415,13 +418,13 @@ bool parserAnnexBMpeg2::picture_header::parse_picture_header(const QByteArray & 
   return true;
 }
 
-QString parserAnnexBMpeg2::picture_header::getPictureTypeString() const
+QString AnnexBMpeg2::picture_header::getPictureTypeString() const
 {
   auto i = std::min(int(this->picture_coding_type), picture_coding_type_meaning.count() - 1);
   return picture_coding_type_meaning[i];
 }
 
-bool parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header(const QByteArray & parameterSetData, TreeItem * root)
+bool AnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
   ReaderHelper reader(parameterSetData, root, "group_of_pictures_header()");
@@ -433,7 +436,7 @@ bool parserAnnexBMpeg2::group_of_pictures_header::parse_group_of_pictures_header
   return true;
 }
 
-bool parserAnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterSetData, TreeItem * root)
+bool AnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterSetData, TreeItem * root)
 {
   nalPayload = parameterSetData;
 
@@ -456,7 +459,7 @@ bool parserAnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterS
   return true;
 }
 
-bool parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & extension_payload, TreeItem * itemTree)
+bool AnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & extension_payload, TreeItem * itemTree)
 {
   ReaderHelper reader(extension_payload, itemTree);
 
@@ -499,34 +502,34 @@ bool parserAnnexBMpeg2::nal_extension::parse_extension_start_code(QByteArray & e
   return true;
 }
 
-QString parserAnnexBMpeg2::nal_extension::get_extension_function_name()
+QString AnnexBMpeg2::nal_extension::get_extension_function_name()
 {
   switch (extension_type)
   {
-  case parserAnnexBMpeg2::EXT_SEQUENCE:
+  case AnnexBMpeg2::EXT_SEQUENCE:
     return "sequence_extension()";
-  case parserAnnexBMpeg2::EXT_SEQUENCE_DISPLAY:
+  case AnnexBMpeg2::EXT_SEQUENCE_DISPLAY:
     return "sequence_display_extension()";
-  case parserAnnexBMpeg2::EXT_QUANT_MATRIX:
+  case AnnexBMpeg2::EXT_QUANT_MATRIX:
     return "quant_matrix_extension()";
-  case parserAnnexBMpeg2::EXT_COPYRIGHT:
+  case AnnexBMpeg2::EXT_COPYRIGHT:
     return "copyright_extension()";
-  case parserAnnexBMpeg2::EXT_SEQUENCE_SCALABLE:
+  case AnnexBMpeg2::EXT_SEQUENCE_SCALABLE:
     return "sequence_scalable_extension()";
-  case parserAnnexBMpeg2::EXT_PICTURE_DISPLAY:
+  case AnnexBMpeg2::EXT_PICTURE_DISPLAY:
     return "picture_display_extension()";
-  case parserAnnexBMpeg2::EXT_PICTURE_CODING:
+  case AnnexBMpeg2::EXT_PICTURE_CODING:
     return "picture_coding_extension()";
-  case parserAnnexBMpeg2::EXT_PICTURE_SPATICAL_SCALABLE:
+  case AnnexBMpeg2::EXT_PICTURE_SPATICAL_SCALABLE:
     return "picture_spatial_scalable_extension()";
-  case parserAnnexBMpeg2::EXT_PICTURE_TEMPORAL_SCALABLE:
+  case AnnexBMpeg2::EXT_PICTURE_TEMPORAL_SCALABLE:
     return "picture_temporal_scalable_extension()";
   default:
     return "";
   }
 }
 
-bool parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem *root)
+bool AnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByteArray & parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
   ReaderHelper reader(parameterSetData, root);
@@ -570,7 +573,7 @@ bool parserAnnexBMpeg2::sequence_extension::parse_sequence_extension(const QByte
   return true;
 }
 
-bool parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, TreeItem *itemTree)
+bool AnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension(const QByteArray & parameterSetData, TreeItem *itemTree)
 {
   nalPayload = parameterSetData;
   ReaderHelper reader(parameterSetData, itemTree);
@@ -608,14 +611,14 @@ bool parserAnnexBMpeg2::picture_coding_extension::parse_picture_coding_extension
   return true;
 }
 
-QPair<int,int> parserAnnexBMpeg2::getProfileLevel()
+QPair<int,int> AnnexBMpeg2::getProfileLevel()
 {
   if (first_sequence_extension)
     return QPair<int,int>(first_sequence_extension->profile_identification, first_sequence_extension->level_identification);
   return QPair<int,int>(0,0);
 }
 
-double parserAnnexBMpeg2::getFramerate() const
+double AnnexBMpeg2::getFramerate() const
 {
   double frame_rate = 0.0;
   if (first_sequence_header && first_sequence_header->frame_rate_code > 0 && first_sequence_header->frame_rate_code <= 8)
@@ -632,7 +635,7 @@ double parserAnnexBMpeg2::getFramerate() const
   return frame_rate;
 }
 
-QSize parserAnnexBMpeg2::getSequenceSizeSamples() const
+QSize AnnexBMpeg2::getSequenceSizeSamples() const
 {
   int w = 0, h = 0;
   if (first_sequence_header)
@@ -649,7 +652,7 @@ QSize parserAnnexBMpeg2::getSequenceSizeSamples() const
   return QSize(w, h);
 }
 
-yuvPixelFormat parserAnnexBMpeg2::getPixelFormat() const
+yuvPixelFormat AnnexBMpeg2::getPixelFormat() const
 {
   if (first_sequence_extension)
   {
@@ -664,7 +667,7 @@ yuvPixelFormat parserAnnexBMpeg2::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-Ratio parserAnnexBMpeg2::getSampleAspectRatio()
+Ratio AnnexBMpeg2::getSampleAspectRatio()
 {
   if (first_sequence_header)
   {
@@ -680,3 +683,5 @@ Ratio parserAnnexBMpeg2::getSampleAspectRatio()
   }
   return Ratio({1, 1});
 }
+
+} // namespace parser

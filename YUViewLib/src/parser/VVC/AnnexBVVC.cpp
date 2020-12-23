@@ -30,13 +30,13 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserAnnexBVVC.h"
+#include "AnnexBVVC.h"
 
 #include <algorithm>
 #include <cmath>
 
-#include "common/parserMacros.h"
-#include "common/ReaderHelper.h"
+#include "parser/common/Macros.h"
+#include "parser/common/ReaderHelper.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -46,46 +46,49 @@
 #define DEBUG_VVC(msg) ((void)0)
 #endif
 
-double parserAnnexBVVC::getFramerate() const
+namespace parser
+{
+
+double AnnexBVVC::getFramerate() const
 {
   return DEFAULT_FRAMERATE;
 }
 
-QSize parserAnnexBVVC::getSequenceSizeSamples() const
+QSize AnnexBVVC::getSequenceSizeSamples() const
 {
   return QSize(352, 288);
 }
 
-yuvPixelFormat parserAnnexBVVC::getPixelFormat() const
+yuvPixelFormat AnnexBVVC::getPixelFormat() const
 {
   return yuvPixelFormat(Subsampling::YUV_420, 8);
 }
 
-QList<QByteArray> parserAnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+QList<QByteArray> AnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   Q_UNUSED(iFrameNr);
   Q_UNUSED(filePos);
   return {};
 }
 
-QByteArray parserAnnexBVVC::getExtradata()
+QByteArray AnnexBVVC::getExtradata()
 {
   return {};
 }
 
-QPair<int,int> parserAnnexBVVC::getProfileLevel()
+QPair<int,int> AnnexBVVC::getProfileLevel()
 {
   return QPair<int,int>(0,0);
 }
 
-Ratio parserAnnexBVVC::getSampleAspectRatio()
+Ratio AnnexBVVC::getSampleAspectRatio()
 {
   return Ratio({1, 1});
 }
 
-parserAnnexB::ParseResult parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
+AnnexB::ParseResult AnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
-  parserAnnexB::ParseResult parseResult;
+  AnnexB::ParseResult parseResult;
   
   if (nalID == -1 && data.isEmpty())
     return parseResult;
@@ -114,11 +117,11 @@ parserAnnexB::ParseResult parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteAr
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
-  parserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   // Create a nal_unit and read the header
   nal_unit_vvc nal_vvc(nalID, nalStartEndPosFile);
-  if (!nal_vvc.parse_nal_unit_header(nalHeaderBytes, nalRoot))
+  if (!nal_vvc.parseNalUnitHeader(nalHeaderBytes, nalRoot))
     return parseResult;
 
   if (nal_vvc.isAUDelimiter())
@@ -166,20 +169,20 @@ parserAnnexB::ParseResult parserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteAr
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_vvc.nal_idx).arg(nal_vvc.nal_unit_type_id) + specificDescription);
+    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_vvc.nalIdx).arg(nal_vvc.nalUnitTypeID) + specificDescription);
 
   parseResult.success = true;
   return parseResult;
 }
 
-QByteArray parserAnnexBVVC::nal_unit_vvc::getNALHeader() const
+QByteArray AnnexBVVC::nal_unit_vvc::getNALHeader() const
 { 
-  int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
+  int out = ((int)nalUnitTypeID << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
   char c[2] = { (char)(out >> 8), (char)out };
   return QByteArray(c, 2);
 }
 
-bool parserAnnexBVVC::nal_unit_vvc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
+bool AnnexBVVC::nal_unit_vvc::parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   ReaderHelper reader(parameterSetData, root, "nal_unit_header()");
@@ -238,8 +241,10 @@ bool parserAnnexBVVC::nal_unit_vvc::parse_nal_unit_header(const QByteArray &para
     << "Unknown"
     << "Unknown"
     << "Unspecified";
-  READBITS_M(nal_unit_type_id, 5, nal_unit_type_id_meaning);
+  READBITS_M(nalUnitTypeID, 5, nal_unit_type_id_meaning);
   READBITS(nuh_temporal_id_plus1, 3);
 
   return true;
 }
+
+} // namespace parser

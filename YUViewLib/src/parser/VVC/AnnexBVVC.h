@@ -34,19 +34,22 @@
 
 #include <QSharedPointer>
 
-#include "parserAnnexB.h"
+#include "../AnnexB.h"
 #include "video/videoHandlerYUV.h"
 
 using namespace YUV_Internals;
 
+namespace parser
+{
+
 // This class knows how to parse the bitrstream of VVC annexB files
-class parserAnnexBVVC : public parserAnnexB
+class AnnexBVVC : public AnnexB
 {
   Q_OBJECT
   
 public:
-  parserAnnexBVVC(QObject *parent = nullptr) : parserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
-  ~parserAnnexBVVC() {};
+  AnnexBVVC(QObject *parent = nullptr) : AnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
+  ~AnnexBVVC() {};
 
   // Get some properties
   double getFramerate() const override;
@@ -58,24 +61,24 @@ public:
   QPair<int,int> getProfileLevel() override;
   Ratio getSampleAspectRatio() override;
 
-  ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) Q_DECL_OVERRIDE;
+  ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) override;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
 
   /* The basic VVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
   */
-  struct nal_unit_vvc : nal_unit
+  struct nal_unit_vvc : NalUnit
   {
-    nal_unit_vvc(int nal_idx, std::optional<pairUint64> filePosStartEnd) : nal_unit(nal_idx, filePosStartEnd) {}
-    nal_unit_vvc(QSharedPointer<nal_unit_vvc> nal_src) : nal_unit(nal_src->nal_idx, nal_src->filePosStartEnd) { nal_unit_type_id = nal_src->nal_unit_type_id; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
+    nal_unit_vvc(int nalIdx, std::optional<pairUint64> filePosStartEnd) : NalUnit(nalIdx, filePosStartEnd) {}
+    nal_unit_vvc(QSharedPointer<nal_unit_vvc> nal_src) : NalUnit(nal_src->nalIdx, nal_src->filePosStartEnd) { nalUnitTypeID = nal_src->nalUnitTypeID; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
     virtual ~nal_unit_vvc() {}
 
     virtual QByteArray getNALHeader() const override;
     virtual bool isParameterSet() const override { return false; }  // We don't know yet
-    bool parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) override;
+    bool parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root) override;
 
-    bool isAUDelimiter() { return nal_unit_type_id == 19; }
+    bool isAUDelimiter() { return nalUnitTypeID == 19; }
 
     // The information of the NAL unit header
     unsigned int nuh_layer_id;
@@ -89,3 +92,5 @@ protected:
   unsigned int counterAU{ 0 };
   unsigned int sizeCurrentAU{ 0 };
 };
+
+} // namespace parser

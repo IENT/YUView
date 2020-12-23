@@ -45,9 +45,9 @@
 #include "decoder/decoderVTM.h"
 #include "decoder/decoderDav1d.h"
 #include "decoder/decoderLibde265.h"
-#include "parser/parserAnnexBAVC.h"
-#include "parser/parserAnnexBHEVC.h"
-#include "parser/parserAnnexBVVC.h"
+#include "parser/AnnexBAVC.h"
+#include "parser/AnnexBHEVC.h"
+#include "parser/VVC/AnnexBVVC.h"
 #include "video/videoHandlerYUV.h"
 #include "video/videoHandlerRGB.h"
 #include "ui/mainwindow.h"
@@ -117,7 +117,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     if (inputFormatType == inputAnnexBHEVC)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is HEVC");
-      inputFileAnnexBParser.reset(new parserAnnexBHEVC());
+      inputFileAnnexBParser.reset(new parser::AnnexBHEVC());
       ffmpegCodec.setTypeHEVC();
       possibleDecoders.append(decoderEngineLibde265);
       possibleDecoders.append(decoderEngineHM);
@@ -126,13 +126,13 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     else if (inputFormatType == inputAnnexBVVC)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is VVC");
-      inputFileAnnexBParser.reset(new parserAnnexBVVC());
+      inputFileAnnexBParser.reset(new parser::AnnexBVVC());
       possibleDecoders.append(decoderEngineVTM);
     }
     else if (inputFormatType == inputAnnexBAVC)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is AVC");
-      inputFileAnnexBParser.reset(new parserAnnexBAVC());
+      inputFileAnnexBParser.reset(new parser::AnnexBAVC());
       ffmpegCodec.setTypeAVC();
       possibleDecoders.append(decoderEngineFFMpeg);
     }

@@ -30,11 +30,11 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "parserAV1OBU.h"
+#include "AV1OBU.h"
 
 #include <algorithm>
 
-#include "common/parserMacros.h"
+#include "common/Macros.h"
 #include "common/ReaderHelper.h"
 
 #define READDELTAQ(into) do { if (!read_delta_q(#into, into, reader)) return false; } while(0)
@@ -70,11 +70,14 @@
 #define MAX_TILE_COLS 64
 #define MAX_TILE_ROWS 64
 
+namespace parser
+{
+
 const QStringList parserAV1OBU::obu_type_toString = QStringList()
   << "RESERVED" << "OBU_SEQUENCE_HEADER" << "OBU_TEMPORAL_DELIMITER" << "OBU_FRAME_HEADER" << "OBU_TILE_GROUP" 
   << "OBU_METADATA" << "OBU_FRAME" << "OBU_REDUNDANT_FRAME_HEADER" << "OBU_TILE_LIST" << "OBU_PADDING";
 
-parserAV1OBU::parserAV1OBU(QObject *parent) : parserBase(parent)
+parserAV1OBU::parserAV1OBU(QObject *parent) : Base(parent)
 {
   // Reset all values in parserAV1OBU
   memset(&decValues, 0, sizeof(global_decoding_values));
@@ -1687,3 +1690,5 @@ bool parserAV1OBU::frame_header::cdef_params_struct::parse_cdef_params(bool Code
 
   return true;
 }
+
+} // namespace parser

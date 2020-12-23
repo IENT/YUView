@@ -32,18 +32,22 @@
 
 #pragma once
 
-#include "common/parserMacros.h"
-#include "parserAnnexB.h"
-#include "parserSubtitle608.h"
+#include "common/Macros.h"
+#include "AnnexB.h"
+#include "Subtitle608.h"
+#include "NalUnit.h"
+
+namespace parser
+{
 
 template <class T>
 class user_data_registered_itu_t_t35_sei : public T
 {
-  static_assert(std::is_base_of<parserAnnexB::nal_unit, T>::value, "T must derive from parserAnnexB::nal_unit");
+  static_assert(std::is_base_of<NalUnit, T>::value, "T must derive from parser::NalUnit");
     
 public:
   user_data_registered_itu_t_t35_sei(QSharedPointer<T> sei_src) : T(sei_src) {};
-  parserAnnexB::sei_parsing_return_t parse_user_data_registered_itu_t_t35(QByteArray &data, TreeItem *root) { return parse_internal(data, root) ? parserAnnexB::SEI_PARSING_OK : parserAnnexB::SEI_PARSING_ERROR; }
+  AnnexB::sei_parsing_return_t parse_user_data_registered_itu_t_t35(QByteArray &data, TreeItem *root) { return parse_internal(data, root) ? AnnexB::SEI_PARSING_OK : AnnexB::SEI_PARSING_ERROR; }
 
   unsigned int itu_t_t35_country_code;
   unsigned int itu_t_t35_country_code_extension_byte;
@@ -173,3 +177,5 @@ private:
     return true;
   }
 };
+
+} // namespace parser

@@ -32,15 +32,18 @@
 
 #pragma once
 
-#include "parserAnnexB.h"
+#include "AnnexB.h"
 
-class parserAnnexBMpeg2 : public parserAnnexB
+namespace parser
+{
+
+class AnnexBMpeg2 : public AnnexB
 {
   Q_OBJECT
   
 public:
-  parserAnnexBMpeg2(QObject *parent = nullptr) : parserAnnexB(parent) {};
-  ~parserAnnexBMpeg2() {};
+  AnnexBMpeg2(QObject *parent = nullptr) : AnnexB(parent) {};
+  ~AnnexBMpeg2() {};
 
   // Get properties
   double getFramerate() const Q_DECL_OVERRIDE;
@@ -77,14 +80,14 @@ private:
   /* The basic Mpeg2 NAL unit. Technically, there is no concept of NAL units in mpeg2 (h262) but there are start codes for some units
    * and there is a start code so we internally use the NAL concept.
    */
-  struct nal_unit_mpeg2 : nal_unit
+  struct nal_unit_mpeg2 : NalUnit
   {
-    nal_unit_mpeg2(int nal_idx, std::optional<pairUint64> filePosStartEnd) : nal_unit(nal_idx, filePosStartEnd) {}
+    nal_unit_mpeg2(int nalIdx, std::optional<pairUint64> filePosStartEnd) : NalUnit(nalIdx, filePosStartEnd) {}
     nal_unit_mpeg2(QSharedPointer<nal_unit_mpeg2> nal_src);
     virtual ~nal_unit_mpeg2() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parse_nal_unit_header(const QByteArray &header_byte, TreeItem *root) Q_DECL_OVERRIDE;
+    bool parseNalUnitHeader(const QByteArray &header_byte, TreeItem *root) override;
 
     virtual QByteArray getNALHeader() const override;
     virtual bool isParameterSet() const override { return nal_unit_type == SEQUENCE_HEADER; }
@@ -237,3 +240,5 @@ private:
   QMap<QString, unsigned int> currentAUSliceTypes;
   QSharedPointer<picture_header> lastPictureHeader;
 };
+
+} // namespace parser
