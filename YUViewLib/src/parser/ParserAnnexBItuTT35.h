@@ -34,7 +34,7 @@
 
 #include "common/Macros.h
 #include "ParserAnnexB.h"
-#include "parserSubtitle608.h"
+#include "ParserSubtitle608.h"
 #include "NalUnit.h"
 
 namespace parser
