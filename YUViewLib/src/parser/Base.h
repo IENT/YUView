@@ -51,13 +51,13 @@ namespace parser
 
 /* Abstract base class that prvides features which are common to all parsers
  */
-class ParserBase : public QObject
+class Base : public QObject
 {
   Q_OBJECT
 
 public:
-  ParserBase(QObject *parent);
-  virtual ~ParserBase() = 0;
+  Base(QObject *parent);
+  virtual ~Base() = 0;
 
   QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
   BitratePlotModel *getBitratePlotModel() { return bitratePlotModel.data(); }

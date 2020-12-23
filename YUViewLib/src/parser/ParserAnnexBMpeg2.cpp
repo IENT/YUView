@@ -299,7 +299,7 @@ ParserAnnexB::ParseResult ParserAnnexBMpeg2::parseAndAddNALUnit(int nalID, QByte
     }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
-    entry.frameType = ParserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
+    entry.frameType = Base::convertSliceTypeMapToString(this->currentAUSliceTypes);
     parseResult.bitrateEntry = entry;
 
     sizeCurrentAU = 0;

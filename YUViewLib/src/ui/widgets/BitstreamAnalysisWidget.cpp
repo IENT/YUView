@@ -158,9 +158,9 @@ void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
   if (this->parser.isNull())
     return;
 
-  this->disconnect(this->parser.data(), &parser::ParserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
-  this->disconnect(this->parser.data(), &parser::ParserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
-  this->disconnect(this->parser.data(), &parser::ParserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
+  this->disconnect(this->parser.data(), &parser::Base::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
+  this->disconnect(this->parser.data(), &parser::Base::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
+  this->disconnect(this->parser.data(), &parser::Base::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
 
   if (this->backgroundParserFuture.isRunning())
   {
@@ -252,9 +252,9 @@ void BitstreamAnalysisWidget::createAndConnectNewParser(inputFormat inputFormatT
   const bool parsingLimitSet = !this->ui.parseEntireFileCheckBox->isChecked();
   this->parser->setParsingLimitEnabled(parsingLimitSet);
 
-  this->connect(this->parser.data(), &parser::ParserBase::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
-  this->connect(this->parser.data(), &parser::ParserBase::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
-  this->connect(this->parser.data(), &parser::ParserBase::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
+  this->connect(this->parser.data(), &parser::Base::modelDataUpdated, this, &BitstreamAnalysisWidget::updateParserItemModel);
+  this->connect(this->parser.data(), &parser::Base::streamInfoUpdated, this, &BitstreamAnalysisWidget::updateStreamInfo);
+  this->connect(this->parser.data(), &parser::Base::backgroundParsingDone, this, &BitstreamAnalysisWidget::backgroundParsingDone);
 }
 
 void BitstreamAnalysisWidget::hideEvent(QHideEvent *event)

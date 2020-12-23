@@ -52,7 +52,7 @@
 namespace parser
 {
 
-ParserAVFormat::ParserAVFormat(QObject *parent) : ParserBase(parent)
+ParserAVFormat::ParserAVFormat(QObject *parent) : Base(parent)
 { 
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);

@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "ParserBase.h"
+#include "Base.h"
 #include "ParserAnnexB.h"
 #include "ParserAV1OBU.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
@@ -45,7 +45,7 @@ namespace parser
  * If the bitstream within the container is a supported annexB bitstream, this parser can use that parser
  * to even parser deeper.
  */
-class ParserAVFormat : public ParserBase
+class ParserAVFormat : public Base
 {
   Q_OBJECT
 

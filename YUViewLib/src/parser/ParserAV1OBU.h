@@ -33,7 +33,7 @@
 #pragma once
 
 #include "common/ReaderHelper.h"
-#include "ParserBase.h"
+#include "Base.h"
 #include "video/videoHandlerYUV.h"
 
 using namespace YUV_Internals;
@@ -41,7 +41,7 @@ using namespace YUV_Internals;
 namespace parser
 {
 
-class parserAV1OBU : public ParserBase
+class parserAV1OBU : public Base
 {
   Q_OBJECT
 

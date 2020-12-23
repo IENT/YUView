@@ -37,7 +37,7 @@
 
 #include <optional>
 
-#include "ParserBase.h"
+#include "Base.h"
 #include "NalUnit.h"
 #include "common/BitratePlotModel.h"
 #include "common/TreeItem.h"
@@ -51,12 +51,12 @@ namespace parser
 
 /* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, VVC) that we can parse.
 */
-class ParserAnnexB : public ParserBase
+class ParserAnnexB : public Base
 {
   Q_OBJECT
 
 public:
-  ParserAnnexB(QObject *parent = nullptr) : ParserBase(parent) {};
+  ParserAnnexB(QObject *parent = nullptr) : Base(parent) {};
   virtual ~ParserAnnexB() {};
 
   // How many POC's have been found in the file

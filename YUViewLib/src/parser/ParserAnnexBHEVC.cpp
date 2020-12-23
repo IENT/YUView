@@ -649,7 +649,7 @@ ParserAnnexB::ParseResult ParserAnnexBHEVC::parseAndAddNALUnit(int nalID, QByteA
     }
     entry.bitrate = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
-    entry.frameType = ParserBase::convertSliceTypeMapToString(this->currentAUSliceTypes);
+    entry.frameType = Base::convertSliceTypeMapToString(this->currentAUSliceTypes);
     parseResult.bitrateEntry = entry;
 
     sizeCurrentAU = 0;
