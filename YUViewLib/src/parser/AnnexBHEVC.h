@@ -36,7 +36,7 @@
 
 #include "common/ReaderHelper.h"
 #include "video/videoHandlerYUV.h"
-#include "ParserAnnexB.h"
+#include "AnnexB.h"
 #include "NalUnit.h"
 
 using namespace YUV_Internals;
@@ -45,13 +45,13 @@ namespace parser
 {
 
 // This class knows how to parse the bitrstream of HEVC annexB files
-class ParserAnnexBHEVC : public ParserAnnexB
+class AnnexBHEVC : public AnnexB
 {
   Q_OBJECT
   
 public:
-  ParserAnnexBHEVC(QObject *parent = nullptr) : ParserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
-  ~ParserAnnexBHEVC() {};
+  AnnexBHEVC(QObject *parent = nullptr) : AnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
+  ~AnnexBHEVC() {};
 
   // Get some properties
   double getFramerate() const Q_DECL_OVERRIDE;
@@ -771,7 +771,7 @@ protected:
   {
   public:
     alternative_transfer_characteristics_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
-    ParserAnnexB::sei_parsing_return_t parse_alternative_transfer_characteristics_sei(QByteArray &seiPayload, TreeItem *root) { return parse_internal(seiPayload, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
+    AnnexB::sei_parsing_return_t parse_alternative_transfer_characteristics_sei(QByteArray &seiPayload, TreeItem *root) { return parse_internal(seiPayload, root) ? SEI_PARSING_OK : SEI_PARSING_ERROR; }
 
     unsigned int preferred_transfer_characteristics;
   private:

@@ -32,18 +32,18 @@
 
 #pragma once
 
-#include "ParserAnnexB.h"
+#include "AnnexB.h"
 
 namespace parser
 {
 
-class ParserAnnexBMpeg2 : public ParserAnnexB
+class AnnexBMpeg2 : public AnnexB
 {
   Q_OBJECT
   
 public:
-  ParserAnnexBMpeg2(QObject *parent = nullptr) : ParserAnnexB(parent) {};
-  ~ParserAnnexBMpeg2() {};
+  AnnexBMpeg2(QObject *parent = nullptr) : AnnexB(parent) {};
+  ~AnnexBMpeg2() {};
 
   // Get properties
   double getFramerate() const Q_DECL_OVERRIDE;

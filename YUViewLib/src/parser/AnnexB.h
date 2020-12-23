@@ -51,13 +51,13 @@ namespace parser
 
 /* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, VVC) that we can parse.
 */
-class ParserAnnexB : public Base
+class AnnexB : public Base
 {
   Q_OBJECT
 
 public:
-  ParserAnnexB(QObject *parent = nullptr) : Base(parent) {};
-  virtual ~ParserAnnexB() {};
+  AnnexB(QObject *parent = nullptr) : Base(parent) {};
+  virtual ~AnnexB() {};
 
   // How many POC's have been found in the file
   int getNumberPOCs() const { return frameList.size(); }

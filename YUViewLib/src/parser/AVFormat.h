@@ -33,8 +33,8 @@
 #pragma once
 
 #include "Base.h"
-#include "ParserAnnexB.h"
-#include "ParserAV1OBU.h"
+#include "AnnexB.h"
+#include "AV1OBU.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
 #include "filesource/FileSourceFFmpegFile.h"
 
@@ -45,13 +45,13 @@ namespace parser
  * If the bitstream within the container is a supported annexB bitstream, this parser can use that parser
  * to even parser deeper.
  */
-class ParserAVFormat : public Base
+class AVFormat : public Base
 {
   Q_OBJECT
 
 public:
-  ParserAVFormat(QObject *parent = nullptr);
-  ~ParserAVFormat() {}
+  AVFormat(QObject *parent = nullptr);
+  ~AVFormat() {}
 
   QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE;
   unsigned int getNrStreams() Q_DECL_OVERRIDE { return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1; }
@@ -71,14 +71,14 @@ private:
 
   struct hvcC_nalUnit
   {
-    bool parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<AnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     unsigned int nalUnitLength;
   };
 
   struct hvcC_naluArray
   {
-    bool parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<AnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     bool array_completeness;
     bool reserved_flag_false;
@@ -89,7 +89,7 @@ private:
 
   struct hvcC
   {
-    bool parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<ParserAnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<AnnexB> &annexBParser, BitratePlotModel *bitrateModel);
 
     unsigned int configurationVersion;
     unsigned int general_profile_space;
@@ -114,7 +114,7 @@ private:
   };
 
   // Used for parsing if the packets contain an annexB file that we can parse.
-  QScopedPointer<ParserAnnexB> annexBParser;
+  QScopedPointer<AnnexB> annexBParser;
   // Used for parsing if the packets contain an obu file that we can parse.
   QScopedPointer<parserAV1OBU> obuParser;
 

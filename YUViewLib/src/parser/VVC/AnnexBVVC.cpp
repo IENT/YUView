@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ParserAnnexBVVC.h"
+#include "AnnexBVVC.h"
 
 #include <algorithm>
 #include <cmath>
@@ -49,46 +49,46 @@
 namespace parser
 {
 
-double ParserAnnexBVVC::getFramerate() const
+double AnnexBVVC::getFramerate() const
 {
   return DEFAULT_FRAMERATE;
 }
 
-QSize ParserAnnexBVVC::getSequenceSizeSamples() const
+QSize AnnexBVVC::getSequenceSizeSamples() const
 {
   return QSize(352, 288);
 }
 
-yuvPixelFormat ParserAnnexBVVC::getPixelFormat() const
+yuvPixelFormat AnnexBVVC::getPixelFormat() const
 {
   return yuvPixelFormat(Subsampling::YUV_420, 8);
 }
 
-QList<QByteArray> ParserAnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+QList<QByteArray> AnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   Q_UNUSED(iFrameNr);
   Q_UNUSED(filePos);
   return {};
 }
 
-QByteArray ParserAnnexBVVC::getExtradata()
+QByteArray AnnexBVVC::getExtradata()
 {
   return {};
 }
 
-QPair<int,int> ParserAnnexBVVC::getProfileLevel()
+QPair<int,int> AnnexBVVC::getProfileLevel()
 {
   return QPair<int,int>(0,0);
 }
 
-Ratio ParserAnnexBVVC::getSampleAspectRatio()
+Ratio AnnexBVVC::getSampleAspectRatio()
 {
   return Ratio({1, 1});
 }
 
-ParserAnnexB::ParseResult ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
+AnnexB::ParseResult AnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
 {
-  ParserAnnexB::ParseResult parseResult;
+  AnnexB::ParseResult parseResult;
   
   if (nalID == -1 && data.isEmpty())
     return parseResult;
@@ -117,7 +117,7 @@ ParserAnnexB::ParseResult ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteAr
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
-  ParserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   // Create a nal_unit and read the header
   nal_unit_vvc nal_vvc(nalID, nalStartEndPosFile);
@@ -175,14 +175,14 @@ ParserAnnexB::ParseResult ParserAnnexBVVC::parseAndAddNALUnit(int nalID, QByteAr
   return parseResult;
 }
 
-QByteArray ParserAnnexBVVC::nal_unit_vvc::getNALHeader() const
+QByteArray AnnexBVVC::nal_unit_vvc::getNALHeader() const
 { 
   int out = ((int)nalUnitTypeID << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
   char c[2] = { (char)(out >> 8), (char)out };
   return QByteArray(c, 2);
 }
 
-bool ParserAnnexBVVC::nal_unit_vvc::parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root)
+bool AnnexBVVC::nal_unit_vvc::parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   ReaderHelper reader(parameterSetData, root, "nal_unit_header()");

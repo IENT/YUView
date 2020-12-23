@@ -33,7 +33,7 @@
 #pragma once
 
 #include "common/Macros.h"
-#include "ParserAnnexB.h"
+#include "AnnexB.h"
 #include "ParserSubtitle608.h"
 #include "NalUnit.h"
 
@@ -47,7 +47,7 @@ class user_data_registered_itu_t_t35_sei : public T
     
 public:
   user_data_registered_itu_t_t35_sei(QSharedPointer<T> sei_src) : T(sei_src) {};
-  ParserAnnexB::sei_parsing_return_t parse_user_data_registered_itu_t_t35(QByteArray &data, TreeItem *root) { return parse_internal(data, root) ? ParserAnnexB::SEI_PARSING_OK : ParserAnnexB::SEI_PARSING_ERROR; }
+  AnnexB::sei_parsing_return_t parse_user_data_registered_itu_t_t35(QByteArray &data, TreeItem *root) { return parse_internal(data, root) ? AnnexB::SEI_PARSING_OK : AnnexB::SEI_PARSING_ERROR; }
 
   unsigned int itu_t_t35_country_code;
   unsigned int itu_t_t35_country_code_extension_byte;

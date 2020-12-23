@@ -34,7 +34,7 @@
 
 #include <QSharedPointer>
 
-#include "../ParserAnnexB.h"
+#include "../AnnexB.h"
 #include "video/videoHandlerYUV.h"
 
 using namespace YUV_Internals;
@@ -43,13 +43,13 @@ namespace parser
 {
 
 // This class knows how to parse the bitrstream of VVC annexB files
-class ParserAnnexBVVC : public ParserAnnexB
+class AnnexBVVC : public AnnexB
 {
   Q_OBJECT
   
 public:
-  ParserAnnexBVVC(QObject *parent = nullptr) : ParserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
-  ~ParserAnnexBVVC() {};
+  AnnexBVVC(QObject *parent = nullptr) : AnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); }
+  ~AnnexBVVC() {};
 
   // Get some properties
   double getFramerate() const override;

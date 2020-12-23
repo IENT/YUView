@@ -32,11 +32,11 @@
 
 #include "BitstreamAnalysisWidget.h"
 
-#include "parser/ParserAnnexBAVC.h"
-#include "parser/ParserAnnexBHEVC.h"
-#include "parser/VVC/ParserAnnexBVVC.h"
-#include "parser/ParserAnnexBMpeg2.h"
-#include "parser/ParserAVFormat.h"
+#include "parser/AnnexBAVC.h"
+#include "parser/AnnexBHEVC.h"
+#include "parser/VVC/AnnexBVVC.h"
+#include "parser/AnnexBMpeg2.h"
+#include "parser/AVFormat.h"
 
 #define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 0
 #if BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT
@@ -241,13 +241,13 @@ void BitstreamAnalysisWidget::createAndConnectNewParser(inputFormat inputFormatT
 {
   Q_ASSERT_X(!this->parser, Q_FUNC_INFO, "Error reinitlaizing parser. The current parser is not null.");
   if (inputFormatType == inputAnnexBHEVC)
-    this->parser.reset(new parser::ParserAnnexBHEVC(this));
+    this->parser.reset(new parser::AnnexBHEVC(this));
   if (inputFormatType == inputAnnexBVVC)
-    this->parser.reset(new parser::ParserAnnexBVVC(this));
+    this->parser.reset(new parser::AnnexBVVC(this));
   else if (inputFormatType == inputAnnexBAVC)
-    this->parser.reset(new parser::ParserAnnexBAVC(this));
+    this->parser.reset(new parser::AnnexBAVC(this));
   else if (inputFormatType == inputLibavformat)
-    this->parser.reset(new parser::ParserAVFormat(this));
+    this->parser.reset(new parser::AVFormat(this));
   this->parser->enableModel();
   const bool parsingLimitSet = !this->ui.parseEntireFileCheckBox->isChecked();
   this->parser->setParsingLimitEnabled(parsingLimitSet);

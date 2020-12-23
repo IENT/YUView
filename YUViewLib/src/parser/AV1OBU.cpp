@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ParserAV1OBU.h"
+#include "AV1OBU.h"
 
 #include <algorithm>
 

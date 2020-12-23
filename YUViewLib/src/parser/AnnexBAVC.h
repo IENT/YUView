@@ -36,7 +36,7 @@
 
 #include "common/ReaderHelper.h"
 #include "video/videoHandlerYUV.h"
-#include "ParserAnnexB.h"
+#include "AnnexB.h"
 #include "NalUnit.h"
 
 using namespace YUV_Internals;
@@ -45,13 +45,13 @@ namespace parser
 {
 
 // This class knows how to parse the bitrstream of HEVC annexB files
-class ParserAnnexBAVC : public ParserAnnexB
+class AnnexBAVC : public AnnexB
 {
   Q_OBJECT
   
 public:
-  ParserAnnexBAVC(QObject *parent = nullptr) : ParserAnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); };
-  ~ParserAnnexBAVC() {};
+  AnnexBAVC(QObject *parent = nullptr) : AnnexB(parent) { curFrameFileStartEndPos = pairUint64(-1, -1); };
+  ~AnnexBAVC() {};
 
   // Get properties
   double getFramerate() const Q_DECL_OVERRIDE;
