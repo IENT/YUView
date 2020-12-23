@@ -1,0 +1,10 @@
+# We'll use defaults from the LLVM style, but with 4 columns indentation.
+BasedOnStyle: LLVM
+IndentWidth: 2
+---
+Language: Cpp
+ColumnLimit: 100
+AlignAfterOpenBracket: true
+BreakBeforeBraces: Allman
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
