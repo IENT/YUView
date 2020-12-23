@@ -35,7 +35,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "common/Macros.h
+#include "common/Macros.h"
 #include "ParserAnnexBItuTT35.h"
 
 #define PARSER_HEVC_DEBUG_OUTPUT 0

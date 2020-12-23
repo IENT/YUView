@@ -35,7 +35,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "parser/common/Macros.h
+#include "parser/common/Macros.h"
 #include "parser/common/ReaderHelper.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0

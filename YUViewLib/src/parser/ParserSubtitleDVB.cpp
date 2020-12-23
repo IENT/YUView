@@ -32,7 +32,7 @@
 
 #include "ParserSubtitleDVB.h"
 
-#include "common/Macros.h
+#include "common/Macros.h"
 #include "common/ReaderHelper.h"
 
 #include <stdexcept>

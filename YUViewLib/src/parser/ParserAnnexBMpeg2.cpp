@@ -32,7 +32,7 @@
 
 #include "ParserAnnexBMpeg2.h"
 
-#include "common/Macros.h
+#include "common/Macros.h"
 #include "common/ReaderHelper.h"
 
 #define PARSER_MPEG2_DEBUG_OUTPUT 0

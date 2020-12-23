@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "common/Macros.h
+#include "common/Macros.h"
 #include "ParserAnnexB.h"
 #include "ParserSubtitle608.h"
 #include "NalUnit.h"
