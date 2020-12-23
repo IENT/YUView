@@ -38,8 +38,8 @@
 #include "AnnexBAVC.h"
 #include "AnnexBHEVC.h"
 #include "AnnexBMpeg2.h"
-#include "ParserSubtitleDVB.h"
-#include "ParserSubtitle608.h"
+#include "SubtitleDVB.h"
+#include "Subtitle608.h"
 
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG

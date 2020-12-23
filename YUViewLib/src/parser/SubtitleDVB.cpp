@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ParserSubtitleDVB.h"
+#include "SubtitleDVB.h"
 
 #include "common/Macros.h"
 #include "common/ReaderHelper.h"
