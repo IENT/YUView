@@ -43,7 +43,6 @@ public:
   // of the parent.
   TreeItem(TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); }
   TreeItem(QList<QString> &data, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData = data; }
-  TreeItem(const QString &name, TreeItem *parent)  { parentItem = parent; if (parent) parent->childItems.append(this); itemData.append(name); }
   TreeItem(const QString &name, int          val, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val); }
   TreeItem(const QString &name, QString      val, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val; }
   TreeItem(const QString &name, int          val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
@@ -55,6 +54,27 @@ public:
   TreeItem(const QString &name, QString      val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; }
   TreeItem(const QString &name, int          val, const QString &coding, const QString &code, QString meaning, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; itemData.append(meaning); }
   TreeItem(const QString &name, QString      val, const QString &coding, const QString &code, QString meaning, TreeItem *parent, bool isError=false) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << val << coding << code; itemData.append(meaning); setError(isError); }
+
+  struct Options
+  {
+    std::string value, meaning, coding, code;
+    bool isError {false};
+  };
+
+  // New construction interfaces
+  TreeItem(const std::string &name, TreeItem *parent, const Options options = {})
+  {
+    this->parentItem = parent;
+    if (parent)
+      parent->childItems.append(this);
+
+    this->itemData << QString::fromStdString(name)
+                   << QString::fromStdString(options.value)
+                   << QString::fromStdString(options.coding)
+                   << QString::fromStdString(options.code)
+                   << QString::fromStdString(options.meaning);
+    this->error = options.isError;
+  }
 
   ~TreeItem() { qDeleteAll(childItems); }
   void setError(bool isError = true) { error = isError; }

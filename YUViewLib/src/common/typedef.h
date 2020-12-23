@@ -39,6 +39,7 @@
 #include <QPair>
 #include <QRect>
 #include <QString>
+#include <vector>
 
 namespace YUView
 {
@@ -230,6 +231,8 @@ typedef QList<QStringPair> QStringPairList;
 typedef QPair<int,int> indexRange;  // QPair of integers (minimum and maximum)
 typedef QPair<int,int> QIntPair;
 typedef QPair<unsigned int, unsigned int> QUIntPair;
+
+typedef std::vector<unsigned char> ByteVector;
 
 template<typename T>
 struct Range

@@ -41,7 +41,7 @@ ReaderHelper::ReaderHelper(SubByteReader &reader, TreeItem *item, QString new_su
     if (new_sub_item_name.isEmpty())
       currentTreeLevel = item;
     else
-      currentTreeLevel = new TreeItem(new_sub_item_name, item);
+      currentTreeLevel = new TreeItem(new_sub_item_name.toStdString(), item);
   }
   itemHierarchy.append(currentTreeLevel);
 }
@@ -54,7 +54,7 @@ ReaderHelper::ReaderHelper(const QByteArray &inArr, TreeItem *item, QString new_
     if (new_sub_item_name.isEmpty())
       currentTreeLevel = item;
     else
-      currentTreeLevel = new TreeItem(new_sub_item_name, item);
+      currentTreeLevel = new TreeItem(new_sub_item_name.toStdString(), item);
   }
   itemHierarchy.append(currentTreeLevel);
 }
@@ -64,7 +64,7 @@ void ReaderHelper::addLogSubLevel(const QString name)
   assert(!name.isEmpty());
   if (itemHierarchy.last() == nullptr)
     return;
-  currentTreeLevel = new TreeItem(name, itemHierarchy.last());
+  currentTreeLevel = new TreeItem(name.toStdString(), itemHierarchy.last());
   itemHierarchy.append(currentTreeLevel);
 }
 
@@ -379,7 +379,7 @@ void ReaderHelper::logValue(QString value, QString valueName, QString meaning)
 void ReaderHelper::logInfo(QString info)
 {
   if (currentTreeLevel)
-    new TreeItem(info, currentTreeLevel);
+    new TreeItem(info.toStdString(), currentTreeLevel);
 }
 
 bool ReaderHelper::addErrorMessageChildItem(QString errorMessage, TreeItem *item)
