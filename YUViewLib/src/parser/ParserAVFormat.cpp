@@ -34,7 +34,7 @@
 
 #include <QElapsedTimer>
 
-#include "common/parserMacros.h"
+#include "common/Macros.h
 #include "ParserAnnexBAVC.h"
 #include "ParserAnnexBHEVC.h"
 #include "ParserAnnexBMpeg2.h"

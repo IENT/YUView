@@ -34,7 +34,7 @@
 
 #include <algorithm>
 
-#include "common/parserMacros.h"
+#include "common/Macros.h
 #include "common/ReaderHelper.h"
 
 #define READDELTAQ(into) do { if (!read_delta_q(#into, into, reader)) return false; } while(0)

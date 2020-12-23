@@ -35,7 +35,7 @@
 #include <cmath>
 
 #include "ParserAnnexBItuTT35.h"
-#include "common/parserMacros.h"
+#include "common/Macros.h
 
 #define PARSER_AVC_DEBUG_OUTPUT 0
 #if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
