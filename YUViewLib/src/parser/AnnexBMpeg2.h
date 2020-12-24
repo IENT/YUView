@@ -87,10 +87,9 @@ private:
     virtual ~nal_unit_mpeg2() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parseNalUnitHeader(const QByteArray &header_byte, TreeItem *root) override;
+    bool parseNalUnitHeader(const QByteArray &header_byte, TreeItem *root);
 
     virtual QByteArray getNALHeader() const override;
-    virtual bool isParameterSet() const override { return nal_unit_type == SEQUENCE_HEADER; }
 
     QStringList get_start_code_meanings();
     void interpreteStartCodeValue();

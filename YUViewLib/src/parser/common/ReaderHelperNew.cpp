@@ -45,10 +45,22 @@ std::string formatCoding(const std::string formatName, T value)
   return stringStream.str();
 }
 
-}
+} // namespace
 
 namespace parser
 {
+
+ByteVector ReaderHelperNew::convertBeginningToByteArray(QByteArray data)
+{
+  ByteVector ret;
+  const auto maxLength = 2000u;
+  const auto length = std::min(unsigned(data.size()), maxLength);
+  for (auto i = 0u; i < length; i++)
+  {
+    ret.push_back(data.at(i));
+  }
+  return ret;
+}
 
 ReaderHelperNew::ReaderHelperNew(SubByteReaderNew &reader, TreeItem *item, std::string new_sub_item_name)
 {

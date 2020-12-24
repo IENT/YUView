@@ -64,33 +64,11 @@ public:
   ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) override;
 
 protected:
-  // ----- Some nested classes that are only used in the scope of this file handler class
-
-  /* The basic VVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
-  */
-  struct nal_unit_vvc : NalUnit
-  {
-    nal_unit_vvc(int nalIdx, std::optional<pairUint64> filePosStartEnd) : NalUnit(nalIdx, filePosStartEnd) {}
-    nal_unit_vvc(QSharedPointer<nal_unit_vvc> nal_src) : NalUnit(nal_src->nalIdx, nal_src->filePosStartEnd) { nalUnitTypeID = nal_src->nalUnitTypeID; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
-    virtual ~nal_unit_vvc() {}
-
-    virtual QByteArray getNALHeader() const override;
-    virtual bool isParameterSet() const override { return false; }  // We don't know yet
-    bool parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root) override;
-
-    bool isAUDelimiter() { return nalUnitTypeID == 19; }
-
-    // The information of the NAL unit header
-    unsigned int nuh_layer_id;
-    unsigned int nuh_temporal_id_plus1;
-  };
-
-  // Since full parsing is not implemented yet, we will just look for AU delimiters (they must be enabled in the bitstream and are by default).
-  // This is used by getNextFrameNALUnits to return all information (NAL units) for a specific frame.
+  
   std::optional<pairUint64> curFrameFileStartEndPos;   //< Save the file start/end position of the current frame (in case the frame has multiple NAL units)
 
-  unsigned int counterAU{ 0 };
-  unsigned int sizeCurrentAU{ 0 };
+  size_t counterAU{ 0 };
+  size_t sizeCurrentAU{ 0 };
 };
 
 } // namespace parser

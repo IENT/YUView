@@ -90,10 +90,9 @@ protected:
     virtual ~nal_unit_hevc() {}
 
     virtual QByteArray getNALHeader() const override;
-    virtual bool isParameterSet() const override { return nal_type == VPS_NUT || nal_type == SPS_NUT || nal_type == PPS_NUT; }
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root) override;
+    bool parseNalUnitHeader(const QByteArray &parameterSetData, TreeItem *root);
 
     bool isIRAP();
     bool isSLNR();
@@ -544,7 +543,6 @@ protected:
   {
     slice(const nal_unit_hevc &nal);
     bool parse_slice(const QByteArray &sliceHeaderData, const sps_map &active_SPS_list, const pps_map &active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
-    virtual int getPOC() const override { return PicOrderCntVal; }
     QString getSliceTypeString() const;
 
     bool first_slice_segment_in_pic_flag;

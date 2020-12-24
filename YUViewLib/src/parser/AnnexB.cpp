@@ -95,6 +95,22 @@ void AnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint
     new TreeItem("Start pos", (*nalStartEndPos).first, root);
 }
 
+void AnnexB::logNALSize(ByteVector &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
+{
+  int startCodeSize = 0;
+  if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
+    startCodeSize = 4;
+  if (data[0] == char(0) && data[1] == char(0) && data[2] == char(1))
+    startCodeSize = 3;
+
+  if (startCodeSize > 0)
+    new TreeItem("Start code size", startCodeSize, root);
+
+  new TreeItem("Payload size", data.size() - startCodeSize, root);
+  if (nalStartEndPos)
+    new TreeItem("Start pos", (*nalStartEndPos).first, root);
+}
+
 int AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const
 {
   // Get the POC for the frame number

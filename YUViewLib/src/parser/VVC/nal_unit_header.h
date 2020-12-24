@@ -12,7 +12,7 @@
  *   OpenSSL library under certain conditions as described in each
  *   individual source file, and distribute linked combinations including
  *   the two.
- *   
+ *
  *   You must obey the GNU General Public License in all respects for all
  *   of the code used other than OpenSSL. If you modify file(s) with this
  *   exception, you may extend this exception to your version of the
@@ -32,25 +32,67 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
 #include "parser/NalUnit.h"
+#include "parser/common/ReaderHelperNew.h"
 
 namespace parser::vvc
 {
 
-class nal_unit_header
+enum class NalType
+{
+  TRAIL_NUT,
+  STSA_NUT,
+  RADL_NUT,
+  RASL_NUT,
+  RSV_VCL_4,
+  RSV_VCL_5,
+  RSV_VCL_6,
+  IDR_W_RADL,
+  IDR_N_LP,
+  CRA_NUT,
+  GDR_NUT,
+  RSV_IRAP_11,
+  OPI_NUT,
+  DCI_NUT,
+  VPS_NUT,
+  SPS_NUT,
+  PPS_NUT,
+  PREFIX_APS_NUT,
+  SUFFIX_APS_NUT,
+  PH_NUT,
+  AUD_NUT,
+  EOS_NUT,
+  EOB_NUT,
+  PREFIX_SEI_NUT,
+  SUFFIX_SEI_NUT,
+  FD_NUT,
+  RSV_NVCL_26,
+  RSV_NVCL_27,
+  UNSPEC_28,
+  UNSPEC_29,
+  UNSPEC_30,
+  UNSPEC_31,
+  UNSPECIFIED
+};
+
+class nal_unit_header : public NalUnit
 {
 public:
-  nal_unit_header();
+  nal_unit_header(int nalIdx, std::optional<pairUint64> filePosStartEnd)
+      : NalUnit(nalIdx, filePosStartEnd)
+  {
+  }
   ~nal_unit_header() = default;
   void parse(ReaderHelperNew &reader);
 
-private:
+  QByteArray getNALHeader() const;
+
   bool forbidden_zero_bit;
   bool nuh_reserved_zero_bit;
-  int nuh_layer_id;
-  int nal_unit_type;
-  int nuh_temporal_id_plus1;
+  int  nuh_layer_id;
+  int  nuh_temporal_id_plus1;
+
+  NalType nal_unit_type;
 };
 
 } // namespace parser::vvc

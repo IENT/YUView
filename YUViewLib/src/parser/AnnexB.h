@@ -147,6 +147,7 @@ protected:
   bool addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint);
 
   static void logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos);
+  static void logNALSize(ByteVector &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos);
 
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.

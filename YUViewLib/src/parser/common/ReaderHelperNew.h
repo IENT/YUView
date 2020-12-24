@@ -56,6 +56,8 @@ public:
   void addLogSubLevel(std::string name);
   void removeLogSubLevel();
 
+  static ByteVector convertBeginningToByteArray(QByteArray data);
+
   struct Options
   {
     std::string meaningString;
