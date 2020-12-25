@@ -86,17 +86,16 @@ AnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data_,
     return parseResult;
 
   // Skip the NAL unit header
-  int skip = 0;
+  int readOffset = 0;
   if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    skip = 3;
+    readOffset = 3;
   else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
            data.at(3) == (char)1)
-    skip = 4;
+    readOffset = 4;
 
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
-  QString   specificDescription;
   TreeItem *nalRoot = nullptr;
   if (parent)
     nalRoot = new TreeItem(parent);
@@ -105,13 +104,16 @@ AnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data_,
 
   AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
-  ReaderHelperNew reader(data, nalRoot);
+  ReaderHelperNew reader(data, nalRoot, "", readOffset);
 
   vvc::nal_unit_header nal_vvc(nalID, nalStartEndPosFile);
   nal_vvc.parse(reader);
 
+  std::string specificDescription;
   if (nal_vvc.nal_unit_type == NalType::VPS_NUT)
   {
+    //specificDescription = " VPS ID %1" + std::to_string(new_vps->vps_video_parameter_set_id));
+    specificDescription = " VPS";
   }
 
   // if (nal_vvc.isAUDelimiter())
@@ -163,10 +165,11 @@ AnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data_,
   sizeCurrentAU += data.size();
 
   if (nalRoot)
-    // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_vvc.nalIdx).arg(nal_vvc.nalUnitTypeID) +
-                             specificDescription);
-
+  {
+    auto name = "NAL " + std::to_string(nal_vvc.nalIdx) + ": " + std::to_string(nal_vvc.nalUnitTypeID) + specificDescription;
+    nalRoot->setNameAndOptions(name);
+  }
+  
   parseResult.success = true;
   return parseResult;
 }

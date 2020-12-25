@@ -50,7 +50,7 @@ class ReaderHelperNew
 public:
   ReaderHelperNew() = default;
   ReaderHelperNew(SubByteReaderNew &reader, TreeItem *item, std::string new_sub_item_name = "");
-  ReaderHelperNew(const ByteVector &inArr, TreeItem *item, std::string new_sub_item_name = "");
+  ReaderHelperNew(const ByteVector &inArr, TreeItem *item, std::string new_sub_item_name = "", size_t inOffset = 0);
 
   // Add another hierarchical log level to the tree or go back up. Don't call these directly but use the reader_sub_level wrapper.
   void addLogSubLevel(std::string name);
@@ -66,7 +66,6 @@ public:
   };
 
   uint64_t readBits(std::string symbolName, int numBits, Options options = {});
-
   bool readFlag(std::string symbolName, Options options = {});
 
   TreeItem *getCurrentItemTree() { return currentTreeLevel; }

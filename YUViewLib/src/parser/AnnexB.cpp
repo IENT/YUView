@@ -81,7 +81,7 @@ bool AnnexB::addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, 
 
 void AnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
 {
-  int startCodeSize = 0;
+  size_t startCodeSize = 0;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
     startCodeSize = 4;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(1))
@@ -97,18 +97,18 @@ void AnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint
 
 void AnnexB::logNALSize(ByteVector &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
 {
-  int startCodeSize = 0;
+  size_t startCodeSize = 0;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
     startCodeSize = 4;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(1))
     startCodeSize = 3;
 
   if (startCodeSize > 0)
-    new TreeItem("Start code size", startCodeSize, root);
+    new TreeItem("Start code size", root, TreeItem::Options{ .value = std::to_string(startCodeSize) });
 
-  new TreeItem("Payload size", data.size() - startCodeSize, root);
+  new TreeItem("Payload size", root, TreeItem::Options{ .value = std::to_string(data.size() - startCodeSize) });
   if (nalStartEndPos)
-    new TreeItem("Start pos", (*nalStartEndPos).first, root);
+    new TreeItem("Start pos", root, TreeItem::Options{ .value = to_string(*nalStartEndPos) });
 }
 
 int AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const

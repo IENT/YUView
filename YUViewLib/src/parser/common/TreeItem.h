@@ -67,7 +67,12 @@ public:
     this->parentItem = parent;
     if (parent)
       parent->childItems.append(this);
+    this->setNameAndOptions(name, options);
+  }
 
+  void setNameAndOptions(const std::string &name, const Options &options = {})
+  {
+    this->itemData.clear();
     this->itemData << QString::fromStdString(name)
                    << QString::fromStdString(options.value)
                    << QString::fromStdString(options.coding)
