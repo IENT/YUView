@@ -61,8 +61,9 @@ ByteVector ReaderHelperNew::convertBeginningToByteArray(QByteArray data)
   return ret;
 }
 
-ReaderHelperNew::ReaderHelperNew(SubByteReaderNew &reader, TreeItem *item,
-                                 std::string new_sub_item_name)
+ReaderHelperNew::ReaderHelperNew(SubByteReaderNew &reader,
+                                 TreeItem *        item,
+                                 std::string       new_sub_item_name)
 {
   this->reader = reader;
   if (item)
@@ -70,13 +71,15 @@ ReaderHelperNew::ReaderHelperNew(SubByteReaderNew &reader, TreeItem *item,
     if (new_sub_item_name.empty())
       this->currentTreeLevel = item;
     else
-      this->currentTreeLevel = new TreeItem(new_sub_item_name, item);
+      this->currentTreeLevel = new TreeItem(item, new_sub_item_name);
   }
   this->itemHierarchy.push(this->currentTreeLevel);
 }
 
-ReaderHelperNew::ReaderHelperNew(const ByteVector &inArr, TreeItem *item,
-                                 std::string new_sub_item_name, size_t inOffset)
+ReaderHelperNew::ReaderHelperNew(const ByteVector &inArr,
+                                 TreeItem *        item,
+                                 std::string       new_sub_item_name,
+                                 size_t            inOffset)
 {
   this->reader = SubByteReaderNew(inArr, inOffset);
   if (item)
@@ -84,7 +87,7 @@ ReaderHelperNew::ReaderHelperNew(const ByteVector &inArr, TreeItem *item,
     if (new_sub_item_name.empty())
       this->currentTreeLevel = item;
     else
-      this->currentTreeLevel = new TreeItem(new_sub_item_name, item);
+      this->currentTreeLevel = new TreeItem(item, new_sub_item_name);
   }
   this->itemHierarchy.push(this->currentTreeLevel);
 }
@@ -94,7 +97,7 @@ void ReaderHelperNew::addLogSubLevel(const std::string name)
   assert(!name.empty());
   if (itemHierarchy.top() == nullptr)
     return;
-  this->currentTreeLevel = new TreeItem(name, this->itemHierarchy.top());
+  this->currentTreeLevel = new TreeItem(this->itemHierarchy.top(), name);
   this->itemHierarchy.push(this->currentTreeLevel);
 }
 
@@ -113,10 +116,8 @@ uint64_t ReaderHelperNew::readBits(std::string symbolName, int numBits, Options 
   {
     auto [value, code] = this->reader.readBits(numBits);
     if (currentTreeLevel)
-      new TreeItem(symbolName, currentTreeLevel,
-                   TreeItem::Options{.value  = std::to_string(value),
-                                     .coding = formatCoding("u", numBits),
-                                     .code   = code});
+      new TreeItem(
+          currentTreeLevel, symbolName, std::to_string(value), formatCoding("u", numBits), code);
     return value;
   }
   catch (const std::exception &ex)
@@ -124,7 +125,7 @@ uint64_t ReaderHelperNew::readBits(std::string symbolName, int numBits, Options 
     // TODO
     // if (currentTreeLevel)
     //   new TreeItem("Error", "", "", "", errorMessage, item, true);
-    (void) ex;
+    (void)ex;
     return false;
   }
 }
@@ -135,8 +136,7 @@ bool ReaderHelperNew::readFlag(std::string symbolName, Options options)
   {
     auto [value, code] = this->reader.readBits(1);
     if (currentTreeLevel)
-      new TreeItem(symbolName, currentTreeLevel,
-                   TreeItem::Options{.value = std::to_string(value), .coding = "u(1)", .code = code});
+      new TreeItem(currentTreeLevel, symbolName, std::to_string(value), "u(1)", code);
     return (value != 0);
   }
   catch (const std::exception &ex)
@@ -144,7 +144,7 @@ bool ReaderHelperNew::readFlag(std::string symbolName, Options options)
     // TODO
     // if (currentTreeLevel)
     //   new TreeItem("Error", "", "", "", errorMessage, item, true);
-    (void) ex;
+    (void)ex;
     return false;
   }
 }

@@ -537,7 +537,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
     int sei_count = 0;
     while(seiReader.more_rbsp_data())
     {
-      TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
+      TreeItem *const message_tree = nalRoot ? new TreeItem(nalRoot) : nullptr;
 
       int nrBytes = new_sei->parse_sei_header(seiReader, message_tree);
       if (nrBytes == -1)
@@ -662,7 +662,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
   sizeCurrentAU += data.size();
 
   if (nal_hevc.isSlice())
-  { 
+  {
     if (!currentSliceIntra)
       currentAUAllSlicesIntra = false;
     this->currentAUSliceTypes[currentSliceType]++;
@@ -2239,7 +2239,7 @@ AnnexB::sei_parsing_return_t AnnexBHEVC::sei::parser_sei_bytes(QByteArray &data,
     return SEI_PARSING_OK;
 
   // Create a new TreeItem root for the item
-  TreeItem *const itemTree = new TreeItem("raw_bytes()", root);
+  TreeItem *const itemTree = new TreeItem(root, "raw_bytes()");
 
   for (int i=0; i<data.length(); i++)
   {
@@ -2270,7 +2270,7 @@ AnnexB::sei_parsing_return_t AnnexBHEVC::user_data_sei::parse_user_data_sei(QByt
     // This seems to be x264 user data. These contain the encoder settings which might be useful
     // Create a new TreeItem root for the item
     // The macros will use this variable to add all the parsed variables
-    TreeItem *const itemTree = new TreeItem("x265 user data", root);
+    TreeItem *const itemTree = new TreeItem(root, "x265 user data");
     new TreeItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578", itemTree);
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
@@ -2311,7 +2311,7 @@ AnnexB::sei_parsing_return_t AnnexBHEVC::user_data_sei::parse_user_data_sei(QByt
   else
   {
     // Just log the data as a string
-    TreeItem *const itemTree = new TreeItem("custom user data", root);
+    TreeItem *const itemTree = new TreeItem(root, "custom user data");
     new TreeItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578", itemTree);
     new TreeItem("User Data", QString(user_data_message), "", "", "", itemTree);
   }
@@ -2334,7 +2334,7 @@ bool AnnexBHEVC::dolbyVisionMetadata::parse_metadata(const QByteArray &data, Tre
     return false;
 
   // Create a new TreeItem root for the item
-  TreeItem *const itemTree = new TreeItem("dolbyMetadata()", root);
+  TreeItem *const itemTree = new TreeItem(root, "dolbyMetadata()");
 
   for (int i=0; i<data.length(); i++)
   {

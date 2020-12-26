@@ -239,7 +239,7 @@ AnnexB::ParseResult AnnexBMpeg2::parseAndAddNALUnit(int nalID, QByteArray data, 
   }
   else if (nal_mpeg2.nal_unit_type == EXTENSION_START)
   {
-    TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
+    TreeItem *const message_tree = nalRoot ? new TreeItem(nalRoot) : nullptr;
 
     // An extension
     auto new_extension = QSharedPointer<nal_extension>(new nal_extension(nal_mpeg2));
@@ -442,7 +442,7 @@ bool AnnexBMpeg2::user_data::parse_user_data(const QByteArray & parameterSetData
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("user_data()", root) : nullptr;
+  TreeItem *const itemTree = root ? new TreeItem(root, "user_data()") : nullptr;
 
   if (itemTree)
   {

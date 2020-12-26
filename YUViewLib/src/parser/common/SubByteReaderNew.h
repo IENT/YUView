@@ -51,8 +51,8 @@ public:
   SubByteReaderNew() = default;
   SubByteReaderNew(const ByteVector &inArr, size_t inArrOffset = 0);
 
-  std::tuple<uint64_t, std::string> readBits(unsigned nrBits);
-  ByteVector                        readBytes(unsigned nrBytes);
+  std::tuple<uint64_t, std::string> readBits(size_t nrBits);
+  ByteVector                        readBytes(size_t nrBytes);
 
   std::tuple<uint64_t, std::string> readUE_V();
   std::tuple<int64_t, std::string>  readSE_V();
@@ -65,8 +65,8 @@ public:
   bool payload_extension_present();
   bool testReadingBits(unsigned nrBits);
 
-  unsigned nrBytesRead() const;
-  unsigned nrBytesLeft() const;
+  size_t nrBytesRead() const;
+  size_t nrBytesLeft() const;
 
   void disableEmulationPrevention() { skipEmulationPrevention = false; }
 

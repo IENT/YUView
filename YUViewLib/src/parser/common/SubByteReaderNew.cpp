@@ -42,14 +42,16 @@ namespace parser
 SubByteReaderNew::SubByteReaderNew(const ByteVector &inArr, size_t inArrOffset)
     : byteVector(inArr), posInBufferBytes(inArrOffset), initialPosInBuffer(inArrOffset){};
 
-std::tuple<uint64_t, std::string> SubByteReaderNew::readBits(unsigned nrBits)
+std::tuple<uint64_t, std::string> SubByteReaderNew::readBits(size_t nrBits)
 {
   uint64_t out        = 0;
-  int      nrBitsRead = nrBits;
+  auto     nrBitsRead = nrBits;
 
   // The return unsigned int is of depth 64 bits
   if (nrBits > 64)
     throw std::logic_error("Trying to read more than 64 bits at once from the bitstream.");
+  if (nrBits == 0)
+    return {0, ""};
 
   while (nrBits > 0)
   {
@@ -66,8 +68,8 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readBits(unsigned nrBits)
     // How many bits can be gotton from the current byte?
     auto curBitsLeft = 8 - this->posInBufferBits;
 
-    int readBits; // Nr of bits to read
-    int offset;   // Offset for reading from the right
+    size_t readBits; // Nr of bits to read
+    size_t offset;   // Offset for reading from the right
     if (nrBits >= curBitsLeft)
     {
       // Read "curBitsLeft" bits
@@ -98,9 +100,10 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readBits(unsigned nrBits)
   }
 
   std::string bitsRead;
-  for (int i = nrBitsRead - 1; i >= 0; i--)
+  assert(nrBitsRead > 0);
+  for (auto i = nrBitsRead - 1; i >= 0; i--)
   {
-    if (out & (1 << i))
+    if (out & (uint64_t(1) << i))
       bitsRead.push_back('1');
     else
       bitsRead.push_back('0');
@@ -109,7 +112,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readBits(unsigned nrBits)
   return {out, bitsRead};
 }
 
-ByteVector SubByteReaderNew::readBytes(unsigned nrBytes)
+ByteVector SubByteReaderNew::readBytes(size_t nrBytes)
 {
   if (this->posInBufferBits != 0 && this->posInBufferBits != 8)
     throw std::logic_error("When reading bytes from the bitstream, it should be byte aligned.");
@@ -121,7 +124,7 @@ ByteVector SubByteReaderNew::readBytes(unsigned nrBytes)
                              "over buffer boundary.");
 
   ByteVector retVector;
-  for (int i = 0; i < nrBytes; i++)
+  for (unsigned i = 0; i < nrBytes; i++)
   {
     retVector.push_back(this->byteVector[this->posInBufferBytes]);
 
@@ -147,7 +150,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readUE_V()
   }
 
   // Get the length of the golomb
-  int golLength = 0;
+  unsigned golLength = 0;
   while (true)
   {
     auto [readBit, readCoding] = this->readBits(1);
@@ -160,7 +163,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readUE_V()
   auto [golBits, golCoding] = this->readBits(golLength);
   coding += golCoding;
   // Exponential part
-  auto val = golBits + (1 << golLength) - 1;
+  auto val = golBits + (uint64_t(1) << golLength) - 1;
 
   return {val, coding};
 }
@@ -264,9 +267,9 @@ std::tuple<int64_t, std::string> SubByteReaderNew::readSU()
  * bit and all following bits are 0. */
 bool SubByteReaderNew::more_rbsp_data()
 {
-  unsigned int posBytes            = this->posInBufferBytes;
-  unsigned int posBits             = this->posInBufferBits;
-  bool         terminatingBitFound = false;
+  auto posBytes            = this->posInBufferBytes;
+  auto posBits             = this->posInBufferBits;
+  auto terminatingBitFound = false;
   if (posBits == 8)
   {
     posBytes++;
@@ -321,19 +324,21 @@ bool SubByteReaderNew::payload_extension_present()
 
 bool SubByteReaderNew::testReadingBits(unsigned nrBits)
 {
-  const int curBitsLeft      = 8 - this->posInBufferBits;
-  const int entireBytesLeft  = this->byteVector.size() - this->posInBufferBytes - 1;
-  const int nrBitsLeftToRead = curBitsLeft + entireBytesLeft * 8;
+  assert(this->posInBufferBits <= 8);
+  const auto curBitsLeft = 8 - this->posInBufferBits;
+  assert(this->byteVector.size() > this->posInBufferBytes);
+  const auto entireBytesLeft  = this->byteVector.size() - this->posInBufferBytes - 1;
+  const auto nrBitsLeftToRead = curBitsLeft + entireBytesLeft * 8;
 
   return nrBits <= nrBitsLeftToRead;
 }
 
-unsigned SubByteReaderNew::nrBytesRead() const
+size_t SubByteReaderNew::nrBytesRead() const
 {
   return this->posInBufferBytes - this->initialPosInBuffer + (this->posInBufferBits != 0 ? 1 : 0);
 }
 
-unsigned SubByteReaderNew::nrBytesLeft() const
+size_t SubByteReaderNew::nrBytesLeft() const
 {
   if (this->byteVector.size() <= this->posInBufferBytes)
     return 0;

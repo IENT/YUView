@@ -72,9 +72,11 @@ QPair<int, int> AnnexBVVC::getProfileLevel() { return QPair<int, int>(0, 0); }
 Ratio AnnexBVVC::getSampleAspectRatio() { return Ratio({1, 1}); }
 
 AnnexB::ParseResult
-AnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data_,
+AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
+                              QByteArray                                    data_,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<pairUint64> nalStartEndPosFile, TreeItem *parent)
+                              std::optional<pairUint64>                     nalStartEndPosFile,
+                              TreeItem *                                    parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -112,7 +114,7 @@ AnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data_,
   std::string specificDescription;
   if (nal_vvc.nal_unit_type == NalType::VPS_NUT)
   {
-    //specificDescription = " VPS ID %1" + std::to_string(new_vps->vps_video_parameter_set_id));
+    // specificDescription = " VPS ID %1" + std::to_string(new_vps->vps_video_parameter_set_id));
     specificDescription = " VPS";
   }
 
@@ -166,10 +168,11 @@ AnnexBVVC::parseAndAddNALUnit(int nalID, QByteArray data_,
 
   if (nalRoot)
   {
-    auto name = "NAL " + std::to_string(nal_vvc.nalIdx) + ": " + std::to_string(nal_vvc.nalUnitTypeID) + specificDescription;
-    nalRoot->setNameAndOptions(name);
+    auto name = "NAL " + std::to_string(nal_vvc.nalIdx) + ": " +
+                std::to_string(nal_vvc.nalUnitTypeID) + specificDescription;
+    nalRoot->setProperties(name);
   }
-  
+
   parseResult.success = true;
   return parseResult;
 }
