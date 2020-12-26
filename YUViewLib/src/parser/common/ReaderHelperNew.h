@@ -82,4 +82,14 @@ private:
   SubByteReaderNew       reader;
 };
 
+// A simple wrapper for ReaderHelperNew.addLogSubLevel / ReaderHelper->removeLogSubLevel
+class ReaderHelperNewSubLevel
+{
+public:
+  ReaderHelperNewSubLevel(ReaderHelperNew &reader, std::string name) { reader.addLogSubLevel(name); r = &reader; }
+  ~ReaderHelperNewSubLevel() { r->removeLogSubLevel(); }
+private:
+  ReaderHelperNew *r;
+};
+
 } // namespace parser

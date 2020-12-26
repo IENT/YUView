@@ -110,7 +110,7 @@ void AnnexB::logNALSize(ByteVector &data, TreeItem *root, std::optional<pairUint
 
   new TreeItem(root, "Payload size", std::to_string(data.size() - startCodeSize));
   if (nalStartEndPos)
-    new TreeItem(root, "Start pos", to_string(*nalStartEndPos));
+    new TreeItem(root, "Start/End pos", to_string(*nalStartEndPos));
 }
 
 int AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const

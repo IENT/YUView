@@ -101,9 +101,9 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readBits(size_t nrBits)
 
   std::string bitsRead;
   assert(nrBitsRead > 0);
-  for (auto i = nrBitsRead - 1; i >= 0; i--)
+  for (auto i = nrBitsRead; i > 0; i--)
   {
-    if (out & (uint64_t(1) << i))
+    if (out & (uint64_t(1) << (i - 1)))
       bitsRead.push_back('1');
     else
       bitsRead.push_back('0');

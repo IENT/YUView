@@ -116,8 +116,13 @@ uint64_t ReaderHelperNew::readBits(std::string symbolName, int numBits, Options 
   {
     auto [value, code] = this->reader.readBits(numBits);
     if (currentTreeLevel)
+    {
+      std::string meaning = options.meaningString;
+      if (options.meaningMap.count(value) > 0)
+        meaning = options.meaningMap.at(value);
       new TreeItem(
-          currentTreeLevel, symbolName, std::to_string(value), formatCoding("u", numBits), code);
+          currentTreeLevel, symbolName, std::to_string(value), formatCoding("u", numBits), code, meaning);
+    }
     return value;
   }
   catch (const std::exception &ex)
