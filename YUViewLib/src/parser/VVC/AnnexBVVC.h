@@ -32,11 +32,11 @@
 
 #pragma once
 
-#include <QSharedPointer>
-
 #include "../AnnexB.h"
 #include "NalUnitVVC.h"
 #include "video/videoHandlerYUV.h"
+
+#include <memory>
 
 using namespace YUV_Internals;
 

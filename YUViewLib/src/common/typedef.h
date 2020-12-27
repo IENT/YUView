@@ -227,6 +227,7 @@ template <typename T> inline T clip(const T n, const T lower, const T upper) { r
 
 /// ---- Custom types
 typedef std::pair<uint64_t, uint64_t> pairUint64;
+typedef std::pair<int64_t, int64_t> pairInt64;
 typedef QPair<QString, QString> QStringPair;
 typedef QList<QStringPair> QStringPairList;
 typedef QPair<int,int> indexRange;  // QPair of integers (minimum and maximum)

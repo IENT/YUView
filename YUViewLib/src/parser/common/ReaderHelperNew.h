@@ -33,6 +33,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <stack>
 
 #include "SubByteReaderNew.h"
@@ -65,9 +66,20 @@ public:
 
   struct Options
   {
+    Options() = default;
+    Options(std::string meaningString) : meaningString(meaningString){};
+    Options(std::map<int, std::string> meaningMap) : meaningMap(meaningMap){};
+    Options(uint64_t checkMin, uint64_t checkMax)
+        : checkMinMaxUnsigned(pairUint64(checkMin, checkMax)){};
+    Options(unsigned checkMin, unsigned checkMax)
+        : checkMinMaxUnsigned(pairUint64(checkMin, checkMax)){};
+    Options(int64_t checkMin, int64_t checkMax)
+        : checkMinMaxSigned(pairInt64(checkMin, checkMax)){};
+
     std::string                meaningString;
     std::map<int, std::string> meaningMap;
-    // TODO: Range checks
+    std::optional<pairUint64>  checkMinMaxUnsigned;
+    std::optional<pairInt64>   checkMinMaxSigned;
   };
 
   uint64_t readBits(const std::string &symbolName, int numBits, const Options &options = {});

@@ -49,7 +49,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   {
     this->vps_all_independent_layers_flag = reader.readFlag("vps_all_independent_layers_flag");
   }
-  for (unsigned i = 0; i <= this->vps_max_layers_minus1; i += i++)
+  for (unsigned i = 0; i <= this->vps_max_layers_minus1; i++)
   {
     this->vps_layer_id[i] = reader.readBits("vps_layer_id", 6);
     if (i > 0 && !this->vps_all_independent_layers_flag)
@@ -58,7 +58,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       if (!this->vps_independent_layer_flag[i])
       {
         this->vps_max_tid_ref_present_flag[i] = reader.readFlag("vps_max_tid_ref_present_flag");
-        for (unsigned j = 0; j < i; i += j++)
+        for (unsigned j = 0; j < i; j++)
         {
           this->vps_direct_ref_layer_flag[i][j] = reader.readFlag("vps_direct_ref_layer_flag");
           if (this->vps_max_tid_ref_present_flag[i] && this->vps_direct_ref_layer_flag[i][j])
@@ -86,9 +86,9 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       {
         this->vps_num_output_layer_sets_minus2 =
             reader.readBits("vps_num_output_layer_sets_minus2", 8);
-        for (unsigned i = 1; i <= this->vps_num_output_layer_sets_minus2 + 1; i += i++)
+        for (unsigned i = 1; i <= this->vps_num_output_layer_sets_minus2 + 1; i++)
         {
-          for (unsigned j = 0; j <= this->vps_max_layers_minus1; i += j++)
+          for (unsigned j = 0; j <= this->vps_max_layers_minus1; j++)
           {
             this->vps_ols_output_layer_flag[i][j] = reader.readFlag("vps_ols_output_layer_flag");
           }
@@ -283,7 +283,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   else
     this->VpsNumDpbParams = this->vps_num_dpb_params_minus1 + 1;
 
-  for (unsigned i = 0; i <= this->vps_num_ptls_minus1; i += i++)
+  for (unsigned i = 0; i <= this->vps_num_ptls_minus1; i++)
   {
     if (i > 0)
     {
@@ -298,7 +298,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   {
     this->vps_ptl_alignment_zero_bit = reader.readFlag("vps_ptl_alignment_zero_bit");
   }
-  for (unsigned i = 0; i <= vps_num_ptls_minus1; i += i++)
+  for (unsigned i = 0; i <= vps_num_ptls_minus1; i++)
   {
     // TODO
     // this->profile_tier_level_instance.parse(reader, vps_pt_present_flag[i], vps_ptl_max_tid[i]);
@@ -318,7 +318,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       this->vps_sublayer_dpb_params_present_flag =
           reader.readFlag("vps_sublayer_dpb_params_present_flag");
     }
-    for (unsigned i = 0; i < this->VpsNumDpbParams; i += i++)
+    for (unsigned i = 0; i < this->VpsNumDpbParams; i++)
     {
       if (!this->vps_default_ptl_dpb_hrd_max_tid_flag)
       {
@@ -328,7 +328,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       // this->dpb_parameters_instance.parse(
       //     reader, vps_dpb_max_tid[i], vps_sublayer_dpb_params_present_flag);
     }
-    for (unsigned i = 0; i < this->NumMultiLayerOlss; i += i++)
+    for (unsigned i = 0; i < this->NumMultiLayerOlss; i++)
     {
       this->vps_ols_dpb_pic_width[i]       = reader.readUEV("vps_ols_dpb_pic_width");
       this->vps_ols_dpb_pic_height[i]      = reader.readUEV("vps_ols_dpb_pic_height");
@@ -352,7 +352,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       }
       this->vps_num_ols_timing_hrd_params_minus1 =
           reader.readUEV("vps_num_ols_timing_hrd_params_minus1");
-      for (unsigned i = 0; i <= this->vps_num_ols_timing_hrd_params_minus1; i += i++)
+      for (unsigned i = 0; i <= this->vps_num_ols_timing_hrd_params_minus1; i++)
       {
         if (!this->vps_default_ptl_dpb_hrd_max_tid_flag)
         {
@@ -364,7 +364,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       if (this->vps_num_ols_timing_hrd_params_minus1 > 0 &&
           this->vps_num_ols_timing_hrd_params_minus1 + 1 != NumMultiLayerOlss)
       {
-        for (unsigned i = 0; i < this->NumMultiLayerOlss; i += i++)
+        for (unsigned i = 0; i < this->NumMultiLayerOlss; i++)
         {
           this->vps_ols_timing_hrd_idx[i] = reader.readUEV("vps_ols_timing_hrd_idx");
         }

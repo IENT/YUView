@@ -82,7 +82,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       this->sps_independent_subpics_flag = reader.readFlag("sps_independent_subpics_flag");
       this->sps_subpic_same_size_flag    = reader.readFlag("sps_subpic_same_size_flag");
     }
-    for (unsigned i = 0; sps_num_subpics_minus1 > 0 && i <= sps_num_subpics_minus1; i += i++)
+    for (unsigned i = 0; sps_num_subpics_minus1 > 0 && i <= sps_num_subpics_minus1; i++)
     {
       if (!sps_subpic_same_size_flag || i == 0)
       {
@@ -124,7 +124,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
           reader.readFlag("sps_subpic_id_mapping_present_flag");
       if (sps_subpic_id_mapping_present_flag)
       {
-        for (unsigned i = 0; i <= sps_num_subpics_minus1; i += i++)
+        for (unsigned i = 0; i <= sps_num_subpics_minus1; i++)
         {
           auto numBits        = sps_subpic_id_len_minus1 + 1;
           this->sps_subpic_id = reader.readBits("sps_subpic_id", numBits);
@@ -132,7 +132,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       }
     }
   }
-  this->sps_bitdepth_minus8 = reader.readUEV("sps_bitdepth_minus8");
+  this->sps_bitdepth_minus8 = reader.readUEV("sps_bitdepth_minus8", ReaderHelperNew::Options(0u, 2u));
   this->sps_entropy_coding_sync_enabled_flag =
       reader.readFlag("sps_entropy_coding_sync_enabled_flag");
   this->sps_entry_point_offsets_present_flag =
@@ -145,12 +145,12 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     this->sps_poc_msb_cycle_len_minus1 = reader.readUEV("sps_poc_msb_cycle_len_minus1");
   }
   this->sps_num_extra_ph_bytes = reader.readBits("sps_num_extra_ph_bytes", 2);
-  for (unsigned i = 0; i < (sps_num_extra_ph_bytes * 8); i += i++)
+  for (unsigned i = 0; i < (sps_num_extra_ph_bytes * 8); i++)
   {
     this->sps_extra_ph_bit_present_flag.push_back(reader.readFlag("sps_extra_ph_bit_present_flag"));
   }
   this->sps_num_extra_sh_bytes = reader.readBits("sps_num_extra_sh_bytes", 2);
-  for (unsigned i = 0; i < (sps_num_extra_sh_bytes * 8); i += i++)
+  for (unsigned i = 0; i < (sps_num_extra_sh_bytes * 8); i++)
   {
     this->sps_extra_ph_bit_present_flag.push_back(reader.readFlag("sps_extra_ph_bit_present_flag"));
   }
@@ -235,13 +235,13 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     this->sps_same_qp_table_for_chroma_flag = reader.readFlag("sps_same_qp_table_for_chroma_flag");
     unsigned numQpTables =
         this->sps_same_qp_table_for_chroma_flag ? 1 : (this->sps_joint_cbcr_enabled_flag ? 3 : 2);
-    for (unsigned i = 0; i < numQpTables; i += i++)
+    for (unsigned i = 0; i < numQpTables; i++)
     {
       this->sps_qp_table_start_minus26.push_back(reader.readSEV("sps_qp_table_start_minus26"));
       this->sps_num_points_in_qp_table_minus1.push_back(reader.readUEV("sps_num_points_in_qp_table_minus1"));
       this->sps_delta_qp_in_val_minus1.push_back({});
       this->sps_delta_qp_diff_val.push_back({});
-      for (unsigned j = 0; j <= sps_num_points_in_qp_table_minus1[i]; i += j++)
+      for (unsigned j = 0; j <= sps_num_points_in_qp_table_minus1[i]; j++)
       {
         this->sps_delta_qp_in_val_minus1[i].push_back(reader.readUEV("sps_delta_qp_in_val_minus1"));
         this->sps_delta_qp_diff_val[i].push_back(reader.readUEV("sps_delta_qp_diff_val"));
@@ -265,10 +265,10 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   }
   this->sps_idr_rpl_present_flag   = reader.readFlag("sps_idr_rpl_present_flag");
   this->sps_rpl1_same_as_rpl0_flag = reader.readFlag("sps_rpl1_same_as_rpl0_flag");
-  for (unsigned i = 0; i < (sps_rpl1_same_as_rpl0_flag ? 1u : 2u); i += i++)
+  for (unsigned i = 0; i < (sps_rpl1_same_as_rpl0_flag ? 1u : 2u); i++)
   {
     this->sps_num_ref_pic_lists.push_back(reader.readUEV("sps_num_ref_pic_lists"));
-    for (unsigned j = 0; j < sps_num_ref_pic_lists[i]; i += j++)
+    for (unsigned j = 0; j < sps_num_ref_pic_lists[i]; j++)
     {
       // TODO
       //this->ref_pic_list_struct_instance.parse(reader, i, j);
@@ -369,7 +369,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   {
     this->sps_num_ladf_intervals_minus2      = reader.readBits("sps_num_ladf_intervals_minus2", 2);
     this->sps_ladf_lowest_interval_qp_offset = reader.readSEV("sps_ladf_lowest_interval_qp_offset");
-    for (unsigned i = 0; i < sps_num_ladf_intervals_minus2 + 1; i += i++)
+    for (unsigned i = 0; i < sps_num_ladf_intervals_minus2 + 1; i++)
     {
       this->sps_ladf_qp_offset.push_back(reader.readSEV("sps_ladf_qp_offset"));
       this->sps_ladf_delta_threshold_minus1.push_back(reader.readUEV("sps_ladf_delta_threshold_minus1"));
@@ -403,12 +403,12 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     if (sps_virtual_boundaries_present_flag)
     {
       this->sps_num_ver_virtual_boundaries = reader.readUEV("sps_num_ver_virtual_boundaries");
-      for (unsigned i = 0; i < sps_num_ver_virtual_boundaries; i += i++)
+      for (unsigned i = 0; i < sps_num_ver_virtual_boundaries; i++)
       {
         this->sps_virtual_boundary_pos_x_minus1.push_back(reader.readUEV("sps_virtual_boundary_pos_x_minus1"));
       }
       this->sps_num_hor_virtual_boundaries = reader.readUEV("sps_num_hor_virtual_boundaries");
-      for (unsigned i = 0; i < sps_num_hor_virtual_boundaries; i += i++)
+      for (unsigned i = 0; i < sps_num_hor_virtual_boundaries; i++)
       {
         this->sps_virtual_boundary_pos_y_minus1.push_back(reader.readUEV("sps_virtual_boundary_pos_y_minus1"));
       }

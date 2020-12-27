@@ -38,8 +38,8 @@
 #include "nal_unit_header.h"
 #include "parser/common/Macros.h"
 #include "parser/common/ReaderHelper.h"
-#include "video_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
+#include "video_parameter_set_rbsp.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -106,35 +106,47 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   else if (!packetModel->isNull())
     nalRoot = new TreeItem(packetModel->getRootItem());
 
+  parseResult.success = true;
+
   AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   ReaderHelperNew reader(data, nalRoot, "", readOffset);
 
-  auto nalVVC = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);
-  nalVVC->header.parse(reader);
-
   std::string specificDescription;
-  if (nalVVC->header.nal_unit_type == NalType::VPS_NUT)
+  auto nalVVC = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);
+  try
   {
-    auto newVPS = std::make_unique<video_parameter_set_rbsp>();
-    newVPS->parse(reader);
-    
-    this->activeParameterSets.vpsMap[newVPS->vps_video_parameter_set_id] = nalVVC;
+    nalVVC->header.parse(reader);
 
-    nalVVC->rbsp = std::move(newVPS);
+    if (nalVVC->header.nal_unit_type == NalType::VPS_NUT)
+    {
+      specificDescription = " VPS";
+      auto newVPS         = std::make_unique<video_parameter_set_rbsp>();
+      newVPS->parse(reader);
 
-    specificDescription = " VPS ID " + std::to_string(newVPS->vps_video_parameter_set_id);
+      this->activeParameterSets.vpsMap[newVPS->vps_video_parameter_set_id] = nalVVC;
+
+      specificDescription += " ID " + std::to_string(newVPS->vps_video_parameter_set_id);
+
+      nalVVC->rbsp = std::move(newVPS);
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::SPS_NUT)
+    {
+      specificDescription = " SPS";
+      auto newSPS         = std::make_unique<seq_parameter_set_rbsp>();
+      newSPS->parse(reader);
+
+      this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = nalVVC;
+
+      specificDescription += " ID " + std::to_string(newSPS->sps_seq_parameter_set_id);
+
+      nalVVC->rbsp = std::move(newSPS);
+    }
   }
-  else if (nalVVC->header.nal_unit_type == NalType::SPS_NUT)
+  catch (const std::exception &e)
   {
-    auto newSPS = std::make_unique<seq_parameter_set_rbsp>();
-    newSPS->parse(reader);
-
-    this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = nalVVC;
-
-    nalVVC->rbsp = std::move(newSPS);
-
-    specificDescription = " SPS ID " + std::to_string(newSPS->sps_seq_parameter_set_id);
+    specificDescription += " ERROR " + std::string(e.what());
+    parseResult.success = false;
   }
 
   // if (nal_vvc.isAUDelimiter())
@@ -192,7 +204,6 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     nalRoot->setProperties(name);
   }
 
-  parseResult.success = true;
   return parseResult;
 }
 

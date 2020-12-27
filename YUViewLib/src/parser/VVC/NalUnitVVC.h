@@ -35,6 +35,8 @@
 #include "nal_unit_header.h"
 #include "parser/NalUnit.h"
 
+#include <memory>
+
 namespace parser::vvc
 {
 
