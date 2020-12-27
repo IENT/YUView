@@ -217,7 +217,7 @@ QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fi
 QByteArray AnnexBHEVC::getExtradata()
 {
   // Just return the VPS, SPS and PPS in NAL unit format. From the format in the extradata, ffmpeg will detect that
-  // the input file is in raw NAL unit format and accept AVPacets in NAL unit format.
+  // the input file is in raw NAL unit format and accept AVPackets in NAL unit format.
   QByteArray ret;
   QByteArray startCode;
   startCode.append((char)0);

@@ -38,6 +38,8 @@
 #include "nal_unit_header.h"
 #include "parser/common/Macros.h"
 #include "parser/common/ReaderHelper.h"
+#include "video_parameter_set_rbsp.h"
+#include "seq_parameter_set_rbsp.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -108,14 +110,31 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
   ReaderHelperNew reader(data, nalRoot, "", readOffset);
 
-  vvc::nal_unit_header nal_vvc(nalID, nalStartEndPosFile);
-  nal_vvc.parse(reader);
+  auto nalVVC = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);
+  nalVVC->header.parse(reader);
 
   std::string specificDescription;
-  if (nal_vvc.nal_unit_type == NalType::VPS_NUT)
+  if (nalVVC->header.nal_unit_type == NalType::VPS_NUT)
   {
-    // specificDescription = " VPS ID %1" + std::to_string(new_vps->vps_video_parameter_set_id));
-    specificDescription = " VPS";
+    auto newVPS = std::make_unique<video_parameter_set_rbsp>();
+    newVPS->parse(reader);
+    
+    this->activeParameterSets.vpsMap[newVPS->vps_video_parameter_set_id] = nalVVC;
+
+    nalVVC->rbsp = std::move(newVPS);
+
+    specificDescription = " VPS ID " + std::to_string(newVPS->vps_video_parameter_set_id);
+  }
+  else if (nalVVC->header.nal_unit_type == NalType::SPS_NUT)
+  {
+    auto newSPS = std::make_unique<seq_parameter_set_rbsp>();
+    newSPS->parse(reader);
+
+    this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = nalVVC;
+
+    nalVVC->rbsp = std::move(newSPS);
+
+    specificDescription = " SPS ID " + std::to_string(newSPS->sps_seq_parameter_set_id);
   }
 
   // if (nal_vvc.isAUDelimiter())
@@ -168,8 +187,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
   if (nalRoot)
   {
-    auto name = "NAL " + std::to_string(nal_vvc.nalIdx) + ": " +
-                std::to_string(nal_vvc.nalUnitTypeID) + specificDescription;
+    auto name = "NAL " + std::to_string(nalVVC->nalIdx) + ": " +
+                std::to_string(nalVVC->header.nalUnitTypeID) + specificDescription;
     nalRoot->setProperties(name);
   }
 

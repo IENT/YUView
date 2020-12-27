@@ -61,7 +61,9 @@ public:
   std::tuple<int64_t, std::string>  readNS();
   std::tuple<int64_t, std::string>  readSU();
 
-  bool more_rbsp_data();
+  bool more_rbsp_data() const;
+  bool byte_aligned() const;
+
   bool payload_extension_present();
   bool testReadingBits(unsigned nrBits);
 

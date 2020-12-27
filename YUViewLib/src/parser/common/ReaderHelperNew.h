@@ -35,7 +35,6 @@
 #include <map>
 #include <stack>
 
-
 #include "SubByteReaderNew.h"
 #include "TreeItem.h"
 #include "common/typedef.h"
@@ -71,12 +70,24 @@ public:
     // TODO: Range checks
   };
 
-  uint64_t readBits(std::string symbolName, int numBits, Options options = {});
-  bool     readFlag(std::string symbolName, Options options = {});
+  uint64_t readBits(const std::string &symbolName, int numBits, const Options &options = {});
+  bool     readFlag(const std::string &symbolName, const Options &options = {});
+  uint64_t readUEV(const std::string &symbolName, const Options &options = {});
+  int64_t  readSEV(const std::string &symbolName, const Options &options = {});
+
+  bool more_rbsp_data() const { return this->reader.more_rbsp_data(); }
+  bool byte_aligned() const { return this->reader.byte_aligned(); }
 
   TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
 private:
+  void logRead(const std::string &formatName,
+               const std::string &symbolName,
+               const Options &    options,
+               int64_t            value,
+               const std::string &code);
+  void logExceptionAndThrowError [[noreturn]] (const std::exception &ex, const std::string &when);
+
   std::stack<TreeItem *> itemHierarchy;
   TreeItem *             currentTreeLevel{nullptr};
   SubByteReaderNew       reader;
@@ -86,8 +97,13 @@ private:
 class ReaderHelperNewSubLevel
 {
 public:
-  ReaderHelperNewSubLevel(ReaderHelperNew &reader, std::string name) { reader.addLogSubLevel(name); r = &reader; }
+  ReaderHelperNewSubLevel(ReaderHelperNew &reader, std::string name)
+  {
+    reader.addLogSubLevel(name);
+    r = &reader;
+  }
   ~ReaderHelperNewSubLevel() { r->removeLogSubLevel(); }
+
 private:
   ReaderHelperNew *r;
 };

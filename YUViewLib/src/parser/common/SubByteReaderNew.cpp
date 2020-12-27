@@ -265,7 +265,7 @@ std::tuple<int64_t, std::string> SubByteReaderNew::readSU()
 
 /* Is there more data? There is no more data if the next bit is the terminating
  * bit and all following bits are 0. */
-bool SubByteReaderNew::more_rbsp_data()
+bool SubByteReaderNew::more_rbsp_data() const
 {
   auto posBytes            = this->posInBufferBytes;
   auto posBits             = this->posInBufferBits;
@@ -307,6 +307,11 @@ bool SubByteReaderNew::more_rbsp_data()
   if (!terminatingBitFound)
     return true;
   return false;
+}
+
+bool SubByteReaderNew::byte_aligned() const
+{
+  return (this->posInBufferBits == 0 || this->posInBufferBits == 8);
 }
 
 /* Is there more data? If the current position in the sei_payload() syntax

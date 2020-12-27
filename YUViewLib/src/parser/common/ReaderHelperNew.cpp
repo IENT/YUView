@@ -40,7 +40,9 @@ namespace
 template <typename T> std::string formatCoding(const std::string formatName, T value)
 {
   std::ostringstream stringStream;
-  stringStream << formatName << "(v) -> u(" << value << ")";
+  stringStream << formatName;
+  if (formatName != "u(1)")
+    stringStream << " -> u(" << value << ")";
   return stringStream.str();
 }
 
@@ -110,48 +112,92 @@ void ReaderHelperNew::removeLogSubLevel()
   this->currentTreeLevel = this->itemHierarchy.top();
 }
 
-uint64_t ReaderHelperNew::readBits(std::string symbolName, int numBits, Options options)
+uint64_t
+ReaderHelperNew::readBits(const std::string &symbolName, int numBits, const Options &options)
 {
   try
   {
     auto [value, code] = this->reader.readBits(numBits);
-    if (currentTreeLevel)
-    {
-      std::string meaning = options.meaningString;
-      if (options.meaningMap.count(value) > 0)
-        meaning = options.meaningMap.at(value);
-      new TreeItem(
-          currentTreeLevel, symbolName, std::to_string(value), formatCoding("u", numBits), code, meaning);
-    }
+    this->logRead("u(v)", symbolName, options, int64_t(value), code);
     return value;
   }
   catch (const std::exception &ex)
   {
-    // TODO
-    // if (currentTreeLevel)
-    //   new TreeItem("Error", "", "", "", errorMessage, item, true);
-    (void)ex;
-    return false;
+    this->logExceptionAndThrowError(ex, std::to_string(numBits) + " bit symbol " + symbolName);
   }
 }
 
-bool ReaderHelperNew::readFlag(std::string symbolName, Options options)
+bool ReaderHelperNew::readFlag(const std::string &symbolName, const Options &options)
 {
   try
   {
     auto [value, code] = this->reader.readBits(1);
-    if (currentTreeLevel)
-      new TreeItem(currentTreeLevel, symbolName, std::to_string(value), "u(1)", code);
+    this->logRead("u(1)", symbolName, options, int64_t(value), code);
     return (value != 0);
   }
   catch (const std::exception &ex)
   {
-    // TODO
-    // if (currentTreeLevel)
-    //   new TreeItem("Error", "", "", "", errorMessage, item, true);
-    (void)ex;
-    return false;
+    this->logExceptionAndThrowError(ex, "flag " + symbolName);
   }
+}
+
+uint64_t ReaderHelperNew::readUEV(const std::string &symbolName, const Options &options)
+{
+  try
+  {
+    auto [value, code] = this->reader.readUE_V();
+    this->logRead("ue(v)", symbolName, options, int64_t(value), code);
+    return value;
+  }
+  catch (const std::exception &ex)
+  {
+    this->logExceptionAndThrowError(ex, "UEV symbol " + symbolName);
+  }
+}
+
+int64_t ReaderHelperNew::readSEV(const std::string &symbolName, const Options &options)
+{
+  try
+  {
+    auto [value, code] = this->reader.readSE_V();
+    this->logRead("se(v)", symbolName, options, int64_t(value), code);
+    return value;
+  }
+  catch (const std::exception &ex)
+  {
+    this->logExceptionAndThrowError(ex, "SEV symbol " + symbolName);
+  }
+}
+
+void ReaderHelperNew::logRead(const std::string &formatName,
+                              const std::string &symbolName,
+                              const Options &    options,
+                              int64_t            value,
+                              const std::string &code)
+{
+  if (this->currentTreeLevel)
+  {
+    std::string meaning = options.meaningString;
+    if (options.meaningMap.count(value) > 0)
+      meaning = options.meaningMap.at(value);
+    new TreeItem(currentTreeLevel,
+                 symbolName,
+                 std::to_string(value),
+                 formatCoding(formatName, code.size()),
+                 code,
+                 meaning);
+  }
+}
+
+void ReaderHelperNew::logExceptionAndThrowError(const std::exception &ex, const std::string &when)
+{
+  if (this->currentTreeLevel)
+  {
+    auto errorMessage = "Reading error " + std::string(ex.what());
+    auto item         = new TreeItem(currentTreeLevel, "Error", "", "", "", errorMessage);
+    item->setError();
+  }
+  throw std::logic_error("Error reading " + when);
 }
 
 } // namespace parser
