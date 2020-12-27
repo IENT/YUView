@@ -64,10 +64,24 @@ RangeCheckResult rangeCheck(const ReaderHelperNew::Options &options, int64_t val
                              std::to_string(options.checkMinMax->first) + " to " +
                              std::to_string(options.checkMinMax->second) + " inclusive."});
   }
-  if (options.checkExactValue && value != *options.checkExactValue)
+  if (options.checkValue && options.checkType)
   {
-    return RangeCheckResult(
-        {"Value should be equal to " + std::to_string(*options.checkExactValue)});
+    using CheckType = ReaderHelperNew::Options::CheckType;
+    if (*options.checkType == CheckType::Equal && value != options.checkValue)
+    {
+      return RangeCheckResult(
+        {"Value should be equal to " + std::to_string(*options.checkValue)});
+    }
+    if (*options.checkType == CheckType::Greater && value <= options.checkValue)
+    {
+      return RangeCheckResult(
+        {"Value should be greater then " + std::to_string(*options.checkValue)});
+    }
+    if (*options.checkType == CheckType::Smaller && value >= options.checkValue)
+    {
+      return RangeCheckResult(
+        {"Value should be smaller then " + std::to_string(*options.checkValue)});
+    }
   }
   return {};
 }

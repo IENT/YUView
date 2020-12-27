@@ -66,16 +66,26 @@ public:
 
   struct Options
   {
+    enum class CheckType
+    {
+      Equal,
+      Greater,
+      Smaller
+    };
+
     Options() = default;
     Options(std::string meaningString) : meaningString(meaningString) {}
     Options(std::map<int, std::string> meaningMap) : meaningMap(meaningMap) {}
     Options(int64_t checkMin, int64_t checkMax) : checkMinMax(pairInt64(checkMin, checkMax)) {}
-    Options(int64_t checkExactValue) : checkExactValue(checkExactValue) {}
+    Options(int64_t checkValue, CheckType checkType) : checkValue(checkValue), checkType(checkType)
+    {
+    }
 
     std::string                meaningString;
     std::map<int, std::string> meaningMap;
     std::optional<pairInt64>   checkMinMax;
-    std::optional<int64_t>     checkExactValue;
+    std::optional<int64_t>     checkValue;
+    std::optional<CheckType>   checkType;
   };
 
   uint64_t readBits(const std::string &symbolName, int numBits, const Options &options = {});
