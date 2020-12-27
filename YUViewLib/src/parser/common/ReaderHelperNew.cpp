@@ -34,7 +34,7 @@
 
 #include <sstream>
 
-namespace parser
+namespace parser::reader
 {
 
 namespace
@@ -49,51 +49,21 @@ template <typename T> std::string formatCoding(const std::string formatName, T v
   return stringStream.str();
 }
 
-struct RangeCheckResult
-{
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
-
-RangeCheckResult rangeCheck(const ReaderHelperNew::Options &options, int64_t value)
-{
-  if (options.checkMinMax &&
-      (value < options.checkMinMax->first || value > options.checkMinMax->second))
-  {
-    return RangeCheckResult({"Value should be in the range of " +
-                             std::to_string(options.checkMinMax->first) + " to " +
-                             std::to_string(options.checkMinMax->second) + " inclusive."});
-  }
-  if (options.checkValue && options.checkType)
-  {
-    using CheckType = ReaderHelperNew::Options::CheckType;
-    if (*options.checkType == CheckType::Equal && value != options.checkValue)
-    {
-      return RangeCheckResult(
-        {"Value should be equal to " + std::to_string(*options.checkValue)});
-    }
-    if (*options.checkType == CheckType::Greater && value <= options.checkValue)
-    {
-      return RangeCheckResult(
-        {"Value should be greater then " + std::to_string(*options.checkValue)});
-    }
-    if (*options.checkType == CheckType::Smaller && value >= options.checkValue)
-    {
-      return RangeCheckResult(
-        {"Value should be smaller then " + std::to_string(*options.checkValue)});
-    }
-  }
-  return {};
-}
-
 void checkAndLog(TreeItem *                      item,
                  const std::string &             formatName,
                  const std::string &             symbolName,
-                 const ReaderHelperNew::Options &options,
+                 const Options &options,
                  int64_t                         value,
                  const std::string &             code)
 {
-  auto checkResult = rangeCheck(options, value);
+  RangeCheckResult checkResult;
+  for (auto &check : options.checkList)
+  {
+    checkResult = check->checkValue(value);
+    if (!checkResult)
+      break;
+  }
+
   if (item)
   {
     std::string meaning = options.meaningString;

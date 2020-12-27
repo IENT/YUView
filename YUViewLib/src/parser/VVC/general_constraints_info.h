@@ -43,7 +43,7 @@ class general_constraints_info : public NalRBSP
 public:
   general_constraints_info()  = default;
   ~general_constraints_info() = default;
-  void parse(ReaderHelperNew &reader);
+  void parse(reader::ReaderHelperNew &reader);
 
   bool gci_present_flag{};
   bool gci_intra_only_constraint_flag{};

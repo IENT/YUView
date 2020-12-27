@@ -35,6 +35,8 @@
 namespace parser::vvc
 {
 
+using namespace parser::reader;
+
 void profile_tier_level::parse(ReaderHelperNew &reader,
                                bool             profileTierPresentFlag,
                                unsigned         MaxNumSubLayersMinus1)

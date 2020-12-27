@@ -35,6 +35,8 @@
 namespace parser::vvc
 {
 
+using namespace parser::reader;
+
 void general_constraints_info::parse(ReaderHelperNew &reader)
 {
   this->gci_present_flag = reader.readFlag("gci_present_flag");

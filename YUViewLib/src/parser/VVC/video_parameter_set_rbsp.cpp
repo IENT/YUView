@@ -35,6 +35,8 @@
 namespace parser::vvc
 {
 
+using namespace parser::reader;
+
 void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
 {
   this->vps_video_parameter_set_id = reader.readBits("vps_video_parameter_set_id", 4);

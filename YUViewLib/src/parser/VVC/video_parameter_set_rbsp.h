@@ -43,7 +43,7 @@ class video_parameter_set_rbsp : public NalRBSP
 public:
   video_parameter_set_rbsp()  = default;
   ~video_parameter_set_rbsp() = default;
-  void parse(ReaderHelperNew &reader);
+  void parse(reader::ReaderHelperNew &reader);
 
   unsigned                           vps_video_parameter_set_id{};
   unsigned                           vps_max_layers_minus1{};

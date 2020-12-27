@@ -84,7 +84,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
   // Convert QByteArray to ByteVector. This is just a temporary solution.
   // Once all parsing functions are switched we can change the interface and get rid of this.
-  auto data = ReaderHelperNew::convertBeginningToByteArray(data_);
+  auto data = reader::ReaderHelperNew::convertBeginningToByteArray(data_);
 
   if (nalID == -1 && data_.isEmpty())
     return parseResult;
@@ -110,7 +110,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
   AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
-  ReaderHelperNew reader(data, nalRoot, "", readOffset);
+  reader::ReaderHelperNew reader(data, nalRoot, "", readOffset);
 
   std::string specificDescription;
   auto nalVVC = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);

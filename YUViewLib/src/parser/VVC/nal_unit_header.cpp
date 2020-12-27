@@ -35,6 +35,8 @@
 namespace parser::vvc
 {
 
+using namespace parser::reader;
+
 namespace
 {
 
@@ -59,10 +61,10 @@ void nal_unit_header::parse(ReaderHelperNew &reader)
 
   this->forbidden_zero_bit    = reader.readFlag("forbidden_zero_bit");
   this->nuh_reserved_zero_bit = reader.readFlag("nuh_reserved_zero_bit");
-  this->nuh_layer_id          = reader.readBits("nuh_layer_id", 6);
+  this->nuh_layer_id = reader.readBits("nuh_layer_id", 6, Options().withCheckRange({0, 55}));
 
   {
-    ReaderHelperNew::Options opt;
+    Options opt;
     opt.meaningMap[0]   = "Coded slice of a trailing picture or subpicture";
     opt.meaningMap[1]   = "Coded slice of an STSA picture or subpicture";
     opt.meaningMap[2]   = "Coded slice of a RADL picture or subpicture";

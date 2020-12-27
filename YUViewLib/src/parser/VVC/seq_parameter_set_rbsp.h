@@ -44,7 +44,7 @@ class seq_parameter_set_rbsp : public NalRBSP
 public:
   seq_parameter_set_rbsp()  = default;
   ~seq_parameter_set_rbsp() = default;
-  void parse(ReaderHelperNew &reader);
+  void parse(reader::ReaderHelperNew &reader);
 
   unsigned           sps_seq_parameter_set_id{};
   unsigned           sps_video_parameter_set_id{};
@@ -198,6 +198,8 @@ public:
 
   unsigned CtbLog2SizeY{};
   unsigned CtbSizeY{};
+  unsigned MinCbLog2SizeY{};
+  unsigned MinQtLog2SizeIntraY{};
   unsigned MaxNumMergeCand{};
 };
 

@@ -80,7 +80,7 @@ class nal_unit_header
 public:
   nal_unit_header() = default;
   ~nal_unit_header() = default;
-  void parse(ReaderHelperNew &reader);
+  void parse(reader::ReaderHelperNew &reader);
 
   QByteArray getNALHeader() const;
 

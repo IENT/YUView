@@ -12,7 +12,7 @@
  *   OpenSSL library under certain conditions as described in each
  *   individual source file, and distribute linked combinations including
  *   the two.
- *   
+ *
  *   You must obey the GNU General Public License in all respects for all
  *   of the code used other than OpenSSL. If you modify file(s) with this
  *   exception, you may extend this exception to your version of the
@@ -32,31 +32,37 @@
 
 #pragma once
 
-#include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
-#include "general_constraints_info.h"
+#include "common/typedef.h"
 
-namespace parser::vvc
+namespace parser::reader
 {
 
-class profile_tier_level : public NalRBSP
+struct RangeCheckResult
 {
-public:
-  profile_tier_level() = default;
-  ~profile_tier_level() = default;
-  void parse(reader::ReaderHelperNew &reader, bool profileTierPresentFlag, unsigned MaxNumSubLayersMinus1);
-
-  unsigned general_profile_idc {};
-  bool general_tier_flag {};
-  unsigned general_level_idc {};
-  bool ptl_frame_only_constraint_flag {};
-  bool ptl_multilayer_enabled_flag {};
-  general_constraints_info general_constraints_info_instance;
-  std::vector<bool> ptl_sublayer_level_present_flag {};
-  bool ptl_reserved_zero_bit {};
-  std::vector<unsigned> sublayer_level_idc {};
-  unsigned ptl_num_sub_profiles {};
-  std::vector<unsigned> general_sub_profile_idc {};
+  explicit    operator bool() const { return this->errorMessage.empty(); }
+  std::string errorMessage;
 };
 
-} // namespace parser::vvc
+class Check
+{
+public:
+  virtual RangeCheckResult checkValue(int64_t value) const = 0;
+};
+
+struct Options
+{
+  Options() = default;
+
+  [[nodiscard]] Options &&withMeaning(std::string &meaningString);
+  [[nodiscard]] Options &&withMeaningMap(std::map<int, std::string> &meaningMap);
+  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
+  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
+  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
+  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
+
+  std::string                         meaningString;
+  std::map<int, std::string>          meaningMap;
+  std::vector<std::unique_ptr<Check>> checkList;
+};
+
+} // namespace parser::reader
