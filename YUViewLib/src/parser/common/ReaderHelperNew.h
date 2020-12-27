@@ -67,19 +67,15 @@ public:
   struct Options
   {
     Options() = default;
-    Options(std::string meaningString) : meaningString(meaningString){};
-    Options(std::map<int, std::string> meaningMap) : meaningMap(meaningMap){};
-    Options(uint64_t checkMin, uint64_t checkMax)
-        : checkMinMaxUnsigned(pairUint64(checkMin, checkMax)){};
-    Options(unsigned checkMin, unsigned checkMax)
-        : checkMinMaxUnsigned(pairUint64(checkMin, checkMax)){};
-    Options(int64_t checkMin, int64_t checkMax)
-        : checkMinMaxSigned(pairInt64(checkMin, checkMax)){};
+    Options(std::string meaningString) : meaningString(meaningString) {}
+    Options(std::map<int, std::string> meaningMap) : meaningMap(meaningMap) {}
+    Options(int64_t checkMin, int64_t checkMax) : checkMinMax(pairInt64(checkMin, checkMax)) {}
+    Options(int64_t checkExactValue) : checkExactValue(checkExactValue) {}
 
     std::string                meaningString;
     std::map<int, std::string> meaningMap;
-    std::optional<pairUint64>  checkMinMaxUnsigned;
-    std::optional<pairInt64>   checkMinMaxSigned;
+    std::optional<pairInt64>   checkMinMax;
+    std::optional<int64_t>     checkExactValue;
   };
 
   uint64_t readBits(const std::string &symbolName, int numBits, const Options &options = {});
@@ -93,11 +89,6 @@ public:
   TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
 private:
-  void logRead(const std::string &formatName,
-               const std::string &symbolName,
-               const Options &    options,
-               int64_t            value,
-               const std::string &code);
   void logExceptionAndThrowError [[noreturn]] (const std::exception &ex, const std::string &when);
 
   std::stack<TreeItem *> itemHierarchy;

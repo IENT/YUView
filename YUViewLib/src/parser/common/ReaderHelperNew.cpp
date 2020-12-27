@@ -49,40 +49,56 @@ template <typename T> std::string formatCoding(const std::string formatName, T v
   return stringStream.str();
 }
 
-std::string rangeCheckErrorMessage(const ReaderHelperNew::Options &options, int64_t value)
+struct RangeCheckResult
 {
-  if (options.checkMinMaxSigned &&
-      (value < options.checkMinMaxSigned->first || value > options.checkMinMaxSigned->second))
+  explicit    operator bool() const { return this->errorMessage.empty(); }
+  std::string errorMessage;
+};
+
+RangeCheckResult rangeCheck(const ReaderHelperNew::Options &options, int64_t value)
+{
+  if (options.checkMinMax &&
+      (value < options.checkMinMax->first || value > options.checkMinMax->second))
   {
-    return "Value should be in the range of " + std::to_string(options.checkMinMaxSigned->first) +
-           " to " + std::to_string(options.checkMinMaxSigned->second) + " inclusive.";
+    return RangeCheckResult({"Value should be in the range of " +
+                             std::to_string(options.checkMinMax->first) + " to " +
+                             std::to_string(options.checkMinMax->second) + " inclusive."});
+  }
+  if (options.checkExactValue && value != *options.checkExactValue)
+  {
+    return RangeCheckResult(
+        {"Value should be equal to " + std::to_string(*options.checkExactValue)});
   }
   return {};
 }
 
-std::string rangeCheckErrorMessage(const ReaderHelperNew::Options &options, uint64_t value)
+void checkAndLog(TreeItem *                      item,
+                 const std::string &             formatName,
+                 const std::string &             symbolName,
+                 const ReaderHelperNew::Options &options,
+                 int64_t                         value,
+                 const std::string &             code)
 {
-  if (options.checkMinMaxUnsigned &&
-      (value < options.checkMinMaxUnsigned->first || value > options.checkMinMaxUnsigned->second))
+  auto checkResult = rangeCheck(options, value);
+  if (item)
   {
-    return "Value should be in the range of " + std::to_string(options.checkMinMaxUnsigned->first) +
-           " to " + std::to_string(options.checkMinMaxUnsigned->second) + " inclusive.";
+    std::string meaning = options.meaningString;
+    if (options.meaningMap.count(int64_t(value)) > 0)
+      meaning = options.meaningMap.at(value);
+
+    if (!checkResult)
+      meaning += " " + checkResult.errorMessage;
+    auto newItem = new TreeItem(item,
+                                symbolName,
+                                std::to_string(value),
+                                formatCoding(formatName, code.size()),
+                                code,
+                                meaning);
+    if (!checkResult)
+      newItem->setError();
   }
-  return {};
-}
-
-void rangeCheckThrow(const ReaderHelperNew::Options &options, int64_t value)
-{
-  auto errorString = rangeCheckErrorMessage(options, value);
-  if (!errorString.empty())
-    throw std::logic_error(errorString);
-}
-
-void rangeCheckThrow(const ReaderHelperNew::Options &options, uint64_t value)
-{
-  auto errorString = rangeCheckErrorMessage(options, value);
-  if (!errorString.empty())
-    throw std::logic_error(errorString);
+  if (!checkResult)
+    throw std::logic_error(checkResult.errorMessage);
 }
 
 } // namespace
@@ -154,8 +170,7 @@ ReaderHelperNew::readBits(const std::string &symbolName, int numBits, const Opti
   try
   {
     auto [value, code] = this->reader.readBits(numBits);
-    this->logRead("u(v)", symbolName, options, int64_t(value), code);
-    rangeCheckThrow(options, value);
+    checkAndLog(this->currentTreeLevel, "u(v)", symbolName, options, value, code);
     return value;
   }
   catch (const std::exception &ex)
@@ -169,8 +184,7 @@ bool ReaderHelperNew::readFlag(const std::string &symbolName, const Options &opt
   try
   {
     auto [value, code] = this->reader.readBits(1);
-    this->logRead("u(1)", symbolName, options, int64_t(value), code);
-    rangeCheckThrow(options, value);
+    checkAndLog(this->currentTreeLevel, "u(1)", symbolName, options, value, code);
     return (value != 0);
   }
   catch (const std::exception &ex)
@@ -184,8 +198,7 @@ uint64_t ReaderHelperNew::readUEV(const std::string &symbolName, const Options &
   try
   {
     auto [value, code] = this->reader.readUE_V();
-    this->logRead("ue(v)", symbolName, options, int64_t(value), code);
-    rangeCheckThrow(options, value);
+    checkAndLog(this->currentTreeLevel, "ue(v)", symbolName, options, value, code);
     return value;
   }
   catch (const std::exception &ex)
@@ -199,34 +212,12 @@ int64_t ReaderHelperNew::readSEV(const std::string &symbolName, const Options &o
   try
   {
     auto [value, code] = this->reader.readSE_V();
-    this->logRead("se(v)", symbolName, options, value, code);
-    rangeCheckThrow(options, value);
+    checkAndLog(this->currentTreeLevel, "se(v)", symbolName, options, value, code);
     return value;
   }
   catch (const std::exception &ex)
   {
     this->logExceptionAndThrowError(ex, "SEV symbol " + symbolName);
-  }
-}
-
-void ReaderHelperNew::logRead(const std::string &formatName,
-                              const std::string &symbolName,
-                              const Options &    options,
-                              int64_t            value,
-                              const std::string &code)
-{
-  if (this->currentTreeLevel)
-  {
-    std::string meaning = options.meaningString;
-    if (options.meaningMap.count(value) > 0)
-      meaning = options.meaningMap.at(value);
-
-    new TreeItem(currentTreeLevel,
-                 symbolName,
-                 std::to_string(value),
-                 formatCoding(formatName, code.size()),
-                 code,
-                 meaning);
   }
 }
 
