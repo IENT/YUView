@@ -43,7 +43,6 @@
 #include <sstream>
 #include <string>
 #include <map>
-#include <optional>
 
 namespace YUView
 {
