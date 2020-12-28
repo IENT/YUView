@@ -39,6 +39,8 @@ using namespace parser::reader;
 
 void general_constraints_info::parse(ReaderHelperNew &reader)
 {
+  ReaderHelperNewSubLevel subLevel(reader, "general_constraints_info");
+
   this->gci_present_flag = reader.readFlag("gci_present_flag");
   if (gci_present_flag)
   {
@@ -46,8 +48,8 @@ void general_constraints_info::parse(ReaderHelperNew &reader)
     this->gci_all_layers_independent_constraint_flag =
         reader.readFlag("gci_all_layers_independent_constraint_flag");
     this->gci_one_au_only_constraint_flag = reader.readFlag("gci_one_au_only_constraint_flag");
-    this->gci_sixteen_minus_max_bitdepth_constraint_idc =
-        reader.readBits("gci_sixteen_minus_max_bitdepth_constraint_idc", 4);
+    this->gci_sixteen_minus_max_bitdepth_constraint_idc = reader.readBits(
+        "gci_sixteen_minus_max_bitdepth_constraint_idc", 4, Options().withCheckRange({0, 8}));
     this->gci_three_minus_max_chroma_format_constraint_idc =
         reader.readBits("gci_three_minus_max_chroma_format_constraint_idc", 2);
     this->gci_no_mixed_nalu_types_in_pic_constraint_flag =
@@ -134,7 +136,8 @@ void general_constraints_info::parse(ReaderHelperNew &reader)
     this->gci_no_ladf_constraint_flag  = reader.readFlag("gci_no_ladf_constraint_flag");
     this->gci_no_virtual_boundaries_constraint_flag =
         reader.readFlag("gci_no_virtual_boundaries_constraint_flag");
-    this->gci_num_reserved_bits = reader.readBits("gci_num_reserved_bits", 8);
+    this->gci_num_reserved_bits =
+        reader.readBits("gci_num_reserved_bits", 8, Options().withCheckEqualTo(0));
     for (unsigned i = 0; i < this->gci_num_reserved_bits; i++)
     {
       this->gci_reserved_zero_bit.push_back(reader.readFlag("gci_reserved_zero_bit"));

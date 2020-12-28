@@ -39,10 +39,14 @@ using namespace parser::reader;
 
 void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
 {
-  this->vps_video_parameter_set_id = reader.readBits("vps_video_parameter_set_id", 4);
-  this->vps_max_layers_minus1      = reader.readBits("vps_max_layers_minus1", 6);
-  this->vps_max_sublayers_minus1   = reader.readBits("vps_max_sublayers_minus1", 3);
-  if (this->vps_max_layers_minus1 > 0 && this->vps_max_sublayers_minus1 > 0)
+  ReaderHelperNewSubLevel subLevel(reader, "video_parameter_set_rbsp");
+
+  this->vps_video_parameter_set_id =
+      reader.readBits("vps_video_parameter_set_id", 4, Options().withCheckGreater(0));
+  this->vps_max_layers_minus1 = reader.readBits("vps_max_layers_minus1", 6);
+  this->vps_max_sublayers_minus1 =
+      reader.readBits("vps_max_sublayers_minus1", 3, Options().withCheckRange({0, 6}));
+  if (this->vps_max_layers_minus1 > 0 && vps_max_sublayers_minus1 > 0)
   {
     this->vps_default_ptl_dpb_hrd_max_tid_flag =
         reader.readFlag("vps_default_ptl_dpb_hrd_max_tid_flag");
@@ -53,20 +57,24 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   }
   for (unsigned i = 0; i <= this->vps_max_layers_minus1; i++)
   {
-    this->vps_layer_id[i] = reader.readBits("vps_layer_id", 6);
+    this->vps_layer_id.push_back(reader.readBits("vps_layer_id", 6));
     if (i > 0 && !this->vps_all_independent_layers_flag)
     {
-      this->vps_independent_layer_flag[i] = reader.readFlag("vps_independent_layer_flag");
+      this->vps_independent_layer_flag.push_back(reader.readFlag("vps_independent_layer_flag"));
       if (!this->vps_independent_layer_flag[i])
       {
-        this->vps_max_tid_ref_present_flag[i] = reader.readFlag("vps_max_tid_ref_present_flag");
+        this->vps_max_tid_ref_present_flag.push_back(
+            reader.readFlag("vps_max_tid_ref_present_flag"));
+        this->vps_direct_ref_layer_flag.push_back({});
+        this->vps_max_tid_il_ref_pics_plus1.push_back({});
         for (unsigned j = 0; j < i; j++)
         {
-          this->vps_direct_ref_layer_flag[i][j] = reader.readFlag("vps_direct_ref_layer_flag");
+          this->vps_direct_ref_layer_flag[i].push_back(
+              reader.readFlag("vps_direct_ref_layer_flag"));
           if (this->vps_max_tid_ref_present_flag[i] && this->vps_direct_ref_layer_flag[i][j])
           {
-            this->vps_max_tid_il_ref_pics_plus1[i][j] =
-                reader.readBits("vps_max_tid_il_ref_pics_plus1", 3);
+            this->vps_max_tid_il_ref_pics_plus1[i].push_back(
+                reader.readBits("vps_max_tid_il_ref_pics_plus1", 3));
           }
         }
       }
@@ -82,22 +90,27 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     {
       if (!this->vps_all_independent_layers_flag)
       {
-        this->vps_ols_mode_idc = reader.readBits("vps_ols_mode_idc", 2);
+        this->vps_ols_mode_idc =
+            reader.readBits("vps_ols_mode_idc", 2, Options().withCheckRange({0, 2}));
       }
       if (this->vps_ols_mode_idc == 2)
       {
         this->vps_num_output_layer_sets_minus2 =
             reader.readBits("vps_num_output_layer_sets_minus2", 8);
+        this->vps_ols_output_layer_flag.push_back({});
         for (unsigned i = 1; i <= this->vps_num_output_layer_sets_minus2 + 1; i++)
         {
+          this->vps_ols_output_layer_flag.push_back({});
           for (unsigned j = 0; j <= this->vps_max_layers_minus1; j++)
           {
-            this->vps_ols_output_layer_flag[i][j] = reader.readFlag("vps_ols_output_layer_flag");
+            this->vps_ols_output_layer_flag[i].push_back(
+                reader.readFlag("vps_ols_output_layer_flag"));
           }
         }
       }
     }
-    this->vps_num_ptls_minus1 = reader.readBits("vps_num_ptls_minus1", 8);
+    this->vps_num_ptls_minus1 =
+        reader.readBits("vps_num_ptls_minus1", 8, Options().withCheckSmaller(TotalNumOlss));
   }
 
   // The variables NumDirectRefLayers[], DirectRefLayerIdx[][], NumRefLayers[],
@@ -289,32 +302,34 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   {
     if (i > 0)
     {
-      this->vps_pt_present_flag[i] = reader.readFlag("vps_pt_present_flag");
+      this->vps_pt_present_flag.push_back(reader.readFlag("vps_pt_present_flag"));
     }
     if (!this->vps_default_ptl_dpb_hrd_max_tid_flag)
     {
-      this->vps_ptl_max_tid[i] = reader.readBits("vps_ptl_max_tid", 3);
+      this->vps_ptl_max_tid.push_back(reader.readBits("vps_ptl_max_tid", 3));
     }
   }
   while (!reader.byte_aligned())
   {
-    this->vps_ptl_alignment_zero_bit = reader.readFlag("vps_ptl_alignment_zero_bit");
+    this->vps_ptl_alignment_zero_bit /* equal to 0 */ =
+        reader.readFlag("vps_ptl_alignment_zero_bit  /* equal to 0 */");
   }
-  for (unsigned i = 0; i <= vps_num_ptls_minus1; i++)
+  for (unsigned i = 0; i <= this->vps_num_ptls_minus1; i++)
   {
     // TODO
     // this->profile_tier_level_instance.parse(reader, vps_pt_present_flag[i], vps_ptl_max_tid[i]);
   }
-  for (unsigned i = 0; i < TotalNumOlss; i += i++)
+  for (unsigned i = 0; i < this->TotalNumOlss; i++)
   {
     if (this->vps_num_ptls_minus1 > 0 && this->vps_num_ptls_minus1 + 1 != this->TotalNumOlss)
     {
-      this->vps_ols_ptl_idx[i] = reader.readBits("vps_ols_ptl_idx", 8);
+      this->vps_ols_ptl_idx.push_back(reader.readBits("vps_ols_ptl_idx", 8));
     }
   }
   if (!this->vps_each_layer_is_an_ols_flag)
   {
-    this->vps_num_dpb_params_minus1 = reader.readUEV("vps_num_dpb_params_minus1");
+    this->vps_num_dpb_params_minus1 = reader.readUEV(
+        "vps_num_dpb_params_minus1", Options().withCheckRange({0, NumMultiLayerOlss}));
     if (this->vps_max_sublayers_minus1 > 0)
     {
       this->vps_sublayer_dpb_params_present_flag =
@@ -324,7 +339,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     {
       if (!this->vps_default_ptl_dpb_hrd_max_tid_flag)
       {
-        this->vps_dpb_max_tid[i] = reader.readBits("vps_dpb_max_tid", 3);
+        this->vps_dpb_max_tid.push_back(reader.readBits("vps_dpb_max_tid", 3));
       }
       // TODO
       // this->dpb_parameters_instance.parse(
@@ -332,13 +347,13 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     }
     for (unsigned i = 0; i < this->NumMultiLayerOlss; i++)
     {
-      this->vps_ols_dpb_pic_width[i]       = reader.readUEV("vps_ols_dpb_pic_width");
-      this->vps_ols_dpb_pic_height[i]      = reader.readUEV("vps_ols_dpb_pic_height");
-      this->vps_ols_dpb_chroma_format[i]   = reader.readBits("vps_ols_dpb_chroma_format", 2);
-      this->vps_ols_dpb_bitdepth_minus8[i] = reader.readUEV("vps_ols_dpb_bitdepth_minus8");
+      this->vps_ols_dpb_pic_width.push_back(reader.readUEV("vps_ols_dpb_pic_width"));
+      this->vps_ols_dpb_pic_height.push_back(reader.readUEV("vps_ols_dpb_pic_height"));
+      this->vps_ols_dpb_chroma_format.push_back(reader.readBits("vps_ols_dpb_chroma_format", 2));
+      this->vps_ols_dpb_bitdepth_minus8.push_back(reader.readUEV("vps_ols_dpb_bitdepth_minus8"));
       if (this->VpsNumDpbParams > 1 && this->VpsNumDpbParams != this->NumMultiLayerOlss)
       {
-        this->vps_ols_dpb_params_idx[i] = reader.readUEV("vps_ols_dpb_params_idx");
+        this->vps_ols_dpb_params_idx.push_back(reader.readUEV("vps_ols_dpb_params_idx"));
       }
     }
     this->vps_timing_hrd_params_present_flag =
@@ -352,28 +367,28 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
         this->vps_sublayer_cpb_params_present_flag =
             reader.readFlag("vps_sublayer_cpb_params_present_flag");
       }
-      this->vps_num_ols_timing_hrd_params_minus1 =
-          reader.readUEV("vps_num_ols_timing_hrd_params_minus1");
+      this->vps_num_ols_timing_hrd_params_minus1 = reader.readUEV(
+          "vps_num_ols_timing_hrd_params_minus1", Options().withCheckRange({0, NumMultiLayerOlss}));
       for (unsigned i = 0; i <= this->vps_num_ols_timing_hrd_params_minus1; i++)
       {
         if (!this->vps_default_ptl_dpb_hrd_max_tid_flag)
         {
-          this->vps_hrd_max_tid[i] = reader.readBits("vps_hrd_max_tid", 3);
+          this->vps_hrd_max_tid.push_back(reader.readBits("vps_hrd_max_tid", 3));
         }
         // TODO
         //this->ols_timing_hrd_parameters_instance.parse(reader, firstSubLayer, vps_hrd_max_tid[i]);
       }
       if (this->vps_num_ols_timing_hrd_params_minus1 > 0 &&
-          this->vps_num_ols_timing_hrd_params_minus1 + 1 != NumMultiLayerOlss)
+          this->vps_num_ols_timing_hrd_params_minus1 + 1 != this->NumMultiLayerOlss)
       {
         for (unsigned i = 0; i < this->NumMultiLayerOlss; i++)
         {
-          this->vps_ols_timing_hrd_idx[i] = reader.readUEV("vps_ols_timing_hrd_idx");
+          this->vps_ols_timing_hrd_idx.push_back(reader.readUEV("vps_ols_timing_hrd_idx"));
         }
       }
     }
   }
-  this->vps_extension_flag = reader.readFlag("vps_extension_flag");
+  this->vps_extension_flag = reader.readFlag("vps_extension_flag", Options().withCheckEqualTo(0));
   if (this->vps_extension_flag)
   {
     while (reader.more_rbsp_data())

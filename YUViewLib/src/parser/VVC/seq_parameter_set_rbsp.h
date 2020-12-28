@@ -201,6 +201,8 @@ public:
   unsigned MinCbLog2SizeY{};
   unsigned MinQtLog2SizeIntraY{};
   unsigned MaxNumMergeCand{};
+  unsigned MinQtLog2SizeIntraC{};
+  unsigned MinQtLog2SizeInterY{};
 };
 
 } // namespace parser::vvc

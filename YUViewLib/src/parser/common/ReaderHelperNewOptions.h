@@ -34,6 +34,9 @@
 
 #include "common/typedef.h"
 
+#include <optional>
+#include <memory>
+
 namespace parser::reader
 {
 
