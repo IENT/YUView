@@ -40,6 +40,7 @@
 #include "parser/common/ReaderHelper.h"
 #include "seq_parameter_set_rbsp.h"
 #include "video_parameter_set_rbsp.h"
+#include "pic_parameter_set_rbsp.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -141,6 +142,18 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       specificDescription += " ID " + std::to_string(newSPS->sps_seq_parameter_set_id);
 
       nalVVC->rbsp = std::move(newSPS);
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::PPS_NUT)
+    {
+      specificDescription = " PPS";
+      auto newPPS         = std::make_unique<pic_parameter_set_rbsp>();
+      newPPS->parse(reader, this->activeParameterSets.spsMap);
+
+      this->activeParameterSets.ppsMap[newPPS->pps_pic_parameter_set_id] = nalVVC;
+
+      specificDescription += " ID " + std::to_string(newPPS->pps_pic_parameter_set_id);
+
+      nalVVC->rbsp = std::move(newPPS);
     }
   }
   catch (const std::exception &e)

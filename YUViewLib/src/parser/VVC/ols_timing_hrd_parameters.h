@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include "NalUnitVVC.h"
 #include "common/typedef.h"
 #include "parser/common/ReaderHelperNew.h"
 #include "sublayer_hrd_parameters.h"
@@ -42,7 +41,7 @@ namespace parser::vvc
 
 class general_timing_hrd_parameters;
 
-class ols_timing_hrd_parameters : public NalRBSP
+class ols_timing_hrd_parameters
 {
 public:
   ols_timing_hrd_parameters()  = default;

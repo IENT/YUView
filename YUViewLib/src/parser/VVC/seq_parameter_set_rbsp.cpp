@@ -51,6 +51,14 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       2,
       Options().withMeaningMap({{0, "Monochrome"}, {1, "4:2:0"}, {2, "4:2:2"}, {3, "4:4:4"}}));
 
+  // Table 2
+  {
+    auto SubWidthCVec  = std::vector({1, 2, 2, 1});
+    this->SubWidthC    = SubWidthCVec[this->sps_chroma_format_idc];
+    auto SubHeightCVec = std::vector({1, 2, 1, 1});
+    this->SubHeightC   = SubHeightCVec[this->sps_chroma_format_idc];
+  }
+
   this->sps_log2_ctu_size_minus5 =
       reader.readBits("sps_log2_ctu_size_minus5", 2, Options().withCheckRange({0, 2}));
   this->sps_ptl_dpb_hrd_params_present_flag =
@@ -96,31 +104,58 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       this->sps_independent_subpics_flag = reader.readFlag("sps_independent_subpics_flag");
       this->sps_subpic_same_size_flag    = reader.readFlag("sps_subpic_same_size_flag");
     }
+
     for (unsigned i = 0; this->sps_num_subpics_minus1 > 0 && i <= this->sps_num_subpics_minus1; i++)
     {
+      // If not present, create default values
+      auto tmpWidthVal =
+          (this->sps_pic_width_max_in_luma_samples + this->CtbSizeY - 1) / this->CtbSizeY;
+      auto tmpHeightVal =
+          (this->sps_pic_height_max_in_luma_samples + this->CtbSizeY - 1) / this->CtbSizeY;
+      if (sps_subpic_same_size_flag == 0 || i == 0)
+      {
+        this->sps_subpic_ctu_top_left_x.push_back(0);
+        this->sps_subpic_ctu_top_left_y.push_back(0);
+        this->sps_subpic_width_minus1.push_back(tmpWidthVal - this->sps_subpic_ctu_top_left_x[i] -
+                                                1);
+        this->sps_subpic_height_minus1.push_back(tmpHeightVal - sps_subpic_ctu_top_left_y[i] - 1);
+      }
+      else
+      {
+        auto numSubpicCols = tmpWidthVal / (this->sps_subpic_width_minus1[0] + 1); // (37)
+        this->sps_subpic_ctu_top_left_x.push_back((i % numSubpicCols) *
+                                                  (this->sps_subpic_width_minus1[0] + 1));
+        this->sps_subpic_ctu_top_left_y.push_back((i / numSubpicCols) *
+                                                  (this->sps_subpic_height_minus1[0] + 1));
+        this->sps_subpic_width_minus1.push_back(this->sps_subpic_width_minus1[0]);
+        this->sps_subpic_height_minus1.push_back(sps_subpic_height_minus1[0]);
+      }
+
       if (!this->sps_subpic_same_size_flag || i == 0)
       {
         auto tmpWidthVal  = (sps_pic_width_max_in_luma_samples + CtbSizeY - 1) / CtbSizeY;
         auto tmpHeightVal = (sps_pic_height_max_in_luma_samples + CtbSizeY - 1) / CtbSizeY;
         if (i > 0 && this->sps_pic_width_max_in_luma_samples > CtbSizeY)
         {
-          auto numBits                    = std::ceil(std::log2(tmpWidthVal));
-          this->sps_subpic_ctu_top_left_x = reader.readBits("sps_subpic_ctu_top_left_x", numBits);
+          auto numBits = std::ceil(std::log2(tmpWidthVal));
+          this->sps_subpic_ctu_top_left_x[i] =
+              reader.readBits("sps_subpic_ctu_top_left_x", numBits);
         }
         if (i > 0 && this->sps_pic_height_max_in_luma_samples > CtbSizeY)
         {
-          auto numBits                    = std::ceil(std::log2(tmpHeightVal));
-          this->sps_subpic_ctu_top_left_y = reader.readBits("sps_subpic_ctu_top_left_y", numBits);
+          auto numBits = std::ceil(std::log2(tmpHeightVal));
+          this->sps_subpic_ctu_top_left_y[i] =
+              reader.readBits("sps_subpic_ctu_top_left_y", numBits);
         }
         if (i<this->sps_num_subpics_minus1 &&this->sps_pic_width_max_in_luma_samples> CtbSizeY)
         {
-          auto numBits                  = std::ceil(std::log2(tmpWidthVal));
-          this->sps_subpic_width_minus1 = reader.readBits("sps_subpic_width_minus1", numBits);
+          auto numBits                     = std::ceil(std::log2(tmpWidthVal));
+          this->sps_subpic_width_minus1[i] = reader.readBits("sps_subpic_width_minus1", numBits);
         }
         if (i<this->sps_num_subpics_minus1 &&this->sps_pic_height_max_in_luma_samples> CtbSizeY)
         {
-          auto numBits                   = std::ceil(std::log2(tmpHeightVal));
-          this->sps_subpic_height_minus1 = reader.readBits("sps_subpic_height_minus1", numBits);
+          auto numBits                      = std::ceil(std::log2(tmpHeightVal));
+          this->sps_subpic_height_minus1[i] = reader.readBits("sps_subpic_height_minus1", numBits);
         }
       }
       if (!this->sps_independent_subpics_flag)
@@ -131,6 +166,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
             reader.readFlag("sps_loop_filter_across_subpic_enabled_flag"));
       }
     }
+
     this->sps_subpic_id_len_minus1 =
         reader.readUEV("sps_subpic_id_len_minus1", Options().withCheckRange({0, 15}));
     this->sps_subpic_id_mapping_explicitly_signalled_flag =
@@ -151,6 +187,11 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   }
   this->sps_bitdepth_minus8 =
       reader.readUEV("sps_bitdepth_minus8", Options().withCheckRange({0, 2}));
+
+  // (38) (39)
+  this->BitDepth   = 8 + this->sps_bitdepth_minus8;
+  this->QpBdOffset = 6 * this->sps_bitdepth_minus8;
+
   this->sps_entropy_coding_sync_enabled_flag =
       reader.readFlag("sps_entropy_coding_sync_enabled_flag");
   this->sps_entry_point_offsets_present_flag =
@@ -187,7 +228,14 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   this->sps_log2_min_luma_coding_block_size_minus2 = reader.readUEV(
       "sps_log2_min_luma_coding_block_size_minus2",
       Options().withCheckRange({0, std::min(4u, this->sps_log2_ctu_size_minus5 + 3)}));
+
+  // (43) -> (47)
   this->MinCbLog2SizeY = this->sps_log2_min_luma_coding_block_size_minus2 + 2;
+  this->MinCbSizeY     = 1 << this->MinCbLog2SizeY;
+  this->IbcBufWidthY   = 256 * 128 / this->CtbSizeY;
+  this->IbcBufWidthC   = this->IbcBufWidthY / this->SubWidthC;
+  this->VSize          = std::min(64u, this->CtbSizeY);
+
   this->sps_partition_constraints_override_enabled_flag =
       reader.readFlag("sps_partition_constraints_override_enabled_flag");
   this->sps_log2_diff_min_qt_min_cb_intra_slice_luma = reader.readUEV(

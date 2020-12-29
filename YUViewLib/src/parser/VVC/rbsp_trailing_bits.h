@@ -32,13 +32,12 @@
 
 #pragma once
 
-#include "NalUnitVVC.h"
 #include "parser/common/ReaderHelperNew.h"
 
 namespace parser::vvc
 {
 
-class rbsp_trailing_bits : public NalRBSP
+class rbsp_trailing_bits
 {
 public:
   rbsp_trailing_bits()  = default;

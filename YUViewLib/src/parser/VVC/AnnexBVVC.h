@@ -79,13 +79,11 @@ protected:
   size_t counterAU{0};
   size_t sizeCurrentAU{0};
 
-  using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
-
   struct ActiveParameterSets
   {
-    NalMap vpsMap;
-    NalMap spsMap;
-    NalMap ppsMap;
+    vvc::NalMap vpsMap;
+    vvc::NalMap spsMap;
+    vvc::NalMap ppsMap;
   };
   ActiveParameterSets activeParameterSets;
 

@@ -41,7 +41,6 @@
 #include "rbsp_trailing_bits.h"
 #include "ref_pic_list_struct.h"
 
-
 namespace parser::vvc
 {
 
@@ -73,12 +72,12 @@ public:
   unsigned                      sps_num_subpics_minus1{};
   bool                          sps_independent_subpics_flag{};
   bool                          sps_subpic_same_size_flag{};
-  int                           sps_subpic_ctu_top_left_x{};
-  int                           sps_subpic_ctu_top_left_y{};
-  int                           sps_subpic_width_minus1{};
-  int                           sps_subpic_height_minus1{};
-  std::vector<bool>             sps_subpic_treated_as_pic_flag{};
-  std::vector<bool>             sps_loop_filter_across_subpic_enabled_flag{};
+  vector<unsigned>              sps_subpic_ctu_top_left_x{};
+  vector<unsigned>              sps_subpic_ctu_top_left_y{};
+  vector<unsigned>              sps_subpic_width_minus1{};
+  vector<unsigned>              sps_subpic_height_minus1{};
+  vector<bool>                  sps_subpic_treated_as_pic_flag{};
+  vector<bool>                  sps_loop_filter_across_subpic_enabled_flag{};
   unsigned                      sps_subpic_id_len_minus1{};
   bool                          sps_subpic_id_mapping_explicitly_signalled_flag{};
   bool                          sps_subpic_id_mapping_present_flag{};
@@ -90,9 +89,9 @@ public:
   bool                          sps_poc_msb_cycle_flag{};
   unsigned                      sps_poc_msb_cycle_len_minus1{};
   unsigned                      sps_num_extra_ph_bytes{};
-  std::vector<bool>             sps_extra_ph_bit_present_flag{};
+  vector<bool>                  sps_extra_ph_bit_present_flag{};
   unsigned                      sps_num_extra_sh_bytes{};
-  std::vector<bool>             sps_extra_sh_bit_present_flag{};
+  vector<bool>                  sps_extra_sh_bit_present_flag{};
   bool                          sps_sublayer_dpb_params_flag{};
   dpb_parameters                dpb_parameters_instance;
   unsigned                      sps_log2_min_luma_coding_block_size_minus2{};
@@ -201,9 +200,17 @@ public:
   bool               sps_extension_data_flag{};
   rbsp_trailing_bits rbsp_trailing_bits_instance;
 
+  unsigned BitDepth{};
+  unsigned QpBdOffset{};
+  unsigned SubWidthC{};
+  unsigned SubHeightC{};
   unsigned CtbLog2SizeY{};
   unsigned CtbSizeY{};
   unsigned MinCbLog2SizeY{};
+  unsigned MinCbSizeY{};
+  unsigned IbcBufWidthY{};
+  unsigned IbcBufWidthC{};
+  unsigned VSize{};
   unsigned MinQtLog2SizeIntraY{};
   unsigned MaxNumMergeCand{};
   unsigned MinQtLog2SizeIntraC{};

@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include "NalUnitVVC.h"
 #include "parser/common/ReaderHelperNew.h"
 
 namespace parser::vvc
@@ -40,7 +39,7 @@ namespace parser::vvc
 
 class seq_parameter_set_rbsp;
 
-class ref_pic_list_struct : public NalRBSP
+class ref_pic_list_struct
 {
 public:
   ref_pic_list_struct()  = default;

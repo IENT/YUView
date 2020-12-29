@@ -32,13 +32,12 @@
 
 #pragma once
 
-#include "NalUnitVVC.h"
 #include "parser/common/ReaderHelperNew.h"
 
 namespace parser::vvc
 {
 
-class dpb_parameters : public NalRBSP
+class dpb_parameters
 {
 public:
   dpb_parameters()  = default;

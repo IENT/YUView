@@ -32,14 +32,13 @@
 
 #pragma once
 
-#include "NalUnitVVC.h"
 #include "parser/common/ReaderHelperNew.h"
 #include "general_constraints_info.h"
 
 namespace parser::vvc
 {
 
-class profile_tier_level : public NalRBSP
+class profile_tier_level
 {
 public:
   profile_tier_level() = default;

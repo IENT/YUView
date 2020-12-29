@@ -32,13 +32,12 @@
 
 #pragma once
 
-#include "NalUnitVVC.h"
 #include "parser/common/ReaderHelperNew.h"
 
 namespace parser::vvc
 {
 
-class general_constraints_info : public NalRBSP
+class general_constraints_info
 {
 public:
   general_constraints_info()  = default;

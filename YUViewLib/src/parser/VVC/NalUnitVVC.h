@@ -43,8 +43,8 @@ namespace parser::vvc
 class NalRBSP
 {
 public:
-  NalRBSP() = default;
-  ~NalRBSP() = default;
+  NalRBSP()          = default;
+  virtual ~NalRBSP() = default;
 };
 
 class NalUnitVVC : public NalUnit
@@ -60,5 +60,7 @@ public:
   nal_unit_header          header;
   std::unique_ptr<NalRBSP> rbsp;
 };
+
+using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
 
 } // namespace parser::vvc
