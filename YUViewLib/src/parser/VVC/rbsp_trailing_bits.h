@@ -32,40 +32,21 @@
 
 #pragma once
 
-#include "common/typedef.h"
+#include "NalUnitVVC.h"
+#include "parser/common/ReaderHelperNew.h"
 
-#include <optional>
-#include <memory>
-
-namespace parser::reader
+namespace parser::vvc
 {
 
-struct RangeCheckResult
-{
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
-
-class Check
+class rbsp_trailing_bits : public NalRBSP
 {
 public:
-  virtual RangeCheckResult checkValue(int64_t value) const = 0;
+  rbsp_trailing_bits()  = default;
+  ~rbsp_trailing_bits() = default;
+  void parse(reader::ReaderHelperNew &reader);
+
+  bool rbsp_stop_one_bit{};
+  bool rbsp_alignment_zero_bit{};
 };
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
-  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::vvc

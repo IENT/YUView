@@ -30,42 +30,23 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "rbsp_trailing_bits.h"
 
-#include "common/typedef.h"
-
-#include <optional>
-#include <memory>
-
-namespace parser::reader
+namespace parser::vvc
 {
 
-struct RangeCheckResult
+using namespace parser::reader;
+
+void rbsp_trailing_bits::parse(ReaderHelperNew &reader)
 {
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
+  ReaderHelperNewSubLevel subLevel(reader, "rbsp_trailing_bits");
 
-class Check
-{
-public:
-  virtual RangeCheckResult checkValue(int64_t value) const = 0;
-};
+  this->rbsp_stop_one_bit = reader.readFlag("rbsp_stop_one_bit", Options().withCheckEqualTo(1));
+  while (!reader.byte_aligned())
+  {
+    this->rbsp_alignment_zero_bit =
+        reader.readFlag("rbsp_alignment_zero_bit", Options().withCheckEqualTo(0));
+  }
+}
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
-  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::vvc

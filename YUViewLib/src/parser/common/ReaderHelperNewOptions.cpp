@@ -127,13 +127,13 @@ RangeCheckResult CheckRange::checkValue(int64_t value) const
   return {};
 }
 
-Options &&Options::withMeaning(std::string &meaningString)
+Options &&Options::withMeaning(const std::string &meaningString)
 {
   this->meaningString = meaningString;
   return std::move(*this);
 }
 
-Options &&Options::withMeaningMap(std::map<int, std::string> &meaningMap)
+Options &&Options::withMeaningMap(const std::map<int, std::string> &meaningMap)
 {
   this->meaningMap = meaningMap;
   return std::move(*this);

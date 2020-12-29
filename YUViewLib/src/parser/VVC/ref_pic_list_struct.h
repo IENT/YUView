@@ -32,40 +32,35 @@
 
 #pragma once
 
-#include "common/typedef.h"
+#include "NalUnitVVC.h"
+#include "parser/common/ReaderHelperNew.h"
 
-#include <optional>
-#include <memory>
-
-namespace parser::reader
+namespace parser::vvc
 {
 
-struct RangeCheckResult
-{
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
+class seq_parameter_set_rbsp;
 
-class Check
+class ref_pic_list_struct : public NalRBSP
 {
 public:
-  virtual RangeCheckResult checkValue(int64_t value) const = 0;
+  ref_pic_list_struct()  = default;
+  ~ref_pic_list_struct() = default;
+  void parse(reader::ReaderHelperNew &reader,
+             unsigned                 listIdx,
+             unsigned                 rplsIdx,
+             seq_parameter_set_rbsp * sps);
+
+  umap_2d<unsigned> num_ref_entries{};
+  umap_2d<bool>     ltrp_in_header_flag{};
+  umap_3d<bool>     inter_layer_ref_pic_flag{};
+  umap_3d<bool>     st_ref_pic_flag{};
+  umap_3d<unsigned> abs_delta_poc_st{};
+  umap_3d<bool>     strp_entry_sign_flag{};
+  umap_3d<unsigned> rpls_poc_lsb_lt{};
+  umap_3d<unsigned> ilrp_idx{};
+
+  umap_3d<bool> AbsDeltaPocSt;
+  umap_3d<int>  DeltaPocValSt;
 };
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
-  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::vvc

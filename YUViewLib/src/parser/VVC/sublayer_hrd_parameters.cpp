@@ -30,42 +30,33 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "sublayer_hrd_parameters.h"
 
-#include "common/typedef.h"
+#include "general_timing_hrd_parameters.h"
 
-#include <optional>
-#include <memory>
-
-namespace parser::reader
+namespace parser::vvc
 {
 
-struct RangeCheckResult
+using namespace parser::reader;
+
+void sublayer_hrd_parameters::parse(ReaderHelperNew &              reader,
+                                    unsigned                       subLayerId,
+                                    general_timing_hrd_parameters *general_hrd)
 {
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
+  assert(general_hrd != nullptr);
+  ReaderHelperNewSubLevel subLevel(reader, "sublayer_hrd_parameters");
 
-class Check
-{
-public:
-  virtual RangeCheckResult checkValue(int64_t value) const = 0;
-};
+  for (unsigned j = 0; j <= general_hrd->hrd_cpb_cnt_minus1; j++)
+  {
+    this->bit_rate_value_minus1[subLayerId][j] = reader.readUEV("bit_rate_value_minus1");
+    this->cpb_size_value_minus1[subLayerId][j] = reader.readUEV("cpb_size_value_minus1");
+    if (general_hrd->general_du_hrd_params_present_flag)
+    {
+      this->cpb_size_du_value_minus1[subLayerId][j] = reader.readUEV("cpb_size_du_value_minus1");
+      this->bit_rate_du_value_minus1[subLayerId][j] = reader.readUEV("bit_rate_du_value_minus1");
+    }
+    this->cbr_flag[subLayerId][j] = reader.readFlag("cbr_flag");
+  }
+}
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
-  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::vvc

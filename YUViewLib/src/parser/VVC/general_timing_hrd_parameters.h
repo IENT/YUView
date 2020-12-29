@@ -32,40 +32,30 @@
 
 #pragma once
 
-#include "common/typedef.h"
+#include "NalUnitVVC.h"
+#include "parser/common/ReaderHelperNew.h"
 
-#include <optional>
-#include <memory>
-
-namespace parser::reader
+namespace parser::vvc
 {
 
-struct RangeCheckResult
-{
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
-
-class Check
+class general_timing_hrd_parameters : public NalRBSP
 {
 public:
-  virtual RangeCheckResult checkValue(int64_t value) const = 0;
+  general_timing_hrd_parameters()  = default;
+  ~general_timing_hrd_parameters() = default;
+  void parse(reader::ReaderHelperNew &reader);
+
+  unsigned num_units_in_tick{};
+  unsigned time_scale{};
+  bool     general_nal_hrd_params_present_flag{};
+  bool     general_vcl_hrd_params_present_flag{};
+  bool     general_same_pic_timing_in_all_ols_flag{};
+  bool     general_du_hrd_params_present_flag{};
+  unsigned tick_divisor_minus2{};
+  unsigned bit_rate_scale{};
+  unsigned cpb_size_scale{};
+  unsigned cpb_size_du_scale{};
+  unsigned hrd_cpb_cnt_minus1{};
 };
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
-  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::vvc

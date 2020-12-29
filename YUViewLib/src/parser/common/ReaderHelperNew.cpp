@@ -33,6 +33,7 @@
 #include "ReaderHelperNew.h"
 
 #include <sstream>
+#include <iomanip>
 
 namespace parser::reader
 {
@@ -49,12 +50,12 @@ template <typename T> std::string formatCoding(const std::string formatName, T v
   return stringStream.str();
 }
 
-void checkAndLog(TreeItem *                      item,
-                 const std::string &             formatName,
-                 const std::string &             symbolName,
-                 const Options &options,
-                 int64_t                         value,
-                 const std::string &             code)
+void checkAndLog(TreeItem *         item,
+                 const std::string &formatName,
+                 const std::string &symbolName,
+                 const Options &    options,
+                 int64_t            value,
+                 const std::string &code)
 {
   RangeCheckResult checkResult;
   for (auto &check : options.checkList)
@@ -83,6 +84,36 @@ void checkAndLog(TreeItem *                      item,
   }
   if (!checkResult)
     throw std::logic_error(checkResult.errorMessage);
+}
+
+void checkAndLog(TreeItem *         item,
+                 const std::string &formatName,
+                 const std::string &symbolName,
+                 const Options &    options,
+                 ByteVector         value,
+                 const std::string &code)
+{
+  // There are no range checks for ByteVectors
+  if (item)
+  {
+    if (code.size() != value.size() * 8)
+      throw std::logic_error("Nr bytes and size of code does not match.");
+
+    auto byteVectorItem = new TreeItem(item, symbolName);
+    for (size_t i = 0; i < value.size(); i++)
+    {
+      auto c = value.at(i);
+      std::stringstream valueStream;
+      valueStream << "0x" << std::setfill ('0') << std::setw(2) << std::hex << c << " (" << c << ")";
+      auto byteCode = code.substr(i*8, 8);
+      auto newItem = new TreeItem(item,
+                                "Byte " + std::to_string(i),
+                                valueStream.str(),
+                                formatCoding(formatName, code.size()),
+                                byteCode,
+                                "");
+    }
+  }
 }
 
 } // namespace
@@ -205,6 +236,24 @@ int64_t ReaderHelperNew::readSEV(const std::string &symbolName, const Options &o
   }
 }
 
+ByteVector
+ReaderHelperNew::readBytes(const std::string &symbolName, size_t nrBytes, const Options &options)
+{
+  try
+  {
+    if (!this->byte_aligned())
+      throw std::logic_error("Trying to ready bytes while not byte aligned.");
+
+    auto [value, code] = this->reader.readBytes(nrBytes);
+    checkAndLog(this->currentTreeLevel, "se(v)", symbolName, options, value, code);
+    return value;
+  }
+  catch (const std::exception &ex)
+  {
+    this->logExceptionAndThrowError(ex, " " + std::to_string(nrBytes) + " bytes.");
+  }
+}
+
 void ReaderHelperNew::logExceptionAndThrowError(const std::exception &ex, const std::string &when)
 {
   if (this->currentTreeLevel)
@@ -216,4 +265,4 @@ void ReaderHelperNew::logExceptionAndThrowError(const std::exception &ex, const 
   throw std::logic_error("Error reading " + when);
 }
 
-} // namespace parser
+} // namespace parser::reader

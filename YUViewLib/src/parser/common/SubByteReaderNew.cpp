@@ -33,6 +33,7 @@
 
 #include "SubByteReaderNew.h"
 
+#include <bitset>
 #include <cassert>
 #include <stdexcept>
 
@@ -112,7 +113,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readBits(size_t nrBits)
   return {out, bitsRead};
 }
 
-ByteVector SubByteReaderNew::readBytes(size_t nrBytes)
+std::tuple<ByteVector, std::string> SubByteReaderNew::readBytes(size_t nrBytes)
 {
   if (this->posInBufferBits != 0 && this->posInBufferBits != 8)
     throw std::logic_error("When reading bytes from the bitstream, it should be byte aligned.");
@@ -124,9 +125,12 @@ ByteVector SubByteReaderNew::readBytes(size_t nrBytes)
                              "over buffer boundary.");
 
   ByteVector retVector;
+  std::string code;
   for (unsigned i = 0; i < nrBytes; i++)
   {
-    retVector.push_back(this->byteVector[this->posInBufferBytes]);
+    auto c = this->byteVector[this->posInBufferBytes];
+    retVector.push_back(c);
+    code += std::bitset<8>(c).to_string();
 
     if (!this->gotoNextByte())
     {
@@ -136,7 +140,7 @@ ByteVector SubByteReaderNew::readBytes(size_t nrBytes)
     }
   }
 
-  return retVector;
+  return {retVector, code};
 }
 
 std::tuple<uint64_t, std::string> SubByteReaderNew::readUE_V()

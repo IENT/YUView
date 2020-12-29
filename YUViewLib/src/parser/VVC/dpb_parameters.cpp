@@ -30,42 +30,27 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "dpb_parameters.h"
 
-#include "common/typedef.h"
-
-#include <optional>
-#include <memory>
-
-namespace parser::reader
+namespace parser::vvc
 {
 
-struct RangeCheckResult
+using namespace parser::reader;
+
+void dpb_parameters::parse(ReaderHelperNew &reader,
+                           unsigned         MaxSubLayersMinus1,
+                           bool             subLayerInfoFlag)
 {
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
+  ReaderHelperNewSubLevel subLevel(reader, "dpb_parameters");
 
-class Check
-{
-public:
-  virtual RangeCheckResult checkValue(int64_t value) const = 0;
-};
+  for (unsigned i = (subLayerInfoFlag ? 0 : MaxSubLayersMinus1); i <= MaxSubLayersMinus1; i++)
+  {
+    this->dpb_max_dec_pic_buffering_minus1.push_back(
+        reader.readUEV("dpb_max_dec_pic_buffering_minus1"));
+    this->dpb_max_num_reorder_pics.push_back(reader.readUEV("dpb_max_num_reorder_pics"));
+    this->dpb_max_latency_increase_plus1.push_back(
+        reader.readUEV("dpb_max_latency_increase_plus1"));
+  }
+}
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
-  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::vvc

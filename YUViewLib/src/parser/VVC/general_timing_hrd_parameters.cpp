@@ -30,42 +30,42 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "general_timing_hrd_parameters.h"
 
-#include "common/typedef.h"
-
-#include <optional>
-#include <memory>
-
-namespace parser::reader
+namespace parser::vvc
 {
 
-struct RangeCheckResult
+using namespace parser::reader;
+
+void general_timing_hrd_parameters::parse(ReaderHelperNew &reader)
 {
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
+  ReaderHelperNewSubLevel subLevel(reader, "general_timing_hrd_parameters");
 
-class Check
-{
-public:
-  virtual RangeCheckResult checkValue(int64_t value) const = 0;
-};
+  this->num_units_in_tick = reader.readBits("num_units_in_tick", 32, Options().withCheckGreater(0));
+  this->time_scale        = reader.readBits("time_scale", 32, Options().withCheckGreater(0));
+  this->general_nal_hrd_params_present_flag =
+      reader.readFlag("general_nal_hrd_params_present_flag");
+  this->general_vcl_hrd_params_present_flag =
+      reader.readFlag("general_vcl_hrd_params_present_flag");
+  if (this->general_nal_hrd_params_present_flag || this->general_vcl_hrd_params_present_flag)
+  {
+    this->general_same_pic_timing_in_all_ols_flag =
+        reader.readFlag("general_same_pic_timing_in_all_ols_flag");
+    this->general_du_hrd_params_present_flag =
+        reader.readFlag("general_du_hrd_params_present_flag");
+    if (this->general_du_hrd_params_present_flag)
+    {
+      this->tick_divisor_minus2 = reader.readBits("tick_divisor_minus2", 8);
+    }
+    this->bit_rate_scale = reader.readBits("bit_rate_scale", 4);
+    this->cpb_size_scale = reader.readBits("cpb_size_scale", 4);
+    if (this->general_du_hrd_params_present_flag)
+    {
+      this->cpb_size_du_scale = reader.readBits("cpb_size_du_scale", 4);
+    }
+    this->hrd_cpb_cnt_minus1 =
+        reader.readUEV("hrd_cpb_cnt_minus1", Options().withCheckRange({0, 31}));
+  }
+}
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
-  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::vvc

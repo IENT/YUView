@@ -47,8 +47,10 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   this->sps_video_parameter_set_id = reader.readBits("sps_video_parameter_set_id", 4);
   this->sps_max_sublayers_minus1   = reader.readBits("sps_max_sublayers_minus1", 3);
   this->sps_chroma_format_idc      = reader.readBits(
-      "sps_chroma_format_idc", 2); // ReaderHelperNew::Options(vps_ols_dpb_chroma_format[i],
-                                        // ReaderHelperNew::Options::CheckType::SmallerEqual)
+      "sps_chroma_format_idc",
+      2,
+      Options().withMeaningMap({{0, "Monochrome"}, {1, "4:2:0"}, {2, "4:2:2"}, {3, "4:4:4"}}));
+
   this->sps_log2_ctu_size_minus5 =
       reader.readBits("sps_log2_ctu_size_minus5", 2, Options().withCheckRange({0, 2}));
   this->sps_ptl_dpb_hrd_params_present_flag =
@@ -110,12 +112,12 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
           auto numBits                    = std::ceil(std::log2(tmpHeightVal));
           this->sps_subpic_ctu_top_left_y = reader.readBits("sps_subpic_ctu_top_left_y", numBits);
         }
-        if (i < this->sps_num_subpics_minus1 && this->sps_pic_width_max_in_luma_samples > CtbSizeY)
+        if (i<this->sps_num_subpics_minus1 &&this->sps_pic_width_max_in_luma_samples> CtbSizeY)
         {
           auto numBits                  = std::ceil(std::log2(tmpWidthVal));
           this->sps_subpic_width_minus1 = reader.readBits("sps_subpic_width_minus1", numBits);
         }
-        if (i < this->sps_num_subpics_minus1 && this->sps_pic_height_max_in_luma_samples > CtbSizeY)
+        if (i<this->sps_num_subpics_minus1 &&this->sps_pic_height_max_in_luma_samples> CtbSizeY)
         {
           auto numBits                   = std::ceil(std::log2(tmpHeightVal));
           this->sps_subpic_height_minus1 = reader.readBits("sps_subpic_height_minus1", numBits);
@@ -179,9 +181,8 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     {
       this->sps_sublayer_dpb_params_flag = reader.readFlag("sps_sublayer_dpb_params_flag");
     }
-    // TODO
-    // this->dpb_parameters_instance.parse(reader, sps_max_sublayers_minus1,
-    // sps_sublayer_dpb_params_flag);
+    this->dpb_parameters_instance.parse(
+        reader, this->sps_max_sublayers_minus1, this->sps_sublayer_dpb_params_flag);
   }
   this->sps_log2_min_luma_coding_block_size_minus2 = reader.readUEV(
       "sps_log2_min_luma_coding_block_size_minus2",
@@ -209,8 +210,11 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   }
   if (this->sps_chroma_format_idc != 0)
   {
-    this->sps_qtbtt_dual_tree_intra_flag =
-        reader.readFlag("sps_qtbtt_dual_tree_intra_flag", Options().withCheckEqualTo(0));
+    Options opt;
+    if (this->sps_log2_diff_max_bt_min_qt_intra_slice_luma >
+        std::min(6u, this->CtbLog2SizeY) - this->MinQtLog2SizeIntraY)
+      opt = Options().withCheckEqualTo(0);
+    this->sps_qtbtt_dual_tree_intra_flag = reader.readFlag("sps_qtbtt_dual_tree_intra_flag", opt);
   }
   if (this->sps_qtbtt_dual_tree_intra_flag)
   {
@@ -275,8 +279,8 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     this->sps_joint_cbcr_enabled_flag       = reader.readFlag("sps_joint_cbcr_enabled_flag");
     this->sps_same_qp_table_for_chroma_flag = reader.readFlag("sps_same_qp_table_for_chroma_flag");
     auto numQpTables                        = this->sps_same_qp_table_for_chroma_flag
-                           ? 1u
-                           : (this->sps_joint_cbcr_enabled_flag ? 3u : 2u);
+                                                  ? 1u
+                                                  : (this->sps_joint_cbcr_enabled_flag ? 3u : 2u);
     for (unsigned i = 0; i < numQpTables; i++)
     {
       this->sps_qp_table_start_minus26.push_back(reader.readSEV("sps_qp_table_start_minus26"));
@@ -310,11 +314,11 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   this->sps_rpl1_same_as_rpl0_flag = reader.readFlag("sps_rpl1_same_as_rpl0_flag");
   for (unsigned i = 0; i < (this->sps_rpl1_same_as_rpl0_flag ? 1u : 2u); i++)
   {
+    auto refPicSubLevel = ReaderHelperNewSubLevel(reader, "Ref Pic List " + std::to_string(i));
     this->sps_num_ref_pic_lists.push_back(reader.readUEV("sps_num_ref_pic_lists"));
     for (unsigned j = 0; j < this->sps_num_ref_pic_lists[i]; j++)
     {
-      // TODO
-      // this->ref_pic_list_struct_instance.parse(reader, i, j);
+      this->ref_pic_list_struct_instance.parse(reader, i, j, this);
     }
   }
   this->sps_ref_wraparound_enabled_flag =
@@ -346,6 +350,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   }
   this->sps_six_minus_max_num_merge_cand =
       reader.readUEV("sps_six_minus_max_num_merge_cand", Options().withCheckRange({0, 5}));
+  this->MaxNumMergeCand         = 6 - this->sps_six_minus_max_num_merge_cand;
   this->sps_sbt_enabled_flag    = reader.readFlag("sps_sbt_enabled_flag");
   this->sps_affine_enabled_flag = reader.readFlag("sps_affine_enabled_flag");
   if (this->sps_affine_enabled_flag)
@@ -473,16 +478,18 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
         reader.readFlag("sps_timing_hrd_params_present_flag");
     if (this->sps_timing_hrd_params_present_flag)
     {
-      // TODO
-      // this->general_timing_hrd_parameters_instance.parse(reader);
+      this->general_timing_hrd_parameters_instance.parse(reader);
       if (this->sps_max_sublayers_minus1 > 0)
       {
         this->sps_sublayer_cpb_params_present_flag =
             reader.readFlag("sps_sublayer_cpb_params_present_flag");
       }
-      // TODO
-      // this->ols_timing_hrd_parameters_instance.parse(reader, firstSubLayer,
-      // this->sps_max_sublayers_minus1);
+      auto firstSubLayer =
+          this->sps_sublayer_cpb_params_present_flag ? 0u : this->sps_max_sublayers_minus1;
+      this->ols_timing_hrd_parameters_instance.parse(reader,
+                                                     firstSubLayer,
+                                                     this->sps_max_sublayers_minus1,
+                                                     &this->general_timing_hrd_parameters_instance);
     }
   }
   this->sps_field_seq_flag              = reader.readFlag("sps_field_seq_flag");
@@ -495,8 +502,9 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     {
       this->sps_vui_alignment_zero_bit = reader.readFlag("sps_vui_alignment_zero_bit");
     }
-    // TODO
-    // this->vui_payload_instance.parse(reader, sps_vui_payload_size_minus1 + 1);
+    // TODO VUI Parsing
+    auto nrBytes = this->sps_vui_payload_size_minus1 + 1;
+    reader.readBytes("vui_payload", nrBytes);
   }
   this->sps_extension_flag = reader.readFlag("sps_extension_flag", Options().withCheckEqualTo(0));
   if (this->sps_extension_flag)
@@ -506,8 +514,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       this->sps_extension_data_flag = reader.readFlag("sps_extension_data_flag");
     }
   }
-  // TODO
-  // this->rbsp_trailing_bits_instance.parse(reader);
+  this->rbsp_trailing_bits_instance.parse(reader);
 }
 
 } // namespace parser::vvc

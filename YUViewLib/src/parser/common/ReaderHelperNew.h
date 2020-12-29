@@ -36,10 +36,11 @@
 #include <optional>
 #include <stack>
 
+#include "ReaderHelperNewOptions.h"
 #include "SubByteReaderNew.h"
 #include "TreeItem.h"
 #include "common/typedef.h"
-#include "ReaderHelperNewOptions.h"
+
 
 namespace parser::reader
 {
@@ -67,10 +68,11 @@ public:
   // everything is using std types.
   static ByteVector convertBeginningToByteArray(QByteArray data);
 
-  uint64_t readBits(const std::string &symbolName, int numBits, const Options &options = {});
-  bool     readFlag(const std::string &symbolName, const Options &options = {});
-  uint64_t readUEV(const std::string &symbolName, const Options &options = {});
-  int64_t  readSEV(const std::string &symbolName, const Options &options = {});
+  uint64_t   readBits(const std::string &symbolName, int numBits, const Options &options = {});
+  bool       readFlag(const std::string &symbolName, const Options &options = {});
+  uint64_t   readUEV(const std::string &symbolName, const Options &options = {});
+  int64_t    readSEV(const std::string &symbolName, const Options &options = {});
+  ByteVector readBytes(const std::string &symbolName, size_t nrBytes, const Options &options = {});
 
   bool more_rbsp_data() const { return this->reader.more_rbsp_data(); }
   bool byte_aligned() const { return this->reader.byte_aligned(); }
@@ -100,4 +102,4 @@ private:
   ReaderHelperNew *r;
 };
 
-} // namespace parser
+} // namespace parser::reader

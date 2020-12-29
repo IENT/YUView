@@ -32,40 +32,32 @@
 
 #pragma once
 
+#include "NalUnitVVC.h"
 #include "common/typedef.h"
+#include "parser/common/ReaderHelperNew.h"
+#include "sublayer_hrd_parameters.h"
 
-#include <optional>
-#include <memory>
-
-namespace parser::reader
+namespace parser::vvc
 {
 
-struct RangeCheckResult
-{
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
+class general_timing_hrd_parameters;
 
-class Check
+class ols_timing_hrd_parameters : public NalRBSP
 {
 public:
-  virtual RangeCheckResult checkValue(int64_t value) const = 0;
+  ols_timing_hrd_parameters()  = default;
+  ~ols_timing_hrd_parameters() = default;
+  void parse(reader::ReaderHelperNew &      reader,
+             unsigned                       firstSubLayer,
+             unsigned                       MaxSubLayersVal,
+             general_timing_hrd_parameters *general_hrd);
+
+  vector<bool>            fixed_pic_rate_general_flag{};
+  vector<bool>            fixed_pic_rate_within_cvs_flag{};
+  vector<unsigned>        elemental_duration_in_tc_minus1{};
+  vector<bool>            low_delay_hrd_flag{};
+  sublayer_hrd_parameters sublayer_hrd_parameters_nal;
+  sublayer_hrd_parameters sublayer_hrd_parameters_vcl;
 };
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
-  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::vvc

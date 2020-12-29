@@ -51,8 +51,8 @@ public:
   SubByteReaderNew() = default;
   SubByteReaderNew(const ByteVector &inArr, size_t inArrOffset = 0);
 
-  std::tuple<uint64_t, std::string> readBits(size_t nrBits);
-  ByteVector                        readBytes(size_t nrBytes);
+  std::tuple<uint64_t, std::string>   readBits(size_t nrBits);
+  std::tuple<ByteVector, std::string> readBytes(size_t nrBytes);
 
   std::tuple<uint64_t, std::string> readUE_V();
   std::tuple<int64_t, std::string>  readSE_V();

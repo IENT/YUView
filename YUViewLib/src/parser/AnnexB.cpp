@@ -90,9 +90,9 @@ void AnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint
     startCodeSize = 3;
 
   if (startCodeSize > 0)
-    new TreeItem("Start code size", startCodeSize, root);
+    new TreeItem(root, "Start code size", std::to_string(startCodeSize));
 
-  new TreeItem("Payload size", data.size() - startCodeSize, root);
+  new TreeItem(root, "Payload size", std::to_string(data.size() - startCodeSize));
   if (nalStartEndPos)
     new TreeItem("Start pos", (*nalStartEndPos).first, root);
 }
