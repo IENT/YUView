@@ -74,8 +74,13 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
   this->PicWidthInSamplesC  = this->pps_pic_width_in_luma_samples / sps->SubWidthC;
   this->PicHeightInSamplesC = this->pps_pic_height_in_luma_samples / sps->SubHeightC;
 
-  this->pps_conformance_window_flag =
-      reader.readFlag("pps_conformance_window_flag", Options().withCheckEqualTo(0));
+  {
+    Options opt;
+    if (this->pps_pic_width_in_luma_samples == sps->sps_pic_width_max_in_luma_samples &&
+        this->pps_pic_height_in_luma_samples == sps->sps_pic_height_max_in_luma_samples)
+      opt = Options().withCheckEqualTo(0);
+    this->pps_conformance_window_flag = reader.readFlag("pps_conformance_window_flag", opt);
+  }
   if (this->pps_conformance_window_flag)
   {
     this->pps_conf_win_left_offset   = reader.readUEV("pps_conf_win_left_offset");
@@ -83,8 +88,13 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
     this->pps_conf_win_top_offset    = reader.readUEV("pps_conf_win_top_offset");
     this->pps_conf_win_bottom_offset = reader.readUEV("pps_conf_win_bottom_offset");
   }
-  this->pps_scaling_window_explicit_signalling_flag =
-      reader.readFlag("pps_scaling_window_explicit_signalling_flag", Options().withCheckEqualTo(0));
+  {
+    Options opt;
+    if (!sps->sps_ref_pic_resampling_enabled_flag)
+      opt = Options().withCheckEqualTo(0);
+    this->pps_scaling_window_explicit_signalling_flag =
+        reader.readFlag("pps_scaling_window_explicit_signalling_flag", opt);
+  }
   if (this->pps_scaling_window_explicit_signalling_flag)
   {
     this->pps_scaling_win_left_offset   = reader.readSEV("pps_scaling_win_left_offset");
@@ -93,10 +103,23 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
     this->pps_scaling_win_bottom_offset = reader.readSEV("pps_scaling_win_bottom_offset");
   }
   this->pps_output_flag_present_flag = reader.readFlag("pps_output_flag_present_flag");
-  this->pps_no_pic_partition_flag =
-      reader.readFlag("pps_no_pic_partition_flag", Options().withCheckEqualTo(0));
-  this->pps_subpic_id_mapping_present_flag =
-      reader.readFlag("pps_subpic_id_mapping_present_flag", Options().withCheckEqualTo(0));
+  {
+    Options opt;
+    if (sps->sps_num_subpics_minus1 > 0 || this->pps_mixed_nalu_types_in_pic_flag)
+      opt = Options().withCheckEqualTo(0);
+    this->pps_no_pic_partition_flag = reader.readFlag("pps_no_pic_partition_flag", opt);
+  }
+  {
+    Options opt;
+    if (!sps->sps_subpic_id_mapping_explicitly_signalled_flag ||
+        sps->sps_subpic_id_mapping_present_flag)
+      opt = Options().withCheckEqualTo(0);
+    else if (sps->sps_subpic_id_mapping_explicitly_signalled_flag &&
+             !sps->sps_subpic_id_mapping_present_flag)
+      opt = Options().withCheckEqualTo(1);
+    this->pps_subpic_id_mapping_present_flag =
+        reader.readFlag("pps_subpic_id_mapping_present_flag", opt);
+  }
   if (this->pps_subpic_id_mapping_present_flag)
   {
     if (!this->pps_no_pic_partition_flag)
@@ -172,8 +195,12 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
     {
       this->pps_loop_filter_across_tiles_enabled_flag =
           reader.readFlag("pps_loop_filter_across_tiles_enabled_flag");
-      this->pps_rect_slice_flag =
-          reader.readFlag("pps_rect_slice_flag", Options().withCheckEqualTo(1));
+      {
+        Options opt;
+        if (sps->sps_subpic_info_present_flag || this->pps_mixed_nalu_types_in_pic_flag)
+          opt = Options().withCheckEqualTo(1);
+        this->pps_rect_slice_flag = reader.readFlag("pps_rect_slice_flag", opt);
+      }
     }
     if (this->pps_rect_slice_flag)
     {
@@ -445,11 +472,19 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
   }
   this->pps_rpl1_idx_present_flag = reader.readFlag("pps_rpl1_idx_present_flag");
   this->pps_weighted_pred_flag =
-      reader.readFlag("pps_weighted_pred_flag", Options().withCheckEqualTo(0));
+      reader.readFlag("pps_weighted_pred_flag",
+                      sps->sps_weighted_pred_flag ? Options() : Options().withCheckEqualTo(0));
   this->pps_weighted_bipred_flag =
-      reader.readFlag("pps_weighted_bipred_flag", Options().withCheckEqualTo(0));
-  this->pps_ref_wraparound_enabled_flag =
-      reader.readFlag("pps_ref_wraparound_enabled_flag", Options().withCheckEqualTo(0));
+      reader.readFlag("pps_weighted_bipred_flag",
+                      sps->sps_weighted_bipred_flag ? Options() : Options().withCheckEqualTo(0));
+  {
+    Options opt;
+    if (!sps->sps_ref_wraparound_enabled_flag ||
+        (sps->CtbSizeY / sps->MinCbSizeY + 1) >
+            this->pps_pic_width_in_luma_samples / sps->MinCbSizeY - 1)
+      opt = Options().withCheckEqualTo(0);
+    this->pps_ref_wraparound_enabled_flag = reader.readFlag("pps_ref_wraparound_enabled_flag", opt);
+  }
   if (this->pps_ref_wraparound_enabled_flag)
   {
     this->pps_pic_width_minus_wraparound_offset = reader.readUEV(
@@ -460,8 +495,13 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
   this->pps_init_qp_minus26 = reader.readSEV(
       "pps_init_qp_minus26", Options().withCheckRange({-(26 + int(sps->QpBdOffset)), 37}));
   this->pps_cu_qp_delta_enabled_flag = reader.readFlag("pps_cu_qp_delta_enabled_flag");
-  this->pps_chroma_tool_offsets_present_flag =
-      reader.readFlag("pps_chroma_tool_offsets_present_flag", Options().withCheckEqualTo(0));
+  {
+    Options opt;
+    if (sps->sps_chroma_format_idc == 0)
+      opt = Options().withCheckEqualTo(0);
+    this->pps_chroma_tool_offsets_present_flag =
+        reader.readFlag("pps_chroma_tool_offsets_present_flag", opt);
+  }
   if (this->pps_chroma_tool_offsets_present_flag)
   {
     this->pps_cb_qp_offset = reader.readSEV("pps_cb_qp_offset");

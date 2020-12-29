@@ -73,7 +73,7 @@ public:
   vector<unsigned>   pps_tile_column_width_minus1{};
   vector<unsigned>   pps_tile_row_height_minus1{};
   bool               pps_loop_filter_across_tiles_enabled_flag{};
-  bool               pps_rect_slice_flag{};
+  bool               pps_rect_slice_flag{true};
   bool               pps_single_slice_per_subpic_flag{};
   unsigned           pps_num_slices_in_pic_minus1{};
   bool               pps_tile_idx_delta_present_flag{};

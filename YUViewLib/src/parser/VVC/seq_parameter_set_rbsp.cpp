@@ -62,7 +62,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   this->sps_log2_ctu_size_minus5 =
       reader.readBits("sps_log2_ctu_size_minus5", 2, Options().withCheckRange({0, 2}));
   this->sps_ptl_dpb_hrd_params_present_flag =
-      reader.readFlag("sps_ptl_dpb_hrd_params_present_flag", Options().withCheckEqualTo(1));
+      reader.readFlag("sps_ptl_dpb_hrd_params_present_flag");
 
   // The variables CtbLog2SizeY and CtbSizeY are derived as follows:
   this->CtbLog2SizeY = this->sps_log2_ctu_size_minus5 + 5; // (35)
@@ -93,8 +93,9 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     this->sps_conf_win_top_offset    = reader.readUEV("sps_conf_win_top_offset");
     this->sps_conf_win_bottom_offset = reader.readUEV("sps_conf_win_bottom_offset");
   }
-  this->sps_subpic_info_present_flag =
-      reader.readFlag("sps_subpic_info_present_flag", Options().withCheckEqualTo(0));
+  this->sps_subpic_info_present_flag = reader.readFlag(
+      "sps_subpic_info_present_flag",
+      this->sps_res_change_in_clvs_allowed_flag ? Options().withCheckEqualTo(0) : Options());
   if (this->sps_subpic_info_present_flag)
   {
     this->sps_num_subpics_minus1 =
@@ -355,8 +356,9 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   this->sps_long_term_ref_pics_flag = reader.readFlag("sps_long_term_ref_pics_flag");
   if (this->sps_video_parameter_set_id > 0)
   {
-    this->sps_inter_layer_prediction_enabled_flag =
-        reader.readFlag("sps_inter_layer_prediction_enabled_flag", Options().withCheckEqualTo(0));
+    this->sps_inter_layer_prediction_enabled_flag = reader.readFlag(
+        "sps_inter_layer_prediction_enabled_flag",
+        this->sps_video_parameter_set_id == 0 ? Options().withCheckEqualTo(0) : Options());
   }
   this->sps_idr_rpl_present_flag   = reader.readFlag("sps_idr_rpl_present_flag");
   this->sps_rpl1_same_as_rpl0_flag = reader.readFlag("sps_rpl1_same_as_rpl0_flag");
@@ -370,7 +372,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     }
   }
   this->sps_ref_wraparound_enabled_flag =
-      reader.readFlag("sps_ref_wraparound_enabled_flag", Options().withCheckEqualTo(0));
+      reader.readFlag("sps_ref_wraparound_enabled_flag");
   this->sps_temporal_mvp_enabled_flag = reader.readFlag("sps_temporal_mvp_enabled_flag");
   if (this->sps_temporal_mvp_enabled_flag)
   {
@@ -498,8 +500,15 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       reader.readFlag("sps_virtual_boundaries_enabled_flag");
   if (this->sps_virtual_boundaries_enabled_flag)
   {
-    this->sps_virtual_boundaries_present_flag =
-        reader.readFlag("sps_virtual_boundaries_present_flag", Options().withCheckEqualTo(0));
+    {
+      Options opt;
+      if (this->sps_res_change_in_clvs_allowed_flag)
+        opt = Options().withCheckEqualTo(0);
+      else if (this->sps_subpic_info_present_flag && this->sps_virtual_boundaries_enabled_flag)
+        opt = Options().withCheckEqualTo(1);
+      this->sps_virtual_boundaries_present_flag =
+          reader.readFlag("sps_virtual_boundaries_present_flag", opt);
+    }
     if (this->sps_virtual_boundaries_present_flag)
     {
       this->sps_num_ver_virtual_boundaries = reader.readUEV(
