@@ -32,8 +32,9 @@
 
 #include "ReaderHelperNew.h"
 
-#include <sstream>
 #include <iomanip>
+#include <sstream>
+
 
 namespace parser::reader
 {
@@ -93,7 +94,7 @@ void checkAndLog(TreeItem *         item,
                  ByteVector         value,
                  const std::string &code)
 {
-  // There are no range checks for ByteVectors
+  // There are no range checks for ByteVectors. Also the meaningMap does nothing.
   if (item)
   {
     if (code.size() != value.size() * 8)
@@ -102,16 +103,16 @@ void checkAndLog(TreeItem *         item,
     auto byteVectorItem = new TreeItem(item, symbolName);
     for (size_t i = 0; i < value.size(); i++)
     {
-      auto c = value.at(i);
+      auto              c = value.at(i);
       std::stringstream valueStream;
-      valueStream << "0x" << std::setfill ('0') << std::setw(2) << std::hex << c << " (" << c << ")";
-      auto byteCode = code.substr(i*8, 8);
-      auto newItem = new TreeItem(item,
-                                "Byte " + std::to_string(i),
-                                valueStream.str(),
-                                formatCoding(formatName, code.size()),
-                                byteCode,
-                                "");
+      valueStream << "0x" << std::setfill('0') << std::setw(2) << std::hex << c << " (" << c << ")";
+      auto byteCode = code.substr(i * 8, 8);
+      new TreeItem(byteVectorItem,
+                   "Byte " + std::to_string(i),
+                   valueStream.str(),
+                   formatCoding(formatName, code.size()),
+                   byteCode,
+                   options.meaningString);
     }
   }
 }
