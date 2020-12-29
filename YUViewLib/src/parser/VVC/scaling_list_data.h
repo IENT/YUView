@@ -12,7 +12,7 @@
  *   OpenSSL library under certain conditions as described in each
  *   individual source file, and distribute linked combinations including
  *   the two.
- *
+ *   
  *   You must obey the GNU General Public License in all respects for all
  *   of the code used other than OpenSSL. If you modify file(s) with this
  *   exception, you may extend this exception to your version of the
@@ -32,62 +32,28 @@
 
 #pragma once
 
-#include "../AnnexB.h"
 #include "NalUnitVVC.h"
-#include "video/videoHandlerYUV.h"
+#include "parser/common/ReaderHelperNew.h"
 
-#include <memory>
-
-using namespace YUV_Internals;
-
-namespace parser
+namespace parser::vvc
 {
 
-// This class knows how to parse the bitrstream of VVC annexB files
-class AnnexBVVC : public AnnexB
-{
-  Q_OBJECT
+class adaptation_parameter_set_rbsp;
 
+class scaling_list_data : public NalRBSP
+{
 public:
-  AnnexBVVC(QObject *parent = nullptr) : AnnexB(parent)
-  {
-    curFrameFileStartEndPos = pairUint64(-1, -1);
-  }
-  ~AnnexBVVC(){};
+  scaling_list_data() = default;
+  ~scaling_list_data() = default;
+  void parse(reader::ReaderHelperNew &reader, adaptation_parameter_set_rbsp *aps);
 
-  // Get some properties
-  double         getFramerate() const override;
-  QSize          getSequenceSizeSamples() const override;
-  yuvPixelFormat getPixelFormat() const override;
+  vector<bool> scaling_list_copy_mode_flag {};
+  vector<bool> scaling_list_pred_mode_flag {};
+  vector<unsigned> scaling_list_pred_id_delta {};
+  vector<int> scaling_list_dc_coef {};
+  umap_2d<int> scaling_list_delta_coef {};
 
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
-  QByteArray        getExtradata() override;
-  QPair<int, int>   getProfileLevel() override;
-  Ratio             getSampleAspectRatio() override;
-
-  ParseResult parseAndAddNALUnit(int                                           nalID,
-                                 QByteArray                                    data,
-                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                                 std::optional<pairUint64> nalStartEndPosFile = {},
-                                 TreeItem *                parent             = nullptr) override;
-
-protected:
-  std::optional<pairUint64>
-      curFrameFileStartEndPos; //< Save the file start/end position of the current frame (in case
-                               //the frame has multiple NAL units)
-
-  size_t counterAU{0};
-  size_t sizeCurrentAU{0};
-
-  struct ActiveParameterSets
-  {
-    vvc::NalMap vpsMap;
-    vvc::NalMap spsMap;
-    vvc::NalMap ppsMap;
-    vvc::NalMap apsMap;
-  };
-  ActiveParameterSets activeParameterSets;
-
+  vector2d<int> ScalingList;
 };
 
-} // namespace parser
+} // namespace parser::vvc

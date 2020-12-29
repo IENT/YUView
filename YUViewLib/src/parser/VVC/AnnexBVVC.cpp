@@ -35,12 +35,13 @@
 #include <algorithm>
 #include <cmath>
 
+#include "adaptation_parameter_set_rbsp.h"
 #include "nal_unit_header.h"
 #include "parser/common/Macros.h"
 #include "parser/common/ReaderHelper.h"
+#include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 #include "video_parameter_set_rbsp.h"
-#include "pic_parameter_set_rbsp.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -114,7 +115,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   reader::ReaderHelperNew reader(data, nalRoot, "", readOffset);
 
   std::string specificDescription;
-  auto nalVVC = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);
+  auto        nalVVC = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);
   try
   {
     nalVVC->header.parse(reader);
@@ -154,6 +155,19 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       specificDescription += " ID " + std::to_string(newPPS->pps_pic_parameter_set_id);
 
       nalVVC->rbsp = std::move(newPPS);
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::PREFIX_APS_NUT ||
+             nalVVC->header.nal_unit_type == NalType::SUFFIX_APS_NUT)
+    {
+      specificDescription = " APS";
+      auto newAPS         = std::make_unique<adaptation_parameter_set_rbsp>();
+      newAPS->parse(reader);
+
+      this->activeParameterSets.apsMap[newAPS->aps_adaptation_parameter_set_id] = nalVVC;
+
+      specificDescription += " ID " + std::to_string(newAPS->aps_adaptation_parameter_set_id);
+
+      nalVVC->rbsp = std::move(newAPS);
     }
   }
   catch (const std::exception &e)

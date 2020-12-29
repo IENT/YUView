@@ -32,62 +32,40 @@
 
 #pragma once
 
-#include "../AnnexB.h"
 #include "NalUnitVVC.h"
-#include "video/videoHandlerYUV.h"
+#include "alf_data.h"
+#include "lmcs_data.h"
+#include "parser/common/ReaderHelperNew.h"
+#include "rbsp_trailing_bits.h"
+#include "scaling_list_data.h"
 
-#include <memory>
 
-using namespace YUV_Internals;
-
-namespace parser
+namespace parser::vvc
 {
 
-// This class knows how to parse the bitrstream of VVC annexB files
-class AnnexBVVC : public AnnexB
+class adaptation_parameter_set_rbsp : public NalRBSP
 {
-  Q_OBJECT
-
 public:
-  AnnexBVVC(QObject *parent = nullptr) : AnnexB(parent)
+  adaptation_parameter_set_rbsp()  = default;
+  ~adaptation_parameter_set_rbsp() = default;
+  void parse(reader::ReaderHelperNew &reader);
+
+  enum class APSParamType
   {
-    curFrameFileStartEndPos = pairUint64(-1, -1);
-  }
-  ~AnnexBVVC(){};
-
-  // Get some properties
-  double         getFramerate() const override;
-  QSize          getSequenceSizeSamples() const override;
-  yuvPixelFormat getPixelFormat() const override;
-
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
-  QByteArray        getExtradata() override;
-  QPair<int, int>   getProfileLevel() override;
-  Ratio             getSampleAspectRatio() override;
-
-  ParseResult parseAndAddNALUnit(int                                           nalID,
-                                 QByteArray                                    data,
-                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                                 std::optional<pairUint64> nalStartEndPosFile = {},
-                                 TreeItem *                parent             = nullptr) override;
-
-protected:
-  std::optional<pairUint64>
-      curFrameFileStartEndPos; //< Save the file start/end position of the current frame (in case
-                               //the frame has multiple NAL units)
-
-  size_t counterAU{0};
-  size_t sizeCurrentAU{0};
-
-  struct ActiveParameterSets
-  {
-    vvc::NalMap vpsMap;
-    vvc::NalMap spsMap;
-    vvc::NalMap ppsMap;
-    vvc::NalMap apsMap;
+    ALF_APS,
+    LMCS_APS,
+    SCALING_APS
   };
-  ActiveParameterSets activeParameterSets;
 
+  APSParamType       aps_params_type{};
+  unsigned           aps_adaptation_parameter_set_id{};
+  bool               aps_chroma_present_flag{};
+  alf_data           alf_data_instance;
+  lmcs_data          lmcs_data_instance;
+  scaling_list_data  scaling_list_data_instance;
+  bool               aps_extension_flag{};
+  bool               aps_extension_data_flag{};
+  rbsp_trailing_bits rbsp_trailing_bits_instance;
 };
 
-} // namespace parser
+} // namespace parser::vvc

@@ -237,11 +237,13 @@ typedef QPair<int,int> QIntPair;
 typedef QPair<unsigned int, unsigned int> QUIntPair;
 
 template <typename T> using umap_1d = std::map<unsigned, T>;
-template <typename T> using umap_2d = std::map<unsigned, std::map<unsigned, T>>;
-template <typename T> using umap_3d = std::map<unsigned, std::map<unsigned, std::map<unsigned, T>>>;
+template <typename T> using umap_2d = std::map<unsigned, umap_1d<T>>;
+template <typename T> using umap_3d = std::map<unsigned, umap_2d<T>>;
 
 template <typename T> using vector = std::vector<T>;
-template <typename T> using vector2d = std::vector<std::vector<T>>;
+template <typename T> using vector2d = std::vector<vector<T>>;
+template <typename T> using vector3d = std::vector<vector2d<T>>;
+template <typename T> using vector4d = std::vector<vector3d<T>>;
 
 template <typename T>
 std::string to_string(const std::pair<T, T> typePair)
