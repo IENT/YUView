@@ -40,7 +40,9 @@
 #include "parser/common/Macros.h"
 #include "parser/common/ReaderHelper.h"
 #include "pic_parameter_set_rbsp.h"
+#include "picture_header_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
+#include "slice_header.h"
 #include "video_parameter_set_rbsp.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
@@ -123,51 +125,94 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     if (nalVVC->header.nal_unit_type == NalType::VPS_NUT)
     {
       specificDescription = " VPS";
-      auto newVPS         = std::make_unique<video_parameter_set_rbsp>();
+      auto newVPS         = std::make_shared<video_parameter_set_rbsp>();
       newVPS->parse(reader);
 
-      this->activeParameterSets.vpsMap[newVPS->vps_video_parameter_set_id] = nalVVC;
+      this->activeParameterSets.vpsMap[newVPS->vps_video_parameter_set_id] = newVPS;
 
       specificDescription += " ID " + std::to_string(newVPS->vps_video_parameter_set_id);
 
-      nalVVC->rbsp = std::move(newVPS);
+      nalVVC->rbsp = newVPS;
     }
     else if (nalVVC->header.nal_unit_type == NalType::SPS_NUT)
     {
       specificDescription = " SPS";
-      auto newSPS         = std::make_unique<seq_parameter_set_rbsp>();
+      auto newSPS         = std::make_shared<seq_parameter_set_rbsp>();
       newSPS->parse(reader);
 
-      this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = nalVVC;
+      this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = newSPS;
 
       specificDescription += " ID " + std::to_string(newSPS->sps_seq_parameter_set_id);
 
-      nalVVC->rbsp = std::move(newSPS);
+      nalVVC->rbsp = newSPS;
     }
     else if (nalVVC->header.nal_unit_type == NalType::PPS_NUT)
     {
       specificDescription = " PPS";
-      auto newPPS         = std::make_unique<pic_parameter_set_rbsp>();
+      auto newPPS         = std::make_shared<pic_parameter_set_rbsp>();
       newPPS->parse(reader, this->activeParameterSets.spsMap);
 
-      this->activeParameterSets.ppsMap[newPPS->pps_pic_parameter_set_id] = nalVVC;
+      this->activeParameterSets.ppsMap[newPPS->pps_pic_parameter_set_id] = newPPS;
 
       specificDescription += " ID " + std::to_string(newPPS->pps_pic_parameter_set_id);
 
-      nalVVC->rbsp = std::move(newPPS);
+      nalVVC->rbsp = newPPS;
     }
     else if (nalVVC->header.nal_unit_type == NalType::PREFIX_APS_NUT ||
              nalVVC->header.nal_unit_type == NalType::SUFFIX_APS_NUT)
     {
       specificDescription = " APS";
-      auto newAPS         = std::make_unique<adaptation_parameter_set_rbsp>();
+      auto newAPS         = std::make_shared<adaptation_parameter_set_rbsp>();
       newAPS->parse(reader);
 
-      this->activeParameterSets.apsMap[newAPS->aps_adaptation_parameter_set_id] = nalVVC;
+      this->activeParameterSets.apsMap[newAPS->aps_adaptation_parameter_set_id] = newAPS;
 
       specificDescription += " ID " + std::to_string(newAPS->aps_adaptation_parameter_set_id);
 
-      nalVVC->rbsp = std::move(newAPS);
+      nalVVC->rbsp = newAPS;
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::PH_NUT)
+    {
+      specificDescription   = " Picture Header";
+      auto newPictureHeader = std::make_shared<picture_header_rbsp>();
+      newPictureHeader->parse(reader,
+                              this->activeParameterSets.spsMap,
+                              this->activeParameterSets.ppsMap,
+                              this->parsingState.currentSlice);
+
+      this->parsingState.currentPictureHeaderStructure =
+          newPictureHeader->picture_header_structure_instance;
+
+      // We can probably get the POC here.
+      // specificDescription += " ID " + std::to_string(newPH->ph_pic_parameter_set_id);
+
+      nalVVC->rbsp = newPictureHeader;
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::STSA_NUT ||
+             nalVVC->header.nal_unit_type == NalType::RADL_NUT ||
+             nalVVC->header.nal_unit_type == NalType::RASL_NUT ||
+             nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
+             nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
+             nalVVC->header.nal_unit_type == NalType::CRA_NUT ||
+             nalVVC->header.nal_unit_type == NalType::GDR_NUT)
+    {
+      specificDescription = " Slice Header";
+      auto newSliceHeader = std::make_shared<slice_header>();
+      newSliceHeader->parse(reader,
+                            nalVVC->header.nal_unit_type,
+                            this->activeParameterSets.spsMap,
+                            this->activeParameterSets.ppsMap,
+                            this->parsingState.currentPictureHeaderStructure);
+
+      this->parsingState.currentSlice = newSliceHeader;
+      if (newSliceHeader->picture_header_structure_instance)
+        this->parsingState.currentPictureHeaderStructure =
+            newSliceHeader->picture_header_structure_instance;
+
+      // At this point we should also be able to get the POC
+      // specificDescription += " ID " + std::to_string(newSlice->ph_pic_parameter_set_id);
+
+      nalVVC->rbsp = newSliceHeader;
     }
   }
   catch (const std::exception &e)

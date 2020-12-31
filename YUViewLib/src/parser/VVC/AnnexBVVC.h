@@ -35,6 +35,7 @@
 #include "../AnnexB.h"
 #include "NalUnitVVC.h"
 #include "video/videoHandlerYUV.h"
+#include "common.h"
 
 #include <memory>
 
@@ -42,6 +43,12 @@ using namespace YUV_Internals;
 
 namespace parser
 {
+
+namespace vvc
+{
+class slice_header;
+class picture_header_structure;
+} // namespace vvc
 
 // This class knows how to parse the bitrstream of VVC annexB files
 class AnnexBVVC : public AnnexB
@@ -74,20 +81,26 @@ public:
 protected:
   std::optional<pairUint64>
       curFrameFileStartEndPos; //< Save the file start/end position of the current frame (in case
-                               //the frame has multiple NAL units)
+                               // the frame has multiple NAL units)
 
   size_t counterAU{0};
   size_t sizeCurrentAU{0};
 
   struct ActiveParameterSets
   {
-    vvc::NalMap vpsMap;
-    vvc::NalMap spsMap;
-    vvc::NalMap ppsMap;
-    vvc::NalMap apsMap;
+    vvc::VPSMap vpsMap;
+    vvc::SPSMap spsMap;
+    vvc::PPSMap ppsMap;
+    vvc::APSMap apsMap;
   };
   ActiveParameterSets activeParameterSets;
 
+  struct ParsingState
+  {
+    std::shared_ptr<vvc::picture_header_structure> currentPictureHeaderStructure;
+    std::shared_ptr<vvc::slice_header>             currentSlice;
+  };
+  ParsingState parsingState;
 };
 
 } // namespace parser

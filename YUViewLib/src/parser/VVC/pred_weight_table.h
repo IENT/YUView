@@ -32,35 +32,44 @@
 
 #pragma once
 
-#include "nal_unit_header.h"
-#include "parser/NalUnit.h"
-
-#include <memory>
+#include "NalUnitVVC.h"
+#include "parser/common/ReaderHelperNew.h"
 
 namespace parser::vvc
 {
 
-class NalRBSP
+class seq_parameter_set_rbsp;
+class pic_parameter_set_rbsp;
+class slice_header;
+class ref_pic_lists;
+
+class pred_weight_table : public NalRBSP
 {
 public:
-  NalRBSP()          = default;
-  virtual ~NalRBSP() = default;
+  pred_weight_table()  = default;
+  ~pred_weight_table() = default;
+  void parse(reader::ReaderHelperNew &               reader,
+             std::shared_ptr<seq_parameter_set_rbsp> sps,
+             std::shared_ptr<pic_parameter_set_rbsp> pps,
+             std::shared_ptr<slice_header>           sh,
+             std::shared_ptr<ref_pic_lists>          rpl);
+
+  unsigned      luma_log2_weight_denom{};
+  int           delta_chroma_log2_weight_denom{};
+  unsigned      num_l0_weights{};
+  vector<bool>  luma_weight_l0_flag{};
+  vector<bool>  chroma_weight_l0_flag{};
+  vector<int>   delta_luma_weight_l0{};
+  vector<int>   luma_offset_l0{};
+  umap_2d<int>  delta_chroma_weight_l0{};
+  vector2d<int> delta_chroma_offset_l0{};
+  unsigned      num_l1_weights{};
+  vector<bool>  luma_weight_l1_flag{};
+  vector<bool>  chroma_weight_l1_flag{};
+  vector<int>   delta_luma_weight_l1{};
+  vector<int>   luma_offset_l1{};
+  vector2d<int> delta_chroma_weight_l1{};
+  vector2d<int> delta_chroma_offset_l1{};
 };
-
-class NalUnitVVC : public NalUnit
-{
-public:
-  NalUnitVVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
-      : NalUnit(nalIdx, filePosStartEnd)
-  {
-  }
-
-  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
-
-  nal_unit_header          header;
-  std::shared_ptr<NalRBSP> rbsp;
-};
-
-using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
 
 } // namespace parser::vvc

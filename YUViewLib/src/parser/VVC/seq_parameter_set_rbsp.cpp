@@ -180,8 +180,8 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       {
         for (unsigned i = 0; i <= this->sps_num_subpics_minus1; i++)
         {
-          auto numBits        = sps_subpic_id_len_minus1 + 1;
-          this->sps_subpic_id = reader.readBits("sps_subpic_id", numBits);
+          auto numBits = sps_subpic_id_len_minus1 + 1;
+          this->sps_subpic_id.push_back(reader.readBits("sps_subpic_id", numBits));
         }
       }
     }
@@ -199,6 +199,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       reader.readFlag("sps_entry_point_offsets_present_flag");
   this->sps_log2_max_pic_order_cnt_lsb_minus4 = reader.readBits(
       "sps_log2_max_pic_order_cnt_lsb_minus4", 4, Options().withCheckRange({0, 12}));
+  this->MaxPicOrderCntLsb      = (1u << (this->sps_log2_max_pic_order_cnt_lsb_minus4 + 4)); // (40)
   this->sps_poc_msb_cycle_flag = reader.readFlag("sps_poc_msb_cycle_flag");
   if (this->sps_poc_msb_cycle_flag)
   {
@@ -209,13 +210,20 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       reader.readBits("sps_num_extra_ph_bytes", 2, Options().withCheckEqualTo(0));
   for (unsigned i = 0; i < (this->sps_num_extra_ph_bytes * 8); i++)
   {
-    this->sps_extra_ph_bit_present_flag.push_back(reader.readFlag("sps_extra_ph_bit_present_flag"));
+    auto flag = reader.readFlag("sps_extra_ph_bit_present_flag");
+    this->sps_extra_ph_bit_present_flag.push_back(flag);
+    if (flag)
+      this->NumExtraPhBits++; // (41)
   }
+
   this->sps_num_extra_sh_bytes =
       reader.readBits("sps_num_extra_sh_bytes", 2, Options().withCheckEqualTo(0));
   for (unsigned i = 0; i < (sps_num_extra_sh_bytes * 8); i++)
   {
-    this->sps_extra_sh_bit_present_flag.push_back(reader.readFlag("sps_extra_sh_bit_present_flag"));
+    auto flag = reader.readFlag("sps_extra_sh_bit_present_flag");
+    this->sps_extra_sh_bit_present_flag.push_back(flag);
+    if (flag)
+      this->NumExtraShBits++;
   }
   if (this->sps_ptl_dpb_hrd_params_present_flag)
   {
@@ -368,12 +376,11 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     this->sps_num_ref_pic_lists.push_back(reader.readUEV("sps_num_ref_pic_lists"));
     for (unsigned j = 0; j < this->sps_num_ref_pic_lists[i]; j++)
     {
-      this->ref_pic_list_struct_instance.parse(reader, i, j, this);
+      this->ref_pic_list_struct_instance.parse(reader, i, j, shared_from_this());
     }
   }
-  this->sps_ref_wraparound_enabled_flag =
-      reader.readFlag("sps_ref_wraparound_enabled_flag");
-  this->sps_temporal_mvp_enabled_flag = reader.readFlag("sps_temporal_mvp_enabled_flag");
+  this->sps_ref_wraparound_enabled_flag = reader.readFlag("sps_ref_wraparound_enabled_flag");
+  this->sps_temporal_mvp_enabled_flag   = reader.readFlag("sps_temporal_mvp_enabled_flag");
   if (this->sps_temporal_mvp_enabled_flag)
   {
     this->sps_sbtmvp_enabled_flag = reader.readFlag("sps_sbtmvp_enabled_flag");

@@ -12,7 +12,7 @@
  *   OpenSSL library under certain conditions as described in each
  *   individual source file, and distribute linked combinations including
  *   the two.
- *
+ *   
  *   You must obey the GNU General Public License in all respects for all
  *   of the code used other than OpenSSL. If you modify file(s) with this
  *   exception, you may extend this exception to your version of the
@@ -32,35 +32,22 @@
 
 #pragma once
 
-#include "nal_unit_header.h"
-#include "parser/NalUnit.h"
-
+#include <map>
 #include <memory>
 
 namespace parser::vvc
 {
 
-class NalRBSP
-{
-public:
-  NalRBSP()          = default;
-  virtual ~NalRBSP() = default;
-};
+class slice_header;
+class picture_header_structure;
+class video_parameter_set_rbsp;
+class seq_parameter_set_rbsp;
+class pic_parameter_set_rbsp;
+class adaptation_parameter_set_rbsp;
 
-class NalUnitVVC : public NalUnit
-{
-public:
-  NalUnitVVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
-      : NalUnit(nalIdx, filePosStartEnd)
-  {
-  }
-
-  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
-
-  nal_unit_header          header;
-  std::shared_ptr<NalRBSP> rbsp;
-};
-
-using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
+using VPSMap = std::map<unsigned, std::shared_ptr<vvc::video_parameter_set_rbsp>>;
+using SPSMap = std::map<unsigned, std::shared_ptr<vvc::seq_parameter_set_rbsp>>;
+using PPSMap = std::map<unsigned, std::shared_ptr<vvc::pic_parameter_set_rbsp>>;
+using APSMap = std::map<unsigned, std::shared_ptr<vvc::adaptation_parameter_set_rbsp>>;
 
 } // namespace parser::vvc

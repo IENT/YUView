@@ -12,7 +12,7 @@
  *   OpenSSL library under certain conditions as described in each
  *   individual source file, and distribute linked combinations including
  *   the two.
- *   
+ *
  *   You must obey the GNU General Public License in all respects for all
  *   of the code used other than OpenSSL. If you modify file(s) with this
  *   exception, you may extend this exception to your version of the
@@ -32,8 +32,9 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
 #include "general_constraints_info.h"
+#include "parser/common/ReaderHelperNew.h"
+
 
 namespace parser::vvc
 {
@@ -41,21 +42,23 @@ namespace parser::vvc
 class profile_tier_level
 {
 public:
-  profile_tier_level() = default;
+  profile_tier_level()  = default;
   ~profile_tier_level() = default;
-  void parse(reader::ReaderHelperNew &reader, bool profileTierPresentFlag, unsigned MaxNumSubLayersMinus1);
+  void parse(reader::ReaderHelperNew &reader,
+             bool                     profileTierPresentFlag,
+             unsigned                 MaxNumSubLayersMinus1);
 
-  unsigned general_profile_idc {};
-  bool general_tier_flag {};
-  unsigned general_level_idc {};
-  bool ptl_frame_only_constraint_flag {};
-  bool ptl_multilayer_enabled_flag {};
+  unsigned                 general_profile_idc{};
+  bool                     general_tier_flag{};
+  unsigned                 general_level_idc{};
+  bool                     ptl_frame_only_constraint_flag{};
+  bool                     ptl_multilayer_enabled_flag{};
   general_constraints_info general_constraints_info_instance;
-  std::vector<bool> ptl_sublayer_level_present_flag {};
-  bool ptl_reserved_zero_bit {};
-  std::vector<unsigned> sublayer_level_idc {};
-  unsigned ptl_num_sub_profiles {};
-  std::vector<unsigned> general_sub_profile_idc {};
+  std::vector<bool>        ptl_sublayer_level_present_flag{};
+  bool                     ptl_reserved_zero_bit{};
+  std::vector<unsigned>    sublayer_level_idc{};
+  unsigned                 ptl_num_sub_profiles{};
+  std::vector<unsigned>    general_sub_profile_idc{};
 };
 
 } // namespace parser::vvc

@@ -41,7 +41,7 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
+void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, SPSMap &spsMap)
 {
   ReaderHelperNewSubLevel subLevel(reader, "pic_parameter_set_rbsp");
 
@@ -51,8 +51,7 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
 
   if (spsMap.count(this->pps_seq_parameter_set_id) == 0)
     throw std::logic_error("SPS with given pps_seq_parameter_set_id not found.");
-  auto sps =
-      dynamic_cast<seq_parameter_set_rbsp *>(spsMap[this->pps_seq_parameter_set_id]->rbsp.get());
+  auto sps = spsMap[this->pps_seq_parameter_set_id];
 
   this->pps_mixed_nalu_types_in_pic_flag = reader.readFlag("pps_mixed_nalu_types_in_pic_flag");
   this->pps_pic_width_in_luma_samples =
@@ -129,8 +128,16 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
     this->pps_subpic_id_len_minus1 = reader.readUEV("pps_subpic_id_len_minus1");
     for (unsigned i = 0; i <= this->pps_num_subpics_minus1; i++)
     {
-      auto nrBits         = this->pps_subpic_id_len_minus1 + 1;
-      this->pps_subpic_id = reader.readBits("pps_subpic_id", nrBits);
+      auto nrBits = this->pps_subpic_id_len_minus1 + 1;
+      this->pps_subpic_id.push_back(reader.readBits("pps_subpic_id", nrBits));
+
+      // (75)
+      if (sps->sps_subpic_id_mapping_explicitly_signalled_flag)
+        this->SubpicIdVal.push_back(this->pps_subpic_id_mapping_present_flag
+                                        ? this->pps_subpic_id[i]
+                                        : sps->sps_subpic_id[i]);
+      else
+        this->SubpicIdVal.push_back(i);
     }
   }
   if (!this->pps_no_pic_partition_flag)
@@ -269,6 +276,48 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
             }
           }
         };
+
+    if (this->pps_rect_slice_flag && !this->pps_single_slice_per_subpic_flag)
+    {
+      this->pps_num_slices_in_pic_minus1 = reader.readUEV(
+          "pps_num_slices_in_pic_minus1"); // Options().withCheckRange({0, MaxSlicesPerAu}
+      if (this->pps_num_slices_in_pic_minus1 > 1)
+      {
+        this->pps_tile_idx_delta_present_flag = reader.readFlag("pps_tile_idx_delta_present_flag");
+      }
+      for (unsigned i = 0; i < this->pps_num_slices_in_pic_minus1; i++)
+      {
+        if (this->SliceTopLeftTileIdx[i] % this->NumTileColumns != this->NumTileColumns - 1)
+        {
+          this->pps_slice_width_in_tiles_minus1.push_back(
+              reader.readUEV("pps_slice_width_in_tiles_minus1"));
+        }
+        if (this->SliceTopLeftTileIdx[i] / this->NumTileColumns != this->NumTileRows - 1 &&
+            (this->pps_tile_idx_delta_present_flag ||
+             this->SliceTopLeftTileIdx[i] % this->NumTileColumns == 0))
+        {
+          this->pps_slice_height_in_tiles_minus1.push_back(
+              reader.readUEV("pps_slice_height_in_tiles_minus1"));
+        }
+        if (this->pps_slice_width_in_tiles_minus1[i] == 0 &&
+            this->pps_slice_height_in_tiles_minus1[i] == 0 &&
+            this->RowHeightVal[SliceTopLeftTileIdx[i] / this->NumTileColumns] > 1)
+        {
+          this->pps_num_exp_slices_in_tile.push_back(reader.readUEV("pps_num_exp_slices_in_tile"));
+          this->pps_exp_slice_height_in_ctus_minus1.push_back({});
+          for (unsigned j = 0; j < this->pps_num_exp_slices_in_tile[i]; j++)
+          {
+            this->pps_exp_slice_height_in_ctus_minus1[i].push_back(
+                reader.readUEV("pps_exp_slice_height_in_ctus_minus1"));
+          }
+          i += NumSlicesInTile[i] - 1;
+        }
+        if (this->pps_tile_idx_delta_present_flag && i < this->pps_num_slices_in_pic_minus1)
+        {
+          this->pps_tile_idx_delta_val.push_back(reader.readSEV("pps_tile_idx_delta_val"));
+        }
+      }
+    }
 
     // 6.5.1 (21)
     if (this->pps_single_slice_per_subpic_flag)
@@ -416,47 +465,26 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, NalMap &spsMap)
       }
     }
 
-    if (this->pps_rect_slice_flag && !this->pps_single_slice_per_subpic_flag)
+    // 6.5.1 (23)
+    for (unsigned i = 0; i <= sps->sps_num_subpics_minus1; i++)
     {
-      this->pps_num_slices_in_pic_minus1 = reader.readUEV(
-          "pps_num_slices_in_pic_minus1"); // Options().withCheckRange({0, MaxSlicesPerAu}
-      if (this->pps_num_slices_in_pic_minus1 > 1)
+      this->NumSlicesInSubpic.push_back(0);
+      for (unsigned j = 0; j <= this->pps_num_slices_in_pic_minus1; j++)
       {
-        this->pps_tile_idx_delta_present_flag = reader.readFlag("pps_tile_idx_delta_present_flag");
-      }
-      for (unsigned i = 0; i < this->pps_num_slices_in_pic_minus1; i++)
-      {
-        if (this->SliceTopLeftTileIdx[i] % this->NumTileColumns != this->NumTileColumns - 1)
+        auto posX = CtbAddrInSlice[j][0] % PicWidthInCtbsY;
+        auto posY = CtbAddrInSlice[j][0] / PicWidthInCtbsY;
+        if ((posX >= sps->sps_subpic_ctu_top_left_x[i]) &&
+            (posX < sps->sps_subpic_ctu_top_left_x[i] + sps->sps_subpic_width_minus1[i] + 1) &&
+            (posY >= sps->sps_subpic_ctu_top_left_y[i]) &&
+            (posY < sps->sps_subpic_ctu_top_left_y[i] + sps->sps_subpic_height_minus1[i] + 1))
         {
-          this->pps_slice_width_in_tiles_minus1.push_back(
-              reader.readUEV("pps_slice_width_in_tiles_minus1"));
-        }
-        if (this->SliceTopLeftTileIdx[i] / this->NumTileColumns != this->NumTileRows - 1 &&
-            (this->pps_tile_idx_delta_present_flag ||
-             this->SliceTopLeftTileIdx[i] % this->NumTileColumns == 0))
-        {
-          this->pps_slice_height_in_tiles_minus1.push_back(
-              reader.readUEV("pps_slice_height_in_tiles_minus1"));
-        }
-        if (this->pps_slice_width_in_tiles_minus1[i] == 0 &&
-            this->pps_slice_height_in_tiles_minus1[i] == 0 &&
-            this->RowHeightVal[SliceTopLeftTileIdx[i] / this->NumTileColumns] > 1)
-        {
-          this->pps_num_exp_slices_in_tile.push_back(reader.readUEV("pps_num_exp_slices_in_tile"));
-          this->pps_exp_slice_height_in_ctus_minus1.push_back({});
-          for (unsigned j = 0; j < this->pps_num_exp_slices_in_tile[i]; j++)
-          {
-            this->pps_exp_slice_height_in_ctus_minus1[i].push_back(
-                reader.readUEV("pps_exp_slice_height_in_ctus_minus1"));
-          }
-          i += NumSlicesInTile[i] - 1;
-        }
-        if (this->pps_tile_idx_delta_present_flag && i < this->pps_num_slices_in_pic_minus1)
-        {
-          this->pps_tile_idx_delta_val.push_back(reader.readSEV("pps_tile_idx_delta_val"));
+          this->SubpicIdxForSlice[j]   = i;
+          this->SubpicLevelSliceIdx[j] = NumSlicesInSubpic[i];
+          this->NumSlicesInSubpic[i]++;
         }
       }
     }
+
     if (!this->pps_rect_slice_flag || this->pps_single_slice_per_subpic_flag ||
         this->pps_num_slices_in_pic_minus1 > 0)
     {

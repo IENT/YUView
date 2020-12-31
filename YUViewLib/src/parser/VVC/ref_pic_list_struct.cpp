@@ -39,10 +39,10 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void ref_pic_list_struct::parse(ReaderHelperNew &       reader,
-                                unsigned                listIdx,
-                                unsigned                rplsIdx,
-                                seq_parameter_set_rbsp *sps)
+void ref_pic_list_struct::parse(ReaderHelperNew &                       reader,
+                                unsigned                                listIdx,
+                                unsigned                                rplsIdx,
+                                std::shared_ptr<seq_parameter_set_rbsp> sps)
 {
   assert(sps != nullptr);
   ReaderHelperNewSubLevel subLevel(reader, "ref_pic_list_struct");
@@ -93,6 +93,13 @@ void ref_pic_list_struct::parse(ReaderHelperNew &       reader,
       this->ilrp_idx[listIdx][rplsIdx][i] = reader.readUEV("ilrp_idx");
     }
   }
+
+  // (148)
+  this->NumLtrpEntries[listIdx][rplsIdx] = 0;
+  for (unsigned i = 0; i < this->num_ref_entries[listIdx][rplsIdx]; i++)
+    if (!this->inter_layer_ref_pic_flag[listIdx][rplsIdx][i] &&
+        !this->st_ref_pic_flag[listIdx][rplsIdx][i])
+      this->NumLtrpEntries[listIdx][rplsIdx]++;
 
   // (150)
   for (unsigned i = 0; i < this->num_ref_entries[listIdx][rplsIdx]; i++)

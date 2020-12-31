@@ -32,35 +32,30 @@
 
 #pragma once
 
-#include "nal_unit_header.h"
-#include "parser/NalUnit.h"
+#include "NalUnitVVC.h"
+#include "common.h"
+#include "parser/common/ReaderHelperNew.h"
+#include "picture_header_structure.h"
+#include "rbsp_trailing_bits.h"
 
-#include <memory>
 
 namespace parser::vvc
 {
 
-class NalRBSP
+class slice_header;
+
+class picture_header_rbsp : public NalRBSP
 {
 public:
-  NalRBSP()          = default;
-  virtual ~NalRBSP() = default;
+  picture_header_rbsp()  = default;
+  ~picture_header_rbsp() = default;
+  void parse(reader::ReaderHelperNew &     reader,
+             SPSMap &                      spsMap,
+             PPSMap &                      ppsMap,
+             std::shared_ptr<slice_header> sh);
+
+  std::shared_ptr<picture_header_structure> picture_header_structure_instance;
+  rbsp_trailing_bits                        rbsp_trailing_bits_instance;
 };
-
-class NalUnitVVC : public NalUnit
-{
-public:
-  NalUnitVVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
-      : NalUnit(nalIdx, filePosStartEnd)
-  {
-  }
-
-  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
-
-  nal_unit_header          header;
-  std::shared_ptr<NalRBSP> rbsp;
-};
-
-using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
 
 } // namespace parser::vvc

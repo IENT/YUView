@@ -32,35 +32,33 @@
 
 #pragma once
 
-#include "nal_unit_header.h"
-#include "parser/NalUnit.h"
-
-#include <memory>
+#include "NalUnitVVC.h"
+#include "parser/common/ReaderHelperNew.h"
+#include "ref_pic_list_struct.h"
 
 namespace parser::vvc
 {
 
-class NalRBSP
+class seq_parameter_set_rbsp;
+class pic_parameter_set_rbsp;
+
+class ref_pic_lists : public NalRBSP
 {
 public:
-  NalRBSP()          = default;
-  virtual ~NalRBSP() = default;
+  ref_pic_lists()  = default;
+  ~ref_pic_lists() = default;
+  void parse(reader::ReaderHelperNew &               reader,
+             std::shared_ptr<seq_parameter_set_rbsp> sps,
+             std::shared_ptr<pic_parameter_set_rbsp> pps);
+
+  umap_1d<bool>       rpl_sps_flag{};
+  umap_1d<int>        rpl_idx{};
+  ref_pic_list_struct ref_pic_list_struct_instance;
+  int                 poc_lsb_lt{};
+  vector2d<bool>      delta_poc_msb_cycle_present_flag{};
+  umap_2d<unsigned>   delta_poc_msb_cycle_lt{};
+
+  umap_1d<int> RplsIdx;
 };
-
-class NalUnitVVC : public NalUnit
-{
-public:
-  NalUnitVVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
-      : NalUnit(nalIdx, filePosStartEnd)
-  {
-  }
-
-  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
-
-  nal_unit_header          header;
-  std::shared_ptr<NalRBSP> rbsp;
-};
-
-using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
 
 } // namespace parser::vvc

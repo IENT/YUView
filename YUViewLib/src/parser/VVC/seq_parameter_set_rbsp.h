@@ -44,7 +44,7 @@
 namespace parser::vvc
 {
 
-class seq_parameter_set_rbsp : public NalRBSP
+class seq_parameter_set_rbsp : public NalRBSP, std::enable_shared_from_this<seq_parameter_set_rbsp>
 {
 public:
   seq_parameter_set_rbsp()  = default;
@@ -81,7 +81,7 @@ public:
   unsigned                      sps_subpic_id_len_minus1{};
   bool                          sps_subpic_id_mapping_explicitly_signalled_flag{};
   bool                          sps_subpic_id_mapping_present_flag{};
-  int                           sps_subpic_id{};
+  vector<unsigned>              sps_subpic_id{};
   unsigned                      sps_bitdepth_minus8{};
   bool                          sps_entropy_coding_sync_enabled_flag{};
   bool                          sps_entry_point_offsets_present_flag{};
@@ -202,10 +202,13 @@ public:
 
   unsigned BitDepth{};
   unsigned QpBdOffset{};
+  unsigned MaxPicOrderCntLsb{};
+  unsigned NumExtraPhBits{0};
   unsigned SubWidthC{};
   unsigned SubHeightC{};
   unsigned CtbLog2SizeY{};
   unsigned CtbSizeY{};
+  unsigned NumExtraShBits{};
   unsigned MinCbLog2SizeY{};
   unsigned MinCbSizeY{};
   unsigned IbcBufWidthY{};

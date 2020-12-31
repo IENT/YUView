@@ -12,7 +12,7 @@
  *   OpenSSL library under certain conditions as described in each
  *   individual source file, and distribute linked combinations including
  *   the two.
- *
+ *   
  *   You must obey the GNU General Public License in all respects for all
  *   of the code used other than OpenSSL. If you modify file(s) with this
  *   exception, you may extend this exception to your version of the
@@ -32,35 +32,18 @@
 
 #pragma once
 
-#include "nal_unit_header.h"
-#include "parser/NalUnit.h"
-
-#include <memory>
+#include "NalUnitVVC.h"
+#include "parser/common/ReaderHelperNew.h"
 
 namespace parser::vvc
 {
 
-class NalRBSP
+class byte_alignment : public NalRBSP
 {
 public:
-  NalRBSP()          = default;
-  virtual ~NalRBSP() = default;
+  byte_alignment() = default;
+  ~byte_alignment() = default;
+  void parse(reader::ReaderHelperNew &reader);
 };
-
-class NalUnitVVC : public NalUnit
-{
-public:
-  NalUnitVVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
-      : NalUnit(nalIdx, filePosStartEnd)
-  {
-  }
-
-  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
-
-  nal_unit_header          header;
-  std::shared_ptr<NalRBSP> rbsp;
-};
-
-using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
 
 } // namespace parser::vvc

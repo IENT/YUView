@@ -44,10 +44,10 @@ class ref_pic_list_struct
 public:
   ref_pic_list_struct()  = default;
   ~ref_pic_list_struct() = default;
-  void parse(reader::ReaderHelperNew &reader,
-             unsigned                 listIdx,
-             unsigned                 rplsIdx,
-             seq_parameter_set_rbsp * sps);
+  void parse(reader::ReaderHelperNew &               reader,
+             unsigned                                listIdx,
+             unsigned                                rplsIdx,
+             std::shared_ptr<seq_parameter_set_rbsp> sps);
 
   umap_2d<unsigned> num_ref_entries{};
   umap_2d<bool>     ltrp_in_header_flag{};
@@ -57,6 +57,8 @@ public:
   umap_3d<bool>     strp_entry_sign_flag{};
   umap_3d<unsigned> rpls_poc_lsb_lt{};
   umap_3d<unsigned> ilrp_idx{};
+
+  umap_2d<unsigned> NumLtrpEntries;
 
   umap_3d<bool> AbsDeltaPocSt;
   umap_3d<int>  DeltaPocValSt;

@@ -30,37 +30,27 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "picture_header_rbsp.h"
 
-#include "nal_unit_header.h"
-#include "parser/NalUnit.h"
-
-#include <memory>
+#include "pic_parameter_set_rbsp.h"
+#include "seq_parameter_set_rbsp.h"
+#include "slice_header.h"
 
 namespace parser::vvc
 {
 
-class NalRBSP
+using namespace parser::reader;
+
+void picture_header_rbsp::parse(ReaderHelperNew &             reader,
+                                SPSMap &                      spsMap,
+                                PPSMap &                      ppsMap,
+                                std::shared_ptr<slice_header> sh)
 {
-public:
-  NalRBSP()          = default;
-  virtual ~NalRBSP() = default;
-};
+  ReaderHelperNewSubLevel subLevel(reader, "picture_header_rbsp");
 
-class NalUnitVVC : public NalUnit
-{
-public:
-  NalUnitVVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
-      : NalUnit(nalIdx, filePosStartEnd)
-  {
-  }
-
-  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
-
-  nal_unit_header          header;
-  std::shared_ptr<NalRBSP> rbsp;
-};
-
-using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
+  this->picture_header_structure_instance = std::make_shared<picture_header_structure>();
+  this->picture_header_structure_instance->parse(reader, spsMap, ppsMap, sh);
+  this->rbsp_trailing_bits_instance.parse(reader);
+}
 
 } // namespace parser::vvc

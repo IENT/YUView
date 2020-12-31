@@ -35,6 +35,7 @@
 #include "NalUnitVVC.h"
 #include "parser/common/ReaderHelperNew.h"
 #include "rbsp_trailing_bits.h"
+#include "common.h"
 
 namespace parser::vvc
 {
@@ -44,7 +45,7 @@ class pic_parameter_set_rbsp : public NalRBSP
 public:
   pic_parameter_set_rbsp()  = default;
   ~pic_parameter_set_rbsp() = default;
-  void parse(reader::ReaderHelperNew &reader, NalMap &spsMap);
+  void parse(reader::ReaderHelperNew &reader, SPSMap &spsMap);
 
   unsigned           pps_pic_parameter_set_id{};
   unsigned           pps_seq_parameter_set_id{};
@@ -66,7 +67,7 @@ public:
   bool               pps_subpic_id_mapping_present_flag{};
   unsigned           pps_num_subpics_minus1{};
   unsigned           pps_subpic_id_len_minus1{};
-  int                pps_subpic_id{};
+  vector<unsigned>   pps_subpic_id{};
   unsigned           pps_log2_ctu_size_minus5{};
   unsigned           pps_num_exp_tile_columns_minus1{};
   unsigned           pps_num_exp_tile_rows_minus1{};
@@ -130,23 +131,28 @@ public:
   unsigned         NumTileRows; // Size of RowHeightVal
   unsigned         NumTilesInPic;
 
-  vector<unsigned>  TileColBdVal;
-  vector<unsigned>  TileRowBdVal;
-  vector<unsigned>  CtbToTileColBd;
-  vector<unsigned>  ctbToTileColIdx;
-  vector<unsigned>  CtbToTileRowBd;
-  vector<unsigned>  ctbToTileRowIdx;
-  vector<unsigned>  SubpicWidthInTiles;
-  vector<unsigned>  SubpicHeightInTiles;
-  vector<bool>      subpicHeightLessThanOneTileFlag;
-  vector<unsigned>  SliceTopLeftTileIdx;
-  vector<unsigned>  sliceWidthInTiles;
-  vector<unsigned>  sliceHeightInTiles;
-  umap_1d<unsigned> NumSlicesInTile;
-  umap_1d<unsigned> sliceHeightInCtus;
-
+  vector<unsigned>   TileColBdVal;
+  vector<unsigned>   TileRowBdVal;
+  vector<unsigned>   CtbToTileColBd;
+  vector<unsigned>   ctbToTileColIdx;
+  vector<unsigned>   CtbToTileRowBd;
+  vector<unsigned>   ctbToTileRowIdx;
+  vector<unsigned>   SubpicWidthInTiles;
+  vector<unsigned>   SubpicHeightInTiles;
+  vector<bool>       subpicHeightLessThanOneTileFlag;
+  vector<unsigned>   SliceTopLeftTileIdx;
+  vector<unsigned>   sliceWidthInTiles;
+  vector<unsigned>   sliceHeightInTiles;
+  umap_1d<unsigned>  NumSlicesInTile;
+  umap_1d<unsigned>  sliceHeightInCtus;
   vector2d<unsigned> CtbAddrInSlice;
   vector<unsigned>   NumCtusInSlice;
+
+  vector<unsigned>  NumSlicesInSubpic;
+  umap_1d<unsigned> SubpicIdxForSlice;
+  umap_1d<unsigned> SubpicLevelSliceIdx;
+
+  vector<unsigned> SubpicIdVal;
 
   unsigned PicWidthInCtbsY{};
   unsigned PicHeightInCtbsY{};

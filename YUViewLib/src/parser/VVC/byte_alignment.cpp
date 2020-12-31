@@ -30,37 +30,22 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "nal_unit_header.h"
-#include "parser/NalUnit.h"
-
-#include <memory>
+#include "byte_alignment.h"
 
 namespace parser::vvc
 {
 
-class NalRBSP
-{
-public:
-  NalRBSP()          = default;
-  virtual ~NalRBSP() = default;
-};
+using namespace parser::reader;
 
-class NalUnitVVC : public NalUnit
+void byte_alignment::parse(ReaderHelperNew &reader)
 {
-public:
-  NalUnitVVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
-      : NalUnit(nalIdx, filePosStartEnd)
+  ReaderHelperNewSubLevel subLevel(reader, "byte_alignment");
+
+  reader.readFlag("byte_alignment_bit_equal_to_one", Options().withCheckEqualTo(1));
+  while (!reader.byte_aligned())
   {
+    reader.readFlag("byte_alignment_bit_equal_to_zero", Options().withCheckEqualTo(0));
   }
-
-  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
-
-  nal_unit_header          header;
-  std::shared_ptr<NalRBSP> rbsp;
-};
-
-using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
+}
 
 } // namespace parser::vvc
