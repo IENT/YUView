@@ -67,7 +67,7 @@ void ref_pic_list_struct::parse(ReaderHelperNew &                       reader,
       {
         this->st_ref_pic_flag[listIdx][rplsIdx][i] = reader.readFlag("st_ref_pic_flag");
       }
-      if (!this->st_ref_pic_flag[listIdx][rplsIdx][i])
+      if (this->getStRefPicFlag(listIdx, rplsIdx, i))
       {
         this->abs_delta_poc_st[listIdx][rplsIdx][i] = reader.readUEV("abs_delta_poc_st");
 
@@ -98,16 +98,26 @@ void ref_pic_list_struct::parse(ReaderHelperNew &                       reader,
   this->NumLtrpEntries[listIdx][rplsIdx] = 0;
   for (unsigned i = 0; i < this->num_ref_entries[listIdx][rplsIdx]; i++)
     if (!this->inter_layer_ref_pic_flag[listIdx][rplsIdx][i] &&
-        !this->st_ref_pic_flag[listIdx][rplsIdx][i])
+        !this->getStRefPicFlag(listIdx, rplsIdx, i))
       this->NumLtrpEntries[listIdx][rplsIdx]++;
 
   // (150)
   for (unsigned i = 0; i < this->num_ref_entries[listIdx][rplsIdx]; i++)
     if (!this->inter_layer_ref_pic_flag[listIdx][rplsIdx][i] &&
-        this->st_ref_pic_flag[listIdx][rplsIdx][i])
+        this->getStRefPicFlag(listIdx, rplsIdx, i))
       this->DeltaPocValSt[listIdx][rplsIdx][i] =
           (1 - 2 * int(this->strp_entry_sign_flag[listIdx][rplsIdx][i])) *
           this->AbsDeltaPocSt[listIdx][rplsIdx][i];
+}
+
+bool ref_pic_list_struct::getStRefPicFlag(unsigned listIdx, unsigned rplsIdx, unsigned i)
+{
+  // The default value of a non existent st_ref_pic_flag is true
+  if (!this->inter_layer_ref_pic_flag[listIdx][rplsIdx][i] &&
+      this->st_ref_pic_flag[listIdx][rplsIdx].count(i) == 0)
+    this->st_ref_pic_flag[listIdx][rplsIdx][i] = true;
+
+  return this->st_ref_pic_flag[listIdx][rplsIdx][i];
 }
 
 } // namespace parser::vvc

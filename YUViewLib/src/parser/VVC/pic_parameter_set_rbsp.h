@@ -33,9 +33,9 @@
 #pragma once
 
 #include "NalUnitVVC.h"
+#include "common.h"
 #include "parser/common/ReaderHelperNew.h"
 #include "rbsp_trailing_bits.h"
-#include "common.h"
 
 namespace parser::vvc
 {
@@ -80,7 +80,7 @@ public:
   bool               pps_tile_idx_delta_present_flag{};
   vector<unsigned>   pps_slice_width_in_tiles_minus1{};
   vector<unsigned>   pps_slice_height_in_tiles_minus1{};
-  vector<unsigned>   pps_num_exp_slices_in_tile{};
+  umap_1d<unsigned>  pps_num_exp_slices_in_tile{};
   vector2d<unsigned> pps_exp_slice_height_in_ctus_minus1{};
   vector<int>        pps_tile_idx_delta_val{};
   bool               pps_loop_filter_across_slices_enabled_flag{};
@@ -131,22 +131,22 @@ public:
   unsigned         NumTileRows; // Size of RowHeightVal
   unsigned         NumTilesInPic;
 
-  vector<unsigned>   TileColBdVal;
-  vector<unsigned>   TileRowBdVal;
-  vector<unsigned>   CtbToTileColBd;
-  vector<unsigned>   ctbToTileColIdx;
-  vector<unsigned>   CtbToTileRowBd;
-  vector<unsigned>   ctbToTileRowIdx;
-  vector<unsigned>   SubpicWidthInTiles;
-  vector<unsigned>   SubpicHeightInTiles;
-  vector<bool>       subpicHeightLessThanOneTileFlag;
-  vector<unsigned>   SliceTopLeftTileIdx;
-  vector<unsigned>   sliceWidthInTiles;
-  vector<unsigned>   sliceHeightInTiles;
-  umap_1d<unsigned>  NumSlicesInTile;
-  umap_1d<unsigned>  sliceHeightInCtus;
-  vector2d<unsigned> CtbAddrInSlice;
-  vector<unsigned>   NumCtusInSlice;
+  vector<unsigned>  TileColBdVal;
+  vector<unsigned>  TileRowBdVal;
+  vector<unsigned>  CtbToTileColBd;
+  vector<unsigned>  ctbToTileColIdx;
+  vector<unsigned>  CtbToTileRowBd;
+  vector<unsigned>  ctbToTileRowIdx;
+  vector<unsigned>  SubpicWidthInTiles;
+  vector<unsigned>  SubpicHeightInTiles;
+  vector<bool>      subpicHeightLessThanOneTileFlag;
+  vector<unsigned>  SliceTopLeftTileIdx;
+  umap_1d<unsigned> sliceWidthInTiles;
+  umap_1d<unsigned> sliceHeightInTiles;
+  umap_1d<unsigned> NumSlicesInTile;
+  umap_1d<unsigned> sliceHeightInCtus;
+  umap_2d<unsigned> CtbAddrInSlice;
+  umap_1d<unsigned> NumCtusInSlice;
 
   vector<unsigned>  NumSlicesInSubpic;
   umap_1d<unsigned> SubpicIdxForSlice;
@@ -163,6 +163,10 @@ public:
   unsigned PicSizeInSamplesY{};
   unsigned PicWidthInSamplesC{};
   unsigned PicHeightInSamplesC{};
+
+private:
+  void calculateTileRowsAndColumns();
+  void calculateTilesInSlices(std::shared_ptr<seq_parameter_set_rbsp> sps);
 };
 
 } // namespace parser::vvc

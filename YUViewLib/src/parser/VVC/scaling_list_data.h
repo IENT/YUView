@@ -47,10 +47,10 @@ public:
   ~scaling_list_data() = default;
   void parse(reader::ReaderHelperNew &reader, adaptation_parameter_set_rbsp *aps);
 
-  vector<bool> scaling_list_copy_mode_flag {};
-  vector<bool> scaling_list_pred_mode_flag {};
-  vector<unsigned> scaling_list_pred_id_delta {};
-  vector<int> scaling_list_dc_coef {};
+  umap_1d<bool> scaling_list_copy_mode_flag {};
+  umap_1d<bool> scaling_list_pred_mode_flag {};
+  umap_1d<unsigned> scaling_list_pred_id_delta {};
+  umap_1d<int> scaling_list_dc_coef {};
   umap_2d<int> scaling_list_delta_coef {};
 
   vector2d<int> ScalingList;

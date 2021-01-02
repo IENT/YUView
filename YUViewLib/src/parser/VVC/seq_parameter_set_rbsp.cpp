@@ -106,36 +106,15 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       this->sps_subpic_same_size_flag    = reader.readFlag("sps_subpic_same_size_flag");
     }
 
+    this->setDefaultSubpicValues(this->sps_num_subpics_minus1);
     for (unsigned i = 0; this->sps_num_subpics_minus1 > 0 && i <= this->sps_num_subpics_minus1; i++)
     {
-      // If not present, create default values
-      auto tmpWidthVal =
-          (this->sps_pic_width_max_in_luma_samples + this->CtbSizeY - 1) / this->CtbSizeY;
-      auto tmpHeightVal =
-          (this->sps_pic_height_max_in_luma_samples + this->CtbSizeY - 1) / this->CtbSizeY;
-      if (sps_subpic_same_size_flag == 0 || i == 0)
-      {
-        this->sps_subpic_ctu_top_left_x.push_back(0);
-        this->sps_subpic_ctu_top_left_y.push_back(0);
-        this->sps_subpic_width_minus1.push_back(tmpWidthVal - this->sps_subpic_ctu_top_left_x[i] -
-                                                1);
-        this->sps_subpic_height_minus1.push_back(tmpHeightVal - sps_subpic_ctu_top_left_y[i] - 1);
-      }
-      else
-      {
-        auto numSubpicCols = tmpWidthVal / (this->sps_subpic_width_minus1[0] + 1); // (37)
-        this->sps_subpic_ctu_top_left_x.push_back((i % numSubpicCols) *
-                                                  (this->sps_subpic_width_minus1[0] + 1));
-        this->sps_subpic_ctu_top_left_y.push_back((i / numSubpicCols) *
-                                                  (this->sps_subpic_height_minus1[0] + 1));
-        this->sps_subpic_width_minus1.push_back(this->sps_subpic_width_minus1[0]);
-        this->sps_subpic_height_minus1.push_back(sps_subpic_height_minus1[0]);
-      }
-
       if (!this->sps_subpic_same_size_flag || i == 0)
       {
-        auto tmpWidthVal  = (sps_pic_width_max_in_luma_samples + CtbSizeY - 1) / CtbSizeY;
-        auto tmpHeightVal = (sps_pic_height_max_in_luma_samples + CtbSizeY - 1) / CtbSizeY;
+        auto tmpWidthVal =
+            (this->sps_pic_width_max_in_luma_samples + CtbSizeY - 1) / this->CtbSizeY;
+        auto tmpHeightVal =
+            (this->sps_pic_height_max_in_luma_samples + CtbSizeY - 1) / this->CtbSizeY;
         if (i > 0 && this->sps_pic_width_max_in_luma_samples > CtbSizeY)
         {
           auto numBits = std::ceil(std::log2(tmpWidthVal));
@@ -166,6 +145,11 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
         this->sps_loop_filter_across_subpic_enabled_flag.push_back(
             reader.readFlag("sps_loop_filter_across_subpic_enabled_flag"));
       }
+      else
+      {
+        this->sps_subpic_treated_as_pic_flag.push_back(true);
+        this->sps_loop_filter_across_subpic_enabled_flag.push_back(false);
+      }
     }
 
     this->sps_subpic_id_len_minus1 =
@@ -186,6 +170,11 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       }
     }
   }
+  else
+  {
+    this->setDefaultSubpicValues(this->sps_num_subpics_minus1);
+  }
+
   this->sps_bitdepth_minus8 =
       reader.readUEV("sps_bitdepth_minus8", Options().withCheckRange({0, 2}));
 
@@ -579,6 +568,35 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
     }
   }
   this->rbsp_trailing_bits_instance.parse(reader);
+}
+
+void seq_parameter_set_rbsp::setDefaultSubpicValues(unsigned numSubPic)
+{
+  for (unsigned i = 0; i <= numSubPic; i++)
+  {
+    // If not present, create default values
+    auto tmpWidthVal =
+        (this->sps_pic_width_max_in_luma_samples + this->CtbSizeY - 1) / this->CtbSizeY;
+    auto tmpHeightVal =
+        (this->sps_pic_height_max_in_luma_samples + this->CtbSizeY - 1) / this->CtbSizeY;
+    if (!this->sps_subpic_same_size_flag || i == 0)
+    {
+      this->sps_subpic_ctu_top_left_x.push_back(0);
+      this->sps_subpic_ctu_top_left_y.push_back(0);
+      this->sps_subpic_width_minus1.push_back(tmpWidthVal - this->sps_subpic_ctu_top_left_x[i] - 1);
+      this->sps_subpic_height_minus1.push_back(tmpHeightVal - sps_subpic_ctu_top_left_y[i] - 1);
+    }
+    else
+    {
+      auto numSubpicCols = tmpWidthVal / (this->sps_subpic_width_minus1[0] + 1); // (37)
+      this->sps_subpic_ctu_top_left_x.push_back((i % numSubpicCols) *
+                                                (this->sps_subpic_width_minus1[0] + 1));
+      this->sps_subpic_ctu_top_left_y.push_back((i / numSubpicCols) *
+                                                (this->sps_subpic_height_minus1[0] + 1));
+      this->sps_subpic_width_minus1.push_back(this->sps_subpic_width_minus1[0]);
+      this->sps_subpic_height_minus1.push_back(sps_subpic_height_minus1[0]);
+    }
+  }
 }
 
 } // namespace parser::vvc

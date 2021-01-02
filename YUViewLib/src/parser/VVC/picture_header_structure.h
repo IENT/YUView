@@ -53,15 +53,21 @@ public:
   picture_header_structure()  = default;
   ~picture_header_structure() = default;
   void parse(reader::ReaderHelperNew &     reader,
+             VPSMap &                      vpsMap,
              SPSMap &                      spsMap,
              PPSMap &                      ppsMap,
              std::shared_ptr<slice_header> sh);
+
+  void calculatePictureOrderCount(NalType                                   nalType,
+                                  SPSMap &                                  spsMap,
+                                  PPSMap &                                  ppsMap,
+                                  std::shared_ptr<picture_header_structure> previousPicture);
 
   bool                           ph_gdr_or_irap_pic_flag{};
   bool                           ph_non_ref_pic_flag{};
   bool                           ph_gdr_pic_flag{};
   bool                           ph_inter_slice_allowed_flag{};
-  bool                           ph_intra_slice_allowed_flag{};
+  bool                           ph_intra_slice_allowed_flag{true};
   unsigned                       ph_pic_parameter_set_id{};
   int                            ph_pic_order_cnt_lsb{};
   unsigned                       ph_recovery_poc_cnt{};
@@ -88,7 +94,7 @@ public:
   vector<unsigned>               ph_virtual_boundary_pos_x_minus1{};
   unsigned                       ph_num_hor_virtual_boundaries{};
   vector<unsigned>               ph_virtual_boundary_pos_y_minus1{};
-  bool                           ph_pic_output_flag{};
+  bool                           ph_pic_output_flag{true};
   std::shared_ptr<ref_pic_lists> ref_pic_lists_instance;
   bool                           ph_partition_constraints_override_flag{};
   unsigned                       ph_log2_diff_min_qt_min_cb_intra_slice_luma{};
@@ -130,6 +136,9 @@ public:
   int                            ph_cr_tc_offset_div2{};
   unsigned                       ph_extension_length{};
   vector<unsigned>               ph_extension_data_byte{};
+
+  unsigned PicOrderCntMsb{};
+  unsigned PicOrderCntVal{};
 };
 
 } // namespace parser::vvc

@@ -44,7 +44,7 @@
 namespace parser::vvc
 {
 
-class seq_parameter_set_rbsp : public NalRBSP, std::enable_shared_from_this<seq_parameter_set_rbsp>
+class seq_parameter_set_rbsp : public NalRBSP, public std::enable_shared_from_this<seq_parameter_set_rbsp>
 {
 public:
   seq_parameter_set_rbsp()  = default;
@@ -70,7 +70,7 @@ public:
   unsigned                      sps_conf_win_bottom_offset{};
   bool                          sps_subpic_info_present_flag{};
   unsigned                      sps_num_subpics_minus1{};
-  bool                          sps_independent_subpics_flag{};
+  bool                          sps_independent_subpics_flag{true};
   bool                          sps_subpic_same_size_flag{};
   vector<unsigned>              sps_subpic_ctu_top_left_x{};
   vector<unsigned>              sps_subpic_ctu_top_left_y{};
@@ -118,7 +118,7 @@ public:
   bool                          sps_explicit_mts_inter_enabled_flag{};
   bool                          sps_lfnst_enabled_flag{};
   bool                          sps_joint_cbcr_enabled_flag{};
-  bool                          sps_same_qp_table_for_chroma_flag{};
+  bool                          sps_same_qp_table_for_chroma_flag{true};
   vector<int>                   sps_qp_table_start_minus26{};
   vector<unsigned>              sps_num_points_in_qp_table_minus1{};
   vector2d<unsigned>            sps_delta_qp_in_val_minus1{};
@@ -163,8 +163,8 @@ public:
   bool                          sps_mrl_enabled_flag{};
   bool                          sps_mip_enabled_flag{};
   bool                          sps_cclm_enabled_flag{};
-  bool                          sps_chroma_horizontal_collocated_flag{};
-  bool                          sps_chroma_vertical_collocated_flag{};
+  bool                          sps_chroma_horizontal_collocated_flag{true};
+  bool                          sps_chroma_vertical_collocated_flag{true};
   bool                          sps_palette_enabled_flag{};
   bool                          sps_act_enabled_flag{};
   unsigned                      sps_min_qp_prime_ts{};
@@ -218,6 +218,9 @@ public:
   unsigned MaxNumMergeCand{};
   unsigned MinQtLog2SizeIntraC{};
   unsigned MinQtLog2SizeInterY{};
+
+private:
+  void setDefaultSubpicValues(unsigned numSubPic);
 };
 
 } // namespace parser::vvc

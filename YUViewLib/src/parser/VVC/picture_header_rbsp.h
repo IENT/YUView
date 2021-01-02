@@ -38,7 +38,6 @@
 #include "picture_header_structure.h"
 #include "rbsp_trailing_bits.h"
 
-
 namespace parser::vvc
 {
 
@@ -50,6 +49,7 @@ public:
   picture_header_rbsp()  = default;
   ~picture_header_rbsp() = default;
   void parse(reader::ReaderHelperNew &     reader,
+             VPSMap &                      vpsMap,
              SPSMap &                      spsMap,
              PPSMap &                      ppsMap,
              std::shared_ptr<slice_header> sh);

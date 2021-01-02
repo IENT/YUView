@@ -62,6 +62,9 @@ public:
 
   umap_3d<bool> AbsDeltaPocSt;
   umap_3d<int>  DeltaPocValSt;
+
+private:
+  bool getStRefPicFlag(unsigned listIdx, unsigned rplsIdx, unsigned i);
 };
 
 } // namespace parser::vvc

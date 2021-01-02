@@ -35,6 +35,7 @@
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 #include "slice_header.h"
+#include "video_parameter_set_rbsp.h"
 
 namespace parser::vvc
 {
@@ -42,6 +43,7 @@ namespace parser::vvc
 using namespace parser::reader;
 
 void picture_header_structure::parse(ReaderHelperNew &             reader,
+                                     VPSMap &                      vpsMap,
                                      SPSMap &                      spsMap,
                                      PPSMap &                      ppsMap,
                                      std::shared_ptr<slice_header> sh)
@@ -52,10 +54,14 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
   this->ph_non_ref_pic_flag     = reader.readFlag("ph_non_ref_pic_flag");
   if (this->ph_gdr_or_irap_pic_flag)
   {
-    this->ph_gdr_pic_flag = reader.readFlag("ph_gdr_pic_flag", Options().withCheckEqualTo(0));
+    this->ph_gdr_pic_flag = reader.readFlag("ph_gdr_pic_flag");
   }
-  this->ph_inter_slice_allowed_flag =
-      reader.readFlag("ph_inter_slice_allowed_flag", Options().withCheckEqualTo(0));
+  {
+    // if (this->ph_gdr_or_irap_pic_flag && !this->ph_gdr_pic_flag && vps_independent_layer_flag[
+    // GeneralLayerIdx[ nuh_layer_id ] ] )
+    // the value should be 0
+    this->ph_inter_slice_allowed_flag = reader.readFlag("ph_inter_slice_allowed_flag");
+  }
   if (this->ph_inter_slice_allowed_flag)
   {
     this->ph_intra_slice_allowed_flag = reader.readFlag("ph_intra_slice_allowed_flag");
@@ -71,10 +77,28 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
     throw std::logic_error("SPS with given pps_seq_parameter_set_id not found.");
   auto sps = spsMap[pps->pps_seq_parameter_set_id];
 
+  std::shared_ptr<video_parameter_set_rbsp> vps;
+  if (sps->sps_video_parameter_set_id > 0)
+  {
+    if (vpsMap.count(sps->sps_video_parameter_set_id) == 0)
+      throw std::logic_error("VPS with given sps_video_parameter_set_id not found.");
+    vps = vpsMap[sps->sps_video_parameter_set_id];
+  }
+  else
+  {
+    vps = std::make_shared<video_parameter_set_rbsp>();
+  }
+
+  if (!sps->sps_gdr_enabled_flag && this->ph_gdr_pic_flag)
+  {
+    throw std::logic_error("When sps_gdr_enabled_flag is equal to 0, the value of ph_gdr_pic_flag "
+                           "shall be equal to 0.");
+  }
+
   {
     auto nrBits                = sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
     this->ph_pic_order_cnt_lsb = reader.readBits(
-        "ph_pic_order_cnt_lsb", nrBits, Options().withCheckRange({0, sps->MaxPicOrderCntLsb}));
+        "ph_pic_order_cnt_lsb", nrBits, Options().withCheckRange({0, sps->MaxPicOrderCntLsb - 1}));
   }
   if (this->ph_gdr_pic_flag)
   {
@@ -87,8 +111,7 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
   }
   if (sps->sps_poc_msb_cycle_flag)
   {
-    this->ph_poc_msb_cycle_present_flag =
-        reader.readFlag("ph_poc_msb_cycle_present_flag", Options().withCheckEqualTo(0));
+    this->ph_poc_msb_cycle_present_flag = reader.readFlag("ph_poc_msb_cycle_present_flag");
     if (this->ph_poc_msb_cycle_present_flag)
     {
       auto nrBits                = sps->sps_poc_msb_cycle_len_minus1 + 1;
@@ -112,22 +135,19 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
       }
       if (this->ph_alf_cb_enabled_flag || ph_alf_cr_enabled_flag)
       {
-        this->ph_alf_aps_id_chroma =
-            reader.readBits("ph_alf_aps_id_chroma", 3, Options().withCheckEqualTo(1));
+        this->ph_alf_aps_id_chroma = reader.readBits("ph_alf_aps_id_chroma", 3);
       }
       if (sps->sps_ccalf_enabled_flag)
       {
         this->ph_alf_cc_cb_enabled_flag = reader.readFlag("ph_alf_cc_cb_enabled_flag");
         if (this->ph_alf_cc_cb_enabled_flag)
         {
-          this->ph_alf_cc_cb_aps_id =
-              reader.readBits("ph_alf_cc_cb_aps_id", 3, Options().withCheckEqualTo(1));
+          this->ph_alf_cc_cb_aps_id = reader.readBits("ph_alf_cc_cb_aps_id", 3);
         }
         this->ph_alf_cc_cr_enabled_flag = reader.readFlag("ph_alf_cc_cr_enabled_flag");
         if (this->ph_alf_cc_cr_enabled_flag)
         {
-          this->ph_alf_cc_cr_aps_id =
-              reader.readBits("ph_alf_cc_cr_aps_id", 3, Options().withCheckEqualTo(1));
+          this->ph_alf_cc_cr_aps_id = reader.readBits("ph_alf_cc_cr_aps_id", 3);
         }
       }
     }
@@ -191,8 +211,25 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
     this->ph_partition_constraints_override_flag =
         reader.readFlag("ph_partition_constraints_override_flag");
   }
+
+  // Inferred defaults
   this->ph_log2_diff_min_qt_min_cb_intra_slice_luma =
       sps->sps_log2_diff_min_qt_min_cb_intra_slice_luma;
+  this->ph_max_mtt_hierarchy_depth_intra_slice_luma =
+      sps->sps_max_mtt_hierarchy_depth_intra_slice_luma;
+  this->ph_log2_diff_max_bt_min_qt_intra_slice_luma =
+      sps->sps_log2_diff_max_bt_min_qt_intra_slice_luma;
+  this->ph_log2_diff_max_tt_min_qt_intra_slice_luma =
+      sps->sps_log2_diff_max_tt_min_qt_intra_slice_luma;
+  this->ph_log2_diff_min_qt_min_cb_intra_slice_chroma =
+      sps->sps_log2_diff_min_qt_min_cb_intra_slice_chroma;
+  this->ph_max_mtt_hierarchy_depth_intra_slice_chroma =
+      sps->sps_max_mtt_hierarchy_depth_intra_slice_chroma;
+  this->ph_log2_diff_max_bt_min_qt_intra_slice_chroma =
+      sps->sps_log2_diff_max_bt_min_qt_intra_slice_chroma;
+  this->ph_log2_diff_max_tt_min_qt_intra_slice_chroma =
+      sps->sps_log2_diff_max_tt_min_qt_intra_slice_chroma;
+
   if (this->ph_intra_slice_allowed_flag)
   {
     if (this->ph_partition_constraints_override_flag)
@@ -249,6 +286,22 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
           "ph_cu_chroma_qp_offset_subdiv_intra_slice", Options().withCheckRange({0, 2}));
     }
   }
+
+  // Inferred defaults
+  this->ph_log2_diff_min_qt_min_cb_inter_slice = sps->sps_log2_diff_min_qt_min_cb_inter_slice;
+  this->ph_max_mtt_hierarchy_depth_inter_slice = sps->sps_max_mtt_hierarchy_depth_inter_slice;
+  this->ph_log2_diff_max_bt_min_qt_inter_slice = sps->sps_log2_diff_max_bt_min_qt_inter_slice;
+  this->ph_log2_diff_max_tt_min_qt_inter_slice = sps->sps_log2_diff_max_tt_min_qt_inter_slice;
+  if (sps->sps_bdof_control_present_in_ph_flag)
+  {
+    this->ph_bdof_disabled_flag = true;
+  }
+  if (sps->sps_dmvr_control_present_in_ph_flag)
+  {
+    this->ph_dmvr_disabled_flag = true;
+  }
+  this->ph_prof_disabled_flag = sps->sps_affine_prof_enabled_flag ? false : true;
+
   if (this->ph_inter_slice_allowed_flag)
   {
     if (this->ph_partition_constraints_override_flag)
@@ -285,6 +338,7 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
       this->ph_temporal_mvp_enabled_flag = reader.readFlag("ph_temporal_mvp_enabled_flag");
       if (this->ph_temporal_mvp_enabled_flag && pps->pps_rpl_info_in_ph_flag)
       {
+        this->ph_collocated_from_l0_flag = true;
         if (this->ref_pic_lists_instance->ref_pic_list_struct_instance
                 .num_ref_entries[1][this->ref_pic_lists_instance->RplsIdx[1]] > 0)
         {
@@ -322,9 +376,17 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
       {
         this->ph_bdof_disabled_flag = reader.readFlag("ph_bdof_disabled_flag");
       }
+      else
+      {
+        this->ph_bdof_disabled_flag = !sps->sps_bdof_enabled_flag;
+      }
       if (sps->sps_dmvr_control_present_in_ph_flag)
       {
         this->ph_dmvr_disabled_flag = reader.readFlag("ph_dmvr_disabled_flag");
+      }
+      else
+      {
+        this->ph_dmvr_disabled_flag = !sps->sps_dmvr_enabled_flag;
       }
     }
     if (sps->sps_prof_control_present_in_ph_flag)
@@ -385,6 +447,54 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
       this->ph_extension_data_byte.push_back(reader.readBits("ph_extension_data_byte", 8));
     }
   }
+}
+
+void picture_header_structure::calculatePictureOrderCount(
+    NalType                                   nalType,
+    SPSMap &                                  spsMap,
+    PPSMap &                                  ppsMap,
+    std::shared_ptr<picture_header_structure> previousPicture)
+{
+  if (ppsMap.count(this->ph_pic_parameter_set_id) == 0)
+    throw std::logic_error("PPS with given ph_pic_parameter_set_id not found.");
+  auto pps = ppsMap[this->ph_pic_parameter_set_id];
+
+  if (spsMap.count(pps->pps_seq_parameter_set_id) == 0)
+    throw std::logic_error("SPS with given pps_seq_parameter_set_id not found.");
+  auto sps = spsMap[pps->pps_seq_parameter_set_id];
+
+  // 8.3.1 Calculate Picture Order Count (POC)
+  // If multiple layers, all layers mus have the same POC. Not implemented yet.
+  auto ph_poc_msb_cycle_val_present =
+      (sps->sps_poc_msb_cycle_flag && this->ph_poc_msb_cycle_present_flag);
+  // This is what the reference decoder does. In the standard it sounds like a CRA or GDR nal could
+  // also be a CLVSS. This is also not implemented yet.
+  auto isCLVSS = nalType == NalType::IDR_N_LP || nalType == NalType::IDR_W_RADL;
+  if (ph_poc_msb_cycle_val_present)
+    this->PicOrderCntMsb = ph_poc_msb_cycle_val * sps->MaxPicOrderCntLsb;
+  else if (isCLVSS)
+    this->PicOrderCntMsb = 0;
+  else
+  {
+    if (!previousPicture)
+      throw std::logic_error("Error when calculating POC. Previous picture not found.");
+
+    auto prevPicOrderCntLsb = previousPicture->ph_pic_order_cnt_lsb;
+    auto prevPicOrderCntMsb = previousPicture->PicOrderCntMsb;
+
+    // (196)
+    if ((this->ph_pic_order_cnt_lsb < prevPicOrderCntLsb) &&
+        ((prevPicOrderCntLsb - this->ph_pic_order_cnt_lsb) >= int(sps->MaxPicOrderCntLsb / 2)))
+      this->PicOrderCntMsb = prevPicOrderCntMsb + sps->MaxPicOrderCntLsb;
+    else if ((this->ph_pic_order_cnt_lsb > prevPicOrderCntLsb) &&
+             ((this->ph_pic_order_cnt_lsb - prevPicOrderCntLsb) > int(sps->MaxPicOrderCntLsb / 2)))
+      this->PicOrderCntMsb = prevPicOrderCntMsb - sps->MaxPicOrderCntLsb;
+    else
+      this->PicOrderCntMsb = prevPicOrderCntMsb;
+  }
+
+  // (197)
+  this->PicOrderCntVal = this->PicOrderCntMsb + this->ph_pic_order_cnt_lsb;
 }
 
 } // namespace parser::vvc

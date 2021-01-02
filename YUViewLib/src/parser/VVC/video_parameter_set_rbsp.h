@@ -48,8 +48,8 @@ public:
   unsigned                           vps_video_parameter_set_id{};
   unsigned                           vps_max_layers_minus1{};
   unsigned                           vps_max_sublayers_minus1{};
-  bool                               vps_default_ptl_dpb_hrd_max_tid_flag{};
-  bool                               vps_all_independent_layers_flag{};
+  bool                               vps_default_ptl_dpb_hrd_max_tid_flag{true};
+  bool                               vps_all_independent_layers_flag{true};
   std::vector<unsigned>              vps_layer_id{};
   std::vector<bool>                  vps_independent_layer_flag{};
   std::vector<bool>                  vps_max_tid_ref_present_flag{};

@@ -44,23 +44,26 @@
 namespace parser::vvc
 {
 
-class slice_header : public NalRBSP, std::enable_shared_from_this<slice_header>
+enum class SliceType
+{
+  B,
+  P,
+  I
+};
+
+std::string to_string(SliceType sliceType);
+
+class slice_header : public NalRBSP, public std::enable_shared_from_this<slice_header>
 {
 public:
   slice_header()  = default;
   ~slice_header() = default;
   void parse(reader::ReaderHelperNew &                 reader,
              NalType                                   nal_unit_type,
+             VPSMap &                                  vpsMap,
              SPSMap &                                  spsMap,
              PPSMap &                                  ppsMap,
              std::shared_ptr<picture_header_structure> picHeader);
-
-  enum class SliceType
-  {
-    B,
-    P,
-    I
-  };
 
   bool                                      sh_picture_header_in_slice_header_flag{};
   std::shared_ptr<picture_header_structure> picture_header_structure_instance;
@@ -69,7 +72,7 @@ public:
   unsigned                       sh_slice_address{};
   vector<bool>                   sh_extra_bit{};
   unsigned                       sh_num_tiles_in_slice_minus1{};
-  SliceType                      sh_slice_type{};
+  SliceType                      sh_slice_type{SliceType::I};
   bool                           sh_no_output_of_prior_pics_flag{};
   bool                           sh_alf_enabled_flag{};
   unsigned                       sh_num_alf_aps_ids_luma{};
@@ -85,7 +88,7 @@ public:
   bool                           sh_explicit_scaling_list_used_flag{};
   std::shared_ptr<ref_pic_lists> ref_pic_lists_instance;
   bool                           sh_num_ref_idx_active_override_flag{};
-  vector<unsigned>               sh_num_ref_idx_active_minus1{};
+  umap_1d<unsigned>              sh_num_ref_idx_active_minus1{};
   bool                           sh_cabac_init_flag{};
   bool                           sh_collocated_from_l0_flag{};
   unsigned                       sh_collocated_ref_idx{};

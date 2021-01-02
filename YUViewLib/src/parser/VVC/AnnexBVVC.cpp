@@ -176,15 +176,22 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       specificDescription   = " Picture Header";
       auto newPictureHeader = std::make_shared<picture_header_rbsp>();
       newPictureHeader->parse(reader,
+                              this->activeParameterSets.vpsMap,
                               this->activeParameterSets.spsMap,
                               this->activeParameterSets.ppsMap,
                               this->parsingState.currentSlice);
+      newPictureHeader->picture_header_structure_instance->calculatePictureOrderCount(
+          nalVVC->header.nal_unit_type,
+          this->activeParameterSets.spsMap,
+          this->activeParameterSets.ppsMap,
+          parsingState.currentPictureHeaderStructure);
 
       this->parsingState.currentPictureHeaderStructure =
           newPictureHeader->picture_header_structure_instance;
 
-      // We can probably get the POC here.
-      // specificDescription += " ID " + std::to_string(newPH->ph_pic_parameter_set_id);
+      specificDescription +=
+          " POC " +
+          std::to_string(newPictureHeader->picture_header_structure_instance->PicOrderCntVal);
 
       nalVVC->rbsp = newPictureHeader;
     }
@@ -200,17 +207,27 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       auto newSliceHeader = std::make_shared<slice_header>();
       newSliceHeader->parse(reader,
                             nalVVC->header.nal_unit_type,
+                            this->activeParameterSets.vpsMap,
                             this->activeParameterSets.spsMap,
                             this->activeParameterSets.ppsMap,
                             this->parsingState.currentPictureHeaderStructure);
 
       this->parsingState.currentSlice = newSliceHeader;
       if (newSliceHeader->picture_header_structure_instance)
+      {
+        newSliceHeader->picture_header_structure_instance->calculatePictureOrderCount(
+            nalVVC->header.nal_unit_type,
+            this->activeParameterSets.spsMap,
+            this->activeParameterSets.ppsMap,
+            parsingState.currentPictureHeaderStructure);
         this->parsingState.currentPictureHeaderStructure =
             newSliceHeader->picture_header_structure_instance;
+      }
 
-      // At this point we should also be able to get the POC
-      // specificDescription += " ID " + std::to_string(newSlice->ph_pic_parameter_set_id);
+      specificDescription +=
+          " POC " +
+          std::to_string(this->parsingState.currentPictureHeaderStructure->PicOrderCntVal);
+      specificDescription += " " + to_string(newSliceHeader->sh_slice_type) + "-Slice";
 
       nalVVC->rbsp = newSliceHeader;
     }

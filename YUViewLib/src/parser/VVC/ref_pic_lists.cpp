@@ -69,9 +69,9 @@ void ref_pic_lists::parse(ReaderHelperNew &                       reader,
       this->ref_pic_list_struct_instance.parse(reader, i, sps->sps_num_ref_pic_lists[i], sps);
     }
     this->RplsIdx[i] = this->rpl_sps_flag[i] ? this->rpl_idx[i] : sps->sps_num_ref_pic_lists[i];
-    for (unsigned j = 0; j < ref_pic_list_struct_instance.NumLtrpEntries[i][this->RplsIdx[i]]; j++)
+    for (unsigned j = 0; j < this->ref_pic_list_struct_instance.NumLtrpEntries[i][this->RplsIdx[i]]; j++)
     {
-      if (ref_pic_list_struct_instance.ltrp_in_header_flag[i][this->RplsIdx[i]])
+      if (this->ref_pic_list_struct_instance.ltrp_in_header_flag[i][this->RplsIdx[i]])
       {
         auto nrBits      = sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
         this->poc_lsb_lt = reader.readBits("poc_lsb_lt", nrBits);

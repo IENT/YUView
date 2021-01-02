@@ -40,10 +40,20 @@
 namespace parser::vvc
 {
 
+std::string to_string(SliceType sliceType)
+{
+  if (sliceType == SliceType::B)
+    return "B";
+  if (sliceType == SliceType::P)
+    return "P";
+  return "I";
+}
+
 using namespace parser::reader;
 
 void slice_header::parse(ReaderHelperNew &                         reader,
                          NalType                                   nal_unit_type,
+                         VPSMap &                                  vpsMap,
                          SPSMap &                                  spsMap,
                          PPSMap &                                  ppsMap,
                          std::shared_ptr<picture_header_structure> picHeader)
@@ -55,7 +65,8 @@ void slice_header::parse(ReaderHelperNew &                         reader,
   if (this->sh_picture_header_in_slice_header_flag)
   {
     this->picture_header_structure_instance = std::make_shared<picture_header_structure>();
-    this->picture_header_structure_instance->parse(reader, spsMap, ppsMap, shared_from_this());
+    this->picture_header_structure_instance->parse(
+        reader, vpsMap, spsMap, ppsMap, shared_from_this());
     picHeader = this->picture_header_structure_instance;
   }
 
@@ -114,7 +125,19 @@ void slice_header::parse(ReaderHelperNew &                         reader,
   }
   if (picHeader->ph_inter_slice_allowed_flag)
   {
-    auto sliceTypeID    = reader.readUEV("sh_slice_type", Options().withCheckEqualTo(0));
+    Options opt = Options().withCheckRange({0, 2});
+    if (!picHeader->ph_intra_slice_allowed_flag)
+    {
+      opt = Options().withCheckRange({0, 1});
+    }
+    // if ((nal_unit_type == NalType::IDR_W_RADL || nal_unit_type == NalType::IDR_N_LP ||
+    //      nal_unit_type == NalType::CRA_NUT) &&
+    //     (vps->vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id]] || firstPicInAU))
+    // {
+    //   opt = Options().withCheckEqualTo(2);
+    // }
+
+    auto sliceTypeID    = reader.readUEV("sh_slice_type", opt);
     auto sliceTypeVec   = std::vector<SliceType>({SliceType::B, SliceType::P, SliceType::I});
     this->sh_slice_type = sliceTypeVec.at(sliceTypeID);
   }
@@ -167,11 +190,13 @@ void slice_header::parse(ReaderHelperNew &                         reader,
     this->sh_explicit_scaling_list_used_flag =
         reader.readFlag("sh_explicit_scaling_list_used_flag");
   }
+
+  this->ref_pic_lists_instance = std::make_shared<ref_pic_lists>();
+
   if (!pps->pps_rpl_info_in_ph_flag &&
       ((nal_unit_type != NalType::IDR_W_RADL && nal_unit_type != NalType::IDR_N_LP) ||
        sps->sps_idr_rpl_present_flag))
   {
-    this->ref_pic_lists_instance = std::make_shared<ref_pic_lists>();
     this->ref_pic_lists_instance->parse(reader, sps, pps);
   }
   if ((this->sh_slice_type != SliceType::I &&
@@ -190,35 +215,35 @@ void slice_header::parse(ReaderHelperNew &                         reader,
         if (this->ref_pic_lists_instance->ref_pic_list_struct_instance
                 .num_ref_entries[i][this->ref_pic_lists_instance->RplsIdx[i]] > 1)
         {
-          this->sh_num_ref_idx_active_minus1.push_back(
-              reader.readUEV("sh_num_ref_idx_active_minus1"));
+          this->sh_num_ref_idx_active_minus1[i] = reader.readUEV("sh_num_ref_idx_active_minus1");
         }
-      }
-
-      // (138)
-      for (unsigned i = 0; i < 2; i++)
-      {
-        if (this->sh_slice_type == SliceType::B || (this->sh_slice_type == SliceType::P && i == 0))
-        {
-          if (this->sh_num_ref_idx_active_override_flag)
-            this->NumRefIdxActive[i] = this->sh_num_ref_idx_active_minus1[i] + 1;
-          else
-          {
-            if (this->ref_pic_lists_instance->ref_pic_list_struct_instance
-                    .num_ref_entries[i][this->ref_pic_lists_instance->RplsIdx[i]] >=
-                pps->pps_num_ref_idx_default_active_minus1[i] + 1)
-              this->NumRefIdxActive[i] = pps->pps_num_ref_idx_default_active_minus1[i] + 1;
-            else
-              this->NumRefIdxActive[i] =
-                  this->ref_pic_lists_instance->ref_pic_list_struct_instance
-                      .num_ref_entries[i][ref_pic_lists_instance->RplsIdx[i]];
-          }
-        }
-        else // this->sh_slice_type == I || (this->sh_slice_type == P && i == 1)
-          this->NumRefIdxActive[i] = 0;
       }
     }
   }
+
+  // (138)
+  this->NumRefIdxActive = vector<unsigned>({0, 0});
+  for (unsigned i = 0; i < 2; i++)
+  {
+    if (this->sh_slice_type == SliceType::B || (this->sh_slice_type == SliceType::P && i == 0))
+    {
+      if (this->sh_num_ref_idx_active_override_flag)
+        this->NumRefIdxActive[i] = this->sh_num_ref_idx_active_minus1[i] + 1;
+      else
+      {
+        if (this->ref_pic_lists_instance->ref_pic_list_struct_instance
+                .num_ref_entries[i][this->ref_pic_lists_instance->RplsIdx[i]] >=
+            pps->pps_num_ref_idx_default_active_minus1[i] + 1)
+          this->NumRefIdxActive[i] = pps->pps_num_ref_idx_default_active_minus1[i] + 1;
+        else
+          this->NumRefIdxActive[i] = this->ref_pic_lists_instance->ref_pic_list_struct_instance
+                                         .num_ref_entries[i][ref_pic_lists_instance->RplsIdx[i]];
+      }
+    }
+    else // this->sh_slice_type == I || (this->sh_slice_type == P && i == 1)
+      this->NumRefIdxActive[i] = 0;
+  }
+
   if (this->sh_slice_type != SliceType::I)
   {
     if (pps->pps_cabac_init_present_flag)

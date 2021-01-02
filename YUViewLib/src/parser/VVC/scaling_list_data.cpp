@@ -95,22 +95,22 @@ void scaling_list_data::parse(ReaderHelperNew &reader, adaptation_parameter_set_
     this->ScalingList.push_back({});
     if (aps->aps_chroma_present_flag || id % 3 == 2 || id == 27)
     {
-      this->scaling_list_copy_mode_flag.push_back(reader.readFlag("scaling_list_copy_mode_flag"));
+      this->scaling_list_copy_mode_flag[id] = reader.readFlag("scaling_list_copy_mode_flag");
       if (!this->scaling_list_copy_mode_flag[id])
       {
-        this->scaling_list_pred_mode_flag.push_back(reader.readFlag("scaling_list_pred_mode_flag"));
+        this->scaling_list_pred_mode_flag[id] = reader.readFlag("scaling_list_pred_mode_flag");
       }
       if ((this->scaling_list_copy_mode_flag[id] || this->scaling_list_pred_mode_flag[id]) &&
           id != 0 && id != 2 && id != 8)
       {
-        this->scaling_list_pred_id_delta.push_back(reader.readUEV("scaling_list_pred_id_delta"));
+        this->scaling_list_pred_id_delta[id] = reader.readUEV("scaling_list_pred_id_delta");
       }
       if (!this->scaling_list_copy_mode_flag[id])
       {
         auto nextCoef = 0;
         if (id > 13)
         {
-          this->scaling_list_dc_coef.push_back(reader.readSEV("scaling_list_dc_coef"));
+          this->scaling_list_dc_coef[id] = reader.readSEV("scaling_list_dc_coef");
           nextCoef += this->scaling_list_dc_coef[id - 14];
         }
 
@@ -126,6 +126,10 @@ void scaling_list_data::parse(ReaderHelperNew &reader, adaptation_parameter_set_
           this->ScalingList[id].push_back(nextCoef);
         }
       }
+    }
+    else
+    {
+      this->scaling_list_copy_mode_flag[id] = true;
     }
   }
 }

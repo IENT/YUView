@@ -157,46 +157,7 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, SPSMap &spsMap)
       this->pps_tile_row_height_minus1.push_back(reader.readUEV("pps_tile_row_height_minus1"));
     }
 
-    // 6.5.1
-    {
-      // (14)
-      auto remainingWidthInCtbsY = this->PicWidthInCtbsY;
-      for (unsigned i = 0; i <= this->pps_num_exp_tile_columns_minus1; i++)
-      {
-        this->ColWidthVal.push_back(this->pps_tile_column_width_minus1[i] + 1);
-        remainingWidthInCtbsY -= this->ColWidthVal[i];
-      }
-      auto uniformTileColWidth =
-          this->pps_tile_column_width_minus1[pps_num_exp_tile_columns_minus1] + 1;
-      while (remainingWidthInCtbsY >= uniformTileColWidth)
-      {
-        this->ColWidthVal.push_back(uniformTileColWidth);
-        remainingWidthInCtbsY -= uniformTileColWidth;
-      }
-      if (remainingWidthInCtbsY > 0)
-        ColWidthVal.push_back(remainingWidthInCtbsY);
-      this->NumTileColumns = unsigned(this->ColWidthVal.size());
-    }
-    {
-      // (15)
-      auto remainingHeightInCtbsY = PicHeightInCtbsY;
-      for (unsigned j = 0; j <= this->pps_num_exp_tile_rows_minus1; j++)
-      {
-        this->RowHeightVal.push_back(this->pps_tile_row_height_minus1[j] + 1);
-        remainingHeightInCtbsY -= RowHeightVal[j];
-      }
-      auto uniformTileRowHeight =
-          this->pps_tile_row_height_minus1[this->pps_num_exp_tile_rows_minus1] + 1;
-      while (remainingHeightInCtbsY >= uniformTileRowHeight)
-      {
-        this->RowHeightVal.push_back(uniformTileRowHeight);
-        remainingHeightInCtbsY -= uniformTileRowHeight;
-      }
-      if (remainingHeightInCtbsY > 0)
-        this->RowHeightVal.push_back(remainingHeightInCtbsY);
-      this->NumTileRows = unsigned(this->RowHeightVal.size());
-    }
-    this->NumTilesInPic = this->NumTileColumns * this->NumTileRows;
+    this->calculateTileRowsAndColumns();
 
     if (this->NumTilesInPic > 1)
     {
@@ -214,69 +175,6 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, SPSMap &spsMap)
       this->pps_single_slice_per_subpic_flag = reader.readFlag("pps_single_slice_per_subpic_flag");
     }
 
-    // 6.5.1 (16)
-    this->TileColBdVal.push_back(0);
-    for (unsigned i = 0; i < this->NumTileColumns; i++)
-      this->TileColBdVal.push_back(this->TileColBdVal[i] + this->ColWidthVal[i]);
-
-    this->TileRowBdVal.push_back(0);
-    for (unsigned j = 0; j < this->NumTileRows; j++)
-      this->TileRowBdVal.push_back(this->TileRowBdVal[j] + this->RowHeightVal[j]);
-
-    // 6.5.1 (18)
-    {
-      auto tileX = 0;
-      for (unsigned ctbAddrX = 0; ctbAddrX <= this->PicWidthInCtbsY; ctbAddrX++)
-      {
-        if (ctbAddrX == this->TileColBdVal[tileX + 1])
-          tileX++;
-        this->CtbToTileColBd.push_back(this->TileColBdVal[tileX]);
-        this->ctbToTileColIdx.push_back(tileX);
-      }
-    }
-
-    // 6.5.1 (19)
-    {
-      auto tileY = 0;
-      for (unsigned ctbAddrY = 0; ctbAddrY <= this->PicHeightInCtbsY; ctbAddrY++)
-      {
-        if (ctbAddrY == this->TileRowBdVal[tileY + 1])
-          tileY++;
-        this->CtbToTileRowBd.push_back(this->TileRowBdVal[tileY]);
-        this->ctbToTileRowIdx.push_back(tileY);
-      }
-    }
-
-    // 6.5.1 (20)
-    for (unsigned i = 0; i <= sps->sps_num_subpics_minus1; i++)
-    {
-      auto leftX  = sps->sps_subpic_ctu_top_left_x[i];
-      auto rightX = leftX + sps->sps_subpic_width_minus1[i];
-      this->SubpicWidthInTiles.push_back(ctbToTileColIdx[rightX] + 1 - ctbToTileColIdx[leftX]);
-      auto topY    = sps->sps_subpic_ctu_top_left_y[i];
-      auto bottomY = topY + sps->sps_subpic_height_minus1[i];
-      this->SubpicHeightInTiles.push_back(ctbToTileRowIdx[bottomY] + 1 - ctbToTileRowIdx[topY]);
-      if (this->SubpicHeightInTiles[i] == 1 &&
-          sps->sps_subpic_height_minus1[i] + 1 < this->RowHeightVal[ctbToTileRowIdx[topY]])
-        subpicHeightLessThanOneTileFlag.push_back(true);
-      else
-        subpicHeightLessThanOneTileFlag.push_back(false);
-    }
-
-    // 6.5.1 (22)
-    auto AddCtbsToSlice =
-        [this](
-            unsigned sliceIdx, unsigned startX, unsigned stopX, unsigned startY, unsigned stopY) {
-          for (auto ctbY = startY; ctbY < stopY; ctbY++)
-          {
-            for (auto ctbX = startX; ctbX < stopX; ctbX++)
-            {
-              this->CtbAddrInSlice[sliceIdx].push_back(ctbY * PicWidthInCtbsY + ctbX);
-              NumCtusInSlice[sliceIdx]++;
-            }
-          }
-        };
-
     if (this->pps_rect_slice_flag && !this->pps_single_slice_per_subpic_flag)
     {
       this->pps_num_slices_in_pic_minus1 = reader.readUEV(
@@ -285,6 +183,9 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, SPSMap &spsMap)
       {
         this->pps_tile_idx_delta_present_flag = reader.readFlag("pps_tile_idx_delta_present_flag");
       }
+
+      this->calculateTilesInSlices(sps);
+
       for (unsigned i = 0; i < this->pps_num_slices_in_pic_minus1; i++)
       {
         if (this->SliceTopLeftTileIdx[i] % this->NumTileColumns != this->NumTileColumns - 1)
@@ -299,11 +200,23 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, SPSMap &spsMap)
           this->pps_slice_height_in_tiles_minus1.push_back(
               reader.readUEV("pps_slice_height_in_tiles_minus1"));
         }
+        else // Inferr
+        {
+          if (this->SliceTopLeftTileIdx[i] / this->NumTileColumns == this->NumTileRows - 1)
+          {
+            this->pps_slice_height_in_tiles_minus1.push_back(0);
+          }
+          else
+          {
+            this->pps_slice_height_in_tiles_minus1.push_back(
+                this->pps_slice_height_in_tiles_minus1[i - 1]);
+          }
+        }
         if (this->pps_slice_width_in_tiles_minus1[i] == 0 &&
             this->pps_slice_height_in_tiles_minus1[i] == 0 &&
             this->RowHeightVal[SliceTopLeftTileIdx[i] / this->NumTileColumns] > 1)
         {
-          this->pps_num_exp_slices_in_tile.push_back(reader.readUEV("pps_num_exp_slices_in_tile"));
+          this->pps_num_exp_slices_in_tile[i] = reader.readUEV("pps_num_exp_slices_in_tile");
           this->pps_exp_slice_height_in_ctus_minus1.push_back({});
           for (unsigned j = 0; j < this->pps_num_exp_slices_in_tile[i]; j++)
           {
@@ -318,171 +231,14 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, SPSMap &spsMap)
         }
       }
     }
-
-    // 6.5.1 (21)
-    if (this->pps_single_slice_per_subpic_flag)
-    {
-      if (!sps->sps_subpic_info_present_flag)
-      {
-        /* There is no subpicture info and only one slice in a
-                                                         picture. */
-        for (unsigned j = 0; j < this->NumTileRows; j++)
-        {
-          for (unsigned i = 0; i < this->NumTileColumns; i++)
-          {
-            AddCtbsToSlice(0,
-                           this->TileColBdVal[i],
-                           this->TileColBdVal[i + 1],
-                           this->TileRowBdVal[j],
-                           this->TileRowBdVal[j + 1]);
-          }
-        }
-      }
-      else
-      {
-        for (unsigned i = 0; i <= sps->sps_num_subpics_minus1; i++)
-        {
-          this->NumCtusInSlice.push_back(0);
-          this->CtbAddrInSlice.push_back({});
-          if (this->subpicHeightLessThanOneTileFlag[i])
-          {
-            // The slice consists of a set of CTU rows in a tile.
-            AddCtbsToSlice(i,
-                           sps->sps_subpic_ctu_top_left_x[i],
-                           sps->sps_subpic_ctu_top_left_x[i] + sps->sps_subpic_width_minus1[i] + 1,
-                           sps->sps_subpic_ctu_top_left_y[i],
-                           sps->sps_subpic_ctu_top_left_y[i] + sps->sps_subpic_height_minus1[i] +
-                               1);
-          }
-          else
-          {
-            // The slice consists of a number of complete tiles covering a rectangular region.
-            auto tileX = this->ctbToTileColIdx[sps->sps_subpic_ctu_top_left_x[i]];
-            auto tileY = this->ctbToTileRowIdx[sps->sps_subpic_ctu_top_left_y[i]];
-            for (unsigned j = 0; j < this->SubpicHeightInTiles[i]; j++)
-            {
-              for (unsigned k = 0; k < this->SubpicWidthInTiles[i]; k++)
-                AddCtbsToSlice(i,
-                               this->TileColBdVal[tileX + k],
-                               this->TileColBdVal[tileX + k + 1],
-                               this->TileRowBdVal[tileY + j],
-                               this->TileRowBdVal[tileY + j + 1]);
-            }
-          }
-        }
-      }
-    }
     else
     {
-      auto tileIdx = 0;
-      for (unsigned i = 0; i <= this->pps_num_slices_in_pic_minus1; i++)
-        NumCtusInSlice[i] = 0;
-      for (unsigned i = 0; i <= this->pps_num_slices_in_pic_minus1; i++)
-      {
-        SliceTopLeftTileIdx.push_back(tileIdx);
-        auto tileX = tileIdx % NumTileColumns;
-        auto tileY = tileIdx / NumTileColumns;
-        if (i < this->pps_num_slices_in_pic_minus1)
-        {
-          this->sliceWidthInTiles[i]  = this->pps_slice_width_in_tiles_minus1[i] + 1;
-          this->sliceHeightInTiles[i] = this->pps_slice_height_in_tiles_minus1[i] + 1;
-        }
-        else
-        {
-          this->sliceWidthInTiles[i]  = this->NumTileColumns - tileX;
-          this->sliceHeightInTiles[i] = this->NumTileRows - tileY;
-          this->NumSlicesInTile[i]    = 1;
-        }
-        if (sliceWidthInTiles[i] == 1 && sliceHeightInTiles[i] == 1)
-        {
-          if (this->pps_num_exp_slices_in_tile[i] == 0)
-          {
-            this->NumSlicesInTile[i] = 1;
-            this->sliceHeightInCtus[i] =
-                this->RowHeightVal[this->SliceTopLeftTileIdx[i] / this->NumTileColumns];
-          }
-          else
-          {
-            auto remainingHeightInCtbsY =
-                this->RowHeightVal[this->SliceTopLeftTileIdx[i] / this->NumTileColumns];
-            unsigned j = 0;
-            for (; j < this->pps_num_exp_slices_in_tile[i]; j++)
-            {
-              this->sliceHeightInCtus[i + j] = this->pps_exp_slice_height_in_ctus_minus1[i][j] + 1;
-              remainingHeightInCtbsY -= this->sliceHeightInCtus[i + j];
-            }
-            auto uniformSliceHeight = sliceHeightInCtus[i + j - 1];
-            while (remainingHeightInCtbsY >= uniformSliceHeight)
-            {
-              this->sliceHeightInCtus[i + j] = uniformSliceHeight;
-              remainingHeightInCtbsY -= uniformSliceHeight;
-              j++;
-            }
-            if (remainingHeightInCtbsY > 0)
-            {
-              this->sliceHeightInCtus[i + j] = remainingHeightInCtbsY;
-              j++;
-            }
-            this->NumSlicesInTile[i] = j;
-          }
-          auto ctbY = this->TileRowBdVal[tileY];
-          for (unsigned j = 0; j < this->NumSlicesInTile[i]; j++)
-          {
-            AddCtbsToSlice(i + j,
-                           this->TileColBdVal[tileX],
-                           this->TileColBdVal[tileX + 1],
-                           ctbY,
-                           ctbY + this->sliceHeightInCtus[i + j]);
-            ctbY += this->sliceHeightInCtus[i + j];
-            this->sliceWidthInTiles[i + j]  = 1;
-            this->sliceHeightInTiles[i + j] = 1;
-          }
-          i += this->NumSlicesInTile[i] - 1;
-        }
-        else
-        {
-          for (unsigned j = 0; j < this->sliceHeightInTiles[i]; j++)
-          {
-            for (unsigned k = 0; k < this->sliceWidthInTiles[i]; k++)
-              AddCtbsToSlice(i,
-                             this->TileColBdVal[tileX + k],
-                             this->TileColBdVal[tileX + k + 1],
-                             this->TileRowBdVal[tileY + j],
-                             this->TileRowBdVal[tileY + j + 1]);
-          }
-        }
-        if (i < this->pps_num_slices_in_pic_minus1)
-        {
-          if (this->pps_tile_idx_delta_present_flag)
-            tileIdx += this->pps_tile_idx_delta_val[i];
-          else
-          {
-            tileIdx += this->sliceWidthInTiles[i];
-            if (tileIdx % this->NumTileColumns == 0)
-              tileIdx += (this->sliceHeightInTiles[i] - 1) * this->NumTileColumns;
-          }
-        }
-      }
+      this->calculateTilesInSlices(sps);
     }
 
-    // 6.5.1 (23)
-    for (unsigned i = 0; i <= sps->sps_num_subpics_minus1; i++)
+    if (this->pps_single_slice_per_subpic_flag)
     {
-      this->NumSlicesInSubpic.push_back(0);
-      for (unsigned j = 0; j <= this->pps_num_slices_in_pic_minus1; j++)
-      {
-        auto posX = CtbAddrInSlice[j][0] % PicWidthInCtbsY;
-        auto posY = CtbAddrInSlice[j][0] / PicWidthInCtbsY;
-        if ((posX >= sps->sps_subpic_ctu_top_left_x[i]) &&
-            (posX < sps->sps_subpic_ctu_top_left_x[i] + sps->sps_subpic_width_minus1[i] + 1) &&
-            (posY >= sps->sps_subpic_ctu_top_left_y[i]) &&
-            (posY < sps->sps_subpic_ctu_top_left_y[i] + sps->sps_subpic_height_minus1[i] + 1))
-        {
-          this->SubpicIdxForSlice[j]   = i;
-          this->SubpicLevelSliceIdx[j] = NumSlicesInSubpic[i];
-          this->NumSlicesInSubpic[i]++;
-        }
-      }
+      this->pps_num_slices_in_pic_minus1 = sps->sps_num_subpics_minus1;
     }
 
     if (!this->pps_rect_slice_flag || this->pps_single_slice_per_subpic_flag ||
@@ -492,6 +248,15 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, SPSMap &spsMap)
           reader.readFlag("pps_loop_filter_across_slices_enabled_flag");
     }
   }
+  else // pps_no_pic_partition_flag == true
+  {
+    this->pps_single_slice_per_subpic_flag = true;
+    this->pps_tile_column_width_minus1.push_back(this->PicWidthInCtbsY - 1);
+    this->pps_tile_row_height_minus1.push_back(this->PicHeightInCtbsY - 1);
+    this->calculateTileRowsAndColumns();
+    this->calculateTilesInSlices(sps);
+  }
+
   this->pps_cabac_init_present_flag = reader.readFlag("pps_cabac_init_present_flag");
   for (unsigned i = 0; i < 2; i++)
   {
@@ -611,6 +376,276 @@ void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, SPSMap &spsMap)
     }
   }
   this->rbsp_trailing_bits_instance.parse(reader);
+}
+
+void pic_parameter_set_rbsp::calculateTileRowsAndColumns()
+{
+  {
+    // 6.5.1 (14)
+    auto remainingWidthInCtbsY = this->PicWidthInCtbsY;
+    for (unsigned i = 0; i <= this->pps_num_exp_tile_columns_minus1; i++)
+    {
+      this->ColWidthVal.push_back(this->pps_tile_column_width_minus1[i] + 1);
+      remainingWidthInCtbsY -= this->ColWidthVal[i];
+    }
+    auto uniformTileColWidth =
+        this->pps_tile_column_width_minus1[pps_num_exp_tile_columns_minus1] + 1;
+    while (remainingWidthInCtbsY >= uniformTileColWidth)
+    {
+      this->ColWidthVal.push_back(uniformTileColWidth);
+      remainingWidthInCtbsY -= uniformTileColWidth;
+    }
+    if (remainingWidthInCtbsY > 0)
+      ColWidthVal.push_back(remainingWidthInCtbsY);
+    this->NumTileColumns = unsigned(this->ColWidthVal.size());
+  }
+  {
+    // 6.5.1 (15)
+    auto remainingHeightInCtbsY = PicHeightInCtbsY;
+    for (unsigned j = 0; j <= this->pps_num_exp_tile_rows_minus1; j++)
+    {
+      this->RowHeightVal.push_back(this->pps_tile_row_height_minus1[j] + 1);
+      remainingHeightInCtbsY -= RowHeightVal[j];
+    }
+    auto uniformTileRowHeight =
+        this->pps_tile_row_height_minus1[this->pps_num_exp_tile_rows_minus1] + 1;
+    while (remainingHeightInCtbsY >= uniformTileRowHeight)
+    {
+      this->RowHeightVal.push_back(uniformTileRowHeight);
+      remainingHeightInCtbsY -= uniformTileRowHeight;
+    }
+    if (remainingHeightInCtbsY > 0)
+      this->RowHeightVal.push_back(remainingHeightInCtbsY);
+    this->NumTileRows = unsigned(this->RowHeightVal.size());
+  }
+  this->NumTilesInPic = this->NumTileColumns * this->NumTileRows;
+}
+
+void pic_parameter_set_rbsp::calculateTilesInSlices(std::shared_ptr<seq_parameter_set_rbsp> sps)
+{
+  // 6.5.1 (16)
+  this->TileColBdVal.push_back(0);
+  for (unsigned i = 0; i < this->NumTileColumns; i++)
+    this->TileColBdVal.push_back(this->TileColBdVal[i] + this->ColWidthVal[i]);
+
+  this->TileRowBdVal.push_back(0);
+  for (unsigned j = 0; j < this->NumTileRows; j++)
+    this->TileRowBdVal.push_back(this->TileRowBdVal[j] + this->RowHeightVal[j]);
+
+  // 6.5.1 (18)
+  {
+    auto tileX = 0;
+    for (unsigned ctbAddrX = 0; ctbAddrX <= this->PicWidthInCtbsY; ctbAddrX++)
+    {
+      if (ctbAddrX == this->TileColBdVal[tileX + 1])
+        tileX++;
+      this->CtbToTileColBd.push_back(this->TileColBdVal[tileX]);
+      this->ctbToTileColIdx.push_back(tileX);
+    }
+  }
+
+  // 6.5.1 (19)
+  {
+    auto tileY = 0;
+    for (unsigned ctbAddrY = 0; ctbAddrY <= this->PicHeightInCtbsY; ctbAddrY++)
+    {
+      if (ctbAddrY == this->TileRowBdVal[tileY + 1])
+        tileY++;
+      this->CtbToTileRowBd.push_back(this->TileRowBdVal[tileY]);
+      this->ctbToTileRowIdx.push_back(tileY);
+    }
+  }
+
+  // 6.5.1 (20)
+  for (unsigned i = 0; i <= sps->sps_num_subpics_minus1; i++)
+  {
+    auto leftX  = sps->sps_subpic_ctu_top_left_x[i];
+    auto rightX = leftX + sps->sps_subpic_width_minus1[i];
+    this->SubpicWidthInTiles.push_back(ctbToTileColIdx[rightX] + 1 - ctbToTileColIdx[leftX]);
+    auto topY    = sps->sps_subpic_ctu_top_left_y[i];
+    auto bottomY = topY + sps->sps_subpic_height_minus1[i];
+    this->SubpicHeightInTiles.push_back(ctbToTileRowIdx[bottomY] + 1 - ctbToTileRowIdx[topY]);
+    if (this->SubpicHeightInTiles[i] == 1 &&
+        sps->sps_subpic_height_minus1[i] + 1 < this->RowHeightVal[ctbToTileRowIdx[topY]])
+      subpicHeightLessThanOneTileFlag.push_back(true);
+    else
+      subpicHeightLessThanOneTileFlag.push_back(false);
+  }
+
+  // 6.5.1 (22)
+  auto AddCtbsToSlice =
+      [this](unsigned sliceIdx, unsigned startX, unsigned stopX, unsigned startY, unsigned stopY) {
+        for (auto ctbY = startY; ctbY < stopY; ctbY++)
+        {
+          for (auto ctbX = startX; ctbX < stopX; ctbX++)
+          {
+            this->CtbAddrInSlice[sliceIdx][this->NumCtusInSlice[sliceIdx]] =
+                ctbY * this->PicWidthInCtbsY + ctbX;
+            this->NumCtusInSlice[sliceIdx]++;
+          }
+        }
+      };
+
+  // 6.5.1 (21)
+  if (this->pps_single_slice_per_subpic_flag)
+  {
+    if (!sps->sps_subpic_info_present_flag)
+    {
+      /* There is no subpicture info and only one slice in a
+                                                       picture. */
+      for (unsigned j = 0; j < this->NumTileRows; j++)
+      {
+        for (unsigned i = 0; i < this->NumTileColumns; i++)
+        {
+          AddCtbsToSlice(0,
+                         this->TileColBdVal[i],
+                         this->TileColBdVal[i + 1],
+                         this->TileRowBdVal[j],
+                         this->TileRowBdVal[j + 1]);
+        }
+      }
+    }
+    else
+    {
+      for (unsigned i = 0; i <= sps->sps_num_subpics_minus1; i++)
+      {
+        if (this->subpicHeightLessThanOneTileFlag[i])
+        {
+          // The slice consists of a set of CTU rows in a tile.
+          AddCtbsToSlice(i,
+                         sps->sps_subpic_ctu_top_left_x[i],
+                         sps->sps_subpic_ctu_top_left_x[i] + sps->sps_subpic_width_minus1[i] + 1,
+                         sps->sps_subpic_ctu_top_left_y[i],
+                         sps->sps_subpic_ctu_top_left_y[i] + sps->sps_subpic_height_minus1[i] + 1);
+        }
+        else
+        {
+          // The slice consists of a number of complete tiles covering a rectangular region.
+          auto tileX = this->ctbToTileColIdx[sps->sps_subpic_ctu_top_left_x[i]];
+          auto tileY = this->ctbToTileRowIdx[sps->sps_subpic_ctu_top_left_y[i]];
+          for (unsigned j = 0; j < this->SubpicHeightInTiles[i]; j++)
+          {
+            for (unsigned k = 0; k < this->SubpicWidthInTiles[i]; k++)
+              AddCtbsToSlice(i,
+                             this->TileColBdVal[tileX + k],
+                             this->TileColBdVal[tileX + k + 1],
+                             this->TileRowBdVal[tileY + j],
+                             this->TileRowBdVal[tileY + j + 1]);
+          }
+        }
+      }
+    }
+  }
+  else
+  {
+    auto tileIdx = 0;
+    for (unsigned i = 0; i <= this->pps_num_slices_in_pic_minus1; i++)
+    {
+      SliceTopLeftTileIdx.push_back(tileIdx);
+      auto tileX = tileIdx % NumTileColumns;
+      auto tileY = tileIdx / NumTileColumns;
+      if (i < this->pps_num_slices_in_pic_minus1)
+      {
+        this->sliceWidthInTiles[i]  = this->pps_slice_width_in_tiles_minus1[i] + 1;
+        this->sliceHeightInTiles[i] = this->pps_slice_height_in_tiles_minus1[i] + 1;
+      }
+      else
+      {
+        this->sliceWidthInTiles[i]  = this->NumTileColumns - tileX;
+        this->sliceHeightInTiles[i] = this->NumTileRows - tileY;
+        this->NumSlicesInTile[i]    = 1;
+      }
+      if (sliceWidthInTiles[i] == 1 && sliceHeightInTiles[i] == 1)
+      {
+        if (this->pps_num_exp_slices_in_tile[i] == 0)
+        {
+          this->NumSlicesInTile[i] = 1;
+          this->sliceHeightInCtus[i] =
+              this->RowHeightVal[this->SliceTopLeftTileIdx[i] / this->NumTileColumns];
+        }
+        else
+        {
+          auto remainingHeightInCtbsY =
+              this->RowHeightVal[this->SliceTopLeftTileIdx[i] / this->NumTileColumns];
+          unsigned j = 0;
+          for (; j < this->pps_num_exp_slices_in_tile[i]; j++)
+          {
+            this->sliceHeightInCtus[i + j] = this->pps_exp_slice_height_in_ctus_minus1[i][j] + 1;
+            remainingHeightInCtbsY -= this->sliceHeightInCtus[i + j];
+          }
+          auto uniformSliceHeight = sliceHeightInCtus[i + j - 1];
+          while (remainingHeightInCtbsY >= uniformSliceHeight)
+          {
+            this->sliceHeightInCtus[i + j] = uniformSliceHeight;
+            remainingHeightInCtbsY -= uniformSliceHeight;
+            j++;
+          }
+          if (remainingHeightInCtbsY > 0)
+          {
+            this->sliceHeightInCtus[i + j] = remainingHeightInCtbsY;
+            j++;
+          }
+          this->NumSlicesInTile[i] = j;
+        }
+        auto ctbY = this->TileRowBdVal[tileY];
+        for (unsigned j = 0; j < this->NumSlicesInTile[i]; j++)
+        {
+          AddCtbsToSlice(i + j,
+                         this->TileColBdVal[tileX],
+                         this->TileColBdVal[tileX + 1],
+                         ctbY,
+                         ctbY + this->sliceHeightInCtus[i + j]);
+          ctbY += this->sliceHeightInCtus[i + j];
+          this->sliceWidthInTiles[i + j]  = 1;
+          this->sliceHeightInTiles[i + j] = 1;
+        }
+        i += this->NumSlicesInTile[i] - 1;
+      }
+      else
+      {
+        for (unsigned j = 0; j < this->sliceHeightInTiles[i]; j++)
+        {
+          for (unsigned k = 0; k < this->sliceWidthInTiles[i]; k++)
+            AddCtbsToSlice(i,
+                           this->TileColBdVal[tileX + k],
+                           this->TileColBdVal[tileX + k + 1],
+                           this->TileRowBdVal[tileY + j],
+                           this->TileRowBdVal[tileY + j + 1]);
+        }
+      }
+      if (i < this->pps_num_slices_in_pic_minus1)
+      {
+        if (this->pps_tile_idx_delta_present_flag)
+          tileIdx += this->pps_tile_idx_delta_val[i];
+        else
+        {
+          tileIdx += this->sliceWidthInTiles[i];
+          if (tileIdx % this->NumTileColumns == 0)
+            tileIdx += (this->sliceHeightInTiles[i] - 1) * this->NumTileColumns;
+        }
+      }
+    }
+  }
+
+  // 6.5.1 (23)
+  for (unsigned i = 0; i <= sps->sps_num_subpics_minus1; i++)
+  {
+    this->NumSlicesInSubpic.push_back(0);
+    for (unsigned j = 0; j <= this->pps_num_slices_in_pic_minus1; j++)
+    {
+      auto posX = CtbAddrInSlice[j][0] % PicWidthInCtbsY;
+      auto posY = CtbAddrInSlice[j][0] / PicWidthInCtbsY;
+      if ((posX >= sps->sps_subpic_ctu_top_left_x[i]) &&
+          (posX < sps->sps_subpic_ctu_top_left_x[i] + sps->sps_subpic_width_minus1[i] + 1) &&
+          (posY >= sps->sps_subpic_ctu_top_left_y[i]) &&
+          (posY < sps->sps_subpic_ctu_top_left_y[i] + sps->sps_subpic_height_minus1[i] + 1))
+      {
+        this->SubpicIdxForSlice[j]   = i;
+        this->SubpicLevelSliceIdx[j] = NumSlicesInSubpic[i];
+        this->NumSlicesInSubpic[i]++;
+      }
+    }
+  }
 }
 
 } // namespace parser::vvc
