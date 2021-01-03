@@ -1,0 +1,4 @@
+# Notes
+
+ - There are some uses of "less then". That should be "less than".
+ 
