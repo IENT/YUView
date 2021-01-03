@@ -48,6 +48,7 @@ namespace vvc
 {
 class slice_layer_rbsp;
 class picture_header_structure;
+class buffering_period;
 } // namespace vvc
 
 // This class knows how to parse the bitrstream of VVC annexB files
@@ -99,6 +100,7 @@ protected:
   {
     std::shared_ptr<vvc::picture_header_structure> currentPictureHeaderStructure;
     std::shared_ptr<vvc::slice_layer_rbsp>         currentSlice;
+    std::shared_ptr<vvc::buffering_period>         lastBufferingPeriod;
   };
   ParsingState parsingState;
 };

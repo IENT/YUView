@@ -30,33 +30,30 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "sei_message.h"
+#pragma once
+
+#include "parser/common/ReaderHelperNew.h"
+#include "sei_payload.h"
 
 namespace parser::vvc
 {
 
-using namespace parser::reader;
+class buffering_period;
 
-void sei_message::parse(ReaderHelperNew &reader)
+class decoding_unit_info : public sei_payload
 {
-  ReaderHelperNewSubLevel subLevel(reader, "sei_message");
+public:
+  decoding_unit_info()  = default;
+  ~decoding_unit_info() = default;
+  void parse(reader::ReaderHelperNew &         reader,
+             unsigned                          nalTemporalID,
+             std::shared_ptr<buffering_period> bp);
 
-  unsigned payload_type_byte;
-  do
-  {
-    payload_type_byte = reader.readBits("payload_type_byte", 8);
-    this->payload_type += payload_type_byte;
-  } while (payload_type_byte == 0xFF);
-  
-  unsigned payload_size_byte;
-  do
-  {
-    payload_size_byte = reader.readBits("payload_size_byte", 8);
-    this->payloadSize += payload_size_byte;
-  } while (payload_size_byte == 0xFF);
-
-  // TODO
-  //this->sei_payload_instance.parse(reader, payloadType, payloadSize);
-}
+  unsigned     dui_decoding_unit_idx{};
+  vector<bool> dui_sublayer_delays_present_flag{};
+  int          dui_du_cpb_removal_delay_increment{};
+  bool         dui_dpb_output_du_delay_present_flag{};
+  int          dui_dpb_output_du_delay{};
+};
 
 } // namespace parser::vvc

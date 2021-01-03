@@ -76,6 +76,7 @@ public:
   [[nodiscard]] bool more_rbsp_data() const { return this->reader.more_rbsp_data(); }
   [[nodiscard]] bool byte_aligned() const { return this->reader.byte_aligned(); }
   [[nodiscard]] bool canReadBits(unsigned nrBits) const { return this->reader.canReadBits(nrBits); }
+  [[nodiscard]] size_t nrBytesRead() const { return this->reader.nrBytesRead(); }
 
   [[nodiscard]] TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 

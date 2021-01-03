@@ -35,6 +35,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "SEI/buffering_period.h"
+#include "SEI/sei_message.h"
 #include "access_unit_delimiter_rbsp.h"
 #include "adaptation_parameter_set_rbsp.h"
 #include "decoding_capability_information_rbsp.h"
@@ -50,7 +52,6 @@
 #include "seq_parameter_set_rbsp.h"
 #include "slice_layer_rbsp.h"
 #include "video_parameter_set_rbsp.h"
-#include "sei_message.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -269,19 +270,34 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     {
       specificDescription = " Filler Data";
       auto newFillerData  = std::make_shared<filler_data_rbsp>();
-      nalVVC->rbsp        = newFillerData;
+      newFillerData->parse(reader);
+      nalVVC->rbsp = newFillerData;
     }
     else if (nalVVC->header.nal_unit_type == NalType::FD_NUT)
     {
       specificDescription = " OPI";
       auto newOPI         = std::make_shared<operating_point_information_rbsp>();
-      nalVVC->rbsp        = newOPI;
+      newOPI->parse(reader);
+      nalVVC->rbsp = newOPI;
     }
-    else if (nalVVC->header.nal_unit_type == NalType::SUFFIX_SEI_NUT || nalVVC->header.nal_unit_type == NalType::PREFIX_APS_NUT)
+    else if (nalVVC->header.nal_unit_type == NalType::SUFFIX_SEI_NUT ||
+             nalVVC->header.nal_unit_type == NalType::PREFIX_APS_NUT)
     {
       specificDescription = " SEI";
       auto newSEI         = std::make_shared<sei_message>();
-      nalVVC->rbsp        = newSEI;
+      newSEI->parse(reader,
+                    nalVVC->header.nal_unit_type,
+                    nalVVC->header.nuh_temporal_id_plus1 - 1,
+                    this->parsingState.lastBufferingPeriod);
+
+      if (newSEI->payloadType == 0)
+      {
+        this->parsingState.lastBufferingPeriod =
+            std::dynamic_pointer_cast<buffering_period>(newSEI->sei_payload_instance);
+        specificDescription = " Buffering Period SEI";
+      }
+
+      nalVVC->rbsp = newSEI;
     }
   }
   catch (const std::exception &e)

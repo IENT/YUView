@@ -32,23 +32,29 @@
 
 #pragma once
 
-#include "NalUnitVVC.h"
+#include "../NalUnitVVC.h"
 #include "parser/common/ReaderHelperNew.h"
 
 namespace parser::vvc
 {
+
+class sei_payload;
+class buffering_period;
 
 class sei_message : public NalRBSP
 {
 public:
   sei_message()  = default;
   ~sei_message() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::ReaderHelperNew &         reader,
+             NalType                           nal_unit_type,
+             unsigned                          nalTemporalID,
+             std::shared_ptr<buffering_period> lastBufferingPeriod);
 
-  unsigned payload_type{};
+  unsigned payloadType{};
   unsigned payloadSize{};
 
-  //sei_payload sei_payload_instance;
+  std::shared_ptr<sei_payload> sei_payload_instance;
 };
 
 } // namespace parser::vvc
