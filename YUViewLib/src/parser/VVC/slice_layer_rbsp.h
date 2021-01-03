@@ -35,27 +35,28 @@
 #include "NalUnitVVC.h"
 #include "common.h"
 #include "parser/common/ReaderHelperNew.h"
+#include "slice_header.h"
 #include "picture_header_structure.h"
-#include "rbsp_trailing_bits.h"
 
 namespace parser::vvc
 {
 
-class slice_layer_rbsp;
-
-class picture_header_rbsp : public NalRBSP
+class slice_layer_rbsp : public NalRBSP, public std::enable_shared_from_this<slice_layer_rbsp>
 {
 public:
-  picture_header_rbsp()  = default;
-  ~picture_header_rbsp() = default;
-  void parse(reader::ReaderHelperNew &         reader,
-             VPSMap &                          vpsMap,
-             SPSMap &                          spsMap,
-             PPSMap &                          ppsMap,
-             std::shared_ptr<slice_layer_rbsp> sl);
+  slice_layer_rbsp()  = default;
+  ~slice_layer_rbsp() = default;
+  void parse(reader::ReaderHelperNew &                 reader,
+             NalType                                   nal_unit_type,
+             VPSMap &                                  vpsMap,
+             SPSMap &                                  spsMap,
+             PPSMap &                                  ppsMap,
+             std::shared_ptr<picture_header_structure> picHeader);
 
-  std::shared_ptr<picture_header_structure> picture_header_structure_instance;
-  rbsp_trailing_bits                        rbsp_trailing_bits_instance;
+  slice_header slice_header_instance;
+
+  // slice_data slice_data_instance;
+  // rbsp_slice_trailing_bits rbsp_slice_trailing_bits_instance;
 };
 
 } // namespace parser::vvc

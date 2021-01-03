@@ -12,7 +12,7 @@
  *   OpenSSL library under certain conditions as described in each
  *   individual source file, and distribute linked combinations including
  *   the two.
- *
+ *   
  *   You must obey the GNU General Public License in all respects for all
  *   of the code used other than OpenSSL. If you modify file(s) with this
  *   exception, you may extend this exception to your version of the
@@ -33,29 +33,16 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "common.h"
 #include "parser/common/ReaderHelperNew.h"
-#include "picture_header_structure.h"
-#include "rbsp_trailing_bits.h"
 
 namespace parser::vvc
 {
 
-class slice_layer_rbsp;
-
-class picture_header_rbsp : public NalRBSP
+class end_of_seq_rbsp : public NalRBSP
 {
 public:
-  picture_header_rbsp()  = default;
-  ~picture_header_rbsp() = default;
-  void parse(reader::ReaderHelperNew &         reader,
-             VPSMap &                          vpsMap,
-             SPSMap &                          spsMap,
-             PPSMap &                          ppsMap,
-             std::shared_ptr<slice_layer_rbsp> sl);
-
-  std::shared_ptr<picture_header_structure> picture_header_structure_instance;
-  rbsp_trailing_bits                        rbsp_trailing_bits_instance;
+  end_of_seq_rbsp() = default;
+  ~end_of_seq_rbsp() = default;
 };
 
 } // namespace parser::vvc

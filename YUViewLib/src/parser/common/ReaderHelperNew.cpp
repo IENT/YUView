@@ -35,7 +35,6 @@
 #include <iomanip>
 #include <sstream>
 
-
 namespace parser::reader
 {
 

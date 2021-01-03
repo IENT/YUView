@@ -33,29 +33,26 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "common.h"
 #include "parser/common/ReaderHelperNew.h"
-#include "picture_header_structure.h"
 #include "rbsp_trailing_bits.h"
 
 namespace parser::vvc
 {
 
-class slice_layer_rbsp;
-
-class picture_header_rbsp : public NalRBSP
+class operating_point_information_rbsp : public NalRBSP
 {
 public:
-  picture_header_rbsp()  = default;
-  ~picture_header_rbsp() = default;
-  void parse(reader::ReaderHelperNew &         reader,
-             VPSMap &                          vpsMap,
-             SPSMap &                          spsMap,
-             PPSMap &                          ppsMap,
-             std::shared_ptr<slice_layer_rbsp> sl);
+  operating_point_information_rbsp()  = default;
+  ~operating_point_information_rbsp() = default;
+  void parse(reader::ReaderHelperNew &reader);
 
-  std::shared_ptr<picture_header_structure> picture_header_structure_instance;
-  rbsp_trailing_bits                        rbsp_trailing_bits_instance;
+  bool               opi_ols_info_present_flag{};
+  bool               opi_htid_info_present_flag{};
+  unsigned           opi_ols_idx{};
+  unsigned           opi_htid_plus1{};
+  bool               opi_extension_flag{};
+  bool               opi_extension_data_flag{};
+  rbsp_trailing_bits rbsp_trailing_bits_instance;
 };
 
 } // namespace parser::vvc

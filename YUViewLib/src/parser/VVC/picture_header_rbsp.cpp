@@ -34,23 +34,23 @@
 
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
-#include "slice_header.h"
+#include "slice_layer_rbsp.h"
 
 namespace parser::vvc
 {
 
 using namespace parser::reader;
 
-void picture_header_rbsp::parse(ReaderHelperNew &             reader,
-                                VPSMap &                      vpsMap,
-                                SPSMap &                      spsMap,
-                                PPSMap &                      ppsMap,
-                                std::shared_ptr<slice_header> sh)
+void picture_header_rbsp::parse(ReaderHelperNew &                 reader,
+                                VPSMap &                          vpsMap,
+                                SPSMap &                          spsMap,
+                                PPSMap &                          ppsMap,
+                                std::shared_ptr<slice_layer_rbsp> sl)
 {
   ReaderHelperNewSubLevel subLevel(reader, "picture_header_rbsp");
 
   this->picture_header_structure_instance = std::make_shared<picture_header_structure>();
-  this->picture_header_structure_instance->parse(reader, vpsMap, spsMap, ppsMap, sh);
+  this->picture_header_structure_instance->parse(reader, vpsMap, spsMap, ppsMap, sl);
   this->rbsp_trailing_bits_instance.parse(reader);
 }
 

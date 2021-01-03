@@ -30,32 +30,20 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "NalUnitVVC.h"
-#include "common.h"
-#include "parser/common/ReaderHelperNew.h"
-#include "picture_header_structure.h"
-#include "rbsp_trailing_bits.h"
+#include "access_unit_delimiter_rbsp.h"
 
 namespace parser::vvc
 {
 
-class slice_layer_rbsp;
+using namespace parser::reader;
 
-class picture_header_rbsp : public NalRBSP
+void access_unit_delimiter_rbsp::parse(ReaderHelperNew &reader)
 {
-public:
-  picture_header_rbsp()  = default;
-  ~picture_header_rbsp() = default;
-  void parse(reader::ReaderHelperNew &         reader,
-             VPSMap &                          vpsMap,
-             SPSMap &                          spsMap,
-             PPSMap &                          ppsMap,
-             std::shared_ptr<slice_layer_rbsp> sl);
+  ReaderHelperNewSubLevel subLevel(reader, "access_unit_delimiter_rbsp");
 
-  std::shared_ptr<picture_header_structure> picture_header_structure_instance;
-  rbsp_trailing_bits                        rbsp_trailing_bits_instance;
-};
+  this->aud_irap_or_gdr_flag = reader.readFlag("aud_irap_or_gdr_flag");
+  this->aud_pic_type         = reader.readBits("aud_pic_type", 3, Options().withCheckRange({0, 2}));
+  this->rbsp_trailing_bits_instance.parse(reader);
+}
 
 } // namespace parser::vvc

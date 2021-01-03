@@ -30,32 +30,27 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "NalUnitVVC.h"
-#include "common.h"
-#include "parser/common/ReaderHelperNew.h"
-#include "picture_header_structure.h"
-#include "rbsp_trailing_bits.h"
+#include "slice_layer_rbsp.h"
 
 namespace parser::vvc
 {
 
-class slice_layer_rbsp;
+using namespace parser::reader;
 
-class picture_header_rbsp : public NalRBSP
+void slice_layer_rbsp::parse(reader::ReaderHelperNew &                 reader,
+                             NalType                                   nal_unit_type,
+                             VPSMap &                                  vpsMap,
+                             SPSMap &                                  spsMap,
+                             PPSMap &                                  ppsMap,
+                             std::shared_ptr<picture_header_structure> picHeader)
 {
-public:
-  picture_header_rbsp()  = default;
-  ~picture_header_rbsp() = default;
-  void parse(reader::ReaderHelperNew &         reader,
-             VPSMap &                          vpsMap,
-             SPSMap &                          spsMap,
-             PPSMap &                          ppsMap,
-             std::shared_ptr<slice_layer_rbsp> sl);
+  ReaderHelperNewSubLevel subLevel(reader, "slice_layer_rbsp");
 
-  std::shared_ptr<picture_header_structure> picture_header_structure_instance;
-  rbsp_trailing_bits                        rbsp_trailing_bits_instance;
-};
+  this->slice_header_instance.parse(reader, nal_unit_type, vpsMap, spsMap, ppsMap, shared_from_this(), picHeader);
+
+  // The rest is arithmetically coded
+  // this->slice_data_instance.parse(reader);
+  // this->rbsp_slice_trailing_bits_instance.parse(reader);
+}
 
 } // namespace parser::vvc

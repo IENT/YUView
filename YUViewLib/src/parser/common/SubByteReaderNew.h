@@ -61,14 +61,14 @@ public:
   std::tuple<int64_t, std::string>  readNS();
   std::tuple<int64_t, std::string>  readSU();
 
-  bool more_rbsp_data() const;
-  bool byte_aligned() const;
+  [[nodiscard]] bool more_rbsp_data() const;
+  [[nodiscard]] bool byte_aligned() const;
 
-  bool payload_extension_present();
-  bool testReadingBits(unsigned nrBits);
+  [[nodiscard]] bool payload_extension_present() const;
+  [[nodiscard]] bool canReadBits(unsigned nrBits) const;
 
-  size_t nrBytesRead() const;
-  size_t nrBytesLeft() const;
+  [[nodiscard]] size_t nrBytesRead() const;
+  [[nodiscard]] size_t nrBytesLeft() const;
 
   void disableEmulationPrevention() { skipEmulationPrevention = false; }
 

@@ -45,18 +45,18 @@ namespace parser::vvc
 
 class seq_parameter_set_rbsp;
 class pic_parameter_set_rbsp;
-class slice_header;
+class slice_layer_rbsp;
 
 class picture_header_structure : public NalRBSP
 {
 public:
   picture_header_structure()  = default;
   ~picture_header_structure() = default;
-  void parse(reader::ReaderHelperNew &     reader,
-             VPSMap &                      vpsMap,
-             SPSMap &                      spsMap,
-             PPSMap &                      ppsMap,
-             std::shared_ptr<slice_header> sh);
+  void parse(reader::ReaderHelperNew &         reader,
+             VPSMap &                          vpsMap,
+             SPSMap &                          spsMap,
+             PPSMap &                          ppsMap,
+             std::shared_ptr<slice_layer_rbsp> sl);
 
   void calculatePictureOrderCount(NalType                                   nalType,
                                   SPSMap &                                  spsMap,

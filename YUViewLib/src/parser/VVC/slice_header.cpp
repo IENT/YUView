@@ -56,6 +56,7 @@ void slice_header::parse(ReaderHelperNew &                         reader,
                          VPSMap &                                  vpsMap,
                          SPSMap &                                  spsMap,
                          PPSMap &                                  ppsMap,
+                         std::shared_ptr<slice_layer_rbsp>         sliceLayer,
                          std::shared_ptr<picture_header_structure> picHeader)
 {
   ReaderHelperNewSubLevel subLevel(reader, "slice_header");
@@ -66,7 +67,7 @@ void slice_header::parse(ReaderHelperNew &                         reader,
   {
     this->picture_header_structure_instance = std::make_shared<picture_header_structure>();
     this->picture_header_structure_instance->parse(
-        reader, vpsMap, spsMap, ppsMap, shared_from_this());
+        reader, vpsMap, spsMap, ppsMap, sliceLayer);
     picHeader = this->picture_header_structure_instance;
   }
 
@@ -268,7 +269,7 @@ void slice_header::parse(ReaderHelperNew &                         reader,
          (pps->pps_weighted_bipred_flag && this->sh_slice_type == SliceType::B)))
     {
       this->pred_weight_table_instance.parse(
-          reader, sps, pps, shared_from_this(), this->ref_pic_lists_instance);
+          reader, sps, pps, sliceLayer, this->ref_pic_lists_instance);
     }
   }
   if (!pps->pps_qp_delta_info_in_ph_flag)

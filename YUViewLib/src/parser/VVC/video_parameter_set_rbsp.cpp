@@ -338,8 +338,8 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   }
   for (unsigned i = 0; i <= this->vps_num_ptls_minus1; i++)
   {
-    // TODO
-    // this->profile_tier_level_instance.parse(reader, vps_pt_present_flag[i], vps_ptl_max_tid[i]);
+    this->profile_tier_level_instance.parse(
+        reader, this->vps_pt_present_flag[i], this->vps_ptl_max_tid[i]);
   }
   for (unsigned i = 0; i < this->TotalNumOlss; i++)
   {
@@ -375,9 +375,8 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       {
         this->vps_dpb_max_tid.push_back(this->vps_max_sublayers_minus1);
       }
-      // TODO
-      // this->dpb_parameters_instance.parse(
-      //     reader, vps_dpb_max_tid[i], vps_sublayer_dpb_params_present_flag);
+      this->dpb_parameters_instance.parse(
+          reader, this->vps_dpb_max_tid[i], this->vps_sublayer_dpb_params_present_flag);
     }
     for (unsigned i = 0; i < this->NumMultiLayerOlss; i++)
     {
@@ -401,8 +400,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
         reader.readFlag("vps_timing_hrd_params_present_flag");
     if (this->vps_timing_hrd_params_present_flag)
     {
-      // TODO
-      //this->general_timing_hrd_parameters_instance.parse(reader);
+      this->general_timing_hrd_parameters_instance.parse(reader);
       if (this->vps_max_sublayers_minus1 > 0)
       {
         this->vps_sublayer_cpb_params_present_flag =
@@ -420,8 +418,13 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
         {
           this->vps_hrd_max_tid.push_back(this->vps_max_sublayers_minus1);
         }
-        // TODO
-        //this->ols_timing_hrd_parameters_instance.parse(reader, firstSubLayer, vps_hrd_max_tid[i]);
+        auto firstSubLayer =
+            this->vps_sublayer_cpb_params_present_flag ? 0u : this->vps_hrd_max_tid[i];
+        this->ols_timing_hrd_parameters_instance.parse(
+            reader,
+            firstSubLayer,
+            this->vps_hrd_max_tid[i],
+            &this->general_timing_hrd_parameters_instance);
       }
       if (this->vps_num_ols_timing_hrd_params_minus1 > 0 &&
           this->vps_num_ols_timing_hrd_params_minus1 + 1 != this->NumMultiLayerOlss)
@@ -449,8 +452,7 @@ void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
       this->vps_extension_data_flag = reader.readFlag("vps_extension_data_flag");
     }
   }
-  // TODO
-  // this->rbsp_trailing_bits_instance.parse(reader);
+  this->rbsp_trailing_bits_instance.parse(reader);
 }
 
 } // namespace parser::vvc

@@ -35,7 +35,7 @@
 #include "pic_parameter_set_rbsp.h"
 #include "ref_pic_list_struct.h"
 #include "seq_parameter_set_rbsp.h"
-#include "slice_header.h"
+#include "slice_layer_rbsp.h"
 
 namespace parser::vvc
 {
@@ -45,7 +45,7 @@ using namespace parser::reader;
 void pred_weight_table::parse(ReaderHelperNew &                       reader,
                               std::shared_ptr<seq_parameter_set_rbsp> sps,
                               std::shared_ptr<pic_parameter_set_rbsp> pps,
-                              std::shared_ptr<slice_header>           sh,
+                              std::shared_ptr<slice_layer_rbsp>       sl,
                               std::shared_ptr<ref_pic_lists>          rpl)
 {
   ReaderHelperNewSubLevel subLevel(reader, "pred_weight_table");
@@ -64,7 +64,7 @@ void pred_weight_table::parse(ReaderHelperNew &                       reader,
   if (pps->pps_wp_info_in_ph_flag)
     NumWeightsL0 = num_l0_weights;
   else
-    NumWeightsL0 = sh->NumRefIdxActive[0];
+    NumWeightsL0 = sl->slice_header_instance.NumRefIdxActive[0];
   for (unsigned i = 0; i < NumWeightsL0; i++)
   {
     this->luma_weight_l0_flag.push_back(reader.readFlag("luma_weight_l0_flag"));
@@ -112,7 +112,7 @@ void pred_weight_table::parse(ReaderHelperNew &                       reader,
   else if (pps->pps_wp_info_in_ph_flag)
     NumWeightsL1 = this->num_l1_weights;
   else
-    NumWeightsL1 = sh->NumRefIdxActive[1];
+    NumWeightsL1 = sl->slice_header_instance.NumRefIdxActive[1];
 
   for (unsigned i = 0; i < NumWeightsL1; i++)
   {

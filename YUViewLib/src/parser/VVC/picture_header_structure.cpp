@@ -34,7 +34,7 @@
 
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
-#include "slice_header.h"
+#include "slice_layer_rbsp.h"
 #include "video_parameter_set_rbsp.h"
 
 namespace parser::vvc
@@ -46,7 +46,7 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
                                      VPSMap &                      vpsMap,
                                      SPSMap &                      spsMap,
                                      PPSMap &                      ppsMap,
-                                     std::shared_ptr<slice_header> sh)
+                                     std::shared_ptr<slice_layer_rbsp> sl)
 {
   ReaderHelperNewSubLevel subLevel(reader, "picture_header_structure");
 
@@ -396,7 +396,7 @@ void picture_header_structure::parse(ReaderHelperNew &             reader,
     if ((pps->pps_weighted_pred_flag || pps->pps_weighted_bipred_flag) &&
         pps->pps_wp_info_in_ph_flag)
     {
-      this->pred_weight_table_instance.parse(reader, sps, pps, sh, this->ref_pic_lists_instance);
+      this->pred_weight_table_instance.parse(reader, sps, pps, sl, this->ref_pic_lists_instance);
     }
   }
   if (pps->pps_qp_delta_info_in_ph_flag)

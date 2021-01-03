@@ -30,32 +30,36 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "NalUnitVVC.h"
-#include "common.h"
-#include "parser/common/ReaderHelperNew.h"
-#include "picture_header_structure.h"
-#include "rbsp_trailing_bits.h"
+#include "operating_point_information_rbsp.h"
 
 namespace parser::vvc
 {
 
-class slice_layer_rbsp;
+using namespace parser::reader;
 
-class picture_header_rbsp : public NalRBSP
+void operating_point_information_rbsp::parse(ReaderHelperNew &reader)
 {
-public:
-  picture_header_rbsp()  = default;
-  ~picture_header_rbsp() = default;
-  void parse(reader::ReaderHelperNew &         reader,
-             VPSMap &                          vpsMap,
-             SPSMap &                          spsMap,
-             PPSMap &                          ppsMap,
-             std::shared_ptr<slice_layer_rbsp> sl);
+  ReaderHelperNewSubLevel subLevel(reader, "operating_point_information_rbsp");
 
-  std::shared_ptr<picture_header_structure> picture_header_structure_instance;
-  rbsp_trailing_bits                        rbsp_trailing_bits_instance;
-};
+  this->opi_ols_info_present_flag  = reader.readFlag("opi_ols_info_present_flag");
+  this->opi_htid_info_present_flag = reader.readFlag("opi_htid_info_present_flag");
+  if (this->opi_ols_info_present_flag)
+  {
+    this->opi_ols_idx = reader.readUEV("opi_ols_idx");
+  }
+  if (this->opi_htid_info_present_flag)
+  {
+    this->opi_htid_plus1 = reader.readBits("opi_htid_plus1", 3);
+  }
+  this->opi_extension_flag = reader.readFlag("opi_extension_flag", Options().withCheckEqualTo(0));
+  if (this->opi_extension_flag)
+  {
+    while (reader.more_rbsp_data())
+    {
+      this->opi_extension_data_flag = reader.readFlag("opi_extension_data_flag");
+    }
+  }
+  this->rbsp_trailing_bits_instance.parse(reader);
+}
 
 } // namespace parser::vvc

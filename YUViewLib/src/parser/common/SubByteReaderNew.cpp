@@ -124,7 +124,7 @@ std::tuple<ByteVector, std::string> SubByteReaderNew::readBytes(size_t nrBytes)
       throw std::logic_error("Error while reading annexB file. Trying to read "
                              "over buffer boundary.");
 
-  ByteVector retVector;
+  ByteVector  retVector;
   std::string code;
   for (unsigned i = 0; i < nrBytes; i++)
   {
@@ -325,13 +325,13 @@ bool SubByteReaderNew::byte_aligned() const
  payload_bit_equal_to_one syntax element), the return value of
  payload_extension_present( ) is equal to TRUE.
 */
-bool SubByteReaderNew::payload_extension_present()
+bool SubByteReaderNew::payload_extension_present() const
 {
   // TODO: What is the difference to this?
   return more_rbsp_data();
 }
 
-bool SubByteReaderNew::testReadingBits(unsigned nrBits)
+bool SubByteReaderNew::canReadBits(unsigned nrBits) const
 {
   assert(this->posInBufferBits <= 8);
   const auto curBitsLeft = 8 - this->posInBufferBits;

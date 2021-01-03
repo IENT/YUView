@@ -41,7 +41,6 @@
 #include "TreeItem.h"
 #include "common/typedef.h"
 
-
 namespace parser::reader
 {
 
@@ -74,10 +73,11 @@ public:
   int64_t    readSEV(const std::string &symbolName, const Options &options = {});
   ByteVector readBytes(const std::string &symbolName, size_t nrBytes, const Options &options = {});
 
-  bool more_rbsp_data() const { return this->reader.more_rbsp_data(); }
-  bool byte_aligned() const { return this->reader.byte_aligned(); }
+  [[nodiscard]] bool more_rbsp_data() const { return this->reader.more_rbsp_data(); }
+  [[nodiscard]] bool byte_aligned() const { return this->reader.byte_aligned(); }
+  [[nodiscard]] bool canReadBits(unsigned nrBits) const { return this->reader.canReadBits(nrBits); }
 
-  TreeItem *getCurrentItemTree() { return currentTreeLevel; }
+  [[nodiscard]] TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
 private:
   void logExceptionAndThrowError [[noreturn]] (const std::exception &ex, const std::string &when);

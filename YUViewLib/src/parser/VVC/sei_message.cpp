@@ -30,32 +30,33 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "NalUnitVVC.h"
-#include "common.h"
-#include "parser/common/ReaderHelperNew.h"
-#include "picture_header_structure.h"
-#include "rbsp_trailing_bits.h"
+#include "sei_message.h"
 
 namespace parser::vvc
 {
 
-class slice_layer_rbsp;
+using namespace parser::reader;
 
-class picture_header_rbsp : public NalRBSP
+void sei_message::parse(ReaderHelperNew &reader)
 {
-public:
-  picture_header_rbsp()  = default;
-  ~picture_header_rbsp() = default;
-  void parse(reader::ReaderHelperNew &         reader,
-             VPSMap &                          vpsMap,
-             SPSMap &                          spsMap,
-             PPSMap &                          ppsMap,
-             std::shared_ptr<slice_layer_rbsp> sl);
+  ReaderHelperNewSubLevel subLevel(reader, "sei_message");
 
-  std::shared_ptr<picture_header_structure> picture_header_structure_instance;
-  rbsp_trailing_bits                        rbsp_trailing_bits_instance;
-};
+  unsigned payload_type_byte;
+  do
+  {
+    payload_type_byte = reader.readBits("payload_type_byte", 8);
+    this->payload_type += payload_type_byte;
+  } while (payload_type_byte == 0xFF);
+  
+  unsigned payload_size_byte;
+  do
+  {
+    payload_size_byte = reader.readBits("payload_size_byte", 8);
+    this->payloadSize += payload_size_byte;
+  } while (payload_size_byte == 0xFF);
+
+  // TODO
+  //this->sei_payload_instance.parse(reader, payloadType, payloadSize);
+}
 
 } // namespace parser::vvc

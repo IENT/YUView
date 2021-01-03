@@ -35,15 +35,22 @@
 #include <algorithm>
 #include <cmath>
 
+#include "access_unit_delimiter_rbsp.h"
 #include "adaptation_parameter_set_rbsp.h"
+#include "decoding_capability_information_rbsp.h"
+#include "end_of_bitstream_rbsp.h"
+#include "end_of_seq_rbsp.h"
+#include "filler_data_rbsp.h"
 #include "nal_unit_header.h"
+#include "operating_point_information_rbsp.h"
 #include "parser/common/Macros.h"
 #include "parser/common/ReaderHelper.h"
 #include "pic_parameter_set_rbsp.h"
 #include "picture_header_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
-#include "slice_header.h"
+#include "slice_layer_rbsp.h"
 #include "video_parameter_set_rbsp.h"
+#include "sei_message.h"
 
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
@@ -204,32 +211,77 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
              nalVVC->header.nal_unit_type == NalType::GDR_NUT)
     {
       specificDescription = " Slice Header";
-      auto newSliceHeader = std::make_shared<slice_header>();
-      newSliceHeader->parse(reader,
-                            nalVVC->header.nal_unit_type,
-                            this->activeParameterSets.vpsMap,
-                            this->activeParameterSets.spsMap,
-                            this->activeParameterSets.ppsMap,
-                            this->parsingState.currentPictureHeaderStructure);
+      auto newSliceLayer  = std::make_shared<slice_layer_rbsp>();
+      newSliceLayer->parse(reader,
+                           nalVVC->header.nal_unit_type,
+                           this->activeParameterSets.vpsMap,
+                           this->activeParameterSets.spsMap,
+                           this->activeParameterSets.ppsMap,
+                           this->parsingState.currentPictureHeaderStructure);
 
-      this->parsingState.currentSlice = newSliceHeader;
-      if (newSliceHeader->picture_header_structure_instance)
+      this->parsingState.currentSlice = newSliceLayer;
+      if (newSliceLayer->slice_header_instance.picture_header_structure_instance)
       {
-        newSliceHeader->picture_header_structure_instance->calculatePictureOrderCount(
-            nalVVC->header.nal_unit_type,
-            this->activeParameterSets.spsMap,
-            this->activeParameterSets.ppsMap,
-            parsingState.currentPictureHeaderStructure);
+        newSliceLayer->slice_header_instance.picture_header_structure_instance
+            ->calculatePictureOrderCount(nalVVC->header.nal_unit_type,
+                                         this->activeParameterSets.spsMap,
+                                         this->activeParameterSets.ppsMap,
+                                         parsingState.currentPictureHeaderStructure);
         this->parsingState.currentPictureHeaderStructure =
-            newSliceHeader->picture_header_structure_instance;
+            newSliceLayer->slice_header_instance.picture_header_structure_instance;
       }
 
       specificDescription +=
           " POC " +
           std::to_string(this->parsingState.currentPictureHeaderStructure->PicOrderCntVal);
-      specificDescription += " " + to_string(newSliceHeader->sh_slice_type) + "-Slice";
+      specificDescription +=
+          " " + to_string(newSliceLayer->slice_header_instance.sh_slice_type) + "-Slice";
 
-      nalVVC->rbsp = newSliceHeader;
+      nalVVC->rbsp = newSliceLayer;
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::AUD_NUT)
+    {
+      specificDescription = " AUD";
+      auto newAUD         = std::make_shared<access_unit_delimiter_rbsp>();
+      newAUD->parse(reader);
+      nalVVC->rbsp = newAUD;
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::DCI_NUT)
+    {
+      specificDescription = " DCI";
+      auto newDCI         = std::make_shared<decoding_capability_information_rbsp>();
+      newDCI->parse(reader);
+      nalVVC->rbsp = newDCI;
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::EOB_NUT)
+    {
+      specificDescription = " EOB";
+      auto newEOB         = std::make_shared<end_of_bitstream_rbsp>();
+      nalVVC->rbsp        = newEOB;
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::EOS_NUT)
+    {
+      specificDescription = " EOS";
+      auto newEOS         = std::make_shared<end_of_seq_rbsp>();
+      nalVVC->rbsp        = newEOS;
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::FD_NUT)
+    {
+      specificDescription = " Filler Data";
+      auto newFillerData  = std::make_shared<filler_data_rbsp>();
+      nalVVC->rbsp        = newFillerData;
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::FD_NUT)
+    {
+      specificDescription = " OPI";
+      auto newOPI         = std::make_shared<operating_point_information_rbsp>();
+      nalVVC->rbsp        = newOPI;
+    }
+    else if (nalVVC->header.nal_unit_type == NalType::SUFFIX_SEI_NUT || nalVVC->header.nal_unit_type == NalType::PREFIX_APS_NUT)
+    {
+      specificDescription = " SEI";
+      auto newSEI         = std::make_shared<sei_message>();
+      nalVVC->rbsp        = newSEI;
     }
   }
   catch (const std::exception &e)

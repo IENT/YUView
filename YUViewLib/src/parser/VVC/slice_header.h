@@ -53,7 +53,7 @@ enum class SliceType
 
 std::string to_string(SliceType sliceType);
 
-class slice_header : public NalRBSP, public std::enable_shared_from_this<slice_header>
+class slice_header : public NalRBSP
 {
 public:
   slice_header()  = default;
@@ -63,6 +63,7 @@ public:
              VPSMap &                                  vpsMap,
              SPSMap &                                  spsMap,
              PPSMap &                                  ppsMap,
+             std::shared_ptr<slice_layer_rbsp>         sliceLayer,
              std::shared_ptr<picture_header_structure> picHeader);
 
   bool                                      sh_picture_header_in_slice_header_flag{};

@@ -34,8 +34,8 @@
 
 #include "../AnnexB.h"
 #include "NalUnitVVC.h"
-#include "video/videoHandlerYUV.h"
 #include "common.h"
+#include "video/videoHandlerYUV.h"
 
 #include <memory>
 
@@ -46,7 +46,7 @@ namespace parser
 
 namespace vvc
 {
-class slice_header;
+class slice_layer_rbsp;
 class picture_header_structure;
 } // namespace vvc
 
@@ -98,7 +98,7 @@ protected:
   struct ParsingState
   {
     std::shared_ptr<vvc::picture_header_structure> currentPictureHeaderStructure;
-    std::shared_ptr<vvc::slice_header>             currentSlice;
+    std::shared_ptr<vvc::slice_layer_rbsp>         currentSlice;
   };
   ParsingState parsingState;
 };

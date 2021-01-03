@@ -40,7 +40,7 @@ namespace parser::vvc
 
 class seq_parameter_set_rbsp;
 class pic_parameter_set_rbsp;
-class slice_header;
+class slice_layer_rbsp;
 class ref_pic_lists;
 
 class pred_weight_table : public NalRBSP
@@ -51,7 +51,7 @@ public:
   void parse(reader::ReaderHelperNew &               reader,
              std::shared_ptr<seq_parameter_set_rbsp> sps,
              std::shared_ptr<pic_parameter_set_rbsp> pps,
-             std::shared_ptr<slice_header>           sh,
+             std::shared_ptr<slice_layer_rbsp>       sl,
              std::shared_ptr<ref_pic_lists>          rpl);
 
   unsigned      luma_log2_weight_denom{};
