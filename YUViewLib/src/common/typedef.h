@@ -39,6 +39,10 @@
 #include <QPair>
 #include <QRect>
 #include <QString>
+#include <vector>
+#include <sstream>
+#include <string>
+#include <map>
 
 namespace YUView
 {
@@ -225,11 +229,31 @@ template <typename T> inline T clip(const T n, const T lower, const T upper) { r
 
 /// ---- Custom types
 typedef std::pair<uint64_t, uint64_t> pairUint64;
+typedef std::pair<int64_t, int64_t> pairInt64;
 typedef QPair<QString, QString> QStringPair;
 typedef QList<QStringPair> QStringPairList;
 typedef QPair<int,int> indexRange;  // QPair of integers (minimum and maximum)
 typedef QPair<int,int> QIntPair;
 typedef QPair<unsigned int, unsigned int> QUIntPair;
+
+template <typename T> using umap_1d = std::map<unsigned, T>;
+template <typename T> using umap_2d = std::map<unsigned, umap_1d<T>>;
+template <typename T> using umap_3d = std::map<unsigned, umap_2d<T>>;
+
+template <typename T> using vector = std::vector<T>;
+template <typename T> using vector2d = std::vector<vector<T>>;
+template <typename T> using vector3d = std::vector<vector2d<T>>;
+template <typename T> using vector4d = std::vector<vector3d<T>>;
+
+template <typename T>
+std::string to_string(const std::pair<T, T> typePair)
+{
+  std::ostringstream ss;
+  ss << "(" << typePair.first << ", " << typePair.second << ")";
+  return ss.str();
+}
+
+typedef std::vector<unsigned char> ByteVector;
 
 template<typename T>
 struct Range

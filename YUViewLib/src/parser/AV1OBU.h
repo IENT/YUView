@@ -102,7 +102,6 @@ protected:
     // The index of the obu within the bitstream
     int obu_idx;
 
-    virtual bool isParameterSet() { return false; }
     // Get the raw OBU unit
     // This only works if the payload was saved of course
     //QByteArray getRawOBUData() const { return getOBUHeader() + obuPayload; }

@@ -33,6 +33,7 @@
 #include "AVFormat.h"
 
 #include <QElapsedTimer>
+#include <iomanip>
 
 #include "common/Macros.h"
 #include "AnnexBAVC.h"
@@ -115,7 +116,7 @@ bool AVFormat::parseMetadata(QStringPairList &metadata)
     return true;
 
   // Log all entries in the metadata list
-  TreeItem *metadataRoot = new TreeItem("Metadata", packetModel->getRootItem());
+  TreeItem *metadataRoot = new TreeItem(packetModel->getRootItem(), "Metadata");
   for (QStringPair p : metadata)
     new TreeItem(p.first, p.second, "", "", metadataRoot);
   return true;
@@ -127,7 +128,7 @@ bool AVFormat::parseExtradata_generic(QByteArray &extradata)
     return true;
 
   // Log all bytes in the extradata
-  TreeItem *extradataRoot = new TreeItem("Extradata", packetModel->getRootItem());
+  TreeItem *extradataRoot = new TreeItem(packetModel->getRootItem(), "Extradata");
   for (int i = 0; i < extradata.length(); i++)
   {
     int val = (unsigned char)extradata.at(i);
@@ -210,7 +211,7 @@ bool AVFormat::parseExtradata_hevc(QByteArray &extradata)
   if (extradata.at(0) == 1)
   {
     // The extradata is using the hvcC format
-    TreeItem *extradataRoot = new TreeItem("Extradata (HEVC hvcC format)", packetModel->getRootItem());
+    TreeItem *extradataRoot = new TreeItem(packetModel->getRootItem(), "Extradata (HEVC hvcC format)");
     hvcC h;
     if (!h.parse_hvcC(extradata, extradataRoot, this->annexBParser, this->bitratePlotModel.data()))
       return false;
@@ -223,7 +224,7 @@ bool AVFormat::parseExtradata_hevc(QByteArray &extradata)
     startCode.append((char)0);
     startCode.append((char)1);
 
-    TreeItem *extradataRoot = new TreeItem("Extradata (Raw HEVC NAL units)", packetModel->getRootItem());
+    TreeItem *extradataRoot = new TreeItem(packetModel->getRootItem(), "Extradata (Raw HEVC NAL units)");
 
     int nalID = 0;
     int nextStartCode = extradata.indexOf(startCode);
@@ -262,7 +263,7 @@ bool AVFormat::parseExtradata_mpeg2(QByteArray &extradata)
     startCode.append((char)0);
     startCode.append((char)1);
 
-    TreeItem *extradataRoot = new TreeItem("Extradata (Raw Mpeg2 units)", packetModel->getRootItem());
+    TreeItem *extradataRoot = new TreeItem(packetModel->getRootItem(), "Extradata (Raw Mpeg2 units)");
 
     int nalID = 0;
     int nextStartCode = extradata.indexOf(startCode);
@@ -304,47 +305,41 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
 
   AVRational timeBase = timeBaseAllStreams[packet.getStreamIndex()];
 
-  auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> QString
+  auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> std::string
   {
-    QString str = QString("%1 (").arg(timestamp);
+    std::ostringstream ss;
+    ss << timestamp << " (";
     if (timestamp < 0)
-    {
-      str += "-";
-      timestamp = -timestamp;
-    }
+      ss << "-";
       
-    int64_t time = std::abs(timestamp) * 1000 / timebase.num / timebase.den;
+    auto time = std::abs(timestamp) * 1000 / timebase.num / timebase.den;
       
-    int64_t hours = time / 1000 / 60 / 60;
+    auto hours = time / 1000 / 60 / 60;
     time -= hours * 60 * 60 * 1000;
-    qint64 minutes = time / 1000 / 60;
+    auto minutes = time / 1000 / 60;
     time -= minutes * 60 * 1000;
-    qint64 seconds = time / 1000;
-    qint64 milliseconds = time - seconds;
+    auto seconds = time / 1000;
+    auto milliseconds = time - seconds;
 
     if (hours > 0)
-      str += QString("%1:").arg(hours);
+      ss << hours << ":";
     if (hours > 0 || minutes > 0)
-      str += QString("%1:").arg(minutes, 2, 10, QChar('0'));
-    str += QString("%1.").arg(seconds, 2, 10, QChar('0'));
-    if (milliseconds < 100)
-      str += "0";
-    if (milliseconds < 10)
-      str += "0";
-    str += QString("%1)").arg(milliseconds);
-
-    return str;
+      ss << std::setfill('0') << std::setw(2) << minutes << ":";
+    ss << std::setfill('0') << std::setw(2) << seconds << ".";
+    ss << std::setfill('0') << std::setw(4) << milliseconds;
+    
+    return ss.str();
   };
     
   // Log all the packet info
-  new TreeItem("stream_index", packet.getStreamIndex(), itemTree);
-  new TreeItem("pts", formatTimestamp(packet.getPTS(), timeBase), itemTree);
-  new TreeItem("dts", formatTimestamp(packet.getDTS(), timeBase), itemTree);
-  new TreeItem("duration", formatTimestamp(packet.getDuration(), timeBase), itemTree);
-  new TreeItem("flag_keyframe", packet.getFlagKeyframe(), itemTree);
-  new TreeItem("flag_corrupt", packet.getFlagCorrupt(), itemTree);
-  new TreeItem("flag_discard", packet.getFlagDiscard(), itemTree);
-  new TreeItem("data_size", packet.getDataSize(), itemTree);
+  new TreeItem(itemTree, "stream_index", std::to_string(packet.getStreamIndex()));
+  new TreeItem(itemTree, "pts", formatTimestamp(packet.getPTS(), timeBase));
+  new TreeItem(itemTree, "dts", formatTimestamp(packet.getDTS(), timeBase));
+  new TreeItem(itemTree, "duration", formatTimestamp(packet.getDuration(), timeBase));
+  new TreeItem(itemTree, "flag_keyframe", std::to_string(packet.getFlagKeyframe()));
+  new TreeItem(itemTree, "flag_corrupt", std::to_string(packet.getFlagCorrupt()));
+  new TreeItem(itemTree, "flag_discard", std::to_string(packet.getFlagDiscard()));
+  new TreeItem(itemTree, "data_size", std::to_string(packet.getDataSize()));
 
   itemTree->setStreamIndex(packet.getStreamIndex());
 
@@ -517,7 +512,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   }
   else
   {
-    TreeItem *rawDataRoot = new TreeItem("Data", itemTree);
+    TreeItem *rawDataRoot = new TreeItem(itemTree, "Data");
     const auto nrBytesToLog = std::min(avpacketData.length(), 100);
     for (int i = 0; i < nrBytesToLog; i++)
     {

@@ -1,0 +1,14 @@
+# We'll use defaults from the LLVM style, but with 4 columns indentation.
+IndentWidth: 2
+---
+Language: Cpp
+Standard: c++17
+ColumnLimit: 100
+AlignAfterOpenBracket: Align
+BreakBeforeBraces: Allman
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+BinPackArguments: false
+BinPackParameters: false
+DerivePointerAlignment: false
+PointerAlignment: Right

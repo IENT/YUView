@@ -107,11 +107,10 @@ protected:
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parseNalUnitHeader(const QByteArray &header_byte, TreeItem *root) Q_DECL_OVERRIDE;
+    bool parseNalUnitHeader(const QByteArray &header_byte, TreeItem *root);
 
     bool isSlice()        { return nal_unit_type >= CODED_SLICE_NON_IDR && nal_unit_type <= CODED_SLICE_IDR; }
     virtual QByteArray getNALHeader() const override;
-    virtual bool isParameterSet() const override { return nal_unit_type == SPS || nal_unit_type == PPS; }
 
     /// The information of the NAL unit header
     unsigned int nal_ref_idc {0};

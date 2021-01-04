@@ -325,7 +325,7 @@ AnnexB::ParseResult AnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, st
     int sei_count = 0;
     while(!sei_data.isEmpty())
     {
-      TreeItem *const message_tree = nalRoot ? new TreeItem("", nalRoot) : nullptr;
+      TreeItem *const message_tree = nalRoot ? new TreeItem(nalRoot) : nullptr;
       
       // Parse the SEI header and remove it from the data array
       int nrBytes = new_sei->parse_sei_header(sei_data, message_tree);
@@ -1757,7 +1757,7 @@ AnnexB::sei_parsing_return_t AnnexBAVC::sei::parser_sei_bytes(QByteArray &data, 
     return SEI_PARSING_OK;
 
   // Create a new TreeItem root for the item
-  TreeItem *const itemTree = new TreeItem("raw_bytes()", root);
+  TreeItem *const itemTree = new TreeItem(root, "raw_bytes()");
 
   for (int i=0; i<data.length(); i++)
   {
@@ -1778,7 +1778,7 @@ AnnexB::sei_parsing_return_t AnnexBAVC::sei::parser_sei_bytes(QByteArray &data, 
 AnnexB::sei_parsing_return_t AnnexBAVC::buffering_period_sei::parse_buffering_period_sei(QByteArray &data, const sps_map &active_SPS_list, TreeItem *root)
 {
   // Create a new TreeItem root for the item
-  itemTree = root ? new TreeItem("buffering_period()", root) : nullptr;
+  itemTree = root ? new TreeItem(root, "buffering_period()") : nullptr;
   sei_data_storage = data;
   if (!parse(active_SPS_list, false))
     return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
@@ -1827,7 +1827,7 @@ bool AnnexBAVC::buffering_period_sei::parse(const sps_map &active_SPS_list, bool
 AnnexB::sei_parsing_return_t AnnexBAVC::pic_timing_sei::parse_pic_timing_sei(QByteArray &data, const sps_map &active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
 {
   // Create a new TreeItem root for the item
-  itemTree = root ? new TreeItem("pic_timing()", root) : nullptr;
+  itemTree = root ? new TreeItem(root, "pic_timing()") : nullptr;
   sei_data_storage = data;
   if (!parse(active_SPS_list, CpbDpbDelaysPresentFlag, false))
     return SEI_PARSING_WAIT_FOR_PARAMETER_SETS;
@@ -1961,7 +1961,7 @@ bool AnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData, TreeI
   {
     // Create a new TreeItem root for the item
     // The macros will use this variable to add all the parsed variables
-    TreeItem *const itemTree = new TreeItem("x264 user data", root);
+    TreeItem *const itemTree = new TreeItem(root, "x264 user data");
     new TreeItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578", itemTree);
 
     // This seems to be x264 user data. These contain the encoder settings which might be useful
@@ -2006,7 +2006,7 @@ bool AnnexBAVC::user_data_sei::parse_internal(QByteArray &sliceHeaderData, TreeI
   else
   {
     // Just log the data as a string
-    TreeItem *const itemTree = new TreeItem("custom user data", root);
+    TreeItem *const itemTree = new TreeItem(root, "custom user data");
     new TreeItem("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578", itemTree);
   }
 
