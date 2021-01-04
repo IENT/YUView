@@ -51,29 +51,32 @@ bool checkByteParity(int val)
   return nrOneBits % 2 == 1;
 }
 
-QString getCCDataBytesMeaning(unsigned int byte1, unsigned int byte2)
+std::string getCCDataBytesMeaning(int64_t byte1And2)
 {
+  auto byte1 = unsigned((byte1And2 >> 8) & 0xFF);
+  auto byte2 = unsigned(byte1And2 & 0xFF);
+
   // Remove the parity bits
   byte1 &= 0x7f;
   byte2 &= 0x7f;
 
   auto colorFromIndex = [](int i) 
   {
-    const QStringList c = QStringList() << "Green" << "Blue" << "Cyan" << "Red" << "Yellow" << "Magenta";
+    auto c = std::vector<std::string>({"Green", "Blue", "Cyan", "Red", "Yellow", "Magenta"});
     int idx = i/2 - 1;
     if (idx >= 0 && idx <= 5)
       return c[idx];
-    return QString("White");
+    return std::string("White");
   };
   auto styleFromIndex = [](int i)
   {
     if (i == 14)
-      return "Italic";
+      return std::string("Italic");
     if (i == 15)
-      return "Italic Underlined";
+      return std::string("Italic Underlined");
     if (i % 2 == 1)
-      return "Underlined";
-    return "";
+      return std::string("Underlined");
+    return std::string();
   };
   auto indentFromIndex = [](int i)
   {
@@ -93,11 +96,11 @@ QString getCCDataBytesMeaning(unsigned int byte1, unsigned int byte2)
     
     byte2 &= 0x1f;
 
-    QString color = colorFromIndex(byte2);
-    QString style = styleFromIndex(byte2);
+    auto color = colorFromIndex(byte2);
+    auto style = styleFromIndex(byte2);
     int indent = indentFromIndex(byte2);
 
-    return QString("PAC (Font and color) Idx %1 - Row %2 Color %3 Indent %4 %5").arg(pacIdx).arg(row).arg(color).arg(indent).arg(style);
+    return "PAC (Font and color) Idx " + std::to_string(pacIdx) + " - Row " + std::to_string(row) + " Color " + color + " Indent " + std::to_string(indent) + " " + style;
   } 
   else if ((byte1 == 0x11 && byte2 >= 0x20 && byte2 <= 0x2f ) || (byte1 == 0x17 && byte2 >= 0x2e && byte2 <= 0x2f))
   {
@@ -105,14 +108,14 @@ QString getCCDataBytesMeaning(unsigned int byte1, unsigned int byte2)
     if (idx >= 32)
       return "Textattribut - invalid index";
 
-    QString color = colorFromIndex(idx);
-    QString style = styleFromIndex(idx);
+    auto color = colorFromIndex(idx);
+    auto style = styleFromIndex(idx);
 
-    return QString("Textattribut (Font and color) Idx %1 - Color %2 ").arg(idx).arg(color).arg(style);
+    return "Textattribut (Font and color) Idx " + std::to_string(idx) + " - Color " + color + " " + style;
   } 
   else if (byte1 == 0x14 || byte1 == 0x15 || byte1 == 0x1c) 
   {
-    const QStringList m = QStringList() << "resume caption loading" << "backspace (overwrite last char)" << "alarm off (unused)" << "alarm on (unused)" << "delete to end of row (clear line)" << "roll up 2 (scroll size)" << "roll up 3 (scroll size)" << "roll up 4 (scroll size)" << "flashes captions on (0.25 seconds once per second)" << "resume direct captioning (start caption text)" << "text restart (start non-caption text)" << "resume text display (resume non-caption text)" << "erase display memory (clear screen)" << "carriage return (scroll lines up)" << "erase non displayed memory (clear buffer)" << "end of caption (display buffer)";
+    auto m = std::vector<std::string>({"resume caption loading", "backspace (overwrite last char)", "alarm off (unused)", "alarm on (unused)", "delete to end of row (clear line)", "roll up 2 (scroll size)", "roll up 3 (scroll size)", "roll up 4 (scroll size)", "flashes captions on (0.25 seconds once per second)", "resume direct captioning (start caption text)", "text restart (start non-caption text)", "resume text display (resume non-caption text)", "erase display memory (clear screen)", "carriage return (scroll lines up)", "erase non displayed memory (clear buffer)", "end of caption (display buffer)"});
     if (byte2 >= 32 && byte2 <= 47)
       return m.at(byte2 - 32);
     return "Unknown command";
@@ -127,17 +130,17 @@ QString getCCDataBytesMeaning(unsigned int byte1, unsigned int byte2)
       return "Special Portuguese/German/Danish character";
   } 
   else if (byte1 >= 0x20) 
-    return QString("Standard characters '%1%2'").arg(char(byte1)).arg(char(byte2));
+    return "Standard characters '" + std::string(1, char(byte1)) + std::string(1, char(byte2)) + "'";
   else if (byte1 == 0x17 && byte2 >= 0x21 && byte2 <= 0x23) 
   {
     int nrSpaces = byte2 - 0x20;
-    return QString("Tab offsets (spacing) - %1 spaces").arg(nrSpaces);
+    return "Tab offsets (spacing) - " + std::to_string(nrSpaces) + " spaces";
   }
   
   return "Non data code";
 }
 
-QString getCCDataPacketMeaning(unsigned int cc_packet_data)
+std::string getCCDataPacketMeaning(int64_t cc_packet_data)
 {
   // Parse the 3 bytes as 608
   unsigned int byte0 = (cc_packet_data >> 16) & 0xff;
@@ -171,70 +174,59 @@ QString getCCDataPacketMeaning(unsigned int cc_packet_data)
   if ((byte0 == 0xfa || byte0 == 0xfc || byte0 == 0xfd) && ((byte1 & 0x7f) == 0 && (byte2 & 0x7f) == 0))
     return "";
 
-  return getCCDataBytesMeaning(byte1, byte2);
+  int64_t byte1And2 = (byte1 << 8) + byte2;
+  return getCCDataBytesMeaning(byte1And2);
 }
 
 } // namespace
 
-namespace parser
+namespace parser::subtitle
 {
 
-int subtitle_608::parse608SubtitlePacket(QByteArray data, TreeItem *parent)
+using namespace reader;
+
+void sub_608::parse608SubtitlePacket(ByteVector data, TreeItem *parent)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet. 
   // We want to parse the item and then set a good description.
-  QString specificDescription;
   if (!parent)
-    return -1;
+    return;
 
   // Create a sub byte parser to access the bits
-  ReaderHelper reader(data, parent, "subtitling_608()");
+  ReaderHelperNew reader(data, parent, "subtitling_608()");
 
   if (data.size() != 10 && data.size() != 20)
     throw std::logic_error("Unknown packt length. Length should be 10 or 20 bytes");
 
   unsigned int nrMessages = data.size() == 20 ? 2 : 1;
-  for (size_t i = 0; i < nrMessages; i++)
+  for (unsigned i = 0; i < nrMessages; i++)
   {
     // The packet should start with a size indicator of 10
-    unsigned int sizeIndicator;
-    READBITS(sizeIndicator, 32);
+    reader.readBits("sizeIndicator", 32, Options().withCheckEqualTo(10));
 
-    if (sizeIndicator != 10)
-      throw std::logic_error("The size indicator should be 10");
-
-    unsigned int tag;
-    QString (*tag_meaning)(unsigned int) = [](unsigned int value)
+    auto tag_meaning = [](int64_t value)
     {
-      QString r;
-      for (unsigned int j = 0; j < 4; j++)
+      std::string r;
+      for (unsigned j = 0; j < 4; j++)
       {
         char c = (value >> (3 - j) * 8) & 0xff;
-        r += QString(c);
+        r.push_back(c);
       }
       return r;
     };
-    READBITS_M(tag, 32, tag_meaning);
+    auto tag = reader.readBits("tag", 32, Options().withMeaningFunction(tag_meaning));
     
     if (tag != 1667527730 && tag != 1667522932)
       throw std::logic_error("Unknown tag. Should be cdt2 or cdat.");
 
-    unsigned int ccByte0, ccByte1;
-    READBITS(ccByte0, 8);
-    READBITS(ccByte1, 8);
-
-    auto bytesMeaning = getCCDataBytesMeaning(ccByte0, ccByte1);
-    LOGSTRVAL("CC Bytes Decoded", bytesMeaning);
-  }
-  
-  return reader.nrBytesRead();
+    reader.readBits("ccByte0/1", 16, Options().withMeaningFunction(getCCDataBytesMeaning));
+  }  
 }
 
-int subtitle_608::parse608DataPayloadCCDataPacket(ReaderHelper &reader, unsigned int &ccData)
+unsigned sub_608::parse608DataPayloadCCDataPacket(ReaderHelperNew &reader)
 {
-    READBITS_M(ccData, 24, &getCCDataPacketMeaning);
-    return 3;
+    return reader.readBits("ccData", 24, Options().withMeaningFunction(getCCDataPacketMeaning));
 }
 
 } // namespace parser

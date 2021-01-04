@@ -34,8 +34,9 @@
 
 #include "common/typedef.h"
 
-#include <optional>
+#include <functional>
 #include <memory>
+#include <optional>
 
 namespace parser::reader
 {
@@ -49,8 +50,8 @@ struct RangeCheckResult
 class Check
 {
 public:
-  Check() = default;
-  virtual ~Check() = default;
+  Check()                                                  = default;
+  virtual ~Check()                                         = default;
   virtual RangeCheckResult checkValue(int64_t value) const = 0;
 };
 
@@ -60,6 +61,7 @@ struct Options
 
   [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
   [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
+  [[nodiscard]] Options &&withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
   [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
   [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
   [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
@@ -67,6 +69,7 @@ struct Options
 
   std::string                         meaningString;
   std::map<int, std::string>          meaningMap;
+  std::function<std::string(int64_t)> meaningFunction;
   std::vector<std::unique_ptr<Check>> checkList;
 };
 

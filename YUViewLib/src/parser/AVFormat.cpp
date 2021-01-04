@@ -506,7 +506,8 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   {
     try
     {
-      subtitle_608::parse608SubtitlePacket(avpacketData, itemTree);
+      auto data = reader::ReaderHelperNew::convertBeginningToByteVector(avpacketData);
+      subtitle::sub_608::parse608SubtitlePacket(data, itemTree);
     }
     catch (...)
     {

@@ -77,8 +77,11 @@ public:
   [[nodiscard]] bool byte_aligned() const { return this->reader.byte_aligned(); }
   [[nodiscard]] bool canReadBits(unsigned nrBits) const { return this->reader.canReadBits(nrBits); }
   [[nodiscard]] size_t nrBytesRead() const { return this->reader.nrBytesRead(); }
+  [[nodiscard]] size_t nrBytesLeft() const { return this->reader.nrBytesLeft(); }
 
   [[nodiscard]] TreeItem *getCurrentItemTree() { return currentTreeLevel; }
+
+  void disableEmulationPrevention() { this->reader.disableEmulationPrevention(); }
 
 private:
   void logExceptionAndThrowError [[noreturn]] (const std::exception &ex, const std::string &when);

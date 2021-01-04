@@ -139,6 +139,12 @@ Options &&Options::withMeaningMap(const std::map<int, std::string> &meaningMap)
   return std::move(*this);
 }
 
+Options &&Options::withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction)
+{
+  this->meaningFunction = meaningFunction;
+  return std::move(*this);
+}
+
 Options && Options::withCheckEqualTo(int64_t value)
 {
   this->checkList.emplace_back(std::make_unique<CheckEqualTo>(value));
