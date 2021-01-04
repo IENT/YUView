@@ -81,7 +81,7 @@ public:
                                  std::optional<pairUint64> nalStartEndPosFile = {},
                                  TreeItem *                parent             = nullptr) override
   {
-    auto dataNew = reader::ReaderHelperNew::convertBeginningToByteVector(data);
+    auto dataNew = reader::SubByteReaderLogging::convertBeginningToByteVector(data);
     return parseAndAddNALUnit(nalID, dataNew, bitrateEntry, nalStartEndPosFile, parent);
   }
 

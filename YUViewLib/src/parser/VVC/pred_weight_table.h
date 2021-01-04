@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -48,7 +48,7 @@ class pred_weight_table : public NalRBSP
 public:
   pred_weight_table()  = default;
   ~pred_weight_table() = default;
-  void parse(reader::ReaderHelperNew &               reader,
+  void parse(reader::SubByteReaderLogging &               reader,
              std::shared_ptr<seq_parameter_set_rbsp> sps,
              std::shared_ptr<pic_parameter_set_rbsp> pps,
              std::shared_ptr<slice_layer_rbsp>       sl,

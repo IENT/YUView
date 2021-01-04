@@ -39,9 +39,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void lmcs_data::parse(ReaderHelperNew &reader, adaptation_parameter_set_rbsp *aps)
+void lmcs_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp *aps)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "lmcs_data");
+  SubByteReaderLoggingSubLevel subLevel(reader, "lmcs_data");
 
   this->lmcs_min_bin_idx = reader.readUEV("lmcs_min_bin_idx", Options().withCheckRange({0, 15}));
   this->lmcs_delta_max_bin_idx =

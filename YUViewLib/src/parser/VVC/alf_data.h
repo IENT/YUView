@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -45,7 +45,7 @@ class alf_data : public NalRBSP
 public:
   alf_data()  = default;
   ~alf_data() = default;
-  void parse(reader::ReaderHelperNew &reader, adaptation_parameter_set_rbsp *aps);
+  void parse(reader::SubByteReaderLogging &reader, adaptation_parameter_set_rbsp *aps);
 
   bool               alf_luma_filter_signal_flag{};
   bool               alf_chroma_filter_signal_flag{};

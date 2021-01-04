@@ -36,7 +36,7 @@
 
 #include "Subtitles/AnnexBItuTT35.h"
 #include "common/Macros.h"
-#include "common/ReaderHelperNew.h"
+#include "common/SubByteReaderLogging.h"
 
 #define PARSER_AVC_DEBUG_OUTPUT 0
 #if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
@@ -369,7 +369,7 @@ AnnexB::ParseResult AnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, st
       {
         try
         {
-          auto data = reader::ReaderHelperNew::convertBeginningToByteVector(sub_sei_data);
+          auto data = reader::SubByteReaderLogging::convertBeginningToByteVector(sub_sei_data);
           subtitle::itutt35::parse_user_data_registered_itu_t_t35(data, message_tree);
           result = SEI_PARSING_OK;
         }

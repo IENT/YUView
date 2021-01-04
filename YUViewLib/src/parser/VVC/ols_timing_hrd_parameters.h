@@ -33,7 +33,7 @@
 #pragma once
 
 #include "common/typedef.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "sublayer_hrd_parameters.h"
 
 namespace parser::vvc
@@ -46,7 +46,7 @@ class ols_timing_hrd_parameters
 public:
   ols_timing_hrd_parameters()  = default;
   ~ols_timing_hrd_parameters() = default;
-  void parse(reader::ReaderHelperNew &      reader,
+  void parse(reader::SubByteReaderLogging &      reader,
              unsigned                       firstSubLayer,
              unsigned                       MaxSubLayersVal,
              general_timing_hrd_parameters *general_hrd);

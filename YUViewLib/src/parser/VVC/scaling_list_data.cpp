@@ -83,9 +83,9 @@ vector4d<int> calcDiagScanOrder()
 
 using namespace parser::reader;
 
-void scaling_list_data::parse(ReaderHelperNew &reader, adaptation_parameter_set_rbsp *aps)
+void scaling_list_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp *aps)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "scaling_list_data");
+  SubByteReaderLoggingSubLevel subLevel(reader, "scaling_list_data");
 
   auto DiagScanOrder = calcDiagScanOrder();
 

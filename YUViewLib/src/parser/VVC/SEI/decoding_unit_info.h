@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "sei_payload.h"
 
 namespace parser::vvc
@@ -45,7 +45,7 @@ class decoding_unit_info : public sei_payload
 public:
   decoding_unit_info()  = default;
   ~decoding_unit_info() = default;
-  void parse(reader::ReaderHelperNew &         reader,
+  void parse(reader::SubByteReaderLogging &         reader,
              unsigned                          nalTemporalID,
              std::shared_ptr<buffering_period> bp);
 

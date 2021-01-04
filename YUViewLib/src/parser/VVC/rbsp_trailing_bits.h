@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -42,7 +42,7 @@ class rbsp_trailing_bits
 public:
   rbsp_trailing_bits()  = default;
   ~rbsp_trailing_bits() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   bool rbsp_stop_one_bit{};
   bool rbsp_alignment_zero_bit{};

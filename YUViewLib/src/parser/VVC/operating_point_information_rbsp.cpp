@@ -37,9 +37,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void operating_point_information_rbsp::parse(ReaderHelperNew &reader)
+void operating_point_information_rbsp::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "operating_point_information_rbsp");
+  SubByteReaderLoggingSubLevel subLevel(reader, "operating_point_information_rbsp");
 
   this->opi_ols_info_present_flag  = reader.readFlag("opi_ols_info_present_flag");
   this->opi_htid_info_present_flag = reader.readFlag("opi_htid_info_present_flag");

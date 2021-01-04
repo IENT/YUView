@@ -34,7 +34,7 @@
 
 #include "NalUnitVVC.h"
 #include "commonMaps.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "pred_weight_table.h"
 #include "ref_pic_lists.h"
 
@@ -52,7 +52,7 @@ class picture_header_structure : public NalRBSP
 public:
   picture_header_structure()  = default;
   ~picture_header_structure() = default;
-  void parse(reader::ReaderHelperNew &         reader,
+  void parse(reader::SubByteReaderLogging &         reader,
              VPSMap &                          vpsMap,
              SPSMap &                          spsMap,
              PPSMap &                          ppsMap,

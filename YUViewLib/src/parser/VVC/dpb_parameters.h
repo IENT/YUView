@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -42,7 +42,7 @@ class dpb_parameters
 public:
   dpb_parameters()  = default;
   ~dpb_parameters() = default;
-  void parse(reader::ReaderHelperNew &reader, unsigned MaxSubLayersMinus1, bool subLayerInfoFlag);
+  void parse(reader::SubByteReaderLogging &reader, unsigned MaxSubLayersMinus1, bool subLayerInfoFlag);
 
   std::vector<unsigned> dpb_max_dec_pic_buffering_minus1{};
   std::vector<unsigned> dpb_max_num_reorder_pics{};

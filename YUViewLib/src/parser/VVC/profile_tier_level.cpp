@@ -37,7 +37,7 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void profile_tier_level::parse(ReaderHelperNew &reader,
+void profile_tier_level::parse(SubByteReaderLogging &reader,
                                bool             profileTierPresentFlag,
                                unsigned         MaxNumSubLayersMinus1)
 {

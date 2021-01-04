@@ -36,7 +36,7 @@
 #include "dpb_parameters.h"
 #include "general_timing_hrd_parameters.h"
 #include "ols_timing_hrd_parameters.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "profile_tier_level.h"
 #include "rbsp_trailing_bits.h"
 
@@ -48,7 +48,7 @@ class video_parameter_set_rbsp : public NalRBSP
 public:
   video_parameter_set_rbsp()  = default;
   ~video_parameter_set_rbsp() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   unsigned                      vps_video_parameter_set_id{};
   unsigned                      vps_max_layers_minus1{};

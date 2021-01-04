@@ -33,7 +33,7 @@
 #include "AnnexBItuTT35.h"
 
 #include "Subtitle608.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "parser/common/functions.h"
 
 namespace
@@ -41,9 +41,9 @@ namespace
 
 using namespace parser::reader;
 
-void parse_ATSC1_data(ReaderHelperNew &reader)
+void parse_ATSC1_data(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel s(reader, "ATSC1_data");
+  SubByteReaderLoggingSubLevel s(reader, "ATSC1_data");
 
   unsigned user_data_type_code;
   {
@@ -97,7 +97,7 @@ namespace parser::subtitle::itutt35
 
 void parse_user_data_registered_itu_t_t35(ByteVector &data, TreeItem *root)
 {
-  ReaderHelperNew reader(data, root, "user_data_registered_itu_t_t35()");
+  SubByteReaderLogging reader(data, root, "user_data_registered_itu_t_t35()");
   // For all SEI messages, the emulation prevention is already removed one level up
   reader.disableEmulationPrevention();
 

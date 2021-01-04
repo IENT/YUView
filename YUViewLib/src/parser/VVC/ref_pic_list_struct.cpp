@@ -39,13 +39,13 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void ref_pic_list_struct::parse(ReaderHelperNew &                       reader,
+void ref_pic_list_struct::parse(SubByteReaderLogging &                       reader,
                                 unsigned                                listIdx,
                                 unsigned                                rplsIdx,
                                 std::shared_ptr<seq_parameter_set_rbsp> sps)
 {
   assert(sps != nullptr);
-  ReaderHelperNewSubLevel subLevel(reader, "ref_pic_list_struct");
+  SubByteReaderLoggingSubLevel subLevel(reader, "ref_pic_list_struct");
 
   this->num_ref_entries[listIdx][rplsIdx] = reader.readUEV("num_ref_entries");
   if (sps->sps_long_term_ref_pics_flag && rplsIdx < sps->sps_num_ref_pic_lists[listIdx] &&

@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -44,7 +44,7 @@ class ref_pic_list_struct
 public:
   ref_pic_list_struct()  = default;
   ~ref_pic_list_struct() = default;
-  void parse(reader::ReaderHelperNew &               reader,
+  void parse(reader::SubByteReaderLogging &               reader,
              unsigned                                listIdx,
              unsigned                                rplsIdx,
              std::shared_ptr<seq_parameter_set_rbsp> sps);

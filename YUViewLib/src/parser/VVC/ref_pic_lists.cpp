@@ -42,11 +42,11 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void ref_pic_lists::parse(ReaderHelperNew &                       reader,
+void ref_pic_lists::parse(SubByteReaderLogging &                       reader,
                           std::shared_ptr<seq_parameter_set_rbsp> sps,
                           std::shared_ptr<pic_parameter_set_rbsp> pps)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "ref_pic_lists");
+  SubByteReaderLoggingSubLevel subLevel(reader, "ref_pic_lists");
 
   for (unsigned i = 0; i < 2; i++)
   {

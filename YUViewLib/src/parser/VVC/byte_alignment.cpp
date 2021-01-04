@@ -37,9 +37,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void byte_alignment::parse(ReaderHelperNew &reader)
+void byte_alignment::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "byte_alignment");
+  SubByteReaderLoggingSubLevel subLevel(reader, "byte_alignment");
 
   reader.readFlag("byte_alignment_bit_equal_to_one", Options().withCheckEqualTo(1));
   while (!reader.byte_aligned())

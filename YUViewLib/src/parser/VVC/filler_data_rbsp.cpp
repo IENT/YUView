@@ -37,9 +37,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void filler_data_rbsp::parse(ReaderHelperNew &reader)
+void filler_data_rbsp::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "filler_data_rbsp");
+  SubByteReaderLoggingSubLevel subLevel(reader, "filler_data_rbsp");
 
   while(reader.canReadBits(8))
   {

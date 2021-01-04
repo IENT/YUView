@@ -36,7 +36,7 @@
 #include <optional>
 #include <stack>
 
-#include "ReaderHelperNewOptions.h"
+#include "SubByteReaderLoggingOptions.h"
 #include "SubByteReaderNew.h"
 #include "TreeItem.h"
 #include "common/typedef.h"
@@ -48,15 +48,17 @@ typedef std::string (*meaning_callback_function)(unsigned int);
 
 // This is a wrapper around the sub_byte_reader that adds the functionality to log the read symbold
 // to TreeItems
-class ReaderHelperNew
+class SubByteReaderLogging : public SubByteReaderNew
 {
 public:
-  ReaderHelperNew() = default;
-  ReaderHelperNew(SubByteReaderNew &reader, TreeItem *item, std::string new_sub_item_name = "");
-  ReaderHelperNew(const ByteVector &inArr,
-                  TreeItem *        item,
-                  std::string       new_sub_item_name = "",
-                  size_t            inOffset          = 0);
+  SubByteReaderLogging() = default;
+  SubByteReaderLogging(SubByteReaderNew &reader,
+                       TreeItem *        item,
+                       std::string       new_sub_item_name = "");
+  SubByteReaderLogging(const ByteVector &inArr,
+                       TreeItem *        item,
+                       std::string       new_sub_item_name = "",
+                       size_t            inOffset          = 0);
 
   // Add another hierarchical log level to the tree or go back up. Don't call these directly but use
   // the reader_sub_level wrapper.
@@ -73,37 +75,29 @@ public:
   int64_t    readSEV(const std::string &symbolName, const Options &options = {});
   ByteVector readBytes(const std::string &symbolName, size_t nrBytes, const Options &options = {});
 
-  [[nodiscard]] bool more_rbsp_data() const { return this->reader.more_rbsp_data(); }
-  [[nodiscard]] bool byte_aligned() const { return this->reader.byte_aligned(); }
-  [[nodiscard]] bool canReadBits(unsigned nrBits) const { return this->reader.canReadBits(nrBits); }
-  [[nodiscard]] size_t nrBytesRead() const { return this->reader.nrBytesRead(); }
-  [[nodiscard]] size_t nrBytesLeft() const { return this->reader.nrBytesLeft(); }
-
   [[nodiscard]] TreeItem *getCurrentItemTree() { return currentTreeLevel; }
-
-  void disableEmulationPrevention() { this->reader.disableEmulationPrevention(); }
 
 private:
   void logExceptionAndThrowError [[noreturn]] (const std::exception &ex, const std::string &when);
 
   std::stack<TreeItem *> itemHierarchy;
   TreeItem *             currentTreeLevel{nullptr};
-  SubByteReaderNew       reader;
 };
 
-// A simple wrapper for ReaderHelperNew.addLogSubLevel / ReaderHelper->removeLogSubLevel
-class ReaderHelperNewSubLevel
+// A simple wrapper for SubByteReaderLogging->addLogSubLevel /
+// SubByteReaderLogging->removeLogSubLevel
+class SubByteReaderLoggingSubLevel
 {
 public:
-  ReaderHelperNewSubLevel(ReaderHelperNew &reader, std::string name)
+  SubByteReaderLoggingSubLevel(SubByteReaderLogging &reader, std::string name)
   {
     reader.addLogSubLevel(name);
     r = &reader;
   }
-  ~ReaderHelperNewSubLevel() { r->removeLogSubLevel(); }
+  ~SubByteReaderLoggingSubLevel() { r->removeLogSubLevel(); }
 
 private:
-  ReaderHelperNew *r;
+  SubByteReaderLogging *r;
 };
 
 } // namespace parser::reader

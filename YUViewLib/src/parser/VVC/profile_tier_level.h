@@ -33,7 +33,7 @@
 #pragma once
 
 #include "general_constraints_info.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 
 namespace parser::vvc
@@ -44,7 +44,7 @@ class profile_tier_level
 public:
   profile_tier_level()  = default;
   ~profile_tier_level() = default;
-  void parse(reader::ReaderHelperNew &reader,
+  void parse(reader::SubByteReaderLogging &reader,
              bool                     profileTierPresentFlag,
              unsigned                 MaxNumSubLayersMinus1);
 

@@ -36,7 +36,7 @@
 #include "dpb_parameters.h"
 #include "general_timing_hrd_parameters.h"
 #include "ols_timing_hrd_parameters.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "profile_tier_level.h"
 #include "rbsp_trailing_bits.h"
 #include "ref_pic_list_struct.h"
@@ -49,7 +49,7 @@ class seq_parameter_set_rbsp : public NalRBSP, public std::enable_shared_from_th
 public:
   seq_parameter_set_rbsp()  = default;
   ~seq_parameter_set_rbsp() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   unsigned                      sps_seq_parameter_set_id{};
   unsigned                      sps_video_parameter_set_id{};

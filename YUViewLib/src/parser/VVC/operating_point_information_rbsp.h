@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "rbsp_trailing_bits.h"
 
 namespace parser::vvc
@@ -44,7 +44,7 @@ class operating_point_information_rbsp : public NalRBSP
 public:
   operating_point_information_rbsp()  = default;
   ~operating_point_information_rbsp() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   bool               opi_ols_info_present_flag{};
   bool               opi_htid_info_present_flag{};

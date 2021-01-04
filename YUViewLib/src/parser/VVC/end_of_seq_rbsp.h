@@ -33,7 +33,6 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
 
 namespace parser::vvc
 {

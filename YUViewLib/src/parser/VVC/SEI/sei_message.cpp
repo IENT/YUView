@@ -43,12 +43,12 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void sei_message::parse(ReaderHelperNew &                 reader,
+void sei_message::parse(SubByteReaderLogging &                 reader,
                         NalType                           nal_unit_type,
                         unsigned                          nalTemporalID,
                         std::shared_ptr<buffering_period> lastBufferingPeriod)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "sei_message");
+  SubByteReaderLoggingSubLevel subLevel(reader, "sei_message");
 
   unsigned payloadtype_byte;
   do

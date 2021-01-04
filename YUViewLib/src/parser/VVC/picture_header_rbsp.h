@@ -34,7 +34,7 @@
 
 #include "NalUnitVVC.h"
 #include "commonMaps.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "picture_header_structure.h"
 #include "rbsp_trailing_bits.h"
 
@@ -48,7 +48,7 @@ class picture_header_rbsp : public NalRBSP
 public:
   picture_header_rbsp()  = default;
   ~picture_header_rbsp() = default;
-  void parse(reader::ReaderHelperNew &         reader,
+  void parse(reader::SubByteReaderLogging &         reader,
              VPSMap &                          vpsMap,
              SPSMap &                          spsMap,
              PPSMap &                          ppsMap,

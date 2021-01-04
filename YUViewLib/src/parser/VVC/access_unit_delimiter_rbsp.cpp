@@ -37,9 +37,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void access_unit_delimiter_rbsp::parse(ReaderHelperNew &reader)
+void access_unit_delimiter_rbsp::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "access_unit_delimiter_rbsp");
+  SubByteReaderLoggingSubLevel subLevel(reader, "access_unit_delimiter_rbsp");
 
   this->aud_irap_or_gdr_flag = reader.readFlag("aud_irap_or_gdr_flag");
   this->aud_pic_type         = reader.readBits("aud_pic_type", 3, Options().withCheckRange({0, 2}));

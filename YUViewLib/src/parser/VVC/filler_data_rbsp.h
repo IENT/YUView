@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "rbsp_trailing_bits.h"
 
 namespace parser::vvc
@@ -44,7 +44,7 @@ class filler_data_rbsp : public NalRBSP
 public:
   filler_data_rbsp() = default;
   ~filler_data_rbsp() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   unsigned number_fd_ff_bytes{};
   rbsp_trailing_bits rbsp_trailing_bits_instance;

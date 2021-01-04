@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -42,7 +42,7 @@ class general_timing_hrd_parameters
 public:
   general_timing_hrd_parameters()  = default;
   ~general_timing_hrd_parameters() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   unsigned num_units_in_tick{};
   unsigned time_scale{};

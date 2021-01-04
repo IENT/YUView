@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "sei_payload.h"
 
 namespace parser::vvc
@@ -46,7 +46,7 @@ class scalable_nesting : public sei_payload
 public:
   scalable_nesting()  = default;
   ~scalable_nesting() = default;
-  void parse(reader::ReaderHelperNew &         reader,
+  void parse(reader::SubByteReaderLogging &         reader,
              NalType                           nal_unit_type,
              unsigned                          nalTemporalID,
              std::shared_ptr<buffering_period> lastBufferingPeriod);

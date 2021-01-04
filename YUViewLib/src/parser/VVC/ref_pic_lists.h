@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "ref_pic_list_struct.h"
 
 namespace parser::vvc
@@ -47,7 +47,7 @@ class ref_pic_lists : public NalRBSP
 public:
   ref_pic_lists()  = default;
   ~ref_pic_lists() = default;
-  void parse(reader::ReaderHelperNew &               reader,
+  void parse(reader::SubByteReaderLogging &               reader,
              std::shared_ptr<seq_parameter_set_rbsp> sps,
              std::shared_ptr<pic_parameter_set_rbsp> pps);
 

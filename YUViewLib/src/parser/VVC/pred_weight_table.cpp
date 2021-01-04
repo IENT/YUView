@@ -42,13 +42,13 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void pred_weight_table::parse(ReaderHelperNew &                       reader,
+void pred_weight_table::parse(SubByteReaderLogging &                       reader,
                               std::shared_ptr<seq_parameter_set_rbsp> sps,
                               std::shared_ptr<pic_parameter_set_rbsp> pps,
                               std::shared_ptr<slice_layer_rbsp>       sl,
                               std::shared_ptr<ref_pic_lists>          rpl)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "pred_weight_table");
+  SubByteReaderLoggingSubLevel subLevel(reader, "pred_weight_table");
 
   this->luma_log2_weight_denom =
       reader.readUEV("luma_log2_weight_denom", Options().withCheckRange({0, 7}));

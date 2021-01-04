@@ -41,7 +41,7 @@
 #include "AnnexBMpeg2.h"
 #include "Subtitles/SubtitleDVB.h"
 #include "Subtitles/Subtitle608.h"
-#include "common/ReaderHelperNew.h"
+#include "common/SubByteReaderLogging.h"
 
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
@@ -479,7 +479,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
       QString segmentTypeName;
       try
       {  
-        auto data = reader::ReaderHelperNew::convertBeginningToByteVector(avpacketData.mid(posInData));
+        auto data = reader::SubByteReaderLogging::convertBeginningToByteVector(avpacketData.mid(posInData));
         auto [nrBytesRead, name] = subtitle::dvb::parseDVBSubtitleSegment(data, itemTree);
         DEBUG_AVFORMAT("AVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
         posInData += int(nrBytesRead);
@@ -506,7 +506,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   {
     try
     {
-      auto data = reader::ReaderHelperNew::convertBeginningToByteVector(avpacketData);
+      auto data = reader::SubByteReaderLogging::convertBeginningToByteVector(avpacketData);
       subtitle::sub_608::parse608SubtitlePacket(data, itemTree);
     }
     catch (...)

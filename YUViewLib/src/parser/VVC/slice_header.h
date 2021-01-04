@@ -34,7 +34,7 @@
 
 #include "NalUnitVVC.h"
 #include "byte_alignment.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "picture_header_structure.h"
 #include "pred_weight_table.h"
 #include "ref_pic_lists.h"
@@ -58,7 +58,7 @@ class slice_header : public NalRBSP
 public:
   slice_header()  = default;
   ~slice_header() = default;
-  void parse(reader::ReaderHelperNew &                 reader,
+  void parse(reader::SubByteReaderLogging &                 reader,
              NalType                                   nal_unit_type,
              VPSMap &                                  vpsMap,
              SPSMap &                                  spsMap,

@@ -32,7 +32,7 @@
 
 #include "SubtitleDVB.h"
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "parser/common/functions.h"
 
 #include <stdexcept>
@@ -42,9 +42,9 @@ namespace
 
 using namespace parser::reader;
 
-void parsePageCompositionSegment(ReaderHelperNew &reader, unsigned segment_length)
+void parsePageCompositionSegment(SubByteReaderLogging &reader, unsigned segment_length)
 {
-  ReaderHelperNewSubLevel s(reader, "page_composition_segment()");
+  SubByteReaderLoggingSubLevel s(reader, "page_composition_segment()");
 
   reader.readBits("page_time_out", 8);
   reader.readBits("page_version_number", 4);
@@ -62,9 +62,9 @@ void parsePageCompositionSegment(ReaderHelperNew &reader, unsigned segment_lengt
   }
 }
 
-void parseRegionCompositionSegment(ReaderHelperNew &reader, unsigned segment_length)
+void parseRegionCompositionSegment(SubByteReaderLogging &reader, unsigned segment_length)
 {
-  ReaderHelperNewSubLevel s(reader, "region_composition_segment()");
+  SubByteReaderLoggingSubLevel s(reader, "region_composition_segment()");
 
   reader.readBits("region_id", 8);
   reader.readBits("region_version_number", 4);
@@ -101,9 +101,9 @@ void parseRegionCompositionSegment(ReaderHelperNew &reader, unsigned segment_len
   }
 }
 
-void parseCLUTDefinitionSegment(ReaderHelperNew &reader, unsigned segment_length)
+void parseCLUTDefinitionSegment(SubByteReaderLogging &reader, unsigned segment_length)
 {
-  ReaderHelperNewSubLevel s(reader, "CLUT_definition_segment()");
+  SubByteReaderLoggingSubLevel s(reader, "CLUT_definition_segment()");
 
   reader.readBits("CLUT_id", 8);
   reader.readBits("CLUT_version_number", 4);
@@ -139,9 +139,9 @@ void parseCLUTDefinitionSegment(ReaderHelperNew &reader, unsigned segment_length
   }
 }
 
-std::tuple<bool, unsigned> parse_2_bit_pixel_code_string(ReaderHelperNew &reader)
+std::tuple<bool, unsigned> parse_2_bit_pixel_code_string(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel s(reader, "2-bit/pixel_code_string()");
+  SubByteReaderLoggingSubLevel s(reader, "2-bit/pixel_code_string()");
 
   bool end      = false;
   auto bitsRead = 0u;
@@ -190,9 +190,9 @@ std::tuple<bool, unsigned> parse_2_bit_pixel_code_string(ReaderHelperNew &reader
   return {end, bitsRead};
 }
 
-std::tuple<bool, unsigned> parse_4_bit_pixel_code_string(ReaderHelperNew &reader)
+std::tuple<bool, unsigned> parse_4_bit_pixel_code_string(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel s(reader, "4-bit/pixel_code_string()");
+  SubByteReaderLoggingSubLevel s(reader, "4-bit/pixel_code_string()");
 
   bool end      = false;
   auto bitsRead = 0u;
@@ -243,9 +243,9 @@ std::tuple<bool, unsigned> parse_4_bit_pixel_code_string(ReaderHelperNew &reader
   return {end, bitsRead};
 }
 
-std::tuple<bool, unsigned> parse_8_bit_pixel_code_string(ReaderHelperNew &reader)
+std::tuple<bool, unsigned> parse_8_bit_pixel_code_string(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel s(reader, "8-bit/pixel_code_string()");
+  SubByteReaderLoggingSubLevel s(reader, "8-bit/pixel_code_string()");
 
   bool end      = false;
   auto bitsRead = 0u;
@@ -274,9 +274,9 @@ std::tuple<bool, unsigned> parse_8_bit_pixel_code_string(ReaderHelperNew &reader
   return {end, bitsRead};
 }
 
-unsigned parsePixelDataSubBlock(ReaderHelperNew &reader)
+unsigned parsePixelDataSubBlock(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel s(reader, "pixel-data_sub-block()");
+  SubByteReaderLoggingSubLevel s(reader, "pixel-data_sub-block()");
 
   unsigned data_type;
   {
@@ -353,9 +353,9 @@ unsigned parsePixelDataSubBlock(ReaderHelperNew &reader)
   return 1 + bitsRead / 8;
 }
 
-void parseProgressivePixelBlock(ReaderHelperNew &reader)
+void parseProgressivePixelBlock(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel s(reader, "progressive_pixel_block()");
+  SubByteReaderLoggingSubLevel s(reader, "progressive_pixel_block()");
 
   reader.readBits("bitmap_width", 16);
   reader.readBits("bitmap_height", 16);
@@ -365,9 +365,9 @@ void parseProgressivePixelBlock(ReaderHelperNew &reader)
     reader.readBits("compressed_bitmap_data_byte", 8);
 }
 
-void parseObjectDataSegment(ReaderHelperNew &reader, unsigned segment_length)
+void parseObjectDataSegment(SubByteReaderLogging &reader, unsigned segment_length)
 {
-  ReaderHelperNewSubLevel s(reader, "object_data_segment()");
+  SubByteReaderLoggingSubLevel s(reader, "object_data_segment()");
 
   reader.readBits("object_id", 16);
   reader.readBits("object_version_number", 4);
@@ -408,9 +408,9 @@ void parseObjectDataSegment(ReaderHelperNew &reader, unsigned segment_length)
     throw std::logic_error("Invalid object_coding_method value");
 }
 
-void parseDisplayDefinitionSegment(ReaderHelperNew &reader)
+void parseDisplayDefinitionSegment(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel s(reader, "display_definition_segment()");
+  SubByteReaderLoggingSubLevel s(reader, "display_definition_segment()");
 
   reader.readBits("dds_version_number", 4);
   auto display_window_flag = reader.readFlag("display_window_flag");
@@ -427,9 +427,9 @@ void parseDisplayDefinitionSegment(ReaderHelperNew &reader)
   }
 }
 
-void parserDisparityShiftUpdateSequence(ReaderHelperNew &reader)
+void parserDisparityShiftUpdateSequence(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel s(reader, "disparity_shift_update_sequence()");
+  SubByteReaderLoggingSubLevel s(reader, "disparity_shift_update_sequence()");
 
   reader.readBits("disparity_shift_update_sequence_length", 8);
   reader.readBits("interval_duration", 24);
@@ -442,9 +442,9 @@ void parserDisparityShiftUpdateSequence(ReaderHelperNew &reader)
   }
 }
 
-bool parseDisparitySignalingSegment(ReaderHelperNew &reader)
+bool parseDisparitySignalingSegment(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel s(reader, "display_definition_segment()");
+  SubByteReaderLoggingSubLevel s(reader, "display_definition_segment()");
 
   reader.readBits("sync_byte", 8);
   reader.readBits("segment_type", 8);
@@ -486,9 +486,9 @@ bool parseDisparitySignalingSegment(ReaderHelperNew &reader)
   return true;
 }
 
-unsigned parseCLUTParameters(ReaderHelperNew &reader)
+unsigned parseCLUTParameters(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel s(reader, "CLUT_parameters()");
+  SubByteReaderLoggingSubLevel s(reader, "CLUT_parameters()");
 
   reader.readBits("CLUT_entry_max_number", 2);
   reader.readBits("colour_component_type", 2);
@@ -499,9 +499,9 @@ unsigned parseCLUTParameters(ReaderHelperNew &reader)
   return output_bit_depth;
 }
 
-void parseAlternativeCLUTSegment(ReaderHelperNew &reader, unsigned segment_length)
+void parseAlternativeCLUTSegment(SubByteReaderLogging &reader, unsigned segment_length)
 {
-  ReaderHelperNewSubLevel s(reader, "alternative_CLUT_segment()");
+  SubByteReaderLoggingSubLevel s(reader, "alternative_CLUT_segment()");
 
   reader.readBits("CLUT_id", 8);
   reader.readBits("CLUT_version_number", 4);
@@ -548,7 +548,7 @@ std::tuple<size_t, std::string> dvb::parseDVBSubtitleSegment(ByteVector &data, T
     return {};
 
   // Create a sub byte parser to access the bits
-  ReaderHelperNew reader(data, parent, "subtitling_segment()");
+  SubByteReaderLogging reader(data, parent, "subtitling_segment()");
   if (data.size() < 6)
     throw std::logic_error("The subtitling_segment header must have at least six byte");
 

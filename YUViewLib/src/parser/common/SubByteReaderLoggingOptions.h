@@ -61,7 +61,8 @@ struct Options
 
   [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
   [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
-  [[nodiscard]] Options &&withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
+  [[nodiscard]] Options &&
+  withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
   [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
   [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
   [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);

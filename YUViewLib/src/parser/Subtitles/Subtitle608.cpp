@@ -194,7 +194,7 @@ void sub_608::parse608SubtitlePacket(ByteVector data, TreeItem *parent)
     return;
 
   // Create a sub byte parser to access the bits
-  ReaderHelperNew reader(data, parent, "subtitling_608()");
+  SubByteReaderLogging reader(data, parent, "subtitling_608()");
 
   if (data.size() != 10 && data.size() != 20)
     throw std::logic_error("Unknown packt length. Length should be 10 or 20 bytes");
@@ -224,7 +224,7 @@ void sub_608::parse608SubtitlePacket(ByteVector data, TreeItem *parent)
   }  
 }
 
-unsigned sub_608::parse608DataPayloadCCDataPacket(ReaderHelperNew &reader)
+unsigned sub_608::parse608DataPayloadCCDataPacket(SubByteReaderLogging &reader)
 {
     return reader.readBits("ccData", 24, Options().withMeaningFunction(getCCDataPacketMeaning));
 }

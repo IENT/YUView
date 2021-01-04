@@ -118,7 +118,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
   AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
-  reader::ReaderHelperNew reader(data, nalRoot, "", readOffset);
+  reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 
   std::string specificDescription;
   auto        nalVVC = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);

@@ -37,9 +37,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void decoding_capability_information_rbsp::parse(ReaderHelperNew &reader)
+void decoding_capability_information_rbsp::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "decoding_capability_information_rbsp");
+  SubByteReaderLoggingSubLevel subLevel(reader, "decoding_capability_information_rbsp");
 
   this->dci_reserved_zero_4bits = reader.readBits("dci_reserved_zero_4bits", 4);
   this->dci_num_ptls_minus1 =

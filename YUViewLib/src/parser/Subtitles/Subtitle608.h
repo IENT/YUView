@@ -33,7 +33,7 @@
 #pragma once
 
 #include "common/typedef.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "parser/common/TreeItem.h"
 
 namespace parser::subtitle::sub_608
@@ -43,6 +43,6 @@ namespace parser::subtitle::sub_608
 void parse608SubtitlePacket(ByteVector data, TreeItem *parent);
 
 // Parse the 608 subtitle encoded in ATSC CC Data packet format with 3 bytes
-unsigned parse608DataPayloadCCDataPacket(reader::ReaderHelperNew &reader);
+unsigned parse608DataPayloadCCDataPacket(reader::SubByteReaderLogging &reader);
 
 } // namespace parser::subtitle_608
