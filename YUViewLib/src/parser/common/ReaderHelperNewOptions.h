@@ -49,6 +49,8 @@ struct RangeCheckResult
 class Check
 {
 public:
+  Check() = default;
+  virtual ~Check() = default;
   virtual RangeCheckResult checkValue(int64_t value) const = 0;
 };
 

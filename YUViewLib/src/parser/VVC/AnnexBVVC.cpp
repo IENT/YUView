@@ -306,6 +306,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     parseResult.success = false;
   }
 
+  // TODO: Add bitrate plotting
+  (void)bitrateEntry;
+
   // if (nal_vvc.isAUDelimiter())
   // {
   //   DEBUG_VVC("Start of new AU. Adding bitrate " << sizeCurrentAU);
