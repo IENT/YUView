@@ -36,7 +36,7 @@
 #include <cmath>
 
 #include "common/Macros.h"
-#include "AnnexBItuTT35.h"
+#include "Subtitles/AnnexBItuTT35.h"
 
 #define PARSER_HEVC_DEBUG_OUTPUT 0
 #if PARSER_HEVC_DEBUG_OUTPUT && !NDEBUG

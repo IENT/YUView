@@ -32,8 +32,8 @@
 
 #include "SubtitleDVB.h"
 
-#include "common/Macros.h"
-#include "common/ReaderHelper.h"
+#include "parser/common/Macros.h"
+#include "parser/common/ReaderHelper.h"
 
 #include <stdexcept>
 

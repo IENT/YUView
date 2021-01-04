@@ -34,7 +34,7 @@
 
 #include <cmath>
 
-#include "AnnexBItuTT35.h"
+#include "Subtitles/AnnexBItuTT35.h"
 #include "common/Macros.h"
 
 #define PARSER_AVC_DEBUG_OUTPUT 0

@@ -33,15 +33,11 @@
 #pragma once
 
 #include <QByteArray>
+#include <QString>
 
-#include "common/ReaderHelper.h"
-#include "common/TreeItem.h"
+#include "parser/common/TreeItem.h"
 
-namespace parser::subtitle_608
+namespace parser::subtitle_dvb
 {
-    // Parse the subtitle in an AVPacket
-    int parse608SubtitlePacket(QByteArray data, TreeItem *parent);
-
-    // Parse the 608 subtitle encoded in ATSC CC Data packet format with 3 bytes
-    int parse608DataPayloadCCDataPacket(ReaderHelper &reader, unsigned int &ccData);
+    int parseDVBSubtitleSegment(QByteArray data, TreeItem *parent, QString *segmentTypeName);
 }
