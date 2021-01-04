@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "common.h"
+#include "commonMaps.h"
 #include "parser/common/ReaderHelperNew.h"
 #include "picture_header_structure.h"
 #include "rbsp_trailing_bits.h"

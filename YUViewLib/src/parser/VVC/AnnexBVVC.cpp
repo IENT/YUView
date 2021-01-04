@@ -87,18 +87,14 @@ Ratio AnnexBVVC::getSampleAspectRatio() { return Ratio({1, 1}); }
 
 AnnexB::ParseResult
 AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
-                              QByteArray                                    data_,
+                              ByteVector                                    &data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
                               TreeItem *                                    parent)
 {
   AnnexB::ParseResult parseResult;
 
-  // Convert QByteArray to ByteVector. This is just a temporary solution.
-  // Once all parsing functions are switched we can change the interface and get rid of this.
-  auto data = reader::ReaderHelperNew::convertBeginningToByteArray(data_);
-
-  if (nalID == -1 && data_.isEmpty())
+  if (nalID == -1 && data.empty())
     return parseResult;
 
   // Skip the NAL unit header

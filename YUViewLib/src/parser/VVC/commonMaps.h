@@ -38,8 +38,6 @@
 namespace parser::vvc
 {
 
-class slice_header;
-class picture_header_structure;
 class video_parameter_set_rbsp;
 class seq_parameter_set_rbsp;
 class pic_parameter_set_rbsp;

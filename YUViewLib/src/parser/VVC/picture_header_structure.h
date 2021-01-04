@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "common.h"
+#include "commonMaps.h"
 #include "parser/common/ReaderHelperNew.h"
 #include "pred_weight_table.h"
 #include "ref_pic_lists.h"

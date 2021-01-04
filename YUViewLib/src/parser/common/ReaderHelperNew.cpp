@@ -118,7 +118,7 @@ void checkAndLog(TreeItem *         item,
 
 } // namespace
 
-ByteVector ReaderHelperNew::convertBeginningToByteArray(QByteArray data)
+ByteVector ReaderHelperNew::convertBeginningToByteVector(QByteArray data)
 {
   ByteVector ret;
   const auto maxLength = 2000u;

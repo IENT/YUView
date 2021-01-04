@@ -40,6 +40,11 @@
 namespace parser
 {
 
+// TODO:
+// - Remove the whole inheritance thing. This is not needed.
+// - Split to class
+// - Use std
+
 template <class T>
 class user_data_registered_itu_t_t35_sei : public T
 {

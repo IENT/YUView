@@ -32,10 +32,21 @@
 
 #pragma once
 
-#include "common/typedef.h"
-#include "parser/common/TreeItem.h"
+#include <string>
 
-namespace parser::subtitle::dvb
+namespace parser
 {
-  std::tuple<size_t, std::string> parseDVBSubtitleSegment(ByteVector &data, TreeItem *parent);
+
+template <typename T>
+std::string formatArray(std::string variableName, T idx)
+{
+  return variableName + "[" + std::to_string(idx) + "]";
 }
+
+template <typename T>
+std::string formatArray(std::string variableName, T idx1, T idx2)
+{
+  return variableName + "[" + std::to_string(idx1) + "][" + std::to_string(idx2) + "]";
+}
+
+} // namespace parser::reader
