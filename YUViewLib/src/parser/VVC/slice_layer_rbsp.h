@@ -33,8 +33,8 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "common.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "commonMaps.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "slice_header.h"
 #include "picture_header_structure.h"
 
@@ -46,7 +46,7 @@ class slice_layer_rbsp : public NalRBSP, public std::enable_shared_from_this<sli
 public:
   slice_layer_rbsp()  = default;
   ~slice_layer_rbsp() = default;
-  void parse(reader::ReaderHelperNew &                 reader,
+  void parse(reader::SubByteReaderLogging &                 reader,
              NalType                                   nal_unit_type,
              VPSMap &                                  vpsMap,
              SPSMap &                                  spsMap,

@@ -41,9 +41,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void alf_data::parse(ReaderHelperNew &reader, adaptation_parameter_set_rbsp *aps)
+void alf_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp *aps)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "alf_data");
+  SubByteReaderLoggingSubLevel subLevel(reader, "alf_data");
 
   this->alf_luma_filter_signal_flag = reader.readFlag("alf_luma_filter_signal_flag");
   if (aps->aps_chroma_present_flag)

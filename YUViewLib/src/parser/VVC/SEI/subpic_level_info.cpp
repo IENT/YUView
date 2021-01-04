@@ -37,9 +37,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void subpic_level_info::parse(ReaderHelperNew &reader)
+void subpic_level_info::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "subpic_level_info");
+  SubByteReaderLoggingSubLevel subLevel(reader, "subpic_level_info");
 
   this->sli_num_ref_levels_minus1          = reader.readBits("sli_num_ref_levels_minus1", 3);
   this->sli_cbr_constraint_flag            = reader.readFlag("sli_cbr_constraint_flag");

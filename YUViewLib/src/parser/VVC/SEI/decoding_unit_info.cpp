@@ -39,11 +39,11 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void decoding_unit_info::parse(ReaderHelperNew &                 reader,
+void decoding_unit_info::parse(SubByteReaderLogging &                 reader,
                                unsigned                          nalTemporalID,
                                std::shared_ptr<buffering_period> bp)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "decoding_unit_info");
+  SubByteReaderLoggingSubLevel subLevel(reader, "decoding_unit_info");
 
   this->dui_decoding_unit_idx = reader.readUEV("dui_decoding_unit_idx");
   if (!bp->bp_du_cpb_params_in_pic_timing_sei_flag)

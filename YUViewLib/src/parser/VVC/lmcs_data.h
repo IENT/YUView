@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -45,7 +45,7 @@ class lmcs_data : public NalRBSP
 public:
   lmcs_data()  = default;
   ~lmcs_data() = default;
-  void parse(reader::ReaderHelperNew &reader, adaptation_parameter_set_rbsp *aps);
+  void parse(reader::SubByteReaderLogging &reader, adaptation_parameter_set_rbsp *aps);
 
   unsigned     lmcs_min_bin_idx{};
   unsigned     lmcs_delta_max_bin_idx{};

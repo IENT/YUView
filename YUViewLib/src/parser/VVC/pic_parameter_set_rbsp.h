@@ -33,8 +33,8 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "common.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "commonMaps.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "rbsp_trailing_bits.h"
 
 namespace parser::vvc
@@ -45,7 +45,7 @@ class pic_parameter_set_rbsp : public NalRBSP
 public:
   pic_parameter_set_rbsp()  = default;
   ~pic_parameter_set_rbsp() = default;
-  void parse(reader::ReaderHelperNew &reader, SPSMap &spsMap);
+  void parse(reader::SubByteReaderLogging &reader, SPSMap &spsMap);
 
   unsigned           pps_pic_parameter_set_id{};
   unsigned           pps_seq_parameter_set_id{};

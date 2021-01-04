@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -43,7 +43,7 @@ class byte_alignment : public NalRBSP
 public:
   byte_alignment() = default;
   ~byte_alignment() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 };
 
 } // namespace parser::vvc

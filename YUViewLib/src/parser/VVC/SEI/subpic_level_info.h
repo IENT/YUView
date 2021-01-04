@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "sei_payload.h"
 
 namespace parser::vvc
@@ -43,7 +43,7 @@ class subpic_level_info : public sei_payload
 public:
   subpic_level_info()  = default;
   ~subpic_level_info() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   unsigned           sli_num_ref_levels_minus1{};
   bool               sli_cbr_constraint_flag{};

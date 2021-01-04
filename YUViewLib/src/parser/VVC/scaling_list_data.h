@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -45,7 +45,7 @@ class scaling_list_data : public NalRBSP
 public:
   scaling_list_data() = default;
   ~scaling_list_data() = default;
-  void parse(reader::ReaderHelperNew &reader, adaptation_parameter_set_rbsp *aps);
+  void parse(reader::SubByteReaderLogging &reader, adaptation_parameter_set_rbsp *aps);
 
   umap_1d<bool> scaling_list_copy_mode_flag {};
   umap_1d<bool> scaling_list_pred_mode_flag {};

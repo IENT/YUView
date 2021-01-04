@@ -37,11 +37,11 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void dpb_parameters::parse(ReaderHelperNew &reader,
+void dpb_parameters::parse(SubByteReaderLogging &reader,
                            unsigned         MaxSubLayersMinus1,
                            bool             subLayerInfoFlag)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "dpb_parameters");
+  SubByteReaderLoggingSubLevel subLevel(reader, "dpb_parameters");
 
   for (unsigned i = (subLayerInfoFlag ? 0 : MaxSubLayersMinus1); i <= MaxSubLayersMinus1; i++)
   {

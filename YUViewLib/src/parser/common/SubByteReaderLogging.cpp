@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ReaderHelperNew.h"
+#include "SubByteReaderLogging.h"
 
 #include <iomanip>
 #include <sstream>
@@ -118,7 +118,7 @@ void checkAndLog(TreeItem *         item,
 
 } // namespace
 
-ByteVector ReaderHelperNew::convertBeginningToByteArray(QByteArray data)
+ByteVector SubByteReaderLogging::convertBeginningToByteVector(QByteArray data)
 {
   ByteVector ret;
   const auto maxLength = 2000u;
@@ -130,11 +130,11 @@ ByteVector ReaderHelperNew::convertBeginningToByteArray(QByteArray data)
   return ret;
 }
 
-ReaderHelperNew::ReaderHelperNew(SubByteReaderNew &reader,
-                                 TreeItem *        item,
-                                 std::string       new_sub_item_name)
+SubByteReaderLogging::SubByteReaderLogging(SubByteReaderNew &reader,
+                                           TreeItem *        item,
+                                           std::string       new_sub_item_name)
+    : SubByteReaderNew(reader)
 {
-  this->reader = reader;
   if (item)
   {
     if (new_sub_item_name.empty())
@@ -145,12 +145,12 @@ ReaderHelperNew::ReaderHelperNew(SubByteReaderNew &reader,
   this->itemHierarchy.push(this->currentTreeLevel);
 }
 
-ReaderHelperNew::ReaderHelperNew(const ByteVector &inArr,
-                                 TreeItem *        item,
-                                 std::string       new_sub_item_name,
-                                 size_t            inOffset)
+SubByteReaderLogging::SubByteReaderLogging(const ByteVector &inArr,
+                                           TreeItem *        item,
+                                           std::string       new_sub_item_name,
+                                           size_t            inOffset)
+    : SubByteReaderNew(inArr, inOffset)
 {
-  this->reader = SubByteReaderNew(inArr, inOffset);
   if (item)
   {
     if (new_sub_item_name.empty())
@@ -161,7 +161,7 @@ ReaderHelperNew::ReaderHelperNew(const ByteVector &inArr,
   this->itemHierarchy.push(this->currentTreeLevel);
 }
 
-void ReaderHelperNew::addLogSubLevel(const std::string name)
+void SubByteReaderLogging::addLogSubLevel(const std::string name)
 {
   assert(!name.empty());
   if (itemHierarchy.top() == nullptr)
@@ -170,7 +170,7 @@ void ReaderHelperNew::addLogSubLevel(const std::string name)
   this->itemHierarchy.push(this->currentTreeLevel);
 }
 
-void ReaderHelperNew::removeLogSubLevel()
+void SubByteReaderLogging::removeLogSubLevel()
 {
   if (itemHierarchy.size() <= 1)
     // Don't remove the root
@@ -180,11 +180,11 @@ void ReaderHelperNew::removeLogSubLevel()
 }
 
 uint64_t
-ReaderHelperNew::readBits(const std::string &symbolName, int numBits, const Options &options)
+SubByteReaderLogging::readBits(const std::string &symbolName, int numBits, const Options &options)
 {
   try
   {
-    auto [value, code] = this->reader.readBits(numBits);
+    auto [value, code] = SubByteReaderNew::readBits(numBits);
     checkAndLog(this->currentTreeLevel, "u(v)", symbolName, options, value, code);
     return value;
   }
@@ -194,11 +194,11 @@ ReaderHelperNew::readBits(const std::string &symbolName, int numBits, const Opti
   }
 }
 
-bool ReaderHelperNew::readFlag(const std::string &symbolName, const Options &options)
+bool SubByteReaderLogging::readFlag(const std::string &symbolName, const Options &options)
 {
   try
   {
-    auto [value, code] = this->reader.readBits(1);
+    auto [value, code] = SubByteReaderNew::readBits(1);
     checkAndLog(this->currentTreeLevel, "u(1)", symbolName, options, value, code);
     return (value != 0);
   }
@@ -208,11 +208,11 @@ bool ReaderHelperNew::readFlag(const std::string &symbolName, const Options &opt
   }
 }
 
-uint64_t ReaderHelperNew::readUEV(const std::string &symbolName, const Options &options)
+uint64_t SubByteReaderLogging::readUEV(const std::string &symbolName, const Options &options)
 {
   try
   {
-    auto [value, code] = this->reader.readUE_V();
+    auto [value, code] = SubByteReaderNew::readUE_V();
     checkAndLog(this->currentTreeLevel, "ue(v)", symbolName, options, value, code);
     return value;
   }
@@ -222,11 +222,11 @@ uint64_t ReaderHelperNew::readUEV(const std::string &symbolName, const Options &
   }
 }
 
-int64_t ReaderHelperNew::readSEV(const std::string &symbolName, const Options &options)
+int64_t SubByteReaderLogging::readSEV(const std::string &symbolName, const Options &options)
 {
   try
   {
-    auto [value, code] = this->reader.readSE_V();
+    auto [value, code] = SubByteReaderNew::readSE_V();
     checkAndLog(this->currentTreeLevel, "se(v)", symbolName, options, value, code);
     return value;
   }
@@ -236,15 +236,16 @@ int64_t ReaderHelperNew::readSEV(const std::string &symbolName, const Options &o
   }
 }
 
-ByteVector
-ReaderHelperNew::readBytes(const std::string &symbolName, size_t nrBytes, const Options &options)
+ByteVector SubByteReaderLogging::readBytes(const std::string &symbolName,
+                                           size_t             nrBytes,
+                                           const Options &    options)
 {
   try
   {
     if (!this->byte_aligned())
       throw std::logic_error("Trying to ready bytes while not byte aligned.");
 
-    auto [value, code] = this->reader.readBytes(nrBytes);
+    auto [value, code] = SubByteReaderNew::readBytes(nrBytes);
     checkAndLog(this->currentTreeLevel, "se(v)", symbolName, options, value, code);
     return value;
   }
@@ -254,7 +255,8 @@ ReaderHelperNew::readBytes(const std::string &symbolName, size_t nrBytes, const 
   }
 }
 
-void ReaderHelperNew::logExceptionAndThrowError(const std::exception &ex, const std::string &when)
+void SubByteReaderLogging::logExceptionAndThrowError(const std::exception &ex,
+                                                     const std::string &   when)
 {
   if (this->currentTreeLevel)
   {

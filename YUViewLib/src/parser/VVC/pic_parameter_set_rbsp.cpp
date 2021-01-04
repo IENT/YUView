@@ -41,9 +41,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void pic_parameter_set_rbsp::parse(ReaderHelperNew &reader, SPSMap &spsMap)
+void pic_parameter_set_rbsp::parse(SubByteReaderLogging &reader, SPSMap &spsMap)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "pic_parameter_set_rbsp");
+  SubByteReaderLoggingSubLevel subLevel(reader, "pic_parameter_set_rbsp");
 
   this->pps_pic_parameter_set_id = reader.readBits("pps_pic_parameter_set_id", 6);
   this->pps_seq_parameter_set_id =

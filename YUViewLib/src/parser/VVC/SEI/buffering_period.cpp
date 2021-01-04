@@ -37,9 +37,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void buffering_period::parse(ReaderHelperNew &reader)
+void buffering_period::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "buffering_period");
+  SubByteReaderLoggingSubLevel subLevel(reader, "buffering_period");
 
   this->bp_nal_hrd_params_present_flag = reader.readFlag("bp_nal_hrd_params_present_flag");
   this->bp_vcl_hrd_params_present_flag = reader.readFlag("bp_vcl_hrd_params_present_flag");

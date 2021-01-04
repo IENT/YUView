@@ -33,7 +33,7 @@
 #pragma once
 
 #include "../NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -46,7 +46,7 @@ class sei_message : public NalRBSP
 public:
   sei_message()  = default;
   ~sei_message() = default;
-  void parse(reader::ReaderHelperNew &         reader,
+  void parse(reader::SubByteReaderLogging &         reader,
              NalType                           nal_unit_type,
              unsigned                          nalTemporalID,
              std::shared_ptr<buffering_period> lastBufferingPeriod);

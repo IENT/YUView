@@ -41,11 +41,11 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void pic_timing::parse(ReaderHelperNew &                 reader,
+void pic_timing::parse(SubByteReaderLogging &                 reader,
                        unsigned                          nalTemporalID,
                        std::shared_ptr<buffering_period> bp)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "pic_timing");
+  SubByteReaderLoggingSubLevel subLevel(reader, "pic_timing");
 
   {
     auto nrBits                       = bp->bp_cpb_removal_delay_length_minus1 + 1;

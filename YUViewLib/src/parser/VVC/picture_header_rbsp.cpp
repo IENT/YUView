@@ -41,13 +41,13 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void picture_header_rbsp::parse(ReaderHelperNew &                 reader,
+void picture_header_rbsp::parse(SubByteReaderLogging &                 reader,
                                 VPSMap &                          vpsMap,
                                 SPSMap &                          spsMap,
                                 PPSMap &                          ppsMap,
                                 std::shared_ptr<slice_layer_rbsp> sl)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "picture_header_rbsp");
+  SubByteReaderLoggingSubLevel subLevel(reader, "picture_header_rbsp");
 
   this->picture_header_structure_instance = std::make_shared<picture_header_structure>();
   this->picture_header_structure_instance->parse(reader, vpsMap, spsMap, ppsMap, sl);

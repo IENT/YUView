@@ -51,7 +51,7 @@ std::string to_string(SliceType sliceType)
 
 using namespace parser::reader;
 
-void slice_header::parse(ReaderHelperNew &                         reader,
+void slice_header::parse(SubByteReaderLogging &                         reader,
                          NalType                                   nal_unit_type,
                          VPSMap &                                  vpsMap,
                          SPSMap &                                  spsMap,
@@ -59,7 +59,7 @@ void slice_header::parse(ReaderHelperNew &                         reader,
                          std::shared_ptr<slice_layer_rbsp>         sliceLayer,
                          std::shared_ptr<picture_header_structure> picHeader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "slice_header");
+  SubByteReaderLoggingSubLevel subLevel(reader, "slice_header");
 
   this->sh_picture_header_in_slice_header_flag =
       reader.readFlag("sh_picture_header_in_slice_header_flag");

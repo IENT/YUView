@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ReaderHelperNewOptions.h"
+#include "SubByteReaderLoggingOptions.h"
 
 namespace parser::reader
 {
@@ -139,25 +139,31 @@ Options &&Options::withMeaningMap(const std::map<int, std::string> &meaningMap)
   return std::move(*this);
 }
 
-Options && Options::withCheckEqualTo(int64_t value)
+Options &&Options::withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction)
+{
+  this->meaningFunction = meaningFunction;
+  return std::move(*this);
+}
+
+Options &&Options::withCheckEqualTo(int64_t value)
 {
   this->checkList.emplace_back(std::make_unique<CheckEqualTo>(value));
   return std::move(*this);
 }
 
-Options && Options::withCheckGreater(int64_t value, bool inclusive)
+Options &&Options::withCheckGreater(int64_t value, bool inclusive)
 {
   this->checkList.emplace_back(std::make_unique<CheckGreater>(value, inclusive));
   return std::move(*this);
 }
 
-Options && Options::withCheckSmaller(int64_t value, bool inclusive)
+Options &&Options::withCheckSmaller(int64_t value, bool inclusive)
 {
   this->checkList.emplace_back(std::make_unique<CheckSmaller>(value, inclusive));
   return std::move(*this);
 }
 
-Options && Options::withCheckRange(Range<int64_t> range, bool inclusive)
+Options &&Options::withCheckRange(Range<int64_t> range, bool inclusive)
 {
   this->checkList.emplace_back(std::make_unique<CheckRange>(range, inclusive));
   return std::move(*this);

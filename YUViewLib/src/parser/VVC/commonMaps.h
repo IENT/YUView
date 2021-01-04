@@ -12,7 +12,7 @@
  *   OpenSSL library under certain conditions as described in each
  *   individual source file, and distribute linked combinations including
  *   the two.
- *
+ *   
  *   You must obey the GNU General Public License in all respects for all
  *   of the code used other than OpenSSL. If you modify file(s) with this
  *   exception, you may extend this exception to your version of the
@@ -32,42 +32,20 @@
 
 #pragma once
 
-#include "common/typedef.h"
-
-#include <optional>
+#include <map>
 #include <memory>
 
-namespace parser::reader
+namespace parser::vvc
 {
 
-struct RangeCheckResult
-{
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
+class video_parameter_set_rbsp;
+class seq_parameter_set_rbsp;
+class pic_parameter_set_rbsp;
+class adaptation_parameter_set_rbsp;
 
-class Check
-{
-public:
-  Check() = default;
-  virtual ~Check() = default;
-  virtual RangeCheckResult checkValue(int64_t value) const = 0;
-};
+using VPSMap = std::map<unsigned, std::shared_ptr<vvc::video_parameter_set_rbsp>>;
+using SPSMap = std::map<unsigned, std::shared_ptr<vvc::seq_parameter_set_rbsp>>;
+using PPSMap = std::map<unsigned, std::shared_ptr<vvc::pic_parameter_set_rbsp>>;
+using APSMap = std::map<unsigned, std::shared_ptr<vvc::adaptation_parameter_set_rbsp>>;
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
-  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
-  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::vvc

@@ -39,12 +39,12 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void scalable_nesting::parse(ReaderHelperNew &                 reader,
+void scalable_nesting::parse(SubByteReaderLogging &                 reader,
                              NalType                           nal_unit_type,
                              unsigned                          nalTemporalID,
                              std::shared_ptr<buffering_period> lastBufferingPeriod)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "scalable_nesting");
+  SubByteReaderLoggingSubLevel subLevel(reader, "scalable_nesting");
 
   this->sn_ols_flag    = reader.readFlag("sn_ols_flag");
   this->sn_subpic_flag = reader.readFlag("sn_subpic_flag");

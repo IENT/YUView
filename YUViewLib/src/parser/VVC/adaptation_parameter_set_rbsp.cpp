@@ -48,9 +48,9 @@ const std::map<unsigned, std::pair<adaptation_parameter_set_rbsp::APSParamType, 
 
 using namespace parser::reader;
 
-void adaptation_parameter_set_rbsp::parse(ReaderHelperNew &reader)
+void adaptation_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "adaptation_parameter_set_rbsp");
+  SubByteReaderLoggingSubLevel subLevel(reader, "adaptation_parameter_set_rbsp");
 
   auto aps_params_type_ID = reader.readBits("aps_params_type", 3, Options().withCheckRange({0, 2}));
   this->aps_params_type   = apsParamTypeMap.at(aps_params_type_ID).first;

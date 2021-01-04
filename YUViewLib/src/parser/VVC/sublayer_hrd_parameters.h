@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -44,7 +44,7 @@ class sublayer_hrd_parameters
 public:
   sublayer_hrd_parameters()  = default;
   ~sublayer_hrd_parameters() = default;
-  void parse(reader::ReaderHelperNew &      reader,
+  void parse(reader::SubByteReaderLogging &      reader,
              unsigned                       subLayerId,
              general_timing_hrd_parameters *general_hrd);
 

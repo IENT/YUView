@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "rbsp_trailing_bits.h"
 
 namespace parser::vvc
@@ -44,7 +44,7 @@ class access_unit_delimiter_rbsp : public NalRBSP
 public:
   access_unit_delimiter_rbsp()  = default;
   ~access_unit_delimiter_rbsp() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   bool               aud_irap_or_gdr_flag{};
   unsigned           aud_pic_type{};
