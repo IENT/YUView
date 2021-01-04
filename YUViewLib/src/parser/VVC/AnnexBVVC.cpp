@@ -194,6 +194,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
           this->activeParameterSets.ppsMap,
           parsingState.currentPictureHeaderStructure);
 
+      this->parsingState.lastFramePOC =
+          this->parsingState.currentPictureHeaderStructure->PicOrderCntVal;
+
       this->parsingState.currentPictureHeaderStructure =
           newPictureHeader->picture_header_structure_instance;
 
@@ -203,7 +206,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       nalVVC->rbsp = newPictureHeader;
     }
-    else if (nalVVC->header.nal_unit_type == NalType::STSA_NUT ||
+    else if (nalVVC->header.nal_unit_type == NalType::TRAIL_NUT ||
+             nalVVC->header.nal_unit_type == NalType::STSA_NUT ||
              nalVVC->header.nal_unit_type == NalType::RADL_NUT ||
              nalVVC->header.nal_unit_type == NalType::RASL_NUT ||
              nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
@@ -309,53 +313,58 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   // TODO: Add bitrate plotting
   (void)bitrateEntry;
 
-  // if (nal_vvc.isAUDelimiter())
-  // {
-  //   DEBUG_VVC("Start of new AU. Adding bitrate " << sizeCurrentAU);
+  if (auDelimiterDetector.isStartOfNewAU(nalVVC, this->parsingState.currentPictureHeaderStructure))
+  {
+    DEBUG_VVC("Start of new AU. Adding bitrate " << this->parsingState.sizeCurrentAU);
 
-  //   BitratePlotModel::BitrateEntry entry;
-  //   if (bitrateEntry)
-  //   {
-  //     entry.pts      = bitrateEntry->pts;
-  //     entry.dts      = bitrateEntry->dts;
-  //     entry.duration = bitrateEntry->duration;
-  //   }
-  //   else
-  //   {
-  //     entry.pts      = counterAU;
-  //     entry.dts      = counterAU; // TODO: Not true. We need to parse the VVC header data
-  //     entry.duration = 1;
-  //   }
-  //   entry.bitrate            = sizeCurrentAU;
-  //   entry.keyframe           = false; // TODO: Also not correct. We need parsing.
-  //   parseResult.bitrateEntry = entry;
+    BitratePlotModel::BitrateEntry entry;
+    if (bitrateEntry)
+    {
+      entry.pts      = bitrateEntry->pts;
+      entry.dts      = bitrateEntry->dts;
+      entry.duration = bitrateEntry->duration;
+    }
+    else
+    {
+      entry.pts = this->parsingState.lastFramePOC;
+      entry.dts =
+          int(this->parsingState.counterAU);
+      entry.duration = 1;
+    }
+    entry.bitrate            = unsigned(this->parsingState.sizeCurrentAU);
+    entry.keyframe           = this->parsingState.lastFrameIsKeyframe;
+    parseResult.bitrateEntry = entry;
 
-  //   if (counterAU > 0)
-  //   {
-  //     const bool curFrameIsRandomAccess = (counterAU == 1);
-  //     if (!addFrameToList(counterAU, curFrameFileStartEndPos, curFrameIsRandomAccess))
-  //     {
-  //       ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."),
-  //                                              parent);
-  //       return parseResult;
-  //     }
-  //     if (curFrameFileStartEndPos)
-  //       DEBUG_VVC("Adding start/end " << curFrameFileStartEndPos->first << "/"
-  //                                     << curFrameFileStartEndPos->second << " - POC " <<
-  //                                     counterAU
-  //                                     << (curFrameIsRandomAccess ? " - ra" : ""));
-  //     else
-  //       DEBUG_VVC("Adding start/end %d/%d - POC NA/NA" << (curFrameIsRandomAccess ? " - ra" :
-  //       ""));
-  //   }
-  //   curFrameFileStartEndPos = nalStartEndPosFile;
-  //   sizeCurrentAU           = 0;
-  //   counterAU++;
-  // }
-  // else if (curFrameFileStartEndPos && nalStartEndPosFile)
-  //   curFrameFileStartEndPos->second = nalStartEndPosFile->second;
+    if (this->parsingState.counterAU > 0)
+    {
+      const auto curFrameIsRandomAccess = (this->parsingState.counterAU == 1);
+      if (!addFrameToList(this->parsingState.lastFramePOC,
+                          this->parsingState.curFrameFileStartEndPos,
+                          curFrameIsRandomAccess))
+      {
+        ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."),
+                                               parent);
+        return parseResult;
+      }
+      if (this->parsingState.curFrameFileStartEndPos)
+        DEBUG_VVC("Adding start/end " << this->curFrameFileStartEndPos->first << "/"
+                                      << this->curFrameFileStartEndPos->second << " - POC "
+                                      << this->parsingState.counterAU
+                                      << (curFrameIsRandomAccess ? " - ra" : ""));
+      else
+        DEBUG_VVC("Adding start/end %d/%d - POC NA/NA" << (curFrameIsRandomAccess ? " - ra" : ""));
+    }
+    this->parsingState.curFrameFileStartEndPos = nalStartEndPosFile;
+    this->parsingState.sizeCurrentAU           = 0;
+    this->parsingState.counterAU++;
+  }
+  else if (this->parsingState.curFrameFileStartEndPos && nalStartEndPosFile)
+    this->parsingState.curFrameFileStartEndPos->second = nalStartEndPosFile->second;
 
-  sizeCurrentAU += data.size();
+  this->parsingState.sizeCurrentAU += data.size();
+  this->parsingState.lastFrameIsKeyframe = (nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
+                                            nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
+                                            nalVVC->header.nal_unit_type == NalType::CRA_NUT);
 
   if (nalRoot)
   {
@@ -365,6 +374,48 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   }
 
   return parseResult;
+}
+
+// 7.4.2.4.3
+bool AnnexBVVC::auDelimiterDetector_t::isStartOfNewAU(
+    std::shared_ptr<vvc::NalUnitVVC> nal, std::shared_ptr<vvc::picture_header_structure> ph)
+{
+  auto nalType = nal->header.nal_unit_type;
+
+  if (this->lastNalWasVcl &&
+      (nalType == NalType::AUD_NUT || nalType == NalType::OPI_NUT || nalType == NalType::DCI_NUT ||
+       nalType == NalType::VPS_NUT || nalType == NalType::SPS_NUT || nalType == NalType::PPS_NUT ||
+       nalType == NalType::PREFIX_APS_NUT || nalType == NalType::PH_NUT ||
+       nalType == NalType::PREFIX_SEI_NUT || nalType == NalType::RSV_NVCL_26 ||
+       nalType == NalType::UNSPEC_28 || nalType == NalType::UNSPEC_29))
+  {
+    this->lastNalWasVcl = false;
+    return true;
+  }
+
+  auto isSlice = (nalType == NalType::TRAIL_NUT || nalType == NalType::STSA_NUT ||
+                  nalType == NalType::RADL_NUT || nalType == NalType::RASL_NUT ||
+                  nalType == NalType::IDR_W_RADL || nalType == NalType::IDR_N_LP ||
+                  nalType == NalType::CRA_NUT || nalType == NalType::GDR_NUT);
+
+  auto isVcl = (isSlice || nalType == NalType::RSV_VCL_4 || nalType == NalType::RSV_VCL_5 ||
+                nalType == NalType::RSV_VCL_6 || nalType == NalType::RSV_IRAP_11);
+
+  if (isVcl && this->lastNalWasVcl)
+  {
+    if (nal->header.nuh_layer_id != this->lastVcl_nuh_layer_id ||
+        ph->ph_pic_order_cnt_lsb != this->lastVcl_ph_pic_order_cnt_lsb ||
+        ph->PicOrderCntVal != this->lastVcl_PicOrderCntVal)
+    {
+      this->lastVcl_nuh_layer_id         = nal->header.nuh_layer_id;
+      this->lastVcl_ph_pic_order_cnt_lsb = ph->ph_pic_order_cnt_lsb;
+      this->lastVcl_PicOrderCntVal       = ph->PicOrderCntVal;
+      return true;
+    }
+  }
+
+  this->lastNalWasVcl = isVcl;
+  return false;
 }
 
 } // namespace parser

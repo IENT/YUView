@@ -57,11 +57,8 @@ class AnnexBVVC : public AnnexB
   Q_OBJECT
 
 public:
-  AnnexBVVC(QObject *parent = nullptr) : AnnexB(parent)
-  {
-    curFrameFileStartEndPos = pairUint64(-1, -1);
-  }
-  ~AnnexBVVC(){};
+  AnnexBVVC(QObject *parent = nullptr) : AnnexB(parent){};
+  ~AnnexBVVC() = default;
 
   // Get some properties
   double         getFramerate() const override;
@@ -80,13 +77,6 @@ public:
                                  TreeItem *                parent             = nullptr) override;
 
 protected:
-  std::optional<pairUint64>
-      curFrameFileStartEndPos; //< Save the file start/end position of the current frame (in case
-                               // the frame has multiple NAL units)
-
-  size_t counterAU{0};
-  size_t sizeCurrentAU{0};
-
   struct ActiveParameterSets
   {
     vvc::VPSMap vpsMap;
@@ -101,8 +91,25 @@ protected:
     std::shared_ptr<vvc::picture_header_structure> currentPictureHeaderStructure;
     std::shared_ptr<vvc::slice_layer_rbsp>         currentSlice;
     std::shared_ptr<vvc::buffering_period>         lastBufferingPeriod;
+
+    size_t                    counterAU{};
+    size_t                    sizeCurrentAU{};
+    unsigned                  lastFramePOC{};
+    bool                      lastFrameIsKeyframe{};
+    std::optional<pairUint64> curFrameFileStartEndPos;
   };
   ParsingState parsingState;
+
+  struct auDelimiterDetector_t
+  {
+    bool     isStartOfNewAU(std::shared_ptr<vvc::NalUnitVVC>               nal,
+                            std::shared_ptr<vvc::picture_header_structure> ph);
+    bool     lastNalWasVcl{false};
+    unsigned lastVcl_PicOrderCntVal{};
+    unsigned lastVcl_ph_pic_order_cnt_lsb{};
+    unsigned lastVcl_nuh_layer_id;
+  };
+  auDelimiterDetector_t auDelimiterDetector;
 };
 
 } // namespace parser
