@@ -32,16 +32,21 @@
 
 #pragma once
 
-#include <QByteArray>
+#include <string>
 
-#include "common/ReaderHelper.h"
-#include "common/TreeItem.h"
-
-namespace parser::subtitle_608
+namespace parser
 {
-    // Parse the subtitle in an AVPacket
-    int parse608SubtitlePacket(QByteArray data, TreeItem *parent);
 
-    // Parse the 608 subtitle encoded in ATSC CC Data packet format with 3 bytes
-    int parse608DataPayloadCCDataPacket(ReaderHelper &reader, unsigned int &ccData);
+template <typename T>
+std::string formatArray(std::string variableName, T idx)
+{
+  return variableName + "[" + std::to_string(idx) + "]";
 }
+
+template <typename T>
+std::string formatArray(std::string variableName, T idx1, T idx2)
+{
+  return variableName + "[" + std::to_string(idx1) + "][" + std::to_string(idx2) + "]";
+}
+
+} // namespace parser::reader

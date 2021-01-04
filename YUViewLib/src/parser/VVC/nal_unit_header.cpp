@@ -55,9 +55,9 @@ const std::map<unsigned, NalType> idToNalTypeMap = {
 
 }
 
-void nal_unit_header::parse(ReaderHelperNew &reader)
+void nal_unit_header::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "nal_unit_header");
+  SubByteReaderLoggingSubLevel subLevel(reader, "nal_unit_header");
 
   this->forbidden_zero_bit    = reader.readFlag("forbidden_zero_bit");
   this->nuh_reserved_zero_bit = reader.readFlag("nuh_reserved_zero_bit");

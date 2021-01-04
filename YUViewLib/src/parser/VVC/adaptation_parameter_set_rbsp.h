@@ -35,7 +35,7 @@
 #include "NalUnitVVC.h"
 #include "alf_data.h"
 #include "lmcs_data.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "rbsp_trailing_bits.h"
 #include "scaling_list_data.h"
 
@@ -48,7 +48,7 @@ class adaptation_parameter_set_rbsp : public NalRBSP
 public:
   adaptation_parameter_set_rbsp()  = default;
   ~adaptation_parameter_set_rbsp() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   enum class APSParamType
   {

@@ -32,12 +32,10 @@
 
 #pragma once
 
-#include <QByteArray>
-#include <QString>
+#include "common/typedef.h"
+#include "parser/common/TreeItem.h"
 
-#include "common/TreeItem.h"
-
-namespace parser::subtitle_dvb
+namespace parser::subtitle::dvb
 {
-    int parseDVBSubtitleSegment(QByteArray data, TreeItem *parent, QString *segmentTypeName);
+  std::tuple<size_t, std::string> parseDVBSubtitleSegment(ByteVector &data, TreeItem *parent);
 }

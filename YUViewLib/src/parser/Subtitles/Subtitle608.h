@@ -12,7 +12,7 @@
  *   OpenSSL library under certain conditions as described in each
  *   individual source file, and distribute linked combinations including
  *   the two.
- *   
+ *
  *   You must obey the GNU General Public License in all respects for all
  *   of the code used other than OpenSSL. If you modify file(s) with this
  *   exception, you may extend this exception to your version of the
@@ -32,22 +32,17 @@
 
 #pragma once
 
-#include <map>
-#include <memory>
+#include "common/typedef.h"
+#include "parser/common/SubByteReaderLogging.h"
+#include "parser/common/TreeItem.h"
 
-namespace parser::vvc
+namespace parser::subtitle::sub_608
 {
 
-class slice_header;
-class picture_header_structure;
-class video_parameter_set_rbsp;
-class seq_parameter_set_rbsp;
-class pic_parameter_set_rbsp;
-class adaptation_parameter_set_rbsp;
+// Parse the subtitle in an AVPacket
+void parse608SubtitlePacket(ByteVector data, TreeItem *parent);
 
-using VPSMap = std::map<unsigned, std::shared_ptr<vvc::video_parameter_set_rbsp>>;
-using SPSMap = std::map<unsigned, std::shared_ptr<vvc::seq_parameter_set_rbsp>>;
-using PPSMap = std::map<unsigned, std::shared_ptr<vvc::pic_parameter_set_rbsp>>;
-using APSMap = std::map<unsigned, std::shared_ptr<vvc::adaptation_parameter_set_rbsp>>;
+// Parse the 608 subtitle encoded in ATSC CC Data packet format with 3 bytes
+unsigned parse608DataPayloadCCDataPacket(reader::SubByteReaderLogging &reader);
 
-} // namespace parser::vvc
+} // namespace parser::subtitle_608

@@ -39,9 +39,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
+void seq_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "seq_parameter_set_rbsp");
+  SubByteReaderLoggingSubLevel subLevel(reader, "seq_parameter_set_rbsp");
 
   this->sps_seq_parameter_set_id   = reader.readBits("sps_seq_parameter_set_id", 4);
   this->sps_video_parameter_set_id = reader.readBits("sps_video_parameter_set_id", 4);
@@ -80,11 +80,11 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
         reader.readFlag("sps_res_change_in_clvs_allowed_flag");
   }
   this->sps_pic_width_max_in_luma_samples = reader.readUEV(
-      "sps_pic_width_max_in_luma_samples"); // ReaderHelperNew::Options(vps_ols_dpb_pic_width[i],
-                                            // ReaderHelperNew::Options::CheckType::SmallerEqual)
+      "sps_pic_width_max_in_luma_samples"); // SubByteReaderLogging::Options(vps_ols_dpb_pic_width[i],
+                                            // SubByteReaderLogging::Options::CheckType::SmallerEqual)
   this->sps_pic_height_max_in_luma_samples = reader.readUEV(
-      "sps_pic_height_max_in_luma_samples"); // ReaderHelperNew::Options(vps_ols_dpb_pic_height[i],
-                                             // ReaderHelperNew::Options::CheckType::SmallerEqual)
+      "sps_pic_height_max_in_luma_samples"); // SubByteReaderLogging::Options(vps_ols_dpb_pic_height[i],
+                                             // SubByteReaderLogging::Options::CheckType::SmallerEqual)
   this->sps_conformance_window_flag = reader.readFlag("sps_conformance_window_flag");
   if (this->sps_conformance_window_flag)
   {
@@ -99,7 +99,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   if (this->sps_subpic_info_present_flag)
   {
     this->sps_num_subpics_minus1 =
-        reader.readUEV("sps_num_subpics_minus1"); // ReaderHelperNew::Options(0, MaxSlicesPerAu)
+        reader.readUEV("sps_num_subpics_minus1"); // SubByteReaderLogging::Options(0, MaxSlicesPerAu)
     if (this->sps_num_subpics_minus1 > 0)
     {
       this->sps_independent_subpics_flag = reader.readFlag("sps_independent_subpics_flag");
@@ -361,7 +361,7 @@ void seq_parameter_set_rbsp::parse(ReaderHelperNew &reader)
   this->sps_rpl1_same_as_rpl0_flag = reader.readFlag("sps_rpl1_same_as_rpl0_flag");
   for (unsigned i = 0; i < (this->sps_rpl1_same_as_rpl0_flag ? 1u : 2u); i++)
   {
-    auto refPicSubLevel = ReaderHelperNewSubLevel(reader, "Ref Pic List " + std::to_string(i));
+    auto refPicSubLevel = SubByteReaderLoggingSubLevel(reader, "Ref Pic List " + std::to_string(i));
     this->sps_num_ref_pic_lists.push_back(reader.readUEV("sps_num_ref_pic_lists"));
     for (unsigned j = 0; j < this->sps_num_ref_pic_lists[i]; j++)
     {

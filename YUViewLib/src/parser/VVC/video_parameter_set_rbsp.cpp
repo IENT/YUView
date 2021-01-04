@@ -37,9 +37,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void video_parameter_set_rbsp::parse(ReaderHelperNew &reader)
+void video_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "video_parameter_set_rbsp");
+  SubByteReaderLoggingSubLevel subLevel(reader, "video_parameter_set_rbsp");
 
   this->vps_video_parameter_set_id =
       reader.readBits("vps_video_parameter_set_id", 4, Options().withCheckGreater(0));

@@ -43,7 +43,7 @@ class HeaderFile:
         writeLicense(self.f)
         self.f.write("#pragma once\n\n")
         self.f.write("#include \"NalUnitVVC.h\"\n")
-        self.f.write("#include \"parser/common/ReaderHelperNew.h\"\n\n")
+        self.f.write("#include \"parser/common/SubByteReaderLogging.h\"\n\n")
         self.f.write(f"""namespace {namespace}""")
         self.f.write("\n{\n\n")
         self.namespace = namespace
@@ -89,7 +89,7 @@ def writeBeginningToHeader(table, file):
     file.write(f"public:\n")
     file.write(f"  {table.name}() = default;\n")
     file.write(f"  ~{table.name}() = default;\n")
-    file.write(f"  void parse(ReaderHelperNew &reader{argumentsToString(table.arguments, 'int')});\n\n")
+    file.write(f"  void parse(SubByteReaderLogging &reader{argumentsToString(table.arguments, 'int')});\n\n")
 
 def writeEndToHeader(file):
     file.spaces = 0
@@ -97,7 +97,7 @@ def writeEndToHeader(file):
     file.write("\n")
 
 def writeBeginnginToSource(table, file):
-    file.write(f"void {table.name}::parse(ReaderHelperNew &reader)\n")
+    file.write(f"void {table.name}::parse(SubByteReaderLogging &reader)\n")
     file.write("{\n")
 
 def writeEndToSource(file):

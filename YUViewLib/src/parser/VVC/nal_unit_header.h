@@ -33,7 +33,7 @@
 #pragma once
 
 #include "parser/NalUnit.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -80,7 +80,7 @@ class nal_unit_header
 public:
   nal_unit_header() = default;
   ~nal_unit_header() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   QByteArray getNALHeader() const;
 

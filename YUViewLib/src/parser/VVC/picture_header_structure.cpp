@@ -42,13 +42,13 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void picture_header_structure::parse(ReaderHelperNew &             reader,
+void picture_header_structure::parse(SubByteReaderLogging &             reader,
                                      VPSMap &                      vpsMap,
                                      SPSMap &                      spsMap,
                                      PPSMap &                      ppsMap,
                                      std::shared_ptr<slice_layer_rbsp> sl)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "picture_header_structure");
+  SubByteReaderLoggingSubLevel subLevel(reader, "picture_header_structure");
 
   this->ph_gdr_or_irap_pic_flag = reader.readFlag("ph_gdr_or_irap_pic_flag");
   this->ph_non_ref_pic_flag     = reader.readFlag("ph_non_ref_pic_flag");

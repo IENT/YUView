@@ -39,13 +39,13 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void ols_timing_hrd_parameters::parse(ReaderHelperNew &              reader,
+void ols_timing_hrd_parameters::parse(SubByteReaderLogging &              reader,
                                       unsigned                       firstSubLayer,
                                       unsigned                       MaxSubLayersVal,
                                       general_timing_hrd_parameters *general_hrd)
 {
   assert(general_hrd != nullptr);
-  ReaderHelperNewSubLevel subLevel(reader, "ols_timing_hrd_parameters");
+  SubByteReaderLoggingSubLevel subLevel(reader, "ols_timing_hrd_parameters");
 
   for (unsigned i = firstSubLayer; i <= MaxSubLayersVal; i++)
   {

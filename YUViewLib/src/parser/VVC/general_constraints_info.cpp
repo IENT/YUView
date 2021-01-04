@@ -37,9 +37,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void general_constraints_info::parse(ReaderHelperNew &reader)
+void general_constraints_info::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "general_constraints_info");
+  SubByteReaderLoggingSubLevel subLevel(reader, "general_constraints_info");
 
   this->gci_present_flag = reader.readFlag("gci_present_flag");
   if (gci_present_flag)

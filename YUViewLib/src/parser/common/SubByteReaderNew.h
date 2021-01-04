@@ -51,16 +51,6 @@ public:
   SubByteReaderNew() = default;
   SubByteReaderNew(const ByteVector &inArr, size_t inArrOffset = 0);
 
-  std::tuple<uint64_t, std::string>   readBits(size_t nrBits);
-  std::tuple<ByteVector, std::string> readBytes(size_t nrBytes);
-
-  std::tuple<uint64_t, std::string> readUE_V();
-  std::tuple<int64_t, std::string>  readSE_V();
-  std::tuple<uint64_t, std::string> readLeb128();
-  std::tuple<uint64_t, std::string> readUVLC();
-  std::tuple<int64_t, std::string>  readNS();
-  std::tuple<int64_t, std::string>  readSU();
-
   [[nodiscard]] bool more_rbsp_data() const;
   [[nodiscard]] bool byte_aligned() const;
 
@@ -73,6 +63,17 @@ public:
   void disableEmulationPrevention() { skipEmulationPrevention = false; }
 
 protected:
+
+  std::tuple<uint64_t, std::string>   readBits(size_t nrBits);
+  std::tuple<ByteVector, std::string> readBytes(size_t nrBytes);
+
+  std::tuple<uint64_t, std::string> readUE_V();
+  std::tuple<int64_t, std::string>  readSE_V();
+  std::tuple<uint64_t, std::string> readLeb128();
+  std::tuple<uint64_t, std::string> readUVLC();
+  std::tuple<int64_t, std::string>  readNS();
+  std::tuple<int64_t, std::string>  readSU();
+
   ByteVector byteVector;
 
   bool skipEmulationPrevention{true};

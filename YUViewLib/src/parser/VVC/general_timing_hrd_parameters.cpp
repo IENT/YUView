@@ -37,9 +37,9 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void general_timing_hrd_parameters::parse(ReaderHelperNew &reader)
+void general_timing_hrd_parameters::parse(SubByteReaderLogging &reader)
 {
-  ReaderHelperNewSubLevel subLevel(reader, "general_timing_hrd_parameters");
+  SubByteReaderLoggingSubLevel subLevel(reader, "general_timing_hrd_parameters");
 
   this->num_units_in_tick = reader.readBits("num_units_in_tick", 32, Options().withCheckGreater(0));
   this->time_scale        = reader.readBits("time_scale", 32, Options().withCheckGreater(0));

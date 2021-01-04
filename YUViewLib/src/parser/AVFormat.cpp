@@ -39,8 +39,9 @@
 #include "AnnexBAVC.h"
 #include "AnnexBHEVC.h"
 #include "AnnexBMpeg2.h"
-#include "SubtitleDVB.h"
-#include "Subtitle608.h"
+#include "Subtitles/SubtitleDVB.h"
+#include "Subtitles/Subtitle608.h"
+#include "common/SubByteReaderLogging.h"
 
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
@@ -478,9 +479,11 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
       QString segmentTypeName;
       try
       {  
-        int nrBytesRead = subtitle_dvb::parseDVBSubtitleSegment(avpacketData.mid(posInData), itemTree, &segmentTypeName);
+        auto data = reader::SubByteReaderLogging::convertBeginningToByteVector(avpacketData.mid(posInData));
+        auto [nrBytesRead, name] = subtitle::dvb::parseDVBSubtitleSegment(data, itemTree);
         DEBUG_AVFORMAT("AVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
-        posInData += nrBytesRead;
+        posInData += int(nrBytesRead);
+        segmentTypeName = QString::fromStdString(name);
       }
       catch (...)
       {
@@ -503,7 +506,8 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   {
     try
     {
-      subtitle_608::parse608SubtitlePacket(avpacketData, itemTree);
+      auto data = reader::SubByteReaderLogging::convertBeginningToByteVector(avpacketData);
+      subtitle::sub_608::parse608SubtitlePacket(data, itemTree);
     }
     catch (...)
     {

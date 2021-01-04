@@ -36,7 +36,8 @@
 #include <cmath>
 
 #include "common/Macros.h"
-#include "AnnexBItuTT35.h"
+#include "common/SubByteReaderLogging.h"
+#include "Subtitles/AnnexBItuTT35.h"
 
 #define PARSER_HEVC_DEBUG_OUTPUT 0
 #if PARSER_HEVC_DEBUG_OUTPUT && !NDEBUG
@@ -565,8 +566,16 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
       }
       else if (new_sei->payloadType == 4)
       {
-        auto new_user_data_registered_itu_t_t35_sei = QSharedPointer<user_data_registered_itu_t_t35_sei<sei>>(new user_data_registered_itu_t_t35_sei<sei>(new_sei));
-        result = new_user_data_registered_itu_t_t35_sei->parse_user_data_registered_itu_t_t35(sub_sei_data, message_tree);
+        try
+        {
+          auto data = reader::SubByteReaderLogging::convertBeginningToByteVector(sub_sei_data);
+          subtitle::itutt35::parse_user_data_registered_itu_t_t35(data, message_tree);
+          result = SEI_PARSING_OK;
+        }
+        catch(const std::exception& e)
+        {
+          result = SEI_PARSING_ERROR;
+        }
       }
       else if (new_sei->payloadType == 5)
       {

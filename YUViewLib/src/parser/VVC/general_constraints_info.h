@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
 {
@@ -42,7 +42,7 @@ class general_constraints_info
 public:
   general_constraints_info()  = default;
   ~general_constraints_info() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   bool gci_present_flag{};
   bool gci_intra_only_constraint_flag{};

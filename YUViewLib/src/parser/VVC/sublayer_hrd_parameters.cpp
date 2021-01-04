@@ -39,12 +39,12 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void sublayer_hrd_parameters::parse(ReaderHelperNew &              reader,
+void sublayer_hrd_parameters::parse(SubByteReaderLogging &              reader,
                                     unsigned                       subLayerId,
                                     general_timing_hrd_parameters *general_hrd)
 {
   assert(general_hrd != nullptr);
-  ReaderHelperNewSubLevel subLevel(reader, "sublayer_hrd_parameters");
+  SubByteReaderLoggingSubLevel subLevel(reader, "sublayer_hrd_parameters");
 
   for (unsigned j = 0; j <= general_hrd->hrd_cpb_cnt_minus1; j++)
   {

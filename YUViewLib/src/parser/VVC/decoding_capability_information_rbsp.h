@@ -33,7 +33,7 @@
 #pragma once
 
 #include "NalUnitVVC.h"
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "profile_tier_level.h"
 #include "rbsp_trailing_bits.h"
 
@@ -45,7 +45,7 @@ class decoding_capability_information_rbsp : public NalRBSP
 public:
   decoding_capability_information_rbsp()  = default;
   ~decoding_capability_information_rbsp() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   unsigned           dci_reserved_zero_4bits{};
   unsigned           dci_num_ptls_minus1{};

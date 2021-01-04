@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/common/ReaderHelperNew.h"
+#include "parser/common/SubByteReaderLogging.h"
 #include "sei_payload.h"
 
 namespace parser::vvc
@@ -43,7 +43,7 @@ class buffering_period : public sei_payload
 public:
   buffering_period()  = default;
   ~buffering_period() = default;
-  void parse(reader::ReaderHelperNew &reader);
+  void parse(reader::SubByteReaderLogging &reader);
 
   bool             bp_nal_hrd_params_present_flag{};
   bool             bp_vcl_hrd_params_present_flag{};

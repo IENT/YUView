@@ -30,42 +30,48 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "lmcs_data.h"
+#pragma once
 
-#include "adaptation_parameter_set_rbsp.h"
+#include "common/typedef.h"
 
-namespace parser::vvc
+#include <functional>
+#include <memory>
+#include <optional>
+
+namespace parser::reader
 {
 
-using namespace parser::reader;
-
-void lmcs_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp *aps)
+struct RangeCheckResult
 {
-  SubByteReaderLoggingSubLevel subLevel(reader, "lmcs_data");
+  explicit    operator bool() const { return this->errorMessage.empty(); }
+  std::string errorMessage;
+};
 
-  this->lmcs_min_bin_idx = reader.readUEV("lmcs_min_bin_idx", Options().withCheckRange({0, 15}));
-  this->lmcs_delta_max_bin_idx =
-      reader.readUEV("lmcs_delta_max_bin_idx", Options().withCheckRange({0, 15}));
-  this->LmcsMaxBinIdx = 15 - lmcs_delta_max_bin_idx;
-  this->lmcs_delta_cw_prec_minus1 =
-      reader.readUEV("lmcs_delta_cw_prec_minus1", Options().withCheckRange({0, 14}));
-  for (unsigned i = lmcs_min_bin_idx; i <= this->LmcsMaxBinIdx; i++)
-  {
-    auto nrBits = this->lmcs_delta_cw_prec_minus1;
-    this->lmcs_delta_abs_cw.push_back(reader.readBits("lmcs_delta_abs_cw", nrBits));
-    if (this->lmcs_delta_abs_cw[i] > 0)
-    {
-      this->lmcs_delta_sign_cw_flag.push_back(reader.readFlag("lmcs_delta_sign_cw_flag"));
-    }
-  }
-  if (aps->aps_chroma_present_flag)
-  {
-    this->lmcs_delta_abs_crs = reader.readBits("lmcs_delta_abs_crs", 3);
-    if (this->lmcs_delta_abs_crs > 0)
-    {
-      this->lmcs_delta_sign_crs_flag = reader.readFlag("lmcs_delta_sign_crs_flag");
-    }
-  }
-}
+class Check
+{
+public:
+  Check()                                                  = default;
+  virtual ~Check()                                         = default;
+  virtual RangeCheckResult checkValue(int64_t value) const = 0;
+};
 
-} // namespace parser::vvc
+struct Options
+{
+  Options() = default;
+
+  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
+  [[nodiscard]] Options &&withMeaningMap(const std::map<int, std::string> &meaningMap);
+  [[nodiscard]] Options &&
+  withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
+  [[nodiscard]] Options &&withCheckEqualTo(int64_t value);
+  [[nodiscard]] Options &&withCheckGreater(int64_t value, bool inclusive = true);
+  [[nodiscard]] Options &&withCheckSmaller(int64_t value, bool inclusive = true);
+  [[nodiscard]] Options &&withCheckRange(Range<int64_t> range, bool inclusive = true);
+
+  std::string                         meaningString;
+  std::map<int, std::string>          meaningMap;
+  std::function<std::string(int64_t)> meaningFunction;
+  std::vector<std::unique_ptr<Check>> checkList;
+};
+
+} // namespace parser::reader
