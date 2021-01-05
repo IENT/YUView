@@ -4,10 +4,10 @@ name: CI flatpak
 
 # Controls when the action will run. 
 on:
-  # Triggers the workflow on push or pull request events but only for the develop branch
+  # Trigger the workflow if we merged into develop or if we create a release
+  # Since the workflow takes significantly longer (because of the ffmpeg build) we want to execute 
+  # this as little as possible.
   push:
-    branches: [ develop ]
-  pull_request:
     branches: [ develop ]
   release:
     branches: [ develop ]
