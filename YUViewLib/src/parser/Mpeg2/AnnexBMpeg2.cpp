@@ -32,8 +32,8 @@
 
 #include "AnnexBMpeg2.h"
 
-#include "common/Macros.h"
-#include "common/ReaderHelper.h"
+#include "parser/common/Macros.h"
+#include "parser/common/ReaderHelper.h"
 
 #define PARSER_MPEG2_DEBUG_OUTPUT 0
 #if PARSER_MPEG2_DEBUG_OUTPUT && !NDEBUG

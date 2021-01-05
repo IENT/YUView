@@ -38,7 +38,7 @@
 #include "common/Macros.h"
 #include "AnnexBAVC.h"
 #include "AnnexBHEVC.h"
-#include "AnnexBMpeg2.h"
+#include "Mpeg2/AnnexBMpeg2.h"
 #include "Subtitles/SubtitleDVB.h"
 #include "Subtitles/Subtitle608.h"
 #include "common/SubByteReaderLogging.h"
