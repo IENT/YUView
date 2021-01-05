@@ -87,7 +87,7 @@ Ratio AnnexBVVC::getSampleAspectRatio() { return Ratio({1, 1}); }
 
 AnnexB::ParseResult
 AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
-                              ByteVector                                    &data,
+                              ByteVector &                                  data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
                               TreeItem *                                    parent)
@@ -190,8 +190,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
           this->activeParameterSets.ppsMap,
           parsingState.currentPictureHeaderStructure);
 
-      this->parsingState.lastFramePOC =
-          this->parsingState.currentPictureHeaderStructure->PicOrderCntVal;
+      if (this->parsingState.currentPictureHeaderStructure)
+        this->parsingState.lastFramePOC =
+            this->parsingState.currentPictureHeaderStructure->PicOrderCntVal;
 
       this->parsingState.currentPictureHeaderStructure =
           newPictureHeader->picture_header_structure_instance;
@@ -230,6 +231,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                                          parsingState.currentPictureHeaderStructure);
         this->parsingState.currentPictureHeaderStructure =
             newSliceLayer->slice_header_instance.picture_header_structure_instance;
+        this->parsingState.lastFramePOC =
+            this->parsingState.currentPictureHeaderStructure->PicOrderCntVal;
       }
 
       specificDescription +=
@@ -322,9 +325,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     }
     else
     {
-      entry.pts = this->parsingState.lastFramePOC;
-      entry.dts =
-          int(this->parsingState.counterAU);
+      entry.pts      = this->parsingState.lastFramePOC;
+      entry.dts      = int(this->parsingState.counterAU);
       entry.duration = 1;
     }
     entry.bitrate            = unsigned(this->parsingState.sizeCurrentAU);
@@ -333,10 +335,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
     if (this->parsingState.counterAU > 0)
     {
-      const auto curFrameIsRandomAccess = (this->parsingState.counterAU == 1);
       if (!addFrameToList(this->parsingState.lastFramePOC,
                           this->parsingState.curFrameFileStartEndPos,
-                          curFrameIsRandomAccess))
+                          this->parsingState.lastFrameIsKeyframe))
       {
         ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."),
                                                parent);
@@ -346,9 +347,10 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
         DEBUG_VVC("Adding start/end " << this->curFrameFileStartEndPos->first << "/"
                                       << this->curFrameFileStartEndPos->second << " - POC "
                                       << this->parsingState.counterAU
-                                      << (curFrameIsRandomAccess ? " - ra" : ""));
+                                      << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
       else
-        DEBUG_VVC("Adding start/end %d/%d - POC NA/NA" << (curFrameIsRandomAccess ? " - ra" : ""));
+        DEBUG_VVC("Adding start/end %d/%d - POC NA/NA"
+                  << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
     }
     this->parsingState.curFrameFileStartEndPos = nalStartEndPosFile;
     this->parsingState.sizeCurrentAU           = 0;
