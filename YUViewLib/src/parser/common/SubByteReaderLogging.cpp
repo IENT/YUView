@@ -118,12 +118,10 @@ void checkAndLog(TreeItem *         item,
 
 } // namespace
 
-ByteVector SubByteReaderLogging::convertBeginningToByteVector(QByteArray data)
+ByteVector SubByteReaderLogging::convertToByteVector(QByteArray data)
 {
   ByteVector ret;
-  const auto maxLength = 2000u;
-  const auto length    = std::min(unsigned(data.size()), maxLength);
-  for (auto i = 0u; i < length; i++)
+  for (auto i = 0u; i < unsigned(data.size()); i++)
   {
     ret.push_back(data.at(i));
   }
