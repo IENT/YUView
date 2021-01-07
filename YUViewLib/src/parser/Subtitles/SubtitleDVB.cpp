@@ -278,19 +278,17 @@ unsigned parsePixelDataSubBlock(SubByteReaderLogging &reader)
 {
   SubByteReaderLoggingSubLevel s(reader, "pixel-data_sub-block()");
 
-  unsigned data_type;
-  {
-    Options opt;
-    opt.meaningMap[0x10] = "2-bit/pixel code string";
-    opt.meaningMap[0x11] = "4-bit/pixel code string";
-    opt.meaningMap[0x12] = "8-bit/pixel code string";
-    opt.meaningMap[0x20] = "2_to_4-bit_map-table data";
-    opt.meaningMap[0x21] = "2_to_8-bit_map-table data";
-    opt.meaningMap[0x22] = "4_to_8-bit_map-table data";
-    opt.meaningMap[0xF0] = "end of object line code";
-    opt.meaningMap[-1]   = "reserved";
-    data_type = reader.readBits("data_type", 8, opt);
-  }
+  unsigned data_type = reader.readBits("data_type",
+                                       8,
+                                       Options()
+                                           .withMeaningMap({{0x10, "2-bit/pixel code string"},
+                                                            {0x11, "4-bit/pixel code string"},
+                                                            {0x12, "8-bit/pixel code string"},
+                                                            {0x20, "2_to_4-bit_map-table data"},
+                                                            {0x21, "2_to_8-bit_map-table data"},
+                                                            {0x22, "4_to_8-bit_map-table data"},
+                                                            {0xF0, "end of object line code"}})
+                                           .withMeaning("reserved"));
 
   auto end      = false;
   auto bitsRead = 0u;

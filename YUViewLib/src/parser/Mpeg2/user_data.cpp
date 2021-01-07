@@ -30,58 +30,23 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "user_data.h"
 
-#include "common/typedef.h"
+#include "parser/common/SubByteReaderLogging.h"
+#include "parser/common/functions.h"
 
-#include <functional>
-#include <memory>
-#include <optional>
-
-namespace parser::reader
+namespace parser::mpeg2
 {
 
-using MeaningMap = std::map<int, std::string>;
+using namespace parser::reader;
 
-struct CheckResult
+void user_data::parse(SubByteReaderLogging &reader)
 {
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
+  SubByteReaderLoggingSubLevel subLevel(reader, "user_data");
 
-class Check
-{
-public:
-  Check() = default;
-  Check(std::string errorIfFail) : errorIfFail(errorIfFail){};
-  virtual ~Check() = default;
+  unsigned i = 0;
+  while (reader.canReadBits(8))
+    reader.readBits(formatArray("byte", i++), 8);
+}
 
-  virtual CheckResult checkValue(int64_t value) const = 0;
-
-  std::string errorIfFail;
-};
-
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const MeaningMap &meaningMap);
-  [[nodiscard]] Options &&withMeaningVector(const std::vector<std::string> &meaningVector);
-  [[nodiscard]] Options &&
-  withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckGreater(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckSmaller(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckRange(Range<int64_t> range, bool inclusive = true, const std::string &errorIfFail = {});
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::function<std::string(int64_t)> meaningFunction;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::mpeg2

@@ -78,18 +78,18 @@ enum class NalType
 class nal_unit_header
 {
 public:
-  nal_unit_header() = default;
+  nal_unit_header()  = default;
   ~nal_unit_header() = default;
   void parse(reader::SubByteReaderLogging &reader);
 
   QByteArray getNALHeader() const;
 
-  bool forbidden_zero_bit;
-  bool nuh_reserved_zero_bit;
-  int  nuh_layer_id;
-  int  nuh_temporal_id_plus1;
+  bool     forbidden_zero_bit;
+  bool     nuh_reserved_zero_bit;
+  unsigned nuh_layer_id;
+  unsigned nuh_temporal_id_plus1;
 
-  NalType nal_unit_type;
+  NalType  nal_unit_type;
   unsigned nalUnitTypeID;
 };
 

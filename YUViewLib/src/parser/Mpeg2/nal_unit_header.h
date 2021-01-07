@@ -33,55 +33,49 @@
 #pragma once
 
 #include "common/typedef.h"
+#include "parser/NalUnit.h"
+#include "parser/common/SubByteReaderLogging.h"
 
-#include <functional>
-#include <memory>
-#include <optional>
-
-namespace parser::reader
+namespace parser::mpeg2
 {
 
-using MeaningMap = std::map<int, std::string>;
-
-struct CheckResult
+// All the different NAL unit types (T-REC-H.262-199507 Page 24 Table 6-1)
+enum class NalType
 {
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
+  UNSPECIFIED,
+  PICTURE,
+  SLICE,
+  USER_DATA,
+  SEQUENCE_HEADER,
+  SEQUENCE_ERROR,
+  EXTENSION_START,
+  SEQUENCE_END,
+  GROUP_START,
+  SYSTEM_START_CODE,
+  RESERVED
 };
 
-class Check
+std::string to_string(NalType nalType);
+
+/* The basic Mpeg2 NAL unit. Technically, there is no concept of NAL units in mpeg2 (h262) but there
+ * are start codes for some units and there is a start code so we internally use the NAL concept.
+ */
+class nal_unit_header
 {
 public:
-  Check() = default;
-  Check(std::string errorIfFail) : errorIfFail(errorIfFail){};
-  virtual ~Check() = default;
+  nal_unit_header()          = default;
+  virtual ~nal_unit_header() = default;
 
-  virtual CheckResult checkValue(int64_t value) const = 0;
+  // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the
+  // values will be added to the tree as well.
+  void parse(reader::SubByteReaderLogging &reader);
 
-  std::string errorIfFail;
+  virtual QByteArray getNALHeader() const;
+
+  NalType      nal_unit_type{NalType::UNSPECIFIED};
+  unsigned int slice_id{};           // in case of SLICE
+  unsigned     system_start_codes{}; // in case of SYSTEM_START_CODE
+  unsigned int start_code_value{};
 };
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const MeaningMap &meaningMap);
-  [[nodiscard]] Options &&withMeaningVector(const std::vector<std::string> &meaningVector);
-  [[nodiscard]] Options &&
-  withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckGreater(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckSmaller(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckRange(Range<int64_t> range, bool inclusive = true, const std::string &errorIfFail = {});
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::function<std::string(int64_t)> meaningFunction;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::mpeg2

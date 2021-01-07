@@ -57,7 +57,7 @@ void checkAndLog(TreeItem *         item,
                  int64_t            value,
                  const std::string &code)
 {
-  RangeCheckResult checkResult;
+  CheckResult checkResult;
   for (auto &check : options.checkList)
   {
     checkResult = check->checkValue(value);
@@ -251,6 +251,11 @@ ByteVector SubByteReaderLogging::readBytes(const std::string &symbolName,
   {
     this->logExceptionAndThrowError(ex, " " + std::to_string(nrBytes) + " bytes.");
   }
+}
+
+void SubByteReaderLogging::logCalculatedValue(const std::string &symbolName, int64_t value, const Options &options)
+{
+  checkAndLog(this->currentTreeLevel, "Calc", symbolName, options, value, "");
 }
 
 void SubByteReaderLogging::logExceptionAndThrowError(const std::exception &ex,

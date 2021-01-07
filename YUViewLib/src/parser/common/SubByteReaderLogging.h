@@ -75,6 +75,8 @@ public:
   int64_t    readSEV(const std::string &symbolName, const Options &options = {});
   ByteVector readBytes(const std::string &symbolName, size_t nrBytes, const Options &options = {});
 
+  void logCalculatedValue(const std::string &symbolName, int64_t value, const Options &options = {});
+
   [[nodiscard]] TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
 private:

@@ -52,7 +52,6 @@ const std::map<unsigned, NalType> idToNalTypeMap = {
     {24, NalType::SUFFIX_SEI_NUT}, {25, NalType::FD_NUT},    {26, NalType::RSV_NVCL_26},
     {27, NalType::RSV_NVCL_27},    {28, NalType::UNSPEC_28}, {29, NalType::UNSPEC_29},
     {30, NalType::UNSPEC_30},      {31, NalType::UNSPEC_31}};
-
 }
 
 void nal_unit_header::parse(SubByteReaderLogging &reader)
@@ -63,43 +62,42 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
   this->nuh_reserved_zero_bit = reader.readFlag("nuh_reserved_zero_bit");
   this->nuh_layer_id = reader.readBits("nuh_layer_id", 6, Options().withCheckRange({0, 55}));
 
-  {
-    Options opt;
-    opt.meaningMap[0]   = "Coded slice of a trailing picture or subpicture";
-    opt.meaningMap[1]   = "Coded slice of an STSA picture or subpicture";
-    opt.meaningMap[2]   = "Coded slice of a RADL picture or subpicture";
-    opt.meaningMap[3]   = "Coded slice of a RASL picture or subpicture";
-    opt.meaningMap[4]   = "Reserved non-IRAP VCL NAL unit types";
-    opt.meaningMap[5]   = "Reserved non-IRAP VCL NAL unit types";
-    opt.meaningMap[6]   = "Reserved non-IRAP VCL NAL unit types";
-    opt.meaningMap[7]   = "Coded slice of an IDR picture or subpicture";
-    opt.meaningMap[8]   = "Coded slice of an IDR picture or subpicture";
-    opt.meaningMap[9]   = "Coded slice of a CRA picture or subpicture";
-    opt.meaningMap[10]  = "Coded slice of a GDR picture or subpicture";
-    opt.meaningMap[11]  = "Reserved IRAP VCL NAL unit type";
-    opt.meaningMap[12]  = "Operating point information";
-    opt.meaningMap[13]  = "Decoding capability information";
-    opt.meaningMap[14]  = "Video parameter set";
-    opt.meaningMap[15]  = "Sequence parameter set";
-    opt.meaningMap[16]  = "Picture parameter set";
-    opt.meaningMap[17]  = "Adaptation parameter set";
-    opt.meaningMap[18]  = "Adaptation parameter set";
-    opt.meaningMap[19]  = "Picture header";
-    opt.meaningMap[20]  = "AU delimiter";
-    opt.meaningMap[21]  = "End of sequence";
-    opt.meaningMap[22]  = "End of bitstream";
-    opt.meaningMap[23]  = "Supplemental enhancement information";
-    opt.meaningMap[24]  = "Supplemental enhancement information";
-    opt.meaningMap[25]  = "Filler data";
-    opt.meaningMap[26]  = "Reserved non-VCL NAL unit types";
-    opt.meaningMap[27]  = "Reserved non-VCL NAL unit types";
-    opt.meaningMap[28]  = "Unspecified non-VCL NAL unit types";
-    opt.meaningMap[29]  = "Unspecified non-VCL NAL unit types";
-    opt.meaningMap[30]  = "Unspecified non-VCL NAL unit types";
-    opt.meaningMap[31]  = "Unspecified non-VCL NAL unit types";
-    this->nalUnitTypeID = reader.readBits("nal_unit_type", 5, opt);
-    this->nal_unit_type = idToNalTypeMap.at(this->nalUnitTypeID);
-  }
+  this->nalUnitTypeID = reader.readBits(
+      "nal_unit_type",
+      5,
+      Options().withMeaningVector({"Coded slice of a trailing picture or subpicture",
+                                   "Coded slice of an STSA picture or subpicture",
+                                   "Coded slice of a RADL picture or subpicture",
+                                   "Coded slice of a RASL picture or subpicture",
+                                   "Reserved non-IRAP VCL NAL unit types",
+                                   "Reserved non-IRAP VCL NAL unit types",
+                                   "Reserved non-IRAP VCL NAL unit types",
+                                   "Coded slice of an IDR picture or subpicture",
+                                   "Coded slice of an IDR picture or subpicture",
+                                   "Coded slice of a CRA picture or subpicture",
+                                   "Coded slice of a GDR picture or subpicture",
+                                   "Reserved IRAP VCL NAL unit type",
+                                   "Operating point information",
+                                   "Decoding capability information",
+                                   "Video parameter set",
+                                   "Sequence parameter set",
+                                   "Picture parameter set",
+                                   "Adaptation parameter set",
+                                   "Adaptation parameter set",
+                                   "Picture header",
+                                   "AU delimiter",
+                                   "End of sequence",
+                                   "End of bitstream",
+                                   "Supplemental enhancement information",
+                                   "Supplemental enhancement information",
+                                   "Filler data",
+                                   "Reserved non-VCL NAL unit types",
+                                   "Reserved non-VCL NAL unit types",
+                                   "Unspecified non-VCL NAL unit types",
+                                   "Unspecified non-VCL NAL unit types",
+                                   "Unspecified non-VCL NAL unit types",
+                                   "Unspecified non-VCL NAL unit types"}));
+  this->nal_unit_type = idToNalTypeMap.at(this->nalUnitTypeID);
 
   this->nuh_temporal_id_plus1 = reader.readBits("nuh_temporal_id_plus1", 3);
 }

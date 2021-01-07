@@ -30,58 +30,23 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "functions.h"
 
-#include "common/typedef.h"
-
-#include <functional>
-#include <memory>
-#include <optional>
-
-namespace parser::reader
+namespace parser
 {
 
-using MeaningMap = std::map<int, std::string>;
-
-struct CheckResult
+std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
 {
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
+  std::string text;
+  for (auto const &key : sliceCounts)
+  {
+    text += key.first;
+    const auto value = key.second;
+    if (value > 1)
+      text += "(" + std::to_string(value) + ")";
+    text += " ";
+  }
+  return text;
+}
 
-class Check
-{
-public:
-  Check() = default;
-  Check(std::string errorIfFail) : errorIfFail(errorIfFail){};
-  virtual ~Check() = default;
-
-  virtual CheckResult checkValue(int64_t value) const = 0;
-
-  std::string errorIfFail;
-};
-
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const MeaningMap &meaningMap);
-  [[nodiscard]] Options &&withMeaningVector(const std::vector<std::string> &meaningVector);
-  [[nodiscard]] Options &&
-  withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckGreater(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckSmaller(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckRange(Range<int64_t> range, bool inclusive = true, const std::string &errorIfFail = {});
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::function<std::string(int64_t)> meaningFunction;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser
