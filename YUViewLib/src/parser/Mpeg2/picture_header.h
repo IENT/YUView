@@ -32,56 +32,30 @@
 
 #pragma once
 
-#include "common/typedef.h"
+#include "NalUnitMpeg2.h"
+#include "parser/common/SubByteReaderLogging.h"
 
-#include <functional>
-#include <memory>
-#include <optional>
-
-namespace parser::reader
+namespace parser::mpeg2
 {
 
-using MeaningMap = std::map<int, std::string>;
-
-struct CheckResult
-{
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
-
-class Check
+class picture_header : public NalRBSP
 {
 public:
-  Check() = default;
-  Check(std::string errorIfFail) : errorIfFail(errorIfFail){};
-  virtual ~Check() = default;
+  picture_header() = default;
 
-  virtual CheckResult checkValue(int64_t value) const = 0;
+  void parse(reader::SubByteReaderLogging &reader);
 
-  std::string errorIfFail;
+  bool        isIntraPicture() const { return picture_coding_type == 1; };
+  std::string getPictureTypeString() const;
+
+  unsigned int     temporal_reference{};
+  unsigned int     picture_coding_type{};
+  unsigned int     vbv_delay{};
+  bool             full_pel_forward_vector{};
+  unsigned int     forward_f_code{};
+  bool             full_pel_backward_vector{};
+  unsigned int     backward_f_code{};
+  vector<unsigned> extra_information_picture_list{};
 };
 
-struct Options
-{
-  Options() = default;
-
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const MeaningMap &meaningMap);
-  [[nodiscard]] Options &&withMeaningVector(const std::vector<std::string> &meaningVector);
-  [[nodiscard]] Options &&
-  withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckGreater(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckSmaller(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckRange(Range<int64_t> range, bool inclusive = true, const std::string &errorIfFail = {});
-
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::function<std::string(int64_t)> meaningFunction;
-  std::vector<std::unique_ptr<Check>> checkList;
-};
-
-} // namespace parser::reader
+} // namespace parser::mpeg2

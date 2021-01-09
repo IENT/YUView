@@ -81,7 +81,7 @@ QList<QByteArray> AnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
 
 QByteArray AnnexBVVC::getExtradata() { return {}; }
 
-QPair<int, int> AnnexBVVC::getProfileLevel() { return QPair<int, int>(0, 0); }
+IntPair AnnexBVVC::getProfileLevel() { return {0, 0}; }
 
 Ratio AnnexBVVC::getSampleAspectRatio() { return Ratio({1, 1}); }
 
@@ -185,6 +185,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                               this->activeParameterSets.ppsMap,
                               this->parsingState.currentSlice);
       newPictureHeader->picture_header_structure_instance->calculatePictureOrderCount(
+          reader,
           nalVVC->header.nal_unit_type,
           this->activeParameterSets.spsMap,
           this->activeParameterSets.ppsMap,
@@ -225,7 +226,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       if (newSliceLayer->slice_header_instance.picture_header_structure_instance)
       {
         newSliceLayer->slice_header_instance.picture_header_structure_instance
-            ->calculatePictureOrderCount(nalVVC->header.nal_unit_type,
+            ->calculatePictureOrderCount(reader,
+                                         nalVVC->header.nal_unit_type,
                                          this->activeParameterSets.spsMap,
                                          this->activeParameterSets.ppsMap,
                                          parsingState.currentPictureHeaderStructure);

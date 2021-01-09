@@ -32,56 +32,32 @@
 
 #pragma once
 
-#include "common/typedef.h"
+#include "parser/NalUnit.h"
 
-#include <functional>
-#include <memory>
-#include <optional>
+#include "nal_unit_header.h"
 
-namespace parser::reader
+namespace parser::mpeg2
 {
 
-using MeaningMap = std::map<int, std::string>;
-
-struct CheckResult
-{
-  explicit    operator bool() const { return this->errorMessage.empty(); }
-  std::string errorMessage;
-};
-
-class Check
+class NalRBSP
 {
 public:
-  Check() = default;
-  Check(std::string errorIfFail) : errorIfFail(errorIfFail){};
-  virtual ~Check() = default;
-
-  virtual CheckResult checkValue(int64_t value) const = 0;
-
-  std::string errorIfFail;
+  NalRBSP()          = default;
+  virtual ~NalRBSP() = default;
 };
 
-struct Options
+class NalUnitMpeg2 : public NalUnit
 {
-  Options() = default;
+public:
+  NalUnitMpeg2(int nalIdx, std::optional<pairUint64> filePosStartEnd)
+      : NalUnit(nalIdx, filePosStartEnd)
+  {
+  }
 
-  [[nodiscard]] Options &&withMeaning(const std::string &meaningString);
-  [[nodiscard]] Options &&withMeaningMap(const MeaningMap &meaningMap);
-  [[nodiscard]] Options &&withMeaningVector(const std::vector<std::string> &meaningVector);
-  [[nodiscard]] Options &&
-  withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckGreater(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckSmaller(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckRange(Range<int64_t> range, bool inclusive = true, const std::string &errorIfFail = {});
+  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
 
-  std::string                         meaningString;
-  std::map<int, std::string>          meaningMap;
-  std::function<std::string(int64_t)> meaningFunction;
-  std::vector<std::unique_ptr<Check>> checkList;
+  nal_unit_header          header;
+  std::shared_ptr<NalRBSP> rbsp;
 };
 
-} // namespace parser::reader
+} // namespace parser::mpeg2

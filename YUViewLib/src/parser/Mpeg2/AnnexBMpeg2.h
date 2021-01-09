@@ -32,43 +32,31 @@
 
 #pragma once
 
-#include "../AnnexB.h"
-#include "NalUnitVVC.h"
-#include "commonMaps.h"
-#include "video/videoHandlerYUV.h"
-
-#include <memory>
-
-using namespace YUV_Internals;
+#include "parser/AnnexB.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser
 {
 
-namespace vvc
+namespace mpeg2
 {
-class slice_layer_rbsp;
-class picture_header_structure;
-class buffering_period;
-} // namespace vvc
+class sequence_extension;
+class sequence_header;
+class picture_header;
+} // namespace mpeg2
 
-// This class knows how to parse the bitrstream of VVC annexB files
-class AnnexBVVC : public AnnexB
+class AnnexBMpeg2 : public AnnexB
 {
   Q_OBJECT
 
 public:
-  AnnexBVVC(QObject *parent = nullptr) : AnnexB(parent){};
-  ~AnnexBVVC() = default;
+  AnnexBMpeg2(QObject *parent = nullptr) : AnnexB(parent){};
+  ~AnnexBMpeg2(){};
 
-  // Get some properties
+  // Get properties
   double         getFramerate() const override;
   QSize          getSequenceSizeSamples() const override;
   yuvPixelFormat getPixelFormat() const override;
-
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
-  QByteArray        getExtradata() override;
-  IntPair           getProfileLevel() override;
-  Ratio             getSampleAspectRatio() override;
 
   // Deprecated function for backwards compatibility. Once all parsing functions are switched
   // This will be removed.
@@ -88,40 +76,31 @@ public:
                                  std::optional<pairUint64> nalStartEndPosFile = {},
                                  TreeItem *                parent             = nullptr);
 
-protected:
-  struct ActiveParameterSets
+  // TODO: Reading from raw mpeg2 streams not supported (yet? Is this even defined / possible?)
+  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override
   {
-    vvc::VPSMap vpsMap;
-    vvc::SPSMap spsMap;
-    vvc::PPSMap ppsMap;
-    vvc::APSMap apsMap;
-  };
-  ActiveParameterSets activeParameterSets;
+    (void)iFrameNr;
+    (void)filePos;
+    return QList<QByteArray>();
+  }
+  QByteArray getExtradata() override { return QByteArray(); }
+  IntPair    getProfileLevel() override;
+  Ratio      getSampleAspectRatio() override;
 
-  struct ParsingState
-  {
-    std::shared_ptr<vvc::picture_header_structure> currentPictureHeaderStructure;
-    std::shared_ptr<vvc::slice_layer_rbsp>         currentSlice;
-    std::shared_ptr<vvc::buffering_period>         lastBufferingPeriod;
+private:
+  // We will keep a pointer to the first sequence extension to be able to retrive some data
+  std::shared_ptr<mpeg2::sequence_extension> firstSequenceExtension;
+  std::shared_ptr<mpeg2::sequence_header>    firstSequenceHeader;
 
-    size_t                    counterAU{};
-    size_t                    sizeCurrentAU{};
-    unsigned                  lastFramePOC{};
-    bool                      lastFrameIsKeyframe{};
-    std::optional<pairUint64> curFrameFileStartEndPos;
-  };
-  ParsingState parsingState;
-
-  struct auDelimiterDetector_t
-  {
-    bool     isStartOfNewAU(std::shared_ptr<vvc::NalUnitVVC>               nal,
-                            std::shared_ptr<vvc::picture_header_structure> ph);
-    bool     lastNalWasVcl{false};
-    unsigned lastVcl_PicOrderCntVal{};
-    unsigned lastVcl_ph_pic_order_cnt_lsb{};
-    unsigned lastVcl_nuh_layer_id;
-  };
-  auDelimiterDetector_t auDelimiterDetector;
+  unsigned                               sizeCurrentAU{0};
+  int                                    pocOffset{0};
+  int                                    curFramePOC{-1};
+  int                                    lastFramePOC{-1};
+  unsigned                               counterAU{0};
+  bool                                   lastAUStartBySequenceHeader{false};
+  bool                                   currentAUAllSlicesIntra{true};
+  std::map<std::string, unsigned>        currentAUSliceCounts;
+  std::shared_ptr<mpeg2::picture_header> lastPictureHeader;
 };
 
 } // namespace parser

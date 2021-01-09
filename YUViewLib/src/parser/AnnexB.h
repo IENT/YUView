@@ -83,7 +83,7 @@ public:
   {
     ParseResult() = default;
     bool success {false};
-    std::optional<QString> nalTypeName;
+    std::optional<std::string> nalTypeName;
     std::optional<BitratePlotModel::BitrateEntry> bitrateEntry;
   };
   virtual ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) = 0;
@@ -107,7 +107,7 @@ public:
   // Get the parameters sets as extradata. The format of this depends on the underlying codec.
   virtual QByteArray getExtradata() = 0;
   // Get some other properties of the bitstream in order to configure the FFMpegDecoder
-  virtual QPair<int,int> getProfileLevel() = 0;
+  virtual IntPair getProfileLevel() = 0;
   virtual Ratio getSampleAspectRatio() = 0;
 
   std::optional<pairUint64> getFrameStartEndPos(int codingOrderFrameIdx);

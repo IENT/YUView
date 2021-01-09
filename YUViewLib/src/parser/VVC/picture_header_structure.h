@@ -52,13 +52,14 @@ class picture_header_structure : public NalRBSP
 public:
   picture_header_structure()  = default;
   ~picture_header_structure() = default;
-  void parse(reader::SubByteReaderLogging &         reader,
+  void parse(reader::SubByteReaderLogging &    reader,
              VPSMap &                          vpsMap,
              SPSMap &                          spsMap,
              PPSMap &                          ppsMap,
              std::shared_ptr<slice_layer_rbsp> sl);
 
-  void calculatePictureOrderCount(NalType                                   nalType,
+  void calculatePictureOrderCount(reader::SubByteReaderLogging &            reader,
+                                  NalType                                   nalType,
                                   SPSMap &                                  spsMap,
                                   PPSMap &                                  ppsMap,
                                   std::shared_ptr<picture_header_structure> previousPicture);
@@ -69,11 +70,11 @@ public:
   bool                           ph_inter_slice_allowed_flag{};
   bool                           ph_intra_slice_allowed_flag{true};
   unsigned                       ph_pic_parameter_set_id{};
-  int                            ph_pic_order_cnt_lsb{};
+  unsigned                       ph_pic_order_cnt_lsb{};
   unsigned                       ph_recovery_poc_cnt{};
   vector<bool>                   ph_extra_bit{};
   bool                           ph_poc_msb_cycle_present_flag{};
-  int                            ph_poc_msb_cycle_val{};
+  unsigned                       ph_poc_msb_cycle_val{};
   bool                           ph_alf_enabled_flag{};
   unsigned                       ph_num_alf_aps_ids_luma{};
   vector<unsigned>               ph_alf_aps_id_luma{};

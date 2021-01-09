@@ -4,6 +4,7 @@ TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += c++1z
 CONFIG -= debug_and_release
+CONFIG += object_parallel_to_source
 
 SOURCES += $$files(src/*.cpp, true)
 HEADERS += $$files(src/*.h, true)

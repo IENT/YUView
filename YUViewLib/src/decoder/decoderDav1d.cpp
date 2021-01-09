@@ -879,7 +879,7 @@ void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int bl
     {
       int angleDelta = (yc == 0) ? b.y_angle : b.uv_angle;
       IntraPredMode predMode = (yc == 0) ? (IntraPredMode)b.y_mode : (IntraPredMode)b.uv_mode;
-      QIntPair vec = calculateIntraPredDirection(predMode, angleDelta);
+      auto vec = calculateIntraPredDirection(predMode, angleDelta);
       if (vec.first == 0 && vec.second == 0)
         continue;
       
@@ -962,10 +962,10 @@ void decoderDav1d::parseBlockPartition(Av1Block *blockData, int x, int y, int bl
   }
 }
 
-QIntPair decoderDav1d::calculateIntraPredDirection(IntraPredMode predMode, int angleDelta)
+IntPair decoderDav1d::calculateIntraPredDirection(IntraPredMode predMode, int angleDelta)
 {
   if (predMode == DC_PRED || predMode > VERT_LEFT_PRED)
-    return QIntPair(0, 0);
+    return {};
 
   // angleDelta should be between -4 and 3
   const int modeIndex = predMode - VERT_PRED;
@@ -1004,6 +1004,5 @@ QIntPair decoderDav1d::calculateIntraPredDirection(IntraPredMode predMode, int a
     {{-18, 26}, {-17, 27}, {-16, 28}, {-14, 29}, {-13, 29}, {-11, 30}, {-9, 31}, {-8, 31}}
    };
 
-  QIntPair vec(vectorTable[modeIndex][deltaIndex][0], vectorTable[modeIndex][deltaIndex][1]);
-  return vec;
+  return {vectorTable[modeIndex][deltaIndex][0], vectorTable[modeIndex][deltaIndex][1]};
 }

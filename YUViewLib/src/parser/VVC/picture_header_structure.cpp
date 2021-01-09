@@ -42,10 +42,10 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void picture_header_structure::parse(SubByteReaderLogging &             reader,
-                                     VPSMap &                      vpsMap,
-                                     SPSMap &                      spsMap,
-                                     PPSMap &                      ppsMap,
+void picture_header_structure::parse(SubByteReaderLogging &            reader,
+                                     VPSMap &                          vpsMap,
+                                     SPSMap &                          spsMap,
+                                     PPSMap &                          ppsMap,
                                      std::shared_ptr<slice_layer_rbsp> sl)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "picture_header_structure");
@@ -450,6 +450,7 @@ void picture_header_structure::parse(SubByteReaderLogging &             reader,
 }
 
 void picture_header_structure::calculatePictureOrderCount(
+    reader::SubByteReaderLogging &            reader,
     NalType                                   nalType,
     SPSMap &                                  spsMap,
     PPSMap &                                  ppsMap,
@@ -495,6 +496,9 @@ void picture_header_structure::calculatePictureOrderCount(
 
   // (197)
   this->PicOrderCntVal = this->PicOrderCntMsb + this->ph_pic_order_cnt_lsb;
+
+  reader.logCalculatedValue("PicOrderCntMsb", int64_t(this->PicOrderCntMsb));
+  reader.logCalculatedValue("PicOrderCntVal", int64_t(this->PicOrderCntVal));
 }
 
 } // namespace parser::vvc
