@@ -185,6 +185,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                               this->activeParameterSets.ppsMap,
                               this->parsingState.currentSlice);
       newPictureHeader->picture_header_structure_instance->calculatePictureOrderCount(
+          reader,
           nalVVC->header.nal_unit_type,
           this->activeParameterSets.spsMap,
           this->activeParameterSets.ppsMap,
@@ -225,7 +226,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       if (newSliceLayer->slice_header_instance.picture_header_structure_instance)
       {
         newSliceLayer->slice_header_instance.picture_header_structure_instance
-            ->calculatePictureOrderCount(nalVVC->header.nal_unit_type,
+            ->calculatePictureOrderCount(reader,
+                                         nalVVC->header.nal_unit_type,
                                          this->activeParameterSets.spsMap,
                                          this->activeParameterSets.ppsMap,
                                          parsingState.currentPictureHeaderStructure);
