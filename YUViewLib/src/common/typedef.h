@@ -43,6 +43,7 @@
 #include <sstream>
 #include <string>
 #include <map>
+#include <utility>
 
 namespace YUView
 {
@@ -230,10 +231,12 @@ template <typename T> inline T clip(const T n, const T lower, const T upper) { r
 /// ---- Custom types
 typedef std::pair<uint64_t, uint64_t> pairUint64;
 typedef std::pair<int64_t, int64_t> pairInt64;
+typedef std::pair<int,int> IntPair;
+
+/// ---- Legacy types that will be replaced
 typedef QPair<QString, QString> QStringPair;
 typedef QList<QStringPair> QStringPairList;
 typedef QPair<int,int> indexRange;  // QPair of integers (minimum and maximum)
-typedef QPair<int,int> QIntPair;
 typedef QPair<unsigned int, unsigned int> QUIntPair;
 
 template <typename T> using umap_1d = std::map<unsigned, T>;

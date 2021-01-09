@@ -60,7 +60,7 @@ public:
 
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
   QByteArray getExtradata() Q_DECL_OVERRIDE;
-  QPair<int,int> getProfileLevel() Q_DECL_OVERRIDE;
+  IntPair getProfileLevel() Q_DECL_OVERRIDE;
   Ratio getSampleAspectRatio() Q_DECL_OVERRIDE;
 
   ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) Q_DECL_OVERRIDE;

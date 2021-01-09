@@ -67,7 +67,7 @@ public:
 
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
   QByteArray        getExtradata() override;
-  QPair<int, int>   getProfileLevel() override;
+  IntPair           getProfileLevel() override;
   Ratio             getSampleAspectRatio() override;
 
   // Deprecated function for backwards compatibility. Once all parsing functions are switched

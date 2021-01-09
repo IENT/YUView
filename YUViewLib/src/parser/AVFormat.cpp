@@ -34,6 +34,7 @@
 
 #include <QElapsedTimer>
 #include <iomanip>
+#include <queue>
 
 #include "common/Macros.h"
 #include "AnnexBAVC.h"
@@ -298,7 +299,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
-  QString specificDescription;
+  std::string specificDescription;
   TreeItem *itemTree = new TreeItem(packetModel->getRootItem());
 
   int posInData = 0;
@@ -349,7 +350,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
     if (this->annexBParser)
     {
       // Colloect the types of NALs to create a good name later
-      QStringList nalNames;
+      std::queue<std::string> nalNames;
 
       int nalID = 0;
       packetDataFormat_t packetFormat = packet.guessDataFormatFromData();
@@ -417,7 +418,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
         else if (parseResult.bitrateEntry)
           this->bitratePlotModel->addBitratePoint(packet.getStreamIndex(), *parseResult.bitrateEntry);
         if (parseResult.nalTypeName)
-          nalNames.append(*parseResult.nalTypeName);
+          nalNames.push(*parseResult.nalTypeName);
         nalID++;
       }
 
@@ -426,25 +427,30 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
         specificDescription = " - ";    // In mpeg2 there is no concept of NAL units
       else
         specificDescription = " - NALs:";
-      for (QString n : nalNames)
-        specificDescription += (" " + n);
+      while (!nalNames.empty())
+      {
+        specificDescription += " " + nalNames.front();
+        nalNames.pop();
+      }
     }
     else if (obuParser)
     {
       int obuID = 0;
       // Colloect the types of OBus to create a good name later
-      QStringList obuNames;
+      std::queue<std::string> obuNames;
 
       const int MIN_OBU_SIZE = 2;
       while (posInData + MIN_OBU_SIZE <= avpacketData.length())
       {
-        QString obuTypeName;
         pairUint64 obuStartEndPosFile; // Not used
         try
         {  
-          int nrBytesRead = obuParser->parseAndAddOBU(obuID, avpacketData.mid(posInData), itemTree, obuStartEndPosFile, &obuTypeName);
+          auto [nrBytesRead, obuTypeName] = obuParser->parseAndAddOBU(obuID, avpacketData.mid(posInData), itemTree, obuStartEndPosFile);
           DEBUG_AVFORMAT("AVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
           posInData += nrBytesRead;
+
+          if (!obuTypeName.empty())
+            obuNames.push(obuTypeName);
         }
         catch (...)
         {
@@ -452,8 +458,6 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
           break;
         }
 
-        if (!obuTypeName.isEmpty())
-          obuNames.append(obuTypeName);
         obuID++;
 
         if (obuID > 200)
@@ -464,8 +468,11 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
       }
 
       specificDescription = " - OBUs:";
-      for (QString n : obuNames)
-        specificDescription += (" " + n);
+      while (!obuNames.empty())
+      {
+        specificDescription += " " + obuNames.front();
+        obuNames.pop();
+      }
     }
   }
   else if (packet.getPacketType() == PacketType::SUBTITLE_DVB)
@@ -535,7 +542,8 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   }
 
   // Set a useful name of the TreeItem (the root for this NAL)
-  itemTree->itemData.append(QString("AVPacket %1%2").arg(packetID).arg(packet.getFlagKeyframe() ? " - Keyframe": "") + specificDescription);
+  auto name = "AVPacket " + std::to_string(packetID) + (packet.getFlagKeyframe() ? " - Keyframe": "") + specificDescription;
+  itemTree->setProperties(name);
 
   return true;
 }

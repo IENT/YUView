@@ -107,7 +107,6 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   if (nal_mpeg2.header.nal_unit_type == NalType::SEQUENCE_HEADER)
   {
     DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Sequence header");
-    specificDescription = " Sequence Header";
 
     auto newSequenceHeader = std::make_shared<sequence_header>();
     newSequenceHeader->parse(reader);
@@ -116,11 +115,12 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
       this->firstSequenceHeader = newSequenceHeader;
 
     nal_mpeg2.rbsp = newSequenceHeader;
+    specificDescription = " Sequence Header";
+    parseResult.nalTypeName = "SeqHeader";
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::PICTURE)
   {
     DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Picture Header");
-    specificDescription = " Picture Header";
 
     auto newPictureHeader = std::make_shared<picture_header>();
     newPictureHeader->parse(reader);
@@ -136,26 +136,30 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
     currentSliceType        = newPictureHeader->getPictureTypeString();
 
     nal_mpeg2.rbsp = newPictureHeader;
+    specificDescription = " Picture Header POC " + std::to_string(this->curFramePOC);
+    parseResult.nalTypeName = "PicHeader(POC " + std::to_string(this->curFramePOC) + ")";
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::GROUP_START)
   {
     DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Group Start");
-    specificDescription = " Group of Pictures";
-
+    
     auto newGroupOfPictureHeader = std::make_shared<group_of_pictures_header>();
     newGroupOfPictureHeader->parse(reader);
 
     nal_mpeg2.rbsp = newGroupOfPictureHeader;
+    specificDescription = " Group of Pictures";
+    parseResult.nalTypeName = "GOP";
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::USER_DATA)
   {
     DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit User Data");
-    specificDescription = " User Data";
-
+    
     auto newUserData = std::make_shared<user_data>();
     newUserData->parse(reader);
 
     nal_mpeg2.rbsp = newUserData;
+    specificDescription = " User Data";
+    parseResult.nalTypeName = "UserData";
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::EXTENSION_START)
   {
@@ -171,6 +175,8 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
     }
 
     nal_mpeg2.rbsp = newExtension;
+    specificDescription = " Extension";
+    parseResult.nalTypeName = "Extension";
   }
 
   const bool isStartOfNewAU =
@@ -231,12 +237,12 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   return parseResult;
 }
 
-QPair<int, int> AnnexBMpeg2::getProfileLevel()
+IntPair AnnexBMpeg2::getProfileLevel()
 {
   if (firstSequenceExtension)
-    return QPair<int, int>(firstSequenceExtension->profile_identification,
-                           firstSequenceExtension->level_identification);
-  return QPair<int, int>(0, 0);
+    return {firstSequenceExtension->profile_identification,
+            firstSequenceExtension->level_identification};
+  return {};
 }
 
 double AnnexBMpeg2::getFramerate() const
@@ -245,8 +251,8 @@ double AnnexBMpeg2::getFramerate() const
   if (firstSequenceHeader && firstSequenceHeader->frame_rate_code > 0 &&
       firstSequenceHeader->frame_rate_code <= 8)
   {
-    QList<double> frame_rates = QList<double>() << 0.0 << 24000 / 1001 << 24 << 25 << 30000 / 1001
-                                                << 30 << 50 << 60000 / 1001 << 60;
+    auto frame_rates =
+        std::vector<double>({0.0, 24000 / 1001, 24, 25, 30000 / 1001, 30, 50, 60000 / 1001, 60});
     frame_rate = frame_rates[firstSequenceHeader->frame_rate_code];
 
     if (firstSequenceExtension)

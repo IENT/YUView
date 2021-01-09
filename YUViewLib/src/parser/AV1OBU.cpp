@@ -157,7 +157,7 @@ bool parserAV1OBU::obu_unit::parse_obu_header(const QByteArray &header_data, uns
   return true;
 }
 
-unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, pairUint64 obuStartEndPosFile, QString *obuTypeName)
+std::pair<unsigned, std::string> parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *parent, pairUint64 obuStartEndPosFile)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active). 
   // We don't set data (a name) for this item yet. 
@@ -176,12 +176,13 @@ unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *
   obu_unit obu(obuStartEndPosFile, obuID);
   unsigned int nrBytesHeader;
   if (!obu.parse_obu_header(data, nrBytesHeader, obuRoot))
-    return false;
+    return {};
 
   // Get the payload of the OBU
   QByteArray obuData = data.mid(nrBytesHeader, obu.obu_size);
 
   bool parsingSuccess = true;
+  std::string obuTypeName;
   if (obu.obu_type == OBU_TEMPORAL_DELIMITER)
   {
     decValues.SeenFrameHeader = false;
@@ -194,23 +195,21 @@ unsigned int parserAV1OBU::parseAndAddOBU(int obuID, QByteArray data, TreeItem *
 
     active_sequence_header = new_sequence_header;
 
-    if (obuTypeName)
-      *obuTypeName = parsingSuccess ? "SEQ_HEAD" : "SEQ_HEAD(ERR)";
+    obuTypeName = parsingSuccess ? "SEQ_HEAD" : "SEQ_HEAD(ERR)";
   }
   else if (obu.obu_type == OBU_FRAME || obu.obu_type == OBU_FRAME_HEADER)
   {
     auto new_frame_header = QSharedPointer<frame_header>(new frame_header(obu));
     parsingSuccess = new_frame_header->parse_frame_header(obuData, obuRoot, active_sequence_header, decValues);
 
-    if (obuTypeName)
-      *obuTypeName = parsingSuccess ? "FRAME" : "FRAME(ERR)";
+    obuTypeName = parsingSuccess ? "FRAME" : "FRAME(ERR)";
   }
 
   if (obuRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
     obuRoot->itemData.append(QString("OBU %1: %2").arg(obu.obu_idx).arg(obu_type_toString.value(obu.obu_type)) + specificDescription);
 
-  return nrBytesHeader + (int)obu.obu_size;
+  return {nrBytesHeader + (int)obu.obu_size, obuTypeName};
 }
 
 bool parserAV1OBU::sequence_header::parse_sequence_header(const QByteArray &sequenceHeaderData, TreeItem *root)

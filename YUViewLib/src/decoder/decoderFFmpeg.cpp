@@ -44,7 +44,7 @@ using namespace YUView;
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 
-decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray extradata, yuvPixelFormat fmt, QPair<int,int> profileLevel, Ratio sampleAspectRatio, bool cachingDecoder) : 
+decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray extradata, yuvPixelFormat fmt, IntPair profileLevel, Ratio sampleAspectRatio, bool cachingDecoder) : 
   decoderBase(cachingDecoder)
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading 

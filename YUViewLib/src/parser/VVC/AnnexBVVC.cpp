@@ -81,7 +81,7 @@ QList<QByteArray> AnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
 
 QByteArray AnnexBVVC::getExtradata() { return {}; }
 
-QPair<int, int> AnnexBVVC::getProfileLevel() { return QPair<int, int>(0, 0); }
+IntPair AnnexBVVC::getProfileLevel() { return {0, 0}; }
 
 Ratio AnnexBVVC::getSampleAspectRatio() { return Ratio({1, 1}); }
 

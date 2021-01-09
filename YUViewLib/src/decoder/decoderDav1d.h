@@ -173,6 +173,6 @@ private:
   void cacheStatistics(const Dav1dPictureWrapper &img);
   void parseBlockRecursive(Av1Block *blockData, int x, int y, BlockLevel level, dav1dFrameInfo &frameInfo);
   void parseBlockPartition(Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, dav1dFrameInfo &frameInfo);
-  QIntPair calculateIntraPredDirection(IntraPredMode predMode, int angleDelta);
+  IntPair calculateIntraPredDirection(IntraPredMode predMode, int angleDelta);
   unsigned int subBlockSize {0};
 };

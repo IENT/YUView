@@ -264,7 +264,7 @@ QByteArray AnnexBHEVC::getExtradata()
   return ret;
 }
 
-QPair<int,int> AnnexBHEVC::getProfileLevel()
+IntPair AnnexBHEVC::getProfileLevel()
 {
   for (auto nal : nalUnitList)
   {
@@ -274,10 +274,10 @@ QPair<int,int> AnnexBHEVC::getProfileLevel()
     if (nal_hevc->nal_type == SPS_NUT)
     {
       auto s = nal.dynamicCast<sps>();
-      return QPair<int,int>(s->ptl.general_profile_idc, s->ptl.general_level_idc);
+      return {s->ptl.general_profile_idc, s->ptl.general_level_idc};
     }
   }
-  return QPair<int,int>(0,0);
+  return {};
 }
 
 Ratio AnnexBHEVC::getSampleAspectRatio()
@@ -407,7 +407,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
 
     // Add the VPS ID
     specificDescription = parsingSuccess ? QString(" VPS_NUT ID %1").arg(new_vps->vps_video_parameter_set_id) : " VPS_NUT ERR";
-    parseResult.nalTypeName = parsingSuccess ? QString("VPS(%1)").arg(new_vps->vps_video_parameter_set_id) : "VPS(ERR)";
+    parseResult.nalTypeName = "VPS(" + (parsingSuccess ? std::to_string(new_vps->vps_video_parameter_set_id) : "ERR") + ")";
 
     DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit VPS ID " << new_vps->vps_video_parameter_set_id);
   }
@@ -425,7 +425,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
 
     // Add the SPS ID
     specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(new_sps->sps_seq_parameter_set_id) : " SPS_NUT ERR";
-    parseResult.nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(new_sps->sps_seq_parameter_set_id) : "SPS(ERR)";
+    parseResult.nalTypeName = "SPS(" + (parsingSuccess ? std::to_string(new_sps->sps_seq_parameter_set_id) : "ERR") + ")";
 
     DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit SPS ID " << new_sps->sps_seq_parameter_set_id);
   }
@@ -443,7 +443,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
 
     // Add the PPS ID
     specificDescription = parsingSuccess ? QString(" PPS_NUT ID %1").arg(new_pps->pps_pic_parameter_set_id) : " PPS_NUT ERR";
-    parseResult.nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->pps_pic_parameter_set_id) : "PPS(ERR)";
+    parseResult.nalTypeName = "PPS(" + (parsingSuccess ? std::to_string(new_pps->pps_pic_parameter_set_id) : "ERR") + ")";
 
     DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit PPS ID " << new_pps->pps_pic_parameter_set_id);
   }
@@ -525,7 +525,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
     }
 
     specificDescription = parsingSuccess ? QString(" POC %1").arg(POC) : " POC ERR";
-    parseResult.nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(POC) : "Slice(ERR)";
+    parseResult.nalTypeName = "Slice(" + (parsingSuccess ? ("POC " + std::to_string(POC)) : "ERR") + ")";
 
     DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Slice POC " << POC << " - pocCounterOffset " << pocCounterOffset << " maxPOCCount " << maxPOCCount << (new_slice->isIRAP() ? " - IRAP" : "") << (new_slice->NoRaslOutputFlag ? "" : " - RASL") << (parsingSuccess ? "" : " ERROR"));
   }
@@ -618,7 +618,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
     }
 
     specificDescription = QString(" Number Messages: %1").arg(sei_count);
-    parseResult.nalTypeName = QString("SEI(#%1)").arg(sei_count);
+    parseResult.nalTypeName = "SEI(" + std::to_string(sei_count) + ")";
   }
   else if (nal_hevc.nal_type == FD_NUT)
   {

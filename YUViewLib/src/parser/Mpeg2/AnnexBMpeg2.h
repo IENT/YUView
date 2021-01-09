@@ -83,9 +83,9 @@ public:
     (void)filePos;
     return QList<QByteArray>();
   }
-  QByteArray      getExtradata() override { return QByteArray(); }
-  QPair<int, int> getProfileLevel() override;
-  Ratio           getSampleAspectRatio() override;
+  QByteArray getExtradata() override { return QByteArray(); }
+  IntPair    getProfileLevel() override;
+  Ratio      getSampleAspectRatio() override;
 
 private:
   // We will keep a pointer to the first sequence extension to be able to retrive some data

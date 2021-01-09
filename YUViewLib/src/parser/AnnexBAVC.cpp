@@ -229,7 +229,7 @@ AnnexB::ParseResult AnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, st
 
     // Add the SPS ID
     specificDescription = parsingSuccess ? QString(" SPS_NUT ID %1").arg(new_sps->seq_parameter_set_id) : " SPS_NUT ERR";
-    parseResult.nalTypeName = parsingSuccess ? QString("SPS(%1)").arg(new_sps->seq_parameter_set_id) : "SPS(ERR)";
+    parseResult.nalTypeName = "SPS(" +  (parsingSuccess ? std::to_string(new_sps->seq_parameter_set_id) : "ERR") + ")";
     
     if (new_sps->vui_parameters.nal_hrd_parameters_present_flag || new_sps->vui_parameters.vcl_hrd_parameters_present_flag)
       CpbDpbDelaysPresentFlag = true;
@@ -255,7 +255,7 @@ AnnexB::ParseResult AnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, st
 
     // Add the PPS ID
     specificDescription = parsingSuccess ? QString(" PPS_NUT ID %1").arg(new_pps->pic_parameter_set_id) : "PPS_NUT ERR";
-    parseResult.nalTypeName = parsingSuccess ? QString("PPS(%1)").arg(new_pps->pic_parameter_set_id) : "PPS(ERR)";
+    parseResult.nalTypeName = "PPS(" +  (parsingSuccess ? std::to_string(new_pps->pic_parameter_set_id) : "ERR") + ")";
 
     DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parse PPS ID " << new_pps->pic_parameter_set_id);
   }
@@ -272,7 +272,7 @@ AnnexB::ParseResult AnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, st
 
     // Add the POC of the slice
     specificDescription = parsingSuccess ? QString(" POC %1").arg(new_slice->globalPOC) : " ERR";
-    parseResult.nalTypeName = parsingSuccess ? QString("Slice(POC %1)").arg(new_slice->globalPOC) : "Slice(ERR)";
+    parseResult.nalTypeName = "Slice(" +  (parsingSuccess ? ("POC " + std::to_string(new_slice->globalPOC)) : "ERR") + ")";
 
     if (parsingSuccess)
     {
@@ -404,7 +404,7 @@ AnnexB::ParseResult AnnexBAVC::parseAndAddNALUnit(int nalID, QByteArray data, st
     }
 
     specificDescription = parsingSuccess ? QString(" (#%1)").arg(sei_count) : QString(" (#%1-ERR)").arg(sei_count);
-    parseResult.nalTypeName = parsingSuccess ? QString("SEI(#%1)").arg(sei_count) : "SEI(ERR)";
+    parseResult.nalTypeName = "SEI(" + (parsingSuccess ? ("#" + std::to_string(sei_count)) : "ERR") + ")";
 
     DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed SEI (" << sei_count << " messages)");
   }
@@ -2146,7 +2146,7 @@ QByteArray AnnexBAVC::getExtradata()
   return e;
 }
 
-QPair<int,int> AnnexBAVC::getProfileLevel()
+IntPair AnnexBAVC::getProfileLevel()
 {
   for (auto nal : nalUnitList)
   {
@@ -2156,10 +2156,10 @@ QPair<int,int> AnnexBAVC::getProfileLevel()
     if (nal_avc->nal_unit_type == SPS)
     {
       auto s = nal.dynamicCast<sps>();
-      return QPair<int,int>(s->profile_idc, s->level_idc);
+      return {s->profile_idc, s->level_idc};
     }
   }
-  return QPair<int,int>(0,0);
+  return {};
 }
 
 Ratio AnnexBAVC::getSampleAspectRatio()
