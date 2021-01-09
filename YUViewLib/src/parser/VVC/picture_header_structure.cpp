@@ -485,10 +485,10 @@ void picture_header_structure::calculatePictureOrderCount(
 
     // (196)
     if ((this->ph_pic_order_cnt_lsb < prevPicOrderCntLsb) &&
-        ((prevPicOrderCntLsb - this->ph_pic_order_cnt_lsb) >= int(sps->MaxPicOrderCntLsb / 2)))
+        ((prevPicOrderCntLsb - this->ph_pic_order_cnt_lsb) >= sps->MaxPicOrderCntLsb / 2))
       this->PicOrderCntMsb = prevPicOrderCntMsb + sps->MaxPicOrderCntLsb;
     else if ((this->ph_pic_order_cnt_lsb > prevPicOrderCntLsb) &&
-             ((this->ph_pic_order_cnt_lsb - prevPicOrderCntLsb) > int(sps->MaxPicOrderCntLsb / 2)))
+             ((this->ph_pic_order_cnt_lsb - prevPicOrderCntLsb) > sps->MaxPicOrderCntLsb / 2))
       this->PicOrderCntMsb = prevPicOrderCntMsb - sps->MaxPicOrderCntLsb;
     else
       this->PicOrderCntMsb = prevPicOrderCntMsb;
