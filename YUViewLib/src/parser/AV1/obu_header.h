@@ -33,6 +33,7 @@
 #pragma once
 
 #include "common/typedef.h"
+#include "parser/common/CodingEnum.h"
 #include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::av1
@@ -53,7 +54,24 @@ enum class ObuType
   UNSPECIFIED
 };
 
-std::string to_string(ObuType obuType);
+static CodingEnum<ObuType>
+    obuTypeCoding({{0, ObuType::RESERVED, "RESERVED"},
+                   {1, ObuType::OBU_SEQUENCE_HEADER, "OBU_SEQUENCE_HEADER"},
+                   {2, ObuType::OBU_TEMPORAL_DELIMITER, "OBU_TEMPORAL_DELIMITER"},
+                   {3, ObuType::OBU_FRAME_HEADER, "OBU_FRAME_HEADER"},
+                   {4, ObuType::OBU_TILE_GROUP, "OBU_TILE_GROUP"},
+                   {5, ObuType::OBU_METADATA, "OBU_METADATA"},
+                   {6, ObuType::OBU_FRAME, "OBU_FRAME"},
+                   {7, ObuType::OBU_REDUNDANT_FRAME_HEADER, "OBU_REDUNDANT_FRAME_HEADER"},
+                   {8, ObuType::OBU_TILE_LIST, "OBU_TILE_LIST"},
+                   {9, ObuType::RESERVED, "RESERVED"},
+                   {10, ObuType::RESERVED, "RESERVED"},
+                   {11, ObuType::RESERVED, "RESERVED"},
+                   {12, ObuType::RESERVED, "RESERVED"},
+                   {13, ObuType::RESERVED, "RESERVED"},
+                   {14, ObuType::RESERVED, "RESERVED"},
+                   {15, ObuType::OBU_PADDING, "OBU_PADDING"}},
+                  ObuType::RESERVED);
 
 class obu_header
 {
@@ -64,9 +82,9 @@ public:
   void parse(reader::SubByteReaderLogging &reader);
 
   unsigned obu_type_idx;
-  ObuType obu_type{ObuType::UNSPECIFIED};
-  bool    obu_extension_flag{false};
-  bool    obu_has_size_field{false};
+  ObuType  obu_type{ObuType::UNSPECIFIED};
+  bool     obu_extension_flag{false};
+  bool     obu_has_size_field{false};
 
   // OBU extension header
   unsigned int temporal_id{0};

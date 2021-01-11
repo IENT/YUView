@@ -70,15 +70,24 @@ public:
     return {};
   }
 
-  std::map<int, std::string> getMeaningMap()
+  std::map<int, std::string> getMeaningMap() const
   {
-    // std::map<int, std::string> m;
-    // for (const auto &entry : this->entryVector)
-    //   m[int(entry.code)] = entry.meaning;
-    // return m;
+    std::map<int, std::string> m;
+    for (const auto &entry : this->entryVector)
+      m[int(entry.code)] = entry.meaning;
+    return m;
     return {};
   }
 
+  std::string getMeaning(T value) const
+  {
+    for (const auto &entry : this->entryVector)
+      if (entry.value == value)
+        return entry.meaning;
+    return {};
+  }
+
+private:
   EntryVector entryVector;
   T           unknown;
 };
