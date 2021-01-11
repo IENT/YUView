@@ -32,20 +32,55 @@
 
 #pragma once
 
-#include <map>
 #include <string>
+#include <vector>
 
 namespace parser
 {
 
-// TODO: Try this:
-
-template <typename T> struct MeaningEnum
+template <typename T> class CodingEnum
 {
-  using MeaningEntry = std::pair<T, std::string>;
+public:
+  struct Entry
+  {
+    unsigned    code;
+    T           value;
+    std::string meaning;
+  };
 
-  std::map<unsigned, MeaningEntry> meaningMap;
-  T                                unknown;
+  using EntryVector = std::vector<Entry>;
+
+  CodingEnum() = default;
+  CodingEnum(const EntryVector &entryVector, const T unknown)
+      : entryVector(entryVector), unknown(unknown){};
+
+  T getValue(unsigned code) const
+  {
+    for (const auto &entry : this->entryVector)
+      if (entry.code == code)
+        return entry.value;
+    return this->unknown;
+  }
+
+  unsigned getCode(T value) const
+  {
+    for (const auto &entry : this->entryVector)
+      if (entry.value == value)
+        return entry.code;
+    return {};
+  }
+
+  std::map<int, std::string> getMeaningMap()
+  {
+    // std::map<int, std::string> m;
+    // for (const auto &entry : this->entryVector)
+    //   m[int(entry.code)] = entry.meaning;
+    // return m;
+    return {};
+  }
+
+  EntryVector entryVector;
+  T           unknown;
 };
 
 } // namespace parser
