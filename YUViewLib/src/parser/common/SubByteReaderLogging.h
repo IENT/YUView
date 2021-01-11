@@ -69,13 +69,23 @@ public:
   // everything is using std types.
   static ByteVector convertToByteVector(QByteArray data);
 
-  uint64_t   readBits(const std::string &symbolName, int numBits, const Options &options = {});
-  bool       readFlag(const std::string &symbolName, const Options &options = {});
-  uint64_t   readUEV(const std::string &symbolName, const Options &options = {});
-  int64_t    readSEV(const std::string &symbolName, const Options &options = {});
+  uint64_t readBits(const std::string &symbolName, int numBits, const Options &options = {});
+  bool     readFlag(const std::string &symbolName, const Options &options = {});
+  uint64_t readUEV(const std::string &symbolName, const Options &options = {});
+  int64_t  readSEV(const std::string &symbolName, const Options &options = {});
+  uint64_t readLEB128(const std::string &symbolName, const Options &options = {});
+  uint64_t readNS(const std::string &symbolName, uint64_t maxVal, const Options &options = {});
+  int64_t  readSU(const std::string &symbolName, unsigned nrBits, const Options &options = {});
+
   ByteVector readBytes(const std::string &symbolName, size_t nrBytes, const Options &options = {});
 
-  void logCalculatedValue(const std::string &symbolName, int64_t value, const Options &options = {});
+  void
+  logCalculatedValue(const std::string &symbolName, int64_t value, const Options &options = {});
+  void logArbitrary(const std::string &symbolName,
+                    const std::string &value   = {},
+                    const std::string &coding  = {},
+                    const std::string &code    = {},
+                    const std::string &meaning = {});
 
   [[nodiscard]] TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 

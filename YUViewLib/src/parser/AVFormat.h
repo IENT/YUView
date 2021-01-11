@@ -34,7 +34,7 @@
 
 #include "Base.h"
 #include "AnnexB.h"
-#include "AV1OBU.h"
+#include "AV1/AV1OBU.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
 #include "filesource/FileSourceFFmpegFile.h"
 
@@ -114,9 +114,9 @@ private:
   };
 
   // Used for parsing if the packets contain an annexB file that we can parse.
-  QScopedPointer<AnnexB> annexBParser;
+  std::unique_ptr<AnnexB> annexBParser;
   // Used for parsing if the packets contain an obu file that we can parse.
-  QScopedPointer<parserAV1OBU> obuParser;
+  std::unique_ptr<ParserAV1OBU> obuParser;
 
   bool parseExtradata_generic(QByteArray &extradata);
   bool parseExtradata_AVC(QByteArray &extradata);

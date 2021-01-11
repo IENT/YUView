@@ -668,7 +668,7 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   else if (codecID.isMpeg2())
     this->annexBParser.reset(new AnnexBMpeg2());
   else if (codecID.isAV1())
-    this->obuParser.reset(new parserAV1OBU());
+    this->obuParser.reset(new ParserAV1OBU());
   else if (codecID.isNone())
   {
     emit backgroundParsingDone("Unknown codec ID " + codecID.getCodecName());

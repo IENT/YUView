@@ -234,6 +234,50 @@ int64_t SubByteReaderLogging::readSEV(const std::string &symbolName, const Optio
   }
 }
 
+uint64_t SubByteReaderLogging::readLEB128(const std::string &symbolName, const Options &options)
+{
+  try
+  {
+    auto [value, code] = SubByteReaderNew::readLEB128();
+    checkAndLog(this->currentTreeLevel, "leb128(v)", symbolName, options, value, code);
+    return value;
+  }
+  catch (const std::exception &ex)
+  {
+    this->logExceptionAndThrowError(ex, "LEB128 symbol " + symbolName);
+  }
+}
+
+uint64_t
+SubByteReaderLogging::readNS(const std::string &symbolName, uint64_t maxVal, const Options &options)
+{
+  try
+  {
+    auto [value, code] = SubByteReaderNew::readNS(maxVal);
+    checkAndLog(this->currentTreeLevel, "ns(n)", symbolName, options, value, code);
+    return value;
+  }
+  catch (const std::exception &ex)
+  {
+    this->logExceptionAndThrowError(ex, "ns symbol " + symbolName);
+  }
+}
+
+int64_t
+SubByteReaderLogging::readSU(const std::string &symbolName, unsigned nrBits, const Options &options)
+{
+  try
+  {
+    auto [value, code] = SubByteReaderNew::readSU(nrBits);
+    checkAndLog(this->currentTreeLevel, "su(n)", symbolName, options, value, code);
+    return value;
+  }
+  catch (const std::exception &ex)
+  {
+    this->logExceptionAndThrowError(ex, "su symbol " + symbolName);
+  }
+}
+
 ByteVector SubByteReaderLogging::readBytes(const std::string &symbolName,
                                            size_t             nrBytes,
                                            const Options &    options)
@@ -253,9 +297,20 @@ ByteVector SubByteReaderLogging::readBytes(const std::string &symbolName,
   }
 }
 
-void SubByteReaderLogging::logCalculatedValue(const std::string &symbolName, int64_t value, const Options &options)
+void SubByteReaderLogging::logCalculatedValue(const std::string &symbolName,
+                                              int64_t            value,
+                                              const Options &    options)
 {
   checkAndLog(this->currentTreeLevel, "Calc", symbolName, options, value, "");
+}
+
+void SubByteReaderLogging::logArbitrary(const std::string &symbolName,
+                                        const std::string &value,
+                                        const std::string &coding,
+                                        const std::string &code,
+                                        const std::string &meaning)
+{
+  new TreeItem(this->currentTreeLevel, symbolName, value, coding, code, meaning);
 }
 
 void SubByteReaderLogging::logExceptionAndThrowError(const std::exception &ex,
@@ -264,7 +319,7 @@ void SubByteReaderLogging::logExceptionAndThrowError(const std::exception &ex,
   if (this->currentTreeLevel)
   {
     auto errorMessage = "Reading error " + std::string(ex.what());
-    auto item         = new TreeItem(currentTreeLevel, "Error", "", "", "", errorMessage);
+    auto item         = new TreeItem(this->currentTreeLevel, "Error", "", "", "", errorMessage);
     item->setError();
   }
   throw std::logic_error("Error reading " + when);

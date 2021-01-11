@@ -63,16 +63,15 @@ public:
   void disableEmulationPrevention() { skipEmulationPrevention = false; }
 
 protected:
-
   std::tuple<uint64_t, std::string>   readBits(size_t nrBits);
   std::tuple<ByteVector, std::string> readBytes(size_t nrBytes);
 
   std::tuple<uint64_t, std::string> readUE_V();
   std::tuple<int64_t, std::string>  readSE_V();
-  std::tuple<uint64_t, std::string> readLeb128();
+  std::tuple<uint64_t, std::string> readLEB128();
   std::tuple<uint64_t, std::string> readUVLC();
-  std::tuple<int64_t, std::string>  readNS();
-  std::tuple<int64_t, std::string>  readSU();
+  std::tuple<uint64_t, std::string> readNS(uint64_t maxVal);
+  std::tuple<int64_t, std::string>  readSU(unsigned nrBits);
 
   ByteVector byteVector;
 
