@@ -115,12 +115,12 @@ struct color_config
 {
   void parse(reader::SubByteReaderLogging &reader, int seq_profile);
 
-  bool high_bitdepth{};
-  bool twelve_bit{};
-  int  BitDepth{};
-  bool mono_chrome{};
-  int  NumPlanes{};
-  bool color_description_present_flag{};
+  bool     high_bitdepth{};
+  bool     twelve_bit{};
+  unsigned BitDepth{};
+  bool     mono_chrome{};
+  unsigned NumPlanes{};
+  bool     color_description_present_flag{};
 
   ColorPrimaries          color_primaries{ColorPrimaries::CP_UNSPECIFIED};
   TransferCharacteristics transfer_characteristics{TransferCharacteristics::TC_UNSPECIFIED};

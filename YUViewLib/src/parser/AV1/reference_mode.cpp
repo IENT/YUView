@@ -30,30 +30,27 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "reference_mode.h"
 
-#include "GlobalDecodingValues.h"
-#include "OpenBitstreamUnit.h"
-#include "parser/common/SubByteReaderLogging.h"
-#include "uncompressed_header.h"
+#include "typedef.h"
 
 namespace parser::av1
 {
 
-class sequence_header;
+using namespace reader;
 
-class frame_header_obu : public ObuPayload
+void reference_mode::parse(reader::SubByteReaderLogging &reader, bool FrameIsIntra)
 {
-public:
-  frame_header_obu() = default;
+  SubByteReaderLoggingSubLevel subLevel(reader, "reference_mode()");
 
-  void parse(reader::SubByteReaderLogging &       reader,
-             std::shared_ptr<sequence_header_obu> seq_header,
-             GlobalDecodingValues &               decValues,
-             unsigned                             temporal_id,
-             unsigned                             spatial_id);
-
-  uncompressed_header uncompressedHeader;
-};
+  if (FrameIsIntra)
+  {
+    this->reference_select = false;
+  }
+  else
+  {
+    this->reference_select = reader.readFlag("reference_select");
+  }
+}
 
 } // namespace parser::av1

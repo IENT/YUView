@@ -67,14 +67,17 @@ void uncompressed_header::parse(SubByteReaderLogging &               reader,
   }
   else
   {
-    this->show_existing_frame = reader.readFlag("show_existing_frame");
-    if (show_existing_frame)
+    auto test = reader.readFlag("show_existing_frame");
+
+    this->show_existing_frame = test;
+
+    if (this->show_existing_frame)
     {
       this->frame_to_show_map_idx = reader.readBits("frame_to_show_map_idx", 3);
       if (seqHeader->decoder_model_info_present_flag &&
           !seqHeader->timing_info.equal_picture_interval)
       {
-        // temporal_point_info();
+        reader.logArbitrary("temporal_point_info()");
       }
       this->refresh_frame_flags = 0;
       if (seqHeader->frame_id_numbers_present_flag)
@@ -313,6 +316,7 @@ void uncompressed_header::parse(SubByteReaderLogging &               reader,
   {
     reader.logArbitrary("init_non_coeff_cdfs");
     reader.logArbitrary("setup_past_independence()");
+    this->setup_past_independence();
   }
   else
   {
@@ -324,7 +328,7 @@ void uncompressed_header::parse(SubByteReaderLogging &               reader,
 
   this->tileInfo.parse(reader, seqHeader, frameSize.MiCols, frameSize.MiRows);
   this->quantizationParams.parse(reader, seqHeader);
-  this->segmentationParams.parse(reader, seqHeader, this->primary_ref_frame);
+  this->segmentationParams.parse(reader, this->primary_ref_frame);
   this->deltaQParams.parse(reader, this->quantizationParams.base_q_idx);
   this->deltaLfParams.parse(reader, this->deltaQParams.delta_q_present, this->allow_intrabc);
 
@@ -364,10 +368,16 @@ void uncompressed_header::parse(SubByteReaderLogging &               reader,
 
   this->loopFilterParams.parse(reader, seqHeader, this->CodedLossless, this->allow_intrabc);
   this->cdefParams.parse(reader, seqHeader, this->CodedLossless, this->allow_intrabc);
-  // lr_params
-  // read_tx_mode
-  // frame_reference_mode
-  // skip_mode_params
+  this->lrParams.parse(reader, seqHeader, this->AllLossless, this->allow_intrabc);
+  this->txMode.parse(reader, this->CodedLossless);
+  this->referenceMode.parse(reader, this->FrameIsIntra);
+  this->skipModeParams.parse(reader,
+                             seqHeader,
+                             this->FrameIsIntra,
+                             this->referenceMode,
+                             decValues,
+                             this->frameRefs,
+                             this->OrderHint);
 
   if (this->FrameIsIntra || this->error_resilient_mode || !seqHeader->enable_warped_motion)
     this->allow_warped_motion = false;
@@ -375,8 +385,10 @@ void uncompressed_header::parse(SubByteReaderLogging &               reader,
     this->allow_warped_motion = reader.readFlag("allow_warped_motion");
   this->reduced_tx_set = reader.readFlag("reduced_tx_set");
 
-  // global_motion_params( )
-  // film_grain_params( )
+  this->globalMotionParams.parse(
+      reader, this->FrameIsIntra, this->allow_high_precision_mv, this->PrevGmParams);
+  this->filmGrainParams.parse(
+      reader, seqHeader, this->show_frame, this->showable_frame, this->frame_type);
 }
 
 void uncompressed_header::mark_ref_frames(int                                  idLen,
@@ -423,6 +435,13 @@ bool uncompressed_header::seg_feature_active_idx(int idx, int feature) const
 {
   return this->segmentationParams.segmentation_enabled &&
          this->segmentationParams.FeatureEnabled[idx][feature];
+}
+
+void uncompressed_header::setup_past_independence()
+{
+  for (unsigned ref = LAST_FRAME; ref <= ALTREF_FRAME; ref++)
+    for (unsigned i = 0; i <= 5; i++)
+      this->PrevGmParams[ref][i] = ((i % 3 == 2) ? 1 << WARPEDMODEL_PREC_BITS : 0);
 }
 
 } // namespace parser::av1

@@ -30,30 +30,20 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "GlobalDecodingValues.h"
-#include "OpenBitstreamUnit.h"
-#include "parser/common/SubByteReaderLogging.h"
-#include "uncompressed_header.h"
+#include "typedef.h"
 
 namespace parser::av1
 {
 
-class sequence_header;
-
-class frame_header_obu : public ObuPayload
+int get_relative_dist(int a, int b, bool enable_order_hint, int OrderHintBits)
 {
-public:
-  frame_header_obu() = default;
+  if (!enable_order_hint)
+    return 0;
 
-  void parse(reader::SubByteReaderLogging &       reader,
-             std::shared_ptr<sequence_header_obu> seq_header,
-             GlobalDecodingValues &               decValues,
-             unsigned                             temporal_id,
-             unsigned                             spatial_id);
-
-  uncompressed_header uncompressedHeader;
-};
+  int diff = a - b;
+  int m    = 1 << (OrderHintBits - 1);
+  diff     = (diff & (m - 1)) - (diff & m);
+  return diff;
+}
 
 } // namespace parser::av1

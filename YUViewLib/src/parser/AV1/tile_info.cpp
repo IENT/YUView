@@ -114,8 +114,8 @@ void tile_info::parse(reader::SubByteReaderLogging &       reader,
   }
   else
   {
-    widestTileSb = 0;
-    TileCols     = 0;
+    this->widestTileSb = 0;
+    this->TileCols     = 0;
     for (unsigned startSb = 0; startSb < sbCols;)
     {
       this->MiColStarts.push_back(startSb << sbShift);
@@ -133,6 +133,8 @@ void tile_info::parse(reader::SubByteReaderLogging &       reader,
       this->maxTileAreaSb = (sbRows * sbCols) >> (this->minLog2Tiles + 1);
     else
       this->maxTileAreaSb = sbRows * sbCols;
+    if (this->widestTileSb == 0)
+      throw std::logic_error("widestTileSb is 0. This is not possible.");
     this->maxTileHeightSb = std::max(this->maxTileAreaSb / this->widestTileSb, 1u);
 
     this->TileRows = 0;

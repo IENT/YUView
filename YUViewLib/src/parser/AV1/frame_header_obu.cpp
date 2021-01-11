@@ -43,7 +43,7 @@ using namespace reader;
 void frame_header_obu::parse(reader::SubByteReaderLogging &       reader,
                              std::shared_ptr<sequence_header_obu> seqHeader,
                              GlobalDecodingValues &               decValues,
-                             unsigned                             temporal_in,
+                             unsigned                             temporal_id,
                              unsigned                             spatial_id)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "frame_header_obu()");
@@ -56,7 +56,7 @@ void frame_header_obu::parse(reader::SubByteReaderLogging &       reader,
   else
   {
     decValues.SeenFrameHeader = true;
-    this->uncompressedHeader.parse(reader, seqHeader, decValues, temporal_in, spatial_id);
+    this->uncompressedHeader.parse(reader, seqHeader, decValues, temporal_id, spatial_id);
     if (this->uncompressedHeader.show_existing_frame)
     {
       reader.logArbitrary("decode_frame_wrapup()");

@@ -64,8 +64,8 @@ void frame_size::parse(SubByteReaderLogging &               reader,
   reader.logCalculatedValue("FrameWidth", this->FrameWidth);
   reader.logCalculatedValue("FrameHeight", this->FrameHeight);
 
-  auto newFrameWidth = this->superresParams.parse(reader, seqHeader, this->UpscaledWidth);
   UpscaledWidth      = FrameWidth;
+  auto newFrameWidth = this->superresParams.parse(reader, seqHeader, this->UpscaledWidth);
   FrameWidth         = newFrameWidth;
 
   this->compute_image_size();

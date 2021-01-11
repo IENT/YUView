@@ -35,17 +35,17 @@
 #include "GlobalDecodingValues.h"
 #include "OpenBitstreamUnit.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "uncompressed_header.h"
+#include "frame_header_obu.h"
 
 namespace parser::av1
 {
 
 class sequence_header;
 
-class frame_header_obu : public ObuPayload
+class frame_obu : public ObuPayload
 {
 public:
-  frame_header_obu() = default;
+  frame_obu() = default;
 
   void parse(reader::SubByteReaderLogging &       reader,
              std::shared_ptr<sequence_header_obu> seq_header,
@@ -53,7 +53,10 @@ public:
              unsigned                             temporal_id,
              unsigned                             spatial_id);
 
-  uncompressed_header uncompressedHeader;
+  size_t startBitPos{};
+  frame_header_obu frameHeaderObu;
+  size_t endBitPos{};
+  size_t headerBytes{};
 };
 
 } // namespace parser::av1

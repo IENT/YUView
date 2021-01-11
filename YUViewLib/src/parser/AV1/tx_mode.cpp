@@ -30,30 +30,33 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "tx_mode.h"
 
-#include "GlobalDecodingValues.h"
-#include "OpenBitstreamUnit.h"
-#include "parser/common/SubByteReaderLogging.h"
-#include "uncompressed_header.h"
+#include "typedef.h"
 
 namespace parser::av1
 {
 
-class sequence_header;
+using namespace reader;
 
-class frame_header_obu : public ObuPayload
+void tx_mode::parse(reader::SubByteReaderLogging &reader, bool CodedLossless)
 {
-public:
-  frame_header_obu() = default;
-
-  void parse(reader::SubByteReaderLogging &       reader,
-             std::shared_ptr<sequence_header_obu> seq_header,
-             GlobalDecodingValues &               decValues,
-             unsigned                             temporal_id,
-             unsigned                             spatial_id);
-
-  uncompressed_header uncompressedHeader;
-};
+  if (CodedLossless)
+  {
+    this->txMode = TxMode::ONLY_4X4;
+  }
+  else
+  {
+    this->tx_mode_select = reader.readFlag("tx_mode_select");
+    if (tx_mode_select)
+    {
+      this->txMode = TxMode::TX_MODE_SELECT;
+    }
+    else
+    {
+      this->txMode = TxMode::TX_MODE_LARGEST;
+    }
+  }
+}
 
 } // namespace parser::av1

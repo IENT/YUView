@@ -30,30 +30,36 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "frame_obu.h"
 
-#include "GlobalDecodingValues.h"
-#include "OpenBitstreamUnit.h"
-#include "parser/common/SubByteReaderLogging.h"
-#include "uncompressed_header.h"
+#include "sequence_header_obu.h"
+#include "typedef.h"
 
 namespace parser::av1
 {
 
-class sequence_header;
+using namespace reader;
 
-class frame_header_obu : public ObuPayload
+void frame_obu::parse(reader::SubByteReaderLogging &       reader,
+                             std::shared_ptr<sequence_header_obu> seqHeader,
+                             GlobalDecodingValues &               decValues,
+                             unsigned                             temporal_id,
+                             unsigned                             spatial_id)
 {
-public:
-  frame_header_obu() = default;
+  SubByteReaderLoggingSubLevel subLevel(reader, "frame_obu()");
 
-  void parse(reader::SubByteReaderLogging &       reader,
-             std::shared_ptr<sequence_header_obu> seq_header,
-             GlobalDecodingValues &               decValues,
-             unsigned                             temporal_id,
-             unsigned                             spatial_id);
+  this->startBitPos = reader.nrBytesRead();
+  frameHeaderObu.parse(reader, seqHeader, decValues, temporal_id, spatial_id);
 
-  uncompressed_header uncompressedHeader;
-};
+  while (!reader.byte_aligned())
+  {
+    reader.readFlag("byte_aligned_flag");
+  }
+
+  this->endBitPos = reader.nrBytesRead();
+  this->headerBytes = (this->endBitPos - this->startBitPos) / 8;
+  
+  //tile_group_obu( sz );
+}
 
 } // namespace parser::av1

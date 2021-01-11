@@ -240,7 +240,7 @@ void sequence_header_obu::parse(reader::SubByteReaderLogging &reader)
     };
 
     // videoFullRangeFlag (1 digit)
-    auto range             = (this->colorConfig.color_range ? ".1" : ".0");
+    auto range             = std::string(this->colorConfig.color_range ? ".1" : ".0");
     rfc6381CodecsParameter = range + rfc6381CodecsParameter;
     add |= (range != ".0");
     if (add)
@@ -285,7 +285,7 @@ void sequence_header_obu::parse(reader::SubByteReaderLogging &reader)
       rfc6381CodecsParameterShortened = subsampling + rfc6381CodecsParameterShortened;
 
     // Monochrome (1 digit)
-    auto monochrome        = (this->colorConfig.mono_chrome ? "1" : "0");
+    auto monochrome        = std::string(this->colorConfig.mono_chrome ? ".1" : ".0");
     rfc6381CodecsParameter = monochrome + rfc6381CodecsParameter;
     add |= (monochrome != ".0");
     if (add)

@@ -44,10 +44,10 @@ using namespace av1;
 
 ParserAV1OBU::ParserAV1OBU(QObject *parent) : Base(parent) { decValues.PrevFrameID = -1; }
 
-std::pair<unsigned, std::string> ParserAV1OBU::parseAndAddOBU(int         obuID,
-                                                              ByteVector &data,
-                                                              TreeItem *  parent,
-                                                              pairUint64  obuStartEndPosFile)
+std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int         obuID,
+                                                            ByteVector &data,
+                                                            TreeItem *  parent,
+                                                            pairUint64  obuStartEndPosFile)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet.
@@ -60,13 +60,16 @@ std::pair<unsigned, std::string> ParserAV1OBU::parseAndAddOBU(int         obuID,
 
   SubByteReaderLogging reader(data, obuRoot);
 
-  reader.logArbitrary("Size", std::to_string(data.size()));
-
   // Read the OBU header
   OpenBitstreamUnit obu(obuID, obuStartEndPosFile);
   obu.header.parse(reader);
 
+  auto nrHeaderBytes = reader.nrBytesRead();
+
   std::string obuTypeName;
+  std::string errorText;
+  try
+  {
   if (obu.header.obu_type == ObuType::OBU_TEMPORAL_DELIMITER)
   {
     decValues.SeenFrameHeader = false;
@@ -84,25 +87,39 @@ std::pair<unsigned, std::string> ParserAV1OBU::parseAndAddOBU(int         obuID,
   else if (obu.header.obu_type == ObuType::OBU_FRAME ||
            obu.header.obu_type == ObuType::OBU_FRAME_HEADER)
   {
-    auto new_frame_header = std::shared_ptr<frame_header_obu>();
+    auto new_frame_header = std::make_shared<frame_header_obu>();
     new_frame_header->parse(reader,
                             this->active_sequence_header,
                             this->decValues,
-                            obu.header.temporal_id,
+                            obu.header.temporal_id, 
                             obu.header.spatial_id);
 
     obuTypeName = "Frame";
     obu.payload = new_frame_header;
+  }
+  }
+  catch (const std::exception &e)
+  {
+    errorText = " ERROR " + std::string(e.what());
   }
 
   if (obuRoot)
   {
     auto name = "OBU " + std::to_string(obu.obu_idx) + ": " + to_string(obu.header.obu_type) + " " +
                 obuTypeName;
+    if (!errorText.empty())
+    {
+      obuRoot->setError();
+      name += " " + errorText;
+    }
     obuRoot->setProperties(name);
   }
 
-  return {unsigned(data.size()), obuTypeName};
+  auto sizeRead = data.size();
+  if (obu.header.obu_has_size_field)
+    sizeRead = obu.header.obu_size + nrHeaderBytes;
+
+  return {sizeRead, obuTypeName};
 }
 
 } // namespace parser

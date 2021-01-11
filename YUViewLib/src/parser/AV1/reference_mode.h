@@ -32,28 +32,19 @@
 
 #pragma once
 
-#include "GlobalDecodingValues.h"
-#include "OpenBitstreamUnit.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "uncompressed_header.h"
 
 namespace parser::av1
 {
 
-class sequence_header;
-
-class frame_header_obu : public ObuPayload
+class reference_mode
 {
 public:
-  frame_header_obu() = default;
+  reference_mode() = default;
 
-  void parse(reader::SubByteReaderLogging &       reader,
-             std::shared_ptr<sequence_header_obu> seq_header,
-             GlobalDecodingValues &               decValues,
-             unsigned                             temporal_id,
-             unsigned                             spatial_id);
+  void parse(reader::SubByteReaderLogging &reader, bool FrameIsIntra);
 
-  uncompressed_header uncompressedHeader;
+  bool reference_select{};
 };
 
 } // namespace parser::av1

@@ -53,8 +53,6 @@ public:
   int find_earliest_backward(int curFrameHint);
   int find_latest_forward(int curFrameHint);
 
-  int get_relative_dist(int a, int b, bool enable_order_hint, int OrderHintBits);
-
   int  ref_frame_idx[8]{};
   bool usedFrame[8]{};
   int  shiftedOrderHints[8]{};

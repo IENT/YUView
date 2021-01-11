@@ -45,7 +45,6 @@ public:
   segmentation_params() = default;
 
   void parse(reader::SubByteReaderLogging &       reader,
-             std::shared_ptr<sequence_header_obu> seqHeader,
              unsigned                             primary_ref_frame);
 
   bool segmentation_enabled{};

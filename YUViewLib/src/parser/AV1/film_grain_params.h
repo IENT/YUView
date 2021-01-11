@@ -32,28 +32,55 @@
 
 #pragma once
 
-#include "GlobalDecodingValues.h"
-#include "OpenBitstreamUnit.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "uncompressed_header.h"
+#include "typedef.h"
 
 namespace parser::av1
 {
 
-class sequence_header;
+class sequence_header_obu;
 
-class frame_header_obu : public ObuPayload
+class film_grain_params
 {
 public:
-  frame_header_obu() = default;
+  film_grain_params() = default;
 
   void parse(reader::SubByteReaderLogging &       reader,
-             std::shared_ptr<sequence_header_obu> seq_header,
-             GlobalDecodingValues &               decValues,
-             unsigned                             temporal_id,
-             unsigned                             spatial_id);
+             std::shared_ptr<sequence_header_obu> seqHeader,
+             bool                                 show_frame,
+             bool                                 showable_frame,
+             FrameType                            frame_type);
 
-  uncompressed_header uncompressedHeader;
+  bool             apply_grain{};
+  unsigned         grain_seed{};
+  bool             update_grain{};
+  unsigned         film_grain_params_ref_idx{};
+  unsigned         num_y_points{};
+  vector<unsigned> point_y_value;
+  vector<unsigned> point_y_scaling;
+  bool             chroma_scaling_from_luma{};
+  unsigned         num_cb_points{};
+  unsigned         num_cr_points{};
+  vector<unsigned> point_cb_value;
+  vector<unsigned> point_cb_scaling;
+  vector<unsigned> point_cr_value;
+  vector<unsigned> point_cr_scaling;
+  unsigned         grain_scaling_minus_8{};
+  unsigned         ar_coeff_lag{};
+  unsigned         numPosChroma{};
+  vector<unsigned> ar_coeffs_y_plus_128;
+  vector<unsigned> ar_coeffs_cb_plus_128;
+  vector<unsigned> ar_coeffs_cr_plus_128;
+  unsigned         ar_coeff_shift_minus_6{};
+  unsigned         grain_scale_shift{};
+  unsigned         cb_mult{};
+  unsigned         cb_luma_mult{};
+  unsigned         cb_offset{};
+  unsigned         cr_mult{};
+  unsigned         cr_luma_mult{};
+  unsigned         cr_offset{};
+  bool             overlap_flag{};
+  bool             clip_to_restricted_range{};
 };
 
 } // namespace parser::av1

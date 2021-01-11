@@ -74,4 +74,16 @@ constexpr unsigned MAX_TILE_AREA  = 4096 * 2304;
 constexpr unsigned MAX_TILE_COLS  = 64;
 constexpr unsigned MAX_TILE_ROWS  = 64;
 
+constexpr unsigned GM_ABS_ALPHA_BITS = 12;
+constexpr unsigned GM_ALPHA_PREC_BITS = 15;
+constexpr unsigned GM_ABS_TRANS_ONLY_BITS = 9;
+constexpr unsigned GM_TRANS_ONLY_PREC_BITS = 3;
+constexpr unsigned GM_ABS_TRANS_BITS = 12;
+constexpr unsigned GM_TRANS_PREC_BITS = 6;
+
+constexpr unsigned RESTORATION_TILESIZE_MAX = 256;
+constexpr unsigned WARPEDMODEL_PREC_BITS = 16;
+
+int get_relative_dist(int a, int b, bool enable_order_hint, int OrderHintBits);
+
 } // namespace parser::av1

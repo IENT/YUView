@@ -32,28 +32,39 @@
 
 #pragma once
 
+#include "FrameRefs.h"
 #include "GlobalDecodingValues.h"
-#include "OpenBitstreamUnit.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "uncompressed_header.h"
+#include "reference_mode.h"
 
 namespace parser::av1
 {
 
-class sequence_header;
+class sequence_header_obu;
 
-class frame_header_obu : public ObuPayload
+class skip_mode_params
 {
 public:
-  frame_header_obu() = default;
+  skip_mode_params() = default;
 
   void parse(reader::SubByteReaderLogging &       reader,
-             std::shared_ptr<sequence_header_obu> seq_header,
+             std::shared_ptr<sequence_header_obu> seqHeader,
+             bool                                 FrameIsIntra,
+             reference_mode &                     referenceMode,
              GlobalDecodingValues &               decValues,
-             unsigned                             temporal_id,
-             unsigned                             spatial_id);
+             FrameRefs &                          frameRefs,
+             unsigned                             OrderHint);
 
-  uncompressed_header uncompressedHeader;
+  bool     skipModeAllowed{};
+  int      forwardIdx{};
+  int      backwardIdx{};
+  unsigned refHint{};
+  unsigned forwardHint{};
+  unsigned backwardHint{};
+  unsigned SkipModeFrame[2]{};
+  int      secondForwardIdx{};
+  unsigned secondForwardHint{};
+  bool     skip_mode_present{};
 };
 
 } // namespace parser::av1

@@ -173,15 +173,4 @@ int FrameRefs::find_latest_forward(int curFrameHint)
   return ref;
 }
 
-int FrameRefs::get_relative_dist(int a, int b, bool enable_order_hint, int OrderHintBits)
-{
-  if (!enable_order_hint)
-    return 0;
-
-  int diff = a - b;
-  int m    = 1 << (OrderHintBits - 1);
-  diff     = (diff & (m - 1)) - (diff & m);
-  return diff;
-}
-
 } // namespace parser::av1

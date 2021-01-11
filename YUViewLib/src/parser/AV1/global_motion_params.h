@@ -32,28 +32,45 @@
 
 #pragma once
 
-#include "GlobalDecodingValues.h"
-#include "OpenBitstreamUnit.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "uncompressed_header.h"
 
 namespace parser::av1
 {
 
-class sequence_header;
+enum class MotionType
+{
+  IDENTITY    = 0,
+  TRANSLATION = 1,
+  ROTZOOM     = 2,
+  AFFINE      = 2,
+};
 
-class frame_header_obu : public ObuPayload
+class sequence_header_obu;
+
+class global_motion_params
 {
 public:
-  frame_header_obu() = default;
+  global_motion_params() = default;
 
-  void parse(reader::SubByteReaderLogging &       reader,
-             std::shared_ptr<sequence_header_obu> seq_header,
-             GlobalDecodingValues &               decValues,
-             unsigned                             temporal_id,
-             unsigned                             spatial_id);
+  void parse(reader::SubByteReaderLogging &reader,
+             bool                          FrameIsIntra,
+             bool                          allow_high_precision_mv,
+             unsigned                      PrevGmParams[8][6]);
 
-  uncompressed_header uncompressedHeader;
+  MotionType GmType[8]{};
+  unsigned   gm_params[8][6]{};
+  bool       is_global{};
+  bool       is_rot_zoom{};
+  bool       is_translation{};
+  MotionType type;
+
+private:
+  void read_global_param(reader::SubByteReaderLogging &reader,
+                         MotionType                    type,
+                         unsigned                      ref,
+                         unsigned                      idx,
+                         bool                          allow_high_precision_mv,
+                         unsigned                      PrevGmParams[8][6]);
 };
 
 } // namespace parser::av1

@@ -96,7 +96,7 @@ void obu_header::parse(SubByteReaderLogging &reader)
   this->obu_extension_flag = reader.readFlag("obu_extension_flag");
   this->obu_has_size_field = reader.readFlag("obu_has_size_field");
 
-  reader.readFlag("obu_reserved_1bit", Options().withCheckEqualTo(1));
+  reader.readFlag("obu_reserved_1bit", Options().withCheckEqualTo(0));
 
   if (this->obu_extension_flag)
   {

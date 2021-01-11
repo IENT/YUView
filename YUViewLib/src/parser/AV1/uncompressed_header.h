@@ -41,11 +41,16 @@
 #include "frame_size.h"
 #include "interpolation_filter.h"
 #include "loop_filter_params.h"
+#include "lr_params.h"
 #include "parser/common/SubByteReaderLogging.h"
 #include "quantization_params.h"
 #include "segmentation_params.h"
 #include "tile_info.h"
-
+#include "tx_mode.h"
+#include "reference_mode.h"
+#include "skip_mode_params.h"
+#include "global_motion_params.h"
+#include "film_grain_params.h"
 
 namespace parser::av1
 {
@@ -126,9 +131,18 @@ public:
 
   loop_filter_params loopFilterParams;
   cdef_params        cdefParams;
-
+  lr_params          lrParams;
+  tx_mode            txMode;
+  reference_mode     referenceMode;
+  skip_mode_params   skipModeParams;
+  
   bool allow_warped_motion{};
   bool reduced_tx_set{};
+
+  unsigned PrevGmParams[8][6]{};
+
+  global_motion_params globalMotionParams;
+  film_grain_params filmGrainParams;
 
 private:
   void mark_ref_frames(int                                  idLen,
@@ -136,6 +150,8 @@ private:
                        GlobalDecodingValues &               decValues);
   int  get_qindex(bool ignoreDeltaQ, int segmentId) const;
   bool seg_feature_active_idx(int idx, int feature) const;
+
+  void setup_past_independence();
 };
 
 } // namespace parser::av1

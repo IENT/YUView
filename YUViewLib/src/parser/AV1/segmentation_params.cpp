@@ -32,7 +32,6 @@
 
 #include "segmentation_params.h"
 
-#include "sequence_header_obu.h"
 #include "typedef.h"
 
 namespace parser::av1
@@ -41,7 +40,6 @@ namespace parser::av1
 using namespace reader;
 
 void segmentation_params::parse(reader::SubByteReaderLogging &       reader,
-                                std::shared_ptr<sequence_header_obu> seqHeader,
                                 unsigned                             primary_ref_frame)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "segmentation_params()");
