@@ -54,16 +54,16 @@ public:
   ~AnnexBHEVC() {};
 
   // Get some properties
-  double getFramerate() const Q_DECL_OVERRIDE;
-  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
-  yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
+  double getFramerate() const override;
+  QSize getSequenceSizeSamples() const override;
+  yuvPixelFormat getPixelFormat() const override;
 
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
-  QByteArray getExtradata() Q_DECL_OVERRIDE;
-  IntPair getProfileLevel() Q_DECL_OVERRIDE;
-  Ratio getSampleAspectRatio() Q_DECL_OVERRIDE;
+  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
+  QByteArray getExtradata() override;
+  IntPair getProfileLevel() override;
+  Ratio getSampleAspectRatio() override;
 
-  ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) Q_DECL_OVERRIDE;
+  ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) override;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
