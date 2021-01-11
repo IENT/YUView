@@ -43,6 +43,7 @@ class sequence_header_obu : public ObuPayload
 {
 public:
   sequence_header_obu() = default;
+
   void parse(reader::SubByteReaderLogging &reader);
 
   unsigned seq_profile{};
@@ -125,7 +126,7 @@ public:
   bool enable_cdef{};
   bool enable_restoration{};
 
-  Color_config color_config;
+  color_config colorConfig;
 
   bool film_grain_params_present{};
 };

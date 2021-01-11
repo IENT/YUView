@@ -40,18 +40,18 @@ namespace
 
 using namespace parser::av1;
 
-auto ColorPrimariesCodingMap = std::map<unsigned, ColorPrimaries>({{1, CP_BT_709 = 1},
-                                                                   {2, CP_UNSPECIFIED},
-                                                                   {4, CP_BT_470_M = 4},
-                                                                   {5, CP_BT_470_B_G},
-                                                                   {6, CP_BT_601},
-                                                                   {7, CP_SMPTE_240},
-                                                                   {8, CP_GENERIC_FILM},
-                                                                   {9, CP_BT_2020},
-                                                                   {10, CP_XYZ},
-                                                                   {11, CP_SMPTE_431},
-                                                                   {12, CP_SMPTE_432},
-                                                                   {22, CP_EBU_3213}});
+auto ColorPrimariesCodingMap = std::map<unsigned, ColorPrimaries>({{1, ColorPrimaries::CP_BT_709},
+                                                                   {2, ColorPrimaries::CP_UNSPECIFIED},
+                                                                   {4, ColorPrimaries::CP_BT_470_M},
+                                                                   {5, ColorPrimaries::CP_BT_470_B_G},
+                                                                   {6, ColorPrimaries::CP_BT_601},
+                                                                   {7, ColorPrimaries::CP_SMPTE_240},
+                                                                   {8, ColorPrimaries::CP_GENERIC_FILM},
+                                                                   {9, ColorPrimaries::CP_BT_2020},
+                                                                   {10, ColorPrimaries::CP_XYZ},
+                                                                   {11, ColorPrimaries::CP_SMPTE_431},
+                                                                   {12, ColorPrimaries::CP_SMPTE_432},
+                                                                   {22, ColorPrimaries::CP_EBU_3213}});
 
 auto ColorPrimariesNames =
     std::map<ColorPrimaries, std::string>({{ColorPrimaries::CP_BT_709, "CP_BT_709"},
@@ -143,7 +143,7 @@ auto MatrixCoefficientsNames = std::map<MatrixCoefficients, std::string>(
 
 auto getColorPrimariesMeaningMap()
 {
-  MeaningMap meaning;
+  reader::MeaningMap meaning;
   for (const auto &entry : ColorPrimariesCodingMap)
     meaning[entry.first] = ColorPrimariesNames[entry.second];
   return meaning;
@@ -151,7 +151,7 @@ auto getColorPrimariesMeaningMap()
 
 auto getTransferCharacteristicsMeaningMap()
 {
-  MeaningMap meaning;
+  reader::MeaningMap meaning;
   for (const auto &entry : TransferCharacteristicsCodingMap)
     meaning[entry.first] = TransferCharacteristicsNames[entry.second];
   return meaning;
@@ -159,11 +159,15 @@ auto getTransferCharacteristicsMeaningMap()
 
 auto getMatrixCoefficientsMeaningMap()
 {
-  MeaningMap meaning;
+  reader::MeaningMap meaning;
   for (const auto &entry : MatrixCoefficientsCodingMap)
     meaning[entry.first] = MatrixCoefficientsNames[entry.second];
   return meaning;
 }
+
+} // namespace
+
+using namespace reader;
 
 unsigned to_int(ColorPrimaries colorPrimaries)
 {
@@ -202,11 +206,7 @@ unsigned to_int(ChromaSamplePosition chromaSamplePosition)
   return {};
 }
 
-} // namespace
-
-using namespace reader;
-
-void Color_config::parse(SubByteReaderLogging &reader, int seq_profile)
+void color_config::parse(SubByteReaderLogging &reader, int seq_profile)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "color_config()");
 

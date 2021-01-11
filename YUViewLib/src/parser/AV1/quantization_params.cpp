@@ -62,9 +62,9 @@ void quantization_params::parse(reader::SubByteReaderLogging &       reader,
 
   this->base_q_idx = reader.readBits("base_q_idx", 8);
   this->DeltaQYDc  = read_delta_q(reader, "DeltaQYDc");
-  if (seqHeader->color_config.NumPlanes > 1)
+  if (seqHeader->colorConfig.NumPlanes > 1)
   {
-    if (seqHeader->color_config.separate_uv_delta_q)
+    if (seqHeader->colorConfig.separate_uv_delta_q)
       this->diff_uv_delta = reader.readFlag("diff_uv_delta");
     else
       this->diff_uv_delta = false;
@@ -93,7 +93,7 @@ void quantization_params::parse(reader::SubByteReaderLogging &       reader,
   {
     this->qm_y = reader.readBits("qm_y", 4);
     this->qm_u = reader.readBits("qm_u", 4);
-    if (!seqHeader->color_config.separate_uv_delta_q)
+    if (!seqHeader->colorConfig.separate_uv_delta_q)
       this->qm_v = qm_u;
     else
       this->qm_v = reader.readBits("qm_v", 4);

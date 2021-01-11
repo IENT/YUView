@@ -30,8 +30,6 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
 #include "FrameRefs.h"
 
 #include "typedef.h"
@@ -41,13 +39,12 @@ namespace parser::av1
 
 using namespace reader;
 
-void FrameRefs::set_frame_refs(reader::SubByteReaderLogging &reader,
-                               unsigned                      OrderHintBits,
-                               bool                          enable_order_hint,
-                               unsigned                      last_frame_idx,
-                               unsigned                      gold_frame_idx,
-                               unsigned                      OrderHint,
-                               GlobalDecodingValues &        decValues)
+void FrameRefs::set_frame_refs(unsigned              OrderHintBits,
+                               bool                  enable_order_hint,
+                               unsigned              last_frame_idx,
+                               unsigned              gold_frame_idx,
+                               unsigned              OrderHint,
+                               GlobalDecodingValues &decValues)
 {
   for (unsigned i = 0; i < REFS_PER_FRAME; i++)
     this->ref_frame_idx[i] = -1;
@@ -131,12 +128,12 @@ void FrameRefs::set_frame_refs(reader::SubByteReaderLogging &reader,
   }
 }
 
-int FrameRefs::find_latest_backward(unsigned curFrameHint)
+int FrameRefs::find_latest_backward(int curFrameHint)
 {
   int ref = -1;
   for (unsigned i = 0; i < NUM_REF_FRAMES; i++)
   {
-    auto hint = shiftedOrderHints[i];
+    auto hint = this->shiftedOrderHints[i];
     if (!this->usedFrame[i] && hint >= curFrameHint && (ref < 0 || hint >= this->latestOrderHint))
     {
       ref                   = i;
@@ -146,12 +143,12 @@ int FrameRefs::find_latest_backward(unsigned curFrameHint)
   return ref;
 }
 
-int FrameRefs::find_earliest_backward(unsigned curFrameHint)
+int FrameRefs::find_earliest_backward(int curFrameHint)
 {
   int ref = -1;
   for (unsigned i = 0; i < NUM_REF_FRAMES; i++)
   {
-    int hint = this->shiftedOrderHints[i];
+    auto hint = this->shiftedOrderHints[i];
     if (!this->usedFrame[i] && hint >= curFrameHint && (ref < 0 || hint < this->earliestOrderHint))
     {
       ref                     = i;
@@ -161,7 +158,7 @@ int FrameRefs::find_earliest_backward(unsigned curFrameHint)
   return ref;
 }
 
-int FrameRefs::find_latest_forward(unsigned curFrameHint)
+int FrameRefs::find_latest_forward(int curFrameHint)
 {
   int ref = -1;
   for (unsigned i = 0; i < NUM_REF_FRAMES; i++)

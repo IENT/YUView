@@ -62,13 +62,13 @@ void cdef_params::parse(reader::SubByteReaderLogging &       reader,
   this->cdef_damping_minus_3 = reader.readBits("cdef_damping_minus_3", 2);
   this->CdefDamping = this->cdef_damping_minus_3 + 3;
   this->cdef_bits = reader.readBits("cdef_bits", 2);
-  for (unsigned i = 0; i < (1 << cdef_bits); i++)
+  for (unsigned i = 0; i < (1u << this->cdef_bits); i++)
   {
     this->cdef_y_pri_strength[i] = reader.readBits(formatArray("cdef_y_pri_strength", i), 4);
     this->cdef_y_sec_strength[i] = reader.readBits(formatArray("cdef_y_sec_strength", i), 2);
     if (this->cdef_y_sec_strength[i] == 3)
       this->cdef_y_sec_strength[i]++;
-    if (seqHeader->color_config.NumPlanes > 1)
+    if (seqHeader->colorConfig.NumPlanes > 1)
     {
       this->cdef_uv_pri_strength[i] = reader.readBits(formatArray("cdef_uv_pri_strength", i), 4);
       this->cdef_uv_sec_strength[i] = reader.readBits(formatArray("cdef_uv_sec_strength", i), 4);

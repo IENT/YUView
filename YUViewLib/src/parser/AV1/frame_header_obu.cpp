@@ -30,38 +30,44 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "frame_header_obu.h"
 
-#include "GlobalDecodingValues.h"
-#include "OpenBitstreamUnit.h"
-#include "parser/common/SubByteReaderLogging.h"
+#include "sequence_header_obu.h"
+#include "typedef.h"
 
 namespace parser::av1
 {
 
-class sequence_header;
+using namespace reader;
 
-class frame_header_obu : public ObuPayload
+void frame_header_obu::parse(reader::SubByteReaderLogging &       reader,
+                             std::shared_ptr<sequence_header_obu> seqHeader,
+                             GlobalDecodingValues &               decValues,
+                             unsigned                             temporal_in,
+                             unsigned                             spatial_id)
 {
-public:
-  frame_header_obu() = default;
+  SubByteReaderLoggingSubLevel subLevel(reader, "frame_header_obu()");
 
-  bool parse(reader::SubByteReaderLogging &   reader,
-             std::shared_ptr<sequence_header> seq_header,
-             GlobalDecodingValues &           decValues);
-
-  bool parse_uncompressed_header(reader::SubByteReaderLogging &  reader,
-                                 QSharedPointer<sequence_header> seq_header,
-                                 GlobalDecodingValues &          decValues);
-  void mark_ref_frames(int                             idLen,
-                       QSharedPointer<sequence_header> seq_header,
-                       GlobalDecodingValues &          decValues);
-
-  
-
-
-
-
-}; // struct frame_header
+  if (decValues.SeenFrameHeader)
+  {
+    reader.logArbitrary("frame_header_copy()");
+    return;
+  }
+  else
+  {
+    decValues.SeenFrameHeader = true;
+    this->uncompressedHeader.parse(reader, seqHeader, decValues, temporal_in, spatial_id);
+    if (this->uncompressedHeader.show_existing_frame)
+    {
+      reader.logArbitrary("decode_frame_wrapup()");
+      decValues.SeenFrameHeader = false;
+    }
+    else
+    {
+      // TileNum = 0;
+      decValues.SeenFrameHeader = true;
+    }
+  }
+}
 
 } // namespace parser::av1

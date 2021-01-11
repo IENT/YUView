@@ -30,8 +30,6 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
 #include "frame_size.h"
 
 #include "sequence_header_obu.h"

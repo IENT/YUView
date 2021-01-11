@@ -56,8 +56,6 @@ public:
       this->filePosStartEnd = *filePosStartEnd;
   }
 
-  ByteVector getNALHeader() const { return this->header.getNALHeader(); };
-
   obu_header                  header;
   std::shared_ptr<ObuPayload> payload;
 

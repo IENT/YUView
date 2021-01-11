@@ -33,7 +33,6 @@
 #pragma once
 
 #include "GlobalDecodingValues.h"
-#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::av1
 {
@@ -43,23 +42,23 @@ class FrameRefs
 public:
   FrameRefs() = default;
 
-  void set_frame_refs(reader::SubByteReaderLogging &reader,
-                      unsigned                      OrderHintBits,
-                      bool                          enable_order_hint,
-                      unsigned                      last_frame_idx,
-                      unsigned                      gold_frame_idx,
-                      unsigned                      OrderHint,
-                      GlobalDecodingValues &        decValues);
+  void set_frame_refs(unsigned              OrderHintBits,
+                      bool                  enable_order_hint,
+                      unsigned              last_frame_idx,
+                      unsigned              gold_frame_idx,
+                      unsigned              OrderHint,
+                      GlobalDecodingValues &decValues);
 
-  int find_latest_backward(unsigned curFrameHint);
-  int find_earliest_backward(unsigned curFrameHint);
-  int find_latest_forward(unsigned curFrameHint);
+  int find_latest_backward(int curFrameHint);
+  int find_earliest_backward(int curFrameHint);
+  int find_latest_forward(int curFrameHint);
 
   int get_relative_dist(int a, int b, bool enable_order_hint, int OrderHintBits);
 
-  unsigned ref_frame_idx[8];
-  bool     usedFrame[8];
-  unsigned shiftedOrderHints[8];
+  int  ref_frame_idx[8]{};
+  bool usedFrame[8]{};
+  int  shiftedOrderHints[8]{};
+
   // TODO: How should these be initialized. I think this is missing in the specification.
   int latestOrderHint{-1};
   int earliestOrderHint{32000};

@@ -221,7 +221,7 @@ void sequence_header_obu::parse(reader::SubByteReaderLogging &reader)
   this->enable_cdef        = reader.readFlag("enable_cdef");
   this->enable_restoration = reader.readFlag("enable_restoration");
 
-  this->color_config.parse(reader, seq_profile);
+  this->colorConfig.parse(reader, seq_profile);
 
   this->film_grain_params_present = reader.readFlag("film_grain_params_present");
 
@@ -240,15 +240,15 @@ void sequence_header_obu::parse(reader::SubByteReaderLogging &reader)
     };
 
     // videoFullRangeFlag (1 digit)
-    auto range             = (this->color_config.color_range ? ".1" : ".0");
+    auto range             = (this->colorConfig.color_range ? ".1" : ".0");
     rfc6381CodecsParameter = range + rfc6381CodecsParameter;
     add |= (range != ".0");
     if (add)
       rfc6381CodecsParameterShortened = range + rfc6381CodecsParameterShortened;
 
     // matrixCoefficients	(2 digits)
-    auto matrix            = (this->color_config.color_description_present_flag
-                                  ? toStringPadded2(to_int(color_config.matrix_coefficients))
+    auto matrix            = (this->colorConfig.color_description_present_flag
+                                  ? toStringPadded2(to_int(this->colorConfig.matrix_coefficients))
                                   : ".01");
     rfc6381CodecsParameter = matrix + rfc6381CodecsParameter;
     add |= (matrix != ".01");
@@ -256,8 +256,8 @@ void sequence_header_obu::parse(reader::SubByteReaderLogging &reader)
       rfc6381CodecsParameterShortened = matrix + rfc6381CodecsParameterShortened;
 
     // transfer_characteristics (2 digits)
-    auto transfer          = (this->color_config.color_description_present_flag
-                                  ? toStringPadded2(to_int(color_config.transfer_characteristics))
+    auto transfer          = (this->colorConfig.color_description_present_flag
+                                  ? toStringPadded2(to_int(this->colorConfig.transfer_characteristics))
                                   : ".01");
     rfc6381CodecsParameter = transfer + rfc6381CodecsParameter;
     add |= (transfer != ".01");
@@ -265,8 +265,8 @@ void sequence_header_obu::parse(reader::SubByteReaderLogging &reader)
       rfc6381CodecsParameterShortened = transfer + rfc6381CodecsParameterShortened;
 
     // color_primaries (2 digits)
-    auto primaries         = (this->color_config.color_description_present_flag
-                                  ? toStringPadded2(to_int(color_config.color_primaries))
+    auto primaries         = (this->colorConfig.color_description_present_flag
+                                  ? toStringPadded2(to_int(this->colorConfig.color_primaries))
                                   : ".01");
     rfc6381CodecsParameter = primaries + rfc6381CodecsParameter;
     add |= (primaries != ".01");
@@ -274,10 +274,10 @@ void sequence_header_obu::parse(reader::SubByteReaderLogging &reader)
       rfc6381CodecsParameterShortened = primaries + rfc6381CodecsParameterShortened;
 
     // chromaSubsampling (3 digits)
-    auto subsampling = std::string((color_config.subsampling_x ? "1" : "0")) +
-                       (color_config.subsampling_y ? "1" : "0") +
-                       (color_config.subsampling_x && color_config.subsampling_y
-                            ? toStringPadded2(to_int(color_config.chroma_sample_position))
+    auto subsampling = std::string((this->colorConfig.subsampling_x ? "1" : "0")) +
+                       (this->colorConfig.subsampling_y ? "1" : "0") +
+                       (this->colorConfig.subsampling_x && this->colorConfig.subsampling_y
+                            ? toStringPadded2(to_int(this->colorConfig.chroma_sample_position))
                             : "0");
     rfc6381CodecsParameter = subsampling + rfc6381CodecsParameter;
     add |= (subsampling != ".110");
@@ -285,7 +285,7 @@ void sequence_header_obu::parse(reader::SubByteReaderLogging &reader)
       rfc6381CodecsParameterShortened = subsampling + rfc6381CodecsParameterShortened;
 
     // Monochrome (1 digit)
-    auto monochrome        = (color_config.mono_chrome ? "1" : "0");
+    auto monochrome        = (this->colorConfig.mono_chrome ? "1" : "0");
     rfc6381CodecsParameter = monochrome + rfc6381CodecsParameter;
     add |= (monochrome != ".0");
     if (add)
@@ -293,7 +293,7 @@ void sequence_header_obu::parse(reader::SubByteReaderLogging &reader)
 
     // From here, all values are mandatory
     auto remainder = std::to_string(seq_profile) + toStringPadded2(this->seq_level_idx[0]) +
-                     (seq_tier[0] ? "H" : "M") + toStringPadded2(this->color_config.BitDepth);
+                     (seq_tier[0] ? "H" : "M") + toStringPadded2(this->colorConfig.BitDepth);
     rfc6381CodecsParameter          = remainder + rfc6381CodecsParameter;
     rfc6381CodecsParameterShortened = remainder + rfc6381CodecsParameterShortened;
 

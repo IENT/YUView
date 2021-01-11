@@ -63,8 +63,6 @@ public:
 
   void parse(reader::SubByteReaderLogging &reader);
 
-  virtual ByteVector getNALHeader() const;
-
   unsigned obu_type_idx;
   ObuType obu_type{ObuType::UNSPECIFIED};
   bool    obu_extension_flag{false};

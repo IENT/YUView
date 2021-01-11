@@ -32,30 +32,34 @@
 
 #include "loop_filter_params.h"
 
+#include "parser/common/functions.h"
 #include "sequence_header_obu.h"
 #include "typedef.h"
-#include "parser/common/functions.h"
+
 
 namespace parser::av1
 {
 
 using namespace reader;
 
-void loop_filter_params::parse(reader::SubByteReaderLogging &reader, std::shared_ptr<sequence_header_obu> seqHeader, bool CodedLossless, bool allow_intrabc)
+void loop_filter_params::parse(reader::SubByteReaderLogging &       reader,
+                               std::shared_ptr<sequence_header_obu> seqHeader,
+                               bool                                 CodedLossless,
+                               bool                                 allow_intrabc)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "loop_filter_params()");
-  
+
   if (CodedLossless || allow_intrabc)
   {
-    this->loop_filter_level[0] = 0;
-    this->loop_filter_level[1] = 0;
-    this->loop_filter_ref_deltas[INTRA_FRAME] = 1;
-    this->loop_filter_ref_deltas[LAST_FRAME] = 0;
-    this->loop_filter_ref_deltas[LAST2_FRAME] = 0;
-    this->loop_filter_ref_deltas[LAST3_FRAME] = 0;
-    this->loop_filter_ref_deltas[BWDREF_FRAME] = 0;
-    this->loop_filter_ref_deltas[GOLDEN_FRAME] = -1;
-    this->loop_filter_ref_deltas[ALTREF_FRAME] = -1;
+    this->loop_filter_level[0]                  = 0;
+    this->loop_filter_level[1]                  = 0;
+    this->loop_filter_ref_deltas[INTRA_FRAME]   = 1;
+    this->loop_filter_ref_deltas[LAST_FRAME]    = 0;
+    this->loop_filter_ref_deltas[LAST2_FRAME]   = 0;
+    this->loop_filter_ref_deltas[LAST3_FRAME]   = 0;
+    this->loop_filter_ref_deltas[BWDREF_FRAME]  = 0;
+    this->loop_filter_ref_deltas[GOLDEN_FRAME]  = -1;
+    this->loop_filter_ref_deltas[ALTREF_FRAME]  = -1;
     this->loop_filter_ref_deltas[ALTREF2_FRAME] = -1;
     for (unsigned i = 0; i < 2; i++)
       this->loop_filter_mode_deltas[i] = 0;
@@ -64,7 +68,7 @@ void loop_filter_params::parse(reader::SubByteReaderLogging &reader, std::shared
 
   this->loop_filter_level[0] = reader.readBits("loop_filter_level[0]", 6);
   this->loop_filter_level[1] = reader.readBits("loop_filter_level[1]", 6);
-  if (seqHeader->color_config.NumPlanes > 1)
+  if (seqHeader->colorConfig.NumPlanes > 1)
   {
     if (loop_filter_level[0] || loop_filter_level[1])
     {
@@ -72,7 +76,7 @@ void loop_filter_params::parse(reader::SubByteReaderLogging &reader, std::shared
       this->loop_filter_level[3] = reader.readBits("loop_filter_level[3]", 6);
     }
   }
-  this->loop_filter_sharpness = reader.readBits("loop_filter_sharpness", 3);
+  this->loop_filter_sharpness     = reader.readBits("loop_filter_sharpness", 3);
   this->loop_filter_delta_enabled = reader.readFlag("loop_filter_delta_enabled");
   if (this->loop_filter_delta_enabled)
   {
@@ -82,12 +86,14 @@ void loop_filter_params::parse(reader::SubByteReaderLogging &reader, std::shared
       for (unsigned i = 0; i < TOTAL_REFS_PER_FRAME; i++)
       {
         if (reader.readFlag("update_ref_delta"))
-          this->loop_filter_ref_deltas[i] = reader.readSU(formatArray("loop_filter_ref_deltas", i), 1+6);
+          this->loop_filter_ref_deltas[i] =
+              reader.readSU(formatArray("loop_filter_ref_deltas", i), 1 + 6);
       }
       for (unsigned i = 0; i < 2; i++)
       {
         if (reader.readFlag("update_mode_delta"))
-          this->loop_filter_mode_deltas[i] = reader.readSU(formatArray("loop_filter_mode_deltas", i), 1+6);
+          this->loop_filter_mode_deltas[i] =
+              reader.readSU(formatArray("loop_filter_mode_deltas", i), 1 + 6);
       }
     }
   }

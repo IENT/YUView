@@ -37,6 +37,7 @@
 #include "AV1/AV1OBU.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
 #include "filesource/FileSourceFFmpegFile.h"
+#include "parser/common/ReaderHelper.h"
 
 namespace parser
 {
@@ -53,14 +54,14 @@ public:
   AVFormat(QObject *parent = nullptr);
   ~AVFormat() {}
 
-  QList<QTreeWidgetItem*> getStreamInfo() Q_DECL_OVERRIDE;
-  unsigned int getNrStreams() Q_DECL_OVERRIDE { return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1; }
+  QList<QTreeWidgetItem*> getStreamInfo() override;
+  unsigned int getNrStreams() override { return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1; }
   QString getShortStreamDescription(int streamIndex) const override;
   
   // This function can run in a separate thread
-  bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
+  bool runParsingOfFile(QString compressedFilePath) override;
 
-  int getVideoStreamIndex() Q_DECL_OVERRIDE { return videoStreamIndex; }
+  int getVideoStreamIndex() override { return videoStreamIndex; }
 
 private:
   AVCodecIDWrapper codecID;
@@ -71,14 +72,14 @@ private:
 
   struct hvcC_nalUnit
   {
-    bool parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<AnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, AnnexB *annexBParser, BitratePlotModel *bitrateModel);
 
     unsigned int nalUnitLength;
   };
 
   struct hvcC_naluArray
   {
-    bool parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<AnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, AnnexB *annexBParser, BitratePlotModel *bitrateModel);
 
     bool array_completeness;
     bool reserved_flag_false;
@@ -89,7 +90,7 @@ private:
 
   struct hvcC
   {
-    bool parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<AnnexB> &annexBParser, BitratePlotModel *bitrateModel);
+    bool parse_hvcC(QByteArray &hvcCData, TreeItem *root, AnnexB *annexBParser, BitratePlotModel *bitrateModel);
 
     unsigned int configurationVersion;
     unsigned int general_profile_space;

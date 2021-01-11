@@ -258,8 +258,7 @@ void uncompressed_header::parse(SubByteReaderLogging &               reader,
         {
           this->last_frame_idx = reader.readBits("last_frame_idx", 3);
           this->gold_frame_idx = reader.readBits("gold_frame_idx", 3);
-          this->frameRefs.set_frame_refs(reader,
-                                         seqHeader->OrderHintBits,
+          this->frameRefs.set_frame_refs(seqHeader->OrderHintBits,
                                          seqHeader->enable_order_hint,
                                          this->last_frame_idx,
                                          this->gold_frame_idx,

@@ -30,8 +30,6 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
 #include "superres_params.h"
 
 #include "sequence_header_obu.h"

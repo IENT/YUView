@@ -37,21 +37,25 @@
 namespace parser::av1
 {
 
+class sequence_header_obu;
+
 class loop_filter_params
 {
 public:
   loop_filter_params() = default;
 
-  void parse(reader::SubByteReaderLogging &reader, std::shared_ptr<sequence_header_obu> seqHeader, bool CodedLossless, bool allow_intrabc);
+  void parse(reader::SubByteReaderLogging &       reader,
+             std::shared_ptr<sequence_header_obu> seqHeader,
+             bool                                 CodedLossless,
+             bool                                 allow_intrabc);
 
   unsigned loop_filter_level[4]{};
-    int      loop_filter_ref_deltas[8]{};
-    int      loop_filter_mode_deltas[2]{};
+  int      loop_filter_ref_deltas[8]{};
+  int      loop_filter_mode_deltas[2]{};
 
-    unsigned loop_filter_sharpness{};
-    bool     loop_filter_delta_enabled{};
-    bool     loop_filter_delta_update{};
-
+  unsigned loop_filter_sharpness{};
+  bool     loop_filter_delta_enabled{};
+  bool     loop_filter_delta_update{};
 };
 
 } // namespace parser::av1

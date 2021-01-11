@@ -111,7 +111,7 @@ enum class ChromaSamplePosition
 
 unsigned to_int(ChromaSamplePosition chromaSamplePosition);
 
-struct Color_config
+struct color_config
 {
   void parse(reader::SubByteReaderLogging &reader, int seq_profile);
 
