@@ -229,7 +229,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   if (nalRoot)
   {
     auto name = "NAL " + std::to_string(nal_mpeg2.nalIdx) + ": " +
-                to_string(nal_mpeg2.header.nal_unit_type) + specificDescription;
+                nalTypeCoding.getMeaning(nal_mpeg2.header.nal_unit_type) + specificDescription;
     nalRoot->setProperties(name);
   }
 

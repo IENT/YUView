@@ -37,51 +37,6 @@ namespace parser::av1
 
 using namespace reader;
 
-namespace
-{
-
-auto ObuTypeMap = std::map<unsigned, ObuType>({{0, ObuType::RESERVED},
-                                               {1, ObuType::OBU_SEQUENCE_HEADER},
-                                               {2, ObuType::OBU_TEMPORAL_DELIMITER},
-                                               {3, ObuType::OBU_FRAME_HEADER},
-                                               {4, ObuType::OBU_TILE_GROUP},
-                                               {5, ObuType::OBU_METADATA},
-                                               {6, ObuType::OBU_FRAME},
-                                               {7, ObuType::OBU_REDUNDANT_FRAME_HEADER},
-                                               {8, ObuType::OBU_TILE_LIST},
-                                               {9, ObuType::RESERVED},
-                                               {10, ObuType::RESERVED},
-                                               {11, ObuType::RESERVED},
-                                               {12, ObuType::RESERVED},
-                                               {13, ObuType::RESERVED},
-                                               {14, ObuType::RESERVED},
-                                               {15, ObuType::OBU_PADDING}});
-
-auto ObuNameMap = std::map<ObuType, std::string>(
-    {{ObuType::RESERVED, "RESERVED"},
-     {ObuType::OBU_SEQUENCE_HEADER, "OBU_SEQUENCE_HEADER"},
-     {ObuType::OBU_TEMPORAL_DELIMITER, "OBU_TEMPORAL_DELIMITER"},
-     {ObuType::OBU_FRAME_HEADER, "OBU_FRAME_HEADER"},
-     {ObuType::OBU_TILE_GROUP, "OBU_TILE_GROUP"},
-     {ObuType::OBU_METADATA, "OBU_METADATA"},
-     {ObuType::OBU_FRAME, "OBU_FRAME"},
-     {ObuType::OBU_REDUNDANT_FRAME_HEADER, "OBU_REDUNDANT_FRAME_HEADER"},
-     {ObuType::OBU_TILE_LIST, "OBU_TILE_LIST"},
-     {ObuType::OBU_PADDING, "OBU_PADDING"},
-     {ObuType::UNSPECIFIED, "UNSPECIFIED"}});
-
-auto getObuMeaningVector()
-{
-  MeaningMap vec;
-  for (const auto &type : ObuTypeMap)
-    vec[type.first] = ObuNameMap[type.second];
-  return vec;
-}
-
-} // namespace
-
-std::string to_string(ObuType obuType) { return ObuNameMap[obuType]; }
-
 void obu_header::parse(SubByteReaderLogging &reader)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "obu_header");
@@ -89,9 +44,9 @@ void obu_header::parse(SubByteReaderLogging &reader)
   reader.readFlag("obu_forbidden_bit", Options().withCheckEqualTo(0));
 
   this->obu_type_idx =
-      reader.readBits("obu_type_idx", 4, Options().withMeaningMap(getObuMeaningVector()));
+      reader.readBits("obu_type_idx", 4, Options().withMeaningMap(obuTypeCoding.getMeaningMap()));
 
-  this->obu_type = ObuTypeMap[this->obu_type_idx];
+  this->obu_type = obuTypeCoding.getValue(this->obu_type_idx);
 
   this->obu_extension_flag = reader.readFlag("obu_extension_flag");
   this->obu_has_size_field = reader.readFlag("obu_has_size_field");
@@ -101,7 +56,7 @@ void obu_header::parse(SubByteReaderLogging &reader)
   if (this->obu_extension_flag)
   {
     this->temporal_id = reader.readBits("temporal_id", 3);
-    this->spatial_id = reader.readBits("spatial_id", 2);
+    this->spatial_id  = reader.readBits("spatial_id", 2);
 
     reader.readBits("extension_header_reserved_3bits", 3);
   }

@@ -37,6 +37,19 @@
 namespace parser::av1
 {
 
+namespace
+{
+
+CodingEnum<InterpolationFilter>
+    interpolationFilterCoding({{0, InterpolationFilter::EIGHTTAP, "EIGHTTAP"},
+                               {1, InterpolationFilter::EIGHTTAP_SMOOTH, "EIGHTTAP_SMOOTH"},
+                               {2, InterpolationFilter::EIGHTTAP_SHARP, "EIGHTTAP_SHARP"},
+                               {3, InterpolationFilter::BILINEAR, "BILINEAR"},
+                               {4, InterpolationFilter::SWITCHABLE, "SWITCHABLE"}},
+                              InterpolationFilter::EIGHTTAP);
+
+}
+
 using namespace reader;
 
 void interpolation_filter::parse(reader::SubByteReaderLogging &reader)
@@ -48,16 +61,11 @@ void interpolation_filter::parse(reader::SubByteReaderLogging &reader)
     this->interpolationFilter = InterpolationFilter::SWITCHABLE;
   else
   {
-    auto index = reader.readBits(
-        "interpolation_filter",
-        2,
-        Options().withMeaningVector({"EIGHTTAP", "EIGHTTAP_SMOOTH", "EIGHTTAP_SHARP", "BILINEAR"}));
-    auto interpolationFilterCoding =
-        std::vector<InterpolationFilter>({InterpolationFilter::EIGHTTAP,
-                                          InterpolationFilter::EIGHTTAP_SMOOTH,
-                                          InterpolationFilter::EIGHTTAP_SHARP,
-                                          InterpolationFilter::BILINEAR});
-    this->interpolationFilter = interpolationFilterCoding[index];
+    auto index =
+        reader.readBits("interpolation_filter",
+                        2,
+                        Options().withMeaningMap(interpolationFilterCoding.getMeaningMap()));
+    this->interpolationFilter = interpolationFilterCoding.getValue(index);
   }
 }
 

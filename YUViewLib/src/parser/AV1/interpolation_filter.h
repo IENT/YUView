@@ -33,18 +33,19 @@
 #pragma once
 
 #include "parser/common/SubByteReaderLogging.h"
+#include "parser/common/CodingEnum.h"
 
 namespace parser::av1
 {
 
 enum class InterpolationFilter
-  {
-    EIGHTTAP,
-    EIGHTTAP_SMOOTH,
-    EIGHTTAP_SHARP,
-    BILINEAR,
-    SWITCHABLE
-  };
+{
+  EIGHTTAP,
+  EIGHTTAP_SMOOTH,
+  EIGHTTAP_SHARP,
+  BILINEAR,
+  SWITCHABLE
+};
 
 class interpolation_filter
 {
@@ -53,7 +54,7 @@ public:
 
   void parse(reader::SubByteReaderLogging &reader);
 
-  bool is_filter_switchable{};
+  bool                is_filter_switchable{};
   InterpolationFilter interpolationFilter{};
 };
 

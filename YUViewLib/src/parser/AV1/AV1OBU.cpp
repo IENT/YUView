@@ -105,7 +105,7 @@ std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int         obuID,
 
   if (obuRoot)
   {
-    auto name = "OBU " + std::to_string(obu.obu_idx) + ": " + to_string(obu.header.obu_type) + " " +
+    auto name = "OBU " + std::to_string(obu.obu_idx) + ": " + obuTypeCoding.getMeaning(obu.header.obu_type) + " " +
                 obuTypeName;
     if (!errorText.empty())
     {

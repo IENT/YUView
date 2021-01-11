@@ -32,40 +32,29 @@
 
 #include "nal_extension.h"
 
+#include "parser/common/CodingEnum.h"
 #include "parser/common/SubByteReaderLogging.h"
 #include "parser/common/functions.h"
 #include "picture_coding_extension.h"
 #include "sequence_extension.h"
-
 
 namespace
 {
 
 using namespace parser::mpeg2;
 
-std::map<unsigned, std::pair<ExtensionType, std::string>> extensionStartCodeMap(
-    {{0, {ExtensionType::EXT_SEQUENCE, "sequence_extension()"}},
-     {1, {ExtensionType::EXT_SEQUENCE_DISPLAY, "sequence_display_extension()"}},
-     {2, {ExtensionType::EXT_QUANT_MATRIX, "quant_matrix_extension()"}},
-     {3, {ExtensionType::EXT_COPYRIGHT, "copyright_extension()"}},
-     {4, {ExtensionType::EXT_SEQUENCE_SCALABLE, "sequence_scalable_extension()"}},
-     {5, {ExtensionType::EXT_PICTURE_DISPLAY, "picture_display_extension()"}},
-     {6, {ExtensionType::EXT_PICTURE_CODING, "picture_coding_extension()"}},
-     {7, {ExtensionType::EXT_PICTURE_SPATICAL_SCALABLE, "picture_spatial_scalable_extension()"}},
-     {8, {ExtensionType::EXT_PICTURE_TEMPORAL_SCALABLE, "picture_temporal_scalable_extension()"}},
-     {9, {ExtensionType::EXT_RESERVED, "Reserved"}}});
-
-std::string getExtensionCodeName(int64_t value)
-{
-  auto idx = value > 9 ? 9u : unsigned(value);
-  return extensionStartCodeMap[idx].second;
-}
-
-ExtensionType getExtensionCode(unsigned value)
-{
-  auto idx = value > 9 ? 9u : unsigned(value);
-  return extensionStartCodeMap[idx].first;
-}
+parser::CodingEnum<ExtensionType> extensionTypeCoding(
+    {{0, ExtensionType::EXT_SEQUENCE, "sequence_extension()"},
+     {1, ExtensionType::EXT_SEQUENCE_DISPLAY, "sequence_display_extension()"},
+     {2, ExtensionType::EXT_QUANT_MATRIX, "quant_matrix_extension()"},
+     {3, ExtensionType::EXT_COPYRIGHT, "copyright_extension()"},
+     {4, ExtensionType::EXT_SEQUENCE_SCALABLE, "sequence_scalable_extension()"},
+     {5, ExtensionType::EXT_PICTURE_DISPLAY, "picture_display_extension()"},
+     {6, ExtensionType::EXT_PICTURE_CODING, "picture_coding_extension()"},
+     {7, ExtensionType::EXT_PICTURE_SPATICAL_SCALABLE, "picture_spatial_scalable_extension()"},
+     {8, ExtensionType::EXT_PICTURE_TEMPORAL_SCALABLE, "picture_temporal_scalable_extension()"},
+     {9, ExtensionType::EXT_RESERVED, "Reserved"}},
+    ExtensionType::EXT_RESERVED);
 
 } // namespace
 
@@ -79,8 +68,8 @@ void nal_extension::parse(SubByteReaderLogging &reader)
   SubByteReaderLoggingSubLevel subLevel(reader, "nal_extension");
 
   this->extension_start_code_identifier = reader.readBits(
-      "extension_start_code_identifier", 4, Options().withMeaningFunction(getExtensionCodeName));
-  this->extension_type = getExtensionCode(this->extension_start_code_identifier);
+      "extension_start_code_identifier", 4, Options().withMeaningMap(extensionTypeCoding.getMeaningMap()));
+  this->extension_type = extensionTypeCoding.getValue(this->extension_start_code_identifier);
 
   if (this->extension_type == ExtensionType::EXT_SEQUENCE)
   {
@@ -100,7 +89,7 @@ void nal_extension::parse(SubByteReaderLogging &reader)
 
 std::string nal_extension::get_extension_function_name()
 {
-  return getExtensionCodeName(int64_t(this->extension_start_code_identifier));
+  return extensionTypeCoding.getMeaning(this->extension_type);
 }
 
 } // namespace parser::mpeg2

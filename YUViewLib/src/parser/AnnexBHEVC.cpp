@@ -574,6 +574,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
         }
         catch(const std::exception& e)
         {
+          (void)e;
           result = SEI_PARSING_ERROR;
         }
       }

@@ -31,6 +31,7 @@
  */
 
 #include "nal_unit_header.h"
+#include "parser/common/CodingEnum.h"
 
 namespace parser::vvc
 {
@@ -40,18 +41,41 @@ using namespace parser::reader;
 namespace
 {
 
-const std::map<unsigned, NalType> idToNalTypeMap = {
-    {0, NalType::TRAIL_NUT},       {1, NalType::STSA_NUT},   {2, NalType::RADL_NUT},
-    {3, NalType::RASL_NUT},        {4, NalType::RSV_VCL_4},  {5, NalType::RSV_VCL_5},
-    {6, NalType::RSV_VCL_6},       {7, NalType::IDR_W_RADL}, {8, NalType::IDR_N_LP},
-    {9, NalType::CRA_NUT},         {10, NalType::GDR_NUT},   {11, NalType::RSV_IRAP_11},
-    {12, NalType::OPI_NUT},        {13, NalType::DCI_NUT},   {14, NalType::VPS_NUT},
-    {15, NalType::SPS_NUT},        {16, NalType::PPS_NUT},   {17, NalType::PREFIX_APS_NUT},
-    {18, NalType::SUFFIX_APS_NUT}, {19, NalType::PH_NUT},    {20, NalType::AUD_NUT},
-    {21, NalType::EOS_NUT},        {22, NalType::EOB_NUT},   {23, NalType::PREFIX_SEI_NUT},
-    {24, NalType::SUFFIX_SEI_NUT}, {25, NalType::FD_NUT},    {26, NalType::RSV_NVCL_26},
-    {27, NalType::RSV_NVCL_27},    {28, NalType::UNSPEC_28}, {29, NalType::UNSPEC_29},
-    {30, NalType::UNSPEC_30},      {31, NalType::UNSPEC_31}};
+parser::CodingEnum<NalType> nalTypeCoding({{0, NalType::TRAIL_NUT, "TRAIL_NUT"},
+                                           {1, NalType::STSA_NUT, "STSA_NUT"},
+                                           {2, NalType::RADL_NUT, "RADL_NUT"},
+                                           {3, NalType::RASL_NUT, "RASL_NUT"},
+                                           {4, NalType::RSV_VCL_4, "RSV_VCL_4"},
+                                           {5, NalType::RSV_VCL_5, "RSV_VCL_5"},
+                                           {6, NalType::RSV_VCL_6, "RSV_VCL_6"},
+                                           {7, NalType::IDR_W_RADL, "IDR_W_RADL"},
+                                           {8, NalType::IDR_N_LP, "IDR_N_LP"},
+                                           {9, NalType::CRA_NUT, "CRA_NUT"},
+                                           {10, NalType::GDR_NUT, "GDR_NUT"},
+                                           {11, NalType::RSV_IRAP_11, "RSV_IRAP_11"},
+                                           {12, NalType::OPI_NUT, "OPI_NUT"},
+                                           {13, NalType::DCI_NUT, "DCI_NUT"},
+                                           {14, NalType::VPS_NUT, "VPS_NUT"},
+                                           {15, NalType::SPS_NUT, "SPS_NUT"},
+                                           {16, NalType::PPS_NUT, "PPS_NUT"},
+                                           {17, NalType::PREFIX_APS_NUT, "PREFIX_APS_NUT"},
+                                           {18, NalType::SUFFIX_APS_NUT, "SUFFIX_APS_NUT"},
+                                           {19, NalType::PH_NUT, "PH_NUT"},
+                                           {20, NalType::AUD_NUT, "AUD_NUT"},
+                                           {21, NalType::EOS_NUT, "EOS_NUT"},
+                                           {22, NalType::EOB_NUT, "EOB_NUT"},
+                                           {23, NalType::PREFIX_SEI_NUT, "PREFIX_SEI_NUT"},
+                                           {24, NalType::SUFFIX_SEI_NUT, "SUFFIX_SEI_NUT"},
+                                           {25, NalType::FD_NUT, "FD_NUT"},
+                                           {26, NalType::RSV_NVCL_26, "RSV_NVCL_26"},
+                                           {27, NalType::RSV_NVCL_27, "RSV_NVCL_27"},
+                                           {28, NalType::UNSPEC_28, "UNSPEC_28"},
+                                           {29, NalType::UNSPEC_29, "UNSPEC_29"},
+                                           {30, NalType::UNSPEC_30, "UNSPEC_30"},
+                                           {31, NalType::UNSPEC_31, "UNSPEC_31"},
+                                           {32, NalType::UNSPECIFIED, "UNSPECIFIED"}},
+                                          NalType::UNSPECIFIED);
+
 }
 
 void nal_unit_header::parse(SubByteReaderLogging &reader)
@@ -97,7 +121,7 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
                                    "Unspecified non-VCL NAL unit types",
                                    "Unspecified non-VCL NAL unit types",
                                    "Unspecified non-VCL NAL unit types"}));
-  this->nal_unit_type = idToNalTypeMap.at(this->nalUnitTypeID);
+  this->nal_unit_type = nalTypeCoding.getValue(this->nalUnitTypeID);
 
   this->nuh_temporal_id_plus1 = reader.readBits("nuh_temporal_id_plus1", 3);
 }
