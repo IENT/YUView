@@ -181,90 +181,86 @@ std::tuple<int64_t, std::string> SubByteReaderNew::readSE_V()
     return {int64_t((val + 1) / 2), coding};
 }
 
-std::tuple<uint64_t, std::string> SubByteReaderNew::readLeb128()
+std::tuple<uint64_t, std::string> SubByteReaderNew::readLEB128()
 {
-  assert(false);
-
-  // // We will read full bytes (up to 8)
-  // // The highest bit indicates if we need to read another bit. The rest of the
-  // // bits is added to the counter (shifted accordingly) See the AV1 reading
-  // // specification
-  // uint64_t value = 0;
-  // for (int i = 0; i < 8; i++)
-  // {
-  //   int leb128_byte = readBits(8, bitsRead);
-  //   bit_count += 8;
-  //   value |= ((leb128_byte & 0x7f) << (i * 7));
-  //   if (!(leb128_byte & 0x80))
-  //     break;
-  // }
-  // return value;
-
-  return {};
+  // We will read full bytes (up to 8)
+  // The highest bit indicates if we need to read another bit. The rest of the
+  // bits is added to the counter (shifted accordingly) See the AV1 reading
+  // specification
+  uint64_t value = 0;
+  std::string coding;
+  for (unsigned i = 0; i < 8; i++)
+  {
+    auto [leb128_byte, leb128_byte_coding] = this->readBits(8);
+    coding += leb128_byte_coding;
+    value |= ((leb128_byte & 0x7f) << (i * 7));
+    if (!(leb128_byte & 0x80))
+      break;
+  }
+  return {value, coding};
 }
 
 std::tuple<uint64_t, std::string> SubByteReaderNew::readUVLC()
 {
-  assert(false);
+  auto leadingZeros = 0u;
+  std::string coding;
+  
+  while (1)
+  {
+    auto [done, done_coding] = this->readBits(1);
+    coding += done_coding;
+    if (done > 0)
+      break;
+    leadingZeros++;
+  }
+  
+  if (leadingZeros >= 32)
+    return {((uint64_t)1 << 32) - 1, coding};
+  auto [value, value_coding] = this->readBits(leadingZeros);
+  coding += value_coding;
 
-  // int leadingZeros = 0;
-  // while (1)
-  // {
-  //   int done = readBits(1, bitsRead);
-  //   bit_count += 1;
-  //   if (done)
-  //     break;
-  //   leadingZeros++;
-  // }
-  // if (leadingZeros >= 32)
-  //   return ((uint64_t)1 << 32) - 1;
-  // uint64_t value = readBits(leadingZeros, bitsRead);
-  // return value + ((uint64_t)1 << leadingZeros) - 1;
-
-  return {};
+  return {value + ((uint64_t)1 << leadingZeros) - 1, coding};
 }
 
-std::tuple<int64_t, std::string> SubByteReaderNew::readNS()
+std::tuple<uint64_t, std::string> SubByteReaderNew::readNS(uint64_t maxVal)
 {
-  assert(false);
+  if (maxVal == 0)
+    return {};
 
-  // // FloorLog2
-  // int floorVal;
-  // {
-  //   int x = maxVal;
-  //   int s = 0;
-  //   while (x != 0)
-  //   {
-  //     x = x >> 1;
-  //     s++;
-  //   }
-  //   floorVal = s - 1;
-  // }
+  // FloorLog2
+  uint64_t floorVal;
+  {
+    auto x = maxVal;
+    unsigned s = 0;
+    while (x != 0)
+    {
+      x = x >> 1;
+      s++;
+    }
+    floorVal = s - 1;
+  }
 
-  // int w = floorVal + 1;
-  // int m = (1 << w) - maxVal;
-  // int v = readBits(w - 1, bitsRead);
-  // bit_count += w - 1;
-  // if (v < m)
-  //   return v;
-  // int extra_bit = readBits(1, bitsRead);
-  // bit_count++;
-  // return (v << 1) - m + extra_bit;
+  auto w = floorVal + 1;
+  auto m = (1 << w) - maxVal;
 
-  return {};
+  auto [v, coding] = this->readBits(w - 1);
+  if (v < m)
+    return {v, coding};
+
+  auto [extra_bit, extra_bit_coding] = this->readBits(1);
+  return {(v << 1) - m + extra_bit, coding + extra_bit_coding};
 }
 
-std::tuple<int64_t, std::string> SubByteReaderNew::readSU()
+std::tuple<int64_t, std::string> SubByteReaderNew::readSU(unsigned nrBits)
 {
-  assert(false);
-
-  // int value    = readBits(nrBits, bitsRead);
-  // int signMask = 1 << (nrBits - 1);
-  // if (value & signMask)
-  //   value = value - 2 * signMask;
-  // return value;
-
-  return {};
+  auto [value, coding]    = readBits(nrBits);
+  int signMask = 1 << (nrBits - 1);
+  if (value & signMask)
+  {
+    auto subValue = int64_t(value) - 2 * signMask;
+    return {subValue, coding};
+  }
+  return {int64_t(value), coding};
 }
 
 /* Is there more data? There is no more data if the next bit is the terminating

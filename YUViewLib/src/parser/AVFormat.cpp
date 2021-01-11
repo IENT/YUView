@@ -215,7 +215,7 @@ bool AVFormat::parseExtradata_hevc(QByteArray &extradata)
     // The extradata is using the hvcC format
     TreeItem *extradataRoot = new TreeItem(packetModel->getRootItem(), "Extradata (HEVC hvcC format)");
     hvcC h;
-    if (!h.parse_hvcC(extradata, extradataRoot, this->annexBParser, this->bitratePlotModel.data()))
+    if (!h.parse_hvcC(extradata, extradataRoot, this->annexBParser.get(), this->bitratePlotModel.data()))
       return false;
   }
   else if (extradata.at(0) == 0)
@@ -444,8 +444,9 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
       {
         pairUint64 obuStartEndPosFile; // Not used
         try
-        {  
-          auto [nrBytesRead, obuTypeName] = obuParser->parseAndAddOBU(obuID, avpacketData.mid(posInData), itemTree, obuStartEndPosFile);
+        {
+          auto data = reader::SubByteReaderLogging::convertToByteVector(avpacketData.mid(posInData));
+          auto [nrBytesRead, obuTypeName] = obuParser->parseAndAddOBU(obuID, data, itemTree, obuStartEndPosFile);
           DEBUG_AVFORMAT("AVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
           posInData += nrBytesRead;
 
@@ -548,7 +549,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   return true;
 }
 
-bool AVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPointer<AnnexB> &annexBParser, BitratePlotModel *bitrateModel)
+bool AVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, AnnexB *annexBParser, BitratePlotModel *bitrateModel)
 {
   ReaderHelper reader(hvcCData, root, "hvcC");
   reader.disableEmulationPrevention();
@@ -608,7 +609,7 @@ bool AVFormat::hvcC::parse_hvcC(QByteArray &hvcCData, TreeItem *root, QScopedPoi
   return true;
 }
 
-bool AVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, QScopedPointer<AnnexB> &annexBParser, BitratePlotModel *bitrateModel)
+bool AVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, ReaderHelper &reader, AnnexB *annexBParser, BitratePlotModel *bitrateModel)
 {
   reader_sub_level sub_level_adder(reader, QString("nal unit array %1").arg(arrayID));
 
@@ -631,7 +632,7 @@ bool AVFormat::hvcC_naluArray::parse_hvcC_naluArray(int arrayID, ReaderHelper &r
   return true;
 }
 
-bool AVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, QScopedPointer<AnnexB> &annexBParser, BitratePlotModel *bitrateModel)
+bool AVFormat::hvcC_nalUnit::parse_hvcC_nalUnit(int unitID, ReaderHelper &reader, AnnexB *annexBParser, BitratePlotModel *bitrateModel)
 {
   reader_sub_level sub_level_adder(reader, QString("nal unit %1").arg(unitID));
 
@@ -668,7 +669,7 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   else if (codecID.isMpeg2())
     this->annexBParser.reset(new AnnexBMpeg2());
   else if (codecID.isAV1())
-    this->obuParser.reset(new parserAV1OBU());
+    this->obuParser.reset(new ParserAV1OBU());
   else if (codecID.isNone())
   {
     emit backgroundParsingDone("Unknown codec ID " + codecID.getCodecName());
