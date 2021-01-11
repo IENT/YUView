@@ -37,38 +37,6 @@ namespace parser::mpeg2
 
 using namespace parser::reader;
 
-std::string to_string(NalType nalType)
-{
-  switch (nalType)
-  {
-  case NalType::UNSPECIFIED:
-    return "UNSPECIFIED";
-  case NalType::PICTURE:
-    return "PICTURE";
-  case NalType::SLICE:
-    return "SLICE";
-  case NalType::USER_DATA:
-    return "USER_DATA";
-  case NalType::SEQUENCE_HEADER:
-    return "SEQUENCE_HEADER";
-  case NalType::SEQUENCE_ERROR:
-    return "SEQUENCE_ERROR";
-  case NalType::EXTENSION_START:
-    return "EXTENSION_START";
-  case NalType::SEQUENCE_END:
-    return "SEQUENCE_END";
-  case NalType::GROUP_START:
-    return "GROUP_START";
-  case NalType::SYSTEM_START_CODE:
-    return "SYSTEM_START_CODE";
-  case NalType::RESERVED:
-    return "RESERVED";
-
-  default:
-    return "UNSPECIFIED";
-  }
-}
-
 void nal_unit_header::parse(SubByteReaderLogging &reader)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "header_code()");
