@@ -38,6 +38,7 @@
 #include "video/videoHandlerYUV.h"
 #include "AnnexB.h"
 #include "NalUnit.h"
+#include "sequence_parameter_set.h"
 
 using namespace YUV_Internals;
 
@@ -54,217 +55,21 @@ public:
   ~AnnexBAVC() {};
 
   // Get properties
-  double getFramerate() const Q_DECL_OVERRIDE;
-  QSize getSequenceSizeSamples() const Q_DECL_OVERRIDE;
-  yuvPixelFormat getPixelFormat() const Q_DECL_OVERRIDE;
+  double getFramerate() const override;
+  QSize getSequenceSizeSamples() const override;
+  yuvPixelFormat getPixelFormat() const override;
 
-  ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) Q_DECL_OVERRIDE;
+  ParseResult parseAndAddNALUnit(int nalID, QByteArray data, std::optional<BitratePlotModel::BitrateEntry> bitrateEntry, std::optional<pairUint64> nalStartEndPosFile={}, TreeItem *parent=nullptr) override;
 
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) Q_DECL_OVERRIDE;
-  QByteArray getExtradata() Q_DECL_OVERRIDE;
-  IntPair getProfileLevel() Q_DECL_OVERRIDE;
-  Ratio getSampleAspectRatio() Q_DECL_OVERRIDE;
+  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
+  QByteArray getExtradata() override;
+  IntPair getProfileLevel() override;
+  Ratio getSampleAspectRatio() override;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
 
-  // All the different NAL unit types (T-REC-H.265-201504 Page 85)
-  enum nal_unit_type_enum
-  {
-    UNSPECIFIED,
-    CODED_SLICE_NON_IDR,
-    CODED_SLICE_DATA_PARTITION_A,
-    CODED_SLICE_DATA_PARTITION_B,
-    CODED_SLICE_DATA_PARTITION_C,
-    CODED_SLICE_IDR,
-    SEI,
-    SPS,
-    PPS,
-    AUD,
-    END_OF_SEQUENCE,
-    END_OF_STREAM,
-    FILLER,
-    SPS_EXT,
-    PREFIX_NAL,
-    SUBSET_SPS,
-    DEPTH_PARAMETER_SET,
-    RESERVED_17,
-    RESERVED_18,
-    CODED_SLICE_AUX,
-    CODED_SLICE_EXTENSION,
-    CODED_SLICE_EXTENSION_DEPTH_MAP,
-    RESERVED_22, RESERVED_23,
-    UNSPCIFIED_24, UNSPCIFIED_25, UNSPCIFIED_26, UNSPCIFIED_27, UNSPCIFIED_28, UNSPCIFIED_29, UNSPCIFIED_30, UNSPCIFIED_31
-  };
-  static const QStringList nal_unit_type_toString;
-
-  /* The basic HEVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
-  */
-  struct nal_unit_avc : NalUnit
-  {
-    nal_unit_avc(int nalIdx, std::optional<pairUint64> filePosStartEnd) : NalUnit(nalIdx, filePosStartEnd) {}
-    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : NalUnit(nal_src->nalIdx, nal_src->filePosStartEnd) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
-    virtual ~nal_unit_avc() {}
-
-    // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    bool parseNalUnitHeader(const QByteArray &header_byte, TreeItem *root);
-
-    bool isSlice()        { return nal_unit_type >= CODED_SLICE_NON_IDR && nal_unit_type <= CODED_SLICE_IDR; }
-    virtual QByteArray getNALHeader() const override;
-
-    /// The information of the NAL unit header
-    unsigned int nal_ref_idc {0};
-    nal_unit_type_enum nal_unit_type {UNSPECIFIED};
-  };
-
-  // The sequence parameter set.
-  struct sps : nal_unit_avc
-  {
-    sps(const nal_unit_avc &nal) : nal_unit_avc(nal) {};
-    bool parse_sps(const QByteArray &parameterSetData, TreeItem *root);
-
-    unsigned int profile_idc;
-    bool constraint_set0_flag;
-    bool constraint_set1_flag;
-    bool constraint_set2_flag;
-    bool constraint_set3_flag;
-    bool constraint_set4_flag;
-    bool constraint_set5_flag;
-    unsigned int reserved_zero_2bits;
-    unsigned int level_idc;
-    unsigned int seq_parameter_set_id;
-    unsigned int chroma_format_idc {1};
-    bool separate_colour_plane_flag {false};
-    unsigned int bit_depth_luma_minus8 {0};
-    unsigned int bit_depth_chroma_minus8 {0};
-    bool qpprime_y_zero_transform_bypass_flag {false};
-    bool seq_scaling_matrix_present_flag {false};
-    bool seq_scaling_list_present_flag[8];
-    int ScalingList4x4[6][16];
-    bool UseDefaultScalingMatrix4x4Flag[6];
-    int ScalingList8x8[6][64];
-    bool UseDefaultScalingMatrix8x8Flag[2];
-    unsigned int log2_max_frame_num_minus4;
-    unsigned int pic_order_cnt_type;
-    unsigned int log2_max_pic_order_cnt_lsb_minus4;
-    bool delta_pic_order_always_zero_flag;
-    int offset_for_non_ref_pic;
-    int offset_for_top_to_bottom_field;
-    unsigned int num_ref_frames_in_pic_order_cnt_cycle;
-    int offset_for_ref_frame[256];
-    unsigned int max_num_ref_frames;
-    bool gaps_in_frame_num_value_allowed_flag;
-    unsigned pic_width_in_mbs_minus1;
-    unsigned pic_height_in_map_units_minus1;
-    bool frame_mbs_only_flag;
-    bool mb_adaptive_frame_field_flag {false};
-    bool direct_8x8_inference_flag;
-    bool frame_cropping_flag;
-    unsigned int frame_crop_left_offset {0};
-    unsigned int frame_crop_right_offset {0};
-    unsigned int frame_crop_top_offset {0};
-    unsigned int frame_crop_bottom_offset {0};
-    bool vui_parameters_present_flag;
-
-    struct vui_parameters_struct
-    {
-      bool parse_vui(ReaderHelper &reader, int BitDeptYC, int BitDepthC, int chroma_format_idc, bool frame_mbs_only_flag);
-
-      bool aspect_ratio_info_present_flag;
-      unsigned int aspect_ratio_idc {0};
-      unsigned int sar_width;
-      unsigned int sar_height;
-
-      bool overscan_info_present_flag;
-      bool overscan_appropriate_flag;
-
-      bool video_signal_type_present_flag;
-      unsigned int video_format {5};
-      bool video_full_range_flag {false};
-      bool colour_description_present_flag;
-      unsigned int colour_primaries {2};
-      unsigned int transfer_characteristics {2};
-      unsigned int matrix_coefficients {2};
-
-      bool chroma_loc_info_present_flag;
-      unsigned int chroma_sample_loc_type_top_field {0};
-      unsigned int chroma_sample_loc_type_bottom_field {0};
-
-      bool timing_info_present_flag;
-      unsigned int num_units_in_tick;
-      unsigned int time_scale;
-      bool fixed_frame_rate_flag {false};
-
-      struct hrd_parameters_struct
-      {
-        bool parse_hrd(ReaderHelper &reader);
-
-        unsigned int cpb_cnt_minus1;
-        unsigned int bit_rate_scale;
-        unsigned int cpb_size_scale;
-        QList<quint32> bit_rate_value_minus1;
-        QList<quint32> cpb_size_value_minus1;
-        QList<unsigned> BitRate;
-        QList<unsigned> CpbSize;
-        QList<bool> cbr_flag;
-        unsigned int initial_cpb_removal_delay_length_minus1 {23};
-        unsigned int cpb_removal_delay_length_minus1;
-        unsigned int dpb_output_delay_length_minus1;
-        unsigned int time_offset_length {24};
-      };
-      hrd_parameters_struct nal_hrd;
-      hrd_parameters_struct vcl_hrd;
-
-      bool nal_hrd_parameters_present_flag {false};
-      bool vcl_hrd_parameters_present_flag {false};
-      bool low_delay_hrd_flag;
-      bool pic_struct_present_flag;
-      bool bitstream_restriction_flag;
-      bool motion_vectors_over_pic_boundaries_flag;
-      unsigned int max_bytes_per_pic_denom;
-      unsigned int max_bits_per_mb_denom;
-      unsigned int log2_max_mv_length_horizontal;
-      unsigned int log2_max_mv_length_vertical;
-      unsigned int max_num_reorder_frames;
-      unsigned int max_dec_frame_buffering;
-
-      // The following values are not read from the bitstream but are calculated from the read values.
-      double frameRate;
-    };
-    vui_parameters_struct vui_parameters;
-
-    // The following values are not read from the bitstream but are calculated from the read values.
-    unsigned int BitDepthY;
-    unsigned int QpBdOffsetY;
-    unsigned int BitDepthC;
-    unsigned int QpBdOffsetC;
-    unsigned int PicWidthInMbs;
-    unsigned int FrameHeightInMbs;
-    unsigned int PicHeightInMbs;
-    unsigned int PicHeightInMapUnits;
-    unsigned int PicSizeInMbs;
-    unsigned int PicSizeInMapUnits;
-    unsigned int SubWidthC;
-    unsigned int SubHeightC;
-    unsigned int MbHeightC;
-    unsigned int MbWidthC;
-    unsigned int PicHeightInSamplesL;
-    unsigned int PicHeightInSamplesC;
-    unsigned int PicWidthInSamplesL;
-    unsigned int PicWidthInSamplesC;
-    unsigned int ChromaArrayType;
-    unsigned int CropUnitX;
-    unsigned int CropUnitY;
-    unsigned int PicCropLeftOffset;
-    int PicCropWidth;
-    unsigned int PicCropTopOffset;
-    int PicCropHeight;
-    bool MbaffFrameFlag;
-    unsigned int MaxPicOrderCntLsb {0};
-    int ExpectedDeltaPerPicOrderCntCycle {0};
-    unsigned int MaxFrameNum;
-  };
-  typedef QMap<int, QSharedPointer<sps>> sps_map;
+  typedef std::map<unsigned, std::shared_ptr<sequence_parameter_set>> sps_map;
 
   // The picture parameter set.
   struct pps : nal_unit_avc

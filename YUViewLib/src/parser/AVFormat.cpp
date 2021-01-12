@@ -37,7 +37,7 @@
 #include <queue>
 
 #include "common/Macros.h"
-#include "AnnexBAVC.h"
+#include "AVC/AnnexBAVC.h"
 #include "AnnexBHEVC.h"
 #include "Mpeg2/AnnexBMpeg2.h"
 #include "Subtitles/SubtitleDVB.h"

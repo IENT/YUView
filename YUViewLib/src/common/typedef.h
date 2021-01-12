@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <QObject>
@@ -247,6 +248,9 @@ template <typename T> using vector = std::vector<T>;
 template <typename T> using vector2d = std::vector<vector<T>>;
 template <typename T> using vector3d = std::vector<vector2d<T>>;
 template <typename T> using vector4d = std::vector<vector3d<T>>;
+
+template <typename T, size_t N> using array = std::array<T, N>;
+template <typename T, size_t N1, size_t N2> using array2d = std::array<std::array<T, N2>, N1>;
 
 template <typename T>
 std::string to_string(const std::pair<T, T> typePair)
