@@ -30,19 +30,19 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "sequence_parameter_set.h"
+#include "seq_parameter_set_data.h"
 
 #include "parser/common/functions.h"
 #include "typedef.h"
 
-namespace parser::av1
+namespace parser::avc
 
 {
 using namespace reader;
 
-void sequence_parameter_set::parse(reader::SubByteReaderLogging &reader)
+void seq_parameter_set_data::parse(reader::SubByteReaderLogging &reader)
 {
-  SubByteReaderLoggingSubLevel subLevel(reader, "sequence_parameter_set()");
+  SubByteReaderLoggingSubLevel subLevel(reader, "seq_parameter_set_data()");
 
   this->profile_idc = reader.readBits(
       "profile_idc",

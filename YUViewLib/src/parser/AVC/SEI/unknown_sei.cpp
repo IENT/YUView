@@ -30,32 +30,28 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "parser/common/SubByteReaderLogging.h"
+#include "unknown_sei.h"
+#include "parser/common/functions.h"
 
 namespace parser::avc
+
 {
+using namespace reader;
 
-class hrd_parameters
+SEIParsingResult unknown_sei::parse(reader::SubByteReaderLogging &          reader,
+                                    bool                                    reparse,
+                                    SPSMap &                                spsMap,
+                                    std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
-public:
-  hrd_parameters() = default;
+  SubByteReaderLoggingSubLevel subLevel(reader, "unknown_sei()");
 
-  void parse(reader::SubByteReaderLogging &reader);
+  unsigned i = 0;
+  while (reader.canReadBits(8))
+  {
+    reader.readBytes(formatArray("raw_byte", i++), 8);
+  }
 
-  unsigned int     cpb_cnt_minus1{};
-  unsigned int     bit_rate_scale{};
-  unsigned int     cpb_size_scale{};
-  vector<quint32>  bit_rate_value_minus1;
-  vector<quint32>  cpb_size_value_minus1;
-  vector<unsigned> BitRate;
-  vector<unsigned> CpbSize;
-  vector<bool>     cbr_flag;
-  unsigned int     initial_cpb_removal_delay_length_minus1{23};
-  unsigned int     cpb_removal_delay_length_minus1{};
-  unsigned int     dpb_output_delay_length_minus1{};
-  unsigned int     time_offset_length{24};
-};
+  return SEIParsingResult::OK;
+}
 
-} // namespace parser::av1
+} // namespace parser::avc

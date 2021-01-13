@@ -37,13 +37,13 @@
 
 #include <array>
 
-namespace parser::av1
+namespace parser::avc
 {
 
-class sequence_parameter_set
+class seq_parameter_set_data
 {
 public:
-  sequence_parameter_set() = default;
+  seq_parameter_set_data() = default;
 
   void parse(reader::SubByteReaderLogging &reader);
 

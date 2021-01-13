@@ -37,25 +37,21 @@
 namespace parser::avc
 {
 
-class hrd_parameters
+class dec_ref_pic_marking
 {
 public:
-  hrd_parameters() = default;
+  dec_ref_pic_marking() = default;
 
-  void parse(reader::SubByteReaderLogging &reader);
+  void parse(reader::SubByteReaderLogging &reader, bool IdrPicFlag);
 
-  unsigned int     cpb_cnt_minus1{};
-  unsigned int     bit_rate_scale{};
-  unsigned int     cpb_size_scale{};
-  vector<quint32>  bit_rate_value_minus1;
-  vector<quint32>  cpb_size_value_minus1;
-  vector<unsigned> BitRate;
-  vector<unsigned> CpbSize;
-  vector<bool>     cbr_flag;
-  unsigned int     initial_cpb_removal_delay_length_minus1{23};
-  unsigned int     cpb_removal_delay_length_minus1{};
-  unsigned int     dpb_output_delay_length_minus1{};
-  unsigned int     time_offset_length{24};
+  bool        no_output_of_prior_pics_flag{};
+  bool        long_term_reference_flag{};
+  bool        adaptive_ref_pic_marking_mode_flag{};
+  vector<int> memory_management_control_operation_list;
+  vector<int> difference_of_pic_nums_minus1;
+  vector<int> long_term_pic_num;
+  vector<int> long_term_frame_idx;
+  vector<int> max_long_term_frame_idx_plus1;
 };
 
-} // namespace parser::av1
+} // namespace parser::avc

@@ -32,30 +32,28 @@
 
 #pragma once
 
+#include "../commonMaps.h"
+#include "../rbsp_trailing_bits.h"
 #include "parser/common/SubByteReaderLogging.h"
+#include "sei_message.h"
 
 namespace parser::avc
 {
 
-class hrd_parameters
+class seq_parameter_set_rbsp;
+
+class sei_rbsp
 {
 public:
-  hrd_parameters() = default;
+  sei_rbsp() = default;
 
-  void parse(reader::SubByteReaderLogging &reader);
+  void parse(reader::SubByteReaderLogging &          reader,
+             SPSMap &                                spsMap,
+             std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
 
-  unsigned int     cpb_cnt_minus1{};
-  unsigned int     bit_rate_scale{};
-  unsigned int     cpb_size_scale{};
-  vector<quint32>  bit_rate_value_minus1;
-  vector<quint32>  cpb_size_value_minus1;
-  vector<unsigned> BitRate;
-  vector<unsigned> CpbSize;
-  vector<bool>     cbr_flag;
-  unsigned int     initial_cpb_removal_delay_length_minus1{23};
-  unsigned int     cpb_removal_delay_length_minus1{};
-  unsigned int     dpb_output_delay_length_minus1{};
-  unsigned int     time_offset_length{24};
+  std::vector<sei_message> seis;
+  std::vector<sei_message> seisReparse;
+  rbsp_trailing_bits       rbspTrailingBits;
 };
 
-} // namespace parser::av1
+} // namespace parser::avc

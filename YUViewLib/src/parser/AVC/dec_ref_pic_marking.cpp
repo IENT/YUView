@@ -30,34 +30,50 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "dec_ref_pic_marking.h"
 
-#include "common/typedef.h"
-#include "parser/common/SubByteReaderLogging.h"
+#include "typedef.h"
 
 namespace parser::avc
-{
 
-template<size_t N>
-static std::optional<bool> read_scaling_list(reader::SubByteReaderLogging &reader,
-                                             array<int, N> &            scalingList)
 {
-  int                 lastScale = 8;
-  int                 nextScale = 8;
-  std::optional<bool> useDefaultScalingMatrixFlag;
-  auto                sizeOfScalingList = scalingList.size();
-  for (int j = 0; j < sizeOfScalingList; j++)
+using namespace reader;
+
+void dec_ref_pic_marking::parse(reader::SubByteReaderLogging &reader, bool IdrPicFlag)
+{
+  SubByteReaderLoggingSubLevel subLevel(reader, "dec_ref_pic_marking()");
+
+  if (IdrPicFlag)
   {
-    if (nextScale != 0)
-    {
-      auto delta_scale            = reader.readSEV("delta_scale");
-      nextScale                   = (lastScale + delta_scale + 256) % 256;
-      useDefaultScalingMatrixFlag = (j == 0 && nextScale == 0);
-    }
-    scalingList[j] = (nextScale == 0) ? lastScale : nextScale;
-    lastScale      = scalingList[j];
+    this->no_output_of_prior_pics_flag = reader.readFlag("no_output_of_prior_pics_flag");
+    this->long_term_reference_flag     = reader.readFlag("long_term_reference_flag");
   }
-  return useDefaultScalingMatrixFlag;
+  else
+  {
+    this->adaptive_ref_pic_marking_mode_flag =
+        reader.readFlag("adaptive_ref_pic_marking_mode_flag");
+    if (this->adaptive_ref_pic_marking_mode_flag)
+    {
+      unsigned memory_management_control_operation;
+      do
+      {
+        memory_management_control_operation = reader.readUEV("memory_management_control_operation");
+        this->memory_management_control_operation_list.push_back(
+            memory_management_control_operation);
+
+        if (memory_management_control_operation == 1 || memory_management_control_operation == 3)
+          this->difference_of_pic_nums_minus1.push_back(
+              reader.readUEV("difference_of_pic_nums_minus1"));
+        if (memory_management_control_operation == 2)
+          this->long_term_pic_num.push_back(reader.readUEV("long_term_pic_num"));
+        if (memory_management_control_operation == 3 || memory_management_control_operation == 6)
+          this->long_term_frame_idx.push_back(reader.readUEV("long_term_frame_idx"));
+        if (memory_management_control_operation == 4)
+          this->max_long_term_frame_idx_plus1.push_back(
+              reader.readUEV("max_long_term_frame_idx_plus1"));
+      } while (memory_management_control_operation != 0);
+    }
+  }
 }
 
-} // namespace parser::av1
+} // namespace parser::avc

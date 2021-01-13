@@ -32,67 +32,59 @@
 
 #pragma once
 
-#include "hrd_parameters.h"
+#include "commonMaps.h"
 #include "parser/common/SubByteReaderLogging.h"
-
+#include "rbsp_trailing_bits.h"
+#include "NalUnitAVC.h"
 
 namespace parser::avc
 {
 
-class vui_parameters
+class pic_parameter_set_rbsp : public NalRBSP
 {
 public:
-  vui_parameters() = default;
+  pic_parameter_set_rbsp() = default;
 
-  void parse(reader::SubByteReaderLogging &reader,
-             unsigned                      BitDepthC,
-             unsigned                      BitDepthY,
-             unsigned                      chroma_format_idc,
-             bool                          frame_mbs_only_flag);
+  void parse(reader::SubByteReaderLogging &reader, SPSMap &spsMap);
 
-  bool         aspect_ratio_info_present_flag{};
-  unsigned int aspect_ratio_idc{};
-  unsigned int sar_width{};
-  unsigned int sar_height{};
+  unsigned int     pic_parameter_set_id{};
+  unsigned int     seq_parameter_set_id{};
+  bool             entropy_coding_mode_flag{};
+  bool             bottom_field_pic_order_in_frame_present_flag{};
+  unsigned int     num_slice_groups_minus1{};
+  unsigned int     slice_group_map_type{};
+  unsigned int     run_length_minus1[8]{};
+  unsigned int     top_left[8]{};
+  unsigned int     bottom_right[8]{};
+  bool             slice_group_change_direction_flag{};
+  unsigned int     slice_group_change_rate_minus1{};
+  unsigned int     pic_size_in_map_units_minus1{};
+  vector<unsigned> slice_group_id{};
+  unsigned int     num_ref_idx_l0_default_active_minus1{};
+  unsigned int     num_ref_idx_l1_default_active_minus1{};
+  bool             weighted_pred_flag{};
+  unsigned int     weighted_bipred_idc{};
+  int              pic_init_qp_minus26{};
+  int              pic_init_qs_minus26{};
+  int              chroma_qp_index_offset{};
+  bool             deblocking_filter_control_present_flag{};
+  bool             constrained_intra_pred_flag{};
+  bool             redundant_pic_cnt_present_flag{};
 
-  bool overscan_info_present_flag{};
-  bool overscan_appropriate_flag{};
+  bool transform_8x8_mode_flag{false};
+  bool pic_scaling_matrix_present_flag{false};
+  int  second_chroma_qp_index_offset{};
+  bool pic_scaling_list_present_flag[12]{};
 
-  bool         video_signal_type_present_flag{};
-  unsigned int video_format{5};
-  bool         video_full_range_flag{};
-  bool         colour_description_present_flag{};
-  unsigned int colour_primaries{2};
-  unsigned int transfer_characteristics{2};
-  unsigned int matrix_coefficients{2};
+  array2d<int, 6, 16> ScalingList4x4;
+  array<bool, 6>      UseDefaultScalingMatrix4x4Flag{};
+  array2d<int, 6, 64> ScalingList8x8{};
+  array<bool, 2>      UseDefaultScalingMatrix8x8Flag{};
 
-  bool         chroma_loc_info_present_flag{};
-  unsigned int chroma_sample_loc_type_top_field{};
-  unsigned int chroma_sample_loc_type_bottom_field{};
-
-  bool         timing_info_present_flag{};
-  unsigned int num_units_in_tick{};
-  unsigned int time_scale{};
-  bool         fixed_frame_rate_flag{};
-
-  hrd_parameters nalHrdParameters;
-  hrd_parameters vclHrdParameters;
-
-  bool         nal_hrd_parameters_present_flag{};
-  bool         vcl_hrd_parameters_present_flag{};
-  bool         low_delay_hrd_flag{};
-  bool         pic_struct_present_flag{};
-  bool         bitstream_restriction_flag{};
-  bool         motion_vectors_over_pic_boundaries_flag{};
-  unsigned int max_bytes_per_pic_denom{};
-  unsigned int max_bits_per_mb_denom{};
-  unsigned int log2_max_mv_length_horizontal{};
-  unsigned int log2_max_mv_length_vertical{};
-  unsigned int max_num_reorder_frames{};
-  unsigned int max_dec_frame_buffering{};
+  rbsp_trailing_bits rbspTrailingBits;
 
   // The following values are not read from the bitstream but are calculated from the read values.
-  double frameRate{};
+  int SliceGroupChangeRate{};
 };
 
-} // namespace parser::av1
+} // namespace parser::avc

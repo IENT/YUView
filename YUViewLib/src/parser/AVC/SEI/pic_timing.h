@@ -33,29 +33,42 @@
 #pragma once
 
 #include "parser/common/SubByteReaderLogging.h"
+#include "sei_message.h"
 
 namespace parser::avc
 {
 
-class hrd_parameters
+class seq_parameter_set_rbsp;
+
+class pic_timing : public sei_payload
 {
 public:
-  hrd_parameters() = default;
+  pic_timing() = default;
 
-  void parse(reader::SubByteReaderLogging &reader);
+  SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
+                         bool                                    reparse,
+                         SPSMap &                                spsMap,
+                         std::shared_ptr<seq_parameter_set_rbsp> associatedSPS) override;
 
-  unsigned int     cpb_cnt_minus1{};
-  unsigned int     bit_rate_scale{};
-  unsigned int     cpb_size_scale{};
-  vector<quint32>  bit_rate_value_minus1;
-  vector<quint32>  cpb_size_value_minus1;
-  vector<unsigned> BitRate;
-  vector<unsigned> CpbSize;
-  vector<bool>     cbr_flag;
-  unsigned int     initial_cpb_removal_delay_length_minus1{23};
-  unsigned int     cpb_removal_delay_length_minus1{};
-  unsigned int     dpb_output_delay_length_minus1{};
-  unsigned int     time_offset_length{24};
+  unsigned cpb_removal_delay{};
+  unsigned dpb_output_delay{};
+
+  unsigned pic_struct{};
+  bool     clock_timestamp_flag[3]{};
+  unsigned ct_type[3]{};
+  bool     nuit_field_based_flag[3]{};
+  unsigned counting_type[3]{};
+  bool     full_timestamp_flag[3]{};
+  bool     discontinuity_flag[3]{};
+  bool     cnt_dropped_flag[3]{};
+  unsigned n_frames[3]{};
+  unsigned seconds_value[3]{};
+  unsigned minutes_value[3]{};
+  unsigned hours_value[3]{};
+  bool     seconds_flag[3]{};
+  bool     minutes_flag[3]{};
+  bool     hours_flag[3]{};
+  unsigned time_offset[3]{};
 };
 
-} // namespace parser::av1
+} // namespace parser::avc

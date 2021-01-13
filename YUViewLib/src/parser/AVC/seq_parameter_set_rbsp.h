@@ -33,29 +33,22 @@
 #pragma once
 
 #include "parser/common/SubByteReaderLogging.h"
+#include "NalUnitAVC.h"
+#include "seq_parameter_set_data.h"
+#include "rbsp_trailing_bits.h"
 
 namespace parser::avc
 {
 
-class hrd_parameters
+class seq_parameter_set_rbsp : public NalRBSP
 {
 public:
-  hrd_parameters() = default;
+  seq_parameter_set_rbsp() = default;
 
   void parse(reader::SubByteReaderLogging &reader);
 
-  unsigned int     cpb_cnt_minus1{};
-  unsigned int     bit_rate_scale{};
-  unsigned int     cpb_size_scale{};
-  vector<quint32>  bit_rate_value_minus1;
-  vector<quint32>  cpb_size_value_minus1;
-  vector<unsigned> BitRate;
-  vector<unsigned> CpbSize;
-  vector<bool>     cbr_flag;
-  unsigned int     initial_cpb_removal_delay_length_minus1{23};
-  unsigned int     cpb_removal_delay_length_minus1{};
-  unsigned int     dpb_output_delay_length_minus1{};
-  unsigned int     time_offset_length{24};
+  seq_parameter_set_data seqParameterSetData;
+  rbsp_trailing_bits rbspTrailingBits;
 };
 
 } // namespace parser::av1

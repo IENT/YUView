@@ -30,32 +30,30 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "parser/common/SubByteReaderLogging.h"
+#include "sei_rbsp.h"
 
 namespace parser::avc
+
 {
+using namespace reader;
 
-class hrd_parameters
+void sei_rbsp::parse(reader::SubByteReaderLogging &          reader,
+                     SPSMap &                                spsMap,
+                     std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
-public:
-  hrd_parameters() = default;
+  SubByteReaderLoggingSubLevel subLevel(reader, "sei_rbsp()");
 
-  void parse(reader::SubByteReaderLogging &reader);
+  do
+  {
+    sei_message newMessage;
+    auto        result = newMessage.parse(reader, spsMap, associatedSPS);
+    if (result == SEIParsingResult::WAIT_FOR_PARAMETER_SETS)
+      this->seisReparse.push_back(newMessage);
+    else
+      this->seis.push_back(newMessage);
+  } while (reader.more_rbsp_data());
 
-  unsigned int     cpb_cnt_minus1{};
-  unsigned int     bit_rate_scale{};
-  unsigned int     cpb_size_scale{};
-  vector<quint32>  bit_rate_value_minus1;
-  vector<quint32>  cpb_size_value_minus1;
-  vector<unsigned> BitRate;
-  vector<unsigned> CpbSize;
-  vector<bool>     cbr_flag;
-  unsigned int     initial_cpb_removal_delay_length_minus1{23};
-  unsigned int     cpb_removal_delay_length_minus1{};
-  unsigned int     dpb_output_delay_length_minus1{};
-  unsigned int     time_offset_length{24};
-};
+  this->rbspTrailingBits.parse(reader);
+}
 
-} // namespace parser::av1
+} // namespace parser::avc

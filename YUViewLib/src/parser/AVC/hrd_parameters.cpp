@@ -36,7 +36,7 @@
 #include "typedef.h"
 
 
-namespace parser::av1
+namespace parser::avc
 
 {
 using namespace reader;

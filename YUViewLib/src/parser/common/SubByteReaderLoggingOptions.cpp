@@ -202,4 +202,10 @@ Options::withCheckRange(Range<int64_t> range, bool inclusive, const std::string 
   return std::move(*this);
 }
 
+Options &&Options::withLoggingDisabled()
+{
+  this->loggingDisabled = true;
+  return std::move(*this);
+}
+
 } // namespace parser::reader

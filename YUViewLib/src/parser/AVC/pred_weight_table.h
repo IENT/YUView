@@ -33,29 +33,36 @@
 #pragma once
 
 #include "parser/common/SubByteReaderLogging.h"
+#include "slice_header.h"
 
 namespace parser::avc
 {
 
-class hrd_parameters
+class pred_weight_table
 {
 public:
-  hrd_parameters() = default;
+  pred_weight_table() = default;
 
-  void parse(reader::SubByteReaderLogging &reader);
+  void parse(reader::SubByteReaderLogging &reader,
+             SliceType                     slice_type,
+             int                           ChromaArrayType,
+             unsigned                      num_ref_idx_l0_active_minus1,
+             unsigned                      num_ref_idx_l1_active_minus1);
 
-  unsigned int     cpb_cnt_minus1{};
-  unsigned int     bit_rate_scale{};
-  unsigned int     cpb_size_scale{};
-  vector<quint32>  bit_rate_value_minus1;
-  vector<quint32>  cpb_size_value_minus1;
-  vector<unsigned> BitRate;
-  vector<unsigned> CpbSize;
-  vector<bool>     cbr_flag;
-  unsigned int     initial_cpb_removal_delay_length_minus1{23};
-  unsigned int     cpb_removal_delay_length_minus1{};
-  unsigned int     dpb_output_delay_length_minus1{};
-  unsigned int     time_offset_length{24};
+  unsigned int luma_log2_weight_denom{};
+  unsigned int chroma_log2_weight_denom{};
+  vector<bool> luma_weight_l0_flag_list;
+  vector<int>  luma_weight_l0;
+  vector<int>  luma_offset_l0;
+  vector<bool> chroma_weight_l0_flag_list;
+  vector<int>  chroma_weight_l0[2];
+  vector<int>  chroma_offset_l0[2];
+  vector<bool> luma_weight_l1_flag_list;
+  vector<int>  luma_weight_l1;
+  vector<int>  luma_offset_l1;
+  vector<bool> chroma_weight_l1_flag_list;
+  vector<int>  chroma_weight_l1[2];
+  vector<int>  chroma_offset_l1[2];
 };
 
-} // namespace parser::av1
+} // namespace parser::avc

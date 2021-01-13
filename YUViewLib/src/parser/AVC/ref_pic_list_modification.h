@@ -33,29 +33,27 @@
 #pragma once
 
 #include "parser/common/SubByteReaderLogging.h"
+#include "slice_header.h"
 
 namespace parser::avc
 {
 
-class hrd_parameters
+class ref_pic_list_modification
 {
 public:
-  hrd_parameters() = default;
+  ref_pic_list_modification() = default;
 
-  void parse(reader::SubByteReaderLogging &reader);
+  void parse(reader::SubByteReaderLogging &reader, SliceType slice_type);
 
-  unsigned int     cpb_cnt_minus1{};
-  unsigned int     bit_rate_scale{};
-  unsigned int     cpb_size_scale{};
-  vector<quint32>  bit_rate_value_minus1;
-  vector<quint32>  cpb_size_value_minus1;
-  vector<unsigned> BitRate;
-  vector<unsigned> CpbSize;
-  vector<bool>     cbr_flag;
-  unsigned int     initial_cpb_removal_delay_length_minus1{23};
-  unsigned int     cpb_removal_delay_length_minus1{};
-  unsigned int     dpb_output_delay_length_minus1{};
-  unsigned int     time_offset_length{24};
+  bool             ref_pic_list_modification_flag_l0{};
+  vector<unsigned> modification_of_pic_nums_idc_l0;
+  vector<unsigned> abs_diff_pic_num_minus1_l0;
+  vector<unsigned> long_term_pic_num_l0;
+
+  bool             ref_pic_list_modification_flag_l1{};
+  vector<unsigned> modification_of_pic_nums_idc_l1;
+  vector<unsigned> abs_diff_pic_num_minus1_l1;
+  vector<unsigned> long_term_pic_num_l1;
 };
 
-} // namespace parser::av1
+} // namespace parser::avc

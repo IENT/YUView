@@ -33,29 +33,24 @@
 #pragma once
 
 #include "parser/common/SubByteReaderLogging.h"
+#include "sei_message.h"
 
 namespace parser::avc
 {
 
-class hrd_parameters
+class buffering_period : public sei_payload
 {
 public:
-  hrd_parameters() = default;
+  buffering_period() = default;
 
-  void parse(reader::SubByteReaderLogging &reader);
+  SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
+                         bool                                    reparse,
+                         SPSMap &                                spsMap,
+                         std::shared_ptr<seq_parameter_set_rbsp> associatedSPS) override;
 
-  unsigned int     cpb_cnt_minus1{};
-  unsigned int     bit_rate_scale{};
-  unsigned int     cpb_size_scale{};
-  vector<quint32>  bit_rate_value_minus1;
-  vector<quint32>  cpb_size_value_minus1;
-  vector<unsigned> BitRate;
-  vector<unsigned> CpbSize;
-  vector<bool>     cbr_flag;
-  unsigned int     initial_cpb_removal_delay_length_minus1{23};
-  unsigned int     cpb_removal_delay_length_minus1{};
-  unsigned int     dpb_output_delay_length_minus1{};
-  unsigned int     time_offset_length{24};
+  unsigned         seq_parameter_set_id{};
+  vector<unsigned> initial_cpb_removal_delay;
+  vector<unsigned> initial_cpb_removal_delay_offset;
 };
 
-} // namespace parser::av1
+} // namespace parser::avc
