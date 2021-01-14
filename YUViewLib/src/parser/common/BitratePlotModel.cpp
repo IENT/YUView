@@ -189,6 +189,10 @@ void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)
   rangeBitratePerStream[streamIndex].min = qMin(rangeBitratePerStream[streamIndex].min, int(entry.bitrate));
   rangeBitratePerStream[streamIndex].max = qMax(rangeBitratePerStream[streamIndex].max, int(entry.bitrate));
 
+  // Store absolute minimum and maximum over all streams
+  yMaxStreamRange.min = qMin(yMaxStreamRange.min, double(rangeBitratePerStream[streamIndex].min));
+  yMaxStreamRange.max = qMax(yMaxStreamRange.max, double(rangeBitratePerStream[streamIndex].max));
+
   DEBUG_PLOT("BitrateItemModel::addBitratePoint streamIndex " << streamIndex << " pts " << entry.pts << " dts " << entry.dts << " rate " << entry.bitrate << " keyframe " << entry.keyframe);
 
   // Keep the list sorted

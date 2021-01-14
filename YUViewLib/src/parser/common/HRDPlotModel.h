@@ -51,7 +51,7 @@ public:
   QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
   std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const override { return 1; }
   QString formatValue(Axis axis, double value) const override;
-  
+  Range<double> getYRange() const override {return getStreamParameter(0).yRange;}
   QString getItemInfoText(int index);
 
   struct HRDEntry

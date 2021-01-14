@@ -106,6 +106,8 @@ public:
                    ).arg(streamIndex).arg(point.x).arg(point.y).arg("Inter");
   }
 
+  Range<double> getYRange() const override {getStreamParameter(0).yRange;}
+
 private:
   QList<int> barData;
   QList<Point> graphData;
