@@ -913,7 +913,7 @@ QPointF PlotViewWidget::convertPlotPosToPixelPos(const QPointF &plotPos, std::op
 
   Range<double> yRange = {0, 100};
   if (this->model)
-    yRange = this->model->getStreamParameter(0).yRange;
+    yRange = this->model->getYRange();
   const auto rangeY = double(yRange.max - yRange.min);
   
   const auto pixelPosX = this->propertiesAxis[0].line.p1().x() + (plotPos.x() * this->zoomToPixelsPerValueX) * (*zoomFactor) + this->moveOffset.x();
@@ -942,7 +942,7 @@ QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &pixelPos, std::o
 
   Range<double> yRange = {0, 100};
   if (this->model)
-    yRange = this->model->getStreamParameter(0).yRange;
+    yRange = this->model->getYRange();
   const auto rangeY = double(yRange.max - yRange.min);
   
   const auto valueX = ((pixelPos.x() - this->propertiesAxis[0].line.p1().x() - this->moveOffset.x()) / (*zoomFactor)) / this->zoomToPixelsPerValueX;

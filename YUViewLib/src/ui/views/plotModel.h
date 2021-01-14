@@ -99,7 +99,7 @@ public:
   virtual QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
   virtual std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const = 0;
   virtual QString formatValue(Axis axis, double value) const = 0;
-
+  virtual Range<double> getYRange() const = 0;
   std::optional<unsigned> getPointIndex(unsigned streamIndex, unsigned plotIndex, QPointF point) const;
 
 protected:

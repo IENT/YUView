@@ -51,7 +51,7 @@ public:
   QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override;
   std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const override;
   QString formatValue(Axis axis, double value) const override;
-  
+  Range<double> getYRange() const override {return yMaxStreamRange;}
   QString getItemInfoText(int index);
 
   struct BitrateEntry
@@ -84,4 +84,5 @@ private:
   Range<int> rangeDts;
   Range<int> rangePts;
   QMap<unsigned int, Range<int>> rangeBitratePerStream;
+  Range<double> yMaxStreamRange;
 };
