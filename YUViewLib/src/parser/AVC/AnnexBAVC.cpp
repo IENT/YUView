@@ -237,6 +237,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       nalAVC->rbsp    = newSPS;
       nalAVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalAVC);
+      parseResult.nalTypeName =
+          "SPS(" + std::to_string(newSPS->seqParameterSetData.seq_parameter_set_id) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::PPS)
     {
@@ -253,6 +255,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       nalAVC->rbsp    = newPPS;
       nalAVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalAVC);
+      parseResult.nalTypeName = "PPS(" + std::to_string(newPPS->pic_parameter_set_id) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
              nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
@@ -356,6 +359,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       currentSliceType  = to_string(newSliceHeader->slice_type);
 
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed Slice POC " << newSliceHeader->globalPOC);
+      parseResult.nalTypeName = "Slice(POC " + std::to_string(newSliceHeader->globalPOC) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_B)
     {
@@ -363,7 +367,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         throw std::logic_error("No partition A slice header found.");
       auto slice = std::make_shared<slice_data_partition_b_layer_rbsp>();
       slice->parse(reader, this->currentAUPartitionASPS);
-      specificDescription = " Slice Partition B";
+      specificDescription     = " Slice Partition B";
+      parseResult.nalTypeName = "Slice-PartB ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_C)
     {
@@ -371,7 +376,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         throw std::logic_error("No partition A slice header found.");
       auto slice = std::make_shared<slice_data_partition_c_layer_rbsp>();
       slice->parse(reader, this->currentAUPartitionASPS);
-      specificDescription = " Slice Partition C";
+      specificDescription     = " Slice Partition C";
+      parseResult.nalTypeName = "Slice-PartC ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::SEI)
     {
@@ -410,16 +416,19 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       nalAVC->rbsp = newSEI;
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed SEI (" << newSEI->seis.size()
                                                              << " messages)");
+      parseResult.nalTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::FILLER)
     {
       specificDescription = " Filler";
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed Filler data");
+      parseResult.nalTypeName = "Filler ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::AUD)
     {
       specificDescription = " AUD";
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed AUD");
+      parseResult.nalTypeName = "AUD ";
     }
 
     if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
@@ -473,14 +482,14 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         try
         {
           if (this->activeParameterSets.spsMap.size() > 0)
-          this->hrd.addAU(this->sizeCurrentAU * 8,
-                          curFramePOC,
-                          this->activeParameterSets.spsMap[0],
-                          this->lastBufferingPeriodSEI,
-                          this->lastPicTimingSEI,
-                          this->getHRDPlotModel());
+            this->hrd.addAU(this->sizeCurrentAU * 8,
+                            curFramePOC,
+                            this->activeParameterSets.spsMap[0],
+                            this->lastBufferingPeriodSEI,
+                            this->lastPicTimingSEI,
+                            this->getHRDPlotModel());
         }
-        catch(const std::exception& e)
+        catch (const std::exception &e)
         {
           specificDescription += " HRD Error: " + std::string(e.what());
         }
@@ -568,9 +577,9 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
 
-        for (auto const& [key, spsNal]  : activeSPSNal)
+        for (auto const &[key, spsNal] : activeSPSNal)
           paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(spsNal->rawData));
-        for (auto const& [key, ppsNal] : activePPSNal)
+        for (auto const &[key, ppsNal] : activePPSNal)
           paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(ppsNal->rawData));
 
         return paramSets;
