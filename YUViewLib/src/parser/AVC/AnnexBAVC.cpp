@@ -536,8 +536,9 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
   int seekPOC = POCList[iFrameNr];
 
   // Collect the active parameter sets
-  SPSMap active_SPS_list;
-  PPSMap active_PPS_list;
+  using NalMap = std::map<unsigned, std::shared_ptr<NalUnitAVC>>;
+  NalMap activeSPSNal;
+  NalMap activePPSNal;
 
   for (auto nal : this->nalUnitsForSeeking)
   {
@@ -567,10 +568,10 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
 
-        for (auto s : this->activeParameterSets.spsMap)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(nal->rawData));
-        for (auto p : this->activeParameterSets.ppsMap)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(nal->rawData));
+        for (auto const& [key, spsNal]  : activeSPSNal)
+          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(spsNal->rawData));
+        for (auto const& [key, ppsNal] : activePPSNal)
+          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(ppsNal->rawData));
 
         return paramSets;
       }
@@ -579,13 +580,13 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
     {
       // Add sps (replace old one if existed)
       auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
-      this->activeParameterSets.spsMap[sps->seqParameterSetData.seq_parameter_set_id] = sps;
+      activeSPSNal[sps->seqParameterSetData.seq_parameter_set_id] = nal;
     }
     else if (nal->header.nal_unit_type == NalType::PPS)
     {
       // Add pps (replace old one if existed)
       auto pps = std::dynamic_pointer_cast<pic_parameter_set_rbsp>(nal->rbsp);
-      this->activeParameterSets.ppsMap[pps->pic_parameter_set_id] = pps;
+      activePPSNal[pps->pic_parameter_set_id] = nal;
     }
   }
 
