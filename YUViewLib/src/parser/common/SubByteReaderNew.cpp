@@ -298,7 +298,7 @@ bool SubByteReaderNew::more_rbsp_data() const
     unsigned char c = this->byteVector[posBytes];
     if (terminatingBitFound && c != 0)
       return true;
-    else if (!terminatingBitFound && (c & 128))
+    else if (!terminatingBitFound && (c == 128))
       terminatingBitFound = true;
     else
       return true;
