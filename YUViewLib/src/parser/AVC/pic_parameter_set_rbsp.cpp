@@ -106,9 +106,9 @@ void pic_parameter_set_rbsp::parse(reader::SubByteReaderLogging &reader, SPSMap 
       reader.readBits("weighted_bipred_idc", 2, Options().withCheckRange({0, 2}));
   this->pic_init_qp_minus26 = reader.readSEV(
       "pic_init_qp_minus26",
-      Options().withCheckRange({-(26 + (int)refSPS->seqParameterSetData.QpBdOffsetY), 25}));
+      Options().withCheckRange({-(26 + int(refSPS->seqParameterSetData.QpBdOffsetY)), 25}));
   this->pic_init_qs_minus26 =
-      reader.readSEV("pic_init_qs_minus26", Options().withCheckRange({26, 25}));
+      reader.readSEV("pic_init_qs_minus26", Options().withCheckRange({-26, 25}));
   this->chroma_qp_index_offset =
       reader.readSEV("chroma_qp_index_offset", Options().withCheckRange({-12, 12}));
   this->deblocking_filter_control_present_flag =

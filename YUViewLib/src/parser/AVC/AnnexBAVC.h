@@ -125,6 +125,7 @@ protected:
   std::shared_ptr<avc::buffering_period>       newBufferingPeriodSEI;
   std::shared_ptr<avc::pic_timing>             newPicTimingSEI;
   std::shared_ptr<avc::seq_parameter_set_rbsp> currentAUAssociatedSPS;
+  std::shared_ptr<avc::seq_parameter_set_rbsp> currentAUPartitionASPS;
   bool                                         nextAUIsFirstAUInBufferingPeriod{false};
 
   bool CpbDpbDelaysPresentFlag{false};

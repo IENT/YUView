@@ -103,8 +103,6 @@ public:
 
   unsigned nal_ref_idc{};
 
-  bool isSlice() const;
-
   NalType  nal_unit_type;
   unsigned nalUnitTypeID;
 };

@@ -81,13 +81,4 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
   nal_unit_type = nalTypeCoding.getValue(this->nalUnitTypeID);
 }
 
-bool nal_unit_header::isSlice() const
-{
-  return (this->nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
-          this->nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A ||
-          this->nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_B ||
-          this->nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_C ||
-          this->nal_unit_type == NalType::CODED_SLICE_IDR);
-}
-
 } // namespace parser::avc

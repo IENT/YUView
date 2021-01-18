@@ -44,8 +44,8 @@
 #include "parser/common/functions.h"
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
-#include "slice_rbsp.h"
 #include "slice_header.h"
+#include "slice_rbsp.h"
 
 #define PARSER_AVC_DEBUG_OUTPUT 0
 #if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
@@ -268,9 +268,9 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
                      nalAVC->header.nal_unit_type,
                      nalAVC->header.nal_ref_idc,
                      this->last_picture_first_slice);
-        nalAVC->rbsp                 = slice;
-        newSliceHeader               = slice->sliceHeader;
-        specificDescription          = " Slice Partition A";
+        nalAVC->rbsp        = slice;
+        newSliceHeader      = slice->sliceHeader;
+        specificDescription = " Slice Partition A";
       }
       else
       {
@@ -339,7 +339,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         this->curFrameFileStartEndPos = nalStartEndPosFile;
         this->curFramePOC             = newSliceHeader->globalPOC;
         this->curFrameIsRandomAccess  = isRandomAccess;
-        this->currentAUAssociatedSPS = refSPS;
+        this->currentAUAssociatedSPS  = refSPS;
       }
       else if (this->curFrameFileStartEndPos && nalStartEndPosFile)
         // Another slice NAL which belongs to the last frame
@@ -422,7 +422,9 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed AUD");
     }
 
-    if (nalAVC->header.isSlice())
+    if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
+        nalAVC->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
+        nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A)
     {
       // Reparse the SEI messages that we could not parse so far. This is a slice so all parameter
       // sets should be available now.
@@ -465,13 +467,24 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       entry.frameType =
           QString::fromStdString(convertSliceCountsToString(this->currentAUSliceTypes));
       parseResult.bitrateEntry = entry;
-      if (this->activeParameterSets.spsMap.size() > 0)
-        this->hrd.addAU(this->sizeCurrentAU * 8,
-                        curFramePOC,
-                        this->activeParameterSets.spsMap[0],
-                        this->lastBufferingPeriodSEI,
-                        this->lastPicTimingSEI,
-                        this->getHRDPlotModel());
+
+      if (this->lastBufferingPeriodSEI && this->lastPicTimingSEI)
+      {
+        try
+        {
+          if (this->activeParameterSets.spsMap.size() > 0)
+          this->hrd.addAU(this->sizeCurrentAU * 8,
+                          curFramePOC,
+                          this->activeParameterSets.spsMap[0],
+                          this->lastBufferingPeriodSEI,
+                          this->lastPicTimingSEI,
+                          this->getHRDPlotModel());
+        }
+        catch(const std::exception& e)
+        {
+          specificDescription += " HRD Error: " + std::string(e.what());
+        }
+      }
     }
     this->sizeCurrentAU = 0;
     this->counterAU++;
@@ -495,7 +508,9 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     this->nextAUIsFirstAUInBufferingPeriod = false;
   }
 
-  if (nalAVC->header.isSlice())
+  if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
+      nalAVC->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
+      nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A)
   {
     if (!currentSliceIntra)
       this->currentAUAllSlicesIntra = false;
@@ -526,12 +541,24 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
 
   for (auto nal : this->nalUnitsForSeeking)
   {
-    if (nal->header.isSlice())
+    if (nal->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
+        nal->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
+        nal->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A)
     {
-      // We can cast this to a slice.
-      auto slice = std::dynamic_pointer_cast<slice_header>(nal->rbsp);
+      int globalPOC;
+      if (nal->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
+          nal->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR)
+      {
+        auto slice = std::dynamic_pointer_cast<slice_layer_without_partitioning_rbsp>(nal->rbsp);
+        globalPOC  = slice->sliceHeader->globalPOC;
+      }
+      else if (nal->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A)
+      {
+        auto slice = std::dynamic_pointer_cast<slice_data_partition_a_layer_rbsp>(nal->rbsp);
+        globalPOC  = slice->sliceHeader->globalPOC;
+      }
 
-      if (slice->globalPOC == seekPOC)
+      if (globalPOC == seekPOC)
       {
         // Seek here
         if (nal->filePosStartEnd)

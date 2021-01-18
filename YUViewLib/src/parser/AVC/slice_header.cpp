@@ -239,14 +239,14 @@ void slice_header::parse(reader::SubByteReaderLogging &reader,
   if (refPPS->num_slice_groups_minus1 > 0 && refPPS->slice_group_map_type >= 3 &&
       refPPS->slice_group_map_type <= 5)
   {
-    auto nrBits = std::ceil(
-        std::log2(refSPS->seqParameterSetData.PicSizeInMapUnits % refPPS->SliceGroupChangeRate + 1));
+    auto nrBits                    = std::ceil(std::log2(
+        refSPS->seqParameterSetData.PicSizeInMapUnits % refPPS->SliceGroupChangeRate + 1));
     this->slice_group_change_cycle = reader.readBits("slice_group_change_cycle", nrBits);
   }
 
   // Calculate the POC
   auto memoryManagement5InPrevPic =
-      (prev_pic->decRefPicMarking &&
+      (prev_pic && prev_pic->decRefPicMarking &&
        std::find(prev_pic->decRefPicMarking->memory_management_control_operation_list.begin(),
                  prev_pic->decRefPicMarking->memory_management_control_operation_list.end(),
                  5) != prev_pic->decRefPicMarking->memory_management_control_operation_list.end());

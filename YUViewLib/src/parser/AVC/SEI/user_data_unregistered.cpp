@@ -33,6 +33,32 @@
 #include "user_data_unregistered.h"
 #include "parser/common/functions.h"
 
+#include <iostream>
+#include <sstream>
+
+namespace
+{
+
+std::vector<std::string> splitString(const std::string str, const std::string seperator)
+{
+  std::vector<std::string> splitStrings;
+
+  std::string::size_type prev_pos = 0;
+  std::string::size_type pos      = 0;
+  while ((pos = str.find(seperator, pos)) != std::string::npos)
+  {
+    auto substring = str.substr(prev_pos, pos - prev_pos);
+    splitStrings.push_back(substring);
+    prev_pos = pos + seperator.size();
+    pos++;
+  }
+  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
+
+  return splitStrings;
+}
+
+} // namespace
+
 namespace parser::avc
 
 {
@@ -49,59 +75,60 @@ user_data_unregistered::parse(reader::SubByteReaderLogging &          reader,
   (void)associatedSPS;
 
   this->uuid_iso_iec_11578 = reader.readBytes("uuid_iso_iec_11578", 16);
-  
+
   // TODO: Test this
   auto firstFourBytes = reader.peekBytes(4);
   if (firstFourBytes == ByteVector({'x', '2', '6', '4'}))
   {
     // This seems to be x264 user data. These contain the encoder settings which might be useful
     SubByteReaderLoggingSubLevel subLevel(reader, "x264 user data");
-    
-    // TODO: Implement parsing of this using std only
-    // Old code:
-// #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
-//     auto list = user_data_message.split(QRegExp("[\r\n\t ]+"), Qt::SkipEmptyParts);
-// #else
-//     auto list = user_data_message.split(QRegExp("[\r\n\t ]+"), QString::SkipEmptyParts);
-// #endif
 
-//     bool    options = false;
-//     QString aggregate_string;
-//     for (QString val : list)
-//     {
-//       if (options)
-//       {
-//         QStringList option = val.split("=");
-//         if (option.length() == 2)
-//         {
-//           new TreeItem(option[0], option[1], "", "", "", itemTree);
-//         }
-//       }
-//       else
-//       {
-//         if (val == "-")
-//         {
-//           if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
-//             new TreeItem("Info", aggregate_string, "", "", "", itemTree);
-//           aggregate_string = "";
-//         }
-//         else if (val == "options:")
-//         {
-//           options = true;
-//           if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
-//             new TreeItem("Info", aggregate_string, "", "", "", itemTree);
-//         }
-//         else
-//           aggregate_string += " " + val;
-//       }
-//     }
+    std::string dataString;
+    while (reader.canReadBits(8))
+    {
+      auto val = reader.readBits("", 8, Options().withLoggingDisabled());
+      dataString.push_back(char(val));
+    }
+
+    auto splitDash = splitString(dataString, " - ");
+
+    unsigned i=0;
+    for (const auto &s : splitDash)
+    {
+      if (i == 0)
+        reader.logArbitrary("Encoder Tag", s);
+      else if (i == 1)
+        reader.logArbitrary("Version", s);
+      else if (i == 2)
+        reader.logArbitrary("Codec", s);
+      else if (i == 3)
+        reader.logArbitrary("Version", s);
+      else if (i == 4)
+        reader.logArbitrary("URL", s);
+      else if (i == 5)
+      {
+        auto options = splitString(s, " ");
+        SubByteReaderLoggingSubLevel optionsLevel(reader, "options");
+        for (const auto &option : options)
+        {
+          if (option == "options:")
+            continue;
+          auto optionSplit = splitString(option, "=");
+          if (optionSplit.size() != 2)
+            reader.logArbitrary("Opt", option);
+          else
+            reader.logArbitrary(optionSplit[0], optionSplit[1]);
+        }
+      }
+      i++;
+    }
   }
   else
   {
     unsigned i = 0;
     while (reader.canReadBits(8))
     {
-      reader.readBytes(formatArray("raw_byte", i++), 8);
+      reader.readBytes(formatArray("raw_byte", i++), 1);
     }
   }
 

@@ -2440,7 +2440,7 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
 // buffer tmpRGBBuffer for intermediate RGB values.
 void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &outputImage, const yuvPixelFormat &yuvFormat, const QSize &curFrameSize)
 {
-  if (!yuvFormat.canConvertToRGB(curFrameSize))
+  if (!yuvFormat.canConvertToRGB(curFrameSize) || sourceBuffer.isEmpty())
   {
     outputImage = QImage();
     return;
