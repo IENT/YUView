@@ -44,6 +44,7 @@
 #include "parser/common/functions.h"
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
+#include "slice_rbsp.h"
 #include "slice_header.h"
 
 #define PARSER_AVC_DEBUG_OUTPUT 0
@@ -253,29 +254,68 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       nalAVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalAVC);
     }
-    else if (nalAVC->header.isSlice())
+    else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
+             nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
+             nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A)
     {
-      specificDescription = " Slice";
-      auto newSlice       = std::make_shared<slice_header>();
-      newSlice->parse(reader,
-                      this->activeParameterSets.spsMap,
-                      this->activeParameterSets.ppsMap,
-                      nalAVC->header.nal_unit_type,
-                      nalAVC->header.nal_ref_idc,
-                      this->last_picture_first_slice);
+      std::shared_ptr<slice_header> newSliceHeader;
+      if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A)
+      {
+        auto slice = std::make_shared<slice_data_partition_a_layer_rbsp>();
+        slice->parse(reader,
+                     this->activeParameterSets.spsMap,
+                     this->activeParameterSets.ppsMap,
+                     nalAVC->header.nal_unit_type,
+                     nalAVC->header.nal_ref_idc,
+                     this->last_picture_first_slice);
+        nalAVC->rbsp                 = slice;
+        newSliceHeader               = slice->sliceHeader;
+        specificDescription          = " Slice Partition A";
+      }
+      else
+      {
+        auto slice = std::make_shared<slice_layer_without_partitioning_rbsp>();
+        slice->parse(reader,
+                     this->activeParameterSets.spsMap,
+                     this->activeParameterSets.ppsMap,
+                     nalAVC->header.nal_unit_type,
+                     nalAVC->header.nal_ref_idc,
+                     this->last_picture_first_slice);
+        nalAVC->rbsp        = slice;
+        newSliceHeader      = slice->sliceHeader;
+        specificDescription = " Slice";
+      }
+
+      std::shared_ptr<seq_parameter_set_rbsp> refSPS;
+      if (this->activeParameterSets.ppsMap.count(newSliceHeader->pic_parameter_set_id) > 0)
+      {
+        auto pps = this->activeParameterSets.ppsMap.at(newSliceHeader->pic_parameter_set_id);
+        if (this->activeParameterSets.spsMap.count(pps->seq_parameter_set_id))
+        {
+          refSPS = this->activeParameterSets.spsMap.at(pps->seq_parameter_set_id);
+        }
+      }
+
+      if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A)
+        this->currentAUPartitionASPS = refSPS;
+
+      if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR)
+        specificDescription += " IDR";
+      else if (newSliceHeader->slice_type == SliceType::SLICE_I)
+        specificDescription += " I-Slice";
 
       auto isRandomAccess = (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
-                             newSlice->slice_type == SliceType::SLICE_I);
-      if (!newSlice->bottom_field_flag &&
+                             newSliceHeader->slice_type == SliceType::SLICE_I);
+      if (!newSliceHeader->bottom_field_flag &&
           (!this->last_picture_first_slice ||
-           newSlice->TopFieldOrderCnt != this->last_picture_first_slice->TopFieldOrderCnt ||
+           newSliceHeader->TopFieldOrderCnt != this->last_picture_first_slice->TopFieldOrderCnt ||
            isRandomAccess) &&
-          newSlice->first_mb_in_slice == 0)
-        this->last_picture_first_slice = newSlice;
+          newSliceHeader->first_mb_in_slice == 0)
+        this->last_picture_first_slice = newSliceHeader;
 
-      specificDescription += " POC " + std::to_string(newSlice->globalPOC);
+      specificDescription += " POC " + std::to_string(newSliceHeader->globalPOC);
 
-      if (newSlice->first_mb_in_slice == 0)
+      if (newSliceHeader->first_mb_in_slice == 0)
       {
         // This slice NAL is the start of a new frame
         if (this->curFramePOC != -1)
@@ -297,34 +337,41 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
                       << this->curFramePOC << (this->curFrameIsRandomAccess ? " - ra" : ""));
         }
         this->curFrameFileStartEndPos = nalStartEndPosFile;
-        this->curFramePOC             = newSlice->globalPOC;
+        this->curFramePOC             = newSliceHeader->globalPOC;
         this->curFrameIsRandomAccess  = isRandomAccess;
-
-        if (this->activeParameterSets.ppsMap.count(newSlice->pic_parameter_set_id) > 0)
-        {
-          auto pps = this->activeParameterSets.ppsMap.at(newSlice->pic_parameter_set_id);
-          if (this->activeParameterSets.spsMap.count(pps->seq_parameter_set_id))
-          {
-            this->currentAUAssociatedSPS =
-                this->activeParameterSets.spsMap.at(pps->seq_parameter_set_id);
-          }
-        }
+        this->currentAUAssociatedSPS = refSPS;
       }
       else if (this->curFrameFileStartEndPos && nalStartEndPosFile)
         // Another slice NAL which belongs to the last frame
         // Update the end position
         this->curFrameFileStartEndPos->second = nalStartEndPosFile->second;
 
-      if (isRandomAccess && newSlice->first_mb_in_slice == 0)
+      if (isRandomAccess && newSliceHeader->first_mb_in_slice == 0)
       {
         // This is the first slice of a random access point. Add it to the list.
         this->nalUnitsForSeeking.push_back(nalAVC);
       }
 
       currentSliceIntra = isRandomAccess;
-      currentSliceType  = to_string(newSlice->slice_type);
+      currentSliceType  = to_string(newSliceHeader->slice_type);
 
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed Slice POC " << newSlice->globalPOC);
+      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed Slice POC " << newSliceHeader->globalPOC);
+    }
+    else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_B)
+    {
+      if (!this->currentAUPartitionASPS)
+        throw std::logic_error("No partition A slice header found.");
+      auto slice = std::make_shared<slice_data_partition_b_layer_rbsp>();
+      slice->parse(reader, this->currentAUPartitionASPS);
+      specificDescription = " Slice Partition B";
+    }
+    else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_C)
+    {
+      if (!this->currentAUPartitionASPS)
+        throw std::logic_error("No partition A slice header found.");
+      auto slice = std::make_shared<slice_data_partition_c_layer_rbsp>();
+      slice->parse(reader, this->currentAUPartitionASPS);
+      specificDescription = " Slice Partition C";
     }
     else if (nalAVC->header.nal_unit_type == NalType::SEI)
     {
@@ -431,6 +478,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     this->currentAUAllSlicesIntra = true;
     this->currentAUSliceTypes.clear();
     this->currentAUAssociatedSPS.reset();
+    this->currentAUPartitionASPS.reset();
   }
   if (this->newBufferingPeriodSEI)
     this->lastBufferingPeriodSEI = this->newBufferingPeriodSEI;
@@ -467,7 +515,9 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
 
 QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
-  // Get the POC for the frame number
+  if (!this->POCList.contains(iFrameNr))
+    return {};
+
   int seekPOC = POCList[iFrameNr];
 
   // Collect the active parameter sets
