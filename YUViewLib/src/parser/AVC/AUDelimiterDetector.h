@@ -32,30 +32,21 @@
 
 #pragma once
 
-#include "../commonMaps.h"
-#include "../rbsp_trailing_bits.h"
-#include "../NalUnitAVC.h"
-#include "parser/common/SubByteReaderLogging.h"
-#include "sei_message.h"
+#include <memory>
 
 namespace parser::avc
 {
 
-class seq_parameter_set_rbsp;
+class NalUnitAVC;
 
-class sei_rbsp : public NalRBSP
+class AUDelimiterDetector
 {
 public:
-  sei_rbsp() = default;
+  AUDelimiterDetector() = default;
 
-  void parse(reader::SubByteReaderLogging &          reader,
-             SPSMap &                                spsMap,
-             std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
-
-  std::vector<sei_message> seis; // All messages
-  // The messages that will need reparsing (also included in seis)
-  std::vector<sei_message> seisReparse;
-  rbsp_trailing_bits       rbspTrailingBits;
+  bool isStartOfNewAU(std::shared_ptr<NalUnitAVC> nal, int curFramePOC);
+  int  lastSlicePoc{-1};
+  bool primaryCodedPictureInAuEncountered{};
 };
 
 } // namespace parser::avc

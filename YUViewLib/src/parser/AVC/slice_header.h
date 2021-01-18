@@ -33,16 +33,17 @@
 #pragma once
 
 #include "commonMaps.h"
-#include "dec_ref_pic_marking.h"
 #include "nal_unit_header.h"
 #include "parser/common/CodingEnum.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "pred_weight_table.h"
-#include "ref_pic_list_modification.h"
-#include "ref_pic_list_mvc_modification.h"
 
 namespace parser::avc
 {
+
+class ref_pic_list_mvc_modification;
+class ref_pic_list_modification;
+class pred_weight_table;
+class dec_ref_pic_marking;
 
 enum class SliceType
 {
@@ -52,6 +53,8 @@ enum class SliceType
   SLICE_SP,
   SLICE_SI
 };
+
+std::string to_string(SliceType type);
 
 class slice_header
 {
@@ -86,10 +89,10 @@ public:
   unsigned int num_ref_idx_l0_active_minus1{};
   unsigned int num_ref_idx_l1_active_minus1{};
 
-  ref_pic_list_mvc_modification refPicListMvcModification;
-  ref_pic_list_modification     refPicListModification;
-  pred_weight_table             predWeightTable;
-  dec_ref_pic_marking           decRefPicMarking;
+  std::unique_ptr<ref_pic_list_mvc_modification> refPicListMvcModification;
+  std::unique_ptr<ref_pic_list_modification>     refPicListModification;
+  std::unique_ptr<pred_weight_table>             predWeightTable;
+  std::unique_ptr<dec_ref_pic_marking>           decRefPicMarking;
 
   unsigned int cabac_init_idc{};
   int          slice_qp_delta{};
@@ -102,7 +105,6 @@ public:
 
   // These values are not parsed from the slice header but are calculated
   // from the parsed values.
-  int IdrPicFlag{};
   int firstMacroblockAddressInSlice{};
   int prevPicOrderCntMsb{-1};
   int prevPicOrderCntLsb{-1};

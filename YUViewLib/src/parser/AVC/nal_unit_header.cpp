@@ -80,13 +80,13 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
   nal_unit_type = nalTypeCoding.getValue(this->nalUnitTypeID);
 }
 
-QByteArray nal_unit_header::getNALHeader() const
+bool nal_unit_header::isSlice(NalType nalType) const
 {
-  // TODO:
-  // if ( nal_unit_type = = 14 | | nal_unit_type = = 20 | | nal_unit_type = = 21 ) ...
-  char out  = ((int)this->nal_ref_idc << 5) + this->nalUnitTypeID;
-  char c[1] = {out};
-  return QByteArray(c, 1);
+  return (this->nalType == NalType::CODED_SLICE_NON_IDR ||
+          this->nalType == NalType::CODED_SLICE_DATA_PARTITION_A ||
+          this->nalType == NalType::CODED_SLICE_DATA_PARTITION_B ||
+          this->nalType == NalType::CODED_SLICE_DATA_PARTITION_C ||
+          this->nalType == NalType::CODED_SLICE_IDR);
 }
 
 } // namespace parser::avc

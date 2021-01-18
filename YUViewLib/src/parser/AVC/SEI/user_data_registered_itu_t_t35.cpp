@@ -30,32 +30,17 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "../commonMaps.h"
-#include "../rbsp_trailing_bits.h"
-#include "../NalUnitAVC.h"
-#include "parser/common/SubByteReaderLogging.h"
-#include "sei_message.h"
+#include "user_data_registered_itu_t_t35.h"
+#include "parser/Subtitles/AnnexBItuTT35.h"
 
 namespace parser::avc
+
 {
+using namespace reader;
 
-class seq_parameter_set_rbsp;
-
-class sei_rbsp : public NalRBSP
+void user_data_registered_itu_t_t35::parse(reader::SubByteReaderLogging &reader)
 {
-public:
-  sei_rbsp() = default;
+  subtitle::itutt35::parse_user_data_registered_itu_t_t35(reader);
+}
 
-  void parse(reader::SubByteReaderLogging &          reader,
-             SPSMap &                                spsMap,
-             std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
-
-  std::vector<sei_message> seis; // All messages
-  // The messages that will need reparsing (also included in seis)
-  std::vector<sei_message> seisReparse;
-  rbsp_trailing_bits       rbspTrailingBits;
-};
-
-} // namespace parser::avc
+} // namespace parser::av1

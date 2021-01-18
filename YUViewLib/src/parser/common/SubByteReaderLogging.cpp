@@ -128,6 +128,16 @@ ByteVector SubByteReaderLogging::convertToByteVector(QByteArray data)
   return ret;
 }
 
+QByteArray SubByteReaderLogging::convertToQByteArray(ByteVector data)
+{
+  QByteArray ret;
+  for (auto i = 0u; i < unsigned(data.size()); i++)
+  {
+    ret.append(data.at(i));
+  }
+  return ret;
+}
+
 SubByteReaderLogging::SubByteReaderLogging(SubByteReaderNew &reader,
                                            TreeItem *        item,
                                            std::string       new_sub_item_name)

@@ -32,12 +32,11 @@
 
 #pragma once
 
-#include "common/typedef.h"
-#include "parser/common/TreeItem.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::subtitle::itutt35
 {
 
-void parse_user_data_registered_itu_t_t35(ByteVector &data, TreeItem *root);
+void parse_user_data_registered_itu_t_t35(reader::SubByteReaderLogging &reader);
 
 } // namespace parser::subtitle::itutt35

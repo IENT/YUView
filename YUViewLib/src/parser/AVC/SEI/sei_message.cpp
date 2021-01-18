@@ -39,30 +39,14 @@
 #include "user_data_unregistered.h"
 
 namespace parser::avc
-
 {
+
 using namespace reader;
 
-SEIParsingResult sei_message::parse(reader::SubByteReaderLogging &          reader,
-                                    SPSMap &                                spsMap,
-                                    std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
+namespace
 {
-  SubByteReaderLoggingSubLevel subLevel(reader, "sei_message()");
 
-  this->payloadType = 0;
-  {
-    unsigned byte;
-    do
-    {
-      byte = reader.readBits(
-          "last_payload_type_byte",
-          8,
-          Options().withMeaningMap({{255, "ff_byte"}}).withMeaning("last_payload_type_byte"));
-      this->payloadType += byte;
-    } while (byte == 255);
-  }
-
-  auto payloadNameMap = MeaningMap({{0, "buffering_period"},
+auto payloadNameMap = MeaningMap({{0, "buffering_period"},
                                     {1, "pic_timing"},
                                     {2, "pan_scan_rect"},
                                     {3, "filler_payload"},
@@ -117,6 +101,28 @@ SEIParsingResult sei_message::parse(reader::SubByteReaderLogging &          read
                                     {52, "depth_timing"},
                                     {53, "depth_sampling_info"},
                                     {54, "constrained_depth_parameter_set_identifier"}});
+
+}
+
+SEIParsingResult sei_message::parse(reader::SubByteReaderLogging &          reader,
+                                    SPSMap &                                spsMap,
+                                    std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
+{
+  SubByteReaderLoggingSubLevel subLevel(reader, "sei_message()");
+
+  this->payloadType = 0;
+  {
+    unsigned byte;
+    do
+    {
+      byte = reader.readBits(
+          "last_payload_type_byte",
+          8,
+          Options().withMeaningMap({{255, "ff_byte"}}).withMeaning("last_payload_type_byte"));
+      this->payloadType += byte;
+    } while (byte == 255);
+  }
+
   reader.logCalculatedValue(
       "payloadType",
       this->payloadType,
@@ -141,6 +147,9 @@ SEIParsingResult sei_message::parse(reader::SubByteReaderLogging &          read
   auto payloadData = reader.readBytes("", this->payloadSize, Options().withLoggingDisabled());
   auto currentLoggingTreeItem = reader.getCurrentItemTree();
   this->payloadReader         = SubByteReaderLogging(payloadData, currentLoggingTreeItem);
+  
+  // When reading the data above, emulation prevention was alread removed.
+  this->payloadReader.disableEmulationPrevention();
 
   return this->parsePayloadData(false, spsMap, associatedSPS);
 }
@@ -151,6 +160,13 @@ SEIParsingResult sei_message::reparse(SPSMap &                                sp
   return this->parsePayloadData(true, spsMap, associatedSPS);
 }
 
+std::string sei_message::getPayloadTypeName() const
+{
+  if (payloadNameMap.count(this->payloadType) == 0)
+    return "unknown";
+  return payloadNameMap.at(this->payloadType);
+}
+
 SEIParsingResult sei_message::parsePayloadData(
     bool reparse, SPSMap &spsMap, std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
@@ -158,13 +174,13 @@ SEIParsingResult sei_message::parsePayloadData(
     throw std::logic_error("Parsing of SEI is already done");
 
   if (this->payloadType == 0)
-    this->payload = std::make_unique<buffering_period>();
+    this->payload = std::make_shared<buffering_period>();
   else if (this->payloadType == 1)
-    this->payload = std::make_unique<pic_timing>();
+    this->payload = std::make_shared<pic_timing>();
   else if (this->payloadType == 5)
-    this->payload = std::make_unique<user_data_unregistered>();
+    this->payload = std::make_shared<user_data_unregistered>();
   else
-    this->payload = std::make_unique<unknown_sei>();
+    this->payload = std::make_shared<unknown_sei>();
 
   auto result = this->payload->parse(this->payloadReader, reparse, spsMap, associatedSPS);
 

@@ -32,9 +32,14 @@
 
 #include "slice_header.h"
 
+#include "dec_ref_pic_marking.h"
 #include "pic_parameter_set_rbsp.h"
+#include "pred_weight_table.h"
+#include "ref_pic_list_modification.h"
+#include "ref_pic_list_mvc_modification.h"
 #include "seq_parameter_set_rbsp.h"
 #include "typedef.h"
+
 
 #define PARSER_AVC_SLICEHEADER_DEBUG_OUTPUT 0
 #if PARSER_AVC_SLICEHEADER_DEBUG_OUTPUT && !NDEBUG
@@ -64,6 +69,8 @@ parser::CodingEnum<SliceType>
                     SliceType::SLICE_P);
 
 }
+
+std::string to_string(SliceType type) { return sliceTypeCoding.getMeaning(type); }
 
 using namespace reader;
 

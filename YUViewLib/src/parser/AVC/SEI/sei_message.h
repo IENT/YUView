@@ -68,13 +68,14 @@ public:
                          SPSMap &                                spsMap,
                          std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
 
-  SEIParsingResult reparse(SPSMap &                                spsMap,
-                         std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
+  SEIParsingResult reparse(SPSMap &spsMap, std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
+
+  std::string getPayloadTypeName() const;
 
   unsigned payloadType{};
   unsigned payloadSize{};
 
-  std::unique_ptr<sei_payload> payload;
+  std::shared_ptr<sei_payload> payload;
 
 private:
   SEIParsingResult parsePayloadData(bool                                    reparse,
@@ -85,8 +86,8 @@ private:
   // The decoder may need to store the payload of an SEI and parse it later if the parameter sets
   // are not available yet. For this, we keep a reader which has all data to continue parsing at a
   // later point in time.
-  SubByteReaderLogging payloadReader;
-  bool                 parsingDone{false};
+  reader::SubByteReaderLogging payloadReader;
+  bool                         parsingDone{false};
 };
 
 } // namespace parser::avc

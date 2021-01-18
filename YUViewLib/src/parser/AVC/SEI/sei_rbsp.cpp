@@ -49,8 +49,7 @@ void sei_rbsp::parse(reader::SubByteReaderLogging &          reader,
     auto        result = newMessage.parse(reader, spsMap, associatedSPS);
     if (result == SEIParsingResult::WAIT_FOR_PARAMETER_SETS)
       this->seisReparse.push_back(newMessage);
-    else
-      this->seis.push_back(newMessage);
+    this->seis.push_back(newMessage);
   } while (reader.more_rbsp_data());
 
   this->rbspTrailingBits.parse(reader);

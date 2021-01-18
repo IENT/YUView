@@ -59,7 +59,7 @@ public:
     int dts {0};
     int pts {0};
     int duration {1};
-    unsigned int bitrate {0};
+    size_t bitrate {0};
     bool keyframe {false};
     QString frameType;
   };

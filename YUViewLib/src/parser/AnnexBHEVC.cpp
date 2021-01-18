@@ -38,6 +38,7 @@
 #include "common/Macros.h"
 #include "common/SubByteReaderLogging.h"
 #include "Subtitles/AnnexBItuTT35.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 #define PARSER_HEVC_DEBUG_OUTPUT 0
 #if PARSER_HEVC_DEBUG_OUTPUT && !NDEBUG
@@ -569,7 +570,8 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
         try
         {
           auto data = reader::SubByteReaderLogging::convertToByteVector(sub_sei_data);
-          subtitle::itutt35::parse_user_data_registered_itu_t_t35(data, message_tree);
+          reader::SubByteReaderLogging reader(data, message_tree);
+          subtitle::itutt35::parse_user_data_registered_itu_t_t35(reader);
           result = SEI_PARSING_OK;
         }
         catch(const std::exception& e)
