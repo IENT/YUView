@@ -43,6 +43,10 @@ SEIParsingResult unknown_sei::parse(reader::SubByteReaderLogging &          read
                                     SPSMap &                                spsMap,
                                     std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
+  (void)reparse;
+  (void)spsMap;
+  (void)associatedSPS;
+
   SubByteReaderLoggingSubLevel subLevel(reader, "unknown_sei()");
 
   unsigned i = 0;

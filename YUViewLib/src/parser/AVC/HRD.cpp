@@ -36,6 +36,8 @@
 #include "SEI/pic_timing.h"
 #include "seq_parameter_set_rbsp.h"
 
+#include <cmath>
+
 #define PARSER_AVC_HRD_DEBUG_OUTPUT 0
 #if PARSER_AVC_HRD_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -154,7 +156,7 @@ void HRD::addAU(size_t                                         auBits,
   {
     time_t t_g_90 = (t_r_nominal_n - this->t_af_nm1) * 90000;
     time_t initial_cpb_removal_delay_time(initial_cpb_removal_delay);
-    if (!cbr_flag && initial_cpb_removal_delay_time > ceil(t_g_90))
+    if (!cbr_flag && initial_cpb_removal_delay_time > std::ceil(t_g_90))
     {
       // TODO: These logs should go somewhere!
       DEBUG_AVC_HRD("HRD AU " << this->au_n << " POC " << poc
@@ -163,12 +165,12 @@ void HRD::addAU(size_t                                         auBits,
                               << double(ceil(t_g_90)));
     }
 
-    if (cbr_flag && initial_cpb_removal_delay_time < floor(t_g_90))
+    if (cbr_flag && initial_cpb_removal_delay_time < std::floor(t_g_90))
     {
       DEBUG_AVC_HRD("HRD AU " << this->au_n << " POC " << poc
                               << " - Warning: Conformance fail. initial_cpb_removal_delay "
                               << initial_cpb_removal_delay << " - should be >= floor(t_g_90) "
-                              << double(floor(t_g_90)));
+                              << double(std::floor(t_g_90)));
     }
   }
 
@@ -257,7 +259,7 @@ void HRD::addAU(size_t                                         auBits,
       assert(frame.t_r >= t_ai_sub && frame.t_r < t_af);
       const time_t time_expired          = frame.t_r - t_ai_sub;
       long double  buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
-      unsigned int buffer_add            = floor(buffer_add_fractional);
+      unsigned int buffer_add            = std::floor(buffer_add_fractional);
       buffer_add_remainder               = buffer_add_fractional - buffer_add;
       buffer_add_sum += buffer_add;
       this->addToBufferAndCheck(buffer_add, buffer_size, poc, t_ai_sub, frame.t_r, plotModel);
@@ -273,7 +275,7 @@ void HRD::addAU(size_t                                         auBits,
       // The last interval from t_ai_sub to t_r_n. After t_r_n we stop the current frame.
       const time_t time_expired          = t_r_n - t_ai_sub;
       long double  buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
-      unsigned int buffer_add            = floor(buffer_add_fractional);
+      unsigned int buffer_add            = std::floor(buffer_add_fractional);
       this->addToBufferAndCheck(buffer_add, buffer_size, poc, t_ai_sub, t_r_n, plotModel);
       this->removeFromBufferAndCheck(HRDFrameToRemove(t_r_n, auBits, poc), poc, t_r_n, plotModel);
       // "Stop transmission" at this point. We have removed the frame so transmission of more bytes
@@ -289,7 +291,7 @@ void HRD::addAU(size_t                                         auBits,
       time_t      time_expired          = t_af - t_ai_sub;
       long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
       {
-        unsigned int buffer_add = round(buffer_add_fractional);
+        unsigned int buffer_add = std::round(buffer_add_fractional);
         buffer_add_sum += buffer_add;
         // assert(buffer_add_sum == au_buffer_add || buffer_add_sum + 1 == au_buffer_add
         // || buffer_add_sum == au_buffer_add + 1);
@@ -389,7 +391,7 @@ void HRD::addToBufferAndCheck(size_t        bufferAdd,
     entry.poc                = poc;
     plotModel->addHRDEntry(entry);
   }
-  if (this->decodingBufferLevel > bufferSize)
+  if (this->decodingBufferLevel > int64_t(bufferSize))
   {
     this->decodingBufferLevel = bufferSize;
     DEBUG_AVC_HRD("HRD AU " << this->au_n << " POC " << poc << " - Warning: Time " << double(t_end)

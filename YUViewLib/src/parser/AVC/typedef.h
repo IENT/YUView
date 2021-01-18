@@ -35,6 +35,8 @@
 #include "common/typedef.h"
 #include "parser/common/SubByteReaderLogging.h"
 
+#include <optional>
+
 namespace parser::avc
 {
 
@@ -46,7 +48,7 @@ static std::optional<bool> read_scaling_list(reader::SubByteReaderLogging &reade
   int                 nextScale = 8;
   std::optional<bool> useDefaultScalingMatrixFlag;
   auto                sizeOfScalingList = scalingList.size();
-  for (int j = 0; j < sizeOfScalingList; j++)
+  for (size_t j = 0; j < sizeOfScalingList; j++)
   {
     if (nextScale != 0)
     {

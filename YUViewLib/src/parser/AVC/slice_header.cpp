@@ -40,6 +40,8 @@
 #include "seq_parameter_set_rbsp.h"
 #include "typedef.h"
 
+#include <cmath>
+
 #define PARSER_AVC_SLICEHEADER_DEBUG_OUTPUT 0
 #if PARSER_AVC_SLICEHEADER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -237,8 +239,8 @@ void slice_header::parse(reader::SubByteReaderLogging &reader,
   if (refPPS->num_slice_groups_minus1 > 0 && refPPS->slice_group_map_type >= 3 &&
       refPPS->slice_group_map_type <= 5)
   {
-    auto nrBits = ceil(
-        log2(refSPS->seqParameterSetData.PicSizeInMapUnits % refPPS->SliceGroupChangeRate + 1));
+    auto nrBits = std::ceil(
+        std::log2(refSPS->seqParameterSetData.PicSizeInMapUnits % refPPS->SliceGroupChangeRate + 1));
     this->slice_group_change_cycle = reader.readBits("slice_group_change_cycle", nrBits);
   }
 

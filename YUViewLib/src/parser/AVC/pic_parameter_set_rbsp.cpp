@@ -36,6 +36,7 @@
 #include "seq_parameter_set_rbsp.h"
 #include "typedef.h"
 
+#include <cmath>
 
 namespace parser::avc
 
@@ -91,7 +92,7 @@ void pic_parameter_set_rbsp::parse(reader::SubByteReaderLogging &reader, SPSMap 
       this->pic_size_in_map_units_minus1 = reader.readUEV("pic_size_in_map_units_minus1");
       for (unsigned i = 0; i <= this->pic_size_in_map_units_minus1; i++)
       {
-        auto nrBits = ceil(log2(this->num_slice_groups_minus1 + 1));
+        auto nrBits = std::ceil(std::log2(this->num_slice_groups_minus1 + 1));
         this->slice_group_id.push_back(reader.readBits(formatArray("slice_group_id", i), nrBits));
       }
     }
@@ -120,8 +121,8 @@ void pic_parameter_set_rbsp::parse(reader::SubByteReaderLogging &reader, SPSMap 
     this->pic_scaling_matrix_present_flag = reader.readFlag("pic_scaling_matrix_present_flag");
     if (this->pic_scaling_matrix_present_flag)
     {
-      for (unsigned i = 0; i < 6 + ((refSPS->seqParameterSetData.chroma_format_idc != 3) ? 2 : 6) *
-                                       this->transform_8x8_mode_flag;
+      for (unsigned i = 0; i < 6 + ((refSPS->seqParameterSetData.chroma_format_idc != 3) ? 2u : 6u) *
+                                       (this->transform_8x8_mode_flag ? 1 : 0);
            i++)
       {
         this->pic_scaling_list_present_flag[i] =

@@ -54,43 +54,6 @@
 #define DEBUG_AVC(fmt) ((void)0)
 #endif
 
-namespace
-{
-
-// In an SEI, the number of bytes indicated do not consider the emulation prevention. This function
-// can determine the real number of bytes that we need to read from the input considering the
-// emulation prevention
-int determineRealNumberOfBytesSEIEmulationPrevention(QByteArray &in, int nrBytes)
-{
-  if (in.length() <= 0)
-    return 0;
-
-  int nrZeroBytes = 0;
-  int pos         = 0;
-  while (nrBytes > 0 && pos < in.length())
-  {
-    char c = (char)in.at(pos);
-
-    if (nrZeroBytes == 2 && c == 3)
-      // Emulation prevention
-      nrZeroBytes = 0;
-    else
-    {
-      if (c == 0)
-        nrZeroBytes++;
-      else
-        nrZeroBytes = 0;
-      nrBytes--;
-    }
-
-    pos++;
-  }
-
-  return pos;
-}
-
-} // namespace
-
 namespace parser
 {
 

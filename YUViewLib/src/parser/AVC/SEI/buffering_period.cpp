@@ -83,7 +83,7 @@ SEIParsingResult buffering_period::parse(reader::SubByteReaderLogging &         
       refSPS->seqParameterSetData.vuiParameters.vcl_hrd_parameters_present_flag;
   if (VclHrdBpPresentFlag)
   {
-    int cpb_cnt_minus1 = refSPS->seqParameterSetData.vuiParameters.vclHrdParameters.cpb_cnt_minus1;
+    auto cpb_cnt_minus1 = refSPS->seqParameterSetData.vuiParameters.vclHrdParameters.cpb_cnt_minus1;
     for (unsigned SchedSelIdx = 0; SchedSelIdx <= cpb_cnt_minus1; SchedSelIdx++)
     {
       this->initial_cpb_removal_delay.push_back(

@@ -44,6 +44,10 @@ user_data_unregistered::parse(reader::SubByteReaderLogging &          reader,
                               SPSMap &                                spsMap,
                               std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
+  (void)reparse;
+  (void)spsMap;
+  (void)associatedSPS;
+
   this->uuid_iso_iec_11578 = reader.readBytes("uuid_iso_iec_11578", 16);
   
   // TODO: Test this
