@@ -48,7 +48,7 @@ class HRD
 {
 public:
   HRD() = default;
-  void addAU(size_t                                       auBits,
+  void addAU(size_t                                         auBits,
              unsigned                                       poc,
              std::shared_ptr<seq_parameter_set_rbsp> const &sps,
              std::shared_ptr<buffering_period> const &      lastBufferingPeriodSEI,
@@ -64,10 +64,10 @@ private:
   // We keep a list of frames which will be removed in the future
   struct HRDFrameToRemove
   {
-    HRDFrameToRemove(time_t t_r, int bits, int poc) : t_r(t_r), bits(bits), poc(poc) {}
-    time_t       t_r;
-    unsigned int bits;
-    int          poc;
+    HRDFrameToRemove(time_t t_r, size_t bits, int poc) : t_r(t_r), bits(bits), poc(poc) {}
+    time_t t_r;
+    size_t bits;
+    int    poc;
   };
   std::vector<HRDFrameToRemove> framesToRemove;
 
@@ -79,8 +79,8 @@ private:
   time_t t_r_nominal_n_first;
 
   std::vector<HRDFrameToRemove> popRemoveFramesInTimeInterval(time_t from, time_t to);
-  void                          addToBufferAndCheck(unsigned      bufferAdd,
-                                                    unsigned      bufferSize,
+  void                          addToBufferAndCheck(size_t        bufferAdd,
+                                                    size_t        bufferSize,
                                                     int           poc,
                                                     time_t        t_begin,
                                                     time_t        t_end,

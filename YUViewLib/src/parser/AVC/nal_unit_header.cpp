@@ -42,8 +42,9 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "nal_unit_header");
 
-  auto forbidden_zero_bit = reader.readFlag("forbidden_zero_bit", Options().withCheckEqualTo(0));
-  this->nal_ref_idc       = reader.readBits("nal_ref_idc", 2);
+  reader.readFlag("forbidden_zero_bit", Options().withCheckEqualTo(0));
+
+  this->nal_ref_idc = reader.readBits("nal_ref_idc", 2);
 
   this->nalUnitTypeID = reader.readBits(
       "nal_unit_type",
@@ -80,13 +81,13 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
   nal_unit_type = nalTypeCoding.getValue(this->nalUnitTypeID);
 }
 
-bool nal_unit_header::isSlice(NalType nalType) const
+bool nal_unit_header::isSlice() const
 {
-  return (this->nalType == NalType::CODED_SLICE_NON_IDR ||
-          this->nalType == NalType::CODED_SLICE_DATA_PARTITION_A ||
-          this->nalType == NalType::CODED_SLICE_DATA_PARTITION_B ||
-          this->nalType == NalType::CODED_SLICE_DATA_PARTITION_C ||
-          this->nalType == NalType::CODED_SLICE_IDR);
+  return (this->nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
+          this->nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A ||
+          this->nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_B ||
+          this->nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_C ||
+          this->nal_unit_type == NalType::CODED_SLICE_IDR);
 }
 
 } // namespace parser::avc

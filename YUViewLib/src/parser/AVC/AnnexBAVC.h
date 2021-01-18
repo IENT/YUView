@@ -56,6 +56,7 @@ class buffering_period;
 class pic_timing;
 class slice_header;
 class NalUnitAVC;
+class seq_parameter_set_rbsp;
 } // namespace avc
 
 // This class knows how to parse the bitrstream of HEVC annexB files
@@ -119,11 +120,12 @@ protected:
 
   // When new SEIs come in and they don't initialize the HRD, they are not accessed until the
   // current AU is processed by the HRD.
-  std::shared_ptr<avc::buffering_period> lastBufferingPeriodSEI;
-  std::shared_ptr<avc::pic_timing>       lastPicTimingSEI;
-  std::shared_ptr<avc::buffering_period> newBufferingPeriodSEI;
-  std::shared_ptr<avc::pic_timing>       newPicTimingSEI;
-  bool                                   nextAUIsFirstAUInBufferingPeriod{false};
+  std::shared_ptr<avc::buffering_period>       lastBufferingPeriodSEI;
+  std::shared_ptr<avc::pic_timing>             lastPicTimingSEI;
+  std::shared_ptr<avc::buffering_period>       newBufferingPeriodSEI;
+  std::shared_ptr<avc::pic_timing>             newPicTimingSEI;
+  std::shared_ptr<avc::seq_parameter_set_rbsp> currentAUAssociatedSPS;
+  bool                                         nextAUIsFirstAUInBufferingPeriod{false};
 
   bool CpbDpbDelaysPresentFlag{false};
 

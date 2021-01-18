@@ -36,7 +36,6 @@
 #include "SEI/pic_timing.h"
 #include "seq_parameter_set_rbsp.h"
 
-
 #define PARSER_AVC_HRD_DEBUG_OUTPUT 0
 #if PARSER_AVC_HRD_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -49,7 +48,7 @@ namespace parser::avc
 
 {
 
-void HRD::addAU(size_t                                       auBits,
+void HRD::addAU(size_t                                         auBits,
                 unsigned                                       poc,
                 std::shared_ptr<seq_parameter_set_rbsp> const &sps,
                 std::shared_ptr<buffering_period> const &      lastBufferingPeriodSEI,
@@ -65,8 +64,11 @@ void HRD::addAU(size_t                                       auBits,
   if (!lastPicTimingSEI)
     throw std::logic_error("No Picture timing SEI given for HRD");
 
-  if (!sps->vui_parameters_present_flag || !sps->vuiParameters.nal_hrd_parameters_present_flag)
+  if (!sps->seqParameterSetData.vui_parameters_present_flag ||
+      !sps->seqParameterSetData.vuiParameters.nal_hrd_parameters_present_flag)
     return;
+
+  auto &vuiParam = sps->seqParameterSetData.vuiParameters;
 
   // There could be multiple but we currently only support one.
   const auto SchedSelIdx = 0;
@@ -76,7 +78,7 @@ void HRD::addAU(size_t                                       auBits,
   const auto initial_cpb_removal_delay_offset =
       lastBufferingPeriodSEI->initial_cpb_removal_delay_offset[SchedSelIdx];
 
-  const bool cbr_flag = sps->vuiParameters.nalHrdParameters.cbr_flag[SchedSelIdx];
+  const bool cbr_flag = vuiParam.nalHrdParameters.cbr_flag[SchedSelIdx];
 
   // TODO: Investigate the difference between our results and the results from stream-Eye
   // I noticed that the results from stream eye differ by a (seemingly random) additional
@@ -94,7 +96,7 @@ void HRD::addAU(size_t                                       auBits,
   */
 
   // Annex C: The variable t c is derived as follows and is called a clock tick:
-  time_t t_c = time_t(sps->vuiParameters.num_units_in_tick) / sps->vuiParameters.time_scale;
+  time_t t_c = time_t(vuiParam.num_units_in_tick) / vuiParam.time_scale;
 
   // ITU-T Rec H.264 (04/2017) - C.1.2 - Timing of coded picture removal
   // Part 1: the nominal removal time of the access unit from the CPB
@@ -133,13 +135,13 @@ void HRD::addAU(size_t                                       auBits,
   }
 
   // The final arrival time for access unit n is derived by:
-  const int bitrate = sps->vuiParameters.nalHrdParameters.BitRate[SchedSelIdx];
-  time_t    t_af    = t_ai + time_t(auBits) / bitrate;
+  const auto bitrate = vuiParam.nalHrdParameters.BitRate[SchedSelIdx];
+  time_t     t_af    = t_ai + time_t(auBits) / bitrate;
 
   // ITU-T Rec H.264 (04/2017) - C.1.2 - Timing of coded picture removal
   // Part 2: The removal time of access unit n is specified as follows:
   time_t t_r_n;
-  if (!sps->vuiParameters.low_delay_hrd_flag || t_r_nominal_n >= t_af)
+  if (!vuiParam.low_delay_hrd_flag || t_r_nominal_n >= t_af)
     t_r_n = t_r_nominal_n;
   else
     // NOTE: This indicates that the size of access unit n, b(n), is so large that it
@@ -177,7 +179,7 @@ void HRD::addAU(size_t                                       auBits,
   // when to when bits are recieved for a frame. time t_r, the access unit is removed from
   // the buffer. If none of this applies, the buffer fill stays constant.
   // (All values are scaled by 90000 to avoid any rounding errors)
-  const auto buffer_size = (uint64_t)sps->vuiParameters.nalHrdParameters.CpbSize[SchedSelIdx];
+  const auto buffer_size = vuiParam.nalHrdParameters.CpbSize[SchedSelIdx];
 
   // The time windows we have to process is from t_af_nm1 to t_af (t_ai is in between
   // these two).
@@ -231,7 +233,7 @@ void HRD::addAU(size_t                                       auBits,
     underflowRemoveCurrentAU = true;
   }
 
-  unsigned int au_buffer_add = auBits;
+  auto au_buffer_add = auBits;
   {
     // time_t au_time_expired = t_af - t_ai;
     // uint64_t au_bits_add   = (uint64_t)(au_time_expired * (unsigned int) bitrate);
@@ -303,7 +305,7 @@ void HRD::addAU(size_t                                       auBits,
 
   // C.3 - 3. A CPB underflow is specified as the condition in which t_r,n(n) is less than
   // t_af(n). When low_delay_hrd_flag is equal to 0, the CPB shall never underflow.
-  if (t_r_nominal_n < t_af && !sps->vuiParameters.low_delay_hrd_flag)
+  if (t_r_nominal_n < t_af && !vuiParam.low_delay_hrd_flag)
   {
     DEBUG_AVC_HRD("HRD AU " << this->au_n << " POC " << poc
                             << " - Warning: Decoding Buffer underflow t_r_n " << double(t_r_n)
@@ -367,8 +369,8 @@ std::vector<HRD::HRDFrameToRemove> HRD::popRemoveFramesInTimeInterval(time_t fro
   return l;
 }
 
-void HRD::addToBufferAndCheck(unsigned      bufferAdd,
-                              unsigned      bufferSize,
+void HRD::addToBufferAndCheck(size_t        bufferAdd,
+                              size_t        bufferSize,
                               int           poc,
                               time_t        t_begin,
                               time_t        t_end,

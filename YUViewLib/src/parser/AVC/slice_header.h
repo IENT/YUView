@@ -59,7 +59,8 @@ std::string to_string(SliceType type);
 class slice_header
 {
 public:
-  slice_header() = default;
+  slice_header();
+  ~slice_header();
 
   void parse(reader::SubByteReaderLogging &reader,
              SPSMap &                      spsMap,

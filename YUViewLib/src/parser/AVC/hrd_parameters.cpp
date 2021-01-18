@@ -63,7 +63,7 @@ void hrd_parameters::parse(reader::SubByteReaderLogging &reader)
       reader.logCalculatedValue(formatArray("BitRate", SchedSelIdx), this->BitRate[SchedSelIdx]);
     }
     {
-      int value = (cpb_size_value_minus1[SchedSelIdx] + 1) * (1 << (4 + cpb_size_scale));
+      auto value = (this->cpb_size_value_minus1[SchedSelIdx] + 1) * (1 << (4 + cpb_size_scale));
       this->CpbSize.push_back(value);
       reader.logCalculatedValue(formatArray("CpbSize", SchedSelIdx), this->CpbSize[SchedSelIdx]);
     }

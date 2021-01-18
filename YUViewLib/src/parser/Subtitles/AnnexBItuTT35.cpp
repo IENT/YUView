@@ -92,7 +92,7 @@ namespace parser::subtitle::itutt35
 
 void parse_user_data_registered_itu_t_t35(SubByteReaderLogging &reader)
 {
-  SubByteReaderLoggingSubLevel subLevel("user_data_registered_itu_t_t35()");
+  SubByteReaderLoggingSubLevel subLevel(reader, "user_data_registered_itu_t_t35()");
 
   unsigned itu_t_t35_country_code;
   {

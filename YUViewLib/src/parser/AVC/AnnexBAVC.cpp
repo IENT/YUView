@@ -245,20 +245,6 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   {
     nalAVC->header.parse(reader);
 
-    if (nalAVC->header.isSlice())
-    {
-      // Reparse the SEI messages that we could not parse so far. This is a slice so all parameter
-      // sets should be available now.
-      while (!this->reparse_sei.empty())
-      {
-        // TODO: What is the associatedSPS???? Must be set here.
-        auto  associatedSPS = std::make_shared<seq_parameter_set_rbsp>();
-        auto &sei           = this->reparse_sei.front();
-        sei.reparse(this->activeParameterSets.spsMap, associatedSPS);
-        reparse_sei.pop();
-      }
-    }
-
     if (nalAVC->header.nal_unit_type == NalType::SPS)
     {
       specificDescription = " SPS";
@@ -350,6 +336,16 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         this->curFrameFileStartEndPos = nalStartEndPosFile;
         this->curFramePOC             = newSlice->globalPOC;
         this->curFrameIsRandomAccess  = isRandomAccess;
+
+        if (this->activeParameterSets.ppsMap.count(newSlice->pic_parameter_set_id) > 0)
+        {
+          auto pps = this->activeParameterSets.ppsMap.at(newSlice->pic_parameter_set_id);
+          if (this->activeParameterSets.spsMap.count(pps->seq_parameter_set_id))
+          {
+            this->currentAUAssociatedSPS =
+                this->activeParameterSets.spsMap.at(pps->seq_parameter_set_id);
+          }
+        }
       }
       else if (this->curFrameFileStartEndPos && nalStartEndPosFile)
         // Another slice NAL which belongs to the last frame
@@ -371,9 +367,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     {
       specificDescription = " SEI";
       auto newSEI         = std::make_shared<sei_rbsp>();
-      // TODO: What is the associatedSPS???? Must be set here.
-      auto associatedSPS = std::make_shared<seq_parameter_set_rbsp>();
-      newSEI->parse(reader, this->activeParameterSets.spsMap, associatedSPS);
+      newSEI->parse(reader, this->activeParameterSets.spsMap, this->currentAUAssociatedSPS);
 
       for (const auto &sei : newSEI->seis)
       {
@@ -416,6 +410,18 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     {
       specificDescription = " AUD";
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed AUD");
+    }
+
+    if (nalAVC->header.isSlice())
+    {
+      // Reparse the SEI messages that we could not parse so far. This is a slice so all parameter
+      // sets should be available now.
+      while (!this->reparse_sei.empty())
+      {
+        auto &sei = this->reparse_sei.front();
+        sei.reparse(this->activeParameterSets.spsMap, this->currentAUAssociatedSPS);
+        reparse_sei.pop();
+      }
     }
   }
   catch (const std::exception &e)
@@ -461,6 +467,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     this->counterAU++;
     this->currentAUAllSlicesIntra = true;
     this->currentAUSliceTypes.clear();
+    this->currentAUAssociatedSPS.reset();
   }
   if (this->newBufferingPeriodSEI)
     this->lastBufferingPeriodSEI = this->newBufferingPeriodSEI;
@@ -611,8 +618,8 @@ QByteArray AnnexBAVC::getExtradata()
   while (ppsData.back() == 0)
     ppsData.pop_back();
 
-  e.push_back((ppsData.size() + 1) >> 8);
-  e.push_back((ppsData.size() + 1) & 0xff);
+  e.push_back((unsigned char)((ppsData.size() + 1) >> 8));
+  e.push_back((unsigned char)((ppsData.size() + 1) & 0xff));
   e.insert(e.end(), ppsData.begin(), ppsData.end());
 
   return reader::SubByteReaderLogging::convertToQByteArray(e);

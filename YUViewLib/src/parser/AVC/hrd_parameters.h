@@ -47,10 +47,10 @@ public:
   unsigned int     cpb_cnt_minus1{};
   unsigned int     bit_rate_scale{};
   unsigned int     cpb_size_scale{};
-  vector<quint32>  bit_rate_value_minus1;
-  vector<quint32>  cpb_size_value_minus1;
-  vector<unsigned> BitRate;
-  vector<unsigned> CpbSize;
+  vector<uint64_t> bit_rate_value_minus1;
+  vector<uint64_t> cpb_size_value_minus1;
+  vector<uint64_t> BitRate;
+  vector<uint64_t> CpbSize;
   vector<bool>     cbr_flag;
   unsigned int     initial_cpb_removal_delay_length_minus1{23};
   unsigned int     cpb_removal_delay_length_minus1{};
@@ -58,4 +58,4 @@ public:
   unsigned int     time_offset_length{24};
 };
 
-} // namespace parser::av1
+} // namespace parser::avc

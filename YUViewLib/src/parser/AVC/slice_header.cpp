@@ -40,7 +40,6 @@
 #include "seq_parameter_set_rbsp.h"
 #include "typedef.h"
 
-
 #define PARSER_AVC_SLICEHEADER_DEBUG_OUTPUT 0
 #if PARSER_AVC_SLICEHEADER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -73,6 +72,9 @@ parser::CodingEnum<SliceType>
 std::string to_string(SliceType type) { return sliceTypeCoding.getMeaning(type); }
 
 using namespace reader;
+
+slice_header::slice_header() {}
+slice_header::~slice_header() {}
 
 void slice_header::parse(reader::SubByteReaderLogging &reader,
                          SPSMap &                      spsMap,
@@ -183,21 +185,33 @@ void slice_header::parse(reader::SubByteReaderLogging &reader,
 
   if (nal_unit_type == NalType::CODED_SLICE_EXTENSION ||
       nal_unit_type == NalType::CODED_SLICE_EXTENSION_DEPTH_MAP)
-    this->refPicListMvcModification.parse(reader, this->slice_type);
+  {
+    this->refPicListMvcModification = std::make_unique<ref_pic_list_mvc_modification>();
+    this->refPicListMvcModification->parse(reader, this->slice_type);
+  }
   else
-    this->refPicListModification.parse(reader, this->slice_type);
+  {
+    this->refPicListModification = std::make_unique<ref_pic_list_modification>();
+    this->refPicListModification->parse(reader, this->slice_type);
+  }
 
   if ((refPPS->weighted_pred_flag &&
        (this->slice_type == SliceType::SLICE_P || this->slice_type == SliceType::SLICE_SP)) ||
       (refPPS->weighted_bipred_idc == 1 && this->slice_type == SliceType::SLICE_B))
-    this->predWeightTable.parse(reader,
-                                this->slice_type,
-                                refSPS->seqParameterSetData.ChromaArrayType,
-                                num_ref_idx_l0_active_minus1,
-                                num_ref_idx_l1_active_minus1);
+  {
+    this->predWeightTable = std::make_unique<pred_weight_table>();
+    this->predWeightTable->parse(reader,
+                                 this->slice_type,
+                                 refSPS->seqParameterSetData.ChromaArrayType,
+                                 num_ref_idx_l0_active_minus1,
+                                 num_ref_idx_l1_active_minus1);
+  }
 
   if (nal_ref_idc != 0)
-    this->decRefPicMarking.parse(reader, this->IdrPicFlag);
+  {
+    this->decRefPicMarking = std::make_unique<dec_ref_pic_marking>();
+    this->decRefPicMarking->parse(reader, this->IdrPicFlag);
+  }
 
   if (refPPS->entropy_coding_mode_flag && this->slice_type != SliceType::SLICE_I &&
       this->slice_type != SliceType::SLICE_SI)
@@ -230,9 +244,10 @@ void slice_header::parse(reader::SubByteReaderLogging &reader,
 
   // Calculate the POC
   auto memoryManagement5InPrevPic =
-      (std::find(prev_pic->decRefPicMarking.memory_management_control_operation_list.begin(),
-                 prev_pic->decRefPicMarking.memory_management_control_operation_list.end(),
-                 5) != prev_pic->decRefPicMarking.memory_management_control_operation_list.end());
+      (prev_pic->decRefPicMarking &&
+       std::find(prev_pic->decRefPicMarking->memory_management_control_operation_list.begin(),
+                 prev_pic->decRefPicMarking->memory_management_control_operation_list.end(),
+                 5) != prev_pic->decRefPicMarking->memory_management_control_operation_list.end());
   if (refSPS->seqParameterSetData.pic_order_cnt_type == 0)
   {
     // 8.2.1.1 Decoding process for picture order count type 0

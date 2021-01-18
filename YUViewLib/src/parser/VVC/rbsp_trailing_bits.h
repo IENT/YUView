@@ -34,7 +34,7 @@
 
 #include "parser/common/SubByteReaderLogging.h"
 
-namespace parser::avc
+namespace parser::vvc
 {
 
 class rbsp_trailing_bits

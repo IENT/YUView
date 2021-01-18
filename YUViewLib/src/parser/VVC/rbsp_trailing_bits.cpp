@@ -32,7 +32,7 @@
 
 #include "rbsp_trailing_bits.h"
 
-namespace parser::avc
+namespace parser::vvc
 {
 
 using namespace parser::reader;
