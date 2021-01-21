@@ -183,10 +183,7 @@ jobs:
       shell: bash
     - name: Install jom
       run: |
-        cd $GITHUB_WORKSPACE
-        curl -L https://download.qt.io/official_releases/jom/jom.zip -o jom.zip
-        7z x jom.zip -ojom
-        cp jom/jom.exe $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/
+        choco install jom
       shell: bash
     - name: Install openSSL
       run: |
