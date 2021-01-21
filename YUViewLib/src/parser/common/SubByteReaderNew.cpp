@@ -116,7 +116,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readBits(size_t nrBits)
 std::tuple<ByteVector, std::string> SubByteReaderNew::readBytes(size_t nrBytes)
 {
   if (this->posInBufferBits != 0 && this->posInBufferBits != 8)
-    throw std::logic_error("When reading bytes from the bitstream, it should be byte aligned.");
+    throw std::logic_error("When reading bytes from the bitstream, it must be byte aligned.");
 
   if (this->posInBufferBits == 8)
     if (!this->gotoNextByte())
@@ -187,7 +187,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readLEB128()
   // The highest bit indicates if we need to read another bit. The rest of the
   // bits is added to the counter (shifted accordingly) See the AV1 reading
   // specification
-  uint64_t value = 0;
+  uint64_t    value = 0;
   std::string coding;
   for (unsigned i = 0; i < 8; i++)
   {
@@ -202,9 +202,9 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readLEB128()
 
 std::tuple<uint64_t, std::string> SubByteReaderNew::readUVLC()
 {
-  auto leadingZeros = 0u;
+  auto        leadingZeros = 0u;
   std::string coding;
-  
+
   while (1)
   {
     auto [done, done_coding] = this->readBits(1);
@@ -213,7 +213,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readUVLC()
       break;
     leadingZeros++;
   }
-  
+
   if (leadingZeros >= 32)
     return {((uint64_t)1 << 32) - 1, coding};
   auto [value, value_coding] = this->readBits(leadingZeros);
@@ -230,7 +230,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readNS(uint64_t maxVal)
   // FloorLog2
   uint64_t floorVal;
   {
-    auto x = maxVal;
+    auto     x = maxVal;
     unsigned s = 0;
     while (x != 0)
     {
@@ -253,8 +253,8 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readNS(uint64_t maxVal)
 
 std::tuple<int64_t, std::string> SubByteReaderNew::readSU(unsigned nrBits)
 {
-  auto [value, coding]    = readBits(nrBits);
-  int signMask = 1 << (nrBits - 1);
+  auto [value, coding] = readBits(nrBits);
+  int signMask         = 1 << (nrBits - 1);
   if (value & signMask)
   {
     auto subValue = int64_t(value) - 2 * signMask;
@@ -298,7 +298,7 @@ bool SubByteReaderNew::more_rbsp_data() const
     unsigned char c = this->byteVector[posBytes];
     if (terminatingBitFound && c != 0)
       return true;
-    else if (!terminatingBitFound && (c & 128))
+    else if (!terminatingBitFound && (c == 128))
       terminatingBitFound = true;
     else
       return true;
@@ -348,6 +348,21 @@ size_t SubByteReaderNew::nrBytesLeft() const
   if (this->byteVector.size() <= this->posInBufferBytes)
     return 0;
   return this->byteVector.size() - this->posInBufferBytes - 1;
+}
+
+ByteVector SubByteReaderNew::peekBytes(unsigned nrBytes) const
+{
+  if (this->posInBufferBits != 0 && this->posInBufferBits != 8)
+    throw std::logic_error("When peeking bytes from the bitstream, it must be byte aligned.");
+
+  auto pos = this->posInBufferBytes;
+  if (this->posInBufferBits == 8)
+    pos++;
+
+  if (pos + nrBytes > this->byteVector.size())
+    throw std::logic_error("Not enough data in the input to peek that far");
+
+  return ByteVector(this->byteVector.begin() + pos, this->byteVector.begin() + pos + nrBytes);
 }
 
 bool SubByteReaderNew::gotoNextByte()

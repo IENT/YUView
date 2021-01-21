@@ -41,12 +41,9 @@ void rbsp_trailing_bits::parse(SubByteReaderLogging &reader)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "rbsp_trailing_bits");
 
-  this->rbsp_stop_one_bit = reader.readFlag("rbsp_stop_one_bit", Options().withCheckEqualTo(1));
+  reader.readFlag("rbsp_stop_one_bit", Options().withCheckEqualTo(1));
   while (!reader.byte_aligned())
-  {
-    this->rbsp_alignment_zero_bit =
-        reader.readFlag("rbsp_alignment_zero_bit", Options().withCheckEqualTo(0));
-  }
+    reader.readFlag("rbsp_alignment_zero_bit", Options().withCheckEqualTo(0));
 }
 
 } // namespace parser::vvc

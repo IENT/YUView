@@ -60,6 +60,8 @@ public:
   [[nodiscard]] size_t nrBytesRead() const;
   [[nodiscard]] size_t nrBytesLeft() const;
 
+  [[nodiscard]] ByteVector peekBytes(unsigned nrBytes) const;
+
   void disableEmulationPrevention() { skipEmulationPrevention = false; }
 
 protected:

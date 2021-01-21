@@ -77,11 +77,13 @@ struct Options
   withCheckSmaller(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
   [[nodiscard]] Options &&
   withCheckRange(Range<int64_t> range, bool inclusive = true, const std::string &errorIfFail = {});
+  [[nodiscard]] Options &&withLoggingDisabled();
 
   std::string                         meaningString;
   std::map<int, std::string>          meaningMap;
   std::function<std::string(int64_t)> meaningFunction;
   std::vector<std::unique_ptr<Check>> checkList;
+  bool                                loggingDisabled{false};
 };
 
 } // namespace parser::reader

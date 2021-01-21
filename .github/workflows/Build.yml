@@ -184,9 +184,8 @@ jobs:
     - name: Install jom
       run: |
         cd $GITHUB_WORKSPACE
-        curl -L https://download.qt.io/official_releases/jom/jom.zip -o jom.zip
-        7z x jom.zip -ojom
-        cp jom/jom.exe $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/
+        curl -L https://github.com/ChristianFeldmann/jom/releases/download/v1.1.3-build/jom.exe -o jom.exe
+        cp jom.exe $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/
       shell: bash
     - name: Install openSSL
       run: |

@@ -123,5 +123,7 @@ itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawV
 
 QList<int> playlistItemWithVideo::getCachedFrames() const
 {
-  return video->getCachedFrames();
+  if (video)
+    return video->getCachedFrames();
+  return {};
 }

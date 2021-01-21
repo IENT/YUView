@@ -81,7 +81,7 @@ public:
   {
     (void)iFrameNr;
     (void)filePos;
-    return QList<QByteArray>();
+    return {};
   }
   QByteArray getExtradata() override { return QByteArray(); }
   IntPair    getProfileLevel() override;

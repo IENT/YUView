@@ -335,7 +335,7 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
 #if DECODERFFMPEG_DEBUG_OUTPUT
     {
       QString meaning = QString("decoderFFmpeg::pushAVPacket: Error sending packet - err %1").arg(retPush);
-      if (retPush == 1094995529)
+      if (retPush == -1094995529)
         meaning += " INDA";
       // Log the first bytes
       meaning += " B(";
@@ -374,7 +374,7 @@ bool decoderFFmpeg::decodeFrame()
   if (retRecieve == 0)
   {
     // We recieved a frame.
-    DEBUG_FFMPEG("Received frame: Size(%dx%d) PTS %ld type %d %s", frame.getWidth(), frame.getHeight(), frame.getPTS(), frame.get_pict_type(), frame.get_key_frame() ? "key frame" : "");
+    DEBUG_FFMPEG("Received frame: Size(%dx%d) PTS %ld type %d %s", frame.getWidth(), frame.getHeight(), frame.getPTS(), frame.getPictType(), frame.getKeyFrame() ? "key frame" : "");
     // Checkt the size of the retrieved image
     if (frameSize != frame.getSize())
       return this->setErrorB("Received a frame of different size");

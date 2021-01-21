@@ -33,7 +33,6 @@
 #include "AnnexBItuTT35.h"
 
 #include "Subtitle608.h"
-#include "parser/common/SubByteReaderLogging.h"
 #include "parser/common/functions.h"
 
 namespace
@@ -91,14 +90,9 @@ void parse_ATSC1_data(SubByteReaderLogging &reader)
 namespace parser::subtitle::itutt35
 {
 
-void parse_user_data_registered_itu_t_t35(ByteVector &data, TreeItem *root)
+void parse_user_data_registered_itu_t_t35(SubByteReaderLogging &reader)
 {
-  SubByteReaderLogging reader(data, root, "user_data_registered_itu_t_t35()");
-  // For all SEI messages, the emulation prevention is already removed one level up
-  reader.disableEmulationPrevention();
-
-  if (data.size() < 2)
-    throw std::logic_error("Invalid length of user_data_registered_itu_t_t35 SEI.");
+  SubByteReaderLoggingSubLevel subLevel(reader, "user_data_registered_itu_t_t35()");
 
   unsigned itu_t_t35_country_code;
   {
@@ -306,11 +300,9 @@ void parse_user_data_registered_itu_t_t35(ByteVector &data, TreeItem *root)
         "itu_t_t35_country_code", 8, Options().withMeaningVector(itu_t_t35_country_code_meaning));
   }
 
-  unsigned i = 1;
   if (itu_t_t35_country_code == 0xff)
   {
     reader.readBits("itu_t_t35_country_code_extension_byte", 8);
-    i = 2;
   }
   if (itu_t_t35_country_code == 0xB5)
   {
@@ -319,7 +311,6 @@ void parse_user_data_registered_itu_t_t35(ByteVector &data, TreeItem *root)
     // value shall be 0x0031 (49).
     reader.readBits(
         "itu_t_t35_provider_code", 16, Options().withMeaningMap({{49, "ANSI-SCTE 128-1 2013"}}));
-    i += 2;
 
     unsigned user_identifier = reader.readBits(
         "user_identifier",
@@ -327,7 +318,6 @@ void parse_user_data_registered_itu_t_t35(ByteVector &data, TreeItem *root)
         Options()
             .withMeaningMap({{1195456820, "ATSC1_data()"}, {1146373937, "afd_data()"}})
             .withMeaning("SCTE/ATSC Reserved"));
-    i += 4;
 
     if (user_identifier == 1195456820)
       parse_ATSC1_data(reader);
@@ -335,10 +325,9 @@ void parse_user_data_registered_itu_t_t35(ByteVector &data, TreeItem *root)
     {
       // Display the raw bytes of the payload
       int idx = 0;
-      while (i < data.size())
+      while (reader.canReadBits(8))
       {
         reader.readBits(parser::formatArray("itu_t_t35_payload_byte_array", idx), 8);
-        i++;
       }
     }
   }
@@ -346,10 +335,9 @@ void parse_user_data_registered_itu_t_t35(ByteVector &data, TreeItem *root)
   {
     // Just display the raw bytes of the payload
     int idx = 0;
-    while (i < data.size())
+    while (reader.canReadBits(8))
     {
       reader.readBits(parser::formatArray("itu_t_t35_payload_byte_array", idx), 8);
-      i++;
     }
   }
 }

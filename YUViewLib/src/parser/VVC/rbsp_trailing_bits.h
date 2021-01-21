@@ -43,9 +43,6 @@ public:
   rbsp_trailing_bits()  = default;
   ~rbsp_trailing_bits() = default;
   void parse(reader::SubByteReaderLogging &reader);
-
-  bool rbsp_stop_one_bit{};
-  bool rbsp_alignment_zero_bit{};
 };
 
 } // namespace parser::vvc

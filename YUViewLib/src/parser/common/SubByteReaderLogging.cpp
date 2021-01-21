@@ -45,7 +45,7 @@ template <typename T> std::string formatCoding(const std::string formatName, T v
 {
   std::ostringstream stringStream;
   stringStream << formatName;
-  if (formatName != "u(1)")
+  if (formatName.find("(v)") != std::string::npos && formatName != "Calc")
     stringStream << " -> u(" << value << ")";
   return stringStream.str();
 }
@@ -65,7 +65,7 @@ void checkAndLog(TreeItem *         item,
       break;
   }
 
-  if (item)
+  if (item && !options.loggingDisabled)
   {
     std::string meaning = options.meaningString;
     if (options.meaningMap.count(int64_t(value)) > 0)
@@ -94,7 +94,7 @@ void checkAndLog(TreeItem *         item,
                  const std::string &code)
 {
   // There are no range checks for ByteVectors. Also the meaningMap does nothing.
-  if (item)
+  if (item && !options.loggingDisabled)
   {
     if (code.size() != value.size() * 8)
       throw std::logic_error("Nr bytes and size of code does not match.");
@@ -104,7 +104,8 @@ void checkAndLog(TreeItem *         item,
     {
       auto              c = value.at(i);
       std::stringstream valueStream;
-      valueStream << "0x" << std::setfill('0') << std::setw(2) << std::hex << c << " (" << c << ")";
+      valueStream << "0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(c) << " ("
+                  << c << ")";
       auto byteCode = code.substr(i * 8, 8);
       new TreeItem(byteVectorItem,
                    "Byte " + std::to_string(i),
@@ -124,6 +125,16 @@ ByteVector SubByteReaderLogging::convertToByteVector(QByteArray data)
   for (auto i = 0u; i < unsigned(data.size()); i++)
   {
     ret.push_back(data.at(i));
+  }
+  return ret;
+}
+
+QByteArray SubByteReaderLogging::convertToQByteArray(ByteVector data)
+{
+  QByteArray ret;
+  for (auto i = 0u; i < unsigned(data.size()); i++)
+  {
+    ret.append(data.at(i));
   }
   return ret;
 }
@@ -288,7 +299,7 @@ ByteVector SubByteReaderLogging::readBytes(const std::string &symbolName,
       throw std::logic_error("Trying to ready bytes while not byte aligned.");
 
     auto [value, code] = SubByteReaderNew::readBytes(nrBytes);
-    checkAndLog(this->currentTreeLevel, "se(v)", symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel, "u(8)", symbolName, options, value, code);
     return value;
   }
   catch (const std::exception &ex)

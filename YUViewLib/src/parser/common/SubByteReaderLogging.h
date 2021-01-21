@@ -68,6 +68,7 @@ public:
   // DEPRECATED. This is just for backwards compatibility and will be removed once
   // everything is using std types.
   static ByteVector convertToByteVector(QByteArray data);
+  static QByteArray convertToQByteArray(ByteVector data);
 
   uint64_t readBits(const std::string &symbolName, int numBits, const Options &options = {});
   bool     readFlag(const std::string &symbolName, const Options &options = {});
