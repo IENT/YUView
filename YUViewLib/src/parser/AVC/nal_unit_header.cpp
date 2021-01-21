@@ -31,7 +31,6 @@
  */
 
 #include "nal_unit_header.h"
-#include "parser/common/CodingEnum.h"
 
 namespace parser::avc
 {

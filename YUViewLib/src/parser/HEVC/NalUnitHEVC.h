@@ -32,63 +32,35 @@
 
 #pragma once
 
+#include "nal_unit_header.h"
 #include "parser/NalUnit.h"
-#include "parser/common/SubByteReaderLogging.h"
+
+#include <memory>
 
 namespace parser::vvc
 {
 
-enum class NalType
-{
-  TRAIL_NUT,
-  STSA_NUT,
-  RADL_NUT,
-  RASL_NUT,
-  RSV_VCL_4,
-  RSV_VCL_5,
-  RSV_VCL_6,
-  IDR_W_RADL,
-  IDR_N_LP,
-  CRA_NUT,
-  GDR_NUT,
-  RSV_IRAP_11,
-  OPI_NUT,
-  DCI_NUT,
-  VPS_NUT,
-  SPS_NUT,
-  PPS_NUT,
-  PREFIX_APS_NUT,
-  SUFFIX_APS_NUT,
-  PH_NUT,
-  AUD_NUT,
-  EOS_NUT,
-  EOB_NUT,
-  PREFIX_SEI_NUT,
-  SUFFIX_SEI_NUT,
-  FD_NUT,
-  RSV_NVCL_26,
-  RSV_NVCL_27,
-  UNSPEC_28,
-  UNSPEC_29,
-  UNSPEC_30,
-  UNSPEC_31,
-  UNSPECIFIED
-};
-
-class nal_unit_header
+class NalRBSP
 {
 public:
-  nal_unit_header()  = default;
-  ~nal_unit_header() = default;
-  void parse(reader::SubByteReaderLogging &reader);
-
-  QByteArray getNALHeader() const;
-
-  unsigned nuh_layer_id;
-  unsigned nuh_temporal_id_plus1;
-
-  NalType  nal_unit_type;
-  unsigned nalUnitTypeID;
+  NalRBSP()          = default;
+  virtual ~NalRBSP() = default;
 };
+
+class NalUnitVVC : public NalUnit
+{
+public:
+  NalUnitVVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
+      : NalUnit(nalIdx, filePosStartEnd)
+  {
+  }
+
+  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
+
+  nal_unit_header          header;
+  std::shared_ptr<NalRBSP> rbsp;
+};
+
+using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
 
 } // namespace parser::vvc

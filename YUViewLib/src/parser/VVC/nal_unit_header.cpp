@@ -82,8 +82,8 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "nal_unit_header");
 
-  this->forbidden_zero_bit    = reader.readFlag("forbidden_zero_bit");
-  this->nuh_reserved_zero_bit = reader.readFlag("nuh_reserved_zero_bit");
+  reader.readFlag("forbidden_zero_bit", Options().withCheckEqualTo(0));
+  reader.readFlag("nuh_reserved_zero_bit", Options().withCheckEqualTo(0));
   this->nuh_layer_id = reader.readBits("nuh_layer_id", 6, Options().withCheckRange({0, 55}));
 
   this->nalUnitTypeID = reader.readBits(
