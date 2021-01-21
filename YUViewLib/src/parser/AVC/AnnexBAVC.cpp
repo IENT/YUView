@@ -55,6 +55,22 @@
 #define DEBUG_AVC(fmt) ((void)0)
 #endif
 
+namespace
+{
+
+size_t getStartCodeOffset(const ByteVector &data)
+{
+  unsigned readOffset = 0;
+  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
+    readOffset = 3;
+  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
+           data.at(3) == (char)1)
+    readOffset = 4;
+  return readOffset;
+}
+
+} // namespace
+
 namespace parser
 {
 
@@ -179,14 +195,6 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     return parseResult;
   }
 
-  // Skip the NAL unit header
-  int readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet.
   // We want to parse the item and then set a good description.
@@ -198,7 +206,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
 
   AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
-  reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
+  reader::SubByteReaderLogging reader(data, nalRoot, "", getStartCodeOffset(data));
 
   std::string specificDescription;
   auto        nalAVC = std::make_shared<avc::NalUnitAVC>(nalID, nalStartEndPosFile);
@@ -659,18 +667,20 @@ QByteArray AnnexBAVC::getExtradata()
   // Write SPS
   while (spsData.back() == 0)
     spsData.pop_back();
-  e.push_back((unsigned char)((spsData.size() + 1) >> 8));
-  e.push_back((unsigned char)((spsData.size() + 1) & 0xff));
-  e.insert(e.end(), spsData.begin(), spsData.end());
+  auto dataSizeSPS = spsData.size() - getStartCodeOffset(spsData);
+  e.push_back((unsigned char)(dataSizeSPS >> 8));
+  e.push_back((unsigned char)(dataSizeSPS & 0xff));
+  e.insert(e.end(), spsData.begin() + getStartCodeOffset(spsData), spsData.end());
 
   // Write PPS
   e.push_back((unsigned char)0x01); /* number of pps */
   while (ppsData.back() == 0)
     ppsData.pop_back();
 
-  e.push_back((unsigned char)((ppsData.size() + 1) >> 8));
-  e.push_back((unsigned char)((ppsData.size() + 1) & 0xff));
-  e.insert(e.end(), ppsData.begin(), ppsData.end());
+  auto dataSizePPS = ppsData.size() - getStartCodeOffset(ppsData);
+  e.push_back((unsigned char)(dataSizePPS >> 8));
+  e.push_back((unsigned char)(dataSizePPS & 0xff));
+  e.insert(e.end(), ppsData.begin() + getStartCodeOffset(ppsData), ppsData.end());
 
   return reader::SubByteReaderLogging::convertToQByteArray(e);
 }
