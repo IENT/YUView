@@ -35,9 +35,9 @@
 #include <algorithm>
 #include <cmath>
 
-#include "common/Macros.h"
-#include "common/SubByteReaderLogging.h"
-#include "Subtitles/AnnexBItuTT35.h"
+#include "parser/common/Macros.h"
+#include "parser/common/SubByteReaderLogging.h"
+#include "parser/Subtitles/AnnexBItuTT35.h"
 #include "parser/common/SubByteReaderLogging.h"
 
 #define PARSER_HEVC_DEBUG_OUTPUT 0
@@ -66,7 +66,7 @@ double AnnexBHEVC::getFramerate() const
     // This should be an hevc nal
     auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
-    if (nal_hevc->nal_type == VPS_NUT) 
+    if (nal_hevc->nal_type == hevc::NalType::VPS_NUT) 
     {
       auto v = nal_hevc.dynamicCast<vps>();
 
@@ -83,7 +83,7 @@ double AnnexBHEVC::getFramerate() const
     // This should be an hevc nal
     auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
-    if (nal_hevc->nal_type == SPS_NUT)
+    if (nal_hevc->nal_type == hevc::NalType::SPS_NUT)
     {
       auto s = nal_hevc.dynamicCast<sps>();
       if (s->vui_parameters_present_flag && s->sps_vui_parameters.vui_timing_info_present_flag)
@@ -103,7 +103,7 @@ QSize AnnexBHEVC::getSequenceSizeSamples() const
     // This should be an hevc nal
     auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
-    if (nal_hevc->nal_type == SPS_NUT) 
+    if (nal_hevc->nal_type == hevc::NalType::SPS_NUT) 
     {
       auto s = nal.dynamicCast<sps>();
       return QSize(s->get_conformance_cropping_width(), s->get_conformance_cropping_height());
@@ -124,7 +124,7 @@ yuvPixelFormat AnnexBHEVC::getPixelFormat() const
     // This should be an hevc nal
     auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
-    if (nal_hevc->nal_type == SPS_NUT)
+    if (nal_hevc->nal_type == hevc::NalType::SPS_NUT)
     {
       auto s = nal_hevc.dynamicCast<sps>();
       if (s->chroma_format_idc == 0)
@@ -193,19 +193,19 @@ QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fi
         return paramSets;
       }
     }
-    else if (nal_hevc->nal_type == VPS_NUT)
+    else if (nal_hevc->nal_type == hevc::NalType::VPS_NUT)
     {
       // Add vps (replace old one if existed)
       auto v = nal_hevc.dynamicCast<vps>();
       active_VPS_list.insert(v->vps_video_parameter_set_id, v);
     }
-    else if (nal_hevc->nal_type == SPS_NUT) 
+    else if (nal_hevc->nal_type == hevc::NalType::SPS_NUT) 
     {
       // Add sps (replace old one if existed)
       auto s = nal_hevc.dynamicCast<sps>();
       active_SPS_list.insert(s->sps_seq_parameter_set_id, s);
     }
-    else if (nal_hevc->nal_type == PPS_NUT) 
+    else if (nal_hevc->nal_type == hevc::NalType::PPS_NUT) 
     {
       // Add pps (replace old one if existed)
       auto p = nal_hevc.dynamicCast<pps>();
@@ -230,7 +230,7 @@ QByteArray AnnexBHEVC::getExtradata()
   {
     // This should be an hevc nal
     auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
-    if (nal_hevc->nal_type == VPS_NUT)
+    if (nal_hevc->nal_type == hevc::NalType::VPS_NUT)
     {
       auto v = nal.dynamicCast<vps>();
       ret.append(startCode);
@@ -242,7 +242,7 @@ QByteArray AnnexBHEVC::getExtradata()
   {
     // This should be an hevc nal
     auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
-    if (nal_hevc->nal_type == SPS_NUT)
+    if (nal_hevc->nal_type == hevc::NalType::SPS_NUT)
     {
       auto s = nal.dynamicCast<sps>();
       ret.append(startCode);
@@ -254,7 +254,7 @@ QByteArray AnnexBHEVC::getExtradata()
   {
     // This should be an hevc nal
     auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
-    if (nal_hevc->nal_type == PPS_NUT)
+    if (nal_hevc->nal_type == hevc::NalType::PPS_NUT)
     {
       auto p = nal.dynamicCast<pps>();
       ret.append(startCode);
@@ -272,7 +272,7 @@ IntPair AnnexBHEVC::getProfileLevel()
     // This should be an hevc nal
     auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
-    if (nal_hevc->nal_type == SPS_NUT)
+    if (nal_hevc->nal_type == hevc::NalType::SPS_NUT)
     {
       auto s = nal.dynamicCast<sps>();
       return {s->ptl.general_profile_idc, s->ptl.general_level_idc};
@@ -288,7 +288,7 @@ Ratio AnnexBHEVC::getSampleAspectRatio()
     // This should be an hevc nal
     auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
-    if (nal_hevc->nal_type == SPS_NUT)
+    if (nal_hevc->nal_type == hevc::NalType::SPS_NUT)
     {
       auto s = nal.dynamicCast<sps>();
       if (s->vui_parameters_present_flag && s->sps_vui_parameters.aspect_ratio_info_present_flag)
@@ -394,7 +394,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
   }
 
   bool parsingSuccess = true;
-  if (nal_hevc.nal_type == VPS_NUT)
+  if (nal_hevc.nal_type == hevc::NalType::VPS_NUT)
   {
     // A video parameter set
     auto new_vps = QSharedPointer<vps>(new vps(nal_hevc));
@@ -412,7 +412,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
 
     DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit VPS ID " << new_vps->vps_video_parameter_set_id);
   }
-  else if (nal_hevc.nal_type == SPS_NUT)
+  else if (nal_hevc.nal_type == hevc::NalType::SPS_NUT)
   {
     // A sequence parameter set
     auto new_sps = QSharedPointer<sps>(new sps(nal_hevc));
@@ -430,7 +430,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
 
     DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit SPS ID " << new_sps->sps_seq_parameter_set_id);
   }
-  else if (nal_hevc.nal_type == PPS_NUT) 
+  else if (nal_hevc.nal_type == hevc::NalType::PPS_NUT) 
   {
     // A picture parameter set
     auto new_pps = QSharedPointer<pps>(new pps(nal_hevc));
@@ -475,19 +475,19 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
       isRandomAccessSkip = false;
       if (firstPOCRandomAccess == INT_MAX)
       {
-        if (nal_hevc.nal_type == CRA_NUT
-          || nal_hevc.nal_type == BLA_W_LP
-          || nal_hevc.nal_type == BLA_N_LP
-          || nal_hevc.nal_type == BLA_W_RADL)
+        if (nal_hevc.nal_type == hevc::NalType::CRA_NUT
+          || nal_hevc.nal_type == hevc::NalType::BLA_W_LP
+          || nal_hevc.nal_type == hevc::NalType::BLA_N_LP
+          || nal_hevc.nal_type == hevc::NalType::BLA_W_RADL)
           // set the POC random access since we need to skip the reordered pictures in the case of CRA/CRANT/BLA/BLANT.
           firstPOCRandomAccess = new_slice->PicOrderCntVal;
-        else if (nal_hevc.nal_type == IDR_W_RADL || nal_hevc.nal_type == IDR_N_LP)
+        else if (nal_hevc.nal_type == hevc::NalType::IDR_W_RADL || nal_hevc.nal_type == hevc::NalType::IDR_N_LP)
           firstPOCRandomAccess = -INT_MAX; // no need to skip the reordered pictures in IDR, they are decodable.
         else
           isRandomAccessSkip = true;
       }
       // skip the reordered pictures, if necessary
-      else if (new_slice->PicOrderCntVal < firstPOCRandomAccess && (nal_hevc.nal_type == RASL_R || nal_hevc.nal_type == RASL_N))
+      else if (new_slice->PicOrderCntVal < firstPOCRandomAccess && (nal_hevc.nal_type == hevc::NalType::RASL_R || nal_hevc.nal_type == hevc::NalType::RASL_N))
         isRandomAccessSkip = true;
 
       if (new_slice->first_slice_segment_in_pic_flag)
@@ -530,7 +530,7 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
 
     DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Slice POC " << POC << " - pocCounterOffset " << pocCounterOffset << " maxPOCCount " << maxPOCCount << (new_slice->isIRAP() ? " - IRAP" : "") << (new_slice->NoRaslOutputFlag ? "" : " - RASL") << (parsingSuccess ? "" : " ERROR"));
   }
-  else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
+  else if (nal_hevc.nal_type == hevc::NalType::PREFIX_SEI_NUT || nal_hevc.nal_type == hevc::NalType::SUFFIX_SEI_NUT)
   {
     // An SEI NAL. Each SEI NAL may contain multiple sei_payloads
     SubByteReader seiReader(payload);
@@ -623,13 +623,13 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
     specificDescription = QString(" Number Messages: %1").arg(sei_count);
     parseResult.nalTypeName = "SEI(" + std::to_string(sei_count) + ")";
   }
-  else if (nal_hevc.nal_type == FD_NUT)
+  else if (nal_hevc.nal_type == hevc::NalType::FD_NUT)
   {
     specificDescription = "Filler";
     parseResult.nalTypeName = "FILLER";
     DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Filler");
   }
-  else if (nal_hevc.nal_type == UNSPEC62 || nal_hevc.nal_type == UNSPEC63)
+  else if (nal_hevc.nal_type == hevc::NalType::UNSPEC62 || nal_hevc.nal_type == hevc::NalType::UNSPEC63)
   {
     // Dolby vision EL or metadata
     // Technically this is not a specific NAL unit type but dolby vision uses a different
@@ -680,9 +680,9 @@ AnnexB::ParseResult AnnexBHEVC::parseAndAddNALUnit(int nalID, QByteArray data, s
     this->currentAUSliceTypes[currentSliceType]++;
   }
 
-  if (nalRoot)
-    // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nalIdx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
+  // if (nalRoot)
+  //   // Set a useful name of the TreeItem (the root for this NAL)
+  //   nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nalIdx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
 
   parseResult.success = true;
   return parseResult;
@@ -1732,7 +1732,7 @@ bool AnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps
     if (actSPS->separate_colour_plane_flag) 
       READBITS(colour_plane_id, 2);
 
-    if(nal_type != IDR_W_RADL && nal_type != IDR_N_LP)
+    if(nal_type != hevc::NalType::IDR_W_RADL && nal_type != hevc::NalType::IDR_N_LP)
     {
       READBITS(slice_pic_order_cnt_lsb, actSPS->log2_max_pic_order_cnt_lsb_minus4 + 4); // Max 16 bits read
       READFLAG(short_term_ref_pic_set_sps_flag);
@@ -1901,7 +1901,7 @@ bool AnnexBHEVC::slice::parse_slice(const QByteArray &sliceHeaderData, const sps
   // If the current picture is an IDR picture, a BLA picture, the first picture in the bitstream in decoding order, or the first
   // picture that follows an end of sequence NAL unit in decoding order, the variable NoRaslOutputFlag is set equal to 1.
   NoRaslOutputFlag = false;
-  if (nal_type == IDR_W_RADL || nal_type == IDR_N_LP || nal_type == BLA_W_LP)
+  if (nal_type == hevc::NalType::IDR_W_RADL || nal_type == hevc::NalType::IDR_N_LP || nal_type == hevc::NalType::BLA_W_LP)
     NoRaslOutputFlag = true;
   else if (bFirstAUInDecodingOrder) 
   {
@@ -2034,44 +2034,44 @@ bool AnnexBHEVC::nal_unit_hevc::parseNalUnitHeader(const QByteArray &parameterSe
   READBITS(nuh_temporal_id_plus1, 3);
 
   // Set the nal unit type
-  nal_type = (nalUnitTypeID > UNSPECIFIED) ? UNSPECIFIED : (nal_unit_type)nalUnitTypeID;
+  //nal_type = (nalUnitTypeID > hevc::NalType::UNSPECIFIED) ? hevc::NalType::UNSPECIFIED : (nal_unit_type)nalUnitTypeID;
 
   return true;
 }
 
 bool AnnexBHEVC::nal_unit_hevc::isIRAP()
 { 
-  return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
-    nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
-    nal_type == IDR_N_LP       || nal_type == CRA_NUT    ||
-    nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); 
+  return (nal_type == hevc::NalType::BLA_W_LP       || nal_type == hevc::NalType::BLA_W_RADL ||
+    nal_type == hevc::NalType::BLA_N_LP       || nal_type == hevc::NalType::IDR_W_RADL ||
+    nal_type == hevc::NalType::IDR_N_LP       || nal_type == hevc::NalType::CRA_NUT    ||
+    nal_type == hevc::NalType::RSV_IRAP_VCL22 || nal_type == hevc::NalType::RSV_IRAP_VCL23); 
 }
 
 bool AnnexBHEVC::nal_unit_hevc::isSLNR() 
 { 
-  return (nal_type == TRAIL_N     || nal_type == TSA_N       ||
-    nal_type == STSA_N      || nal_type == RADL_N      ||
-    nal_type == RASL_N      || nal_type == RSV_VCL_N10 ||
-    nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); 
+  return (nal_type == hevc::NalType::TRAIL_N     || nal_type == hevc::NalType::TSA_N       ||
+    nal_type == hevc::NalType::STSA_N      || nal_type == hevc::NalType::RADL_N      ||
+    nal_type == hevc::NalType::RASL_N      || nal_type == hevc::NalType::RSV_VCL_N10 ||
+    nal_type == hevc::NalType::RSV_VCL_N12 || nal_type == hevc::NalType::RSV_VCL_N14); 
 }
 
 bool AnnexBHEVC::nal_unit_hevc::isRADL() { 
-  return (nal_type == RADL_N || nal_type == RADL_R); 
+  return (nal_type == hevc::NalType::RADL_N || nal_type == hevc::NalType::RADL_R); 
 }
 
 bool AnnexBHEVC::nal_unit_hevc::isRASL() 
 { 
-  return (nal_type == RASL_N || nal_type == RASL_R); 
+  return (nal_type == hevc::NalType::RASL_N || nal_type == hevc::NalType::RASL_R); 
 }
 
 bool AnnexBHEVC::nal_unit_hevc::isSlice() 
 { 
-  return (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT  ||
-    nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
-    nal_type == TRAIL_N    || nal_type == TRAIL_R    || nal_type == TSA_N    ||
-    nal_type == TSA_R      || nal_type == STSA_N     || nal_type == STSA_R   ||
-    nal_type == RADL_N     || nal_type == RADL_R     || nal_type == RASL_N   ||
-    nal_type == RASL_R); 
+  return (nal_type == hevc::NalType::IDR_W_RADL || nal_type == hevc::NalType::IDR_N_LP   || nal_type == hevc::NalType::CRA_NUT  ||
+    nal_type == hevc::NalType::BLA_W_LP   || nal_type == hevc::NalType::BLA_W_RADL || nal_type == hevc::NalType::BLA_N_LP ||
+    nal_type == hevc::NalType::TRAIL_N    || nal_type == hevc::NalType::TRAIL_R    || nal_type == hevc::NalType::TSA_N    ||
+    nal_type == hevc::NalType::TSA_R      || nal_type == hevc::NalType::STSA_N     || nal_type == hevc::NalType::STSA_R   ||
+    nal_type == hevc::NalType::RADL_N     || nal_type == hevc::NalType::RADL_R     || nal_type == hevc::NalType::RASL_N   ||
+    nal_type == hevc::NalType::RASL_R); 
 }
 
 int AnnexBHEVC::sei::parse_sei_header(SubByteReader &sei_reader, TreeItem *root)
@@ -2093,7 +2093,7 @@ int AnnexBHEVC::sei::parse_sei_header(SubByteReader &sei_reader, TreeItem *root)
     } while (byte == 255);
   }
 
-  if (nal_type == PREFIX_SEI_NUT)
+  if (nal_type == hevc::NalType::PREFIX_SEI_NUT)
   {
     if (payloadType == 0)
       payloadTypeName = "buffering_period";
@@ -2713,19 +2713,19 @@ bool AnnexBHEVC::auDelimiterDetector_t::isStartOfNewAU(nal_unit_hevc &nal, bool 
   bool isStart = false;
   if (this->primaryCodedPictureInAuEncountered)
   {
-    if (nal.nal_type == AUD_NUT && nal.nuh_layer_id == 0)
+    if (nal.nal_type == hevc::NalType::AUD_NUT && nal.nuh_layer_id == 0)
       isStart = true;
 
-    if (nal.nuh_layer_id == 0 && (nal.nal_type == VPS_NUT || nal.nal_type == SPS_NUT || nal.nal_type == PPS_NUT || nal.nal_type == PREFIX_SEI_NUT))
+    if (nal.nuh_layer_id == 0 && (nal.nal_type == hevc::NalType::VPS_NUT || nal.nal_type == hevc::NalType::SPS_NUT || nal.nal_type == hevc::NalType::PPS_NUT || nal.nal_type == hevc::NalType::PREFIX_SEI_NUT))
       isStart = true;
 
-    if (nal.nal_type == PREFIX_SEI_NUT && nal.nuh_layer_id == 0)
+    if (nal.nal_type == hevc::NalType::PREFIX_SEI_NUT && nal.nuh_layer_id == 0)
       isStart = true;
 
-    if (nal.nuh_layer_id == 0 && (nal.nal_type == RSV_NVCL41 || nal.nal_type == RSV_NVCL42 || nal.nal_type == RSV_NVCL43 || nal.nal_type == RSV_NVCL44))
+    if (nal.nuh_layer_id == 0 && (nal.nal_type == hevc::NalType::RSV_NVCL41 || nal.nal_type == hevc::NalType::RSV_NVCL42 || nal.nal_type == hevc::NalType::RSV_NVCL43 || nal.nal_type == hevc::NalType::RSV_NVCL44))
       isStart = true;
 
-    if (nal.nuh_layer_id == 0 && (nal.nal_type >= UNSPEC48 && nal.nal_type <= UNSPEC55))
+    if (nal.nuh_layer_id == 0 && (nal.nal_type >= hevc::NalType::UNSPEC48 && nal.nal_type <= hevc::NalType::UNSPEC55))
       isStart = true;
 
     if (nal.isSlice() && first_slice_segment_in_pic_flag)

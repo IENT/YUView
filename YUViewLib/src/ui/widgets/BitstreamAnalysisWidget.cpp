@@ -33,7 +33,7 @@
 #include "BitstreamAnalysisWidget.h"
 
 #include "parser/AVC/AnnexBAVC.h"
-#include "parser/AnnexBHEVC.h"
+#include "parser/HEVC/AnnexBHEVC.h"
 #include "parser/VVC/AnnexBVVC.h"
 #include "parser/Mpeg2/AnnexBMpeg2.h"
 #include "parser/AVFormat.h"

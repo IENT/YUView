@@ -37,7 +37,7 @@
 
 #include <memory>
 
-namespace parser::vvc
+namespace parser::hevc
 {
 
 class NalRBSP
@@ -47,10 +47,10 @@ public:
   virtual ~NalRBSP() = default;
 };
 
-class NalUnitVVC : public NalUnit
+class NalUnitHEVC : public NalUnit
 {
 public:
-  NalUnitVVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
+  NalUnitHEVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
       : NalUnit(nalIdx, filePosStartEnd)
   {
   }
@@ -61,6 +61,6 @@ public:
   std::shared_ptr<NalRBSP> rbsp;
 };
 
-using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;
+using NalMap = std::map<unsigned, std::shared_ptr<NalUnitHEVC>>;
 
-} // namespace parser::vvc
+} // namespace parser::hevc

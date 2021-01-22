@@ -34,10 +34,11 @@
 
 #include <QSharedPointer>
 
-#include "common/ReaderHelper.h"
+#include "parser/common/ReaderHelper.h"
 #include "video/videoHandlerYUV.h"
-#include "AnnexB.h"
-#include "NalUnit.h"
+#include "../AnnexB.h"
+#include "../NalUnit.h"
+#include "nal_unit_header.h"
 
 using namespace YUV_Internals;
 
@@ -69,7 +70,6 @@ protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
 
   // All the different NAL unit types (T-REC-H.265-201504 Page 85)
-  
   static const QStringList nal_unit_type_toString;
 
   /* The basic HEVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
@@ -92,7 +92,7 @@ protected:
     bool isSlice();
 
     // The information of the NAL unit header
-    nal_unit_type nal_type {UNSPECIFIED};
+    hevc::NalType nal_type {hevc::NalType::UNSPECIFIED};
     unsigned int nuh_layer_id;
     unsigned int nuh_temporal_id_plus1;
   };
