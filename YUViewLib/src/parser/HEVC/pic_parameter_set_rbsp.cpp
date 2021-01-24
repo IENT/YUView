@@ -134,6 +134,7 @@ void pic_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
     reader.logArbitrary("pps_extension_data_flag()", 0, "", "", "Not implemented yet...");
 
   // There is more to parse but we are not interested in this information (for now)
+  // this->rbspTrailingBits.parse(reader);
 
   if (entropy_coding_sync_enabled_flag && tiles_enabled_flag)
     reader.logArbitrary("Parallelism", "Mixed");

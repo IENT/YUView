@@ -136,47 +136,48 @@ SEIParsingResult unknown_sei::parse(reader::SubByteReaderLogging &          read
 }
 
 SEIParsingResult sei_message::parse(reader::SubByteReaderLogging &          reader,
-                                    NalType                                 nal_unit_type,
                                     VPSMap &                                vpsMap,
                                     SPSMap &                                spsMap,
                                     std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
-  SubByteReaderLoggingSubLevel subLevel(reader, "sei_message()");
-
-  this->payloadType = 0;
   {
-    unsigned byte;
-    do
-    {
-      byte = reader.readBits(
-          "last_payload_type_byte",
-          8,
-          Options().withMeaningMap({{255, "ff_byte"}}).withMeaning("last_payload_type_byte"));
-      this->payloadType += byte;
-    } while (byte == 255);
-  }
+    SubByteReaderLoggingSubLevel subLevel(reader, "sei_message()");
 
-  reader.logCalculatedValue("payloadType",
-                            this->payloadType,
-                            Options()
-                                .withMeaningMap(nal_unit_type == NalType::PREFIX_SEI_NUT
-                                                    ? prefixSEINameMap
-                                                    : suffixSEINameMap)
-                                .withMeaning("reserved_sei_message"));
-
-  this->payloadSize = 0;
-  {
-    unsigned byte;
-    do
+    this->payloadType = 0;
     {
-      byte = reader.readBits(
-          "last_payload_size_byte",
-          8,
-          Options().withMeaningMap({{255, "ff_byte"}}).withMeaning("last_payload_size_byte"));
-      this->payloadSize += byte;
-    } while (byte == 255);
+      unsigned byte;
+      do
+      {
+        byte = reader.readBits(
+            "last_payload_type_byte",
+            8,
+            Options().withMeaningMap({{255, "ff_byte"}}).withMeaning("last_payload_type_byte"));
+        this->payloadType += byte;
+      } while (byte == 255);
+    }
+
+    reader.logCalculatedValue("payloadType",
+                              this->payloadType,
+                              Options()
+                                  .withMeaningMap(this->seiNalUnitType == NalType::PREFIX_SEI_NUT
+                                                      ? prefixSEINameMap
+                                                      : suffixSEINameMap)
+                                  .withMeaning("reserved_sei_message"));
+
+    this->payloadSize = 0;
+    {
+      unsigned byte;
+      do
+      {
+        byte = reader.readBits(
+            "last_payload_size_byte",
+            8,
+            Options().withMeaningMap({{255, "ff_byte"}}).withMeaning("last_payload_size_byte"));
+        this->payloadSize += byte;
+      } while (byte == 255);
+    }
+    reader.logCalculatedValue("payloadSize", this->payloadSize);
   }
-  reader.logCalculatedValue("payloadSize", this->payloadSize);
 
   // For reparsing, first save all data and then call the same function that we will (possibly) also
   // call for reparsing.
@@ -187,20 +188,20 @@ SEIParsingResult sei_message::parse(reader::SubByteReaderLogging &          read
   // When reading the data above, emulation prevention was alread removed.
   this->payloadReader.disableEmulationPrevention();
 
-  return this->parsePayloadData(false, nal_unit_type, vpsMap, spsMap, associatedSPS);
+  return this->parsePayloadData(false, vpsMap, spsMap, associatedSPS);
 }
 
-SEIParsingResult sei_message::reparse(NalType                                 nal_unit_type,
-                                      VPSMap &                                vpsMap,
+SEIParsingResult sei_message::reparse(VPSMap &                                vpsMap,
                                       SPSMap &                                spsMap,
                                       std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
-  return this->parsePayloadData(true, nal_unit_type, vpsMap, spsMap, associatedSPS);
+  return this->parsePayloadData(true, vpsMap, spsMap, associatedSPS);
 }
 
-std::string sei_message::getPayloadTypeName(NalType nal_unit_type) const
+std::string sei_message::getPayloadTypeName() const
 {
-  auto list = (nal_unit_type == NalType::PREFIX_SEI_NUT ? prefixSEINameMap : suffixSEINameMap);
+  auto list =
+      (this->seiNalUnitType == NalType::PREFIX_SEI_NUT ? prefixSEINameMap : suffixSEINameMap);
   if (list.count(this->payloadType) == 0)
     return "unknown";
   return list.at(this->payloadType);
@@ -208,7 +209,6 @@ std::string sei_message::getPayloadTypeName(NalType nal_unit_type) const
 
 SEIParsingResult
 sei_message::parsePayloadData(bool                                    reparse,
-                              NalType                                 nal_unit_type,
                               VPSMap &                                vpsMap,
                               SPSMap &                                spsMap,
                               std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
@@ -216,31 +216,34 @@ sei_message::parsePayloadData(bool                                    reparse,
   if (this->parsingDone)
     throw std::logic_error("Parsing of SEI is already done");
 
-  if (nal_unit_type == NalType::PREFIX_SEI_NUT)
+  if (!reparse)
   {
-    if (this->payloadType == 0)
-      this->payload = std::make_shared<buffering_period>();
-    else if (this->payloadType == 1)
-      this->payload = std::make_shared<pic_timing>();
-    else if (this->payloadType == 5)
-      this->payload = std::make_shared<user_data_unregistered>();
-    else if (this->payloadType == 129)
-      this->payload = std::make_shared<active_parameter_sets>();
-    else if (this->payloadType == 137)
-      this->payload = std::make_shared<mastering_display_colour_volume>();
-    else if (this->payloadType == 144)
-      this->payload = std::make_shared<content_light_level_info>();
-    else if (this->payloadType == 147)
-      this->payload = std::make_shared<alternative_transfer_characteristics>();
+    if (this->seiNalUnitType == NalType::PREFIX_SEI_NUT)
+    {
+      if (this->payloadType == 0)
+        this->payload = std::make_shared<buffering_period>();
+      else if (this->payloadType == 1)
+        this->payload = std::make_shared<pic_timing>();
+      else if (this->payloadType == 5)
+        this->payload = std::make_shared<user_data_unregistered>();
+      else if (this->payloadType == 129)
+        this->payload = std::make_shared<active_parameter_sets>();
+      else if (this->payloadType == 137)
+        this->payload = std::make_shared<mastering_display_colour_volume>();
+      else if (this->payloadType == 144)
+        this->payload = std::make_shared<content_light_level_info>();
+      else if (this->payloadType == 147)
+        this->payload = std::make_shared<alternative_transfer_characteristics>();
+      else
+        this->payload = std::make_shared<unknown_sei>();
+    }
     else
-      this->payload = std::make_shared<unknown_sei>();
-  }
-  else
-  {
-    if (this->payloadType == 5)
-      this->payload = std::make_shared<user_data_unregistered>();
-    else
-      this->payload = std::make_shared<unknown_sei>();
+    {
+      if (this->payloadType == 5)
+        this->payload = std::make_shared<user_data_unregistered>();
+      else
+        this->payload = std::make_shared<unknown_sei>();
+    }
   }
 
   auto result = this->payload->parse(this->payloadReader, reparse, vpsMap, spsMap, associatedSPS);

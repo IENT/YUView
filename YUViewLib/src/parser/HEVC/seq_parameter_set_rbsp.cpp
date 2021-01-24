@@ -188,6 +188,8 @@ void seq_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
   if (this->sps_extension_5bits != 0)
     reader.logArbitrary("sps_extension_data_flag()", 0, "", "", "Not implemented yet...");
 
+  // rbspTrailingBits.parse(reader);
+
   // Calculate some values - Rec. ITU-T H.265 v3 (04/2015) 7.4.3.2.1
   this->MinCbLog2SizeY = this->log2_min_luma_coding_block_size_minus3 + 3; // (7-10)
   this->CtbLog2SizeY =

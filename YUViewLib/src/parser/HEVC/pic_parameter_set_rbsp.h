@@ -36,7 +36,7 @@
 #include "parser/common/SubByteReaderLogging.h"
 #include "pps_range_extension.h"
 #include "scaling_list_data.h"
-
+#include "rbsp_trailing_bits.h"
 
 namespace parser::hevc
 {
@@ -94,6 +94,8 @@ public:
   unsigned          pps_extension_5bits{};
 
   pps_range_extension ppsRangeExtension;
+
+  rbsp_trailing_bits rbspTrailingBits;
 };
 
 } // namespace parser::hevc

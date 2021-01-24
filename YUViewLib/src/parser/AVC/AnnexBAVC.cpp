@@ -430,9 +430,17 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       // sets should be available now.
       while (!this->reparse_sei.empty())
       {
-        auto &sei = this->reparse_sei.front();
-        sei.reparse(this->activeParameterSets.spsMap, this->currentAUAssociatedSPS);
-        reparse_sei.pop();
+        try
+        {
+          auto &sei = this->reparse_sei.front();
+          sei.reparse(this->activeParameterSets.spsMap, this->currentAUAssociatedSPS);
+          reparse_sei.pop();
+        }
+        catch (const std::exception &e)
+        {
+          (void)e;
+          DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Error reparsing SEI");
+        }
       }
     }
   }
@@ -533,7 +541,7 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
   if (!this->POCList.contains(iFrameNr))
     return {};
 
-  int seekPOC = POCList[iFrameNr];
+  auto seekPOC = this->POCList[iFrameNr];
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitAVC>>;

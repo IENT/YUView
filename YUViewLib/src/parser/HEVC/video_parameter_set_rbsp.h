@@ -36,6 +36,7 @@
 #include "parser/common/SubByteReaderLogging.h"
 #include "profile_tier_level.h"
 #include "NalUnitHEVC.h"
+#include "rbsp_trailing_bits.h"
 
 namespace parser::hevc
 {
@@ -77,6 +78,8 @@ public:
 
   vector<hrd_parameters> vps_hrd_parameters;
   bool                   vps_extension_flag{};
+
+  rbsp_trailing_bits rbspTrailingBits;
 
   // Calculated values
   double frameRate{};

@@ -47,8 +47,8 @@ void sei_rbsp::parse(reader::SubByteReaderLogging &          reader,
 
   do
   {
-    sei_message newMessage;
-    auto        result = newMessage.parse(reader, nal_unit_type, vpsMap, spsMap, associatedSPS);
+    sei_message newMessage(nal_unit_type);
+    auto        result = newMessage.parse(reader, vpsMap, spsMap, associatedSPS);
     if (result == SEIParsingResult::WAIT_FOR_PARAMETER_SETS)
       this->seisReparse.push_back(newMessage);
     this->seis.push_back(newMessage);

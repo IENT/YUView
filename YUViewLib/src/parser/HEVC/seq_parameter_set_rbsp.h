@@ -38,6 +38,7 @@
 #include "scaling_list_data.h"
 #include "st_ref_pic_set.h"
 #include "vui_parameters.h"
+#include "rbsp_trailing_bits.h"
 
 namespace parser::hevc
 {
@@ -110,6 +111,8 @@ public:
   bool     sps_multilayer_extension_flag{};
   bool     sps_3d_extension_flag{};
   unsigned sps_extension_5bits{};
+
+  rbsp_trailing_bits rbspTrailingBits;
 
   // 7.4.3.2.1
   unsigned ChromaArrayType{};

@@ -76,29 +76,27 @@ public:
 class sei_message : public NalRBSP
 {
 public:
-  sei_message()  = default;
+  sei_message(NalType nal_unit_type) : seiNalUnitType(nal_unit_type) {}
   ~sei_message() = default;
   SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
-                         NalType                                 nal_unit_type,
                          VPSMap &                                vpsMap,
                          SPSMap &                                spsMap,
                          std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
 
-  SEIParsingResult reparse(NalType                                 nal_unit_type,
-                           VPSMap &                                vpsMap,
-                           SPSMap &                                spsMap,
-                           std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
+  SEIParsingResult
+  reparse(VPSMap &vpsMap, SPSMap &spsMap, std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
 
-  std::string getPayloadTypeName(NalType nal_unit_type) const;
+  std::string getPayloadTypeName() const;
 
   unsigned payloadType{};
   unsigned payloadSize{};
 
   std::shared_ptr<sei_payload> payload;
 
+  NalType seiNalUnitType;
+
 private:
   SEIParsingResult parsePayloadData(bool                                    reparse,
-                                    NalType                                 nal_unit_type,
                                     VPSMap &                                vpsMap,
                                     SPSMap &                                spsMap,
                                     std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);

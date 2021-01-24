@@ -143,8 +143,10 @@ yuvPixelFormat AnnexBHEVC::getPixelFormat() const
 
 QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
-  // Get the POC for the frame number
-  int seekPOC = POCList[iFrameNr];
+  if (!this->POCList.contains(iFrameNr))
+    return {};
+
+  auto seekPOC = this->POCList[iFrameNr];
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitHEVC>>;
@@ -325,22 +327,6 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
   {
     nalHEVC->header.parse(reader);
 
-    if (nalHEVC->header.isSlice())
-    {
-      // Reparse the SEI messages that we could not parse so far. This is a slice so all parameter
-      // sets should be available now.
-      while (!this->reparse_sei.empty())
-      {
-        auto sei = reparse_sei.front();
-        reparse_sei.pop();
-        sei.parse(reader,
-                  nalHEVC->header.nal_unit_type,
-                  this->activeParameterSets.vpsMap,
-                  this->activeParameterSets.spsMap,
-                  this->currentAUAssociatedSPS);
-      }
-    }
-
     if (nalHEVC->header.nal_unit_type == NalType::VPS_NUT)
     {
       specificDescription = " VPS";
@@ -480,6 +466,22 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
         curFrameFileStartEndPos = nalStartEndPosFile;
         curFramePOC             = newSlice->sliceSegmentHeader.globalPOC;
         curFrameIsRandomAccess  = nalHEVC->header.isIRAP();
+
+        {
+          std::shared_ptr<seq_parameter_set_rbsp> refSPS;
+          auto ppsID = newSlice->sliceSegmentHeader.slice_pic_parameter_set_id;
+          if (this->activeParameterSets.ppsMap.count(ppsID) > 0)
+          {
+            auto pps = this->activeParameterSets.ppsMap.at(ppsID);
+            if (this->activeParameterSets.spsMap.count(pps->pps_seq_parameter_set_id))
+            {
+              refSPS = this->activeParameterSets.spsMap.at(pps->pps_seq_parameter_set_id);
+            }
+          }
+          if (!refSPS)
+            throw std::logic_error("Referenced SPS of slice could not be obtained.");
+          this->currentAUAssociatedSPS = refSPS;
+        }
       }
       else if (curFrameFileStartEndPos && nalStartEndPosFile)
         // Another slice NAL which belongs to the last frame
@@ -518,7 +520,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
 
       for (const auto &sei : newSEI->seis)
       {
-        specificDescription += " " + sei.getPayloadTypeName(nalHEVC->header.nal_unit_type);
+        specificDescription += " " + sei.getPayloadTypeName();
 
         if (sei.payloadType == 0)
         {
@@ -544,7 +546,6 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
 
       nalHEVC->rbsp = newSEI;
 
-      specificDescription += "(x" + std::to_string(newSEI->seis.size()) + ")";
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Parsed SEI (" << newSEI->seis.size()
                                                                << " messages)");
       parseResult.nalTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
@@ -564,6 +565,28 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       specificDescription = " Dolby Vision";
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Dolby Vision Metadata");
       parseResult.nalTypeName = "Dolby Vision ";
+    }
+
+    if (nalHEVC->header.isSlice())
+    {
+      // Reparse the SEI messages that we could not parse so far. This is a slice so all parameter
+      // sets should be available now.
+      while (!this->reparse_sei.empty())
+      {
+        try
+        {
+          auto sei = reparse_sei.front();
+          reparse_sei.pop();
+          sei.reparse(this->activeParameterSets.vpsMap,
+                      this->activeParameterSets.spsMap,
+                      this->currentAUAssociatedSPS);
+        }
+        catch (const std::exception &e)
+        {
+          (void)e;
+          DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Error reparsing SEI message. " + e.what());
+        }
+      }
     }
   }
   catch (const std::exception &e)
@@ -600,6 +623,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
     this->currentAUAllSlicesIntra = true;
     this->firstAUInDecodingOrder  = false;
     this->currentAUSliceTypes.clear();
+    this->currentAUAssociatedSPS.reset();
   }
   if (this->lastFramePOC != this->curFramePOC)
     this->lastFramePOC = this->curFramePOC;
