@@ -113,7 +113,7 @@ SEIParsingResult buffering_period::parse(reader::SubByteReaderLogging &         
   auto VclHrdBpPresentFlag = hrd.vcl_hrd_parameters_present_flag;
   if (VclHrdBpPresentFlag)
   {
-    for (int i = 0; i < CpbCnt; i++)
+    for (unsigned i = 0; i < CpbCnt; i++)
     {
       const int nrBits = hrd.initial_cpb_removal_delay_length_minus1 + 1;
       this->vcl_initial_cpb_removal_delay.push_back(
