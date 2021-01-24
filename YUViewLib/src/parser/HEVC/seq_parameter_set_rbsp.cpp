@@ -34,6 +34,8 @@
 
 #include "parser/common/functions.h"
 
+#include <cmath>
+
 namespace parser::hevc
 {
 
@@ -189,11 +191,13 @@ void seq_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
   // Calculate some values - Rec. ITU-T H.265 v3 (04/2015) 7.4.3.2.1
   this->MinCbLog2SizeY = this->log2_min_luma_coding_block_size_minus3 + 3; // (7-10)
   this->CtbLog2SizeY =
-      this->MinCbLog2SizeY + this->log2_diff_max_min_luma_coding_block_size;               // (7-11)
-  this->CtbSizeY         = 1 << this->CtbLog2SizeY;                                        // (7-13)
-  this->PicWidthInCtbsY  = ceil((float)this->pic_width_in_luma_samples / this->CtbSizeY);  // (7-15)
-  this->PicHeightInCtbsY = ceil((float)this->pic_height_in_luma_samples / this->CtbSizeY); // (7-17)
-  this->PicSizeInCtbsY   = this->PicWidthInCtbsY * this->PicHeightInCtbsY;                 // (7-19)
+      this->MinCbLog2SizeY + this->log2_diff_max_min_luma_coding_block_size; // (7-11)
+  this->CtbSizeY = 1 << this->CtbLog2SizeY;                                  // (7-13)
+  this->PicWidthInCtbsY =
+      std::ceil((float)this->pic_width_in_luma_samples / this->CtbSizeY); // (7-15)
+  this->PicHeightInCtbsY =
+      std::ceil((float)this->pic_height_in_luma_samples / this->CtbSizeY); // (7-17)
+  this->PicSizeInCtbsY = this->PicWidthInCtbsY * this->PicHeightInCtbsY;   // (7-19)
 
   reader.logCalculatedValue("MinCbLog2SizeY", this->MinCbLog2SizeY);
   reader.logCalculatedValue("CtbLog2SizeY", this->CtbLog2SizeY);
