@@ -84,8 +84,6 @@ public:
 
   QByteArray getNALHeader() const;
 
-  bool     forbidden_zero_bit;
-  bool     nuh_reserved_zero_bit;
   unsigned nuh_layer_id;
   unsigned nuh_temporal_id_plus1;
 

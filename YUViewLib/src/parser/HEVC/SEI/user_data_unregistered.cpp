@@ -31,25 +31,30 @@
  */
 
 #include "user_data_unregistered.h"
+
 #include "parser/common/functions.h"
 
 #include <iostream>
 #include <sstream>
 
-namespace parser::avc
+namespace parser::hevc
 
 {
 using namespace reader;
 
 SEIParsingResult
-user_data_unregistered::parse(reader::SubByteReaderLogging &          reader,
+user_data_unregistered::parse(SubByteReaderLogging &                  reader,
                               bool                                    reparse,
+                              VPSMap &                                vpsMap,
                               SPSMap &                                spsMap,
                               std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
   (void)reparse;
+  (void)vpsMap;
   (void)spsMap;
   (void)associatedSPS;
+
+  SubByteReaderLoggingSubLevel subLevel(reader, "user_data_unregistered");
 
   this->uuid_iso_iec_11578 = reader.readBytes("uuid_iso_iec_11578", 16);
 
@@ -57,7 +62,7 @@ user_data_unregistered::parse(reader::SubByteReaderLogging &          reader,
   if (firstFourBytes == ByteVector({'x', '2', '6', '4'}))
   {
     // This seems to be x264 user data. These contain the encoder settings which might be useful
-    SubByteReaderLoggingSubLevel subLevel(reader, "x264 user data");
+    SubByteReaderLoggingSubLevel subLevel(reader, "x265 user data");
 
     std::string dataString;
     while (reader.canReadBits(8))
@@ -68,7 +73,7 @@ user_data_unregistered::parse(reader::SubByteReaderLogging &          reader,
 
     auto splitDash = splitX26XOptionsString(dataString, " - ");
 
-    unsigned i=0;
+    unsigned i = 0;
     for (const auto &s : splitDash)
     {
       if (i == 0)
@@ -83,7 +88,7 @@ user_data_unregistered::parse(reader::SubByteReaderLogging &          reader,
         reader.logArbitrary("URL", s);
       else if (i == 5)
       {
-        auto options = splitX26XOptionsString(s, " ");
+        auto                         options = splitX26XOptionsString(s, " ");
         SubByteReaderLoggingSubLevel optionsLevel(reader, "options");
         for (const auto &option : options)
         {
@@ -111,4 +116,4 @@ user_data_unregistered::parse(reader::SubByteReaderLogging &          reader,
   return SEIParsingResult::OK;
 }
 
-} // namespace parser::avc
+} // namespace parser::hevc

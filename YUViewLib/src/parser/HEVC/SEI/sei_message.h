@@ -32,10 +32,11 @@
 
 #pragma once
 
+#include "../NalUnitHEVC.h"
 #include "../commonMaps.h"
 #include "parser/common/SubByteReaderLogging.h"
 
-namespace parser::avc
+namespace parser::hevc
 {
 
 class seq_parameter_set_rbsp;
@@ -56,20 +57,35 @@ public:
 
   virtual SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
                                  bool                                    reparse,
+                                 VPSMap &                                vpsMap,
                                  SPSMap &                                spsMap,
                                  std::shared_ptr<seq_parameter_set_rbsp> associatedSPS) = 0;
 };
 
-class sei_message
+class unknown_sei : public sei_payload
 {
 public:
-  sei_message() = default;
+  unknown_sei() = default;
 
   SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
+                         bool                                    reparse,
+                         VPSMap &                                vpsMap,
+                         SPSMap &                                spsMap,
+                         std::shared_ptr<seq_parameter_set_rbsp> associatedSPS) override;
+};
+
+class sei_message : public NalRBSP
+{
+public:
+  sei_message(NalType nal_unit_type) : seiNalUnitType(nal_unit_type) {}
+  ~sei_message() = default;
+  SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
+                         VPSMap &                                vpsMap,
                          SPSMap &                                spsMap,
                          std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
 
-  SEIParsingResult reparse(SPSMap &spsMap, std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
+  SEIParsingResult
+  reparse(VPSMap &vpsMap, SPSMap &spsMap, std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
 
   std::string getPayloadTypeName() const;
 
@@ -78,17 +94,16 @@ public:
 
   std::shared_ptr<sei_payload> payload;
 
+  NalType seiNalUnitType;
+
 private:
   SEIParsingResult parsePayloadData(bool                                    reparse,
+                                    VPSMap &                                vpsMap,
                                     SPSMap &                                spsMap,
                                     std::shared_ptr<seq_parameter_set_rbsp> associatedSPS);
 
-  // See Spec D.2.3
-  // The decoder may need to store the payload of an SEI and parse it later if the parameter sets
-  // are not available yet. For this, we keep a reader which has all data to continue parsing at a
-  // later point in time.
   reader::SubByteReaderLogging payloadReader;
   bool                         parsingDone{false};
 };
 
-} // namespace parser::avc
+} // namespace parser::hevc

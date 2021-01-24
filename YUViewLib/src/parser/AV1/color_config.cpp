@@ -32,8 +32,6 @@
 
 #include "color_config.h"
 
-#include "parser/common/CodingEnum.h"
-
 namespace parser::av1
 {
 

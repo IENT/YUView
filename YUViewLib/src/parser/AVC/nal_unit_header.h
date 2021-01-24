@@ -67,33 +67,6 @@ enum class NalType
   RESERVED_23
 };
 
-static parser::CodingEnum<NalType> nalTypeCoding(
-    {{0, NalType::UNSPECIFIED, "UNSPECIFIED"},
-     {1, NalType::CODED_SLICE_NON_IDR, "CODED_SLICE_NON_IDR"},
-     {2, NalType::CODED_SLICE_DATA_PARTITION_A, "CODED_SLICE_DATA_PARTITION_A"},
-     {3, NalType::CODED_SLICE_DATA_PARTITION_B, "CODED_SLICE_DATA_PARTITION_B"},
-     {4, NalType::CODED_SLICE_DATA_PARTITION_C, "CODED_SLICE_DATA_PARTITION_C"},
-     {5, NalType::CODED_SLICE_IDR, "CODED_SLICE_IDR"},
-     {6, NalType::SEI, "SEI"},
-     {7, NalType::SPS, "SPS"},
-     {8, NalType::PPS, "PPS"},
-     {9, NalType::AUD, "AUD"},
-     {10, NalType::END_OF_SEQUENCE, "END_OF_SEQUENCE"},
-     {11, NalType::END_OF_STREAM, "END_OF_STREAM"},
-     {12, NalType::FILLER, "FILLER"},
-     {13, NalType::SPS_EXT, "SPS_EXT"},
-     {14, NalType::PREFIX_NAL, "PREFIX_NAL"},
-     {15, NalType::SUBSET_SPS, "SUBSET_SPS"},
-     {16, NalType::DEPTH_PARAMETER_SET, "DEPTH_PARAMETER_SET"},
-     {17, NalType::RESERVED_17, "RESERVED_17"},
-     {18, NalType::RESERVED_18, "RESERVED_18"},
-     {19, NalType::CODED_SLICE_AUX, "CODED_SLICE_AUX"},
-     {20, NalType::CODED_SLICE_EXTENSION, "CODED_SLICE_EXTENSION"},
-     {21, NalType::CODED_SLICE_EXTENSION_DEPTH_MAP, "CODED_SLICE_EXTENSION_DEPTH_MAP"},
-     {22, NalType::RESERVED_22, "RESERVED_22"},
-     {23, NalType::RESERVED_23, "RESERVED_23"}},
-    NalType::UNSPECIFIED);
-
 class nal_unit_header
 {
 public:

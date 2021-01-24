@@ -241,7 +241,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readNS(uint64_t maxVal)
   }
 
   auto w = floorVal + 1;
-  auto m = (1 << w) - maxVal;
+  auto m = (uint64_t(1) << w) - maxVal;
 
   auto [v, coding] = this->readBits(w - 1);
   if (v < m)
@@ -329,6 +329,9 @@ bool SubByteReaderNew::payload_extension_present() const
 
 bool SubByteReaderNew::canReadBits(unsigned nrBits) const
 {
+  if (this->posInBufferBytes == this->byteVector.size())
+    return false;
+
   assert(this->posInBufferBits <= 8);
   const auto curBitsLeft = 8 - this->posInBufferBits;
   assert(this->byteVector.size() > this->posInBufferBytes);

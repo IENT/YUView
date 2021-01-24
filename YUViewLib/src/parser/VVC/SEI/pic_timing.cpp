@@ -41,7 +41,7 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void pic_timing::parse(SubByteReaderLogging &                 reader,
+void pic_timing::parse(SubByteReaderLogging &            reader,
                        unsigned                          nalTemporalID,
                        std::shared_ptr<buffering_period> bp)
 {

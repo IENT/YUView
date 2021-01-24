@@ -46,7 +46,7 @@
 #include "decoder/decoderDav1d.h"
 #include "decoder/decoderLibde265.h"
 #include "parser/AVC/AnnexBAVC.h"
-#include "parser/AnnexBHEVC.h"
+#include "parser/HEVC/AnnexBHEVC.h"
 #include "parser/VVC/AnnexBVVC.h"
 #include "video/videoHandlerYUV.h"
 #include "video/videoHandlerRGB.h"

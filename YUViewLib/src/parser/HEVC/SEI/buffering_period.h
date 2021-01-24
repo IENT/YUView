@@ -30,52 +30,43 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#pragma once
 
-namespace parser
+#include "parser/common/SubByteReaderLogging.h"
+#include "sei_message.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+class buffering_period : public sei_payload
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
-  {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
-  }
-  return text;
-}
+public:
+  buffering_period() = default;
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
+  SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
+                         bool                                    reparse,
+                         VPSMap &                                vpsMap,
+                         SPSMap &                                spsMap,
+                         std::shared_ptr<seq_parameter_set_rbsp> associatedSPS) override;
 
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
+  unsigned bp_seq_parameter_set_id{};
+  bool     irap_cpb_params_present_flag{};
+  unsigned cpb_delay_offset{};
+  unsigned dpb_delay_offset{};
+  bool     concatenation_flag{};
+  unsigned au_cpb_removal_delay_delta_minus1{};
 
-  return splitStrings;
-}
+  vector<unsigned> nal_initial_cpb_removal_delay;
+  vector<unsigned> nal_initial_cpb_removal_offset;
+  vector<unsigned> nal_initial_alt_cpb_removal_delay;
+  vector<unsigned> nal_initial_alt_cpb_removal_offset;
 
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
+  vector<unsigned> vcl_initial_cpb_removal_delay;
+  vector<unsigned> vcl_initial_cpb_removal_offset;
+  vector<unsigned> vcl_initial_alt_cpb_removal_delay;
+  vector<unsigned> vcl_initial_alt_cpb_removal_offset;
 
-} // namespace parser
+  bool use_alt_cpb_params_flag;
+};
+
+} // namespace parser::hevc

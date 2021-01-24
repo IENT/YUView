@@ -30,52 +30,103 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#pragma once
 
-namespace parser
+#include "parser/NalUnit.h"
+#include "parser/common/SubByteReaderLogging.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+enum class NalType
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
-  {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
-  }
-  return text;
-}
+  TRAIL_N,
+  TRAIL_R,
+  TSA_N,
+  TSA_R,
+  STSA_N,
+  STSA_R,
+  RADL_N,
+  RADL_R,
+  RASL_N,
+  RASL_R,
+  RSV_VCL_N10,
+  RSV_VCL_N12,
+  RSV_VCL_N14,
+  RSV_VCL_R11,
+  RSV_VCL_R13,
+  RSV_VCL_R15,
+  BLA_W_LP,
+  BLA_W_RADL,
+  BLA_N_LP,
+  IDR_W_RADL,
+  IDR_N_LP,
+  CRA_NUT,
+  RSV_IRAP_VCL22,
+  RSV_IRAP_VCL23,
+  RSV_VCL24,
+  RSV_VCL25,
+  RSV_VCL26,
+  RSV_VCL27,
+  RSV_VCL28,
+  RSV_VCL29,
+  RSV_VCL30,
+  RSV_VCL31,
+  VPS_NUT,
+  SPS_NUT,
+  PPS_NUT,
+  AUD_NUT,
+  EOS_NUT,
+  EOB_NUT,
+  FD_NUT,
+  PREFIX_SEI_NUT,
+  SUFFIX_SEI_NUT,
+  RSV_NVCL41,
+  RSV_NVCL42,
+  RSV_NVCL43,
+  RSV_NVCL44,
+  RSV_NVCL45,
+  RSV_NVCL46,
+  RSV_NVCL47,
+  UNSPEC48,
+  UNSPEC49,
+  UNSPEC50,
+  UNSPEC51,
+  UNSPEC52,
+  UNSPEC53,
+  UNSPEC54,
+  UNSPEC55,
+  UNSPEC56,
+  UNSPEC57,
+  UNSPEC58,
+  UNSPEC69,
+  UNSPEC60,
+  UNSPEC61,
+  UNSPEC62,
+  UNSPEC63,
+  UNSPECIFIED
+};
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
+class nal_unit_header
 {
-  std::vector<std::string> splitStrings;
+public:
+  nal_unit_header()  = default;
+  ~nal_unit_header() = default;
+  void parse(reader::SubByteReaderLogging &reader);
 
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
+  QByteArray getNALHeader() const;
 
-  return splitStrings;
-}
+  bool isIRAP() const;
+  bool isSLNR() const;
+  bool isRADL() const;
+  bool isRASL() const;
+  bool isSlice() const;
 
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
+  unsigned nuh_layer_id;
+  unsigned nuh_temporal_id_plus1;
 
-} // namespace parser
+  NalType  nal_unit_type;
+  unsigned nalUnitTypeID;
+};
+
+} // namespace parser::hevc

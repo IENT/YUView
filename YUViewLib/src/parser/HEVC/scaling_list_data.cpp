@@ -30,52 +30,48 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#include "scaling_list_data.h"
 
-namespace parser
+#include "parser/common/functions.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+using namespace reader;
+
+void scaling_list_data::parse(SubByteReaderLogging &reader)
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
+  SubByteReaderLoggingSubLevel subLevel(reader, "scaling_list_data()");
+  
+  for(unsigned sizeId=0; sizeId<4; sizeId++)
   {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
+    for(unsigned matrixId=0; matrixId<6u; matrixId += (sizeId == 3) ? 3 : 1)
+    { 
+
+      this->scaling_list_pred_mode_flag[sizeId][matrixId] = reader.readFlag(formatArray("scaling_list_pred_mode_flag", sizeId, matrixId));
+      if (!this->scaling_list_pred_mode_flag[sizeId][matrixId])
+      {
+        this->scaling_list_pred_matrix_id_delta[sizeId][matrixId] = reader.readUEV(formatArray("scaling_list_pred_matrix_id_delta", sizeId, matrixId));
+      }
+      else
+      {
+        int nextCoef = 8;
+        auto coefNum = std::min(64u, (1u << (4u + (sizeId << 1u))));
+        if(sizeId > 1)
+        {
+          this->scaling_list_dc_coef_minus8[sizeId-2][matrixId] = reader.readSEV(formatArray("scaling_list_dc_coef_minus8", sizeId-2, matrixId));
+          nextCoef = this->scaling_list_dc_coef_minus8[sizeId-2][matrixId] + 8;
+        }
+        for (unsigned i=0; i<coefNum; i++)
+        {
+          auto scaling_list_delta_coef = reader.readSEV("scaling_list_delta_coef");
+          nextCoef = (nextCoef + scaling_list_delta_coef + 256) % 256;
+          auto scalingListVal = nextCoef;
+          reader.logCalculatedValue(formatArray("scalingListVal", sizeId, matrixId, i), scalingListVal);
+        }
+      }
+    }
   }
-  return text;
 }
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
-
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
-
-  return splitStrings;
-}
-
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
-
-} // namespace parser
+} // namespace parser::hevc

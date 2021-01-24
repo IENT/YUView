@@ -55,22 +55,6 @@
 #define DEBUG_AVC(fmt) ((void)0)
 #endif
 
-namespace
-{
-
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
-
-} // namespace
-
 namespace parser
 {
 
@@ -173,7 +157,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     if (this->curFramePOC != -1)
     {
       // Save the info of the last frame
-      if (!addFrameToList(
+      if (!this->addFrameToList(
               this->curFramePOC, this->curFrameFileStartEndPos, this->curFrameIsRandomAccess))
       {
         ReaderHelper::addErrorMessageChildItem(
@@ -419,9 +403,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       for (const auto &sei : newSEI->seisReparse)
         this->reparse_sei.push(sei);
 
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parse PPS ID " << newPPS->pic_parameter_set_id);
-
       nalAVC->rbsp = newSEI;
+      specificDescription + "(x" + std::to_string(newSEI->seis.size()) + ")";
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed SEI (" << newSEI->seis.size()
                                                              << " messages)");
       parseResult.nalTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
@@ -447,9 +430,17 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       // sets should be available now.
       while (!this->reparse_sei.empty())
       {
-        auto &sei = this->reparse_sei.front();
-        sei.reparse(this->activeParameterSets.spsMap, this->currentAUAssociatedSPS);
-        reparse_sei.pop();
+        try
+        {
+          auto &sei = this->reparse_sei.front();
+          sei.reparse(this->activeParameterSets.spsMap, this->currentAUAssociatedSPS);
+          reparse_sei.pop();
+        }
+        catch (const std::exception &e)
+        {
+          (void)e;
+          DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Error reparsing SEI");
+        }
       }
     }
   }
@@ -459,7 +450,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     parseResult.success = false;
   }
 
-  if (auDelimiterDetector.isStartOfNewAU(nalAVC, this->curFramePOC))
+  if (this->auDelimiterDetector.isStartOfNewAU(nalAVC, this->curFramePOC))
   {
     if (this->sizeCurrentAU > 0)
     {
@@ -550,7 +541,7 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
   if (!this->POCList.contains(iFrameNr))
     return {};
 
-  int seekPOC = POCList[iFrameNr];
+  auto seekPOC = this->POCList[iFrameNr];
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitAVC>>;
@@ -563,7 +554,7 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
         nal->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
         nal->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A)
     {
-      int globalPOC;
+      int globalPOC {};
       if (nal->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
           nal->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR)
       {
@@ -585,10 +576,12 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
 
-        for (auto const &[key, spsNal] : activeSPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(spsNal->rawData));
-        for (auto const &[key, ppsNal] : activePPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(ppsNal->rawData));
+        for (auto const &entry : activeSPSNal)
+          paramSets.append(
+              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+        for (auto const &entry : activePPSNal)
+          paramSets.append(
+              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
 
         return paramSets;
       }

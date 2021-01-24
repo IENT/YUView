@@ -32,9 +32,9 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 namespace parser
 {
@@ -44,8 +44,13 @@ template <typename T> class CodingEnum
 public:
   struct Entry
   {
+    Entry(unsigned code, T value, std::string name, std::string meaning = "")
+        : code(code), value(value), name(name), meaning(meaning)
+    {
+    }
     unsigned    code;
     T           value;
+    std::string name;
     std::string meaning;
   };
 
@@ -75,7 +80,12 @@ public:
   {
     std::map<int, std::string> m;
     for (const auto &entry : this->entryVector)
-      m[int(entry.code)] = entry.meaning;
+    {
+      if (entry.meaning.empty())
+        m[int(entry.code)] = entry.name;
+      else
+        m[int(entry.code)] = entry.meaning;
+    }
     return m;
     return {};
   }
