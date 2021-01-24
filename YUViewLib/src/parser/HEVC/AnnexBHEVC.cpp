@@ -486,6 +486,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
         // Update the end position
         curFrameFileStartEndPos->second = nalStartEndPosFile->second;
 
+      nalHEVC->rbsp = newSlice;
       if (nalHEVC->header.isIRAP())
       {
         if (newSlice->sliceSegmentHeader.first_slice_segment_in_pic_flag)
@@ -611,11 +612,12 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
     this->currentAUSliceTypes[currentSliceType]++;
   }
 
-  // if (nalRoot)
-  //   // Set a useful name of the TreeItem (the root for this NAL)
-  //   nalRoot->itemData.append(QString("NAL %1:
-  //   %2").arg(nal_hevc.nalIdx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) +
-  //   specificDescription);
+  if (nalRoot)
+  {
+    auto name = "NAL " + std::to_string(nalHEVC->nalIdx) + ": " +
+                std::to_string(nalHEVC->header.nalUnitTypeID) + specificDescription;
+    nalRoot->setProperties(name);
+  }
 
   parseResult.success = true;
   return parseResult;

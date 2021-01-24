@@ -32,15 +32,17 @@
 
 #pragma once
 
+#include "NalUnitHEVC.h"
 #include "commonMaps.h"
 #include "nal_unit_header.h"
 #include "parser/common/SubByteReaderLogging.h"
 #include "slice_segment_header.h"
 
+
 namespace parser::hevc
 {
 
-class slice_segment_layer_rbsp
+class slice_segment_layer_rbsp : public NalRBSP
 {
 public:
   slice_segment_layer_rbsp() {}
