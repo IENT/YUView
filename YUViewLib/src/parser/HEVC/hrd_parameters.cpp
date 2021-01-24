@@ -112,7 +112,7 @@ void hrd_parameters::parse(SubByteReaderLogging &reader,
   if (maxNumSubLayersMinus1 >= 8)
     throw std::logic_error("The value of maxNumSubLayersMinus1 must be in the range of 0 to 7");
 
-  for (int i = 0; i <= maxNumSubLayersMinus1; i++)
+  for (unsigned i = 0; i <= maxNumSubLayersMinus1; i++)
   {
     this->fixed_pic_rate_general_flag[i] = reader.readFlag(
         formatArray("fixed_pic_rate_general_flag", i),

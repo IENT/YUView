@@ -554,7 +554,7 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
         nal->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
         nal->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A)
     {
-      int globalPOC;
+      int globalPOC {};
       if (nal->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
           nal->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR)
       {
@@ -576,10 +576,12 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
 
-        for (auto const &[key, spsNal] : activeSPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(spsNal->rawData));
-        for (auto const &[key, ppsNal] : activePPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(ppsNal->rawData));
+        for (auto const &entry : activeSPSNal)
+          paramSets.append(
+              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+        for (auto const &entry : activePPSNal)
+          paramSets.append(
+              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
 
         return paramSets;
       }

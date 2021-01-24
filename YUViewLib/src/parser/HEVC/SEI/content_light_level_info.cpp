@@ -46,6 +46,11 @@ content_light_level_info::parse(reader::SubByteReaderLogging &          reader,
                                 SPSMap &                                spsMap,
                                 std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
+  (void)reparse;
+  (void)vpsMap;
+  (void)spsMap;
+  (void)associatedSPS;
+  
   SubByteReaderLoggingSubLevel subLevel(reader, "content_light_level_info");
 
   this->max_content_light_level     = reader.readBits("max_content_light_level", 16);

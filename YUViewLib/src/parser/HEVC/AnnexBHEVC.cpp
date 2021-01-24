@@ -169,12 +169,12 @@ QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fi
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
 
-        for (auto const &[key, vpsNal] : activeVPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(vpsNal->rawData));
-        for (auto const &[key, spsNal] : activeSPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(spsNal->rawData));
-        for (auto const &[key, ppsNal] : activePPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(ppsNal->rawData));
+        for (auto const &entry : activeVPSNal)
+          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+        for (auto const &entry : activeSPSNal)
+          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+        for (auto const &entry : activePPSNal)
+          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
 
         return paramSets;
       }

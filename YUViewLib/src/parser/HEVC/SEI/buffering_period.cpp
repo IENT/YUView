@@ -48,6 +48,9 @@ SEIParsingResult buffering_period::parse(reader::SubByteReaderLogging &         
                                          SPSMap &                                spsMap,
                                          std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
+  (void)vpsMap;
+  (void)associatedSPS;
+
   if (!reparse)
     reader.addLogSubLevel("buffering_period()");
 

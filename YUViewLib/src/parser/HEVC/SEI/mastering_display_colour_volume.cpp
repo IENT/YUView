@@ -46,6 +46,11 @@ mastering_display_colour_volume::parse(reader::SubByteReaderLogging &          r
                                        SPSMap &                                spsMap,
                                        std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
+  (void)reparse;
+  (void)vpsMap;
+  (void)spsMap;
+  (void)associatedSPS;
+
   SubByteReaderLoggingSubLevel subLevel(reader, "mastering_display_colour_volume");
   
   for (unsigned c = 0; c < 3; c++)

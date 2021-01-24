@@ -48,6 +48,8 @@ SEIParsingResult pic_timing::parse(reader::SubByteReaderLogging &          reade
                                    SPSMap &                                spsMap,
                                    std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
+  (void)spsMap;
+
   if (!reparse)
     reader.addLogSubLevel("pic_timing()");
 

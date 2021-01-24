@@ -53,6 +53,7 @@ class sei_payload
 {
 public:
   sei_payload() = default;
+  virtual ~sei_payload() = default;
 
   virtual SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
                                  bool                                    reparse,

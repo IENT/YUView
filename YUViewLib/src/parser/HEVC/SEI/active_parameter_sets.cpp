@@ -46,6 +46,9 @@ SEIParsingResult active_parameter_sets::parse(SubByteReaderLogging &            
                                               SPSMap &                                spsMap,
                                               std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
+  (void)spsMap;
+  (void)associatedSPS;
+
   if (!reparse)
     reader.addLogSubLevel("active_parameter_sets()");
 
