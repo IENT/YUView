@@ -30,52 +30,35 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#include "mastering_display_colour_volume.h"
 
-namespace parser
+#include "parser/common/functions.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+using namespace reader;
+
+SEIParsingResult
+mastering_display_colour_volume::parse(reader::SubByteReaderLogging &          reader,
+                                       bool                                    reparse,
+                                       VPSMap &                                vpsMap,
+                                       SPSMap &                                spsMap,
+                                       std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
+  SubByteReaderLoggingSubLevel subLevel(reader, "mastering_display_colour_volume");
+  
+  for (unsigned c = 0; c < 3; c++)
   {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
+    this->display_primaries_x[c] = reader.readBits(formatArray("display_primaries_x", c), 16);
+    this->display_primaries_y[c] = reader.readBits(formatArray("display_primaries_y", c), 16);
   }
-  return text;
+  this->white_point_x = reader.readBits("white_point_x", 16);
+  this->white_point_y = reader.readBits("white_point_y", 16);
+  this->max_display_mastering_luminance = reader.readBits("max_display_mastering_luminance", 32);
+  this->min_display_mastering_luminance = reader.readBits("min_display_mastering_luminance", 32);
+  
+  return SEIParsingResult::OK;
 }
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
-
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
-
-  return splitStrings;
-}
-
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
-
-} // namespace parser
+} // namespace parser::hevc

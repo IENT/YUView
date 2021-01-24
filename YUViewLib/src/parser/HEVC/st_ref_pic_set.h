@@ -30,52 +30,47 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#pragma once
 
-namespace parser
+#include "parser/common/SubByteReaderLogging.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+class slice_segment_header;
+
+// 7.3.7 Short-term reference picture set syntax
+class st_ref_pic_set
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
-  {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
-  }
-  return text;
-}
+public:
+  st_ref_pic_set() {}
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
+  void parse(reader::SubByteReaderLogging &reader, unsigned stRpsIdx, unsigned num_short_term_ref_pic_sets);
 
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
+  unsigned NumPicTotalCurr(int CurrRpsIdx, const slice_segment_header* slice);
 
-  return splitStrings;
-}
+  bool         inter_ref_pic_set_prediction_flag{};
+  unsigned     delta_idx_minus1{};
+  bool         delta_rps_sign{};
+  unsigned     abs_delta_rps_minus1{};
+  vector<bool> used_by_curr_pic_flag;
+  vector<bool> use_delta_flag;
 
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
+  unsigned         num_negative_pics{};
+  unsigned         num_positive_pics{};
+  vector<unsigned> delta_poc_s0_minus1;
+  vector<bool>     used_by_curr_pic_s0_flag;
+  vector<unsigned> delta_poc_s1_minus1;
+  vector<bool>     used_by_curr_pic_s1_flag;
 
-} // namespace parser
+  // Calculated values. These are static. They are used for reference picture set prediction.
+  static unsigned NumNegativePics[65];
+  static unsigned NumPositivePics[65];
+  static int      DeltaPocS0[65][16];
+  static int      DeltaPocS1[65][16];
+  static bool     UsedByCurrPicS0[65][16];
+  static bool     UsedByCurrPicS1[65][16];
+  static unsigned NumDeltaPocs[65];
+};
+
+} // namespace parser::hevc

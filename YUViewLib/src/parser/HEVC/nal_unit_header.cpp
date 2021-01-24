@@ -134,10 +134,8 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
   reader.readFlag("nuh_reserved_zero_bit", Options().withCheckEqualTo(0));
   this->nuh_layer_id = reader.readBits("nuh_layer_id", 6, Options().withCheckRange({0, 55}));
 
-  this->nalUnitTypeID = reader.readBits(
-      "nal_unit_type",
-      5,
-      Options().withMeaningMap(nalTypeCoding.getMeaningMap()));
+  this->nalUnitTypeID =
+      reader.readBits("nal_unit_type", 5, Options().withMeaningMap(nalTypeCoding.getMeaningMap()));
   this->nal_unit_type = nalTypeCoding.getValue(this->nalUnitTypeID);
 
   this->nuh_temporal_id_plus1 = reader.readBits("nuh_temporal_id_plus1", 3);
@@ -149,6 +147,61 @@ QByteArray nal_unit_header::getNALHeader() const
   ret.append(char(this->nuh_layer_id));
   ret.append(char((this->nalUnitTypeID << 3) + this->nuh_temporal_id_plus1));
   return ret;
+}
+
+bool nal_unit_header::isIRAP() const
+{
+  return (this->nal_unit_type == hevc::NalType::BLA_W_LP ||
+          this->nal_unit_type == hevc::NalType::BLA_W_RADL ||
+          this->nal_unit_type == hevc::NalType::BLA_N_LP ||
+          this->nal_unit_type == hevc::NalType::IDR_W_RADL ||
+          this->nal_unit_type == hevc::NalType::IDR_N_LP ||
+          this->nal_unit_type == hevc::NalType::CRA_NUT ||
+          this->nal_unit_type == hevc::NalType::RSV_IRAP_VCL22 ||
+          this->nal_unit_type == hevc::NalType::RSV_IRAP_VCL23);
+}
+
+bool nal_unit_header::isSLNR() const
+{
+  return (this->nal_unit_type == hevc::NalType::TRAIL_N ||
+          this->nal_unit_type == hevc::NalType::TSA_N ||
+          this->nal_unit_type == hevc::NalType::STSA_N ||
+          this->nal_unit_type == hevc::NalType::RADL_N ||
+          this->nal_unit_type == hevc::NalType::RASL_N ||
+          this->nal_unit_type == hevc::NalType::RSV_VCL_N10 ||
+          this->nal_unit_type == hevc::NalType::RSV_VCL_N12 ||
+          this->nal_unit_type == hevc::NalType::RSV_VCL_N14);
+}
+
+bool nal_unit_header::isRADL() const
+{
+  return (this->nal_unit_type == hevc::NalType::RADL_N ||
+          this->nal_unit_type == hevc::NalType::RADL_R);
+}
+
+bool nal_unit_header::isRASL() const
+{
+  return (this->nal_unit_type == hevc::NalType::RASL_N ||
+          this->nal_unit_type == hevc::NalType::RASL_R);
+}
+
+bool nal_unit_header::isSlice() const
+{
+  return (
+      this->nal_unit_type == hevc::NalType::IDR_W_RADL ||
+      this->nal_unit_type == hevc::NalType::IDR_N_LP ||
+      this->nal_unit_type == hevc::NalType::CRA_NUT ||
+      this->nal_unit_type == hevc::NalType::BLA_W_LP ||
+      this->nal_unit_type == hevc::NalType::BLA_W_RADL ||
+      this->nal_unit_type == hevc::NalType::BLA_N_LP ||
+      this->nal_unit_type == hevc::NalType::TRAIL_N ||
+      this->nal_unit_type == hevc::NalType::TRAIL_R ||
+      this->nal_unit_type == hevc::NalType::TSA_N || this->nal_unit_type == hevc::NalType::TSA_R ||
+      this->nal_unit_type == hevc::NalType::STSA_N ||
+      this->nal_unit_type == hevc::NalType::STSA_R ||
+      this->nal_unit_type == hevc::NalType::RADL_N ||
+      this->nal_unit_type == hevc::NalType::RADL_R ||
+      this->nal_unit_type == hevc::NalType::RASL_N || this->nal_unit_type == hevc::NalType::RASL_R);
 }
 
 } // namespace parser::hevc

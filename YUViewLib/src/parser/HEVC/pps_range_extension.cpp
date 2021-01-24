@@ -30,52 +30,37 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#include "pps_range_extension.h"
 
-namespace parser
+#include "parser/common/functions.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+using namespace reader;
+
+void pps_range_extension::parse(SubByteReaderLogging &reader, bool transform_skip_enabled_flag)
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
+  SubByteReaderLoggingSubLevel subLevel(reader, "pps_range_extension()");
+
+  if (transform_skip_enabled_flag)
+    this->log2_max_transform_skip_block_size_minus2 =
+        reader.readUEV("log2_max_transform_skip_block_size_minus2");
+  this->cross_component_prediction_enabled_flag =
+      reader.readFlag("cross_component_prediction_enabled_flag");
+  this->chroma_qp_offset_list_enabled_flag = reader.readFlag("chroma_qp_offset_list_enabled_flag");
+  if (this->chroma_qp_offset_list_enabled_flag)
   {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
+    this->diff_cu_chroma_qp_offset_depth   = reader.readUEV("diff_cu_chroma_qp_offset_depth");
+    this->chroma_qp_offset_list_len_minus1 = reader.readUEV("chroma_qp_offset_list_len_minus1");
+    for (unsigned i = 0; i <= this->chroma_qp_offset_list_len_minus1; i++)
+    {
+      this->cb_qp_offset_list.push_back(reader.readSEV(formatArray("cb_qp_offset_list", i)));
+      this->cr_qp_offset_list.push_back(reader.readSEV(formatArray("cr_qp_offset_list", i)));
+    }
   }
-  return text;
+  this->log2_sao_offset_scale_luma   = reader.readUEV("log2_sao_offset_scale_luma");
+  this->log2_sao_offset_scale_chroma = reader.readUEV("log2_sao_offset_scale_chroma");
 }
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
-
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
-
-  return splitStrings;
-}
-
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
-
-} // namespace parser
+} // namespace parser::hevc

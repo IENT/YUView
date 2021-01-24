@@ -59,6 +59,8 @@ public:
 
   nal_unit_header          header;
   std::shared_ptr<NalRBSP> rbsp;
+
+  ByteVector rawData;
 };
 
 using NalMap = std::map<unsigned, std::shared_ptr<NalUnitHEVC>>;

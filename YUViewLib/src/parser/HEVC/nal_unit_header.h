@@ -116,6 +116,12 @@ public:
 
   QByteArray getNALHeader() const;
 
+  bool isIRAP() const;
+  bool isSLNR() const;
+  bool isRADL() const;
+  bool isRASL() const;
+  bool isSlice() const;
+
   unsigned nuh_layer_id;
   unsigned nuh_temporal_id_plus1;
 

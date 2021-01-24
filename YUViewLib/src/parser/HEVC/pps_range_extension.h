@@ -30,52 +30,29 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#pragma once
 
-namespace parser
+#include "parser/common/SubByteReaderLogging.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+class pps_range_extension
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
-  {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
-  }
-  return text;
-}
+public:
+  pps_range_extension() {}
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
+  void parse(reader::SubByteReaderLogging &reader, bool transform_skip_enabled_flag);
 
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
+  unsigned    log2_max_transform_skip_block_size_minus2{};
+  bool        cross_component_prediction_enabled_flag{};
+  bool        chroma_qp_offset_list_enabled_flag{};
+  unsigned    diff_cu_chroma_qp_offset_depth{};
+  unsigned    chroma_qp_offset_list_len_minus1{};
+  vector<int> cb_qp_offset_list;
+  vector<int> cr_qp_offset_list;
+  unsigned    log2_sao_offset_scale_luma{};
+  unsigned    log2_sao_offset_scale_chroma{};
+};
 
-  return splitStrings;
-}
-
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
-
-} // namespace parser
+} // namespace parser::hevc

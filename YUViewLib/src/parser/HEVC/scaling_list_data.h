@@ -30,52 +30,24 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#pragma once
 
-namespace parser
+#include "parser/common/SubByteReaderLogging.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+// 7.3.4 Scaling list data syntax
+class scaling_list_data
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
-  {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
-  }
-  return text;
-}
+public:
+  scaling_list_data() {}
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
+  void parse(reader::SubByteReaderLogging &reader);
 
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
+  bool     scaling_list_pred_mode_flag[4][6]{};
+  unsigned scaling_list_pred_matrix_id_delta[4][6]{};
+  int      scaling_list_dc_coef_minus8[2][6]{};
+};
 
-  return splitStrings;
-}
-
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
-
-} // namespace parser
+} // namespace parser::hevc

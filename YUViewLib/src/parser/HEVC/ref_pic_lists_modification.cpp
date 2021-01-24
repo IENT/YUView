@@ -30,52 +30,40 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#include "ref_pic_lists_modification.h"
 
-namespace parser
+#include "parser/common/functions.h"
+#include "slice_segment_header.h"
+
+#include <cmath>
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+using namespace reader;
+
+void ref_pic_lists_modification::parse(SubByteReaderLogging &      reader,
+                                       unsigned                    NumPicTotalCurr,
+                                       const slice_segment_header *slice)
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
+  SubByteReaderLoggingSubLevel subLevel(reader, "ref_pic_lists_modification()");
+
+  int nrBits = std::ceil(std::log2(NumPicTotalCurr));
+
+  this->ref_pic_list_modification_flag_l0 = reader.readFlag("ref_pic_list_modification_flag_l0");
+  if (this->ref_pic_list_modification_flag_l0)
   {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
+    for (unsigned int i = 0; i <= slice->num_ref_idx_l0_active_minus1; i++)
+      this->list_entry_l0.push_back(reader.readBits(formatArray("list_entry_l0", i), nrBits));
   }
-  return text;
-}
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
-
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
+  if (slice->slice_type == SliceType::B)
   {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
+    this->ref_pic_list_modification_flag_l1 = reader.readFlag("ref_pic_list_modification_flag_l1");
+    if (ref_pic_list_modification_flag_l1)
+      for (unsigned int i = 0; i <= slice->num_ref_idx_l1_active_minus1; i++)
+        this->list_entry_l1.push_back(reader.readBits(formatArray("list_entry_l1", i), nrBits));
   }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
-
-  return splitStrings;
 }
 
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
-
-} // namespace parser
+} // namespace parser::hevc

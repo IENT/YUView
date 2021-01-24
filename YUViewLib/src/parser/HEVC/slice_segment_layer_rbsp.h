@@ -30,52 +30,31 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#pragma once
 
-namespace parser
+#include "commonMaps.h"
+#include "nal_unit_header.h"
+#include "parser/common/SubByteReaderLogging.h"
+#include "slice_segment_header.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+class slice_segment_layer_rbsp
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
-  {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
-  }
-  return text;
-}
+public:
+  slice_segment_layer_rbsp() {}
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
+  void parse(reader::SubByteReaderLogging &            reader,
+             bool                                      firstAUInDecodingOrder,
+             int                                       prevTid0PicSlicePicOrderCntLsb,
+             int                                       prevTid0PicPicOrderCntMsb,
+             const nal_unit_header &                   nalUnitHeader,
+             SPSMap &                                  spsMap,
+             PPSMap &                                  ppsMap,
+             std::shared_ptr<slice_segment_layer_rbsp> firstSliceInSegment);
 
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
+  slice_segment_header sliceSegmentHeader;
+};
 
-  return splitStrings;
-}
-
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
-
-} // namespace parser
+} // namespace parser::hevc

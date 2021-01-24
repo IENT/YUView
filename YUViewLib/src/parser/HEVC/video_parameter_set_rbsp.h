@@ -30,52 +30,56 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#pragma once
 
-namespace parser
+#include "hrd_parameters.h"
+#include "parser/common/SubByteReaderLogging.h"
+#include "profile_tier_level.h"
+#include "NalUnitHEVC.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+// The video parameter set. 7.3.2.1
+class video_parameter_set_rbsp : public NalRBSP
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
-  {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
-  }
-  return text;
-}
+public:
+  video_parameter_set_rbsp() {}
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
+  void parse(reader::SubByteReaderLogging &reader);
 
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
+  unsigned vps_video_parameter_set_id{};
+  bool     vps_base_layer_internal_flag{};
+  bool     vps_base_layer_available_flag{};
+  unsigned vps_max_layers_minus1{};
+  unsigned vps_max_sub_layers_minus1{};
+  bool     vps_temporal_id_nesting_flag{};
+  unsigned vps_reserved_0xffff_16bits{};
 
-  return splitStrings;
-}
+  profile_tier_level profileTierLevel;
 
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
+  bool         vps_sub_layer_ordering_info_present_flag{};
+  unsigned     vps_max_dec_pic_buffering_minus1[7]{};
+  unsigned     vps_max_num_reorder_pics[7]{};
+  unsigned     vps_max_latency_increase_plus1[7]{};
+  unsigned     vps_max_layer_id{};
+  unsigned     vps_num_layer_sets_minus1{};
+  vector<bool> layer_id_included_flag[7]{};
 
-} // namespace parser
+  bool             vps_timing_info_present_flag{};
+  unsigned         vps_num_units_in_tick{};
+  unsigned         vps_time_scale{};
+  bool             vps_poc_proportional_to_timing_flag{};
+  unsigned         vps_num_ticks_poc_diff_one_minus1{};
+  unsigned         vps_num_hrd_parameters{};
+  vector<unsigned> hrd_layer_set_idx;
+  vector<bool>     cprms_present_flag;
+
+  vector<hrd_parameters> vps_hrd_parameters;
+  bool                   vps_extension_flag{};
+
+  // Calculated values
+  double frameRate{};
+};
+
+} // namespace parser::hevc

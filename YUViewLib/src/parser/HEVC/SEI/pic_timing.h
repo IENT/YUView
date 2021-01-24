@@ -30,52 +30,37 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#pragma once
 
-namespace parser
+#include "parser/common/SubByteReaderLogging.h"
+#include "sei_message.h"
+
+namespace parser::hevc
 {
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts)
+class pic_timing : public sei_payload
 {
-  std::string text;
-  for (auto const &key : sliceCounts)
-  {
-    text += key.first;
-    const auto value = key.second;
-    if (value > 1)
-      text += "(" + std::to_string(value) + ")";
-    text += " ";
-  }
-  return text;
-}
+public:
+  pic_timing() = default;
 
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator)
-{
-  std::vector<std::string> splitStrings;
+  SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
+                         bool                                    reparse,
+                         VPSMap &                                vpsMap,
+                         SPSMap &                                spsMap,
+                         std::shared_ptr<seq_parameter_set_rbsp> associatedSPS) override;
 
-  std::string::size_type prev_pos = 0;
-  std::string::size_type pos      = 0;
-  while ((pos = str.find(seperator, pos)) != std::string::npos)
-  {
-    auto substring = str.substr(prev_pos, pos - prev_pos);
-    splitStrings.push_back(substring);
-    prev_pos = pos + seperator.size();
-    pos++;
-  }
-  splitStrings.push_back(str.substr(prev_pos, pos - prev_pos));
+  unsigned pic_struct{};
+  unsigned source_scan_type{};
+  bool     duplicate_flag{};
 
-  return splitStrings;
-}
+  unsigned         au_cpb_removal_delay_minus1{};
+  unsigned         pic_dpb_output_delay{};
+  unsigned         pic_dpb_output_du_delay{};
+  unsigned         num_decoding_units_minus1;
+  bool             du_common_cpb_removal_delay_flag{};
+  unsigned         du_common_cpb_removal_delay_increment_minus1{};
+  vector<unsigned> num_nalus_in_du_minus1;
+  vector<unsigned> du_cpb_removal_delay_increment_minus1;
+};
 
-size_t getStartCodeOffset(const ByteVector &data)
-{
-  unsigned readOffset = 0;
-  if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
-    readOffset = 3;
-  else if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 &&
-           data.at(3) == (char)1)
-    readOffset = 4;
-  return readOffset;
-}
-
-} // namespace parser
+} // namespace parser::hevc
