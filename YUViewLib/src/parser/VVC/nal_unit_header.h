@@ -82,8 +82,6 @@ public:
   ~nal_unit_header() = default;
   void parse(reader::SubByteReaderLogging &reader);
 
-  QByteArray getNALHeader() const;
-
   unsigned nuh_layer_id;
   unsigned nuh_temporal_id_plus1;
 

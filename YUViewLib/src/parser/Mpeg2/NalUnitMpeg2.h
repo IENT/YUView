@@ -54,8 +54,6 @@ public:
   {
   }
 
-  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
-
   nal_unit_header          header;
   std::shared_ptr<NalRBSP> rbsp;
 };

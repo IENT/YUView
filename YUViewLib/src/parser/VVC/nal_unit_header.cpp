@@ -94,12 +94,4 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
   this->nuh_temporal_id_plus1 = reader.readBits("nuh_temporal_id_plus1", 3);
 }
 
-QByteArray nal_unit_header::getNALHeader() const
-{
-  QByteArray ret;
-  ret.append(char(this->nuh_layer_id));
-  ret.append(char((this->nalUnitTypeID << 3) + this->nuh_temporal_id_plus1));
-  return ret;
-}
-
 } // namespace parser::vvc

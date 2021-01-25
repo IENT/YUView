@@ -114,8 +114,6 @@ public:
   ~nal_unit_header() = default;
   void parse(reader::SubByteReaderLogging &reader);
 
-  QByteArray getNALHeader() const;
-
   bool isIRAP() const;
   bool isSLNR() const;
   bool isRADL() const;

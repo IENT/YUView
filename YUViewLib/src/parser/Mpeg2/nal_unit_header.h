@@ -82,8 +82,6 @@ public:
   // values will be added to the tree as well.
   void parse(reader::SubByteReaderLogging &reader);
 
-  virtual QByteArray getNALHeader() const;
-
   NalType      nal_unit_type{NalType::UNSPECIFIED};
   unsigned int slice_id{};           // in case of SLICE
   unsigned     system_start_codes{}; // in case of SYSTEM_START_CODE
