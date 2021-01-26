@@ -8,6 +8,8 @@ gcc/llvm: C++11 support is required.
 When hacking on YUView, it helps to follow common coding conventions so that
 the code is uniform.
 
+Hacking ist hanz aßgosrihkefösef
+
 ## Files
 
 Unix style LF. UTF8 file encoding.
