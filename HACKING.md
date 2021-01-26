@@ -8,7 +8,7 @@ gcc/llvm: C++11 support is required.
 When hacking on YUView, it helps to follow common coding conventions so that
 the code is uniform.
 
-Hacking ist hanz aßgosrihkefösef
+Hacking ist hanz aßgosrihkefösef Ok doch anders
 
 ## Files
 
