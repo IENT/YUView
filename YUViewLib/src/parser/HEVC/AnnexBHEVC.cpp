@@ -39,7 +39,6 @@
 #include "SEI/pic_timing.h"
 #include "SEI/sei_rbsp.h"
 #include "parser/Subtitles/AnnexBItuTT35.h"
-#include "parser/common/Macros.h"
 #include "parser/common/SubByteReaderLogging.h"
 #include "parser/common/functions.h"
 #include "pic_parameter_set_rbsp.h"

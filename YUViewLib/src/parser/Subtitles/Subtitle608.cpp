@@ -32,8 +32,6 @@
 
 #include "Subtitle608.h"
 
-#include "parser/common/Macros.h"
-
 #include <stdexcept>
 
 namespace

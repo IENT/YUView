@@ -45,7 +45,6 @@
 #include "filler_data_rbsp.h"
 #include "nal_unit_header.h"
 #include "operating_point_information_rbsp.h"
-#include "parser/common/Macros.h"
 #include "parser/common/ReaderHelper.h"
 #include "pic_parameter_set_rbsp.h"
 #include "picture_header_rbsp.h"
