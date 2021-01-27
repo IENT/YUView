@@ -32,6 +32,8 @@
 
 #include "AnnexB.h"
 
+#include "parser/common/SubByteReaderLogging.h"
+
 #include <QElapsedTimer>
 #include <QProgressDialog>
 #include <assert.h>
@@ -62,8 +64,9 @@ bool AnnexB::addFrameToList(int                       poc,
                             std::optional<pairUint64> fileStartEndPos,
                             bool                      randomAccessPoint)
 {
-  if (POCList.contains(poc))
-    return false;
+  for (const auto &f : this->frameList)
+    if (f.poc == poc)
+      return false;
 
   if (pocOfFirstRandomAccessFrame == -1 && randomAccessPoint)
     pocOfFirstRandomAccessFrame = poc;
@@ -74,30 +77,12 @@ bool AnnexB::addFrameToList(int                       poc,
     newFrame.poc               = poc;
     newFrame.fileStartEndPos   = fileStartEndPos;
     newFrame.randomAccessPoint = randomAccessPoint;
-    frameList.append(newFrame);
-
-    POCList.append(poc);
+    frameList.push_back(newFrame);
   }
   return true;
 }
 
-void AnnexB::logNALSize(QByteArray &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
-{
-  size_t startCodeSize = 0;
-  if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
-    startCodeSize = 4;
-  if (data[0] == char(0) && data[1] == char(0) && data[2] == char(1))
-    startCodeSize = 3;
-
-  if (startCodeSize > 0)
-    new TreeItem(root, "Start code size", std::to_string(startCodeSize));
-
-  new TreeItem(root, "Payload size", std::to_string(data.size() - startCodeSize));
-  if (nalStartEndPos)
-    new TreeItem("Start pos", (*nalStartEndPos).first, root);
-}
-
-void AnnexB::logNALSize(ByteVector &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
+void AnnexB::logNALSize(const ByteVector &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
 {
   size_t startCodeSize = 0;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
@@ -113,29 +98,32 @@ void AnnexB::logNALSize(ByteVector &data, TreeItem *root, std::optional<pairUint
     new TreeItem(root, "Start/End pos", to_string(*nalStartEndPos));
 }
 
-int AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFrameIdx) const
+size_t AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx) const
 {
-  // Get the POC for the frame number
-  int seekPOC = POCList[frameIdx];
+  if (frameIdx >= this->frameList.size())
+    return {};
 
-  int bestSeekPOC = -1;
-  for (int i = 0; i < frameList.length(); i++)
+  auto seekPOC = this->frameList[frameIdx].poc;
+
+  int    bestSeekPOC      = -1;
+  size_t bestSeekPocIndex = 0;
+  for (size_t i = 0; i < frameList.size(); i++)
   {
-    auto f = frameList[i];
+    const auto &f = frameList[i];
     if (f.randomAccessPoint)
     {
       if (bestSeekPOC == -1)
       {
-        bestSeekPOC         = f.poc;
-        codingOrderFrameIdx = i;
+        bestSeekPOC      = f.poc;
+        bestSeekPocIndex = i;
       }
       else
       {
         if (f.poc <= seekPOC)
         {
           // We could seek here
-          bestSeekPOC         = f.poc;
-          codingOrderFrameIdx = i;
+          bestSeekPOC      = f.poc;
+          bestSeekPocIndex = i;
         }
         else
           break;
@@ -143,8 +131,7 @@ int AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx, int &codingOrderFr
     }
   }
 
-  // Get the frame index for the given POC
-  return POCList.indexOf(bestSeekPOC);
+  return bestSeekPocIndex;
 }
 
 std::optional<pairUint64> AnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
@@ -180,7 +167,6 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
   emit streamInfoUpdated();
 
   // Just push all NAL units from the annexBFile into the annexBParser
-  QByteArray    nalData;
   int           nalID = 0;
   pairUint64    nalStartEndPosFile;
   bool          abortParsing = false;
@@ -195,8 +181,9 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
 
     try
     {
-      nalData            = file->getNextNALUnit(false, &nalStartEndPosFile);
-      auto parsingResult = parseAndAddNALUnit(nalID, nalData, {}, nalStartEndPosFile, nullptr);
+      auto nalData = reader::SubByteReaderLogging::convertToByteVector(
+          file->getNextNALUnit(false, &nalStartEndPosFile));
+      auto parsingResult = this->parseAndAddNALUnit(nalID, nalData, {}, nalStartEndPosFile, nullptr);
       if (!parsingResult.success)
       {
         DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error parsing NAL " << nalID);
@@ -256,17 +243,18 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
   }
 
   // We are done.
-  auto parseResult = parseAndAddNALUnit(-1, QByteArray(), {}, {});
+  auto parseResult = this->parseAndAddNALUnit(-1, {}, {}, {});
   if (!parseResult.success)
     DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
-  DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Parsing done. Found " << POCList.length() << " POCs");
+  DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Parsing done. Found " << this->frameList.size()
+                                                                 << " POCs");
 
   if (packetModel)
     emit modelDataUpdated();
 
   stream_info.parsing      = false;
   stream_info.nr_nal_units = nalID;
-  stream_info.nr_frames    = frameList.size();
+  stream_info.nr_frames    = unsigned(frameList.size());
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 

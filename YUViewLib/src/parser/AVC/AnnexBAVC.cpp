@@ -145,7 +145,7 @@ yuvPixelFormat AnnexBAVC::getPixelFormat() const
 
 AnnexB::ParseResult
 AnnexBAVC::parseAndAddNALUnit(int                                           nalID,
-                              ByteVector                                    data,
+                              const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
                               TreeItem *                                    parent)
@@ -174,7 +174,6 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
                   << this->curFramePOC << (this->curFrameIsRandomAccess ? " - ra" : ""));
     }
     // The file ended
-    std::sort(this->POCList.begin(), this->POCList.end());
     this->hrd.endOfFile(this->getHRDPlotModel());
     return parseResult;
   }
@@ -404,7 +403,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         this->reparse_sei.push(sei);
 
       nalAVC->rbsp = newSEI;
-      specificDescription + "(x" + std::to_string(newSEI->seis.size()) + ")";
+      specificDescription += "(x" + std::to_string(newSEI->seis.size()) + ")";
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed SEI (" << newSEI->seis.size()
                                                              << " messages)");
       parseResult.nalTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
@@ -538,10 +537,10 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
 
 QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
-  if (!this->POCList.contains(iFrameNr))
+  if (iFrameNr >= this->frameList.size())
     return {};
 
-  auto seekPOC = this->POCList[iFrameNr];
+  auto seekPOC = this->frameList[iFrameNr].poc;
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitAVC>>;
@@ -554,7 +553,7 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
         nal->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
         nal->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_A)
     {
-      int globalPOC {};
+      int globalPOC{};
       if (nal->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
           nal->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR)
       {

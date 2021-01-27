@@ -143,10 +143,10 @@ yuvPixelFormat AnnexBHEVC::getPixelFormat() const
 
 QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
-  if (!this->POCList.contains(iFrameNr))
+  if (iFrameNr >= this->frameList.size())
     return {};
 
-  auto seekPOC = this->POCList[iFrameNr];
+  auto seekPOC = this->frameList[iFrameNr].poc;
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitHEVC>>;
@@ -170,11 +170,14 @@ QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fi
         QList<QByteArray> paramSets;
 
         for (auto const &entry : activeVPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(
+              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
         for (auto const &entry : activeSPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(
+              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
         for (auto const &entry : activePPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(
+              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
 
         return paramSets;
       }
@@ -273,7 +276,7 @@ Ratio AnnexBHEVC::getSampleAspectRatio()
 
 AnnexB::ParseResult
 AnnexBHEVC::parseAndAddNALUnit(int                                           nalID,
-                               ByteVector                                    data,
+                               const ByteVector &                            data,
                                std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                std::optional<pairUint64>                     nalStartEndPosFile,
                                TreeItem *                                    parent)
@@ -300,7 +303,6 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
                    << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
     }
     // The file ended
-    std::sort(POCList.begin(), POCList.end());
     return parseResult;
   }
 

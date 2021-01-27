@@ -69,6 +69,9 @@ public:
   bool     minutes_flag[3]{};
   bool     hours_flag[3]{};
   unsigned time_offset[3]{};
+
+private:
+  reader::SubByteReaderLoggingSubLevel subLevel;
 };
 
 } // namespace parser::avc

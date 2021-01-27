@@ -59,7 +59,7 @@ using namespace mpeg2;
 
 AnnexB::ParseResult
 AnnexBMpeg2::parseAndAddNALUnit(int                                           nalID,
-                                ByteVector &                                  data,
+                                const ByteVector &                            data,
                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                 std::optional<pairUint64>                     nalStartEndPosFile,
                                 TreeItem *                                    parent)
@@ -114,8 +114,8 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
     if (!this->firstSequenceHeader)
       this->firstSequenceHeader = newSequenceHeader;
 
-    nal_mpeg2.rbsp = newSequenceHeader;
-    specificDescription = " Sequence Header";
+    nal_mpeg2.rbsp          = newSequenceHeader;
+    specificDescription     = " Sequence Header";
     parseResult.nalTypeName = "SeqHeader";
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::PICTURE)
@@ -135,30 +135,30 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
     this->lastPictureHeader = newPictureHeader;
     currentSliceType        = newPictureHeader->getPictureTypeString();
 
-    nal_mpeg2.rbsp = newPictureHeader;
-    specificDescription = " Picture Header POC " + std::to_string(this->curFramePOC);
+    nal_mpeg2.rbsp          = newPictureHeader;
+    specificDescription     = " Picture Header POC " + std::to_string(this->curFramePOC);
     parseResult.nalTypeName = "PicHeader(POC " + std::to_string(this->curFramePOC) + ")";
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::GROUP_START)
   {
     DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Group Start");
-    
+
     auto newGroupOfPictureHeader = std::make_shared<group_of_pictures_header>();
     newGroupOfPictureHeader->parse(reader);
 
-    nal_mpeg2.rbsp = newGroupOfPictureHeader;
-    specificDescription = " Group of Pictures";
+    nal_mpeg2.rbsp          = newGroupOfPictureHeader;
+    specificDescription     = " Group of Pictures";
     parseResult.nalTypeName = "GOP";
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::USER_DATA)
   {
     DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit User Data");
-    
+
     auto newUserData = std::make_shared<user_data>();
     newUserData->parse(reader);
 
-    nal_mpeg2.rbsp = newUserData;
-    specificDescription = " User Data";
+    nal_mpeg2.rbsp          = newUserData;
+    specificDescription     = " User Data";
     parseResult.nalTypeName = "UserData";
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::EXTENSION_START)
@@ -174,8 +174,8 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
           std::dynamic_pointer_cast<sequence_extension>(newExtension->payload);
     }
 
-    nal_mpeg2.rbsp = newExtension;
-    specificDescription = " Extension";
+    nal_mpeg2.rbsp          = newExtension;
+    specificDescription     = " Extension";
     parseResult.nalTypeName = "Extension";
   }
 

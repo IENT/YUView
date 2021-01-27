@@ -36,7 +36,7 @@
 #include "parser/HEVC/AnnexBHEVC.h"
 #include "parser/VVC/AnnexBVVC.h"
 #include "parser/Mpeg2/AnnexBMpeg2.h"
-#include "parser/AVFormat.h"
+#include "parser/AVFormat/AVFormat.h"
 
 #define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 0
 #if BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT

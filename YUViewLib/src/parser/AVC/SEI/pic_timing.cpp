@@ -39,7 +39,7 @@ namespace parser::avc
 {
 using namespace reader;
 
-SEIParsingResult pic_timing::parse(reader::SubByteReaderLogging &          reader,
+SEIParsingResult pic_timing::parse(SubByteReaderLogging &                  reader,
                                    bool                                    reparse,
                                    SPSMap &                                spsMap,
                                    std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
@@ -47,7 +47,7 @@ SEIParsingResult pic_timing::parse(reader::SubByteReaderLogging &          reade
   (void)spsMap;
 
   if (!reparse)
-    reader.addLogSubLevel("pic_timing()");
+    this->subLevel = SubByteReaderLoggingSubLevel(reader, "pic_timing()");
 
   if (!associatedSPS)
   {

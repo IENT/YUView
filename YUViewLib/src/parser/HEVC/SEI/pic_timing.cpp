@@ -36,13 +36,12 @@
 #include "../video_parameter_set_rbsp.h"
 #include "parser/common/functions.h"
 
-
 namespace parser::hevc
 {
 
 using namespace reader;
 
-SEIParsingResult pic_timing::parse(reader::SubByteReaderLogging &          reader,
+SEIParsingResult pic_timing::parse(SubByteReaderLogging &                  reader,
                                    bool                                    reparse,
                                    VPSMap &                                vpsMap,
                                    SPSMap &                                spsMap,
@@ -51,7 +50,7 @@ SEIParsingResult pic_timing::parse(reader::SubByteReaderLogging &          reade
   (void)spsMap;
 
   if (!reparse)
-    reader.addLogSubLevel("pic_timing()");
+    this->subLevel = SubByteReaderLoggingSubLevel(reader, "pic_timing()");
 
   if (!reparse)
   {

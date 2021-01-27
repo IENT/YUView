@@ -51,6 +51,8 @@ public:
   unsigned         seq_parameter_set_id{};
   vector<unsigned> initial_cpb_removal_delay;
   vector<unsigned> initial_cpb_removal_delay_offset;
+
+  reader::SubByteReaderLoggingSubLevel subLevel;
 };
 
 } // namespace parser::avc

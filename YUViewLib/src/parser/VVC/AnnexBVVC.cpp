@@ -87,7 +87,7 @@ Ratio AnnexBVVC::getSampleAspectRatio() { return Ratio({1, 1}); }
 
 AnnexB::ParseResult
 AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
-                              ByteVector &                                  data,
+                              const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
                               TreeItem *                                    parent)
