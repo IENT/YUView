@@ -45,11 +45,11 @@ namespace parser
  * supported. This class can "read out" the emulation prevention bytes. This is enabled by default
  * but can be disabled if needed.
  */
-class SubByteReaderNew
+class SubByteReader
 {
 public:
-  SubByteReaderNew() = default;
-  SubByteReaderNew(const ByteVector &inArr, size_t inArrOffset = 0);
+  SubByteReader() = default;
+  SubByteReader(const ByteVector &inArr, size_t inArrOffset = 0);
 
   [[nodiscard]] bool more_rbsp_data() const;
   [[nodiscard]] bool byte_aligned() const;

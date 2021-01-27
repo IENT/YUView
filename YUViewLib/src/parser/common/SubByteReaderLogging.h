@@ -37,7 +37,7 @@
 #include <stack>
 
 #include "SubByteReaderLoggingOptions.h"
-#include "SubByteReaderNew.h"
+#include "SubByteReader.h"
 #include "TreeItem.h"
 #include "common/typedef.h"
 
@@ -50,11 +50,11 @@ class SubByteReaderLoggingSubLevel;
 
 // This is a wrapper around the sub_byte_reader that adds the functionality to log the read symbold
 // to TreeItems
-class SubByteReaderLogging : public SubByteReaderNew
+class SubByteReaderLogging : public SubByteReader
 {
 public:
   SubByteReaderLogging() = default;
-  SubByteReaderLogging(SubByteReaderNew &reader,
+  SubByteReaderLogging(SubByteReader &reader,
                        TreeItem *        item,
                        std::string       new_sub_item_name = "");
   SubByteReaderLogging(const ByteVector &inArr,

@@ -31,7 +31,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "SubByteReaderNew.h"
+#include "SubByteReader.h"
 
 #include <bitset>
 #include <cassert>
@@ -40,10 +40,10 @@
 namespace parser
 {
 
-SubByteReaderNew::SubByteReaderNew(const ByteVector &inArr, size_t inArrOffset)
+SubByteReader::SubByteReader(const ByteVector &inArr, size_t inArrOffset)
     : byteVector(inArr), posInBufferBytes(inArrOffset), initialPosInBuffer(inArrOffset){};
 
-std::tuple<uint64_t, std::string> SubByteReaderNew::readBits(size_t nrBits)
+std::tuple<uint64_t, std::string> SubByteReader::readBits(size_t nrBits)
 {
   uint64_t out        = 0;
   auto     nrBitsRead = nrBits;
@@ -113,7 +113,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readBits(size_t nrBits)
   return {out, bitsRead};
 }
 
-std::tuple<ByteVector, std::string> SubByteReaderNew::readBytes(size_t nrBytes)
+std::tuple<ByteVector, std::string> SubByteReader::readBytes(size_t nrBytes)
 {
   if (this->posInBufferBits != 0 && this->posInBufferBits != 8)
     throw std::logic_error("When reading bytes from the bitstream, it must be byte aligned.");
@@ -143,7 +143,7 @@ std::tuple<ByteVector, std::string> SubByteReaderNew::readBytes(size_t nrBytes)
   return {retVector, code};
 }
 
-std::tuple<uint64_t, std::string> SubByteReaderNew::readUE_V()
+std::tuple<uint64_t, std::string> SubByteReader::readUE_V()
 {
   std::string coding;
   {
@@ -172,7 +172,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readUE_V()
   return {val, coding};
 }
 
-std::tuple<int64_t, std::string> SubByteReaderNew::readSE_V()
+std::tuple<int64_t, std::string> SubByteReader::readSE_V()
 {
   auto [val, coding] = this->readUE_V();
   if (val % 2 == 0)
@@ -181,7 +181,7 @@ std::tuple<int64_t, std::string> SubByteReaderNew::readSE_V()
     return {int64_t((val + 1) / 2), coding};
 }
 
-std::tuple<uint64_t, std::string> SubByteReaderNew::readLEB128()
+std::tuple<uint64_t, std::string> SubByteReader::readLEB128()
 {
   // We will read full bytes (up to 8)
   // The highest bit indicates if we need to read another bit. The rest of the
@@ -200,7 +200,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readLEB128()
   return {value, coding};
 }
 
-std::tuple<uint64_t, std::string> SubByteReaderNew::readUVLC()
+std::tuple<uint64_t, std::string> SubByteReader::readUVLC()
 {
   auto        leadingZeros = 0u;
   std::string coding;
@@ -222,7 +222,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readUVLC()
   return {value + ((uint64_t)1 << leadingZeros) - 1, coding};
 }
 
-std::tuple<uint64_t, std::string> SubByteReaderNew::readNS(uint64_t maxVal)
+std::tuple<uint64_t, std::string> SubByteReader::readNS(uint64_t maxVal)
 {
   if (maxVal == 0)
     return {};
@@ -251,7 +251,7 @@ std::tuple<uint64_t, std::string> SubByteReaderNew::readNS(uint64_t maxVal)
   return {(v << 1) - m + extra_bit, coding + extra_bit_coding};
 }
 
-std::tuple<int64_t, std::string> SubByteReaderNew::readSU(unsigned nrBits)
+std::tuple<int64_t, std::string> SubByteReader::readSU(unsigned nrBits)
 {
   auto [value, coding] = readBits(nrBits);
   int signMask         = 1 << (nrBits - 1);
@@ -265,7 +265,7 @@ std::tuple<int64_t, std::string> SubByteReaderNew::readSU(unsigned nrBits)
 
 /* Is there more data? There is no more data if the next bit is the terminating
  * bit and all following bits are 0. */
-bool SubByteReaderNew::more_rbsp_data() const
+bool SubByteReader::more_rbsp_data() const
 {
   auto posBytes            = this->posInBufferBytes;
   auto posBits             = this->posInBufferBits;
@@ -309,7 +309,7 @@ bool SubByteReaderNew::more_rbsp_data() const
   return false;
 }
 
-bool SubByteReaderNew::byte_aligned() const
+bool SubByteReader::byte_aligned() const
 {
   return (this->posInBufferBits == 0 || this->posInBufferBits == 8);
 }
@@ -321,13 +321,13 @@ bool SubByteReaderNew::byte_aligned() const
  payload_bit_equal_to_one syntax element), the return value of
  payload_extension_present( ) is equal to TRUE.
 */
-bool SubByteReaderNew::payload_extension_present() const
+bool SubByteReader::payload_extension_present() const
 {
   // TODO: What is the difference to this?
   return more_rbsp_data();
 }
 
-bool SubByteReaderNew::canReadBits(unsigned nrBits) const
+bool SubByteReader::canReadBits(unsigned nrBits) const
 {
   if (this->posInBufferBytes == this->byteVector.size())
     return false;
@@ -341,19 +341,19 @@ bool SubByteReaderNew::canReadBits(unsigned nrBits) const
   return nrBits <= nrBitsLeftToRead;
 }
 
-size_t SubByteReaderNew::nrBytesRead() const
+size_t SubByteReader::nrBytesRead() const
 {
   return this->posInBufferBytes - this->initialPosInBuffer + (this->posInBufferBits != 0 ? 1 : 0);
 }
 
-size_t SubByteReaderNew::nrBytesLeft() const
+size_t SubByteReader::nrBytesLeft() const
 {
   if (this->byteVector.size() <= this->posInBufferBytes)
     return 0;
   return this->byteVector.size() - this->posInBufferBytes - 1;
 }
 
-ByteVector SubByteReaderNew::peekBytes(unsigned nrBytes) const
+ByteVector SubByteReader::peekBytes(unsigned nrBytes) const
 {
   if (this->posInBufferBits != 0 && this->posInBufferBits != 8)
     throw std::logic_error("When peeking bytes from the bitstream, it must be byte aligned.");
@@ -368,7 +368,7 @@ ByteVector SubByteReaderNew::peekBytes(unsigned nrBytes) const
   return ByteVector(this->byteVector.begin() + pos, this->byteVector.begin() + pos + nrBytes);
 }
 
-bool SubByteReaderNew::gotoNextByte()
+bool SubByteReader::gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero
   // byte.
