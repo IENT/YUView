@@ -234,8 +234,8 @@ bool AVFormat::parseExtradata_mpeg2(ByteVector &extradata)
         new TreeItem(packetModel->getRootItem(), "Extradata (Raw Mpeg2 units)"));
   }
   else
-    return ReaderHelper::addErrorMessageChildItem(
-        "Unsupported extradata format (configurationVersion != 1)", packetModel->getRootItem());
+    new TreeItem(packetModel->getRootItem(),
+                 "Unsupported extradata format (configurationVersion != 1)");
 
   return true;
 }

@@ -39,7 +39,6 @@
 #include "SEI/sei_message.h"
 #include "commonMaps.h"
 #include "parser/AnnexB.h"
-#include "parser/common/ReaderHelper.h"
 #include "video/videoHandlerYUV.h"
 
 #include <queue>

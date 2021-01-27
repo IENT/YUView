@@ -289,8 +289,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       // Save the info of the last frame
       if (!this->addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
       {
-        ReaderHelper::addErrorMessageChildItem(
-            QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
+        new TreeItem(parent,
+                     "Error - POC " + std::to_string(curFramePOC) + " alread in the POC list.");
         return parseResult;
       }
       if (curFrameFileStartEndPos)

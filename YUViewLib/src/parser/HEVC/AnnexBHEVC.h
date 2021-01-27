@@ -40,7 +40,6 @@
 #include "SEI/sei_message.h"
 #include "commonMaps.h"
 #include "nal_unit_header.h"
-#include "parser/common/ReaderHelper.h"
 #include "video/videoHandlerYUV.h"
 
 #include <queue>

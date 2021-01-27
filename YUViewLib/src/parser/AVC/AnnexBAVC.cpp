@@ -160,8 +160,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       if (!this->addFrameToList(
               this->curFramePOC, this->curFrameFileStartEndPos, this->curFrameIsRandomAccess))
       {
-        ReaderHelper::addErrorMessageChildItem(
-            QString("Error - POC %1 alread in the POC list.").arg(this->curFramePOC), parent);
+        new TreeItem(
+            parent, "Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list.");
         return parseResult;
       }
       if (this->curFrameFileStartEndPos)
