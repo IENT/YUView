@@ -85,7 +85,7 @@ private:
   bool parseExtradata_mpeg2(ByteVector &extradata);
 
   // Parse all NAL units in data using the AnnexB parser
-  std::queue<std::string>
+  std::map<std::string, unsigned>
   parseByteVectorAnnexBStartCodes(ByteVector &                   data,
                                   packetDataFormat_t             dataFormat,
                                   BitratePlotModel::BitrateEntry packetBitrateEntry,

@@ -177,6 +177,11 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
     specificDescription     = " Extension";
     parseResult.nalTypeName = "Extension";
   }
+  if (nal_mpeg2.header.nal_unit_type == NalType::SLICE)
+  {
+    specificDescription     = " Slice";
+    parseResult.nalTypeName = "Slice";
+  }
 
   const bool isStartOfNewAU =
       (nal_mpeg2.header.nal_unit_type == NalType::SEQUENCE_HEADER ||

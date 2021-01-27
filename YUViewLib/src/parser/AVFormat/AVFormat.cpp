@@ -142,6 +142,8 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
   {
     SubByteReaderLogging reader(
         extradata, packetModel->getRootItem(), "Extradata (Raw AVC NAL units)");
+    reader.disableEmulationPrevention();
+
     reader.readBits("Version", 8);
 
     // The extradata uses the avcc format (see avc.c in libavformat)
@@ -159,7 +161,7 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
       SubByteReaderLoggingSubLevel spsSubLevel(reader, "SPS " + std::to_string(i));
       auto                         sps_size = reader.readBits("sps_size", 16);
       auto spsData     = reader.readBytes("", sps_size, Options().withLoggingDisabled());
-      auto parseResult = this->annexBParser->parseAndAddNALUnit(nalID++, spsData, {}, {});
+      auto parseResult = this->annexBParser->parseAndAddNALUnit(nalID++, spsData, {}, {}, reader.getCurrentItemTree());
       if (parseResult.success && parseResult.bitrateEntry)
         this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
     }
@@ -170,7 +172,7 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
       SubByteReaderLoggingSubLevel ppsSubLevel(reader, "PPS " + std::to_string(i));
       auto                         pps_size = reader.readBits("pps_size", 16);
       auto pspsData    = reader.readBytes("", pps_size, Options().withLoggingDisabled());
-      auto parseResult = this->annexBParser->parseAndAddNALUnit(nalID++, pspsData, {}, {});
+      auto parseResult = this->annexBParser->parseAndAddNALUnit(nalID++, pspsData, {}, {}, reader.getCurrentItemTree());
       if (parseResult.success && parseResult.bitrateEntry)
         this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
     }
@@ -240,7 +242,7 @@ bool AVFormat::parseExtradata_mpeg2(ByteVector &extradata)
   return true;
 }
 
-std::queue<std::string>
+std::map<std::string, unsigned>
 AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
                                           packetDataFormat_t             dataFormat,
                                           BitratePlotModel::BitrateEntry packetBitrateEntry,
@@ -256,18 +258,20 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
   auto getNextNalStart = [&data, &dataFormat](ByteVector::iterator searchStart) {
     if (dataFormat == packetDataFormat_t::packetFormatRawNAL)
     {
-      auto itStartCode = std::search(searchStart, data.end(), startCode.begin(), startCode.end());
+      if (std::distance(searchStart, data.end()) <= 3)
+        return data.end();
+      auto itStartCode = std::search(searchStart + 3, data.end(), startCode.begin(), startCode.end());
       if (itStartCode == data.end())
         return data.end();
-      itStartCode += startCode.size();
       return itStartCode;
     }
     else if (dataFormat == packetDataFormat_t::packetFormatMP4)
     {
-      unsigned size = *searchStart++;
-      size += ((*searchStart++) << 8);
-      size += ((*searchStart++) << 16);
-      size += ((*searchStart++) << 24);
+      unsigned size = 0;
+      size += ((*(searchStart++)) << 24);
+      size += ((*(searchStart++)) << 16);
+      size += ((*(searchStart++)) << 8);
+      size += (*(searchStart++));
       if (size > std::distance(searchStart, data.end()))
         return data.end();
       return searchStart + size;
@@ -287,18 +291,20 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
     }
   }
 
+  const auto sizeStartCode = (dataFormat == packetDataFormat_t::packetFormatRawNAL ? 3u : 4u );
+
   auto                    nalID = 0u;
-  std::queue<std::string> naNames;
+  std::map<std::string, unsigned> naNames;
   while (itStartCode != data.end())
   {
     auto itNextStartCode = getNextNalStart(itStartCode);
-    auto nalData         = ByteVector(itStartCode, itNextStartCode);
+    auto nalData         = ByteVector(itStartCode + sizeStartCode, itNextStartCode);
     auto parseResult =
         this->annexBParser->parseAndAddNALUnit(nalID++, nalData, packetBitrateEntry, {}, item);
     if (parseResult.success && parseResult.bitrateEntry)
       this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
     if (parseResult.success && parseResult.nalTypeName)
-      naNames.push(*parseResult.nalTypeName);
+      naNames[*parseResult.nalTypeName]++;
     itStartCode = itNextStartCode;
   }
   return naNames;
@@ -364,7 +370,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   if (packet.getPacketType() == PacketType::VIDEO)
   {
     // Colloect the types of OBus/NALs to create a good name later
-    std::queue<std::string> unitNames;
+    std::map<std::string, unsigned> unitNames;
 
     if (this->annexBParser)
     {
@@ -406,7 +412,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
           posInData += nrBytesRead;
 
           if (!obuTypeName.empty())
-            unitNames.push(obuTypeName);
+            unitNames[obuTypeName]++;
         }
         catch (...)
         {
@@ -427,10 +433,11 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
       specificDescription = " - OBUs:";
     }
 
-    while (!unitNames.empty())
+    for (const auto entry : unitNames)
     {
-      specificDescription += " " + unitNames.front();
-      unitNames.pop();
+      specificDescription += " " + entry.first;
+      if (entry.second > 1)
+        specificDescription += "(x" + std::to_string(entry.second) + ")";
     }
   }
   else if (packet.getPacketType() == PacketType::SUBTITLE_DVB)
