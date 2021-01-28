@@ -116,7 +116,7 @@ bool AVFormat::parseMetadata(QStringPairList &metadata)
   // Log all entries in the metadata list
   TreeItem *metadataRoot = new TreeItem(packetModel->getRootItem(), "Metadata");
   for (QStringPair p : metadata)
-    new TreeItem(p.first, p.second, "", "", metadataRoot);
+    new TreeItem(metadataRoot, p.first.toStdString(), p.second.toStdString(), "", "");
   return true;
 }
 
