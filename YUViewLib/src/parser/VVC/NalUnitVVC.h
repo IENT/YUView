@@ -33,7 +33,6 @@
 #pragma once
 
 #include "nal_unit_header.h"
-#include "parser/NalUnit.h"
 
 #include <memory>
 
@@ -47,16 +46,20 @@ public:
   virtual ~NalRBSP() = default;
 };
 
-class NalUnitVVC : public NalUnit
+class NalUnitVVC
 {
 public:
   NalUnitVVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
-      : NalUnit(nalIdx, filePosStartEnd)
+      : nalIdx(nalIdx), filePosStartEnd(filePosStartEnd)
   {
   }
 
   nal_unit_header          header;
   std::shared_ptr<NalRBSP> rbsp;
+
+  int nalIdx{};
+  // Pointer to the first byte of the start code of the NAL unit (if known)
+  std::optional<pairUint64> filePosStartEnd;
 };
 
 using NalMap = std::map<unsigned, std::shared_ptr<vvc::NalUnitVVC>>;

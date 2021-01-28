@@ -38,7 +38,6 @@
 #include <optional>
 #include <set>
 
-#include "NalUnit.h"
 #include "common/BitratePlotModel.h"
 #include "common/TreeItem.h"
 #include "filesource/FileSourceAnnexBFile.h"

@@ -33,7 +33,6 @@
 #pragma once
 
 #include "nal_unit_header.h"
-#include "parser/NalUnit.h"
 #include "common/typedef.h"
 
 #include <memory>
