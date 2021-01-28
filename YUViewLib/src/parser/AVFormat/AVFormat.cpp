@@ -462,6 +462,8 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
         if (remaining < 0 || nrBytesRead + minDVBSegmentSize >= size_t(std::abs(remaining)))
           break;
 
+        if (!name.empty())
+          specificDescription += " " + name;
         posInData += nrBytesRead;
       }
       catch (...)

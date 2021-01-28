@@ -98,8 +98,7 @@ QVariant PacketItemModel::headerData(int section, Qt::Orientation orientation, i
 {
   if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != nullptr)
     return getTreeItemEntry(rootItem.get(), section);
-
-  return QVariant();
+  return {};
 }
 
 QVariant PacketItemModel::data(const QModelIndex &index, int role) const
@@ -107,7 +106,7 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
   if (!index.isValid())
     return QVariant();
 
-  TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
+  auto item = static_cast<TreeItem*>(index.internalPointer());
   if (role == Qt::ForegroundRole)
   {
     if (item->isError())
@@ -130,17 +129,17 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
     else
       return QVariant(getTreeItemEntry(item, index.column()));
   }
-  return QVariant();
+  return {};
 }
 
 QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &parent) const
 {
   if (!hasIndex(row, column, parent))
-    return QModelIndex();
+    return {};
 
   TreeItem *parentItem;
   if (!parent.isValid())
-    parentItem = rootItem.data();
+    parentItem = rootItem.get();
   else
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
 
@@ -150,19 +149,19 @@ QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &paren
   if (childItem)
     return createIndex(row, column, childItem);
   else
-    return QModelIndex();
+    return {};
 }
 
 QModelIndex PacketItemModel::parent(const QModelIndex &index) const
 {
   if (!index.isValid())
-    return QModelIndex();
+    return {};
 
   auto *childItem = static_cast<TreeItem*>(index.internalPointer());
   auto *parentItem = childItem->getParent();
 
-  if (parentItem == rootItem.data())
-    return QModelIndex();
+  if (parentItem == rootItem.get())
+    return {};
 
   // Get the row of the item in the list of children of the parent item
   int row = 0;
@@ -180,14 +179,14 @@ QModelIndex PacketItemModel::parent(const QModelIndex &index) const
 int PacketItemModel::rowCount(const QModelIndex &parent) const
 {
   if (parent.column() > 0)
-    return 0;
+    return {};
 
   if (!parent.isValid())
   {
-    TreeItem *p = rootItem.data();
+    auto p = rootItem.get();
     return (p == nullptr) ? 0 : nrShowChildItems;
   }
-  TreeItem *p = static_cast<TreeItem*>(parent.internalPointer());
+  auto p = static_cast<TreeItem*>(parent.internalPointer());
   return (p == nullptr) ? 0 : int(p->getNrChildItems());
 }
 
@@ -195,11 +194,11 @@ void PacketItemModel::updateNumberModelItems()
 {
   auto n = getNumberFirstLevelChildren();
   Q_ASSERT_X(n >= nrShowChildItems, Q_FUNC_INFO, "Setting a smaller number of items.");
-  unsigned int nrAddItems = n - nrShowChildItems;
+  auto nrAddItems = n - nrShowChildItems;
   if (nrAddItems == 0)
     return;
 
-  int lastIndex = nrShowChildItems;
+  auto lastIndex = nrShowChildItems;
   beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
   nrShowChildItems = n;
   endInsertRows();
@@ -243,8 +242,8 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
   if (!sourceParent.isValid())
   {
     // Get the root item
-    QAbstractItemModel *s = sourceModel();
-    PacketItemModel *p = static_cast<PacketItemModel*>(s);
+    auto *s = sourceModel();
+    auto *p = static_cast<PacketItemModel*>(s);
     if (p == nullptr)
     {
       DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow Unable to get root item");  
