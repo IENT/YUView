@@ -37,7 +37,7 @@
 #include <stack>
 
 #include "SubByteReaderLoggingOptions.h"
-#include "SubByteReaderNew.h"
+#include "SubByteReader.h"
 #include "TreeItem.h"
 #include "common/typedef.h"
 
@@ -46,24 +46,21 @@ namespace parser::reader
 
 typedef std::string (*meaning_callback_function)(unsigned int);
 
+class SubByteReaderLoggingSubLevel;
+
 // This is a wrapper around the sub_byte_reader that adds the functionality to log the read symbold
 // to TreeItems
-class SubByteReaderLogging : public SubByteReaderNew
+class SubByteReaderLogging : public SubByteReader
 {
 public:
   SubByteReaderLogging() = default;
-  SubByteReaderLogging(SubByteReaderNew &reader,
+  SubByteReaderLogging(SubByteReader &reader,
                        TreeItem *        item,
                        std::string       new_sub_item_name = "");
   SubByteReaderLogging(const ByteVector &inArr,
                        TreeItem *        item,
                        std::string       new_sub_item_name = "",
                        size_t            inOffset          = 0);
-
-  // Add another hierarchical log level to the tree or go back up. Don't call these directly but use
-  // the reader_sub_level wrapper.
-  void addLogSubLevel(std::string name);
-  void removeLogSubLevel();
 
   // DEPRECATED. This is just for backwards compatibility and will be removed once
   // everything is using std types.
@@ -91,6 +88,10 @@ public:
   [[nodiscard]] TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
 private:
+  friend class SubByteReaderLoggingSubLevel;
+  void addLogSubLevel(std::string name);
+  void removeLogSubLevel();
+
   void logExceptionAndThrowError [[noreturn]] (const std::exception &ex, const std::string &when);
 
   std::stack<TreeItem *> itemHierarchy;
@@ -102,15 +103,20 @@ private:
 class SubByteReaderLoggingSubLevel
 {
 public:
+  SubByteReaderLoggingSubLevel() = default;
   SubByteReaderLoggingSubLevel(SubByteReaderLogging &reader, std::string name)
   {
     reader.addLogSubLevel(name);
-    r = &reader;
+    this->r = &reader;
   }
-  ~SubByteReaderLoggingSubLevel() { r->removeLogSubLevel(); }
+  ~SubByteReaderLoggingSubLevel()
+  {
+    if (this->r != nullptr)
+      this->r->removeLogSubLevel();
+  }
 
 private:
-  SubByteReaderLogging *r;
+  SubByteReaderLogging *r{nullptr};
 };
 
 } // namespace parser::reader

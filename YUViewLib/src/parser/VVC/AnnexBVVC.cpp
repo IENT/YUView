@@ -45,8 +45,6 @@
 #include "filler_data_rbsp.h"
 #include "nal_unit_header.h"
 #include "operating_point_information_rbsp.h"
-#include "parser/common/Macros.h"
-#include "parser/common/ReaderHelper.h"
 #include "pic_parameter_set_rbsp.h"
 #include "picture_header_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
@@ -87,7 +85,7 @@ Ratio AnnexBVVC::getSampleAspectRatio() { return Ratio({1, 1}); }
 
 AnnexB::ParseResult
 AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
-                              ByteVector &                                  data,
+                              const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
                               TreeItem *                                    parent)
@@ -341,8 +339,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                           this->parsingState.curFrameFileStartEndPos,
                           this->parsingState.lastFrameIsKeyframe))
       {
-        ReaderHelper::addErrorMessageChildItem(QString("Error adding frame to frame list."),
-                                               parent);
+        new TreeItem(parent, "Error adding frame to frame list.");
         return parseResult;
       }
       if (this->parsingState.curFrameFileStartEndPos)

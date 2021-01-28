@@ -139,10 +139,10 @@ QByteArray SubByteReaderLogging::convertToQByteArray(ByteVector data)
   return ret;
 }
 
-SubByteReaderLogging::SubByteReaderLogging(SubByteReaderNew &reader,
+SubByteReaderLogging::SubByteReaderLogging(SubByteReader &reader,
                                            TreeItem *        item,
                                            std::string       new_sub_item_name)
-    : SubByteReaderNew(reader)
+    : SubByteReader(reader)
 {
   if (item)
   {
@@ -158,7 +158,7 @@ SubByteReaderLogging::SubByteReaderLogging(const ByteVector &inArr,
                                            TreeItem *        item,
                                            std::string       new_sub_item_name,
                                            size_t            inOffset)
-    : SubByteReaderNew(inArr, inOffset)
+    : SubByteReader(inArr, inOffset)
 {
   if (item)
   {
@@ -193,7 +193,7 @@ SubByteReaderLogging::readBits(const std::string &symbolName, int numBits, const
 {
   try
   {
-    auto [value, code] = SubByteReaderNew::readBits(numBits);
+    auto [value, code] = SubByteReader::readBits(numBits);
     checkAndLog(this->currentTreeLevel, "u(v)", symbolName, options, value, code);
     return value;
   }
@@ -207,7 +207,7 @@ bool SubByteReaderLogging::readFlag(const std::string &symbolName, const Options
 {
   try
   {
-    auto [value, code] = SubByteReaderNew::readBits(1);
+    auto [value, code] = SubByteReader::readBits(1);
     checkAndLog(this->currentTreeLevel, "u(1)", symbolName, options, value, code);
     return (value != 0);
   }
@@ -221,7 +221,7 @@ uint64_t SubByteReaderLogging::readUEV(const std::string &symbolName, const Opti
 {
   try
   {
-    auto [value, code] = SubByteReaderNew::readUE_V();
+    auto [value, code] = SubByteReader::readUE_V();
     checkAndLog(this->currentTreeLevel, "ue(v)", symbolName, options, value, code);
     return value;
   }
@@ -235,7 +235,7 @@ int64_t SubByteReaderLogging::readSEV(const std::string &symbolName, const Optio
 {
   try
   {
-    auto [value, code] = SubByteReaderNew::readSE_V();
+    auto [value, code] = SubByteReader::readSE_V();
     checkAndLog(this->currentTreeLevel, "se(v)", symbolName, options, value, code);
     return value;
   }
@@ -249,7 +249,7 @@ uint64_t SubByteReaderLogging::readLEB128(const std::string &symbolName, const O
 {
   try
   {
-    auto [value, code] = SubByteReaderNew::readLEB128();
+    auto [value, code] = SubByteReader::readLEB128();
     checkAndLog(this->currentTreeLevel, "leb128(v)", symbolName, options, value, code);
     return value;
   }
@@ -264,7 +264,7 @@ SubByteReaderLogging::readNS(const std::string &symbolName, uint64_t maxVal, con
 {
   try
   {
-    auto [value, code] = SubByteReaderNew::readNS(maxVal);
+    auto [value, code] = SubByteReader::readNS(maxVal);
     checkAndLog(this->currentTreeLevel, "ns(n)", symbolName, options, value, code);
     return value;
   }
@@ -279,7 +279,7 @@ SubByteReaderLogging::readSU(const std::string &symbolName, unsigned nrBits, con
 {
   try
   {
-    auto [value, code] = SubByteReaderNew::readSU(nrBits);
+    auto [value, code] = SubByteReader::readSU(nrBits);
     checkAndLog(this->currentTreeLevel, "su(n)", symbolName, options, value, code);
     return value;
   }
@@ -298,7 +298,7 @@ ByteVector SubByteReaderLogging::readBytes(const std::string &symbolName,
     if (!this->byte_aligned())
       throw std::logic_error("Trying to ready bytes while not byte aligned.");
 
-    auto [value, code] = SubByteReaderNew::readBytes(nrBytes);
+    auto [value, code] = SubByteReader::readBytes(nrBytes);
     checkAndLog(this->currentTreeLevel, "u(8)", symbolName, options, value, code);
     return value;
   }

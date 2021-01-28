@@ -32,38 +32,72 @@
 
 #pragma once
 
+#include "common/typedef.h"
+#include "parser/HEVC/AnnexBHEVC.h"
+#include "parser/common/BitratePlotModel.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "sei_message.h"
+#include "parser/common/TreeItem.h"
 
-namespace parser::hevc
+namespace parser::avformat
 {
 
-class pic_timing : public sei_payload
+class HVCCNalUnit
 {
 public:
-  pic_timing() = default;
+  HVCCNalUnit() = default;
 
-  SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
-                         bool                                    reparse,
-                         VPSMap &                                vpsMap,
-                         SPSMap &                                spsMap,
-                         std::shared_ptr<seq_parameter_set_rbsp> associatedSPS) override;
+  void parse(unsigned                      unitID,
+             reader::SubByteReaderLogging &reader,
+             AnnexBHEVC *                  hevcParser,
+             BitratePlotModel *            bitrateModel);
 
-  unsigned pic_struct{};
-  unsigned source_scan_type{};
-  bool     duplicate_flag{};
-
-  unsigned         au_cpb_removal_delay_minus1{};
-  unsigned         pic_dpb_output_delay{};
-  unsigned         pic_dpb_output_du_delay{};
-  unsigned         num_decoding_units_minus1;
-  bool             du_common_cpb_removal_delay_flag{};
-  unsigned         du_common_cpb_removal_delay_increment_minus1{};
-  vector<unsigned> num_nalus_in_du_minus1;
-  vector<unsigned> du_cpb_removal_delay_increment_minus1;
-
-private:
-  reader::SubByteReaderLoggingSubLevel subLevel;
+  unsigned nalUnitLength{};
 };
 
-} // namespace parser::hevc
+class HVCCNalArray
+{
+public:
+  HVCCNalArray() = default;
+
+  void parse(unsigned                      arrayID,
+             reader::SubByteReaderLogging &reader,
+             AnnexBHEVC *                  hevcParser,
+             BitratePlotModel *            bitrateModel);
+
+  bool                array_completeness{};
+  unsigned            nal_unit_type{};
+  unsigned            numNalus{};
+  vector<HVCCNalUnit> nalList;
+};
+
+class HVCC
+{
+public:
+  HVCC() = default;
+
+  void
+  parse(ByteVector &data, TreeItem *root, AnnexBHEVC *hevcParser, BitratePlotModel *bitrateModel);
+
+  unsigned configurationVersion{};
+  unsigned general_profile_space{};
+  bool     general_tier_flag{};
+  unsigned general_profile_idc{};
+  unsigned general_profile_compatibility_flags{};
+  uint64_t general_constraint_indicator_flags{};
+  unsigned general_level_idc{};
+  unsigned min_spatial_segmentation_idc{};
+  unsigned parallelismType{};
+  unsigned chromaFormat{};
+  unsigned bitDepthLumaMinus8{};
+  unsigned bitDepthChromaMinus8{};
+  unsigned avgFrameRate{};
+  unsigned constantFrameRate{};
+  unsigned numTemporalLayers{};
+  bool     temporalIdNested{};
+  unsigned lengthSizeMinusOne{};
+  unsigned numOfArrays{};
+
+  vector<HVCCNalArray> naluArrays;
+};
+
+} // namespace parser::avformat

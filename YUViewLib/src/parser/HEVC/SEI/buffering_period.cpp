@@ -42,7 +42,7 @@ namespace parser::hevc
 
 using namespace reader;
 
-SEIParsingResult buffering_period::parse(reader::SubByteReaderLogging &          reader,
+SEIParsingResult buffering_period::parse(SubByteReaderLogging &          reader,
                                          bool                                    reparse,
                                          VPSMap &                                vpsMap,
                                          SPSMap &                                spsMap,
@@ -52,7 +52,7 @@ SEIParsingResult buffering_period::parse(reader::SubByteReaderLogging &         
   (void)associatedSPS;
 
   if (!reparse)
-    reader.addLogSubLevel("buffering_period()");
+    this->subLevel = SubByteReaderLoggingSubLevel(reader, "buffering_period()");
 
   this->bp_seq_parameter_set_id = reader.readUEV("bp_seq_parameter_set_id");
 

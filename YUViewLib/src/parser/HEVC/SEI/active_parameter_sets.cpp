@@ -32,8 +32,8 @@
 
 #include "active_parameter_sets.h"
 
-#include "parser/common/functions.h"
 #include "../video_parameter_set_rbsp.h"
+#include "parser/common/functions.h"
 
 namespace parser::hevc
 {
@@ -50,7 +50,7 @@ SEIParsingResult active_parameter_sets::parse(SubByteReaderLogging &            
   (void)associatedSPS;
 
   if (!reparse)
-    reader.addLogSubLevel("active_parameter_sets()");
+    this->subLevel = SubByteReaderLoggingSubLevel(reader, "active_parameter_sets()");
 
   this->active_video_parameter_set_id = reader.readBits("active_video_parameter_set_id", 4);
   this->self_contained_cvs_flag       = reader.readFlag("self_contained_cvs_flag");

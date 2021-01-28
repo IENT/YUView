@@ -102,7 +102,8 @@ public:
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
-  int getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const;
+  // Return: POC and frame index
+  std::pair<int64_t, size_t> getClosestSeekableFrameBefore(int frameIdx) const;
 
   QStringList getFFmpegLoadingLog() const { return ff.getLog(); }
   
@@ -157,14 +158,14 @@ protected:
   // the PTS values of keyframes that we can start decoding at.
   // If a mainWindow pointer is given, open a progress dialog. Return true on success. False if the process was canceled.
   bool scanBitstream(QWidget *mainWindow);
-  int nrFrames {0};
+  size_t nrFrames {0};
 
   // Private struct for navigation. We index frames by frame number and FFMpeg uses the pts.
   // This connects both values.
   struct pictureIdx
   {
-    pictureIdx(int64_t frame, int64_t dts) : frame(frame), dts(dts) {}
-    int64_t frame;
+    pictureIdx(size_t frame, int64_t dts) : frame(frame), dts(dts) {}
+    size_t frame;
     int64_t dts;
   };
 

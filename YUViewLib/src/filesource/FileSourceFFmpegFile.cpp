@@ -35,7 +35,7 @@
 #include <QSettings>
 #include <QProgressDialog>
 
-#include "parser/common/SubByteReader.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 #define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
@@ -47,6 +47,7 @@
 
 using namespace YUView;
 using namespace YUV_Internals;
+using namespace parser::reader;
 
 FileSourceFFmpegFile::FileSourceFFmpegFile()
 {
@@ -153,38 +154,26 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pt
   }
   else if (packetDataFormat == packetFormatOBU)
   {
-    SubByteReader reader(currentPacketData, posInData);
+    SubByteReaderLogging reader(SubByteReaderLogging::convertToByteVector(currentPacketData), nullptr, "", posInData);
 
     try
     {
-      QString bitsRead;
-      bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);
-      reader.readBits(4, bitsRead); // obu_type
-      bool obu_extension_flag = (reader.readBits(1, bitsRead) != 0);
-      bool obu_has_size_field = (reader.readBits(1, bitsRead) != 0);
-      bool obu_reserved_1bit = (reader.readBits(1, bitsRead) != 0);
+      reader.readFlag("obu_forbidden_bit", Options().withCheckEqualTo(0));
+      reader.readBits("obu_type", 4);
+      auto obu_extension_flag = reader.readFlag("obu_extension_flag");
+      auto obu_has_size_field = reader.readFlag("obu_has_size_field");
+      reader.readFlag("obu_reserved_1bit", Options().withCheckEqualTo(1));
 
-      if (obu_forbidden_bit || obu_reserved_1bit)
-      {
-        currentPacketData.clear();
-        return QByteArray();
-      }
       if (obu_extension_flag)
       {
-        reader.readBits(3, bitsRead); // temporal_id
-        reader.readBits(2, bitsRead); // spatial_id
-        unsigned int extension_header_reserved_3bits = reader.readBits(3, bitsRead);
-        if (extension_header_reserved_3bits != 0)
-        {
-          currentPacketData.clear();
-          return QByteArray();
-        }
+        reader.readBits("temporal_id", 3);
+        reader.readBits("spatial_id", 2);
+        reader.readBits("extension_header_reserved_3bits", 3, Options().withCheckEqualTo(0));
       }
       if (obu_has_size_field)
       {
-        int bitCount;
-        unsigned int obu_size = reader.readLeb128(bitsRead, bitCount);
-        unsigned int completeSize = obu_size + reader.nrBytesRead();
+        auto obu_size = reader.readLEB128("obu_size");
+        auto completeSize = obu_size + reader.nrBytesRead();
         lastReturnArray = currentPacketData.mid(posInData, completeSize);
         posInData += completeSize;
         if (posInData >= currentPacketData.size())
@@ -378,28 +367,28 @@ void FileSourceFFmpegFile::updateFileWatchSetting()
     fileWatcher.removePath(fullFilePath);
 }
 
-int FileSourceFFmpegFile::getClosestSeekableDTSBefore(int frameIdx, int &seekToFrameIdx) const
+std::pair<int64_t, size_t> FileSourceFFmpegFile::getClosestSeekableFrameBefore(int frameIdx) const
 {
   // We are always be able to seek to the beginning of the file
-  int bestSeekDTS = keyFrameList[0].dts;
-  seekToFrameIdx = keyFrameList[0].frame;
+  auto bestSeekDTS = this->keyFrameList[0].dts;
+  auto seekToFrameIdx = this->keyFrameList[0].frame;
 
-  for (pictureIdx idx : keyFrameList)
+  for (const auto &pic : this->keyFrameList)
   {
-    if (idx.frame >= 0) 
+    if (pic.frame >= 0) 
     {
-      if (idx.frame <= frameIdx)
+      if (pic.frame <= frameIdx)
       {
         // We could seek here
-        bestSeekDTS = idx.dts;
-        seekToFrameIdx = idx.frame;
+        bestSeekDTS = pic.dts;
+        seekToFrameIdx = pic.frame;
       }
       else
         break;
     }
   }
 
-  return bestSeekDTS;
+  return {bestSeekDTS, seekToFrameIdx};
 }
 
 bool FileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
@@ -621,8 +610,8 @@ indexRange FileSourceFFmpegFile::getDecodableFrameLimits() const
     return {};
 
   indexRange range;
-  range.first = this->keyFrameList.at(0).frame;
-  range.second = nrFrames;
+  range.first = int(this->keyFrameList.at(0).frame);
+  range.second = int(nrFrames);
   return range;
 }
 

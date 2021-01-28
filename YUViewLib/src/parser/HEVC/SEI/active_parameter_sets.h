@@ -55,6 +55,9 @@ public:
   unsigned         num_sps_ids_minus1{};
   vector<unsigned> active_seq_parameter_set_id;
   vector<unsigned> layer_sps_idx;
+
+private:
+  reader::SubByteReaderLoggingSubLevel subLevel;
 };
 
 } // namespace parser::hevc

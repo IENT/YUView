@@ -39,7 +39,6 @@
 #include "SEI/sei_message.h"
 #include "commonMaps.h"
 #include "parser/AnnexB.h"
-#include "parser/common/ReaderHelper.h"
 #include "video/videoHandlerYUV.h"
 
 #include <queue>
@@ -76,23 +75,11 @@ public:
   QSize          getSequenceSizeSamples() const override;
   yuvPixelFormat getPixelFormat() const override;
 
-  // Deprecated function for backwards compatibility. Once all parsing functions are switched
-  // This will be removed.
   ParseResult parseAndAddNALUnit(int                                           nalID,
-                                 QByteArray                                    data,
+                                 const ByteVector &                            data,
                                  std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                  std::optional<pairUint64> nalStartEndPosFile = {},
-                                 TreeItem *                parent             = nullptr) override
-  {
-    auto dataNew = reader::SubByteReaderLogging::convertToByteVector(data);
-    return parseAndAddNALUnit(nalID, dataNew, bitrateEntry, nalStartEndPosFile, parent);
-  }
-
-  ParseResult parseAndAddNALUnit(int                                           nalID,
-                                 ByteVector                                    data,
-                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                                 std::optional<pairUint64> nalStartEndPosFile = {},
-                                 TreeItem *                parent             = nullptr);
+                                 TreeItem *                parent             = nullptr) override;
 
   QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
   QByteArray        getExtradata() override;

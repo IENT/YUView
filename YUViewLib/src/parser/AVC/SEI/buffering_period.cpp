@@ -50,7 +50,7 @@ SEIParsingResult buffering_period::parse(reader::SubByteReaderLogging &         
   (void)associatedSPS;
 
   if (!reparse)
-    reader.addLogSubLevel("buffering_period()");
+    this->subLevel = SubByteReaderLoggingSubLevel(reader, "buffering_period()");
 
   if (!reparse)
   {

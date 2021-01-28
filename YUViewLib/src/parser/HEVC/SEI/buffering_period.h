@@ -66,7 +66,10 @@ public:
   vector<unsigned> vcl_initial_alt_cpb_removal_delay;
   vector<unsigned> vcl_initial_alt_cpb_removal_offset;
 
-  bool use_alt_cpb_params_flag;
+  bool use_alt_cpb_params_flag{};
+
+private:
+  reader::SubByteReaderLoggingSubLevel subLevel;
 };
 
 } // namespace parser::hevc

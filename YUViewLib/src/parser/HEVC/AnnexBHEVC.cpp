@@ -39,7 +39,6 @@
 #include "SEI/pic_timing.h"
 #include "SEI/sei_rbsp.h"
 #include "parser/Subtitles/AnnexBItuTT35.h"
-#include "parser/common/Macros.h"
 #include "parser/common/SubByteReaderLogging.h"
 #include "parser/common/functions.h"
 #include "pic_parameter_set_rbsp.h"
@@ -143,10 +142,10 @@ yuvPixelFormat AnnexBHEVC::getPixelFormat() const
 
 QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
-  if (!this->POCList.contains(iFrameNr))
+  if (iFrameNr >= this->frameList.size())
     return {};
 
-  auto seekPOC = this->POCList[iFrameNr];
+  auto seekPOC = this->frameList[iFrameNr].poc;
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitHEVC>>;
@@ -170,11 +169,14 @@ QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fi
         QList<QByteArray> paramSets;
 
         for (auto const &entry : activeVPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(
+              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
         for (auto const &entry : activeSPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(
+              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
         for (auto const &entry : activePPSNal)
-          paramSets.append(reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(
+              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
 
         return paramSets;
       }
@@ -273,7 +275,7 @@ Ratio AnnexBHEVC::getSampleAspectRatio()
 
 AnnexB::ParseResult
 AnnexBHEVC::parseAndAddNALUnit(int                                           nalID,
-                               ByteVector                                    data,
+                               const ByteVector &                            data,
                                std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                std::optional<pairUint64>                     nalStartEndPosFile,
                                TreeItem *                                    parent)
@@ -287,8 +289,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       // Save the info of the last frame
       if (!this->addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
       {
-        ReaderHelper::addErrorMessageChildItem(
-            QString("Error - POC %1 alread in the POC list.").arg(curFramePOC), parent);
+        new TreeItem(parent,
+                     "Error - POC " + std::to_string(curFramePOC) + " alread in the POC list.");
         return parseResult;
       }
       if (curFrameFileStartEndPos)
@@ -300,7 +302,6 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
                    << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
     }
     // The file ended
-    std::sort(POCList.begin(), POCList.end());
     return parseResult;
   }
 

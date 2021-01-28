@@ -148,7 +148,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     rawFormat = raw_YUV;  // Raw annexB files will always provide YUV data
     this->prop.frameRate = inputFileAnnexBParser->getFramerate();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate %f", frameRate);
-    this->prop.startEndRange = indexRange(0, inputFileAnnexBParser->getNumberPOCs() - 1);
+    this->prop.startEndRange = indexRange(0, int(inputFileAnnexBParser->getNumberPOCs() - 1));
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo startEndRange (0,%d)", inputFileAnnexBParser->getNumberPOCs());
     this->prop.sampleAspectRatio = inputFileAnnexBParser->getSampleAspectRatio();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo sample aspect ratio (%d,%d)", this->prop.sampleAspectRatio.num, this->prop.sampleAspectRatio.den);
@@ -504,17 +504,16 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
     bool seek = (frameIdx < curFrameIdx);
 
     // Get the closest possible seek position
-    int seekToFrame = -1;
-    int seekToAnnexBFrameCount = -1;
-    int seekToDTS = -1;
+    size_t seekToFrame = 0;
+    int64_t seekToDTS = -1;
     if (isInputFormatTypeAnnexB(inputFormatType))
-      seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdx, seekToAnnexBFrameCount);
+      seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdx);
     else
     {
       if (caching)
-        seekToDTS = inputFileFFmpegCaching->getClosestSeekableDTSBefore(frameIdx, seekToFrame);
+        std::tie(seekToDTS, seekToFrame) = inputFileFFmpegCaching->getClosestSeekableFrameBefore(frameIdx);
       else
-        seekToDTS = inputFileFFmpegLoading->getClosestSeekableDTSBefore(frameIdx, seekToFrame);
+        std::tie(seekToDTS, seekToFrame) = inputFileFFmpegLoading->getClosestSeekableFrameBefore(frameIdx);
     }
 
     if (curFrameIdx == -1 || seekToFrame > curFrameIdx + FORWARD_SEEK_THRESHOLD)
@@ -526,9 +525,9 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
     if (seek)
     {
       // Seek and update the frame counters. The seekToPosition function will update the currentFrameIdx[] indices
-      readAnnexBFrameCounterCodingOrder = seekToAnnexBFrameCount;
+      this->readAnnexBFrameCounterCodingOrder = int(seekToFrame);
       DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData seeking to frame %d PTS %d AnnexBCnt %d", seekToFrame, seekToDTS, readAnnexBFrameCounterCodingOrder);
-      seekToPosition(seekToFrame, seekToDTS, caching);
+      seekToPosition(this->readAnnexBFrameCounterCodingOrder, seekToDTS, caching);
     }
   }
   

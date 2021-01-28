@@ -40,7 +40,6 @@
 #include "SEI/sei_message.h"
 #include "commonMaps.h"
 #include "nal_unit_header.h"
-#include "parser/common/ReaderHelper.h"
 #include "video/videoHandlerYUV.h"
 
 #include <queue>
@@ -81,22 +80,10 @@ public:
   Ratio             getSampleAspectRatio() override;
 
   ParseResult parseAndAddNALUnit(int                                           nalID,
-                                 ByteVector                                    data,
+                                 const ByteVector &                            data,
                                  std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                  std::optional<pairUint64> nalStartEndPosFile = {},
-                                 TreeItem *                parent             = nullptr);
-
-  // Deprecated function for backwards compatibility. Once all parsing functions are switched
-  // This will be removed.
-  ParseResult parseAndAddNALUnit(int                                           nalID,
-                                 QByteArray                                    data,
-                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                                 std::optional<pairUint64> nalStartEndPosFile = {},
-                                 TreeItem *                parent             = nullptr) override
-  {
-    auto dataNew = reader::SubByteReaderLogging::convertToByteVector(data);
-    return parseAndAddNALUnit(nalID, dataNew, bitrateEntry, nalStartEndPosFile, parent);
-  }
+                                 TreeItem *                parent             = nullptr) override;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -107,8 +94,8 @@ protected:
   int pocCounterOffset{0};
 
   bool firstAUInDecodingOrder{true};
-  int prevTid0PicSlicePicOrderCntLsb{};
-  int prevTid0PicPicOrderCntMsb{};
+  int  prevTid0PicSlicePicOrderCntLsb{};
+  int  prevTid0PicPicOrderCntMsb{};
 
   // Is this NAL skipped because it is RASL (can not be decoded because of slicing/merging of the
   // bitstream)

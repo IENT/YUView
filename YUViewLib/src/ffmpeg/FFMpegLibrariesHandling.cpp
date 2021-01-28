@@ -38,7 +38,7 @@
 #include <QSettings>
 
 #include "common/typedef.h"
-#include "parser/common/SubByteReader.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 #define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG
@@ -49,6 +49,7 @@
 #endif
 
 using namespace YUView;
+using namespace parser::reader;
 
 namespace
 {
@@ -3115,38 +3116,35 @@ bool AVPacketWrapper::checkForMp4Format(QByteArray &data)
 
 bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
 {
+  // TODO: We already have an implementation of this in the parser
+  //       That should also be used here so we only have one place where we parse OBUs.
   try
   {
     int posInData = 0;
     while (posInData + 2 <= data.length())
     {
-      SubByteReader reader(data, posInData);
+      SubByteReaderLogging reader(SubByteReaderLogging::convertToByteVector(data), nullptr, "", posInData);
 
       QString bitsRead;
-      bool obu_forbidden_bit = (reader.readBits(1, bitsRead) != 0);
-      unsigned int obu_type = reader.readBits(4, bitsRead); // obu_type
+      reader.readFlag("obu_forbidden_bit", Options().withCheckEqualTo(0));
+      auto obu_type = reader.readBits("obu_type", 4);
       if (obu_type == 0 || (obu_type >= 9 && obu_type <= 14))
         // RESERVED obu types should not occur (highly unlikely)
         return false;
-      bool obu_extension_flag = (reader.readBits(1, bitsRead) != 0);
-      bool obu_has_size_field = (reader.readBits(1, bitsRead) != 0);
-      bool obu_reserved_1bit = (reader.readBits(1, bitsRead) != 0);
+      auto obu_extension_flag = reader.readFlag("obu_extension_flag");
+      auto obu_has_size_field = reader.readFlag("obu_has_size_field");
+      reader.readFlag("obu_reserved_1bit", Options().withCheckEqualTo(0));
 
-      if (obu_forbidden_bit || obu_reserved_1bit)
-        return false;
       if (obu_extension_flag)
       {
-        reader.readBits(3, bitsRead); // temporal_id
-        reader.readBits(2, bitsRead); // spatial_id
-        unsigned int extension_header_reserved_3bits = reader.readBits(3, bitsRead);
-        if (extension_header_reserved_3bits != 0)
-          return false;
+        reader.readBits("temporal_id", 3);
+        reader.readBits("spatial_id", 2);
+        reader.readBits("extension_header_reserved_3bits", 3, Options().withCheckEqualTo(0));
       }
-      unsigned int obu_size;
+      unsigned obu_size;
       if (obu_has_size_field)
       {
-        int bitCount;
-        obu_size = reader.readLeb128(bitsRead, bitCount);
+        obu_size = reader.readLEB128("obu_size");
       }
       else
       {

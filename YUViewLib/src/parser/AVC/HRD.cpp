@@ -251,9 +251,9 @@ void HRD::addAU(size_t                                         auBits,
     // While bits are coming into the buffer, frames are removed as well.
     // For each period, we add the bits (and check the buffer state) and remove the
     // frames from the buffer (and check the buffer state).
-    auto         t_ai_sub             = t_ai;
-    unsigned int buffer_add_sum       = 0;
-    long double  buffer_add_remainder = 0;
+    auto        t_ai_sub             = t_ai;
+    size_t      buffer_add_sum       = 0;
+    long double buffer_add_remainder = 0;
     for (auto frame : relevant_frames)
     {
       assert(frame.t_r >= t_ai_sub && frame.t_r < t_af);
@@ -286,12 +286,12 @@ void HRD::addAU(size_t                                         auBits,
     {
       // The last interval from t_ai_sub to t_af
       assert(au_buffer_add >= buffer_add_sum);
-      unsigned int buffer_add_remain = au_buffer_add - buffer_add_sum;
+      auto buffer_add_remain = au_buffer_add - buffer_add_sum;
       // The sum should correspond to the size of the complete AU
       time_t      time_expired          = t_af - t_ai_sub;
       long double buffer_add_fractional = bitrate * time_expired + buffer_add_remainder;
       {
-        unsigned int buffer_add = std::round(buffer_add_fractional);
+        auto buffer_add = size_t(std::round(buffer_add_fractional));
         buffer_add_sum += buffer_add;
         // assert(buffer_add_sum == au_buffer_add || buffer_add_sum + 1 == au_buffer_add
         // || buffer_add_sum == au_buffer_add + 1);
@@ -409,8 +409,8 @@ void HRD::removeFromBufferAndCheck(const HRDFrameToRemove &frame,
   (void)poc;
 
   // Remove the frame from the buffer
-  unsigned int bufferSub = frame.bits;
-  const auto   bufferOld = this->decodingBufferLevel;
+  auto       bufferSub = frame.bits;
+  const auto bufferOld = this->decodingBufferLevel;
   this->decodingBufferLevel -= bufferSub;
   {
     HRDPlotModel::HRDEntry entry;
