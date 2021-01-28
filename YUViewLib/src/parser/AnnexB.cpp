@@ -84,6 +84,9 @@ bool AnnexB::addFrameToList(int                       poc,
 
 void AnnexB::logNALSize(const ByteVector &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
 {
+  if (root == nullptr)
+    return;
+
   size_t startCodeSize = 0;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
     startCodeSize = 4;
@@ -91,11 +94,11 @@ void AnnexB::logNALSize(const ByteVector &data, TreeItem *root, std::optional<pa
     startCodeSize = 3;
 
   if (startCodeSize > 0)
-    new TreeItem(root, "Start code size", std::to_string(startCodeSize));
+    root->addChild("Start code size", std::to_string(startCodeSize));
 
-  new TreeItem(root, "Payload size", std::to_string(data.size() - startCodeSize));
+  root->addChild("Payload size", std::to_string(data.size() - startCodeSize));
   if (nalStartEndPos)
-    new TreeItem(root, "Start/End pos", to_string(*nalStartEndPos));
+    root->addChild("Start/End pos", to_string(*nalStartEndPos));
 }
 
 size_t AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx) const

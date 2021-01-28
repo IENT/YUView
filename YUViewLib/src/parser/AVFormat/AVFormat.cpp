@@ -113,10 +113,13 @@ bool AVFormat::parseMetadata(QStringPairList &metadata)
   if (metadata.isEmpty() || packetModel->isNull())
     return true;
 
+  if (packetModel->getRootItem() == nullptr)
+    return false;
+
   // Log all entries in the metadata list
-  TreeItem *metadataRoot = new TreeItem(packetModel->getRootItem(), "Metadata");
+  TreeItem *metadataRoot = packetModel->getRootItem()->addChild("Metadata");
   for (QStringPair p : metadata)
-    new TreeItem(metadataRoot, p.first.toStdString(), p.second.toStdString(), "", "");
+    metadataRoot->addChild(p.first.toStdString(), p.second.toStdString(), "", "");
   return true;
 }
 
@@ -205,17 +208,17 @@ bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
   }
   else if (extradata.at(0) == 0)
   {
+    auto treeItem = packetModel->getRootItem()->addChild("Extradata (Raw HEVC NAL units)");
     this->parseByteVectorAnnexBStartCodes(
         extradata,
         packetDataFormat_t::packetFormatRawNAL,
         {},
-        new TreeItem(packetModel->getRootItem(), "Extradata (Raw HEVC NAL units)"));
+        treeItem);
   }
   else
   {
-    auto t = new TreeItem(packetModel->getRootItem(),
-                          "Unsupported extradata format (configurationVersion != 1)");
-    t->setError();
+    auto treeItem = packetModel->getRootItem()->addChild("Unsupported extradata format (configurationVersion != 1)");
+    treeItem->setError();
     return false;
   }
 
@@ -229,16 +232,16 @@ bool AVFormat::parseExtradata_mpeg2(ByteVector &extradata)
 
   if (extradata.at(0) == 0)
   {
+    auto treeItem = packetModel->getRootItem()->addChild("Extradata (Raw Mpeg2 units)");
     this->parseByteVectorAnnexBStartCodes(
         extradata,
         packetDataFormat_t::packetFormatRawNAL,
         {},
-        new TreeItem(packetModel->getRootItem(), "Extradata (Raw Mpeg2 units)"));
+        treeItem);
   }
   else
-    new TreeItem(packetModel->getRootItem(),
-                 "Unsupported extradata format (configurationVersion != 1)");
-
+    packetModel->getRootItem()->addChild("Unsupported extradata format (configurationVersion != 1)");
+    
   return true;
 }
 
@@ -319,7 +322,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
   std::string specificDescription;
-  TreeItem *  itemTree = new TreeItem(packetModel->getRootItem());
+  TreeItem *itemTree = packetModel->getRootItem()->addChild();
 
   ByteVector avpacketData;
   {
@@ -356,14 +359,14 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   };
 
   // Log all the packet info
-  new TreeItem(itemTree, "stream_index", std::to_string(packet.getStreamIndex()));
-  new TreeItem(itemTree, "pts", formatTimestamp(packet.getPTS(), timeBase));
-  new TreeItem(itemTree, "dts", formatTimestamp(packet.getDTS(), timeBase));
-  new TreeItem(itemTree, "duration", formatTimestamp(packet.getDuration(), timeBase));
-  new TreeItem(itemTree, "flag_keyframe", std::to_string(packet.getFlagKeyframe()));
-  new TreeItem(itemTree, "flag_corrupt", std::to_string(packet.getFlagCorrupt()));
-  new TreeItem(itemTree, "flag_discard", std::to_string(packet.getFlagDiscard()));
-  new TreeItem(itemTree, "data_size", std::to_string(packet.getDataSize()));
+  itemTree->addChild("stream_index", std::to_string(packet.getStreamIndex()));
+  itemTree->addChild("pts", formatTimestamp(packet.getPTS(), timeBase));
+  itemTree->addChild("dts", formatTimestamp(packet.getDTS(), timeBase));
+  itemTree->addChild("duration", formatTimestamp(packet.getDuration(), timeBase));
+  itemTree->addChild("flag_keyframe", std::to_string(packet.getFlagKeyframe()));
+  itemTree->addChild("flag_corrupt", std::to_string(packet.getFlagCorrupt()));
+  itemTree->addChild("flag_discard", std::to_string(packet.getFlagDiscard()));
+  itemTree->addChild("data_size", std::to_string(packet.getDataSize()));
 
   itemTree->setStreamIndex(packet.getStreamIndex());
 

@@ -289,7 +289,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       // Save the info of the last frame
       if (!this->addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
       {
-        new TreeItem(parent,
+        parent->addChild(
                      "Error - POC " + std::to_string(curFramePOC) + " alread in the POC list.");
         return parseResult;
       }
@@ -310,9 +310,9 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
   // yet. We want to parse the item and then set a good description.
   TreeItem *nalRoot = nullptr;
   if (parent)
-    nalRoot = new TreeItem(parent);
+    nalRoot = parent->addChild();
   else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = packetModel->getRootItem()->addChild();
 
   AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 

@@ -160,8 +160,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       if (!this->addFrameToList(
               this->curFramePOC, this->curFrameFileStartEndPos, this->curFrameIsRandomAccess))
       {
-        new TreeItem(
-            parent, "Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list.");
+        if (parent != nullptr)
+          parent->addChild("Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list.");
         return parseResult;
       }
       if (this->curFrameFileStartEndPos)
@@ -183,9 +183,9 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   // We want to parse the item and then set a good description.
   TreeItem *nalRoot = nullptr;
   if (parent)
-    nalRoot = new TreeItem(parent);
+    nalRoot = parent->addChild();
   else if (!this->packetModel->isNull())
-    nalRoot = new TreeItem(this->packetModel->getRootItem());
+    nalRoot = this->packetModel->getRootItem()->addChild();
 
   AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 

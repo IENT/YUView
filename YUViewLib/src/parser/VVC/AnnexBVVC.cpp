@@ -108,9 +108,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   // yet. We want to parse the item and then set a good description.
   TreeItem *nalRoot = nullptr;
   if (parent)
-    nalRoot = new TreeItem(parent);
+    nalRoot = parent->addChild();
   else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = packetModel->getRootItem()->addChild();
 
   parseResult.success = true;
 
@@ -339,7 +339,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                           this->parsingState.curFrameFileStartEndPos,
                           this->parsingState.lastFrameIsKeyframe))
       {
-        new TreeItem(parent, "Error adding frame to frame list.");
+        parent->addChild("Error adding frame to frame list.");
         return parseResult;
       }
       if (this->parsingState.curFrameFileStartEndPos)

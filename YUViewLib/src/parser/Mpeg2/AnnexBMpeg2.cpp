@@ -89,9 +89,9 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   std::string specificDescription;
   TreeItem *  nalRoot = nullptr;
   if (parent)
-    nalRoot = new TreeItem(parent);
+    nalRoot = parent->addChild();
   else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = packetModel->getRootItem()->addChild();
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 

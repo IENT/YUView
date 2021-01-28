@@ -42,6 +42,30 @@
 #define DEBUG_FILTER(fmt,...) ((void)0)
 #endif
 
+namespace
+{
+
+QString getTreeItemEntry(TreeItem *treeItem, int column)
+{
+  if (treeItem == nullptr)
+    return {};
+
+  std::string entry;
+  if (column == 0)
+    entry = treeItem->itemData.name;
+  if (column == 1)
+    entry = treeItem->itemData.value;
+  if (column == 2)
+    entry = treeItem->itemData.coding;
+  if (column == 3)
+    entry = treeItem->itemData.code;
+  if (column == 4)
+    entry = treeItem->itemData.meaning;
+  return QString::fromStdString(entry);
+}
+
+}
+
 // These are form the google material design color chooser (https://material.io/tools/color/)
 QList<QColor> PacketItemModel::streamIndexColors = QList<QColor>()
   << QColor("#90caf9")  // blue (200)
@@ -73,7 +97,7 @@ PacketItemModel::~PacketItemModel()
 QVariant PacketItemModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
   if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != nullptr)
-    return rootItem->itemData.value(section, QString());
+    return getTreeItemEntry(rootItem.get(), section);
 
   return QVariant();
 }
@@ -102,9 +126,9 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
   else if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
   {
     if (index.column() == 0)
-      return QVariant(item->getName(!showVideoOnly));
+      return QVariant(QString::fromStdString(item->getName(!showVideoOnly)));
     else
-      return QVariant(item->itemData.value(index.column()));
+      return QVariant(getTreeItemEntry(item, index.column()));
   }
   return QVariant();
 }
@@ -122,7 +146,7 @@ QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &paren
 
   Q_ASSERT_X(parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
 
-  TreeItem *childItem = parentItem->childItems.value(row, nullptr);
+  auto *childItem = parentItem->getChildOrNull(row);
   if (childItem)
     return createIndex(row, column, childItem);
   else
@@ -134,16 +158,21 @@ QModelIndex PacketItemModel::parent(const QModelIndex &index) const
   if (!index.isValid())
     return QModelIndex();
 
-  TreeItem *childItem = static_cast<TreeItem*>(index.internalPointer());
-  TreeItem *parentItem = childItem->parentItem;
+  auto *childItem = static_cast<TreeItem*>(index.internalPointer());
+  auto *parentItem = childItem->getParent();
 
   if (parentItem == rootItem.data())
     return QModelIndex();
 
   // Get the row of the item in the list of children of the parent item
   int row = 0;
-  if (parentItem)
-    row = parentItem->parentItem->childItems.indexOf(const_cast<TreeItem*>(parentItem));
+  if (parentItem != nullptr)
+  {
+    auto treeItem = const_cast<TreeItem*>(parentItem);
+    auto treeItemRow = parentItem->getIndexOfChildItem(treeItem);
+    if (treeItemRow)
+      row = *treeItemRow;
+  }
 
   return createIndex(row, 0, parentItem);
 }
@@ -159,7 +188,7 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
     return (p == nullptr) ? 0 : nrShowChildItems;
   }
   TreeItem *p = static_cast<TreeItem*>(parent.internalPointer());
-  return (p == nullptr) ? 0 : p->childItems.count();
+  return (p == nullptr) ? 0 : int(p->getNrChildItems());
 }
 
 void PacketItemModel::updateNumberModelItems()
@@ -227,7 +256,7 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
     parentItem = static_cast<TreeItem*>(sourceParent.internalPointer());
   Q_ASSERT_X(parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
 
-  TreeItem *childItem = parentItem->childItems.value(row, nullptr);
+  auto childItem = parentItem->getChildOrNull(row);
   if (childItem != nullptr)
   {
     DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d", childItem->getStreamIndex());

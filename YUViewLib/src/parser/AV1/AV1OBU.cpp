@@ -54,9 +54,9 @@ std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int         obuID,
   // We want to parse the item and then set a good description.
   TreeItem *obuRoot = nullptr;
   if (parent)
-    obuRoot = new TreeItem(parent);
+    obuRoot = parent->addChild();
   else if (!packetModel->isNull())
-    obuRoot = new TreeItem(packetModel->getRootItem());
+    obuRoot = packetModel->getRootItem()->addChild();
 
   SubByteReaderLogging reader(data, obuRoot);
 

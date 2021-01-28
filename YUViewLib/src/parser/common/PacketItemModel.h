@@ -67,9 +67,9 @@ private:
   // This is the current number of first level child items which we show right now.
   // The brackground parser will add more items and it will notify the bitstreamAnalysisWindow
   // about them. The bitstream analysis window will then update this count and the view to show the new items.
-  unsigned int nrShowChildItems {0};
+  unsigned nrShowChildItems {0};
 
-  unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
+  unsigned getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : unsigned(rootItem->getNrChildItems()); }
 
   static QList<QColor> streamIndexColors;
   bool useColorCoding { true };
