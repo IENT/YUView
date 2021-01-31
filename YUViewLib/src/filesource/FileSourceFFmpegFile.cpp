@@ -49,14 +49,11 @@ using namespace YUView;
 using namespace YUV_Internals;
 using namespace parser::reader;
 
+const ByteVector STARTCODE({0, 0, 1});
+
 FileSourceFFmpegFile::FileSourceFFmpegFile()
 {
-  // Set the start code to look for (0x00 0x00 0x01)
-  startCode.append((char)0);
-  startCode.append((char)0);
-  startCode.append((char)1);
-
-  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &FileSourceFFmpegFile::fileSystemWatcherFileChanged);
+  this->connect(&this->fileWatcher, &QFileSystemWatcher::fileChanged, this, &FileSourceFFmpegFile::fileSystemWatcherFileChanged);
 }
 
 AVPacketWrapper FileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool videoPacket)
@@ -67,29 +64,25 @@ AVPacketWrapper FileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool vi
   // Load the next packet
   if (!goToNextPacket(videoPacket))
   {
-    posInFile = -1;
     return AVPacketWrapper();
   }
 
   return pkt;
 }
 
-QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pts)
+ByteVector FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pts)
 {
   if (getLastDataAgain)
-    return lastReturnArray;
+    return this->lastReturnArray;
 
   // Is a packet loaded?
-  if (currentPacketData.isEmpty())
+  if (this->currentPacketData.empty())
   {
     if (!goToNextPacket(true))
-    {
-      posInFile = -1;
-      return QByteArray();
-    }
+      return {};
 
-    currentPacketData = QByteArray::fromRawData((const char*)(pkt.getData()), pkt.getDataSize());
-    posInData = 0;
+    this->currentPacketData = ByteVector(pkt.getData(), pkt.getData() + pkt.getDataSize());
+    this->posInData = this->currentPacketData.begin();
   }
   
   // AVPacket data can be in one of two formats:
@@ -97,64 +90,70 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pt
   // 2: ISO/IEC 14496-15 mp4 format: The first 4 bytes determine the size of the NAL unit followed by the payload
   if (packetDataFormat == packetFormatRawNAL)
   {
-    QByteArray firstBytes = currentPacketData.mid(posInData, 4);
-    int offset;
-    if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 && firstBytes.at(3) == (char)1)
-      offset = 4;
-    else if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)1)
-      offset = 3;
-    else
-    {
-      // The start code could not be found ...
-      currentPacketData.clear();
-      return QByteArray();
-    }
-    
-    // Look for the next start code (or the end of the file)
-    int nextStartCodePos = currentPacketData.indexOf(startCode, posInData + 3);
+    auto distance = std::distance(this->posInData, this->currentPacketData.end());
+    if (distance < 5)
+      return {};
 
-    if (nextStartCodePos == -1)
+    int offset {};
+    {
+      auto byte0 = *(this->posInData);
+      auto byte1 = *(this->posInData + 1);
+      auto byte2 = *(this->posInData + 2);
+      auto byte3 = *(this->posInData + 3);
+      
+      if (byte0 == 0 && byte1 == 0 && byte2 == 0 && byte3 == 1)
+        offset = 4;
+      else if (byte0 == 0 && byte1 == 0 && byte2 == 1)
+        offset = 3;
+      else
+      {
+        this->currentPacketData.clear();
+        return {};
+      }
+    }
+
+    // Look for the next start code (or the end of the file)
+    auto nextStartCodePos = std::search(this->posInData + 3, this->currentPacketData.end(), STARTCODE.begin(), STARTCODE.end());
+
+    if (nextStartCodePos == this->currentPacketData.end())
     {
       // Return the remainder of the buffer and clear it so that the next packet is loaded on the next call
-      lastReturnArray = currentPacketData.mid(posInData + offset);
-      currentPacketData.clear();
+      this->lastReturnArray = ByteVector(this->posInData, this->currentPacketData.end());
+      this->currentPacketData.clear();
+      this->posInData = this->currentPacketData.begin();
     }
     else
     {
-      int size = nextStartCodePos - posInData - offset;
-      lastReturnArray = currentPacketData.mid(posInData + offset, size);
-      posInData += 3 + size;
+      this->lastReturnArray = ByteVector(this->posInData, nextStartCodePos);
+      this->posInData = nextStartCodePos;
     }
   }
   else if (packetDataFormat == packetFormatMP4)
   {
-    QByteArray sizePart = currentPacketData.mid(posInData, 4);
-    int size = (unsigned char)sizePart.at(3);
-    size += (unsigned char)sizePart.at(2) << 8;
-    size += (unsigned char)sizePart.at(1) << 16;
-    size += (unsigned char)sizePart.at(0) << 24;
+    auto it = this->currentPacketData.begin();
+    size_t size = 0;
+    size += (*it) << 24;
+    size += (*(it + 1)) << 16;
+    size += (*(it + 2)) << 8;
+    size += *(it + 3);
 
-    if (size < 0)
+    auto remainingPacketSize = std::distance(this->posInData, this->currentPacketData.end());
+    assert(remainingPacketSize >= 0);
+    if (size + 4 > size_t(remainingPacketSize))
     {
-      // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
-      currentPacketData.clear();
-      return QByteArray();
-    }
-    if (size > currentPacketData.length() - posInData)
-    {
-      // The indicated size is bigger than the buffer
-      currentPacketData.clear();
-      return QByteArray();
+      // The size indicates something bigger then the remaining data in the packet.
+      this->currentPacketData.clear();
+      this->posInData = this->currentPacketData.begin();
+      return {};
     }
     
-    lastReturnArray = currentPacketData.mid(posInData + 4, size);
-    posInData += 4 + size;
-    if (posInData >= currentPacketData.size())
-      currentPacketData.clear();
+    this->lastReturnArray = ByteVector(this->posInData, this->posInData + size);
+    this->posInData = this->posInData + 4 + size;
   }
   else if (packetDataFormat == packetFormatOBU)
   {
-    SubByteReaderLogging reader(SubByteReaderLogging::convertToByteVector(currentPacketData), nullptr, "", posInData);
+    auto posInDataUnsigned = size_t(std::distance(this->currentPacketData.begin(), this->posInData));
+    SubByteReaderLogging reader(this->currentPacketData, nullptr, "", posInDataUnsigned);
 
     try
     {
@@ -174,24 +173,33 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pt
       {
         auto obu_size = reader.readLEB128("obu_size");
         auto completeSize = obu_size + reader.nrBytesRead();
-        lastReturnArray = currentPacketData.mid(posInData, completeSize);
-        posInData += completeSize;
-        if (posInData >= currentPacketData.size())
-          currentPacketData.clear();
+        
+        auto remainingPacketSize = std::distance(this->posInData, this->currentPacketData.end());
+        if (completeSize >= remainingPacketSize)
+        {
+          this->lastReturnArray = ByteVector(this->posInData, this->currentPacketData.end());
+          this->currentPacketData.clear();
+          this->posInData = this->currentPacketData.begin();
+        }
+        else
+        {
+          this->lastReturnArray = ByteVector(this->posInData, this->posInData + completeSize);
+          this->posInData += completeSize;
+        }
       }
       else
       {
         // The OBU is the remainder of the input
-        lastReturnArray = currentPacketData.mid(posInData);
-        posInData = currentPacketData.size();
-        currentPacketData.clear();
+        this->lastReturnArray = ByteVector(this->posInData, this->currentPacketData.end());
+        this->currentPacketData.clear();
+        this->posInData = this->currentPacketData.begin();
       }
     }
     catch(...)
     {
       // The reader threw an exception
       currentPacketData.clear();
-      return QByteArray();
+      return {};
     }
   }
 
@@ -201,14 +209,14 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pt
   return lastReturnArray;
 }
 
-QByteArray FileSourceFFmpegFile::getExtradata()
+ByteVector FileSourceFFmpegFile::getExtradata()
 {
   // Get the video stream
   if (!video_stream)
-    return QByteArray();
+    return {};
   AVCodecContextWrapper codec = video_stream.getCodec();
   if (!codec)
-    return QByteArray();
+    return {};
   return codec.getExtradata();
 }
 
@@ -219,7 +227,7 @@ QStringPairList FileSourceFFmpegFile::getMetadata()
   return ff.getDictionaryEntries(fmt_ctx.getMetadata(), "", 0);
 }
 
-QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
+QList<ByteVector> FileSourceFFmpegFile::getParameterSets()
 {
   if (!isFileOpened)
     return {};
@@ -229,45 +237,50 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
    * To access them from libav* APIs you need to look for extradata field in AVCodecContext of AVStream 
    * which relate to needed video stream. Also extradata can have different format from standard H.264 
    * NALs so look in MP4-container specs for format description. */
-  QByteArray extradata = getExtradata();
-  QList<QByteArray> retArray;
+  auto extradata = this->getExtradata();
+  auto it = extradata.begin();
+  QList<ByteVector> retArray;
 
   // Since the FFmpeg developers don't want to make it too easy, the extradata is organized differently depending on the codec.
   AVCodecIDWrapper codecID = ff.getCodecIDWrapper(video_stream.getCodecID());
   if (codecID.isHEVC())
   {
-    if (extradata.at(0) == 1)
+    if (*it == 1)
     {
       // Internally, ffmpeg uses a custom format for the parameter sets (hvcC).
       // The hvcC parameters come first, and afterwards, the "normal" parameter sets are sent.
 
       // The first 22 bytes are fixed hvcC parameter set (see hvcc_write in libavformat hevc.c)
-      int numOfArrays = extradata.at(22);
+      it += 22;
+      auto numOfArrays = unsigned(*it++);
 
-      int pos = 23;
-      for (int i = 0; i < numOfArrays; i++)
+      for (unsigned i = 0; i < numOfArrays; i++)
       {
         // The first byte contains the NAL unit type (which we don't use here).
-        pos++;
+        it++;
         //int byte = (unsigned char)(extradata.at(pos++));
         //bool array_completeness = byte & (1 << 7);
         //int nalUnitType = byte & 0x3f;
 
         // Two bytes numNalus
-        int numNalus = (unsigned char)(extradata.at(pos++)) << 7;
-        numNalus += (unsigned char)(extradata.at(pos++));
+        unsigned numNalus = (unsigned(*it++)) << 7;
+        numNalus += unsigned(*it++);
 
-        for (int j = 0; j < numNalus; j++)
+        for (unsigned j = 0; j < numNalus; j++)
         {
           // Two bytes nalUnitLength
-          int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
-          nalUnitLength += (unsigned char)(extradata.at(pos++));
+          unsigned nalUnitLength = (unsigned(*it++)) << 7;
+          nalUnitLength += unsigned(*it++);
 
           // nalUnitLength bytes payload of the NAL unit
           // This payload includes the NAL unit header
-          QByteArray rawNAL = extradata.mid(pos, nalUnitLength);
-          retArray.append(rawNAL);
-          pos += nalUnitLength;
+          if (nalUnitLength > std::distance(it, extradata.end()))
+            // Not enough data in the buffer
+            return {};
+
+          auto newExtradata = ByteVector(it, it + nalUnitLength);
+          retArray.append(newExtradata);
+          it += nalUnitLength;
         }
       }
     }
@@ -278,29 +291,37 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
     //       So this function is so far not called (and not tested).
 
     // First byte is 1, length must be at least 7 bytes
-    if (extradata.at(0) == 1 && extradata.length() >= 7)
+    if (extradata.at(0) == 1 && extradata.size() >= 7)
     {
-      int nrSPS = extradata.at(5) & 0x1f;
-      int pos = 6;
-      for (int i = 0; i < nrSPS; i++)
+      it += 5;
+      unsigned nrSPS = unsigned(*it++) & 0x1f;
+      for (unsigned i = 0; i < nrSPS; i++)
       {
-        int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
-        nalUnitLength += (unsigned char)(extradata.at(pos++));
+        unsigned nalUnitLength = (unsigned(*it++)) << 7;
+        nalUnitLength += unsigned(*it++);
 
-        QByteArray rawNAL = extradata.mid(pos, nalUnitLength);
+        if (nalUnitLength > std::distance(it, extradata.end()))
+          // Not enough data in the buffer
+          return {};
+
+        auto rawNAL = ByteVector(it, it + nalUnitLength);
         retArray.append(rawNAL);
-        pos += nalUnitLength;
+        it += nalUnitLength;
       }
 
-      int nrPPS = extradata.at(pos++);
+      int nrPPS = unsigned(*it++) & 0x1f;
       for (int i = 0; i < nrPPS; i++)
       {
-        int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
-        nalUnitLength += (unsigned char)(extradata.at(pos++));
+        unsigned nalUnitLength = (unsigned(*it++)) << 7;
+        nalUnitLength += unsigned(*it++);
 
-        QByteArray rawNAL = extradata.mid(pos, nalUnitLength);
+        if (nalUnitLength > std::distance(it, extradata.end()))
+          // Not enough data in the buffer
+          return {};
+
+        auto rawNAL = ByteVector(it, it + nalUnitLength);
         retArray.append(rawNAL);
-        pos += nalUnitLength;
+        it += nalUnitLength;
       }
     }
   }

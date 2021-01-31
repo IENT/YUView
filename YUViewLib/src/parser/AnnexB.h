@@ -66,8 +66,8 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  QList<QTreeWidgetItem *> getStreamInfo() Q_DECL_OVERRIDE { return stream_info.getStreamInfo(); }
-  unsigned int             getNrStreams() Q_DECL_OVERRIDE { return 1; }
+  QList<QTreeWidgetItem *> getStreamInfo() override { return stream_info.getStreamInfo(); }
+  unsigned int             getNrStreams() override { return 1; }
   QString                  getShortStreamDescription(int streamIndex) const override;
 
   /* Parse the NAL unit and what it contains
@@ -101,7 +101,7 @@ public:
   // When we want to seek to a specific frame number, this function return the parameter sets that
   // you need to start decoding (without start codes). If file positions were set for the NAL units,
   // the file position where decoding can begin will also be returned.
-  virtual QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) = 0;
+  virtual QList<ByteVector> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) = 0;
 
   // Look through the random access points and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
@@ -109,7 +109,7 @@ public:
   size_t getClosestSeekableFrameNumberBefore(int frameIdx) const;
 
   // Get the parameters sets as extradata. The format of this depends on the underlying codec.
-  virtual QByteArray getExtradata() = 0;
+  virtual ByteVector getExtradata() = 0;
   // Get some other properties of the bitstream in order to configure the FFMpegDecoder
   virtual IntPair getProfileLevel()      = 0;
   virtual Ratio   getSampleAspectRatio() = 0;
@@ -119,7 +119,7 @@ public:
   bool parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
 
   // Called from the bitstream analyzer. This function can run in a background process.
-  bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
+  bool runParsingOfFile(QString compressedFilePath) override;
 
 protected:
   struct AnnexBFrame

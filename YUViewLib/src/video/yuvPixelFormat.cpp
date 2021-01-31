@@ -339,9 +339,9 @@ QString yuvPixelFormat::getName() const
   return name;
 }
 
-int64_t yuvPixelFormat::bytesPerFrame(const QSize &frameSize) const
+std::optional<size_t> yuvPixelFormat::bytesPerFrame(const QSize &frameSize) const
 {
-  int64_t bytes = 0;
+  size_t bytes = 0;
   if (this->planar || !this->bytePacking)
   {
     // Add the bytes of the 3 (or 4) planes.
@@ -363,7 +363,7 @@ int64_t yuvPixelFormat::bytesPerFrame(const QSize &frameSize) const
     else if (this->subsampling == Subsampling::YUV_400)
       bytes += 0; // No chroma components
     else
-      return -1;  // Unknown subsampling
+      return {};  // Unknown subsampling
 
     if (this->planar && (this->planeOrder == PlaneOrder::YUVA || this->planeOrder == PlaneOrder::YVUA))
       // There is an additional alpha plane. The alpha plane is not subsampled

@@ -1,34 +1,34 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "FileSource.h"
 
@@ -42,7 +42,7 @@
 #endif
 
 #include "common/typedef.h"
- 
+
 #define FILESOURCE_DEBUG_SIMULATESLOWLOADING 0
 #if FILESOURCE_DEBUG_SIMULATESLOWLOADING && !NDEBUG
 #include <QThread>
@@ -50,10 +50,13 @@
 
 FileSource::FileSource()
 {
-  fileChanged = false;
+  fileChanged  = false;
   isFileOpened = false;
 
-  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &FileSource::fileSystemWatcherFileChanged);
+  connect(&fileWatcher,
+          &QFileSystemWatcher::fileChanged,
+          this,
+          &FileSource::fileSystemWatcherFileChanged);
 }
 
 bool FileSource::openFile(const QString &filePath)
@@ -86,7 +89,7 @@ bool FileSource::openFile(const QString &filePath)
 // Resize the target array if necessary and read the given number of bytes to the data array
 void FileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
-  if(!isOk())
+  if (!isOk())
     return;
 
   if (targetBuffer.size() < nrBytes)
@@ -98,13 +101,10 @@ void FileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int
 #endif
 
 // Resize the target array if necessary and read the given number of bytes to the data array
-int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes)
+ByteVector FileSource::readBytes(size_t startPos, size_t nrBytes)
 {
-  if(!isOk())
-    return 0;
-
-  if (targetBuffer.size() < nrBytes)
-    targetBuffer.resize(nrBytes);
+  if (!isOk())
+    return {};
 
 #if FILESOURCE_DEBUG_SIMULATESLOWLOADING && !NDEBUG
   QThread::msleep(50);
@@ -113,7 +113,12 @@ int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_
   // lock the seek and read function
   QMutexLocker locker(&readMutex);
   srcFile.seek(startPos);
-  return srcFile.read(targetBuffer.data(), nrBytes);
+  ByteVector data;
+  auto byteCount = srcFile.read((char*)data.data(), nrBytes);
+
+  if (byteCount < nrBytes)
+    return {};
+  return std::move(data);
 }
 
 QList<infoItem> FileSource::getFileInfoList() const
@@ -145,12 +150,33 @@ QList<infoItem> FileSource::getFileInfoList() const
   return infoList;
 }
 
+ByteVector FileSource::readLine() 
+{ 
+  if (!this->isFileOpened)
+    return {};
+
+  auto byteArrayData = srcFile.readLine();
+  auto ptr = (unsigned char*)byteArrayData.data();
+  auto size = size_t(byteArrayData.size());
+  return ByteVector(ptr, ptr + size);
+}
+
+size_t FileSource::pos() 
+{ 
+  if (!this->isFileOpened)
+    return 0;
+  auto p = srcFile.pos();
+  if (p < 0)
+    return 0;
+  return size_t(p);
+}
+
 FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
 {
   FileSource::fileFormat_t format;
 
-  // We are going to check two strings (one after the other) for indicators on the frames size, fps and bit depth.
-  // 1: The file name, 2: The folder name that the file is contained in.
+  // We are going to check two strings (one after the other) for indicators on the frames size, fps
+  // and bit depth. 1: The file name, 2: The folder name that the file is contained in.
   QStringList checkStrings;
 
   // The full name of the file
@@ -168,21 +194,29 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
     // First, we will try to get a frame size from the name
     if (!format.frameSize.isValid())
     {
-      // The regular expressions to match. They are sorted from most detailed to least so that the most
-      // detailed ones are tested first.
+      // The regular expressions to match. They are sorted from most detailed to least so that the
+      // most detailed ones are tested first.
       QStringList regExprList;
-      regExprList << "([0-9]+)(?:x|X|\\*)([0-9]+)_([0-9]+)(?:Hz)?_([0-9]+)b?[\\._]";    // Something_2160x1440_60_8_more.yuv or Something_2160x1440_60_8b.yuv or Something_2160x1440_60Hz_8_more.yuv
-      regExprList << "([0-9]+)(?:x|X|\\*)([0-9]+)_([0-9]+)(?:Hz)?[\\._]";               // Something_2160x1440_60_more.yuv or Something_2160x1440_60.yuv
-      regExprList << "([0-9]+)(?:x|X|\\*)([0-9]+)[\\._]";                               // Something_2160x1440_more.yuv or Something_2160x1440.yuv
+      regExprList
+          << "([0-9]+)(?:x|X|\\*)([0-9]+)_([0-9]+)(?:Hz)?_([0-9]+)b?[\\._]"; // Something_2160x1440_60_8_more.yuv
+                                                                             // or
+                                                                             // Something_2160x1440_60_8b.yuv
+                                                                             // or
+                                                                             // Something_2160x1440_60Hz_8_more.yuv
+      regExprList
+          << "([0-9]+)(?:x|X|\\*)([0-9]+)_([0-9]+)(?:Hz)?[\\._]"; // Something_2160x1440_60_more.yuv
+                                                                  // or Something_2160x1440_60.yuv
+      regExprList << "([0-9]+)(?:x|X|\\*)([0-9]+)[\\._]";         // Something_2160x1440_more.yuv or
+                                                                  // Something_2160x1440.yuv
 
       for (QString regExpStr : regExprList)
       {
         QRegExp exp(regExpStr);
         if (exp.indexIn(name) > -1)
         {
-          QString widthString = exp.cap(1);
+          QString widthString  = exp.cap(1);
           QString heightString = exp.cap(2);
-          format.frameSize = QSize(widthString.toInt(), heightString.toInt());
+          format.frameSize     = QSize(widthString.toInt(), heightString.toInt());
 
           QString rateString = exp.cap(3);
           if (!rateString.isEmpty())
@@ -206,15 +240,15 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
 
       if (rx1080p.indexIn(name) > -1)
       {
-        format.frameSize = QSize(1920, 1080);
+        format.frameSize        = QSize(1920, 1080);
         QString frameRateString = rx1080p.cap(1);
-        format.frameRate = frameRateString.toInt();
+        format.frameRate        = frameRateString.toInt();
       }
       else if (rx720p.indexIn(name) > -1)
       {
-        format.frameSize = QSize(1280, 720);
+        format.frameSize        = QSize(1280, 720);
         QString frameRateString = rx720p.cap(1);
-        format.frameRate = frameRateString.toInt();
+        format.frameRate        = frameRateString.toInt();
       }
     }
 
@@ -237,7 +271,8 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
         format.frameSize = QSize(1280, 720);
     }
 
-    // Second, if we were able to get a frame size but no frame rate, we will try to get a frame rate.
+    // Second, if we were able to get a frame size but no frame rate, we will try to get a frame
+    // rate.
     if (format.frameSize.isValid() && format.frameRate == -1)
     {
       // Look for: 24fps, 50fps, 24FPS, 50FPS
@@ -245,7 +280,7 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
       if (rxFPS.indexIn(name) > -1)
       {
         QString frameRateString = rxFPS.cap(1);
-        format.frameRate = frameRateString.toInt();
+        format.frameRate        = frameRateString.toInt();
       }
     }
     if (format.frameSize.isValid() && format.frameRate == -1)
@@ -255,7 +290,7 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
       if (rxHZ.indexIn(name) > -1)
       {
         QString frameRateString = rxHZ.cap(1);
-        format.frameRate = frameRateString.toInt();
+        format.frameRate        = frameRateString.toInt();
       }
     }
 
@@ -266,7 +301,8 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
       for (int bd : bitDepths)
       {
         // Look for: 10bit, 10BIT, 10-bit, 10-BIT
-        if (name.contains(QString("%1bit").arg(bd), Qt::CaseInsensitive) || name.contains(QString("%1-bit").arg(bd), Qt::CaseInsensitive))
+        if (name.contains(QString("%1bit").arg(bd), Qt::CaseInsensitive) ||
+            name.contains(QString("%1-bit").arg(bd), Qt::CaseInsensitive))
         {
           format.bitDepth = bd;
           break;
@@ -295,17 +331,20 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
   return format;
 }
 
-// If you are loading a playlist and you have an absolute path and a relative path, this function will return
-// the absolute path (if a file with that absolute path exists) or convert the relative path to an absolute
-// one and return that (if that file exists). If neither exists the empty string is returned.
-QString FileSource::getAbsPathFromAbsAndRel(const QString &currentPath, const QString &absolutePath, const QString &relativePath)
+// If you are loading a playlist and you have an absolute path and a relative path, this function
+// will return the absolute path (if a file with that absolute path exists) or convert the relative
+// path to an absolute one and return that (if that file exists). If neither exists the empty string
+// is returned.
+QString FileSource::getAbsPathFromAbsAndRel(const QString &currentPath,
+                                            const QString &absolutePath,
+                                            const QString &relativePath)
 {
   QFileInfo checkAbsoluteFile(absolutePath);
   if (checkAbsoluteFile.exists())
     return absolutePath;
 
   QFileInfo plFileInfo(currentPath);
-  QString combinePath = QDir(plFileInfo.path()).filePath(relativePath);
+  QString   combinePath = QDir(plFileInfo.path()).filePath(relativePath);
   QFileInfo checkRelativeFile(combinePath);
   if (checkRelativeFile.exists() && checkRelativeFile.isFile())
   {
@@ -320,7 +359,7 @@ void FileSource::updateFileWatchSetting()
   // Install a file watcher if file watching is active in the settings.
   // The addPath/removePath functions will do nothing if called twice for the same file.
   QSettings settings;
-  if (settings.value("WatchFiles",true).toBool())
+  if (settings.value("WatchFiles", true).toBool())
     fileWatcher.addPath(fullFilePath);
   else
     fileWatcher.removePath(fullFilePath);
@@ -332,13 +371,15 @@ void FileSource::clearFileCache()
     return;
 
 #ifdef Q_OS_WIN
-  // We will close the QFile, open it using the FILE_FLAG_NO_BUFFERING flags, close it and reopen the QFile.
-  // Suggested: http://stackoverflow.com/questions/478340/clear-file-cache-to-repeat-performance-testing
+  // We will close the QFile, open it using the FILE_FLAG_NO_BUFFERING flags, close it and reopen
+  // the QFile. Suggested:
+  // http://stackoverflow.com/questions/478340/clear-file-cache-to-repeat-performance-testing
   QMutexLocker locker(&readMutex);
   srcFile.close();
 
-  LPCWSTR file = (const wchar_t*) fullFilePath.utf16();
-  HANDLE hFile = CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, NULL);
+  LPCWSTR file = (const wchar_t *)fullFilePath.utf16();
+  HANDLE  hFile =
+      CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, NULL);
   CloseHandle(hFile);
 
   srcFile.setFileName(fullFilePath);

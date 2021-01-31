@@ -85,7 +85,6 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
       return;
 
     // We perform reading using an input buffer
-    QByteArray inputBuffer;
     bool fileAtEnd = false;
     qint64 bufferStartPos = 0;
 
@@ -98,8 +97,8 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
     while (!fileAtEnd && !cancelBackgroundParser)
     {
       // Fill the buffer
-      int bufferSize = inputFile.readBytes(inputBuffer, bufferStartPos, STAT_PARSING_BUFFER_SIZE);
-      if (bufferSize < STAT_PARSING_BUFFER_SIZE)
+      auto inputBuffer = inputFile.readBytes(bufferStartPos, STAT_PARSING_BUFFER_SIZE);
+      if (inputBuffer.size() < STAT_PARSING_BUFFER_SIZE)
         // Less bytes than the maximum buffer size were read. The file is at the end.
         // This is the last run of the loop.
         fileAtEnd = true;
@@ -107,7 +106,7 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
       // prevent lineBuffer overflow by dumping it for such cases
       if (lineBuffer.size() > STAT_MAX_STRING_SIZE)
         lineBuffer.clear(); // prevent an overflow here
-      for (int i = 0; i < bufferSize; i++)
+      for (int i = 0; i < inputBuffer.size(); i++)
       {
         // Search for '\n' newline characters
         if (inputBuffer.at(i) == 10)
@@ -212,7 +211,7 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
         }
       }
 
-      bufferStartPos += bufferSize;
+      bufferStartPos += inputBuffer.size();
     }
 
     // Parsing complete
@@ -259,8 +258,8 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
     while (!file.atEnd())
     {
       // read one line
-      QByteArray aLineByteArray = file.readLine();
-      QString aLine(aLineByteArray);
+      auto aLineByteArray = file.readLine();
+      QString aLine(QByteArray((char*)aLineByteArray.data(), int(aLineByteArray.size())));
 
       // get components of this line
       QStringList rowItemList = parseCSVLine(aLine, ';');

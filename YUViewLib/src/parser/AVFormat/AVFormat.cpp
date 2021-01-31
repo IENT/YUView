@@ -560,7 +560,7 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   // First get the extradata and push it to the parser
   try
   {
-    auto extradata = SubByteReaderLogging::convertToByteVector(ffmpegFile->getExtradata());
+    auto extradata = ffmpegFile->getExtradata();
     this->parseExtradata(extradata);
   }
   catch (...)

@@ -44,7 +44,7 @@ using namespace YUView;
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 
-decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray extradata, yuvPixelFormat fmt, IntPair profileLevel, Ratio sampleAspectRatio, bool cachingDecoder) : 
+decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, ByteVector &&extradata, yuvPixelFormat fmt, IntPair profileLevel, Ratio sampleAspectRatio, bool cachingDecoder) : 
   decoderBase(cachingDecoder)
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without loading 
@@ -57,7 +57,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray ex
   codecpar.setAVMediaType(AVMEDIA_TYPE_VIDEO);
   codecpar.setAVCodecID(this->ff.getCodecIDFromWrapper(codecID));
   codecpar.setSize(size.width(), size.height());
-  codecpar.setExtradata(extradata);
+  codecpar.setExtradata(std::move(extradata));
   
   AVPixelFormat f = this->ff.getAVPixelFormatFromYUVPixelFormat(fmt);
   if (f == AV_PIX_FMT_NONE)
@@ -78,9 +78,6 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID, QSize size, QByteArray ex
 
   this->flushing = false;
   this->internalsSupported = true;
-  // Fill the padding array
-  for (int i = 0; i < AV_INPUT_BUFFER_PADDING_SIZE; i++)
-    this->avPacketPaddingData.append((char)0);
 
   DEBUG_FFMPEG("Created new FFmpeg decoder - codec %s%s", this->getCodecName(), cachingDecoder ? " - caching" : "");
 }
@@ -147,17 +144,17 @@ bool decoderFFmpeg::decodeNextFrame()
   return true;
 }
 
-QByteArray decoderFFmpeg::getRawFrameData()
+ByteVector decoderFFmpeg::getRawFrameData()
 {
   if (this->decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_FFMPEG("decoderFFmpeg::getYUVFrameData: Wrong decoder state.");
-    return QByteArray();
+    return {};
   }
 
   DEBUG_FFMPEG("decoderFFmpeg::getYUVFrameData Copy frame");
 
-  if (this->currentOutputBuffer.isEmpty())
+  if (this->currentOutputBuffer.empty())
     DEBUG_FFMPEG("decoderFFmpeg::loadYUVFrameData empty buffer");
 
   return this->currentOutputBuffer;
@@ -211,13 +208,13 @@ void decoderFFmpeg::copyCurImageToBuffer()
     const rgbPixelFormat pixFmt = this->getRGBPixelFormat();
     const auto nrBytesPerSample = pixFmt.bitsPerValue <= 8 ? 1 : 2;
     const auto nrBytesPerComponent = this->frameSize.width() * this->frameSize.height() * nrBytesPerSample;
-    const auto nrBytes = nrBytesPerComponent * pixFmt.nrChannels();
+    const auto nrBytes = nrBytesPerComponent * (*pixFmt.nrChannels());
 
     // Is the output big enough?
     if (this->currentOutputBuffer.capacity() < nrBytes)
       this->currentOutputBuffer.resize(nrBytes);
 
-    char* dst = this->currentOutputBuffer.data();
+    auto dst = this->currentOutputBuffer.data();
     const auto hDst = this->frameSize.height();
     if (pixFmt.planar)
     {
@@ -241,7 +238,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     else
     {
       // We only need to iterate over the image once and copy all values per line at once (RGB(A))
-      const auto wDst = this->frameSize.width() * nrBytesPerSample * pixFmt.nrChannels();
+      const auto wDst = this->frameSize.width() * nrBytesPerSample * (*pixFmt.nrChannels());
       auto src = frame.getData(0);
       const auto srcLinesize = frame.getLineSize(0);
       for (int y = 0; y < hDst; y++)
@@ -283,11 +280,11 @@ void decoderFFmpeg::cacheCurStatistics()
   }
 }
 
-bool decoderFFmpeg::pushData(QByteArray &data)
+bool decoderFFmpeg::pushData(ByteVector &&data)
 {
   if (!this->raw_pkt)
     this->raw_pkt.allocatePaket(ff);
-  if (data.length() == 0)
+  if (data.size() == 0)
   {
     // Push an empty packet to indicate that the file has ended
     DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing an empty packet");
@@ -297,10 +294,10 @@ bool decoderFFmpeg::pushData(QByteArray &data)
   else
     DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing data length %d", data.length());
 
-  // Add some padding
-  data.append(this->avPacketPaddingData);
+  for (unsigned i = 0; i < AV_INPUT_BUFFER_PADDING_SIZE; i++)
+    data.push_back(0);
 
-  this->raw_pkt.setData(data);
+  this->raw_pkt.setData(std::move(data));
   this->raw_pkt.setDTS(AV_NOPTS_VALUE);
   this->raw_pkt.setPTS(AV_NOPTS_VALUE);
 

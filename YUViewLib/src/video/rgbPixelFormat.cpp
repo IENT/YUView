@@ -148,14 +148,18 @@ void rgbPixelFormat::setRGBFormatFromString(const QString &format)
 
 /* Get the number of bytes for a frame with this RGB format and the given size
 */
-int64_t rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
+std::optional<size_t> rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
 {
-  if (bitsPerValue == 0 || !frameSize.isValid())
-    return 0;
+  if (this->bitsPerValue == 0 || !frameSize.isValid())
+    return {};
+  
+  auto channels = this->nrChannels();
+  if (!channels)
+    return {};
 
-  int64_t numSamples = frameSize.height() * frameSize.width();
-  int64_t nrBytes = numSamples * nrChannels() * ((bitsPerValue + 7) / 8);
-  DEBUG_RGB_FORMAT("rgbPixelFormat::bytesPerFrame samples %d channels %d bytes %d", int(numSamples), nrChannels(), nrBytes);
+  auto numSamples = size_t(frameSize.height()) * size_t(frameSize.width());
+  auto nrBytes = numSamples * (*channels) * ((this->bitsPerValue + 7) / 8);
+  DEBUG_RGB_FORMAT("rgbPixelFormat::bytesPerFrame samples %d channels %d bytes %d", int(numSamples), *channels, nrBytes);
   return nrBytes;
 }
 

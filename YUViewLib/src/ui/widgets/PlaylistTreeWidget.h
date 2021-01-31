@@ -65,7 +65,7 @@ public:
   // Get a list of all playlist items that are currently in the playlist. Including all child items.
   QList<playlistItem*> getAllPlaylistItems(const bool topLevelOnly=false) const;
 
-  Qt::DropActions supportedDropActions() const Q_DECL_OVERRIDE;
+  Qt::DropActions supportedDropActions() const override;
   QModelIndex indexForItem(playlistItem *item) { return indexFromItem((QTreeWidgetItem*)item); }
 
   // Get the first two selected items
@@ -145,17 +145,17 @@ signals:
 
 protected:
   // Overload from QWidget to create a custom context menu
-  virtual void contextMenuEvent(QContextMenuEvent *event) Q_DECL_OVERRIDE;
+  virtual void contextMenuEvent(QContextMenuEvent *event) override;
   // Overload from QWidget to capture file drops onto the playlist
-  virtual void dropEvent(QDropEvent *event) Q_DECL_OVERRIDE;
+  virtual void dropEvent(QDropEvent *event) override;
   // Overload from QWidget to determine if we can accept this item for dropping
-  virtual void dragEnterEvent(QDragEnterEvent *event) Q_DECL_OVERRIDE;
+  virtual void dragEnterEvent(QDragEnterEvent *event) override;
   // Overload from QWidget to set if the item being dragged can be dropped onto the item under the cursor
-  void dragMoveEvent(QDragMoveEvent* event) Q_DECL_OVERRIDE;
+  void dragMoveEvent(QDragMoveEvent* event) override;
   // Overload from QWidget to ...
-  virtual void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+  virtual void mousePressEvent(QMouseEvent *event) override;
   // Overload from QAbstractItemView. This will changed the defaul QTreeWidget behavior for the keys 1..8.
-  virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+  virtual void keyPressEvent(QKeyEvent *event) override;
 
 protected slots:
 

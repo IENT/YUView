@@ -34,6 +34,7 @@
 
 #include <QObject>
 #include <QString>
+#include <optional>
 
 // The YUV_Internals namespace. We use this namespace because of the dialog. We want to be able to pass a yuvPixelFormat to the dialog and keep the
 // global namespace clean but we are not able to use nested classes because of the Q_OBJECT macro. So the dialog and the yuvPixelFormat is inside
@@ -146,7 +147,7 @@ public:
 
   bool isValid() const;
   bool canConvertToRGB(QSize frameSize, QString *whyNot = nullptr) const;
-  int64_t bytesPerFrame(const QSize &frameSize) const;
+  std::optional<size_t> bytesPerFrame(const QSize &frameSize) const;
   QString getName() const;
   unsigned getNrPlanes() const;
   int getSubsamplingHor(Component component = Component::Chroma) const;

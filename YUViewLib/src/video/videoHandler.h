@@ -35,6 +35,7 @@
 #include <QBasicTimer>
 #include <QFileInfo>
 #include <QMutex>
+#include <optional>
 
 #include "video/frameHandler.h"
 
@@ -66,18 +67,18 @@ public:
   virtual void removeAllFrameFromCache();
 
   // Get the number of bytes for one frame (RGB or YUV) with the current format (if this video handler uses raw data)
-  virtual int64_t getBytesPerFrame() const { return -1; }
+  virtual std::optional<size_t> getBytesPerFrame() const { return {}; }
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
-  virtual void setFrameSize(const QSize &size) Q_DECL_OVERRIDE ;
+  virtual void setFrameSize(const QSize &size) override ;
   
   // Same as the calculateDifference in frameHandler. For a video we have to make sure that the right frame is loaded first.
-  virtual QImage calculateDifference(frameHandler *item2, const int frameIndex0, const int frameIndex1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
+  virtual QImage calculateDifference(frameHandler *item2, const int frameIndex0, const int frameIndex1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) override;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw data in the right raw format.
   // If a file size is given, it is tested if the guessed format and the file size match. You can overload this
   // for any specific raw format. The default implementation does nothing.
-  virtual void setFormatFromCorrelation(const QByteArray &rawData, int64_t fileSize=-1) { Q_UNUSED(rawData); Q_UNUSED(fileSize); }
+  virtual void setFormatFromCorrelation(const ByteVector &rawData, int64_t fileSize=-1) { Q_UNUSED(rawData); Q_UNUSED(fileSize); }
 
   // If you know the frame size and the bit depth and the file size then we can try to guess
   // the format from that. You can override this for a specific raw format. The default implementation does nothing.
@@ -115,7 +116,7 @@ public:
   // TODO: Explain better what the difference between these two is (currentFrameRawData and rawData)
 
   // A buffer with the raw RGB data (this is filled if signalRequestRawData() is emitted)
-  QByteArray rawData;
+  ByteVector rawData;
   int        rawData_frameIndex;
 
   // Scale a value with limited mpeg range (16 ... 245) to the full range (0 ... 255) for output.
@@ -146,7 +147,7 @@ protected:
 
   // As the frameHandler implementations, we get the pixel values from currentImage. For a video, however, we
   // have to first check if currentImage contains the correct frame.
-  virtual QRgb getPixelVal(int x, int y) Q_DECL_OVERRIDE;
+  virtual QRgb getPixelVal(int x, int y) override;
 
   // The video handler wants to cache a frame. After the operation the frameToCache should contain
   // the requested frame. No other internal state of the specific video format handler should be changed.
@@ -169,7 +170,7 @@ protected:
   // The buffer of the raw data (RGB or YUV) of the current frame (and its frame index)
   // Before using the currentFrameRawData, you have to check if the currentFrameRawData_frameIndex is correct. If not,
   // you have to call loadFrame() to load the frame and set it correctly.
-  QByteArray currentFrameRawData;
+  ByteVector currentFrameRawData;
   int        currentFrameRawData_frameIndex;
 
   // Set the cache to be invalid until a call to removefromCache(-1) clears it.
@@ -187,5 +188,5 @@ protected:
 
 private slots:
   // Override the slotVideoControlChanged slot. For a videoHandler, also the number of frames might have changed.
-  void slotVideoControlChanged() Q_DECL_OVERRIDE;
+  void slotVideoControlChanged() override;
 };

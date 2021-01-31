@@ -256,7 +256,7 @@ bool decoderVTM::getNextFrameFromDecoder()
   return true;
 }
 
-bool decoderVTM::pushData(QByteArray &data)
+bool decoderVTM::pushData(ByteVector &&data)
 {
   if (decoderState != DecoderState::NeedsMoreData)
   {
@@ -264,7 +264,7 @@ bool decoderVTM::pushData(QByteArray &data)
     return false;
   }
 
-  bool endOfFile = (data.length() == 0);
+  bool endOfFile = (data.size() == 0);
   if (endOfFile)
     DEBUG_DECVTM("decoderVTM::pushData: Received empty packet. Setting EOF.");
 
@@ -272,10 +272,10 @@ bool decoderVTM::pushData(QByteArray &data)
   // with a start code and without.
   bool checkOutputPictures = false;
   bool bNewPicture = false;
-  libVTMDec_error err = libVTMDec_push_nal_unit(decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
+  libVTMDec_error err = libVTMDec_push_nal_unit(decoder, data.data(), int(data.size()), endOfFile, bNewPicture, checkOutputPictures);
   if (err != LIBVTMDEC_OK)
-    return setErrorB(QString("Error pushing data to decoder (libVTMDec_push_nal_unit) length %1").arg(data.length()));
-  DEBUG_DECVTM("decoderVTM::pushData pushed NAL length %d%s%s", data.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+    return setErrorB(QString("Error pushing data to decoder (libVTMDec_push_nal_unit) length %1").arg(data.size()));
+  DEBUG_DECVTM("decoderVTM::pushData pushed NAL length %d%s%s", data.size(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
 
   if (checkOutputPictures && getNextFrameFromDecoder())
   {
@@ -290,17 +290,17 @@ bool decoderVTM::pushData(QByteArray &data)
   return !bNewPicture;
 }
 
-QByteArray decoderVTM::getRawFrameData()
+ByteVector decoderVTM::getRawFrameData()
 {
   if (currentVTMPic == nullptr)
-    return QByteArray();
+    return {};
   if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DECVTM("decoderVTM::getRawFrameData: Wrong decoder state.");
-    return QByteArray();
+    return {};
   }
 
-  if (currentOutputBuffer.isEmpty())
+  if (currentOutputBuffer.empty())
   {
     // Put image data into buffer
     copyImgToByteArray(currentVTMPic, currentOutputBuffer);
@@ -317,7 +317,7 @@ QByteArray decoderVTM::getRawFrameData()
 #if SSE_CONVERSION
 void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, byteArrayAligned &dst)
 #else
-void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
+void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, ByteVector &dst)
 #endif
 {
   // How many image planes are there?
@@ -339,7 +339,7 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
   if (dst.capacity() < nrBytesOutput)
     dst.resize(nrBytesOutput);
 
-  // The source (from VTM) is always short (16bit). The destination is a QByteArray so
+  // The source (from VTM) is always short (16bit). The destination is a ByteVector so
   // we have to cast it right.
   for (int c = 0; c < nrPlanes; c++)
   {

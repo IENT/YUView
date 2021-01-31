@@ -140,7 +140,7 @@ yuvPixelFormat AnnexBHEVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+QList<ByteVector> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   if (iFrameNr >= this->frameList.size())
     return {};
@@ -166,17 +166,14 @@ QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fi
           filePos = nal->filePosStartEnd->first;
 
         // Get the bitstream of all active parameter sets
-        QList<QByteArray> paramSets;
+        QList<ByteVector> paramSets;
 
         for (auto const &entry : activeVPSNal)
-          paramSets.append(
-              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(entry.second->rawData);
         for (auto const &entry : activeSPSNal)
-          paramSets.append(
-              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(entry.second->rawData);
         for (auto const &entry : activePPSNal)
-          paramSets.append(
-              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(entry.second->rawData);
 
         return paramSets;
       }
@@ -201,7 +198,7 @@ QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fi
   return {};
 }
 
-QByteArray AnnexBHEVC::getExtradata()
+ByteVector AnnexBHEVC::getExtradata()
 {
   // Just return the VPS, SPS and PPS in NAL unit format. From the format in the extradata, ffmpeg
   // will detect that the input file is in raw NAL unit format and accept AVPackets in NAL unit
@@ -231,7 +228,7 @@ QByteArray AnnexBHEVC::getExtradata()
       break;
     }
   }
-  return reader::SubByteReaderLogging::convertToQByteArray(ret);
+  return ret;
 }
 
 IntPair AnnexBHEVC::getProfileLevel()
@@ -289,8 +286,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       // Save the info of the last frame
       if (!this->addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
       {
-        parent->addChild(
-                     "Error - POC " + std::to_string(curFramePOC) + " alread in the POC list.");
+        parent->addChild("Error - POC " + std::to_string(curFramePOC) + " alread in the POC list.");
         return parseResult;
       }
       if (curFrameFileStartEndPos)

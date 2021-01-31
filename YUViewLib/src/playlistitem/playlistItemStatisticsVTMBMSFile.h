@@ -63,7 +63,7 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual void reloadItemSource() Q_DECL_OVERRIDE;
+  virtual void reloadItemSource() override;
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.
   //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
@@ -72,7 +72,7 @@ public slots:
 
 private:
 
-  QString getPlaylistTag() const Q_DECL_OVERRIDE { return "playlistItemStatisticsVTMBMSFile"; }
+  QString getPlaylistTag() const override { return "playlistItemStatisticsVTMBMSFile"; }
 
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();

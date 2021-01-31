@@ -91,8 +91,10 @@ QList<Subsampling> getDetectionSubsamplingList(Subsampling forceAsFirst, bool pa
 
 bool checkFormat(const YUV_Internals::yuvPixelFormat pixelFormat, const QSize frameSize, const int64_t fileSize)
 {
-  int bpf = pixelFormat.bytesPerFrame(frameSize);
-  return (bpf != 0 && (fileSize % bpf) == 0);
+  auto bpf = pixelFormat.bytesPerFrame(frameSize);
+  if (!bpf)
+    return false;
+  return ((*bpf) != 0 && (fileSize % (*bpf)) == 0);
 }
 
 yuvPixelFormat testFormatFromSizeAndNamePlanar(QString name, const QSize size, int bitDepth, Subsampling detectedSubsampling, int64_t fileSize)
@@ -215,7 +217,7 @@ yuvPixelFormat guessFormatFromSizeAndName(const QSize size, int bitDepth, bool p
     auto fmt = yuvPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YVU);
     fmt.uvInterleaved = true;
     auto bpf = fmt.bytesPerFrame(size);
-    if (bpf != 0 && (fileSize % bpf) == 0)
+    if (bpf && (*bpf) != 0 && (fileSize % (*bpf)) == 0)
     {
       // Bits per frame and file size match
       return fmt;

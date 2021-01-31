@@ -81,8 +81,8 @@ public:
                                  std::optional<pairUint64> nalStartEndPosFile = {},
                                  TreeItem *                parent             = nullptr) override;
 
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
-  QByteArray        getExtradata() override;
+  QList<ByteVector> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
+  ByteVector        getExtradata() override;
   IntPair           getProfileLevel() override;
   Ratio             getSampleAspectRatio() override;
 

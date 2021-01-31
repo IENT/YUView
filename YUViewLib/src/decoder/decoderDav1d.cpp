@@ -292,24 +292,24 @@ bool decoderDav1d::decodeFrame()
   return false;
 }
 
-QByteArray decoderDav1d::getRawFrameData()
+ByteVector decoderDav1d::getRawFrameData()
 {
   QSize s = curPicture.getFrameSize();
   if (s.width() <= 0 || s.height() <= 0)
   {
     DEBUG_DAV1D("decoderDav1d::getRawFrameData: Current picture has invalid size.");
-    return QByteArray();
+    return {};
   }
   if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DAV1D("decoderDav1d::getRawFrameData: Wrong decoder state.");
-    return QByteArray();
+    return {};
   }
 
-  if (currentOutputBuffer.isEmpty())
+  if (currentOutputBuffer.empty())
   {
     // Put image data into buffer
-    copyImgToByteArray(curPicture, currentOutputBuffer);
+    this->copyImgToByteArray(curPicture, currentOutputBuffer);
     DEBUG_DAV1D("decoderDav1d::getRawFrameData copied frame to buffer");
 
     if (retrieveStatistics)
@@ -320,7 +320,7 @@ QByteArray decoderDav1d::getRawFrameData()
   return currentOutputBuffer;
 }
 
-bool decoderDav1d::pushData(QByteArray &data) 
+bool decoderDav1d::pushData(ByteVector &&data) 
 {
   if (decoderState != DecoderState::NeedsMoreData)
   {
@@ -410,7 +410,7 @@ bool decoderDav1d::pushData(QByteArray &data)
 #if SSE_CONVERSION
 void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, byteArrayAligned &dst)
 #else
-void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray &dst)
+void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, ByteVector &dst)
 #endif
 {
   // How many image planes are there?

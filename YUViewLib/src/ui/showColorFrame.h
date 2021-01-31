@@ -42,7 +42,7 @@ class showColorWidget : public QFrame
 
 public:
   showColorWidget(QWidget *parent) : QFrame(parent) { renderRange = false; renderRangeValues = false; }
-  virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
+  virtual void paintEvent(QPaintEvent *event) override;
   void setColorMapper(const colorMapper &mapper) { renderRange = true; colMapper = mapper; update(); }
   void setPlainColor(const QColor &color) { renderRange = false; plainColor = color; update(); }
   QColor getPlainColor() { return plainColor; }
@@ -54,7 +54,7 @@ signals:
 
 protected:
   // If the mouse is released, emit a clicked() event.
-  virtual void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE { Q_UNUSED(event); emit clicked(); }
+  virtual void mouseReleaseEvent(QMouseEvent *event) override { Q_UNUSED(event); emit clicked(); }
   bool        renderRange;
   bool        renderRangeValues;
   colorMapper colMapper;

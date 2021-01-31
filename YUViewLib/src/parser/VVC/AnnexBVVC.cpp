@@ -70,14 +70,14 @@ QSize AnnexBVVC::getSequenceSizeSamples() const { return QSize(352, 288); }
 
 yuvPixelFormat AnnexBVVC::getPixelFormat() const { return yuvPixelFormat(Subsampling::YUV_420, 8); }
 
-QList<QByteArray> AnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+QList<ByteVector> AnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   Q_UNUSED(iFrameNr);
   Q_UNUSED(filePos);
   return {};
 }
 
-QByteArray AnnexBVVC::getExtradata() { return {}; }
+ByteVector AnnexBVVC::getExtradata() { return {}; }
 
 IntPair AnnexBVVC::getProfileLevel() { return {0, 0}; }
 

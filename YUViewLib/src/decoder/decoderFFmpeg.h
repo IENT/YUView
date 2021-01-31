@@ -38,27 +38,27 @@
 class decoderFFmpeg : public decoderBase
 {
 public:
-  decoderFFmpeg(AVCodecIDWrapper codec, QSize frameSize, QByteArray extradata, YUV_Internals::yuvPixelFormat fmt, IntPair profileLevel, Ratio sampleAspectRatio, bool cachingDecoder=false);
+  decoderFFmpeg(AVCodecIDWrapper codec, QSize frameSize, ByteVector &&extradata, YUV_Internals::yuvPixelFormat fmt, IntPair profileLevel, Ratio sampleAspectRatio, bool cachingDecoder=false);
   decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder=false);
   ~decoderFFmpeg();
 
-  void resetDecoder() Q_DECL_OVERRIDE;
+  void resetDecoder() override;
 
   // Decoding / pushing data
-  bool decodeNextFrame() Q_DECL_OVERRIDE;
-  QByteArray getRawFrameData() Q_DECL_OVERRIDE;
+  bool decodeNextFrame() override;
+  ByteVector getRawFrameData() override;
   
   // Push an AVPacket or raw data. When this returns false, pushing the given packet failed. Probably the 
   // decoder switched to DecoderState::RetrieveFrames. Don't forget to push the given packet again later.
   bool pushAVPacket(AVPacketWrapper &pkt);
-  bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  bool pushData(ByteVector &&data) override;
 
   // What statistics do we support?
-  void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
+  void fillStatisticList(statisticHandler &statSource) const override;
 
-  QStringList getLibraryPaths() const Q_DECL_OVERRIDE { return ff.getLibPaths(); }
-  QString     getDecoderName()  const Q_DECL_OVERRIDE { return "FFmpeg"; }
-  QString     getCodecName()          Q_DECL_OVERRIDE;
+  QStringList getLibraryPaths() const override { return ff.getLibPaths(); }
+  QString     getDecoderName()  const override { return "FFmpeg"; }
+  QString     getCodecName()          override;
   
   static QStringList getLogMessages() { return FFmpegVersionHandler::getFFmpegLog(); }
 
@@ -78,7 +78,7 @@ protected:
   // Statistics caching
   void cacheCurStatistics();
 
-  QByteArray currentOutputBuffer;
+  ByteVector currentOutputBuffer;
   void copyCurImageToBuffer();   // Copy the raw data from the de265_image source *src to the byte array
 
   // At the end of the file, when no more data is available, we will swith to flushing. After all
@@ -87,7 +87,4 @@ protected:
 
   // When pushing raw data to the decoder, we need to package it into AVPackets
   AVPacketWrapper raw_pkt;
-
-  // An array of AV_INPUT_BUFFER_PADDING_SIZE zeros to be added as padding in pushData
-  QByteArray avPacketPaddingData;
 };

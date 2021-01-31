@@ -35,6 +35,7 @@
 #include <QPainter>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <algorithm>
 
 #include "common/functions.h"
 #include "handler/itemMemoryHandler.h"
@@ -49,6 +50,9 @@ using namespace YUV_Internals;
 #else
 #define DEBUG_RAWFILE(fmt,...) ((void)0)
 #endif
+
+const ByteVector YUV4MpegHeader({'Y', 'U', 'V', '4', 'M', 'P', 'E', 'G', '2', ' '});
+const ByteVector YUV4MpegFRAME({'F', 'R', 'A', 'M', 'E'});
 
 playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize, const QString &sourcePixelFormat, const QString &fmt)
   : playlistItemWithVideo(rawFilePath)
@@ -112,8 +116,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
     if (!video->isFormatValid())
     {
       // Load 24883200 bytes from the input and try to get the format from the correlation.
-      QByteArray rawData;
-      dataSource.readBytes(rawData, 0, 24883200);
+      auto rawData = dataSource.readBytes(0, 24883200);
       video->setFormatFromCorrelation(rawData, dataSource.getFileSize());
     }
   }
@@ -150,12 +153,12 @@ void playlistItemRawFile::updateStartEndRange()
     return;
   }
 
-  auto nrFrames = 0;
+  size_t nrFrames = 0;
   if (this->isY4MFile)
     nrFrames = this->y4mFrameIndices.count();
   else
   {
-    auto bpf = this->video->getBytesPerFrame();
+    auto bpf = *this->video->getBytesPerFrame();
     if (bpf == 0)
     {
       this->prop.startEndRange = indexRange(-1, -1);
@@ -164,7 +167,7 @@ void playlistItemRawFile::updateStartEndRange()
     nrFrames = this->dataSource.getFileSize() / bpf;
   }
   
-  this->prop.startEndRange = indexRange(0, nrFrames - 1);
+  this->prop.startEndRange = indexRange(0, int(nrFrames) - 1);
 }
 
 infoData playlistItemRawFile::getInfo() const
@@ -176,7 +179,7 @@ infoData playlistItemRawFile::getInfo() const
 
   auto nrFrames = (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
   info.items.append(infoItem("Num Frames", QString::number(nrFrames)));
-  info.items.append(infoItem("Bytes per Frame", QString("%1").arg(this->video->getBytesPerFrame())));
+  info.items.append(infoItem("Bytes per Frame", QString("%1").arg(*this->video->getBytesPerFrame())));
 
   if (dataSource.isOk() && video->isFormatValid() && !isY4MFile)
   {
@@ -184,7 +187,7 @@ infoData playlistItemRawFile::getInfo() const
     // without any remainder. If not, then there is probably something wrong with the
     // selected YUV format / width / height ...
 
-    auto bpf = this->video->getBytesPerFrame();
+    auto bpf = *this->video->getBytesPerFrame();
     if ((dataSource.getFileSize() % bpf) != 0)
     {
       // Add a warning
@@ -199,16 +202,15 @@ bool playlistItemRawFile::parseY4MFile()
 {
   // Read a chunck of data from the file. Thecnically, the header can be arbitrarily long, but in practice, 
   // 512 bytes should cover the length of all headers
-  QByteArray rawData;
-  dataSource.readBytes(rawData, 0, 512);
+  auto rawData = dataSource.readBytes(0, 512);
 
   // A Y4M file must start with the signature string "YUV4MPEG2 ".
-  if (rawData.left(10) != "YUV4MPEG2 ")
+  if (!std::equal(YUV4MpegHeader.begin(), YUV4MpegHeader.end(), rawData.begin()))
     return setError("Y4M File header does not start with YUV4MPEG2 header signature.");
 
   // Next, there can be any number of parameters. Each paramter starts with a space.
   // The only requirement is, that width, height and framerate are specified.
-  int64_t offset = 9;
+  size_t offset = 9;
   int width = -1;
   int height = -1;
   yuvPixelFormat format = yuvPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YUV);
@@ -306,7 +308,7 @@ bool playlistItemRawFile::parseY4MFile()
     while (rawData.at(offset) != ' ' && rawData.at(offset) != 10)
     {
       offset++;
-      if (offset >= rawData.count())
+      if (offset >= rawData.size())
         // End of bufer
         break;
     }
@@ -338,11 +340,11 @@ bool playlistItemRawFile::parseY4MFile()
   while (true)
   {
     // Seek the file to 'offset' and read a few bytes
-    if (dataSource.readBytes(rawData, offset, 20) < 20)
+    rawData = dataSource.readBytes(offset, 20);
+    if (rawData.size() < 20)
       return setError("Error parsing the Y4M header: The file ended unexpectedly.");
 
-    QByteArray frameIndicator = rawData.mid(0, 5);
-    if (frameIndicator != "FRAME")
+    if (!std::equal(YUV4MpegFRAME.begin(), YUV4MpegFRAME.end(), rawData.begin()))
       return setError("Error parsing the Y4M header: Could not locate the next 'FRAME' indicator.");
 
     // We will now ignore all frame parameters by searching for the next 0x0A byte. I don't know what
@@ -480,7 +482,7 @@ void playlistItemRawFile::loadRawData(int frameIdx)
   if (!video->isFormatValid())
     return;
 
-  auto nrBytes = this->video->getBytesPerFrame();
+  auto nrBytes = *this->video->getBytesPerFrame();
 
   // Load the raw data for the given frameIdx from file and set it in the video
   int64_t fileStartPos;
@@ -490,8 +492,12 @@ void playlistItemRawFile::loadRawData(int frameIdx)
     fileStartPos = frameIdx * nrBytes;
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData frame %d bytes %d", frameIdx, int(nrBytes));
-  if (dataSource.readBytes(video->rawData, fileStartPos, nrBytes) < nrBytes)
+  video->rawData = dataSource.readBytes(fileStartPos, nrBytes);
+  if (video->rawData.size() < nrBytes)
+  {
+    video->rawData.clear();
     return; // Error
+  }
   video->rawData_frameIndex = frameIdx;
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d Done", frameIdx);

@@ -43,7 +43,7 @@
 /* This class is the abstract base class for all decoders. All decoders work like this:
  * 1. Create an instance and configure it (if required)
  * 2. Push data to the decoder until it returns that it can not take any more data. 
- *    When you pushed all of the bitstream into the decoder, push an empty QByteArray to indicate the EOF.
+ *    When you pushed all of the bitstream into the decoder, push an empty ByteVector to indicate the EOF.
  * 3. Read frames until no new frames are coming out. Go back to 2.
 */
 class decoderBase
@@ -69,14 +69,15 @@ public:
   // If the current frame is valid, the current frame can be retrieved using getRawFrameData.
   // Call decodeNextFrame to advance to the next frame. When the function returns false, more data is probably needed.
   virtual bool decodeNextFrame() = 0;
-  virtual QByteArray getRawFrameData() = 0;
+  virtual ByteVector getRawFrameData() = 0;
   YUView::RawFormat getRawFormat() const { return rawFormat; }
   YUV_Internals::yuvPixelFormat getYUVPixelFormat() const { return formatYUV; }
   RGB_Internals::rgbPixelFormat getRGBPixelFormat() const { return formatRGB; }
   QSize getFrameSize() { return frameSize; }
+  
   // Push data to the decoder (until no more data is needed)
   // In order to make the interface generic, the pushData function accepts data only without start codes
-  virtual bool pushData(QByteArray &data) = 0;
+  virtual bool pushData(ByteVector &&data) = 0;
 
   // The state of the decoder
   bool decodeFrames() const { return decoderState == DecoderState::RetrieveFrames; }
@@ -108,7 +109,7 @@ protected:
   // Each decoder is in one of two states:
   enum class DecoderState
   {
-    NeedsMoreData,   ///< The decoder needs more data (pushData). When there is no more data, push an empty QByteArray. 
+    NeedsMoreData,   ///< The decoder needs more data (pushData). When there is no more data, push an empty ByteVector.
     RetrieveFrames,  ///< Retrieve frames from the decoder (decodeNextFrame)
     EndOfBitstream,  ///< Decoding has ended.
     Error
@@ -145,7 +146,7 @@ public:
   decoderBaseSingleLib(bool cachingDecoder=false) : decoderBase(cachingDecoder) {};
   virtual ~decoderBaseSingleLib() {};
 
-  QStringList getLibraryPaths() const Q_DECL_OVERRIDE { return QStringList() << getDecoderName() << library.fileName() << library.fileName(); }
+  QStringList getLibraryPaths() const override { return QStringList() << getDecoderName() << library.fileName() << library.fileName(); }
 
 protected:
   virtual void resolveLibraryFunctionPointers() = 0;

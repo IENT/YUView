@@ -255,7 +255,7 @@ bool decoderHM::getNextFrameFromDecoder()
   return true;
 }
 
-bool decoderHM::pushData(QByteArray &data) 
+bool decoderHM::pushData(ByteVector &&data) 
 {
   if (decoderState != DecoderState::NeedsMoreData)
   {
@@ -263,7 +263,7 @@ bool decoderHM::pushData(QByteArray &data)
     return false;
   }
 
-  bool endOfFile = (data.length() == 0);
+  auto endOfFile = (data.size() == 0);
   if (endOfFile)
     DEBUG_DECHM("decoderFFmpeg::pushData: Received empty packet. Setting EOF.");
 
@@ -271,10 +271,10 @@ bool decoderHM::pushData(QByteArray &data)
   // with a start code and without.
   bool checkOutputPictures = false;
   bool bNewPicture = false;
-  libHMDec_error err = libHMDec_push_nal_unit(decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
+  libHMDec_error err = libHMDec_push_nal_unit(decoder, data.data(), int(data.size()), endOfFile, bNewPicture, checkOutputPictures);
   if (err != LIBHMDEC_OK)
-    return setErrorB(QString("Error pushing data to decoder (libHMDec_push_nal_unit) length %1").arg(data.length()));
-  DEBUG_DECHM("decoderHM::pushData pushed NAL length %d%s%s", data.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+    return setErrorB(QString("Error pushing data to decoder (libHMDec_push_nal_unit) length %1").arg(data.size()));
+  DEBUG_DECHM("decoderHM::pushData pushed NAL length %d%s%s", data.size(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
 
   if (checkOutputPictures && getNextFrameFromDecoder())
   {
@@ -289,17 +289,17 @@ bool decoderHM::pushData(QByteArray &data)
   return !bNewPicture;
 }
 
-QByteArray decoderHM::getRawFrameData()
+ByteVector decoderHM::getRawFrameData()
 {
   if (currentHMPic == nullptr)
-    return QByteArray();
+    return {};
   if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DECHM("decoderHM::getRawFrameData: Wrong decoder state.");
-    return QByteArray();
+    return {};
   }
 
-  if (currentOutputBuffer.isEmpty())
+  if (currentOutputBuffer.empty())
   {
     // Put image data into buffer
     copyImgToByteArray(currentHMPic, currentOutputBuffer);
@@ -316,7 +316,7 @@ QByteArray decoderHM::getRawFrameData()
 #if SSE_CONVERSION
 void decoderHM::copyImgToByteArray(libHMDec_picture *src, byteArrayAligned &dst)
 #else
-void decoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
+void decoderHM::copyImgToByteArray(libHMDec_picture *src, ByteVector &dst)
 #endif
 {
   // How many image planes are there?
@@ -344,7 +344,7 @@ void decoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
   if (dst.capacity() < nrBytesOutput)
     dst.resize(nrBytesOutput);
 
-  // The source (from HM) is always short (16bit). The destination is a QByteArray so
+  // The source (from HM) is always short (16bit). The destination is a ByteVector so
   // we have to cast it right.
   for (int c = 0; c < nrPlanes; c++)
   {

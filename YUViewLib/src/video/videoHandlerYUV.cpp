@@ -418,7 +418,7 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
 void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
 {
   // Store the number bytes per frame of the old pixel format
-  int64_t oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
+  auto oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
   // Set the new pixel format. Lock the mutex, so that no background process is running wile the format changes.
   srcPixelFormat = format;
@@ -491,7 +491,7 @@ void videoHandlerYUV::slotYUVControlChanged()
   }
   else if (sender == ui.yuvFormatComboBox)
   {
-    int64_t oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
+    auto oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
     // Set the new YUV format
     //setSrcPixelFormat(yuvFormatList.getFromName(ui.yuvFormatComboBox->currentText()));
@@ -830,7 +830,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, b
   * If a file size is given, we test if the candidates frame size is a multiple of the fileSize. If fileSize is -1, this test
   * is skipped.
   */
-void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int64_t fileSize)
+void videoHandlerYUV::setFormatFromCorrelation(const ByteVector &rawYUVData, int64_t fileSize)
 {
   if(rawYUVData.size() < 1)
     return;
@@ -881,12 +881,12 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
 
     for (testFormatAndSize &testFormat : formatList)
     {
-      int64_t picSize = testFormat.format.bytesPerFrame(testFormat.size);
+      auto picSize = testFormat.format.bytesPerFrame(testFormat.size);
 
-      const bool atLeastTwoPictureInInput = fileSize >= (picSize*2);
+      const auto atLeastTwoPictureInInput = size_t(fileSize) >= ((*picSize)*2);
       if(atLeastTwoPictureInInput)
       {
-        if((fileSize % picSize) == 0)   // important: file size must be multiple of the picture size
+        if((fileSize % (*picSize)) == 0)   // important: file size must be multiple of the picture size
         {
           testFormat.interesting = true;
           fileSizeMatchFound = true;
@@ -903,19 +903,19 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
   {
     if (testFormat.interesting)
     {
-      int64_t picSize = testFormat.format.bytesPerFrame(testFormat.size);
+      auto picSize = testFormat.format.bytesPerFrame(testFormat.size);
       int lumaSamples = testFormat.size.width() * testFormat.size.height();
 
       // Calculate the MSE for 2 frames
       if (testFormat.format.bitsPerSample == 8)
       {
         unsigned char *ptr = (unsigned char*) rawYUVData.data();
-        testFormat.mse = computeMSE(ptr, ptr + picSize, lumaSamples);
+        testFormat.mse = computeMSE(ptr, ptr + *picSize, lumaSamples);
       }
       else if (testFormat.format.bitsPerSample > 8 && testFormat.format.bitsPerSample <= 16)
       {
         unsigned short *ptr = (unsigned short*) rawYUVData.data();
-        testFormat.mse = computeMSE(ptr, ptr + picSize/2, lumaSamples);
+        testFormat.mse = computeMSE(ptr, ptr + (*picSize)/2, lumaSamples);
       }
       else
         continue;
@@ -1005,7 +1005,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, true);
-  QByteArray tmpBufferRawYUVDataCaching = rawData;
+  auto tmpBufferRawYUVDataCaching = rawData;
   requestDataMutex.unlock();
 
   if (frameIndex != rawData_frameIndex)
@@ -1033,7 +1033,7 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, false);
 
-  if (frameIndex != rawData_frameIndex || rawData.isEmpty())
+  if (frameIndex != rawData_frameIndex || rawData.empty())
   {
     // Loading failed
     DEBUG_YUV("videoHandlerYUV::loadRawYUVData Loading failed");
@@ -2165,7 +2165,7 @@ inline void YUVPlaneToRGB_411(const int w, const int h, const MathParameters mat
   }
 }
 
-bool videoHandlerYUV::convertYUVPackedToPlanar(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &curFrameSize, yuvPixelFormat &sourceBufferFormat)
+bool videoHandlerYUV::convertYUVPackedToPlanar(const ByteVector &sourceBuffer, ByteVector &targetBuffer, const QSize &curFrameSize, yuvPixelFormat &sourceBufferFormat)
 {
   const auto format = sourceBufferFormat;
   const auto packing = format.packingOrder;
@@ -2278,7 +2278,7 @@ bool videoHandlerYUV::convertYUVPackedToPlanar(const QByteArray &sourceBuffer, Q
   return true;
 }
 
-bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, uchar *targetBuffer, const QSize &curFrameSize, const yuvPixelFormat &sourceBufferFormat) const
+bool videoHandlerYUV::convertYUVPlanarToRGB(const ByteVector &sourceBuffer, uchar *targetBuffer, const QSize &curFrameSize, const yuvPixelFormat &sourceBufferFormat) const
 {
   // These are constant for the runtime of this function. This way, the compiler can optimize the
   // hell out of this function.
@@ -2438,9 +2438,9 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
 
 // Convert the given raw YUV data in sourceBuffer (using srcPixelFormat) to image (RGB-888), using the
 // buffer tmpRGBBuffer for intermediate RGB values.
-void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &outputImage, const yuvPixelFormat &yuvFormat, const QSize &curFrameSize)
+void videoHandlerYUV::convertYUVToImage(const ByteVector &sourceBuffer, QImage &outputImage, const yuvPixelFormat &yuvFormat, const QSize &curFrameSize)
 {
-  if (!yuvFormat.canConvertToRGB(curFrameSize) || sourceBuffer.isEmpty())
+  if (!yuvFormat.canConvertToRGB(curFrameSize) || sourceBuffer.empty())
   {
     outputImage = QImage();
     return;
@@ -2487,7 +2487,7 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
   else
   {
     // Convert to a planar format first
-    QByteArray tmpPlanarYUVSource;
+    ByteVector tmpPlanarYUVSource;
     // This is the current format of the buffer. The conversion function will change this.
     yuvPixelFormat bufferPixelFormat = yuvFormat;
     convOK &= convertYUVPackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize, bufferPixelFormat);
@@ -2608,7 +2608,7 @@ videoHandlerYUV::yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) co
 #if SSE_CONVERSION
 bool videoHandlerYUV::convertYUV420ToRGB(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
 #else
-bool videoHandlerYUV::convertYUV420ToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const QSize &size, const yuvPixelFormat format)
+bool videoHandlerYUV::convertYUV420ToRGB(const ByteVector &sourceBuffer, unsigned char *targetBuffer, const QSize &size, const yuvPixelFormat format)
 #endif
 {
   const int frameWidth = size.width();
@@ -2823,7 +2823,7 @@ bool videoHandlerYUV::convertYUV420ToRGB(const QByteArray &sourceBuffer, unsigne
   return true;
 }
 
-bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const QSize &curFrameSize, const yuvPixelFormat &sourceBufferFormat) const
+bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const ByteVector &sourceBuffer, unsigned char *targetBuffer, const QSize &curFrameSize, const yuvPixelFormat &sourceBufferFormat) const
 {
   // These are constant for the runtime of this function. This way, the compiler can optimize the
   // hell out of this function.
@@ -2912,12 +2912,12 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuff
 
 YUV_Internals::yuvPixelFormat videoHandlerYUV::getDiffYUVFormat() const
 {
-    return diffYUVFormat;
+    return this->diffYUVFormat;
 }
 
-QByteArray videoHandlerYUV::getDiffYUV() const
+ByteVector videoHandlerYUV::getDiffYUV() const
 {
-    return diffYUV;
+    return this->diffYUV;
 }
 
 QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)

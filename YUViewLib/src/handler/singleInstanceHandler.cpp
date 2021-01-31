@@ -59,8 +59,8 @@ void singleInstanceHandler::newConnection()
 
 void singleInstanceHandler::readyRead()
 {
-  QByteArray tmp = socket->readAll();
-  QStringList fileList = QString(tmp).split("\n");
+  auto tmp = socket->readAll();
+  auto fileList = QString(tmp).split("\n");
   if (fileList.length() > 0)
   {
     QStringList openFiles;

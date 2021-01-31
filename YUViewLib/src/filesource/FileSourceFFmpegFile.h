@@ -69,15 +69,15 @@ public:
    * from the bitstream using these functions. The important thing is to not mix calls to these functions.
    */
   // Get the next NAL unit (everything excluding the start code) or the next packet.
-  QByteArray getNextUnit(bool getLastDataAgain=false, uint64_t *pts=nullptr);
+  ByteVector getNextUnit(bool getLastDataAgain=false, uint64_t *pts=nullptr);
   // Return the next packet (unless getLastPackage is set in which case we return the current packet)
   AVPacketWrapper getNextPacket(bool getLastPackage=false, bool videoPacket=true);
   // Return the raw extradata/metadata (in avformat format containing the parameter sets)
   
-  QByteArray getExtradata();
+  ByteVector getExtradata();
   QStringPairList getMetadata();
   // Return a list containing the raw data of all parameter set NAL units
-  QList<QByteArray> getParameterSets();
+  QList<ByteVector> getParameterSets();
 
   // File watching
   void updateFileWatchSetting();
@@ -171,18 +171,14 @@ protected:
 
   packetDataFormat_t packetDataFormat {packetFormatUnknown};
 
-  // The start code pattern to look for in case of a raw format
-  QByteArray startCode;
-
   // These are filled after opening a file (after scanBitstream was called)
   QList<pictureIdx> keyFrameList;  //< A list of pairs (frameNr, PTS) that we can seek to.
   //pictureIdx getClosestSeekableFrameNumberBeforeBefore(int frameIdx);
 
   // For parsing NAL units from the compressed data:
-  QByteArray currentPacketData;
-  int posInFile {-1};
+  ByteVector currentPacketData;
   bool loadNextPacket;
-  int posInData;
+  ByteVector::iterator posInData{};
   // We will keep the last buffer in case the reader wants to get it again
-  QByteArray lastReturnArray;
+  ByteVector lastReturnArray;
 };

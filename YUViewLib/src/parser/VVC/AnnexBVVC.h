@@ -65,8 +65,8 @@ public:
   QSize          getSequenceSizeSamples() const override;
   yuvPixelFormat getPixelFormat() const override;
 
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
-  QByteArray        getExtradata() override;
+  QList<ByteVector> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
+  ByteVector        getExtradata() override;
   IntPair           getProfileLevel() override;
   Ratio             getSampleAspectRatio() override;
 

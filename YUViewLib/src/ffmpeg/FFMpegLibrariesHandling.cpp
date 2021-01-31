@@ -1952,7 +1952,8 @@ void AVCodecContextWrapper::update()
     compression_level = src->compression_level;
     flags = src->flags;
     flags2 = src->flags2;
-    extradata = QByteArray((const char*)src->extradata, src->extradata_size);
+    extradata = src->extradata;
+    extradata_size = src->extradata_size;
     time_base = src->time_base;
     ticks_per_frame = src->ticks_per_frame;
     delay = src->delay;
@@ -2036,7 +2037,8 @@ void AVCodecContextWrapper::update()
     compression_level = src->compression_level;
     flags = src->flags;
     flags2 = src->flags2;
-    extradata = QByteArray((const char*)src->extradata, src->extradata_size);
+    extradata = src->extradata;
+    extradata_size = src->extradata_size;
     time_base = src->time_base;
     ticks_per_frame = src->ticks_per_frame;
     delay = src->delay;
@@ -2120,7 +2122,8 @@ void AVCodecContextWrapper::update()
     compression_level = src->compression_level;
     flags = src->flags;
     flags2 = src->flags2;
-    extradata = QByteArray((const char*)src->extradata, src->extradata_size);
+    extradata = src->extradata;
+    extradata_size = src->extradata_size;
     time_base = src->time_base;
     ticks_per_frame = src->ticks_per_frame;
     delay = src->delay;
@@ -2528,16 +2531,16 @@ void AVCodecParametersWrapper::setAVCodecID(AVCodecID id)
   }
 }
 
-void AVCodecParametersWrapper::setExtradata(QByteArray data)
+void AVCodecParametersWrapper::setExtradata(ByteVector &&data)
 {
   if (libVer.avformat == 57 || libVer.avformat == 58)
   {
-    set_extradata = data;
+    set_extradata = std::move(data);
     AVCodecParameters_57_58 *src = reinterpret_cast<AVCodecParameters_57_58*>(param);
     src->extradata = (uint8_t*)set_extradata.data();
-    src->extradata_size = set_extradata.length();
+    src->extradata_size = int(set_extradata.size());
     extradata = (uint8_t*)set_extradata.data();
-    extradata_size = set_extradata.length();
+    extradata_size = int(set_extradata.size());
   }
 }
 
@@ -2992,21 +2995,22 @@ void AVPacketWrapper::freePacket(FFmpegVersionHandler &ff)
   pkt = nullptr;
 }
 
-void AVPacketWrapper::setData(QByteArray &set_data)
+void AVPacketWrapper::setData(ByteVector &&packetData)
 {
+  this->setPacketData = std::move(packetData);
   if (libVer.avcodec == 56)
   {
     AVPacket_56 *src = reinterpret_cast<AVPacket_56*>(pkt);
-    src->data = (uint8_t*)set_data.data();
-    src->size = set_data.size();
+    src->data = (uint8_t*)this->setPacketData.data();
+    src->size = int(this->setPacketData.size());
     data = src->data;
     size = src->size;
   }
   else if (libVer.avcodec == 57 || libVer.avcodec == 58)
   {
     AVPacket_57_58 *src = reinterpret_cast<AVPacket_57_58*>(pkt);
-    src->data = (uint8_t*)set_data.data();
-    src->size = set_data.size();
+    src->data = (uint8_t*)this->setPacketData.data();
+    src->size = int(this->setPacketData.size());
     data = src->data;
     size = src->size;
   }
@@ -3055,12 +3059,14 @@ packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
   if (packetFormat != packetFormatUnknown)
     return packetFormat;
 
-  QByteArray avpacketData = QByteArray::fromRawData((const char*)(getData()), getDataSize());
-  if (avpacketData.length() < 4)
+  this->update();
+  if (this->size < 4)
   {
     packetFormat = packetFormatUnknown;
     return packetFormat;
   }
+
+  auto packetData = ByteVector(this->data, this->data + this->size);
 
   // AVPacket data can be in one of two formats:
   // 1: The raw annexB format with start codes (0x00000001 or 0x000001)
@@ -3068,45 +3074,43 @@ packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
   // We will try to guess the format of the data from the data in this AVPacket.
   // This should always work unless a format is used which we did not encounter so far (which is not listed above)
   // Also I think this should be identical for all packets in a bitstream.
-  if (checkForRawNALFormat(avpacketData, false))
+  if (checkForRawNALFormat(packetData, false))
     packetFormat = packetFormatRawNAL;
-  else if (checkForMp4Format(avpacketData))
+  else if (checkForMp4Format(packetData))
     packetFormat = packetFormatMP4;
   // This might be an OBU (AV1) stream
-  else if (checkForObuFormat(avpacketData))
+  else if (checkForObuFormat(packetData))
     packetFormat = packetFormatOBU;
-  else if (checkForRawNALFormat(avpacketData, true))
+  else if (checkForRawNALFormat(packetData, true))
     packetFormat = packetFormatRawNAL;
   return packetFormat;
 }
 
-bool AVPacketWrapper::checkForRawNALFormat(QByteArray &data, bool threeByteStartCode)
+bool AVPacketWrapper::checkForRawNALFormat(ByteVector &data, bool threeByteStartCode)
 {
-  if (threeByteStartCode && data.length() > 3 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
+  if (threeByteStartCode && data.size() > 3 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)
     return true;
-  if (!threeByteStartCode && data.length() > 4 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 && data.at(3) == (char)1)
+  if (!threeByteStartCode && data.size() > 4 && data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)0 && data.at(3) == (char)1)
     return true;
   return false;
 }
 
-bool AVPacketWrapper::checkForMp4Format(QByteArray &data)
+bool AVPacketWrapper::checkForMp4Format(ByteVector &data)
 {
   // Check the ISO mp4 format: Parse the whole data and check if the size bytes per Unit are correct.
-  int posInData = 0;
-  while (posInData + 4 <= data.length())
+  size_t posInData = 0;
+  while (posInData + 4 <= data.size())
   {
-    QByteArray firstBytes = data.mid(posInData, 4);
-
-    int size = (unsigned char)firstBytes.at(3);
-    size += (unsigned char)firstBytes.at(2) << 8;
-    size += (unsigned char)firstBytes.at(1) << 16;
-    size += (unsigned char)firstBytes.at(0) << 24;
+    int size = (unsigned char)data.at(posInData + 3);
+    size += (unsigned char)data.at(posInData + 2) << 8;
+    size += (unsigned char)data.at(posInData + 1) << 16;
+    size += (unsigned char)data.at(posInData + 0) << 24;
     posInData += 4;
 
     if (size < 0)
       // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an error
       return false;
-    if (posInData + size > data.length())
+    if (posInData + size > data.size())
       // Not enough data in the input array to read NAL unit.
       return false;
     posInData += size;
@@ -3114,16 +3118,16 @@ bool AVPacketWrapper::checkForMp4Format(QByteArray &data)
   return true;
 }
 
-bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
+bool AVPacketWrapper::checkForObuFormat(ByteVector &data)
 {
   // TODO: We already have an implementation of this in the parser
   //       That should also be used here so we only have one place where we parse OBUs.
   try
   {
-    int posInData = 0;
-    while (posInData + 2 <= data.length())
+    size_t posInData = 0;
+    while (posInData + 2 <= data.size())
     {
-      SubByteReaderLogging reader(SubByteReaderLogging::convertToByteVector(data), nullptr, "", posInData);
+      SubByteReaderLogging reader(data, nullptr, "", posInData);
 
       QString bitsRead;
       reader.readFlag("obu_forbidden_bit", Options().withCheckEqualTo(0));
@@ -3148,7 +3152,7 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
       }
       else
       {
-        obu_size = (data.size() - posInData) - 1 - (obu_extension_flag ? 1 : 0);
+        obu_size = int(data.size() - posInData) - 1 - (obu_extension_flag ? 1 : 0);
       }
       posInData += obu_size + reader.nrBytesRead();
     }

@@ -161,7 +161,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
               this->curFramePOC, this->curFrameFileStartEndPos, this->curFrameIsRandomAccess))
       {
         if (parent != nullptr)
-          parent->addChild("Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list.");
+          parent->addChild("Error - POC " + std::to_string(this->curFramePOC) +
+                           "alread in the POC list.");
         return parseResult;
       }
       if (this->curFrameFileStartEndPos)
@@ -535,7 +536,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   return parseResult;
 }
 
-QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+QList<ByteVector> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
   if (iFrameNr >= this->frameList.size())
     return {};
@@ -573,14 +574,12 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
           filePos = nal->filePosStartEnd->first;
 
         // Get the bitstream of all active parameter sets
-        QList<QByteArray> paramSets;
+        QList<ByteVector> paramSets;
 
         for (auto const &entry : activeSPSNal)
-          paramSets.append(
-              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(entry.second->rawData);
         for (auto const &entry : activePPSNal)
-          paramSets.append(
-              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
+          paramSets.append(entry.second->rawData);
 
         return paramSets;
       }
@@ -599,10 +598,10 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
     }
   }
 
-  return QList<QByteArray>();
+  return {};
 }
 
-QByteArray AnnexBAVC::getExtradata()
+ByteVector AnnexBAVC::getExtradata()
 {
   // Convert the SPS and PPS that we found in the bitstream to the libavformat avcc format (see
   // avc.c)
@@ -674,7 +673,7 @@ QByteArray AnnexBAVC::getExtradata()
   e.push_back((unsigned char)(dataSizePPS & 0xff));
   e.insert(e.end(), ppsData.begin() + getStartCodeOffset(ppsData), ppsData.end());
 
-  return reader::SubByteReaderLogging::convertToQByteArray(e);
+  return e;
 }
 
 IntPair AnnexBAVC::getProfileLevel()

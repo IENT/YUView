@@ -34,6 +34,7 @@
 
 #include <QSize>
 #include <QString>
+#include <optional>
 
 namespace RGB_Internals
 {
@@ -51,7 +52,7 @@ public:
   bool operator==(const QString &a) const { return getName() == a; }
   bool operator!=(const QString &a) const { return getName() != a; }
   bool isValid() const;
-  int  nrChannels() const { return posA == -1 ? 3 : 4; }
+  std::optional<size_t>  nrChannels() const { return posA == -1 ? 3 : 4; }
   bool hasAlphaChannel() const { return posA != -1; }
   // Get a name representation of this item (this will be unique for the set parameters)
   QString getName() const;
@@ -59,7 +60,7 @@ public:
   QString getRGBFormatString() const;
   void setRGBFormatFromString(const QString &sFormat);
   // Get the number of bytes for a frame with this rgbPixelFormat and the given size
-  int64_t bytesPerFrame(const QSize &frameSize) const;
+  std::optional<size_t> bytesPerFrame(const QSize &frameSize) const;
   
   // The order of each component (E.g. for GBR this is posR=2,posG=0,posB=1)
   int posR {0};

@@ -60,50 +60,50 @@ public:
   playlistItemCompressedVideo(const QString &fileName, int displayComponent=0, YUView::inputFormat input = YUView::inputInvalid, YUView::decoderEngine decoder = YUView::decoderEngineInvalid);
 
   // Save the compressed file element to the given XML structure.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
   // Create a new playlistItemHEVCFile from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemCompressedVideo *newPlaylistItemCompressedVideo(const YUViewDomElement &root, const QString &playlistFilePath);
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual infoData getInfo() const Q_DECL_OVERRIDE;
-  virtual void infoListButtonPressed(int buttonID) Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const override;
+  virtual void infoListButtonPressed(int buttonID) override;
 
   // Draw the compressed item using the given painter and zoom factor.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
   // Return the source (YUV and statistics) values under the given pixel position.
-  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override;
 
-  virtual bool canBeUsedInProcessing() const Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInProcessing() const override { return true; }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { /* TODO */ return false; }
-  virtual void reloadItemSource()       Q_DECL_OVERRIDE;
-  virtual void updateSettings()         Q_DECL_OVERRIDE { /* TODO loadingDecoder->updateFileWatchSetting(); statSource.updateSettings(); */ }
+  virtual bool isSourceChanged()        override { /* TODO */ return false; }
+  virtual void reloadItemSource()       override;
+  virtual void updateSettings()         override { /* TODO loadingDecoder->updateFileWatchSetting(); statSource.updateSettings(); */ }
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE;
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
-  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) override;
   // Is an image currently being loaded?
-  virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
-  virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
+  virtual bool isLoading() const override { return isFrameLoading; }
+  virtual bool isLoadingDoubleBuffer() const override { return isFrameLoadingDoubleBuffer; }
 
   // Cache the frame with the given index.
   // For all compressed items, a mutex must be locked when caching a frame (only one frame can be cached at a time because we only have one decoder).
-  void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE;
+  void cacheFrame(int idx, bool testMode) override;
 
   // We only have one caching decoder so it is better if only one thread caches frames from this item.
   // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.
-  virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
+  virtual int cachingThreadLimit() override { return 1; }
 
   YUView::inputFormat getInputFormat() const { return inputFormatType; }
   
 protected:
-  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+  virtual void createPropertiesWidget() override;
 
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.

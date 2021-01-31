@@ -362,7 +362,7 @@ inline int getValueFromSource(const unsigned char * src, const int idx, const in
 }
 
 
-bool videoHandlerDifference::hierarchicalPositionYUV(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QByteArray &diffYUV, const YUV_Internals::yuvPixelFormat &diffYUVFormat) const
+bool videoHandlerDifference::hierarchicalPositionYUV(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const ByteVector &diffYUV, const YUV_Internals::yuvPixelFormat &diffYUVFormat) const
 {
   if (x >= frameSize.width() || y >= frameSize.height())
     // This block is entirely outside of the picture

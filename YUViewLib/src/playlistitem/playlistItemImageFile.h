@@ -46,42 +46,42 @@ public:
 
   // ------ Overload from playlistItem
 
-  virtual infoData getInfo() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const override;
 
   // Get the text size (using the current text, font/text size ...)
-  virtual QSize getSize() const Q_DECL_OVERRIDE { return frame.getFrameSize(); }
+  virtual QSize getSize() const override { return frame.getFrameSize(); }
 
   // Overload from playlistItem. Save the text item to playlist.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
   // Create a new playlistItemText from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemImageFile *newplaylistItemImageFile(const YUViewDomElement &root, const QString &playlistFilePath);
     
   // Return the RGB values under the given pixel position.
-  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override;
 
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawValues) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); Q_UNUSED(loadRawValues); return needToLoadImage ? LoadingNeeded : LoadingNotNeeded; }
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawValues) override { Q_UNUSED(frameIdx); Q_UNUSED(loadRawValues); return needToLoadImage ? LoadingNeeded : LoadingNotNeeded; }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // Get the frame handler
-  virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &frame; }
+  virtual frameHandler *getFrameHandler() override { return &frame; }
 
-  virtual bool canBeUsedInProcessing() const Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInProcessing() const override { return true; }
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }
-  virtual void reloadItemSource()       Q_DECL_OVERRIDE { needToLoadImage = false; }
-  virtual void updateSettings()         Q_DECL_OVERRIDE;
+  virtual bool isSourceChanged()        override { bool b = fileChanged; fileChanged = false; return b; }
+  virtual void reloadItemSource()       override { needToLoadImage = false; }
+  virtual void updateSettings()         override;
 
   // Load the frame. Emit signalItemChanged(true,false) when done. Always called from a thread.
-  virtual void loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals=true) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals=true) override;
 
   // Is the image currently being loaded?
-  virtual bool isLoading() const Q_DECL_OVERRIDE { return imageLoading; }
+  virtual bool isLoading() const override { return imageLoading; }
   
 private slots:
   // The image file that we loaded was changed.

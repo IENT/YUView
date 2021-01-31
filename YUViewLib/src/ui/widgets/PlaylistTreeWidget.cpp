@@ -58,7 +58,7 @@ class bufferStatusWidget : public QWidget
 {
 public:
   bufferStatusWidget(playlistItem *item, QWidget* parent) : QWidget(parent) { plItem = item; setMinimumWidth(50); }
-  virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE
+  virtual void paintEvent(QPaintEvent *event) override
   {
     Q_UNUSED(event);
 
@@ -112,7 +112,7 @@ public:
     // Draw the border
     painter.drawRect(0, 0, s.width()-1, s.height()-1);
   }
-  virtual QSize	minimumSizeHint() const Q_DECL_OVERRIDE { return QSize(20, 5); }
+  virtual QSize	minimumSizeHint() const override { return QSize(20, 5); }
 private:
   playlistItem *plItem;
 };

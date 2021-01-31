@@ -65,13 +65,13 @@ public:
                                  TreeItem *                parent             = nullptr) override;
 
   // TODO: Reading from raw mpeg2 streams not supported (yet? Is this even defined / possible?)
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override
+  QList<ByteVector> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override
   {
     (void)iFrameNr;
     (void)filePos;
     return {};
   }
-  QByteArray getExtradata() override { return QByteArray(); }
+  ByteVector getExtradata() override { return {}; }
   IntPair    getProfileLevel() override;
   Ratio      getSampleAspectRatio() override;
 

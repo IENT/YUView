@@ -201,7 +201,7 @@ public:
   int getHeight() { update(); return height; }
   AVColorSpace getColorspace() { update(); return colorspace; }
   AVRational getTimeBase() { update(); return time_base; }
-  QByteArray getExtradata() { update(); return extradata; }
+  ByteVector getExtradata() { update(); return ByteVector(this->extradata, this->extradata + this->extradata_size); }
 
 private:
   // Update all private values from the AVCodecContext
@@ -219,7 +219,8 @@ private:
   int compression_level;
   int flags;
   int flags2;
-  QByteArray extradata;
+  uint8_t *extradata;
+  int extradata_size;
   AVRational time_base;
   int ticks_per_frame;
   int delay;
@@ -317,7 +318,7 @@ public:
 
   void setAVMediaType(AVMediaType type);
   void setAVCodecID(AVCodecID id);
-  void setExtradata(QByteArray extradata);
+  void setExtradata(ByteVector &&extradata);
   void setSize(int width, int height);
   void setAVPixelFormat(AVPixelFormat f);
   void setProfileLevel(int profile, int level);
@@ -353,7 +354,7 @@ private:
   int video_delay;
 
   // When setting custom metadata, we keep a reference to it here.
-  QByteArray set_extradata;
+  ByteVector set_extradata;
 
   AVCodecParameters *param;
   FFmpegLibraryVersion libVer;
@@ -465,7 +466,7 @@ public:
   void allocatePaket(FFmpegVersionHandler &ff);
   void unrefPacket(FFmpegVersionHandler &ff);
   void freePacket(FFmpegVersionHandler &ff);
-  void setData(QByteArray &set_data);
+  void setData(ByteVector &&packetData);
   void setPTS(int64_t pts);
   void setDTS(int64_t dts);
   explicit operator bool() const { return this->pkt != nullptr; };
@@ -491,9 +492,9 @@ public:
 private:
   void update();
 
-  bool checkForRawNALFormat(QByteArray &data, bool threeByteStartCode=false);
-  bool checkForMp4Format(QByteArray &data);
-  bool checkForObuFormat(QByteArray &data);
+  bool checkForRawNALFormat(ByteVector &data, bool threeByteStartCode=false);
+  bool checkForMp4Format(ByteVector &data);
+  bool checkForObuFormat(ByteVector &data);
 
   // These are private. Use "update" to update them from the AVFormatContext
   AVBufferRef *buf;
@@ -510,6 +511,8 @@ private:
   int64_t convergence_duration;
 
   PacketType packetType;
+
+  ByteVector setPacketData;
 
   AVPacket *pkt {nullptr};
   FFmpegLibraryVersion libVer;

@@ -80,20 +80,20 @@ public:
   decoderHM(int signalID, bool cachingDecoder=false);
   ~decoderHM();
 
-  void resetDecoder() Q_DECL_OVERRIDE;
+  void resetDecoder() override;
 
   // Decoding / pushing data
-  bool decodeNextFrame() Q_DECL_OVERRIDE;
-  QByteArray getRawFrameData() Q_DECL_OVERRIDE;
-  bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  bool decodeNextFrame() override;
+  ByteVector getRawFrameData() override;
+  bool pushData(ByteVector &&data) override;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
-  QString getDecoderName() const Q_DECL_OVERRIDE;
-  QString getCodecName()         Q_DECL_OVERRIDE { return "hevc"; }
+  QString getDecoderName() const override;
+  QString getCodecName()         override { return "hevc"; }
 
-  int nrSignalsSupported() const Q_DECL_OVERRIDE { return nrSignals; }
+  int nrSignalsSupported() const override { return nrSignals; }
 
 private:
   // A private constructor that creates an uninitialized decoder library.
@@ -101,10 +101,10 @@ private:
   decoderHM() {};
 
   // Return the possible names of the HM library
-  QStringList getLibraryNames() Q_DECL_OVERRIDE;
+  QStringList getLibraryNames() override;
 
   // Try to resolve all the required function pointers from the library
-  void resolveLibraryFunctionPointers() Q_DECL_OVERRIDE;
+  void resolveLibraryFunctionPointers() override;
 
   // The function template for resolving the functions.
   // This can not go into the base class because then the template
@@ -133,15 +133,15 @@ private:
   YUV_Internals::Subsampling convertFromInternalSubsampling(libHMDec_ChromaFormat fmt);
 
   // Add the statistics supported by the HM decoder
-  void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
+  void fillStatisticList(statisticHandler &statSource) const override;
 
-  // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as necessary
-  // without invoking the copy operation from the hm image buffer to the QByteArray again.
+  // We buffer the current image as a ByteVector so you can call getYUVFrameData as often as necessary
+  // without invoking the copy operation from the hm image buffer to the ByteVector again.
 #if SSE_CONVERSION
   byteArrayAligned currentOutputBuffer;
   void copyImgToByteArray(libHMDec_picture *src, byteArrayAligned &dst);
 #else
-  QByteArray currentOutputBuffer;
-  void copyImgToByteArray(libHMDec_picture *src, QByteArray &dst);   // Copy the raw data from the de265_image source *src to the byte array
+  ByteVector currentOutputBuffer;
+  void copyImgToByteArray(libHMDec_picture *src, ByteVector &dst);   // Copy the raw data from the de265_image source *src to the byte array
 #endif  
 };

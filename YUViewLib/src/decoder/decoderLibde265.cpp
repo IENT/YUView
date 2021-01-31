@@ -314,17 +314,17 @@ bool decoderLibde265::decodeFrame()
   return false;
 }
 
-QByteArray decoderLibde265::getRawFrameData()
+ByteVector decoderLibde265::getRawFrameData()
 {
   if (curImage == nullptr)
-    return QByteArray();
+    return {};
   if (decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_LIBDE265("decoderLibde265::getRawFrameData: Wrong decoder state.");
-    return QByteArray();
+    return {};
   }
 
-  if (currentOutputBuffer.isEmpty())
+  if (currentOutputBuffer.empty())
   {
     // Put image data into buffer
     copyImgToByteArray(curImage, currentOutputBuffer);
@@ -338,7 +338,7 @@ QByteArray decoderLibde265::getRawFrameData()
   return currentOutputBuffer;
 }
 
-bool decoderLibde265::pushData(QByteArray &data) 
+bool decoderLibde265::pushData(ByteVector &&data) 
 {
   if (decoderState != DecoderState::NeedsMoreData)
   {
@@ -364,7 +364,7 @@ bool decoderLibde265::pushData(QByteArray &data)
         offset = 4;
     }
     // de265_push_NAL will return either DE265_OK or DE265_ERROR_OUT_OF_MEMORY
-    de265_error err = de265_push_NAL(decoder, data.data() + offset, data.size() - offset, 0, nullptr);
+    de265_error err = de265_push_NAL(decoder, data.data() + offset, int(data.size()) - offset, 0, nullptr);
     DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes%s%s", data.size(), err != DE265_OK ? " - err " : "", err != DE265_OK ? de265_get_error_text(err) : "");
     if (err != DE265_OK)
       return setErrorB("Error pushing data to decoder (de265_push_NAL): " + QString(de265_get_error_text(err)));
@@ -389,7 +389,7 @@ bool decoderLibde265::pushData(QByteArray &data)
 #if SSE_CONVERSION
 void decoderLibde265::copyImgToByteArray(const de265_image *src, byteArrayAligned &dst)
 #else
-void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst)
+void decoderLibde265::copyImgToByteArray(const de265_image *src, ByteVector &dst)
 #endif
 {
   // How many image planes are there?

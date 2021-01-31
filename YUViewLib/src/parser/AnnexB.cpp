@@ -184,8 +184,7 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
 
     try
     {
-      auto nalData = reader::SubByteReaderLogging::convertToByteVector(
-          file->getNextNALUnit(false, &nalStartEndPosFile));
+      auto nalData = file->getNextNALUnit(false, &nalStartEndPosFile);
       auto parsingResult = this->parseAndAddNALUnit(nalID, nalData, {}, nalStartEndPosFile, nullptr);
       if (!parsingResult.success)
       {

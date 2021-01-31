@@ -155,7 +155,7 @@ static inline void *ALLOC_ALIGNED(size_t alignment, size_t size) {
 
 #define ALLOC_ALIGNED_16(size)              ALLOC_ALIGNED(16, size)
 
-// A small class comparable to QByteArray but aligned to 16 byte addresses
+// A small byte array that is aligned to 16 byte addresses
 class byteArrayAligned
 {
 public:

@@ -47,39 +47,39 @@ public:
   playlistItemStatisticsFile(const QString &itemNameOrFileName);
   virtual ~playlistItemStatisticsFile();
 
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
 
-  virtual QSize getSize() const Q_DECL_OVERRIDE { return statSource.getFrameSize(); }
+  virtual QSize getSize() const override { return statSource.getFrameSize(); }
   
   // Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual infoData getInfo() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const override;
 
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
   // ------ Statistics ----
 
   // Do we need to load the statistics first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) Q_DECL_OVERRIDE { Q_UNUSED(loadRawdata); return statSource.needsLoading(frameIdx); }
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) override { Q_UNUSED(loadRawdata); return statSource.needsLoading(frameIdx); }
   // Load the statistics for the given frame. Emit signalItemChanged(true,false) when done. Always called from a thread.
-  virtual void loadFrame(int frameIdx, bool playback, bool loadRawdata, bool emitSignals=true) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playback, bool loadRawdata, bool emitSignals=true) override;
   // Are statistics currently being loaded?
-  virtual bool isLoading() const Q_DECL_OVERRIDE { return isStatisticsLoading; }
+  virtual bool isLoading() const override { return isStatisticsLoading; }
 
   // Override from playlistItem. Return the statistics values under the given pixel position.
-  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override { Q_UNUSED(frameIdx); return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
 
   // A statistics file source of course provides statistics
-  virtual statisticHandler *getStatisticsHandler() Q_DECL_OVERRIDE { return &statSource; }
+  virtual statisticHandler *getStatisticsHandler() override { return &statSource; }
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()  Q_DECL_OVERRIDE { return file.isFileChanged(); }
-  virtual void updateSettings()   Q_DECL_OVERRIDE { file.updateFileWatchSetting(); statSource.updateSettings(); }
+  virtual bool isSourceChanged()  override { return file.isFileChanged(); }
+  virtual void updateSettings()   override { file.updateFileWatchSetting(); statSource.updateSettings(); }
 
 protected:
 
   // Overload from playlistItem. Create a properties widget custom to the statistics item
   // and set propertiesWidget to point to it.
-  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+  virtual void createPropertiesWidget() override;
 
   // Get the tag/name which is used when saving the item to a playlist
   virtual QString getPlaylistTag() const = 0;
@@ -95,7 +95,7 @@ protected:
   bool cancelBackgroundParser;
   // A timer is used to frequently update the status of the background process (every second)
   QBasicTimer timer;
-  virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
+  virtual void timerEvent(QTimerEvent *event) override; // Overloaded from QObject. Called when the timer fires.
 
   // Set if the file is sorted by POC and the types are 'random' within this POC (true)
   // or if the file is sorted by typeID and the POC is 'random'
