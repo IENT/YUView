@@ -219,6 +219,18 @@ public:
   unsigned MinQtLog2SizeIntraC{};
   unsigned MinQtLog2SizeInterY{};
 
+  // Get the actual size of the image that will be returned. Internally the image might be bigger.
+  unsigned get_max_width_cropping() const
+  {
+    return (this->sps_pic_width_max_in_luma_samples - (this->SubWidthC * this->sps_conf_win_right_offset) -
+            this->SubWidthC * this->sps_conf_win_left_offset);
+  }
+  unsigned get_max_height_cropping() const
+  {
+    return (this->sps_pic_height_max_in_luma_samples - (this->SubHeightC * this->sps_conf_win_bottom_offset) -
+            this->SubHeightC * this->sps_conf_win_top_offset);
+  }
+
 private:
   void setDefaultSubpicValues(unsigned numSubPic);
 };

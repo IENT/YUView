@@ -86,6 +86,8 @@ protected:
   };
   ActiveParameterSets activeParameterSets;
 
+  std::vector<std::shared_ptr<vvc::NalUnitVVC>> nalUnitsForSeeking;
+
   struct ParsingState
   {
     std::shared_ptr<vvc::picture_header_structure> currentPictureHeaderStructure;

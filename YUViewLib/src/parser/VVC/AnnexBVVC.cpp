@@ -64,11 +64,63 @@ namespace parser
 
 using namespace vvc;
 
-double AnnexBVVC::getFramerate() const { return DEFAULT_FRAMERATE; }
+double AnnexBVVC::getFramerate() const
+{
+  // Parsing of VUI not implemented yet
+  return DEFAULT_FRAMERATE;
+}
 
-QSize AnnexBVVC::getSequenceSizeSamples() const { return QSize(352, 288); }
+QSize AnnexBVVC::getSequenceSizeSamples() const
+{
+  for (const auto &nal : this->nalUnitsForSeeking)
+  {
+    if (nal->header.nal_unit_type == vvc::NalType::SPS_NUT)
+    {
+      auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
+      return QSize(sps->get_max_width_cropping(), sps->get_max_height_cropping());
+    }
+  }
 
-yuvPixelFormat AnnexBVVC::getPixelFormat() const { return yuvPixelFormat(Subsampling::YUV_420, 8); }
+  return QSize(-1, -1);
+}
+
+yuvPixelFormat AnnexBVVC::getPixelFormat() const
+{
+  // Get the subsampling and bit-depth from the sps
+  int  bitDepthY   = -1;
+  int  bitDepthC   = -1;
+  auto subsampling = Subsampling::UNKNOWN;
+  for (const auto &nal : this->nalUnitsForSeeking)
+  {
+    if (nal->header.nal_unit_type == vvc::NalType::SPS_NUT)
+    {
+      auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
+      if (sps->sps_chroma_format_idc == 0)
+        subsampling = Subsampling::YUV_400;
+      else if (sps->sps_chroma_format_idc == 1)
+        subsampling = Subsampling::YUV_420;
+      else if (sps->sps_chroma_format_idc == 2)
+        subsampling = Subsampling::YUV_422;
+      else if (sps->sps_chroma_format_idc == 3)
+        subsampling = Subsampling::YUV_444;
+
+      bitDepthY = sps->sps_bitdepth_minus8 + 8;
+      bitDepthC = sps->sps_bitdepth_minus8 + 8;
+    }
+
+    if (bitDepthY != -1 && bitDepthC != -1 && subsampling != Subsampling::UNKNOWN)
+    {
+      if (bitDepthY != bitDepthC)
+      {
+        // Different luma and chroma bit depths currently not supported
+        return {};
+      }
+      return yuvPixelFormat(subsampling, bitDepthY);
+    }
+  }
+
+  return {};
+}
 
 QList<QByteArray> AnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
 {
@@ -79,9 +131,25 @@ QList<QByteArray> AnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
 
 QByteArray AnnexBVVC::getExtradata() { return {}; }
 
-IntPair AnnexBVVC::getProfileLevel() { return {0, 0}; }
+IntPair AnnexBVVC::getProfileLevel()
+{
+  for (const auto &nal : this->nalUnitsForSeeking)
+  {
+    if (nal->header.nal_unit_type == vvc::NalType::SPS_NUT)
+    {
+      auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
+      return {sps->profile_tier_level_instance.general_profile_idc,
+              sps->profile_tier_level_instance.general_level_idc};
+    }
+  }
+  return {};
+}
 
-Ratio AnnexBVVC::getSampleAspectRatio() { return Ratio({1, 1}); }
+Ratio AnnexBVVC::getSampleAspectRatio()
+{
+  // Parsing of VUI not implemented yet
+  return Ratio({1, 1});
+}
 
 AnnexB::ParseResult
 AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
@@ -135,6 +203,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       specificDescription += " ID " + std::to_string(newVPS->vps_video_parameter_set_id);
 
       nalVVC->rbsp = newVPS;
+      this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::SPS_NUT)
     {
@@ -147,6 +216,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       specificDescription += " ID " + std::to_string(newSPS->sps_seq_parameter_set_id);
 
       nalVVC->rbsp = newSPS;
+      this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::PPS_NUT)
     {
@@ -159,6 +229,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       specificDescription += " ID " + std::to_string(newPPS->pps_pic_parameter_set_id);
 
       nalVVC->rbsp = newPPS;
+      this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::PREFIX_APS_NUT ||
              nalVVC->header.nal_unit_type == NalType::SUFFIX_APS_NUT)
@@ -172,6 +243,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       specificDescription += " ID " + std::to_string(newAPS->aps_adaptation_parameter_set_id);
 
       nalVVC->rbsp = newAPS;
+      this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::PH_NUT)
     {
@@ -309,6 +381,14 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     parseResult.success = false;
   }
 
+  auto isKeyframe = (nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
+                     nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
+                     nalVVC->header.nal_unit_type == NalType::CRA_NUT);
+  if (isKeyframe)
+  {
+    this->nalUnitsForSeeking.push_back(nalVVC);
+  }
+
   // TODO: Add bitrate plotting
   (void)bitrateEntry;
 
@@ -359,9 +439,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     this->parsingState.curFrameFileStartEndPos->second = nalStartEndPosFile->second;
 
   this->parsingState.sizeCurrentAU += data.size();
-  this->parsingState.lastFrameIsKeyframe = (nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
-                                            nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
-                                            nalVVC->header.nal_unit_type == NalType::CRA_NUT);
+  this->parsingState.lastFrameIsKeyframe = isKeyframe;
 
   if (nalRoot)
   {
