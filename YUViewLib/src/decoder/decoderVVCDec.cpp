@@ -183,7 +183,10 @@ void decoderVVCDec::allocateNewDecoder()
   DEBUG_VVCDEC("decoderVVCDec::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
   // Create new decoder object
-  this->decoder = this->functions.libvvcdec_new_decoder();
+  this->decoder  = this->functions.libvvcdec_new_decoder();
+  this->flushing = false;
+  this->currentOutputBuffer.clear();
+  this->decoderState = DecoderState::NeedsMoreData;
 }
 
 bool decoderVVCDec::decodeNextFrame()
@@ -192,6 +195,27 @@ bool decoderVVCDec::decodeNextFrame()
   {
     DEBUG_VVCDEC("decoderVVCDec::decodeNextFrame: Wrong decoder state.");
     return false;
+  }
+
+  if (this->flushing)
+  {
+    // This is our way of moving the decoder to the next picture
+    bool checkOutputPictures = false;
+    auto err =
+        this->functions.libvvcdec_push_nal_unit(this->decoder, nullptr, 0, checkOutputPictures);
+    if (err == LIBVVCDEC_ERROR)
+    {
+      DEBUG_VVCDEC(
+          "decoderVVCDec::getNextFrameFromDecoder Error getting next flushed frame from decoder.");
+      return false;
+    }
+    if (!checkOutputPictures)
+    {
+      DEBUG_VVCDEC("decoderVVCDec::getNextFrameFromDecoder No more frames to flush. EOF.");
+      this->decoderState = DecoderState::EndOfBitstream;
+      return false;
+    }
+    this->currentOutputBuffer.clear();
   }
 
   return this->getNextFrameFromDecoder();
@@ -242,35 +266,44 @@ bool decoderVVCDec::pushData(QByteArray &data)
     DEBUG_VVCDEC("decoderVVCDec::pushData: Wrong decoder state.");
     return false;
   }
+  if (this->flushing)
+  {
+    DEBUG_VVCDEC("decoderVVCDec::pushData: Don't push more data when flushing.");
+    return false;
+  }
 
-  bool endOfFile = (data.length() == 0);
-  if (endOfFile)
-    DEBUG_VVCDEC("decoderFFmpeg::pushData: Received empty packet. Setting EOF.");
-
+  bool endOfFile           = (data.length() == 0);
+  int  err                 = 0;
   bool checkOutputPictures = false;
-  bool bNewPicture         = false;
-  auto err                 = this->functions.libvvcdec_push_nal_unit(this->decoder,
-                                                     (const unsigned char *)data.data(),
-                                                     data.length(),
-                                                     endOfFile,
-                                                     bNewPicture,
-                                                     checkOutputPictures);
+  if (endOfFile)
+  {
+    DEBUG_VVCDEC("decoderVVCDec::pushData: Received empty packet. Sending EOF.");
+    err = this->functions.libvvcdec_push_nal_unit(this->decoder, nullptr, 0, checkOutputPictures);
+  }
+  else
+  {
+    err = this->functions.libvvcdec_push_nal_unit(
+        this->decoder, (const unsigned char *)data.data(), data.length(), checkOutputPictures);
+    DEBUG_VVCDEC("decoderVVCDec::pushData pushed NAL length %d%s",
+                 data.length(),
+                 checkOutputPictures ? " checkOutputPictures" : "");
+  }
+
   if (err != LIBVVCDEC_OK)
   {
     DEBUG_VVCDEC("decoderVVCDec::pushData Error pushing data");
     return setErrorB(QString("Error pushing data to decoder (libvvcdec_push_nal_unit) length %1")
                          .arg(data.length()));
   }
-  DEBUG_VVCDEC("decoderVVCDec::pushData pushed NAL length %d%s%s",
-               data.length(),
-               bNewPicture ? " bNewPicture" : "",
-               checkOutputPictures ? " checkOutputPictures" : "");
 
   if (checkOutputPictures && this->getNextFrameFromDecoder())
   {
     this->decoderState = DecoderState::RetrieveFrames;
     this->currentOutputBuffer.clear();
   }
+
+  if (endOfFile)
+    this->flushing = true;
 
   return true;
 }
@@ -290,7 +323,11 @@ QByteArray decoderVVCDec::getRawFrameData()
     DEBUG_VVCDEC("decoderVVCDec::getRawFrameData copied frame to buffer");
   }
 
-  this->decoderState = DecoderState::NeedsMoreData;
+  if (!this->flushing)
+  {
+    DEBUG_VVCDEC("decoderVVCDec::getRawFrameData Not flushing. Swithch to state NeedsMoreData");
+    this->decoderState = DecoderState::NeedsMoreData;
+  }
 
   return currentOutputBuffer;
 }

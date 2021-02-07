@@ -48,7 +48,7 @@ struct DecoderFunctions
   libvvcdec_context *(*libvvcdec_new_decoder)(void){};
   libvvcdec_error (*libvvcdec_free_decoder)(libvvcdec_context *){};
   libvvcdec_error (*libvvcdec_push_nal_unit)(
-      libvvcdec_context *, const unsigned char *, int, bool, bool &, bool &){};
+      libvvcdec_context *, const unsigned char *, int, bool &){};
 
   // Picture retrieval
   uint64_t (*libvvcdec_get_picture_POC)(libvvcdec_context *){};
@@ -107,6 +107,7 @@ private:
 
   bool internalsSupported{false};
   int  nrSignals{0};
+  bool flushing {false};
 
   YUV_Internals::Subsampling convertFromInternalSubsampling(libvvcdec_ChromaFormat fmt);
 
