@@ -44,6 +44,7 @@
 #include "decoder/decoderHM.h"
 #include "decoder/decoderLibde265.h"
 #include "decoder/decoderVTM.h"
+#include "decoder/decoderVVCDec.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
@@ -139,6 +140,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
   ui.lineEditLibDav1d->setText(settings.value("libDav1dFile", "").toString());
   ui.lineEditLibVTMFile->setText(settings.value("libVTMFile", "").toString());
+  ui.lineEditLibVVCDecFile->setText(settings.value("libVVCDecFile", "").toString());
   ui.lineEditAVFormat->setText(settings.value("FFmpeg.avformat", "").toString());
   ui.lineEditAVCodec->setText(settings.value("FFmpeg.avcodec", "").toString());
   ui.lineEditAVUtil->setText(settings.value("FFmpeg.avutil", "").toString());
@@ -293,6 +295,18 @@ void SettingsDialog::on_pushButtonLibVTMSelectFile_clicked()
     ui.lineEditLibVTMFile->setText(newFiles[0]);
 }
 
+void SettingsDialog::on_pushButtonLibVVCDecSelectFile_clicked()
+{
+  QStringList newFiles = this->getLibraryPath(ui.lineEditLibVVCDecFile->text(), "Please select the libVVCDec decoder library file to use.");
+  if (newFiles.count() != 1)
+    return;
+  QString error;
+  if (!decoderVVCDec::checkLibraryFile(newFiles[0], error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libVVCDec decoder library. Error: " + error);
+  else
+    ui.lineEditLibVVCDecFile->setText(newFiles[0]);
+}
+
 void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 {
   QStringList newFiles = this->getLibraryPath(ui.lineEditAVFormat->text(), "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.", true);
@@ -404,6 +418,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
   settings.setValue("libDav1dFile", ui.lineEditLibDav1d->text());
   settings.setValue("libVTMFile", ui.lineEditLibVTMFile->text());
+  settings.setValue("libVVCDecFile", ui.lineEditLibVVCDecFile->text());
   // FFMpeg files
   settings.setValue("FFmpeg.avformat", ui.lineEditAVFormat->text());
   settings.setValue("FFmpeg.avcodec", ui.lineEditAVCodec->text());

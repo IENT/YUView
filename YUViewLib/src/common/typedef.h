@@ -73,6 +73,7 @@ namespace YUView
     decoderEngineLibde265,      // The libde265 decoder
     decoderEngineHM,            // The HM reference software decoder
     decoderEngineVTM,           // The VTM reference software decoder
+    decoderEngineVVCDec,        // The VVCDec decoder
     decoderEngineDav1d,         // The dav1d AV1 decoder
     decoderEngineFFMpeg,        // The FFMpeg decoder
     decoderEngineNum
