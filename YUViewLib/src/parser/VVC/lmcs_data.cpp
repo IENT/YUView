@@ -33,6 +33,7 @@
 #include "lmcs_data.h"
 
 #include "adaptation_parameter_set_rbsp.h"
+#include "parser/common/functions.h"
 
 namespace parser::vvc
 {
@@ -51,11 +52,11 @@ void lmcs_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbs
       reader.readUEV("lmcs_delta_cw_prec_minus1", Options().withCheckRange({0, 14}));
   for (unsigned i = lmcs_min_bin_idx; i <= this->LmcsMaxBinIdx; i++)
   {
-    auto nrBits = this->lmcs_delta_cw_prec_minus1;
-    this->lmcs_delta_abs_cw.push_back(reader.readBits("lmcs_delta_abs_cw", nrBits));
+    auto nrBits                = this->lmcs_delta_cw_prec_minus1;
+    this->lmcs_delta_abs_cw[i] = reader.readBits(formatArray("lmcs_delta_abs_cw", i), nrBits);
     if (this->lmcs_delta_abs_cw[i] > 0)
     {
-      this->lmcs_delta_sign_cw_flag.push_back(reader.readFlag("lmcs_delta_sign_cw_flag"));
+      this->lmcs_delta_sign_cw_flag[i] = reader.readFlag("lmcs_delta_sign_cw_flag");
     }
   }
   if (aps->aps_chroma_present_flag)

@@ -47,13 +47,13 @@ public:
   ~lmcs_data() = default;
   void parse(reader::SubByteReaderLogging &reader, adaptation_parameter_set_rbsp *aps);
 
-  unsigned     lmcs_min_bin_idx{};
-  unsigned     lmcs_delta_max_bin_idx{};
-  unsigned     lmcs_delta_cw_prec_minus1{};
-  vector<int>  lmcs_delta_abs_cw;
-  vector<bool> lmcs_delta_sign_cw_flag{};
-  unsigned     lmcs_delta_abs_crs{};
-  bool         lmcs_delta_sign_crs_flag{};
+  unsigned      lmcs_min_bin_idx{};
+  unsigned      lmcs_delta_max_bin_idx{};
+  unsigned      lmcs_delta_cw_prec_minus1{};
+  umap_1d<int>  lmcs_delta_abs_cw;
+  umap_1d<bool> lmcs_delta_sign_cw_flag;
+  unsigned      lmcs_delta_abs_crs{};
+  bool          lmcs_delta_sign_crs_flag{};
 
   unsigned LmcsMaxBinIdx{};
 };
