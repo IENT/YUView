@@ -396,8 +396,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   if (auDelimiterDetector.isStartOfNewAU(nalVVC, updatedParsingState.currentPictureHeaderStructure))
   {
     DEBUG_VVC("Start of new AU. Adding bitrate " << this->parsingState.sizeCurrentAU << " POC "
-                                                 << this->parsingState.lastFramePOC)
-        << " AU " << this->parsingState.counterAU;
+                                                 << this->parsingState.lastFramePOC << " AU "
+                                                 << this->parsingState.counterAU);
 
     BitratePlotModel::BitrateEntry entry;
     if (bitrateEntry)
