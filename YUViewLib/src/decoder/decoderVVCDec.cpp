@@ -40,7 +40,7 @@
 #include "common/typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERVVCDEC_DEBUG_OUTPUT 1
+#define DECODERVVCDEC_DEBUG_OUTPUT 0
 #if DECODERVVCDEC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERVVCDEC_DEBUG_OUTPUT == 1
@@ -108,7 +108,7 @@ decoderVVCDec::decoderVVCDec(int signalID, bool cachingDecoder)
 decoderVVCDec::~decoderVVCDec()
 {
   if (this->decoder != nullptr)
-    this->functions.libvvcdec_free_decoder(this->decoder);
+    this->lib.libvvcdec_free_decoder(this->decoder);
 }
 
 QStringList decoderVVCDec::getLibraryNames()
@@ -124,29 +124,29 @@ QStringList decoderVVCDec::getLibraryNames()
 void decoderVVCDec::resolveLibraryFunctionPointers()
 {
   // Get/check function pointers
-  if (!resolve(this->functions.libvvcdec_get_version, "libvvcdec_get_version"))
+  if (!resolve(this->lib.libvvcdec_get_version, "libvvcdec_get_version"))
     return;
-  if (!resolve(this->functions.libvvcdec_new_decoder, "libvvcdec_new_decoder"))
+  if (!resolve(this->lib.libvvcdec_new_decoder, "libvvcdec_new_decoder"))
     return;
-  if (!resolve(this->functions.libvvcdec_free_decoder, "libvvcdec_free_decoder"))
+  if (!resolve(this->lib.libvvcdec_free_decoder, "libvvcdec_free_decoder"))
     return;
-  if (!resolve(this->functions.libvvcdec_push_nal_unit, "libvvcdec_push_nal_unit"))
+  if (!resolve(this->lib.libvvcdec_push_nal_unit, "libvvcdec_push_nal_unit"))
     return;
 
-  if (!resolve(this->functions.libvvcdec_get_picture_POC, "libvvcdec_get_picture_POC"))
+  if (!resolve(this->lib.libvvcdec_get_picture_POC, "libvvcdec_get_picture_POC"))
     return;
-  if (!resolve(this->functions.libvvcdec_get_picture_width, "libvvcdec_get_picture_width"))
+  if (!resolve(this->lib.libvvcdec_get_picture_width, "libvvcdec_get_picture_width"))
     return;
-  if (!resolve(this->functions.libvvcdec_get_picture_height, "libvvcdec_get_picture_height"))
+  if (!resolve(this->lib.libvvcdec_get_picture_height, "libvvcdec_get_picture_height"))
     return;
-  if (!resolve(this->functions.libvvcdec_get_picture_stride, "libvvcdec_get_picture_stride"))
+  if (!resolve(this->lib.libvvcdec_get_picture_stride, "libvvcdec_get_picture_stride"))
     return;
-  if (!resolve(this->functions.libvvcdec_get_picture_plane, "libvvcdec_get_picture_plane"))
+  if (!resolve(this->lib.libvvcdec_get_picture_plane, "libvvcdec_get_picture_plane"))
     return;
-  if (!resolve(this->functions.libvvcdec_get_picture_chroma_format,
+  if (!resolve(this->lib.libvvcdec_get_picture_chroma_format,
                "libvvcdec_get_picture_chroma_format"))
     return;
-  if (!resolve(this->functions.libvvcdec_get_picture_bit_depth, "libvvcdec_get_picture_bit_depth"))
+  if (!resolve(this->lib.libvvcdec_get_picture_bit_depth, "libvvcdec_get_picture_bit_depth"))
     return;
 }
 
@@ -167,7 +167,7 @@ template <typename T> T decoderVVCDec::resolve(T &fun, const char *symbol, bool 
 void decoderVVCDec::resetDecoder()
 {
   if (this->decoder != nullptr)
-    if (this->functions.libvvcdec_free_decoder(decoder) != LIBVVCDEC_OK)
+    if (this->lib.libvvcdec_free_decoder(decoder) != LIBVVCDEC_OK)
       return setError("Reset: Freeing the decoder failded.");
 
   this->decoder = nullptr;
@@ -183,7 +183,7 @@ void decoderVVCDec::allocateNewDecoder()
   DEBUG_VVCDEC("decoderVVCDec::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
   // Create new decoder object
-  this->decoder  = this->functions.libvvcdec_new_decoder();
+  this->decoder  = this->lib.libvvcdec_new_decoder();
   this->flushing = false;
   this->currentOutputBuffer.clear();
   this->decoderState = DecoderState::NeedsMoreData;
@@ -197,26 +197,25 @@ bool decoderVVCDec::decodeNextFrame()
     return false;
   }
 
-  if (this->flushing)
+  DEBUG_VVCDEC("decoderVVCDec::decodeNextFrame");
+
+  // This is our way of moving the decoder to the next picture
+  bool checkOutputPictures = false;
+  auto err =
+      this->lib.libvvcdec_push_nal_unit(this->decoder, nullptr, 0, checkOutputPictures);
+  if (err == LIBVVCDEC_ERROR)
   {
-    // This is our way of moving the decoder to the next picture
-    bool checkOutputPictures = false;
-    auto err =
-        this->functions.libvvcdec_push_nal_unit(this->decoder, nullptr, 0, checkOutputPictures);
-    if (err == LIBVVCDEC_ERROR)
-    {
-      DEBUG_VVCDEC(
-          "decoderVVCDec::getNextFrameFromDecoder Error getting next flushed frame from decoder.");
-      return false;
-    }
-    if (!checkOutputPictures)
-    {
-      DEBUG_VVCDEC("decoderVVCDec::getNextFrameFromDecoder No more frames to flush. EOF.");
-      this->decoderState = DecoderState::EndOfBitstream;
-      return false;
-    }
-    this->currentOutputBuffer.clear();
+    DEBUG_VVCDEC(
+        "decoderVVCDec::decodeNextFrame Error getting next flushed frame from decoder.");
+    return false;
   }
+  if (!checkOutputPictures)
+  {
+    DEBUG_VVCDEC("decoderVVCDec::decodeNextFrame No more frames to flush. EOF.");
+    this->decoderState = DecoderState::EndOfBitstream;
+    return false;
+  }
+  this->currentOutputBuffer.clear();
 
   return this->getNextFrameFromDecoder();
 }
@@ -226,15 +225,15 @@ bool decoderVVCDec::getNextFrameFromDecoder()
   DEBUG_VVCDEC("decoderVVCDec::getNextFrameFromDecoder");
 
   // Check the validity of the picture
-  auto picSize = QSize(this->functions.libvvcdec_get_picture_width(this->decoder, LIBVVCDEC_LUMA),
-                       this->functions.libvvcdec_get_picture_height(this->decoder, LIBVVCDEC_LUMA));
+  auto picSize = QSize(this->lib.libvvcdec_get_picture_width(this->decoder, LIBVVCDEC_LUMA),
+                       this->lib.libvvcdec_get_picture_height(this->decoder, LIBVVCDEC_LUMA));
   if (picSize.width() == 0 || picSize.height() == 0)
     DEBUG_VVCDEC("decoderVVCDec::getNextFrameFromDecoder got invalid size");
   auto subsampling = convertFromInternalSubsampling(
-      this->functions.libvvcdec_get_picture_chroma_format(this->decoder));
+      this->lib.libvvcdec_get_picture_chroma_format(this->decoder));
   if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
     DEBUG_VVCDEC("decoderVVCDec::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth = this->functions.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_LUMA);
+  auto bitDepth = this->lib.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_VVCDEC("decoderVVCDec::getNextFrameFromDecoder got invalid bit depth");
 
@@ -278,11 +277,11 @@ bool decoderVVCDec::pushData(QByteArray &data)
   if (endOfFile)
   {
     DEBUG_VVCDEC("decoderVVCDec::pushData: Received empty packet. Sending EOF.");
-    err = this->functions.libvvcdec_push_nal_unit(this->decoder, nullptr, 0, checkOutputPictures);
+    err = this->lib.libvvcdec_push_nal_unit(this->decoder, nullptr, 0, checkOutputPictures);
   }
   else
   {
-    err = this->functions.libvvcdec_push_nal_unit(
+    err = this->lib.libvvcdec_push_nal_unit(
         this->decoder, (const unsigned char *)data.data(), data.length(), checkOutputPictures);
     DEBUG_VVCDEC("decoderVVCDec::pushData pushed NAL length %d%s",
                  data.length(),
@@ -334,7 +333,7 @@ QByteArray decoderVVCDec::getRawFrameData()
 
 void decoderVVCDec::copyImgToByteArray(QByteArray &dst)
 {
-  auto fmt = this->functions.libvvcdec_get_picture_chroma_format(this->decoder);
+  auto fmt = this->lib.libvvcdec_get_picture_chroma_format(this->decoder);
   if (fmt == LIBVVCDEC_CHROMA_UNKNOWN)
   {
     DEBUG_VVCDEC("decoderVVCDec::copyImgToByteArray picture format is unknown");
@@ -343,13 +342,13 @@ void decoderVVCDec::copyImgToByteArray(QByteArray &dst)
   auto nrPlanes = (fmt == LIBVVCDEC_CHROMA_400) ? 1u : 3u;
 
   bool outputTwoByte =
-      (this->functions.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_LUMA) > 8);
+      (this->lib.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_LUMA) > 8);
   if (nrPlanes > 1)
   {
     auto bitDepthU =
-        this->functions.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_CHROMA_U);
+        this->lib.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_CHROMA_U);
     auto bitDepthV =
-        this->functions.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_CHROMA_V);
+        this->lib.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_CHROMA_V);
     if ((outputTwoByte != bitDepthU > 8) || (outputTwoByte != bitDepthV > 8))
     {
       DEBUG_VVCDEC("decoderVVCDec::copyImgToByteArray different bit depth in YUV components. This "
@@ -360,14 +359,14 @@ void decoderVVCDec::copyImgToByteArray(QByteArray &dst)
 
   // How many samples are in each component?
   const uint32_t width[2] = {
-      this->functions.libvvcdec_get_picture_width(this->decoder, LIBVVCDEC_LUMA),
-      this->functions.libvvcdec_get_picture_width(this->decoder, LIBVVCDEC_CHROMA_U)};
+      this->lib.libvvcdec_get_picture_width(this->decoder, LIBVVCDEC_LUMA),
+      this->lib.libvvcdec_get_picture_width(this->decoder, LIBVVCDEC_CHROMA_U)};
   const uint32_t height[2] = {
-      this->functions.libvvcdec_get_picture_height(this->decoder, LIBVVCDEC_LUMA),
-      this->functions.libvvcdec_get_picture_height(this->decoder, LIBVVCDEC_CHROMA_U)};
+      this->lib.libvvcdec_get_picture_height(this->decoder, LIBVVCDEC_LUMA),
+      this->lib.libvvcdec_get_picture_height(this->decoder, LIBVVCDEC_CHROMA_U)};
 
-  if (this->functions.libvvcdec_get_picture_width(this->decoder, LIBVVCDEC_CHROMA_V) != width[1] ||
-      this->functions.libvvcdec_get_picture_height(this->decoder, LIBVVCDEC_CHROMA_V) != height[1])
+  if (this->lib.libvvcdec_get_picture_width(this->decoder, LIBVVCDEC_CHROMA_V) != width[1] ||
+      this->lib.libvvcdec_get_picture_height(this->decoder, LIBVVCDEC_CHROMA_V) != height[1])
   {
     DEBUG_VVCDEC("decoderVVCDec::copyImgToByteArray chroma components have different size");
     return;
@@ -388,8 +387,8 @@ void decoderVVCDec::copyImgToByteArray(QByteArray &dst)
     auto component = colorComponentMap[c];
     auto cIdx      = (c == 0 ? 0 : 1);
 
-    auto plane      = this->functions.libvvcdec_get_picture_plane(this->decoder, component);
-    auto stride     = this->functions.libvvcdec_get_picture_stride(this->decoder, component);
+    auto plane      = this->lib.libvvcdec_get_picture_plane(this->decoder, component);
+    auto stride     = this->lib.libvvcdec_get_picture_stride(this->decoder, component);
     auto widthBytes = width[cIdx] * (outputTwoByte ? 2 : 1);
 
     if (plane == nullptr)
@@ -415,7 +414,7 @@ void decoderVVCDec::copyImgToByteArray(QByteArray &dst)
 
 QString decoderVVCDec::getDecoderName() const
 {
-  return (decoderState == DecoderState::Error) ? "VVCDec" : this->functions.libvvcdec_get_version();
+  return (decoderState == DecoderState::Error) ? "VVCDec" : this->lib.libvvcdec_get_version();
 }
 
 bool decoderVVCDec::checkLibraryFile(QString libFilePath, QString &error)
