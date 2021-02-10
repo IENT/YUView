@@ -33,6 +33,7 @@
 #include "alf_data.h"
 
 #include "adaptation_parameter_set_rbsp.h"
+#include "parser/common/functions.h"
 
 #include <cmath>
 
@@ -64,7 +65,7 @@ void alf_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp
       {
         auto nrBits = std::ceil(std::log2(alf_luma_num_filters_signalled_minus1 + 1));
         this->alf_luma_coeff_delta_idx = reader.readBits(
-            "alf_luma_coeff_delta_idx",
+            formatArray("alf_luma_coeff_delta_idx", filtIdx),
             nrBits,
             Options().withCheckRange({0, this->alf_luma_num_filters_signalled_minus1}));
       }
@@ -75,10 +76,12 @@ void alf_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp
       this->alf_luma_coeff_sign.push_back({});
       for (unsigned j = 0; j < 12; j++)
       {
-        this->alf_luma_coeff_abs[sfIdx].push_back(reader.readUEV("alf_luma_coeff_abs"));
+        this->alf_luma_coeff_abs[sfIdx].push_back(
+            reader.readUEV(formatArray("alf_luma_coeff_abs", sfIdx, j)));
         if (this->alf_luma_coeff_abs[sfIdx][j])
         {
-          this->alf_luma_coeff_sign[sfIdx].push_back(reader.readFlag("alf_luma_coeff_sign"));
+          this->alf_luma_coeff_sign[sfIdx].push_back(
+              reader.readFlag(formatArray("alf_luma_coeff_sign", sfIdx, j)));
         }
         else
         {
@@ -93,7 +96,8 @@ void alf_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp
         this->alf_luma_clip_idx.push_back({});
         for (unsigned j = 0; j < 12; j++)
         {
-          this->alf_luma_clip_idx[sfIdx].push_back(reader.readBits("alf_luma_clip_idx", 2));
+          this->alf_luma_clip_idx[sfIdx].push_back(
+              reader.readBits(formatArray("alf_luma_clip_idx", sfIdx, j), 2));
         }
       }
     }
@@ -109,10 +113,12 @@ void alf_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp
       this->alf_chroma_clip_idx.push_back({});
       for (unsigned j = 0; j < 6; j++)
       {
-        this->alf_chroma_coeff_abs[altIdx].push_back(reader.readUEV("alf_chroma_coeff_abs"));
+        this->alf_chroma_coeff_abs[altIdx].push_back(
+            reader.readUEV(formatArray("alf_chroma_coeff_abs", altIdx, j)));
         if (this->alf_chroma_coeff_abs[altIdx][j] > 0)
         {
-          this->alf_chroma_coeff_sign[altIdx].push_back(reader.readFlag("alf_chroma_coeff_sign"));
+          this->alf_chroma_coeff_sign[altIdx].push_back(
+              reader.readFlag(formatArray("alf_chroma_coeff_sign", altIdx, j)));
         }
         else
         {
@@ -123,7 +129,8 @@ void alf_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp
       {
         for (unsigned j = 0; j < 6; j++)
         {
-          this->alf_chroma_clip_idx[altIdx].push_back(reader.readBits("alf_chroma_clip_idx", 2));
+          this->alf_chroma_clip_idx[altIdx].push_back(
+              reader.readBits(formatArray("alf_chroma_clip_idx", altIdx, j), 2));
         }
       }
     }
@@ -139,10 +146,11 @@ void alf_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp
       for (unsigned j = 0; j < 7; j++)
       {
         this->alf_cc_cb_mapped_coeff_abs[k].push_back(
-            reader.readBits("alf_cc_cb_mapped_coeff_abs", 3));
+            reader.readBits(formatArray("alf_cc_cb_mapped_coeff_abs", k, j), 3));
         if (this->alf_cc_cb_mapped_coeff_abs[k][j])
         {
-          this->alf_cc_cb_coeff_sign[k].push_back(reader.readFlag("alf_cc_cb_coeff_sign"));
+          this->alf_cc_cb_coeff_sign[k].push_back(
+              reader.readFlag(formatArray("alf_cc_cb_coeff_sign", k, j)));
         }
         else
         {
@@ -158,10 +166,20 @@ void alf_data::parse(SubByteReaderLogging &reader, adaptation_parameter_set_rbsp
     for (unsigned k = 0; k < alf_cc_cr_filters_signalled_minus1 + 1; k++)
     {
       this->alf_cc_cr_mapped_coeff_abs.push_back({});
+      this->alf_cc_cr_coeff_sign.push_back({});
       for (unsigned j = 0; j < 7; j++)
       {
         this->alf_cc_cr_mapped_coeff_abs[k].push_back(
-            reader.readBits("alf_cc_cr_mapped_coeff_abs", 3));
+            reader.readBits(formatArray("alf_cc_cr_mapped_coeff_abs", k, j), 3));
+        if (this->alf_cc_cr_mapped_coeff_abs[k][j])
+        {
+          this->alf_cc_cr_coeff_sign[k].push_back(
+              reader.readFlag(formatArray("alf_cc_cr_coeff_sign", k, j)));
+        }
+        else
+        {
+          this->alf_cc_cr_coeff_sign[k].push_back(0);
+        }
       }
     }
   }

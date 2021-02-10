@@ -359,13 +359,35 @@ void seq_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
   }
   this->sps_idr_rpl_present_flag   = reader.readFlag("sps_idr_rpl_present_flag");
   this->sps_rpl1_same_as_rpl0_flag = reader.readFlag("sps_rpl1_same_as_rpl0_flag");
-  for (unsigned i = 0; i < (this->sps_rpl1_same_as_rpl0_flag ? 1u : 2u); i++)
   {
-    auto refPicSubLevel = SubByteReaderLoggingSubLevel(reader, "Ref Pic List " + std::to_string(i));
-    this->sps_num_ref_pic_lists.push_back(reader.readUEV("sps_num_ref_pic_lists"));
-    for (unsigned j = 0; j < this->sps_num_ref_pic_lists[i]; j++)
+    auto refPicSubLevel = SubByteReaderLoggingSubLevel(reader, "Ref Pic List 0");
+    this->sps_num_ref_pic_lists[0] = reader.readUEV("sps_num_ref_pic_lists");
+    for (unsigned j = 0; j < this->sps_num_ref_pic_lists[0]; j++)
     {
-      this->ref_pic_list_struct_instance.parse(reader, i, j, shared_from_this());
+      ref_pic_list_struct rpl;
+      rpl.parse(reader, 0, j, shared_from_this());
+      this->ref_pic_list_structs[0].push_back(rpl);
+    }
+  }
+  {
+    auto refPicSubLevel = SubByteReaderLoggingSubLevel(reader, "Ref Pic List 1");
+    if (this->sps_rpl1_same_as_rpl0_flag)
+    {
+      this->sps_num_ref_pic_lists[1] = this->sps_num_ref_pic_lists[0];
+      for (unsigned j = 0; j < this->sps_num_ref_pic_lists[1]; j++)
+      {
+        this->ref_pic_list_structs[1].push_back(this->ref_pic_list_structs[0][j]);
+      }
+    }
+    else
+    {
+      this->sps_num_ref_pic_lists[1] = reader.readUEV("sps_num_ref_pic_lists");
+      for (unsigned j = 0; j < this->sps_num_ref_pic_lists[1]; j++)
+      {
+        ref_pic_list_struct rpl;
+        rpl.parse(reader, 1, j, shared_from_this());
+        this->ref_pic_list_structs[1].push_back(rpl);
+      }
     }
   }
   this->sps_ref_wraparound_enabled_flag = reader.readFlag("sps_ref_wraparound_enabled_flag");

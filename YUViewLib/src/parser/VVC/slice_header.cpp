@@ -32,6 +32,7 @@
 
 #include "slice_header.h"
 
+#include "parser/common/functions.h"
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 
@@ -51,7 +52,7 @@ std::string to_string(SliceType sliceType)
 
 using namespace parser::reader;
 
-void slice_header::parse(SubByteReaderLogging &                         reader,
+void slice_header::parse(SubByteReaderLogging &                    reader,
                          NalType                                   nal_unit_type,
                          VPSMap &                                  vpsMap,
                          SPSMap &                                  spsMap,
@@ -66,8 +67,7 @@ void slice_header::parse(SubByteReaderLogging &                         reader,
   if (this->sh_picture_header_in_slice_header_flag)
   {
     this->picture_header_structure_instance = std::make_shared<picture_header_structure>();
-    this->picture_header_structure_instance->parse(
-        reader, vpsMap, spsMap, ppsMap, sliceLayer);
+    this->picture_header_structure_instance->parse(reader, vpsMap, spsMap, ppsMap, sliceLayer);
     picHeader = this->picture_header_structure_instance;
   }
 
@@ -117,7 +117,7 @@ void slice_header::parse(SubByteReaderLogging &                         reader,
   }
   for (unsigned i = 0; i < sps->NumExtraShBits; i++)
   {
-    this->sh_extra_bit.push_back(reader.readFlag("sh_extra_bit"));
+    this->sh_extra_bit.push_back(reader.readFlag(formatArray("sh_extra_bit", i)));
   }
   if (!pps->pps_rect_slice_flag && pps->NumTilesInPic - sh_slice_address > 1)
   {
@@ -155,7 +155,8 @@ void slice_header::parse(SubByteReaderLogging &                         reader,
       this->sh_num_alf_aps_ids_luma = reader.readBits("sh_num_alf_aps_ids_luma", 3);
       for (unsigned i = 0; i < sh_num_alf_aps_ids_luma; i++)
       {
-        this->sh_alf_aps_id_luma.push_back(reader.readBits("sh_alf_aps_id_luma", 3));
+        this->sh_alf_aps_id_luma.push_back(
+            reader.readBits(formatArray("sh_alf_aps_id_luma", i), 3));
       }
       if (sps->sps_chroma_format_idc != 0)
       {
@@ -201,11 +202,9 @@ void slice_header::parse(SubByteReaderLogging &                         reader,
     this->ref_pic_lists_instance->parse(reader, sps, pps);
   }
   if ((this->sh_slice_type != SliceType::I &&
-       this->ref_pic_lists_instance->ref_pic_list_struct_instance
-               .num_ref_entries[0][this->ref_pic_lists_instance->RplsIdx[0]] > 1) ||
+       this->ref_pic_lists_instance->getActiveRefPixList(sps, 0).num_ref_entries > 1) ||
       (this->sh_slice_type == SliceType::B &&
-       this->ref_pic_lists_instance->ref_pic_list_struct_instance
-               .num_ref_entries[1][this->ref_pic_lists_instance->RplsIdx[1]] > 1))
+       this->ref_pic_lists_instance->getActiveRefPixList(sps, 1).num_ref_entries > 1))
   {
     this->sh_num_ref_idx_active_override_flag =
         reader.readFlag("sh_num_ref_idx_active_override_flag");
@@ -213,10 +212,9 @@ void slice_header::parse(SubByteReaderLogging &                         reader,
     {
       for (unsigned i = 0; i < (this->sh_slice_type == SliceType::B ? 2u : 1u); i++)
       {
-        if (this->ref_pic_lists_instance->ref_pic_list_struct_instance
-                .num_ref_entries[i][this->ref_pic_lists_instance->RplsIdx[i]] > 1)
+        if (this->ref_pic_lists_instance->getActiveRefPixList(sps, i).num_ref_entries > 1)
         {
-          this->sh_num_ref_idx_active_minus1[i] = reader.readUEV("sh_num_ref_idx_active_minus1");
+          this->sh_num_ref_idx_active_minus1[i] = reader.readUEV(formatArray("sh_num_ref_idx_active_minus1", i));
         }
       }
     }
@@ -232,13 +230,12 @@ void slice_header::parse(SubByteReaderLogging &                         reader,
         this->NumRefIdxActive[i] = this->sh_num_ref_idx_active_minus1[i] + 1;
       else
       {
-        if (this->ref_pic_lists_instance->ref_pic_list_struct_instance
-                .num_ref_entries[i][this->ref_pic_lists_instance->RplsIdx[i]] >=
+        if (this->ref_pic_lists_instance->getActiveRefPixList(sps, i).num_ref_entries >=
             pps->pps_num_ref_idx_default_active_minus1[i] + 1)
           this->NumRefIdxActive[i] = pps->pps_num_ref_idx_default_active_minus1[i] + 1;
         else
-          this->NumRefIdxActive[i] = this->ref_pic_lists_instance->ref_pic_list_struct_instance
-                                         .num_ref_entries[i][ref_pic_lists_instance->RplsIdx[i]];
+          this->NumRefIdxActive[i] =
+              this->ref_pic_lists_instance->getActiveRefPixList(sps, i).num_ref_entries;
       }
     }
     else // this->sh_slice_type == I || (this->sh_slice_type == P && i == 1)
@@ -343,7 +340,7 @@ void slice_header::parse(SubByteReaderLogging &                         reader,
     for (unsigned i = 0; i < this->sh_slice_header_extension_length; i++)
     {
       this->sh_slice_header_extension_data_byte.push_back(
-          reader.readBits("sh_slice_header_extension_data_byte", 8));
+          reader.readBits(formatArray("sh_slice_header_extension_data_byte", i), 8));
     }
   }
 

@@ -32,6 +32,7 @@
 
 #include "ref_pic_lists.h"
 
+#include "parser/common/functions.h"
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 
@@ -42,7 +43,7 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void ref_pic_lists::parse(SubByteReaderLogging &                       reader,
+void ref_pic_lists::parse(SubByteReaderLogging &                  reader,
                           std::shared_ptr<seq_parameter_set_rbsp> sps,
                           std::shared_ptr<pic_parameter_set_rbsp> pps)
 {
@@ -53,7 +54,19 @@ void ref_pic_lists::parse(SubByteReaderLogging &                       reader,
     this->delta_poc_msb_cycle_present_flag.push_back({});
     if (sps->sps_num_ref_pic_lists[i] > 0 && (i == 0 || (i == 1 && pps->pps_rpl1_idx_present_flag)))
     {
-      this->rpl_sps_flag[i] = reader.readFlag("rpl_sps_flag");
+      this->rpl_sps_flag[i] = reader.readFlag(formatArray("rpl_sps_flag", i));
+    }
+    else
+    {
+      // 7.40.10 If rpl_sps_flag is not present
+      if (sps->sps_num_ref_pic_lists[i] == 0)
+      {
+        this->rpl_sps_flag[i] = 0;
+      }
+      else if (!pps->pps_rpl1_idx_present_flag && i == 1)
+      {
+        this->rpl_sps_flag[1] = rpl_sps_flag[0];
+      }
     }
     if (this->rpl_sps_flag[i])
     {
@@ -61,29 +74,47 @@ void ref_pic_lists::parse(SubByteReaderLogging &                       reader,
           (i == 0 || (i == 1 && pps->pps_rpl1_idx_present_flag)))
       {
         auto nrBits      = std::ceil(std::log2(sps->sps_num_ref_pic_lists[i]));
-        this->rpl_idx[i] = reader.readBits("rpl_idx", nrBits);
+        this->rpl_idx[i] = reader.readBits(formatArray("rpl_idx", i), nrBits);
+      }
+      else if (i == 1 && !pps->pps_rpl1_idx_present_flag)
+      {
+        this->rpl_idx[i] = this->rpl_idx[0];
       }
     }
     else
     {
-      this->ref_pic_list_struct_instance.parse(reader, i, sps->sps_num_ref_pic_lists[i], sps);
+      this->ref_pic_list_structs[i].parse(reader, i, sps->sps_num_ref_pic_lists[i], sps);
     }
+
     this->RplsIdx[i] = this->rpl_sps_flag[i] ? this->rpl_idx[i] : sps->sps_num_ref_pic_lists[i];
-    for (unsigned j = 0; j < this->ref_pic_list_struct_instance.NumLtrpEntries[i][this->RplsIdx[i]]; j++)
+    reader.logCalculatedValue(formatArray("RplsIdx", i), this->RplsIdx[i]);
+
+    auto rpl = this->getActiveRefPixList(sps, i);
+
+    for (unsigned j = 0; j < rpl.NumLtrpEntries; j++)
     {
-      if (this->ref_pic_list_struct_instance.ltrp_in_header_flag[i][this->RplsIdx[i]])
+      if (rpl.ltrp_in_header_flag)
       {
         auto nrBits      = sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
-        this->poc_lsb_lt = reader.readBits("poc_lsb_lt", nrBits);
+        this->poc_lsb_lt = reader.readBits(formatArray("poc_lsb_lt", i), nrBits);
       }
       this->delta_poc_msb_cycle_present_flag[i].push_back(
-          reader.readFlag("delta_poc_msb_cycle_present_flag"));
+          reader.readFlag(formatArray("delta_poc_msb_cycle_present_flag", i)));
       if (this->delta_poc_msb_cycle_present_flag[i][j])
       {
-        this->delta_poc_msb_cycle_lt[i][j] = reader.readUEV("delta_poc_msb_cycle_lt");
+        this->delta_poc_msb_cycle_lt[i][j] =
+            reader.readUEV(formatArray("delta_poc_msb_cycle_lt", i, j));
       }
     }
   }
+}
+
+ref_pic_list_struct ref_pic_lists::getActiveRefPixList(std::shared_ptr<seq_parameter_set_rbsp> sps,
+                                                       unsigned listIndex) const
+{
+  return (this->rpl_sps_flag.at(listIndex)
+              ? sps->ref_pic_list_structs[listIndex][this->rpl_idx.at(listIndex)]
+              : this->ref_pic_list_structs[listIndex]);
 }
 
 } // namespace parser::vvc

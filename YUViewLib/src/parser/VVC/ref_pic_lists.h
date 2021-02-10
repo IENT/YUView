@@ -47,13 +47,15 @@ class ref_pic_lists : public NalRBSP
 public:
   ref_pic_lists()  = default;
   ~ref_pic_lists() = default;
-  void parse(reader::SubByteReaderLogging &               reader,
+  void parse(reader::SubByteReaderLogging &          reader,
              std::shared_ptr<seq_parameter_set_rbsp> sps,
              std::shared_ptr<pic_parameter_set_rbsp> pps);
 
+  ref_pic_list_struct getActiveRefPixList(std::shared_ptr<seq_parameter_set_rbsp> sps, unsigned listIndex) const;
+
   umap_1d<bool>       rpl_sps_flag{};
   umap_1d<int>        rpl_idx{};
-  ref_pic_list_struct ref_pic_list_struct_instance;
+  ref_pic_list_struct ref_pic_list_structs[2];
   int                 poc_lsb_lt{};
   vector2d<bool>      delta_poc_msb_cycle_present_flag{};
   umap_2d<unsigned>   delta_poc_msb_cycle_lt{};
