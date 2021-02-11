@@ -40,15 +40,20 @@
 #include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"
 
-
 struct LibraryFunctions
 {
   // General functions
   const char *(*libvvcdec_get_version)(void){};
   libvvcdec_context *(*libvvcdec_new_decoder)(void){};
+  libvvcdec_error (*libvvcdec_set_logging_callback)(libvvcdec_context *,
+                                                    libvvcdec_logging_callback,
+                                                    void *             userData,
+                                                    libvvcdec_loglevel loglevel){};
   libvvcdec_error (*libvvcdec_free_decoder)(libvvcdec_context *){};
-  libvvcdec_error (*libvvcdec_push_nal_unit)(
-      libvvcdec_context *, const unsigned char *, int, bool &){};
+  libvvcdec_error (*libvvcdec_push_nal_unit)(libvvcdec_context *,
+                                             const unsigned char *,
+                                             int,
+                                             bool &){};
 
   // Picture retrieval
   uint64_t (*libvvcdec_get_picture_POC)(libvvcdec_context *){};
@@ -103,18 +108,20 @@ private:
   libvvcdec_context *decoder{nullptr};
 
   // Try to get the next picture from the decoder and save it in currentHMPic
-  bool              getNextFrameFromDecoder();
+  bool getNextFrameFromDecoder();
 
   bool internalsSupported{false};
   int  nrSignals{0};
-  bool flushing {false};
+  bool flushing{false};
 
   YUV_Internals::Subsampling convertFromInternalSubsampling(libvvcdec_ChromaFormat fmt);
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as
   // necessary without invoking the copy operation from the hm image buffer to the QByteArray again.
   QByteArray currentOutputBuffer;
-  void copyImgToByteArray(QByteArray &dst);
+  void       copyImgToByteArray(QByteArray &dst);
+
+  bool currentFrameReadyForRetrieval{};
 
   LibraryFunctions lib{};
 };

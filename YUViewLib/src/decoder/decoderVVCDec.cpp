@@ -85,7 +85,15 @@ namespace
 const std::vector<libvvcdec_ColorComponent>
     colorComponentMap({LIBVVCDEC_LUMA, LIBVVCDEC_CHROMA_U, LIBVVCDEC_CHROMA_V});
 
+void loggingCallback(void *ptr, int level, const char *msg)
+{
+  (void)ptr;
+#if DECODERVVCDEC_DEBUG_OUTPUT && !NDEBUG
+  qDebug() << "decoderVVCDec::decoderVVCDec vvcdeclog(" << level << "): " << msg;
+#endif
 }
+
+} // namespace
 
 decoderVVCDec::decoderVVCDec(int signalID, bool cachingDecoder)
     : decoderBaseSingleLib(cachingDecoder)
@@ -127,6 +135,8 @@ void decoderVVCDec::resolveLibraryFunctionPointers()
   if (!resolve(this->lib.libvvcdec_get_version, "libvvcdec_get_version"))
     return;
   if (!resolve(this->lib.libvvcdec_new_decoder, "libvvcdec_new_decoder"))
+    return;
+  if (!resolve(this->lib.libvvcdec_set_logging_callback, "libvvcdec_set_logging_callback"))
     return;
   if (!resolve(this->lib.libvvcdec_free_decoder, "libvvcdec_free_decoder"))
     return;
@@ -187,6 +197,9 @@ void decoderVVCDec::allocateNewDecoder()
   this->flushing = false;
   this->currentOutputBuffer.clear();
   this->decoderState = DecoderState::NeedsMoreData;
+
+  this->lib.libvvcdec_set_logging_callback(
+      this->decoder, &loggingCallback, this, LIBVVCDEC_LOGLEVEL_INFO);
 }
 
 bool decoderVVCDec::decodeNextFrame()
@@ -197,25 +210,41 @@ bool decoderVVCDec::decodeNextFrame()
     return false;
   }
 
-  DEBUG_VVCDEC("decoderVVCDec::decodeNextFrame");
-
-  // This is our way of moving the decoder to the next picture
-  bool checkOutputPictures = false;
-  auto err =
-      this->lib.libvvcdec_push_nal_unit(this->decoder, nullptr, 0, checkOutputPictures);
-  if (err == LIBVVCDEC_ERROR)
+  if (this->flushing)
   {
-    DEBUG_VVCDEC(
-        "decoderVVCDec::decodeNextFrame Error getting next flushed frame from decoder.");
-    return false;
+    // This is our way of moving the decoder to the next picture when flushing.
+    bool checkOutputPictures = false;
+    auto err = this->lib.libvvcdec_push_nal_unit(this->decoder, nullptr, 0, checkOutputPictures);
+    if (err == LIBVVCDEC_ERROR)
+    {
+      DEBUG_VVCDEC("decoderVVCDec::decodeNextFrame Error getting next flushed frame from decoder.");
+      return false;
+    }
+    if (!checkOutputPictures)
+    {
+      DEBUG_VVCDEC("decoderVVCDec::decodeNextFrame No more frames to flush. EOF.");
+      this->decoderState = DecoderState::EndOfBitstream;
+      return false;
+    }
+    this->currentOutputBuffer.clear();
+    DEBUG_VVCDEC("decoderVVCDec::decodeNextFrame Flushing - Invalidate buffer");
   }
-  if (!checkOutputPictures)
+  else
   {
-    DEBUG_VVCDEC("decoderVVCDec::decodeNextFrame No more frames to flush. EOF.");
-    this->decoderState = DecoderState::EndOfBitstream;
-    return false;
+    if (this->currentFrameReadyForRetrieval)
+    {
+      DEBUG_VVCDEC("decoderVVCDec::decodeNextFrame Switch back to NeedsMoreData");
+      this->decoderState                  = DecoderState::NeedsMoreData;
+      this->currentFrameReadyForRetrieval = false;
+      return false;
+    }
+    else
+    {
+      DEBUG_VVCDEC("decoderVVCDec::decodeNextFrame Current frame ready to read out");
+      this->currentFrameReadyForRetrieval = true;
+      return true;
+    }
   }
-  this->currentOutputBuffer.clear();
 
   return this->getNextFrameFromDecoder();
 }
@@ -229,8 +258,8 @@ bool decoderVVCDec::getNextFrameFromDecoder()
                        this->lib.libvvcdec_get_picture_height(this->decoder, LIBVVCDEC_LUMA));
   if (picSize.width() == 0 || picSize.height() == 0)
     DEBUG_VVCDEC("decoderVVCDec::getNextFrameFromDecoder got invalid size");
-  auto subsampling = convertFromInternalSubsampling(
-      this->lib.libvvcdec_get_picture_chroma_format(this->decoder));
+  auto subsampling =
+      convertFromInternalSubsampling(this->lib.libvvcdec_get_picture_chroma_format(this->decoder));
   if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
     DEBUG_VVCDEC("decoderVVCDec::getNextFrameFromDecoder got invalid chroma format");
   auto bitDepth = this->lib.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_LUMA);
@@ -322,12 +351,6 @@ QByteArray decoderVVCDec::getRawFrameData()
     DEBUG_VVCDEC("decoderVVCDec::getRawFrameData copied frame to buffer");
   }
 
-  if (!this->flushing)
-  {
-    DEBUG_VVCDEC("decoderVVCDec::getRawFrameData Not flushing. Swithch to state NeedsMoreData");
-    this->decoderState = DecoderState::NeedsMoreData;
-  }
-
   return currentOutputBuffer;
 }
 
@@ -345,10 +368,8 @@ void decoderVVCDec::copyImgToByteArray(QByteArray &dst)
       (this->lib.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_LUMA) > 8);
   if (nrPlanes > 1)
   {
-    auto bitDepthU =
-        this->lib.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_CHROMA_U);
-    auto bitDepthV =
-        this->lib.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_CHROMA_V);
+    auto bitDepthU = this->lib.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_CHROMA_U);
+    auto bitDepthV = this->lib.libvvcdec_get_picture_bit_depth(this->decoder, LIBVVCDEC_CHROMA_V);
     if ((outputTwoByte != bitDepthU > 8) || (outputTwoByte != bitDepthV > 8))
     {
       DEBUG_VVCDEC("decoderVVCDec::copyImgToByteArray different bit depth in YUV components. This "
