@@ -66,7 +66,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
  *   }
  *
  *   bool new_picture, check_output;
- *   if (libvvcdec_push_nal_unit(decCtx, data, length, eof, new_picture, check_output) != LIBVVCDEC_OK)
+ *   if (libvvcdec_push_nal_unit(decCtx, data, length, check_output) != LIBVVCDEC_OK)
  *     handle_the_error();
  *   if (!new_picture)
  *   {
@@ -112,6 +112,19 @@ typedef enum
   LIBVVCDEC_ERROR_READ_ERROR   ///< There was an error reading the provided data
 } libvvcdec_error;
 
+typedef enum
+{
+  LIBVVCDEC_LOGLEVEL_SILENT  = 0,
+  LIBVVCDEC_LOGLEVEL_ERROR   = 1,
+  LIBVVCDEC_LOGLEVEL_WARNING = 2,
+  LIBVVCDEC_LOGLEVEL_INFO    = 3,
+  LIBVVCDEC_LOGLEVEL_NOTICE  = 4,
+  LIBVVCDEC_LOGLEVEL_VERBOSE = 5,
+  LIBVVCDEC_LOGLEVEL_DETAILS = 6
+} libvvcdec_loglevel;
+
+typedef void (*libvvcdec_logging_callback)(void*, int, const char*);
+
 /** Get info about the decoder version (e.g. "2.0")
  */
 VVCDECAPI const char *libvvcdec_get_version(void);
@@ -127,6 +140,10 @@ typedef void libvvcdec_context;
   */
 VVCDECAPI libvvcdec_context* libvvcdec_new_decoder(void);
 
+/** Set a logging callback.
+ */
+VVCDECAPI libvvcdec_error libvvcdec_set_logging_callback(libvvcdec_context* decCtx, libvvcdec_logging_callback callback, void *userData, libvvcdec_loglevel loglevel);
+
 /** Destroy an existing decoder.
  * \param decCtx The decoder context to destroy that was created with libvvcdec_new_decoder
  * \return Return an error code or LIBVVCDEC_OK if no error occured.
@@ -137,14 +154,12 @@ VVCDECAPI libvvcdec_error libvvcdec_free_decoder(libvvcdec_context* decCtx);
  * This will perform decoding of the NAL unit. It must be exactly one NAL unit and the data array must
  * not be empty.
  * \param decCtx The decoder context that was created with libvvcdec_new_decoder
- * \param data8 The raw byte data from the NAL unit starting with the first byte of the NAL unit header.
+ * \param data8 The raw byte data from the NAL unit starting with the first byte of the NAL unit header. Push nullptr to signal EOF.
  * \param length The length in number of bytes in the data
- * \param eof Is this NAL the last one in the bitstream?
- * \param bNewPicture This bool is set by the function if the NAL unit must be pushed to the decoder again after reading frames.
  * \param checkOutputPictures This bool is set by the function if pictures might be available (see libvvcdec_get_picture).
  * \return An error code or LIBVVCDEC_OK if no error occured
  */
-VVCDECAPI libvvcdec_error libvvcdec_push_nal_unit(libvvcdec_context *decCtx, const unsigned char* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
+VVCDECAPI libvvcdec_error libvvcdec_push_nal_unit(libvvcdec_context *decCtx, const unsigned char* data8, int length, bool &checkOutputPictures);
 
 /** This private structure represents a picture.
  * You can save a pointer to it and use all the following functions to access it
