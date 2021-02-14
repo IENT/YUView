@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include "parser/NalUnit.h"
 #include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::vvc
@@ -82,7 +81,13 @@ public:
   ~nal_unit_header() = default;
   void parse(reader::SubByteReaderLogging &reader);
 
-  QByteArray getNALHeader() const;
+  bool isSlice() const
+  {
+    return this->nal_unit_type == NalType::TRAIL_NUT || this->nal_unit_type == NalType::STSA_NUT ||
+           this->nal_unit_type == NalType::RADL_NUT || this->nal_unit_type == NalType::RASL_NUT ||
+           this->nal_unit_type == NalType::IDR_W_RADL || this->nal_unit_type == NalType::IDR_N_LP ||
+           this->nal_unit_type == NalType::CRA_NUT || this->nal_unit_type == NalType::GDR_NUT;
+  }
 
   unsigned nuh_layer_id;
   unsigned nuh_temporal_id_plus1;

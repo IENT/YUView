@@ -38,7 +38,6 @@
 #include <optional>
 #include <set>
 
-#include "NalUnit.h"
 #include "common/BitratePlotModel.h"
 #include "common/TreeItem.h"
 #include "filesource/FileSourceAnnexBFile.h"
@@ -62,7 +61,7 @@ public:
   virtual ~AnnexB(){};
 
   // How many POC's have been found in the file
-  size_t getNumberPOCs() const { return frameList.size(); }
+  size_t getNumberPOCs() const { return this->frameList.size(); }
 
   // Clear all knowledge about the bitstream.
   void clearData();
@@ -102,12 +101,17 @@ public:
   // When we want to seek to a specific frame number, this function return the parameter sets that
   // you need to start decoding (without start codes). If file positions were set for the NAL units,
   // the file position where decoding can begin will also be returned.
-  virtual QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) = 0;
+  struct SeekData
+  {
+    std::vector<ByteVector> parameterSets;
+    std::optional<uint64_t> filePos;
+  };
+  virtual std::optional<SeekData> getSeekData(int iFrameNr) = 0;
 
   // Look through the random access points and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
   // frameIdx: The frame index in display order that we want to seek to
-  size_t getClosestSeekableFrameNumberBefore(int frameIdx) const;
+  size_t getClosestSeekableFrameNumberBefore(int frameIdx);
 
   // Get the parameters sets as extradata. The format of this depends on the underlying codec.
   virtual QByteArray getExtradata() = 0;
@@ -130,12 +134,9 @@ protected:
     std::optional<pairUint64>
          fileStartEndPos;          //< The start and end position of all slice NAL units (if known)
     bool randomAccessPoint{false}; //< Can we start decoding here?
-  };
 
-  // A list of all frames in the sequence (in coding order) with POC and the file positions of all
-  // slice NAL units associated with a frame. POC's don't have to be consecutive, so the only way to
-  // know how many pictures are in a sequences is to keep a list of all POCs.
-  vector<AnnexBFrame> frameList;
+    bool operator<(AnnexBFrame const &b) { return poc < b.poc; }
+  };
 
   // Returns false if the POC was already present int the list
   bool addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint);
@@ -156,6 +157,15 @@ protected:
     bool     parsing{false};
   };
   stream_info_type stream_info;
+
+  int getFramePOC(int frameIdx);
+
+private:
+  // A list of all frames in the sequence (in coding order) with POC and the file positions of all
+  // slice NAL units associated with a frame. POC's don't have to be consecutive, so the only way to
+  // know how many pictures are in a sequences is to keep a list of all POCs.
+  vector<AnnexBFrame> frameList;
+  bool frameListNeedsParsing{};
 };
 
 } // namespace parser

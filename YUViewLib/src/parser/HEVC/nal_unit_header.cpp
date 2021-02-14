@@ -139,14 +139,6 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
   this->nal_unit_type = nalTypeCoding.getValue(this->nalUnitTypeID);
 }
 
-QByteArray nal_unit_header::getNALHeader() const
-{
-  QByteArray ret;
-  ret.append(char(this->nuh_layer_id));
-  ret.append(char((this->nalUnitTypeID << 3) + this->nuh_temporal_id_plus1));
-  return ret;
-}
-
 bool nal_unit_header::isIRAP() const
 {
   return (this->nal_unit_type == hevc::NalType::BLA_W_LP ||

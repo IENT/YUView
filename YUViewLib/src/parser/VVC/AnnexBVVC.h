@@ -65,10 +65,10 @@ public:
   QSize          getSequenceSizeSamples() const override;
   yuvPixelFormat getPixelFormat() const override;
 
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
-  QByteArray        getExtradata() override;
-  IntPair           getProfileLevel() override;
-  Ratio             getSampleAspectRatio() override;
+  virtual std::optional<SeekData> getSeekData(int iFrameNr) override;
+  QByteArray                      getExtradata() override;
+  IntPair                         getProfileLevel() override;
+  Ratio                           getSampleAspectRatio() override;
 
   ParseResult parseAndAddNALUnit(int                                           nalID,
                                  const ByteVector &                            data,

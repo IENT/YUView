@@ -92,11 +92,4 @@ void nal_unit_header::parse(SubByteReaderLogging &reader)
     this->nal_unit_type = NalType::UNSPECIFIED;
 }
 
-QByteArray nal_unit_header::getNALHeader() const
-{
-  QByteArray ret;
-  ret.append(this->start_code_value);
-  return ret;
-}
-
 } // namespace parser::mpeg2

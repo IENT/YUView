@@ -77,7 +77,7 @@ double AnnexBHEVC::getFramerate() const
   // Look for VUI information in the sps
   for (const auto &nal : this->nalUnitsForSeeking)
   {
-    if (nal->header.nal_unit_type == hevc::NalType::SPS_NUT)
+    if (nal->header.nal_unit_type == NalType::SPS_NUT)
     {
       auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
       if (sps->vui_parameters_present_flag && sps->vuiParameters.vui_timing_info_present_flag)
@@ -92,7 +92,7 @@ QSize AnnexBHEVC::getSequenceSizeSamples() const
 {
   for (const auto &nal : this->nalUnitsForSeeking)
   {
-    if (nal->header.nal_unit_type == hevc::NalType::SPS_NUT)
+    if (nal->header.nal_unit_type == NalType::SPS_NUT)
     {
       auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
       return QSize(sps->get_conformance_cropping_width(), sps->get_conformance_cropping_height());
@@ -110,7 +110,7 @@ yuvPixelFormat AnnexBHEVC::getPixelFormat() const
   auto subsampling = Subsampling::UNKNOWN;
   for (const auto &nal : this->nalUnitsForSeeking)
   {
-    if (nal->header.nal_unit_type == hevc::NalType::SPS_NUT)
+    if (nal->header.nal_unit_type == NalType::SPS_NUT)
     {
       auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
       if (sps->chroma_format_idc == 0)
@@ -140,12 +140,12 @@ yuvPixelFormat AnnexBHEVC::getPixelFormat() const
   return yuvPixelFormat();
 }
 
-QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+std::optional<AnnexB::SeekData> AnnexBHEVC::getSeekData(int iFrameNr)
 {
-  if (iFrameNr >= this->frameList.size())
+  if (iFrameNr >= int(this->getNumberPOCs()))
     return {};
 
-  auto seekPOC = this->frameList[iFrameNr].poc;
+  auto seekPOC = this->getFramePOC(iFrameNr);
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitHEVC>>;
@@ -162,36 +162,30 @@ QList<QByteArray> AnnexBHEVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fi
       if (slice->sliceSegmentHeader.globalPOC == seekPOC)
       {
         // Seek here
+        AnnexB::SeekData seekData;
         if (nal->filePosStartEnd)
-          filePos = nal->filePosStartEnd->first;
+          seekData.filePos = nal->filePosStartEnd->first;
 
-        // Get the bitstream of all active parameter sets
-        QList<QByteArray> paramSets;
+        for (const auto &nalMap : {activeVPSNal, activeSPSNal, activePPSNal})
+        {
+          for (auto const &entry : nalMap)
+            seekData.parameterSets.push_back(entry.second->rawData);
+        }
 
-        for (auto const &entry : activeVPSNal)
-          paramSets.append(
-              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
-        for (auto const &entry : activeSPSNal)
-          paramSets.append(
-              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
-        for (auto const &entry : activePPSNal)
-          paramSets.append(
-              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
-
-        return paramSets;
+        return seekData;
       }
     }
-    if (nal->header.nal_unit_type == hevc::NalType::VPS_NUT)
+    if (nal->header.nal_unit_type == NalType::VPS_NUT)
     {
       auto vps = std::dynamic_pointer_cast<video_parameter_set_rbsp>(nal->rbsp);
       activeVPSNal[vps->vps_video_parameter_set_id] = nal;
     }
-    if (nal->header.nal_unit_type == hevc::NalType::SPS_NUT)
+    if (nal->header.nal_unit_type == NalType::SPS_NUT)
     {
       auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
       activeSPSNal[sps->sps_seq_parameter_set_id] = nal;
     }
-    if (nal->header.nal_unit_type == hevc::NalType::PPS_NUT)
+    if (nal->header.nal_unit_type == NalType::PPS_NUT)
     {
       auto pps = std::dynamic_pointer_cast<pic_parameter_set_rbsp>(nal->rbsp);
       activePPSNal[pps->pps_pic_parameter_set_id] = nal;
@@ -209,7 +203,7 @@ QByteArray AnnexBHEVC::getExtradata()
   ByteVector ret;
   for (const auto &nal : this->nalUnitsForSeeking)
   {
-    if (nal->header.nal_unit_type == hevc::NalType::VPS_NUT)
+    if (nal->header.nal_unit_type == NalType::VPS_NUT)
     {
       ret.insert(ret.end(), nal->rawData.begin(), nal->rawData.end());
       break;
@@ -217,7 +211,7 @@ QByteArray AnnexBHEVC::getExtradata()
   }
   for (const auto &nal : this->nalUnitsForSeeking)
   {
-    if (nal->header.nal_unit_type == hevc::NalType::SPS_NUT)
+    if (nal->header.nal_unit_type == NalType::SPS_NUT)
     {
       ret.insert(ret.end(), nal->rawData.begin(), nal->rawData.end());
       break;
@@ -225,7 +219,7 @@ QByteArray AnnexBHEVC::getExtradata()
   }
   for (const auto &nal : this->nalUnitsForSeeking)
   {
-    if (nal->header.nal_unit_type == hevc::NalType::PPS_NUT)
+    if (nal->header.nal_unit_type == NalType::PPS_NUT)
     {
       ret.insert(ret.end(), nal->rawData.begin(), nal->rawData.end());
       break;
@@ -238,7 +232,7 @@ IntPair AnnexBHEVC::getProfileLevel()
 {
   for (const auto &nal : this->nalUnitsForSeeking)
   {
-    if (nal->header.nal_unit_type == hevc::NalType::SPS_NUT)
+    if (nal->header.nal_unit_type == NalType::SPS_NUT)
     {
       auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
       return {sps->profileTierLevel.general_profile_idc, sps->profileTierLevel.general_level_idc};
@@ -251,7 +245,7 @@ Ratio AnnexBHEVC::getSampleAspectRatio()
 {
   for (const auto &nal : this->nalUnitsForSeeking)
   {
-    if (nal->header.nal_unit_type == hevc::NalType::SPS_NUT)
+    if (nal->header.nal_unit_type == NalType::SPS_NUT)
     {
       auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
       if (sps->vui_parameters_present_flag && sps->vuiParameters.aspect_ratio_info_present_flag)
@@ -415,15 +409,15 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       isRandomAccessSkip = false;
       if (firstPOCRandomAccess == INT_MAX)
       {
-        if (nalHEVC->header.nal_unit_type == hevc::NalType::CRA_NUT ||
-            nalHEVC->header.nal_unit_type == hevc::NalType::BLA_W_LP ||
-            nalHEVC->header.nal_unit_type == hevc::NalType::BLA_N_LP ||
-            nalHEVC->header.nal_unit_type == hevc::NalType::BLA_W_RADL)
+        if (nalHEVC->header.nal_unit_type == NalType::CRA_NUT ||
+            nalHEVC->header.nal_unit_type == NalType::BLA_W_LP ||
+            nalHEVC->header.nal_unit_type == NalType::BLA_N_LP ||
+            nalHEVC->header.nal_unit_type == NalType::BLA_W_RADL)
           // set the POC random access since we need to skip the reordered pictures in the case of
           // CRA/CRANT/BLA/BLANT.
           firstPOCRandomAccess = newSlice->sliceSegmentHeader.PicOrderCntVal;
-        else if (nalHEVC->header.nal_unit_type == hevc::NalType::IDR_W_RADL ||
-                 nalHEVC->header.nal_unit_type == hevc::NalType::IDR_N_LP)
+        else if (nalHEVC->header.nal_unit_type == NalType::IDR_W_RADL ||
+                 nalHEVC->header.nal_unit_type == NalType::IDR_N_LP)
           firstPOCRandomAccess =
               -INT_MAX; // no need to skip the reordered pictures in IDR, they are decodable.
         else
@@ -431,8 +425,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       }
       // skip the reordered pictures, if necessary
       else if (newSlice->sliceSegmentHeader.PicOrderCntVal < firstPOCRandomAccess &&
-               (nalHEVC->header.nal_unit_type == hevc::NalType::RASL_R ||
-                nalHEVC->header.nal_unit_type == hevc::NalType::RASL_N))
+               (nalHEVC->header.nal_unit_type == NalType::RASL_R ||
+                nalHEVC->header.nal_unit_type == NalType::RASL_N))
         isRandomAccessSkip = true;
 
       if (nalHEVC->header.nuh_temporal_id_plus1 - 1 == 0 && !nalHEVC->header.isRASL() &&
@@ -508,8 +502,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
                  << (new_slice->NoRaslOutputFlag ? "" : " - RASL")
                  << (parsingSuccess ? "" : " ERROR"));
     }
-    else if (nalHEVC->header.nal_unit_type == hevc::NalType::PREFIX_SEI_NUT ||
-             nalHEVC->header.nal_unit_type == hevc::NalType::SUFFIX_SEI_NUT)
+    else if (nalHEVC->header.nal_unit_type == NalType::PREFIX_SEI_NUT ||
+             nalHEVC->header.nal_unit_type == NalType::SUFFIX_SEI_NUT)
     {
       specificDescription = " SEI";
       auto newSEI         = std::make_shared<sei_rbsp>();
@@ -551,14 +545,14 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
                                                                << " messages)");
       parseResult.nalTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
     }
-    else if (nalHEVC->header.nal_unit_type == hevc::NalType::FD_NUT)
+    else if (nalHEVC->header.nal_unit_type == NalType::FD_NUT)
     {
       specificDescription = " Filler";
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Parsed Fillerdata");
       parseResult.nalTypeName = "Filler ";
     }
-    else if (nalHEVC->header.nal_unit_type == hevc::NalType::UNSPEC62 ||
-             nalHEVC->header.nal_unit_type == hevc::NalType::UNSPEC63)
+    else if (nalHEVC->header.nal_unit_type == NalType::UNSPEC62 ||
+             nalHEVC->header.nal_unit_type == NalType::UNSPEC63)
     {
       // Dolby vision EL or metadata
       // Technically this is not a specific NAL unit type but dolby vision uses a different

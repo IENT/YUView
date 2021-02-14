@@ -81,10 +81,10 @@ public:
                                  std::optional<pairUint64> nalStartEndPosFile = {},
                                  TreeItem *                parent             = nullptr) override;
 
-  QList<QByteArray> getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos) override;
-  QByteArray        getExtradata() override;
-  IntPair           getProfileLevel() override;
-  Ratio             getSampleAspectRatio() override;
+  std::optional<SeekData> getSeekData(int iFrameNr) override;
+  QByteArray              getExtradata() override;
+  IntPair                 getProfileLevel() override;
+  Ratio                   getSampleAspectRatio() override;
 
 protected:
   // When we start to parse the bitstream we will remember the first RAP POC

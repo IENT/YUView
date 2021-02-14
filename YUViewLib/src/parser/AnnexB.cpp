@@ -77,12 +77,15 @@ bool AnnexB::addFrameToList(int                       poc,
     newFrame.poc               = poc;
     newFrame.fileStartEndPos   = fileStartEndPos;
     newFrame.randomAccessPoint = randomAccessPoint;
-    frameList.push_back(newFrame);
+    this->frameList.push_back(newFrame);
+    this->frameListNeedsParsing = true;
   }
   return true;
 }
 
-void AnnexB::logNALSize(const ByteVector &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos)
+void AnnexB::logNALSize(const ByteVector &        data,
+                        TreeItem *                root,
+                        std::optional<pairUint64> nalStartEndPos)
 {
   size_t startCodeSize = 0;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
@@ -98,18 +101,18 @@ void AnnexB::logNALSize(const ByteVector &data, TreeItem *root, std::optional<pa
     new TreeItem(root, "Start/End pos", to_string(*nalStartEndPos));
 }
 
-size_t AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx) const
+size_t AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx)
 {
   if (frameIdx >= this->frameList.size())
     return {};
 
-  auto seekPOC = this->frameList[frameIdx].poc;
+  auto seekPOC = this->getFramePOC(frameIdx);
 
   int    bestSeekPOC      = -1;
   size_t bestSeekPocIndex = 0;
   for (size_t i = 0; i < frameList.size(); i++)
   {
-    const auto &f = frameList[i];
+    const auto &f = this->frameList[i];
     if (f.randomAccessPoint)
     {
       if (bestSeekPOC == -1)
@@ -131,6 +134,8 @@ size_t AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx) const
     }
   }
 
+  DEBUG_ANNEXB("AnnexB::getClosestSeekableFrameNumberBefore franeIdx " << frameIdx << " seekPoc "
+                                                                       << bestSeekPocIndex);
   return bestSeekPocIndex;
 }
 
@@ -138,6 +143,11 @@ std::optional<pairUint64> AnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
 {
   if (codingOrderFrameIdx < 0 || codingOrderFrameIdx >= frameList.size())
     return {};
+  if (this->frameListNeedsParsing)
+  {
+    std::sort(this->frameList.begin(), this->frameList.end());
+    this->frameListNeedsParsing = false;
+  }
   return frameList[codingOrderFrameIdx].fileStartEndPos;
 }
 
@@ -183,7 +193,8 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
     {
       auto nalData = reader::SubByteReaderLogging::convertToByteVector(
           file->getNextNALUnit(false, &nalStartEndPosFile));
-      auto parsingResult = this->parseAndAddNALUnit(nalID, nalData, {}, nalStartEndPosFile, nullptr);
+      auto parsingResult =
+          this->parseAndAddNALUnit(nalID, nalData, {}, nalStartEndPosFile, nullptr);
       if (!parsingResult.success)
       {
         DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error parsing NAL " << nalID);
@@ -288,6 +299,16 @@ QList<QTreeWidgetItem *> AnnexB::stream_info_type::getStreamInfo()
   }
 
   return infoList;
+}
+
+int AnnexB::getFramePOC(int frameIdx)
+{
+  if (this->frameListNeedsParsing)
+  {
+    std::sort(this->frameList.begin(), this->frameList.end());
+    this->frameListNeedsParsing = false;
+  }
+  return this->frameList[frameIdx].poc;
 }
 
 } // namespace parser

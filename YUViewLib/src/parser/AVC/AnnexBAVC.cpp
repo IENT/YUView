@@ -192,7 +192,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   reader::SubByteReaderLogging reader(data, nalRoot, "", getStartCodeOffset(data));
 
   std::string specificDescription;
-  auto        nalAVC = std::make_shared<avc::NalUnitAVC>(nalID, nalStartEndPosFile);
+  auto        nalAVC = std::make_shared<NalUnitAVC>(nalID, nalStartEndPosFile);
 
   bool        currentSliceIntra = false;
   std::string currentSliceType;
@@ -535,12 +535,12 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   return parseResult;
 }
 
-QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+std::optional<AnnexB::SeekData> AnnexBAVC::getSeekData(int iFrameNr)
 {
-  if (iFrameNr >= this->frameList.size())
+  if (iFrameNr >= int(this->getNumberPOCs()))
     return {};
 
-  auto seekPOC = this->frameList[iFrameNr].poc;
+  auto seekPOC = this->getFramePOC(iFrameNr);
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitAVC>>;
@@ -569,20 +569,18 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
       if (globalPOC == seekPOC)
       {
         // Seek here
+        AnnexB::SeekData seekData;
         if (nal->filePosStartEnd)
-          filePos = nal->filePosStartEnd->first;
+          seekData.filePos = nal->filePosStartEnd->first;
 
         // Get the bitstream of all active parameter sets
-        QList<QByteArray> paramSets;
+        for (const auto &nalMap : {activeSPSNal, activePPSNal})
+        {
+          for (auto const &entry : nalMap)
+            seekData.parameterSets.push_back(entry.second->rawData);
+        }
 
-        for (auto const &entry : activeSPSNal)
-          paramSets.append(
-              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
-        for (auto const &entry : activePPSNal)
-          paramSets.append(
-              reader::SubByteReaderLogging::convertToQByteArray(entry.second->rawData));
-
-        return paramSets;
+        return seekData;
       }
     }
     else if (nal->header.nal_unit_type == NalType::SPS)
@@ -599,7 +597,7 @@ QList<QByteArray> AnnexBAVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &fil
     }
   }
 
-  return QList<QByteArray>();
+  return {};
 }
 
 QByteArray AnnexBAVC::getExtradata()

@@ -122,10 +122,72 @@ yuvPixelFormat AnnexBVVC::getPixelFormat() const
   return {};
 }
 
-QList<QByteArray> AnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
 {
-  Q_UNUSED(iFrameNr);
-  Q_UNUSED(filePos);
+  if (iFrameNr >= int(this->getNumberPOCs()))
+    return {};
+
+  auto seekPOC = this->getFramePOC(iFrameNr);
+
+  // Collect the active parameter sets
+  using NalMap = std::map<unsigned, std::shared_ptr<NalUnitVVC>>;
+  NalMap activeVPSNal;
+  NalMap activeSPSNal;
+  NalMap activePPSNal;
+  NalMap activeAPSNal;
+
+  for (const auto &nal : this->nalUnitsForSeeking)
+  {
+    if (nal->header.isSlice())
+    {
+      auto slice = std::dynamic_pointer_cast<slice_layer_rbsp>(nal->rbsp);
+
+      auto picHeader = slice->slice_header_instance.picture_header_structure_instance;
+      if (!picHeader)
+      {
+        DEBUG_VVC("Error - Slice has no picture header");
+        continue;
+      }
+
+      if (picHeader->PicOrderCntVal == seekPOC)
+      {
+        // Seek here
+        AnnexB::SeekData seekData;
+        if (nal->filePosStartEnd)
+          seekData.filePos = nal->filePosStartEnd->first;
+
+        for (const auto &nalMap : {activeVPSNal, activeSPSNal, activePPSNal, activeAPSNal})
+        {
+          for (auto const &entry : nalMap)
+            seekData.parameterSets.push_back(entry.second->rawData);
+        }
+
+        return seekData;
+      }
+    }
+    if (nal->header.nal_unit_type == NalType::VPS_NUT)
+    {
+      auto vps = std::dynamic_pointer_cast<video_parameter_set_rbsp>(nal->rbsp);
+      activeVPSNal[vps->vps_video_parameter_set_id] = nal;
+    }
+    if (nal->header.nal_unit_type == NalType::SPS_NUT)
+    {
+      auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
+      activeSPSNal[sps->sps_seq_parameter_set_id] = nal;
+    }
+    if (nal->header.nal_unit_type == NalType::PPS_NUT)
+    {
+      auto pps = std::dynamic_pointer_cast<pic_parameter_set_rbsp>(nal->rbsp);
+      activePPSNal[pps->pps_pic_parameter_set_id] = nal;
+    }
+    if (nal->header.nal_unit_type == NalType::PREFIX_APS_NUT ||
+        nal->header.nal_unit_type == NalType::SUFFIX_APS_NUT)
+    {
+      auto aps = std::dynamic_pointer_cast<adaptation_parameter_set_rbsp>(nal->rbsp);
+      activeAPSNal[aps->aps_adaptation_parameter_set_id] = nal;
+    }
+  }
+
   return {};
 }
 
@@ -204,7 +266,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newVPS->vps_video_parameter_set_id);
 
-      nalVVC->rbsp = newVPS;
+      nalVVC->rbsp    = newVPS;
+      nalVVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::SPS_NUT)
@@ -217,7 +280,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newSPS->sps_seq_parameter_set_id);
 
-      nalVVC->rbsp = newSPS;
+      nalVVC->rbsp    = newSPS;
+      nalVVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::PPS_NUT)
@@ -230,7 +294,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newPPS->pps_pic_parameter_set_id);
 
-      nalVVC->rbsp = newPPS;
+      nalVVC->rbsp    = newPPS;
+      nalVVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::PREFIX_APS_NUT ||
@@ -244,7 +309,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newAPS->aps_adaptation_parameter_set_id);
 
-      nalVVC->rbsp = newAPS;
+      nalVVC->rbsp    = newAPS;
+      nalVVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::PH_NUT)
@@ -276,14 +342,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       nalVVC->rbsp = newPictureHeader;
     }
-    else if (nalVVC->header.nal_unit_type == NalType::TRAIL_NUT ||
-             nalVVC->header.nal_unit_type == NalType::STSA_NUT ||
-             nalVVC->header.nal_unit_type == NalType::RADL_NUT ||
-             nalVVC->header.nal_unit_type == NalType::RASL_NUT ||
-             nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
-             nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
-             nalVVC->header.nal_unit_type == NalType::CRA_NUT ||
-             nalVVC->header.nal_unit_type == NalType::GDR_NUT)
+    else if (nalVVC->header.isSlice())
     {
       specificDescription = " Slice Header";
       auto newSliceLayer  = std::make_shared<slice_layer_rbsp>();
@@ -307,6 +366,13 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
             newSliceLayer->slice_header_instance.picture_header_structure_instance;
         updatedParsingState.lastFramePOC =
             updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal;
+      }
+      else
+      {
+        if (!updatedParsingState.currentPictureHeaderStructure)
+          throw std::logic_error("Slice must have a valid picture header");
+        newSliceLayer->slice_header_instance.picture_header_structure_instance =
+            updatedParsingState.currentPictureHeaderStructure;
       }
 
       specificDescription +=
@@ -390,6 +456,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                                              nalVVC->header.nal_unit_type == NalType::CRA_NUT);
   if (updatedParsingState.lastFrameIsKeyframe)
   {
+    nalVVC->rawData = data;
     this->nalUnitsForSeeking.push_back(nalVVC);
   }
 
@@ -416,25 +483,23 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     entry.keyframe           = this->parsingState.lastFrameIsKeyframe;
     parseResult.bitrateEntry = entry;
 
-    if (this->parsingState.counterAU > 0)
+    if (!addFrameToList(this->parsingState.lastFramePOC,
+                        this->parsingState.curFrameFileStartEndPos,
+                        this->parsingState.lastFrameIsKeyframe))
     {
-      if (!addFrameToList(this->parsingState.lastFramePOC,
-                          this->parsingState.curFrameFileStartEndPos,
-                          this->parsingState.lastFrameIsKeyframe))
-      {
-        specificDescription += " ERROR Adding POC " +
-                               std::to_string(this->parsingState.lastFramePOC) + " to frame list";
-        parseResult.success = false;
-      }
-      if (this->parsingState.curFrameFileStartEndPos)
-        DEBUG_VVC("Adding start/end " << this->parsingState.curFrameFileStartEndPos->first << "/"
-                                      << this->parsingState.curFrameFileStartEndPos->second
-                                      << " - AU " << this->parsingState.counterAU
-                                      << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
-      else
-        DEBUG_VVC("Adding start/end %d/%d - POC NA/NA"
-                  << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
+      specificDescription +=
+          " ERROR Adding POC " + std::to_string(this->parsingState.lastFramePOC) + " to frame list";
+      parseResult.success = false;
     }
+    if (this->parsingState.curFrameFileStartEndPos)
+      DEBUG_VVC("Adding start/end " << this->parsingState.curFrameFileStartEndPos->first << "/"
+                                    << this->parsingState.curFrameFileStartEndPos->second
+                                    << " - AU " << this->parsingState.counterAU
+                                    << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
+    else
+      DEBUG_VVC("Adding start/end %d/%d - POC NA/NA"
+                << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
+
     updatedParsingState.curFrameFileStartEndPos = nalStartEndPosFile;
     updatedParsingState.sizeCurrentAU           = 0;
     updatedParsingState.counterAU++;
