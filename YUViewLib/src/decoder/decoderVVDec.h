@@ -36,41 +36,41 @@
 
 #include "common/fileInfo.h"
 #include "decoderBase.h"
-#include "externalHeader/libvvcdec.h"
+#include "externalHeader/libvvdec.h"
 #include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"
 
 struct LibraryFunctions
 {
   // General functions
-  const char *(*libvvcdec_get_version)(void){};
-  libvvcdec_context *(*libvvcdec_new_decoder)(void){};
-  libvvcdec_error (*libvvcdec_set_logging_callback)(libvvcdec_context *,
-                                                    libvvcdec_logging_callback,
+  const char *(*libvvdec_get_version)(void){};
+  libvvdec_context *(*libvvdec_new_decoder)(void){};
+  libvvdec_error (*libvvdec_set_logging_callback)(libvvdec_context *,
+                                                    libvvdec_logging_callback,
                                                     void *             userData,
-                                                    libvvcdec_loglevel loglevel){};
-  libvvcdec_error (*libvvcdec_free_decoder)(libvvcdec_context *){};
-  libvvcdec_error (*libvvcdec_push_nal_unit)(libvvcdec_context *,
+                                                    libvvdec_loglevel loglevel){};
+  libvvdec_error (*libvvdec_free_decoder)(libvvdec_context *){};
+  libvvdec_error (*libvvdec_push_nal_unit)(libvvdec_context *,
                                              const unsigned char *,
                                              int,
                                              bool &){};
 
   // Picture retrieval
-  uint64_t (*libvvcdec_get_picture_POC)(libvvcdec_context *){};
-  uint32_t (*libvvcdec_get_picture_width)(libvvcdec_context *, libvvcdec_ColorComponent){};
-  uint32_t (*libvvcdec_get_picture_height)(libvvcdec_context *, libvvcdec_ColorComponent){};
-  int32_t (*libvvcdec_get_picture_stride)(libvvcdec_context *, libvvcdec_ColorComponent){};
-  unsigned char *(*libvvcdec_get_picture_plane)(libvvcdec_context *, libvvcdec_ColorComponent){};
-  libvvcdec_ChromaFormat (*libvvcdec_get_picture_chroma_format)(libvvcdec_context *){};
-  uint32_t (*libvvcdec_get_picture_bit_depth)(libvvcdec_context *, libvvcdec_ColorComponent){};
+  uint64_t (*libvvdec_get_picture_POC)(libvvdec_context *){};
+  uint32_t (*libvvdec_get_picture_width)(libvvdec_context *, libvvdec_ColorComponent){};
+  uint32_t (*libvvdec_get_picture_height)(libvvdec_context *, libvvdec_ColorComponent){};
+  int32_t (*libvvdec_get_picture_stride)(libvvdec_context *, libvvdec_ColorComponent){};
+  unsigned char *(*libvvdec_get_picture_plane)(libvvdec_context *, libvvdec_ColorComponent){};
+  libvvdec_ChromaFormat (*libvvdec_get_picture_chroma_format)(libvvdec_context *){};
+  uint32_t (*libvvdec_get_picture_bit_depth)(libvvdec_context *, libvvdec_ColorComponent){};
 };
 
 // This class wraps the decoder library in a demand-load fashion.
-class decoderVVCDec : public decoderBaseSingleLib
+class decoderVVDec : public decoderBaseSingleLib
 {
 public:
-  decoderVVCDec(int signalID, bool cachingDecoder = false);
-  ~decoderVVCDec();
+  decoderVVDec(int signalID, bool cachingDecoder = false);
+  ~decoderVVDec();
 
   void resetDecoder() override;
 
@@ -90,7 +90,7 @@ public:
 private:
   // A private constructor that creates an uninitialized decoder library.
   // Used by checkLibraryFile to check if a file can be used as a this decoder.
-  decoderVVCDec(){};
+  decoderVVDec(){};
 
   // Return the possible names of the HM library
   QStringList getLibraryNames() override;
@@ -105,7 +105,7 @@ private:
 
   void allocateNewDecoder();
 
-  libvvcdec_context *decoder{nullptr};
+  libvvdec_context *decoder{nullptr};
 
   // Try to get the next picture from the decoder and save it in currentHMPic
   bool getNextFrameFromDecoder();
@@ -114,7 +114,7 @@ private:
   int  nrSignals{0};
   bool flushing{false};
 
-  YUV_Internals::Subsampling convertFromInternalSubsampling(libvvcdec_ChromaFormat fmt);
+  YUV_Internals::Subsampling convertFromInternalSubsampling(libvvdec_ChromaFormat fmt);
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as
   // necessary without invoking the copy operation from the hm image buffer to the QByteArray again.

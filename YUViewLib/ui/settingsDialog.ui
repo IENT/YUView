@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>433</width>
-    <height>619</height>
+    <width>529</width>
+    <height>652</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1081,29 +1081,29 @@
            </widget>
           </item>
           <item row="4" column="0">
-           <widget class="QLabel" name="labelLibVVCDec">
+           <widget class="QLabel" name="labelLibVVDec">
             <property name="text">
-             <string>libVVCDec</string>
+             <string>libvvdec</string>
             </property>
            </widget>
           </item>
           <item row="4" column="1">
-           <widget class="QLineEdit" name="lineEditLibVVCDecFile">
+           <widget class="QLineEdit" name="lineEditLibVVDecFile">
             <property name="toolTip">
-             <string>Specify a libVVCDec library file. These will always be tried first.</string>
+             <string>Specify a libVVDec library file. These will always be tried first.</string>
             </property>
             <property name="whatsThis">
-             <string>Specify a libVVCDec library file. These will always be tried first.</string>
+             <string>Specify a libVVDec library file. These will always be tried first.</string>
             </property>
            </widget>
           </item>
           <item row="4" column="2">
-           <widget class="QPushButton" name="pushButtonLibVVCDecSelectFile">
+           <widget class="QPushButton" name="pushButtonLibVVDecSelectFile">
             <property name="toolTip">
-             <string>Specify a libVVCDec library file. These will always be tried first.</string>
+             <string>Specify a libVVDec library file. These will always be tried first.</string>
             </property>
             <property name="whatsThis">
-             <string>Specify a libVVCDec library file. These will always be tried first.</string>
+             <string>Specify a libVVDec library file. These will always be tried first.</string>
             </property>
             <property name="text">
              <string/>
@@ -1115,12 +1115,12 @@
            </widget>
           </item>
           <item row="4" column="3">
-           <widget class="QPushButton" name="pushButtonLibVVCDecClearFile">
+           <widget class="QPushButton" name="pushButtonLibVVDecClearFile">
             <property name="toolTip">
-             <string>Remove the libVVCDec path.</string>
+             <string>Remove the libVVDec path.</string>
             </property>
             <property name="whatsThis">
-             <string>Remove the libVVCDec path.</string>
+             <string>Remove the libVVDec path.</string>
             </property>
             <property name="text">
              <string/>

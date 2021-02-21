@@ -42,7 +42,7 @@
 #include "common/YUViewDomElement.h"
 #include "decoder/decoderFFmpeg.h"
 #include "decoder/decoderHM.h"
-#include "decoder/decoderVVCDec.h"
+#include "decoder/decoderVVDec.h"
 #include "decoder/decoderVTM.h"
 #include "decoder/decoderDav1d.h"
 #include "decoder/decoderLibde265.h"
@@ -129,7 +129,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is VVC");
       inputFileAnnexBParser.reset(new parser::AnnexBVVC());
-      possibleDecoders.append(decoderEngineVVCDec);
+      possibleDecoders.append(decoderEngineVVDec);
       possibleDecoders.append(decoderEngineVTM);
     }
     else if (inputFormatType == inputAnnexBAVC)
@@ -812,14 +812,14 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
       cachingDecoder.reset(new decoderVTM(displayComponent, true));
     }
   }
-  else if (decoderEngineType == decoderEngineVVCDec)
+  else if (decoderEngineType == decoderEngineVVDec)
   {
-    DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive VVCDec decoder");
-    loadingDecoder.reset(new decoderVVCDec(displayComponent));
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive VVDec decoder");
+    loadingDecoder.reset(new decoderVVDec(displayComponent));
     if (cachingEnabled)
     {
-      DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder caching interactive VVCDec decoder");
-      cachingDecoder.reset(new decoderVVCDec(displayComponent, true));
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder caching interactive VVDec decoder");
+      cachingDecoder.reset(new decoderVVDec(displayComponent, true));
     }
   }
   else if (decoderEngineType == decoderEngineDav1d)
