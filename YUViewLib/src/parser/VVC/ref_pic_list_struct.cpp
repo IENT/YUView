@@ -69,7 +69,7 @@ void ref_pic_list_struct::parse(SubByteReaderLogging &                  reader,
       {
         this->st_ref_pic_flag[i] = reader.readFlag(formatArray("st_ref_pic_flag", i));
       }
-      if (this->getStRefPicFlag(listIdx, rplsIdx, i))
+      if (this->getStRefPicFlag(i))
       {
         this->abs_delta_poc_st[i] = reader.readUEV(formatArray("abs_delta_poc_st", i));
 
@@ -99,17 +99,17 @@ void ref_pic_list_struct::parse(SubByteReaderLogging &                  reader,
   // (148)
   this->NumLtrpEntries = 0;
   for (unsigned i = 0; i < this->num_ref_entries; i++)
-    if (!this->inter_layer_ref_pic_flag[i] && !this->getStRefPicFlag(listIdx, rplsIdx, i))
+    if (!this->inter_layer_ref_pic_flag[i] && !this->getStRefPicFlag(i))
       this->NumLtrpEntries++;
 
   // (150)
   for (unsigned i = 0; i < this->num_ref_entries; i++)
-    if (!this->inter_layer_ref_pic_flag[i] && this->getStRefPicFlag(listIdx, rplsIdx, i))
+    if (!this->inter_layer_ref_pic_flag[i] && this->getStRefPicFlag(i))
       this->DeltaPocValSt[i] =
           (1 - 2 * int(this->strp_entry_sign_flag[i])) * this->AbsDeltaPocSt[i];
 }
 
-bool ref_pic_list_struct::getStRefPicFlag(unsigned listIdx, unsigned rplsIdx, unsigned i)
+bool ref_pic_list_struct::getStRefPicFlag(unsigned i)
 {
   // The default value of a non existent st_ref_pic_flag is true
   if (!this->inter_layer_ref_pic_flag[i] && this->st_ref_pic_flag.count(i) == 0)

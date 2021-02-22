@@ -519,7 +519,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
         std::tie(seekToDTS, seekToFrame) = inputFileFFmpegLoading->getClosestSeekableFrameBefore(frameIdx);
     }
 
-    if (curFrameIdx == -1 || seekToFrame > curFrameIdx + FORWARD_SEEK_THRESHOLD)
+    if (curFrameIdx < 0 || seekToFrame > unsigned(curFrameIdx) + FORWARD_SEEK_THRESHOLD)
     {
       // A seek forward makes sense
       seek = true;
@@ -564,7 +564,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       {
         // We are reading from a raw annexB file and use ffmpeg for decoding
         QByteArray data;
-        if (readAnnexBFrameCounterCodingOrder >= inputFileAnnexBParser->getNumberPOCs())
+        if (readAnnexBFrameCounterCodingOrder >= 0 && unsigned(readAnnexBFrameCounterCodingOrder) >= inputFileAnnexBParser->getNumberPOCs())
         {
           DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData EOF");
         }

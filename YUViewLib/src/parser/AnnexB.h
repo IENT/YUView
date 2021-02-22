@@ -135,7 +135,7 @@ protected:
          fileStartEndPos;          //< The start and end position of all slice NAL units (if known)
     bool randomAccessPoint{false}; //< Can we start decoding here?
 
-    bool operator<(AnnexBFrame const &b) { return (this->poc < b.poc); }
+    bool operator<(AnnexBFrame const &b) const { return (this->poc < b.poc); }
   };
 
   // Returns false if the POC was already present int the list

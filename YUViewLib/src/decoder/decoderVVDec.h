@@ -110,7 +110,6 @@ private:
   // Try to get the next picture from the decoder and save it in currentHMPic
   bool getNextFrameFromDecoder();
 
-  bool internalsSupported{false};
   int  nrSignals{0};
   bool flushing{false};
 

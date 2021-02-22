@@ -287,7 +287,7 @@ bool decoderVVDec::getNextFrameFromDecoder()
       return setErrorB("Received a frame of different size");
     if (this->formatYUV.subsampling != subsampling)
       return setErrorB("Received a frame with different subsampling");
-    if (this->formatYUV.bitsPerSample != bitDepth)
+    if (unsigned(this->formatYUV.bitsPerSample) != bitDepth)
       return setErrorB("Received a frame with different bit depth");
   }
 

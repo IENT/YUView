@@ -64,7 +64,7 @@ public:
   umap_1d<int>  DeltaPocValSt;
 
 private:
-  bool getStRefPicFlag(unsigned listIdx, unsigned rplsIdx, unsigned i);
+  bool getStRefPicFlag(unsigned i);
 };
 
 } // namespace parser::vvc

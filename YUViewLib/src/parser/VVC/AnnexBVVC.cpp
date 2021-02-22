@@ -149,7 +149,7 @@ std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
         continue;
       }
 
-      if (picHeader->PicOrderCntVal == seekPOC)
+      if (seekPOC >= 0 && picHeader->PicOrderCntVal == unsigned(seekPOC))
       {
         // Seek here
         AnnexB::SeekData seekData;
