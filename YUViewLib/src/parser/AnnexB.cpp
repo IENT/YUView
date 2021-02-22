@@ -103,7 +103,7 @@ void AnnexB::logNALSize(const ByteVector &        data,
 
 size_t AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx)
 {
-  if (frameIdx >= this->frameList.size())
+  if (frameIdx < 0 || unsigned(frameIdx) >= this->frameList.size())
     return {};
 
   auto seekPOC = this->getFramePOC(frameIdx);
@@ -141,7 +141,7 @@ size_t AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx)
 
 std::optional<pairUint64> AnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
 {
-  if (codingOrderFrameIdx < 0 || codingOrderFrameIdx >= frameList.size())
+  if (codingOrderFrameIdx < 0 || unsigned(codingOrderFrameIdx) >= frameList.size())
     return {};
   if (this->frameListNeedsParsing)
   {
