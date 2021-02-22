@@ -88,6 +88,8 @@ const std::vector<libvvdec_ColorComponent>
 void loggingCallback(void *ptr, int level, const char *msg)
 {
   (void)ptr;
+  (void)level;
+  (void)msg;
 #if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
   qDebug() << "decoderVVDec::decoderVVDec vvdeclog(" << level << "): " << msg;
 #endif
@@ -124,7 +126,13 @@ QStringList decoderVVDec::getLibraryNames()
   // If the file name is not set explicitly, QLibrary will try to open the .so file first.
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
-  auto names = is_Q_OS_MAC ? QStringList() << "libvvdec.dylib" : QStringList() << "libvvdec";
+  QStringList names;
+  if (is_Q_OS_LINUX)
+    names << "libvvdecLib";
+  if (is_Q_OS_MAC)
+    names << "libvvdecLib.dylib";
+  if (is_Q_OS_WIN)
+    names << "vvdecLib";
 
   return names;
 }
