@@ -270,15 +270,17 @@ void MainWindow::createMenusAndActions()
   helpMenu->addAction("About YUView", this, &MainWindow::showAbout);
   helpMenu->addAction("Help", this, &MainWindow::showHelp);
   helpMenu->addSeparator();
-  helpMenu->addAction("Open Project Website...", this, &MainWindow::openProjectWebsite);
-  helpMenu->addAction("Check for new version", this, &MainWindow::checkForNewVersion);
+  helpMenu->addAction("Open Project Website...", [](){ QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); });
+  helpMenu->addAction("Check for new version", [this](){ this->updater->startCheckForNewVersion(); });
   QMenu *downloadsMenu = helpMenu->addMenu("Downloads");
-  downloadsMenu->addAction("libde265 HEVC decoder", this, &MainWindow::openLibde265Website);
-  downloadsMenu->addAction("HM reference HEVC decoder", this, &MainWindow::openHMWebsite);
-  downloadsMenu->addAction("VTM VVC decoder", this, &MainWindow::openVTMWebsize);
-  downloadsMenu->addAction("dav1d AV1 decoder", this, &MainWindow::openDav1dWebsite);
+  downloadsMenu->addAction("libde265 HEVC decoder", [](){ QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libde265/releases")); });
+  downloadsMenu->addAction("HM reference HEVC decoder", [](){ QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libHM/releases")); });
+  downloadsMenu->addAction("VTM VVC decoder", [](){ QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/VTM/releases")); });
+  downloadsMenu->addAction("dav1d AV1 decoder", [](){ QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/dav1d/releases")); });
+  downloadsMenu->addAction("FFmpeg libraries", [](){ QDesktopServices::openUrl(QUrl("https://ffmpeg.org/")); });
+  downloadsMenu->addAction("VVDec libraries", [](){ QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/vvdec/releases/tag/libv0.2.0.1")); });
   helpMenu->addSeparator();
-  helpMenu->addAction("Performance Tests", this, &MainWindow::performanceTest);
+  helpMenu->addAction("Performance Tests", [this](){ this->performanceTest(); });
   helpMenu->addAction("Reset Window Layout", this, &MainWindow::resetWindowLayout);
   helpMenu->addAction("Clear Settings", this, &MainWindow::closeAndClearSettings);
 

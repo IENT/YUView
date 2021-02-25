@@ -97,15 +97,6 @@ private slots:
   bool handleKeyPressFromSeparateView(QKeyEvent *event) { return handleKeyPress(event); }
   bool handleKeyPress(QKeyEvent *event, bool keyFromSeparateView=true);
 
-  // Some slots for the actions.
-  void openProjectWebsite()  { QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); }
-  void openLibde265Website() { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libde265/releases")); }
-  void openHMWebsite()       { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libHM/releases")); }
-  void openVTMWebsize()      { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/VTM/releases")); }
-  void openDav1dWebsite()    { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/dav1d/releases")); }
-  void checkForNewVersion()  { updater->startCheckForNewVersion(); }
-  void performanceTest();
-
 private:
 
   Ui::MainWindow ui;
@@ -125,6 +116,8 @@ private:
 
   void showAboutHelp(bool about);
   void updateSettings();
+
+  void performanceTest();
 
   QPointer<QAction> recentFileActions[MAX_RECENT_FILES];
   QScopedPointer<videoCache> cache;
