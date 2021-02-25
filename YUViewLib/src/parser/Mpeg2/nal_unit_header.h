@@ -33,7 +33,6 @@
 #pragma once
 
 #include "common/typedef.h"
-#include "parser/NalUnit.h"
 #include "parser/common/SubByteReaderLogging.h"
 #include "parser/common/CodingEnum.h"
 
@@ -81,8 +80,6 @@ public:
   // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the
   // values will be added to the tree as well.
   void parse(reader::SubByteReaderLogging &reader);
-
-  virtual QByteArray getNALHeader() const;
 
   NalType      nal_unit_type{NalType::UNSPECIFIED};
   unsigned int slice_id{};           // in case of SLICE

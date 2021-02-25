@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include "parser/NalUnit.h"
 #include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::hevc
@@ -113,8 +112,6 @@ public:
   nal_unit_header()  = default;
   ~nal_unit_header() = default;
   void parse(reader::SubByteReaderLogging &reader);
-
-  QByteArray getNALHeader() const;
 
   bool isIRAP() const;
   bool isSLNR() const;

@@ -338,18 +338,15 @@ void picture_header_structure::parse(SubByteReaderLogging &            reader,
       this->ph_temporal_mvp_enabled_flag = reader.readFlag("ph_temporal_mvp_enabled_flag");
       if (this->ph_temporal_mvp_enabled_flag && pps->pps_rpl_info_in_ph_flag)
       {
+        auto rps0 = this->ref_pic_lists_instance->getActiveRefPixList(sps, 0);
+        auto rps1 = this->ref_pic_lists_instance->getActiveRefPixList(sps, 1);
         this->ph_collocated_from_l0_flag = true;
-        if (this->ref_pic_lists_instance->ref_pic_list_struct_instance
-                .num_ref_entries[1][this->ref_pic_lists_instance->RplsIdx[1]] > 0)
+        if (rps0.num_ref_entries > 0)
         {
           this->ph_collocated_from_l0_flag = reader.readFlag("ph_collocated_from_l0_flag");
         }
-        if ((this->ph_collocated_from_l0_flag &&
-             this->ref_pic_lists_instance->ref_pic_list_struct_instance
-                     .num_ref_entries[0][ref_pic_lists_instance->RplsIdx[0]] > 1) ||
-            (!this->ph_collocated_from_l0_flag &&
-             this->ref_pic_lists_instance->ref_pic_list_struct_instance
-                     .num_ref_entries[1][this->ref_pic_lists_instance->RplsIdx[1]] > 1))
+        if ((this->ph_collocated_from_l0_flag && rps0.num_ref_entries > 1) ||
+            (!this->ph_collocated_from_l0_flag && rps1.num_ref_entries > 1))
         {
           this->ph_collocated_ref_idx = reader.readUEV("ph_collocated_ref_idx");
         }
@@ -364,10 +361,13 @@ void picture_header_structure::parse(SubByteReaderLogging &            reader,
     {
       presenceFlag = true;
     }
-    else if (this->ref_pic_lists_instance->ref_pic_list_struct_instance
-                 .num_ref_entries[1][this->ref_pic_lists_instance->RplsIdx[1]] > 0)
+    else
     {
-      presenceFlag = true;
+      auto rps1 = this->ref_pic_lists_instance->getActiveRefPixList(sps, 1);
+      if (rps1.num_ref_entries > 0)
+      {
+        presenceFlag = true;
+      }
     }
     if (presenceFlag)
     {

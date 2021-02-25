@@ -52,8 +52,12 @@ void adaptation_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "adaptation_parameter_set_rbsp");
 
-  auto aps_params_type_ID = reader.readBits("aps_params_type", 3, Options().withCheckRange({0, 2}));
-  this->aps_params_type   = apsParamTypeMap.at(aps_params_type_ID).first;
+  auto aps_params_type_ID =
+      reader.readBits("aps_params_type",
+                      3,
+                      Options().withCheckRange({0, 2}).withMeaningVector(
+                          {"ALF parameters", "LMCS parameters", "Scaling list parameters"}));
+  this->aps_params_type = apsParamTypeMap.at(aps_params_type_ID).first;
 
   this->aps_adaptation_parameter_set_id =
       reader.readBits("aps_adaptation_parameter_set_id", 5, Options().withCheckRange({0, 7}));

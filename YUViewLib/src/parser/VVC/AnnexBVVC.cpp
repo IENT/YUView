@@ -64,24 +64,154 @@ namespace parser
 
 using namespace vvc;
 
-double AnnexBVVC::getFramerate() const { return DEFAULT_FRAMERATE; }
-
-QSize AnnexBVVC::getSequenceSizeSamples() const { return QSize(352, 288); }
-
-yuvPixelFormat AnnexBVVC::getPixelFormat() const { return yuvPixelFormat(Subsampling::YUV_420, 8); }
-
-QList<QByteArray> AnnexBVVC::getSeekFrameParamerSets(int iFrameNr, uint64_t &filePos)
+double AnnexBVVC::getFramerate() const
 {
-  Q_UNUSED(iFrameNr);
-  Q_UNUSED(filePos);
+  // Parsing of VUI not implemented yet
+  return DEFAULT_FRAMERATE;
+}
+
+QSize AnnexBVVC::getSequenceSizeSamples() const
+{
+  for (const auto &nal : this->nalUnitsForSeeking)
+  {
+    if (nal->header.nal_unit_type == vvc::NalType::SPS_NUT)
+    {
+      auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
+      return QSize(sps->get_max_width_cropping(), sps->get_max_height_cropping());
+    }
+  }
+
+  return QSize(-1, -1);
+}
+
+yuvPixelFormat AnnexBVVC::getPixelFormat() const
+{
+  // Get the subsampling and bit-depth from the sps
+  int  bitDepthY   = -1;
+  int  bitDepthC   = -1;
+  auto subsampling = Subsampling::UNKNOWN;
+  for (const auto &nal : this->nalUnitsForSeeking)
+  {
+    if (nal->header.nal_unit_type == vvc::NalType::SPS_NUT)
+    {
+      auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
+      if (sps->sps_chroma_format_idc == 0)
+        subsampling = Subsampling::YUV_400;
+      else if (sps->sps_chroma_format_idc == 1)
+        subsampling = Subsampling::YUV_420;
+      else if (sps->sps_chroma_format_idc == 2)
+        subsampling = Subsampling::YUV_422;
+      else if (sps->sps_chroma_format_idc == 3)
+        subsampling = Subsampling::YUV_444;
+
+      bitDepthY = sps->sps_bitdepth_minus8 + 8;
+      bitDepthC = sps->sps_bitdepth_minus8 + 8;
+    }
+
+    if (bitDepthY != -1 && bitDepthC != -1 && subsampling != Subsampling::UNKNOWN)
+    {
+      if (bitDepthY != bitDepthC)
+      {
+        // Different luma and chroma bit depths currently not supported
+        return {};
+      }
+      return yuvPixelFormat(subsampling, bitDepthY);
+    }
+  }
+
+  return {};
+}
+
+std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
+{
+  if (iFrameNr >= int(this->getNumberPOCs()))
+    return {};
+
+  auto seekPOC = this->getFramePOC(iFrameNr);
+
+  // Collect the active parameter sets
+  using NalMap = std::map<unsigned, std::shared_ptr<NalUnitVVC>>;
+  NalMap activeVPSNal;
+  NalMap activeSPSNal;
+  NalMap activePPSNal;
+  NalMap activeAPSNal;
+
+  for (const auto &nal : this->nalUnitsForSeeking)
+  {
+    if (nal->header.isSlice())
+    {
+      auto slice = std::dynamic_pointer_cast<slice_layer_rbsp>(nal->rbsp);
+
+      auto picHeader = slice->slice_header_instance.picture_header_structure_instance;
+      if (!picHeader)
+      {
+        DEBUG_VVC("Error - Slice has no picture header");
+        continue;
+      }
+
+      if (seekPOC >= 0 && picHeader->PicOrderCntVal == unsigned(seekPOC))
+      {
+        // Seek here
+        AnnexB::SeekData seekData;
+        if (nal->filePosStartEnd)
+          seekData.filePos = nal->filePosStartEnd->first;
+
+        for (const auto &nalMap : {activeVPSNal, activeSPSNal, activePPSNal, activeAPSNal})
+        {
+          for (auto const &entry : nalMap)
+            seekData.parameterSets.push_back(entry.second->rawData);
+        }
+
+        return seekData;
+      }
+    }
+    if (nal->header.nal_unit_type == NalType::VPS_NUT)
+    {
+      auto vps = std::dynamic_pointer_cast<video_parameter_set_rbsp>(nal->rbsp);
+      activeVPSNal[vps->vps_video_parameter_set_id] = nal;
+    }
+    if (nal->header.nal_unit_type == NalType::SPS_NUT)
+    {
+      auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
+      activeSPSNal[sps->sps_seq_parameter_set_id] = nal;
+    }
+    if (nal->header.nal_unit_type == NalType::PPS_NUT)
+    {
+      auto pps = std::dynamic_pointer_cast<pic_parameter_set_rbsp>(nal->rbsp);
+      activePPSNal[pps->pps_pic_parameter_set_id] = nal;
+    }
+    if (nal->header.nal_unit_type == NalType::PREFIX_APS_NUT ||
+        nal->header.nal_unit_type == NalType::SUFFIX_APS_NUT)
+    {
+      auto aps = std::dynamic_pointer_cast<adaptation_parameter_set_rbsp>(nal->rbsp);
+      activeAPSNal[aps->aps_adaptation_parameter_set_id] = nal;
+    }
+  }
+
   return {};
 }
 
 QByteArray AnnexBVVC::getExtradata() { return {}; }
 
-IntPair AnnexBVVC::getProfileLevel() { return {0, 0}; }
+IntPair AnnexBVVC::getProfileLevel()
+{
+  for (const auto &nal : this->nalUnitsForSeeking)
+  {
+    if (nal->header.nal_unit_type == vvc::NalType::SPS_NUT)
+    {
+      auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
+      return {sps->profile_tier_level_instance.general_profile_idc,
+              sps->profile_tier_level_instance.general_level_idc};
+    }
+  }
+  return {};
+}
 
-Ratio AnnexBVVC::getSampleAspectRatio() { return Ratio({1, 1}); }
+Ratio AnnexBVVC::getSampleAspectRatio()
+{
+  // Parsing of VUI not implemented yet
+  return Ratio({1, 1});
+}
 
 AnnexB::ParseResult
 AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
@@ -118,6 +248,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 
+  ParsingState updatedParsingState = this->parsingState;
+
   std::string specificDescription;
   auto        nalVVC = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);
   try
@@ -134,7 +266,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newVPS->vps_video_parameter_set_id);
 
-      nalVVC->rbsp = newVPS;
+      nalVVC->rbsp    = newVPS;
+      nalVVC->rawData = data;
+      this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::SPS_NUT)
     {
@@ -146,7 +280,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newSPS->sps_seq_parameter_set_id);
 
-      nalVVC->rbsp = newSPS;
+      nalVVC->rbsp    = newSPS;
+      nalVVC->rawData = data;
+      this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::PPS_NUT)
     {
@@ -158,7 +294,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newPPS->pps_pic_parameter_set_id);
 
-      nalVVC->rbsp = newPPS;
+      nalVVC->rbsp    = newPPS;
+      nalVVC->rawData = data;
+      this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::PREFIX_APS_NUT ||
              nalVVC->header.nal_unit_type == NalType::SUFFIX_APS_NUT)
@@ -171,7 +309,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newAPS->aps_adaptation_parameter_set_id);
 
-      nalVVC->rbsp = newAPS;
+      nalVVC->rbsp    = newAPS;
+      nalVVC->rawData = data;
+      this->nalUnitsForSeeking.push_back(nalVVC);
     }
     else if (nalVVC->header.nal_unit_type == NalType::PH_NUT)
     {
@@ -181,19 +321,19 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                               this->activeParameterSets.vpsMap,
                               this->activeParameterSets.spsMap,
                               this->activeParameterSets.ppsMap,
-                              this->parsingState.currentSlice);
+                              updatedParsingState.currentSlice);
       newPictureHeader->picture_header_structure_instance->calculatePictureOrderCount(
           reader,
           nalVVC->header.nal_unit_type,
           this->activeParameterSets.spsMap,
           this->activeParameterSets.ppsMap,
-          parsingState.currentPictureHeaderStructure);
+          updatedParsingState.currentPictureHeaderStructure);
 
-      if (this->parsingState.currentPictureHeaderStructure)
-        this->parsingState.lastFramePOC =
-            this->parsingState.currentPictureHeaderStructure->PicOrderCntVal;
+      if (updatedParsingState.currentPictureHeaderStructure)
+        updatedParsingState.lastFramePOC =
+            updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal;
 
-      this->parsingState.currentPictureHeaderStructure =
+      updatedParsingState.currentPictureHeaderStructure =
           newPictureHeader->picture_header_structure_instance;
 
       specificDescription +=
@@ -202,14 +342,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       nalVVC->rbsp = newPictureHeader;
     }
-    else if (nalVVC->header.nal_unit_type == NalType::TRAIL_NUT ||
-             nalVVC->header.nal_unit_type == NalType::STSA_NUT ||
-             nalVVC->header.nal_unit_type == NalType::RADL_NUT ||
-             nalVVC->header.nal_unit_type == NalType::RASL_NUT ||
-             nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
-             nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
-             nalVVC->header.nal_unit_type == NalType::CRA_NUT ||
-             nalVVC->header.nal_unit_type == NalType::GDR_NUT)
+    else if (nalVVC->header.isSlice())
     {
       specificDescription = " Slice Header";
       auto newSliceLayer  = std::make_shared<slice_layer_rbsp>();
@@ -218,9 +351,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                            this->activeParameterSets.vpsMap,
                            this->activeParameterSets.spsMap,
                            this->activeParameterSets.ppsMap,
-                           this->parsingState.currentPictureHeaderStructure);
+                           updatedParsingState.currentPictureHeaderStructure);
 
-      this->parsingState.currentSlice = newSliceLayer;
+      updatedParsingState.currentSlice = newSliceLayer;
       if (newSliceLayer->slice_header_instance.picture_header_structure_instance)
       {
         newSliceLayer->slice_header_instance.picture_header_structure_instance
@@ -228,16 +361,23 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                                          nalVVC->header.nal_unit_type,
                                          this->activeParameterSets.spsMap,
                                          this->activeParameterSets.ppsMap,
-                                         parsingState.currentPictureHeaderStructure);
-        this->parsingState.currentPictureHeaderStructure =
+                                         updatedParsingState.currentPictureHeaderStructure);
+        updatedParsingState.currentPictureHeaderStructure =
             newSliceLayer->slice_header_instance.picture_header_structure_instance;
-        this->parsingState.lastFramePOC =
-            this->parsingState.currentPictureHeaderStructure->PicOrderCntVal;
+        updatedParsingState.lastFramePOC =
+            updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal;
+      }
+      else
+      {
+        if (!updatedParsingState.currentPictureHeaderStructure)
+          throw std::logic_error("Slice must have a valid picture header");
+        newSliceLayer->slice_header_instance.picture_header_structure_instance =
+            updatedParsingState.currentPictureHeaderStructure;
       }
 
       specificDescription +=
           " POC " +
-          std::to_string(this->parsingState.currentPictureHeaderStructure->PicOrderCntVal);
+          std::to_string(updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal);
       specificDescription +=
           " " + to_string(newSliceLayer->slice_header_instance.sh_slice_type) + "-Slice";
 
@@ -291,11 +431,11 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       newSEI->parse(reader,
                     nalVVC->header.nal_unit_type,
                     nalVVC->header.nuh_temporal_id_plus1 - 1,
-                    this->parsingState.lastBufferingPeriod);
+                    updatedParsingState.lastBufferingPeriod);
 
       if (newSEI->payloadType == 0)
       {
-        this->parsingState.lastBufferingPeriod =
+        updatedParsingState.lastBufferingPeriod =
             std::dynamic_pointer_cast<buffering_period>(newSEI->sei_payload_instance);
         specificDescription = " Buffering Period SEI";
       }
@@ -309,12 +449,22 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     parseResult.success = false;
   }
 
-  // TODO: Add bitrate plotting
-  (void)bitrateEntry;
+  DEBUG_VVC("AnnexBVVC::parseAndAddNALUnit NAL " + QString::fromStdString(specificDescription));
 
-  if (auDelimiterDetector.isStartOfNewAU(nalVVC, this->parsingState.currentPictureHeaderStructure))
+  updatedParsingState.lastFrameIsKeyframe = (nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
+                                             nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
+                                             nalVVC->header.nal_unit_type == NalType::CRA_NUT);
+  if (updatedParsingState.lastFrameIsKeyframe)
   {
-    DEBUG_VVC("Start of new AU. Adding bitrate " << this->parsingState.sizeCurrentAU);
+    nalVVC->rawData = data;
+    this->nalUnitsForSeeking.push_back(nalVVC);
+  }
+
+  if (auDelimiterDetector.isStartOfNewAU(nalVVC, updatedParsingState.currentPictureHeaderStructure))
+  {
+    DEBUG_VVC("Start of new AU. Adding bitrate " << this->parsingState.sizeCurrentAU << " POC "
+                                                 << this->parsingState.lastFramePOC << " AU "
+                                                 << this->parsingState.counterAU);
 
     BitratePlotModel::BitrateEntry entry;
     if (bitrateEntry)
@@ -333,35 +483,32 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     entry.keyframe           = this->parsingState.lastFrameIsKeyframe;
     parseResult.bitrateEntry = entry;
 
-    if (this->parsingState.counterAU > 0)
+    if (!addFrameToList(this->parsingState.lastFramePOC,
+                        this->parsingState.curFrameFileStartEndPos,
+                        this->parsingState.lastFrameIsKeyframe))
     {
-      if (!addFrameToList(this->parsingState.lastFramePOC,
-                          this->parsingState.curFrameFileStartEndPos,
-                          this->parsingState.lastFrameIsKeyframe))
-      {
-        new TreeItem(parent, "Error adding frame to frame list.");
-        return parseResult;
-      }
-      if (this->parsingState.curFrameFileStartEndPos)
-        DEBUG_VVC("Adding start/end " << this->curFrameFileStartEndPos->first << "/"
-                                      << this->curFrameFileStartEndPos->second << " - POC "
-                                      << this->parsingState.counterAU
-                                      << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
-      else
-        DEBUG_VVC("Adding start/end %d/%d - POC NA/NA"
-                  << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
+      specificDescription +=
+          " ERROR Adding POC " + std::to_string(this->parsingState.lastFramePOC) + " to frame list";
+      parseResult.success = false;
     }
-    this->parsingState.curFrameFileStartEndPos = nalStartEndPosFile;
-    this->parsingState.sizeCurrentAU           = 0;
-    this->parsingState.counterAU++;
+    if (this->parsingState.curFrameFileStartEndPos)
+      DEBUG_VVC("Adding start/end " << this->parsingState.curFrameFileStartEndPos->first << "/"
+                                    << this->parsingState.curFrameFileStartEndPos->second
+                                    << " - AU " << this->parsingState.counterAU
+                                    << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
+    else
+      DEBUG_VVC("Adding start/end %d/%d - POC NA/NA"
+                << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
+
+    updatedParsingState.curFrameFileStartEndPos = nalStartEndPosFile;
+    updatedParsingState.sizeCurrentAU           = 0;
+    updatedParsingState.counterAU++;
   }
   else if (this->parsingState.curFrameFileStartEndPos && nalStartEndPosFile)
-    this->parsingState.curFrameFileStartEndPos->second = nalStartEndPosFile->second;
+    updatedParsingState.curFrameFileStartEndPos->second = nalStartEndPosFile->second;
 
+  this->parsingState = updatedParsingState;
   this->parsingState.sizeCurrentAU += data.size();
-  this->parsingState.lastFrameIsKeyframe = (nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
-                                            nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
-                                            nalVVC->header.nal_unit_type == NalType::CRA_NUT);
 
   if (nalRoot)
   {

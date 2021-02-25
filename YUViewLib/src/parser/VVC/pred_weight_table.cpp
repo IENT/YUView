@@ -42,7 +42,7 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void pred_weight_table::parse(SubByteReaderLogging &                       reader,
+void pred_weight_table::parse(SubByteReaderLogging &                  reader,
                               std::shared_ptr<seq_parameter_set_rbsp> sps,
                               std::shared_ptr<pic_parameter_set_rbsp> pps,
                               std::shared_ptr<slice_layer_rbsp>       sl,
@@ -93,21 +93,18 @@ void pred_weight_table::parse(SubByteReaderLogging &                       reade
     }
   }
   if (pps->pps_weighted_bipred_flag && pps->pps_wp_info_in_ph_flag &&
-      rpl->ref_pic_list_struct_instance.num_ref_entries[1][rpl->RplsIdx[1]] > 0)
+      rpl->getActiveRefPixList(sps, 1).num_ref_entries > 0)
   {
-    this->num_l1_weights = reader.readUEV(
-        "num_l1_weights",
-        Options().withCheckRange(
-            {0,
-             std::min(15u,
-                      rpl->ref_pic_list_struct_instance.num_ref_entries[1][rpl->RplsIdx[1]])}));
+    this->num_l1_weights =
+        reader.readUEV("num_l1_weights",
+                       Options().withCheckRange(
+                           {0, std::min(15u, rpl->getActiveRefPixList(sps, 1).num_ref_entries)}));
   }
 
   // (144)
   unsigned NumWeightsL1;
   if (!pps->pps_weighted_bipred_flag ||
-      (pps->pps_wp_info_in_ph_flag &&
-       rpl->ref_pic_list_struct_instance.num_ref_entries[1][rpl->RplsIdx[1]] == 0))
+      (pps->pps_wp_info_in_ph_flag && rpl->getActiveRefPixList(sps, 1).num_ref_entries == 0))
     NumWeightsL1 = 0;
   else if (pps->pps_wp_info_in_ph_flag)
     NumWeightsL1 = this->num_l1_weights;

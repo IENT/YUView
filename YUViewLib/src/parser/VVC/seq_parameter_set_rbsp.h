@@ -44,7 +44,8 @@
 namespace parser::vvc
 {
 
-class seq_parameter_set_rbsp : public NalRBSP, public std::enable_shared_from_this<seq_parameter_set_rbsp>
+class seq_parameter_set_rbsp : public NalRBSP,
+                               public std::enable_shared_from_this<seq_parameter_set_rbsp>
 {
 public:
   seq_parameter_set_rbsp()  = default;
@@ -133,8 +134,8 @@ public:
   bool                          sps_inter_layer_prediction_enabled_flag{};
   bool                          sps_idr_rpl_present_flag{};
   bool                          sps_rpl1_same_as_rpl0_flag{};
-  vector<unsigned>              sps_num_ref_pic_lists{};
-  ref_pic_list_struct           ref_pic_list_struct_instance;
+  unsigned                      sps_num_ref_pic_lists[2];
+  vector<ref_pic_list_struct>   ref_pic_list_structs[2];
   bool                          sps_ref_wraparound_enabled_flag{};
   bool                          sps_temporal_mvp_enabled_flag{};
   bool                          sps_sbtmvp_enabled_flag{};
@@ -218,6 +219,20 @@ public:
   unsigned MaxNumMergeCand{};
   unsigned MinQtLog2SizeIntraC{};
   unsigned MinQtLog2SizeInterY{};
+
+  // Get the actual size of the image that will be returned. Internally the image might be bigger.
+  unsigned get_max_width_cropping() const
+  {
+    return (this->sps_pic_width_max_in_luma_samples -
+            (this->SubWidthC * this->sps_conf_win_right_offset) -
+            this->SubWidthC * this->sps_conf_win_left_offset);
+  }
+  unsigned get_max_height_cropping() const
+  {
+    return (this->sps_pic_height_max_in_luma_samples -
+            (this->SubHeightC * this->sps_conf_win_bottom_offset) -
+            this->SubHeightC * this->sps_conf_win_top_offset);
+  }
 
 private:
   void setDefaultSubpicValues(unsigned numSubPic);

@@ -76,7 +76,7 @@ QString functions::getDecoderEngineName(decoderEngine e)
 {
   if (e <= decoderEngineInvalid || e >= decoderEngineNum)
     return "";
-  QStringList l = QStringList() << "libDe265" << "HM" << "VTM" << "Dav1d" << "FFmpeg";
+  QStringList l = QStringList() << "libDe265" << "HM" << "VTM" << "VVDec" << "Dav1d" << "FFmpeg";
   return l.at((int)e);
 }
 

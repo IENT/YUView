@@ -41,6 +41,8 @@ void profile_tier_level::parse(SubByteReaderLogging &reader,
                                bool             profileTierPresentFlag,
                                unsigned         MaxNumSubLayersMinus1)
 {
+  SubByteReaderLoggingSubLevel subLevel(reader, "profile_tier_level");
+
   if (profileTierPresentFlag)
   {
     this->general_profile_idc = reader.readBits("general_profile_idc", 7);

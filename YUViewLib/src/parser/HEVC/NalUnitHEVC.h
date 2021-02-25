@@ -33,7 +33,6 @@
 #pragma once
 
 #include "nal_unit_header.h"
-#include "parser/NalUnit.h"
 
 #include <memory>
 
@@ -47,18 +46,20 @@ public:
   virtual ~NalRBSP() = default;
 };
 
-class NalUnitHEVC : public NalUnit
+class NalUnitHEVC
 {
 public:
   NalUnitHEVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
-      : NalUnit(nalIdx, filePosStartEnd)
+      : nalIdx(nalIdx), filePosStartEnd(filePosStartEnd)
   {
   }
 
-  QByteArray getNALHeader() const override { return this->header.getNALHeader(); };
-
   nal_unit_header          header;
   std::shared_ptr<NalRBSP> rbsp;
+
+  int nalIdx{};
+  // Pointer to the first byte of the start code of the NAL unit (if known)
+  std::optional<pairUint64> filePosStartEnd;
 
   ByteVector rawData;
 };

@@ -32,6 +32,7 @@
 
 #include "ref_pic_list_struct.h"
 
+#include "parser/common/functions.h"
 #include "seq_parameter_set_rbsp.h"
 
 namespace parser::vvc
@@ -39,85 +40,82 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void ref_pic_list_struct::parse(SubByteReaderLogging &                       reader,
+void ref_pic_list_struct::parse(SubByteReaderLogging &                  reader,
                                 unsigned                                listIdx,
                                 unsigned                                rplsIdx,
                                 std::shared_ptr<seq_parameter_set_rbsp> sps)
 {
   assert(sps != nullptr);
-  SubByteReaderLoggingSubLevel subLevel(reader, "ref_pic_list_struct");
+  SubByteReaderLoggingSubLevel subLevel(reader,
+                                        formatArray("ref_pic_list_struct", listIdx, rplsIdx));
 
-  this->num_ref_entries[listIdx][rplsIdx] = reader.readUEV("num_ref_entries");
+  this->num_ref_entries = reader.readUEV("num_ref_entries");
   if (sps->sps_long_term_ref_pics_flag && rplsIdx < sps->sps_num_ref_pic_lists[listIdx] &&
-      this->num_ref_entries[listIdx][rplsIdx] > 0)
+      this->num_ref_entries > 0)
   {
-    this->ltrp_in_header_flag[listIdx][rplsIdx] = reader.readFlag("ltrp_in_header_flag");
+    this->ltrp_in_header_flag = reader.readFlag("ltrp_in_header_flag");
   }
   unsigned j = 0;
-  for (unsigned i = 0; i < this->num_ref_entries[listIdx][rplsIdx]; i++)
+  for (unsigned i = 0; i < this->num_ref_entries; i++)
   {
     if (sps->sps_inter_layer_prediction_enabled_flag)
     {
-      this->inter_layer_ref_pic_flag[listIdx][rplsIdx][i] =
-          reader.readFlag("inter_layer_ref_pic_flag");
+      this->inter_layer_ref_pic_flag[i] =
+          reader.readFlag(formatArray("inter_layer_ref_pic_flag", i));
     }
-    if (!this->inter_layer_ref_pic_flag[listIdx][rplsIdx][i])
+    if (!this->inter_layer_ref_pic_flag[i])
     {
       if (sps->sps_long_term_ref_pics_flag)
       {
-        this->st_ref_pic_flag[listIdx][rplsIdx][i] = reader.readFlag("st_ref_pic_flag");
+        this->st_ref_pic_flag[i] = reader.readFlag(formatArray("st_ref_pic_flag", i));
       }
-      if (this->getStRefPicFlag(listIdx, rplsIdx, i))
+      if (this->getStRefPicFlag(i))
       {
-        this->abs_delta_poc_st[listIdx][rplsIdx][i] = reader.readUEV("abs_delta_poc_st");
+        this->abs_delta_poc_st[i] = reader.readUEV(formatArray("abs_delta_poc_st", i));
 
         // (149)
         if ((sps->sps_weighted_pred_flag || sps->sps_weighted_bipred_flag) && i != 0)
-          this->AbsDeltaPocSt[listIdx][rplsIdx][i] = abs_delta_poc_st[listIdx][rplsIdx][i];
+          this->AbsDeltaPocSt[i] = abs_delta_poc_st[i];
         else
-          this->AbsDeltaPocSt[listIdx][rplsIdx][i] = abs_delta_poc_st[listIdx][rplsIdx][i] + 1;
+          this->AbsDeltaPocSt[i] = abs_delta_poc_st[i] + 1;
 
-        if (this->AbsDeltaPocSt[listIdx][rplsIdx][i])
+        if (this->AbsDeltaPocSt[i])
         {
-          this->strp_entry_sign_flag[listIdx][rplsIdx][i] = reader.readFlag("strp_entry_sign_flag");
+          this->strp_entry_sign_flag[i] = reader.readFlag(formatArray("strp_entry_sign_flag", i));
         }
       }
-      else if (!this->ltrp_in_header_flag[listIdx][rplsIdx])
+      else if (!this->ltrp_in_header_flag)
       {
-        auto numBits = sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
-        this->rpls_poc_lsb_lt[listIdx][rplsIdx][j++] = reader.readBits("rpls_poc_lsb_lt", numBits);
+        auto numBits               = sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
+        this->rpls_poc_lsb_lt[j++] = reader.readBits(formatArray("rpls_poc_lsb_lt", i), numBits);
       }
     }
     else
     {
-      this->ilrp_idx[listIdx][rplsIdx][i] = reader.readUEV("ilrp_idx");
+      this->ilrp_idx[i] = reader.readUEV(formatArray("ilrp_idx", i));
     }
   }
 
   // (148)
-  this->NumLtrpEntries[listIdx][rplsIdx] = 0;
-  for (unsigned i = 0; i < this->num_ref_entries[listIdx][rplsIdx]; i++)
-    if (!this->inter_layer_ref_pic_flag[listIdx][rplsIdx][i] &&
-        !this->getStRefPicFlag(listIdx, rplsIdx, i))
-      this->NumLtrpEntries[listIdx][rplsIdx]++;
+  this->NumLtrpEntries = 0;
+  for (unsigned i = 0; i < this->num_ref_entries; i++)
+    if (!this->inter_layer_ref_pic_flag[i] && !this->getStRefPicFlag(i))
+      this->NumLtrpEntries++;
 
   // (150)
-  for (unsigned i = 0; i < this->num_ref_entries[listIdx][rplsIdx]; i++)
-    if (!this->inter_layer_ref_pic_flag[listIdx][rplsIdx][i] &&
-        this->getStRefPicFlag(listIdx, rplsIdx, i))
-      this->DeltaPocValSt[listIdx][rplsIdx][i] =
-          (1 - 2 * int(this->strp_entry_sign_flag[listIdx][rplsIdx][i])) *
-          this->AbsDeltaPocSt[listIdx][rplsIdx][i];
+  for (unsigned i = 0; i < this->num_ref_entries; i++)
+    if (!this->inter_layer_ref_pic_flag[i] && this->getStRefPicFlag(i))
+      this->DeltaPocValSt[i] =
+          (1 - 2 * int(this->strp_entry_sign_flag[i])) * this->AbsDeltaPocSt[i];
 }
 
-bool ref_pic_list_struct::getStRefPicFlag(unsigned listIdx, unsigned rplsIdx, unsigned i)
+bool ref_pic_list_struct::getStRefPicFlag(unsigned i)
 {
   // The default value of a non existent st_ref_pic_flag is true
-  if (!this->inter_layer_ref_pic_flag[listIdx][rplsIdx][i] &&
-      this->st_ref_pic_flag[listIdx][rplsIdx].count(i) == 0)
-    this->st_ref_pic_flag[listIdx][rplsIdx][i] = true;
+  if (!this->inter_layer_ref_pic_flag[i] && this->st_ref_pic_flag.count(i) == 0)
+    this->st_ref_pic_flag[i] = true;
 
-  return this->st_ref_pic_flag[listIdx][rplsIdx][i];
+  return this->st_ref_pic_flag[i];
 }
 
 } // namespace parser::vvc

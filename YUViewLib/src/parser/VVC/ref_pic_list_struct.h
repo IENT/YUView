@@ -44,27 +44,27 @@ class ref_pic_list_struct
 public:
   ref_pic_list_struct()  = default;
   ~ref_pic_list_struct() = default;
-  void parse(reader::SubByteReaderLogging &               reader,
+  void parse(reader::SubByteReaderLogging &          reader,
              unsigned                                listIdx,
              unsigned                                rplsIdx,
              std::shared_ptr<seq_parameter_set_rbsp> sps);
 
-  umap_2d<unsigned> num_ref_entries{};
-  umap_2d<bool>     ltrp_in_header_flag{};
-  umap_3d<bool>     inter_layer_ref_pic_flag{};
-  umap_3d<bool>     st_ref_pic_flag{};
-  umap_3d<unsigned> abs_delta_poc_st{};
-  umap_3d<bool>     strp_entry_sign_flag{};
-  umap_3d<unsigned> rpls_poc_lsb_lt{};
-  umap_3d<unsigned> ilrp_idx{};
+  unsigned          num_ref_entries{};
+  bool              ltrp_in_header_flag{};
+  umap_1d<bool>     inter_layer_ref_pic_flag{};
+  umap_1d<bool>     st_ref_pic_flag{};
+  umap_1d<unsigned> abs_delta_poc_st{};
+  umap_1d<bool>     strp_entry_sign_flag{};
+  umap_1d<unsigned> rpls_poc_lsb_lt{};
+  umap_1d<unsigned> ilrp_idx{};
 
-  umap_2d<unsigned> NumLtrpEntries;
+  unsigned NumLtrpEntries;
 
-  umap_3d<bool> AbsDeltaPocSt;
-  umap_3d<int>  DeltaPocValSt;
+  umap_1d<bool> AbsDeltaPocSt;
+  umap_1d<int>  DeltaPocValSt;
 
 private:
-  bool getStRefPicFlag(unsigned listIdx, unsigned rplsIdx, unsigned i);
+  bool getStRefPicFlag(unsigned i);
 };
 
 } // namespace parser::vvc

@@ -67,6 +67,7 @@ public:
   vector2d<bool>     alf_cc_cb_coeff_sign{};
   unsigned           alf_cc_cr_filters_signalled_minus1{};
   vector2d<unsigned> alf_cc_cr_mapped_coeff_abs{};
+  vector2d<bool>     alf_cc_cr_coeff_sign{};
 };
 
 } // namespace parser::vvc

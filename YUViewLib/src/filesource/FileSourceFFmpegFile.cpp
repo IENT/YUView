@@ -375,17 +375,14 @@ std::pair<int64_t, size_t> FileSourceFFmpegFile::getClosestSeekableFrameBefore(i
 
   for (const auto &pic : this->keyFrameList)
   {
-    if (pic.frame >= 0) 
+    if (frameIdx > 0 && pic.frame <= unsigned(frameIdx))
     {
-      if (pic.frame <= frameIdx)
-      {
-        // We could seek here
-        bestSeekDTS = pic.dts;
-        seekToFrameIdx = pic.frame;
-      }
-      else
-        break;
+      // We could seek here
+      bestSeekDTS = pic.dts;
+      seekToFrameIdx = pic.frame;
     }
+    else
+      break;
   }
 
   return {bestSeekDTS, seekToFrameIdx};
