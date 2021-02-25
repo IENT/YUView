@@ -108,7 +108,7 @@ decoderVVDec::decoderVVDec(int signalID, bool cachingDecoder)
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");
-  this->loadDecoderLibrary(settings.value("libvvdecFile", "").toString());
+  this->loadDecoderLibrary(settings.value("libVVDecFile", "").toString());
   settings.endGroup();
 
   if (this->decoderState != DecoderState::Error)
@@ -378,7 +378,7 @@ void decoderVVDec::copyImgToByteArray(QByteArray &dst)
   {
     auto bitDepthU = this->lib.libvvdec_get_picture_bit_depth(this->decoder, LIBvvdec_CHROMA_U);
     auto bitDepthV = this->lib.libvvdec_get_picture_bit_depth(this->decoder, LIBvvdec_CHROMA_V);
-    if ((outputTwoByte != bitDepthU > 8) || (outputTwoByte != bitDepthV > 8))
+    if ((outputTwoByte != (bitDepthU > 8)) || (outputTwoByte != (bitDepthV > 8)))
     {
       DEBUG_vvdec("decoderVVDec::copyImgToByteArray different bit depth in YUV components. This "
                    "is not supported.");
