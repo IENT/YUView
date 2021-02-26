@@ -98,8 +98,8 @@ void seq_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
       this->sps_res_change_in_clvs_allowed_flag ? Options().withCheckEqualTo(0) : Options());
   if (this->sps_subpic_info_present_flag)
   {
-    this->sps_num_subpics_minus1 =
-        reader.readUEV("sps_num_subpics_minus1"); // SubByteReaderLogging::Options(0, MaxSlicesPerAu)
+    this->sps_num_subpics_minus1 = reader.readUEV(
+        "sps_num_subpics_minus1"); // SubByteReaderLogging::Options(0, MaxSlicesPerAu)
     if (this->sps_num_subpics_minus1 > 0)
     {
       this->sps_independent_subpics_flag = reader.readFlag("sps_independent_subpics_flag");
@@ -360,7 +360,7 @@ void seq_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
   this->sps_idr_rpl_present_flag   = reader.readFlag("sps_idr_rpl_present_flag");
   this->sps_rpl1_same_as_rpl0_flag = reader.readFlag("sps_rpl1_same_as_rpl0_flag");
   {
-    auto refPicSubLevel = SubByteReaderLoggingSubLevel(reader, "Ref Pic List 0");
+    auto refPicSubLevel            = SubByteReaderLoggingSubLevel(reader, "Ref Pic List 0");
     this->sps_num_ref_pic_lists[0] = reader.readUEV("sps_num_ref_pic_lists");
     for (unsigned j = 0; j < this->sps_num_ref_pic_lists[0]; j++)
     {
@@ -575,11 +575,10 @@ void seq_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
         reader.readUEV("sps_vui_payload_size_minus1", Options().withCheckRange({0, 1023}));
     while (!reader.byte_aligned())
     {
-      this->sps_vui_alignment_zero_bit = reader.readFlag("sps_vui_alignment_zero_bit");
+      this->sps_vui_alignment_zero_bit =
+          reader.readFlag("sps_vui_alignment_zero_bit", Options().withCheckEqualTo(0));
     }
-    // TODO VUI Parsing
-    auto nrBytes = this->sps_vui_payload_size_minus1 + 1;
-    reader.readBytes("vui_payload", nrBytes);
+    this->vui_payload_instance.parse(reader, this->sps_vui_payload_size_minus1 + 1);
   }
   this->sps_extension_flag = reader.readFlag("sps_extension_flag", Options().withCheckEqualTo(0));
   if (this->sps_extension_flag)

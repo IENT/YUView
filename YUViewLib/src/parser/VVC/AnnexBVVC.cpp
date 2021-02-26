@@ -209,7 +209,24 @@ IntPair AnnexBVVC::getProfileLevel()
 
 Ratio AnnexBVVC::getSampleAspectRatio()
 {
-  // Parsing of VUI not implemented yet
+  for (const auto &nal : this->nalUnitsForSeeking)
+  {
+    if (nal->header.nal_unit_type == vvc::NalType::SPS_NUT)
+    {
+      auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
+      if (sps->sps_vui_parameters_present_flag)
+      {
+        auto vui = sps->vui_payload_instance.vui;
+        if (vui.vui_aspect_ratio_info_present_flag)
+        {
+          if (vui.vui_aspect_ratio_idc == 255)
+            return {int(vui.vui_sar_height), int(vui.vui_sar_width)};
+          else
+            return sampleAspectRatioCoding.getValue(vui.vui_aspect_ratio_idc);
+        }
+      }
+    }
+  }
   return Ratio({1, 1});
 }
 
