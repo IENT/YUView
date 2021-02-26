@@ -341,6 +341,11 @@ bool SubByteReader::canReadBits(unsigned nrBits) const
   return nrBits <= nrBitsLeftToRead;
 }
 
+size_t SubByteReader::nrBitsRead() const
+{
+  return (this->posInBufferBytes - this->initialPosInBuffer) * 8 + this->posInBufferBits;
+}
+
 size_t SubByteReader::nrBytesRead() const
 {
   return this->posInBufferBytes - this->initialPosInBuffer + (this->posInBufferBits != 0 ? 1 : 0);

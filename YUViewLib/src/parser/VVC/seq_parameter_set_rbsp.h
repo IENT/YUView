@@ -40,6 +40,7 @@
 #include "profile_tier_level.h"
 #include "rbsp_trailing_bits.h"
 #include "ref_pic_list_struct.h"
+#include "vui_payload.h"
 
 namespace parser::vvc
 {
@@ -196,10 +197,10 @@ public:
   bool                          sps_vui_parameters_present_flag{};
   unsigned                      sps_vui_payload_size_minus1{};
   bool                          sps_vui_alignment_zero_bit{};
-  // vui_payload vui_payload_instance;
-  bool               sps_extension_flag{};
-  bool               sps_extension_data_flag{};
-  rbsp_trailing_bits rbsp_trailing_bits_instance;
+  vui_payload                   vui_payload_instance;
+  bool                          sps_extension_flag{};
+  bool                          sps_extension_data_flag{};
+  rbsp_trailing_bits            rbsp_trailing_bits_instance;
 
   unsigned BitDepth{};
   unsigned QpBdOffset{};

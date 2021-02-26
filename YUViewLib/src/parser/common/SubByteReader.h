@@ -57,6 +57,7 @@ public:
   [[nodiscard]] bool payload_extension_present() const;
   [[nodiscard]] bool canReadBits(unsigned nrBits) const;
 
+  [[nodiscard]] size_t nrBitsRead() const;
   [[nodiscard]] size_t nrBytesRead() const;
   [[nodiscard]] size_t nrBytesLeft() const;
 
