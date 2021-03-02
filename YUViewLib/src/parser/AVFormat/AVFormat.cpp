@@ -622,7 +622,6 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     {
       signalEmitTimer.start();
       emit modelDataUpdated();
-      qDebug() << "AVFormatModelUpdate";
     }
 
     if (cancelBackgroundParser)
@@ -641,11 +640,7 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   ffmpegFile->seekFileToBeginning();
 
   if (packetModel)
-  {
     emit modelDataUpdated();
-    qDebug() << "AVFormatModelUpdate Final";
-  }
-  qDebug() << "AVFormatModelUpdate - DEBUG";
 
   this->streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   emit streamInfoUpdated();
