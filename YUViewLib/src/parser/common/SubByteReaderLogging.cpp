@@ -140,8 +140,8 @@ QByteArray SubByteReaderLogging::convertToQByteArray(ByteVector data)
 }
 
 SubByteReaderLogging::SubByteReaderLogging(SubByteReader &reader,
-                                           TreeItem *        item,
-                                           std::string       new_sub_item_name)
+                                           TreeItem *     item,
+                                           std::string    new_sub_item_name)
     : SubByteReader(reader)
 {
   if (item)
@@ -296,10 +296,15 @@ ByteVector SubByteReaderLogging::readBytes(const std::string &symbolName,
   try
   {
     if (!this->byte_aligned())
-      throw std::logic_error("Trying to ready bytes while not byte aligned.");
+      throw std::logic_error("Trying to read bytes while not byte aligned.");
 
     auto [value, code] = SubByteReader::readBytes(nrBytes);
-    checkAndLog(this->currentTreeLevel, "u(8)", symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel,
+                "u(" + std::to_string(nrBytes * 8) + ")",
+                symbolName,
+                options,
+                value,
+                code);
     return value;
   }
   catch (const std::exception &ex)

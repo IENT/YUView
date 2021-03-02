@@ -128,7 +128,7 @@ bool AVFormat::parseExtradata_generic(ByteVector &extradata)
   SubByteReaderLogging reader(extradata, packetModel->getRootItem(), "Extradata");
   unsigned             i = 0;
   while (reader.canReadBits(8))
-    reader.readBytes(formatArray("raw_byte", i++), 8);
+    reader.readBytes(formatArray("raw_byte", i++), 1);
 
   return true;
 }
@@ -161,7 +161,8 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
       SubByteReaderLoggingSubLevel spsSubLevel(reader, "SPS " + std::to_string(i));
       auto                         sps_size = reader.readBits("sps_size", 16);
       auto spsData     = reader.readBytes("", sps_size, Options().withLoggingDisabled());
-      auto parseResult = this->annexBParser->parseAndAddNALUnit(nalID++, spsData, {}, {}, reader.getCurrentItemTree());
+      auto parseResult = this->annexBParser->parseAndAddNALUnit(
+          nalID++, spsData, {}, {}, reader.getCurrentItemTree());
       if (parseResult.success && parseResult.bitrateEntry)
         this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
     }
@@ -172,7 +173,8 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
       SubByteReaderLoggingSubLevel ppsSubLevel(reader, "PPS " + std::to_string(i));
       auto                         pps_size = reader.readBits("pps_size", 16);
       auto pspsData    = reader.readBytes("", pps_size, Options().withLoggingDisabled());
-      auto parseResult = this->annexBParser->parseAndAddNALUnit(nalID++, pspsData, {}, {}, reader.getCurrentItemTree());
+      auto parseResult = this->annexBParser->parseAndAddNALUnit(
+          nalID++, pspsData, {}, {}, reader.getCurrentItemTree());
       if (parseResult.success && parseResult.bitrateEntry)
         this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
     }
@@ -260,7 +262,8 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
     {
       if (std::distance(searchStart, data.end()) <= 3)
         return data.end();
-      auto itStartCode = std::search(searchStart + 3, data.end(), startCode.begin(), startCode.end());
+      auto itStartCode =
+          std::search(searchStart + 3, data.end(), startCode.begin(), startCode.end());
       if (itStartCode == data.end())
         return data.end();
       return itStartCode;
@@ -291,9 +294,9 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
     }
   }
 
-  const auto sizeStartCode = (dataFormat == packetDataFormat_t::packetFormatRawNAL ? 3u : 4u );
+  const auto sizeStartCode = (dataFormat == packetDataFormat_t::packetFormatRawNAL ? 3u : 4u);
 
-  auto                    nalID = 0u;
+  auto                            nalID = 0u;
   std::map<std::string, unsigned> naNames;
   while (itStartCode != data.end())
   {
@@ -351,6 +354,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
       ss << std::setfill('0') << std::setw(2) << minutes << ":";
     ss << std::setfill('0') << std::setw(2) << seconds << ".";
     ss << std::setfill('0') << std::setw(4) << milliseconds;
+    ss << ")";
 
     return ss.str();
   };
@@ -367,7 +371,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
 
   itemTree->setStreamIndex(packet.getStreamIndex());
 
-  if (packet.getPacketType() == PacketType::VIDEO)
+  if (packet.getPacketType() == PacketType::VIDEO && (this->annexBParser || this->obuParser))
   {
     // Colloect the types of OBus/NALs to create a good name later
     std::map<std::string, unsigned> unitNames;
@@ -494,10 +498,10 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   {
     const auto nrBytesToLog = std::min(avpacketData.size(), size_t(100));
 
-    SubByteReaderLogging reader(avpacketData, packetModel->getRootItem(), "Data");
+    SubByteReaderLogging reader(avpacketData, itemTree, "Data");
     auto                 i = 0u;
     while (reader.canReadBits(8) && i < nrBytesToLog)
-      reader.readBytes(formatArray("raw_byte", i++), 8);
+      reader.readBytes(formatArray("raw_byte", i++), 1);
 
     BitratePlotModel::BitrateEntry entry;
     entry.pts      = packet.getPTS();
@@ -618,6 +622,7 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     {
       signalEmitTimer.start();
       emit modelDataUpdated();
+      qDebug() << "AVFormatModelUpdate";
     }
 
     if (cancelBackgroundParser)
@@ -636,7 +641,11 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   ffmpegFile->seekFileToBeginning();
 
   if (packetModel)
+  {
     emit modelDataUpdated();
+    qDebug() << "AVFormatModelUpdate Final";
+  }
+  qDebug() << "AVFormatModelUpdate - DEBUG";
 
   this->streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
   emit streamInfoUpdated();

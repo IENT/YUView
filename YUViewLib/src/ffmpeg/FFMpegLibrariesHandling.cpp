@@ -3126,20 +3126,26 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
       SubByteReaderLogging reader(SubByteReaderLogging::convertToByteVector(data), nullptr, "", posInData);
 
       QString bitsRead;
-      reader.readFlag("obu_forbidden_bit", Options().withCheckEqualTo(0));
+      auto forbiddenBit = reader.readFlag("obu_forbidden_bit");
+      if (forbiddenBit)
+        return false;
       auto obu_type = reader.readBits("obu_type", 4);
       if (obu_type == 0 || (obu_type >= 9 && obu_type <= 14))
         // RESERVED obu types should not occur (highly unlikely)
         return false;
       auto obu_extension_flag = reader.readFlag("obu_extension_flag");
       auto obu_has_size_field = reader.readFlag("obu_has_size_field");
-      reader.readFlag("obu_reserved_1bit", Options().withCheckEqualTo(0));
+      auto reserved1Bit = reader.readFlag("obu_reserved_1bit");
+      if (reserved1Bit)
+        return false;
 
       if (obu_extension_flag)
       {
         reader.readBits("temporal_id", 3);
         reader.readBits("spatial_id", 2);
-        reader.readBits("extension_header_reserved_3bits", 3, Options().withCheckEqualTo(0));
+        auto reserved3bits = reader.readBits("extension_header_reserved_3bits", 3);
+        if (reserved3bits)
+          return false;
       }
       unsigned obu_size;
       if (obu_has_size_field)

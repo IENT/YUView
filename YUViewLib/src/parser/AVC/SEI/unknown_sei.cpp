@@ -52,7 +52,7 @@ SEIParsingResult unknown_sei::parse(reader::SubByteReaderLogging &          read
   unsigned i = 0;
   while (reader.canReadBits(8))
   {
-    reader.readBytes(formatArray("raw_byte", i++), 8);
+    reader.readBytes(formatArray("raw_byte", i++), 1);
   }
 
   return SEIParsingResult::OK;
