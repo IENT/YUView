@@ -51,7 +51,10 @@ user_data_unregistered::parse(reader::SubByteReaderLogging &          reader,
   (void)spsMap;
   (void)associatedSPS;
 
-  this->uuid_iso_iec_11578 = reader.readBytes("uuid_iso_iec_11578", 16);
+  {
+    SubByteReaderLoggingSubLevel subLevel(reader, "uuid_iso_iec_11578");
+    this->uuid_iso_iec_11578 = reader.readBytes("byte", 16);
+  }
 
   auto firstFourBytes = reader.peekBytes(4);
   if (firstFourBytes == ByteVector({'x', '2', '6', '4'}))

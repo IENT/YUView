@@ -87,8 +87,7 @@ void checkAndLog(TreeItem *         item,
 }
 
 void checkAndLog(TreeItem *         item,
-                 const std::string &formatName,
-                 const std::string &symbolName,
+                 const std::string &byteName,
                  const Options &    options,
                  ByteVector         value,
                  const std::string &code)
@@ -99,7 +98,6 @@ void checkAndLog(TreeItem *         item,
     if (code.size() != value.size() * 8)
       throw std::logic_error("Nr bytes and size of code does not match.");
 
-    auto byteVectorItem = new TreeItem(item, symbolName);
     for (size_t i = 0; i < value.size(); i++)
     {
       auto              c = value.at(i);
@@ -107,10 +105,10 @@ void checkAndLog(TreeItem *         item,
       valueStream << "0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(c) << " ("
                   << c << ")";
       auto byteCode = code.substr(i * 8, 8);
-      new TreeItem(byteVectorItem,
-                   "Byte " + std::to_string(i),
+      new TreeItem(item,
+                   byteName + (value.size() > 1 ? "[" + std::to_string(i) + "]" : ""),
                    valueStream.str(),
-                   formatCoding(formatName, code.size()),
+                   formatCoding("u(8)", code.size()),
                    byteCode,
                    options.meaningString);
     }
@@ -140,8 +138,8 @@ QByteArray SubByteReaderLogging::convertToQByteArray(ByteVector data)
 }
 
 SubByteReaderLogging::SubByteReaderLogging(SubByteReader &reader,
-                                           TreeItem *        item,
-                                           std::string       new_sub_item_name)
+                                           TreeItem *     item,
+                                           std::string    new_sub_item_name)
     : SubByteReader(reader)
 {
   if (item)
@@ -296,10 +294,10 @@ ByteVector SubByteReaderLogging::readBytes(const std::string &symbolName,
   try
   {
     if (!this->byte_aligned())
-      throw std::logic_error("Trying to ready bytes while not byte aligned.");
+      throw std::logic_error("Trying to read bytes while not byte aligned.");
 
     auto [value, code] = SubByteReader::readBytes(nrBytes);
-    checkAndLog(this->currentTreeLevel, "u(8)", symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel, symbolName, options, value, code);
     return value;
   }
   catch (const std::exception &ex)

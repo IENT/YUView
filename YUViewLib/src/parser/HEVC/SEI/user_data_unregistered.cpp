@@ -56,7 +56,10 @@ user_data_unregistered::parse(SubByteReaderLogging &                  reader,
 
   SubByteReaderLoggingSubLevel subLevel(reader, "user_data_unregistered");
 
-  this->uuid_iso_iec_11578 = reader.readBytes("uuid_iso_iec_11578", 16);
+  {
+    SubByteReaderLoggingSubLevel subLevelUUID(reader, "uuid_iso_iec_11578");
+    this->uuid_iso_iec_11578 = reader.readBytes("byte", 16);
+  }
 
   auto firstFourBytes = reader.peekBytes(4);
   if (firstFourBytes == ByteVector({'x', '2', '6', '4'}))
