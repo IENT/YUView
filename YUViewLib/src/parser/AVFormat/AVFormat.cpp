@@ -500,8 +500,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
 
     SubByteReaderLogging reader(avpacketData, itemTree, "Data");
     auto                 i = 0u;
-    while (reader.canReadBits(8) && i < nrBytesToLog)
-      reader.readBytes(formatArray("raw_byte", i++), 1);
+    reader.readBytes("raw_byte", nrBytesToLog);
 
     BitratePlotModel::BitrateEntry entry;
     entry.pts      = packet.getPTS();
