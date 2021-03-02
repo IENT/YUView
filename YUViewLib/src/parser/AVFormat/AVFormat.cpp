@@ -499,7 +499,6 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
     const auto nrBytesToLog = std::min(avpacketData.size(), size_t(100));
 
     SubByteReaderLogging reader(avpacketData, itemTree, "Data");
-    auto                 i = 0u;
     reader.readBytes("raw_byte", nrBytesToLog);
 
     BitratePlotModel::BitrateEntry entry;
