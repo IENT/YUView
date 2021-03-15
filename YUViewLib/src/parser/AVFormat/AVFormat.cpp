@@ -313,7 +313,7 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
   return naNames;
 }
 
-bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
+bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacketWrapper &packet)
 {
   if (packetModel->isNull())
     return true;
@@ -346,14 +346,14 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
     auto minutes = time / 1000 / 60;
     time -= minutes * 60 * 1000;
     auto seconds      = time / 1000;
-    auto milliseconds = time - seconds;
+    auto milliseconds = time - (seconds * 1000);
 
     if (hours > 0)
       ss << hours << ":";
     if (hours > 0 || minutes > 0)
       ss << std::setfill('0') << std::setw(2) << minutes << ":";
     ss << std::setfill('0') << std::setw(2) << seconds << ".";
-    ss << std::setfill('0') << std::setw(4) << milliseconds;
+    ss << std::setfill('0') << std::setw(3) << milliseconds;
     ss << ")";
 
     return ss.str();
@@ -361,6 +361,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
 
   // Log all the packet info
   new TreeItem(itemTree, "stream_index", std::to_string(packet.getStreamIndex()));
+  new TreeItem(itemTree, "Global AVPacket Count", std::to_string(packetID));
   new TreeItem(itemTree, "pts", formatTimestamp(packet.getPTS(), timeBase));
   new TreeItem(itemTree, "dts", formatTimestamp(packet.getDTS(), timeBase));
   new TreeItem(itemTree, "duration", formatTimestamp(packet.getDuration(), timeBase));
@@ -511,7 +512,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
   }
 
   // Set a useful name of the TreeItem (the root for this NAL)
-  auto name = "AVPacket " + std::to_string(packetID) +
+  auto name = "AVPacket " + std::to_string(streamPacketID) +
               (packet.getFlagKeyframe() ? " - Keyframe" : "") + specificDescription;
   itemTree->setProperties(name);
 
@@ -587,8 +588,10 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   AVPacketWrapper packet   = ffmpegFile->getNextPacket(false, false);
   int64_t         start_ts = packet.getDTS();
 
-  unsigned int  packetID          = 0;
-  unsigned int  videoFrameCounter = 0;
+  unsigned                     packetID {};
+  std::map<int, unsigned> packetCounterPerStream;
+
+  unsigned      videoFrameCounter = 0;
   bool          abortParsing      = false;
   QElapsedTimer signalEmitTimer;
   signalEmitTimer.start();
@@ -601,16 +604,18 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
       videoFrameCounter++;
     }
 
-    if (!this->parseAVPacket(packetID, packet))
+    auto streamPacketID = packetCounterPerStream[packet.getStreamIndex()];
+    if (!this->parseAVPacket(packetID, streamPacketID, packet))
     {
-      DEBUG_AVFORMAT("AVFormat::parseAVPacket error parsing Packet %d", packetID);
+      DEBUG_AVFORMAT("AVFormat::runParsingOfFile error parsing Packet %d", packetID);
     }
     else
     {
-      DEBUG_AVFORMAT("AVFormat::parseAVPacket Packet %d", packetID);
+      DEBUG_AVFORMAT("AVFormat::runParsingOfFile Packet %d", packetID);
     }
 
     packetID++;
+    packetCounterPerStream[packet.getStreamIndex()]++;
     packet = ffmpegFile->getNextPacket(false, false);
 
     // For signal slot debugging purposes, sleep
@@ -625,11 +630,11 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     if (cancelBackgroundParser)
     {
       abortParsing = true;
-      DEBUG_AVFORMAT("AVFormat::parseAVPacket Abort parsing by user request");
+      DEBUG_AVFORMAT("AVFormat::runParsingOfFile Abort parsing by user request");
     }
     if (parsingLimitEnabled && videoFrameCounter > PARSER_FILE_FRAME_NR_LIMIT)
     {
-      DEBUG_AVFORMAT("AVFormat::parseAVPacket Abort parsing because frame limit was reached.");
+      DEBUG_AVFORMAT("AVFormat::runParsingOfFile Abort parsing because frame limit was reached.");
       abortParsing = true;
     }
   }
