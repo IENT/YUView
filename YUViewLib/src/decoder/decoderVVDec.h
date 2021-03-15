@@ -36,33 +36,38 @@
 
 #include "common/fileInfo.h"
 #include "decoderBase.h"
-#include "externalHeader/libvvdec.h"
+#include "externalHeader/vvdec.h"
 #include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"
 
 struct LibraryFunctions
 {
   // General functions
-  const char *(*libvvdec_get_version)(void){};
-  libvvdec_context *(*libvvdec_new_decoder)(void){};
-  libvvdec_error (*libvvdec_set_logging_callback)(libvvdec_context *,
-                                                    libvvdec_logging_callback,
-                                                    void *             userData,
-                                                    libvvdec_loglevel loglevel){};
-  libvvdec_error (*libvvdec_free_decoder)(libvvdec_context *){};
-  libvvdec_error (*libvvdec_push_nal_unit)(libvvdec_context *,
-                                             const unsigned char *,
-                                             int,
-                                             bool &){};
+  const char *(*vvdec_get_version)(void){};
 
-  // Picture retrieval
-  uint64_t (*libvvdec_get_picture_POC)(libvvdec_context *){};
-  uint32_t (*libvvdec_get_picture_width)(libvvdec_context *, libvvdec_ColorComponent){};
-  uint32_t (*libvvdec_get_picture_height)(libvvdec_context *, libvvdec_ColorComponent){};
-  int32_t (*libvvdec_get_picture_stride)(libvvdec_context *, libvvdec_ColorComponent){};
-  unsigned char *(*libvvdec_get_picture_plane)(libvvdec_context *, libvvdec_ColorComponent){};
-  libvvdec_ChromaFormat (*libvvdec_get_picture_chroma_format)(libvvdec_context *){};
-  uint32_t (*libvvdec_get_picture_bit_depth)(libvvdec_context *, libvvdec_ColorComponent){};
+  vvdecAccessUnit *(*vvdec_accessUnit_alloc)(){};
+  void (*vvdec_accessUnit_free)(vvdecAccessUnit *accessUnit){};
+  void (*vvdec_accessUnit_alloc_payload)(vvdecAccessUnit *accessUnit, int payload_size){};
+  void (*vvdec_accessUnit_free_payload)(vvdecAccessUnit *accessUnit){};
+  void (*vvdec_accessUnit_default)(vvdecAccessUnit *accessUnit){};
+
+  void (*vvdec_params_default)(vvdecParams *param){};
+  vvdecParams *(*vvdec_params_alloc)(){};
+  void (*vvdec_params_free)(vvdecParams *params){};
+
+  vvdecDecoder *(*vvdec_decoder_open)(vvdecParams *){};
+  int (*vvdec_decoder_close)(vvdecDecoder *){};
+
+  int (*vvdec_set_logging_callback)(vvdecDecoder *, vvdecLoggingCallback callback){};
+  int (*vvdec_decode)(vvdecDecoder *, vvdecAccessUnit *accessUnit, vvdecFrame **frame){};
+  int (*vvdec_flush)(vvdecDecoder *, vvdecFrame **frame){};
+  int (*vvdec_frame_unref)(vvdecDecoder *, vvdecFrame *frame){};
+
+  int (*vvdec_get_hash_error_count)(vvdecDecoder *){};
+  const char *(*vvdec_get_dec_information)(vvdecDecoder *){};
+  const char *(*vvdec_get_last_error)(vvdecDecoder *){};
+  const char *(*vvdec_get_last_additional_error)(vvdecDecoder *){};
+  const char *(*vvdec_get_error_msg)(int nRet){};
 };
 
 // This class wraps the decoder library in a demand-load fashion.
@@ -105,7 +110,7 @@ private:
 
   void allocateNewDecoder();
 
-  libvvdec_context *decoder{nullptr};
+  vvdecDecoder *decoder{nullptr};
 
   // Try to get the next picture from the decoder and save it in currentHMPic
   bool getNextFrameFromDecoder();
@@ -113,7 +118,7 @@ private:
   int  nrSignals{0};
   bool flushing{false};
 
-  YUV_Internals::Subsampling convertFromInternalSubsampling(libvvdec_ChromaFormat fmt);
+  YUV_Internals::Subsampling convertFromInternalSubsampling(vvdecColorFormat fmt);
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as
   // necessary without invoking the copy operation from the hm image buffer to the QByteArray again.
