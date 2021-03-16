@@ -33,6 +33,7 @@
 #include "AVFormat.h"
 
 #include <QElapsedTimer>
+#include <cmath>
 #include <iomanip>
 
 #include "../AVC/AnnexBAVC.h"
