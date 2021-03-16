@@ -481,7 +481,7 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   // Get the frame rate, picture size and color conversion mode
   AVRational avgFrameRate = video_stream.getAvgFrameRate();
   if (avgFrameRate.den == 0)
-    frameRate = -1;
+    frameRate = -1.0;
   else
     frameRate = avgFrameRate.num / double(avgFrameRate.den);
 

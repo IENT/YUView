@@ -3120,7 +3120,7 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
   //       That should also be used here so we only have one place where we parse OBUs.
   try
   {
-    int posInData = 0;
+    size_t posInData = 0;
     while (posInData + 2 <= data.length())
     {
       SubByteReaderLogging reader(SubByteReaderLogging::convertToByteVector(data), nullptr, "", posInData);
@@ -3147,14 +3147,14 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
         if (reserved3bits)
           return false;
       }
-      unsigned obu_size;
+      size_t obu_size;
       if (obu_has_size_field)
       {
         obu_size = reader.readLEB128("obu_size");
       }
       else
       {
-        obu_size = (data.size() - posInData) - 1 - (obu_extension_flag ? 1 : 0);
+        obu_size = (size_t(data.size()) - posInData) - 1 - (obu_extension_flag ? 1 : 0);
       }
       posInData += obu_size + reader.nrBytesRead();
     }

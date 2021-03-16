@@ -72,7 +72,7 @@ private:
 
   bool parseExtradata(ByteVector &extradata);
   bool parseMetadata(QStringPairList &metadata);
-  bool parseAVPacket(unsigned int packetID, AVPacketWrapper &packet);
+  bool parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacketWrapper &packet);
 
   // Used for parsing if the packets contain an annexB file that we can parse.
   std::unique_ptr<AnnexB> annexBParser;
@@ -97,7 +97,8 @@ private:
   QList<AVRational>      timeBaseAllStreams;
   QList<QString>         shortStreamInfoAllStreams;
 
-  int videoStreamIndex{-1};
+  int    videoStreamIndex{-1};
+  double framerate{-1.0};
 };
 
 } // namespace parser
