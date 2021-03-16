@@ -97,7 +97,8 @@ private:
   QList<AVRational>      timeBaseAllStreams;
   QList<QString>         shortStreamInfoAllStreams;
 
-  int videoStreamIndex{-1};
+  int    videoStreamIndex{-1};
+  double framerate{-1.0};
 };
 
 } // namespace parser

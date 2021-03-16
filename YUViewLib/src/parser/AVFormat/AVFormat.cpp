@@ -505,9 +505,22 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
     BitratePlotModel::BitrateEntry entry;
     entry.pts      = packet.getPTS();
     entry.dts      = packet.getDTS();
-    entry.duration = packet.getDuration();
     entry.bitrate  = packet.getDataSize();
     entry.keyframe = packet.getFlagKeyframe();
+    entry.duration = packet.getDuration();
+    if (entry.duration == 0)
+    {
+      // Unknown. We have to guess.
+      entry.duration = 10; // The backup guess
+      if (this->framerate > 0 && this->videoStreamIndex >= 0 &&
+          this->videoStreamIndex < this->timeBaseAllStreams.size())
+      {
+        auto videoTimeBase = this->timeBaseAllStreams[this->videoStreamIndex];
+        auto duration      = 1.0 / this->framerate * videoTimeBase.den / videoTimeBase.num;
+        entry.duration     = int(std::round(duration));
+      }
+    }
+
     bitratePlotModel->addBitratePoint(packet.getStreamIndex(), entry);
   }
 
@@ -549,9 +562,6 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   if (this->obuParser)
     this->obuParser->setRedirectPlotModel(this->getHRDPlotModel());
 
-  int max_ts             = ffmpegFile->getMaxTS();
-  this->videoStreamIndex = ffmpegFile->getVideoStreamIndex();
-
   // Don't seek to the beginning here. This causes more problems then it solves.
   // ffmpegFile->seekFileToBeginning();
 
@@ -577,7 +587,9 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     return false;
   }
 
-  // After opening the file, we can get information on it
+  int max_ts                      = ffmpegFile->getMaxTS();
+  this->videoStreamIndex          = ffmpegFile->getVideoStreamIndex();
+  this->framerate                 = ffmpegFile->getFramerate();
   this->streamInfoAllStreams      = ffmpegFile->getFileInfoForAllStreams();
   this->timeBaseAllStreams        = ffmpegFile->getTimeBaseAllStreams();
   this->shortStreamInfoAllStreams = ffmpegFile->getShortStreamDescriptionAllStreams();
@@ -588,7 +600,7 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   AVPacketWrapper packet   = ffmpegFile->getNextPacket(false, false);
   int64_t         start_ts = packet.getDTS();
 
-  unsigned                     packetID {};
+  unsigned                packetID{};
   std::map<int, unsigned> packetCounterPerStream;
 
   unsigned      videoFrameCounter = 0;
