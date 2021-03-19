@@ -2404,9 +2404,9 @@ QStringPairList AVCodecParametersWrapper::getInfoText()
   info.append(QStringPair("Width/Height", QString("%1/%2").arg(width).arg(height)));
   info.append(QStringPair("Sample aspect ratio", QString("%1:%2").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den)));
   QStringList fieldOrders = QStringList() << "Unknown" << "Progressive" << "Top coded_first, top displayed first" << "Bottom coded first, bottom displayed first" << "Top coded first, bottom displayed first" << "Bottom coded first, top displayed first";
-  info.append(QStringPair("Field Order", fieldOrders.at(clip((int)codec_type, 0, fieldOrders.count()))));
+  info.append(QStringPair("Field Order", fieldOrders.at(clip(int(codec_type), 0, int(fieldOrders.count())))));
   QStringList colorRanges = QStringList() << "Unspecified" << "The normal 219*2^(n-8) MPEG YUV ranges" << "The normal 2^n-1 JPEG YUV ranges" << "Not part of ABI";
-  info.append(QStringPair("Color Range", colorRanges.at(clip((int)color_range, 0, colorRanges.count()))));
+  info.append(QStringPair("Color Range", colorRanges.at(clip(int(color_range), 0, int(colorRanges.count())))));
   QStringList colorPrimaries = QStringList() 
     << "Reserved" 
     << "BT709 / ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B"
@@ -3121,7 +3121,7 @@ bool AVPacketWrapper::checkForObuFormat(QByteArray &data)
   try
   {
     size_t posInData = 0;
-    while (posInData + 2 <= data.length())
+    while (posInData + 2 <= size_t(data.length()))
     {
       SubByteReaderLogging reader(SubByteReaderLogging::convertToByteVector(data), nullptr, "", posInData);
 
