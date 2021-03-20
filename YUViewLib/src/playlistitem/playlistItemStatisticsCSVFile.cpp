@@ -60,7 +60,7 @@ playlistItemStatisticsCSVFile::playlistItemStatisticsCSVFile(const QString &item
   // Run the parsing of the file in the background
   cancelBackgroundParser = false;
   timer.start(1000, this);
-  backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile);
+  backgroundParserFuture = QtConcurrent::run(&playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile, this);
 
   connect(&statSource, &statisticHandler::updateItem, [this](bool redraw){ emit signalItemChanged(redraw, RECACHE_NONE); });
   connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemStatisticsCSVFile::loadStatisticToCache, Qt::DirectConnection);
@@ -586,7 +586,7 @@ void playlistItemStatisticsCSVFile::reloadItemSource()
   // Run the parsing of the file in the background
   cancelBackgroundParser = false;
   timer.start(1000, this);
-  backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile);
+  backgroundParserFuture = QtConcurrent::run(&playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile, this);
 }
 
 

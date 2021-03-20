@@ -61,7 +61,7 @@ playlistItemStatisticsVTMBMSFile::playlistItemStatisticsVTMBMSFile(const QString
   // Run the parsing of the file in the background
   cancelBackgroundParser = false;
   timer.start(1000, this);
-  backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile);
+  backgroundParserFuture = QtConcurrent::run(&playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile, this);
 
   connect(&statSource, &statisticHandler::updateItem, [this](bool redraw){ emit signalItemChanged(redraw, RECACHE_NONE); });
   connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemStatisticsVTMBMSFile::loadStatisticToCache, Qt::DirectConnection);
@@ -653,6 +653,6 @@ void playlistItemStatisticsVTMBMSFile::reloadItemSource()
   // Run the parsing of the file in the background
   cancelBackgroundParser = false;
   timer.start(1000, this);
-  backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile);
+  backgroundParserFuture = QtConcurrent::run(&playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile, this);
 }
 

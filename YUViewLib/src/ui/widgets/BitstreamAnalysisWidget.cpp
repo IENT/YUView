@@ -233,7 +233,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   this->updateStreamInfo();
 
   this->updateParsingStatusText(0);
-  this->backgroundParserFuture = QtConcurrent::run(this, &BitstreamAnalysisWidget::backgroundParsingFunction);
+  this->backgroundParserFuture = QtConcurrent::run(&BitstreamAnalysisWidget::backgroundParsingFunction, this);
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::restartParsingOfCurrentItem new parser created and started");
 }
 
