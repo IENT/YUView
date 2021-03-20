@@ -133,7 +133,7 @@ yuvPixelFormat::yuvPixelFormat(const QString &name)
 
   QRegularExpression rxYUVFormat(
       "([YUVA]{3,6}(?:\\(IL\\))?) (4:[4210]{1}:[4210]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ "
-      "]?(packed|packed-B)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
+      "]?(packed-B|packed)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
 
   auto match = rxYUVFormat.match(name);
   if (match.hasMatch())
