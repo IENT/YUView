@@ -74,8 +74,6 @@ private:
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();
   
-  QStringList parseCSVLine(const QString &line, char delimiter) const;
-
   // A list of file positions where each POC/type starts
   QMap<int, QMap<int, qint64> > pocTypeStartList;
 
