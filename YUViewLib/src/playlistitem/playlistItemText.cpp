@@ -35,6 +35,7 @@
 #include <QColorDialog>
 #include <QFontDialog>
 #include <QPainter>
+#include <QRegularExpression>
 
 #include "common/functions.h"
 
@@ -147,7 +148,7 @@ void playlistItemText::on_textEdit_textChanged()
   }
 
   // If there is a newline only show the first line of the text
-  int newlinePos = t.indexOf(QRegExp("[\n\t\r]"));
+  int newlinePos = t.indexOf(QRegularExpression("[\n\t\r]"));
   if (newlinePos != -1)
   {
     t.truncate(newlinePos);
