@@ -132,7 +132,7 @@ public:
   virtual void infoListButtonPressed(int buttonID) { Q_UNUSED(buttonID); }
 
   QWidget *getPropertiesWidget() { if (!propertiesWidget) createPropertiesWidget(); return propertiesWidget.data(); }
-  bool propertiesWidgetCreated() const { return propertiesWidget; }
+  bool propertiesWidgetCreated() const { return !propertiesWidget.isNull(); }
 
   // Does the playlist item currently accept drops of the given item?
   virtual bool acceptDrops(playlistItem *draggingItem) const { Q_UNUSED(draggingItem); return false; }

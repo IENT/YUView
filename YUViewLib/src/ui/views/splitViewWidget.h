@@ -34,6 +34,7 @@
 #define SPLITVIEWWIDGET_H
 
 #include <QAction>
+#include <QActionGroup>
 #include <QElapsedTimer>
 #include <QMenu>
 #include <QMouseEvent>
