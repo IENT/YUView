@@ -40,7 +40,7 @@
 #define DEBUG_FFMPEG(fmt, ...) ((void)0)
 #endif
 
-namespace dec
+namespace decoder
 {
 
 using namespace YUView;
@@ -509,4 +509,4 @@ QString decoderFFmpeg::getCodecName()
   return this->ff.getCodecIDWrapper(this->decCtx.getCodecID()).getCodecName();
 }
 
-} // namespace dec
+} // namespace decoder

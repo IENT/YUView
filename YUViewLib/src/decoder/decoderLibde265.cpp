@@ -65,7 +65,7 @@ using namespace YUView;
 #define DEBUG_LIBDE265(fmt, ...) ((void)0)
 #endif
 
-namespace dec
+namespace decoder
 {
 
 decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
@@ -1067,4 +1067,4 @@ YUV_Internals::Subsampling decoderLibde265::convertFromInternalSubsampling(de265
   return YUV_Internals::Subsampling::UNKNOWN;
 }
 
-} // namespace dec
+} // namespace decoder

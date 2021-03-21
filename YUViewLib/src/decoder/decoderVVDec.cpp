@@ -79,7 +79,7 @@
 #endif
 #endif
 
-namespace dec
+namespace decoder
 {
 
 namespace

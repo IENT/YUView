@@ -37,7 +37,7 @@
 
 using namespace YUView;
 
-namespace dec
+namespace decoder
 {
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)

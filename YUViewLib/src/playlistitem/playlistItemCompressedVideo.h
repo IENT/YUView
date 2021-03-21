@@ -120,8 +120,8 @@ protected:
   // We allocate two decoder: One for loading images in the foreground and one for caching in the
   // background. This is better if random access and linear decoding (caching) is performed at the
   // same time.
-  QScopedPointer<dec::decoderBase> loadingDecoder;
-  QScopedPointer<dec::decoderBase> cachingDecoder;
+  QScopedPointer<decoder::decoderBase> loadingDecoder;
+  QScopedPointer<decoder::decoderBase> cachingDecoder;
 
   // When opening the file, we will fill this list with the possible decoders
   QList<YUView::decoderEngine> possibleDecoders;

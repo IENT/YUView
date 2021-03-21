@@ -40,7 +40,7 @@
 #include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"
 
-namespace dec
+namespace decoder
 {
 
 namespace
@@ -152,4 +152,4 @@ private:
   LibraryFunctionsVTM lib;
 };
 
-} // namespace dec
+} // namespace decoder

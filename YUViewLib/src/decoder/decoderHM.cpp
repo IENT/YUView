@@ -79,7 +79,7 @@
 #endif
 #endif
 
-namespace dec
+namespace decoder
 {
 
 decoderHM::decoderHM(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
@@ -626,4 +626,4 @@ YUV_Internals::Subsampling decoderHM::convertFromInternalSubsampling(libHMDec_Ch
   return YUV_Internals::Subsampling::UNKNOWN;
 }
 
-} // namespace dec
+} // namespace decoder

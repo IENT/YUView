@@ -79,7 +79,7 @@
 #endif
 #endif
 
-namespace dec
+namespace decoder
 {
 
 decoderVTM::decoderVTM(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
@@ -629,4 +629,4 @@ YUV_Internals::Subsampling decoderVTM::convertFromInternalSubsampling(libVTMDec_
   return YUV_Internals::Subsampling::UNKNOWN;
 }
 
-} // namespace dec
+} // namespace decoder

@@ -39,7 +39,7 @@
 #include "externalHeader/dav1d/dav1d.h"
 #include "video/videoHandlerYUV.h"
 
-namespace dec
+namespace decoder
 {
 
 namespace
@@ -201,4 +201,4 @@ private:
   LibraryFunctionsDav1d lib;
 };
 
-} // namespace dec
+} // namespace decoder

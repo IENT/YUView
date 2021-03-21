@@ -40,7 +40,7 @@
 
 #include "common/typedef.h"
 
-namespace dec
+namespace decoder
 {
 
 using namespace YUView;
@@ -1065,4 +1065,4 @@ IntPair decoderDav1d::calculateIntraPredDirection(IntraPredMode predMode, int an
   return {vectorTable[modeIndex][deltaIndex][0], vectorTable[modeIndex][deltaIndex][1]};
 }
 
-} // namespace dec
+} // namespace decoder

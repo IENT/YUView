@@ -35,7 +35,7 @@
 #include "decoderBase.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
 
-namespace dec
+namespace decoder
 {
 
 class decoderFFmpeg : public decoderBase
@@ -104,4 +104,4 @@ protected:
   QByteArray avPacketPaddingData;
 };
 
-} // namespace dec
+} // namespace decoder

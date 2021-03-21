@@ -40,7 +40,7 @@
 #include "video/videoHandlerRGB.h"
 #include "video/videoHandlerYUV.h"
 
-namespace dec
+namespace decoder
 {
 
 // Each decoder is in one of two states:

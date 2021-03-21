@@ -474,7 +474,7 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     uiDialog.setupUi(&newDialog);
 
     // Get the ffmpeg log
-    auto    logFFmpeg = dec::decoderFFmpeg::getLogMessages();
+    auto    logFFmpeg = decoder::decoderFFmpeg::getLogMessages();
     QString logFFmpegString;
     for (const auto &l : logFFmpeg)
       logFFmpegString.append(l);
@@ -542,7 +542,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
 {
   if (caching && !cachingEnabled)
     return;
-  if (!caching && loadingDecoder->state() == dec::DecoderState::Error)
+  if (!caching && loadingDecoder->state() == decoder::DecoderState::Error)
   {
     if (frameIdx < currentFrameIdx[0])
     {
@@ -552,7 +552,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
     else
       return;
   }
-  if (caching && cachingDecoder->state() == dec::DecoderState::Error)
+  if (caching && cachingDecoder->state() == decoder::DecoderState::Error)
     return;
 
   DEBUG_COMPRESSED(
@@ -565,7 +565,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
   }
 
   // Get the right decoder
-  dec::decoderBase *dec         = caching ? cachingDecoder.data() : loadingDecoder.data();
+  decoder::decoderBase *dec         = caching ? cachingDecoder.data() : loadingDecoder.data();
   int               curFrameIdx = caching ? currentFrameIdx[1] : currentFrameIdx[0];
 
   // Should we seek?
@@ -614,7 +614,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
   bool rightFrame = caching ? currentFrameIdx[1] == frameIdx : currentFrameIdx[0] == frameIdx;
   while (!rightFrame)
   {
-    while (dec->state() == dec::DecoderState::NeedsMoreData)
+    while (dec->state() == decoder::DecoderState::NeedsMoreData)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData decoder needs more data");
       if (isInputFormatTypeFFmpeg(inputFormatType) && decoderEngineType == decoderEngineFFMpeg)
@@ -630,11 +630,11 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
                            pkt.getPTS());
         else
           DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived empty packet");
-        auto ffmpegDec = (caching ? dynamic_cast<dec::decoderFFmpeg *>(cachingDecoder.data())
-                                  : dynamic_cast<dec::decoderFFmpeg *>(loadingDecoder.data()));
+        auto ffmpegDec = (caching ? dynamic_cast<decoder::decoderFFmpeg *>(cachingDecoder.data())
+                                  : dynamic_cast<decoder::decoderFFmpeg *>(loadingDecoder.data()));
         if (!ffmpegDec->pushAVPacket(pkt))
         {
-          if (ffmpegDec->state() != dec::DecoderState::RetrieveFrames)
+          if (ffmpegDec->state() != decoder::DecoderState::RetrieveFrames)
             // The decoder did not switch to decoding frame mode. Error.
             return;
           repushData = true;
@@ -671,7 +671,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
 
         if (!dec->pushData(data))
         {
-          if (dec->state() != dec::DecoderState::RetrieveFrames)
+          if (dec->state() != decoder::DecoderState::RetrieveFrames)
           {
             DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData The decoder did not switch "
                              "to decoding frame mode. Error.");
@@ -708,7 +708,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
         assert(false);
     }
 
-    if (dec->state() == dec::DecoderState::RetrieveFrames)
+    if (dec->state() == decoder::DecoderState::RetrieveFrames)
     {
       if (dec->decodeNextFrame())
       {
@@ -728,8 +728,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       }
     }
 
-    if (dec->state() != dec::DecoderState::NeedsMoreData &&
-        dec->state() != dec::DecoderState::RetrieveFrames)
+    if (dec->state() != decoder::DecoderState::NeedsMoreData &&
+        dec->state() != decoder::DecoderState::RetrieveFrames)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData decoder neither needs more data "
                        "nor can decode frames");
@@ -750,7 +750,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
     // reload when the frame number changes.
     video->rawData_frameIndex = frameIdx;
   }
-  else if (loadingDecoder->state() == dec::DecoderState::Error)
+  else if (loadingDecoder->state() == decoder::DecoderState::Error)
   {
     // There was an error in the deocder.
     infoText = "There was an error in the decoder: \n";
@@ -902,60 +902,60 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
   {
     DEBUG_COMPRESSED(
         "playlistItemCompressedVideo::allocateDecoder Initializing interactive libde265 decoder");
-    loadingDecoder.reset(new dec::decoderLibde265(displayComponent));
+    loadingDecoder.reset(new decoder::decoderLibde265(displayComponent));
     if (cachingEnabled)
     {
       DEBUG_COMPRESSED(
           "playlistItemCompressedVideo::allocateDecoder Initializing caching libde265 decoder");
-      cachingDecoder.reset(new dec::decoderLibde265(displayComponent, true));
+      cachingDecoder.reset(new decoder::decoderLibde265(displayComponent, true));
     }
   }
   else if (decoderEngineType == decoderEngineHM)
   {
     DEBUG_COMPRESSED(
         "playlistItemCompressedVideo::allocateDecoder Initializing interactive HM decoder");
-    loadingDecoder.reset(new dec::decoderHM(displayComponent));
+    loadingDecoder.reset(new decoder::decoderHM(displayComponent));
     if (cachingEnabled)
     {
       DEBUG_COMPRESSED(
           "playlistItemCompressedVideo::allocateDecoder caching interactive HM decoder");
-      cachingDecoder.reset(new dec::decoderHM(displayComponent, true));
+      cachingDecoder.reset(new decoder::decoderHM(displayComponent, true));
     }
   }
   else if (decoderEngineType == decoderEngineVTM)
   {
     DEBUG_COMPRESSED(
         "playlistItemCompressedVideo::allocateDecoder Initializing interactive VTM decoder");
-    loadingDecoder.reset(new dec::decoderVTM(displayComponent));
+    loadingDecoder.reset(new decoder::decoderVTM(displayComponent));
     if (cachingEnabled)
     {
       DEBUG_COMPRESSED(
           "playlistItemCompressedVideo::allocateDecoder caching interactive VTM decoder");
-      cachingDecoder.reset(new dec::decoderVTM(displayComponent, true));
+      cachingDecoder.reset(new decoder::decoderVTM(displayComponent, true));
     }
   }
   else if (decoderEngineType == decoderEngineVVDec)
   {
     DEBUG_COMPRESSED(
         "playlistItemCompressedVideo::allocateDecoder Initializing interactive VVDec decoder");
-    loadingDecoder.reset(new dec::decoderVVDec(displayComponent));
+    loadingDecoder.reset(new decoder::decoderVVDec(displayComponent));
     if (cachingEnabled)
     {
       DEBUG_COMPRESSED(
           "playlistItemCompressedVideo::allocateDecoder caching interactive VVDec decoder");
-      cachingDecoder.reset(new dec::decoderVVDec(displayComponent, true));
+      cachingDecoder.reset(new decoder::decoderVVDec(displayComponent, true));
     }
   }
   else if (decoderEngineType == decoderEngineDav1d)
   {
     DEBUG_COMPRESSED(
         "playlistItemCompressedVideo::allocateDecoder Initializing interactive dav1d decoder");
-    loadingDecoder.reset(new dec::decoderDav1d(displayComponent));
+    loadingDecoder.reset(new decoder::decoderDav1d(displayComponent));
     if (cachingEnabled)
     {
       DEBUG_COMPRESSED(
           "playlistItemCompressedVideo::allocateDecoder caching interactive dav1d decoder");
-      cachingDecoder.reset(new dec::decoderDav1d(displayComponent, true));
+      cachingDecoder.reset(new decoder::decoderDav1d(displayComponent, true));
     }
   }
   else if (decoderEngineType == decoderEngineFFMpeg)
@@ -980,12 +980,12 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
                        ratio.num,
                        ratio.den);
       loadingDecoder.reset(
-          new dec::decoderFFmpeg(ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio));
+          new decoder::decoderFFmpeg(ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio));
       if (cachingEnabled)
       {
         DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing caching ffmpeg "
                          "decoder from raw anexB stream. Same settings.");
-        cachingDecoder.reset(new dec::decoderFFmpeg(
+        cachingDecoder.reset(new decoder::decoderFFmpeg(
             ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio, true));
       }
     }
@@ -993,12 +993,12 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive "
                        "ffmpeg decoder using ffmpeg as parser");
-      loadingDecoder.reset(new dec::decoderFFmpeg(inputFileFFmpegLoading->getVideoCodecPar()));
+      loadingDecoder.reset(new decoder::decoderFFmpeg(inputFileFFmpegLoading->getVideoCodecPar()));
       if (cachingEnabled)
       {
         DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing caching ffmpeg "
                          "decoder using ffmpeg as parser");
-        cachingDecoder.reset(new dec::decoderFFmpeg(inputFileFFmpegCaching->getVideoCodecPar()));
+        cachingDecoder.reset(new decoder::decoderFFmpeg(inputFileFFmpegCaching->getVideoCodecPar()));
       }
     }
   }
@@ -1009,7 +1009,7 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
     return false;
   }
 
-  decodingEnabled = loadingDecoder->state() != dec::DecoderState::Error;
+  decodingEnabled = loadingDecoder->state() != decoder::DecoderState::Error;
   if (!decodingEnabled)
   {
     infoText = "There was an error allocating the new decoder: \n";

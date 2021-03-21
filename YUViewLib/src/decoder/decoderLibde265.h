@@ -39,7 +39,7 @@
 #include "externalHeader/libde265/de265_internals.h"
 #include "video/videoHandlerYUV.h"
 
-namespace dec
+namespace decoder
 {
 
 namespace
@@ -196,4 +196,4 @@ private:
   LibraryFunctionsDe265 lib;
 };
 
-} // namespace dec
+} // namespace decoder

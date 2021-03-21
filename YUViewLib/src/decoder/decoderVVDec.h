@@ -40,7 +40,7 @@
 #include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"
 
-namespace dec
+namespace decoder
 {
 
 struct LibraryFunctionsVVDec
