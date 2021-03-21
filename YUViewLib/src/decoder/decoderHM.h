@@ -43,9 +43,6 @@
 namespace decoder
 {
 
-namespace
-{
-
 struct LibraryFunctionsHM
 {
   // General functions
@@ -85,8 +82,6 @@ struct LibraryFunctionsHM
                                                      bool &            callAgain){};
   libHMDec_error (*libHMDEC_clear_internal_info)(libHMDec_context *decCtx){};
 };
-
-} // namespace
 
 // This class wraps the HM decoder library in a demand-load fashion.
 class decoderHM : public decoderBaseSingleLib

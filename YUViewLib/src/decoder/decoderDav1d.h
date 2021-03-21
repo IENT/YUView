@@ -42,9 +42,6 @@
 namespace decoder
 {
 
-namespace
-{
-
 struct LibraryFunctionsDav1d
 {
   const char *(*dav1d_version)(){};
@@ -108,8 +105,6 @@ struct dav1dFrameInfo
   int            b4_stride;
   Dav1dFrameType frameType;
 };
-
-} // namespace
 
 // This class wraps the libde265 library in a demand-load fashion.
 class decoderDav1d : public decoderBaseSingleLib
@@ -188,12 +183,12 @@ private:
   void fillStatisticList(statisticHandler &statSource) const override;
   void cacheStatistics(const Dav1dPictureWrapper &img);
   void parseBlockRecursive(
-      Av1Block *blockData, int x, int y, BlockLevel level, dav1dFrameInfo &frameInfo);
+      Av1Block *blockData, unsigned x, unsigned y, BlockLevel level, dav1dFrameInfo &frameInfo);
   void         parseBlockPartition(Av1Block *      blockData,
-                                   int             x,
-                                   int             y,
-                                   int             blockWidth4,
-                                   int             blockHeight4,
+                                   unsigned        x,
+                                   unsigned        y,
+                                   unsigned        blockWidth4,
+                                   unsigned        blockHeight4,
                                    dav1dFrameInfo &frameInfo);
   IntPair      calculateIntraPredDirection(IntraPredMode predMode, int angleDelta);
   unsigned int subBlockSize{};

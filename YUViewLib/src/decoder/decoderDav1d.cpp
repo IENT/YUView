@@ -400,7 +400,8 @@ bool decoderDav1d::pushData(QByteArray &data)
     }
 
     Dav1dSequenceHeader seq;
-    int err = this->lib.dav1d_parse_sequence_header(&seq, (const uint8_t *)data.data(), data.size());
+    int                 err =
+        this->lib.dav1d_parse_sequence_header(&seq, (const uint8_t *)data.data(), data.size());
     if (err == 0)
     {
       sequenceHeaderPushed = true;
@@ -489,7 +490,7 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
   DEBUG_DAV1D("decoderDav1d::copyImgToByteArray nrBytes %d", nrBytes);
 
   // Is the output big enough?
-  if (dst.capacity() < nrBytes)
+  if (dst.capacity() < int(nrBytes))
     dst.resize(int(nrBytes));
 
   uint8_t *dst_c = (uint8_t *)dst.data();
@@ -520,7 +521,7 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
       return;
 
     const int stride = (c == 0) ? curPicture.getStride(0) : curPicture.getStride(1);
-    for (int y = 0; y < height; y++)
+    for (size_t y = 0; y < height; y++)
     {
       memcpy(dst_c, img_c, widthInBytes);
       img_c += stride;
@@ -781,13 +782,13 @@ void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
 
   const int sb_step = subBlockSize >> 2;
 
-  for (int y = 0; y < frameInfo.frameSizeAligned.height; y += sb_step)
-    for (int x = 0; x < frameInfo.frameSizeAligned.width; x += sb_step)
+  for (unsigned y = 0; y < frameInfo.frameSizeAligned.height; y += sb_step)
+    for (unsigned x = 0; x < frameInfo.frameSizeAligned.width; x += sb_step)
       parseBlockRecursive(blockData, x, y, BL_128X128, frameInfo);
 }
 
 void decoderDav1d::parseBlockRecursive(
-    Av1Block *blockData, int x, int y, BlockLevel level, dav1dFrameInfo &frameInfo)
+    Av1Block *blockData, unsigned x, unsigned y, BlockLevel level, dav1dFrameInfo &frameInfo)
 {
   if (y >= frameInfo.sizeInBlocks.height)
     return;
@@ -886,18 +887,22 @@ void decoderDav1d::parseBlockRecursive(
   }
 }
 
-void decoderDav1d::parseBlockPartition(
-    Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, dav1dFrameInfo &frameInfo)
+void decoderDav1d::parseBlockPartition(Av1Block *      blockData,
+                                       unsigned        x,
+                                       unsigned        y,
+                                       unsigned        blockWidth4,
+                                       unsigned        blockHeight4,
+                                       dav1dFrameInfo &frameInfo)
 {
   if (y >= frameInfo.sizeInBlocks.height || x >= frameInfo.sizeInBlocks.width)
     return;
 
   Av1Block b = blockData[y * frameInfo.b4_stride + x];
 
-  const int cbPosX   = x * 4;
-  const int cbPosY   = y * 4;
-  const int cbWidth  = blockWidth4 * 4;
-  const int cbHeight = blockHeight4 * 4;
+  const auto cbPosX   = x * 4;
+  const auto cbPosY   = y * 4;
+  const auto cbWidth  = blockWidth4 * 4;
+  const auto cbHeight = blockHeight4 * 4;
 
   // Set prediction mode (ID 0)
   const bool isIntra  = (b.intra != 0);
@@ -1000,22 +1005,24 @@ void decoderDav1d::parseBlockPartition(
       curPOCStats[25].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
   }
 
-  const TxfmSize   tx_val               = TxfmSize(isIntra ? b.tx : b.max_ytx);
-  static const int TxfmSizeWidthTable[] = {
+  const auto tx_val = TxfmSize(isIntra ? b.tx : b.max_ytx);
+
+  static const unsigned TxfmSizeWidthTable[] = {
       4, 8, 16, 32, 64, 4, 8, 8, 16, 16, 32, 32, 64, 4, 16, 8, 32, 16, 64};
-  static const int TxfmSizeHeightTable[] = {
+  static const unsigned TxfmSizeHeightTable[] = {
       4, 8, 16, 32, 64, 8, 4, 16, 8, 32, 16, 64, 32, 16, 4, 32, 8, 64, 16};
-  const int tx_w = TxfmSizeWidthTable[tx_val];
-  const int tx_h = TxfmSizeHeightTable[tx_val];
+
+  const auto tx_w = TxfmSizeWidthTable[tx_val];
+  const auto tx_h = TxfmSizeHeightTable[tx_val];
   assert(tx_w <= cbWidth && tx_h <= cbHeight);
 
-  for (int x = 0; x < cbWidth; x += tx_w)
+  for (unsigned x = 0; x < cbWidth; x += tx_w)
   {
-    for (int y = 0; y < cbHeight; y += tx_h)
+    for (unsigned y = 0; y < cbHeight; y += tx_h)
     {
       // Set the transform size (ID 26)
-      const int x_abs = cbPosX + x;
-      const int y_abs = cbPosY + y;
+      const auto x_abs = cbPosX + x;
+      const auto y_abs = cbPosY + y;
       if (x_abs < frameInfo.frameSize.width && y_abs < frameInfo.frameSize.height)
         curPOCStats[26].addBlockValue(x_abs, y_abs, tx_w, tx_h, (int)tx_val);
     }

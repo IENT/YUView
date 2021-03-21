@@ -42,9 +42,6 @@
 namespace decoder
 {
 
-namespace
-{
-
 struct LibraryFunctionsDe265
 {
   de265_decoder_context *(*de265_new_decoder)(){};
@@ -89,8 +86,6 @@ struct LibraryFunctionsDe265
                                              enum de265_internals_param param,
                                              int                        value){};
 };
-
-} // namespace
 
 // This class wraps the libde265 library in a demand-load fashion.
 class decoderLibde265 : public decoderBaseSingleLib

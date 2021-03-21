@@ -43,9 +43,6 @@
 namespace decoder
 {
 
-namespace
-{
-
 struct LibraryFunctionsVTM
 {
   // General functions
@@ -71,8 +68,6 @@ struct LibraryFunctionsVTM
   libVTMDec_ChromaFormat (*libVTMDec_get_chroma_format)(libVTMDec_picture *pic){};
   int (*libVTMDec_get_internal_bit_depth)(libVTMDec_picture *pic, libVTMDec_ColorComponent c){};
 };
-
-} // namespace
 
 // This class wraps the HM decoder library in a demand-load fashion.
 class decoderVTM : public decoderBaseSingleLib
