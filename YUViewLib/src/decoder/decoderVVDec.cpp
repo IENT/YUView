@@ -95,7 +95,7 @@ void loggingCallback(void *ptr, int level, const char *msg, va_list list)
   (void)list;
 #if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
   char buf[200];
-  snprintf( buf, 200, msg, list );
+  vsnprintf( buf, 200, msg, list );
   qDebug() << "decoderVVDec::decoderVVDec vvdeclog(" << level << "): " << buf;
 #endif
 }
