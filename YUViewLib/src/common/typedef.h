@@ -234,6 +234,7 @@ template <typename T> inline T clip(const T n, const T lower, const T upper) { r
 typedef std::pair<uint64_t, uint64_t> pairUint64;
 typedef std::pair<int64_t, int64_t> pairInt64;
 typedef std::pair<int,int> IntPair;
+typedef std::pair<unsigned,unsigned> UIntPair;
 
 /// ---- Legacy types that will be replaced
 typedef QPair<QString, QString> QStringPair;
@@ -272,8 +273,15 @@ struct Range
 
 struct Ratio
 {
-  int num;
-  int den;
+  int num{0};
+  int den{0};
+};
+
+struct Size
+{
+  operator bool() const { return this->width > 0 && this->height > 0; }
+  size_t width{0};
+  size_t height{0};
 };
 
 // A list of value pair lists, where every list has a string (title)

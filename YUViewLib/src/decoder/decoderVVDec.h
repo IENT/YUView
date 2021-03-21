@@ -40,7 +40,10 @@
 #include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"
 
-struct LibraryFunctions
+namespace dec
+{
+
+struct LibraryFunctionsVVDec
 {
   // General functions
   const char *(*vvdec_get_version)(void){};
@@ -111,14 +114,14 @@ private:
   void allocateNewDecoder();
 
   vvdecDecoder *decoder{nullptr};
+  vvdecAccessUnit* accessUnit{nullptr};
+  vvdecFrame *currentFrame{nullptr};
 
   // Try to get the next picture from the decoder and save it in currentHMPic
   bool getNextFrameFromDecoder();
 
   int  nrSignals{0};
   bool flushing{false};
-
-  YUV_Internals::Subsampling convertFromInternalSubsampling(vvdecColorFormat fmt);
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as
   // necessary without invoking the copy operation from the hm image buffer to the QByteArray again.
@@ -127,5 +130,7 @@ private:
 
   bool currentFrameReadyForRetrieval{};
 
-  LibraryFunctions lib{};
+  LibraryFunctionsVVDec lib{};
 };
+
+}

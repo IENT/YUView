@@ -37,6 +37,9 @@
 
 using namespace YUView;
 
+namespace dec
+{
+
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define DECODERBASE_DEBUG_OUTPUT 0
 #if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
@@ -65,10 +68,23 @@ void decoderBase::resetDecoder()
   DEBUG_DECODERBASE("decoderBase::resetDecoder");
   decoderState = DecoderState::NeedsMoreData;
   statsCacheCurPOC = -1;
-  frameSize = QSize();
-  formatYUV = YUV_Internals::yuvPixelFormat();
+  frameSize = {};
+  formatYUV = {};
   rawFormat = raw_Invalid;
 }
+
+bool        decoderBase::isSignalDifference(int signalID) const
+  {
+    Q_UNUSED(signalID);
+    return false;
+  }
+
+void decoderBase::setDecodeSignal(int signalID, bool &decoderResetNeeded)
+  {
+    if (signalID >= 0 && signalID < nrSignalsSupported())
+      this->decodeSignal = signalID;
+    decoderResetNeeded = false;
+  }
 
 statisticsData decoderBase::getStatisticsData(int typeIdx)
 {
@@ -155,4 +171,6 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
   }
 
   resolveLibraryFunctionPointers();
+}
+
 }

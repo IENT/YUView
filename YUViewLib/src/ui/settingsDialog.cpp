@@ -253,7 +253,7 @@ void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
   if (newFiles.count() != 1)
     return;
   QString error;
-  if (!decoderLibde265::checkLibraryFile(newFiles[0], error))
+  if (!dec::decoderLibde265::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libde265 library. Error: " + error);
   else
     ui.lineEditLibde265File->setText(newFiles[0]);
@@ -265,7 +265,7 @@ void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
   if (newFiles.count() != 1)
     return;
   QString error;
-  if (!decoderHM::checkLibraryFile(newFiles[0], error))
+  if (!dec::decoderHM::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libHMDecoder library. Error: " + error);
   else
     ui.lineEditLibHMFile->setText(newFiles[0]);
@@ -277,7 +277,7 @@ void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
   if (newFiles.count() != 1)
     return;
   QString error;
-  if (!decoderDav1d::checkLibraryFile(newFiles[0], error))
+  if (!dec::decoderDav1d::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libDav1d library. Error: " + error);
   else
     ui.lineEditLibDav1d->setText(newFiles[0]);
@@ -289,7 +289,7 @@ void SettingsDialog::on_pushButtonLibVTMSelectFile_clicked()
   if (newFiles.count() != 1)
     return;
   QString error;
-  if (!decoderVTM::checkLibraryFile(newFiles[0], error))
+  if (!dec::decoderVTM::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libVTMDecoder library. Error: " + error);
   else
     ui.lineEditLibVTMFile->setText(newFiles[0]);
@@ -301,7 +301,7 @@ void SettingsDialog::on_pushButtonLibVVDecSelectFile_clicked()
   if (newFiles.count() != 1)
     return;
   QString error;
-  if (!decoderVVDec::checkLibraryFile(newFiles[0], error))
+  if (!dec::decoderVVDec::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libVVDec decoder library. Error: " + error);
   else
     ui.lineEditLibVVDecFile->setText(newFiles[0]);

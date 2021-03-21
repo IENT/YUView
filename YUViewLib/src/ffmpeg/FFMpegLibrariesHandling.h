@@ -628,7 +628,7 @@ public:
   AVFrame *getFrame() { return this->frame; }
   int getWidth() { update(); return this->width; }
   int getHeight() { update(); return this->height; }
-  QSize getSize() { update(); return QSize(width, height); }
+  Size getSize() { update(); return Size({size_t(width), size_t(height)}); }
   int getPTS() { update(); return this->pts; }
   AVPictureType getPictType() { update(); return this->pict_type; }
   int getKeyFrame() { update(); return this->key_frame; }
