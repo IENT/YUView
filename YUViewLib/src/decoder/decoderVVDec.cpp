@@ -94,7 +94,9 @@ void loggingCallback(void *ptr, int level, const char *msg, va_list list)
   (void)msg;
   (void)list;
 #if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
-  qDebug() << "decoderVVDec::decoderVVDec vvdeclog(" << level << "): " << msg;
+  char buf[200];
+  snprintf( buf, 200, msg, list );
+  qDebug() << "decoderVVDec::decoderVVDec vvdeclog(" << level << "): " << buf;
 #endif
 }
 
@@ -304,9 +306,15 @@ bool decoderVVDec::decodeNextFrame()
 
   if (this->flushing)
   {
-    //   // This is our way of moving the decoder to the next picture when flushing.
+    // This is our way of moving the decoder to the next picture when flushing.
     auto ret = this->lib.vvdec_flush(this->decoder, &this->currentFrame);
-    if (ret = !VVDEC_OK)
+    if (ret == VVDEC_EOF)
+    {
+      DEBUG_vvdec("decoderVVDec::pushData: Flushing returned EOF");
+      this->decoderState = DecoderState::EndOfBitstream;
+      return false;
+    }
+    else if (ret != VVDEC_OK)
       return setErrorB("Error sendling flush to decoder");
     DEBUG_vvdec("decoderVVDec::pushData: Flushing to next pixture. %s",
                 this->currentFrame != nullptr ? " frameAvailable" : "");
@@ -406,7 +414,7 @@ bool decoderVVDec::pushData(QByteArray &data)
   if (endOfFile)
   {
     auto ret = this->lib.vvdec_flush(this->decoder, &this->currentFrame);
-    if (ret = !VVDEC_OK)
+    if (ret != VVDEC_OK)
       return setErrorB("Error sendling flush to decoder");
     DEBUG_vvdec("decoderVVDec::pushData: Received empty packet. Sending EOF. %s",
                 this->currentFrame != nullptr ? " frameAvailable" : "");
