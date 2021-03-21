@@ -373,7 +373,10 @@ bool decoderVVDec::getNextFrameFromDecoder()
 
   for (unsigned i = 1; i < this->currentFrame->numPlanes; i++)
   {
+    const auto &plane = this->currentFrame->planes[i];
     auto expectedSize = calculateChromaSize(lumaSize, this->currentFrame->colorFormat);
+    if (expectedSize.width != plane.width || expectedSize.height != plane.height)
+      DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder plane has different size then expected");
   }
 
   if (!this->frameSize && !this->formatYUV.isValid())
@@ -501,7 +504,6 @@ void decoderVVDec::copyImgToByteArray(QByteArray &dst)
   for (unsigned c = 0; c < nrPlanes; c++)
   {
     auto &component = this->currentFrame->planes[c];
-    auto cIdx      = (c == 0 ? 0 : 1);
 
     auto widthBytes = component.width * bytesPerSample;
     auto plane = component.ptr;

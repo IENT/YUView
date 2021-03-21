@@ -196,7 +196,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     const auto nrBytes = nrBytesY + 2 * nrBytesC;
 
     // Is the output big enough?
-    if (this->currentOutputBuffer.capacity() < nrBytes)
+    if (this->currentOutputBuffer.capacity() < int(nrBytes))
       this->currentOutputBuffer.resize(int(nrBytes));
 
     // Copy line by line. The linesize of the source may be larger than the width of the frame.
@@ -213,7 +213,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
       const auto dstLinesize =
           this->frameSize.width / pixFmt.getSubsamplingHor(component) * nrBytesPerSample;
       const auto height = this->frameSize.height / pixFmt.getSubsamplingVer(component);
-      for (int y = 0; y < height; y++)
+      for (unsigned y = 0; y < height; y++)
       {
         memcpy(dst, src, dstLinesize);
         dst += dstLinesize;
@@ -230,7 +230,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     const auto nrBytes = nrBytesPerComponent * pixFmt.nrChannels();
 
     // Is the output big enough?
-    if (this->currentOutputBuffer.capacity() < nrBytes)
+    if (this->currentOutputBuffer.capacity() < int(nrBytes))
       this->currentOutputBuffer.resize(nrBytes);
 
     char *     dst  = this->currentOutputBuffer.data();
@@ -245,7 +245,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
       {
         auto       src         = frame.getData(i);
         const auto srcLinesize = frame.getLineSize(i);
-        for (int y = 0; y < hDst; y++)
+        for (unsigned y = 0; y < hDst; y++)
         {
           memcpy(dst, src, wDst);
           // Goto the next line
@@ -260,7 +260,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
       const auto wDst        = this->frameSize.width * nrBytesPerSample * pixFmt.nrChannels();
       auto       src         = frame.getData(0);
       const auto srcLinesize = frame.getLineSize(0);
-      for (int y = 0; y < hDst; y++)
+      for (unsigned y = 0; y < hDst; y++)
       {
         memcpy(dst, src, wDst);
         dst += wDst;

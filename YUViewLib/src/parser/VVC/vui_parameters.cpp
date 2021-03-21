@@ -39,6 +39,7 @@ using namespace reader;
 
 void vui_parameters::parse(reader::SubByteReaderLogging &reader, unsigned payloadSize)
 {
+  (void)payloadSize;
 
   this->vui_progressive_source_flag        = reader.readFlag("vui_progressive_source_flag");
   this->vui_interlaced_source_flag         = reader.readFlag("vui_interlaced_source_flag");
