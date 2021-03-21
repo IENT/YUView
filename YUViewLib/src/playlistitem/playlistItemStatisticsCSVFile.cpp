@@ -37,6 +37,7 @@
 #include <QDebug>
 #include <QtConcurrent>
 #include <QTime>
+#include <QTextStream>
 #include "statistics/statisticsExtensions.h"
 
 // The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB

@@ -37,6 +37,7 @@
 #include <QDebug>
 #include <QtConcurrent>
 #include <QTime>
+#include <QTextStream>
 
 #include "statistics/statisticsExtensions.h"
 

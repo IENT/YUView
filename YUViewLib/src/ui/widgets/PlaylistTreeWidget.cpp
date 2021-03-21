@@ -43,6 +43,7 @@
 #include <QScopedValueRollback>
 #include <QSettings>
 #include <QHeaderView>
+#include <QTextStream>
 
 #include "playlistitem/playlistItems.h"
 
