@@ -39,3 +39,10 @@ target_include_directories(YUView PUBLIC
     "YUViewApp/src"
     "YUViewLib/src"
 )
+
+
+#####################################################################################################################################
+# YUViewUnitTest
+#####################################################################################################################################
+enable_testing(true) # needs to be before add_subdirectory (or in the root CMake file?)
+add_subdirectory( "YUViewUnitTest" )
