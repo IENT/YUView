@@ -57,6 +57,11 @@ jobs:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
 
+    - name: Install Linux packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev
+        
     - name: Cache Qt base
       id: cache-qt-base
       uses: actions/cache@v2
@@ -97,10 +102,10 @@ jobs:
 #         curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
 #         chmod a+x linuxdeployqt-6-x86_64.AppImage
 #       if: matrix.os == 'ubuntu-16.04'
-    - name: Install Linux packages
-      run: |
-        sudo apt-get update
-        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev
+#     - name: Install Linux packages
+#       run: |
+#         sudo apt-get update
+#         sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev
       if: matrix.os == 'ubuntu-20.04'
 #     - name: Install Newer GCC Ubuntu 16.04
 #       run: |
