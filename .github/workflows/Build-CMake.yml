@@ -127,7 +127,7 @@ jobs:
         export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
         mkdir build
         cd build
-        cmake  ..
+        cmake  -DQt6_DIR=/opt/Qt/6.0.2 ..
         make -j 2
         make test
 #     - name: Build App (Mac)
