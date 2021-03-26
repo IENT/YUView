@@ -7,47 +7,47 @@ on:
       - created
 
 jobs:
-  build-unix-native:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include: 
-          - os: ubuntu-18.04
+#   build-unix-native:
+#     runs-on: ${{ matrix.os }}
+#     strategy:
+#       matrix:
+#         include: 
+#           - os: ubuntu-20.04
 
-    steps:
-    - uses: actions/checkout@v2
-    - run: git fetch --prune --unshallow
-    - name: Install Linux packages
-      run: |
-        sudo apt-get update
-        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
-    - name: Build
-      run: |
-        cd $GITHUB_WORKSPACE
-        mkdir build
-        cd build
-        cmake  ..
-        make -j 2
-        make test 
+#     steps:
+#     - uses: actions/checkout@v2
+#     - run: git fetch --prune --unshallow
+#     - name: Install Linux packages
+#       run: |
+#         sudo apt-get update
+#         sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+#     - name: Build
+#       run: |
+#         cd $GITHUB_WORKSPACE
+#         mkdir build
+#         cd build
+#         cmake  ..
+#         make -j 2
+#         make test 
   build-unix:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include: 
-          - os: ubuntu-16.04
-            QT_FILE: qtBase_5.15.1_xenial.zip
-            LIBDE265_REMOTE: libde265.so
-            LIBDE265_LOCAL: libde265-internals.so
-            ARTIFACT_NAME: YUView.AppImage
-          - os: ubuntu-18.04
+#           - os: ubuntu-16.04
+#             QT_FILE: qtBase_5.15.1_xenial.zip
+#             LIBDE265_REMOTE: libde265.so
+#             LIBDE265_LOCAL: libde265-internals.so
+#             ARTIFACT_NAME: YUView.AppImage
+          - os: ubuntu-20.04
             QT_FILE: qtBase_5.15.1_bionic.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
-          - os: macos-10.15
-            QT_FILE: qtBase_5.15.1_mac.zip
-            LIBDE265_REMOTE: libde265.dylib
-            LIBDE265_LOCAL: libde265-internals.dylib
-            ARTIFACT_NAME: YUView-Mac.zip
+#           - os: macos-10.15
+#             QT_FILE: qtBase_5.15.1_mac.zip
+#             LIBDE265_REMOTE: libde265.dylib
+#             LIBDE265_LOCAL: libde265-internals.dylib
+#             ARTIFACT_NAME: YUView-Mac.zip
           # - os: macos-11.0
           #   QT_FILE: qtBase_5.15.1_mac.zip
           #   LIBDE265_REMOTE: libde265.dylib
@@ -61,40 +61,41 @@ jobs:
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/${{matrix.QT_FILE}} -o Qt.zip
+        curl -L https://download.qt.io/official_releases/qt/6.0/6.0.2/submodules/qtbase-everywhere-src-6.0.2.zip -o Qt.zip 
+        # curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/${{matrix.QT_FILE}} -o Qt.zip
         unzip -qa Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
-    - name: Install MacDeployQT
-      run: |
-        cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_mac.zip -o deployQt.zip
-        unzip -qa deployQt.zip
-      shell: bash
-      if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
-    - name: Install Macdeploy Qt
-      run: |
-        cp $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qttools/bin/macdeployqt $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
-        strip $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
-      if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
-    - name: Install Linuxdeployqt
-      run: |
-        curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
-        chmod a+x linuxdeployqt-6-x86_64.AppImage
-      if: matrix.os == 'ubuntu-16.04'
+#     - name: Install MacDeployQT
+#       run: |
+#         cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
+#         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_mac.zip -o deployQt.zip
+#         unzip -qa deployQt.zip
+#       shell: bash
+#       if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
+#     - name: Install Macdeploy Qt
+#       run: |
+#         cp $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qttools/bin/macdeployqt $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
+#         strip $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
+#       if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
+#     - name: Install Linuxdeployqt
+#       run: |
+#         curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
+#         chmod a+x linuxdeployqt-6-x86_64.AppImage
+#       if: matrix.os == 'ubuntu-16.04'
     - name: Install Linux packages
       run: |
         sudo apt-get update
         sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev
-      if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04'
-    - name: Install Newer GCC Ubuntu 16.04
-      run: |
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-        sudo apt-get update
-        sudo apt-get install gcc-9 g++-9
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
-        sudo update-alternatives --config gcc
-      if: matrix.os == 'ubuntu-16.04'
+      if: matrix.os == 'ubuntu-20.04'
+#     - name: Install Newer GCC Ubuntu 16.04
+#       run: |
+#         sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+#         sudo apt-get update
+#         sudo apt-get install gcc-9 g++-9
+#         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+#         sudo update-alternatives --config gcc
+#       if: matrix.os == 'ubuntu-16.04'
     - name: Install libde265
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
@@ -109,35 +110,35 @@ jobs:
         cmake  ..
         make -j 2
         make test
-    - name: Build App (Mac)
-      run: |
-        macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
-        cp ${{matrix.LIBDE265_LOCAL}} build/YUViewApp/YUView.app/Contents/MacOS/.
-        cd build/YUViewApp
-        # Zip
-        zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
-        mkdir $GITHUB_WORKSPACE/artifacts
-        cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
-      if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
-    - name: Build Appimage (Linux)
-      run: |
-        cd build
-        make INSTALL_ROOT=appdir install
-        $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
-        mv YUView-*.AppImage YUView.AppImage
-        mkdir $GITHUB_WORKSPACE/artifacts
-        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
-        cd $GITHUB_WORKSPACE
-        ls -l
-        cd $GITHUB_WORKSPACE/artifacts
-        ls -l
-      if: matrix.os == 'ubuntu-16.04'
+#     - name: Build App (Mac)
+#       run: |
+#         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
+#         cp ${{matrix.LIBDE265_LOCAL}} build/YUViewApp/YUView.app/Contents/MacOS/.
+#         cd build/YUViewApp
+#         # Zip
+#         zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
+#         mkdir $GITHUB_WORKSPACE/artifacts
+#         cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
+#       if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
+#     - name: Build Appimage (Linux)
+#       run: |
+#         cd build
+#         make INSTALL_ROOT=appdir install
+#         $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
+#         mv YUView-*.AppImage YUView.AppImage
+#         mkdir $GITHUB_WORKSPACE/artifacts
+#         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
+#         cd $GITHUB_WORKSPACE
+#         ls -l
+#         cd $GITHUB_WORKSPACE/artifacts
+#         ls -l
+#       if: matrix.os == 'ubuntu-16.04'
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
-      if: matrix.os != 'ubuntu-18.04'
+      if: matrix.os != 'ubuntu-20.04'
     - name: Upload Release
       uses: actions/upload-release-asset@v1.0.1
       env:
@@ -147,7 +148,7 @@ jobs:
         asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
         asset_name: ${{matrix.ARTIFACT_NAME}}
         asset_content_type: application/zip
-      if: github.event_name == 'release' && matrix.os != 'ubuntu-18.04'
+      if: github.event_name == 'release' && matrix.os != 'ubuntu-20.04'
     
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
