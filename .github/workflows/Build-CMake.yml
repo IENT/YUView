@@ -40,7 +40,7 @@ jobs:
 #             LIBDE265_LOCAL: libde265-internals.so
 #             ARTIFACT_NAME: YUView.AppImage
           - os: ubuntu-20.04
-            QT_FILE: qtBase_5.15.1_bionic.zip
+            # QT_FILE: qtBase_5.15.1_bionic.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
 #           - os: macos-10.15
@@ -56,7 +56,16 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
+
+    - name: Cache Qt base
+      id: cache-qt-base
+      uses: actions/cache@v2
+      with:
+        path: /opt/Qt/6.0.2
+        key: ${{ matrix.os }}-primes
+        
     - name: Install Qt base
+      if: steps.cache-qt-base.outputs.cache-hit != 'true'
       run: |
         cd ../../
         mkdir -p YUViewQt/YUViewQt
@@ -64,7 +73,12 @@ jobs:
         curl -L https://download.qt.io/official_releases/qt/6.0/6.0.2/submodules/qtbase-everywhere-src-6.0.2.zip -o Qt.zip 
         # curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/${{matrix.QT_FILE}} -o Qt.zip
         unzip -qa Qt.zip
-        echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
+        mkdir qt6-build
+        cd qt6-build
+        cmake  -DCMAKE_INSTALL_PREFIX=/opt/Qt/6.0.2 -DFEATURE_lcdnumber=OFF ../qtbase-everywhere-src-6.0.2
+        cmake --build .
+        cmake --install .
+    
       shell: bash
 #     - name: Install MacDeployQT
 #       run: |
