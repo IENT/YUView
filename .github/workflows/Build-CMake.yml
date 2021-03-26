@@ -121,15 +121,15 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
       shell: bash
-    - name: Build Linux/Mac
-      run: |
-        cd $GITHUB_WORKSPACE
-        export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
-        mkdir build
-        cd build
-        cmake  -DQt6_DIR=/opt/Qt/6.0.2 ..
-        make -j 2
-        make test
+#     - name: Build Linux/Mac
+#       run: |
+#         cd $GITHUB_WORKSPACE
+#         export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
+#         mkdir build
+#         cd build
+#         cmake  -DQt6_DIR=/opt/Qt/6.0.2 ..
+#         make -j 2
+#         make test
 #     - name: Build App (Mac)
 #       run: |
 #         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
@@ -153,22 +153,22 @@ jobs:
 #         cd $GITHUB_WORKSPACE/artifacts
 #         ls -l
 #       if: matrix.os == 'ubuntu-16.04'
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{matrix.ARTIFACT_NAME}}
-        path: artifacts
-      if: matrix.os != 'ubuntu-20.04'
-    - name: Upload Release
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
-        asset_name: ${{matrix.ARTIFACT_NAME}}
-        asset_content_type: application/zip
-      if: github.event_name == 'release' && matrix.os != 'ubuntu-20.04'
+#     - name: Upload Artifact
+#       uses: actions/upload-artifact@v2
+#       with:
+#         name: ${{matrix.ARTIFACT_NAME}}
+#         path: artifacts
+#       if: matrix.os != 'ubuntu-20.04'
+#     - name: Upload Release
+#       uses: actions/upload-release-asset@v1.0.1
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       with:
+#         upload_url: ${{ github.event.release.upload_url }}
+#         asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
+#         asset_name: ${{matrix.ARTIFACT_NAME}}
+#         asset_content_type: application/zip
+#       if: github.event_name == 'release' && matrix.os != 'ubuntu-20.04'
     
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
