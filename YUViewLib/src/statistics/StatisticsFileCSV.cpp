@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -30,23 +30,21 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "playlistItemStatisticsCSVFile.h"
+#include "StatisticsFileCSV.h"
 
-#include "statistics/statisticsExtensions.h"
-#include <QDebug>
-#include <QTime>
-#include <QtConcurrent>
-#include <cassert>
 #include <iostream>
+
+namespace stats
+{
+
+namespace
+{
 
 // The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB
 // so that we can address all the positions in it with int (using such a large buffer is not a good
 // idea anyways)
-#define STAT_PARSING_BUFFER_SIZE 1048576
-#define STAT_MAX_STRING_SIZE 1 << 28
-
-namespace
-{
+constexpr unsigned STAT_PARSING_BUFFER_SIZE = 1048576u;
+constexpr unsigned STAT_MAX_STRING_SIZE     = 1u << 28;
 
 QStringList parseCSVLine(const QString &srcLine, char delimiter)
 {
@@ -58,33 +56,10 @@ QStringList parseCSVLine(const QString &srcLine, char delimiter)
 
 } // namespace
 
-playlistItemStatisticsCSVFile::playlistItemStatisticsCSVFile(const QString &itemNameOrFileName)
-    : playlistItemStatisticsFile(itemNameOrFileName)
+StatisticsFileCSV::StatisticsFileCSV(const QString &filename, StatisticHandler &handler)
+    : StatisticsFileBase(filename)
 {
-  this->file.openFile(itemNameOrFileName);
-  if (!this->file.isOk())
-    return;
-
-  this->prop.isFileSource = true;
-
-  // Read the statistics file header
-  readHeaderFromFile();
-
-  // Run the parsing of the file in the background
-  this->cancelBackgroundParser = false;
-  this->timer.start(1000, this);
-  this->backgroundParserFuture = QtConcurrent::run(
-      [=](playlistItemStatisticsCSVFile *csvFile) { csvFile->readFrameAndTypePositionsFromFile(); },
-      this);
-
-  connect(&this->statSource, &statisticHandler::updateItem, [this](bool redraw) {
-    emit signalItemChanged(redraw, RECACHE_NONE);
-  });
-  connect(&this->statSource,
-          &statisticHandler::requestStatisticsLoading,
-          this,
-          &playlistItemStatisticsCSVFile::loadStatisticToCache,
-          Qt::DirectConnection);
+  this->readHeaderFromFile(handler);
 }
 
 /** The background task that parses the file and extracts the exact file positions
@@ -95,7 +70,7 @@ playlistItemStatisticsCSVFile::playlistItemStatisticsCSVFile(const QString &item
  * This function might emit the objectInformationChanged() signal if something went wrong,
  * setting the error message, or if parsing finished successfully.
  */
-void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
+void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction)
 {
   try
   {
@@ -108,15 +83,17 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
     // We perform reading using an input buffer
     QByteArray inputBuffer;
     bool       fileAtEnd      = false;
-    qint64     bufferStartPos = 0;
+    uint64_t   bufferStartPos = 0;
 
-    QString lineBuffer;
-    qint64  lineBufferStartPos = 0;
-    int     lastPOC            = INT_INVALID;
-    int     lastType           = INT_INVALID;
-    bool    sortingFixed       = false;
+    QString  lineBuffer;
+    uint64_t lineBufferStartPos = 0;
+    int      lastPOC            = INT_INVALID;
+    int      lastType           = INT_INVALID;
+    bool     sortingFixed       = false;
 
-    while (!fileAtEnd && !this->cancelBackgroundParser)
+    this->parsingProgress = 0;
+
+    while (!fileAtEnd && !breakFunction.load() && !this->abortParsingDestroy)
     {
       // Fill the buffer
       auto bufferSize = inputFile.readBytes(inputBuffer, bufferStartPos, STAT_PARSING_BUFFER_SIZE);
@@ -152,11 +129,8 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
               if (lastType == -1 && lastPOC == -1)
               {
                 // First POC/type line
-                this->pocTypeStartList[poc][typeID] = lineBufferStartPos;
-                if (poc == currentDrawnFrameIdx)
-                  // We added a start position for the frame index that is currently drawn. We might
-                  // have to redraw.
-                  emit signalItemChanged(true, RECACHE_NONE);
+                this->pocTypeFileposMap[poc][typeID] = lineBufferStartPos;
+                emit readPOC(poc);
 
                 lastType = typeID;
                 lastPOC  = poc;
@@ -179,13 +153,10 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
                   sortingFixed          = true;
                 }
                 lastType = typeID;
-                if (!this->pocTypeStartList[poc].contains(typeID))
+                if (this->pocTypeFileposMap[poc].count(typeID) == 0)
                 {
-                  this->pocTypeStartList[poc][typeID] = lineBufferStartPos;
-                  if (poc == currentDrawnFrameIdx)
-                    // We added a start position for the frame index that is currently drawn. We
-                    // might have to redraw.
-                    emit signalItemChanged(true, RECACHE_NONE);
+                  this->pocTypeFileposMap[poc][typeID] = lineBufferStartPos;
+                  emit readPOC(poc);
                 }
               }
               else if (poc != lastPOC)
@@ -198,35 +169,31 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
                 if (this->fileSortedByPOC)
                 {
                   // There must not be a start position for any type with this POC already.
-                  if (this->pocTypeStartList.contains(poc))
+                  if (this->pocTypeFileposMap.count(poc) > 0)
                     throw "The data for each POC must be continuous in an interleaved statistics "
-                          "file->";
+                          "file";
                 }
                 else
                 {
-
                   // There must not be a start position for this POC/type already.
-                  if (this->pocTypeStartList.contains(poc) &&
-                      this->pocTypeStartList[poc].contains(typeID))
+                  if (this->pocTypeFileposMap.count(poc) > 0 &&
+                      this->pocTypeFileposMap[poc].count(typeID) > 0)
                     throw "The data for each typeID must be continuous in an non interleaved "
-                          "statistics file->";
+                          "statistics file";
                 }
 
                 lastPOC  = poc;
                 lastType = typeID;
 
-                this->pocTypeStartList[poc][typeID] = lineBufferStartPos;
-                if (poc == this->currentDrawnFrameIdx)
-                  // We added a start position for the frame index that is currently drawn. We might
-                  // have to redraw.
-                  emit signalItemChanged(true, RECACHE_NONE);
+                this->pocTypeFileposMap[poc][typeID] = lineBufferStartPos;
+                emit readPOC(poc);
 
                 // update number of frames
                 if (poc > this->maxPOC)
                   this->maxPOC = poc;
 
                 // Update percent of file parsed
-                this->backgroundParserProgress =
+                this->parsingProgress =
                     ((double)lineBufferStartPos * 100 / (double)inputFile.getFileSize());
               }
             }
@@ -245,40 +212,143 @@ void playlistItemStatisticsCSVFile::readFrameAndTypePositionsFromFile()
       bufferStartPos += bufferSize;
     }
 
-    // Parsing complete
-    this->backgroundParserProgress = 100.0;
-
-    this->prop.startEndRange = indexRange(0, maxPOC);
-    emit signalItemChanged(false, RECACHE_NONE);
-
-  } // try
+    this->parsingProgress = 100.0;
+  }
   catch (const char *str)
   {
     std::cerr << "Error while parsing meta data: " << str << "\n";
-    this->parsingError = QString("Error while parsing meta data: ") + QString(str);
-    emit signalItemChanged(false, RECACHE_NONE);
-    return;
+    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
+    this->error        = true;
   }
   catch (const std::exception &ex)
   {
     std::cerr << "Error while parsing:" << ex.what() << "\n";
-    this->parsingError = QString("Error while parsing: ") + QString(ex.what());
-    emit signalItemChanged(false, RECACHE_NONE);
-    return;
+    this->errorMessage = QString("Error while parsing: ") + QString(ex.what());
+    this->error        = true;
   }
-
-  return;
 }
 
-void playlistItemStatisticsCSVFile::readHeaderFromFile()
+void StatisticsFileCSV::loadStatisticToHandler(StatisticHandler &handler, int poc, int typeID)
 {
+  if (!this->file.isOk())
+    return;
+
+  try
+  {
+    QTextStream in(this->file.getQFile());
+
+    if (this->pocTypeFileposMap.count(poc) == 0 || this->pocTypeFileposMap[poc].count(typeID) == 0)
+    {
+      // There are no statistics in the file for the given frame and index.
+      handler.statsCache.insert(typeID, {});
+      return;
+    }
+
+    auto startPos = this->pocTypeFileposMap[poc][typeID];
+    if (this->fileSortedByPOC)
+    {
+      // If the statistics file is sorted by POC we have to start at the first entry of this POC and
+      // parse the file until another POC is encountered. If this is not done, some information from
+      // a different typeID could be ignored during parsing.
+
+      // Get the position of the first line with the given frameIdx
+      startPos = std::numeric_limits<qint64>::max();
+      for (const auto &typeEntry : this->pocTypeFileposMap[poc])
+        if (typeEntry.second < startPos)
+          startPos = typeEntry.second;
+    }
+
+    // fast forward
+    in.seek(startPos);
+
+    while (!in.atEnd())
+    {
+      // read one line
+      auto aLine       = in.readLine();
+      auto rowItemList = parseCSVLine(aLine, ';');
+
+      if (rowItemList[0].isEmpty())
+        continue;
+
+      auto pocRow = rowItemList[0].toInt();
+      auto type   = rowItemList[5].toInt();
+
+      // if there is a new POC, we are done here!
+      if (pocRow != poc)
+        break;
+      // if there is a new type and this is a non interleaved file, we are done here.
+      if (!this->fileSortedByPOC && type != typeID)
+        break;
+
+      int values[4] = {0};
+
+      values[0] = rowItemList[6].toInt();
+
+      bool vectorData = false;
+      bool lineData   = false; // or a vector specified by 2 points
+
+      if (rowItemList.count() > 7)
+      {
+        values[1]  = rowItemList[7].toInt();
+        vectorData = true;
+      }
+      if (rowItemList.count() > 8)
+      {
+        values[2]  = rowItemList[8].toInt();
+        values[3]  = rowItemList[9].toInt();
+        lineData   = true;
+        vectorData = false;
+      }
+
+      auto posX   = rowItemList[1].toInt();
+      auto posY   = rowItemList[2].toInt();
+      auto width  = rowItemList[3].toUInt();
+      auto height = rowItemList[4].toUInt();
+
+      // Check if block is within the image range
+      if (this->blockOutsideOfFramePOC == -1 &&
+          (posX + int(width) > handler.getFrameSize().width() ||
+           posY + int(height) > handler.getFrameSize().height()))
+        // Block not in image. Warn about this.
+        this->blockOutsideOfFramePOC = poc;
+
+      const auto statsType = handler.getStatisticsType(type);
+      Q_ASSERT_X(statsType != nullptr, Q_FUNC_INFO, "Stat type not found.");
+
+      if (vectorData && statsType->hasVectorData)
+        handler.statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
+      else if (lineData && statsType->hasVectorData)
+        handler.statsCache[type].addLine(
+            posX, posY, width, height, values[0], values[1], values[2], values[3]);
+      else
+        handler.statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
+    }
+  }
+  catch (const char *str)
+  {
+    std::cerr << "Error while parsing: " << str << '\n';
+    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
+    this->error        = true;
+  }
+  catch (...)
+  {
+    std::cerr << "Error while parsing.";
+    this->errorMessage = QString("Error while parsing meta data.");
+    this->error        = true;
+  }
+}
+
+void StatisticsFileCSV::readHeaderFromFile(StatisticHandler &handler)
+{
+  // TODO: Why is there a try block here? I see no throwing of anything ...
+  //       We should get rid of this and just set an error and return on failure.
   try
   {
     if (!this->file.isOk())
       return;
 
     // Cleanup old types
-    this->statSource.clearStatTypes();
+    handler.clearStatTypes();
 
     // scan header lines first
     // also count the lines per Frame for more efficient memory allocation
@@ -303,7 +373,7 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
       {
         // Last type is complete. Store this initial state.
         aType.setInitialState();
-        statSource.addStatType(aType);
+        handler.addStatType(aType);
 
         // start from scratch for next item
         aType             = StatisticsType();
@@ -348,8 +418,8 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
         auto b = (unsigned char)rowItemList[5].toInt();
         auto a = (unsigned char)rowItemList[6].toInt();
 
-        aType.colMapper.type = colorMapper::mappingType::map;
-        aType.colMapper.colorMap.insert(id, QColor(r, g, b, a));
+        aType.colorMapper.mappingType = ColorMapper::MappingType::map;
+        aType.colorMapper.colorMap.insert(id, QColor(r, g, b, a));
       }
       else if (rowItemList[1] == "range")
       {
@@ -368,7 +438,7 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
         a             = rowItemList[11].toInt();
         auto maxColor = QColor(r, g, b, a);
 
-        aType.colMapper = colorMapper(min, minColor, max, maxColor);
+        aType.colorMapper = ColorMapper(min, minColor, max, maxColor);
       }
       else if (rowItemList[1] == "defaultRange")
       {
@@ -377,7 +447,7 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
         int  max       = rowItemList[3].toInt();
         auto rangeName = rowItemList[4];
 
-        aType.colMapper = colorMapper(rangeName, min, max);
+        aType.colorMapper = ColorMapper(rangeName, min, max);
       }
       else if (rowItemList[1] == "vectorColor")
       {
@@ -412,213 +482,24 @@ void playlistItemStatisticsCSVFile::readHeaderFromFile()
         auto width  = rowItemList[4].toInt();
         auto height = rowItemList[5].toInt();
         if (width > 0 && height > 0)
-          statSource.setFrameSize(QSize(width, height));
+          handler.setFrameSize(QSize(width, height));
         if (rowItemList[6].toDouble() > 0.0)
-          this->prop.frameRate = rowItemList[6].toDouble();
+          this->framerate = rowItemList[6].toDouble();
       }
     }
-
-  } // try
+  }
   catch (const char *str)
   {
     std::cerr << "Error while parsing meta data: " << str << '\n';
-    this->parsingError = QString("Error while parsing meta data: ") + QString(str);
-    return;
+    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
+    this->error        = true;
   }
   catch (...)
   {
     std::cerr << "Error while parsing meta data.";
-    this->parsingError = QString("Error while parsing meta data.");
-    return;
+    this->errorMessage = QString("Error while parsing meta data.");
+    this->error        = true;
   }
-
-  return;
 }
 
-void playlistItemStatisticsCSVFile::loadStatisticToCache(int frameIdx, int typeID)
-{
-  try
-  {
-    if (!this->file.isOk())
-      return;
-
-    QTextStream in(this->file.getQFile());
-
-    if (!this->pocTypeStartList.contains(frameIdx) ||
-        !this->pocTypeStartList[frameIdx].contains(typeID))
-    {
-      // There are no statistics in the file for the given frame and index.
-      this->statSource.statsCache.insert(typeID, statisticsData());
-      return;
-    }
-
-    auto startPos = this->pocTypeStartList[frameIdx][typeID];
-    if (this->fileSortedByPOC)
-    {
-      // If the statistics file is sorted by POC we have to start at the first entry of this POC and
-      // parse the file until another POC is encountered. If this is not done, some information from
-      // a different typeID could be ignored during parsing.
-
-      // Get the position of the first line with the given frameIdx
-      startPos = std::numeric_limits<qint64>::max();
-      for (const auto &value : this->pocTypeStartList[frameIdx])
-        if (value < startPos)
-          startPos = value;
-    }
-
-    // fast forward
-    in.seek(startPos);
-
-    while (!in.atEnd())
-    {
-      // read one line
-      auto aLine       = in.readLine();
-      auto rowItemList = parseCSVLine(aLine, ';');
-
-      if (rowItemList[0].isEmpty())
-        continue;
-
-      auto poc  = rowItemList[0].toInt();
-      auto type = rowItemList[5].toInt();
-
-      // if there is a new POC, we are done here!
-      if (poc != frameIdx)
-        break;
-      // if there is a new type and this is a non interleaved file, we are done here.
-      if (!this->fileSortedByPOC && type != typeID)
-        break;
-
-      int values[4] = {0};
-
-      values[0] = rowItemList[6].toInt();
-
-      bool vectorData = false;
-      bool lineData   = false; // or a vector specified by 2 points
-
-      if (rowItemList.count() > 7)
-      {
-        values[1]  = rowItemList[7].toInt();
-        vectorData = true;
-      }
-      if (rowItemList.count() > 8)
-      {
-        values[2]  = rowItemList[8].toInt();
-        values[3]  = rowItemList[9].toInt();
-        lineData   = true;
-        vectorData = false;
-      }
-
-      auto posX   = rowItemList[1].toInt();
-      auto posY   = rowItemList[2].toInt();
-      auto width  = rowItemList[3].toUInt();
-      auto height = rowItemList[4].toUInt();
-
-      // Check if block is within the image range
-      if (this->blockOutsideOfFrame_idx == -1 &&
-          (posX + int(width) > this->statSource.getFrameSize().width() ||
-           posY + int(height) > this->statSource.getFrameSize().height()))
-        // Block not in image. Warn about this.
-        this->blockOutsideOfFrame_idx = frameIdx;
-
-      const auto statsType = this->statSource.getStatisticsType(type);
-      Q_ASSERT_X(statsType != nullptr, Q_FUNC_INFO, "Stat type not found.");
-
-      if (vectorData && statsType->hasVectorData)
-        this->statSource.statsCache[type].addBlockVector(
-            posX, posY, width, height, values[0], values[1]);
-      else if (lineData && statsType->hasVectorData)
-        statSource.statsCache[type].addLine(
-            posX, posY, width, height, values[0], values[1], values[2], values[3]);
-      else
-        this->statSource.statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
-    }
-
-  } // try
-  catch (const char *str)
-  {
-    std::cerr << "Error while parsing: " << str << '\n';
-    this->parsingError = QString("Error while parsing meta data: ") + QString(str);
-    return;
-  }
-  catch (...)
-  {
-    std::cerr << "Error while parsing.";
-    this->parsingError = QString("Error while parsing meta data.");
-    return;
-  }
-
-  return;
-}
-
-playlistItemStatisticsCSVFile *
-playlistItemStatisticsCSVFile::newplaylistItemStatisticsCSVFile(const YUViewDomElement &root,
-                                                                const QString &playlistFilePath)
-{
-  // Parse the DOM element. It should have all values of a playlistItemStatisticsFile
-  auto absolutePath = root.findChildValue("absolutePath");
-  auto relativePath = root.findChildValue("relativePath");
-
-  // check if file with absolute path exists, otherwise check relative path
-  auto filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
-  if (filePath.isEmpty())
-    return nullptr;
-
-  // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  auto newStat = new playlistItemStatisticsCSVFile(filePath);
-
-  // Load the propertied of the playlistItem
-  playlistItem::loadPropertiesFromPlaylist(root, newStat);
-
-  // Load the status of the statistics (which are shown, transparency ...)
-  newStat->statSource.loadPlaylist(root);
-
-  return newStat;
-}
-
-void playlistItemStatisticsCSVFile::reloadItemSource()
-{
-  // Set default variables
-  this->fileSortedByPOC          = false;
-  this->blockOutsideOfFrame_idx  = -1;
-  this->backgroundParserProgress = 0.0;
-  this->parsingError.clear();
-  this->currentDrawnFrameIdx = -1;
-  this->maxPOC               = 0;
-
-  // Is the background parser still running? If yes, abort it.
-  if (this->backgroundParserFuture.isRunning())
-  {
-    // signal to background thread that we want to cancel the processing
-    this->cancelBackgroundParser = true;
-    this->backgroundParserFuture.waitForFinished();
-  }
-
-  // Clear the parsed data
-  this->pocTypeStartList.clear();
-  this->statSource.statsCache.clear();
-  this->statSource.statsCacheFrameIdx = -1;
-
-  // Reopen the file
-  this->file.openFile(this->properties().name);
-  if (!this->file.isOk())
-    return;
-
-  // Read the new statistics file header
-  this->readHeaderFromFile();
-
-  this->statSource.updateStatisticsHandlerControls();
-
-  // Run the parsing of the file in the background
-  this->cancelBackgroundParser = false;
-  this->timer.start(1000, this);
-  this->backgroundParserFuture = QtConcurrent::run(
-      [=](playlistItemStatisticsCSVFile *csvFile) { csvFile->readFrameAndTypePositionsFromFile(); },
-      this);
-}
-
-void playlistItemStatisticsCSVFile::getSupportedFileExtensions(QStringList &allExtensions,
-                                                               QStringList &filters)
-{
-  allExtensions.append("csv");
-  filters.append("Statistics File (*.csv)");
-}
+} // namespace stats

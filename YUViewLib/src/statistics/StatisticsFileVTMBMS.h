@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -32,31 +32,31 @@
 
 #pragma once
 
-#include <QFrame>
+#include "StatisticsFileBase.h"
 
-#include "statistics/statisticsExtensions.h"
-
-class showColorWidget : public QFrame
+namespace stats
 {
-  Q_OBJECT
 
+/* Abstract base class that prvides features which are common to all parsers
+ */
+class StatisticsFileVTMBMS : public StatisticsFileBase
+{
 public:
-  showColorWidget(QWidget *parent) : QFrame(parent) { renderRange = false; renderRangeValues = false; }
-  virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-  void setColorMapper(const colorMapper &mapper) { renderRange = true; colMapper = mapper; update(); }
-  void setPlainColor(const QColor &color) { renderRange = false; plainColor = color; update(); }
-  QColor getPlainColor() { return plainColor; }
-  void setRenderRangeValues(bool render) { renderRangeValues = render; }
+  StatisticsFileVTMBMS(const QString &filename, StatisticHandler &handler);
+  virtual ~StatisticsFileVTMBMS() = default;
 
-signals:
-  // Emitted if the user clicked this widget.
-  void clicked();
+  // Parse the whole file and get the positions where a new POC/type starts and save them. Later we
+  // can then seek to these positions to load data. Usually this is called in a seperate thread.
+  void readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction) override;
 
-protected:
-  // If the mouse is released, emit a clicked() event.
-  virtual void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE { Q_UNUSED(event); emit clicked(); }
-  bool        renderRange;
-  bool        renderRangeValues;
-  colorMapper colMapper;
-  QColor      plainColor;
+  // Load the statistics for "poc/type" from file and put it into the handlers cache.
+  virtual void loadStatisticToHandler(StatisticHandler &handler, int poc, int typeID) override;
+
+private:
+  //! Scan the header: What types are saved in this file?
+  void readHeaderFromFile(StatisticHandler &handler);
+  
+  std::map<int, uint64_t> pocStartList;
 };
+
+} // namespace parser

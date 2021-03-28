@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -30,49 +30,23 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "playlistItemStatisticsVTMBMSFile.h"
+#include "StatisticsFileVTMBMS.h"
 
-#include <QDebug>
-#include <QTime>
-#include <QtConcurrent>
-#include <cassert>
 #include <iostream>
 
-#include "statistics/statisticsExtensions.h"
+namespace stats
+{
 
 // The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB
 // so that we can address all the positions in it with int (using such a large buffer is not a good
 // idea anyways)
-#define STAT_PARSING_BUFFER_SIZE 1048576
-#define STAT_MAX_STRING_SIZE 1 << 28
+constexpr unsigned STAT_PARSING_BUFFER_SIZE = 1048576u;
+constexpr unsigned STAT_MAX_STRING_SIZE     = 1u << 28;
 
-playlistItemStatisticsVTMBMSFile::playlistItemStatisticsVTMBMSFile(
-    const QString &itemNameOrFileName)
-    : playlistItemStatisticsFile(itemNameOrFileName)
+StatisticsFileVTMBMS::StatisticsFileVTMBMS(const QString &filename, StatisticHandler &handler)
+    : StatisticsFileBase(filename)
 {
-  this->file.openFile(itemNameOrFileName);
-  if (!this->file.isOk())
-    return;
-
-  this->prop.isFileSource = true;
-
-  // Read the statistics file header
-  this->readHeaderFromFile();
-
-  // Run the parsing of the file in the background
-  this->cancelBackgroundParser = false;
-  this->timer.start(1000, this);
-  this->backgroundParserFuture = QtConcurrent::run(
-      [=](playlistItemStatisticsVTMBMSFile *f) { f->readFramePositionsFromFile(); }, this);
-
-  connect(&this->statSource, &statisticHandler::updateItem, [this](bool redraw) {
-    emit signalItemChanged(redraw, RECACHE_NONE);
-  });
-  connect(&this->statSource,
-          &statisticHandler::requestStatisticsLoading,
-          this,
-          &playlistItemStatisticsVTMBMSFile::loadStatisticToCache,
-          Qt::DirectConnection);
+  this->readHeaderFromFile(handler);
 }
 
 /** The background task that parses the file and extracts the exact file positions
@@ -83,7 +57,7 @@ playlistItemStatisticsVTMBMSFile::playlistItemStatisticsVTMBMSFile(
  * This function might emit the objectInformationChanged() signal if something went wrong,
  * setting the error message, or if parsing finished successfully.
  */
-void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
+void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction)
 {
   try
   {
@@ -96,14 +70,14 @@ void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
     // We perform reading using an input buffer
     QByteArray inputBuffer;
     bool       fileAtEnd      = false;
-    qint64     bufferStartPos = 0;
+    uint64_t   bufferStartPos = 0;
 
-    QString lineBuffer;
-    qint64  lineBufferStartPos = 0;
-    int     lastPOC            = INT_INVALID;
-    bool    sortingFixed       = false;
+    QString  lineBuffer;
+    uint64_t lineBufferStartPos = 0;
+    int      lastPOC            = INT_INVALID;
+    bool     sortingFixed       = false;
 
-    while (!fileAtEnd && !this->cancelBackgroundParser)
+    while (!fileAtEnd && !breakFunction.load() && !this->abortParsingDestroy)
     {
       // Fill the buffer
       auto bufferSize = inputFile.readBytes(inputBuffer, bufferStartPos, STAT_PARSING_BUFFER_SIZE);
@@ -142,10 +116,7 @@ void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
               {
                 // First POC
                 this->pocStartList[poc] = lineBufferStartPos;
-                if (poc == this->currentDrawnFrameIdx)
-                  // We added a start position for the frame index that is currently drawn. We might
-                  // have to redraw.
-                  emit signalItemChanged(true, RECACHE_NONE);
+                emit readPOC(poc);
 
                 lastPOC = poc;
 
@@ -161,17 +132,14 @@ void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
 
                 lastPOC                 = poc;
                 this->pocStartList[poc] = lineBufferStartPos;
-                if (poc == this->currentDrawnFrameIdx)
-                  // We added a start position for the frame index that is currently drawn. We might
-                  // have to redraw.
-                  emit signalItemChanged(true, RECACHE_NONE);
+                emit readPOC(poc);
 
                 // update number of frames
                 if (poc > this->maxPOC)
                   this->maxPOC = poc;
 
                 // Update percent of file parsed
-                this->backgroundParserProgress =
+                this->parsingProgress =
                     ((double)lineBufferStartPos * 100 / (double)inputFile.getFileSize());
               }
             }
@@ -191,31 +159,252 @@ void playlistItemStatisticsVTMBMSFile::readFramePositionsFromFile()
     }
 
     // Parsing complete
-    this->backgroundParserProgress = 100.0;
-
-    this->prop.startEndRange = indexRange(0, maxPOC);
-    emit signalItemChanged(false, RECACHE_NONE);
-
-  } // try
+    this->parsingProgress = 100.0;
+  }
   catch (const char *str)
   {
     std::cerr << "Error while parsing meta data: " << str << "\n";
-    this->parsingError = QString("Error while parsing meta data: ") + QString(str);
-    emit signalItemChanged(false, RECACHE_NONE);
+    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
+    this->error        = true;
     return;
   }
   catch (const std::exception &ex)
   {
     std::cerr << "Error while parsing:" << ex.what() << "\n";
-    this->parsingError = QString("Error while parsing: ") + QString(ex.what());
-    emit signalItemChanged(false, RECACHE_NONE);
+    this->errorMessage = QString("Error while parsing: ") + QString(ex.what());
+    this->error        = true;
     return;
   }
 
   return;
 }
 
-void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
+void StatisticsFileVTMBMS::loadStatisticToHandler(StatisticHandler &handler, int poc, int typeID)
+{
+  if (!this->file.isOk())
+    return;
+
+  try
+  {
+    QTextStream in(this->file.getQFile());
+
+    if (this->pocStartList.count(poc) == 0)
+    {
+      // There are no statistics in the file for the given frame and index.
+      handler.statsCache.insert(typeID, {});
+      return;
+    }
+
+    auto startPos = this->pocStartList[poc];
+
+    // fast forward
+    in.seek(startPos);
+
+    QRegularExpression pocRegex("BlockStat: POC ([0-9]+)");
+
+    // prepare regex for selected type
+    StatisticsType *aType = handler.getStatisticsType(typeID);
+    Q_ASSERT_X(aType != nullptr, Q_FUNC_INFO, "Stat type not found.");
+    QRegularExpression typeRegex(" " + aType->typeName + "="); // for catching lines of the type
+
+    // for extracting scalar value statistics, need to match:
+    // BlockStat: POC 1 @( 112,  88) [ 8x 8] PredMode=0
+    QRegularExpression scalarRegex(
+        "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+=([0-9\\-]+)");
+    // for extracting vector value statistics, need to match:
+    // BlockStat: POC 1 @( 120,  80) [ 8x 8] MVL0={ -24,  -2}
+    QRegularExpression vectorRegex("POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x "
+                                   "*([0-9]+)\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+)}");
+    // for extracting affine transform value statistics, need to match:
+    // BlockStat: POC 2 @( 192,  96) [64x32] AffineMVL0={-324,-116,-276,-116,-324, -92}
+    QRegularExpression affineTFRegex(
+        "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ "
+        "*([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
+    // for extracting scalar polygon  statistics, need to match:
+    // BlockStat: POC 2 @[(505, 384)--(511, 384)--(511, 415)--] GeoPUInterIntraFlag=0
+    // BlockStat: POC 2 @[(416, 448)--(447, 448)--(447, 478)--(416, 463)--] GeoPUInterIntraFlag=0
+    // will capture 3-5 points. other polygons are not supported
+    QRegularExpression scalarPolygonRegex(
+        "POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+=([0-9\\-]+)");
+    // for extracting vector polygon statistics:
+    QRegularExpression vectorPolygonRegex(
+        "POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+={ *([0-9\\-]+), "
+        "*([0-9\\-]+)}");
+    // for extracting the partitioning line, we extract
+    // BlockStat: POC 2 @( 192,  96) [64x32] Line={0,0,31,31}
+    QRegularExpression lineRegex(
+        "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ "
+        "*([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
+
+    while (!in.atEnd())
+    {
+      // read one line
+      auto aLine    = in.readLine();
+      auto pocMatch = pocRegex.match(aLine);
+      // ignore not matching lines
+      if (pocMatch.hasMatch())
+      {
+        auto pocRow = pocMatch.captured(1).toInt();
+        if (poc != pocRow)
+          break;
+
+        // filter lines of different types
+        auto typeMatch = typeRegex.match(aLine);
+        if (typeMatch.hasMatch())
+        {
+          int poc, posX, posY, width, height, scalar, vecX, vecY;
+
+          QRegularExpressionMatch statisitcMatch;
+          // extract statistics info
+          // try block types
+          if (aType->isPolygon == false)
+          {
+            if (aType->hasValueData)
+              statisitcMatch = scalarRegex.match(aLine);
+            else if (aType->hasVectorData)
+            {
+              statisitcMatch = vectorRegex.match(aLine);
+              if (!statisitcMatch.hasMatch())
+                statisitcMatch = lineRegex.match(aLine);
+            }
+            else if (aType->hasAffineTFData)
+              statisitcMatch = affineTFRegex.match(aLine);
+          }
+          else
+          // try polygons
+          {
+            if (aType->hasValueData)
+              statisitcMatch = scalarPolygonRegex.match(aLine);
+            else if (aType->hasVectorData)
+              statisitcMatch = vectorPolygonRegex.match(aLine);
+          }
+          if (!statisitcMatch.hasMatch())
+          {
+            this->errorMessage = QString("Error while parsing statistic: ") + QString(aLine);
+            continue;
+          }
+
+          // useful for debugging:
+          //        QStringList all_captured = statisitcMatch.capturedTexts();
+
+          pocRow = statisitcMatch.captured(1).toInt();
+          width  = statisitcMatch.captured(4).toInt();
+          height = statisitcMatch.captured(5).toInt();
+          // if there is a new POC, we are done here!
+          if (poc != pocRow)
+            break;
+
+          // process block statistics
+          if (aType->isPolygon == false)
+          {
+            posX = statisitcMatch.captured(2).toInt();
+            posY = statisitcMatch.captured(3).toInt();
+
+            // Check if block is within the image range
+            if (blockOutsideOfFramePOC == -1 && (posX + width > handler.getFrameSize().width() ||
+                                                 posY + height > handler.getFrameSize().height()))
+              // Block not in image. Warn about this.
+              blockOutsideOfFramePOC = poc;
+
+            if (aType->hasVectorData)
+            {
+              vecX = statisitcMatch.captured(6).toInt();
+              vecY = statisitcMatch.captured(7).toInt();
+              if (statisitcMatch.lastCapturedIndex() > 7)
+              {
+                auto vecX1 = statisitcMatch.captured(8).toInt();
+                auto vecY1 = statisitcMatch.captured(9).toInt();
+                handler.statsCache[typeID].addLine(
+                    posX, posY, width, height, vecX, vecY, vecX1, vecY1);
+              }
+              else
+              {
+                handler.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
+              }
+            }
+            else if (aType->hasAffineTFData)
+            {
+              auto vecX0 = statisitcMatch.captured(6).toInt();
+              auto vecY0 = statisitcMatch.captured(7).toInt();
+              auto vecX1 = statisitcMatch.captured(8).toInt();
+              auto vecY1 = statisitcMatch.captured(9).toInt();
+              auto vecX2 = statisitcMatch.captured(10).toInt();
+              auto vecY2 = statisitcMatch.captured(11).toInt();
+              handler.statsCache[typeID].addBlockAffineTF(
+                  posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
+            }
+            else
+            {
+              scalar = statisitcMatch.captured(6).toInt();
+              handler.statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
+            }
+          }
+          else
+          // process polygon statistics
+          {
+            auto               corners    = statisitcMatch.captured(2);
+            auto               cornerList = corners.split("--");
+            QRegularExpression cornerRegex("\\( *([0-9]+), *([0-9]+)\\)");
+            QVector<QPoint>    points;
+            for (const auto &corner : cornerList)
+            {
+              auto cornerMatch = cornerRegex.match(corner);
+              if (cornerMatch.hasMatch())
+              {
+                auto x = cornerMatch.captured(1).toInt();
+                auto y = cornerMatch.captured(2).toInt();
+                points << QPoint(x, y);
+
+                // Check if polygon is within the image range
+                if (this->blockOutsideOfFramePOC == -1 &&
+                    (x + width > handler.getFrameSize().width() ||
+                     y + height > handler.getFrameSize().height()))
+                  // Block not in image. Warn about this.
+                  this->blockOutsideOfFramePOC = poc;
+              }
+            }
+
+            if (aType->hasVectorData)
+            {
+              vecX = statisitcMatch.captured(3).toInt();
+              vecY = statisitcMatch.captured(4).toInt();
+              handler.statsCache[typeID].addPolygonVector(points, vecX, vecY);
+            }
+            else if (aType->hasValueData)
+            {
+              scalar = statisitcMatch.captured(3).toInt();
+              handler.statsCache[typeID].addPolygonValue(points, scalar);
+            }
+          }
+        }
+      }
+    }
+
+    if (!handler.statsCache.contains(typeID))
+    {
+      // There are no statistics in the file for the given frame and index.
+      handler.statsCache.insert(typeID, {});
+      return;
+    }
+
+  } // try
+  catch (const char *str)
+  {
+    std::cerr << "Error while parsing: " << str << '\n';
+    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
+    return;
+  }
+  catch (...)
+  {
+    std::cerr << "Error while parsing.";
+    this->errorMessage = QString("Error while parsing meta data.");
+    return;
+  }
+
+  return;
+}
+
+void StatisticsFileVTMBMS::readHeaderFromFile(StatisticHandler &handler)
 {
   try
   {
@@ -223,7 +412,7 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
       return;
 
     // Cleanup old types
-    this->statSource.clearStatTypes();
+    handler.clearStatTypes();
 
     while (!this->file.atEnd())
     {
@@ -249,7 +438,7 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
       auto sequenceSizeMatch = sequenceSizeRegex.match(aLine);
       if (sequenceSizeMatch.hasMatch())
       {
-        statSource.setFrameSize(
+        handler.setFrameSize(
             QSize(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt()));
       }
 
@@ -306,7 +495,7 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
         {
           aType.hasValueData    = true;
           aType.renderValueData = true;
-          aType.colMapper       = colorMapper("jet", 0, 1);
+          aType.colorMapper     = ColorMapper("jet", 0, 1);
         }
         else if (statType.contains("Integer")) // for now do the same as for Flags
         {
@@ -323,7 +512,7 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
 
           aType.hasValueData    = true;
           aType.renderValueData = true;
-          aType.colMapper       = colorMapper("jet", minVal, maxVal);
+          aType.colorMapper     = ColorMapper("jet", minVal, maxVal);
         }
         else if (statType.contains("Line"))
         {
@@ -340,320 +529,20 @@ void playlistItemStatisticsVTMBMSFile::readHeaderFromFile()
           aType.isPolygon = true;
 
         // add the new type if it is not already in the list
-        statSource.addStatType(aType); // check if in list is done by addStatsType
+        handler.addStatType(aType); // check if in list is done by addStatsType
       }
     }
   } // try
   catch (const char *str)
   {
     std::cerr << "Error while parsing meta data: " << str << '\n';
-    this->parsingError = QString("Error while parsing meta data: ") + QString(str);
-    return;
+    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
   }
   catch (...)
   {
     std::cerr << "Error while parsing meta data.";
-    this->parsingError = QString("Error while parsing meta data.");
-    return;
+    this->errorMessage = QString("Error while parsing meta data.");
   }
-
-  return;
 }
 
-void playlistItemStatisticsVTMBMSFile::loadStatisticToCache(int frameIdx, int typeID)
-{
-  try
-  {
-    if (!this->file.isOk())
-      return;
-
-    QTextStream in(this->file.getQFile());
-
-    if (!this->pocStartList.contains(frameIdx))
-    {
-      // There are no statistics in the file for the given frame and index.
-      this->statSource.statsCache.insert(typeID, statisticsData());
-      return;
-    }
-
-    auto startPos = this->pocStartList[frameIdx];
-
-    // fast forward
-    in.seek(startPos);
-
-    QRegularExpression pocRegex("BlockStat: POC ([0-9]+)");
-
-    // prepare regex for selected type
-    StatisticsType *aType = statSource.getStatisticsType(typeID);
-    Q_ASSERT_X(aType != nullptr, Q_FUNC_INFO, "Stat type not found.");
-    QRegularExpression typeRegex(" " + aType->typeName + "="); // for catching lines of the type
-
-    // for extracting scalar value statistics, need to match:
-    // BlockStat: POC 1 @( 112,  88) [ 8x 8] PredMode=0
-    QRegularExpression scalarRegex(
-        "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+=([0-9\\-]+)");
-    // for extracting vector value statistics, need to match:
-    // BlockStat: POC 1 @( 120,  80) [ 8x 8] MVL0={ -24,  -2}
-    QRegularExpression vectorRegex("POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x "
-                                   "*([0-9]+)\\] *\\w+={ *([0-9\\-]+), *([0-9\\-]+)}");
-    // for extracting affine transform value statistics, need to match:
-    // BlockStat: POC 2 @( 192,  96) [64x32] AffineMVL0={-324,-116,-276,-116,-324, -92}
-    QRegularExpression affineTFRegex(
-        "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ "
-        "*([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
-    // for extracting scalar polygon  statistics, need to match:
-    // BlockStat: POC 2 @[(505, 384)--(511, 384)--(511, 415)--] GeoPUInterIntraFlag=0
-    // BlockStat: POC 2 @[(416, 448)--(447, 448)--(447, 478)--(416, 463)--] GeoPUInterIntraFlag=0
-    // will capture 3-5 points. other polygons are not supported
-    QRegularExpression scalarPolygonRegex(
-        "POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+=([0-9\\-]+)");
-    // for extracting vector polygon statistics:
-    QRegularExpression vectorPolygonRegex(
-        "POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+={ *([0-9\\-]+), "
-        "*([0-9\\-]+)}");
-    // for extracting the partitioning line, we extract
-    // BlockStat: POC 2 @( 192,  96) [64x32] Line={0,0,31,31}
-    QRegularExpression lineRegex(
-        "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ "
-        "*([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
-
-    while (!in.atEnd())
-    {
-      // read one line
-      auto aLine    = in.readLine();
-      auto pocMatch = pocRegex.match(aLine);
-      // ignore not matching lines
-      if (pocMatch.hasMatch())
-      {
-        auto poc = pocMatch.captured(1).toInt();
-        if (poc != frameIdx)
-          break;
-
-        // filter lines of different types
-        auto typeMatch = typeRegex.match(aLine);
-        if (typeMatch.hasMatch())
-        {
-          int poc, posX, posY, width, height, scalar, vecX, vecY;
-
-          QRegularExpressionMatch statisitcMatch;
-          // extract statistics info
-          // try block types
-          if (aType->isPolygon == false)
-          {
-            if (aType->hasValueData)
-              statisitcMatch = scalarRegex.match(aLine);
-            else if (aType->hasVectorData)
-            {
-              statisitcMatch = vectorRegex.match(aLine);
-              if (!statisitcMatch.hasMatch())
-                statisitcMatch = lineRegex.match(aLine);
-            }
-            else if (aType->hasAffineTFData)
-              statisitcMatch = affineTFRegex.match(aLine);
-          }
-          else
-          // try polygons
-          {
-            if (aType->hasValueData)
-              statisitcMatch = scalarPolygonRegex.match(aLine);
-            else if (aType->hasVectorData)
-              statisitcMatch = vectorPolygonRegex.match(aLine);
-          }
-          if (!statisitcMatch.hasMatch())
-          {
-            parsingError = QString("Error while parsing statistic: ") + QString(aLine);
-            continue;
-          }
-
-          // useful for debugging:
-          //        QStringList all_captured = statisitcMatch.capturedTexts();
-
-          poc    = statisitcMatch.captured(1).toInt();
-          width  = statisitcMatch.captured(4).toInt();
-          height = statisitcMatch.captured(5).toInt();
-          // if there is a new POC, we are done here!
-          if (poc != frameIdx)
-            break;
-
-          // process block statistics
-          if (aType->isPolygon == false)
-          {
-            posX = statisitcMatch.captured(2).toInt();
-            posY = statisitcMatch.captured(3).toInt();
-
-            // Check if block is within the image range
-            if (blockOutsideOfFrame_idx == -1 &&
-                (posX + width > statSource.getFrameSize().width() ||
-                 posY + height > statSource.getFrameSize().height()))
-              // Block not in image. Warn about this.
-              blockOutsideOfFrame_idx = frameIdx;
-
-            if (aType->hasVectorData)
-            {
-              vecX = statisitcMatch.captured(6).toInt();
-              vecY = statisitcMatch.captured(7).toInt();
-              if (statisitcMatch.lastCapturedIndex() > 7)
-              {
-                auto vecX1 = statisitcMatch.captured(8).toInt();
-                auto vecY1 = statisitcMatch.captured(9).toInt();
-                statSource.statsCache[typeID].addLine(
-                    posX, posY, width, height, vecX, vecY, vecX1, vecY1);
-              }
-              else
-              {
-                statSource.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
-              }
-            }
-            else if (aType->hasAffineTFData)
-            {
-              auto vecX0 = statisitcMatch.captured(6).toInt();
-              auto vecY0 = statisitcMatch.captured(7).toInt();
-              auto vecX1 = statisitcMatch.captured(8).toInt();
-              auto vecY1 = statisitcMatch.captured(9).toInt();
-              auto vecX2 = statisitcMatch.captured(10).toInt();
-              auto vecY2 = statisitcMatch.captured(11).toInt();
-              statSource.statsCache[typeID].addBlockAffineTF(
-                  posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
-            }
-            else
-            {
-              scalar = statisitcMatch.captured(6).toInt();
-              statSource.statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
-            }
-          }
-          else
-          // process polygon statistics
-          {
-            auto               corners    = statisitcMatch.captured(2);
-            auto               cornerList = corners.split("--");
-            QRegularExpression cornerRegex("\\( *([0-9]+), *([0-9]+)\\)");
-            QVector<QPoint>    points;
-            for (const auto &corner : cornerList)
-            {
-              auto cornerMatch = cornerRegex.match(corner);
-              if (cornerMatch.hasMatch())
-              {
-                auto x = cornerMatch.captured(1).toInt();
-                auto y = cornerMatch.captured(2).toInt();
-                points << QPoint(x, y);
-
-                // Check if polygon is within the image range
-                if (this->blockOutsideOfFrame_idx == -1 &&
-                    (x + width > statSource.getFrameSize().width() ||
-                     y + height > statSource.getFrameSize().height()))
-                  // Block not in image. Warn about this.
-                  this->blockOutsideOfFrame_idx = frameIdx;
-              }
-            }
-
-            if (aType->hasVectorData)
-            {
-              vecX = statisitcMatch.captured(3).toInt();
-              vecY = statisitcMatch.captured(4).toInt();
-              this->statSource.statsCache[typeID].addPolygonVector(points, vecX, vecY);
-            }
-            else if (aType->hasValueData)
-            {
-              scalar = statisitcMatch.captured(3).toInt();
-              this->statSource.statsCache[typeID].addPolygonValue(points, scalar);
-            }
-          }
-        }
-      }
-    }
-
-    if (!this->statSource.statsCache.contains(typeID))
-    {
-      // There are no statistics in the file for the given frame and index.
-      this->statSource.statsCache.insert(typeID, statisticsData());
-      return;
-    }
-
-  } // try
-  catch (const char *str)
-  {
-    std::cerr << "Error while parsing: " << str << '\n';
-    this->parsingError = QString("Error while parsing meta data: ") + QString(str);
-    return;
-  }
-  catch (...)
-  {
-    std::cerr << "Error while parsing.";
-    this->parsingError = QString("Error while parsing meta data.");
-    return;
-  }
-
-  return;
-}
-
-playlistItemStatisticsVTMBMSFile *
-playlistItemStatisticsVTMBMSFile::newplaylistItemStatisticsVTMBMSFile(
-    const YUViewDomElement &root, const QString &playlistFilePath)
-{
-  // Parse the DOM element. It should have all values of a playlistItemStatisticsFile
-  auto absolutePath = root.findChildValue("absolutePath");
-  auto relativePath = root.findChildValue("relativePath");
-
-  // check if file with absolute path exists, otherwise check relative path
-  auto filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
-  if (filePath.isEmpty())
-    return nullptr;
-
-  // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  auto newStat = new playlistItemStatisticsVTMBMSFile(filePath);
-
-  // Load the propertied of the playlistItem
-  playlistItem::loadPropertiesFromPlaylist(root, newStat);
-
-  // Load the status of the statistics (which are shown, transparency ...)
-  newStat->statSource.loadPlaylist(root);
-
-  return newStat;
-}
-
-void playlistItemStatisticsVTMBMSFile::getSupportedFileExtensions(QStringList &allExtensions,
-                                                                  QStringList &filters)
-{
-  allExtensions.append("vtmbmsstats");
-  filters.append("Statistics File (*.vtmbmsstats)");
-}
-
-void playlistItemStatisticsVTMBMSFile::reloadItemSource()
-{
-  // Set default variables
-  this->fileSortedByPOC          = false;
-  this->blockOutsideOfFrame_idx  = -1;
-  this->backgroundParserProgress = 0.0;
-  this->parsingError.clear();
-  this->currentDrawnFrameIdx = -1;
-  this->maxPOC               = 0;
-
-  // Is the background parser still running? If yes, abort it.
-  if (this->backgroundParserFuture.isRunning())
-  {
-    // signal to background thread that we want to cancel the processing
-    this->cancelBackgroundParser = true;
-    this->backgroundParserFuture.waitForFinished();
-  }
-
-  // Clear the parsed data
-  this->pocStartList.clear();
-  this->statSource.statsCache.clear();
-  this->statSource.statsCacheFrameIdx = -1;
-
-  // Reopen the file
-  this->file.openFile(this->properties().name);
-  if (!this->file.isOk())
-    return;
-
-  // Read the new statistics file header
-  this->readHeaderFromFile();
-
-  this->statSource.updateStatisticsHandlerControls();
-
-  // Run the parsing of the file in the background
-  this->cancelBackgroundParser = false;
-  this->timer.start(1000, this);
-  this->backgroundParserFuture = QtConcurrent::run(
-      [=](playlistItemStatisticsVTMBMSFile *f) { f->readFramePositionsFromFile(); }, this);
-}
+} // namespace stats

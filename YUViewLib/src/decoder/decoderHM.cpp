@@ -463,7 +463,7 @@ void decoderHM::cacheStatistics(libHMDec_picture *img)
   }
 }
 
-void decoderHM::fillStatisticList(statisticHandler &statSource) const
+void decoderHM::fillStatisticList(stats::StatisticHandler &statSource) const
 {
   // Ask the decoder how many internals types there are
   unsigned int nrTypes = libHMDEC_get_internal_type_number();
@@ -482,32 +482,32 @@ void decoderHM::fillStatisticList(statisticHandler &statSource) const
 
     if (statType == LIBHMDEC_TYPE_FLAG)
     {
-      StatisticsType flag(i, name, "jet", 0, 1);
+      stats::StatisticsType flag(i, name, "jet", 0, 1);
       flag.description = description;
       statSource.addStatType(flag);
     }
     else if (statType == LIBHMDEC_TYPE_RANGE)
     {
-      StatisticsType range(i, name, "jet", 0, max);
+      stats::StatisticsType range(i, name, "jet", 0, max);
       range.description = description;
       statSource.addStatType(range);
     }
     else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
     {
-      StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
+      stats::StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
       rangeZero.description = description;
       statSource.addStatType(rangeZero);
     }
     else if (statType == LIBHMDEC_TYPE_VECTOR)
     {
       unsigned int scale = libHMDEC_get_internal_type_vector_scaling(i);
-      StatisticsType vec(i, name, scale);
+      stats::StatisticsType vec(i, name, scale);
       vec.description = description;
       statSource.addStatType(vec);
     }
     else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
     {
-      StatisticsType intraDir(i, name, "jet", 0, 34);
+      stats::StatisticsType intraDir(i, name, "jet", 0, 34);
       intraDir.description = description;
       intraDir.hasVectorData = true;
       intraDir.renderVectorData = true;

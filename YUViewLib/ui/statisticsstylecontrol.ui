@@ -269,7 +269,7 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="showColorWidget" name="frameMinColor">
+           <widget class="ShowColorWidget" name="frameMinColor">
             <property name="toolTip">
              <string>The left color of the custom color gradient.</string>
             </property>
@@ -305,7 +305,7 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="showColorWidget" name="frameMaxColor">
+           <widget class="ShowColorWidget" name="frameMaxColor">
             <property name="toolTip">
              <string>The right color of the custom color gradient.</string>
             </property>
@@ -372,7 +372,7 @@
           <number>5</number>
          </property>
          <item>
-          <widget class="showColorWidget" name="frameDataColor">
+          <widget class="ShowColorWidget" name="frameDataColor">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -594,7 +594,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="showColorWidget" name="colorFrameVectorColor">
+         <widget class="ShowColorWidget" name="colorFrameVectorColor">
           <property name="toolTip">
            <string>Set the color of the vector</string>
           </property>
@@ -735,7 +735,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="showColorWidget" name="frameGridColor">
+         <widget class="ShowColorWidget" name="frameGridColor">
           <property name="toolTip">
            <string>Set the color of the grid line</string>
           </property>
@@ -849,7 +849,7 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>showColorWidget</class>
+   <class>ShowColorWidget</class>
    <extends>QFrame</extends>
    <header>ui/showColorFrame.h</header>
    <container>1</container>

@@ -137,7 +137,7 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="showColorWidget" name="viewBackgroundColor">
+             <widget class="ShowColorWidget" name="viewBackgroundColor">
               <property name="toolTip">
                <string>Set the background color of the central view widget.</string>
               </property>
@@ -413,7 +413,7 @@
           <item row="5" column="1">
            <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0">
             <item>
-             <widget class="showColorWidget" name="plotBackgroundColor">
+             <widget class="ShowColorWidget" name="plotBackgroundColor">
               <property name="frameShape">
                <enum>QFrame::StyledPanel</enum>
               </property>
@@ -460,7 +460,7 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="showColorWidget" name="viewGridLineColor">
+             <widget class="ShowColorWidget" name="viewGridLineColor">
               <property name="toolTip">
                <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
               </property>
@@ -1331,7 +1331,7 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>showColorWidget</class>
+   <class>ShowColorWidget</class>
    <extends>QFrame</extends>
    <header>ui/showColorFrame.h</header>
    <container>1</container>

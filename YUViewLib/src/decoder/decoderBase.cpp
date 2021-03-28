@@ -70,10 +70,10 @@ void decoderBase::resetDecoder()
   rawFormat = raw_Invalid;
 }
 
-statisticsData decoderBase::getStatisticsData(int typeIdx)
+stats::StatisticsData decoderBase::getStatisticsData(int typeIdx)
 {
   if (!retrieveStatistics)
-    return statisticsData();
+    return {};
 
   return curPOCStats[typeIdx];
 }

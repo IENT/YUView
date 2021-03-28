@@ -461,7 +461,7 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
   //}
 }
 
-void decoderVTM::fillStatisticList(statisticHandler &statSource) const
+void decoderVTM::fillStatisticList(stats::StatisticHandler &statSource) const
 {
   Q_UNUSED(statSource);
   

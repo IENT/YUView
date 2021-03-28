@@ -301,8 +301,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Connect signals for requesting data and statistics
   connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemCompressedVideo::loadRawData, Qt::DirectConnection);
-  connect(&statSource, &statisticHandler::updateItem, this, &playlistItemCompressedVideo::updateStatSource);
-  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemCompressedVideo::loadStatisticToCache, Qt::DirectConnection);
+  connect(&statSource, &stats::StatisticHandler::updateItem, this, &playlistItemCompressedVideo::updateStatSource);
+  connect(&statSource, &stats::StatisticHandler::requestStatisticsLoading, this, &playlistItemCompressedVideo::loadStatisticToCache, Qt::DirectConnection);
 }
 
 void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &playlistDir) const

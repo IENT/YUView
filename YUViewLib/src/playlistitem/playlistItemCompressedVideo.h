@@ -36,7 +36,7 @@
 #include "filesource/FileSourceFFmpegFile.h"
 #include "parser/AnnexB.h"
 #include "playlistItemWithVideo.h"
-#include "statistics/statisticHandler.h"
+#include "statistics/StatisticHandler.h"
 #include "ui_playlistItemCompressedFile.h"
 
 class videoHandler;
@@ -143,7 +143,7 @@ protected:
   // TODO: Could we somehow make shure that caching is always performed in display order?
   QMutex cachingMutex;
 
-  statisticHandler statSource;
+  stats::StatisticHandler statSource;
 
   // Fill the list of statistic types that we can provide
   void fillStatisticList();

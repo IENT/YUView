@@ -34,7 +34,7 @@
 
 #include <algorithm>
 #include <QPainter>
-#include "statistics/statisticHandler.h"
+#include "statistics/StatisticHandler.h"
 
 playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName)
   : playlistItem(itemNameOrFileName, Type::Indexed)

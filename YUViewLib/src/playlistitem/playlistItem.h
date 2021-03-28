@@ -38,11 +38,11 @@
 #include "common/saveUi.h"
 #include "common/typedef.h"
 #include "common/YUViewDomElement.h"
+#include "statistics/StatisticHandler.h"
 
 #include "ui_playlistItem.h"
 
 class frameHandler;
-class statisticHandler;
 
 class playlistItem : public QObject, public QTreeWidgetItem
 {
@@ -165,7 +165,7 @@ public:
   virtual frameHandler *getFrameHandler() { return nullptr; }
 
   // If this item provides statistics, return them here so that they can be used correctly in an overlay
-  virtual statisticHandler *getStatisticsHandler() { return nullptr; }
+  virtual stats::StatisticHandler *getStatisticsHandler() { return nullptr; }
 
   // Return true if something is currently being loaded in the background. (As in: When loading is done, the item will update itself and look different)
   virtual bool isLoading() const { return false; }

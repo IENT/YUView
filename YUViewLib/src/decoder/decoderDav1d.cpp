@@ -529,9 +529,9 @@ Subsampling decoderDav1d::convertFromInternalSubsampling(Dav1dPixelLayout layout
   return Subsampling::UNKNOWN;
 }
 
-void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
+void decoderDav1d::fillStatisticList(stats::StatisticHandler &statSource) const
 {
-  StatisticsType predMode(0, "Pred Mode", "jet", 0, 1);
+  stats::StatisticsType predMode(0, "Pred Mode", "jet", 0, 1);
   predMode.description = "The prediction mode (intra/inter) per block";
   predMode.valMap.insert(0, "INTRA");
   predMode.valMap.insert(1, "INTER");
@@ -539,21 +539,21 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
 
   // LastActiveSegId indicates the real maximum. But that can also vary per frame.
   // 255 is the maximum maximum.
-  StatisticsType segmentID(1, "Segment ID", "jet", 0, 255);
+  stats::StatisticsType segmentID(1, "Segment ID", "jet", 0, 255);
   segmentID.description = "Specifies which segment is associated with the current intra block being decoded";
   statSource.addStatType(segmentID);
 
-  StatisticsType skip(2, "skip", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  stats::StatisticsType skip(2, "skip", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
   skip.description = "Equal to 0 indicates that there may be some transform coefficients for this block. 1 Indicates there are none.";
   statSource.addStatType(skip);
 
-  StatisticsType skip_mode(3, "skip_mode", 0, QColor(0, 0, 0), 1, QColor(0,255,0));
+  stats::StatisticsType skip_mode(3, "skip_mode", 0, QColor(0, 0, 0), 1, QColor(0,255,0));
   skip_mode.description = "Equal to 1 indicates that signaling of most of the mode info is skipped";
   statSource.addStatType(skip_mode);
 
   // Intra specific values
 
-  StatisticsType intraPredModeLuma(4, "intra pred mode (Y)", "jet", 0, 13);
+  stats::StatisticsType intraPredModeLuma(4, "intra pred mode (Y)", "jet", 0, 13);
   intraPredModeLuma.description = "Intra prediction mode Luma (Y)";
   intraPredModeLuma.valMap.insert(0, "DC_PRED");
   intraPredModeLuma.valMap.insert(1, "VERT_PRED");
@@ -571,7 +571,7 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
   intraPredModeLuma.valMap.insert(13, "CFL_PRED");
   statSource.addStatType(intraPredModeLuma);
 
-  StatisticsType intraPredModeChroma(5, "intra pred mode (UV)", "jet", 0, 12);
+  stats::StatisticsType intraPredModeChroma(5, "intra pred mode (UV)", "jet", 0, 12);
   intraPredModeChroma.description = "Intra prediction mode Chroma (UV)";
   intraPredModeChroma.valMap.insert(0, "DC_PRED");
   intraPredModeChroma.valMap.insert(1, "VERT_PRED");
@@ -588,45 +588,45 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
   intraPredModeChroma.valMap.insert(12, "PAETH_PRED");
   statSource.addStatType(intraPredModeChroma);
 
-  StatisticsType paletteSizeLuma(6, "palette size (Y)", 0, QColor(0, 0, 0), 255, QColor(0,0,255));
+  stats::StatisticsType paletteSizeLuma(6, "palette size (Y)", 0, QColor(0, 0, 0), 255, QColor(0,0,255));
   statSource.addStatType(paletteSizeLuma);
 
-  StatisticsType paletteSizeChroma(7, "palette size (U)", 0, QColor(0, 0, 0), 255, QColor(0,0,255));
+  stats::StatisticsType paletteSizeChroma(7, "palette size (U)", 0, QColor(0, 0, 0), 255, QColor(0,0,255));
   statSource.addStatType(paletteSizeChroma);
 
-  StatisticsType intraAngleDeltaLuma(8, "intra angle delta (Y)", "col3_bblg", -3, 4);
+  stats::StatisticsType intraAngleDeltaLuma(8, "intra angle delta (Y)", "col3_bblg", -3, 4);
   intraAngleDeltaLuma.description = "Offset to be applied to the intra prediction angle specified by the prediction mode";
   statSource.addStatType(intraAngleDeltaLuma);
 
-  StatisticsType intraAngleDeltaChroma(9, "intra angle delta (UV)", "col3_bblg", -3, 4);
+  stats::StatisticsType intraAngleDeltaChroma(9, "intra angle delta (UV)", "col3_bblg", -3, 4);
   intraAngleDeltaChroma.description = "Offset to be applied to the intra prediction angle specified by the prediction mode";
   statSource.addStatType(intraAngleDeltaChroma);
 
-  StatisticsType intraDirLuma(10, "Intra direction luma", 4);
+  stats::StatisticsType intraDirLuma(10, "Intra direction luma", 4);
   intraDirLuma.description = "Intra prediction direction luma";
   statSource.addStatType(intraDirLuma);
 
-  StatisticsType intraDirChroma(11, "Intra direction chroma", 4);
+  stats::StatisticsType intraDirChroma(11, "Intra direction chroma", 4);
   intraDirChroma.description = "Intra prediction direction chroma";
   statSource.addStatType(intraDirChroma);
     
-  StatisticsType chromaFromLumaAlphaU(12, "chroma from luma alpha (U)", "col3_bblg", -128, 128);
+  stats::StatisticsType chromaFromLumaAlphaU(12, "chroma from luma alpha (U)", "col3_bblg", -128, 128);
   chromaFromLumaAlphaU.description = "CflAlphaU: contains the signed value of the alpha component for the U component";
   statSource.addStatType(chromaFromLumaAlphaU);
 
-  StatisticsType chromaFromLumaAlphaV(13, "chroma from luma alpha (V)", "col3_bblg", -128, 128);
+  stats::StatisticsType chromaFromLumaAlphaV(13, "chroma from luma alpha (V)", "col3_bblg", -128, 128);
   chromaFromLumaAlphaV.description = "CflAlphaU: contains the signed value of the alpha component for the U component";
   statSource.addStatType(chromaFromLumaAlphaV);
 
   // Inter specific values
 
-  StatisticsType refFrames0(14, "ref frame index 0", "jet", 0, 7);
+  stats::StatisticsType refFrames0(14, "ref frame index 0", "jet", 0, 7);
   statSource.addStatType(refFrames0);
 
-  StatisticsType refFrames1(15, "ref frame index 1", "jet", 0, 7);
+  stats::StatisticsType refFrames1(15, "ref frame index 1", "jet", 0, 7);
   statSource.addStatType(refFrames1);
 
-  StatisticsType compoundPredType(16, "compound prediction type", "jet", 0, 4);
+  stats::StatisticsType compoundPredType(16, "compound prediction type", "jet", 0, 4);
   compoundPredType.valMap.insert(0, "COMP_INTER_NONE");
   compoundPredType.valMap.insert(1, "COMP_INTER_WEIGHTED_AVG");
   compoundPredType.valMap.insert(2, "COMP_INTER_AVG");
@@ -634,13 +634,13 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
   compoundPredType.valMap.insert(4, "COMP_INTER_WEDGE");
   statSource.addStatType(compoundPredType);
 
-  StatisticsType wedgeIndex(17, "wedge index", "jet", 0, 16);
+  stats::StatisticsType wedgeIndex(17, "wedge index", "jet", 0, 16);
   statSource.addStatType(wedgeIndex);
 
-  StatisticsType maskSign(18, "mask sign", 0, QColor(0, 0, 0), 1, QColor(0,255,255));
+  stats::StatisticsType maskSign(18, "mask sign", 0, QColor(0, 0, 0), 1, QColor(0,255,255));
   statSource.addStatType(maskSign);
   
-  StatisticsType interMode(19, "inter mode", "jet", 0, 7);
+  stats::StatisticsType interMode(19, "inter mode", "jet", 0, 7);
   interMode.valMap.insert(0, "NEARESTMV_NEARESTMV");
   interMode.valMap.insert(1, "NEARMV_NEARMV");
   interMode.valMap.insert(2, "NEARESTMV_NEWMV");
@@ -651,16 +651,16 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
   interMode.valMap.insert(7, "NEWMV_NEWMV");
   statSource.addStatType(interMode);
 
-  StatisticsType drlIndex(20, "dynamic reference list index", 0, QColor(0, 0, 0), 16, QColor(0,255,255));
+  stats::StatisticsType drlIndex(20, "dynamic reference list index", 0, QColor(0, 0, 0), 16, QColor(0,255,255));
   statSource.addStatType(drlIndex);
 
-  StatisticsType interintraType(21, "inter-intra type", "jet", 0, 2);
+  stats::StatisticsType interintraType(21, "inter-intra type", "jet", 0, 2);
   interintraType.valMap.insert(0, "INTER_INTRA_NONE");
   interintraType.valMap.insert(1, "INTER_INTRA_BLEND");
   interintraType.valMap.insert(2, "INTER_INTRA_WEDGE");
   statSource.addStatType(interintraType);
 
-  StatisticsType interintraMode(22, "inter-intra mode", "jet", 0, 4);
+  stats::StatisticsType interintraMode(22, "inter-intra mode", "jet", 0, 4);
   interintraMode.valMap.insert(0, "II_DC_PRED");
   interintraMode.valMap.insert(1, "II_VERT_PRED");
   interintraMode.valMap.insert(2, "II_HOR_PRED");
@@ -668,21 +668,21 @@ void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
   interintraMode.valMap.insert(4, "N_INTER_INTRA_PRED_MODES");
   statSource.addStatType(interintraMode);
 
-  StatisticsType motionMode(23, "motion mode", "jet", 0, 2);
+  stats::StatisticsType motionMode(23, "motion mode", "jet", 0, 2);
   motionMode.valMap.insert(0, "MM_TRANSLATION");
   motionMode.valMap.insert(1, "MM_OBMC");
   motionMode.valMap.insert(2, "MM_WARP");
   statSource.addStatType(motionMode);
 
-  StatisticsType motionVec0(24, "Motion Vector 0", 4);
+  stats::StatisticsType motionVec0(24, "Motion Vector 0", 4);
   motionVec0.description = "The motion vector for component 0";
   statSource.addStatType(motionVec0);
   
-  StatisticsType motionVec1(25, "Motion Vector 1", 4);
+  stats::StatisticsType motionVec1(25, "Motion Vector 1", 4);
   motionVec1.description = "The motion vector for component 1";
   statSource.addStatType(motionVec1);
 
-  StatisticsType transformDepth(26, "Transform Size", "jet", 0, 19);
+  stats::StatisticsType transformDepth(26, "Transform Size", "jet", 0, 19);
   transformDepth.description = "The transform size";
   transformDepth.valMap.insert(0, "TX_4X4");
   transformDepth.valMap.insert(1, "TX_8X8");

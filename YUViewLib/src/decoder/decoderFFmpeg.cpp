@@ -403,18 +403,18 @@ bool decoderFFmpeg::decodeFrame()
   return false;
 }
 
-void decoderFFmpeg::fillStatisticList(statisticHandler &statSource) const
+void decoderFFmpeg::fillStatisticList(stats::StatisticHandler &statSource) const
 {
-  StatisticsType refIdx0(0, "Source -", "col3_bblg", -2, 2);
+  stats::StatisticsType refIdx0(0, "Source -", "col3_bblg", -2, 2);
   statSource.addStatType(refIdx0);
 
-  StatisticsType refIdx1(1, "Source +", "col3_bblg", -2, 2);
+  stats::StatisticsType refIdx1(1, "Source +", "col3_bblg", -2, 2);
   statSource.addStatType(refIdx1);
 
-  StatisticsType motionVec0(2, "Motion Vector -", 4);
+  stats::StatisticsType motionVec0(2, "Motion Vector -", 4);
   statSource.addStatType(motionVec0);
 
-  StatisticsType motionVec1(3, "Motion Vector +", 4);
+  stats::StatisticsType motionVec1(3, "Motion Vector +", 4);
   statSource.addStatType(motionVec1);
 }
 
