@@ -240,7 +240,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
-  statSource.setFrameSize(frameSize);
+  this->statisticsData.setFrameSize(frameSize);
 
   decoderEngineType = decoderEngineInvalid;
   if (decoder != decoderEngineInvalid)
@@ -301,8 +301,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Connect signals for requesting data and statistics
   connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemCompressedVideo::loadRawData, Qt::DirectConnection);
-  connect(&statSource, &stats::StatisticHandler::updateItem, this, &playlistItemCompressedVideo::updateStatSource);
-  connect(&statSource, &stats::StatisticHandler::requestStatisticsLoading, this, &playlistItemCompressedVideo::loadStatisticToCache, Qt::DirectConnection);
+  connect(&this->statisticsUIHandler, &stats::StatisticUIHandler::updateItem, this, &playlistItemCompressedVideo::updateStatSource);
 }
 
 void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -442,7 +441,7 @@ itemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool lo
   if (videoState == LoadingNeeded && decodingNotPossibleAfter >= 0 && frameIdx >= decodingNotPossibleAfter && frameIdx >= currentFrameIdx[0])
     // The decoder can not decode this frame. 
     return LoadingNotNeeded;
-  if (videoState == LoadingNeeded || statSource.needsLoading(frameIdx) == LoadingNeeded)
+  if (videoState == LoadingNeeded || this->statisticsData.needsLoading(frameIdx) == LoadingNeeded)
     return LoadingNeeded;
   return videoState;
 }
@@ -468,7 +467,7 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
   else if (frameIdx >= range.first && frameIdx <= range.second)
   {
     video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
-    statSource.paintStatistics(painter, frameIdx, zoomFactor);
+    this->statisticsData.paintStatistics(painter, frameIdx, zoomFactor);
   }
 }
 
@@ -755,7 +754,7 @@ void playlistItemCompressedVideo::createPropertiesWidget()
   ui.verticalLayout->insertWidget(1, lineOne);
   ui.verticalLayout->insertLayout(2, video->createVideoHandlerControls(true));
   ui.verticalLayout->insertWidget(5, lineTwo);
-  ui.verticalLayout->insertLayout(6, statSource.createStatisticsHandlerControls(), 1);
+  ui.verticalLayout->insertLayout(6, this->statisticsUIHandler.createStatisticsHandlerControls(), 1);
 
   // Set the components that we can display
   if (loadingDecoder)
@@ -885,13 +884,11 @@ void playlistItemCompressedVideo::fillStatisticList()
   if (!loadingDecoder || !loadingDecoder->statisticsSupported())
     return;
 
-  loadingDecoder->fillStatisticList(statSource);
+  loadingDecoder->fillStatisticList(this->statisticsData);
 }
 
-void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx)
+void playlistItemCompressedVideo::loadStatistics(int frameIdx)
 {
-  DEBUG_COMPRESSED("playlistItemCompressedVideo::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdx);
-
   if (!loadingDecoder->statisticsSupported())
     return;
   if (!loadingDecoder->statisticsEnabled())
@@ -899,21 +896,23 @@ void playlistItemCompressedVideo::loadStatisticToCache(int frameIdx, int typeIdx
     // We have to enable collecting of statistics in the decoder. By default (for speed reasons) this is off.
     // Enabeling works like this: Enable collection, reset the decoder and decode the current frame again.
     // Statisitcs are always retrieved for the loading decoder.
-    loadingDecoder->enableStatisticsRetrieval();
+    loadingDecoder->enableStatisticsRetrieval(&this->statisticsData);
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::loadStatistics Enable loading of stats frame %d", frameIdx);
 
     // Reload the current frame (force a seek and decode operation)
     int frameToLoad = currentFrameIdx[0];
     currentFrameIdx[0] = INT_MAX;
-    loadRawData(frameToLoad, false);
+    this->loadRawData(frameToLoad, false);
 
     // The statistics should now be loaded
   }
   else if (frameIdx != currentFrameIdx[0])
+  {
     // If the requested frame is not currently decoded, decode it.
     // This can happen if the picture was gotten from the cache.
-    loadRawData(frameIdx, false);
-
-  statSource.statsCache[typeIdx] = loadingDecoder->getStatisticsData(typeIdx);
+    DEBUG_COMPRESSED("playlistItemCompressedVideo::loadStatistics Trigger manual load of stats frame %d", frameIdx);
+    this->loadRawData(frameIdx, false);
+  }
 }
 
 ValuePairListSets playlistItemCompressedVideo::getPixelValues(const QPoint &pixelPos, int frameIdx)
@@ -922,7 +921,7 @@ ValuePairListSets playlistItemCompressedVideo::getPixelValues(const QPoint &pixe
 
   newSet.append("YUV", video->getPixelValues(pixelPos, frameIdx));
   if (loadingDecoder->statisticsSupported() && loadingDecoder->statisticsEnabled())
-    newSet.append("Stats", statSource.getValuesAt(pixelPos));
+    newSet.append("Stats", this->statisticsData.getValuesAt(pixelPos));
 
   return newSet;
 }
@@ -977,7 +976,7 @@ void playlistItemCompressedVideo::loadFrame(int frameIdx, bool playing, bool loa
   Q_ASSERT(QThread::currentThread() != QApplication::instance()->thread());
 
   auto stateYUV = video->needsLoading(frameIdx, loadRawdata);
-  auto stateStat = statSource.needsLoading(frameIdx);
+  auto stateStat = this->statisticsData.needsLoading(frameIdx);
 
   if (stateYUV == LoadingNeeded || stateStat == LoadingNeeded)
   {
@@ -991,7 +990,7 @@ void playlistItemCompressedVideo::loadFrame(int frameIdx, bool playing, bool loa
     if (stateStat == LoadingNeeded)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::loadFrame loading statistics %d %s", frameIdx, playing ? "(playing)" : "");
-      statSource.loadStatistics(frameIdx);
+      this->loadStatistics(frameIdx);
     }
 
     isFrameLoading = false;
@@ -1071,9 +1070,9 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
     }
 
     // Update the statistics list with what the new decoder can provide
-    statSource.clearStatTypes();
+    this->statisticsUIHandler.clearStatTypes();
     fillStatisticList();
-    statSource.updateStatisticsHandlerControls();
+    this->statisticsUIHandler.updateStatisticsHandlerControls();
 
     emit signalItemChanged(true, RECACHE_CLEAR);
   }

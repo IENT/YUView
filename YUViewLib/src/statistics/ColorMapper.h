@@ -55,13 +55,13 @@ public:
   ColorMapper(int min, const QColor &colMin, int max, const QColor &colMax);
   ColorMapper(const QString &rangeName, int min, int max);
 
-  QColor getColor(int value);
-  QColor getColor(float value);
-  int    getMinVal();
-  int    getMaxVal();
+  QColor getColor(int value) const;
+  QColor getColor(float value) const;
+  int    getMinVal() const;
+  int    getMaxVal() const;
 
   // ID: 0:colorMapperGradient, 1:colorMapperMap, 2+:ColorMapperComplex
-  int getID();
+  int getID() const;
 
   int               rangeMin, rangeMax;
   QColor            minColor, maxColor;

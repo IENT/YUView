@@ -98,12 +98,12 @@ ColorMapper::ColorMapper(const QString &rangeName, int min, int max)
   colorMapOther = Qt::black;
 }
 
-QColor ColorMapper::getColor(int value)
+QColor ColorMapper::getColor(int value) const
 {
   if (mappingType == MappingType::map)
   {
     if (colorMap.count(value) > 0)
-      return colorMap[value];
+      return colorMap.at(value);
     else
       return colorMapOther;
   }
@@ -113,7 +113,7 @@ QColor ColorMapper::getColor(int value)
   }
 }
 
-QColor ColorMapper::getColor(float value)
+QColor ColorMapper::getColor(float value) const
 {
   if (mappingType == MappingType::map)
     // Round and use the integer value to get the value from the map
@@ -498,7 +498,7 @@ QColor ColorMapper::getColor(float value)
   return QColor();
 }
 
-int ColorMapper::getMinVal()
+int ColorMapper::getMinVal() const
 {
   if (mappingType == MappingType::gradient || mappingType == MappingType::complex)
     return rangeMin;
@@ -508,7 +508,7 @@ int ColorMapper::getMinVal()
   return 0;
 }
 
-int ColorMapper::getMaxVal()
+int ColorMapper::getMaxVal() const
 {
   if (mappingType == MappingType::gradient || mappingType == MappingType::complex)
     return rangeMax;
@@ -518,7 +518,7 @@ int ColorMapper::getMaxVal()
   return 0;
 }
 
-int ColorMapper::getID()
+int ColorMapper::getID() const
 {
   if (mappingType == MappingType::gradient)
     return 0;

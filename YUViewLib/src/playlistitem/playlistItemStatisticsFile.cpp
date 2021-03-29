@@ -43,7 +43,6 @@
 #include "common/functions.h"
 #include "statistics/StatisticsFileCSV.h"
 #include "statistics/StatisticsFileVTMBMS.h"
-#include "statistics/statisticsExtensions.h"
 
 // The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB
 // so that we can address all the positions in it with int (using such a large buffer is not a good
@@ -66,15 +65,11 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   setIcon(0, functions::convertIcon(":img_stats.png"));
 
   this->openStatisticsFile();
+  this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
 
-  connect(&this->statSource, &stats::StatisticHandler::updateItem, [this](bool redraw) {
+  connect(&this->statisticsUIHandler, &stats::StatisticUIHandler::updateItem, [this](bool redraw) {
     emit signalItemChanged(redraw, RECACHE_NONE);
   });
-  connect(&this->statSource,
-          &stats::StatisticHandler::requestStatisticsLoading,
-          this,
-          &playlistItemStatisticsFile::loadStatisticToCache,
-          Qt::DirectConnection);
 }
 
 playlistItemStatisticsFile::~playlistItemStatisticsFile()
@@ -116,7 +111,7 @@ playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatistic
   playlistItem::loadPropertiesFromPlaylist(root, newStat);
 
   // Load the status of the statistics (which are shown, transparency ...)
-  newStat->statSource.loadPlaylist(root);
+  newStat->statisticsData.loadPlaylist(root);
 
   return newStat;
 }
@@ -125,11 +120,19 @@ void playlistItemStatisticsFile::reloadItemSource()
 {
   this->currentDrawnFrameIdx = -1;
 
-  this->statSource.statsCache.clear();
-  this->statSource.statsCacheFrameIdx = -1;
-  this->statSource.updateStatisticsHandlerControls();
+  this->statisticsData.clear();
+  this->statisticsUIHandler.updateStatisticsHandlerControls();
 
   this->openStatisticsFile();
+}
+
+itemLoadingState playlistItemStatisticsFile::needsLoading(int frameIdx, bool loadRawdata)
+{
+  Q_UNUSED(loadRawdata);
+  if (!this->file)
+    return itemLoadingState::LoadingNotNeeded;
+
+  return this->statisticsData.needsLoading(frameIdx);
 }
 
 void playlistItemStatisticsFile::drawItem(QPainter *painter,
@@ -137,14 +140,9 @@ void playlistItemStatisticsFile::drawItem(QPainter *painter,
                                           double    zoomFactor,
                                           bool      drawRawData)
 {
-  // drawRawData only controls the drawing of raw pixel values
   Q_UNUSED(drawRawData);
-
-  // Tell the statSource to draw the statistics
-  statSource.paintStatistics(painter, frameIdx, zoomFactor);
-
-  // Currently this frame is drawn.
-  currentDrawnFrameIdx = frameIdx;
+  this->statisticsData.paintStatistics(painter, frameIdx, zoomFactor);
+  this->currentDrawnFrameIdx = frameIdx;
 }
 
 void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -153,7 +151,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   auto absolutePath = QFileInfo(this->prop.name).absoluteFilePath();
   QUrl fileURL(absolutePath);
   fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath(absolutePath);
+  auto relativePath = playlistDir.relativeFilePath(absolutePath);
 
   YUViewDomElement d = root.ownerDocument().createElement("playlistItemStatisticsFile");
 
@@ -165,7 +163,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   d.appendProperiteChild("relativePath", relativePath);
 
   // Save the status of the statistics (which are shown, transparency ...)
-  statSource.savePlaylist(d);
+  this->statisticsData.savePlaylist(d);
 
   root.appendChild(d);
 }
@@ -178,11 +176,15 @@ void playlistItemStatisticsFile::loadFrame(int  frameIdx,
   Q_UNUSED(playback);
   Q_UNUSED(loadRawdata);
 
-  if (statSource.needsLoading(frameIdx) == LoadingNeeded)
+  if (this->statisticsData.needsLoading(frameIdx) == LoadingNeeded)
   {
-    isStatisticsLoading = true;
-    statSource.loadStatistics(frameIdx);
-    isStatisticsLoading = false;
+    this->isStatisticsLoading = true;
+    {
+      auto typesToLoad = this->statisticsData.getTypesThatNeedLoading();
+      for (auto typeID : typesToLoad)
+        this->file->loadStatisticData(this->statisticsData, frameIdx, typeID);
+    }
+    this->isStatisticsLoading = false;
     if (emitSignals)
       emit signalItemChanged(true, RECACHE_NONE);
   }
@@ -191,7 +193,7 @@ void playlistItemStatisticsFile::loadFrame(int  frameIdx,
 ValuePairListSets playlistItemStatisticsFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   (void)frameIdx;
-  return ValuePairListSets("Stats", statSource.getValuesAt(pixelPos));
+  return ValuePairListSets("Stats", this->statisticsData.getValuesAt(pixelPos));
 }
 
 bool playlistItemStatisticsFile::isSourceChanged()
@@ -201,7 +203,7 @@ bool playlistItemStatisticsFile::isSourceChanged()
 
 void playlistItemStatisticsFile::updateSettings()
 {
-  this->statSource.updateSettings();
+  this->statisticsUIHandler.updateSettings();
   if (this->file)
     this->file->updateSettings();
 }
@@ -213,12 +215,6 @@ void playlistItemStatisticsFile::getSupportedFileExtensions(QStringList &allExte
   allExtensions.append("csv");
   filters.append("Statistics File (*.vtmbmsstats)");
   filters.append("Statistics File (*.csv)");
-}
-
-void playlistItemStatisticsFile::loadStatisticToCache(int poc, int typeID)
-{
-  if (this->file)
-    this->file->loadStatisticToHandler(this->statSource, poc, typeID);
 }
 
 void playlistItemStatisticsFile::onPOCParser(int poc)
@@ -243,7 +239,7 @@ void playlistItemStatisticsFile::createPropertiesWidget()
 
   vAllLaout->addLayout(createPlaylistItemControls());
   vAllLaout->addWidget(line);
-  vAllLaout->addLayout(statSource.createStatisticsHandlerControls());
+  vAllLaout->addLayout(this->statisticsUIHandler.createStatisticsHandlerControls());
 
   // Do not add any stretchers at the bottom because the statistics handler controls will
   // expand to take up as much space as there is available
@@ -262,10 +258,10 @@ void playlistItemStatisticsFile::openStatisticsFile()
   auto suffix = QFileInfo(this->prop.name).suffix();
   if (this->openMode == OpenMode::CSVFile ||
       (this->openMode == OpenMode::Extension && suffix == "csv"))
-    this->file.reset(new stats::StatisticsFileCSV(this->prop.name, this->statSource));
+    this->file.reset(new stats::StatisticsFileCSV(this->prop.name, this->statisticsData));
   else if (this->openMode == OpenMode::VTMBMSFile ||
            (this->openMode == OpenMode::Extension && suffix == "vtmbmsstats"))
-    this->file.reset(new stats::StatisticsFileVTMBMS(this->prop.name, this->statSource));
+    this->file.reset(new stats::StatisticsFileVTMBMS(this->prop.name, this->statisticsData));
   else
     assert(false);
 

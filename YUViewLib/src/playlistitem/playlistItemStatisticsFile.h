@@ -36,7 +36,6 @@
 #include <QFuture>
 
 #include "playlistItem.h"
-#include "statistics/StatisticHandler.h"
 #include "statistics/StatisticsFileBase.h"
 
 class playlistItemStatisticsFile : public playlistItem
@@ -57,7 +56,7 @@ public:
 
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
 
-  virtual QSize getSize() const override { return statSource.getFrameSize(); }
+  virtual QSize getSize() const override { return this->statisticsData.getFrameSize(); }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const override;
@@ -75,11 +74,8 @@ public:
   // ------ Statistics ----
 
   // Do we need to load the statistics first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) override
-  {
-    Q_UNUSED(loadRawdata);
-    return statSource.needsLoading(frameIdx);
-  }
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) override;
+
   // Load the statistics for the given frame. Emit signalItemChanged(true,false) when done. Always
   // called from a thread.
   virtual void
@@ -91,7 +87,10 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override;
 
   // A statistics file source of course provides statistics
-  virtual stats::StatisticHandler *getStatisticsHandler() override { return &this->statSource; }
+  virtual stats::StatisticUIHandler *getStatisticsUIHandler() override
+  {
+    return &this->statisticsUIHandler;
+  }
 
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged() override;
@@ -100,7 +99,6 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
 protected slots:
-  void loadStatisticToCache(int poc, int typeID);
   void onPOCParser(int poc);
 
 protected:
@@ -110,7 +108,9 @@ protected:
 
   void openStatisticsFile();
 
-  stats::StatisticHandler                    statSource;
+  stats::StatisticUIHandler statisticsUIHandler;
+  stats::StatisticsData     statisticsData;
+
   std::unique_ptr<stats::StatisticsFileBase> file;
   OpenMode                                   openMode;
 

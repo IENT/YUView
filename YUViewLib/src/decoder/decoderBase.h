@@ -35,8 +35,7 @@
 #include <QLibrary>
 
 #include "filesource/FileSourceAnnexBFile.h"
-#include "statistics/StatisticHandler.h"
-#include "statistics/statisticsExtensions.h"
+#include "statistics/StatisticsData.h"
 #include "video/videoHandlerRGB.h"
 #include "video/videoHandlerYUV.h"
 
@@ -98,13 +97,13 @@ public:
 
   // Get the statistics values for the current frame. In order to enable statistics retrievel,
   // activate it, reset the decoder and decode to the current frame again.
-  bool                  statisticsSupported() const { return internalsSupported; }
-  bool                  statisticsEnabled() const { return retrieveStatistics; }
-  void                  enableStatisticsRetrieval() { retrieveStatistics = true; }
-  stats::StatisticsData getStatisticsData(int typeIdx);
-  virtual void          fillStatisticList(stats::StatisticHandler &statSource) const
+  bool statisticsSupported() const { return internalsSupported; }
+  bool statisticsEnabled() const { return statisticsData != nullptr; }
+  void enableStatisticsRetrieval(stats::StatisticsData *s) { this->statisticsData = s; }
+  stats::FrameTypeData getCurrentFrameStatsForType(int typeIdx);
+  virtual void         fillStatisticList(stats::StatisticsData &statisticsData) const
   {
-    Q_UNUSED(statSource);
+    Q_UNUSED(statisticsData);
   };
 
   // Error handling
@@ -135,9 +134,7 @@ protected:
   int  decodeSignal{0};  ///< Which signal should be decoded?
   bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
 
-  bool internalsSupported{false}; ///< Enable in the constructor if you support statistics
-  bool retrieveStatistics{
-      false}; ///< If enabled, the decoder should also retrive statistics data from the bitstream
+  bool  internalsSupported{false}; ///< Enable in the constructor if you support statistics
   QSize frameSize;
 
   // Some decoders are able to handel both YUV and RGB output
@@ -158,10 +155,8 @@ protected:
   }
   QString errorString;
 
-  // Statistics caching
-  QHash<int, stats::StatisticsData>
-      curPOCStats;      // cache of the statistics for the current POC [statsTypeID]
-  int statsCacheCurPOC; // the POC of the statistics that are in the curPOCStats
+  // If set, fill it (if possible). The playlistItem has ownership of this.
+  stats::StatisticsData *statisticsData{};
 };
 
 // This abstract base class extends the decoderBase class by the ability to load one single library

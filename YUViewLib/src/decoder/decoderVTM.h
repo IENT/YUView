@@ -37,7 +37,6 @@
 #include "decoderBase.h"
 #include "common/fileInfo.h"
 #include "externalHeader/libVTMDecoder.h"
-#include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"
 
 struct decoderVTM_Functions
@@ -127,7 +126,7 @@ private:
   YUV_Internals::Subsampling convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt);
 
   // Add the statistics supported by the HM decoder
-  void fillStatisticList(stats::StatisticHandler &statSource) const Q_DECL_OVERRIDE;
+  void fillStatisticList(stats::StatisticsData &statisticsData) const Q_DECL_OVERRIDE;
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as necessary
   // without invoking the copy operation from the hm image buffer to the QByteArray again.

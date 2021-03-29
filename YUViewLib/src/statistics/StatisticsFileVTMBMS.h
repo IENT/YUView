@@ -42,19 +42,19 @@ namespace stats
 class StatisticsFileVTMBMS : public StatisticsFileBase
 {
 public:
-  StatisticsFileVTMBMS(const QString &filename, StatisticHandler &handler);
+  StatisticsFileVTMBMS(const QString &filename, StatisticsData &statisticsData);
   virtual ~StatisticsFileVTMBMS() = default;
 
   // Parse the whole file and get the positions where a new POC/type starts and save them. Later we
   // can then seek to these positions to load data. Usually this is called in a seperate thread.
   void readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction) override;
 
-  // Load the statistics for "poc/type" from file and put it into the handlers cache.
-  virtual void loadStatisticToHandler(StatisticHandler &handler, int poc, int typeID) override;
+  // Load the statistics for "poc/type" from file and put it into the statisticsData.
+  virtual void loadStatisticData(StatisticsData &statisticsData, int poc, int typeID) override;
 
 private:
   //! Scan the header: What types are saved in this file?
-  void readHeaderFromFile(StatisticHandler &handler);
+  void readHeaderFromFile(StatisticsData &statisticsData);
   
   std::map<int, uint64_t> pocStartList;
 };

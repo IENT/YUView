@@ -64,18 +64,18 @@ void decoderBase::resetDecoder()
 {
   DEBUG_DECODERBASE("decoderBase::resetDecoder");
   decoderState = DecoderState::NeedsMoreData;
-  statsCacheCurPOC = -1;
+  this->statisticsData->clear();
   frameSize = QSize();
   formatYUV = YUV_Internals::yuvPixelFormat();
   rawFormat = raw_Invalid;
 }
 
-stats::StatisticsData decoderBase::getStatisticsData(int typeIdx)
+stats::FrameTypeData decoderBase::getCurrentFrameStatsForType(int typeId)
 {
-  if (!retrieveStatistics)
+  if (!this->statisticsEnabled())
     return {};
 
-  return curPOCStats[typeIdx];
+  return statisticsData->getFrameTypeData(typeId);
 }
 
 void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)

@@ -304,14 +304,29 @@ void StatisticsType::loadPlaylist(const YUViewDomElement &root)
 
 // If the internal valueMap can map the value to text, text and value will be returned.
 // Otherwise just the value as QString will be returned.
-QString StatisticsType::getValueTxt(int val)
+QString StatisticsType::getValueTxt(int val) const
 {
   if (valMap.count(val) > 0)
   {
     // A text for this value van be shown.
-    return QString("%1 (%2)").arg(valMap[val]).arg(val);
+    return QString("%1 (%2)").arg(valMap.at(val)).arg(val);
   }
   return QString("%1").arg(val);
+}
+
+void StatisticsType::setMappingValues(std::vector<QString> values)
+{
+  // We assume linear increasing typed IDs
+  for (int i = 0; i < values.size(); i++)
+    this->valMap[i] = values[i];
+}
+
+QString StatisticsType::getMappedValue(int typeID) const
+{
+  if (this->valMap.count(typeID) == 0)
+    return {};
+
+  return this->valMap.at(typeID);
 }
 
 }

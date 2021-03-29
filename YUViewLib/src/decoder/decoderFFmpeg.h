@@ -54,7 +54,7 @@ public:
   bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
 
   // What statistics do we support?
-  void fillStatisticList(stats::StatisticHandler &statSource) const Q_DECL_OVERRIDE;
+  void fillStatisticList(stats::StatisticsData &statisticsData) const Q_DECL_OVERRIDE;
 
   QStringList getLibraryPaths() const Q_DECL_OVERRIDE { return ff.getLibPaths(); }
   QString     getDecoderName()  const Q_DECL_OVERRIDE { return "FFmpeg"; }

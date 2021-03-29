@@ -36,7 +36,10 @@
 
 #include "ui_statisticsstylecontrol.h"
 
+namespace stats
+{
 class StatisticsType;
+}
 
 class StatisticsStyleControl : public QDialog
 {
@@ -87,7 +90,4 @@ private slots:
 private:
   Ui::StatisticsStyleControl ui;
   stats::StatisticsType *    currentItem;
-
-  // Static list of pen stlyes to convert from Qt::PenStyle to an index and back.
-  static const QList<Qt::PenStyle> penStyleList;
 };

@@ -37,7 +37,11 @@
 
 #include "common/functions.h"
 #include "common/typedef.h"
+#include "statistics/StatisticsType.h"
 #include "statisticsStyleControl_ColorMapEditor.h"
+
+namespace
+{
 
 #define STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT 0
 #if STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT
@@ -47,9 +51,11 @@
 #define DEBUG_STAT_STYLE(fmt, ...) ((void)0)
 #endif
 
-const QList<Qt::PenStyle> StatisticsStyleControl::penStyleList =
+const QList<Qt::PenStyle> penStyleList =
     QList<Qt::PenStyle>() << Qt::SolidLine << Qt::DashLine << Qt::DotLine << Qt::DashDotLine
                           << Qt::DashDotDotLine;
+
+}
 
 StatisticsStyleControl::StatisticsStyleControl(QWidget *parent)
     : QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
@@ -229,8 +235,8 @@ void StatisticsStyleControl::on_frameMaxColor_clicked()
 
 void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
 {
-  QMap<int, QColor> colorMap;
-  QColor            otherColor = currentItem->colorMapper.colorMapOther;
+  std::map<int, QColor> colorMap;
+  QColor                otherColor = currentItem->colorMapper.colorMapOther;
 
   if (currentItem->colorMapper.mappingType == stats::ColorMapper::MappingType::map)
     // Edit the currently set color map
@@ -243,10 +249,10 @@ void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
     int higher =
         std::max(currentItem->colorMapper.getMinVal(), currentItem->colorMapper.getMaxVal());
     for (int i = lower; i <= higher; i++)
-      colorMap.insert(i, currentItem->colorMapper.getColor(i));
+      colorMap[i] = currentItem->colorMapper.getColor(i);
   }
 
-  StatisticsStyleControl_ColorMapEditor *colorMapEditor =
+  auto *colorMapEditor =
       new StatisticsStyleControl_ColorMapEditor(colorMap, otherColor, this);
   if (colorMapEditor->exec() == QDialog::Accepted)
   {

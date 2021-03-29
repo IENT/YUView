@@ -79,10 +79,10 @@ public:
   QString description;
 
   // Get the value text (from the value map (if there is an entry))
-  QString getValueTxt(int val);
+  QString getValueTxt(int val) const;
 
-  // If set, this map is used to map values to text
-  std::map<int, QString> valMap;
+  void setMappingValues(std::vector<QString> values);
+  QString getMappedValue(int typeID) const;
 
   // Is this statistics type rendered and what is the alpha value?
   // These are corresponding to the controls in the properties panel
@@ -126,6 +126,9 @@ private:
   // We keep a backup of the last used color map so that the map is not lost if the user tries out
   // different color maps.
   std::map<int, QColor> colorMapBackup;
+
+  // If set, this map is used to map values to text
+  std::map<int, QString> valMap;
 
   // Backup values for setDefaultState()
   struct initialState

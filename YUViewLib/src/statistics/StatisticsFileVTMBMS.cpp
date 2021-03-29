@@ -32,6 +32,8 @@
 
 #include "StatisticsFileVTMBMS.h"
 
+#include <QRegularExpression>
+
 #include <iostream>
 
 namespace stats
@@ -43,10 +45,10 @@ namespace stats
 constexpr unsigned STAT_PARSING_BUFFER_SIZE = 1048576u;
 constexpr unsigned STAT_MAX_STRING_SIZE     = 1u << 28;
 
-StatisticsFileVTMBMS::StatisticsFileVTMBMS(const QString &filename, StatisticHandler &handler)
+StatisticsFileVTMBMS::StatisticsFileVTMBMS(const QString &filename, StatisticsData &statisticsData)
     : StatisticsFileBase(filename)
 {
-  this->readHeaderFromFile(handler);
+  this->readHeaderFromFile(statisticsData);
 }
 
 /** The background task that parses the file and extracts the exact file positions
@@ -179,7 +181,7 @@ void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &b
   return;
 }
 
-void StatisticsFileVTMBMS::loadStatisticToHandler(StatisticHandler &handler, int poc, int typeID)
+void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int poc, int typeID)
 {
   if (!this->file.isOk())
     return;
@@ -191,7 +193,7 @@ void StatisticsFileVTMBMS::loadStatisticToHandler(StatisticHandler &handler, int
     if (this->pocStartList.count(poc) == 0)
     {
       // There are no statistics in the file for the given frame and index.
-      handler.statsCache.insert(typeID, {});
+      statisticsData[typeID] = {};
       return;
     }
 
@@ -203,9 +205,10 @@ void StatisticsFileVTMBMS::loadStatisticToHandler(StatisticHandler &handler, int
     QRegularExpression pocRegex("BlockStat: POC ([0-9]+)");
 
     // prepare regex for selected type
-    StatisticsType *aType = handler.getStatisticsType(typeID);
-    Q_ASSERT_X(aType != nullptr, Q_FUNC_INFO, "Stat type not found.");
-    QRegularExpression typeRegex(" " + aType->typeName + "="); // for catching lines of the type
+    auto statTypes = statisticsData.getStatisticsTypes();
+    auto statIt = std::find_if(statTypes.begin(), statTypes.end(), [typeID](StatisticsType &t){ return t.typeID == typeID; });
+    Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
+    QRegularExpression typeRegex(" " + statIt->typeName + "="); // for catching lines of the type
 
     // for extracting scalar value statistics, need to match:
     // BlockStat: POC 1 @( 112,  88) [ 8x 8] PredMode=0
@@ -257,25 +260,25 @@ void StatisticsFileVTMBMS::loadStatisticToHandler(StatisticHandler &handler, int
           QRegularExpressionMatch statisitcMatch;
           // extract statistics info
           // try block types
-          if (aType->isPolygon == false)
+          if (statIt->isPolygon == false)
           {
-            if (aType->hasValueData)
+            if (statIt->hasValueData)
               statisitcMatch = scalarRegex.match(aLine);
-            else if (aType->hasVectorData)
+            else if (statIt->hasVectorData)
             {
               statisitcMatch = vectorRegex.match(aLine);
               if (!statisitcMatch.hasMatch())
                 statisitcMatch = lineRegex.match(aLine);
             }
-            else if (aType->hasAffineTFData)
+            else if (statIt->hasAffineTFData)
               statisitcMatch = affineTFRegex.match(aLine);
           }
           else
           // try polygons
           {
-            if (aType->hasValueData)
+            if (statIt->hasValueData)
               statisitcMatch = scalarPolygonRegex.match(aLine);
-            else if (aType->hasVectorData)
+            else if (statIt->hasVectorData)
               statisitcMatch = vectorPolygonRegex.match(aLine);
           }
           if (!statisitcMatch.hasMatch())
@@ -295,18 +298,18 @@ void StatisticsFileVTMBMS::loadStatisticToHandler(StatisticHandler &handler, int
             break;
 
           // process block statistics
-          if (aType->isPolygon == false)
+          if (statIt->isPolygon == false)
           {
             posX = statisitcMatch.captured(2).toInt();
             posY = statisitcMatch.captured(3).toInt();
 
             // Check if block is within the image range
-            if (blockOutsideOfFramePOC == -1 && (posX + width > handler.getFrameSize().width() ||
-                                                 posY + height > handler.getFrameSize().height()))
+            if (blockOutsideOfFramePOC == -1 && (posX + width > statisticsData.getFrameSize().width() ||
+                                                 posY + height > statisticsData.getFrameSize().height()))
               // Block not in image. Warn about this.
               blockOutsideOfFramePOC = poc;
 
-            if (aType->hasVectorData)
+            if (statIt->hasVectorData)
             {
               vecX = statisitcMatch.captured(6).toInt();
               vecY = statisitcMatch.captured(7).toInt();
@@ -314,15 +317,15 @@ void StatisticsFileVTMBMS::loadStatisticToHandler(StatisticHandler &handler, int
               {
                 auto vecX1 = statisitcMatch.captured(8).toInt();
                 auto vecY1 = statisitcMatch.captured(9).toInt();
-                handler.statsCache[typeID].addLine(
+                statisticsData[typeID].addLine(
                     posX, posY, width, height, vecX, vecY, vecX1, vecY1);
               }
               else
               {
-                handler.statsCache[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
+                statisticsData[typeID].addBlockVector(posX, posY, width, height, vecX, vecY);
               }
             }
-            else if (aType->hasAffineTFData)
+            else if (statIt->hasAffineTFData)
             {
               auto vecX0 = statisitcMatch.captured(6).toInt();
               auto vecY0 = statisitcMatch.captured(7).toInt();
@@ -330,13 +333,13 @@ void StatisticsFileVTMBMS::loadStatisticToHandler(StatisticHandler &handler, int
               auto vecY1 = statisitcMatch.captured(9).toInt();
               auto vecX2 = statisitcMatch.captured(10).toInt();
               auto vecY2 = statisitcMatch.captured(11).toInt();
-              handler.statsCache[typeID].addBlockAffineTF(
+              statisticsData[typeID].addBlockAffineTF(
                   posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
             }
             else
             {
               scalar = statisitcMatch.captured(6).toInt();
-              handler.statsCache[typeID].addBlockValue(posX, posY, width, height, scalar);
+              statisticsData[typeID].addBlockValue(posX, posY, width, height, scalar);
             }
           }
           else
@@ -357,33 +360,33 @@ void StatisticsFileVTMBMS::loadStatisticToHandler(StatisticHandler &handler, int
 
                 // Check if polygon is within the image range
                 if (this->blockOutsideOfFramePOC == -1 &&
-                    (x + width > handler.getFrameSize().width() ||
-                     y + height > handler.getFrameSize().height()))
+                    (x + width > statisticsData.getFrameSize().width() ||
+                     y + height > statisticsData.getFrameSize().height()))
                   // Block not in image. Warn about this.
                   this->blockOutsideOfFramePOC = poc;
               }
             }
 
-            if (aType->hasVectorData)
+            if (statIt->hasVectorData)
             {
               vecX = statisitcMatch.captured(3).toInt();
               vecY = statisitcMatch.captured(4).toInt();
-              handler.statsCache[typeID].addPolygonVector(points, vecX, vecY);
+              statisticsData[typeID].addPolygonVector(points, vecX, vecY);
             }
-            else if (aType->hasValueData)
+            else if (statIt->hasValueData)
             {
               scalar = statisitcMatch.captured(3).toInt();
-              handler.statsCache[typeID].addPolygonValue(points, scalar);
+              statisticsData[typeID].addPolygonValue(points, scalar);
             }
           }
         }
       }
     }
 
-    if (!handler.statsCache.contains(typeID))
+    if (!statisticsData.hasDataForTypeID(typeID))
     {
       // There are no statistics in the file for the given frame and index.
-      handler.statsCache.insert(typeID, {});
+      statisticsData[typeID] = {};
       return;
     }
 
@@ -404,15 +407,14 @@ void StatisticsFileVTMBMS::loadStatisticToHandler(StatisticHandler &handler, int
   return;
 }
 
-void StatisticsFileVTMBMS::readHeaderFromFile(StatisticHandler &handler)
+void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
 {
   try
   {
     if (!this->file.isOk())
       return;
 
-    // Cleanup old types
-    handler.clearStatTypes();
+    statisticsData.clear();
 
     while (!this->file.atEnd())
     {
@@ -438,7 +440,7 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticHandler &handler)
       auto sequenceSizeMatch = sequenceSizeRegex.match(aLine);
       if (sequenceSizeMatch.hasMatch())
       {
-        handler.setFrameSize(
+        statisticsData.setFrameSize(
             QSize(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt()));
       }
 
@@ -529,7 +531,7 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticHandler &handler)
           aType.isPolygon = true;
 
         // add the new type if it is not already in the list
-        handler.addStatType(aType); // check if in list is done by addStatsType
+        statisticsData.addStatType(aType); // check if in list is done by addStatsType
       }
     }
   } // try

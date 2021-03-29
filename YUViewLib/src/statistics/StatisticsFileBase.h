@@ -33,7 +33,7 @@
 #pragma once
 
 #include "filesource/FileSource.h"
-#include "statistics/StatisticHandler.h"
+#include "statistics/StatisticsData.h"
 
 #include <QObject>
 
@@ -55,7 +55,7 @@ public:
   virtual void readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction) = 0;
 
   // Load the statistics for "poc/type" from file and put it into the handlers cache.
-  virtual void loadStatisticToHandler(StatisticHandler &handler, int poc, int typeID) = 0;
+  virtual void loadStatisticData(StatisticsData &statisticsData, int poc, int typeID) = 0;
 
   operator bool() const { return !this->error; };
 

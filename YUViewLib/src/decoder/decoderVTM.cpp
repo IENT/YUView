@@ -306,9 +306,9 @@ QByteArray decoderVTM::getRawFrameData()
     copyImgToByteArray(currentVTMPic, currentOutputBuffer);
     DEBUG_DECVTM("decoderVTM::getRawFrameData copied frame to buffer");
 
-    if (retrieveStatistics)
+    if (this->statisticsEnabled())
       // Get the statistics from the image and put them into the statistics cache
-      cacheStatistics(currentVTMPic);
+      this->cacheStatistics(currentVTMPic);
   }
 
   return currentOutputBuffer;
@@ -404,7 +404,7 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
   DEBUG_DECVTM("decoderVTM::cacheStatistics POC %d", libVTMDec_get_POC(img));
 
   // Clear the local statistics cache
-  curPOCStats.clear();
+  this->statisticsData->clear();
 
   // // Conversion from intra prediction mode to vector.
   // // Coordinates are in x,y with the axes going right and down.
@@ -461,9 +461,9 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
   //}
 }
 
-void decoderVTM::fillStatisticList(stats::StatisticHandler &statSource) const
+void decoderVTM::fillStatisticList(stats::StatisticsData &statisticsData) const
 {
-  Q_UNUSED(statSource);
+  Q_UNUSED(statisticsData);
   
   // Ask the decoder how many internals types there are
   // unsigned int nrTypes = libVTMDec_get_internal_type_number();

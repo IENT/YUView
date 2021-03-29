@@ -42,7 +42,7 @@ namespace stats
 class StatisticsFileCSV : public StatisticsFileBase
 {
 public:
-  StatisticsFileCSV(const QString &filename, StatisticHandler &handler);
+  StatisticsFileCSV(const QString &filename, StatisticsData &statisticsData);
   virtual ~StatisticsFileCSV() = default;
 
   // -1 if it could not be parser from the file
@@ -52,14 +52,14 @@ public:
   // can then seek to these positions to load data. Usually this is called in a seperate thread.
   void readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction) override;
 
-  // Load the statistics for "poc/type" from file and put it into the handlers cache.
+  // Load the statistics for "poc/type" from file and put it into the statisticsData.
   // If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
   // types which were not requested by the given 'type'.
-  virtual void loadStatisticToHandler(StatisticHandler &handler, int poc, int typeID) override;
+  virtual void loadStatisticData(StatisticsData &statisticsData, int poc, int typeID) override;
 
 protected:
   //! Scan the header: What types are saved in this file?
-  void readHeaderFromFile(StatisticHandler &handler);
+  void readHeaderFromFile(StatisticsData &statisticsData);
 
   double framerate{-1};
 

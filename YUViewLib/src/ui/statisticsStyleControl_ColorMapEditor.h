@@ -41,9 +41,9 @@ class StatisticsStyleControl_ColorMapEditor : public QDialog
   Q_OBJECT
 
 public:
-  explicit StatisticsStyleControl_ColorMapEditor(const QMap<int, QColor> &colorMap, const QColor &other, QWidget *parent = 0);
+  explicit StatisticsStyleControl_ColorMapEditor(const std::map<int, QColor> &colorMap, const QColor &other, QWidget *parent = 0);
 
-  QMap<int, QColor> getColorMap();
+  std::map<int, QColor> getColorMap();
   QColor getOtherColor();
 
 public slots:

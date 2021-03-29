@@ -56,10 +56,10 @@ QStringList parseCSVLine(const QString &srcLine, char delimiter)
 
 } // namespace
 
-StatisticsFileCSV::StatisticsFileCSV(const QString &filename, StatisticHandler &handler)
+StatisticsFileCSV::StatisticsFileCSV(const QString &filename, StatisticsData &statisticsData)
     : StatisticsFileBase(filename)
 {
-  this->readHeaderFromFile(handler);
+  this->readHeaderFromFile(statisticsData);
 }
 
 /** The background task that parses the file and extracts the exact file positions
@@ -228,7 +228,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
   }
 }
 
-void StatisticsFileCSV::loadStatisticToHandler(StatisticHandler &handler, int poc, int typeID)
+void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int poc, int typeID)
 {
   if (!this->file.isOk())
     return;
@@ -240,7 +240,7 @@ void StatisticsFileCSV::loadStatisticToHandler(StatisticHandler &handler, int po
     if (this->pocTypeFileposMap.count(poc) == 0 || this->pocTypeFileposMap[poc].count(typeID) == 0)
     {
       // There are no statistics in the file for the given frame and index.
-      handler.statsCache.insert(typeID, {});
+      statisticsData[typeID] = {};
       return;
     }
 
@@ -307,21 +307,22 @@ void StatisticsFileCSV::loadStatisticToHandler(StatisticHandler &handler, int po
 
       // Check if block is within the image range
       if (this->blockOutsideOfFramePOC == -1 &&
-          (posX + int(width) > handler.getFrameSize().width() ||
-           posY + int(height) > handler.getFrameSize().height()))
+          (posX + int(width) > statisticsData.getFrameSize().width() ||
+           posY + int(height) > statisticsData.getFrameSize().height()))
         // Block not in image. Warn about this.
         this->blockOutsideOfFramePOC = poc;
 
-      const auto statsType = handler.getStatisticsType(type);
-      Q_ASSERT_X(statsType != nullptr, Q_FUNC_INFO, "Stat type not found.");
+      auto statTypes = statisticsData.getStatisticsTypes();
+      auto statIt = std::find_if(statTypes.begin(), statTypes.end(), [type](StatisticsType &t){ return t.typeID == type; });
+      Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
 
-      if (vectorData && statsType->hasVectorData)
-        handler.statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
-      else if (lineData && statsType->hasVectorData)
-        handler.statsCache[type].addLine(
+      if (vectorData && statIt->hasVectorData)
+        statisticsData[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
+      else if (lineData && statIt->hasVectorData)
+        statisticsData[type].addLine(
             posX, posY, width, height, values[0], values[1], values[2], values[3]);
       else
-        handler.statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
+        statisticsData[type].addBlockValue(posX, posY, width, height, values[0]);
     }
   }
   catch (const char *str)
@@ -338,7 +339,7 @@ void StatisticsFileCSV::loadStatisticToHandler(StatisticHandler &handler, int po
   }
 }
 
-void StatisticsFileCSV::readHeaderFromFile(StatisticHandler &handler)
+void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
 {
   // TODO: Why is there a try block here? I see no throwing of anything ...
   //       We should get rid of this and just set an error and return on failure.
@@ -347,8 +348,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticHandler &handler)
     if (!this->file.isOk())
       return;
 
-    // Cleanup old types
-    handler.clearStatTypes();
+    statisticsData.clear();
 
     // scan header lines first
     // also count the lines per Frame for more efficient memory allocation
@@ -373,7 +373,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticHandler &handler)
       {
         // Last type is complete. Store this initial state.
         aType.setInitialState();
-        handler.addStatType(aType);
+        statisticsData.addStatType(aType);
 
         // start from scratch for next item
         aType             = StatisticsType();
@@ -419,7 +419,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticHandler &handler)
         auto a = (unsigned char)rowItemList[6].toInt();
 
         aType.colorMapper.mappingType = ColorMapper::MappingType::map;
-        aType.colorMapper.colorMap.insert(id, QColor(r, g, b, a));
+        aType.colorMapper.colorMap[id] = QColor(r, g, b, a);
       }
       else if (rowItemList[1] == "range")
       {
@@ -482,7 +482,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticHandler &handler)
         auto width  = rowItemList[4].toInt();
         auto height = rowItemList[5].toInt();
         if (width > 0 && height > 0)
-          handler.setFrameSize(QSize(width, height));
+          statisticsData.setFrameSize(QSize(width, height));
         if (rowItemList[6].toDouble() > 0.0)
           this->framerate = rowItemList[6].toDouble();
       }

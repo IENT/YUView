@@ -34,8 +34,9 @@
 
 #include "common/saveUi.h"
 #include "common/typedef.h"
-#include "StatisticsData.h"
+#include "common/YUViewDomElement.h"
 #include "ui/statisticsstylecontrol.h"
+
 #include <QMutex>
 #include <QPointer>
 #include <QVector>
@@ -45,17 +46,18 @@
 namespace stats
 {
 
+class StatisticsData;
+
 /* The StatisticHandler can handle statistics.
  */
-class StatisticHandler : public QObject
+class StatisticUIHandler : public QObject
 {
   Q_OBJECT
 
 public:
-  StatisticHandler();
+  StatisticUIHandler();
 
-  // Get the statistics values under the cursor position (if they are visible)
-  QStringPairList getValuesAt(const QPoint &pos);
+  void setStatisticsData(StatisticsData *statisticsData);
 
   // Create all the check boxes/sliders and so on. If recreateControlsOnly is set, the UI is assumed
   // to be already initialized. Only all the controls are created.
@@ -73,50 +75,8 @@ public:
   // Load it to the cache. This has to be handled by the child classes.
   // virtual void loadStatisticToCache(int frameIdx, int typeIdx) = 0;
 
-  // Draw the statistics for the given frame index with the given zoomFactor to the painter.
-  // Returns false if the statistics need to be loaded first.
-  void paintStatistics(QPainter *painter, int frameIdx, double zoomFactor);
-
-  // Draw a vector.
-  void paintVector(QPainter *    painter,
-                   const int &   statTypeIdx,
-                   const double &zoomFactor,
-                   const int &   x1,
-                   const int &   y1,
-                   const int &   x2,
-                   const int &   y2,
-                   const float & vx,
-                   const float & vy,
-                   bool          isLine,
-                   const int &   xMin,
-                   const int &   xMax,
-                   const int &   yMin,
-                   const int &   yMax);
-
-  // Do we need to load some of the statistics before we can draw them?
-  itemLoadingState needsLoading(int frameIdx);
-
-  // If needsLoading() returned LoadingNeeded, this function is called to load all the needed
-  // statistics data that is needed to render the statistics for the given frame.
-  void loadStatistics(int frameIdx);
-
-  // Get the statisticsType with the given typeID from p_statsTypeList
-  StatisticsType *getStatisticsType(int typeID);
-
-  void  setFrameSize(QSize frameSize) { statFrameSize = frameSize; }
-  void  setFrameSize(int width, int height) { statFrameSize = QSize(width, height); }
-  QSize getFrameSize() const { return statFrameSize; }
-
-  // Add new statistics type. Add all types using this function before creating the controls
-  // (createStatisticsHandlerControls).
-  void addStatType(const StatisticsType &type);
-
   // Clear the statistics type list.
   void clearStatTypes();
-
-  // Load/Save status of statistics from playlist file
-  void savePlaylist(YUViewDomElement &root) const;
-  void loadPlaylist(const YUViewDomElement &root);
 
   // Update the settings. For the statistics this means updating the icons for editing statistic.
   void updateSettings();
@@ -124,12 +84,10 @@ public:
 signals:
   // Update the item (and maybe redraw it)
   void updateItem(bool redraw);
-  // Request to load the statistics for the given frame index/typeIdx into statsCache.
-  void requestStatisticsLoading(int frameIdx, int typeIdx);
 
 private:
-
-  StatisticsData data;
+  StatisticsData *            statisticsData{};
+  std::vector<StatisticsType> statsTypeListBackup;
 
   // Primary controls for the statistics
   SafeUi<Ui::StatisticHandler> ui;
@@ -147,14 +105,14 @@ private:
   QList<QCheckBox *>   itemNameCheckBoxes[2];
   QList<QSlider *>     itemOpacitySliders[2];
   QList<QPushButton *> itemStyleButtons[2];
-  QSpacerItem *        spacerItems[2];
+  QSpacerItem *        spacerItems[2] {nullptr};
 
 private slots:
 
   // This slot is toggled whenever one of the controls for the statistics is changed
   void onStatisticsControlChanged();
   void onSecondaryStatisticsControlChanged();
-  void onStyleButtonClicked(int id);
+  void onStyleButtonClicked(unsigned id);
   void updateStatisticItem() { emit updateItem(true); }
 };
 

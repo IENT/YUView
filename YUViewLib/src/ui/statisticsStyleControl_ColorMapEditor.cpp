@@ -39,20 +39,20 @@
 #include "common/functions.h"
 #include "common/typedef.h"
 
-StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(const QMap<int, QColor> &colorMap, const QColor &other, QWidget *parent) :
+StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(const std::map<int, QColor> &colorMap, const QColor &other, QWidget *parent) :
   QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
 {
   ui.setupUi(this);
 
-  ui.colorMapTable->setRowCount(colorMap.count() + 1);
+  ui.colorMapTable->setRowCount(colorMap.size() + 1);
   ui.pushButtonAdd->setIcon(functions::convertIcon(":img_add.png"));
   ui.pushButtonDelete->setIcon(functions::convertIcon(":img_delete.png"));
 
   // Put all the colors from the colorMap into the table widget
   int count = 0;
-  for (const auto &entry : colorMap.toStdMap())
+  for (const auto &entry : colorMap)
   {
-    QTableWidgetItem *newItem = new QTableWidgetItem();
+    auto *newItem = new QTableWidgetItem();
     newItem->setData(Qt::EditRole, entry.first);
     ui.colorMapTable->setItem(count, 0, newItem);
     
@@ -64,7 +64,7 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(con
   }
 
   // Into the last row, put the item for "other"
-  QTableWidgetItem *newItem = new QTableWidgetItem("Other");
+  auto *newItem = new QTableWidgetItem("Other");
   newItem->setFlags((~newItem->flags()) & Qt::ItemIsEditable);
   ui.colorMapTable->setItem(count, 0, newItem);
   // with a white color value.
@@ -77,10 +77,10 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(con
   connect(ui.colorMapTable, &QTableWidget::itemChanged, this, &StatisticsStyleControl_ColorMapEditor::slotItemChanged);
 }
 
-QMap<int, QColor> StatisticsStyleControl_ColorMapEditor::getColorMap()
+std::map<int, QColor> StatisticsStyleControl_ColorMapEditor::getColorMap()
 {
   // Get all value/color combos and return them as a color map list
-  QMap<int, QColor> colorMap;
+  std::map<int, QColor> colorMap;
 
   for (int row = 0; row < ui.colorMapTable->rowCount(); row++)
   {
@@ -92,7 +92,7 @@ QMap<int, QColor> StatisticsStyleControl_ColorMapEditor::getColorMap()
       int val = item0->data(Qt::EditRole).toInt();
       QColor color = item1->background().color();
 
-      colorMap.insert(val, color);
+      colorMap[val] = color;
     }
   }
 
@@ -126,12 +126,12 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
     newValue = ui.colorMapTable->item(rowCount-2, 0)->data(Qt::EditRole).toInt() + 1;
 
   // Save the color of the "other" entry
-  QColor otherColor = ui.colorMapTable->item(rowCount - 1, 1)->background().color();
+  auto otherColor = ui.colorMapTable->item(rowCount - 1, 1)->background().color();
 
   // Add a new item
   ui.colorMapTable->insertRow(rowCount);
 
-  QTableWidgetItem *newItem = new QTableWidgetItem();
+  auto *newItem = new QTableWidgetItem();
   newItem->setData(Qt::EditRole, newValue);
   ui.colorMapTable->setItem(rowCount-1, 0, newItem);
 
@@ -158,9 +158,9 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
 void StatisticsStyleControl_ColorMapEditor::on_pushButtonDelete_clicked()
 {
   // Delete the currently selected rows
-  QList<QTableWidgetItem*> selection = ui.colorMapTable->selectedItems();
+  auto selection = ui.colorMapTable->selectedItems();
 
-  for (QTableWidgetItem* item : selection)
+  for (auto  item : selection)
   {
     if (item->column() == 1 && item->row() != ui.colorMapTable->rowCount()-1)
     {
@@ -174,8 +174,8 @@ void StatisticsStyleControl_ColorMapEditor::slotItemClicked(QTableWidgetItem *it
   if (item->column() != 1)
     return;
 
-  QColor oldColor = item->background().color();
-  QColor newColor = QColorDialog::getColor(oldColor, this, tr("Select color range maximum"), QColorDialog::ShowAlphaChannel);
+  auto oldColor = item->background().color();
+  auto newColor = QColorDialog::getColor(oldColor, this, tr("Select color range maximum"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && newColor != oldColor)
   {
     // Set the new color
