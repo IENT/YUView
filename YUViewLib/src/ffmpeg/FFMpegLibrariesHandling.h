@@ -848,7 +848,7 @@ public:
   AVDictionaryWrapper    getMetadata(AVFrameWrapper &frame);
 
   // Seek to a specific frame
-  int seekFrame(AVFormatContextWrapper &fmt, int stream_idx, int dts);
+  int seekFrame(AVFormatContextWrapper &fmt, int stream_idx, int64_t dts);
   int seekBeginning(AVFormatContextWrapper & fmt);
 
   // All the function pointers of the ffmpeg library
