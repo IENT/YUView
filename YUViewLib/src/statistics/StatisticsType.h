@@ -36,7 +36,6 @@
 #include "common/YUViewDomElement.h"
 #include "common/typedef.h"
 
-
 #include <QPen>
 
 namespace stats
@@ -60,9 +59,9 @@ public:
   StatisticsType(int            typeID,
                  const QString &typeName,
                  int            cRangeMin,
-                 const QColor & cRangeMinColor,
+                 const Color &  cRangeMinColor,
                  int            cRangeMax,
-                 const QColor & cRangeMaxColor,
+                 const Color &  cRangeMaxColor,
                  bool           hasAndRenderVectorData = false);
 
   // Save all the values that the user could change. When saving to playlist we can save only the
@@ -81,7 +80,7 @@ public:
   // Get the value text (from the value map (if there is an entry))
   QString getValueTxt(int val) const;
 
-  void setMappingValues(std::vector<QString> values);
+  void    setMappingValues(std::vector<QString> values);
   QString getMappedValue(int typeID) const;
 
   // Is this statistics type rendered and what is the alpha value?
@@ -123,10 +122,6 @@ public:
   bool isPolygon;
 
 private:
-  // We keep a backup of the last used color map so that the map is not lost if the user tries out
-  // different color maps.
-  std::map<int, QColor> colorMapBackup;
-
   // If set, this map is used to map values to text
   std::map<int, QString> valMap;
 

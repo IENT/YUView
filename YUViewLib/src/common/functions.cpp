@@ -47,6 +47,13 @@
 
 using namespace YUView;
 
+QColor functions::convertToQColor(Color color)
+{
+  if (color.alpha() == -1)
+    return QColor(color.R(), color.G(), color.B());
+  return QColor(color.R(), color.G(), color.B(), color.A());
+}
+
 bool functions::isInputFormatTypeAnnexB(inputFormat format) 
 { 
     return format == inputAnnexBHEVC || format == inputAnnexBVVC || format == inputAnnexBAVC; 

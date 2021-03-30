@@ -419,7 +419,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto a = (unsigned char)rowItemList[6].toInt();
 
         aType.colorMapper.mappingType = ColorMapper::MappingType::map;
-        aType.colorMapper.colorMap[id] = QColor(r, g, b, a);
+        aType.colorMapper.colorMap[id] = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "range")
       {
@@ -429,14 +429,14 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto g        = (unsigned char)rowItemList[6].toInt();
         auto b        = (unsigned char)rowItemList[8].toInt();
         auto a        = (unsigned char)rowItemList[10].toInt();
-        auto minColor = QColor(r, g, b, a);
+        auto minColor = Color(r, g, b, a);
 
         auto max      = rowItemList[3].toInt();
         r             = rowItemList[5].toInt();
         g             = rowItemList[7].toInt();
         b             = rowItemList[9].toInt();
         a             = rowItemList[11].toInt();
-        auto maxColor = QColor(r, g, b, a);
+        auto maxColor = Color(r, g, b, a);
 
         aType.colorMapper = ColorMapper(min, minColor, max, maxColor);
       }

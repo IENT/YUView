@@ -871,7 +871,7 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
 
 void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) const
 {
-  stats::StatisticsType sliceIdx(0, "Slice Index", 0, QColor(0, 0, 0), 10, QColor(255, 0, 0));
+  stats::StatisticsType sliceIdx(0, "Slice Index", 0, Color(0, 0, 0), 10, Color(255, 0, 0));
   sliceIdx.description = "The slice index reported per CTU";
   statisticsData.addStatType(sliceIdx);
 
@@ -892,12 +892,12 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
   predMode.setMappingValues({"INTRA", "INTER", "SKIP"});
   statisticsData.addStatType(predMode);
 
-  stats::StatisticsType pcmFlag(3, "PCM flag", 0, QColor(0, 0, 0), 1, QColor(255, 0, 0));
+  stats::StatisticsType pcmFlag(3, "PCM flag", 0, Color(0, 0, 0), 1, Color(255, 0, 0));
   pcmFlag.description = "The PCM flag per CU";
   statisticsData.addStatType(pcmFlag);
 
   stats::StatisticsType transQuantBypass(
-      4, "Transquant Bypass Flag", 0, QColor(0, 0, 0), 1, QColor(255, 0, 0));
+      4, "Transquant Bypass Flag", 0, Color(0, 0, 0), 1, Color(255, 0, 0));
   transQuantBypass.description = "The transquant bypass flag per CU";
   statisticsData.addStatType(transQuantBypass);
 
@@ -957,7 +957,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
   statisticsData.addStatType(intraDirC);
 
   stats::StatisticsType transformDepth(
-      11, "Transform Depth", 0, QColor(0, 0, 0), 3, QColor(0, 255, 0));
+      11, "Transform Depth", 0, Color(0, 0, 0), 3, Color(0, 255, 0));
   transformDepth.description = "The transform depth within the transform tree per TU";
   statisticsData.addStatType(transformDepth);
 }

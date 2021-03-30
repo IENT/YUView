@@ -570,12 +570,12 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
       "Specifies which segment is associated with the current intra block being decoded";
   statisticsData.addStatType(segmentID);
 
-  stats::StatisticsType skip(2, "skip", 0, QColor(0, 0, 0), 1, QColor(255, 0, 0));
+  stats::StatisticsType skip(2, "skip", 0, Color(0, 0, 0), 1, Color(255, 0, 0));
   skip.description = "Equal to 0 indicates that there may be some transform coefficients for this "
                      "block. 1 Indicates there are none.";
   statisticsData.addStatType(skip);
 
-  stats::StatisticsType skip_mode(3, "skip_mode", 0, QColor(0, 0, 0), 1, QColor(0, 255, 0));
+  stats::StatisticsType skip_mode(3, "skip_mode", 0, Color(0, 0, 0), 1, Color(0, 255, 0));
   skip_mode.description = "Equal to 1 indicates that signaling of most of the mode info is skipped";
   statisticsData.addStatType(skip_mode);
 
@@ -618,11 +618,11 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(intraPredModeChroma);
 
   stats::StatisticsType paletteSizeLuma(
-      6, "palette size (Y)", 0, QColor(0, 0, 0), 255, QColor(0, 0, 255));
+      6, "palette size (Y)", 0, Color(0, 0, 0), 255, Color(0, 0, 255));
   statisticsData.addStatType(paletteSizeLuma);
 
   stats::StatisticsType paletteSizeChroma(
-      7, "palette size (U)", 0, QColor(0, 0, 0), 255, QColor(0, 0, 255));
+      7, "palette size (U)", 0, Color(0, 0, 0), 255, Color(0, 0, 255));
   statisticsData.addStatType(paletteSizeChroma);
 
   stats::StatisticsType intraAngleDeltaLuma(8, "intra angle delta (Y)", "col3_bblg", -3, 4);
@@ -674,7 +674,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   stats::StatisticsType wedgeIndex(17, "wedge index", "jet", 0, 16);
   statisticsData.addStatType(wedgeIndex);
 
-  stats::StatisticsType maskSign(18, "mask sign", 0, QColor(0, 0, 0), 1, QColor(0, 255, 255));
+  stats::StatisticsType maskSign(18, "mask sign", 0, Color(0, 0, 0), 1, Color(0, 255, 255));
   statisticsData.addStatType(maskSign);
 
   stats::StatisticsType interMode(19, "inter mode", "jet", 0, 7);
@@ -682,7 +682,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(interMode);
 
   stats::StatisticsType drlIndex(
-      20, "dynamic reference list index", 0, QColor(0, 0, 0), 16, QColor(0, 255, 255));
+      20, "dynamic reference list index", 0, Color(0, 0, 0), 16, Color(0, 255, 255));
   statisticsData.addStatType(drlIndex);
 
   stats::StatisticsType interintraType(21, "inter-intra type", "jet", 0, 2);

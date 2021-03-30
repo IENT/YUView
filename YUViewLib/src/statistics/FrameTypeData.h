@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <QColor>
 #include <QPoint>
 #include <QPolygon>
 

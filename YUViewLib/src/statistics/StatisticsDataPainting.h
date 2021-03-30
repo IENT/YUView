@@ -32,55 +32,13 @@
 
 #pragma once
 
-#include "FrameTypeData.h"
-#include "StatisticsType.h"
+#include "StatisticsData.h"
 
-#include <QPainter>
-#include <QSize>
-#include <map>
-#include <mutex>
-#include <vector>
+class QPainter;
 
 namespace stats
 {
 
-using StatisticsTypesVec = std::vector<StatisticsType>;
+void paintStatisticsData(QPainter *painter, stats::StatisticsData &statisticsData, int frameIndex, double zoomFactor);
 
-class StatisticsData
-{
-public:
-  StatisticsData() = default;
-
-  FrameTypeData      getFrameTypeData(int typeId);
-  QSize              getFrameSize() const { return this->frameSize; }
-  int                getFrameIndex() const { return this->frameIdx; }
-  itemLoadingState   needsLoading(int frameIndex) const;
-  std::vector<int>   getTypesThatNeedLoading() const;
-  QStringPairList    getValuesAt(const QPoint &pos) const;
-  StatisticsTypesVec getStatisticsTypes() const { return this->statsTypes; }
-  bool               hasDataForTypeID(int typeID) { return this->frameCache.count(typeID) > 0; }
-
-  void clear();
-  void setFrameSize(QSize size) { this->frameSize = size; }
-  void setFrameIndex(int frameIndex);
-  void addStatType(const StatisticsType &type);
-
-  void savePlaylist(YUViewDomElement &root) const;
-  void loadPlaylist(const YUViewDomElement &root);
-
-  FrameTypeData &operator[](int typeID) { return this->frameCache[typeID]; }
-  FrameTypeData &at(int typeID) { return this->frameCache[typeID]; }
-
-  mutable std::mutex accessMutex;
-
-private:
-  // cache of the statistics for the current POC [statsTypeID]
-  std::map<int, FrameTypeData> frameCache;
-  int                          frameIdx{-1};
-
-  QSize              frameSize;
-  
-  StatisticsTypesVec statsTypes;
-};
-
-} // namespace stats
+}

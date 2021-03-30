@@ -41,6 +41,7 @@
 
 #include "common/YUViewDomElement.h"
 #include "common/functions.h"
+#include "statistics/StatisticsDataPainting.h"
 #include "statistics/StatisticsFileCSV.h"
 #include "statistics/StatisticsFileVTMBMS.h"
 
@@ -86,7 +87,7 @@ infoData playlistItemStatisticsFile::getInfo() const
 {
   if (this->file)
     return this->file->getInfo();
-  
+
   infoData info("Statistics File info");
   info.items.append(infoItem("File", "No file loaded"));
   return info;
@@ -141,7 +142,7 @@ void playlistItemStatisticsFile::drawItem(QPainter *painter,
                                           bool      drawRawData)
 {
   Q_UNUSED(drawRawData);
-  this->statisticsData.paintStatistics(painter, frameIdx, zoomFactor);
+  stats::paintStatisticsData(painter, this->statisticsData, frameIdx, zoomFactor);
   this->currentDrawnFrameIdx = frameIdx;
 }
 
@@ -220,7 +221,7 @@ void playlistItemStatisticsFile::getSupportedFileExtensions(QStringList &allExte
 void playlistItemStatisticsFile::onPOCParser(int poc)
 {
   if (poc == this->currentDrawnFrameIdx)
-    emit signalItemChanged(true, RECACHE_NONE); 
+    emit signalItemChanged(true, RECACHE_NONE);
 }
 
 void playlistItemStatisticsFile::createPropertiesWidget()
@@ -265,7 +266,10 @@ void playlistItemStatisticsFile::openStatisticsFile()
   else
     assert(false);
 
-  connect(this->file.get(), &stats::StatisticsFileBase::readPOC, this, &playlistItemStatisticsFile::onPOCParser);
+  connect(this->file.get(),
+          &stats::StatisticsFileBase::readPOC,
+          this,
+          &playlistItemStatisticsFile::onPOCParser);
 
   // Run the parsing of the file in the background
   this->timer.start(1000, this);

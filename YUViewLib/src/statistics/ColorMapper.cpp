@@ -32,7 +32,9 @@
 
 #include "ColorMapper.h"
 
+#include <QStringList>
 #include <random>
+
 
 namespace stats
 {
@@ -65,18 +67,18 @@ ColorMapper::ColorMapper()
 {
   rangeMin      = 0;
   rangeMax      = 0;
-  colorMapOther = Qt::black;
+  colorMapOther = {};
   mappingType   = MappingType::none;
 }
 
 // Setup a color mapper with a gradient
-ColorMapper::ColorMapper(int min, const QColor &colMin, int max, const QColor &colMax)
+ColorMapper::ColorMapper(int min, const Color &colMin, int max, const Color &colMax)
 {
   rangeMin      = min;
   rangeMax      = max;
   minColor      = colMin;
   maxColor      = colMax;
-  colorMapOther = Qt::black;
+  colorMapOther = {};
   mappingType   = MappingType::gradient;
 }
 
@@ -95,10 +97,10 @@ ColorMapper::ColorMapper(const QString &rangeName, int min, int max)
     rangeMax    = 0;
     mappingType = MappingType::none;
   }
-  colorMapOther = Qt::black;
+  colorMapOther = {};
 }
 
-QColor ColorMapper::getColor(int value) const
+Color ColorMapper::getColor(int value) const
 {
   if (mappingType == MappingType::map)
   {
@@ -113,7 +115,7 @@ QColor ColorMapper::getColor(int value) const
   }
 }
 
-QColor ColorMapper::getColor(float value) const
+Color ColorMapper::getColor(float value) const
 {
   if (mappingType == MappingType::map)
     // Round and use the integer value to get the value from the map
@@ -131,19 +133,15 @@ QColor ColorMapper::getColor(float value) const
     float valScaled = (value - rangeMin) / (rangeMax - rangeMin);
 
     unsigned char retR =
-        minColor.red() +
-        (unsigned char)(floor(valScaled * (float)(maxColor.red() - minColor.red()) + 0.5f));
+        minColor.R() + (unsigned char)(floor(valScaled * (float)(maxColor.R() - minColor.R()) + 0.5f));
     unsigned char retG =
-        minColor.green() +
-        (unsigned char)(floor(valScaled * (float)(maxColor.green() - minColor.green()) + 0.5f));
+        minColor.G() + (unsigned char)(floor(valScaled * (float)(maxColor.G() - minColor.G()) + 0.5f));
     unsigned char retB =
-        minColor.blue() +
-        (unsigned char)(floor(valScaled * (float)(maxColor.blue() - minColor.blue()) + 0.5f));
+        minColor.B() + (unsigned char)(floor(valScaled * (float)(maxColor.B() - minColor.B()) + 0.5f));
     unsigned char retA =
-        minColor.alpha() +
-        (unsigned char)(floor(valScaled * (float)(maxColor.alpha() - minColor.alpha()) + 0.5f));
+        minColor.A() + (unsigned char)(floor(valScaled * (float)(maxColor.A() - minColor.A()) + 0.5f));
 
-    return QColor(retR, retG, retB, retA);
+    return Color(retR, retG, retB, retA);
   }
   else if (mappingType == MappingType::complex)
   {
@@ -492,10 +490,10 @@ QColor ColorMapper::getColor(float value) const
     unsigned char retB = (unsigned char)(floor(b * 255.0f + 0.5f));
     unsigned char retA = (unsigned char)(floor(a * 255.0f + 0.5f));
 
-    return QColor(retR, retG, retB, retA);
+    return Color(retR, retG, retB, retA);
   }
 
-  return QColor();
+  return {};
 }
 
 int ColorMapper::getMinVal() const

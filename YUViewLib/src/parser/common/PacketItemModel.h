@@ -71,7 +71,6 @@ private:
 
   unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
 
-  static QList<QColor> streamIndexColors;
   bool useColorCoding { true };
   bool showVideoOnly  { false };
 };

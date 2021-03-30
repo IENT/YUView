@@ -50,6 +50,7 @@
 #include "parser/HEVC/AnnexBHEVC.h"
 #include "parser/VVC/AnnexBVVC.h"
 #include "parser/common/SubByteReaderLogging.h"
+#include "statistics/StatisticsDataPainting.h"
 #include "video/videoHandlerYUV.h"
 #include "video/videoHandlerRGB.h"
 #include "ui/mainwindow.h"
@@ -467,7 +468,7 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter, int frameIdx, doub
   else if (frameIdx >= range.first && frameIdx <= range.second)
   {
     video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
-    this->statisticsData.paintStatistics(painter, frameIdx, zoomFactor);
+    stats::paintStatisticsData(painter, this->statisticsData, frameIdx, zoomFactor);
   }
 }
 

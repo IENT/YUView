@@ -32,55 +32,36 @@
 
 #pragma once
 
-#include "FrameTypeData.h"
-#include "StatisticsType.h"
+#include <string>
 
-#include <QPainter>
-#include <QSize>
-#include <map>
-#include <mutex>
-#include <vector>
-
-namespace stats
-{
-
-using StatisticsTypesVec = std::vector<StatisticsType>;
-
-class StatisticsData
+class Color
 {
 public:
-  StatisticsData() = default;
+  Color() = default;
+  Color(std::string name);
+  Color(int R, int G, int B, int A = -1);
 
-  FrameTypeData      getFrameTypeData(int typeId);
-  QSize              getFrameSize() const { return this->frameSize; }
-  int                getFrameIndex() const { return this->frameIdx; }
-  itemLoadingState   needsLoading(int frameIndex) const;
-  std::vector<int>   getTypesThatNeedLoading() const;
-  QStringPairList    getValuesAt(const QPoint &pos) const;
-  StatisticsTypesVec getStatisticsTypes() const { return this->statsTypes; }
-  bool               hasDataForTypeID(int typeID) { return this->frameCache.count(typeID) > 0; }
+  int R() const { return this->values[0]; }
+  int G() const { return this->values[1]; }
+  int B() const { return this->values[2]; }
+  int A() const { return this->values[3]; }
+  int alpha() const { return this->values[3]; }
 
-  void clear();
-  void setFrameSize(QSize size) { this->frameSize = size; }
-  void setFrameIndex(int frameIndex);
-  void addStatType(const StatisticsType &type);
+  void setAlpha(int alpha) { this->values[3] = alpha; }
 
-  void savePlaylist(YUViewDomElement &root) const;
-  void loadPlaylist(const YUViewDomElement &root);
+  std::string toHex() const;
 
-  FrameTypeData &operator[](int typeID) { return this->frameCache[typeID]; }
-  FrameTypeData &at(int typeID) { return this->frameCache[typeID]; }
-
-  mutable std::mutex accessMutex;
+  bool operator!=(const Color &other) const
+  {
+    return values[0] != other.values[0] || values[1] != other.values[1] ||
+           values[2] != other.values[2] || values[3] != other.values[3];
+  }
+  bool operator==(const Color &other) const
+  {
+    return values[0] == other.values[0] && values[1] == other.values[1] &&
+           values[2] == other.values[2] && values[3] == other.values[3];
+  }
 
 private:
-  // cache of the statistics for the current POC [statsTypeID]
-  std::map<int, FrameTypeData> frameCache;
-  int                          frameIdx{-1};
-
-  QSize              frameSize;
-  
-  StatisticsTypesVec statsTypes;
+  int values[4]{0, 0, 0, -1};
 };
-
-} // namespace stats

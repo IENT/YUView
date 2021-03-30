@@ -32,7 +32,8 @@
 
 #pragma once
 
-#include <QColor>
+#include "common/Color.h"
+
 #include <QString>
 #include <map>
 
@@ -52,22 +53,22 @@ class ColorMapper
 {
 public:
   ColorMapper();
-  ColorMapper(int min, const QColor &colMin, int max, const QColor &colMax);
+  ColorMapper(int min, const Color &colMin, int max, const Color &colMax);
   ColorMapper(const QString &rangeName, int min, int max);
 
-  QColor getColor(int value) const;
-  QColor getColor(float value) const;
-  int    getMinVal() const;
-  int    getMaxVal() const;
+  Color getColor(int value) const;
+  Color getColor(float value) const;
+  int   getMinVal() const;
+  int   getMaxVal() const;
 
   // ID: 0:colorMapperGradient, 1:colorMapperMap, 2+:ColorMapperComplex
   int getID() const;
 
-  int               rangeMin, rangeMax;
-  QColor            minColor, maxColor;
-  std::map<int, QColor> colorMap;      // Each int is mapped to a specific color
-  QColor            colorMapOther; // All other values are mapped to this color
-  QString           complexType;
+  int                  rangeMin, rangeMax;
+  Color                minColor, maxColor;
+  std::map<int, Color> colorMap;      // Each int is mapped to a specific color
+  Color                colorMapOther; // All other values are mapped to this color
+  QString              complexType;
 
   // Two colorMappers are identical if they will return the same color when asked for any value.
   // When changing the type of one of the mappers, this might not be true anymore.
@@ -86,4 +87,4 @@ public:
   static QStringList supportedComplexTypes;
 };
 
-}
+} // namespace stats

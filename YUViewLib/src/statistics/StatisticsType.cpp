@@ -105,9 +105,9 @@ StatisticsType::StatisticsType(int            typeID,
 StatisticsType::StatisticsType(int            typeID,
                                const QString &typeName,
                                int            cRangeMin,
-                               const QColor & cRangeMinColor,
+                               const Color &  cRangeMinColor,
                                int            cRangeMax,
-                               const QColor & cRangeMaxColor,
+                               const Color &  cRangeMaxColor,
                                bool           hasAndRenderVectorData)
     : StatisticsType(typeID, typeName)
 {
@@ -200,9 +200,11 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
     if (colorMapper.mappingType == ColorMapper::MappingType::gradient)
     {
       if (init.colorMapper.minColor != colorMapper.minColor)
-        newChild.setAttribute("colorMapperMinColor", colorMapper.minColor.name());
+        newChild.setAttribute("colorMapperMinColor",
+                              QString::fromStdString(colorMapper.minColor.toHex()));
       if (init.colorMapper.maxColor != colorMapper.maxColor)
-        newChild.setAttribute("colorMapperMaxColor", colorMapper.maxColor.name());
+        newChild.setAttribute("colorMapperMaxColor",
+                              QString::fromStdString(colorMapper.maxColor.toHex()));
     }
     if (colorMapper.mappingType == ColorMapper::MappingType::gradient ||
         colorMapper.mappingType == ColorMapper::MappingType::complex)
@@ -218,7 +220,8 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
       {
         // Append the whole color map
         for (auto &[key, value] : colorMapper.colorMap)
-          newChild.setAttribute(QString("colorMapperMapValue%1").arg(key), value.name());
+          newChild.setAttribute(QString("colorMapperMapValue%1").arg(key),
+                                QString::fromStdString(value.toHex()));
       }
     }
   }
@@ -268,17 +271,17 @@ void StatisticsType::loadPlaylist(const YUViewDomElement &root)
     else if (attributes[i].first == "colorMapperType")
       colorMapper.mappingType = ColorMapper::MappingType(attributes[i].second.toInt());
     else if (attributes[i].first == "colorMapperMinColor")
-      colorMapper.minColor = QColor(attributes[i].second);
+      colorMapper.minColor = Color(attributes[i].second.toStdString());
     else if (attributes[i].first == "colorMapperMaxColor")
-      colorMapper.maxColor = QColor(attributes[i].second);
+      colorMapper.maxColor = Color(attributes[i].second.toStdString());
     else if (attributes[i].first == "colorMapperRangeMin")
       colorMapper.rangeMin = attributes[i].second.toInt();
     else if (attributes[i].first == "colorMapperRangeMax")
       colorMapper.rangeMax = attributes[i].second.toInt();
     else if (attributes[i].first.startsWith("colorMapperMapValue"))
     {
-      int    key   = attributes[i].first.mid(19).toInt();
-      QColor value = QColor(attributes[i].second);
+      auto key                  = attributes[i].first.mid(19).toInt();
+      auto value                = Color(attributes[i].second.toStdString());
       colorMapper.colorMap[key] = value;
     }
     else if (attributes[i].first == "renderVectorData")
@@ -329,4 +332,4 @@ QString StatisticsType::getMappedValue(int typeID) const
   return this->valMap.at(typeID);
 }
 
-}
+} // namespace stats
