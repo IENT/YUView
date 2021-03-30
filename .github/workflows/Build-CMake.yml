@@ -129,7 +129,8 @@ jobs:
         cd build
         cmake  -DCMAKE_PREFIX_PATH=/opt/Qt/6.0.2 ..
         make -j 2
-        make test
+        sleep 5s
+        VERBOSE=1 make test
 #     - name: Build App (Mac)
 #       run: |
 #         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
