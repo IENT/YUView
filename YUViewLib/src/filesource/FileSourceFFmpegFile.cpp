@@ -74,7 +74,7 @@ AVPacketWrapper FileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool vi
   return pkt;
 }
 
-QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, uint64_t *pts)
+QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, int64_t *pts)
 {
   if (getLastDataAgain)
     return lastReturnArray;
