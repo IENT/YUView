@@ -69,7 +69,7 @@ public:
    * from the bitstream using these functions. The important thing is to not mix calls to these functions.
    */
   // Get the next NAL unit (everything excluding the start code) or the next packet.
-  QByteArray getNextUnit(bool getLastDataAgain=false, uint64_t *pts=nullptr);
+  QByteArray getNextUnit(bool getLastDataAgain=false, int64_t *pts=nullptr);
   // Return the next packet (unless getLastPackage is set in which case we return the current packet)
   AVPacketWrapper getNextPacket(bool getLastPackage=false, bool videoPacket=true);
   // Return the raw extradata/metadata (in avformat format containing the parameter sets)

@@ -1353,7 +1353,7 @@ AVDictionaryWrapper FFmpegVersionHandler::getMetadata(AVFrameWrapper &frame)
   return AVDictionaryWrapper(dict);
 }
 
-int FFmpegVersionHandler::seekFrame(AVFormatContextWrapper & fmt, int stream_idx, int dts)
+int FFmpegVersionHandler::seekFrame(AVFormatContextWrapper & fmt, int stream_idx, int64_t dts)
 {
   int ret = lib.av_seek_frame(fmt.getFormatCtx(), stream_idx, dts, AVSEEK_FLAG_BACKWARD);
   return ret;
