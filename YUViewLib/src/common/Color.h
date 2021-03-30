@@ -46,6 +46,7 @@ public:
   int B() const { return this->values[2]; }
   int A() const { return this->values[3]; }
   int alpha() const { return this->values[3]; }
+  int gray() const;
 
   void setAlpha(int alpha) { this->values[3] = alpha; }
 

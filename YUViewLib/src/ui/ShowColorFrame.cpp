@@ -32,6 +32,8 @@
 
 #include "showColorFrame.h"
 
+#include "common/functions.h"
+
 #include <QPainter>
 
 ShowColorWidget::ShowColorWidget(QWidget *parent) : QFrame(parent)
@@ -108,12 +110,12 @@ void ShowColorWidget::paintEvent(QPaintEvent *event)
       float xRel   = (float)x / (drawRect.right() - drawRect.left()); // 0...1
       float xRange = minVal + (maxVal - minVal) * xRel;
 
-      QColor c = colMapper.getColor(xRange);
+      auto c = colMapper.getColor(xRange);
       if (isEnabled())
-        painter.setPen(c);
+        painter.setPen(functions::convertToQColor(c));
       else
       {
-        int gray = 64 + qGray(c.rgb()) / 2;
+        auto gray = 64 + c.gray() / 2;
         painter.setPen(QColor(gray, gray, gray));
       }
       // Draw the line

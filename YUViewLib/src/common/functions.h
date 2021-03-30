@@ -42,6 +42,7 @@ namespace functions
 {
 
 QColor convertToQColor(Color color);
+Color  fromQColor(QColor color);
 
 QString getInputFormatName(YUView::inputFormat i);
 YUView::inputFormat getInputFormatFromName(QString name);

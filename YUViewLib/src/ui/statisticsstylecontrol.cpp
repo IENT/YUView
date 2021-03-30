@@ -51,11 +51,11 @@ namespace
 #define DEBUG_STAT_STYLE(fmt, ...) ((void)0)
 #endif
 
-const QList<Qt::PenStyle> penStyleList =
-    QList<Qt::PenStyle>() << Qt::SolidLine << Qt::DashLine << Qt::DotLine << Qt::DashDotLine
-                          << Qt::DashDotDotLine;
+const QList<Qt::PenStyle> penStyleList = QList<Qt::PenStyle>()
+                                         << Qt::SolidLine << Qt::DashLine << Qt::DotLine
+                                         << Qt::DashDotLine << Qt::DashDotDotLine;
 
-}
+} // namespace
 
 StatisticsStyleControl::StatisticsStyleControl(QWidget *parent)
     : QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
@@ -97,10 +97,12 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
       // Enable/setup the controls for the minimum and maximum color
       ui.frameMinColor->setEnabled(true);
       ui.pushButtonEditMinColor->setEnabled(true);
-      ui.frameMinColor->setPlainColor(currentItem->colorMapper.minColor);
+      ui.frameMinColor->setPlainColor(
+          functions::convertToQColor(currentItem->colorMapper.minColor));
       ui.frameMaxColor->setEnabled(true);
       ui.pushButtonEditMaxColor->setEnabled(true);
-      ui.frameMaxColor->setPlainColor(currentItem->colorMapper.maxColor);
+      ui.frameMaxColor->setPlainColor(
+          functions::convertToQColor(currentItem->colorMapper.maxColor));
     }
     else
     {
@@ -182,8 +184,10 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
     currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::gradient;
     currentItem->colorMapper.rangeMin    = ui.spinBoxRangeMin->value();
     currentItem->colorMapper.rangeMax    = ui.spinBoxRangeMax->value();
-    currentItem->colorMapper.minColor    = ui.frameMinColor->getPlainColor();
-    currentItem->colorMapper.maxColor    = ui.frameMaxColor->getPlainColor();
+
+    auto plainColor                   = functions::fromQColor(ui.frameMinColor->getPlainColor());
+    currentItem->colorMapper.minColor = plainColor;
+    currentItem->colorMapper.maxColor = plainColor;
   }
   else if (index == 1)
     // A map is selected
@@ -205,14 +209,16 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
 
 void StatisticsStyleControl::on_frameMinColor_clicked()
 {
-  QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(),
-                                           this,
-                                           tr("Select color range minimum"),
-                                           QColorDialog::ShowAlphaChannel);
-  if (newColor.isValid() && currentItem->colorMapper.minColor != newColor)
+  QColor newQColor = QColorDialog::getColor(currentItem->gridPen.color(),
+                                            this,
+                                            tr("Select color range minimum"),
+                                            QColorDialog::ShowAlphaChannel);
+
+  Color newColor = functions::fromQColor(newQColor);
+  if (newQColor.isValid() && currentItem->colorMapper.minColor != newColor)
   {
     currentItem->colorMapper.minColor = newColor;
-    ui.frameMinColor->setPlainColor(newColor);
+    ui.frameMinColor->setPlainColor(newQColor);
     ui.frameDataColor->setColorMapper(currentItem->colorMapper);
     emit StyleChanged();
   }
@@ -220,14 +226,16 @@ void StatisticsStyleControl::on_frameMinColor_clicked()
 
 void StatisticsStyleControl::on_frameMaxColor_clicked()
 {
-  QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(),
-                                           this,
-                                           tr("Select color range maximum"),
-                                           QColorDialog::ShowAlphaChannel);
-  if (newColor.isValid() && currentItem->colorMapper.maxColor != newColor)
+  QColor newQColor = QColorDialog::getColor(currentItem->gridPen.color(),
+                                            this,
+                                            tr("Select color range maximum"),
+                                            QColorDialog::ShowAlphaChannel);
+
+  Color newColor = functions::fromQColor(newQColor);
+  if (newQColor.isValid() && currentItem->colorMapper.maxColor != newColor)
   {
     currentItem->colorMapper.maxColor = newColor;
-    ui.frameMaxColor->setPlainColor(newColor);
+    ui.frameMaxColor->setPlainColor(newQColor);
     ui.frameDataColor->setColorMapper(currentItem->colorMapper);
     emit StyleChanged();
   }
@@ -235,8 +243,8 @@ void StatisticsStyleControl::on_frameMaxColor_clicked()
 
 void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
 {
-  std::map<int, QColor> colorMap;
-  QColor                otherColor = currentItem->colorMapper.colorMapOther;
+  std::map<int, Color> colorMap;
+  auto                 otherColor = currentItem->colorMapper.colorMapOther;
 
   if (currentItem->colorMapper.mappingType == stats::ColorMapper::MappingType::map)
     // Edit the currently set color map
@@ -252,8 +260,7 @@ void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
       colorMap[i] = currentItem->colorMapper.getColor(i);
   }
 
-  auto *colorMapEditor =
-      new StatisticsStyleControl_ColorMapEditor(colorMap, otherColor, this);
+  auto *colorMapEditor = new StatisticsStyleControl_ColorMapEditor(colorMap, otherColor, this);
   if (colorMapEditor->exec() == QDialog::Accepted)
   {
     // Set the new color map

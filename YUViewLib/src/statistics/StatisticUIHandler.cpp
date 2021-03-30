@@ -83,7 +83,7 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
 
   // Add the controls to the gridLayer
   auto statTypes = this->statisticsData->getStatisticsTypes();
-  for (size_t row = 0; row < statTypes.size(); ++row)
+  for (unsigned row = 0; row < statTypes.size(); ++row)
   {
     auto &statType = statTypes.at(row);
 
@@ -120,7 +120,7 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
 
   // Add a spacer at the very bottom
   QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
-  ui.gridLayout->addItem(verticalSpacer, statTypes.size() + 2, 0, 1, 1);
+  ui.gridLayout->addItem(verticalSpacer, int(statTypes.size() + 2), 0, 1, 1);
   spacerItems[0] = verticalSpacer;
 
   // Update all controls
@@ -149,7 +149,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
 
     // Add the controls to the gridLayer
     auto statTypes = this->statisticsData->getStatisticsTypes();
-    for (size_t row = 0; row < statTypes.size(); ++row)
+    for (unsigned row = 0; row < statTypes.size(); ++row)
     {
       auto &statType = statTypes.at(row);
 
@@ -190,7 +190,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
     {
       QSpacerItem *verticalSpacer =
           new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
-      ui2.gridLayout->addItem(verticalSpacer, statTypes.size() + 2, 0, 1, 1);
+      ui2.gridLayout->addItem(verticalSpacer, int(statTypes.size() + 2), 0, 1, 1);
       spacerItems[1] = verticalSpacer;
     }
 

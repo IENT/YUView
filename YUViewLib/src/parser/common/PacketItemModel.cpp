@@ -33,6 +33,8 @@
 #include "PacketItemModel.h"
 
 #include "common/typedef.h"
+#include "common/Color.h"
+#include "common/functions.h"
 
 #include <QBrush>
 
@@ -83,7 +85,7 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
   if (role == Qt::ForegroundRole)
   {
     if (item->isError())
-      return QVariant(QBrush(Color(255, 0, 0)));
+      return QVariant(QBrush(QColor(255, 0, 0)));
     return QVariant(QBrush());
   }
   if (role == Qt::BackgroundRole)
@@ -92,7 +94,7 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
       return QVariant(QBrush());
     const int idx = item->getStreamIndex();
     if (idx >= 0)
-      return QVariant(QBrush(streamIndexColors.at(idx % streamIndexColors.length())));
+      return QVariant(QBrush(functions::convertToQColor(streamIndexColors.at(idx % streamIndexColors.size()))));
     return QVariant(QBrush());
   }
   else if (role == Qt::DisplayRole || role == Qt::ToolTipRole)

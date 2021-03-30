@@ -54,6 +54,13 @@ QColor functions::convertToQColor(Color color)
   return QColor(color.R(), color.G(), color.B(), color.A());
 }
 
+Color functions::fromQColor(QColor color)
+{
+  if (color.alpha() == 255)
+    return Color(color.red(), color.green(), color.blue());
+  return Color(color.red(), color.green(), color.blue(), color.alpha());
+}
+
 bool functions::isInputFormatTypeAnnexB(inputFormat format) 
 { 
     return format == inputAnnexBHEVC || format == inputAnnexBVVC || format == inputAnnexBAVC; 

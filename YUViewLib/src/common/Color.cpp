@@ -49,6 +49,11 @@ Color::Color(std::string name)
   }
 }
 
+int Color::gray() const
+{
+  return (this->values[0] * 11 + this->values[1] * 16 + this->values[1] * 5) / 32;
+}
+
 std::string Color::toHex() const
 {
   std::stringstream stream;
@@ -59,7 +64,7 @@ std::string Color::toHex() const
   return stream.str();
 }
 
-Color::Color(int R, int G, int B, int A = -1)
+Color::Color(int R, int G, int B, int A)
 {
   this->values[0] = R;
   this->values[1] = G;
