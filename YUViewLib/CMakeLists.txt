@@ -34,7 +34,7 @@ file (GLOB RSC_FILES
 )
 
 add_library( YUViewLib STATIC ${SRC_FILES}  ${INC_FILES} ${FORMS_FILES}  ${RSC_FILES} )
-target_link_libraries( YUViewLib
+target_link_libraries( YUViewLib PRIVATE
     Qt6::Gui
     Qt6::Widgets
     Qt6::OpenGL
