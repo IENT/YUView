@@ -1,0 +1,77 @@
+name: CI build with CMake
+
+on:
+  push:
+  release:
+    types:
+      - created
+
+jobs:
+
+  build-unix-qt5:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-20.04
+            # QT_FILE: qtBase_5.15.1_bionic.zip
+            LIBDE265_REMOTE: libde265.so
+            LIBDE265_LOCAL: libde265-internals.so
+    steps:
+    - uses: actions/checkout@v2
+    - run: git fetch --prune --unshallow
+
+    - name: Install Linux packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev
+      if: matrix.os == 'ubuntu-20.04'
+
+    - name: Cache Qt base
+      id: cache-qt-base
+      uses: actions/cache@v2
+      with:
+        path: /opt/Qt/5.15.2
+        key: ${{ matrix.os }}-qt5-base
+
+    - name: Install Qt base
+      if: steps.cache-qt-base.outputs.cache-hit != 'true'
+      run: |
+        cd ../../
+        mkdir -p YUViewQt/YUViewQt
+        cd YUViewQt/YUViewQt
+        curl -L http://download.qt.io/official_releases/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.zip -o Qt.zip
+
+        unzip -qa Qt.zip
+        mkdir qt5-build
+        cd qt5-build
+        cmake  -DCMAKE_INSTALL_PREFIX=/opt/Qt/5.15.2 -DFEATURE_lcdnumber=OFF ../qtbase-everywhere-src-5.15.2
+        cmake --build .
+        cmake --install .
+      shell: bash
+
+    - name: Install libde265
+      run: |
+        curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
+        curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+      shell: bash
+
+    - name: Build Linux/Mac
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir build
+        cd build
+        cmake  -DCMAKE_PREFIX_PATH=/opt/Qt/5.15.2 ..
+        cmake --build . --parallel $(nproc)
+
+    - name: Run unit tests
+      run: |
+        cd $GITHUB_WORKSPACE/build
+        ctest --output-on-failure --debug --extra-verbose
+        # ctest --output-on-failure --debug --extra-verbose
+
+
+  # How to upload files to the release:
+  # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
+  # Mime type list
+  # https://www.iana.org/assignments/media-types/media-types.xhtml
