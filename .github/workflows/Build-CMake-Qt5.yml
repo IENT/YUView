@@ -31,8 +31,8 @@ jobs:
       id: cache-qt-base
       uses: actions/cache@v2
       with:
-        path: /opt/Qt/5.15.2
-        key: ${{ matrix.os }}-qt5-base
+        path:  /usr/local/Qt-5.15.2
+        key: ${{ matrix.os }}-qt5.15.2-base
 
     - name: Install Qt base
       if: steps.cache-qt-base.outputs.cache-hit != 'true'
@@ -43,7 +43,7 @@ jobs:
         curl -L http://download.qt.io/official_releases/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz -o Qt.tar.xz
         tar xJf Qt.tar.xz
         cd qt-everywhere-src-5.15.2
-        ./configure -prefix /opt/Qt/5.12.2 -opensource  -nomake tests  -nomake examples   -confirm-license  -release
+        ./configure  -opensource  -nomake tests  -nomake examples   -confirm-license  -release
         make -j $(nproc)
         make install                
       shell: bash
@@ -54,19 +54,19 @@ jobs:
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
       shell: bash
 
-    - name: Build Linux/Mac
-      run: |
-        cd $GITHUB_WORKSPACE
-        mkdir build
-        cd build
-        cmake  -DCMAKE_PREFIX_PATH=/opt/Qt/5.15.2 ..
-        cmake --build . --parallel $(nproc)
+#     - name: Build Linux/Mac
+#       run: |
+#         cd $GITHUB_WORKSPACE
+#         mkdir build
+#         cd build
+#         cmake  -DCMAKE_PREFIX_PATH=/opt/Qt/5.15.2 ..
+#         cmake --build . --parallel $(nproc)
 
-    - name: Run unit tests
-      run: |
-        cd $GITHUB_WORKSPACE/build
-        ctest --output-on-failure --debug --extra-verbose
-        # ctest --output-on-failure --debug --extra-verbose
+#     - name: Run unit tests
+#       run: |
+#         cd $GITHUB_WORKSPACE/build
+#         ctest --output-on-failure --debug --extra-verbose
+#         # ctest --output-on-failure --debug --extra-verbose
 
 
   # How to upload files to the release:
