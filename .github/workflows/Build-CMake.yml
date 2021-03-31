@@ -128,16 +128,13 @@ jobs:
         mkdir build
         cd build
         cmake  -DCMAKE_PREFIX_PATH=/opt/Qt/6.0.2 ..
-        cmake --build . 
-#         VERBOSE=1 make test
+        cmake --build . --parallel $(nproc)
+        
     - name: Run unit tests
-      uses: HorstBaerbel/action-ctest@1.0
-      # These are optional (defaults displayed)
-      with:
-        sourcedir: '.'
-        builddir: 'build'
-        cmakeoptions: '--config Release'
-        ctestoptions: '--debug --extra-verbose'
+      run: |
+        cd $GITHUB_WORKSPACE
+        cd build
+        ctest --output-on-failure --debug --extra-verbose
 #     - name: Build App (Mac)
 #       run: |
 #         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
