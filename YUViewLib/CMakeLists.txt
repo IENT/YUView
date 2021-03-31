@@ -16,7 +16,19 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS "ui")
 
-find_package(Qt6 COMPONENTS Gui Widgets OpenGL Xml Concurrent Network REQUIRED)
+# try to find Qt6 first
+find_package(Qt6 COMPONENTS Gui Widgets OpenGL Xml Concurrent Network)
+if (Qt6_FOUND)
+    message(STATUS "Building YUViewLib using Qt6")
+endif()
+if (NOT Qt6_FOUND)
+    # fallback: try to find Qt5
+    find_package(Qt5 COMPONENTS Gui Widgets OpenGL Xml Concurrent Network REQUIRED)
+    if (Qt5_FOUND)
+        message(STATUS "Building YUViewLib using Qt5")
+    endif()
+endif()
+
 
 # get source files
 file( GLOB_RECURSE SRC_FILES "src/*.cpp" )
@@ -35,11 +47,11 @@ file (GLOB RSC_FILES
 
 add_library( YUViewLib STATIC ${SRC_FILES}  ${INC_FILES} ${FORMS_FILES}  ${RSC_FILES} )
 target_link_libraries( YUViewLib PRIVATE
-    Qt6::Gui
-    Qt6::Widgets
-    Qt6::OpenGL
-    Qt6::Xml
-    Qt6::Concurrent
-    Qt6::Network
+    Qt::Gui
+    Qt::Widgets
+    Qt::OpenGL
+    Qt::Xml
+    Qt::Concurrent
+    Qt::Network
 )
 target_include_directories(YUViewLib PUBLIC "src")

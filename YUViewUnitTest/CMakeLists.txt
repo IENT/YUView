@@ -12,7 +12,18 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_AUTOMOC ON)
-find_package(Qt6 COMPONENTS Test REQUIRED)
+# try to find Qt6 first
+find_package(Qt6 COMPONENTS Test)
+if (Qt6_FOUND)
+    message(STATUS "Building YUViewUnitTestusing Qt6")
+endif()
+if (NOT Qt6_FOUND)
+    # fallback: try to find Qt5
+    find_package(Qt5 COMPONENTS Test REQUIRED)
+    if (Qt5_FOUND)
+        message(STATUS "Building YUViewUnitTest using Qt5")
+    endif()
+endif()
 
 enable_testing(true)
 
@@ -30,7 +41,7 @@ FOREACH(test_file_name ${TST_FILES})
     add_test(NAME ${test_base_name} COMMAND ${test_base_name})
     target_link_libraries( ${test_base_name}
         YUViewLib
-        Qt6::Test
+        Qt::Test
     )
     target_include_directories(${test_base_name}  PUBLIC "../YUViewLib/src")
 
