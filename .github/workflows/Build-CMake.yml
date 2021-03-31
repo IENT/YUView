@@ -7,34 +7,6 @@ on:
       - created
 
 jobs:
-  build-unix-native:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include: 
-          - os: ubuntu-18.04
-
-    steps:
-    - uses: actions/checkout@v2
-    - run: git fetch --prune --unshallow
-    
-    - name: Install Linux packages
-      run: |
-        sudo apt-get update
-        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
-
-    - name: Build 
-      run: |
-        cd $GITHUB_WORKSPACE
-        mkdir build
-        cd build
-        cmake ..
-        cmake --build . --parallel $(nproc)
-        
-    - name: Run unit tests
-      run: |
-        cd $GITHUB_WORKSPACE/build   
-        ctest --output-on-failure
         
   build-unix:
     runs-on: ${{ matrix.os }}
@@ -75,7 +47,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: /opt/Qt/6.0.2
-        key: ${{ matrix.os }}-qt-base
+        key: ${{ matrix.os }}-qt6-base
         
     - name: Install Qt base
       if: steps.cache-qt-base.outputs.cache-hit != 'true'
