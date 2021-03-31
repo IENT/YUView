@@ -7,28 +7,35 @@ on:
       - created
 
 jobs:
-#   build-unix-native:
-#     runs-on: ${{ matrix.os }}
-#     strategy:
-#       matrix:
-#         include: 
-#           - os: ubuntu-20.04
+  build-unix-native:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include: 
+          - os: ubuntu-18.04
 
-#     steps:
-#     - uses: actions/checkout@v2
-#     - run: git fetch --prune --unshallow
-#     - name: Install Linux packages
-#       run: |
-#         sudo apt-get update
-#         sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
-#     - name: Build
-#       run: |
-#         cd $GITHUB_WORKSPACE
-#         mkdir build
-#         cd build
-#         cmake  ..
-#         make -j 2
-#         make test 
+    steps:
+    - uses: actions/checkout@v2
+    - run: git fetch --prune --unshallow
+    
+    - name: Install Linux packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+
+    - name: Build 
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir build
+        cd build
+        cmake ..
+        cmake --build . --parallel $(nproc)
+        
+    - name: Run unit tests
+      run: |
+        cd $GITHUB_WORKSPACE/build   
+        ctest --output-on-failure
+        
   build-unix:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -124,7 +131,6 @@ jobs:
     - name: Build Linux/Mac
       run: |
         cd $GITHUB_WORKSPACE
-        export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
         mkdir build
         cd build
         cmake  -DCMAKE_PREFIX_PATH=/opt/Qt/6.0.2 ..
@@ -132,9 +138,9 @@ jobs:
         
     - name: Run unit tests
       run: |
-        cd $GITHUB_WORKSPACE
-        cd build
+        cd $GITHUB_WORKSPACE/build
         ctest --output-on-failure --debug --extra-verbose
+        # ctest --output-on-failure --debug --extra-verbose
 #     - name: Build App (Mac)
 #       run: |
 #         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
