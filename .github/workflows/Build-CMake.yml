@@ -68,7 +68,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: /opt/Qt/6.0.2
-        key: ${{ matrix.os }}-primes
+        key: ${{ matrix.os }}-qt-base
         
     - name: Install Qt base
       if: steps.cache-qt-base.outputs.cache-hit != 'true'
