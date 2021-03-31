@@ -61,7 +61,7 @@ jobs:
         mkdir qt6-build
         cd qt6-build
         cmake  -DCMAKE_INSTALL_PREFIX=/opt/Qt/6.0.2 -DFEATURE_lcdnumber=OFF ../qtbase-everywhere-src-6.0.2
-        cmake --build .
+        cmake --build . --parallel $(nproc)
         cmake --install .
     
       shell: bash
