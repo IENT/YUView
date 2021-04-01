@@ -11,22 +11,18 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # try to find Qt6 first
-find_package(Qt6 COMPONENTS Gui Widgets OpenGL Xml Concurrent Network)
+find_package(Qt6 COMPONENTS Gui Widgets OpenGL Xml Concurrent Network Test)
 if (Qt6_FOUND)
     message(STATUS "Building YUView using Qt6")
 endif()
 if (NOT Qt6_FOUND)
     # fallback: try to find Qt5
-    find_package(Qt5 COMPONENTS Gui Widgets OpenGL Xml Concurrent Network REQUIRED)
+    find_package(Qt5 COMPONENTS Gui Widgets OpenGL Xml Concurrent Network Test REQUIRED)
     if (Qt5_FOUND)
         message(STATUS "Building YUView using Qt5")
     endif()
 endif()
 
-#####################################################################################################################################
-# YUViewLib
-#####################################################################################################################################
-add_subdirectory( "YUViewLib" )
 
 #####################################################################################################################################
 # YUViewApp
@@ -47,12 +43,71 @@ target_link_libraries( YUView
 )
 target_include_directories(YUView PUBLIC
     "YUViewApp/src"
-    "YUViewLib/src"
 )
+
+
+
+#####################################################################################################################################
+# YUViewLib
+#####################################################################################################################################
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOUIC_SEARCH_PATHS "YUViewLib/ui")
+
+# get source files
+file( GLOB_RECURSE LIB_SRC_FILES "YUViewLib/src/*.cpp" )
+
+# get include files
+file( GLOB_RECURSE LIB_INC_FILES "YUViewLib/src/*.h" )
+
+# get forms, ui files
+file( GLOB LIB_FORMS_FILES "YUViewLib/ui/*.ui" )
+
+# Resources
+file (GLOB LIB_RSC_FILES
+    "YUViewLib/images/images.qrc"
+    "YUViewLib/docs/docs.qrc"
+)
+
+add_library( YUViewLib STATIC ${LIB_SRC_FILES}  ${LIB_INC_FILES} ${LIB_FORMS_FILES}  ${LIB_RSC_FILES} )
+target_link_libraries( YUViewLib PRIVATE
+    Qt::Gui
+    Qt::Widgets
+    Qt::OpenGL
+    Qt::Xml
+    Qt::Concurrent
+    Qt::Network
+)
+target_include_directories(YUViewLib PUBLIC "YUViewLib/src")
+
+
 
 
 #####################################################################################################################################
 # YUViewUnitTest
 #####################################################################################################################################
 enable_testing(true) # needs to be before add_subdirectory (or in the root CMake file?)
-add_subdirectory( "YUViewUnitTest" )
+
+set(CMAKE_AUTOMOC ON)
+
+# get all test files
+file( GLOB_RECURSE TST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "YUViewUnitTest/*.cpp" )
+
+# add a target for each test file
+FOREACH(test_file_name ${TST_FILES})
+    get_filename_component(test_base_name ${test_file_name} NAME_WE )
+
+    message( VERBOSE "Adding executable for ${test_base_name}")
+
+    list(APPEND TEST_LIST ${test_base_name})
+    add_executable( ${test_base_name}  ${test_file_name})
+    add_test(NAME ${test_base_name} COMMAND ${test_base_name})
+    target_link_libraries( ${test_base_name}
+        YUViewLib
+        Qt::Test
+    )
+    # target_include_directories(${test_base_name}  PUBLIC "YUViewLib/src") # are those not pulled by the lib dependency?
+
+ENDFOREACH()
