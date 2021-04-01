@@ -32,7 +32,7 @@ jobs:
       id: cache-qt-base
       uses: actions/cache@v2
       with:
-        path:  ${QT_PATH}
+        path:  ${{matrix.QT_PATH}}
         key: ${{ matrix.os }}-qt5.15.2-base
 
     - name: Install Qt base
@@ -42,7 +42,7 @@ jobs:
         curl -L http://download.qt.io/official_releases/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz -o Qt.tar.xz
         tar xJf Qt.tar.xz
         cd qt-everywhere-src-5.15.2
-        ./configure  -prefix ${QT_PATH} -opensource  -nomake tests  -nomake examples   -confirm-license  -release
+        ./configure  -prefix ${{matrix.QT_PATH}} -opensource  -nomake tests  -nomake examples   -confirm-license  -release
         make -j $(nproc)
         make install                
       shell: bash
