@@ -53,19 +53,19 @@ jobs:
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
       shell: bash
 
-#     - name: Build Linux/Mac
-#       run: |
-#         cd $GITHUB_WORKSPACE
-#         mkdir build
-#         cd build
-#         cmake  -DCMAKE_PREFIX_PATH=/opt/Qt/5.15.2 ..
-#         cmake --build . --parallel $(nproc)
+    - name: Build Linux/Mac
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir build
+        cd build
+        cmake  -DCMAKE_PREFIX_PATH=${{matrix.QT_PATH}} ..
+        cmake --build . --parallel $(nproc)
 
-#     - name: Run unit tests
-#       run: |
-#         cd $GITHUB_WORKSPACE/build
-#         ctest --output-on-failure --debug --extra-verbose
-#         # ctest --output-on-failure --debug --extra-verbose
+    - name: Run unit tests
+      run: |
+        cd $GITHUB_WORKSPACE/build
+        ctest --output-on-failure --debug --extra-verbose
+        # ctest --output-on-failure --debug --extra-verbose
 
 
   # How to upload files to the release:
