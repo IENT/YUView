@@ -17,6 +17,7 @@ jobs:
             # QT_FILE: qtBase_5.15.1_bionic.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
+            QT_PATH: /opt/Qt
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
@@ -31,21 +32,19 @@ jobs:
       id: cache-qt-base
       uses: actions/cache@v2
       with:
-        path:  /usr/local/Qt-5.15.2
+        path:  ${QT_PATH}
         key: ${{ matrix.os }}-qt5.15.2-base
 
     - name: Install Qt base
       if: steps.cache-qt-base.outputs.cache-hit != 'true'
       run: |
-        cd ../../
-        mkdir -p YUViewQt/YUViewQt
-        cd YUViewQt/YUViewQt        
+        cd    
         curl -L http://download.qt.io/official_releases/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz -o Qt.tar.xz
         tar xJf Qt.tar.xz
         cd qt-everywhere-src-5.15.2
-        ./configure  -opensource  -nomake tests  -nomake examples   -confirm-license  -release
+        ./configure  -prefix ${QT_PATH} -opensource  -nomake tests  -nomake examples   -confirm-license  -release
         make -j $(nproc)
-        sudo make install                
+        make install                
       shell: bash
 
     - name: Install libde265
