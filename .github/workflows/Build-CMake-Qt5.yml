@@ -45,7 +45,7 @@ jobs:
         cd qt-everywhere-src-5.15.2
         ./configure  -opensource  -nomake tests  -nomake examples   -confirm-license  -release
         make -j $(nproc)
-        make install                
+        sudo make install                
       shell: bash
 
     - name: Install libde265
