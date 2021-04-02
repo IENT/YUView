@@ -1,4 +1,4 @@
-name: CI build with CMake and Qt5
+name: CI build with CMake and Qt6
 
 on:
   push:
@@ -8,27 +8,27 @@ on:
 
 jobs:
 
-  build-unix-qt5:
+  build-unix-qt6:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-16.04
-            QT_FILE: qtBase_5.15.1_xenial.zip
+            QT_FILE: qtBase_6.0.2_xenial.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
             ARTIFACT_NAME: YUView.AppImage
           - os: ubuntu-18.04
-            QT_FILE: qtBase_5.15.1_bionic.zip
+            QT_FILE: qtBase_6.0.2_bionic.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
           - os: macos-10.15
-            QT_FILE: qtBase_5.15.1_mac.zip
+            QT_FILE: qtBase_6.0.2_mac.zip
             LIBDE265_REMOTE: libde265.dylib
             LIBDE265_LOCAL: libde265-internals.dylib
             ARTIFACT_NAME: YUView-Mac.zip
           # - os: ubuntu-20.04
-          #   QT_FILE: qtBase_5.15.1_bionic.zip
+          #   QT_FILE: qtBase_6.0.2_bionic.zip
           #   LIBDE265_REMOTE: libde265.so
           #   LIBDE265_LOCAL: libde265-internals.so
     steps:
@@ -63,7 +63,7 @@ jobs:
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/${{matrix.QT_FILE}} -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.0.2/${{matrix.QT_FILE}} -o Qt.zip
         unzip -qa Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
