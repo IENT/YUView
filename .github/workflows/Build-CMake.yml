@@ -22,10 +22,10 @@ jobs:
             QT_FILE: qtBase_6.0.2_bionic.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
-          - os: ubuntu-20.04
-            QT_FILE: qtBase_6.0.2_bionic.zip
-            LIBDE265_REMOTE: libde265.so
-            LIBDE265_LOCAL: libde265-internals.so
+          # - os: ubuntu-20.04
+          #   QT_FILE: qtBase_6.0.2_bionic.zip
+          #   LIBDE265_REMOTE: libde265.so
+          #   LIBDE265_LOCAL: libde265-internals.so
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
@@ -50,7 +50,7 @@ jobs:
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/${{matrix.QT_FILE}} -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.0.2/${{matrix.QT_FILE}} -o Qt.zip
         unzip -qa Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash

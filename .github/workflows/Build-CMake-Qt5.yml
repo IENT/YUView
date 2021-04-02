@@ -22,10 +22,10 @@ jobs:
             QT_FILE: qtBase_5.15.1_bionic.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
-          - os: ubuntu-20.04
-            QT_FILE: qtBase_5.15.1_bionic.zip
-            LIBDE265_REMOTE: libde265.so
-            LIBDE265_LOCAL: libde265-internals.so
+          # - os: ubuntu-20.04
+          #   QT_FILE: qtBase_5.15.1_bionic.zip
+          #   LIBDE265_REMOTE: libde265.so
+          #   LIBDE265_LOCAL: libde265-internals.so
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
