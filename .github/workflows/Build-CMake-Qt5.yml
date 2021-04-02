@@ -13,11 +13,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-20.04
-            # QT_FILE: qtBase_5.15.1_bionic.zip
+          - os: ubuntu-16.04
+            QT_FILE: qtBase_5.15.1_xenial.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
-            QT_PATH: /opt/Qt
+            ARTIFACT_NAME: YUView.AppImage
+          - os: ubuntu-18.04
+            QT_FILE: qtBase_5.15.1_bionic.zip
+            LIBDE265_REMOTE: libde265.so
+            LIBDE265_LOCAL: libde265-internals.so
+          - os: ubuntu-20.04
+            QT_FILE: qtBase_5.15.1_bionic.zip
+            LIBDE265_REMOTE: libde265.so
+            LIBDE265_LOCAL: libde265-internals.so
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
@@ -26,25 +34,25 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev
-      if: matrix.os == 'ubuntu-20.04'
+      if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04' || 'ubuntu-20.04'
 
-    - name: Cache Qt base
-      id: cache-qt-base
-      uses: actions/cache@v2
-      with:
-        path:  ${{matrix.QT_PATH}}
-        key: ${{ matrix.os }}-qt5.15.2-base
+    - name: Install Newer GCC Ubuntu 16.04
+      run: |
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+        sudo apt-get update
+        sudo apt-get install gcc-9 g++-9
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+        sudo update-alternatives --config gcc
+      if: matrix.os == 'ubuntu-16.04'
 
     - name: Install Qt base
-      if: steps.cache-qt-base.outputs.cache-hit != 'true'
       run: |
-        cd    
-        curl -L http://download.qt.io/official_releases/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz -o Qt.tar.xz
-        tar xJf Qt.tar.xz
-        cd qt-everywhere-src-5.15.2
-        ./configure  -prefix ${{matrix.QT_PATH}} -opensource  -nomake tests  -nomake examples   -confirm-license  -release
-        make -j $(nproc)
-        make install                
+        cd ../../
+        mkdir -p YUViewQt/YUViewQt
+        cd YUViewQt/YUViewQt
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/${{matrix.QT_FILE}} -o Qt.zip
+        unzip -qa Qt.zip
+        echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
 
     - name: Install libde265
@@ -58,7 +66,7 @@ jobs:
         cd $GITHUB_WORKSPACE
         mkdir build
         cd build
-        cmake  -DCMAKE_PREFIX_PATH=${{matrix.QT_PATH}} ..
+        cmake  -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt" ..
         cmake --build . --parallel $(nproc)
 
     - name: Run unit tests
