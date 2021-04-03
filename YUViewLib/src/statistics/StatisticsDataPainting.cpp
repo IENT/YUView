@@ -50,13 +50,41 @@ namespace
 #define DEBUG_PAINT(fmt, ...) ((void)0)
 #endif
 
+QPolygon convertToQPolygon(const stats::Polygon &poly)
+{
+  auto qPoly = QPolygon(poly.size());
+  for (int i = 0; i < poly.size(); i++)
+    qPoly.setPoint(i, QPoint(poly[i].first, poly[i].second));
+  return qPoly;
+}
+
 QPoint getPolygonCenter(const QPolygon &polygon)
 {
   auto p = QPoint(0, 0);
-  for (size_t k = 0; k < polygon.count(); k++)
+  for (int k = 0; k < polygon.count(); k++)
     p += polygon.point(k);
   p /= polygon.count();
   return p;
+}
+
+Qt::PenStyle patternToQPenStyle(stats::Pattern &pattern)
+{
+  if (pattern == stats::Pattern::Solid)
+    return Qt::SolidLine;
+  if (pattern == stats::Pattern::Dash)
+    return Qt::DashLine;
+  if (pattern == stats::Pattern::Dot)
+    return Qt::DotLine;
+  if (pattern == stats::Pattern::DashDot)
+    return Qt::DashDotLine;
+  if (pattern == stats::Pattern::DashDotDot)
+    return Qt::DashDotDotLine;
+  return Qt::SolidLine;
+}
+
+QPen styleToPen(stats::LineDrawStyle &style)
+{
+  return QPen(functions::convertToQColor(style.color), style.width, patternToQPenStyle(style.pattern));
 }
 
 void paintVector(QPainter *                   painter,
@@ -80,15 +108,16 @@ void paintVector(QPainter *                   painter,
       !(y1 > yMax && y2 > yMax))
   {
     // Set the pen for drawing
-    auto vectorPen  = statisticsType.vectorPen;
-    auto arrowColor = vectorPen.color();
+    auto vectorStyle  = statisticsType.vectorStyle;
+    auto arrowColor = functions::convertToQColor(vectorStyle.color);
     if (statisticsType.mapVectorToColor)
       arrowColor.setHsvF(clip((atan2f(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
     arrowColor.setAlpha(arrowColor.alpha() * ((float)statisticsType.alphaFactor / 100.0));
-    vectorPen.setColor(arrowColor);
+    
     if (statisticsType.scaleVectorToZoom)
-      vectorPen.setWidthF(vectorPen.widthF() * zoomFactor / 8);
-    painter->setPen(vectorPen);
+      vectorStyle.width = vectorStyle.width * zoomFactor / 8;
+    
+    painter->setPen(QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
     painter->setBrush(arrowColor);
 
     // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or
@@ -109,11 +138,11 @@ void paintVector(QPainter *                   painter,
                 ? 8
                 : zoomFactor / 2;
 
-        if (statisticsType.arrowHead != stats::StatisticsType::arrowHead_t::none)
+        if (statisticsType.arrowHead != stats::StatisticsType::ArrowHead::none)
         {
           // We draw an arrow head. This means that we will have to draw a shortened line
           const int shorten =
-              (statisticsType.arrowHead == stats::StatisticsType::arrowHead_t::arrow)
+              (statisticsType.arrowHead == stats::StatisticsType::ArrowHead::arrow)
                   ? headSize * 2
                   : headSize * 0.5;
 
@@ -129,7 +158,7 @@ void paintVector(QPainter *                   painter,
           // Draw the not shortened line
           painter->drawLine(x1, y1, x2, y2);
 
-        if (statisticsType.arrowHead == stats::StatisticsType::arrowHead_t::arrow)
+        if (statisticsType.arrowHead == stats::StatisticsType::ArrowHead::arrow)
         {
           // Save the painter state, translate to the arrow tip, rotate the painter and draw the
           // normal triangle.
@@ -145,7 +174,7 @@ void paintVector(QPainter *                   painter,
           // Restore. Revert translation/rotation of the painter.
           painter->restore();
         }
-        else if (statisticsType.arrowHead == stats::StatisticsType::arrowHead_t::circle)
+        else if (statisticsType.arrowHead == stats::StatisticsType::ArrowHead::circle)
           painter->drawEllipse(x2 - headSize / 2, y2 - headSize / 2, headSize, headSize);
       }
 
@@ -318,15 +347,16 @@ void stats::paintStatisticsData(QPainter *             painter,
       if (it->renderGrid)
       {
         // Set the grid color (no fill)
-        auto gridPen = it->gridPen;
+        auto gridStyle = it->gridStyle;
         if (it->scaleGridToZoom)
-          gridPen.setWidthF(gridPen.widthF() * zoomFactor);
-        painter->setPen(gridPen);
+          gridStyle.width = gridStyle.width * zoomFactor;
+
+        painter->setPen(styleToPen(gridStyle));
         painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color
 
         // Save the line width (if thicker)
-        if (gridPen.widthF() > maxLineWidth)
-          maxLineWidth = gridPen.widthF();
+        if (gridStyle.width > maxLineWidth)
+          maxLineWidth = gridStyle.width;
 
         painter->drawRect(displayRect);
       }
@@ -371,9 +401,10 @@ void stats::paintStatisticsData(QPainter *             painter,
     for (const auto &valueItem : statisticsData[it->typeID].polygonValueData)
     {
       // Calculate the size and position of the rectangle to draw (zoomed in)
-      auto boundingRect        = valueItem.corners.boundingRect();
+      auto valuePoly           = convertToQPolygon(valueItem.corners);
+      auto boundingRect        = valuePoly.boundingRect();
       auto trans               = QTransform().scale(zoomFactor, zoomFactor);
-      auto displayPolygon      = trans.map(valueItem.corners);
+      auto displayPolygon      = trans.map(valuePoly);
       auto displayBoundingRect = displayPolygon.boundingRect();
 
       // Check if the rectangle of the statistics item is even visible
@@ -407,15 +438,16 @@ void stats::paintStatisticsData(QPainter *             painter,
         if (it->renderGrid)
         {
           // Set the grid color (no fill)
-          auto gridPen = it->gridPen;
+          auto gridStyle = it->gridStyle;
           if (it->scaleGridToZoom)
-            gridPen.setWidthF(gridPen.widthF() * zoomFactor);
-          painter->setPen(gridPen);
+            gridStyle.width = gridStyle.width * zoomFactor;
+          
+          painter->setPen(styleToPen(gridStyle));
           painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color
 
           // Save the line width (if thicker)
-          if (gridPen.widthF() > maxLineWidth)
-            maxLineWidth = gridPen.widthF();
+        if (gridStyle.width > maxLineWidth)
+          maxLineWidth = gridStyle.width;
 
           painter->drawPolygon(displayPolygon);
         }
@@ -483,10 +515,10 @@ void stats::paintStatisticsData(QPainter *             painter,
         float vx, vy;
         if (vectorItem.isLine)
         {
-          x1 = displayRect.left() + zoomFactor * vectorItem.point[0].x();
-          y1 = displayRect.top() + zoomFactor * vectorItem.point[0].y();
-          x2 = displayRect.left() + zoomFactor * vectorItem.point[1].x();
-          y2 = displayRect.top() + zoomFactor * vectorItem.point[1].y();
+          x1 = displayRect.left() + zoomFactor * vectorItem.point[0].first;
+          y1 = displayRect.top() + zoomFactor * vectorItem.point[0].second;
+          x2 = displayRect.left() + zoomFactor * vectorItem.point[1].first;
+          y2 = displayRect.top() + zoomFactor * vectorItem.point[1].second;
           vx = (float)(x2 - x1) / it->vectorScale;
           vy = (float)(y2 - y1) / it->vectorScale;
         }
@@ -496,8 +528,8 @@ void stats::paintStatisticsData(QPainter *             painter,
           y1 = displayRect.top() + displayRect.height() / 2;
 
           // The length of the vector
-          vx = (float)vectorItem.point[0].x() / it->vectorScale;
-          vy = (float)vectorItem.point[0].y() / it->vectorScale;
+          vx = (float)vectorItem.point[0].first / it->vectorScale;
+          vy = (float)vectorItem.point[0].second / it->vectorScale;
 
           // The end point of the vector
           x2 = x1 + zoomFactor * vx;
@@ -511,17 +543,15 @@ void stats::paintStatisticsData(QPainter *             painter,
         if (arrowVisible)
         {
           // Set the pen for drawing
-          auto vectorPen  = it->vectorPen;
-          auto arrowColor = vectorPen.color();
+          auto vectorStyle = it->vectorStyle;
+          auto arrowColor = functions::convertToQColor(vectorStyle.color);
           if (it->mapVectorToColor)
             arrowColor.setHsvF(clip((atan2f(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));
-          vectorPen.setColor(arrowColor);
           if (it->scaleVectorToZoom)
-            vectorPen.setWidthF(vectorPen.widthF() * zoomFactor / 8);
-          if (vectorItem.isLine)
-            vectorPen.setCapStyle(Qt::RoundCap);
-          painter->setPen(vectorPen);
+            vectorStyle.width = vectorStyle.width * zoomFactor / 8;
+
+          painter->setPen(QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
           painter->setBrush(arrowColor);
 
           // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or
@@ -542,10 +572,10 @@ void stats::paintStatisticsData(QPainter *             painter,
                       ? 8
                       : zoomFactor / 2;
 
-              if (it->arrowHead != StatisticsType::arrowHead_t::none)
+              if (it->arrowHead != StatisticsType::ArrowHead::none)
               {
                 // We draw an arrow head. This means that we will have to draw a shortened line
-                const int shorten = (it->arrowHead == StatisticsType::arrowHead_t::arrow)
+                const int shorten = (it->arrowHead == StatisticsType::ArrowHead::arrow)
                                         ? headSize * 2
                                         : headSize * 0.5;
                 if (sqrt(vx * vx * zoomFactor * zoomFactor + vy * vy * zoomFactor * zoomFactor) >
@@ -561,7 +591,7 @@ void stats::paintStatisticsData(QPainter *             painter,
                 // Draw the not shortened line
                 painter->drawLine(x1, y1, x2, y2);
 
-              if (it->arrowHead == StatisticsType::arrowHead_t::arrow)
+              if (it->arrowHead == StatisticsType::ArrowHead::arrow)
               {
                 // Save the painter state, translate to the arrow tip, rotate the painter and draw
                 // the normal triangle.
@@ -578,7 +608,7 @@ void stats::paintStatisticsData(QPainter *             painter,
                 // Restore. Revert translation/rotation of the painter.
                 painter->restore();
               }
-              else if (it->arrowHead == StatisticsType::arrowHead_t::circle)
+              else if (it->arrowHead == StatisticsType::ArrowHead::circle)
                 painter->drawEllipse(x2 - headSize / 2, y2 - headSize / 2, headSize, headSize);
             }
 
@@ -658,11 +688,11 @@ void stats::paintStatisticsData(QPainter *             painter,
         // optionally, draw a grid around the region that the arrow is defined for
         if (it->renderGrid && rectVisible)
         {
-          auto gridPen = it->gridPen;
+          auto gridStyle = it->gridStyle;
           if (it->scaleGridToZoom)
-            gridPen.setWidthF(gridPen.widthF() * zoomFactor);
+            gridStyle.width = gridStyle.width * zoomFactor;
 
-          painter->setPen(gridPen);
+          painter->setPen(styleToPen(gridStyle));
           painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color
 
           painter->drawRect(displayRect);
@@ -702,12 +732,12 @@ void stats::paintStatisticsData(QPainter *             painter,
         yLBstart = displayRect.bottom();
 
         // The length of the vectors
-        vxLT = (float)affineTFItem.point[0].x() / it->vectorScale;
-        vyLT = (float)affineTFItem.point[0].y() / it->vectorScale;
-        vxRT = (float)affineTFItem.point[1].x() / it->vectorScale;
-        vyRT = (float)affineTFItem.point[1].y() / it->vectorScale;
-        vxLB = (float)affineTFItem.point[2].x() / it->vectorScale;
-        vyLB = (float)affineTFItem.point[2].y() / it->vectorScale;
+        vxLT = (float)affineTFItem.point[0].first / it->vectorScale;
+        vyLT = (float)affineTFItem.point[0].second / it->vectorScale;
+        vxRT = (float)affineTFItem.point[1].first / it->vectorScale;
+        vyRT = (float)affineTFItem.point[1].second / it->vectorScale;
+        vxLB = (float)affineTFItem.point[2].first / it->vectorScale;
+        vyLB = (float)affineTFItem.point[2].second / it->vectorScale;
 
         // The end point of the vectors
         xLTend = xLTstart + zoomFactor * vxLT;
@@ -764,11 +794,11 @@ void stats::paintStatisticsData(QPainter *             painter,
       // optionally, draw a grid around the region that the arrow is defined for
       if (it->renderGrid && rectVisible)
       {
-        auto gridPen = it->gridPen;
+        auto gridStyle = it->gridStyle;
         if (it->scaleGridToZoom)
-          gridPen.setWidthF(gridPen.widthF() * zoomFactor);
+          gridStyle.width = gridStyle.width * zoomFactor;
 
-        painter->setPen(gridPen);
+        painter->setPen(styleToPen(gridStyle));
         painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color
 
         painter->drawRect(displayRect);
@@ -787,8 +817,9 @@ void stats::paintStatisticsData(QPainter *             painter,
     for (const auto &vectorItem : statisticsData[it->typeID].polygonVectorData)
     {
       // Calculate the size and position of the rectangle to draw (zoomed in)
+      auto vectorPoly           = convertToQPolygon(vectorItem.corners);
       auto trans               = QTransform().scale(zoomFactor, zoomFactor);
-      auto displayPolygon      = trans.map(vectorItem.corners);
+      auto displayPolygon      = trans.map(vectorPoly);
       auto displayBoundingRect = displayPolygon.boundingRect();
 
       // Check if the rectangle of the statistics item is even visible
@@ -814,8 +845,8 @@ void stats::paintStatisticsData(QPainter *             painter,
         center_y /= displayPolygon.size();
 
         // The length of the vector
-        vx = (float)vectorItem.point[0].x() / it->vectorScale;
-        vy = (float)vectorItem.point[0].y() / it->vectorScale;
+        vx = (float)vectorItem.point[0].first / it->vectorScale;
+        vy = (float)vectorItem.point[0].second / it->vectorScale;
 
         // The end point of the vector
         head_x = center_x + zoomFactor * vx;
@@ -826,15 +857,15 @@ void stats::paintStatisticsData(QPainter *             painter,
             !(center_y < yMin && head_y < yMin) && !(center_y > yMax && head_y > yMax))
         {
           // Set the pen for drawing
-          auto vectorPen  = it->vectorPen;
-          auto arrowColor = vectorPen.color();
+          auto vectorStyle  = it->vectorStyle;
+          auto arrowColor = functions::convertToQColor(vectorStyle.color);
           if (it->mapVectorToColor)
             arrowColor.setHsvF(clip((atan2f(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));
-          vectorPen.setColor(arrowColor);
           if (it->scaleVectorToZoom)
-            vectorPen.setWidthF(vectorPen.widthF() * zoomFactor / 8);
-          painter->setPen(vectorPen);
+            vectorStyle.width = vectorStyle.width * zoomFactor / 8;
+
+          painter->setPen(QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
           painter->setBrush(arrowColor);
 
           // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or
@@ -854,10 +885,10 @@ void stats::paintStatisticsData(QPainter *             painter,
                   (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && !it->scaleVectorToZoom)
                       ? 8
                       : zoomFactor / 2;
-              if (it->arrowHead != StatisticsType::arrowHead_t::none)
+              if (it->arrowHead != StatisticsType::ArrowHead::none)
               {
                 // We draw an arrow head. This means that we will have to draw a shortened line
-                const int shorten = (it->arrowHead == StatisticsType::arrowHead_t::arrow)
+                const int shorten = (it->arrowHead == StatisticsType::ArrowHead::arrow)
                                         ? headSize * 2
                                         : headSize * 0.5;
                 if (sqrt(vx * vx * zoomFactor * zoomFactor + vy * vy * zoomFactor * zoomFactor) >
@@ -875,7 +906,7 @@ void stats::paintStatisticsData(QPainter *             painter,
                 // Draw the not shortened line
                 painter->drawLine(center_x, center_y, head_x, head_y);
 
-              if (it->arrowHead == StatisticsType::arrowHead_t::arrow)
+              if (it->arrowHead == StatisticsType::ArrowHead::arrow)
               {
                 // Save the painter state, translate to the arrow tip, rotate the painter and draw
                 // the normal triangle.
@@ -892,7 +923,7 @@ void stats::paintStatisticsData(QPainter *             painter,
                 // Restore. Revert translation/rotation of the painter.
                 painter->restore();
               }
-              else if (it->arrowHead == StatisticsType::arrowHead_t::circle)
+              else if (it->arrowHead == StatisticsType::ArrowHead::circle)
                 painter->drawEllipse(
                     head_x - headSize / 2, head_y - headSize / 2, headSize, headSize);
             }
@@ -929,11 +960,11 @@ void stats::paintStatisticsData(QPainter *             painter,
       // optionally, draw the polygon outline
       if (it->renderGrid && isVisible)
       {
-        auto gridPen = it->gridPen;
+        auto gridStyle = it->gridStyle;
         if (it->scaleGridToZoom)
-          gridPen.setWidthF(gridPen.widthF() * zoomFactor);
+          gridStyle.width = gridStyle.width * zoomFactor;
 
-        painter->setPen(gridPen);
+        painter->setPen(styleToPen(gridStyle));
         painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color
 
         painter->drawPolygon(displayPolygon);

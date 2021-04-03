@@ -32,42 +32,51 @@
 
 #include "StatisticsType.h"
 
+#include "common/functions.h"
+
 namespace stats
 {
+
+namespace
+{
+
+// Get a string with all values of the QPen
+QString convertPenToString(const LineDrawStyle &style)
+{
+  auto colorHex  = QString::fromStdString(style.color.toHex());
+  auto patternIt = std::find(AllPatterns.begin(), AllPatterns.end(), style.pattern);
+  if (patternIt == AllPatterns.end())
+    return {};
+  auto patternIdx = std::distance(AllPatterns.begin(), patternIt);
+  return QString("%1 %2 %3").arg(colorHex).arg(style.width).arg(patternIdx);
+}
+
+// The inverse functio to get a QPen from the string
+LineDrawStyle convertStringToPen(const QString &str)
+{
+  LineDrawStyle style;
+  QStringList   split = str.split(" ");
+  if (split.length() == 3)
+  {
+    style.color     = Color(split[0].toStdString());
+    style.width     = split[1].toDouble();
+    auto patternIdx = split[2].toInt();
+    if (patternIdx >= 0 && patternIdx < AllPatterns.size())
+      style.pattern = AllPatterns[patternIdx];
+  }
+  return style;
+}
+
+std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHead::arrow,
+                                                        StatisticsType::ArrowHead::circle,
+                                                        StatisticsType::ArrowHead::none};
+
+} // namespace
 
 StatisticsType::StatisticsType(int typeID, const QString &typeName)
     : typeID(typeID), typeName(typeName)
 {
-  // Default, do not render, alpha 50%
-  render      = false;
-  alphaFactor = 50;
-
-  // For this constructor, we don't know if there is value or vector data.
-  // Set one of these to true if you want to render something.
-  hasValueData    = false;
-  hasVectorData   = false;
-  hasAffineTFData = false;
-
-  // Default values for drawing value data
-  renderValueData       = false;
-  scaleValueToBlockSize = false;
-
-  // Default values for drawing vectors
-  renderVectorData       = false;
-  renderVectorDataValues = true;
-  vectorScale            = 1;
-  vectorPen              = QPen(QBrush(QColor(Qt::black)), 1.0, Qt::SolidLine);
-  scaleVectorToZoom      = false;
-  mapVectorToColor       = false;
-  arrowHead              = arrow;
-
-  // Default values for drawing grids
-  renderGrid      = true;
-  scaleGridToZoom = false;
-  gridPen         = QPen(QBrush(QColor(Qt::black)), 0.25, Qt::SolidLine);
-
-  // Default: no polygon shape, use Rect
-  isPolygon = false;
+  gridStyle.width = 0.25;
 }
 
 StatisticsType::StatisticsType(int typeID, const QString &typeName, int vectorScaling)
@@ -112,54 +121,35 @@ StatisticsType::StatisticsType(int            typeID,
     : StatisticsType(typeID, typeName)
 {
   // There is value data. Set up a color mapper.
-  hasValueData    = true;
-  renderValueData = true;
-  colorMapper     = ColorMapper(cRangeMin, cRangeMinColor, cRangeMax, cRangeMaxColor);
+  this->hasValueData    = true;
+  this->renderValueData = true;
+  this->colorMapper     = ColorMapper(cRangeMin, cRangeMinColor, cRangeMax, cRangeMaxColor);
 
-  hasVectorData    = hasAndRenderVectorData;
-  renderVectorData = hasAndRenderVectorData;
+  this->hasVectorData    = hasAndRenderVectorData;
+  this->renderVectorData = hasAndRenderVectorData;
 
-  setInitialState();
+  this->setInitialState();
 }
 
 void StatisticsType::setInitialState()
 {
-  init.render      = render;
-  init.alphaFactor = alphaFactor;
+  this->init.render      = this->render;
+  this->init.alphaFactor = this->alphaFactor;
 
-  init.renderValueData       = renderValueData;
-  init.scaleValueToBlockSize = scaleValueToBlockSize;
-  init.colorMapper           = colorMapper;
+  this->init.renderValueData       = this->renderValueData;
+  this->init.scaleValueToBlockSize = this->scaleValueToBlockSize;
+  this->init.colorMapper           = this->colorMapper;
 
-  init.renderVectorData  = renderVectorData;
-  init.scaleVectorToZoom = scaleVectorToZoom;
-  init.vectorPen         = vectorPen;
-  init.vectorScale       = vectorScale;
-  init.mapVectorToColor  = mapVectorToColor;
-  init.arrowHead         = arrowHead;
+  this->init.renderVectorData  = this->renderVectorData;
+  this->init.scaleVectorToZoom = this->scaleVectorToZoom;
+  this->init.vectorStyle       = this->vectorStyle;
+  this->init.vectorScale       = this->vectorScale;
+  this->init.mapVectorToColor  = this->mapVectorToColor;
+  this->init.arrowHead         = this->arrowHead;
 
-  init.renderGrid      = renderGrid;
-  init.gridPen         = gridPen;
-  init.scaleGridToZoom = scaleGridToZoom;
-}
-
-// Get a string with all values of the QPen
-QString convertPenToString(const QPen &pen)
-{
-  return QString("%1 %2 %3").arg(pen.color().name()).arg(pen.widthF()).arg(pen.style());
-}
-// The inverse functio to get a QPen from the string
-QPen convertStringToPen(const QString &str)
-{
-  QPen        pen;
-  QStringList split = str.split(" ");
-  if (split.length() == 3)
-  {
-    pen.setColor(QColor(split[0]));
-    pen.setWidthF(split[1].toFloat());
-    pen.setStyle(Qt::PenStyle(split[2].toInt()));
-  }
-  return pen;
+  this->init.renderGrid      = this->renderGrid;
+  this->init.gridStyle       = this->gridStyle;
+  this->init.scaleGridToZoom = this->scaleGridToZoom;
 }
 
 /* Save all the settings of the statistics type that have changed from the initial state
@@ -171,9 +161,9 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
        init.renderValueData != renderValueData ||
        init.scaleValueToBlockSize != scaleValueToBlockSize || init.colorMapper != colorMapper ||
        init.renderVectorData != renderVectorData || init.scaleVectorToZoom != scaleVectorToZoom ||
-       init.vectorPen != vectorPen || init.vectorScale != vectorScale ||
+       init.vectorStyle != vectorStyle || init.vectorScale != vectorScale ||
        init.mapVectorToColor != mapVectorToColor || init.arrowHead != arrowHead ||
-       init.renderGrid != renderGrid || init.gridPen != gridPen ||
+       init.renderGrid != renderGrid || init.gridStyle != gridStyle ||
        init.scaleGridToZoom != scaleGridToZoom);
 
   if (!statChanged)
@@ -230,18 +220,25 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
     newChild.setAttribute("renderVectorData", renderVectorData);
   if (init.scaleVectorToZoom != scaleVectorToZoom)
     newChild.setAttribute("scaleVectorToZoom", scaleVectorToZoom);
-  if (init.vectorPen != vectorPen)
-    newChild.setAttribute("vectorPen", convertPenToString(vectorPen));
+  if (init.vectorStyle != vectorStyle)
+    newChild.setAttribute("vectorStyle", convertPenToString(vectorStyle));
   if (init.vectorScale != vectorScale)
     newChild.setAttribute("vectorScale", vectorScale);
   if (init.mapVectorToColor != mapVectorToColor)
     newChild.setAttribute("mapVectorToColor", mapVectorToColor);
   if (init.arrowHead != arrowHead)
-    newChild.setAttribute("renderarrowHead", arrowHead);
+  {
+    auto it = std::find(AllArrowHeads.begin(), AllArrowHeads.end(), arrowHead);
+    if (it != AllArrowHeads.end())
+    {
+      auto idx = std::distance(AllArrowHeads.begin(), it);
+      newChild.setAttribute("renderarrowHead", idx);
+    }
+  }
   if (init.renderGrid != renderGrid)
     newChild.setAttribute("renderGrid", renderGrid);
-  if (init.gridPen != gridPen)
-    newChild.setAttribute("gridPen", convertPenToString(gridPen));
+  if (init.gridStyle != gridStyle)
+    newChild.setAttribute("gridStyle", convertPenToString(gridStyle));
   if (init.scaleGridToZoom != scaleGridToZoom)
     newChild.setAttribute("scaleGridToZoom", scaleGridToZoom);
 
@@ -289,17 +286,21 @@ void StatisticsType::loadPlaylist(const YUViewDomElement &root)
     else if (attributes[i].first == "scaleVectorToZoom")
       scaleVectorToZoom = (attributes[i].second != "0");
     else if (attributes[i].first == "vectorPen")
-      vectorPen = convertStringToPen(attributes[i].second);
+      vectorStyle = convertStringToPen(attributes[i].second);
     else if (attributes[i].first == "vectorScale")
       vectorScale = attributes[i].second.toInt();
     else if (attributes[i].first == "mapVectorToColor")
       mapVectorToColor = (attributes[i].second != "0");
     else if (attributes[i].first == "renderarrowHead")
-      arrowHead = arrowHead_t(attributes[i].second.toInt());
+    {
+      auto idx = attributes[i].second.toInt();
+      if (idx >= 0 && idx < AllArrowHeads.size())
+        arrowHead = AllArrowHeads[idx];
+    }
     else if (attributes[i].first == "renderGrid")
       renderGrid = (attributes[i].second != "0");
     else if (attributes[i].first == "gridPen")
-      gridPen = convertStringToPen(attributes[i].second);
+      gridStyle = convertStringToPen(attributes[i].second);
     else if (attributes[i].first == "scaleGridToZoom")
       scaleGridToZoom = (attributes[i].second != "0");
   }

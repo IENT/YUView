@@ -147,14 +147,14 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
         if (vectorItem.isLine)
         {
           vectorValue1 =
-              (float)(vectorItem.point[1].x() - vectorItem.point[0].x()) / it->vectorScale;
+              float(vectorItem.point[1].first - vectorItem.point[0].first) / it->vectorScale;
           vectorValue2 =
-              (float)(vectorItem.point[1].y() - vectorItem.point[0].y()) / it->vectorScale;
+              float(vectorItem.point[1].second - vectorItem.point[0].second) / it->vectorScale;
         }
         else
         {
-          vectorValue1 = (float)vectorItem.point[0].x() / it->vectorScale;
-          vectorValue2 = (float)vectorItem.point[0].y() / it->vectorScale;
+          vectorValue1 = float(vectorItem.point[0].first / it->vectorScale);
+          vectorValue2 = float(vectorItem.point[0].second / it->vectorScale);
         }
         valueList.append(
             QStringPair(QString("%1[x]").arg(typeName), QString::number(vectorValue1)));

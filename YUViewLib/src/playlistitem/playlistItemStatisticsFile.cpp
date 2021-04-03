@@ -273,6 +273,7 @@ void playlistItemStatisticsFile::openStatisticsFile()
 
   // Run the parsing of the file in the background
   this->timer.start(1000, this);
+  this->breakBackgroundAtomic.store(false);
   this->backgroundParserFuture = QtConcurrent::run(
       [=](stats::StatisticsFileBase *file) {
         file->readFrameAndTypePositionsFromFile(std::ref(this->breakBackgroundAtomic));

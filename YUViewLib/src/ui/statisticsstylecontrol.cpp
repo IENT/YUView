@@ -51,10 +51,6 @@ namespace
 #define DEBUG_STAT_STYLE(fmt, ...) ((void)0)
 #endif
 
-const QList<Qt::PenStyle> penStyleList = QList<Qt::PenStyle>()
-                                         << Qt::SolidLine << Qt::DashLine << Qt::DotLine
-                                         << Qt::DashDotLine << Qt::DashDotDotLine;
-
 } // namespace
 
 StatisticsStyleControl::StatisticsStyleControl(QWidget *parent)
@@ -123,26 +119,26 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
     ui.groupBoxVector->show();
 
     // Update all the values in the vector controls
-    int penStyleIndex = penStyleList.indexOf(currentItem->vectorPen.style());
+    auto penStyleIndex = indexInVec(stats::AllPatterns, currentItem->vectorStyle.pattern);
     if (penStyleIndex != -1)
       ui.comboBoxVectorLineStyle->setCurrentIndex(penStyleIndex);
-    ui.doubleSpinBoxVectorLineWidth->setValue(currentItem->vectorPen.widthF());
+    ui.doubleSpinBoxVectorLineWidth->setValue(currentItem->vectorStyle.width);
     ui.checkBoxVectorScaleToZoom->setChecked(currentItem->scaleVectorToZoom);
     ui.comboBoxVectorHeadStyle->setCurrentIndex((int)currentItem->arrowHead);
     ui.checkBoxVectorMapToColor->setChecked(currentItem->mapVectorToColor);
-    ui.colorFrameVectorColor->setPlainColor(currentItem->vectorPen.color());
+    ui.colorFrameVectorColor->setPlainColor(functions::convertToQColor(currentItem->vectorStyle.color));
     ui.colorFrameVectorColor->setEnabled(!currentItem->mapVectorToColor);
     ui.pushButtonEditVectorColor->setEnabled(!currentItem->mapVectorToColor);
   }
   else
     ui.groupBoxVector->hide();
 
-  ui.frameGridColor->setPlainColor(currentItem->gridPen.color());
-  ui.doubleSpinBoxGridLineWidth->setValue(currentItem->gridPen.widthF());
+  ui.frameGridColor->setPlainColor(functions::convertToQColor(currentItem->gridStyle.color));
+  ui.doubleSpinBoxGridLineWidth->setValue(currentItem->gridStyle.width);
   ui.checkBoxGridScaleToZoom->setChecked(currentItem->scaleGridToZoom);
 
   // Convert the current pen style to an index and set it in the comboBoxGridLineStyle
-  int penStyleIndex = penStyleList.indexOf(currentItem->gridPen.style());
+  auto penStyleIndex = indexInVec(stats::AllPatterns, currentItem->vectorStyle.pattern);
   if (penStyleIndex != -1)
     ui.comboBoxGridLineStyle->setCurrentIndex(penStyleIndex);
 
@@ -209,7 +205,7 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
 
 void StatisticsStyleControl::on_frameMinColor_clicked()
 {
-  QColor newQColor = QColorDialog::getColor(currentItem->gridPen.color(),
+  auto newQColor = QColorDialog::getColor(functions::convertToQColor(currentItem->gridStyle.color),
                                             this,
                                             tr("Select color range minimum"),
                                             QColorDialog::ShowAlphaChannel);
@@ -226,7 +222,7 @@ void StatisticsStyleControl::on_frameMinColor_clicked()
 
 void StatisticsStyleControl::on_frameMaxColor_clicked()
 {
-  QColor newQColor = QColorDialog::getColor(currentItem->gridPen.color(),
+  auto newQColor = QColorDialog::getColor(functions::convertToQColor(currentItem->gridStyle.color),
                                             this,
                                             tr("Select color range maximum"),
                                             QColorDialog::ShowAlphaChannel);
@@ -288,14 +284,14 @@ void StatisticsStyleControl::on_checkBoxScaleValueToBlockSize_stateChanged(int a
 void StatisticsStyleControl::on_comboBoxVectorLineStyle_currentIndexChanged(int index)
 {
   // Convert the selection to a pen style and set it
-  Qt::PenStyle penStyle = penStyleList.at(index);
-  currentItem->vectorPen.setStyle(penStyle);
+  auto pattern = stats::AllPatterns.at(index);
+  currentItem->vectorStyle.pattern = pattern;
   emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_doubleSpinBoxVectorLineWidth_valueChanged(double arg1)
+void StatisticsStyleControl::on_doubleSpinBoxVectorLineWidth_valueChanged(double width)
 {
-  currentItem->vectorPen.setWidthF(arg1);
+  currentItem->vectorStyle.width = width;
   emit StyleChanged();
 }
 
@@ -307,7 +303,7 @@ void StatisticsStyleControl::on_checkBoxVectorScaleToZoom_stateChanged(int arg1)
 
 void StatisticsStyleControl::on_comboBoxVectorHeadStyle_currentIndexChanged(int index)
 {
-  currentItem->arrowHead = (stats::StatisticsType::arrowHead_t)(index);
+  currentItem->arrowHead = (stats::StatisticsType::ArrowHead)(index);
   emit StyleChanged();
 }
 
@@ -321,14 +317,16 @@ void StatisticsStyleControl::on_checkBoxVectorMapToColor_stateChanged(int arg1)
 
 void StatisticsStyleControl::on_colorFrameVectorColor_clicked()
 {
-  QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(),
+  auto newQColor = QColorDialog::getColor(functions::convertToQColor(currentItem->vectorStyle.color),
                                            this,
                                            tr("Select vector color"),
                                            QColorDialog::ShowAlphaChannel);
-  if (newColor.isValid() && newColor != currentItem->vectorPen.color())
+
+  auto newColor = functions::fromQColor(newQColor);
+  if (newQColor.isValid() && newColor != currentItem->vectorStyle.color)
   {
-    currentItem->vectorPen.setColor(newColor);
-    ui.colorFrameVectorColor->setPlainColor(currentItem->vectorPen.color());
+    currentItem->vectorStyle.color = newColor;
+    ui.colorFrameVectorColor->setPlainColor(newQColor);
     emit StyleChanged();
   }
 }
@@ -341,12 +339,14 @@ void StatisticsStyleControl::on_groupBoxGrid_clicked(bool check)
 
 void StatisticsStyleControl::on_frameGridColor_clicked()
 {
-  QColor newColor = QColorDialog::getColor(
-      currentItem->gridPen.color(), this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
-  if (newColor.isValid() && newColor != currentItem->gridPen.color())
+  auto newQColor = QColorDialog::getColor(
+      functions::convertToQColor(currentItem->gridStyle.color), this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
+
+  auto newColor = functions::fromQColor(newQColor);
+  if (newQColor.isValid() && newColor != currentItem->gridStyle.color)
   {
-    currentItem->gridPen.setColor(newColor);
-    ui.frameGridColor->setPlainColor(currentItem->gridPen.color());
+    currentItem->gridStyle.color = newColor;
+    ui.frameGridColor->setPlainColor(newQColor);
     emit StyleChanged();
   }
 }
@@ -354,14 +354,14 @@ void StatisticsStyleControl::on_frameGridColor_clicked()
 void StatisticsStyleControl::on_comboBoxGridLineStyle_currentIndexChanged(int index)
 {
   // Convert the selection to a pen style and set it
-  Qt::PenStyle penStyle = penStyleList.at(index);
-  currentItem->gridPen.setStyle(penStyle);
+  auto pattern = stats::AllPatterns.at(index);
+  currentItem->gridStyle.pattern = pattern;
   emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_doubleSpinBoxGridLineWidth_valueChanged(double arg1)
+void StatisticsStyleControl::on_doubleSpinBoxGridLineWidth_valueChanged(double width)
 {
-  currentItem->gridPen.setWidthF(arg1);
+  currentItem->gridStyle.width = width;
   emit StyleChanged();
 }
 
@@ -371,16 +371,16 @@ void StatisticsStyleControl::on_checkBoxGridScaleToZoom_stateChanged(int arg1)
   emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_spinBoxRangeMin_valueChanged(int arg1)
+void StatisticsStyleControl::on_spinBoxRangeMin_valueChanged(int minVal)
 {
-  currentItem->colorMapper.rangeMin = arg1;
+  currentItem->colorMapper.rangeMin = minVal;
   ui.frameDataColor->setColorMapper(currentItem->colorMapper);
   emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_spinBoxRangeMax_valueChanged(int arg1)
+void StatisticsStyleControl::on_spinBoxRangeMax_valueChanged(int maxVal)
 {
-  currentItem->colorMapper.rangeMax = arg1;
+  currentItem->colorMapper.rangeMax = maxVal;
   ui.frameDataColor->setColorMapper(currentItem->colorMapper);
   emit StyleChanged();
 }

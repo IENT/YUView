@@ -32,37 +32,21 @@
 
 #pragma once
 
+#include <cstdio>
+#include <filesystem>
 #include <string>
 
-class Color
+class TemporaryFile
 {
 public:
-  Color() = default;
-  Color(std::string name);
-  Color(int R, int G, int B, int A = -1);
-
-  int R() const { return this->values[0]; }
-  int G() const { return this->values[1]; }
-  int B() const { return this->values[2]; }
-  int A() const { return this->values[3]; }
-  int alpha() const { return this->values[3]; }
-  int gray() const;
-
-  void setAlpha(int alpha) { this->values[3] = alpha; }
-
-  std::string toHex() const;
-
-  bool operator!=(const Color &other) const
+  TemporaryFile(std::string extension)
   {
-    return values[0] != other.values[0] || values[1] != other.values[1] ||
-           values[2] != other.values[2] || values[3] != other.values[3];
+    this->filename = std::string(std::tmpnam(nullptr)) + "." + extension;
   }
-  bool operator==(const Color &other) const
-  {
-    return values[0] == other.values[0] && values[1] == other.values[1] &&
-           values[2] == other.values[2] && values[3] == other.values[3];
-  }
+  ~TemporaryFile() { std::filesystem::remove(this->filename); }
+
+  std::string getFilename() const { return this->filename; }
 
 private:
-  int values[4]{0, 0, 0, 255};
+  std::string filename;
 };

@@ -57,10 +57,11 @@ int Color::gray() const
 std::string Color::toHex() const
 {
   std::stringstream stream;
-  stream << "#" << std::hex << this->values[0] << std::hex << this->values[1] << std::hex
-         << this->values[2];
-  if (this->values[3] >= 0)
-    stream << std::hex << this->values[3];
+  stream << "#";
+  for (unsigned i = 0; i < 3; i++)
+     stream << std::hex << std::setw(2) << std::setfill('0') << this->values[i];
+  if (this->values[3] != 255)
+    stream << std::hex << std::setw(2) << std::setfill('0') << this->values[3];
   return stream.str();
 }
 

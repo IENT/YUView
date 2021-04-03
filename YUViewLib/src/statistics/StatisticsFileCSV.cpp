@@ -235,8 +235,6 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
 
   try
   {
-    QTextStream in(this->file.getQFile());
-
     if (this->pocTypeFileposMap.count(poc) == 0 || this->pocTypeFileposMap[poc].count(typeID) == 0)
     {
       // There are no statistics in the file for the given frame and index.
@@ -258,7 +256,9 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
           startPos = typeEntry.second;
     }
 
-    // fast forward
+    statisticsData.setFrameIndex(poc);
+
+    QTextStream in(this->file.getQFile());
     in.seek(startPos);
 
     while (!in.atEnd())
@@ -402,7 +402,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
             aType.hasVectorData    = true;
             aType.renderVectorData = true;
             if (rowItemList[4] == "line")
-              aType.arrowHead = StatisticsType::arrowHead_t::none;
+              aType.arrowHead = StatisticsType::ArrowHead::none;
           }
         }
 
@@ -455,7 +455,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto g = (unsigned char)rowItemList[3].toInt();
         auto b = (unsigned char)rowItemList[4].toInt();
         auto a = (unsigned char)rowItemList[5].toInt();
-        aType.vectorPen.setColor(QColor(r, g, b, a));
+        aType.vectorStyle.color = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "gridColor")
       {
@@ -463,7 +463,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto g = (unsigned char)rowItemList[3].toInt();
         auto b = (unsigned char)rowItemList[4].toInt();
         auto a = 255;
-        aType.gridPen.setColor(QColor(r, g, b, a));
+        aType.gridStyle.color = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "scaleFactor")
       {

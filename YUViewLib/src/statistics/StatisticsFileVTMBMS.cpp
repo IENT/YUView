@@ -348,7 +348,7 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
             auto               corners    = statisitcMatch.captured(2);
             auto               cornerList = corners.split("--");
             QRegularExpression cornerRegex("\\( *([0-9]+), *([0-9]+)\\)");
-            QVector<QPoint>    points;
+            stats::Polygon     points;
             for (const auto &corner : cornerList)
             {
               auto cornerMatch = cornerRegex.match(corner);
@@ -356,7 +356,7 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
               {
                 auto x = cornerMatch.captured(1).toInt();
                 auto y = cornerMatch.captured(2).toInt();
-                points << QPoint(x, y);
+                points.push_back({x, y});
 
                 // Check if polygon is within the image range
                 if (this->blockOutsideOfFramePOC == -1 &&
@@ -475,7 +475,7 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
           aType.hasAffineTFData  = true;
           aType.renderVectorData = true;
           aType.vectorScale      = scale;
-          aType.vectorPen.setColor(QColor(255, 0, 0));
+          aType.vectorStyle.color = Color(255, 0, 0);
         }
         else if (statType.contains("Vector"))
         {
@@ -491,7 +491,7 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
           aType.hasVectorData    = true;
           aType.renderVectorData = true;
           aType.vectorScale      = scale;
-          aType.vectorPen.setColor(QColor(255, 0, 0));
+          aType.vectorStyle.color = Color(255, 0, 0);
         }
         else if (statType.contains("Flag"))
         {
@@ -521,9 +521,9 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
           aType.hasVectorData    = true;
           aType.renderVectorData = true;
           aType.vectorScale      = 1;
-          aType.arrowHead        = StatisticsType::arrowHead_t::none;
-          aType.gridPen.setColor(QColor(255, 255, 255));
-          aType.vectorPen.setColor(QColor(255, 255, 255));
+          aType.arrowHead        = StatisticsType::ArrowHead::none;
+          aType.gridStyle.color = Color(255, 255, 255);
+          aType.vectorStyle.color = Color(255, 255, 255);
         }
 
         // check whether is was a geometric partitioning statistic with polygon shape

@@ -61,7 +61,7 @@ void FrameTypeData::addBlockVector(
   vec.pos[1]   = y;
   vec.size[0]  = w;
   vec.size[1]  = h;
-  vec.point[0] = QPoint(vecX, vecY);
+  vec.point[0] = IntPair({vecX, vecY});
   vec.isLine   = false;
   vectorData.push_back(vec);
 }
@@ -82,9 +82,9 @@ void FrameTypeData::addBlockAffineTF(unsigned short x,
   affineTF.pos[1]   = y;
   affineTF.size[0]  = w;
   affineTF.size[1]  = h;
-  affineTF.point[0] = QPoint(vecX0, vecY0);
-  affineTF.point[1] = QPoint(vecX1, vecY1);
-  affineTF.point[2] = QPoint(vecX2, vecY2);
+  affineTF.point[0] = IntPair({vecX0, vecY0});
+  affineTF.point[1] = IntPair({vecX1, vecY1});
+  affineTF.point[2] = IntPair({vecX2, vecY2});
   affineTFData.push_back(affineTF);
 }
 
@@ -102,16 +102,16 @@ void FrameTypeData::addLine(unsigned short x,
   vec.pos[1]   = y;
   vec.size[0]  = w;
   vec.size[1]  = h;
-  vec.point[0] = QPoint(x1, y1);
-  vec.point[1] = QPoint(x2, y2);
+  vec.point[0] = IntPair({x1, y1});
+  vec.point[1] = IntPair({x2, y2});
   vec.isLine   = true;
   vectorData.push_back(vec);
 }
 
-void FrameTypeData::addPolygonValue(const QVector<QPoint> &points, int val)
+void FrameTypeData::addPolygonValue(const Polygon &points, int val)
 {
   statisticsItemPolygon_Value value;
-  value.corners = QPolygon(points);
+  value.corners = points;
   value.value   = val;
 
   // todo: how to do this nicely?
@@ -123,11 +123,11 @@ void FrameTypeData::addPolygonValue(const QVector<QPoint> &points, int val)
   polygonValueData.push_back(value);
 }
 
-void FrameTypeData::addPolygonVector(const QVector<QPoint> &points, int vecX, int vecY)
+void FrameTypeData::addPolygonVector(const Polygon &points, int vecX, int vecY)
 {
   statisticsItemPolygon_Vector vec;
-  vec.corners  = QPolygon(points);
-  vec.point[0] = QPoint(vecX, vecY);
+  vec.corners  = points;
+  vec.point[0] = IntPair({vecX, vecY});
   polygonVectorData.push_back(vec);
 }
 

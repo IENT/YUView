@@ -8,6 +8,7 @@ CONFIG -= app_bundled
 TARGET = StatisticsFileCSVTest
 
 QT += testlib
+QT += xml
 QT -= gui
 
 INCLUDEPATH += $$top_srcdir/YUViewLib/src

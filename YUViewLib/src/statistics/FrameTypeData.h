@@ -32,11 +32,12 @@
 
 #pragma once
 
-#include <QPoint>
-#include <QPolygon>
+#include "common/typedef.h"
 
 namespace stats
 {
+
+using Polygon = std::vector<IntPair>;
 
 struct statisticsItem_Value
 {
@@ -54,9 +55,8 @@ struct statisticsItem_Vector
   unsigned short pos[2];
   unsigned short size[2];
 
-  bool isLine; // the vector is specified by two points
-  // The actual vector value
-  QPoint point[2];
+  bool    isLine; // the vector is specified by two points
+  IntPair point[2];
 };
 
 struct statisticsItem_AffineTF
@@ -66,14 +66,13 @@ struct statisticsItem_AffineTF
   unsigned short size[2];
 
   // the vector is specified by two points
-  // The actual vector value
-  QPoint point[3];
+  IntPair point[3];
 };
 
 struct statisticsItemPolygon_Value
 {
   // The position and size of the item.
-  QPolygon corners;
+  Polygon corners;
 
   // The actual value
   int value;
@@ -82,10 +81,9 @@ struct statisticsItemPolygon_Value
 struct statisticsItemPolygon_Vector
 {
   // The position and size of the item.
-  QPolygon corners;
+  Polygon corners;
 
-  // The actual vector value
-  QPoint point[2];
+  IntPair point[2];
 };
 
 // A collection of statistics data (value and vector) for a certain context (for example for a
@@ -116,8 +114,8 @@ public:
                int            y1,
                int            x2,
                int            y2);
-  void addPolygonVector(const QVector<QPoint> &points, int vecX, int vecY);
-  void addPolygonValue(const QVector<QPoint> &points, int val);
+  void addPolygonVector(const Polygon &points, int vecX, int vecY);
+  void addPolygonValue(const Polygon &points, int val);
 
   std::vector<statisticsItem_Value>         valueData;
   std::vector<statisticsItem_Vector>        vectorData;

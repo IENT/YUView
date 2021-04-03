@@ -36,10 +36,32 @@
 #include "common/YUViewDomElement.h"
 #include "common/typedef.h"
 
-#include <QPen>
-
 namespace stats
 {
+
+enum class Pattern
+{
+  Solid,
+  Dash,
+  Dot,
+  DashDot,
+  DashDotDot
+};
+
+const std::vector<Pattern> AllPatterns = {
+    Pattern::Solid, Pattern::Dash, Pattern::Dot, Pattern::DashDot, Pattern::DashDotDot};
+
+struct LineDrawStyle
+{
+  Color   color;
+  double  width{};
+  Pattern pattern{Pattern::Solid};
+
+  bool operator!=(const LineDrawStyle &other) const
+  {
+    return color != other.color || width != other.width || pattern != other.pattern;
+  }
+};
 
 /* This class defines a type of statistic to render. Each statistics type entry defines the name and
  * and ID of a statistic. It also defines what type of data should be drawn for this type and how it
@@ -73,7 +95,7 @@ public:
   void loadPlaylist(const YUViewDomElement &root);
 
   // Every statistics type has an ID, a name and possibly a description
-  int     typeID;
+  int     typeID{};
   QString typeName;
   QString description;
 
@@ -85,41 +107,42 @@ public:
 
   // Is this statistics type rendered and what is the alpha value?
   // These are corresponding to the controls in the properties panel
-  bool render;
-  int  alphaFactor;
+  bool render{};
+  int  alphaFactor{50};
 
   // Value data (a certain value, that is set for a block)
-  bool        hasValueData;          // Does this type have value data?
-  bool        renderValueData;       // Do we render the value data?
-  bool        scaleValueToBlockSize; // Scale the values according to the size of the block
-  ColorMapper colorMapper;           // How do we map values to color?
+  bool        hasValueData{};          // Does this type have value data?
+  bool        renderValueData{};       // Do we render the value data?
+  bool        scaleValueToBlockSize{}; // Scale the values according to the size of the block
+  ColorMapper colorMapper;             // How do we map values to color?
 
   // Vector data (a vector that is set for a block)
-  bool hasVectorData; // Does this type have any vector data?
-  bool hasAffineTFData;
-  bool renderVectorData;       // Do we draw the vector data?
-  bool renderVectorDataValues; // Do we draw the values of the vector next to the vector (by default
-                               // true).
-  bool scaleVectorToZoom;
-  QPen vectorPen;   // How do we draw the vectors
-  int  vectorScale; // Every vector value (x,y) has to be divided by this value before displaying it
-                    // (e.g. 1/4 th pixel accuracy)
-  bool mapVectorToColor; // Color the vectors depending on their direction
-  enum arrowHead_t
+  bool hasVectorData{}; // Does this type have any vector data?
+  bool hasAffineTFData{};
+  bool renderVectorData{};       // Do we draw the vector data?
+  bool renderVectorDataValues{}; // Do we draw the values of the vector next to the vector (by
+                                 // default true).
+  bool          scaleVectorToZoom{};
+  LineDrawStyle vectorStyle; // How do we draw the vectors
+  int vectorScale{1}; // Every vector value (x,y) has to be divided by this value before displaying
+                      // it (e.g. 1/4 th pixel accuracy)
+  bool mapVectorToColor{}; // Color the vectors depending on their direction
+  enum class ArrowHead
   {
-    arrow = 0,
+    arrow,
     circle,
     none
   };
-  arrowHead_t arrowHead; // Do we draw an arrow, a circle or nothing at the end of the arrow?
+  ArrowHead arrowHead{
+      ArrowHead::arrow}; // Do we draw an arrow, a circle or nothing at the end of the arrow?
 
   // Do we (and if yes how) draw a grid around each block (vector or value)
-  bool renderGrid;
-  QPen gridPen;
-  bool scaleGridToZoom;
+  bool          renderGrid{true};
+  LineDrawStyle gridStyle;
+  bool          scaleGridToZoom{};
 
   // is statistic drawn as a block or as a polygon?
-  bool isPolygon;
+  bool isPolygon{};
 
 private:
   // If set, this map is used to map values to text
@@ -135,16 +158,16 @@ private:
     bool        scaleValueToBlockSize;
     ColorMapper colorMapper;
 
-    bool        renderVectorData;
-    bool        scaleVectorToZoom;
-    QPen        vectorPen;
-    int         vectorScale;
-    bool        mapVectorToColor;
-    arrowHead_t arrowHead;
+    bool          renderVectorData;
+    bool          scaleVectorToZoom;
+    LineDrawStyle vectorStyle;
+    int           vectorScale;
+    bool          mapVectorToColor;
+    ArrowHead     arrowHead;
 
-    bool renderGrid;
-    QPen gridPen;
-    bool scaleGridToZoom;
+    bool          renderGrid;
+    LineDrawStyle gridStyle;
+    bool          scaleGridToZoom;
   };
   initialState init;
 };
