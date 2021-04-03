@@ -45,7 +45,37 @@ target_include_directories(YUView PUBLIC
     "YUViewApp/src"
 )
 
+install(TARGETS YUView)
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+   # Mac OS X specific code
+endif()
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    # Install desktop entry
+    install(FILES packaging/linux/de.rwth_aachen.ient.YUView.desktop
+            DESTINATION share/applications )
+    # Install mime file
+    install(FILES packaging/linux/de.rwth_aachen.ient.YUView.xml
+            DESTINATION share/mime/packages )
+    # Install metainfo
+    install(FILES packaging/linux/de.rwth_aachen.ient.YUView.appdata.xml
+            DESTINATION share/metainfo )
+    # Install icons
+    install(FILES packaging/linux/icons/32x32/de.rwth_aachen.ient.YUView.png
+            DESTINATION share/icons/hicolor/32x32/apps)
+    install(FILES packaging/linux/icons/64x64/de.rwth_aachen.ient.YUView.png
+            DESTINATION share/icons/hicolor/64x64/apps)
+    install(FILES packaging/linux/icons/128x128/de.rwth_aachen.ient.YUView.png
+            DESTINATION share/icons/hicolor/128x128/apps)
+    install(FILES packaging/linux/icons/256x256/de.rwth_aachen.ient.YUView.png
+            DESTINATION share/icons/hicolor/256x256/apps)
+    install(FILES packaging/linux/icons/512x512/de.rwth_aachen.ient.YUView.png
+            DESTINATION share/icons/hicolor/512x512/apps)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+endif()
 
 #####################################################################################################################################
 # YUViewLib
