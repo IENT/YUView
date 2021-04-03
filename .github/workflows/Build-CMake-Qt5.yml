@@ -120,16 +120,16 @@ jobs:
 ############################### Packaging YUView, Installers #############################
 ##########################################################################################
 
-    - name: Build App (Mac)
-      run: |
-        macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
-        cp ${{matrix.LIBDE265_LOCAL}} build/YUViewApp/YUView.app/Contents/MacOS/.
-        cd build/YUViewApp
-        # Zip
-        zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
-        mkdir $GITHUB_WORKSPACE/artifacts
-        cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
-      if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
+    # - name: Build App (Mac)
+    #   run: |
+    #     macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
+    #     cp ${{matrix.LIBDE265_LOCAL}} build/YUViewApp/YUView.app/Contents/MacOS/.
+    #     cd build/YUViewApp
+    #     # Zip
+    #     zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
+    #     mkdir $GITHUB_WORKSPACE/artifacts
+    #     cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
+    #   if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
 
     - name: Build Appimage (Linux)
       run: |
