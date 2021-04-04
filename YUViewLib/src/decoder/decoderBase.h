@@ -101,10 +101,7 @@ public:
   bool statisticsEnabled() const { return statisticsData != nullptr; }
   void enableStatisticsRetrieval(stats::StatisticsData *s) { this->statisticsData = s; }
   stats::FrameTypeData getCurrentFrameStatsForType(int typeIdx);
-  virtual void         fillStatisticList(stats::StatisticsData &statisticsData) const
-  {
-    Q_UNUSED(statisticsData);
-  };
+  virtual void         fillStatisticList(stats::StatisticsData &) const {};
 
   // Error handling
   bool    errorInDecoder() const { return decoderState == DecoderState::Error; }

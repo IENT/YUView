@@ -507,9 +507,6 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
 
   DEBUG_LIBDE265("decoderLibde265::cacheStatistics");
 
-  // Clear the local statistics cache
-  this->statisticsData->clear();
-
   /// --- CTB internals/statistics
   int widthInCTB, heightInCTB, log2CTBSize;
   de265_internals_get_CTB_Info_Layout(img, &widthInCTB, &heightInCTB, &log2CTBSize);

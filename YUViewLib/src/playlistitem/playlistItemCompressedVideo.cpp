@@ -287,7 +287,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Fill the list of statistics that we can provide
   DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Fill the statistics list");
-  fillStatisticList();
+  this->fillStatisticList();
+  this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
 
   // Set the frame number limits
   if (this->prop.startEndRange == indexRange({-1, -1}))
@@ -622,6 +623,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
         rightFrame = caching ? currentFrameIdx[1] == frameIdx : currentFrameIdx[0] == frameIdx;
         if (rightFrame)
         {
+          if (dec->statisticsEnabled())
+            this->statisticsData.setFrameIndex(frameIdx);
           video->rawData = dec->getRawFrameData();
           video->rawData_frameIndex = frameIdx;
         }
