@@ -240,7 +240,7 @@ void StatisticsFileCSVTest::testCSVFileParsing1()
   // We did not let the file parse the positions of the start of each poc/type yet so loading should
   // not yield any data yet.
   statFile.loadStatisticData(statData, 1, 9);
-  QCOMPARE(statData.getFrameIndex(), -1);
+  QCOMPARE(statData.getFrameIndex(), 1);
   {
     auto &frameData = statData[9];
     QCOMPARE(frameData.vectorData.size(), size_t(0));
