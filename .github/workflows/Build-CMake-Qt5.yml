@@ -82,12 +82,6 @@ jobs:
         strip $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt
       if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
 
-    - name: Install Linuxdeployqt
-      run: |
-        curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
-        chmod a+x linuxdeployqt-6-x86_64.AppImage
-      if: matrix.os == 'ubuntu-16.04'
-
     - name: Install libde265
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
@@ -130,20 +124,6 @@ jobs:
     #     mkdir $GITHUB_WORKSPACE/artifacts
     #     cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
     #   if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
-
-    - name: Build Appimage (Linux)
-      run: |
-        cd build
-        make INSTALL_ROOT=appdir install
-        $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
-        mv YUView-*.AppImage YUView.AppImage
-        mkdir $GITHUB_WORKSPACE/artifacts
-        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
-        cd $GITHUB_WORKSPACE
-        ls -l
-        cd $GITHUB_WORKSPACE/artifacts
-        ls -l
-      if: matrix.os == 'ubuntu-16.04'
 
 ##########################################################################################
 ############################### Upload ###################################################

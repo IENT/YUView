@@ -1,4 +1,4 @@
-name: CI build with CMake and Qt6
+name: CI build AppImage with CMake and Qt5
 
 on:
   push:
@@ -8,29 +8,16 @@ on:
 
 jobs:
 
-  build-unix-qt6:
+  build-unix-qt5:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-16.04
-            QT_FILE: qtBase_6.0.2_xenial.zip
+            QT_FILE: qtBase_5.15.1_xenial.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
             ARTIFACT_NAME: YUView.AppImage
-          - os: ubuntu-18.04
-            QT_FILE: qtBase_6.0.2_bionic.zip
-            LIBDE265_REMOTE: libde265.so
-            LIBDE265_LOCAL: libde265-internals.so
-          - os: macos-10.15
-            QT_FILE: qtBase_6.0.2_mac.zip
-            LIBDE265_REMOTE: libde265.dylib
-            LIBDE265_LOCAL: libde265-internals.dylib
-            ARTIFACT_NAME: YUView-Mac.zip
-          # - os: ubuntu-20.04
-          #   QT_FILE: qtBase_6.0.2_bionic.zip
-          #   LIBDE265_REMOTE: libde265.so
-          #   LIBDE265_LOCAL: libde265-internals.so
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
@@ -63,10 +50,17 @@ jobs:
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.0.2/${{matrix.QT_FILE}} -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/${{matrix.QT_FILE}} -o Qt.zip
         unzip -qa Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
+
+    - name: Install Linuxdeployqt
+      run: |
+        wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+        chmod +x linuxdeploy*.AppImage
+      if: matrix.os == 'ubuntu-16.04'
 
     - name: Install libde265
       run: |
@@ -83,7 +77,7 @@ jobs:
         cd $GITHUB_WORKSPACE
         mkdir build
         cd build
-        cmake  -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt" ..
+        cmake  -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt" -DCMAKE_INSTALL_PREFIX=/usr ..
         cmake --build . --parallel $(nproc)
 
 ##########################################################################################
@@ -111,6 +105,19 @@ jobs:
     #     cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
     #   if: matrix.os == 'macos-10.15' || matrix.os == 'macos-11.0'
 
+    - name: Build Appimage (Linux)
+      run: |
+        cd $GITHUB_WORKSPACE/build
+        make install DESTDIR=appdir
+        $GITHUB_WORKSPACE/linuxdeploy-x86_64.AppImage  --appdir appdir --plugin qt  --output appimage
+        mv YUView-*.AppImage YUView.AppImage
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
+        cd $GITHUB_WORKSPACE
+        ls -l
+        cd $GITHUB_WORKSPACE/artifacts
+        ls -l
+      if: matrix.os == 'ubuntu-16.04'
 
 ##########################################################################################
 ############################### Upload ###################################################
