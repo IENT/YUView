@@ -12,8 +12,8 @@ namespace
 
 struct CheckStatsItem
 {
-  unsigned x, y, w, h;
-  int      v0, v1;
+  unsigned x{}, y{}, w{}, h{};
+  int      v0{}, v1{};
 };
 
 void checkVectorList(const std::vector<stats::statisticsItem_Vector> &vectors,

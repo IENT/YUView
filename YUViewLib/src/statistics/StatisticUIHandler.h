@@ -35,20 +35,21 @@
 #include "common/saveUi.h"
 #include "common/typedef.h"
 #include "common/YUViewDomElement.h"
+#include "statistics/StatisticsType.h"
 #include "ui/statisticsstylecontrol.h"
 
 #include <QMutex>
 #include <QPointer>
 #include <QVector>
 
-#include "ui_StatisticHandler.h"
+#include "ui_statisticUIHandler.h"
 
 namespace stats
 {
 
 class StatisticsData;
 
-/* The StatisticHandler can handle statistics.
+/* Handles the UI for statistics data
  */
 class StatisticUIHandler : public QObject
 {
@@ -90,12 +91,12 @@ private:
   std::vector<StatisticsType> statsTypeListBackup;
 
   // Primary controls for the statistics
-  SafeUi<Ui::StatisticHandler> ui;
+  SafeUi<Ui::StatisticUIHandler> ui;
 
   // Secondary controls. These can be set up it the item is used in an overlay item so that the
   // properties of the statistics item can be controlled from the properties panel of the overlay
   // item. The primary and secondary controls are linked and always show/control the same thing.
-  SafeUi<Ui::StatisticHandler> ui2;
+  SafeUi<Ui::StatisticUIHandler> ui2;
   QPointer<QWidget>            secondaryControlsWidget;
 
   StatisticsStyleControl statisticsStyleUI;

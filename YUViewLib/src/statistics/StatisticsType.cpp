@@ -61,7 +61,7 @@ LineDrawStyle convertStringToPen(const QString &str)
     style.color     = Color(split[0].toStdString());
     style.width     = split[1].toDouble();
     auto patternIdx = split[2].toInt();
-    if (patternIdx >= 0 && patternIdx < AllPatterns.size())
+    if (patternIdx >= 0 && unsigned(patternIdx) < AllPatterns.size())
       style.pattern = AllPatterns[patternIdx];
   }
   return style;
@@ -228,12 +228,9 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
     newChild.setAttribute("mapVectorToColor", mapVectorToColor);
   if (init.arrowHead != arrowHead)
   {
-    auto it = std::find(AllArrowHeads.begin(), AllArrowHeads.end(), arrowHead);
-    if (it != AllArrowHeads.end())
-    {
-      auto idx = std::distance(AllArrowHeads.begin(), it);
+    auto idx = indexInVec(stats::AllArrowHeads, arrowHead);
+    if (idx >= 0)
       newChild.setAttribute("renderarrowHead", idx);
-    }
   }
   if (init.renderGrid != renderGrid)
     newChild.setAttribute("renderGrid", renderGrid);
@@ -294,7 +291,7 @@ void StatisticsType::loadPlaylist(const YUViewDomElement &root)
     else if (attributes[i].first == "renderarrowHead")
     {
       auto idx = attributes[i].second.toInt();
-      if (idx >= 0 && idx < AllArrowHeads.size())
+      if (idx >= 0 && unsigned(idx) < AllArrowHeads.size())
         arrowHead = AllArrowHeads[idx];
     }
     else if (attributes[i].first == "renderGrid")
@@ -321,7 +318,7 @@ QString StatisticsType::getValueTxt(int val) const
 void StatisticsType::setMappingValues(std::vector<QString> values)
 {
   // We assume linear increasing typed IDs
-  for (int i = 0; i < values.size(); i++)
+  for (size_t i = 0; i < values.size(); i++)
     this->valMap[i] = values[i];
 }
 

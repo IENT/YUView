@@ -35,9 +35,10 @@
 #include "StatisticsType.h"
 #include "common/functions.h"
 
-
 #include <QPainter>
 #include <QPainterPath>
+#include <QtMath>
+#include <cmath>
 
 namespace
 {
@@ -53,7 +54,7 @@ namespace
 QPolygon convertToQPolygon(const stats::Polygon &poly)
 {
   auto qPoly = QPolygon(poly.size());
-  for (int i = 0; i < poly.size(); i++)
+  for (size_t i = 0; i < poly.size(); i++)
     qPoly.setPoint(i, QPoint(poly[i].first, poly[i].second));
   return qPoly;
 }
@@ -84,7 +85,8 @@ Qt::PenStyle patternToQPenStyle(stats::Pattern &pattern)
 
 QPen styleToPen(stats::LineDrawStyle &style)
 {
-  return QPen(functions::convertToQColor(style.color), style.width, patternToQPenStyle(style.pattern));
+  return QPen(
+      functions::convertToQColor(style.color), style.width, patternToQPenStyle(style.pattern));
 }
 
 void paintVector(QPainter *                   painter,
@@ -108,15 +110,15 @@ void paintVector(QPainter *                   painter,
       !(y1 > yMax && y2 > yMax))
   {
     // Set the pen for drawing
-    auto vectorStyle  = statisticsType.vectorStyle;
-    auto arrowColor = functions::convertToQColor(vectorStyle.color);
+    auto vectorStyle = statisticsType.vectorStyle;
+    auto arrowColor  = functions::convertToQColor(vectorStyle.color);
     if (statisticsType.mapVectorToColor)
-      arrowColor.setHsvF(clip((atan2f(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
+      arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
     arrowColor.setAlpha(arrowColor.alpha() * ((float)statisticsType.alphaFactor / 100.0));
-    
+
     if (statisticsType.scaleVectorToZoom)
       vectorStyle.width = vectorStyle.width * zoomFactor / 8;
-    
+
     painter->setPen(QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
     painter->setBrush(arrowColor);
 
@@ -127,7 +129,7 @@ void paintVector(QPainter *                   painter,
       // At which angle do we draw the triangle?
       // A vector to the right (1,  0) -> 0°
       // A vector to the top   (0, -1) -> 90°
-      const auto angle = qAtan2(vy, vx);
+      const auto angle = std::atan2(vy, vx);
 
       // Draw the vector head if the vector is not 0,0
       if ((vx != 0 || vy != 0))
@@ -141,16 +143,18 @@ void paintVector(QPainter *                   painter,
         if (statisticsType.arrowHead != stats::StatisticsType::ArrowHead::none)
         {
           // We draw an arrow head. This means that we will have to draw a shortened line
-          const int shorten =
-              (statisticsType.arrowHead == stats::StatisticsType::ArrowHead::arrow)
-                  ? headSize * 2
-                  : headSize * 0.5;
+          const int shorten = (statisticsType.arrowHead == stats::StatisticsType::ArrowHead::arrow)
+                                  ? headSize * 2
+                                  : headSize * 0.5;
 
-          if (sqrt(vx * vx * zoomFactor * zoomFactor + vy * vy * zoomFactor * zoomFactor) > shorten)
+          if (std::sqrt(vx * vx * zoomFactor * zoomFactor + vy * vy * zoomFactor * zoomFactor) >
+              shorten)
           {
             // Shorten the line and draw it
-            auto vectorLine = QLineF(
-                x1, y1, double(x2) - cos(angle) * shorten, double(y2) - sin(angle) * shorten);
+            auto vectorLine = QLineF(x1,
+                                     y1,
+                                     double(x2) - std::cos(angle) * shorten,
+                                     double(y2) - std::sin(angle) * shorten);
             painter->drawLine(vectorLine);
           }
         }
@@ -441,13 +445,13 @@ void stats::paintStatisticsData(QPainter *             painter,
           auto gridStyle = it->gridStyle;
           if (it->scaleGridToZoom)
             gridStyle.width = gridStyle.width * zoomFactor;
-          
+
           painter->setPen(styleToPen(gridStyle));
           painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color
 
           // Save the line width (if thicker)
-        if (gridStyle.width > maxLineWidth)
-          maxLineWidth = gridStyle.width;
+          if (gridStyle.width > maxLineWidth)
+            maxLineWidth = gridStyle.width;
 
           painter->drawPolygon(displayPolygon);
         }
@@ -544,14 +548,15 @@ void stats::paintStatisticsData(QPainter *             painter,
         {
           // Set the pen for drawing
           auto vectorStyle = it->vectorStyle;
-          auto arrowColor = functions::convertToQColor(vectorStyle.color);
+          auto arrowColor  = functions::convertToQColor(vectorStyle.color);
           if (it->mapVectorToColor)
-            arrowColor.setHsvF(clip((atan2f(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
+            arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));
           if (it->scaleVectorToZoom)
             vectorStyle.width = vectorStyle.width * zoomFactor / 8;
 
-          painter->setPen(QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
+          painter->setPen(
+              QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
           painter->setBrush(arrowColor);
 
           // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or
@@ -561,7 +566,7 @@ void stats::paintStatisticsData(QPainter *             painter,
             // At which angle do we draw the triangle?
             // A vector to the right (1,  0) -> 0°
             // A vector to the top   (0, -1) -> 90°
-            const auto angle = qAtan2(vy, vx);
+            const auto angle = std::atan2(vy, vx);
 
             // Draw the vector head if the vector is not 0,0
             if ((vx != 0 || vy != 0))
@@ -578,12 +583,14 @@ void stats::paintStatisticsData(QPainter *             painter,
                 const int shorten = (it->arrowHead == StatisticsType::ArrowHead::arrow)
                                         ? headSize * 2
                                         : headSize * 0.5;
-                if (sqrt(vx * vx * zoomFactor * zoomFactor + vy * vy * zoomFactor * zoomFactor) >
-                    shorten)
+                if (std::sqrt(vx * vx * zoomFactor * zoomFactor +
+                              vy * vy * zoomFactor * zoomFactor) > shorten)
                 {
                   // Shorten the line and draw it
-                  QLineF vectorLine = QLineF(
-                      x1, y1, double(x2) - cos(angle) * shorten, double(y2) - sin(angle) * shorten);
+                  QLineF vectorLine = QLineF(x1,
+                                             y1,
+                                             double(x2) - std::cos(angle) * shorten,
+                                             double(y2) - std::sin(angle) * shorten);
                   painter->drawLine(vectorLine);
                 }
               }
@@ -817,7 +824,7 @@ void stats::paintStatisticsData(QPainter *             painter,
     for (const auto &vectorItem : statisticsData[it->typeID].polygonVectorData)
     {
       // Calculate the size and position of the rectangle to draw (zoomed in)
-      auto vectorPoly           = convertToQPolygon(vectorItem.corners);
+      auto vectorPoly          = convertToQPolygon(vectorItem.corners);
       auto trans               = QTransform().scale(zoomFactor, zoomFactor);
       auto displayPolygon      = trans.map(vectorPoly);
       auto displayBoundingRect = displayPolygon.boundingRect();
@@ -857,15 +864,16 @@ void stats::paintStatisticsData(QPainter *             painter,
             !(center_y < yMin && head_y < yMin) && !(center_y > yMax && head_y > yMax))
         {
           // Set the pen for drawing
-          auto vectorStyle  = it->vectorStyle;
-          auto arrowColor = functions::convertToQColor(vectorStyle.color);
+          auto vectorStyle = it->vectorStyle;
+          auto arrowColor  = functions::convertToQColor(vectorStyle.color);
           if (it->mapVectorToColor)
-            arrowColor.setHsvF(clip((atan2f(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
+            arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));
           if (it->scaleVectorToZoom)
             vectorStyle.width = vectorStyle.width * zoomFactor / 8;
 
-          painter->setPen(QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
+          painter->setPen(
+              QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
           painter->setBrush(arrowColor);
 
           // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or
@@ -875,7 +883,7 @@ void stats::paintStatisticsData(QPainter *             painter,
             // At which angle do we draw the triangle?
             // A vector to the right (1,  0) -> 0°
             // A vector to the top   (0, -1) -> 90°
-            const auto angle = qAtan2(vy, vx);
+            const auto angle = std::atan2(vy, vx);
 
             // Draw the vector head if the vector is not 0,0
             if ((vx != 0 || vy != 0))
@@ -891,14 +899,14 @@ void stats::paintStatisticsData(QPainter *             painter,
                 const int shorten = (it->arrowHead == StatisticsType::ArrowHead::arrow)
                                         ? headSize * 2
                                         : headSize * 0.5;
-                if (sqrt(vx * vx * zoomFactor * zoomFactor + vy * vy * zoomFactor * zoomFactor) >
-                    shorten)
+                if (std::sqrt(vx * vx * zoomFactor * zoomFactor +
+                              vy * vy * zoomFactor * zoomFactor) > shorten)
                 {
                   // Shorten the line and draw it
                   auto vectorLine = QLineF(center_x,
                                            center_y,
-                                           double(head_x) - cos(angle) * shorten,
-                                           double(head_y) - sin(angle) * shorten);
+                                           double(head_x) - std::cos(angle) * shorten,
+                                           double(head_y) - std::sin(angle) * shorten);
                   painter->drawLine(vectorLine);
                 }
               }

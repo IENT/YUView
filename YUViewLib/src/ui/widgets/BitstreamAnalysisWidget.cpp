@@ -105,7 +105,7 @@ void BitstreamAnalysisWidget::updateStreamInfo()
   auto nrSelections = this->parser->getNrStreams();
   if (this->parser->getNrStreams() > 1)
     nrSelections += 1;
-  if (this->ui.showStreamComboBox->count() != nrSelections)
+  if (this->ui.showStreamComboBox->count() != int(nrSelections))
   {
     this->ui.showStreamComboBox->clear();
     if (nrSelections == 1)

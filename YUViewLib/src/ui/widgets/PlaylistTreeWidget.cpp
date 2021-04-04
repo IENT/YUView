@@ -43,6 +43,7 @@
 #include <QPainter>
 #include <QScopedValueRollback>
 #include <QSettings>
+#include <QTextStream>
 
 #include "playlistitem/playlistItemContainer.h"
 #include "playlistitem/playlistItemDifference.h"

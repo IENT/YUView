@@ -33,6 +33,7 @@
 #include "StatisticsFileCSV.h"
 
 #include <iostream>
+#include <QTextStream>
 
 namespace stats
 {
@@ -105,7 +106,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
         fileAtEnd = true;
       // a corrupted file may contain an arbitrary amount of non-\n symbols
       // prevent lineBuffer overflow by dumping it for such cases
-      if (lineBuffer.size() > STAT_MAX_STRING_SIZE)
+      if (unsigned(lineBuffer.size()) > STAT_MAX_STRING_SIZE)
         lineBuffer.clear(); // prevent an overflow here
       for (size_t i = 0; i < size_t(bufferSize); i++)
       {

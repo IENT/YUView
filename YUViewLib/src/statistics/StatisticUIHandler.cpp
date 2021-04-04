@@ -40,7 +40,8 @@
 #endif
 #include <QtMath>
 
-#include "StatisticsData.h"
+#include "statistics/StatisticsData.h"
+#include "statistics/StatisticsType.h"
 #include "common/functions.h"
 
 namespace stats
@@ -299,7 +300,7 @@ void StatisticUIHandler::deleteSecondaryStatisticsHandlerControls()
 
 void StatisticUIHandler::updateSettings()
 {
-  for (unsigned row = 0; row < itemStyleButtons[0].length(); ++row)
+  for (unsigned row = 0; row < unsigned(itemStyleButtons[0].length()); ++row)
   {
     itemStyleButtons[0][row]->setIcon(functions::convertIcon(":img_edit.png"));
     if (secondaryControlsWidget)
@@ -318,7 +319,7 @@ void StatisticUIHandler::updateStatisticsHandlerControls()
   // First run a check if all statisticsTypes are identical
   bool controlsStillValid = true;
   auto &statTypes = this->statisticsData->getStatisticsTypes();
-  if (statTypes.size() != itemNameCheckBoxes[0].count())
+  if (statTypes.size() != unsigned(itemNameCheckBoxes[0].count()))
     // There are more or less statistics types as before
     controlsStillValid = false;
   else
