@@ -24,10 +24,10 @@ void checkVectorList(const std::vector<stats::statisticsItem_Vector> &vectors,
   {
     auto vec = vectors[i];
     auto chk = checkItems[i];
-    QCOMPARE(vec.pos[0], chk.x);
-    QCOMPARE(vec.pos[1], chk.y);
-    QCOMPARE(vec.size[0], chk.w);
-    QCOMPARE(vec.size[1], chk.h);
+    QCOMPARE(unsigned(vec.pos[0]), chk.x);
+    QCOMPARE(unsigned(vec.pos[1]), chk.y);
+    QCOMPARE(unsigned(vec.size[0]), chk.w);
+    QCOMPARE(unsigned(vec.size[1]), chk.h);
     QCOMPARE(vec.point[0].first, chk.v0);
     QCOMPARE(vec.point[0].second, chk.v1);
   }
@@ -41,10 +41,10 @@ void checkValueList(const std::vector<stats::statisticsItem_Value> &values,
   {
     auto val = values[i];
     auto chk = checkItems[i];
-    QCOMPARE(val.pos[0], chk.x);
-    QCOMPARE(val.pos[1], chk.y);
-    QCOMPARE(val.size[0], chk.w);
-    QCOMPARE(val.size[1], chk.h);
+    QCOMPARE(unsigned(val.pos[0]), chk.x);
+    QCOMPARE(unsigned(val.pos[1]), chk.y);
+    QCOMPARE(unsigned(val.size[0]), chk.w);
+    QCOMPARE(unsigned(val.size[1]), chk.h);
     QCOMPARE(val.value, chk.v0);
   }
 }
