@@ -132,7 +132,7 @@ void StatisticsFileCSVTest::testCSVFileParsing1()
   QCOMPARE(statData.getFrameSize(), QSize(1920, 1080));
 
   auto types = statData.getStatisticsTypes();
-  QCOMPARE(types.size(), 12);
+  QCOMPARE(types.size(), size_t(12));
 
   // Code on how to generate the lists:
 
@@ -243,8 +243,8 @@ void StatisticsFileCSVTest::testCSVFileParsing1()
   QCOMPARE(statData.getFrameIndex(), -1);
   {
     auto &frameData = statData[9];
-    QCOMPARE(frameData.vectorData.size(), 0);
-    QCOMPARE(frameData.valueData.size(), 0);
+    QCOMPARE(frameData.vectorData.size(), size_t(0));
+    QCOMPARE(frameData.valueData.size(), size_t(0));
   }
 
   std::atomic_bool breakAtomic;
@@ -263,7 +263,7 @@ void StatisticsFileCSVTest::testCSVFileParsing1()
                      {116, 56, 4, 8, 0, 0},
                      {128, 32, 32, 16, 0, 0},
                      {128, 48, 32, 16, 0, 0}});
-    QCOMPARE(frameData.valueData.size(), 0);
+    QCOMPARE(frameData.valueData.size(), size_t(0));
   }
 
   statFile.loadStatisticData(statData, 1, 11);
@@ -278,14 +278,14 @@ void StatisticsFileCSVTest::testCSVFileParsing1()
                      {128, 32, 32, 16, -31, 0},
                      {128, 48, 32, 16, -31, 0},
                      {160, 32, 32, 16, -31, 0}});
-    QCOMPARE(frameData.valueData.size(), 0);
+    QCOMPARE(frameData.valueData.size(), size_t(0));
   }
 
   statFile.loadStatisticData(statData, 7, 3);
   QCOMPARE(statData.getFrameIndex(), 7);
   {
     auto &frameData = statData[3];
-    QCOMPARE(frameData.vectorData.size(), 0);
+    QCOMPARE(frameData.vectorData.size(), size_t(0));
     checkValueList(frameData.valueData,
                    {{0, 32, 8, 16, 1},
                     {128, 48, 32, 16, 0},
