@@ -205,7 +205,7 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
     QRegularExpression pocRegex("BlockStat: POC ([0-9]+)");
 
     // prepare regex for selected type
-    auto statTypes = statisticsData.getStatisticsTypes();
+    auto &statTypes = statisticsData.getStatisticsTypes();
     auto statIt = std::find_if(statTypes.begin(), statTypes.end(), [typeID](StatisticsType &t){ return t.typeID == typeID; });
     Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
     QRegularExpression typeRegex(" " + statIt->typeName + "="); // for catching lines of the type

@@ -36,16 +36,17 @@
 
 #include <QPainterPath>
 
-namespace stats
-{
-
 // Activate this if you want to know when what is loaded.
 #define STATISTICS_DEBUG_LOADING 0
 #if STATISTICS_DEBUG_LOADING && !NDEBUG
-#define DEBUG_STAT qDebug
+#include <QDebug>
+#define DEBUG_STATDATA(fmt) qDebug() << fmt
 #else
-#define DEBUG_STAT(fmt, ...) ((void)0)
+#define DEBUG_STATDATA(fmt) ((void)0)
 #endif
+
+namespace stats
+{
 
 FrameTypeData StatisticsData::getFrameTypeData(int typeID)
 {
@@ -64,7 +65,8 @@ itemLoadingState StatisticsData::needsLoading(int frameIndex) const
       if (t.render)
       {
         // At least one statistic type is drawn. We need to load it.
-        DEBUG_STAT("StatisticsData::needsLoading %d LoadingNeeded", frameIdx);
+        DEBUG_STATDATA("StatisticsData::needsLoading new frameIndex " << frameIdx
+                                                                      << " LoadingNeeded");
         return LoadingNeeded;
       }
   }
@@ -75,31 +77,31 @@ itemLoadingState StatisticsData::needsLoading(int frameIndex) const
   {
     // If the statistics for this frame index were not loaded yet but will be rendered, load them
     // now.
-    auto typeIdx = it->typeID;
-    if (it->render)
+    if (it->render && this->frameCache.count(it->typeID) == 0)
     {
-      if (this->frameCache.count(typeIdx) > 0)
-      {
-        // Return that loading is needed before we can render the statitics.
-        DEBUG_STAT("StatisticsData::needsLoading %d LoadingNeeded", frameIdx);
-        return LoadingNeeded;
-      }
+      // Return that loading is needed before we can render the statitics.
+      DEBUG_STATDATA("StatisticsData::needsLoading type " << it->typeID << " LoadingNeeded");
+      return LoadingNeeded;
     }
   }
 
   // Everything needed for drawing is loaded
-  DEBUG_STAT("StatisticsData::needsLoading %d LoadingNotNeeded", frameIdx);
+  DEBUG_STATDATA("StatisticsData::needsLoading " << frameIdx << " LoadingNotNeeded");
   return LoadingNotNeeded;
 }
 
-std::vector<int> StatisticsData::getTypesThatNeedLoading() const
+std::vector<int> StatisticsData::getTypesThatNeedLoading(int frameIndex) const
 {
   std::vector<int> typesToLoad;
+  auto             loadAll = this->frameIdx != frameIndex;
   for (const auto &statsType : this->statsTypes)
   {
-    if (statsType.render && this->frameCache.count(statsType.typeID) == 0)
+    if (loadAll || (statsType.render && this->frameCache.count(statsType.typeID) == 0))
       typesToLoad.push_back(statsType.typeID);
   }
+
+  DEBUG_STATDATA("StatisticsData::getTypesThatNeedLoading "
+                 << QString::fromStdString(to_string(typesToLoad)));
   return typesToLoad;
 }
 
@@ -118,8 +120,6 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
     if (it->typeID == INT_INVALID) // no active statistics
       continue;
 
-    const auto typeName = this->statsTypes.at(it->typeID).typeName;
-
     // Get all value data entries
     bool foundStats = false;
     for (const auto &valueItem : this->frameCache.at(it->typeID).valueData)
@@ -132,7 +132,7 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
         if (valTxt.isEmpty() && it->scaleValueToBlockSize)
           valTxt = QString("%1").arg(float(value) / (valueItem.size[0] * valueItem.size[1]));
 
-        valueList.append(QStringPair(typeName, valTxt));
+        valueList.append(QStringPair(it->typeName, valTxt));
         foundStats = true;
       }
     }
@@ -157,15 +157,15 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
           vectorValue2 = float(vectorItem.point[0].second / it->vectorScale);
         }
         valueList.append(
-            QStringPair(QString("%1[x]").arg(typeName), QString::number(vectorValue1)));
+            QStringPair(QString("%1[x]").arg(it->typeName), QString::number(vectorValue1)));
         valueList.append(
-            QStringPair(QString("%1[y]").arg(typeName), QString::number(vectorValue2)));
+            QStringPair(QString("%1[y]").arg(it->typeName), QString::number(vectorValue2)));
         foundStats = true;
       }
     }
 
     if (!foundStats)
-      valueList.append(QStringPair(typeName, "-"));
+      valueList.append(QStringPair(it->typeName, "-"));
   }
 
   return valueList;
@@ -184,9 +184,8 @@ void StatisticsData::setFrameIndex(int frameIndex)
   std::unique_lock<std::mutex> lock(this->accessMutex);
   if (this->frameIdx != frameIndex)
   {
-    DEBUG_STAT("StatisticsData::getTypesThatNeedLoading New frame index set %d -> %d",
-               this->frameIdx,
-               frameIndex);
+    DEBUG_STATDATA("StatisticsData::getTypesThatNeedLoading New frame index set "
+                   << this->frameIdx << "->" << frameIndex);
     this->frameCache.clear();
     this->frameIdx = frameIndex;
   }
@@ -207,8 +206,8 @@ void StatisticsData::addStatType(const StatisticsType &type)
         maxTypeID = it->typeID;
     }
 
-    auto newType = type;
-    newType.typeID         = maxTypeID + 1;
+    auto newType   = type;
+    newType.typeID = maxTypeID + 1;
     this->statsTypes.push_back(newType);
   }
   else

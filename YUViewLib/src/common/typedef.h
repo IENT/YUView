@@ -263,10 +263,25 @@ std::string to_string(const std::pair<T, T> typePair)
 }
 
 template <typename T>
+std::string to_string(const std::vector<T> vec)
+{
+  std::ostringstream ss;
+  ss << "[";
+  for (auto it = vec.begin(); it != vec.end(); it++)
+  {
+    if (it != vec.begin())
+      ss << ", ";
+    ss << (*it);
+  }
+  ss << "]";
+  return ss.str();
+}
+
+template <typename T>
 int indexInVec(const std::vector<T> &vec, const T &item)
 {
   auto it = std::find(vec.begin(), vec.end(), item);
-  if (it == stats::AllPatterns.end())
+  if (it == vec.end())
     return -1;
   return int(std::distance(vec.begin(), it));
 }

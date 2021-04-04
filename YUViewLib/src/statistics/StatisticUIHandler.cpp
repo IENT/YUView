@@ -49,9 +49,9 @@ namespace stats
 // Activate this if you want to know when what is loaded.
 #define STATISTICS_DEBUG_LOADING 0
 #if STATISTICS_DEBUG_LOADING && !NDEBUG
-#define DEBUG_STAT qDebug
+#define DEBUG_STATUI qDebug
 #else
-#define DEBUG_STAT(fmt, ...) ((void)0)
+#define DEBUG_STATUI(fmt, ...) ((void)0)
 #endif
 
 StatisticUIHandler::StatisticUIHandler()
@@ -77,12 +77,12 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
 
   if (!this->statisticsData)
   {
-    DEBUG_STAT("StatisticUIHandler::createStatisticsHandlerControls statisticsData not set");
+    DEBUG_STATUI("StatisticUIHandler::createStatisticsHandlerControls statisticsData not set");
     return {};
   }
 
   // Add the controls to the gridLayer
-  auto statTypes = this->statisticsData->getStatisticsTypes();
+  auto &statTypes = this->statisticsData->getStatisticsTypes();
   for (unsigned row = 0; row < statTypes.size(); ++row)
   {
     auto &statType = statTypes.at(row);
@@ -142,13 +142,13 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
 
     if (!this->statisticsData)
     {
-      DEBUG_STAT(
+      DEBUG_STATUI(
           "StatisticUIHandler::getSecondaryStatisticsHandlerControls statisticsData not set");
       return {};
     }
 
     // Add the controls to the gridLayer
-    auto statTypes = this->statisticsData->getStatisticsTypes();
+    auto &statTypes = this->statisticsData->getStatisticsTypes();
     for (unsigned row = 0; row < statTypes.size(); ++row)
     {
       auto &statType = statTypes.at(row);
@@ -207,11 +207,11 @@ void StatisticUIHandler::onStatisticsControlChanged()
 {
   if (!this->statisticsData)
   {
-    DEBUG_STAT("StatisticUIHandler::onStatisticsControlChanged statisticsData not set");
+    DEBUG_STATUI("StatisticUIHandler::onStatisticsControlChanged statisticsData not set");
     return;
   }
 
-  auto statTypes = this->statisticsData->getStatisticsTypes();
+  auto &statTypes = this->statisticsData->getStatisticsTypes();
   for (size_t row = 0; row < statTypes.size(); ++row)
   {
     auto &statType = statTypes.at(row);
@@ -253,11 +253,11 @@ void StatisticUIHandler::onSecondaryStatisticsControlChanged()
 {
   if (!this->statisticsData)
   {
-    DEBUG_STAT("StatisticUIHandler::onSecondaryStatisticsControlChanged statisticsData not set");
+    DEBUG_STATUI("StatisticUIHandler::onSecondaryStatisticsControlChanged statisticsData not set");
     return;
   }
 
-  auto statTypes = this->statisticsData->getStatisticsTypes();
+  auto &statTypes = this->statisticsData->getStatisticsTypes();
   for (size_t row = 0; row < statTypes.size(); ++row)
   {
     auto &statType = statTypes.at(row);
@@ -311,13 +311,13 @@ void StatisticUIHandler::updateStatisticsHandlerControls()
 {
   if (!this->statisticsData)
   {
-    DEBUG_STAT("StatisticUIHandler::updateStatisticsHandlerControls statisticsData not set");
+    DEBUG_STATUI("StatisticUIHandler::updateStatisticsHandlerControls statisticsData not set");
     return;
   }
 
   // First run a check if all statisticsTypes are identical
   bool controlsStillValid = true;
-  auto statTypes = this->statisticsData->getStatisticsTypes();
+  auto &statTypes = this->statisticsData->getStatisticsTypes();
   if (statTypes.size() != itemNameCheckBoxes[0].count())
     // There are more or less statistics types as before
     controlsStillValid = false;
@@ -425,7 +425,7 @@ void StatisticUIHandler::clearStatTypes()
 {
   if (!this->statisticsData)
   {
-    DEBUG_STAT("StatisticUIHandler::clearStatTypes statisticsData not set");
+    DEBUG_STATUI("StatisticUIHandler::clearStatTypes statisticsData not set");
     return;
   }
 
@@ -441,11 +441,11 @@ void StatisticUIHandler::onStyleButtonClicked(unsigned id)
 {
   if (!this->statisticsData)
   {
-    DEBUG_STAT("StatisticUIHandler::onStyleButtonClicked statisticsData not set");
+    DEBUG_STATUI("StatisticUIHandler::onStyleButtonClicked statisticsData not set");
     return;
   }
 
-  auto statTypes = this->statisticsData->getStatisticsTypes();
+  auto &statTypes = this->statisticsData->getStatisticsTypes();
   statisticsStyleUI.setStatsItem(&statTypes[id]);
   statisticsStyleUI.show();
 }

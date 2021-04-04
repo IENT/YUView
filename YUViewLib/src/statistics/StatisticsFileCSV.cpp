@@ -235,6 +235,8 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
 
   try
   {
+    statisticsData.setFrameIndex(poc);
+
     if (this->pocTypeFileposMap.count(poc) == 0 || this->pocTypeFileposMap[poc].count(typeID) == 0)
     {
       // There are no statistics in the file for the given frame and index.
@@ -255,8 +257,6 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
         if (typeEntry.second < startPos)
           startPos = typeEntry.second;
     }
-
-    statisticsData.setFrameIndex(poc);
 
     QTextStream in(this->file.getQFile());
     in.seek(startPos);
@@ -312,7 +312,7 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
         // Block not in image. Warn about this.
         this->blockOutsideOfFramePOC = poc;
 
-      auto statTypes = statisticsData.getStatisticsTypes();
+      auto &statTypes = statisticsData.getStatisticsTypes();
       auto statIt = std::find_if(statTypes.begin(), statTypes.end(), [type](StatisticsType &t){ return t.typeID == type; });
       Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
 

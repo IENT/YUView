@@ -32,9 +32,10 @@
 
 #include "ColorMapper.h"
 
+#include "common/typedef.h"
+
 #include <QStringList>
 #include <random>
-
 
 namespace stats
 {
@@ -133,13 +134,17 @@ Color ColorMapper::getColor(float value) const
     float valScaled = (value - rangeMin) / (rangeMax - rangeMin);
 
     unsigned char retR =
-        minColor.R() + (unsigned char)(floor(valScaled * (float)(maxColor.R() - minColor.R()) + 0.5f));
+        minColor.R() +
+        (unsigned char)(floor(valScaled * (float)(maxColor.R() - minColor.R()) + 0.5f));
     unsigned char retG =
-        minColor.G() + (unsigned char)(floor(valScaled * (float)(maxColor.G() - minColor.G()) + 0.5f));
+        minColor.G() +
+        (unsigned char)(floor(valScaled * (float)(maxColor.G() - minColor.G()) + 0.5f));
     unsigned char retB =
-        minColor.B() + (unsigned char)(floor(valScaled * (float)(maxColor.B() - minColor.B()) + 0.5f));
+        minColor.B() +
+        (unsigned char)(floor(valScaled * (float)(maxColor.B() - minColor.B()) + 0.5f));
     unsigned char retA =
-        minColor.A() + (unsigned char)(floor(valScaled * (float)(maxColor.A() - minColor.A()) + 0.5f));
+        minColor.A() +
+        (unsigned char)(floor(valScaled * (float)(maxColor.A() - minColor.A()) + 0.5f));
 
     return Color(retR, retG, retB, retA);
   }
@@ -233,7 +238,7 @@ Color ColorMapper::getColor(float value) const
     }
     else if (complexType == "shuffle")
     {
-      int rangeSize = rangeMax - rangeMin;
+      int rangeSize = rangeMax - rangeMin + 1;
       // randomly remap the x value, but always with the same random seed
       unsigned         seed = 42;
       std::vector<int> randomMap;
@@ -243,7 +248,7 @@ Color ColorMapper::getColor(float value) const
       }
       shuffle(randomMap.begin(), randomMap.end(), std::default_random_engine(seed));
 
-      int   valueInt    = (int)(value - rangeMin);
+      int   valueInt    = clip(int(value - rangeMin), rangeMin, rangeMax);
       float rem         = value - valueInt;
       float valueMapped = randomMap[valueInt] + rem;
 

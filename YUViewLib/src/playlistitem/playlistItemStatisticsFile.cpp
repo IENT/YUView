@@ -45,6 +45,13 @@
 #include "statistics/StatisticsFileCSV.h"
 #include "statistics/StatisticsFileVTMBMS.h"
 
+#define PLAYLISTITEMSTATISTICS_DEBUG 0
+#if PLAYLISTITEMSTATISTICS_DEBUG && !NDEBUG
+#define DEBUG_STAT qDebug
+#else
+#define DEBUG_STAT(fmt, ...) ((void)0)
+#endif
+
 // The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB
 // so that we can address all the positions in it with int (using such a large buffer is not a good
 // idea anyways)
@@ -127,13 +134,14 @@ void playlistItemStatisticsFile::reloadItemSource()
   this->openStatisticsFile();
 }
 
-itemLoadingState playlistItemStatisticsFile::needsLoading(int frameIdx, bool loadRawdata)
+itemLoadingState playlistItemStatisticsFile::needsLoading(int frameIdx, bool)
 {
-  Q_UNUSED(loadRawdata);
   if (!this->file)
     return itemLoadingState::LoadingNotNeeded;
 
-  return this->statisticsData.needsLoading(frameIdx);
+  auto ret = this->statisticsData.needsLoading(frameIdx);
+  DEBUG_STAT("playlistItemStatisticsFile::needsLoading frameIdx %d - %d", frameIdx, ret);
+  return ret;
 }
 
 void playlistItemStatisticsFile::drawItem(QPainter *painter,
@@ -169,19 +177,15 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   root.appendChild(d);
 }
 
-void playlistItemStatisticsFile::loadFrame(int  frameIdx,
-                                           bool playback,
-                                           bool loadRawdata,
-                                           bool emitSignals)
+void playlistItemStatisticsFile::loadFrame(int frameIdx, bool, bool, bool emitSignals)
 {
-  Q_UNUSED(playback);
-  Q_UNUSED(loadRawdata);
+  DEBUG_STAT("playlistItemStatisticsFile::loadFrame frameIdx %d", frameIdx);
 
   if (this->statisticsData.needsLoading(frameIdx) == LoadingNeeded)
   {
     this->isStatisticsLoading = true;
     {
-      auto typesToLoad = this->statisticsData.getTypesThatNeedLoading();
+      auto typesToLoad = this->statisticsData.getTypesThatNeedLoading(frameIdx);
       for (auto typeID : typesToLoad)
         this->file->loadStatisticData(this->statisticsData, frameIdx, typeID);
     }
@@ -279,6 +283,9 @@ void playlistItemStatisticsFile::openStatisticsFile()
         file->readFrameAndTypePositionsFromFile(std::ref(this->breakBackgroundAtomic));
       },
       this->file.get());
+
+  DEBUG_STAT(
+      "playlistItemStatisticsFile::openStatisticsFile File opened. Background parsing started.");
 }
 
 // This timer event is called regularly when the background loading process is running.
@@ -288,7 +295,10 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent *event)
     return playlistItem::timerEvent(event);
 
   if (!backgroundParserFuture.isRunning())
+  {
     timer.stop();
+    DEBUG_STAT("playlistItemStatisticsFile::timerEvent Background parsing done.");
+  }
 
   if (this->file)
     this->prop.startEndRange = indexRange(0, this->file->getMaxPoc());

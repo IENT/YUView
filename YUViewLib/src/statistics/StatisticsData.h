@@ -50,14 +50,14 @@ class StatisticsData
 public:
   StatisticsData() = default;
 
-  FrameTypeData      getFrameTypeData(int typeId);
-  QSize              getFrameSize() const { return this->frameSize; }
-  int                getFrameIndex() const { return this->frameIdx; }
-  itemLoadingState   needsLoading(int frameIndex) const;
-  std::vector<int>   getTypesThatNeedLoading() const;
-  QStringPairList    getValuesAt(const QPoint &pos) const;
-  StatisticsTypesVec getStatisticsTypes() const { return this->statsTypes; }
-  bool               hasDataForTypeID(int typeID) { return this->frameCache.count(typeID) > 0; }
+  FrameTypeData       getFrameTypeData(int typeId);
+  QSize               getFrameSize() const { return this->frameSize; }
+  int                 getFrameIndex() const { return this->frameIdx; }
+  itemLoadingState    needsLoading(int frameIndex) const;
+  std::vector<int>    getTypesThatNeedLoading(int frameIndex) const;
+  QStringPairList     getValuesAt(const QPoint &pos) const;
+  StatisticsTypesVec &getStatisticsTypes() { return this->statsTypes; }
+  bool                hasDataForTypeID(int typeID) { return this->frameCache.count(typeID) > 0; }
 
   void clear();
   void setFrameSize(QSize size) { this->frameSize = size; }
@@ -77,8 +77,8 @@ private:
   std::map<int, FrameTypeData> frameCache;
   int                          frameIdx{-1};
 
-  QSize              frameSize;
-  
+  QSize frameSize;
+
   StatisticsTypesVec statsTypes;
 };
 

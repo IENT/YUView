@@ -277,7 +277,7 @@ void stats::paintStatisticsData(QPainter *             painter,
 
   painter->translate(statRect.topLeft());
 
-  auto statsTypes = statisticsData.getStatisticsTypes();
+  auto &statsTypes = statisticsData.getStatisticsTypes();
 
   // First, get if more than one statistic that has block values is rendered.
   bool moreThanOneBlockStatRendered = false;
