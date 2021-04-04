@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "showColorFrame.h"
+#include "ShowColorFrame.h"
 
 #include "common/functions.h"
 
