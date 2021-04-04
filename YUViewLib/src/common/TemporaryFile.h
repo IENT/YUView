@@ -33,7 +33,6 @@
 #pragma once
 
 #include <cstdio>
-#include <filesystem>
 #include <string>
 
 class TemporaryFile
@@ -43,7 +42,7 @@ public:
   {
     this->filename = std::string(std::tmpnam(nullptr)) + "." + extension;
   }
-  ~TemporaryFile() { std::filesystem::remove(this->filename); }
+  ~TemporaryFile() { std::remove(this->filename.c_str()); }
 
   std::string getFilename() const { return this->filename; }
 
