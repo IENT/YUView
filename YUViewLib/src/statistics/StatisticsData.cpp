@@ -117,7 +117,8 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
     if (!it->renderGrid)
       continue;
 
-    if (it->typeID == INT_INVALID) // no active statistics
+    if (it->typeID == INT_INVALID || this->frameCache.count(it->typeID) == 0)
+      // no active statistics data
       continue;
 
     // Get all value data entries
