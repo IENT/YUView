@@ -115,7 +115,7 @@ jobs:
         make install DESTDIR=appdir
         which qmake
         QMAKE="$HOME/YUViewQt/Qt/bin/qmake"
-        $GITHUB_WORKSPACE/linuxdeploy-x86_64.AppImage  --appdir appdir --plugin qt  --output appimage
+        $HOME/linuxdeploy-x86_64.AppImage  --appdir appdir --plugin qt  --output appimage
         mv YUView-*.AppImage YUView.AppImage
         mkdir $GITHUB_WORKSPACE/artifacts
         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
