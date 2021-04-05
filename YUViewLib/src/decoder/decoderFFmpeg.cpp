@@ -140,7 +140,7 @@ bool decoderFFmpeg::decodeNextFrame()
 
   copyCurImageToBuffer();
   
-  if (retrieveStatistics)
+  if (this->statisticsEnabled())
     // Get the statistics from the image and put them into the statistics cache
     cacheCurStatistics();
 
@@ -259,9 +259,6 @@ void decoderFFmpeg::cacheCurStatistics()
   // Copy the statistics of the current frame to the buffer
   DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
 
-  // Clear the local statistics cache
-  this->curPOCStats.clear();
-
   // Try to get the motion information
   AVFrameSideDataWrapper sd = this->ff.getSideData(frame, AV_FRAME_DATA_MOTION_VECTORS);
   if (sd)
@@ -277,8 +274,8 @@ void decoderFFmpeg::cacheCurStatistics()
       const int16_t mvX = mvs.dst_x - mvs.src_x;
       const int16_t mvY = mvs.dst_y - mvs.src_y;
 
-      this->curPOCStats[mvs.source < 0 ? 0 : 1].addBlockValue(blockX, blockY, mvs.w, mvs.h, (int)mvs.source);
-      this->curPOCStats[mvs.source < 0 ? 2 : 3].addBlockVector(blockX, blockY, mvs.w, mvs.h, mvX, mvY);
+      this->statisticsData->at(mvs.source < 0 ? 0 : 1).addBlockValue(blockX, blockY, mvs.w, mvs.h, (int)mvs.source);
+      this->statisticsData->at(mvs.source < 0 ? 2 : 3).addBlockVector(blockX, blockY, mvs.w, mvs.h, mvX, mvY);
     }
   }
 }
@@ -403,19 +400,19 @@ bool decoderFFmpeg::decodeFrame()
   return false;
 }
 
-void decoderFFmpeg::fillStatisticList(statisticHandler &statSource) const
+void decoderFFmpeg::fillStatisticList(stats::StatisticsData &statisticsData) const
 {
-  StatisticsType refIdx0(0, "Source -", "col3_bblg", -2, 2);
-  statSource.addStatType(refIdx0);
+  stats::StatisticsType refIdx0(0, "Source -", "col3_bblg", -2, 2);
+  statisticsData.addStatType(refIdx0);
 
-  StatisticsType refIdx1(1, "Source +", "col3_bblg", -2, 2);
-  statSource.addStatType(refIdx1);
+  stats::StatisticsType refIdx1(1, "Source +", "col3_bblg", -2, 2);
+  statisticsData.addStatType(refIdx1);
 
-  StatisticsType motionVec0(2, "Motion Vector -", 4);
-  statSource.addStatType(motionVec0);
+  stats::StatisticsType motionVec0(2, "Motion Vector -", 4);
+  statisticsData.addStatType(motionVec0);
 
-  StatisticsType motionVec1(3, "Motion Vector +", 4);
-  statSource.addStatType(motionVec1);
+  stats::StatisticsType motionVec1(3, "Motion Vector +", 4);
+  statisticsData.addStatType(motionVec1);
 }
 
 bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWrapper codecpar)

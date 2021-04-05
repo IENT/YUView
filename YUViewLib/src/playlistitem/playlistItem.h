@@ -38,11 +38,11 @@
 #include "common/saveUi.h"
 #include "common/typedef.h"
 #include "common/YUViewDomElement.h"
+#include "statistics/StatisticUIHandler.h"
 
 #include "ui_playlistItem.h"
 
 class frameHandler;
-class statisticHandler;
 
 class playlistItem : public QObject, public QTreeWidgetItem
 {
@@ -132,7 +132,7 @@ public:
   virtual void infoListButtonPressed(int buttonID) { Q_UNUSED(buttonID); }
 
   QWidget *getPropertiesWidget() { if (!propertiesWidget) createPropertiesWidget(); return propertiesWidget.data(); }
-  bool propertiesWidgetCreated() const { return propertiesWidget; }
+  bool propertiesWidgetCreated() const { return !propertiesWidget.isNull(); }
 
   // Does the playlist item currently accept drops of the given item?
   virtual bool acceptDrops(playlistItem *draggingItem) const { Q_UNUSED(draggingItem); return false; }
@@ -165,7 +165,7 @@ public:
   virtual frameHandler *getFrameHandler() { return nullptr; }
 
   // If this item provides statistics, return them here so that they can be used correctly in an overlay
-  virtual statisticHandler *getStatisticsHandler() { return nullptr; }
+  virtual stats::StatisticUIHandler *getStatisticsUIHandler() { return nullptr; }
 
   // Return true if something is currently being loaded in the background. (As in: When loading is done, the item will update itself and look different)
   virtual bool isLoading() const { return false; }

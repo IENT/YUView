@@ -37,7 +37,6 @@
 #include "decoderBase.h"
 #include "common/fileInfo.h"
 #include "externalHeader/libHMDecoder.h"
-#include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"
 
 struct decoderHM_Functions
@@ -126,14 +125,13 @@ private:
   // Statistics caching
   void cacheStatistics(libHMDec_picture *pic);
 
-  bool internalsSupported {false};
   int nrSignals { 0 };
 
   // Convert from libde265 types to YUView types
   YUV_Internals::Subsampling convertFromInternalSubsampling(libHMDec_ChromaFormat fmt);
 
   // Add the statistics supported by the HM decoder
-  void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
+  void fillStatisticList(stats::StatisticsData &statisticsData) const Q_DECL_OVERRIDE;
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as necessary
   // without invoking the copy operation from the hm image buffer to the QByteArray again.

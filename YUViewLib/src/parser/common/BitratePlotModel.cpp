@@ -241,6 +241,6 @@ unsigned int BitratePlotModel::calculateAverageValue(unsigned streamIndex, unsig
   const unsigned start = qMax(unsigned(0), pointIndex - averageRange);
   const unsigned end = qMin(pointIndex + averageRange, unsigned(this->dataPerStream[streamIndex].size()));
   for (unsigned i = start; i < end; i++)
-    averageBitrate += this->dataPerStream[streamIndex][i].bitrate;
+    averageBitrate += unsigned(this->dataPerStream[streamIndex][i].bitrate);
   return averageBitrate / (end - start);
 }

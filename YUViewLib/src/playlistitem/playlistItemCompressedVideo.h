@@ -36,7 +36,8 @@
 #include "filesource/FileSourceFFmpegFile.h"
 #include "parser/AnnexB.h"
 #include "playlistItemWithVideo.h"
-#include "statistics/statisticHandler.h"
+#include "statistics/StatisticUIHandler.h"
+#include "statistics/StatisticsData.h"
 #include "ui_playlistItemCompressedFile.h"
 
 class videoHandler;
@@ -159,10 +160,11 @@ protected:
   // TODO: Could we somehow make shure that caching is always performed in display order?
   QMutex cachingMutex;
 
-  statisticHandler statSource;
+  stats::StatisticUIHandler statisticsUIHandler;
+  stats::StatisticsData     statisticsData;
 
-  // Fill the list of statistic types that we can provide
   void fillStatisticList();
+  void loadStatistics(int frameIdx);
 
   SafeUi<Ui::playlistItemCompressedFile_Widget> ui;
 
@@ -194,9 +196,6 @@ private slots:
   // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the
   // videoHandler if the frame that is requested to be drawn has not been loaded yet.
   virtual void loadRawData(int frameIdx, bool forceDecodingNow);
-
-  // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
-  virtual void loadStatisticToCache(int frameIdx, int typeIdx);
 
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
   void displaySignalComboBoxChanged(int idx);

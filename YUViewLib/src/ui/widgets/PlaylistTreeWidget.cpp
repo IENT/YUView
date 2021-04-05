@@ -1,38 +1,41 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "PlaylistTreeWidget.h"
 
+#include <QDebug>
+
 #include <QBuffer>
+#include <QDragMoveEvent>
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QInputDialog>
@@ -42,8 +45,13 @@
 #include <QPainter>
 #include <QScopedValueRollback>
 #include <QSettings>
-#include <QHeaderView>
+#include <QTextStream>
 
+#include "playlistitem/playlistItemContainer.h"
+#include "playlistitem/playlistItemDifference.h"
+#include "playlistitem/playlistItemOverlay.h"
+#include "playlistitem/playlistItemResample.h"
+#include "playlistitem/playlistItemText.h"
 #include "playlistitem/playlistItems.h"
 
 // Activate this if you want to know when which signals/slots are handled
@@ -51,31 +59,35 @@
 #if PLAYLISTTREEWIDGET_DEBUG_EVENTS && !NDEBUG
 #define DEBUG_TREE_WIDGET qDebug
 #else
-#define DEBUG_TREE_WIDGET(fmt,...) ((void)0)
+#define DEBUG_TREE_WIDGET(fmt, ...) ((void)0)
 #endif
 
 class bufferStatusWidget : public QWidget
 {
 public:
-  bufferStatusWidget(playlistItem *item, QWidget* parent) : QWidget(parent) { plItem = item; setMinimumWidth(50); }
+  bufferStatusWidget(playlistItem *item, QWidget *parent) : QWidget(parent)
+  {
+    plItem = item;
+    setMinimumWidth(50);
+  }
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE
   {
     Q_UNUSED(event);
 
     // Draw
     QPainter painter(this);
-    QSize s = size();
+    QSize    s = size();
 
     if (!plItem->isCachable())
     {
       // Only draw the border
-      painter.drawRect(0, 0, s.width()-1, s.height()-1);
+      painter.drawRect(0, 0, s.width() - 1, s.height() - 1);
       return;
     }
 
     // Draw the cached frames
     auto frameList = plItem->getCachedFrames();
-    auto range = plItem->properties().startEndRange;
+    auto range     = plItem->properties().startEndRange;
     if (frameList.count() > 0)
     {
       int lastPos = frameList[0];
@@ -86,8 +98,8 @@ public:
         {
           // This is the end of a block. Draw it
           int xStart = (int)((float)lastPos / range.second * s.width());
-          int xEnd   = (int)((float)pos     / range.second * s.width());
-          painter.fillRect(xStart, 0, xEnd - xStart, s.height(), QColor(33,150,243));
+          int xEnd   = (int)((float)pos / range.second * s.width());
+          painter.fillRect(xStart, 0, xEnd - xStart, s.height(), QColor(33, 150, 243));
 
           // A new rectangle starts here
           lastPos = pos;
@@ -96,23 +108,24 @@ public:
       // Draw the last rectangle that goes to the end of the list
       int xStart = (int)((float)lastPos / range.second * s.width());
       int xEnd   = (int)((float)frameList.last() / range.second * s.width());
-      painter.fillRect(xStart, 0, xEnd - xStart, s.height(), QColor(33,150,243));
+      painter.fillRect(xStart, 0, xEnd - xStart, s.height(), QColor(33, 150, 243));
     }
 
     // Draw the percentage as text
-    //painter.setPen(Qt::black);
+    // painter.setPen(Qt::black);
     const int maxFrameNumber = range.second + 1 - range.first;
     if (maxFrameNumber <= 0)
       return;
-    
+
     const float bufferPercent = float(frameList.count()) / maxFrameNumber * 100;
-    QString pTxt = QString::number(bufferPercent, 'f', 0) + "%";
+    QString     pTxt          = QString::number(bufferPercent, 'f', 0) + "%";
     painter.drawText(0, 0, s.width(), s.height(), Qt::AlignCenter, pTxt);
 
     // Draw the border
-    painter.drawRect(0, 0, s.width()-1, s.height()-1);
+    painter.drawRect(0, 0, s.width() - 1, s.height() - 1);
   }
-  virtual QSize	minimumSizeHint() const Q_DECL_OVERRIDE { return QSize(20, 5); }
+  virtual QSize minimumSizeHint() const Q_DECL_OVERRIDE { return QSize(20, 5); }
+
 private:
   playlistItem *plItem;
 };
@@ -132,10 +145,14 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   header()->setSectionResizeMode(1, QHeaderView::Fixed);
   header()->setSectionResizeMode(0, QHeaderView::Stretch);
 
-  // This does not work here. Don't know why. Setting it every time a new item is added, however, works.
-  //header()->resizeSection(1, 10);
+  // This does not work here. Don't know why. Setting it every time a new item is added, however,
+  // works.
+  // header()->resizeSection(1, 10);
 
-  connect(this, &PlaylistTreeWidget::itemSelectionChanged, this, &PlaylistTreeWidget::slotSelectionChanged);
+  connect(this,
+          &PlaylistTreeWidget::itemSelectionChanged,
+          this,
+          &PlaylistTreeWidget::slotSelectionChanged);
   connect(&autosaveTimer, &QTimer::timeout, this, &PlaylistTreeWidget::autoSavePlaylist);
 }
 
@@ -148,13 +165,13 @@ PlaylistTreeWidget::~PlaylistTreeWidget()
     settings.remove("Autosaveplaylist");
 }
 
-playlistItem* PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
+playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 {
-  playlistItem *pItem = dynamic_cast<playlistItem*>(this->itemAt(pos));
+  playlistItem *pItem = dynamic_cast<playlistItem *>(this->itemAt(pos));
   if (pItem != nullptr)
   {
     // check if dropped on or below/above pItem
-    QRect rc = this->visualItemRect(pItem);
+    QRect rc    = this->visualItemRect(pItem);
     QRect rcNew = QRect(rc.left(), rc.top() + 2, rc.width(), rc.height() - 4);
     if (!rcNew.contains(pos, true))
       // dropped next to pItem
@@ -164,13 +181,13 @@ playlistItem* PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
   return pItem;
 }
 
-void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent* event)
+void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
 {
-  playlistItem* dropTarget = getDropTarget(event->pos());
+  playlistItem *dropTarget = getDropTarget(event->pos());
   if (dropTarget)
   {
-    QList<QTreeWidgetItem*> draggedItems = selectedItems();
-    playlistItem* draggedItem = dynamic_cast<playlistItem*>(draggedItems[0]);
+    QList<QTreeWidgetItem *> draggedItems = selectedItems();
+    playlistItem *           draggedItem  = dynamic_cast<playlistItem *>(draggedItems[0]);
 
     // handle video items as target
     if (!dropTarget->acceptDrops(draggedItem))
@@ -188,7 +205,7 @@ void PlaylistTreeWidget::dragEnterEvent(QDragEnterEvent *event)
 {
   if (event->mimeData()->hasUrls())
     event->acceptProposedAction();
-  else    // default behavior
+  else // default behavior
     QTreeWidget::dragEnterEvent(event);
 }
 
@@ -196,7 +213,7 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
 {
   if (event->mimeData()->hasUrls())
   {
-    QStringList fileList;
+    QStringList       fileList;
     const QList<QUrl> urls = event->mimeData()->urls();
     for (auto &url : urls)
     {
@@ -213,17 +230,17 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   else
   {
     // get the list of the items that are about to be dragged
-    QList<QTreeWidgetItem*> dragItems = selectedItems();
+    QList<QTreeWidgetItem *> dragItems = selectedItems();
 
     // Actually move all the items
     QTreeWidget::dropEvent(event);
 
-    // Query the selected items that were dropped and add a new bufferStatusWidget 
+    // Query the selected items that were dropped and add a new bufferStatusWidget
     // for each of them. The old bufferStatusWidget will be deleted by the tree widget.
     QList<int> toRows;
-    for(QTreeWidgetItem* item : dragItems)
+    for (QTreeWidgetItem *item : dragItems)
     {
-      playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+      playlistItem *plItem = dynamic_cast<playlistItem *>(item);
       if (plItem)
         setItemWidget(item, 1, new bufferStatusWidget(plItem, this));
     }
@@ -240,25 +257,25 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   //// When dragging an item onto another one (for example a video onto a difference)
   //// the currentChanged slot is called but at a time when the item has not been dropped
   //// yet.
-  //QTreeWidgetItem *item = currentItem();
-  //playlistItem *pItem = dynamic_cast<playlistItem*>(item);
-  //pItem->showPropertiesWidget();
-  //propertiesDockWidget->setWindowTitle(pItem->getPropertiesTitle());
-  //fileInfoGroupBox->setFileInfo(pItem->getInfoTitle(), pItem->getInfoList());
+  // QTreeWidgetItem *item = currentItem();
+  // playlistItem *pItem = dynamic_cast<playlistItem*>(item);
+  // pItem->showPropertiesWidget();
+  // propertiesDockWidget->setWindowTitle(pItem->getPropertiesTitle());
+  // fileInfoGroupBox->setFileInfo(pItem->getInfoTitle(), pItem->getInfoList());
 }
 
 void PlaylistTreeWidget::updateAllContainterItems()
 {
   for (int i = 0; i < topLevelItemCount(); i++)
   {
-    QTreeWidgetItem *item = topLevelItem(i);
-    playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer*>(item);
+    QTreeWidgetItem *      item          = topLevelItem(i);
+    playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer *>(item);
     if (containerItem != nullptr)
       containerItem->updateChildItems();
   }
 }
 
-Qt::DropActions PlaylistTreeWidget::supportedDropActions () const
+Qt::DropActions PlaylistTreeWidget::supportedDropActions() const
 {
   return Qt::CopyAction | Qt::MoveAction;
 }
@@ -276,10 +293,10 @@ void PlaylistTreeWidget::addDifferenceItem()
   auto newDiff = new playlistItemDifference();
 
   // Get the currently selected items that selectedItems canBeUsedInProcessing
-  QVector<QTreeWidgetItem*> selection;
+  QVector<QTreeWidgetItem *> selection;
   for (int i = 0; i < this->selectedItems().count(); i++)
   {
-    auto item = dynamic_cast<playlistItem*>(this->selectedItems()[i]);
+    auto item = dynamic_cast<playlistItem *>(this->selectedItems()[i]);
     if (item->canBeUsedInProcessing())
       selection.append(this->selectedItems()[i]);
   }
@@ -321,10 +338,10 @@ void PlaylistTreeWidget::addResampleItem()
   auto newResample = new playlistItemResample();
 
   // Get the currently selected items that selectedItems canBeUsedInProcessing
-  QVector<QTreeWidgetItem*> selection;
+  QVector<QTreeWidgetItem *> selection;
   for (int i = 0; i < this->selectedItems().count(); i++)
   {
-    auto item = dynamic_cast<playlistItem*>(this->selectedItems()[i]);
+    auto item = dynamic_cast<playlistItem *>(this->selectedItems()[i]);
     if (item->canBeUsedInProcessing())
       selection.append(this->selectedItems()[i]);
   }
@@ -364,10 +381,10 @@ void PlaylistTreeWidget::addOverlayItem()
   playlistItemOverlay *newOverlay = new playlistItemOverlay();
 
   // Get the currently selected items
-  QList<QTreeWidgetItem*> selection;
+  QList<QTreeWidgetItem *> selection;
   for (int i = 0; i < selectedItems().count(); i++)
   {
-    playlistItem *item = dynamic_cast<playlistItem*>(selectedItems()[i]);
+    playlistItem *item = dynamic_cast<playlistItem *>(selectedItems()[i]);
     if (item)
       selection.append(selectedItems()[i]);
   }
@@ -375,7 +392,7 @@ void PlaylistTreeWidget::addOverlayItem()
   // Add all selected items to the overlay
   for (int i = 0; i < selection.count(); i++)
   {
-    QTreeWidgetItem* item = selection[i];
+    QTreeWidgetItem *item = selection[i];
 
     int index = indexOfTopLevelItem(item);
     if (index != INT_INVALID)
@@ -395,7 +412,10 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
 {
   insertTopLevelItem(topLevelItemCount(), item);
   connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
-  connect(item, &playlistItem::signalItemDoubleBufferLoaded, this, &PlaylistTreeWidget::slotItemDoubleBufferLoaded);
+  connect(item,
+          &playlistItem::signalItemDoubleBufferLoaded,
+          this,
+          &PlaylistTreeWidget::slotItemDoubleBufferLoaded);
   setItemWidget(item, 1, new bufferStatusWidget(item, this));
   header()->resizeSection(1, 50);
 
@@ -404,7 +424,7 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
     emit playlistChanged();
 }
 
-void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
+void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent *event)
 {
   QMenu menu(this);
 
@@ -415,13 +435,13 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   menu.addAction("Add Resampler", this, &PlaylistTreeWidget::addResampleItem);
   menu.addAction("Add Overlay", this, &PlaylistTreeWidget::addOverlayItem);
 
-  QTreeWidgetItem* itemAtPoint = itemAt(event->pos());
+  QTreeWidgetItem *itemAtPoint = itemAt(event->pos());
   if (itemAtPoint)
   {
     menu.addSeparator();
     menu.addAction("Delete Item", this, &PlaylistTreeWidget::deletePlaylistItems);
 
-    playlistItemText *txt = dynamic_cast<playlistItemText*>(itemAtPoint);
+    playlistItemText *txt = dynamic_cast<playlistItemText *>(itemAtPoint);
     if (txt)
       menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
   }
@@ -431,12 +451,12 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
 
 std::array<playlistItem *, 2> PlaylistTreeWidget::getSelectedItems() const
 {
-  std::array<playlistItem *, 2> result{ { nullptr, nullptr } };
-  QList<QTreeWidgetItem*> items = selectedItems();
-  unsigned int i = 0;
+  std::array<playlistItem *, 2> result{{nullptr, nullptr}};
+  QList<QTreeWidgetItem *>      items = selectedItems();
+  unsigned int                  i     = 0;
   for (auto item : items)
   {
-    result[i] = dynamic_cast<playlistItem*>(item);
+    result[i] = dynamic_cast<playlistItem *>(item);
     if (result[i])
       i++;
     if (i >= result.size())
@@ -450,7 +470,8 @@ void PlaylistTreeWidget::slotSelectionChanged()
   if (ignoreSlotSelectionChanged)
     return;
 
-  // The selection changed. Get the first and second selection and emit the selectionRangeChanged signal.
+  // The selection changed. Get the first and second selection and emit the selectionRangeChanged
+  // signal.
   auto items = getSelectedItems();
   emit selectionRangeChanged(items[0], items[1], false);
 
@@ -461,26 +482,28 @@ void PlaylistTreeWidget::slotSelectionChanged()
 void PlaylistTreeWidget::slotItemChanged(bool redraw, recacheIndicator recache)
 {
   // Check if the calling object is (one of) the currently selected item(s)
-  auto items = getSelectedItems();
+  auto     items  = getSelectedItems();
   QObject *sender = QObject::sender();
   if (sender == items[0] || sender == items[1])
   {
-    DEBUG_TREE_WIDGET("PlaylistTreeWidget::slotItemChanged sender %s", sender == items[0] ? "items[0]" : "items[1]");
-    // One of the currently selected items send this signal. Inform the playbackController that something might have changed.
+    DEBUG_TREE_WIDGET("PlaylistTreeWidget::slotItemChanged sender %s",
+                      sender == items[0] ? "items[0]" : "items[1]");
+    // One of the currently selected items send this signal. Inform the playbackController that
+    // something might have changed.
     emit selectedItemChanged(redraw);
   }
 
   if (recache != RECACHE_NONE)
   {
-    playlistItem *senderItem = dynamic_cast<playlistItem*>(sender);
-    emit signalItemRecache(senderItem, recache);
+    playlistItem *senderItem = dynamic_cast<playlistItem *>(sender);
+    emit          signalItemRecache(senderItem, recache);
   }
 }
 
 void PlaylistTreeWidget::slotItemDoubleBufferLoaded()
 {
   // Check if the calling object is (one of) the currently selected item(s)
-  auto items = getSelectedItems();
+  auto     items  = getSelectedItems();
   QObject *sender = QObject::sender();
   if (sender == items[0])
     // The first of the currently selected items send this signal.
@@ -505,14 +528,16 @@ void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
 
 void PlaylistTreeWidget::keyPressEvent(QKeyEvent *event)
 {
-  int key = event->key();
+  int  key         = event->key();
   bool noModifiers = (event->modifiers() == Qt::NoModifier);
-  if (noModifiers && (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 ||
-    key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8))
+  if (noModifiers &&
+      (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 ||
+       key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8))
   {
-    // The user pressed one of the keys 1..8 without ctrl, alt or shift. Usually, the QAbstractItemView consumes
-    // this key event. However, we want to handle this in the main window. So we are not going to pass it to the
-    // QTreeWidget base class, but directly to the QWidget.
+    // The user pressed one of the keys 1..8 without ctrl, alt or shift. Usually, the
+    // QAbstractItemView consumes this key event. However, we want to handle this in the main
+    // window. So we are not going to pass it to the QTreeWidget base class, but directly to the
+    // QWidget.
     QWidget::keyPressEvent(event);
     return;
   }
@@ -523,7 +548,7 @@ void PlaylistTreeWidget::keyPressEvent(QKeyEvent *event)
 
 bool PlaylistTreeWidget::hasNextItem()
 {
-  QList<QTreeWidgetItem*> items = selectedItems();
+  QList<QTreeWidgetItem *> items = selectedItems();
   if (items.count() == 0)
     return false;
 
@@ -539,7 +564,7 @@ bool PlaylistTreeWidget::hasNextItem()
 
 bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
 {
-  QList<QTreeWidgetItem*> items = selectedItems();
+  QList<QTreeWidgetItem *> items = selectedItems();
   if (items.count() == 0)
     return false;
 
@@ -566,12 +591,14 @@ bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
     setCurrentItem(nextItem, 0, QItemSelectionModel::ClearAndSelect);
     assert(selectedItems().count() == 1);
 
-    // Do what the function slotSelectionChanged usually does but this time with changedByPlayback=false.
+    // Do what the function slotSelectionChanged usually does but this time with
+    // changedByPlayback=false.
     auto items = getSelectedItems();
     emit selectionRangeChanged(items[0], items[1], true);
   }
   else
-    // Set next item as current and emit the selectionRangeChanged event with changedByPlayback=false.
+    // Set next item as current and emit the selectionRangeChanged event with
+    // changedByPlayback=false.
     setCurrentItem(topLevelItem(idx + 1));
 
   // Another item was selected. The caching thread also has to be notified about this.
@@ -582,7 +609,7 @@ bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
 
 void PlaylistTreeWidget::selectPreviousItem()
 {
-  QList<QTreeWidgetItem*> items = selectedItems();
+  QList<QTreeWidgetItem *> items = selectedItems();
   if (items.count() == 0)
     return;
 
@@ -604,35 +631,35 @@ void PlaylistTreeWidget::selectPreviousItem()
 void PlaylistTreeWidget::deletePlaylistItems(bool deleteAllItems)
 {
   // First get all the items to process (top level or selected)
-  QList<playlistItem*> itemList;
+  QList<playlistItem *> itemList;
   if (deleteAllItems)
   {
     // Get all top level items
     for (int i = 0; i < topLevelItemCount(); i++)
-      itemList.append(dynamic_cast<playlistItem*>(topLevelItem(i)));
+      itemList.append(dynamic_cast<playlistItem *>(topLevelItem(i)));
   }
   else
   {
     // Get the selected items
-    QList<QTreeWidgetItem*> itemsList = selectedItems();
-    for (QTreeWidgetItem* item : itemsList)
-      itemList.append(dynamic_cast<playlistItem*>(item));
+    QList<QTreeWidgetItem *> itemsList = selectedItems();
+    for (QTreeWidgetItem *item : itemsList)
+      itemList.append(dynamic_cast<playlistItem *>(item));
   }
-  
+
   // For all items, expand the items that contain children. However, do not add an item twice.
-  QList<playlistItem*> unfoldedItemList;
+  QList<playlistItem *> unfoldedItemList;
   for (playlistItem *plItem : itemList)
   {
-    playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer*>(plItem);
+    playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer *>(plItem);
     if (containerItem)
     {
       // Add all children (if not yet in the list)
-      QList<playlistItem*> children = containerItem->takeAllChildItemsRecursive();
-      for (playlistItem* child : children)
+      QList<playlistItem *> children = containerItem->takeAllChildItemsRecursive();
+      for (playlistItem *child : children)
         if (!unfoldedItemList.contains(child))
           unfoldedItemList.append(child);
     }
-    
+
     // Add the item itself (if not yet in the list)
     if (!unfoldedItemList.contains(plItem))
       unfoldedItemList.append(plItem);
@@ -648,7 +675,8 @@ void PlaylistTreeWidget::deletePlaylistItems(bool deleteAllItems)
     // Tag the item for deletion. This will disable loading/caching of the item.
     plItem->tagItemForDeletion();
 
-    // If the item is in a container item we have to inform the container that the item will be deleted.
+    // If the item is in a container item we have to inform the container that the item will be
+    // deleted.
     playlistItem *parentItem = plItem->parentPlaylistItem();
     if (parentItem)
       parentItem->itemAboutToBeDeleted(plItem);
@@ -668,17 +696,17 @@ void PlaylistTreeWidget::deletePlaylistItems(bool deleteAllItems)
     // One of the items we deleted might be the child of a container item.
     // Update all container items.
     updateAllContainterItems();
-  
+
   // Something was deleted. The playlist changed.
   emit playlistChanged();
 }
 
 void PlaylistTreeWidget::loadFiles(const QStringList &files)
 {
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
+  // qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
 
   // this might be used to associate a statistics item with a video item
-  playlistItem* lastAddedItem = nullptr;
+  playlistItem *lastAddedItem = nullptr;
 
   QStringList filesToOpen;
 
@@ -745,13 +773,14 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
     // Something was added. Select the last added item.
     setCurrentItem(lastAddedItem, 0, QItemSelectionModel::ClearAndSelect);
 
-    // The signal playlistChanged mus not be emitted again here because the setCurrentItem(...) function already did
+    // The signal playlistChanged mus not be emitted again here because the setCurrentItem(...)
+    // function already did
   }
 }
 
 void PlaylistTreeWidget::addFileToRecentFileSetting(const QString &fileName)
 {
-  QSettings settings;
+  QSettings   settings;
   QStringList files = settings.value("recentFileList").toStringList();
   files.removeAll(fileName);
   files.prepend(fileName);
@@ -765,16 +794,17 @@ QString PlaylistTreeWidget::getPlaylistString(QDir dirName)
 {
   // Create the XML document structure
   QDomDocument document;
-  document.appendChild(document.createProcessingInstruction(QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
+  document.appendChild(document.createProcessingInstruction(
+      QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
   QDomElement plist = document.createElement(QStringLiteral("playlistItems"));
   plist.setAttribute(QStringLiteral("version"), QStringLiteral("2.0"));
   document.appendChild(plist);
 
   // Append all the playlist items to the output
-  for(int i = 0; i < topLevelItemCount(); ++i)
+  for (int i = 0; i < topLevelItemCount(); ++i)
   {
-    QTreeWidgetItem *item = topLevelItem(i);
-    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    QTreeWidgetItem *item   = topLevelItem(i);
+    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
 
     plItem->savePlaylist(plist, dirName);
   }
@@ -792,7 +822,10 @@ void PlaylistTreeWidget::savePlaylistToFile()
   // ask user for file location
   QSettings settings;
 
-  QString filename = QFileDialog::getSaveFileName(this, tr("Save Playlist"), settings.value("LastPlaylistPath").toString(), tr("Playlist Files (*.yuvplaylist)"));
+  QString filename = QFileDialog::getSaveFileName(this,
+                                                  tr("Save Playlist"),
+                                                  settings.value("LastPlaylistPath").toString(),
+                                                  tr("Playlist Files (*.yuvplaylist)"));
   if (filename.isEmpty())
     return;
   if (!filename.endsWith(".yuvplaylist", Qt::CaseInsensitive))
@@ -820,7 +853,8 @@ bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
     // Clear playlist first? Ask the user
     QMessageBox msgBox(this);
     msgBox.setWindowTitle("Load playlist...");
-    msgBox.setText("The current playlist is not empty. Do you want to clear the playlist first or append the playlist items to the current playlist?");
+    msgBox.setText("The current playlist is not empty. Do you want to clear the playlist first or "
+                   "append the playlist items to the current playlist?");
     QPushButton *clearPlaylist = msgBox.addButton(tr("Clear Playlist"), QMessageBox::ActionRole);
     msgBox.addButton(tr("Append"), QMessageBox::ActionRole);
     QPushButton *abortButton = msgBox.addButton(QMessageBox::Abort);
@@ -840,7 +874,7 @@ bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
   }
 
   // Open the playlist file
-  QFile file(filePath);
+  QFile     file(filePath);
   QFileInfo fileInfo(file);
   if (!file.open(QIODevice::ReadOnly))
     return false;
@@ -852,33 +886,37 @@ bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
 
 bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString filePath)
 {
-  QBuffer buffer(&data);
-
   // Try to open the DOM document
   QDomDocument doc;
-  QString errorMessage;
-  int errorLine;
-  int errorColumn;
-  bool success = doc.setContent(&buffer, false, &errorMessage, &errorLine, &errorColumn);
+  QString      errorMessage;
+  int          errorLine;
+  int          errorColumn;
+  bool         success = doc.setContent(data, false, &errorMessage, &errorLine, &errorColumn);
   if (!success)
   {
-    QMessageBox::critical(this, "Error loading playlist.", "The playlist file format could not be recognized.");
+    QMessageBox::critical(
+        this, "Error loading playlist.", errorMessage + QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
     return false;
   }
 
   // Get the root and parser the header
   QDomElement root = doc.documentElement();
-  QString tmp1 = root.tagName();
-  QString tmp2 = root.attribute("version");
+  QString     tmp1 = root.tagName();
+  QString     tmp2 = root.attribute("version");
   if (root.tagName() == "plist" && root.attribute("version") == "1.0")
   {
     // This is a playlist file in the old format. This is not supported anymore.
-    QMessageBox::critical(this, "Error loading playlist.", "The given playlist file seems to be in the old XML format. The playlist format was changed a while back and the old format is no longer supported.");
+    QMessageBox::critical(
+        this,
+        "Error loading playlist.",
+        "The given playlist file seems to be in the old XML format. The playlist format was "
+        "changed a while back and the old format is no longer supported.");
     return false;
   }
   if (root.tagName() != "playlistItems" || root.attribute("version") != "2.0")
   {
-    QMessageBox::critical(this, "Error loading playlist.", "The playlist file format could not be recognized.");
+    QMessageBox::critical(
+        this, "Error loading playlist.", "The playlist file format could not be recognized.");
     return false;
   }
 
@@ -927,11 +965,11 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
 void PlaylistTreeWidget::checkAndUpdateItems()
 {
   // Append all the playlist items to the output
-  QList<playlistItem*> changedItems;
-  for(int i = 0; i < topLevelItemCount(); ++i)
+  QList<playlistItem *> changedItems;
+  for (int i = 0; i < topLevelItemCount(); ++i)
   {
-    QTreeWidgetItem *item = topLevelItem(i);
-    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    QTreeWidgetItem *item   = topLevelItem(i);
+    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
 
     // Check (and reset) the flag if the source was changed.
     if (plItem->isSourceChanged())
@@ -941,11 +979,20 @@ void PlaylistTreeWidget::checkAndUpdateItems()
   if (!changedItems.empty())
   {
     // One of the two items was changed. Does the user want to reload it?
-    int ret = QMessageBox::question(parentWidget(), "Item changed", "The source of one or more currently loaded items has changed. Do you want to reload the item(s)?");
+    int ret = QMessageBox::question(parentWidget(),
+                                    "Item changed",
+                                    "The source of one or more currently loaded items has changed. "
+                                    "Do you want to reload the item(s)?");
     if (ret != QMessageBox::Yes)
     {
       // The user pressed no (or the x). This can not be recommended.
-      ret = QMessageBox::question(parentWidget(), "Item changed", "It is really recommended to reload the changed items. YUView does not always buffer all data from the items. We can not guarantee that the data you are shown is correct anymore. For the shown values, there is no indication if they are old or new. Parsing of statistics files may fail. So again:  Do you want to reload the item(s)?");
+      ret = QMessageBox::question(
+          parentWidget(),
+          "Item changed",
+          "It is really recommended to reload the changed items. YUView does not always buffer all "
+          "data from the items. We can not guarantee that the data you are shown is correct "
+          "anymore. For the shown values, there is no indication if they are old or new. Parsing "
+          "of statistics files may fail. So again:  Do you want to reload the item(s)?");
       if (ret != QMessageBox::Yes)
         // Really no
         return;
@@ -959,10 +1006,10 @@ void PlaylistTreeWidget::checkAndUpdateItems()
 
 void PlaylistTreeWidget::updateSettings()
 {
-  for(int i = 0; i < topLevelItemCount(); ++i)
+  for (int i = 0; i < topLevelItemCount(); ++i)
   {
-    QTreeWidgetItem *item = topLevelItem(i);
-    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    QTreeWidgetItem *item   = topLevelItem(i);
+    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
 
     plItem->updateSettings();
   }
@@ -980,7 +1027,7 @@ void PlaylistTreeWidget::loadAutosavedPlaylist()
   if (!settings.contains("Autosaveplaylist"))
     return;
 
-  QByteArray compressedPlaylist = settings.value("Autosaveplaylist").toByteArray();
+  QByteArray compressedPlaylist   = settings.value("Autosaveplaylist").toByteArray();
   QByteArray uncompressedPlaylist = qUncompress(compressedPlaylist);
   loadPlaylistFromByteArray(uncompressedPlaylist, QDir::current().absolutePath());
 
@@ -995,22 +1042,23 @@ void PlaylistTreeWidget::dropAutosavedPlaylist()
 
 void PlaylistTreeWidget::cloneSelectedItem()
 {
-  QList<QTreeWidgetItem*> items = selectedItems();
+  QList<QTreeWidgetItem *> items = selectedItems();
   if (items.count() == 0)
     return;
 
   // Ask the user how many clones he wants to create
   bool ok;
-  int nrClones = QInputDialog::getInt(this, "How many clones of each item do you need?", "Number of clones", 1, 1, 100000, 1, &ok);
+  int  nrClones = QInputDialog::getInt(
+      this, "How many clones of each item do you need?", "Number of clones", 1, 1, 100000, 1, &ok);
   if (!ok)
     return;
 
   for (QTreeWidgetItem *item : items)
   {
-    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    playlistItem *plItem = dynamic_cast<playlistItem *>(item);
 
     // Is this is playlistItemText?
-    playlistItemText *plItemTxt = dynamic_cast<playlistItemText*>(plItem);
+    playlistItemText *plItemTxt = dynamic_cast<playlistItemText *>(plItem);
     if (plItemTxt)
     {
       // Clone it
@@ -1034,7 +1082,7 @@ void PlaylistTreeWidget::autoSavePlaylist()
   }
   else
   {
-    QString playlistAsString = getPlaylistString(QDir::current());
+    QString    playlistAsString   = getPlaylistString(QDir::current());
     QByteArray compressedPlaylist = qCompress(playlistAsString.toLatin1());
     settings.setValue("Autosaveplaylist", compressedPlaylist);
   }
@@ -1066,19 +1114,19 @@ void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *ite
   }
 }
 
-QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems(const bool topLevelOnly) const
+QList<playlistItem *> PlaylistTreeWidget::getAllPlaylistItems(const bool topLevelOnly) const
 {
-  QList<playlistItem*> returnList;
+  QList<playlistItem *> returnList;
   for (int i = 0; i < topLevelItemCount(); i++)
   {
-    QTreeWidgetItem *item = topLevelItem(i);
-    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    QTreeWidgetItem *item   = topLevelItem(i);
+    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
     if (plItem != nullptr)
     {
       returnList.append(plItem);
       if (!topLevelOnly)
       {
-        playlistItemContainer *container = dynamic_cast<playlistItemContainer*>(plItem);
+        playlistItemContainer *container = dynamic_cast<playlistItemContainer *>(plItem);
         if (container)
           returnList.append(container->getAllChildPlaylistItems());
       }

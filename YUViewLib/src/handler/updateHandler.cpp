@@ -182,7 +182,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   bool error = (reply->error() != QNetworkReply::NoError);
   QString errorString;
   if (error)
-    errorString = reply->error();
+    errorString = reply->errorString();
   DEBUG_UPDATE("updateHandler::replyFinished " << (error ? "error " : "") << reply->error());
 
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN)

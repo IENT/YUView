@@ -427,7 +427,12 @@ bool MoveAndZoomableView::event(QEvent *event)
   {
     auto touchEvent = static_cast<QTouchEvent*>(event);
     auto device = touchEvent->device();
+    
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    isTouchScreenEvent = (device->type() == QInputDevice::DeviceType::TouchScreen);
+#else
     isTouchScreenEvent = (device->type() == QTouchDevice::TouchScreen);
+#endif
   }
 
   if (event->type() == QEvent::Gesture)

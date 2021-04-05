@@ -34,7 +34,7 @@
 
 #include <algorithm>
 #include <QPainter>
-#include "statistics/statisticHandler.h"
+#include "statistics/StatisticUIHandler.h"
 
 playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName)
   : playlistItem(itemNameOrFileName, Type::Indexed)
@@ -61,7 +61,7 @@ void playlistItemContainer::updateChildList()
     {
       disconnect(item, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
       if (item->properties().providesStatistics)
-        item->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
+        item->getStatisticsUIHandler()->deleteSecondaryStatisticsHandlerControls();
     }
   }
 
@@ -92,7 +92,7 @@ void playlistItemContainer::updateChildList()
       line->setFrameShadow(QFrame::Sunken);
 
       containerStatLayout.addWidget(line);
-      containerStatLayout.addWidget(item->getStatisticsHandler()->getSecondaryStatisticsHandlerControls());
+      containerStatLayout.addWidget(item->getStatisticsUIHandler()->getSecondaryStatisticsHandlerControls());
     }
   }
 
@@ -115,7 +115,7 @@ void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
     {
       disconnect(listItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
       if (listItem->properties().providesStatistics)
-        listItem->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
+        listItem->getStatisticsUIHandler()->deleteSecondaryStatisticsHandlerControls();
       takeChild(i);
     }
   }

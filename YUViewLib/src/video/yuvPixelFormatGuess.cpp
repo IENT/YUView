@@ -34,6 +34,7 @@
 
 #include <QSize>
 #include <QDir>
+#include <QRegularExpression>
 
 namespace YUV_Internals
 {
@@ -45,11 +46,13 @@ Subsampling findSubsamplingTypeIndicatorInName(QString name)
     subsamplingMatcher += subsampling + "|";
   subsamplingMatcher.chop(1);
   subsamplingMatcher = "(?:_|\\.|-)(" + subsamplingMatcher + ")(?:_|\\.|-)";
-  QRegExp exp(subsamplingMatcher);
-  if (exp.indexIn(name) > -1)
+  QRegularExpression exp(subsamplingMatcher);
+  auto matchIt = exp.globalMatch(name);
+  if (matchIt.hasNext())
   {
-    auto match = exp.cap(1);
-    auto matchIndex = subsamplingNameList.indexOf(match);
+    auto match = matchIt.next();
+    auto matchStr = match.captured(1);
+    auto matchIndex = subsamplingNameList.indexOf(matchStr);
     if (matchIndex >= 0)
       return Subsampling(matchIndex);
   }

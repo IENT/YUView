@@ -37,7 +37,6 @@
 #include "common/fileInfo.h"
 #include "decoderBase.h"
 #include "externalHeader/libvvdec.h"
-#include "statistics/statisticsExtensions.h"
 #include "video/videoHandlerYUV.h"
 
 struct LibraryFunctions

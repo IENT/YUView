@@ -33,11 +33,16 @@
 #pragma once
 
 #include <QImage>
+#include <QColor>
 
 #include "typedef.h"
+#include "Color.h"
 
 namespace functions
 {
+
+QColor convertToQColor(Color color);
+Color  fromQColor(QColor color);
 
 QString getInputFormatName(YUView::inputFormat i);
 YUView::inputFormat getInputFormatFromName(QString name);
