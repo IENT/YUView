@@ -81,7 +81,7 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   {
     // Set the plane order
     groupBoxPlanar->setChecked(true);
-    const auto idx = planeOrderList.indexOf(yuvFormat.planeOrder);
+    auto idx = planeOrderList.indexOf(yuvFormat.planeOrder);
     if (idx == -1)
       comboBoxPlaneOrder->setCurrentIndex(idx);
     // Set UV(A) interleaved
@@ -91,8 +91,8 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   {
     // Set the packing order
     groupBoxPacked->setChecked(true);
-    const auto supportedPackingFormats = getSupportedPackingFormats(yuvFormat.subsampling);
-    const auto idx                     = supportedPackingFormats.indexOf(yuvFormat.packingOrder);
+    auto supportedPackingFormats = getSupportedPackingFormats(yuvFormat.subsampling);
+    auto idx                     = supportedPackingFormats.indexOf(yuvFormat.packingOrder);
     if (idx != -1)
       comboBoxPackingOrder->setCurrentIndex(idx);
     checkBoxBytePacking->setChecked(yuvFormat.bytePacking);
@@ -102,10 +102,10 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
 void videoHandlerYUVCustomFormatDialog::on_comboBoxChromaSubsampling_currentIndexChanged(int idx)
 {
   // What packing types are supported?
-  Subsampling         subsampling  = static_cast<Subsampling>(idx);
-  QList<PackingOrder> packingTypes = getSupportedPackingFormats(subsampling);
+  auto subsampling  = static_cast<Subsampling>(idx);
+  auto packingTypes = getSupportedPackingFormats(subsampling);
   comboBoxPackingOrder->clear();
-  for (PackingOrder packing : packingTypes)
+  for (auto &packing : packingTypes)
     comboBoxPackingOrder->addItem(getPackingFormatString(packing));
 
   bool packedSupported = (packingTypes.count() != 0);
@@ -117,7 +117,7 @@ void videoHandlerYUVCustomFormatDialog::on_comboBoxChromaSubsampling_currentInde
 
   // What chroma offsets are possible?
   comboBoxChromaOffsetX->clear();
-  int maxValsX = getMaxPossibleChromaOffsetValues(true, subsampling);
+  auto maxValsX = getMaxPossibleChromaOffsetValues(true, subsampling);
   if (maxValsX >= 1)
     comboBoxChromaOffsetX->addItems(QStringList() << "0"
                                                   << "1/2");
