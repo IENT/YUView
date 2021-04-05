@@ -254,45 +254,36 @@ void StatisticsFileCSVTest::testCSVFileParsing1()
   // Now we should get the data
   statFile.loadStatisticData(statData, 1, 9);
   QCOMPARE(statData.getFrameIndex(), 1);
-  {
-    auto &frameData = statData[9];
-    checkVectorList(frameData.vectorData,
-                    {{0, 32, 8, 16, 1, 0},
-                     {8, 32, 8, 16, 0, 0},
-                     {112, 56, 4, 8, 0, 0},
-                     {116, 56, 4, 8, 0, 0},
-                     {128, 32, 32, 16, 0, 0},
-                     {128, 48, 32, 16, 0, 0}});
-    QCOMPARE(frameData.valueData.size(), size_t(0));
-  }
+  checkVectorList(statData[9].vectorData,
+                  {{0, 32, 8, 16, 1, 0},
+                   {8, 32, 8, 16, 0, 0},
+                   {112, 56, 4, 8, 0, 0},
+                   {116, 56, 4, 8, 0, 0},
+                   {128, 32, 32, 16, 0, 0},
+                   {128, 48, 32, 16, 0, 0}});
+  QCOMPARE(statData[9].valueData.size(), size_t(0));
 
   statFile.loadStatisticData(statData, 1, 11);
   QCOMPARE(statData.getFrameIndex(), 1);
-  {
-    auto &frameData = statData[11];
-    checkVectorList(frameData.vectorData,
-                    {{0, 32, 8, 16, 31, 0},
-                     {8, 32, 8, 16, -33, 0},
-                     {112, 56, 4, 8, -30, 0},
-                     {116, 56, 4, 8, -30, 0},
-                     {128, 32, 32, 16, -31, 0},
-                     {128, 48, 32, 16, -31, 0},
-                     {160, 32, 32, 16, -31, 0}});
-    QCOMPARE(frameData.valueData.size(), size_t(0));
-  }
+  checkVectorList(statData[11].vectorData,
+                  {{0, 32, 8, 16, 31, 0},
+                   {8, 32, 8, 16, -33, 0},
+                   {112, 56, 4, 8, -30, 0},
+                   {116, 56, 4, 8, -30, 0},
+                   {128, 32, 32, 16, -31, 0},
+                   {128, 48, 32, 16, -31, 0},
+                   {160, 32, 32, 16, -31, 0}});
+  QCOMPARE(statData[11].valueData.size(), size_t(0));
 
   statFile.loadStatisticData(statData, 7, 3);
   QCOMPARE(statData.getFrameIndex(), 7);
-  {
-    auto &frameData = statData[3];
-    QCOMPARE(frameData.vectorData.size(), size_t(0));
-    checkValueList(frameData.valueData,
-                   {{0, 32, 8, 16, 1},
-                    {128, 48, 32, 16, 0},
-                    {384, 0, 64, 64, 0},
-                    {520, 32, 24, 32, 0},
-                    {576, 40, 32, 24, 0}});
-  }
+  QCOMPARE(statData[3].vectorData.size(), size_t(0));
+  checkValueList(statData[3].valueData,
+                 {{0, 32, 8, 16, 1},
+                  {128, 48, 32, 16, 0},
+                  {384, 0, 64, 64, 0},
+                  {520, 32, 24, 32, 0},
+                  {576, 40, 32, 24, 0}});
 }
 
 QTEST_MAIN(StatisticsFileCSVTest)

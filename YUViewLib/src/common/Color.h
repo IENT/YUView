@@ -39,7 +39,7 @@ class Color
 public:
   Color() = default;
   Color(std::string name);
-  Color(int R, int G, int B, int A = -1);
+  Color(int R, int G, int B, int A = 255);
 
   int R() const { return this->values[0]; }
   int G() const { return this->values[1]; }
