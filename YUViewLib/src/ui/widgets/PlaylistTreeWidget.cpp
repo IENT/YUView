@@ -32,6 +32,8 @@
 
 #include "PlaylistTreeWidget.h"
 
+#include <QDebug>
+
 #include <QBuffer>
 #include <QDragMoveEvent>
 #include <QFileDialog>
@@ -884,18 +886,16 @@ bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
 
 bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString filePath)
 {
-  QBuffer buffer(&data);
-
   // Try to open the DOM document
   QDomDocument doc;
   QString      errorMessage;
   int          errorLine;
   int          errorColumn;
-  bool         success = doc.setContent(&buffer, false, &errorMessage, &errorLine, &errorColumn);
+  bool         success = doc.setContent(data, false, &errorMessage, &errorLine, &errorColumn);
   if (!success)
   {
     QMessageBox::critical(
-        this, "Error loading playlist.", "The playlist file format could not be recognized.");
+        this, "Error loading playlist.", errorMessage + QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
     return false;
   }
 

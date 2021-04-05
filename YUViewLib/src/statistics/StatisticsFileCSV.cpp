@@ -131,7 +131,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
               {
                 // First POC/type line
                 this->pocTypeFileposMap[poc][typeID] = lineBufferStartPos;
-                emit readPOC(poc);
+                emit readPOCType(poc, typeID);
 
                 lastType = typeID;
                 lastPOC  = poc;
@@ -157,7 +157,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
                 if (this->pocTypeFileposMap[poc].count(typeID) == 0)
                 {
                   this->pocTypeFileposMap[poc][typeID] = lineBufferStartPos;
-                  emit readPOC(poc);
+                  emit readPOCType(poc, typeID);
                 }
               }
               else if (poc != lastPOC)
@@ -187,7 +187,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
                 lastType = typeID;
 
                 this->pocTypeFileposMap[poc][typeID] = lineBufferStartPos;
-                emit readPOC(poc);
+                emit readPOCType(poc, typeID);
 
                 // update number of frames
                 if (poc > this->maxPOC)

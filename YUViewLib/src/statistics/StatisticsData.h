@@ -58,6 +58,7 @@ public:
   QStringPairList     getValuesAt(const QPoint &pos) const;
   StatisticsTypesVec &getStatisticsTypes() { return this->statsTypes; }
   bool                hasDataForTypeID(int typeID) { return this->frameCache.count(typeID) > 0; }
+  void                eraseDataForTypeID(int typeID) { this->frameCache.erase(typeID); }
 
   void clear();
   void setFrameSize(QSize size) { this->frameSize = size; }

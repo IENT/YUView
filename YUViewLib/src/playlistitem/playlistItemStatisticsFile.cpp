@@ -222,10 +222,21 @@ void playlistItemStatisticsFile::getSupportedFileExtensions(QStringList &allExte
   filters.append("Statistics File (*.csv)");
 }
 
-void playlistItemStatisticsFile::onPOCParser(int poc)
+void playlistItemStatisticsFile::onPOCTypeParsed(int poc, int typeID)
+{
+  if (poc == this->currentDrawnFrameIdx && this->statisticsData.hasDataForTypeID(typeID))
+  {
+    this->statisticsData.eraseDataForTypeID(typeID);
+    emit signalItemChanged(true, RECACHE_NONE);
+  }
+}
+
+void playlistItemStatisticsFile::onPOCParsed(int poc)
 {
   if (poc == this->currentDrawnFrameIdx)
     emit signalItemChanged(true, RECACHE_NONE);
+
+  this->statisticsData.setFrameIndex(-1);
 }
 
 void playlistItemStatisticsFile::createPropertiesWidget()
@@ -273,7 +284,11 @@ void playlistItemStatisticsFile::openStatisticsFile()
   connect(this->file.get(),
           &stats::StatisticsFileBase::readPOC,
           this,
-          &playlistItemStatisticsFile::onPOCParser);
+          &playlistItemStatisticsFile::onPOCParsed);
+  connect(this->file.get(),
+          &stats::StatisticsFileBase::readPOCType,
+          this,
+          &playlistItemStatisticsFile::onPOCTypeParsed);
 
   // Run the parsing of the file in the background
   this->timer.start(1000, this);

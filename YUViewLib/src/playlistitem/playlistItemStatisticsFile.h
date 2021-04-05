@@ -100,7 +100,8 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
 protected slots:
-  void onPOCParser(int poc);
+  void onPOCTypeParsed(int poc, int typeID);
+  void onPOCParsed(int poc);
 
 protected:
   // Overload from playlistItem. Create a properties widget custom to the statistics item

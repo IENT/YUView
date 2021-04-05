@@ -73,6 +73,7 @@ signals:
   // When readFrameAndTypePositionsFromFile is running it will emit whenever new data for this POC
   // is available. If this POC is currently drawn we can then update the view and show the
   // statistics.
+  void readPOCType(int newPoc, int typeID);
   void readPOC(int newPoc);
 
 protected:
