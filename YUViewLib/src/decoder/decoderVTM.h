@@ -73,20 +73,20 @@ public:
   decoderVTM(int signalID, bool cachingDecoder=false);
   ~decoderVTM();
 
-  void resetDecoder() Q_DECL_OVERRIDE;
+  void resetDecoder() override;
 
   // Decoding / pushing data
-  bool decodeNextFrame() Q_DECL_OVERRIDE;
-  QByteArray getRawFrameData() Q_DECL_OVERRIDE;
-  bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  bool decodeNextFrame() override;
+  QByteArray getRawFrameData() override;
+  bool pushData(QByteArray &data) override;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
-  QString getDecoderName() const Q_DECL_OVERRIDE;
-  QString getCodecName()         Q_DECL_OVERRIDE { return "hevc"; }
+  QString getDecoderName() const override;
+  QString getCodecName()         override { return "hevc"; }
 
-  int nrSignalsSupported() const Q_DECL_OVERRIDE { return nrSignals; }
+  int nrSignalsSupported() const override { return nrSignals; }
 
 private:
   // A private constructor that creates an uninitialized decoder library.
@@ -94,10 +94,10 @@ private:
   decoderVTM() {};
 
   // Return the possible names of the HM library
-  QStringList getLibraryNames() Q_DECL_OVERRIDE;
+  QStringList getLibraryNames() override;
 
   // Try to resolve all the required function pointers from the library
-  void resolveLibraryFunctionPointers() Q_DECL_OVERRIDE;
+  void resolveLibraryFunctionPointers() override;
 
   // The function template for resolving the functions.
   // This can not go into the base class because then the template
@@ -126,7 +126,7 @@ private:
   YUV_Internals::Subsampling convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt);
 
   // Add the statistics supported by the HM decoder
-  void fillStatisticList(stats::StatisticsData &statisticsData) const Q_DECL_OVERRIDE;
+  void fillStatisticList(stats::StatisticsData &statisticsData) const override;
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as necessary
   // without invoking the copy operation from the hm image buffer to the QByteArray again.

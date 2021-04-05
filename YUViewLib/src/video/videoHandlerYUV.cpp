@@ -113,10 +113,9 @@ videoHandlerYUV::~videoHandlerYUV()
   DEBUG_YUV("videoHandlerYUV destruction");
 }
 
-void videoHandlerYUV::loadValues(const QSize &newFramesize, const QString &sourcePixelFormat)
+void videoHandlerYUV::loadValues(const QSize &newFramesize, const QString &)
 {
-  Q_UNUSED(sourcePixelFormat);
-  setFrameSize(newFramesize);
+  this->setFrameSize(newFramesize);
 }
 
 void videoHandlerYUV::drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
@@ -658,8 +657,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   // Scale the input up by this many bits
   const int depthScale = bps_out - (bitDepthScaling[0] ? bps_in[0] : bps_in[1]);
   // What are the maximum and middle value for the output bit depth
-  const int diffZero = 128 << (bps_out-8);
-  Q_UNUSED(diffZero);
+  // const int diffZero = 128 << (bps_out-8);
 
   // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
   // of the pixels that are actually visible
@@ -2292,18 +2290,14 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
   // Do we have to apply YUV math?
   const auto mathY = mathParameters[Component::Luma];
   const auto mathC = mathParameters[Component::Chroma];
-  const auto applyMathLuma   = mathY.mathRequired();
-  const auto applyMathChroma = mathC.mathRequired();
-  Q_UNUSED(applyMathLuma);
-  Q_UNUSED(applyMathChroma);
+  // const auto applyMathLuma   = mathY.mathRequired();
+  // const auto applyMathChroma = mathC.mathRequired();
 
   const auto bps = format.bitsPerSample;
   const bool fullRange = (conversion == ColorConversion::BT709_FullRange || conversion == ColorConversion::BT601_FullRange || conversion == ColorConversion::BT2020_FullRange);
-  const auto yOffset = 16<<(bps-8);
-  const auto cZero = 128<<(bps-8);
+  // const auto yOffset = 16<<(bps-8);
+  // const auto cZero = 128<<(bps-8);
   const auto inputMax = (1<<bps)-1;
-  Q_UNUSED(yOffset);
-  Q_UNUSED(cZero);
 
   // The luma component has full resolution. The size of each chroma components depends on the subsampling.
   const auto componentSizeLuma = (w * h);

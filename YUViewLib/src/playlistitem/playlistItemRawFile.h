@@ -50,28 +50,28 @@ public:
   playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize=QSize(-1,-1), const QString &sourcePixelFormat=QString(), const QString &fmt=QString());
 
   // Overload from playlistItem. Save the raw file item to playlist.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual infoData getInfo() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const override;
 
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemRawFile *newplaylistItemRawFile(const YUViewDomElement &root, const QString &playlistFilePath);
 
-  virtual bool canBeUsedInProcessing() const Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInProcessing() const override { return true; }
 
-  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override;
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()  Q_DECL_OVERRIDE { return dataSource.isFileChanged(); }
-  virtual void reloadItemSource() Q_DECL_OVERRIDE;
-  virtual void updateSettings()   Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
+  virtual bool isSourceChanged()  override { return dataSource.isFileChanged(); }
+  virtual void reloadItemSource() override;
+  virtual void updateSettings()   override { dataSource.updateFileWatchSetting(); }
 
   // Cache the given frame
-  virtual void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE { if (testMode) dataSource.clearFileCache(); playlistItemWithVideo::cacheFrame(idx, testMode); }
+  virtual void cacheFrame(int idx, bool testMode) override { if (testMode) dataSource.clearFileCache(); playlistItemWithVideo::cacheFrame(idx, testMode); }
 
 private slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
@@ -90,7 +90,7 @@ private:
 
   // Overload from playlistItem. Create a properties widget custom to the RawFile
   // and set propertiesWidget to point to it.
-  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+  virtual void createPropertiesWidget() override;
 
   int getNumberFrames() const;
   

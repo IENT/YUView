@@ -144,12 +144,8 @@ itemLoadingState playlistItemStatisticsFile::needsLoading(int frameIdx, bool)
   return ret;
 }
 
-void playlistItemStatisticsFile::drawItem(QPainter *painter,
-                                          int       frameIdx,
-                                          double    zoomFactor,
-                                          bool      drawRawData)
+void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool)
 {
-  Q_UNUSED(drawRawData);
   stats::paintStatisticsData(painter, this->statisticsData, frameIdx, zoomFactor);
   this->currentDrawnFrameIdx = frameIdx;
 }

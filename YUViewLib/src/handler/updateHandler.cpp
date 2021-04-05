@@ -89,8 +89,6 @@ updateHandler::updateHandler(QWidget *mainWindow, bool useAltSources) :
 
 void updateHandler::sslErrors(QNetworkReply *reply, const QList<QSslError> &errors)
 {
-  Q_UNUSED(reply);
-  Q_UNUSED(errors);
   QMessageBox::information(mainWidget, "SSL Connection error", "An error occurred while trying to establish a secure coonection to the server raw.githubusercontent.com.");
   
   // Abort
@@ -118,6 +116,9 @@ void updateHandler::sslErrors(QNetworkReply *reply, const QList<QSslError> &erro
       ++i;
     }
   }
+#else
+  (void)reply;
+  (void)errors;
 #endif
 }
 
@@ -413,7 +414,7 @@ void updateHandler::restartYUView(bool elevated)
       return abortUpdate("YUView could not be started with admin rights. These are needed in order to update the application.");
   }
 #else
-  Q_UNUSED(elevated);
+  (void)elevated;
 #endif
 }
 
@@ -432,9 +433,8 @@ void updateHandler::abortUpdate(QString errorMsg)
   }
 }
 
-void updateHandler::updateDownloadProgress(int64_t val, int64_t max)
+void updateHandler::updateDownloadProgress(int64_t val, int64_t)
 {
-  Q_UNUSED(max);
   if (downloadProgress)
     downloadProgress->setValue(currentDownloadProgress + val);
 }

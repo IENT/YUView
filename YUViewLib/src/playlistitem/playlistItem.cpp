@@ -55,11 +55,8 @@ void playlistItem::setName(const QString &name)
   setText(0, name.simplified());
 }
 
-void playlistItem::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
+void playlistItem::drawItem(QPainter *painter, int, double zoomFactor, bool)
 {
-  Q_UNUSED(frameIdx);
-  Q_UNUSED(drawRawValues);
-
   // Draw an error text in the view instead of showing an empty image
   // Get the size of the text and create a QRect of that size which is centered at (0,0)
   QFont displayFont = painter->font();

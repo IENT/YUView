@@ -43,40 +43,40 @@ class playlistItemDifference :
 public:
   playlistItemDifference();
 
-  virtual infoData getInfo() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const override;
 
   // Overload from playlistItemVideo.
-  virtual QSize getSize() const Q_DECL_OVERRIDE;
+  virtual QSize getSize() const override;
   
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two children are not comparable.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE { return difference.needsLoading(frameIdx, loadRawData); }
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override { return difference.needsLoading(frameIdx, loadRawData); }
   // This is part of the caching interface. The loadFrame function is always called from a different thread.
-  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
-  virtual bool isLoading() const Q_DECL_OVERRIDE { return isDifferenceLoading; }
-  virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isDifferenceLoadingToDoubleBuffer; }
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) override;
+  virtual bool isLoading() const override { return isDifferenceLoading; }
+  virtual bool isLoadingDoubleBuffer() const override { return isDifferenceLoadingToDoubleBuffer; }
     
   // Overload from playlistItem. Save the playlist item to playlist.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
   // Create a new playlistItemDifference from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemDifference *newPlaylistItemDifference(const YUViewDomElement &stringElement);
 
   // Get the pixel values from A, B and the difference.
-  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override;
 
   // Return the frame handler pointer that draws the difference
-  virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &difference; }
+  virtual frameHandler *getFrameHandler() override { return &difference; }
 
 protected slots:
-  virtual void childChanged(bool redraw, recacheIndicator recache) Q_DECL_OVERRIDE;
+  virtual void childChanged(bool redraw, recacheIndicator recache) override;
 
 private:
 
   // Overload from playlistItem. Create a properties widget custom to the playlistItemDifference
   // and set propertiesWidget to point to it.
-  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+  virtual void createPropertiesWidget() override;
 
   videoHandlerDifference difference;
   bool isDifferenceLoading {false};

@@ -45,30 +45,30 @@ class playlistItemOverlay : public playlistItemContainer
 public:
   playlistItemOverlay();
 
-  virtual infoData getInfo() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const override;
 
   // Overload from playlistItemVideo.
-  virtual QSize getSize() const Q_DECL_OVERRIDE;
+  virtual QSize getSize() const override;
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
   // children are not comparable.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
   // The overlay item itself does not need to load anything. We just pass all of these to the child items.
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE;
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done. Always called from a thread.
-  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) override;
   
   // Is an image currently being loaded?
-  virtual bool isLoading() const Q_DECL_OVERRIDE;
-  virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE;
+  virtual bool isLoading() const override;
+  virtual bool isLoadingDoubleBuffer() const override;
 
   // Overload from playlistItem. Save the playlist item to playlist.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
   // Create a new playlistItemOverlay from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemOverlay *newPlaylistItemOverlay(const YUViewDomElement &stringElement, const QString &filePath);
 
-  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override;
 
   void guessBestLayout();
 
@@ -86,7 +86,7 @@ private:
 
   // Overload from playlistItem. Create a properties widget custom to the playlistItemOverlay
   // and set propertiesWidget to point to it.
-  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+  virtual void createPropertiesWidget() override;
 
   SafeUi<Ui::playlistItemOverlay_Widget> ui;
 
@@ -110,7 +110,7 @@ private:
 
 private slots:
   void slotControlChanged();
-  void childChanged(bool redraw, recacheIndicator recache) Q_DECL_OVERRIDE;
+  void childChanged(bool redraw, recacheIndicator recache) override;
 
   void on_overlayGroupBox_toggled(bool on) { onGroupBoxToggled(0, on); }
   void on_arangeGroupBox_toggled(bool on)  { onGroupBoxToggled(1, on); };

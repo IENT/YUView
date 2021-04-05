@@ -161,10 +161,8 @@ void playlistItemText::on_textEdit_textChanged()
   emit signalItemChanged(true, RECACHE_NONE);
 }
 
-void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir) const
+void playlistItemText::savePlaylist(QDomElement &root, const QDir &) const
 {
-  Q_UNUSED(playlistDir);
-
   auto d = YUViewDomElement(root.ownerDocument().createElement("playlistItemText"));
 
   playlistItem::appendPropertiesToPlaylist(d);
@@ -195,11 +193,8 @@ playlistItemText *playlistItemText::newplaylistItemText(const YUViewDomElement &
   return newText;
 }
 
-void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
+void playlistItemText::drawItem(QPainter *painter, int, double zoomFactor, bool)
 {
-  Q_UNUSED(frameIdx);
-  Q_UNUSED(drawRawData);
-  
   QTextDocument td;
   td.setHtml(this->text);
 

@@ -49,17 +49,17 @@ public:
   virtual ~videoHandlerRGB();
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat.isValid()); }
+  virtual bool isFormatValid() const override { return (frameHandler::isFormatValid() && srcPixelFormat.isValid()); }
 
   // Return the RGB values for the given pixel
-  virtual QStringPairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1 = 0) Q_DECL_OVERRIDE;
+  virtual QStringPairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1 = 0) override;
 
   // Get the number of bytes for one RGB frame with the current format
-  virtual int64_t getBytesPerFrame() const Q_DECL_OVERRIDE { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual int64_t getBytesPerFrame() const override { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw RGB data.
   // If a file size is given, it is tested if the RGB format and the file size match.
-  virtual void setFormatFromCorrelation(const QByteArray &rawRGBData, int64_t fileSize=-1) Q_DECL_OVERRIDE { /* TODO */ Q_UNUSED(rawRGBData); Q_UNUSED(fileSize); }
+  virtual void setFormatFromCorrelation(const QByteArray &rawRGBData, int64_t fileSize=-1) override;
 
   virtual QString getFormatAsString() const override { return frameHandler::getFormatAsString() + ";RGB;" + this->srcPixelFormat.getName(); }
   virtual bool setFormatFromString(QString format) override;
@@ -67,7 +67,7 @@ public:
   // Create the RGB controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change.
-  virtual QLayout *createVideoHandlerControls(bool isSizeFixed=false) Q_DECL_OVERRIDE;
+  virtual QLayout *createVideoHandlerControls(bool isSizeFixed=false) override;
 
   // Get the name of the currently selected RGB pixel format
   virtual QString getRawRGBPixelFormatName() const { return srcPixelFormat.getName(); }
@@ -79,21 +79,21 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // The sub format can be one of: "RGB", "GBR" or "BGR"
-  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo) override;
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a RGB source, so we can draw the source RGB values from the source data.
-  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2 = nullptr, const bool markDifference = false, const int frameIdxItem1 = 0) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2 = nullptr, const bool markDifference = false, const int frameIdxItem1 = 0) override;
 
   // Overload from playlistItemVideo. Calculate the difference of this videoHandlerRGB
   // to another videoHandlerRGB. If item2 cannot be converted to a videoHandlerRGB,
   // we will use the videoHandler::calculateDifference function to calculate the difference
   // using the 8bit RGB values.
-  virtual QImage calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
+  virtual QImage calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) override;
   
   // Load the given frame and convert it to image. After this, currentFrameRawRGBData and currentFrame will
   // contain the frame with the given frame index.
-  virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false) override;
 
 protected:
 
@@ -140,7 +140,7 @@ protected:
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawRGBData and currentFrame)
   // will not be modified.
-  virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache) Q_DECL_OVERRIDE;
+  virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache) override;
 
 private:
 

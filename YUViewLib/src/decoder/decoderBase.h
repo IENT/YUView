@@ -63,12 +63,8 @@ public:
   // These are the default implementations. Overload if a decoder can support more signals.
   virtual int         nrSignalsSupported() const { return 1; }
   virtual QStringList getSignalNames() const { return QStringList() << "Reconstruction"; }
-  virtual bool        isSignalDifference(int signalID) const
-  {
-    Q_UNUSED(signalID);
-    return false;
-  }
-  virtual void setDecodeSignal(int signalID, bool &decoderResetNeeded)
+  virtual bool        isSignalDifference(int) const { return false; }
+  virtual void        setDecodeSignal(int signalID, bool &decoderResetNeeded)
   {
     if (signalID >= 0 && signalID < nrSignalsSupported())
       decodeSignal = signalID;
@@ -164,7 +160,7 @@ public:
   decoderBaseSingleLib(bool cachingDecoder = false) : decoderBase(cachingDecoder){};
   virtual ~decoderBaseSingleLib(){};
 
-  QStringList getLibraryPaths() const Q_DECL_OVERRIDE
+  QStringList getLibraryPaths() const override
   {
     return QStringList() << getDecoderName() << library.fileName() << library.fileName();
   }

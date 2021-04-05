@@ -199,13 +199,8 @@ void BitstreamAnalysisWidget::backgroundParsingFunction()
     this->parser->runParsingOfFile(this->currentCompressedVideo->properties().name);
 }
 
-void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1,
-                                                          playlistItem *item2,
-                                                          bool          chageByPlayback)
+void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *, bool)
 {
-  Q_UNUSED(item2);
-  Q_UNUSED(chageByPlayback);
-
   this->currentCompressedVideo = dynamic_cast<playlistItemCompressedVideo *>(item1);
   this->ui.streamInfoTreeWidget->clear();
 

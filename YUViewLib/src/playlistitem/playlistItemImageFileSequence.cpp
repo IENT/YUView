@@ -1,34 +1,34 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "playlistItemImageFileSequence.h"
 
@@ -40,17 +40,17 @@
 #include "filesource/FileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
-  : playlistItemWithVideo(rawFilePath)
+    : playlistItemWithVideo(rawFilePath)
 {
   // Set the properties of the playlistItem
   setIcon(0, functions::convertIcon(":img_television.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  this->prop.isFileSource = true;
+  this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Image Sequence Properties";
 
   loadPlaylistFrameMissing = false;
-  isFrameLoading = false;
+  isFrameLoading           = false;
 
   // Create the video handler
   video.reset(new videoHandler());
@@ -59,8 +59,11 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   playlistItemWithVideo::connectVideo();
 
   // Connect the video signalRequestFrame to this::loadFrame
-  connect(video.data(), &videoHandler::signalRequestFrame, this, &playlistItemImageFileSequence::slotFrameRequest);
-  
+  connect(video.data(),
+          &videoHandler::signalRequestFrame,
+          this,
+          &playlistItemImageFileSequence::slotFrameRequest);
+
   if (!rawFilePath.isEmpty())
   {
     // Get the frames to use as a sequence
@@ -72,7 +75,10 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   // No file changed yet
   fileChanged = false;
 
-  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &playlistItemImageFileSequence::fileSystemWatcherFileChanged);
+  connect(&fileWatcher,
+          &QFileSystemWatcher::fileChanged,
+          this,
+          &playlistItemImageFileSequence::fileSystemWatcherFileChanged);
 
   // Install a file watcher if file watching is active.
   updateSettings();
@@ -85,12 +91,13 @@ bool playlistItemImageFileSequence::isImageSequence(const QString &filePath)
   return files.count() > 1;
 }
 
-void playlistItemImageFileSequence::fillImageFileList(QStringList &imageFiles, const QString &filePath)
+void playlistItemImageFileSequence::fillImageFileList(QStringList &  imageFiles,
+                                                      const QString &filePath)
 {
   // See if the filename ends with a number
   QFileInfo fi(filePath);
-  QString fileName = fi.fileName();
-  QString base = fi.baseName();
+  QString   fileName = fi.fileName();
+  QString   base     = fi.baseName();
 
   int lastN = 0;
   for (int i = base.count() - 1; i >= 0; i--)
@@ -113,25 +120,25 @@ void playlistItemImageFileSequence::fillImageFileList(QStringList &imageFiles, c
   QString absBaseName = base.left(base.count() - lastN);
 
   // List all files in the directory and get all that have the same pattern.
-  QDir currentDir(fi.path());
+  QDir                currentDir(fi.path());
   const QFileInfoList fileList = currentDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
-  QMap<int, QString> unsortedFiles;
+  QMap<int, QString>  unsortedFiles;
   for (auto &file : fileList)
   {
     if (file.baseName().startsWith(absBaseName) && file.suffix() == fi.suffix())
     {
       // Check if the remaining part is all digits
       QString remainder = file.baseName().right(file.baseName().length() - absBaseName.length());
-      bool isNumber;
-      int num = remainder.toInt(&isNumber);
+      bool    isNumber;
+      int     num = remainder.toInt(&isNumber);
       if (isNumber)
         unsortedFiles.insert(num, file.absoluteFilePath());
     }
   }
 
   int count = unsortedFiles.count();
-  int i = 0;
-  while(count > 0 && i < INT_MAX)
+  int i     = 0;
+  while (count > 0 && i < INT_MAX)
   {
     if (unsortedFiles.contains(i))
     {
@@ -153,7 +160,7 @@ void playlistItemImageFileSequence::createPropertiesWidget()
 
   // First add the parents controls (first video controls (width/height...)
   vAllLaout->addLayout(createPlaylistItemControls());
-    
+
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(2, 1);
@@ -166,15 +173,20 @@ infoData playlistItemImageFileSequence::getInfo() const
   if (this->video->isFormatValid())
   {
     QSize videoSize = this->video->getFrameSize();
-    auto nrFrames = this->imageFiles.size();
+    auto  nrFrames  = this->imageFiles.size();
     info.items.append(infoItem("Num Frames", QString::number(nrFrames)));
-    info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixels (width x height)"));
+    info.items.append(infoItem("Resolution",
+                               QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()),
+                               "The video resolution in pixels (width x height)"));
   }
   else
     info.items.append(infoItem("Status", "Error", "There was an error loading the image."));
-  
+
   if (loadPlaylistFrameMissing)
-    info.items.append(infoItem("Warning", "Frames missing", "At least one frame could not be found when loading from playlist."));
+    info.items.append(
+        infoItem("Warning",
+                 "Frames missing",
+                 "At least one frame could not be found when loading from playlist."));
 
   return info;
 }
@@ -198,13 +210,15 @@ void playlistItemImageFileSequence::savePlaylist(QDomElement &root, const QDir &
     d.appendProperiteChild(QString("file%1_absolutePath").arg(i), fileURL.toString());
     d.appendProperiteChild(QString("file%1_relativePath").arg(i), relativePath);
   }
-  
+
   root.appendChild(d);
 }
 
 /* Parse the playlist and return a new playlistItemRawFile.
-*/
-playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemImageFileSequence(const YUViewDomElement &root, const QString &playlistFilePath)
+ */
+playlistItemImageFileSequence *
+playlistItemImageFileSequence::newplaylistItemImageFileSequence(const YUViewDomElement &root,
+                                                                const QString &playlistFilePath)
 {
   playlistItemImageFileSequence *newSequence = new playlistItemImageFileSequence();
 
@@ -218,16 +232,18 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
 
     if (absolutePath.isEmpty() && relativePath.isEmpty())
       break;
-  
+
     // check if file with absolute path exists, otherwise check relative path
-    QString filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
-    
+    QString filePath =
+        FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+
     // Check if the file exists
     QFileInfo fileInfo(filePath);
     if (!fileInfo.exists() || !fileInfo.isFile())
     {
       // The file does not exist
-      //qDebug() << "Error while loading playlistItemImageFileSequence. The file " << absolutePath << "could not be found.";
+      // qDebug() << "Error while loading playlistItemImageFileSequence. The file " << absolutePath
+      // << "could not be found.";
       newSequence->loadPlaylistFrameMissing = true;
     }
 
@@ -235,16 +251,17 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
     newSequence->imageFiles.append(filePath);
     i++;
   }
-  
+
   // Load the propertied of the playlistItemIndexed
   playlistItem::loadPropertiesFromPlaylist(root, newSequence);
-  
+
   newSequence->setInternals(newSequence->imageFiles[0]);
 
   return newSequence;
 }
 
-void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
+void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allExtensions,
+                                                               QStringList &filters)
 {
   const QList<QByteArray> formats = QImageReader::supportedImageFormats();
 
@@ -264,28 +281,26 @@ void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allE
   filters.append(filter);
 }
 
-void playlistItemImageFileSequence::slotFrameRequest(int frameIdx, bool caching)
+void playlistItemImageFileSequence::slotFrameRequest(int frameIdx, bool)
 {
-  Q_UNUSED(caching);
-
   // Does the index/file exist?
   if (frameIdx < 0 || frameIdx >= imageFiles.count())
     return;
   QFileInfo fileInfo(imageFiles[frameIdx]);
   if (!fileInfo.exists() || !fileInfo.isFile())
     return;
-  
+
   // Load the given frame
-  video->requestedFrame = QImage(imageFiles[frameIdx]);
+  video->requestedFrame     = QImage(imageFiles[frameIdx]);
   video->requestedFrame_idx = frameIdx;
 }
 
 void playlistItemImageFileSequence::setInternals(const QString &filePath)
 {
   // Set start end frame and frame size if it has not been set yet.
-  if (this->prop.startEndRange == indexRange(-1,-1))
+  if (this->prop.startEndRange == indexRange(-1, -1))
   {
-    auto nrFrames = this->imageFiles.size();
+    auto nrFrames            = this->imageFiles.size();
     this->prop.startEndRange = {0, nrFrames};
   }
 
@@ -293,12 +308,12 @@ void playlistItemImageFileSequence::setInternals(const QString &filePath)
   QImage frame0 = QImage(imageFiles[0]);
   video->setFrameSize(frame0.size());
 
-  cachingEnabled = false;  
+  cachingEnabled = false;
 
   // Set the internal name
   QFileInfo fi(filePath);
-  QString fileName = fi.fileName();
-  QString base = fi.baseName();
+  QString   fileName = fi.fileName();
+  QString   base     = fi.baseName();
 
   for (int i = base.count() - 1; i >= 0; i--)
   {
@@ -324,7 +339,7 @@ void playlistItemImageFileSequence::updateSettings()
   // Install a file watcher if file watching is active in the settings.
   // The addPath/removePath functions will do nothing if called twice for the same file.
   QSettings settings;
-  if (settings.value("WatchFiles",true).toBool())
+  if (settings.value("WatchFiles", true).toBool())
     // Install watchers for all image files.
     fileWatcher.addPaths(imageFiles);
   else
