@@ -98,20 +98,20 @@ void StatisticsFileVTMBMSTest::testVTMBMSParsing()
 
   QCOMPARE(types[0].typeID, 1);
   QCOMPARE(types[1].typeID, 2);
-  QCOMPARE(types[0].typeName, "PredMode");
-  QCOMPARE(types[1].typeName, "MVDL0");
+  QCOMPARE(types[0].typeName, QString("PredMode"));
+  QCOMPARE(types[1].typeName, QString("MVDL0"));
 
   QCOMPARE(types[0].hasVectorData, false);
   QCOMPARE(types[0].hasValueData, true);
   QCOMPARE(types[0].colorMapper.rangeMin, 0);
   QCOMPARE(types[0].colorMapper.rangeMax, 4);
-  QCOMPARE(types[0].colorMapper.complexType, "jet");
-  QCOMPARE(types[0].gridStyle.color.toHex(), "#000000");
+  QCOMPARE(types[0].colorMapper.complexType, QString("jet"));
+  QCOMPARE(types[0].gridStyle.color.toHex(), std::string("#000000"));
 
   QCOMPARE(types[1].hasVectorData, true);
   QCOMPARE(types[1].hasValueData, false);
   auto debugName = types[1].vectorStyle.color.toHex();
-  QCOMPARE(types[1].vectorStyle.color.toHex(), "#ff0000");
+  QCOMPARE(types[1].vectorStyle.color.toHex(), std::string("#ff0000"));
   QCOMPARE(types[1].vectorScale, 4);
 
   // We did not let the file parse the positions of the start of each poc/type yet so loading should
