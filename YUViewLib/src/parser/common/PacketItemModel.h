@@ -47,12 +47,12 @@ public:
   ~PacketItemModel();
 
   // The functions that must be overridden from the QAbstractItemModel
-  virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-  virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-  virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  virtual QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
-  virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 5; }
+  virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+  virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+  virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+  virtual QModelIndex parent(const QModelIndex &index) const override;
+  virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+  virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override { (void)parent; return 5; }
 
   // The root of the tree
   QScopedPointer<TreeItem> rootItem;

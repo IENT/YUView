@@ -66,8 +66,8 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  QList<QTreeWidgetItem *> getStreamInfo() Q_DECL_OVERRIDE { return stream_info.getStreamInfo(); }
-  unsigned int             getNrStreams() Q_DECL_OVERRIDE { return 1; }
+  QList<QTreeWidgetItem *> getStreamInfo() override { return stream_info.getStreamInfo(); }
+  unsigned int             getNrStreams() override { return 1; }
   QString                  getShortStreamDescription(int streamIndex) const override;
 
   /* Parse the NAL unit and what it contains
@@ -124,7 +124,7 @@ public:
   bool parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
 
   // Called from the bitstream analyzer. This function can run in a background process.
-  bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
+  bool runParsingOfFile(QString compressedFilePath) override;
 
 protected:
   struct AnnexBFrame

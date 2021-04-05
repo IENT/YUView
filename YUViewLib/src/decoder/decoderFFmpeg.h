@@ -42,23 +42,23 @@ public:
   decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder=false);
   ~decoderFFmpeg();
 
-  void resetDecoder() Q_DECL_OVERRIDE;
+  void resetDecoder() override;
 
   // Decoding / pushing data
-  bool decodeNextFrame() Q_DECL_OVERRIDE;
-  QByteArray getRawFrameData() Q_DECL_OVERRIDE;
+  bool decodeNextFrame() override;
+  QByteArray getRawFrameData() override;
   
   // Push an AVPacket or raw data. When this returns false, pushing the given packet failed. Probably the 
   // decoder switched to DecoderState::RetrieveFrames. Don't forget to push the given packet again later.
   bool pushAVPacket(AVPacketWrapper &pkt);
-  bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  bool pushData(QByteArray &data) override;
 
   // What statistics do we support?
-  void fillStatisticList(stats::StatisticsData &statisticsData) const Q_DECL_OVERRIDE;
+  void fillStatisticList(stats::StatisticsData &statisticsData) const override;
 
-  QStringList getLibraryPaths() const Q_DECL_OVERRIDE { return ff.getLibPaths(); }
-  QString     getDecoderName()  const Q_DECL_OVERRIDE { return "FFmpeg"; }
-  QString     getCodecName()          Q_DECL_OVERRIDE;
+  QStringList getLibraryPaths() const override { return ff.getLibPaths(); }
+  QString     getDecoderName()  const override { return "FFmpeg"; }
+  QString     getCodecName()          override;
   
   static QStringList getLogMessages() { return FFmpegVersionHandler::getFFmpegLog(); }
 

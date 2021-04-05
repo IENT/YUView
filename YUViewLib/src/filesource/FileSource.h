@@ -108,7 +108,7 @@ public:
   void clearFileCache();
 
 private slots:
-  void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
+  void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
 
 protected:
   // Info on the source file.

@@ -81,11 +81,8 @@
 
 decoderHM_Functions::decoderHM_Functions() { memset(this, 0, sizeof(*this)); }
 
-decoderHM::decoderHM(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
+decoderHM::decoderHM(int, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
-  // For now we don't support different signals (like prediction, residual)
-  Q_UNUSED(signalID);
-
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");

@@ -74,11 +74,10 @@ decoderVTM_Functions::decoderVTM_Functions()
   memset(this, 0, sizeof(*this)); 
 }
 
-decoderVTM::decoderVTM(int signalID, bool cachingDecoder) :
+decoderVTM::decoderVTM(int, bool cachingDecoder) :
   decoderBaseSingleLib(cachingDecoder)
 {
   // For now we don't support different signals (like prediction, residual)
-  Q_UNUSED(signalID);
 
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
@@ -394,10 +393,8 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
   }
 }
 
-void decoderVTM::cacheStatistics(libVTMDec_picture *img)
+void decoderVTM::cacheStatistics(libVTMDec_picture *)
 {
-  Q_UNUSED(img);
-
   if (!internalsSupported)
     return;
 
@@ -458,10 +455,8 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
   //}
 }
 
-void decoderVTM::fillStatisticList(stats::StatisticsData &statisticsData) const
+void decoderVTM::fillStatisticList(stats::StatisticsData &) const
 {
-  Q_UNUSED(statisticsData);
-  
   // Ask the decoder how many internals types there are
   // unsigned int nrTypes = libVTMDec_get_internal_type_number();
 

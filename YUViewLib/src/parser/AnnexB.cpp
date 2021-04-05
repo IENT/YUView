@@ -49,10 +49,8 @@
 namespace parser
 {
 
-QString AnnexB::getShortStreamDescription(int streamIndex) const
+QString AnnexB::getShortStreamDescription(int) const
 {
-  Q_UNUSED(streamIndex);
-
   QString info      = "Video";
   QSize   frameSize = this->getSequenceSizeSamples();
   if (frameSize.isValid())
@@ -204,9 +202,8 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
         this->bitratePlotModel->addBitratePoint(0, *parsingResult.bitrateEntry);
       }
     }
-    catch (const std::exception &exc)
+    catch (const std::exception &)
     {
-      Q_UNUSED(exc);
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
       DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID << " - "

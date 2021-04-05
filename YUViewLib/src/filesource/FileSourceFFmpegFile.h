@@ -108,7 +108,7 @@ public:
   QStringList getFFmpegLoadingLog() const { return ff.getLog(); }
   
 private slots:
-  void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
+  void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
 
 protected:
 

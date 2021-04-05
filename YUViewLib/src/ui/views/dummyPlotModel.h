@@ -1,34 +1,34 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #pragma once
 
@@ -43,8 +43,8 @@ public:
   DummyPlotModel() : PlotModel()
   {
     std::random_device rd;
-    std::mt19937 gen(rd());
-    
+    std::mt19937       gen(rd());
+
     std::uniform_int_distribution<> dis500(0, 500);
     for (size_t i = 0; i < 100; i++)
       this->barData.append(int(dis500(gen)));
@@ -54,10 +54,7 @@ public:
       this->graphData.append({double(dis100(gen)), double(dis1000(gen))});
   }
 
-  unsigned int getNrStreams() const override
-  {
-    return 3;
-  }
+  unsigned int getNrStreams() const override { return 3; }
 
   StreamParameter getStreamParameter(unsigned streamIndex) const override
   {
@@ -92,9 +89,8 @@ public:
     return {};
   }
 
-  QString getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const override
+  QString getPointInfo(unsigned streamIndex, unsigned, unsigned pointIndex) const override
   {
-    Q_UNUSED(plotIndex);
     auto point = this->getPlotPoint(streamIndex, 0, pointIndex);
     return QString("<h4>Stream %1</h4>"
                    "<table width=\"100%\">"
@@ -102,13 +98,16 @@ public:
                    "<tr><td>DTS:</td><td align=\"right\">%2</td></tr>"
                    "<tr><td>Bitrate:</td><td align=\"right\">%3</td></tr>"
                    "<tr><td>Type:</td><td align=\"right\">%4</td></tr>"
-                   "</table>"
-                   ).arg(streamIndex).arg(point.x).arg(point.y).arg("Inter");
+                   "</table>")
+        .arg(streamIndex)
+        .arg(point.x)
+        .arg(point.y)
+        .arg("Inter");
   }
 
-  Range<double> getYRange() const override {getStreamParameter(0).yRange;}
+  Range<double> getYRange() const override { getStreamParameter(0).yRange; }
 
 private:
-  QList<int> barData;
+  QList<int>   barData;
   QList<Point> graphData;
 };

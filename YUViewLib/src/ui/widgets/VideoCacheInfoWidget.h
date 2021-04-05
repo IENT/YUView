@@ -46,7 +46,7 @@ namespace VideoCacheStatusWidgetNamespace
     public:
     VideoCacheStatusWidget(QWidget *parent) : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0) {}
     // Override the paint event
-    virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
+    virtual void paintEvent(QPaintEvent *event) override;
     void updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
     private:
     // The floating point values (0 to 1) of the end positions of the blocks to draw

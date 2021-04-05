@@ -53,7 +53,7 @@ public:
 
 public slots:
   // Override from QDialog. Check for dublicate entries.
-  virtual void done(int r) Q_DECL_OVERRIDE;
+  virtual void done(int r) override;
 
 private slots:
   void slotItemClicked(QTableWidgetItem *item);
@@ -64,5 +64,5 @@ private slots:
 protected:
   Ui::statisticStyleControl_ColorMapEditor ui;
 
-  virtual void keyPressEvent(QKeyEvent *keyEvent) Q_DECL_OVERRIDE;
+  virtual void keyPressEvent(QKeyEvent *keyEvent) override;
 };

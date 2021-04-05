@@ -1,43 +1,43 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "playlistItemOverlay.h"
 
 #include "playlistItemStatisticsFile.h"
 
-#include <cmath>
-#include <limits>
 #include <QPainter>
 #include <QPointer>
+#include <cmath>
+#include <limits>
 
 #include "common/functions.h"
 
@@ -46,13 +46,12 @@
 #include <QDebug>
 #define DEBUG_OVERLAY qDebug
 #else
-#define DEBUG_OVERLAY(fmt,...) ((void)0)
+#define DEBUG_OVERLAY(fmt, ...) ((void)0)
 #endif
 
 #define CUSTOM_POS_MAX 100000
 
-playlistItemOverlay::playlistItemOverlay() :
-  playlistItemContainer("Overlay Item")
+playlistItemOverlay::playlistItemOverlay() : playlistItemContainer("Overlay Item")
 {
   setIcon(0, functions::convertIcon(":img_overlay.png"));
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
@@ -61,7 +60,8 @@ playlistItemOverlay::playlistItemOverlay() :
   this->prop.propertiesWidgetTitle = "Overlay Properties";
 
   // This text is drawn if there are no child items in the overlay
-  infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
+  infoText = "Please drop some items onto this overlay. All child items will be drawn on top of "
+             "each other.";
 }
 
 /* For an overlay item, the info list is just a list of the names of the
@@ -72,7 +72,8 @@ infoData playlistItemOverlay::getInfo() const
   infoData info("Overlay Info");
 
   // Add the size of this playlistItemOverlay
-  info.items.append(infoItem("Overlay Size",QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())));
+  info.items.append(
+      infoItem("Overlay Size", QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())));
 
   // Add the sizes of all child items
   for (int i = 0; i < childCount(); i++)
@@ -81,7 +82,9 @@ infoData playlistItemOverlay::getInfo() const
     if (childItem)
     {
       QSize childSize = childItem->getSize();
-      info.items.append(infoItem(QString("Item %1 size").arg(i),QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())));
+      info.items.append(
+          infoItem(QString("Item %1 size").arg(i),
+                   QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())));
     }
   }
   return info;
@@ -127,7 +130,8 @@ itemLoadingState playlistItemOverlay::needsLoading(int frameIdx, bool loadRawdat
   {
     if (getChildPlaylistItem(i)->needsLoading(frameIdx, loadRawdata) == LoadingNeeded)
     {
-      DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeeded child %s", getChildPlaylistItem(i)->getName().toLatin1().data());
+      DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeeded child %s",
+                    getChildPlaylistItem(i)->getName().toLatin1().data());
       return LoadingNeeded;
     }
   }
@@ -135,7 +139,8 @@ itemLoadingState playlistItemOverlay::needsLoading(int frameIdx, bool loadRawdat
   {
     if (getChildPlaylistItem(i)->needsLoading(frameIdx, loadRawdata) == LoadingNeededDoubleBuffer)
     {
-      DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeededDoubleBuffer child %s", getChildPlaylistItem(i)->getName().toLatin1().data());
+      DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeededDoubleBuffer child %s",
+                    getChildPlaylistItem(i)->getName().toLatin1().data());
       return LoadingNeededDoubleBuffer;
     }
   }
@@ -144,7 +149,10 @@ itemLoadingState playlistItemOverlay::needsLoading(int frameIdx, bool loadRawdat
   return LoadingNotNeeded;
 }
 
-void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
+void playlistItemOverlay::drawItem(QPainter *painter,
+                                   int       frameIdx,
+                                   double    zoomFactor,
+                                   bool      drawRawData)
 {
   DEBUG_OVERLAY("playlistItemOverlay::drawItem frame %d", frameIdx);
 
@@ -202,7 +210,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
   }
 
   // Check if the nr/order of items changed
-  bool nrItemsChanged = childCount() != childItemRects.count();
+  bool nrItemsChanged   = childCount() != childItemRects.count();
   bool itemOrderChanged = false;
   if (!nrItemsChanged)
   {
@@ -220,7 +228,8 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
   if (onlyIfItemsChanged && !nrItemsChanged && !itemOrderChanged)
     return;
 
-  DEBUG_OVERLAY("playlistItemOverlay::updateLayout%s", onlyIfNrItemsChanged ? " onlyIfNrItemsChanged" : "");
+  DEBUG_OVERLAY("playlistItemOverlay::updateLayout%s",
+                onlyIfNrItemsChanged ? " onlyIfNrItemsChanged" : "");
 
   if (nrItemsChanged || itemOrderChanged)
   {
@@ -238,8 +247,8 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
   // Update the layout in all children which are also playlistItemOverlays
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = getChildPlaylistItem(i);
-    playlistItemOverlay *childOverlay = dynamic_cast<playlistItemOverlay*>(childItem);
+    playlistItem *       childItem    = getChildPlaylistItem(i);
+    playlistItemOverlay *childOverlay = dynamic_cast<playlistItemOverlay *>(childItem);
     if (childOverlay)
       childOverlay->updateLayout();
   }
@@ -248,31 +257,35 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
   // We will arange all other items relative to this one
   playlistItem *firstItem = getChildPlaylistItem(0);
   boundingRect.setSize(firstItem->getSize());
-  boundingRect.moveCenter(QPoint(0,0));
+  boundingRect.moveCenter(QPoint(0, 0));
 
   QRect firstItemRect;
   firstItemRect.setSize(firstItem->getSize());
-  firstItemRect.moveCenter(QPoint(0,0));
+  firstItemRect.moveCenter(QPoint(0, 0));
   childItemRects[0] = firstItemRect;
-  DEBUG_OVERLAY("playlistItemOverlay::updateLayout item 0 size (%d,%d) firstItemRect (%d,%d)", firstItem->getSize().width(), firstItem->getSize().height(), firstItemRect.left(), firstItemRect.top());
+  DEBUG_OVERLAY("playlistItemOverlay::updateLayout item 0 size (%d,%d) firstItemRect (%d,%d)",
+                firstItem->getSize().width(),
+                firstItem->getSize().height(),
+                firstItemRect.left(),
+                firstItemRect.top());
 
   QList<int> columns, rows;
-  const int nrRowsCols = int(sqrt(childCount() - 1)) + 1;
+  const int  nrRowsCols = int(sqrt(childCount() - 1)) + 1;
   if (layoutMode == ARANGE)
   {
-    // Before calculating the actual position of each item, we have to pre-calculate 
+    // Before calculating the actual position of each item, we have to pre-calculate
     // the row/column height/width for the 2D layout
-    for (int i=0; i<nrRowsCols; i++)
+    for (int i = 0; i < nrRowsCols; i++)
     {
       columns.append(0);
       rows.append(0);
     }
-    for (int i=0; i<childCount(); i++)
+    for (int i = 0; i < childCount(); i++)
     {
-      const int r = i / nrRowsCols;
-      const int c = i % nrRowsCols;
+      const int     r = i / nrRowsCols;
+      const int     c = i % nrRowsCols;
       playlistItem *p = getChildPlaylistItem(i);
-      QSize s = p->getSize();
+      QSize         s = p->getSize();
       if (columns[c] < s.width())
         columns[c] = s.width();
       if (rows[r] < s.height())
@@ -281,7 +294,8 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
   }
 
   // Align the rest of the items
-  DEBUG_OVERLAY("playlistItemOverlay::updateLayout childCount %d layoutMode %d", childCount(), layoutMode);
+  DEBUG_OVERLAY(
+      "playlistItemOverlay::updateLayout childCount %d layoutMode %d", childCount(), layoutMode);
   for (int i = 1; i < childCount(); i++)
   {
     playlistItem *childItem = getChildPlaylistItem(i);
@@ -290,7 +304,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
       QSize childSize = childItem->getSize();
       QRect targetRect;
       targetRect.setSize(childSize);
-      targetRect.moveCenter(QPoint(0,0));
+      targetRect.moveCenter(QPoint(0, 0));
 
       if (layoutMode == OVERLAY)
       {
@@ -298,23 +312,32 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
         switch (overlayMode)
         {
         case 0:
-          targetRect.moveTopLeft(firstItemRect.topLeft()); break;
+          targetRect.moveTopLeft(firstItemRect.topLeft());
+          break;
         case 1:
-          targetRect.moveTop(firstItemRect.top()); break;
+          targetRect.moveTop(firstItemRect.top());
+          break;
         case 2:
-          targetRect.moveTopRight(firstItemRect.topRight()); break;
+          targetRect.moveTopRight(firstItemRect.topRight());
+          break;
         case 3:
-          targetRect.moveLeft(firstItemRect.left()); break;
+          targetRect.moveLeft(firstItemRect.left());
+          break;
         case 5:
-          targetRect.moveRight(firstItemRect.right()); break;
+          targetRect.moveRight(firstItemRect.right());
+          break;
         case 6:
-          targetRect.moveBottomLeft(firstItemRect.bottomLeft()); break;
+          targetRect.moveBottomLeft(firstItemRect.bottomLeft());
+          break;
         case 7:
-          targetRect.moveBottom(firstItemRect.bottom()); break;
+          targetRect.moveBottom(firstItemRect.bottom());
+          break;
         case 8:
-          targetRect.moveBottomRight(firstItemRect.bottomRight()); break;
+          targetRect.moveBottomRight(firstItemRect.bottomRight());
+          break;
         default:
-          targetRect.moveCenter(QPoint(0,0)); break;
+          targetRect.moveCenter(QPoint(0, 0));
+          break;
         }
       }
       else if (layoutMode == ARANGE)
@@ -324,25 +347,25 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
           // 2D
           const int r = i / nrRowsCols;
           const int c = i % nrRowsCols;
-          int y = 0;
-          for (int i=0; i<r; i++)
+          int       y = 0;
+          for (int i = 0; i < r; i++)
             y += rows[i];
           int x = 0;
-          for (int i=0; i<c; i++)
+          for (int i = 0; i < c; i++)
             x += columns[i];
           targetRect.moveTopLeft(firstItemRect.topLeft() + QPoint(x, y));
         }
         else if (arangementMode == 1)
         {
           // Side by side
-          QPoint newTopLeft = childItemRects[i-1].topRight();
+          QPoint newTopLeft = childItemRects[i - 1].topRight();
           newTopLeft.setX(newTopLeft.x() + 1);
           targetRect.moveTopLeft(newTopLeft);
         }
         else if (arangementMode == 2)
         {
           // Stacked
-          QPoint newTopLeft = childItemRects[i-1].bottomLeft();
+          QPoint newTopLeft = childItemRects[i - 1].bottomLeft();
           newTopLeft.setY(newTopLeft.y() + 1);
           targetRect.moveTopLeft(newTopLeft);
         }
@@ -350,14 +373,21 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
       else if (layoutMode == CUSTOM)
       {
         // Just use the provided custion positions per item
-        QPoint pos = customPositions[i-1];
+        QPoint pos = customPositions[i - 1];
         targetRect.moveTopLeft(firstItemRect.topLeft() + pos);
       }
 
       // Set item bounding rectangle
       childItemRects[i] = targetRect;
 
-      DEBUG_OVERLAY("playlistItemOverlay::updateLayout item %d size (%d,%d) alignmentMode %d targetRect (%d,%d)", i, childSize.width(), childSize.height(), alignmentMode, targetRect.left(), targetRect.top());
+      DEBUG_OVERLAY("playlistItemOverlay::updateLayout item %d size (%d,%d) alignmentMode %d "
+                    "targetRect (%d,%d)",
+                    i,
+                    childSize.width(),
+                    childSize.height(),
+                    alignmentMode,
+                    targetRect.left(),
+                    targetRect.top());
 
       // Expand the bounding rectangle
       boundingRect = boundingRect.united(targetRect);
@@ -377,12 +407,20 @@ void playlistItemOverlay::createPropertiesWidget()
   ui.verticalLayout->insertLayout(0, createPlaylistItemControls());
 
   // Alignment mode
-  ui.comboBoxOverlayMode->addItems(QStringList() << "Top Left" << "Top Center" << "Top Right");
-  ui.comboBoxOverlayMode->addItems(QStringList() << "Center Left" << "Center" << "Center Right");
-  ui.comboBoxOverlayMode->addItems(QStringList() << "Bottom Left" << "Bottom Center" << "Bottom Right");
+  ui.comboBoxOverlayMode->addItems(QStringList() << "Top Left"
+                                                 << "Top Center"
+                                                 << "Top Right");
+  ui.comboBoxOverlayMode->addItems(QStringList() << "Center Left"
+                                                 << "Center"
+                                                 << "Center Right");
+  ui.comboBoxOverlayMode->addItems(QStringList() << "Bottom Left"
+                                                 << "Bottom Center"
+                                                 << "Bottom Right");
   ui.comboBoxOverlayMode->setCurrentIndex(overlayMode);
-  
-  ui.comboBoxArangementMode->addItems(QStringList() << "2D Grid" << "Side by Side" << "Stacked" );
+
+  ui.comboBoxArangementMode->addItems(QStringList() << "2D Grid"
+                                                    << "Side by Side"
+                                                    << "Stacked");
   ui.comboBoxArangementMode->setCurrentIndex(arangementMode);
 
   ui.overlayGroupBox->setChecked(layoutMode == OVERLAY);
@@ -391,7 +429,7 @@ void playlistItemOverlay::createPropertiesWidget()
 
   // Create and add the grid layout for the custom positions
   customPositionGrid = new QGridLayout(ui.customGroupBox);
-  
+
   // Add the Container Layout
   ui.verticalLayout->insertLayout(3, createContainerItemControls());
 
@@ -399,11 +437,26 @@ void playlistItemOverlay::createPropertiesWidget()
   ui.verticalLayout->addStretch(1);
 
   // Connect signals/slots
-  connect(ui.overlayGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_overlayGroupBox_toggled);
-  connect(ui.arangeGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_arangeGroupBox_toggled);
-  connect(ui.customGroupBox, &QGroupBox::toggled, this, &playlistItemOverlay::on_customGroupBox_toggled);
-  connect(ui.comboBoxOverlayMode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::slotControlChanged);
-  connect(ui.comboBoxArangementMode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemOverlay::slotControlChanged);
+  connect(ui.overlayGroupBox,
+          &QGroupBox::toggled,
+          this,
+          &playlistItemOverlay::on_overlayGroupBox_toggled);
+  connect(ui.arangeGroupBox,
+          &QGroupBox::toggled,
+          this,
+          &playlistItemOverlay::on_arangeGroupBox_toggled);
+  connect(ui.customGroupBox,
+          &QGroupBox::toggled,
+          this,
+          &playlistItemOverlay::on_customGroupBox_toggled);
+  connect(ui.comboBoxOverlayMode,
+          QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this,
+          &playlistItemOverlay::slotControlChanged);
+  connect(ui.comboBoxArangementMode,
+          QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this,
+          &playlistItemOverlay::slotControlChanged);
 }
 
 void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -424,7 +477,7 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDi
     assert(layoutMode == CUSTOM);
     for (int i = 1; i < childCount(); i++)
     {
-      QPoint p = customPositions[i-1];
+      QPoint p = customPositions[i - 1];
       d.appendProperiteChild(QString("ItemPos%1X").arg(i), QString::number(p.x()));
       d.appendProperiteChild(QString("ItemPos%1Y").arg(i), QString::number(p.y()));
     }
@@ -436,10 +489,9 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDi
   root.appendChild(d);
 }
 
-playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const YUViewDomElement &root, const QString &filePath)
+playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const YUViewDomElement &root,
+                                                                 const QString &)
 {
-  Q_UNUSED(filePath);
-
   bool oldFormat = (!root.findChildValue("alignmentMode").isEmpty());
   bool newFormat = (!root.findChildValue("layoutMode").isEmpty());
   if (!oldFormat && !newFormat)
@@ -450,28 +502,33 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const YUViewDom
 
   if (oldFormat)
   {
-    int alignmentMode = root.findChildValue("alignmentMode").toInt();
+    int alignmentMode    = root.findChildValue("alignmentMode").toInt();
     int manualAlignmentX = root.findChildValue("manualAlignmentX").toInt();
     int manualAlignmentY = root.findChildValue("manualAlignmentY").toInt();
 
     // We can not really map the old (and not really pratical) notation
     if (manualAlignmentX != 0 || manualAlignmentY != 0)
     {
-      newOverlay->layoutMode = CUSTOM;
+      newOverlay->layoutMode         = CUSTOM;
       newOverlay->customPositions[0] = QPoint(manualAlignmentX, manualAlignmentY);
     }
     else
     {
-      newOverlay->layoutMode = OVERLAY;
+      newOverlay->layoutMode     = OVERLAY;
       newOverlay->arangementMode = alignmentMode;
     }
 
-    DEBUG_OVERLAY("playlistItemOverlay::newPlaylistItemOverlay alignmentMode %d manualAlignment (%d,%d)", alignment, manualAlignmentX, manualAlignmentY);
+    DEBUG_OVERLAY(
+        "playlistItemOverlay::newPlaylistItemOverlay alignmentMode %d manualAlignment (%d,%d)",
+        alignment,
+        manualAlignmentX,
+        manualAlignmentY);
   }
   else
   {
     newOverlay->layoutMode = (layoutModeEnum)root.findChildValue("layoutMode").toInt();
-    DEBUG_OVERLAY("playlistItemOverlay::newPlaylistItemOverlay layoutMode %d", newOverlay->layoutMode);
+    DEBUG_OVERLAY("playlistItemOverlay::newPlaylistItemOverlay layoutMode %d",
+                  newOverlay->layoutMode);
     if (newOverlay->layoutMode == OVERLAY)
     {
       newOverlay->overlayMode = root.findChildValue("overlayMode").toInt();
@@ -490,14 +547,14 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const YUViewDom
         if (strX.isEmpty() || strY.isEmpty())
           break;
 
-        QPoint pos = QPoint(strX.toInt(), strY.toInt());
-        newOverlay->customPositions[i-1] = pos;
+        QPoint pos                         = QPoint(strX.toInt(), strY.toInt());
+        newOverlay->customPositions[i - 1] = pos;
 
         i++;
       }
     }
   }
-  
+
   playlistItem::loadPropertiesFromPlaylist(root, newOverlay);
 
   return newOverlay;
@@ -511,10 +568,10 @@ void playlistItemOverlay::slotControlChanged()
   arangementMode = ui.comboBoxArangementMode->currentIndex();
   for (int i = 1; i < childCount(); i++)
   {
-    QPoint p = getCutomPositionOfItem(i);
-    customPositions[i-1] = p;
+    QPoint p               = getCutomPositionOfItem(i);
+    customPositions[i - 1] = p;
   }
-  
+
   // No new item was added but update the layout of the items
   updateLayout(false);
 
@@ -570,17 +627,20 @@ void playlistItemOverlay::loadFrame(int frameIdx, bool playing, bool loadRawData
 {
   // Does one of the items need loading?
   bool itemLoadedDoubleBuffer = false;
-  bool itemLoaded = false;
+  bool itemLoaded             = false;
 
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *item = getChildPlaylistItem(i);
-    auto state = item->needsLoading(frameIdx, loadRawData);
+    playlistItem *item  = getChildPlaylistItem(i);
+    auto          state = item->needsLoading(frameIdx, loadRawData);
     if (state != LoadingNotNeeded)
     {
       // Load the requested current frame (or the double buffer) without emitting any signals.
       // We will emit the signal that loading is complete when all overlay items have loaded.
-      DEBUG_OVERLAY("playlistItemWithVideo::loadFrame loading frame %d%s%s", frameIdx, playing ? " playing" : "", loadRawData ? " raw" : "");
+      DEBUG_OVERLAY("playlistItemWithVideo::loadFrame loading frame %d%s%s",
+                    frameIdx,
+                    playing ? " playing" : "",
+                    loadRawData ? " raw" : "");
       item->loadFrame(frameIdx, playing, loadRawData, false);
     }
 
@@ -616,18 +676,18 @@ bool playlistItemOverlay::isLoadingDoubleBuffer() const
 
 // Returns a possibly new widget at given row and column, having a set column span.
 // Any existing widgets of other types or other span will be removed.
-template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column)
+template <typename W> static W *widgetAt(QGridLayout *grid, int row, int column)
 {
   Q_ASSERT(grid->columnCount() <= 3);
   QPointer<QWidget> widgets[3];
   for (int j = 0; j < grid->columnCount(); ++j)
   {
     auto item = grid->itemAtPosition(row, j);
-    if (item) 
+    if (item)
       widgets[j] = item->widget();
   }
 
-  auto widget = qobject_cast<W*>(widgets[column]);
+  auto widget = qobject_cast<W *>(widgets[column]);
   if (!widget)
   {
     // There may be an incompatible widget there.
@@ -644,7 +704,7 @@ void playlistItemOverlay::clear(int startRow)
     for (int j = 0; j < customPositionGrid->columnCount(); ++j)
     {
       auto item = customPositionGrid->itemAtPosition(i, j);
-      if (item) 
+      if (item)
         delete item->widget();
     }
 }
@@ -658,21 +718,27 @@ void playlistItemOverlay::updateCustomPositionGrid()
   for (int i = 0; i < row; i++)
   {
     // Counter
-    //playlistItem *item = getChildPlaylistItem(i);
+    // playlistItem *item = getChildPlaylistItem(i);
     QLabel *name = widgetAt<QLabel>(customPositionGrid, i, 0);
     name->setText(QString("Item %1").arg(i));
 
     // Width
     QSpinBox *width = widgetAt<QSpinBox>(customPositionGrid, i, 1);
     width->setRange(-CUSTOM_POS_MAX, CUSTOM_POS_MAX);
-    connect(width, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::slotControlChanged);
+    connect(width,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this,
+            &playlistItemOverlay::slotControlChanged);
     QSignalBlocker widthSignalBlocker(width);
     width->setValue(customPositions[i].x());
 
     // Height
     QSpinBox *height = widgetAt<QSpinBox>(customPositionGrid, i, 2);
     height->setRange(-CUSTOM_POS_MAX, CUSTOM_POS_MAX);
-    connect(height, QOverload<int>::of(&QSpinBox::valueChanged), this, &playlistItemOverlay::slotControlChanged);
+    connect(height,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this,
+            &playlistItemOverlay::slotControlChanged);
     QSignalBlocker heightSignalBlocker(height);
     height->setValue(customPositions[i].y());
   }
@@ -701,22 +767,22 @@ QPoint playlistItemOverlay::getCutomPositionOfItem(int itemIdx) const
     return QPoint();
 
   // There should be 2 spin boxes in this row
-  QLayoutItem *layoutItemX = customPositionGrid->itemAtPosition(gridRowIdx, 1);
-  QWidgetItem *layoutWidgetX = dynamic_cast<QWidgetItem*>(layoutItemX);
+  QLayoutItem *layoutItemX   = customPositionGrid->itemAtPosition(gridRowIdx, 1);
+  QWidgetItem *layoutWidgetX = dynamic_cast<QWidgetItem *>(layoutItemX);
   if (layoutWidgetX == nullptr)
     return QPoint();
-  QWidget *widgetX = dynamic_cast<QWidget*>(layoutWidgetX->widget());
-  QSpinBox *spinBoxX = dynamic_cast<QSpinBox*>(widgetX);
+  QWidget * widgetX  = dynamic_cast<QWidget *>(layoutWidgetX->widget());
+  QSpinBox *spinBoxX = dynamic_cast<QSpinBox *>(widgetX);
   if (spinBoxX == nullptr)
     return QPoint();
   int posX = spinBoxX->value();
 
-  QLayoutItem *layoutItemY = customPositionGrid->itemAtPosition(gridRowIdx, 2);
-  QWidgetItem *layoutWidgetY = dynamic_cast<QWidgetItem*>(layoutItemY);
+  QLayoutItem *layoutItemY   = customPositionGrid->itemAtPosition(gridRowIdx, 2);
+  QWidgetItem *layoutWidgetY = dynamic_cast<QWidgetItem *>(layoutItemY);
   if (layoutWidgetY == nullptr)
     return QPoint();
-  QWidget *widgetY = dynamic_cast<QWidget*>(layoutWidgetY->widget());
-  QSpinBox *spinBoxY = dynamic_cast<QSpinBox*>(widgetY);
+  QWidget * widgetY  = dynamic_cast<QWidget *>(layoutWidgetY->widget());
+  QSpinBox *spinBoxY = dynamic_cast<QSpinBox *>(widgetY);
   if (spinBoxY == nullptr)
     return QPoint();
   int posY = spinBoxY->value();
@@ -730,8 +796,8 @@ void playlistItemOverlay::guessBestLayout()
   bool statisticsPresent = false;
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = getChildPlaylistItem(i);
-    playlistItemStatisticsFile *childStas = dynamic_cast<playlistItemStatisticsFile*>(childItem);
+    playlistItem *              childItem = getChildPlaylistItem(i);
+    playlistItemStatisticsFile *childStas = dynamic_cast<playlistItemStatisticsFile *>(childItem);
     if (childStas)
       statisticsPresent = true;
   }

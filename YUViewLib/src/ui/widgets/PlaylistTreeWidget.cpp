@@ -70,10 +70,8 @@ public:
     plItem = item;
     setMinimumWidth(50);
   }
-  virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE
+  virtual void paintEvent(QPaintEvent *) override
   {
-    Q_UNUSED(event);
-
     // Draw
     QPainter painter(this);
     QSize    s = size();
@@ -124,7 +122,7 @@ public:
     // Draw the border
     painter.drawRect(0, 0, s.width() - 1, s.height() - 1);
   }
-  virtual QSize minimumSizeHint() const Q_DECL_OVERRIDE { return QSize(20, 5); }
+  virtual QSize minimumSizeHint() const override { return QSize(20, 5); }
 
 private:
   playlistItem *plItem;
@@ -894,8 +892,10 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   bool         success = doc.setContent(data, false, &errorMessage, &errorLine, &errorColumn);
   if (!success)
   {
-    QMessageBox::critical(
-        this, "Error loading playlist.", errorMessage + QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
+    QMessageBox::critical(this,
+                          "Error loading playlist.",
+                          errorMessage +
+                              QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
     return false;
   }
 

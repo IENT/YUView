@@ -44,7 +44,6 @@ ShowColorWidget::ShowColorWidget(QWidget *parent) : QFrame(parent)
 
 void ShowColorWidget::paintEvent(QPaintEvent *event)
 {
-  Q_UNUSED(event);
   QFrame::paintEvent(event);
 
   // Draw
@@ -148,8 +147,4 @@ void ShowColorWidget::setPlainColor(const QColor &color)
   update();
 }
 
-void ShowColorWidget::mouseReleaseEvent(QMouseEvent *event)
-{
-  Q_UNUSED(event);
-  emit clicked();
-}
+void ShowColorWidget::mouseReleaseEvent(QMouseEvent *) { emit clicked(); }

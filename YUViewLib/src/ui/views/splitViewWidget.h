@@ -1,34 +1,34 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef SPLITVIEWWIDGET_H
 #define SPLITVIEWWIDGET_H
@@ -38,8 +38,8 @@
 #include <QElapsedTimer>
 #include <QMenu>
 #include <QMouseEvent>
-#include <QProgressDialog>
 #include <QPointer>
+#include <QProgressDialog>
 #include <QTimer>
 
 #include "MoveAndZoomableView.h"
@@ -62,34 +62,37 @@ public:
   // Set pointers to the playlist tree, the playback controller and the cache.
   void setPlaylistTreeWidget(PlaylistTreeWidget *p);
   void setPlaybackController(PlaybackController *p);
-  void setVideoCache        (videoCache *p);
+  void setVideoCache(videoCache *p);
 
-  // Set the minimum size hint. This will only be valid until the next showEvent. This is used when adding the widget
-  // as a new central widget. Then this size guarantees that the splitVie will have a certain size.
-  // Call before adding the widget using setCenterWidget().
+  // Set the minimum size hint. This will only be valid until the next showEvent. This is used when
+  // adding the widget as a new central widget. Then this size guarantees that the splitVie will
+  // have a certain size. Call before adding the widget using setCenterWidget().
   void setMinimumSizeHint(const QSize &size) { minSizeHint = size; }
 
-  // Update the splitView. newFrame should be true if the frame index was changed or the playlistitem needs a redraw.
-  // If newFrame is true, this will not automatically trigger a redraw, because first we might need to load the right frame.
-  // itemRedraw indicates if the playlist item initiated this redraw (possibly the item also needs to be reloaded).
-  void update(bool newFrame=false, bool itemRedraw=false);
+  // Update the splitView. newFrame should be true if the frame index was changed or the
+  // playlistitem needs a redraw. If newFrame is true, this will not automatically trigger a redraw,
+  // because first we might need to load the right frame. itemRedraw indicates if the playlist item
+  // initiated this redraw (possibly the item also needs to be reloaded).
+  void update(bool newFrame = false, bool itemRedraw = false);
 
-  // Called by the playback controller if playback was just started. In this case, we immediately see if the double buffer
-  // of the visible item(s) need to be updated.
+  // Called by the playback controller if playback was just started. In this case, we immediately
+  // see if the double buffer of the visible item(s) need to be updated.
   void playbackStarted(int nextFrameIdx);
 
-  // Freeze/unfreeze the view. If the view is frozen, it will take a screenshot of the current state and show that
-  // in gray-scale until it is unfrozen again.
+  // Freeze/unfreeze the view. If the view is frozen, it will take a screenshot of the current state
+  // and show that in gray-scale until it is unfrozen again.
   void freezeView(bool freeze);
 
-  // Take a screenshot of this widget as the user sees it in the center of the main window wight now.
-  // If fullItem is set, instead a full render of the first selected item will be shown.
-  QImage getScreenshot(bool fullItem=false);
+  // Take a screenshot of this widget as the user sees it in the center of the main window wight
+  // now. If fullItem is set, instead a full render of the first selected item will be shown.
+  QImage getScreenshot(bool fullItem = false);
 
-  // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
+  // This can be called from the parent widget. It will return false if the event is not handled
+  // here so it can be passed on.
   bool handleKeyPress(QKeyEvent *event) override;
 
-  // Get and set the current state (center point and zoom, is splitting active? if yes the split line position)
+  // Get and set the current state (center point and zoom, is splitting active? if yes the split
+  // line position)
   void getViewState(QPointF &offset, double &zoom, double &splitPoint, int &mode) const;
   void setViewState(const QPointF &offset, double zoom, double splitPoint, int mode);
   bool isSplitting() { return viewSplitMode != DISABLED; }
@@ -98,7 +101,10 @@ public:
   void updateSettings() override;
 
   // Raw values are shown if the zoom factor is high enough or if the zoom box is shown.
-  bool showRawData() { return this->zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR || this->drawZoomBox; }
+  bool showRawData()
+  {
+    return this->zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR || this->drawZoomBox;
+  }
 
   // Test the drawing speed with the currently selected item
   void testDrawingSpeed();
@@ -109,7 +115,7 @@ public:
   virtual void resetViewInternal() override;
 
 signals:
-  
+
   // Show (or hide) the separate window
   void signalShowSeparateWindow(bool show);
 
@@ -126,100 +132,136 @@ public slots:
 
 private slots:
 
-  void splitViewDisable(bool checked) { Q_UNUSED(checked); setViewSplitMode(DISABLED, true, true); }
-  void splitViewSideBySide(bool checked) { Q_UNUSED(checked); setViewSplitMode(SIDE_BY_SIDE, true, true); }
-  void splitViewComparison(bool checked) { Q_UNUSED(checked); setViewSplitMode(COMPARISON, true, true); }
+  void splitViewDisable(bool) { setViewSplitMode(DISABLED, true, true); }
+  void splitViewSideBySide(bool) { setViewSplitMode(SIDE_BY_SIDE, true, true); }
+  void splitViewComparison(bool) { setViewSplitMode(COMPARISON, true, true); }
 
-  void gridDisable(bool checked) { Q_UNUSED(checked); setRegularGridSize(0, true, true); }
-  void gridSet16(bool checked) { Q_UNUSED(checked); setRegularGridSize(16, true, true); }
-  void gridSet32(bool checked) { Q_UNUSED(checked); setRegularGridSize(32, true, true); }
-  void gridSet64(bool checked) { Q_UNUSED(checked); setRegularGridSize(64, true, true); }
-  void gridSet128(bool checked) { Q_UNUSED(checked); setRegularGridSize(128, true, true); }
+  void gridDisable(bool) { setRegularGridSize(0, true, true); }
+  void gridSet16(bool) { setRegularGridSize(16, true, true); }
+  void gridSet32(bool) { setRegularGridSize(32, true, true); }
+  void gridSet64(bool) { setRegularGridSize(64, true, true); }
+  void gridSet128(bool) { setRegularGridSize(128, true, true); }
   void gridSetCustom(bool checked);
 
   void toggleZoomBox(bool checked);
   void toggleSeparateWindow(bool checked);
-  void toggleSeparateWindowPlaybackBoth(bool checked) { Q_UNUSED(checked); };
+  void toggleSeparateWindowPlaybackBoth(bool){};
   void toggleFullScreen(bool checked);
 
 protected:
-  
   // Set the widget to the given view mode
-  enum ViewSplitMode {DISABLED, SIDE_BY_SIDE, COMPARISON};
-  // Set the view mode and update the view mode combo box. Disable the combo box events if emitSignal is false.
+  enum ViewSplitMode
+  {
+    DISABLED,
+    SIDE_BY_SIDE,
+    COMPARISON
+  };
+  // Set the view mode and update the view mode combo box. Disable the combo box events if
+  // emitSignal is false.
   void setViewSplitMode(ViewSplitMode v, bool setOtherViewIfLinked = true, bool callUpdate = false);
   // The current view mode (split view or comparison view)
-  ViewSplitMode viewSplitMode {DISABLED};
+  ViewSplitMode viewSplitMode{DISABLED};
 
   // Override some events from the widget
   virtual void paintEvent(QPaintEvent *event) override;
   virtual void mouseMoveEvent(QMouseEvent *event) override;
   virtual void mousePressEvent(QMouseEvent *event) override;
   virtual void mouseReleaseEvent(QMouseEvent *event) override;
-  virtual void wheelEvent (QWheelEvent *event) override;
-  virtual void mouseDoubleClickEvent(QMouseEvent *event) override { this->actionFullScreen.trigger(); event->accept(); }
+  virtual void wheelEvent(QWheelEvent *event) override;
+  virtual void mouseDoubleClickEvent(QMouseEvent *event) override
+  {
+    this->actionFullScreen.trigger();
+    event->accept();
+  }
 
   virtual void onSwipeLeft() override;
   virtual void onSwipeRight() override;
   virtual void onSwipeUp() override;
   virtual void onSwipeDown() override;
 
-  void createMenuActions();
-  virtual void addContextMenuActions(QMenu *menu) override;
+  void                         createMenuActions();
+  virtual void                 addContextMenuActions(QMenu *menu) override;
   QScopedPointer<QActionGroup> actionSplitViewGroup;
   QScopedPointer<QActionGroup> actionGridGroup;
-  QAction actionSplitView[3];
-  QAction actionGrid[6];
-  QAction actionSeparateView;
-  QAction actionSeparateViewLink;
-  QAction actionSeparateViewPlaybackBoth;
-  QAction actionZoomBox;
-  QAction actionFullScreen;
+  QAction                      actionSplitView[3];
+  QAction                      actionGrid[6];
+  QAction                      actionSeparateView;
+  QAction                      actionSeparateViewLink;
+  QAction                      actionSeparateViewPlaybackBoth;
+  QAction                      actionZoomBox;
+  QAction                      actionFullScreen;
 
-  void updateMouseTracking();
+  void         updateMouseTracking();
   virtual bool updateMouseCursor(const QPoint &srcMousePos) override;
 
-  // When the splitView is set as a center widget this will assert that after the adding operation the widget will have a
-  // certain size (minSizeHint). The size can be set with setMinimumSizeHint().
-  void showEvent(QShowEvent *event) override { Q_UNUSED(event); minSizeHint = QSize(100,100); updateGeometry(); }
-  virtual QSize	minimumSizeHint() const override { return minSizeHint; }
-  QSize minSizeHint;
+  // When the splitView is set as a center widget this will assert that after the adding operation
+  // the widget will have a certain size (minSizeHint). The size can be set with
+  // setMinimumSizeHint().
+  void showEvent(QShowEvent *) override
+  {
+    minSizeHint = QSize(100, 100);
+    this->updateGeometry();
+  }
+  virtual QSize minimumSizeHint() const override { return minSizeHint; }
+  QSize         minSizeHint;
 
-  bool       splittingDragging {false};     //!< True if the user is currently dragging the splitter
-  void       setSplittingPoint(double p, bool setOtherViewIfLinked = true);
-  double     splittingPoint {0.5};          //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
-  enum       splitStyle {SOLID_LINE, TOP_BOTTOM_HANDLERS};
-  splitStyle splittingLineStyle;            //!< The style of the splitting line. This can be set in the settings window.
+  bool   splittingDragging{false}; //!< True if the user is currently dragging the splitter
+  void   setSplittingPoint(double p, bool setOtherViewIfLinked = true);
+  double splittingPoint{
+      0.5}; //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
+  enum splitStyle
+  {
+    SOLID_LINE,
+    TOP_BOTTOM_HANDLERS
+  };
+  splitStyle splittingLineStyle; //!< The style of the splitting line. This can be set in the
+                                 //!< settings window.
 
   void   setMoveOffset(QPointF offset) override;
   QPoint getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPoint = {}) const override;
   void   onZoomRectUpdateOffsetAndZoom(QRectF zoomRect, double additionalZoomFactor) override;
 
-  QRect   viewActiveArea;                   //!< The active area, where the picture is drawn into
+  QRect viewActiveArea; //!< The active area, where the picture is drawn into
 
-  void    zoomToFitInternal() override;
-  void    setZoomFactor(double zoom) override;
-  QFont   zoomFactorFont;                   //!< The font to use for the zoom factor indicator
-  QPoint  zoomFactorFontPos;                //!< The position where the zoom factor indication will be shown
-  void    onZoomIn() override { this->update(false, true); }
+  void   zoomToFitInternal() override;
+  void   setZoomFactor(double zoom) override;
+  QFont  zoomFactorFont;    //!< The font to use for the zoom factor indicator
+  QPoint zoomFactorFontPos; //!< The position where the zoom factor indication will be shown
+  void   onZoomIn() override { this->update(false, true); }
 
   // The zoom box(es)
-  bool   drawZoomBox {false};               //!< If set to true, the paint event will draw the zoom box(es)
-  QPoint zoomBoxMousePosition;              //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
-  QColor zoomBoxBackgroundColor;            //!< The color of the zoom box background (read from settings)
-  void   paintZoomBox(int view, QPainter &painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing);
-  void   setDrawZoomBox(bool drawZoomBox, bool setOtherViewIfLinked = true, bool callUpdate = false);
+  bool   drawZoomBox{false};     //!< If set to true, the paint event will draw the zoom box(es)
+  QPoint zoomBoxMousePosition;   //!< If we are drawing the zoom box(es) we have to know where the
+                                 //!< mouse currently is.
+  QColor zoomBoxBackgroundColor; //!< The color of the zoom box background (read from settings)
+  void   paintZoomBox(int           view,
+                      QPainter &    painter,
+                      int           xSplit,
+                      const QPoint &drawArea_botR,
+                      playlistItem *item,
+                      int           frame,
+                      const QPoint &pixelPos,
+                      bool          pixelPosInItem,
+                      double        zoomFactor,
+                      bool          playing);
+  void setDrawZoomBox(bool drawZoomBox, bool setOtherViewIfLinked = true, bool callUpdate = false);
 
-  //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
+  //!< Using the current mouse position, calculate the position in the items under the mouse (per
+  //!< view)
   void   updatePixelPositions();
-  void   setZoomBoxPixelUnderCursor(QPoint posA, QPoint posB, bool setOtherViewIfLinked = true, bool callUpdate = false);
-  QPoint zoomBoxPixelUnderCursor[2];        //!< The above function will update this. (The position of the pixel under the cursor (per item))
+  void   setZoomBoxPixelUnderCursor(QPoint posA,
+                                    QPoint posB,
+                                    bool   setOtherViewIfLinked = true,
+                                    bool   callUpdate           = false);
+  QPoint zoomBoxPixelUnderCursor[2]; //!< The above function will update this. (The position of the
+                                     //!< pixel under the cursor (per item))
 
   // Regular grid
-  unsigned int regularGridSize {0};         //!< The size of each block in the regular grid in pixels
-  void setRegularGridSize(unsigned int size, bool setOtherViewIfLinked = true, bool callUpdate = false);
+  unsigned int regularGridSize{0}; //!< The size of each block in the regular grid in pixels
+  void
+  setRegularGridSize(unsigned int size, bool setOtherViewIfLinked = true, bool callUpdate = false);
   QColor regularGridColor;
-  void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
+  void   paintRegularGrid(QPainter *painter, playlistItem *item); //!< paint the grid
 
   // Pointers to the playlist tree widget, the playback controller and the videoCache
   QPointer<PlaylistTreeWidget> playlist;
@@ -227,49 +269,62 @@ protected:
   QPointer<videoCache>         cache;
 
   // Freezing of the view
-  bool isViewFrozen {false};               //!< Is the view frozen?
+  bool isViewFrozen{false}; //!< Is the view frozen?
 
   // Draw the "Loading..." message (if needed)
   void drawLoadingMessage(QPainter *painter, const QPoint &pos);
   // True if the "Loading..." message is currently being drawn for one of the two items
-  bool drawingLoadingMessage[2] {false, false};
+  bool drawingLoadingMessage[2]{false, false};
 
   // Draw a ruler at the top and left that indicate the x and y position of the visible pixels
-  void paintPixelRulersX(QPainter &painter, playlistItem *item, int xPixMin, int xPixMax, double zoom, QPoint centerPoints, QPointF offset);
-  void paintPixelRulersY(QPainter &painter, playlistItem *item, int yPixMax, int xPos,    double zoom, QPoint centerPoints, QPointF offset);
+  void paintPixelRulersX(QPainter &    painter,
+                         playlistItem *item,
+                         int           xPixMin,
+                         int           xPixMax,
+                         double        zoom,
+                         QPoint        centerPoints,
+                         QPointF       offset);
+  void paintPixelRulersY(QPainter &    painter,
+                         playlistItem *item,
+                         int           yPixMax,
+                         int           xPos,
+                         double        zoom,
+                         QPoint        centerPoints,
+                         QPointF       offset);
 
-  // Class to save the current view statue (center point and zoom, splitting settings) so that we can quickly switch between them 
-  // using the keyboard.
+  // Class to save the current view statue (center point and zoom, splitting settings) so that we
+  // can quickly switch between them using the keyboard.
   class splitViewWidgetState
   {
   public:
     splitViewWidgetState() : valid(false) {}
-    bool valid;
-    QPoint centerOffset;
-    double zoomFactor;
-    double splittingPoint;
+    bool          valid;
+    QPoint        centerOffset;
+    double        zoomFactor;
+    double        splittingPoint;
     ViewSplitMode viewMode;
   };
   splitViewWidgetState viewStates[8];
 
-  // This pixmap is drawn in the lower left corner if playback is paused because we are waiting for caching.
+  // This pixmap is drawn in the lower left corner if playback is paused because we are waiting for
+  // caching.
   QPixmap waitingForCachingPixmap;
 
   QStringPair determineItemNamesToDraw(playlistItem *item1, playlistItem *item2);
-  void drawItemPathAndName(QPainter *painter, int posX, int width, QString path);
-  bool drawItemPathAndNameEnabled {true};
+  void        drawItemPathAndName(QPainter *painter, int posX, int width, QString path);
+  bool        drawItemPathAndNameEnabled{true};
 
   // Everything related to drawing tests
   QPointer<QProgressDialog> testProgressDialog;
-  int testLoopCount;                            //< Set before the test starts. Count down to 0. Then the test is over.
-  bool testMode {false};                                //< Set to true when the test is running
-  QTimer testProgrssUpdateTimer;                //< Periodically update the progress dialog
-  QElapsedTimer testDuration;                   //< Used to obtain the duration of the test
-  void updateTestProgress();
-  void testFinished(bool canceled);             //< Report the test results and stop the testProgrssUpdateTimer
+  int    testLoopCount;   //< Set before the test starts. Count down to 0. Then the test is over.
+  bool   testMode{false}; //< Set to true when the test is running
+  QTimer testProgrssUpdateTimer; //< Periodically update the progress dialog
+  QElapsedTimer testDuration;    //< Used to obtain the duration of the test
+  void          updateTestProgress();
+  void testFinished(bool canceled); //< Report the test results and stop the testProgrssUpdateTimer
 
   QPointer<splitViewWidget> getOtherWidget() const;
-  void getStateFromMaster() override;
+  void                      getStateFromMaster() override;
 };
 
 #endif // SPLITVIEWWIDGET_H

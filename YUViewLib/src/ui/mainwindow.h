@@ -52,7 +52,7 @@ class MainWindow : public QMainWindow
 public:
   explicit MainWindow(bool useAlternativeSources, QWidget *parent = 0);
 
-  void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
+  void closeEvent(QCloseEvent *event) override;
   
   // Check for a new update (if we do this automatically)
   void autoUpdateCheck() { updater->startCheckForNewVersion(false, false); }
@@ -101,11 +101,11 @@ private:
 
   Ui::MainWindow ui;
 
-  virtual bool eventFilter(QObject *watched, QEvent *event) Q_DECL_OVERRIDE;
-  virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+  virtual bool eventFilter(QObject *watched, QEvent *event) override;
+  virtual void keyPressEvent(QKeyEvent *event) override;
 
   // Check if one of the loaded files has changed (if activated in the settings)
-  virtual void focusInEvent(QFocusEvent *event) Q_DECL_OVERRIDE;
+  virtual void focusInEvent(QFocusEvent *event) override;
 
   MoveAndZoomableView *getCurrentActiveView();
 

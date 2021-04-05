@@ -98,11 +98,8 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx
   }
 }
 
-void videoHandlerDifference::loadFrameDifference(int frameIndex, bool loadToDoubleBuffer)
+void videoHandlerDifference::loadFrameDifference(int frameIndex, bool)
 {
-  // No double buffering for difference items
-  Q_UNUSED(loadToDoubleBuffer);
-
   // Calculate the difference between the inputVideos
   if (!inputsValid())
     return;
@@ -164,10 +161,8 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
   }
 }
 
-QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
+QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *, const int frameIdx1)
 {
-  Q_UNUSED(item2);
-
   if (!inputsValid())
     return QStringPairList();
 

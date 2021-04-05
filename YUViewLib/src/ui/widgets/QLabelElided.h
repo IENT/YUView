@@ -63,7 +63,7 @@ public:
   }
 
 protected:
-  void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE { QLabel::resizeEvent(event); setElidedText(); }
+  void resizeEvent(QResizeEvent *event) override { QLabel::resizeEvent(event); setElidedText(); }
 
 private:
   void setElidedText()

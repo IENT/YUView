@@ -78,10 +78,8 @@ PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex
   return streamParameter;
 }
 
-PlotModel::Point HRDPlotModel::getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
+PlotModel::Point HRDPlotModel::getPlotPoint(unsigned streamIndex, unsigned, unsigned pointIndex) const
 {
-  Q_UNUSED(plotIndex);
-
   if (streamIndex > 0)
     return {};
 
@@ -100,10 +98,8 @@ PlotModel::Point HRDPlotModel::getPlotPoint(unsigned streamIndex, unsigned plotI
   return point;
 }
 
-QString HRDPlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
+QString HRDPlotModel::getPointInfo(unsigned streamIndex, unsigned, unsigned pointIndex) const
 {
-  Q_UNUSED(plotIndex);
-
   if (streamIndex > 0)
     return {};
 

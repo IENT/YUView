@@ -66,23 +66,23 @@ public:
   decoderDav1d(int signalID, bool cachingDecoder=false);
   ~decoderDav1d();
 
-  void resetDecoder() Q_DECL_OVERRIDE;
+  void resetDecoder() override;
 
-  int nrSignalsSupported() const Q_DECL_OVERRIDE { return nrSignals; }
-  bool isSignalDifference(int signalID) const Q_DECL_OVERRIDE { return signalID == 2 || signalID == 3; }
-  QStringList getSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Reconstruction pre-filter"; }
-  void setDecodeSignal(int signalID, bool &decoderResetNeeded) Q_DECL_OVERRIDE;
+  int nrSignalsSupported() const override { return nrSignals; }
+  bool isSignalDifference(int signalID) const override { return signalID == 2 || signalID == 3; }
+  QStringList getSignalNames() const override { return QStringList() << "Reconstruction" << "Prediction" << "Reconstruction pre-filter"; }
+  void setDecodeSignal(int signalID, bool &decoderResetNeeded) override;
 
   // Decoding / pushing data
-  bool decodeNextFrame() Q_DECL_OVERRIDE;
-  QByteArray getRawFrameData() Q_DECL_OVERRIDE;
-  bool pushData(QByteArray &data) Q_DECL_OVERRIDE;
+  bool decodeNextFrame() override;
+  QByteArray getRawFrameData() override;
+  bool pushData(QByteArray &data) override;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
-  QString getDecoderName() const Q_DECL_OVERRIDE;
-  QString getCodecName()         Q_DECL_OVERRIDE { return "AV1"; }
+  QString getDecoderName() const override;
+  QString getCodecName()         override { return "AV1"; }
 
 private:
   // A private constructor that creates an uninitialized decoder library.
@@ -90,10 +90,10 @@ private:
   decoderDav1d() : decoderBaseSingleLib() {};
 
   // Try to resolve all the required function pointers from the library
-  void resolveLibraryFunctionPointers() Q_DECL_OVERRIDE;
+  void resolveLibraryFunctionPointers() override;
 
   // Return the possible names of the dav1d library
-  QStringList getLibraryNames() Q_DECL_OVERRIDE;
+  QStringList getLibraryNames() override;
 
   // The function template for resolving the functions.
   // This can not go into the base class because then the template
