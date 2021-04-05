@@ -116,17 +116,17 @@ jobs:
         cd $GITHUB_WORKSPACE/build
         make install DESTDIR=appdir      
         echo "Test 123"
-        test=$(which qmake)
-        echo $test
-#        QMAKE="$HOME/YUViewQt/Qt/bin/qmake"
-#        $HOME/linuxdeploy-x86_64.AppImage  --appdir appdir --plugin qt  --output appimage
-#        mv YUView-*.AppImage YUView.AppImage
-#        mkdir $GITHUB_WORKSPACE/artifacts
-#        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
-#        cd $GITHUB_WORKSPACE
-#        ls -l
-#        cd $GITHUB_WORKSPACE/artifacts
-#        ls -l
+        # test=$(which qmake)
+        # echo $test
+        QMAKE="$HOME/YUViewQt/Qt/bin/qmake"
+        $HOME/linuxdeploy-x86_64.AppImage  --appdir appdir --plugin qt  --output appimage
+        mv YUView-*.AppImage YUView.AppImage
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
+        cd $GITHUB_WORKSPACE
+        ls -l
+        cd $GITHUB_WORKSPACE/artifacts
+        ls -l
       if: matrix.os == 'ubuntu-16.04'
       shell: bash
 
