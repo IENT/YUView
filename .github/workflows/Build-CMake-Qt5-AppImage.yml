@@ -83,6 +83,7 @@ jobs:
         cd build
         cmake  -DCMAKE_PREFIX_PATH="$HOME/YUViewQt/Qt" -DCMAKE_INSTALL_PREFIX=/usr ..
         cmake --build . --parallel $(nproc)
+      shell: bash
 
 ##########################################################################################
 ############################### Unit tests ###############################################
@@ -93,6 +94,7 @@ jobs:
         cd $GITHUB_WORKSPACE/build
         ctest --output-on-failure
         # ctest --output-on-failure --debug --extra-verbose
+      shell: bash
 
 ##########################################################################################
 ############################### Packaging YUView, Installers #############################
@@ -112,8 +114,9 @@ jobs:
     - name: Build Appimage (Linux)
       run: |
         cd $GITHUB_WORKSPACE/build
-        make install DESTDIR=appdir
-        which qmake
+        make install DESTDIR=appdir        
+        test=$(which qmake)
+        echo $test
         QMAKE="$HOME/YUViewQt/Qt/bin/qmake"
         $HOME/linuxdeploy-x86_64.AppImage  --appdir appdir --plugin qt  --output appimage
         mv YUView-*.AppImage YUView.AppImage
@@ -124,6 +127,7 @@ jobs:
         cd $GITHUB_WORKSPACE/artifacts
         ls -l
       if: matrix.os == 'ubuntu-16.04'
+      shell: bash
 
 ##########################################################################################
 ############################### Upload ###################################################
