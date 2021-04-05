@@ -192,11 +192,11 @@ void decoderHM::resetDecoder()
 {
   // Delete decoder
   if (decoder != nullptr)
+  {
     if (libHMDec_free_decoder(decoder) != LIBHMDEC_OK)
       return setError("Reset: Freeing the decoder failded.");
-
-  decoder             = nullptr;
-  decodedFrameWaiting = false;
+    decoder = nullptr;
+  }
 
   // Create new decoder
   allocateNewDecoder();
@@ -207,7 +207,7 @@ void decoderHM::allocateNewDecoder()
   if (decoder != nullptr)
     return;
 
-  DEBUG_DECHM("hevcDecoderHM::allocateNewDecoder - decodeSignal %d", decodeSignal);
+  DEBUG_DECHM("decoderHM::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
   // Create new decoder object
   decoder = libHMDec_new_decoder();
@@ -215,6 +215,9 @@ void decoderHM::allocateNewDecoder()
   // Set some decoder parameters
   libHMDec_set_SEI_Check(decoder, true);
   libHMDec_set_max_temporal_layer(decoder, -1);
+
+  decoderBase::resetDecoder();
+  this->decodedFrameWaiting = false;
 }
 
 bool decoderHM::decodeNextFrame()
@@ -447,9 +450,6 @@ void decoderHM::cacheStatistics(libHMDec_picture *img)
     return;
 
   DEBUG_DECHM("decoderHM::cacheStatistics POC %d", libHMDEC_get_POC(img));
-
-  // Clear the local statistics cache
-  this->statisticsData->clear();
 
   // Conversion from intra prediction mode to vector.
   // Coordinates are in x,y with the axes going right and down.

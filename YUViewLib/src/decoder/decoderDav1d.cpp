@@ -718,9 +718,6 @@ void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
 
   DEBUG_DAV1D("decoderDav1d::cacheStatistics");
 
-  // Clear the local statistics cache
-  this->statisticsData->clear();
-
   Av1Block *        blockData   = img.getBlockData();
   Dav1dFrameHeader *frameHeader = img.getFrameHeader();
   if (frameHeader == nullptr)

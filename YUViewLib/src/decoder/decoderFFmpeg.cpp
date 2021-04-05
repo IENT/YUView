@@ -259,9 +259,6 @@ void decoderFFmpeg::cacheCurStatistics()
   // Copy the statistics of the current frame to the buffer
   DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
 
-  // Clear the local statistics cache
-  this->statisticsData->clear();
-
   // Try to get the motion information
   AVFrameSideDataWrapper sd = this->ff.getSideData(frame, AV_FRAME_DATA_MOTION_VECTORS);
   if (sd)

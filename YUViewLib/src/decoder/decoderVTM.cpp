@@ -403,9 +403,6 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
 
   DEBUG_DECVTM("decoderVTM::cacheStatistics POC %d", libVTMDec_get_POC(img));
 
-  // Clear the local statistics cache
-  this->statisticsData->clear();
-
   // // Conversion from intra prediction mode to vector.
   // // Coordinates are in x,y with the axes going right and down.
   // static const int vectorTable[35][2] = 

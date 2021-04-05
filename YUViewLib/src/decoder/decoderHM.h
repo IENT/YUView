@@ -125,7 +125,6 @@ private:
   // Statistics caching
   void cacheStatistics(libHMDec_picture *pic);
 
-  bool internalsSupported {false};
   int nrSignals { 0 };
 
   // Convert from libde265 types to YUView types

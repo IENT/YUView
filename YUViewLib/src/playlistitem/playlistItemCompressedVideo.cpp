@@ -241,7 +241,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
-  this->statisticsData.setFrameSize(frameSize);
+  this->statisticsData.setFrameSize(this->video->getFrameSize());
 
   decoderEngineType = decoderEngineInvalid;
   if (decoder != decoderEngineInvalid)
@@ -1075,7 +1075,8 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
 
     // Update the statistics list with what the new decoder can provide
     this->statisticsUIHandler.clearStatTypes();
-    fillStatisticList();
+    this->statisticsData.setFrameSize(this->video->getFrameSize());
+    this->fillStatisticList();
     this->statisticsUIHandler.updateStatisticsHandlerControls();
 
     emit signalItemChanged(true, RECACHE_CLEAR);
