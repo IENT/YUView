@@ -189,8 +189,8 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
 
   try
   {
-    QTextStream in(this->file.getQFile());
-
+    statisticsData.setFrameIndex(poc);
+    
     if (this->pocStartList.count(poc) == 0)
     {
       // There are no statistics in the file for the given frame and index.
@@ -200,7 +200,7 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
 
     auto startPos = this->pocStartList[poc];
 
-    // fast forward
+    QTextStream in(this->file.getQFile());
     in.seek(startPos);
 
     QRegularExpression pocRegex("BlockStat: POC ([0-9]+)");

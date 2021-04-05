@@ -96,7 +96,7 @@ std::vector<int> StatisticsData::getTypesThatNeedLoading(int frameIndex) const
   auto             loadAll = this->frameIdx != frameIndex;
   for (const auto &statsType : this->statsTypes)
   {
-    if (loadAll || (statsType.render && this->frameCache.count(statsType.typeID) == 0))
+    if (statsType.render && (loadAll || this->frameCache.count(statsType.typeID) == 0))
       typesToLoad.push_back(statsType.typeID);
   }
 
