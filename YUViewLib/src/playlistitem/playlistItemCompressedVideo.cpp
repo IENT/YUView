@@ -595,14 +595,14 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       }
       else if (isInputFormatTypeAnnexB(inputFormatType) && decoderEngineType != decoderEngineFFMpeg)
       {
-        QByteArray data = caching ? inputFileAnnexBCaching->getNextNALUnit(repushData) : inputFileAnnexBLoading->getNextNALUnit(repushData);
+        auto data = caching ? inputFileAnnexBCaching->getNextNALUnit(repushData) : inputFileAnnexBLoading->getNextNALUnit(repushData);
         DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived nal unit from file - size %d", data.size());
         repushData = !dec->pushData(data);
       }
       else if (isInputFormatTypeFFmpeg(inputFormatType) && decoderEngineType != decoderEngineFFMpeg)
       {
         // Get the next unit (NAL or OBU) form ffmepg and push it to the decoder
-        QByteArray data = caching ? inputFileFFmpegCaching->getNextUnit(repushData) : inputFileFFmpegLoading->getNextUnit(repushData);
+        auto data = caching ? inputFileFFmpegCaching->getNextUnit(repushData) : inputFileFFmpegLoading->getNextUnit(repushData);
         DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived nal unit from file - size %d", data.size());
         repushData = !dec->pushData(data);
       }
