@@ -47,16 +47,18 @@ jobs:
 
     - name: Install Qt base
       run: |
-        cd ../../
-        mkdir -p YUViewQt/YUViewQt
-        cd YUViewQt/YUViewQt
+        pwd
+        cd $HOME
+        mkdir -p YUViewQt
+        cd YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/${{matrix.QT_FILE}} -o Qt.zip
         unzip -qa Qt.zip
-        echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
 
     - name: Install Linuxdeployqt
       run: |
+        pwd
+        cd $HOME
         wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
         wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
         chmod +x linuxdeploy*.AppImage
@@ -64,6 +66,7 @@ jobs:
 
     - name: Install libde265
       run: |
+        cd $HOME
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
       shell: bash
@@ -74,10 +77,11 @@ jobs:
 
     - name: Build Linux/Mac
       run: |
+        pwd
         cd $GITHUB_WORKSPACE
         mkdir build
         cd build
-        cmake  -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt" -DCMAKE_INSTALL_PREFIX=/usr ..
+        cmake  -DCMAKE_PREFIX_PATH="$HOME/YUViewQt/Qt" -DCMAKE_INSTALL_PREFIX=/usr ..
         cmake --build . --parallel $(nproc)
 
 ##########################################################################################
@@ -109,6 +113,8 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/build
         make install DESTDIR=appdir
+        which qmake
+        QMAKE="$HOME/YUViewQt/Qt/bin/qmake"
         $GITHUB_WORKSPACE/linuxdeploy-x86_64.AppImage  --appdir appdir --plugin qt  --output appimage
         mv YUView-*.AppImage YUView.AppImage
         mkdir $GITHUB_WORKSPACE/artifacts
