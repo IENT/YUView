@@ -954,7 +954,10 @@ void decoderDav1d::parseBlockPartition(
       4, 8, 16, 32, 64, 8, 4, 16, 8, 32, 16, 64, 32, 16, 4, 32, 8, 64, 16};
   const int tx_w = TxfmSizeWidthTable[tx_val];
   const int tx_h = TxfmSizeHeightTable[tx_val];
-  assert(tx_w <= cbWidth && tx_h <= cbHeight);
+  
+  if (tx_w > cbWidth || tx_h > cbHeight)
+    // Transform can not be bigger then the coding block
+    return;
 
   for (int x = 0; x < cbWidth; x += tx_w)
   {

@@ -3049,15 +3049,15 @@ void AVPacketWrapper::setDTS(int64_t d)
     assert(false);
 }
 
-packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
+PacketDataFormat AVPacketWrapper::guessDataFormatFromData()
 {
-  if (packetFormat != packetFormatUnknown)
+  if (packetFormat != PacketDataFormat::Unknown)
     return packetFormat;
 
   QByteArray avpacketData = QByteArray::fromRawData((const char*)(getData()), getDataSize());
   if (avpacketData.length() < 4)
   {
-    packetFormat = packetFormatUnknown;
+    packetFormat = PacketDataFormat::Unknown;
     return packetFormat;
   }
 
@@ -3068,14 +3068,14 @@ packetDataFormat_t AVPacketWrapper::guessDataFormatFromData()
   // This should always work unless a format is used which we did not encounter so far (which is not listed above)
   // Also I think this should be identical for all packets in a bitstream.
   if (checkForRawNALFormat(avpacketData, false))
-    packetFormat = packetFormatRawNAL;
+    packetFormat = PacketDataFormat::RawNAL;
   else if (checkForMp4Format(avpacketData))
-    packetFormat = packetFormatMP4;
+    packetFormat = PacketDataFormat::MP4;
   // This might be an OBU (AV1) stream
   else if (checkForObuFormat(avpacketData))
-    packetFormat = packetFormatOBU;
+    packetFormat = PacketDataFormat::OBU;
   else if (checkForRawNALFormat(avpacketData, true))
-    packetFormat = packetFormatRawNAL;
+    packetFormat = PacketDataFormat::RawNAL;
   return packetFormat;
 }
 

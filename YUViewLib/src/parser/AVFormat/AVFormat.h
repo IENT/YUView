@@ -87,7 +87,7 @@ private:
   // Parse all NAL units in data using the AnnexB parser
   std::map<std::string, unsigned>
   parseByteVectorAnnexBStartCodes(ByteVector &                   data,
-                                  packetDataFormat_t             dataFormat,
+                                  PacketDataFormat               dataFormat,
                                   BitratePlotModel::BitrateEntry packetBitrateEntry,
                                   TreeItem *                     item);
 

@@ -210,7 +210,7 @@ bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
   {
     this->parseByteVectorAnnexBStartCodes(
         extradata,
-        packetDataFormat_t::packetFormatRawNAL,
+        PacketDataFormat::RawNAL,
         {},
         new TreeItem(packetModel->getRootItem(), "Extradata (Raw HEVC NAL units)"));
   }
@@ -234,7 +234,7 @@ bool AVFormat::parseExtradata_mpeg2(ByteVector &extradata)
   {
     this->parseByteVectorAnnexBStartCodes(
         extradata,
-        packetDataFormat_t::packetFormatRawNAL,
+        PacketDataFormat::RawNAL,
         {},
         new TreeItem(packetModel->getRootItem(), "Extradata (Raw Mpeg2 units)"));
   }
@@ -247,19 +247,18 @@ bool AVFormat::parseExtradata_mpeg2(ByteVector &extradata)
 
 std::map<std::string, unsigned>
 AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
-                                          packetDataFormat_t             dataFormat,
+                                          PacketDataFormat               dataFormat,
                                           BitratePlotModel::BitrateEntry packetBitrateEntry,
                                           TreeItem *                     item)
 {
-  if (dataFormat != packetDataFormat_t::packetFormatRawNAL &&
-      dataFormat != packetDataFormat_t::packetFormatMP4)
+  if (dataFormat != PacketDataFormat::RawNAL && dataFormat != PacketDataFormat::MP4)
   {
     DEBUG_AVFORMAT("AVFormat::parseByteVectorAnnexBStartCodes Unsupported data format");
     return {};
   }
 
   auto getNextNalStart = [&data, &dataFormat](ByteVector::iterator searchStart) {
-    if (dataFormat == packetDataFormat_t::packetFormatRawNAL)
+    if (dataFormat == PacketDataFormat::RawNAL)
     {
       if (std::distance(searchStart, data.end()) <= 3)
         return data.end();
@@ -269,7 +268,7 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
         return data.end();
       return itStartCode;
     }
-    else if (dataFormat == packetDataFormat_t::packetFormatMP4)
+    else if (dataFormat == PacketDataFormat::MP4)
     {
       unsigned size = 0;
       size += ((*(searchStart++)) << 24);
@@ -284,7 +283,7 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
   };
 
   auto itStartCode = data.begin();
-  if (dataFormat == packetDataFormat_t::packetFormatRawNAL)
+  if (dataFormat == PacketDataFormat::RawNAL)
   {
     itStartCode = getNextNalStart(itStartCode);
     if (itStartCode == data.end())
@@ -295,7 +294,7 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
     }
   }
 
-  const auto sizeStartCode = (dataFormat == packetDataFormat_t::packetFormatRawNAL ? 3u : 4u);
+  const auto sizeStartCode = (dataFormat == PacketDataFormat::RawNAL ? 3u : 4u);
 
   auto                            nalID = 0u;
   std::map<std::string, unsigned> naNames;
@@ -381,7 +380,7 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
     if (this->annexBParser)
     {
       // Colloect the types of NALs to create a good name later
-      packetDataFormat_t             packetFormat = packet.guessDataFormatFromData();
+      auto                           packetFormat = packet.guessDataFormatFromData();
       BitratePlotModel::BitrateEntry packetBitrateEntry;
       packetBitrateEntry.dts      = packet.getDTS();
       packetBitrateEntry.pts      = packet.getPTS();
