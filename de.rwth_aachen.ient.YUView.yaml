@@ -7,7 +7,7 @@ finish-args:
   - --socket=wayland
   - --socket=x11
   - --share=ipc
-  - --share=network  
+  - --share=network
   - --filesystem=host
   - --env=QT_NO_FT_CACHE=1
 
@@ -41,7 +41,7 @@ modules:
       - /share/ffmpeg/examples
 
   - name: YUView
-    buildsystem: qmake
+    buildsystem: cmake-ninja
     sources:
       - type: dir
         path: .
