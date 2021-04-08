@@ -12,33 +12,33 @@ finish-args:
   - --env=QT_NO_FT_CACHE=1
 
 modules:
-  # - name: libde265
-  #   buildsystem: cmake-ninja
-  #   config-opts:
-  #     - -DONLY_LIB=ON
-  #     - -DCMAKE_INSTALL_LIBDIR:PATH=/app/lib
-  #   sources:
-  #     - type: git
-  #       branch: internal
-  #       url: https://github.com/nolyn/libde265.git
-  #       commit: e655e91d7495785996552e935f308f45c0e6e161
+  - name: libde265
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DONLY_LIB=ON
+      - -DCMAKE_INSTALL_LIBDIR:PATH=/app/lib
+    sources:
+      - type: git
+        branch: internal
+        url: https://github.com/nolyn/libde265.git
+        commit: e655e91d7495785996552e935f308f45c0e6e161
 
-  # - name: ffmpeg
-  #   config-opts:
-  #     - --enable-shared
-  #     - --disable-static
-  #     - --enable-gnutls
-  #     - --disable-doc
-  #     - --disable-programs
-  #     - --disable-encoders
-  #     - --disable-muxers
-  #     - --enable-encoder=png
-  #   sources:
-  #     - type: archive
-  #       url: https://www.ffmpeg.org/releases/ffmpeg-4.2.3.tar.xz
-  #       sha256: 9df6c90aed1337634c1fb026fb01c154c29c82a64ea71291ff2da9aacb9aad31
-  #   cleanup:
-  #     - /share/ffmpeg/examples
+  - name: ffmpeg
+    config-opts:
+      - --enable-shared
+      - --disable-static
+      - --enable-gnutls
+      - --disable-doc
+      - --disable-programs
+      - --disable-encoders
+      - --disable-muxers
+      - --enable-encoder=png
+    sources:
+      - type: archive
+        url: https://www.ffmpeg.org/releases/ffmpeg-4.2.3.tar.xz
+        sha256: 9df6c90aed1337634c1fb026fb01c154c29c82a64ea71291ff2da9aacb9aad31
+    cleanup:
+      - /share/ffmpeg/examples
 
   - name: YUView
     buildsystem: cmake-ninja
