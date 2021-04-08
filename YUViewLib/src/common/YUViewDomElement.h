@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <QDomElement>
+#include <QtXml/QDomElement>
 
 #include "typedef.h"
 

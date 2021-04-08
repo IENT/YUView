@@ -13,13 +13,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # try to find Qt6 first
 find_package(Qt6 COMPONENTS Gui Widgets OpenGL Xml Concurrent Network Test)
 if (Qt6_FOUND)
-    message(STATUS "Building YUView using Qt6")
+    message(STATUS "Building YUView using Qt6, Version ${Qt6Core_VERSION}")
 endif()
 if (NOT Qt6_FOUND)
     # fallback: try to find Qt5
     find_package(Qt5 COMPONENTS Gui Widgets OpenGL Xml Concurrent Network Test REQUIRED)
     if (Qt5_FOUND)
-        message(STATUS "Building YUView using Qt5")
+        message(STATUS "Building YUView using Qt5, Version ${Qt5Core_VERSION}")
     endif()
 endif()
 
