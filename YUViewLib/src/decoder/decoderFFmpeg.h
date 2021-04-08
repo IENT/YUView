@@ -38,7 +38,7 @@
 class decoderFFmpeg : public decoderBase
 {
 public:
-  decoderFFmpeg(AVCodecIDWrapper codec, QSize frameSize, QByteArray extradata, YUV_Internals::yuvPixelFormat fmt, IntPair profileLevel, Ratio sampleAspectRatio, bool cachingDecoder=false);
+  decoderFFmpeg(AVCodecIDWrapper codec, Size frameSize, QByteArray extradata, YUV_Internals::YUVPixelFormat fmt, IntPair profileLevel, Ratio sampleAspectRatio, bool cachingDecoder=false);
   decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder=false);
   ~decoderFFmpeg();
 

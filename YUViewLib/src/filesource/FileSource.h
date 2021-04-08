@@ -37,10 +37,10 @@
 #include <QFileSystemWatcher>
 #include <QMutex>
 #include <QMutexLocker>
-#include <QSize>
 #include <QString>
 
 #include "common/fileInfo.h"
+#include "common/typedef.h"
 
 /* The FileSource class provides functions for accessing files. Besides the reading of
  * certain blocks of the file, it also directly provides information on the file for the
@@ -77,7 +77,7 @@ public:
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
   struct fileFormat_t
   {
-    QSize frameSize;
+    Size frameSize;
     int frameRate {-1};
     int bitDepth {-1};
     bool packed {false};

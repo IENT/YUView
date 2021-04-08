@@ -67,17 +67,17 @@ using namespace YUV_Internals;
 #define DEBUG_DAV1D(fmt, ...) ((void)0)
 #endif
 
-decoderDav1d::dav1dFrameInfo::dav1dFrameInfo(QSize frameSize, Dav1dFrameType frameType)
+decoderDav1d::dav1dFrameInfo::dav1dFrameInfo(Size frameSize, Dav1dFrameType frameType)
     : frameSize(frameSize), frameType(frameType)
 {
-  const int aligned_w = (frameSize.width() + 127) & ~127;
-  const int aligned_h = (frameSize.height() + 127) & ~127;
-  frameSizeAligned    = QSize(aligned_w, aligned_h);
+  const auto aligned_w = (frameSize.width + 127) & ~127;
+  const auto aligned_h = (frameSize.height + 127) & ~127;
+  frameSizeAligned    = Size(aligned_w, aligned_h);
 
-  sizeInBlocks        = QSize(frameSize.width() / 4, frameSize.height() / 4);
-  sizeInBlocksAligned = QSize(aligned_w / 4, aligned_h / 4);
+  sizeInBlocks        = Size(frameSize.width / 4, frameSize.height / 4);
+  sizeInBlocksAligned = Size(aligned_w / 4, aligned_h / 4);
 
-  const int bw = ((frameSize.width() + 7) >> 3) << 1;
+  const int bw = ((frameSize.width + 7) >> 3) << 1;
   b4_stride    = (bw + 31) & ~31;
 }
 
@@ -272,7 +272,7 @@ bool decoderDav1d::decodeFrame()
   {
     // We did get a picture
     // Get the resolution / yuv format from the frame
-    QSize s = curPicture.getFrameSize();
+    auto s = curPicture.getFrameSize();
     if (!s.isValid())
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid frame size");
     auto subsampling = curPicture.getSubsampling();
@@ -286,16 +286,16 @@ bool decoderDav1d::decodeFrame()
     {
       // Set the values
       frameSize = s;
-      formatYUV = yuvPixelFormat(subsampling, bitDepth);
+      formatYUV = YUVPixelFormat(subsampling, bitDepth);
     }
     else
     {
       // Check the values against the previously set values
       if (frameSize != s)
         return setErrorB("Received a frame of different size");
-      if (formatYUV.subsampling != subsampling)
+      if (formatYUV.getSubsampling() != subsampling)
         return setErrorB("Received a frame with different subsampling");
-      if (formatYUV.bitsPerSample != bitDepth)
+      if (formatYUV.getBitsPerSample() != bitDepth)
         return setErrorB("Received a frame with different bit depth");
     }
     DEBUG_DAV1D("decoderDav1d::decodeFrame Picture decoded - switching to retrieve frame mode");
@@ -315,8 +315,8 @@ bool decoderDav1d::decodeFrame()
 
 QByteArray decoderDav1d::getRawFrameData()
 {
-  QSize s = curPicture.getFrameSize();
-  if (s.width() <= 0 || s.height() <= 0)
+  auto s = curPicture.getFrameSize();
+  if (s.width <= 0 || s.height <= 0)
   {
     DEBUG_DAV1D("decoderDav1d::getRawFrameData: Current picture has invalid size.");
     return QByteArray();
@@ -371,7 +371,7 @@ bool decoderDav1d::pushData(QByteArray &data)
     {
       sequenceHeaderPushed = true;
 
-      QSize s = QSize(seq.max_width, seq.max_height);
+      auto s = Size(seq.max_width, seq.max_height);
       if (!s.isValid())
         DEBUG_DAV1D("decoderDav1d::pushData got invalid frame size");
       auto subsampling = convertFromInternalSubsampling(seq.layout);
@@ -383,7 +383,7 @@ bool decoderDav1d::pushData(QByteArray &data)
       subBlockSize = (seq.sb128 >= 1) ? 128 : 64;
 
       frameSize = s;
-      formatYUV = yuvPixelFormat(subsampling, bitDepth);
+      formatYUV = YUVPixelFormat(subsampling, bitDepth);
     }
     else
     {
@@ -403,8 +403,8 @@ bool decoderDav1d::pushData(QByteArray &data)
   {
     // Since dav1d consumes the data (takes ownership), we need to copy it to a new buffer from
     // dav1d
-    Dav1dData *dav1dData      = new Dav1dData;
-    uint8_t *  rawDataPointer = dav1d_data_create(dav1dData, data.size());
+    auto dav1dData      = new Dav1dData;
+    auto rawDataPointer = dav1d_data_create(dav1dData, data.size());
     memcpy(rawDataPointer, data.data(), data.size());
 
     int err = dav1d_send_data(decoder, dav1dData);
@@ -443,14 +443,14 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
   // At first get how many bytes we are going to write
   const auto nrBytesPerSample = (src.getBitDepth() > 8) ? 2 : 1;
   const auto framSize         = src.getFrameSize();
-  int        nrBytes          = frameSize.width() * frameSize.height() * nrBytesPerSample;
+  int        nrBytes          = frameSize.width * frameSize.height * nrBytesPerSample;
   auto       layout           = src.getSubsampling();
   if (layout == Subsampling::YUV_420)
-    nrBytes += (frameSize.width() / 2) * (frameSize.height() / 2) * 2 * nrBytesPerSample;
+    nrBytes += (frameSize.width / 2) * (frameSize.height / 2) * 2 * nrBytesPerSample;
   else if (layout == Subsampling::YUV_422)
-    nrBytes += (frameSize.width() / 2) * frameSize.height() * 2 * nrBytesPerSample;
+    nrBytes += (frameSize.width / 2) * frameSize.height * 2 * nrBytesPerSample;
   else if (layout == Subsampling::YUV_444)
-    nrBytes += frameSize.width() * frameSize.height() * 2 * nrBytesPerSample;
+    nrBytes += frameSize.width * frameSize.height * 2 * nrBytesPerSample;
 
   DEBUG_DAV1D("decoderDav1d::copyImgToByteArray nrBytes %d", nrBytes);
 
@@ -463,8 +463,8 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
   // We can now copy from src to dst
   for (int c = 0; c < nrPlanes; c++)
   {
-    int width  = framSize.width();
-    int height = framSize.height();
+    int width  = framSize.width;
+    int height = framSize.height;
     if (c != 0)
     {
       if (layout == Subsampling::YUV_420 || layout == Subsampling::YUV_422)
@@ -728,15 +728,15 @@ void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
 
   const int sb_step = subBlockSize >> 2;
 
-  for (int y = 0; y < frameInfo.frameSizeAligned.height(); y += sb_step)
-    for (int x = 0; x < frameInfo.frameSizeAligned.width(); x += sb_step)
+  for (unsigned y = 0; y < frameInfo.frameSizeAligned.height; y += sb_step)
+    for (unsigned x = 0; x < frameInfo.frameSizeAligned.width; x += sb_step)
       parseBlockRecursive(blockData, x, y, BL_128X128, frameInfo);
 }
 
 void decoderDav1d::parseBlockRecursive(
     Av1Block *blockData, int x, int y, BlockLevel level, dav1dFrameInfo &frameInfo)
 {
-  if (y >= frameInfo.sizeInBlocks.height())
+  if (y >= int(frameInfo.sizeInBlocks.height))
     return;
 
   Av1Block         b          = blockData[y * frameInfo.b4_stride + x];
@@ -836,7 +836,7 @@ void decoderDav1d::parseBlockRecursive(
 void decoderDav1d::parseBlockPartition(
     Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, dav1dFrameInfo &frameInfo)
 {
-  if (y >= frameInfo.sizeInBlocks.height() || x >= frameInfo.sizeInBlocks.width())
+  if (y >= int(frameInfo.sizeInBlocks.height) || x >= int(frameInfo.sizeInBlocks.width))
     return;
 
   Av1Block b = blockData[y * frameInfo.b4_stride + x];
@@ -966,7 +966,7 @@ void decoderDav1d::parseBlockPartition(
       // Set the transform size (ID 26)
       const int x_abs = cbPosX + x;
       const int y_abs = cbPosY + y;
-      if (x_abs < frameInfo.frameSize.width() && y_abs < frameInfo.frameSize.height())
+      if (x_abs < int(frameInfo.frameSize.width) && y_abs < int(frameInfo.frameSize.height))
         this->statisticsData->at(26).addBlockValue(x_abs, y_abs, tx_w, tx_h, (int)tx_val);
     }
   }

@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functions.h"
+#include "common/functionsGUI.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLER_DEBUG_LOADING 0
@@ -44,38 +44,29 @@
 #define DEBUG_VIDEO(fmt, ...) ((void)0)
 #endif
 
-videoHandler::videoHandler()
-{
-  // Initialize variables
-  currentImageIndex              = -1;
-  currentImage_frameIndex        = -1;
-  doubleBufferImageFrameIndex    = -1;
-  cacheValid                     = true;
-  currentFrameRawData_frameIndex = -1;
-  rawData_frameIndex             = -1;
-}
+videoHandler::videoHandler() {}
 
 void videoHandler::slotVideoControlChanged()
 {
   // Update the controls and get the new selected size
-  QSize newSize = getNewSizeFromControls();
+  auto newSize = getNewSizeFromControls();
 
-  if (newSize != frameSize && newSize != QSize(-1, -1))
+  if (newSize != frameSize && newSize.isValid())
   {
     // Set the new size and update the controls.
-    setFrameSize(newSize);
+    this->setFrameSize(newSize);
     // The frame size changed. We need to redraw/re-cache.
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
 
   // Set the current frame in the buffer to be invalid
-  currentImageIndex = -1;
+  this->currentImageIndex = -1;
 
   // The cache is invalid until the item is recached
   setCacheInvalid();
 }
 
-void videoHandler::setFrameSize(const QSize &size)
+void videoHandler::setFrameSize(Size size)
 {
   if (size != frameSize)
   {
@@ -209,7 +200,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
 
   // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
-  videoRect.setSize(frameSize * zoomFactor);
+  videoRect.setSize(QSize(frameSize.width * zoomFactor, frameSize.height * zoomFactor));
   videoRect.moveCenter(QPoint(0, 0));
 
   // Draw the current image (currentImage)
@@ -295,8 +286,8 @@ void videoHandler::cacheFrame(int frameIdx, bool testMode)
 
 unsigned int videoHandler::getCachingFrameSize() const
 {
-  auto bytes = functions::bytesPerPixel(functions::platformImageFormat());
-  return frameSize.width() * frameSize.height() * bytes;
+  auto bytes = functionsGUI::bytesPerPixel(functionsGUI::platformImageFormat());
+  return frameSize.width * frameSize.height * bytes;
 }
 
 QList<int> videoHandler::getCachedFrames() const
@@ -384,7 +375,7 @@ void videoHandler::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   frameToCache = requestedFrame;
 }
 
-void videoHandler::setFormatFromSizeAndName(const QSize, int, bool, int64_t, const QFileInfo &) {}
+void videoHandler::setFormatFromSizeAndName(const Size, int, bool, int64_t, const QFileInfo &) {}
 
 void videoHandler::invalidateAllBuffers()
 {

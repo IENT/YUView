@@ -77,7 +77,7 @@ double AnnexBAVC::getFramerate() const
   return 0.0;
 }
 
-QSize AnnexBAVC::getSequenceSizeSamples() const
+Size AnnexBAVC::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
   for (auto &nal : this->nalUnitsForSeeking)
@@ -97,14 +97,14 @@ QSize AnnexBAVC::getSequenceSizeSamples() const
              (sps.CropUnitY * sps.frame_crop_top_offset);
       }
 
-      return QSize(w, h);
+      return Size(w, h);
     }
   }
 
-  return QSize(-1, -1);
+  return {};
 }
 
-yuvPixelFormat AnnexBAVC::getPixelFormat() const
+YUVPixelFormat AnnexBAVC::getPixelFormat() const
 {
   // Get the subsampling and bit-depth from the sps
   int  bitDepthY   = -1;
@@ -136,7 +136,7 @@ yuvPixelFormat AnnexBAVC::getPixelFormat() const
         // Different luma and chroma bit depths currently not supported
         return {};
       }
-      return yuvPixelFormat(subsampling, bitDepthY);
+      return YUVPixelFormat(subsampling, bitDepthY);
     }
   }
 

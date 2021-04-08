@@ -36,7 +36,7 @@
 #include <QKeyEvent>
 #include <QMessageBox>
 
-#include "common/functions.h"
+#include "common/functionsGUI.h"
 #include "common/typedef.h"
 
 StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(
@@ -46,8 +46,8 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(
   ui.setupUi(this);
 
   ui.colorMapTable->setRowCount(colorMap.size() + 1);
-  ui.pushButtonAdd->setIcon(functions::convertIcon(":img_add.png"));
-  ui.pushButtonDelete->setIcon(functions::convertIcon(":img_delete.png"));
+  ui.pushButtonAdd->setIcon(functionsGUI::convertIcon(":img_add.png"));
+  ui.pushButtonDelete->setIcon(functionsGUI::convertIcon(":img_delete.png"));
 
   // Put all the colors from the colorMap into the table widget
   int count = 0;
@@ -58,7 +58,7 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(
     ui.colorMapTable->setItem(count, 0, newItem);
 
     newItem = new QTableWidgetItem();
-    newItem->setBackground(QBrush(functions::convertToQColor(entry.second)));
+    newItem->setBackground(QBrush(functionsGUI::toQColor(entry.second)));
     ui.colorMapTable->setItem(count, 1, newItem);
 
     count++;
@@ -70,7 +70,7 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(
   ui.colorMapTable->setItem(count, 0, newItem);
   // with a white color value.
   newItem = new QTableWidgetItem();
-  newItem->setBackground(QBrush(functions::convertToQColor(other)));
+  newItem->setBackground(QBrush(functionsGUI::toQColor(other)));
   ui.colorMapTable->setItem(count, 1, newItem);
 
   // Connect the signals for editing
@@ -97,7 +97,7 @@ std::map<int, Color> StatisticsStyleControl_ColorMapEditor::getColorMap()
     if (item0->text() != "Other")
     {
       int  val   = item0->data(Qt::EditRole).toInt();
-      auto color = functions::fromQColor(item1->background().color());
+      auto color = functionsGUI::toColor(item1->background().color());
 
       colorMap[val] = color;
     }
@@ -111,7 +111,7 @@ Color StatisticsStyleControl_ColorMapEditor::getOtherColor()
   // This should be the last entry in the list
   int row = ui.colorMapTable->rowCount() - 1;
   auto otherQColor = ui.colorMapTable->item(row, 1)->background().color();
-  return functions::fromQColor(otherQColor);
+  return functionsGUI::toColor(otherQColor);
 }
 
 void StatisticsStyleControl_ColorMapEditor::slotItemChanged(QTableWidgetItem *item)

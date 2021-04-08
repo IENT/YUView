@@ -36,14 +36,14 @@
 #include <QSettings>
 #include <QUrl>
 
-#include "common/functions.h"
+#include "common/functionsGUI.h"
 #include "filesource/FileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
     : playlistItemWithVideo(rawFilePath)
 {
   // Set the properties of the playlistItem
-  setIcon(0, functions::convertIcon(":img_television.png"));
+  setIcon(0, functionsGUI::convertIcon(":img_television.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   this->prop.isFileSource          = true;
@@ -172,11 +172,11 @@ infoData playlistItemImageFileSequence::getInfo() const
 
   if (this->video->isFormatValid())
   {
-    QSize videoSize = this->video->getFrameSize();
+    auto videoSize = this->video->getFrameSize();
     auto  nrFrames  = this->imageFiles.size();
     info.items.append(infoItem("Num Frames", QString::number(nrFrames)));
     info.items.append(infoItem("Resolution",
-                               QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()),
+                               QString("%1x%2").arg(videoSize.width).arg(videoSize.height),
                                "The video resolution in pixels (width x height)"));
   }
   else
@@ -305,8 +305,11 @@ void playlistItemImageFileSequence::setInternals(const QString &filePath)
   }
 
   // Open frame 0 and set the size of it
-  QImage frame0 = QImage(imageFiles[0]);
-  video->setFrameSize(frame0.size());
+  {
+    QImage frame0 = QImage(imageFiles[0]);
+    auto s = frame0.size();
+    video->setFrameSize(Size(s.width(), s.height()));
+  }
 
   cachingEnabled = false;
 

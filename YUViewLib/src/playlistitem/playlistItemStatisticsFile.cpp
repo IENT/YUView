@@ -40,7 +40,7 @@
 #include <iostream>
 
 #include "common/YUViewDomElement.h"
-#include "common/functions.h"
+#include "common/functionsGUI.h"
 #include "statistics/StatisticsDataPainting.h"
 #include "statistics/StatisticsFileCSV.h"
 #include "statistics/StatisticsFileVTMBMS.h"
@@ -70,7 +70,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   this->prop.providesStatistics    = true;
 
   // Set statistics icon
-  setIcon(0, functions::convertIcon(":img_stats.png"));
+  setIcon(0, functionsGUI::convertIcon(":img_stats.png"));
 
   this->openStatisticsFile();
   this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
@@ -171,6 +171,12 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   this->statisticsData.savePlaylist(d);
 
   root.appendChild(d);
+}
+
+QSize playlistItemStatisticsFile::getSize() const
+{
+  auto s = this->statisticsData.getFrameSize();
+  return QSize(s.width, s.height);
 }
 
 void playlistItemStatisticsFile::loadFrame(int frameIdx, bool, bool, bool emitSignals)

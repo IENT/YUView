@@ -55,8 +55,8 @@ public:
 
   // Get properties
   double         getFramerate() const override;
-  QSize          getSequenceSizeSamples() const override;
-  yuvPixelFormat getPixelFormat() const override;
+  Size           getSequenceSizeSamples() const override;
+  YUVPixelFormat getPixelFormat() const override;
 
   ParseResult parseAndAddNALUnit(int                                           nalID,
                                  const ByteVector &                            data,

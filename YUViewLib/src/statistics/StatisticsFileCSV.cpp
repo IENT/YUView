@@ -308,8 +308,8 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
 
       // Check if block is within the image range
       if (this->blockOutsideOfFramePOC == -1 &&
-          (posX + int(width) > statisticsData.getFrameSize().width() ||
-           posY + int(height) > statisticsData.getFrameSize().height()))
+          (posX + int(width) > statisticsData.getFrameSize().width ||
+           posY + int(height) > statisticsData.getFrameSize().height))
         // Block not in image. Warn about this.
         this->blockOutsideOfFramePOC = poc;
 
@@ -483,7 +483,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto width  = rowItemList[4].toInt();
         auto height = rowItemList[5].toInt();
         if (width > 0 && height > 0)
-          statisticsData.setFrameSize(QSize(width, height));
+          statisticsData.setFrameSize(Size(width, height));
         if (rowItemList[6].toDouble() > 0.0)
           this->framerate = rowItemList[6].toDouble();
       }

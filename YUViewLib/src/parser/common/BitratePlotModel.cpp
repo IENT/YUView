@@ -180,18 +180,18 @@ void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)
   }
   else
   {
-    rangeDts.min = qMin(rangeDts.min, entry.dts);
-    rangeDts.max = qMax(rangeDts.max, entry.dts);
-    rangePts.min = qMin(rangePts.min, entry.pts);
-    rangePts.max = qMax(rangePts.max, entry.pts);
+    rangeDts.min = std::min(rangeDts.min, entry.dts);
+    rangeDts.max = std::max(rangeDts.max, entry.dts);
+    rangePts.min = std::min(rangePts.min, entry.pts);
+    rangePts.max = std::max(rangePts.max, entry.pts);
   }
   
-  rangeBitratePerStream[streamIndex].min = qMin(rangeBitratePerStream[streamIndex].min, int(entry.bitrate));
-  rangeBitratePerStream[streamIndex].max = qMax(rangeBitratePerStream[streamIndex].max, int(entry.bitrate));
+  rangeBitratePerStream[streamIndex].min = std::min(rangeBitratePerStream[streamIndex].min, int(entry.bitrate));
+  rangeBitratePerStream[streamIndex].max = std::max(rangeBitratePerStream[streamIndex].max, int(entry.bitrate));
 
   // Store absolute minimum and maximum over all streams
-  yMaxStreamRange.min = qMin(yMaxStreamRange.min, double(rangeBitratePerStream[streamIndex].min));
-  yMaxStreamRange.max = qMax(yMaxStreamRange.max, double(rangeBitratePerStream[streamIndex].max));
+  yMaxStreamRange.min = std::min(yMaxStreamRange.min, double(rangeBitratePerStream[streamIndex].min));
+  yMaxStreamRange.max = std::max(yMaxStreamRange.max, double(rangeBitratePerStream[streamIndex].max));
 
   DEBUG_PLOT("BitrateItemModel::addBitratePoint streamIndex " << streamIndex << " pts " << entry.pts << " dts " << entry.dts << " rate " << entry.bitrate << " keyframe " << entry.keyframe);
 
@@ -238,8 +238,8 @@ unsigned int BitratePlotModel::calculateAverageValue(unsigned streamIndex, unsig
 {
   const unsigned int averageRange = 10;
   unsigned averageBitrate = 0;
-  const unsigned start = qMax(unsigned(0), pointIndex - averageRange);
-  const unsigned end = qMin(pointIndex + averageRange, unsigned(this->dataPerStream[streamIndex].size()));
+  const unsigned start = std::max(unsigned(0), pointIndex - averageRange);
+  const unsigned end = std::min(pointIndex + averageRange, unsigned(this->dataPerStream[streamIndex].size()));
   for (unsigned i = start; i < end; i++)
     averageBitrate += unsigned(this->dataPerStream[streamIndex][i].bitrate);
   return averageBitrate / (end - start);

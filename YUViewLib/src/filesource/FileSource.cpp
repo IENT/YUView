@@ -188,7 +188,7 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
         {
           auto widthString  = match.captured(1);
           auto heightString = match.captured(2);
-          format.frameSize  = QSize(widthString.toInt(), heightString.toInt());
+          format.frameSize  = Size(widthString.toInt(), heightString.toInt());
 
           auto rateString = match.captured(3);
           if (!rateString.isEmpty())
@@ -211,7 +211,7 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
       if (matchIt.hasNext())
       {
         auto match           = matchIt.next();
-        format.frameSize     = QSize(1920, 1080);
+        format.frameSize     = Size(1920, 1080);
         auto frameRateString = match.captured(1);
         format.frameRate     = frameRateString.toInt();
       }
@@ -223,7 +223,7 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
       if (matchIt.hasNext())
       {
         auto match           = matchIt.next();
-        format.frameSize     = QSize(1280, 720);
+        format.frameSize     = Size(1280, 720);
         auto frameRateString = match.captured(1);
         format.frameRate     = frameRateString.toInt();
       }
@@ -233,19 +233,19 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
     {
       // try to find resolution indicators (e.g. 'cif', 'hd') in file name
       if (name.contains("_cif", Qt::CaseInsensitive))
-        format.frameSize = QSize(352, 288);
+        format.frameSize = Size(352, 288);
       else if (name.contains("_qcif", Qt::CaseInsensitive))
-        format.frameSize = QSize(176, 144);
+        format.frameSize = Size(176, 144);
       else if (name.contains("_4cif", Qt::CaseInsensitive))
-        format.frameSize = QSize(704, 576);
+        format.frameSize = Size(704, 576);
       else if (name.contains("UHD", Qt::CaseSensitive))
-        format.frameSize = QSize(3840, 2160);
+        format.frameSize = Size(3840, 2160);
       else if (name.contains("HD", Qt::CaseSensitive))
-        format.frameSize = QSize(1920, 1080);
+        format.frameSize = Size(1920, 1080);
       else if (name.contains("1080p", Qt::CaseSensitive))
-        format.frameSize = QSize(1920, 1080);
+        format.frameSize = Size(1920, 1080);
       else if (name.contains("720p", Qt::CaseSensitive))
-        format.frameSize = QSize(1280, 720);
+        format.frameSize = Size(1280, 720);
     }
 
     // Second, if we were able to get a frame size but no frame rate, we will try to get a frame

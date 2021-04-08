@@ -33,7 +33,7 @@
 #include "StatisticsDataPainting.h"
 
 #include "StatisticsType.h"
-#include "common/functions.h"
+#include "common/functionsGUI.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -54,7 +54,7 @@ namespace
 QPolygon convertToQPolygon(const stats::Polygon &poly)
 {
   auto qPoly = QPolygon(poly.size());
-  for (size_t i = 0; i < poly.size(); i++)
+  for (int i = 0; i < int(poly.size()); i++)
     qPoly.setPoint(i, QPoint(poly[i].first, poly[i].second));
   return qPoly;
 }
@@ -86,7 +86,7 @@ Qt::PenStyle patternToQPenStyle(stats::Pattern &pattern)
 QPen styleToPen(stats::LineDrawStyle &style)
 {
   return QPen(
-      functions::convertToQColor(style.color), style.width, patternToQPenStyle(style.pattern));
+      functionsGUI::toQColor(style.color), style.width, patternToQPenStyle(style.pattern));
 }
 
 void paintVector(QPainter *                   painter,
@@ -111,7 +111,7 @@ void paintVector(QPainter *                   painter,
   {
     // Set the pen for drawing
     auto vectorStyle = statisticsType.vectorStyle;
-    auto arrowColor  = functions::convertToQColor(vectorStyle.color);
+    auto arrowColor  = functionsGUI::toQColor(vectorStyle.color);
     if (statisticsType.mapVectorToColor)
       arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
     arrowColor.setAlpha(arrowColor.alpha() * ((float)statisticsType.alphaFactor / 100.0));
@@ -268,7 +268,8 @@ void stats::paintStatisticsData(QPainter *             painter,
   painter->setRenderHint(QPainter::Antialiasing, true);
 
   QRect statRect;
-  statRect.setSize(statisticsData.getFrameSize() * zoomFactor);
+  auto  frameSize = statisticsData.getFrameSize();
+  statRect.setSize(QSize(frameSize.width * zoomFactor, frameSize.height * zoomFactor));
   statRect.moveCenter(QPoint(0, 0));
 
   // Get the visible coordinates of the statistics
@@ -342,7 +343,7 @@ void stats::paintStatisticsData(QPainter *             painter,
           rectColor = it->colorMapper.getColor(value);
         rectColor.setAlpha(rectColor.alpha() * ((float)it->alphaFactor / 100.0));
 
-        auto rectQColor = functions::convertToQColor(rectColor);
+        auto rectQColor = functionsGUI::toQColor(rectColor);
         painter->setBrush(rectQColor);
         painter->fillRect(displayRect, rectQColor);
       }
@@ -433,7 +434,7 @@ void stats::paintStatisticsData(QPainter *             painter,
           QPainterPath path;
           path.addPolygon(displayPolygon);
 
-          auto qColor = functions::convertToQColor(color);
+          auto qColor = functionsGUI::toQColor(color);
           painter->setBrush(qColor);
           painter->fillPath(path, qColor);
         }
@@ -548,7 +549,7 @@ void stats::paintStatisticsData(QPainter *             painter,
         {
           // Set the pen for drawing
           auto vectorStyle = it->vectorStyle;
-          auto arrowColor  = functions::convertToQColor(vectorStyle.color);
+          auto arrowColor  = functionsGUI::toQColor(vectorStyle.color);
           if (it->mapVectorToColor)
             arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));
@@ -865,7 +866,7 @@ void stats::paintStatisticsData(QPainter *             painter,
         {
           // Set the pen for drawing
           auto vectorStyle = it->vectorStyle;
-          auto arrowColor  = functions::convertToQColor(vectorStyle.color);
+          auto arrowColor  = functionsGUI::toQColor(vectorStyle.color);
           if (it->mapVectorToColor)
             arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));

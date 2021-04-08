@@ -46,14 +46,15 @@ void rgbPixelFormatTest::testFormatFromToString()
   {
     QVERIFY(fmt.isValid());
     auto name = fmt.getName();
-    auto fmtNew = RGB_Internals::rgbPixelFormat(name);
-    if (name.isEmpty())
+    if (name.empty())
     {
       QFAIL("Name empty");
     }
+    auto fmtNew = RGB_Internals::rgbPixelFormat(name);
     if (fmt != fmtNew)
     {
-      QFAIL(QString("Comparison failed. Names: %1").arg(name).toLocal8Bit().data());
+      auto errorStr = "Comparison failed. Names: " + name;
+      QFAIL(errorStr.c_str());
     }
     if (fmt.posR != fmtNew.posR ||
         fmt.posG != fmtNew.posG ||
@@ -62,15 +63,18 @@ void rgbPixelFormatTest::testFormatFromToString()
         fmt.bitsPerValue != fmtNew.bitsPerValue ||
         fmt.planar != fmtNew.planar)
     {
-      QFAIL(QString("Comparison of parameters failed. Names: %1").arg(name).toLocal8Bit().data());
+      auto errorStr = "Comparison of parameters failed. Names: " + name;
+      QFAIL(errorStr.c_str());
     }
     if (fmt.posA != -1 && (fmt.nrChannels() != 4 || !fmt.hasAlphaChannel()))
     {
-      QFAIL(QString("Alpha channel indicated wrong - %1").arg(name).toLocal8Bit().data());
+      auto errorStr = "Alpha channel indicated wrong - " + name;
+      QFAIL(errorStr.c_str());
     }
     if (fmt.posA == -1 && (fmt.nrChannels() != 3 || fmt.hasAlphaChannel()))
     {
-      QFAIL(QString("Alpha channel indicated wrong - %1").arg(name).toLocal8Bit().data());
+      auto errorStr = "Alpha channel indicated wrong - %1" + name;
+      QFAIL(errorStr.c_str());
     }
   }
 }

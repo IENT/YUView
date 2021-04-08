@@ -325,7 +325,7 @@ bool decoderLibde265::decodeFrame()
   if (curImage != nullptr)
   {
     // Get the resolution / yuv format from the frame
-    QSize s = QSize(de265_get_image_width(curImage, 0), de265_get_image_height(curImage, 0));
+    auto s = Size(de265_get_image_width(curImage, 0), de265_get_image_height(curImage, 0));
     if (!s.isValid())
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(de265_get_chroma_format(curImage));
@@ -339,16 +339,16 @@ bool decoderLibde265::decodeFrame()
     {
       // Set the values
       frameSize = s;
-      formatYUV = YUV_Internals::yuvPixelFormat(subsampling, bitDepth);
+      formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
     }
     else
     {
       // Check the values against the previously set values
       if (frameSize != s)
         return setErrorB("Received a frame of different size");
-      if (formatYUV.subsampling != subsampling)
+      if (formatYUV.getSubsampling() != subsampling)
         return setErrorB("Received a frame with different subsampling");
-      if (formatYUV.bitsPerSample != bitDepth)
+      if (formatYUV.getBitsPerSample() != bitDepth)
         return setErrorB("Received a frame with different bit depth");
     }
     DEBUG_LIBDE265("decoderLibde265::decodeFrame Picture decoded");

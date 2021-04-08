@@ -34,7 +34,7 @@
 
 #include "common/typedef.h"
 #include "common/Color.h"
-#include "common/functions.h"
+#include "common/functionsGui.h"
 
 #include <QBrush>
 
@@ -94,7 +94,7 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
       return QVariant(QBrush());
     const int idx = item->getStreamIndex();
     if (idx >= 0)
-      return QVariant(QBrush(functions::convertToQColor(streamIndexColors.at(idx % streamIndexColors.size()))));
+      return QVariant(QBrush(functionsGUI::toQColor(streamIndexColors.at(idx % streamIndexColors.size()))));
     return QVariant(QBrush());
   }
   else if (role == Qt::DisplayRole || role == Qt::ToolTipRole)

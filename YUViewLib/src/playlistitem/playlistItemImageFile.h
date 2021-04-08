@@ -49,7 +49,7 @@ public:
   virtual infoData getInfo() const override;
 
   // Get the text size (using the current text, font/text size ...)
-  virtual QSize getSize() const override { return frame.getFrameSize(); }
+  virtual QSize getSize() const override;
 
   // Overload from playlistItem. Save the text item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;

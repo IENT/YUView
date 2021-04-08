@@ -5,7 +5,7 @@ CONFIG += c++1z
 CONFIG -= debug_and_release
 CONFIG -= app_bundled
 
-TARGET = yuvPixelFormatTest
+TARGET = YUVPixelFormatTest
 
 QT += testlib
 QT -= gui
@@ -13,4 +13,4 @@ QT -= gui
 INCLUDEPATH += $$top_srcdir/YUViewLib/src
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
 
-SOURCES += yuvPixelFormatTest.cpp
+SOURCES += YUVPixelFormatTest.cpp

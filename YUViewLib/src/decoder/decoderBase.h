@@ -78,10 +78,10 @@ public:
   // is probably needed.
   virtual bool                  decodeNextFrame() = 0;
   virtual QByteArray            getRawFrameData() = 0;
-  YUView::RawFormat             getRawFormat() const { return rawFormat; }
-  YUV_Internals::yuvPixelFormat getYUVPixelFormat() const { return formatYUV; }
-  RGB_Internals::rgbPixelFormat getRGBPixelFormat() const { return formatRGB; }
-  QSize                         getFrameSize() { return frameSize; }
+  YUView::RawFormat             getRawFormat() const { return this->rawFormat; }
+  YUV_Internals::YUVPixelFormat getYUVPixelFormat() const { return this->formatYUV; }
+  RGB_Internals::rgbPixelFormat getRGBPixelFormat() const { return this->formatRGB; }
+  Size                          getFrameSize() { return this->frameSize; }
   // Push data to the decoder (until no more data is needed)
   // In order to make the interface generic, the pushData function accepts data only without start
   // codes
@@ -127,12 +127,12 @@ protected:
   int  decodeSignal{0};  ///< Which signal should be decoded?
   bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
 
-  bool  internalsSupported{false}; ///< Enable in the constructor if you support statistics
-  QSize frameSize;
+  bool internalsSupported{false}; ///< Enable in the constructor if you support statistics
+  Size frameSize;
 
   // Some decoders are able to handel both YUV and RGB output
   YUView::RawFormat             rawFormat;
-  YUV_Internals::yuvPixelFormat formatYUV;
+  YUV_Internals::YUVPixelFormat formatYUV;
   RGB_Internals::rgbPixelFormat formatRGB;
 
   // Error handling

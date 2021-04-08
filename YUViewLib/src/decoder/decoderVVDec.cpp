@@ -262,9 +262,9 @@ bool decoderVVDec::getNextFrameFromDecoder()
   DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder");
 
   // Check the validity of the picture
-  auto picSize = QSize(this->lib.libvvdec_get_picture_width(this->decoder, LIBvvdec_LUMA),
+  auto picSize = Size(this->lib.libvvdec_get_picture_width(this->decoder, LIBvvdec_LUMA),
                        this->lib.libvvdec_get_picture_height(this->decoder, LIBvvdec_LUMA));
-  if (picSize.width() == 0 || picSize.height() == 0)
+  if (picSize.isValid())
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid size");
   auto subsampling =
       convertFromInternalSubsampling(this->lib.libvvdec_get_picture_chroma_format(this->decoder));
@@ -278,16 +278,16 @@ bool decoderVVDec::getNextFrameFromDecoder()
   {
     // Set the values
     this->frameSize = picSize;
-    this->formatYUV = YUV_Internals::yuvPixelFormat(subsampling, bitDepth);
+    this->formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
   }
   else
   {
     // Check the values against the previously set values
     if (this->frameSize != picSize)
       return setErrorB("Received a frame of different size");
-    if (this->formatYUV.subsampling != subsampling)
+    if (this->formatYUV.getSubsampling() != subsampling)
       return setErrorB("Received a frame with different subsampling");
-    if (unsigned(this->formatYUV.bitsPerSample) != bitDepth)
+    if (unsigned(this->formatYUV.getBitsPerSample()) != bitDepth)
       return setErrorB("Received a frame with different bit depth");
   }
 

@@ -1,36 +1,38 @@
 #include <QtTest>
 
-#include <video/yuvPixelFormat.h>
+#include <video/YUVPixelFormat.h>
 
-class yuvPixelFormatTest : public QObject
+class YUVPixelFormatTest : public QObject
 {
   Q_OBJECT
 
 public:
-  yuvPixelFormatTest() {};
-  ~yuvPixelFormatTest() {};
+  YUVPixelFormatTest(){};
+  ~YUVPixelFormatTest(){};
 
 private slots:
   void testFormatFromToString();
 };
 
-QList<YUV_Internals::yuvPixelFormat> getAllFormats()
+std::vector<YUV_Internals::YUVPixelFormat> getAllFormats()
 {
-  QList<YUV_Internals::yuvPixelFormat> allFormats;
+  std::vector<YUV_Internals::YUVPixelFormat> allFormats;
 
-  for (auto subsampling : YUV_Internals::subsamplingList)
+  for (auto subsampling : YUV_Internals::SubsamplingMapper.getEnums())
   {
-    for (auto bitsPerSample : YUV_Internals::bitDepthList)
+    for (auto bitsPerSample : YUV_Internals::BitDepthList)
     {
-      QList<bool> endianList = (bitsPerSample > 8) ? (QList<bool>() << false << true) : (QList<bool>() << false);
+      auto endianList =
+          (bitsPerSample > 8) ? std::vector<bool>({false, true}) : std::vector<bool>({false});
 
       // Planar
-      for (auto planeOrder : YUV_Internals::planeOrderList)
+      for (auto planeOrder : YUV_Internals::PlaneOrderMapper.getEnums())
       {
         for (auto bigEndian : endianList)
         {
-          auto pixelFormat = YUV_Internals::yuvPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
-          allFormats.append(pixelFormat);
+          auto pixelFormat =
+              YUV_Internals::YUVPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
+          allFormats.push_back(pixelFormat);
         }
       }
       // Packet
@@ -40,8 +42,9 @@ QList<YUV_Internals::yuvPixelFormat> getAllFormats()
         {
           for (auto bigEndian : endianList)
           {
-            auto pixelFormat = YUV_Internals::yuvPixelFormat(subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian);
-            allFormats.append(pixelFormat);
+            auto pixelFormat = YUV_Internals::YUVPixelFormat(
+                subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian);
+            allFormats.push_back(pixelFormat);
           }
         }
       }
@@ -51,40 +54,41 @@ QList<YUV_Internals::yuvPixelFormat> getAllFormats()
   return allFormats;
 }
 
-void yuvPixelFormatTest::testFormatFromToString()
+void YUVPixelFormatTest::testFormatFromToString()
 {
   for (auto fmt : getAllFormats())
   {
     QVERIFY(fmt.isValid());
     auto name = fmt.getName();
-    if (name.isEmpty())
+    if (name.empty())
     {
       QFAIL("Name empty");
     }
-    auto fmtNew = YUV_Internals::yuvPixelFormat(name);
+    auto fmtNew = YUV_Internals::YUVPixelFormat(name);
     if (fmt != fmtNew)
     {
-      QFAIL(QString("Comparison failed. Names: %1").arg(name).toLocal8Bit().data());
+      auto errorStr = "Comparison failed. Names: " + name;
+      QFAIL(errorStr.c_str());
     }
-    if (fmt.subsampling != fmtNew.subsampling ||
-        fmt.bitsPerSample != fmtNew.bitsPerSample ||
-        fmt.planar != fmtNew.planar ||
-        fmt.chromaOffset[0] != fmtNew.chromaOffset[0] ||
-        fmt.chromaOffset[1] != fmtNew.chromaOffset[1] ||
-        fmt.planeOrder != fmtNew.planeOrder ||
-        fmt.uvInterleaved != fmtNew.uvInterleaved ||
-        fmt.packingOrder != fmtNew.packingOrder ||
-        fmt.bytePacking != fmtNew.bytePacking)
+    if (fmt.getSubsampling() != fmtNew.getSubsampling() ||
+        fmt.getBitsPerSample() != fmtNew.getBitsPerSample() ||
+        fmt.isPlanar() != fmtNew.isPlanar() || fmt.getChromaOffset() != fmtNew.getChromaOffset() ||
+        fmt.getPlaneOrder() != fmtNew.getPlaneOrder() ||
+        fmt.isUVInterleaved() != fmtNew.isUVInterleaved() ||
+        fmt.getPackingOrder() != fmtNew.getPackingOrder() ||
+        fmt.isBytePacking() != fmtNew.isBytePacking())
     {
-      QFAIL(QString("Comparison of parameters failed. Names: %1").arg(name).toLocal8Bit().data());
+      auto errorStr = "Comparison of parameters failed. Names: " + name;
+      QFAIL(errorStr.c_str());
     }
-    if (fmt.bitsPerSample > 8 && fmt.bigEndian != fmtNew.bigEndian)
+    if (fmt.getBitsPerSample() > 8 && fmt.isBigEndian() != fmtNew.isBigEndian())
     {
-      QFAIL(QString("Comparison of parameters failed. Endianness wrong. Names: %1").arg(name).toLocal8Bit().data());
+      auto errorStr = "Comparison of parameters failed. Endianness wrong. Names: " + name;
+      QFAIL(errorStr.c_str());
     }
   }
 }
 
-QTEST_MAIN(yuvPixelFormatTest)
+QTEST_MAIN(YUVPixelFormatTest)
 
-#include "yuvPixelFormatTest.moc"
+#include "YUVPixelFormatTest.moc"

@@ -1,14 +1,14 @@
 #include <QtTest>
 
-#include <video/yuvPixelFormatGuess.h>
+#include <video/YUVPixelFormatGuess.h>
 
-class yuvPixelFormatGuessTest : public QObject
+class YUVPixelFormatGuessTest : public QObject
 {
   Q_OBJECT
 
 public:
-  yuvPixelFormatGuessTest();
-  ~yuvPixelFormatGuessTest();
+  YUVPixelFormatGuessTest();
+  ~YUVPixelFormatGuessTest();
 
 private slots:
   void testFormatGuessFromFilename_data();
@@ -16,15 +16,15 @@ private slots:
 
 };
 
-yuvPixelFormatGuessTest::yuvPixelFormatGuessTest()
+YUVPixelFormatGuessTest::YUVPixelFormatGuessTest()
 {
 }
 
-yuvPixelFormatGuessTest::~yuvPixelFormatGuessTest()
+YUVPixelFormatGuessTest::~YUVPixelFormatGuessTest()
 {
 }
 
-void yuvPixelFormatGuessTest::testFormatGuessFromFilename_data()
+void YUVPixelFormatGuessTest::testFormatGuessFromFilename_data()
 {
   QTest::addColumn<QString>("filename");
   QTest::addColumn<unsigned>("fileSize");
@@ -33,7 +33,7 @@ void yuvPixelFormatGuessTest::testFormatGuessFromFilename_data()
   QTest::addColumn<int>("framerate");
   QTest::addColumn<int>("bitDepth");
   QTest::addColumn<bool>("packed");
-  QTest::addColumn<QString>("expectedFormatName");
+  QTest::addColumn<std::string>("expectedFormatName");
 
   const unsigned bytes1080 = 1920 * 1080 * 3 * 6;  // 12 frames 420
   const unsigned bytes1280 = 1280 * 720 * 3 * 6;  // 6 frames 444
@@ -61,11 +61,10 @@ void yuvPixelFormatGuessTest::testFormatGuessFromFilename_data()
   QTest::newRow("testIssue221_7") << "sample_1280x720_yuv444p16leUVVI_114812.yuv" << bytes1280 << 1280 << 720 << -1 << 16 << false << "YUV 4:4:4 16-bit LE";
   QTest::newRow("testIssue221_8") << "sample_1280x720_yuv444p16leinnterlaced_114812.yuv" << bytes1280 << 1280 << 720 << -1 << 16 << false << "YUV 4:4:4 16-bit LE";
   
-
   // We need more tests here ... but I don't want to do this now :)
 }
 
-void yuvPixelFormatGuessTest::testFormatGuessFromFilename()
+void YUVPixelFormatGuessTest::testFormatGuessFromFilename()
 {
   QFETCH(QString, filename);
   QFETCH(unsigned, fileSize);
@@ -73,16 +72,16 @@ void yuvPixelFormatGuessTest::testFormatGuessFromFilename()
   QFETCH(int, height);
   QFETCH(int, bitDepth);
   QFETCH(bool, packed);
-  QFETCH(QString, expectedFormatName);
+  QFETCH(std::string, expectedFormatName);
 
   QFileInfo fileInfo(filename);
-  auto fmt = YUV_Internals::guessFormatFromSizeAndName(QSize(width, height), bitDepth, packed, fileSize, fileInfo);
+  auto fmt = YUV_Internals::guessFormatFromSizeAndName(Size(width, height), bitDepth, packed, fileSize, fileInfo);
   auto fmtName = fmt.getName();
   
   QVERIFY(fmt.isValid());
   QCOMPARE(fmtName, expectedFormatName);
 }
 
-QTEST_MAIN(yuvPixelFormatGuessTest)
+QTEST_MAIN(YUVPixelFormatGuessTest)
 
-#include "yuvPixelFormatGuessTest.moc"
+#include "YUVPixelFormatGuessTest.moc"

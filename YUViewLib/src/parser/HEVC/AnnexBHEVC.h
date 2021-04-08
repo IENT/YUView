@@ -70,8 +70,8 @@ public:
 
   // Get some properties
   double         getFramerate() const override;
-  QSize          getSequenceSizeSamples() const override;
-  yuvPixelFormat getPixelFormat() const override;
+  Size           getSequenceSizeSamples() const override;
+  YUVPixelFormat getPixelFormat() const override;
 
   std::optional<SeekData> getSeekData(int iFrameNr) override;
   QByteArray              getExtradata() override;

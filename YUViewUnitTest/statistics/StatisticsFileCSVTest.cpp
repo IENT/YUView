@@ -129,7 +129,7 @@ void StatisticsFileCSVTest::testCSVFileParsing1()
   stats::StatisticsData    statData;
   stats::StatisticsFileCSV statFile(QString::fromStdString(csfFile.getFilename()), statData);
 
-  QCOMPARE(statData.getFrameSize(), QSize(1920, 1080));
+  QCOMPARE(statData.getFrameSize(), Size(1920, 1080));
 
   auto types = statData.getStatisticsTypes();
   QCOMPARE(types.size(), size_t(12));

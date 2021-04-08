@@ -35,71 +35,85 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <optional>
 
-namespace parser
-{
-
-template <typename T> class CodingEnum
+template <typename T> class EnumMapper
 {
 public:
   struct Entry
   {
-    Entry(unsigned code, T value, std::string name, std::string meaning = "")
-        : code(code), value(value), name(name), meaning(meaning)
-    {
-    }
-    unsigned    code;
+    Entry(T value, std::string name) : value(value), name(name) {}
+    Entry(T value, std::string name, std::string text) : value(value), name(name), text(text) {}
     T           value;
     std::string name;
-    std::string meaning;
+    std::string text;
   };
 
   using EntryVector = std::vector<Entry>;
 
-  CodingEnum() = default;
-  CodingEnum(const EntryVector &entryVector, const T unknown)
-      : entryVector(entryVector), unknown(unknown){};
+  EnumMapper() = default;
+  EnumMapper(const EntryVector &entryVector)
+      : entryVector(entryVector) {};
 
-  T getValue(unsigned code) const
+  std::optional<T> getValue(std::string name) const
   {
     for (const auto &entry : this->entryVector)
-      if (entry.code == code)
+      if (entry.name == name)
         return entry.value;
-    return this->unknown;
-  }
-
-  unsigned getCode(T value) const
-  {
-    for (const auto &entry : this->entryVector)
-      if (entry.value == value)
-        return entry.code;
     return {};
   }
 
-  std::map<int, std::string> getMeaningMap() const
+  std::optional<std::string> getName(T value) const
   {
-    std::map<int, std::string> m;
     for (const auto &entry : this->entryVector)
-    {
-      if (entry.meaning.empty())
-        m[int(entry.code)] = entry.name;
-      else
-        m[int(entry.code)] = entry.meaning;
-    }
+      if (entry.value == value)
+        return entry.name;
+    return {};
+  }
+
+  std::optional<std::string> getText(T value) const
+  {
+    for (const auto &entry : this->entryVector)
+      if (entry.value == value)
+        return entry.text;
+    return {};
+  }
+
+  std::optional<size_t> indexOf(T value) const
+  {
+    for (size_t i = 0; i < this->entryVector.size(); i++)
+      if (this->entryVector.at(i).value == value)
+        return i;
+    return {};
+  }
+
+  std::optional<T> at(size_t index) const
+  {
+    if (index >= this->entryVector.size())
+      return {};
+    return this->entryVector.at(index).value;
+  }
+
+  std::vector<T> getEnums() const
+  {
+    std::vector<T> m;
+    for (const auto &entry : this->entryVector)
+      m.push_back(entry.value);
     return m;
   }
 
-  std::string getMeaning(T value) const
+  std::vector<std::string> getNames() const
   {
+    std::vector<std::string> l;
     for (const auto &entry : this->entryVector)
-      if (entry.value == value)
-        return entry.meaning;
-    return {};
+      l.push_back(entry.name);
+    return l;
   }
+
+  size_t size() const { return this->entryVector.size(); }
+
+  const EntryVector &entries() const { return this->entryVector; }
 
 private:
   EntryVector entryVector;
-  T           unknown;
 };
-
-} // namespace parser

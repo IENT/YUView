@@ -305,8 +305,8 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
             posY = statisitcMatch.captured(3).toInt();
 
             // Check if block is within the image range
-            if (blockOutsideOfFramePOC == -1 && (posX + width > statisticsData.getFrameSize().width() ||
-                                                 posY + height > statisticsData.getFrameSize().height()))
+            if (blockOutsideOfFramePOC == -1 && (posX + width > statisticsData.getFrameSize().width ||
+                                                 posY + height > statisticsData.getFrameSize().height))
               // Block not in image. Warn about this.
               blockOutsideOfFramePOC = poc;
 
@@ -361,8 +361,8 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
 
                 // Check if polygon is within the image range
                 if (this->blockOutsideOfFramePOC == -1 &&
-                    (x + width > statisticsData.getFrameSize().width() ||
-                     y + height > statisticsData.getFrameSize().height()))
+                    (x + width > statisticsData.getFrameSize().width ||
+                     y + height > statisticsData.getFrameSize().height))
                   // Block not in image. Warn about this.
                   this->blockOutsideOfFramePOC = poc;
               }
@@ -442,7 +442,7 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
       if (sequenceSizeMatch.hasMatch())
       {
         statisticsData.setFrameSize(
-            QSize(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt()));
+            Size(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt()));
       }
 
       // get available statistics

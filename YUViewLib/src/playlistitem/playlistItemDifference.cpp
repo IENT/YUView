@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functions.h"
+#include "common/functionsGUI.h"
 
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMDIFFERENCE_DEBUG_LOADING 0
@@ -49,7 +49,7 @@
 
 playlistItemDifference::playlistItemDifference() : playlistItemContainer("Difference Item")
 {
-  setIcon(0, functions::convertIcon(":img_difference.png"));
+  setIcon(0, functionsGUI::convertIcon(":img_difference.png"));
   // Enable dropping for difference objects. The user can drop the two items to calculate the
   // difference from.
   setFlags(flags() | Qt::ItemIsDropEnabled);
@@ -139,7 +139,8 @@ QSize playlistItemDifference::getSize() const
     return playlistItemContainer::getSize();
   }
 
-  return difference.getFrameSize();
+  auto s = difference.getFrameSize();
+  return QSize(s.width, s.height);
 }
 
 void playlistItemDifference::createPropertiesWidget()

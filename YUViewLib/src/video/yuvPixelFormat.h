@@ -32,12 +32,12 @@
 
 #pragma once
 
-#include <QObject>
-#include <QString>
+#include "common/EnumMapper.h"
+#include "common/typedef.h"
 
 // The YUV_Internals namespace. We use this namespace because of the dialog. We want to be able to
-// pass a yuvPixelFormat to the dialog and keep the global namespace clean but we are not able to
-// use nested classes because of the Q_OBJECT macro. So the dialog and the yuvPixelFormat is inside
+// pass a YUVPixelFormat to the dialog and keep the global namespace clean but we are not able to
+// use nested classes because of the Q_OBJECT macro. So the dialog and the YUVPixelFormat is inside
 // of this namespace.
 namespace YUV_Internals
 {
@@ -57,18 +57,15 @@ enum class ColorConversion
   BT2020_LimitedRange,
   BT2020_FullRange,
 };
-const auto colorConversionList = QList<ColorConversion>() << ColorConversion::BT709_LimitedRange
-                                                          << ColorConversion::BT709_FullRange
-                                                          << ColorConversion::BT601_LimitedRange
-                                                          << ColorConversion::BT601_FullRange
-                                                          << ColorConversion::BT2020_LimitedRange
-                                                          << ColorConversion::BT2020_FullRange;
-const auto colorConversionNameList = QStringList() << "ITU-R.BT709"
-                                                   << "ITU-R.BT709 Full Range"
-                                                   << "ITU-R.BT601"
-                                                   << "ITU-R.BT601 Full Range"
-                                                   << "ITU-R.BT2020"
-                                                   << "ITU-R.BT2020 Full Range";
+
+const auto ColorConversionMapper =
+    EnumMapper<ColorConversion>({{ColorConversion::BT709_LimitedRange, "ITU-R.BT709"},
+                                 {ColorConversion::BT709_FullRange, "ITU-R.BT709 Full Range"},
+                                 {ColorConversion::BT601_LimitedRange, "ITU-R.BT601"},
+                                 {ColorConversion::BT601_FullRange, "ITU-R.BT601 Full Range"},
+                                 {ColorConversion::BT2020_LimitedRange, "ITU-R.BT2020"},
+                                 {ColorConversion::BT2020_FullRange, "ITU-R.BT2020 Full Range"}});
+
 void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv[5]);
 
 // How to perform up-sampling (chroma subsampling)
@@ -78,13 +75,11 @@ enum class ChromaInterpolation
   Bilinear,
   Interstitial
 };
-const auto chromaInterpolationList = QList<ChromaInterpolation>()
-                                     << ChromaInterpolation::NearestNeighbor
-                                     << ChromaInterpolation::Bilinear
-                                     << ChromaInterpolation::Interstitial;
-const auto chromaInterpolationNameList = QStringList() << "Nearest Neighbor"
-                                                       << "Bilinear"
-                                                       << "Interstitial";
+
+const auto ChromaInterpolationMapper =
+    EnumMapper<ChromaInterpolation>({{ChromaInterpolation::NearestNeighbor, "Nearest Neighbor"},
+                                     {ChromaInterpolation::Bilinear, "Bilinear"},
+                                     {ChromaInterpolation::Interstitial, "Interstitial"}});
 
 class MathParameters
 {
@@ -99,6 +94,16 @@ public:
   int  scale, offset;
   bool invert;
 };
+
+enum class PredefinedPixelFormat
+{
+  // https://developer.apple.com/library/archive/technotes/tn2162/_index.html#//apple_ref/doc/uid/DTS40013070-CH1-TNTAG8-V210__4_2_2_COMPRESSION_TYPE
+  // Packed 422 format with 12 10 bit values in 16 bytes
+  V210
+};
+
+const auto PredefinedPixelFormatMapper =
+    EnumMapper<PredefinedPixelFormat>({{PredefinedPixelFormat::V210, "V210"}});
 
 enum class PackingOrder
 {
@@ -117,20 +122,16 @@ enum class PackingOrder
   // VYYUYY    // 420
   UNKNOWN
 };
-const auto packingOrderList = QList<PackingOrder>()
-                              << PackingOrder::YUV << PackingOrder::YVU << PackingOrder::AYUV
-                              << PackingOrder::YUVA << PackingOrder::VUYA << PackingOrder::UYVY
-                              << PackingOrder::VYUY << PackingOrder::YUYV << PackingOrder::YVYU;
-const auto packingOrderNameList = QStringList() << "YUV"
-                                                << "YVU"
-                                                << "AYUV"
-                                                << "YUVA"
-                                                << "VUYA"
-                                                << "UYVY"
-                                                << "VYUY"
-                                                << "YUYV"
-                                                << "YVYU";
-QString getPackingFormatString(PackingOrder packing);
+
+const auto PackingOrderMapper = EnumMapper<PackingOrder>({{PackingOrder::YUV, "YUV"},
+                                                          {PackingOrder::YVU, "YVU"},
+                                                          {PackingOrder::AYUV, "AYUV"},
+                                                          {PackingOrder::YUVA, "YUVA"},
+                                                          {PackingOrder::VUYA, "VUYA"},
+                                                          {PackingOrder::UYVY, "UYVY"},
+                                                          {PackingOrder::VYUY, "VYUY"},
+                                                          {PackingOrder::YUYV, "YUYV"},
+                                                          {PackingOrder::YVYU, "YVYU"}});
 
 enum class Subsampling
 {
@@ -143,28 +144,17 @@ enum class Subsampling
   YUV_400, // Luma only
   UNKNOWN
 };
-const auto subsamplingList = QList<Subsampling>()
-                             << Subsampling::YUV_444 << Subsampling::YUV_422 << Subsampling::YUV_420
-                             << Subsampling::YUV_440 << Subsampling::YUV_410 << Subsampling::YUV_411
-                             << Subsampling::YUV_400;
-const auto subsamplingNameList = QStringList() << "444"
-                                               << "422"
-                                               << "420"
-                                               << "440"
-                                               << "410"
-                                               << "411"
-                                               << "400";
-const auto subsamplingTextList = QStringList() << "4:4:4"
-                                               << "4:2:2"
-                                               << "4:2:0"
-                                               << "4:4:0"
-                                               << "4:1:0"
-                                               << "4:1:1"
-                                               << "4:0:0";
-int                 getMaxPossibleChromaOffsetValues(bool horizontal, Subsampling subsampling);
-QList<PackingOrder> getSupportedPackingFormats(Subsampling subsampling);
-QString             subsamplingToString(Subsampling type);
-Subsampling         stringToSubsampling(QString typeString);
+
+const auto SubsamplingMapper = EnumMapper<Subsampling>({{Subsampling::YUV_444, "444", "4:4:4"},
+                                                        {Subsampling::YUV_422, "422", "4:2:2"},
+                                                        {Subsampling::YUV_420, "420", "4:2:0"},
+                                                        {Subsampling::YUV_440, "440", "4:4:0"},
+                                                        {Subsampling::YUV_410, "410", "4:1:0"},
+                                                        {Subsampling::YUV_411, "411", "4:1:1"},
+                                                        {Subsampling::YUV_400, "400", "4:0:0"}});
+
+int getMaxPossibleChromaOffsetValues(bool horizontal, Subsampling subsampling);
+std::vector<PackingOrder> getSupportedPackingFormats(Subsampling subsampling);
 
 enum class PlaneOrder
 {
@@ -173,63 +163,85 @@ enum class PlaneOrder
   YUVA,
   YVUA
 };
-const auto planeOrderList = QList<PlaneOrder>() << PlaneOrder::YUV << PlaneOrder::YVU
-                                                << PlaneOrder::YUVA << PlaneOrder::YVUA;
-const auto planeOrderNameList = QStringList() << "YUV"
-                                              << "YVU"
-                                              << "YUVA"
-                                              << "YVUA";
 
-const QList<int> bitDepthList = QList<int>() << 8 << 9 << 10 << 12 << 14 << 16;
+const auto PlaneOrderMapper = EnumMapper<PlaneOrder>({{PlaneOrder::YUV, "YUV"},
+                                                      {PlaneOrder::YVU, "YVU"},
+                                                      {PlaneOrder::YUVA, "YUVA"},
+                                                      {PlaneOrder::YVUA, "YVUA"}});
+
+const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16});
 
 // This class defines a specific YUV format with all properties like pixels per sample, subsampling
 // of chroma components and so on.
-class yuvPixelFormat
+class YUVPixelFormat
 {
 public:
-  yuvPixelFormat() = default;
-  yuvPixelFormat(const QString &name); // Set the pixel format by name. The name should have the
-                                       // format that is returned by getName().
-  yuvPixelFormat(Subsampling subsampling,
+  YUVPixelFormat() = default;
+  YUVPixelFormat(const std::string &name); // Set the pixel format by name. The name should have the
+                                           // format that is returned by getName().
+  YUVPixelFormat(Subsampling subsampling,
                  int         bitsPerSample,
-                 PlaneOrder  planeOrder = PlaneOrder::YUV,
-                 bool        bigEndian  = false);
-  yuvPixelFormat(Subsampling  subsampling,
+                 PlaneOrder  planeOrder    = PlaneOrder::YUV,
+                 bool        bigEndian     = false,
+                 Offset      chromaOffset  = {},
+                 bool        uvInterleaved = false);
+  YUVPixelFormat(Subsampling  subsampling,
                  int          bitsPerSample,
                  PackingOrder packingOrder,
-                 bool         bytePacking = false,
-                 bool         bigEndian   = false);
+                 bool         bytePacking  = false,
+                 bool         bigEndian    = false,
+                 Offset       chromaOffset = {});
 
-  bool     isValid() const;
-  bool     canConvertToRGB(QSize frameSize, QString *whyNot = nullptr) const;
-  int64_t  bytesPerFrame(const QSize &frameSize) const;
-  QString  getName() const;
-  unsigned getNrPlanes() const;
-  int      getSubsamplingHor(Component component = Component::Chroma) const;
-  int      getSubsamplingVer(Component component = Component::Chroma) const;
-  void     setDefaultChromaOffset();
-  bool     isChromaSubsampled() const { return subsampling != Subsampling::YUV_444; }
+  bool        isValid() const;
+  bool        canConvertToRGB(Size frameSize, std::string *whyNot = nullptr) const;
+  int64_t     bytesPerFrame(const Size &frameSize) const;
+  std::string getName() const;
+  unsigned    getNrPlanes() const;
+  void        setDefaultChromaOffset();
 
-  bool operator==(const yuvPixelFormat &a) const { return getName() == a.getName(); }
-  bool operator!=(const yuvPixelFormat &a) const { return getName() != a.getName(); }
-  bool operator==(const QString &a) const { return getName() == a; }
-  bool operator!=(const QString &a) const { return getName() != a; }
+  Subsampling getSubsampling() const;
+  int         getSubsamplingHor(Component component = Component::Chroma) const;
+  int         getSubsamplingVer(Component component = Component::Chroma) const;
+  bool        isChromaSubsampled() const;
+
+  unsigned getBitsPerSample() const;
+  bool     isBigEndian() const;
+  bool     isPlanar() const;
+
+  Offset getChromaOffset() const;
+
+  PlaneOrder getPlaneOrder() const { return this->planeOrder; }
+  bool       isUVInterleaved() const { return this->uvInterleaved; }
+
+  PackingOrder getPackingOrder() const { return this->packingOrder; }
+  bool         isBytePacking() const;
+
+  bool operator==(const YUVPixelFormat &a) const { return getName() == a.getName(); }
+  bool operator!=(const YUVPixelFormat &a) const { return getName() != a.getName(); }
+  bool operator==(const std::string &a) const { return getName() == a; }
+  bool operator!=(const std::string &a) const { return getName() != a; }
+
+private:
+  // If this is set, the format is defined according to a specific standard and does not
+  // conform to the definition below (using subsampling/bitDepht/planes/packed)
+  // If this is set, none of the values below matter.
+  std::optional<PredefinedPixelFormat> predefinedPixelFormat;
 
   Subsampling subsampling{Subsampling::YUV_444};
-  int         bitsPerSample{-1};
-  bool        bigEndian{false};
-  bool        planar{false};
+  unsigned    bitsPerSample{};
+  bool        bigEndian{};
+  bool        planar{};
 
   // The chroma offset in x and y direction. The vales (0...4) define the offsets [0, 1/2, 1, 3/2]
   // samples towards the right and bottom.
-  int chromaOffset[2]{0, 0};
+  Offset chromaOffset;
 
   PlaneOrder planeOrder{PlaneOrder::YUV};
-  bool       uvInterleaved{false}; //< If set, the UV (and A if present) planes are interleaved
+  bool       uvInterleaved{}; //< If set, the UV (and A if present) planes are interleaved
 
   // if planar is not set
   PackingOrder packingOrder{PackingOrder::YUV};
-  bool         bytePacking{false};
+  bool         bytePacking{};
 };
 
 } // namespace YUV_Internals

@@ -91,7 +91,7 @@ void StatisticsFileVTMBMSTest::testVTMBMSParsing()
   stats::StatisticsData       statData;
   stats::StatisticsFileVTMBMS statFile(QString::fromStdString(vtmbmsFile.getFilename()), statData);
 
-  QCOMPARE(statData.getFrameSize(), QSize(2048, 872));
+  QCOMPARE(statData.getFrameSize(), Size(2048, 872));
 
   auto types = statData.getStatisticsTypes();
   QCOMPARE(types.size(), size_t(2));

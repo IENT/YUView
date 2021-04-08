@@ -37,7 +37,7 @@
 #include <QSettings>
 #include <QUrl>
 
-#include "common/functions.h"
+#include "common/functionsGUI.h"
 #include "filesource/FileSource.h"
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
@@ -46,7 +46,7 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath)
     : playlistItem(filePath, Type::Static), needToLoadImage(true), imageLoading(false)
 {
   // Set the properties of the playlistItem
-  setIcon(0, functions::convertIcon(":img_television.png"));
+  setIcon(0, functionsGUI::convertIcon(":img_television.png"));
   // Nothing can be dropped onto an image file
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
@@ -183,9 +183,9 @@ infoData playlistItemImageFile::getInfo() const
   info.items.append(infoItem("File", this->properties().name));
   if (frame.isFormatValid())
   {
-    QSize frameSize = frame.getFrameSize();
+    auto frameSize = frame.getFrameSize();
     info.items.append(infoItem("Resolution",
-                               QString("%1x%2").arg(frameSize.width()).arg(frameSize.height()),
+                               QString("%1x%2").arg(frameSize.width).arg(frameSize.height),
                                "The video resolution in pixel (width x height)"));
     info.items.append(infoItem(
         "Bit depth", QString::number(frame.getImageBitDepth()), "The bit depth of the image."));
@@ -196,6 +196,12 @@ infoData playlistItemImageFile::getInfo() const
     info.items.append(infoItem("Status", "Error", "There was an error loading the image."));
 
   return info;
+}
+
+QSize playlistItemImageFile::getSize() const
+{
+  auto s = frame.getFrameSize();
+  return QSize(s.width, s.height);
 }
 
 void playlistItemImageFile::updateSettings()

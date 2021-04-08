@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functions.h"
+#include "common/functionsGUI.h"
 #include "playlistitem/playlistItem.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -53,17 +53,17 @@ public:
   // Get all presets in a displayable format ("Name (xxx,yyy)")
   QStringList getFormattedNames() const;
   // Return the index of a certain size (0 (Custom Size) if not found)
-  int findSize(const QSize &size)
+  int findSize(const Size &size)
   {
     int idx = sizes.indexOf(size);
     return (idx == -1) ? 0 : idx;
   }
   // Get the size with the given index.
-  QSize getSize(int index) { return sizes[index]; }
+  Size getSize(int index) { return sizes[index]; }
 
 private:
   QList<QString> names;
-  QList<QSize>   sizes;
+  QList<Size>   sizes;
 };
 
 frameHandler::frameSizePresetList::frameSizePresetList()
@@ -82,10 +82,10 @@ frameHandler::frameSizePresetList::frameSizePresetList()
         << "4k"
         << "XGA"
         << "XGA+";
-  sizes << QSize(-1, -1) << QSize(176, 144) << QSize(320, 240) << QSize(416, 240) << QSize(352, 288)
-        << QSize(640, 480) << QSize(832, 480) << QSize(704, 576) << QSize(720, 576)
-        << QSize(1280, 720) << QSize(1920, 1080) << QSize(3840, 2160) << QSize(1024, 768)
-        << QSize(1280, 960);
+  sizes << Size(0, 0) << Size(176, 144) << Size(320, 240) << Size(416, 240) << Size(352, 288)
+        << Size(640, 480) << Size(832, 480) << Size(704, 576) << Size(720, 576)
+        << Size(1280, 720) << Size(1920, 1080) << Size(3840, 2160) << Size(1024, 768)
+        << Size(1280, 960);
 }
 
 /* Get all the names of the preset frame sizes in the form "Name (xxx,yyy)" in a QStringList.
@@ -98,7 +98,7 @@ QStringList frameHandler::frameSizePresetList::getFormattedNames() const
 
   for (int i = 1; i < names.count(); i++)
   {
-    QString str = QString("%1 (%2,%3)").arg(names[i]).arg(sizes[i].width()).arg(sizes[i].height());
+    QString str = QString("%1 (%2,%3)").arg(names[i]).arg(sizes[i].width).arg(sizes[i].height);
     presetList.append(str);
   }
 
@@ -118,10 +118,10 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
 
   // Set default values
   ui.widthSpinBox->setMaximum(100000);
-  ui.widthSpinBox->setValue(frameSize.width());
+  ui.widthSpinBox->setValue(frameSize.width);
   ui.widthSpinBox->setEnabled(!isSizeFixed);
   ui.heightSpinBox->setMaximum(100000);
-  ui.heightSpinBox->setValue(frameSize.height());
+  ui.heightSpinBox->setValue(frameSize.height);
   ui.heightSpinBox->setEnabled(!isSizeFixed);
   ui.frameSizeComboBox->addItems(presetFrameSizes.getFormattedNames());
   int idx = presetFrameSizes.findSize(frameSize);
@@ -145,7 +145,7 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
   return ui.frameHandlerLayout;
 }
 
-void frameHandler::setFrameSize(const QSize &newSize)
+void frameHandler::setFrameSize(Size newSize)
 {
   if (newSize != frameSize)
   {
@@ -159,7 +159,8 @@ bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
 {
   // Load the image and return if loading was successful
   currentImage = QImage(filePath);
-  setFrameSize(currentImage.size());
+  auto qFrameSize = currentImage.size();
+  setFrameSize(Size(qFrameSize.width(), qFrameSize.height()));
 
   return (!currentImage.isNull());
 }
@@ -167,28 +168,27 @@ bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
 void frameHandler::slotVideoControlChanged()
 {
   // Update the controls and get the new selected size
-  QSize newSize = getNewSizeFromControls();
+  auto newSize = getNewSizeFromControls();
   DEBUG_FRAME(
       "frameHandler::slotVideoControlChanged new size %dx%d", newSize.width(), newSize.height());
 
-  if (newSize != frameSize && newSize != QSize(-1, -1))
+  if (newSize != frameSize && newSize.isValid())
   {
     // Set the new size and update the controls.
-    setFrameSize(newSize);
+    this->setFrameSize(newSize);
     // The frame size changed. We need to redraw/re-cache.
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
 }
 
-QSize frameHandler::getNewSizeFromControls()
+Size frameHandler::getNewSizeFromControls()
 {
   // The control that caused the slot to be called
-  QObject *sender = QObject::sender();
+  auto sender = QObject::sender();
 
-  QSize newSize;
   if (sender == ui.widthSpinBox || sender == ui.heightSpinBox)
   {
-    newSize = QSize(ui.widthSpinBox->value(), ui.heightSpinBox->value());
+    auto newSize = Size(ui.widthSpinBox->value(), ui.heightSpinBox->value());
     if (newSize != frameSize)
     {
       // Set the comboBox index without causing another signal to be emitted.
@@ -196,25 +196,27 @@ QSize frameHandler::getNewSizeFromControls()
       int                  idx = presetFrameSizes.findSize(newSize);
       ui.frameSizeComboBox->setCurrentIndex(idx);
     }
+    return newSize;
   }
   else if (sender == ui.frameSizeComboBox)
   {
-    newSize = presetFrameSizes.getSize(ui.frameSizeComboBox->currentIndex());
+    auto newSize = presetFrameSizes.getSize(ui.frameSizeComboBox->currentIndex());
 
     // Set the width/height spin boxes without emitting another signal.
     const QSignalBlocker blocker1(ui.widthSpinBox);
     const QSignalBlocker blocker2(ui.heightSpinBox);
-    ui.widthSpinBox->setValue(newSize.width());
-    ui.heightSpinBox->setValue(newSize.height());
+    ui.widthSpinBox->setValue(int(newSize.width));
+    ui.heightSpinBox->setValue(int(newSize.height));
+    return newSize;
   }
-  return newSize;
+  return {};
 }
 
 void frameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues)
 {
   // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
-  videoRect.setSize(frameSize * zoomFactor);
+  videoRect.setSize(QSize(frameSize.width * zoomFactor, frameSize.height * zoomFactor));
   videoRect.moveCenter(QPoint(0, 0));
 
   // Draw the current image (currentFrame)
@@ -252,13 +254,13 @@ void frameHandler::drawPixelValues(QPainter *painter,
 
   // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
   // item have to be labeled)
-  xMin = clip(xMin, 0, frameSize.width() - 1);
-  yMin = clip(yMin, 0, frameSize.height() - 1);
-  xMax = clip(xMax, 0, frameSize.width() - 1);
-  yMax = clip(yMax, 0, frameSize.height() - 1);
+  xMin = clip(xMin, 0, int(frameSize.width) - 1);
+  yMin = clip(yMin, 0, int(frameSize.height) - 1);
+  xMax = clip(xMax, 0, int(frameSize.width) - 1);
+  yMax = clip(yMax, 0, int(frameSize.height) - 1);
 
   // The center point of the pixel (0,0).
-  QPoint centerPointZero = (QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor +
+  QPoint centerPointZero = (QPoint(-(int(frameSize.width)), -(int(frameSize.height))) * zoomFactor +
                             QPoint(zoomFactor, zoomFactor)) /
                            2;
   // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
@@ -326,10 +328,10 @@ QImage frameHandler::calculateDifference(frameHandler *item2,
                                          const int        amplificationFactor,
                                          const bool       markDifference)
 {
-  int width  = qMin(frameSize.width(), item2->frameSize.width());
-  int height = qMin(frameSize.height(), item2->frameSize.height());
+  auto width  = std::min(frameSize.width, item2->frameSize.width);
+  auto height = std::min(frameSize.height, item2->frameSize.height);
 
-  QImage diffImg(width, height, functions::platformImageFormat());
+  QImage diffImg(width, height, functionsGUI::platformImageFormat());
 
   // Also calculate the MSE while we're at it (R,G,B)
   int64_t mseAdd[3] = {0, 0, 0};
@@ -400,8 +402,8 @@ QStringPairList frameHandler::getPixelValues(const QPoint &pixelPos,
                                              frameHandler *item2,
                                              const int     )
 {
-  int width  = (item2) ? qMin(frameSize.width(), item2->frameSize.width()) : frameSize.width();
-  int height = (item2) ? qMin(frameSize.height(), item2->frameSize.height()) : frameSize.height();
+  auto width  = (item2) ? std::min(frameSize.width, item2->frameSize.width) : frameSize.width;
+  auto height = (item2) ? std::min(frameSize.height, item2->frameSize.height) : frameSize.height;
 
   if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
     return QStringPairList();
@@ -448,14 +450,14 @@ bool frameHandler::setFormatFromString(QString format)
     return false;
 
   bool ok;
-  auto newWidth = split[0].toInt(&ok);
+  auto newWidth = unsigned(split[0].toInt(&ok));
   if (!ok)
     return false;
 
-  auto newHeight = split[1].toInt(&ok);
+  auto newHeight = unsigned(split[1].toInt(&ok));
   if (!ok)
     return false;
 
-  this->setFrameSize(QSize(newWidth, newHeight));
+  this->setFrameSize(Size(newWidth, newHeight));
   return true;
 }

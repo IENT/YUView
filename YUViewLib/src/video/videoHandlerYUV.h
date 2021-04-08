@@ -33,7 +33,7 @@
 #pragma once
 
 #include "videoHandler.h"
-#include "yuvPixelFormat.h"
+#include "YUVPixelFormat.h"
 
 #include "ui_videoHandlerYUV.h"
 
@@ -71,13 +71,13 @@ public:
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
-  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo) override;
+  virtual void setFormatFromSizeAndName(const Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo) override;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.
   virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, int64_t fileSize=-1) override;
 
-  virtual QString getFormatAsString() const override { return frameHandler::getFormatAsString() + ";YUV;" + this->srcPixelFormat.getName(); }
+  virtual QString getFormatAsString() const override { return frameHandler::getFormatAsString() + ";YUV;" + QString::fromStdString(this->srcPixelFormat.getName()); }
   virtual bool setFormatFromString(QString format) override;
 
   // Create the YUV controls and return a pointer to the layout.
@@ -86,15 +86,15 @@ public:
   virtual QLayout *createVideoHandlerControls(bool isSizeFixed=false) override;
 
   // Get the name of the currently selected YUV pixel format
-  virtual QString getRawYUVPixelFormatName() const { return srcPixelFormat.getName(); }
+  virtual QString getRawYUVPixelFormatName() const { return QString::fromStdString(srcPixelFormat.getName()); }
   // Set the current YUV format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setYUVPixelFormat(const YUV_Internals::yuvPixelFormat &fmt, bool emitSignal=false);
-  virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false) { this->setYUVPixelFormat(YUV_Internals::yuvPixelFormat(name), emitSignal); }
+  virtual void setYUVPixelFormat(const YUV_Internals::YUVPixelFormat &fmt, bool emitSignal=false);
+  virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false) { this->setYUVPixelFormat(YUV_Internals::YUVPixelFormat(name.toStdString()), emitSignal); }
   virtual void setYUVColorConversion(YUV_Internals::ColorConversion conversion);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
-  void loadValues(const QSize &frameSize, const QString &sourcePixelFormat);
+  void loadValues(Size frameSize, const QString &sourcePixelFormat);
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
@@ -110,7 +110,7 @@ public:
 
   QByteArray getDiffYUV() const;
 
-  YUV_Internals::yuvPixelFormat getDiffYUVFormat() const;
+  YUV_Internals::YUVPixelFormat getDiffYUVFormat() const;
 
   bool getIs_YUV_diff() const;
 
@@ -145,7 +145,7 @@ protected:
   QMap<YUV_Internals::Component, YUV_Internals::MathParameters> mathParameters;
 
   // The currently selected YUV format
-  YUV_Internals::yuvPixelFormat srcPixelFormat;
+  YUV_Internals::YUVPixelFormat srcPixelFormat;
 
   struct yuv_t
   {
@@ -164,25 +164,25 @@ private:
   bool loadRawYUVData(int frameIndex);
 
   // Convert from YUV (which ever format is selected) to image (RGB-888)
-  void convertYUVToImage(const QByteArray &sourceBuffer, QImage &outputImage, const YUV_Internals::yuvPixelFormat &yuvFormat, const QSize &curFrameSize);
+  void convertYUVToImage(const QByteArray &sourceBuffer, QImage &outputImage, const YUV_Internals::YUVPixelFormat &yuvFormat, const Size &curFrameSize);
 
   // Set the new pixel format thread save (lock the mutex). We should also emit that something changed (can be disabled).
-  void setSrcPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitChangedSignal=true);
+  void setSrcPixelFormat(YUV_Internals::YUVPixelFormat newFormat, bool emitChangedSignal=true);
   // Check the given format against the file size. Set the format if this is a match.
-  bool checkAndSetFormat(const YUV_Internals::yuvPixelFormat format, const QSize frameSize, const int64_t fileSize);
+  bool checkAndSetFormat(const YUV_Internals::YUVPixelFormat format, const Size frameSize, const int64_t fileSize);
 
-  bool setFormatFromSizeAndNamePlanar(QString name, const QSize size, int bitDepth, YUV_Internals::Subsampling subsampling, int64_t fileSize);
-  bool setFormatFromSizeAndNamePacked(QString name, const QSize size, int bitDepth, YUV_Internals::Subsampling subsampling, int64_t fileSize);
+  bool setFormatFromSizeAndNamePlanar(QString name, const Size size, int bitDepth, YUV_Internals::Subsampling subsampling, int64_t fileSize);
+  bool setFormatFromSizeAndNamePacked(QString name, const Size size, int bitDepth, YUV_Internals::Subsampling subsampling, int64_t fileSize);
 
 #if SSE_CONVERSION
   bool convertYUV420ToRGB(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
 #else
-  bool convertYUV420ToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const QSize &size, const YUV_Internals::yuvPixelFormat format);
+  bool convertYUV420ToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const Size size, const YUV_Internals::YUVPixelFormat format);
 #endif
 
-  bool convertYUVPackedToPlanar(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &frameSize, YUV_Internals::yuvPixelFormat &sourceBufferFormat);
-  bool convertYUVPlanarToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const QSize &frameSize, const YUV_Internals::yuvPixelFormat &sourceBufferFormat) const;
-  bool markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const QSize &frameSize, const YUV_Internals::yuvPixelFormat &sourceBufferFormat) const;
+  bool convertYUVPackedToPlanar(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const Size frameSize, YUV_Internals::YUVPixelFormat &sourceBufferFormat);
+  bool convertYUVPlanarToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const Size frameSize, const YUV_Internals::YUVPixelFormat &sourceBufferFormat) const;
+  bool markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const Size frameSize, const YUV_Internals::YUVPixelFormat &sourceBufferFormat) const;
 
 #if SSE_CONVERSION_420_ALT
   void yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp,
@@ -195,9 +195,9 @@ private:
 
   bool is_YUV_diff;
   QByteArray diffYUV;
-  YUV_Internals::yuvPixelFormat diffYUVFormat;
+  YUV_Internals::YUVPixelFormat diffYUVFormat;
 
-  QList<YUV_Internals::yuvPixelFormat> presetList;
+  QList<YUV_Internals::YUVPixelFormat> presetList;
 
 private slots:
 

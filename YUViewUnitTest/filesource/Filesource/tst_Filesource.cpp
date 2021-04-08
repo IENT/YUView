@@ -113,8 +113,8 @@ void FileSourceTest::testFormatFromFilename()
   QFileInfo fileInfo(filename);
   auto fileFormat = FileSource::formatFromFilename(fileInfo);
 
-  QCOMPARE(fileFormat.frameSize.width(), width);
-  QCOMPARE(fileFormat.frameSize.height(), height);
+  QCOMPARE(fileFormat.frameSize.width, width);
+  QCOMPARE(fileFormat.frameSize.height, height);
   QCOMPARE(fileFormat.frameRate, framerate);
   QCOMPARE(fileFormat.bitDepth, bitDepth);
   QCOMPARE(fileFormat.packed, packed);
