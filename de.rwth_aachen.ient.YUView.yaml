@@ -1,6 +1,6 @@
 app-id: de.rwth_aachen.ient.YUView
 runtime: org.kde.Platform
-runtime-version: '5.14'
+runtime-version: '5.15'
 sdk: org.kde.Sdk
 command: YUView
 finish-args:
