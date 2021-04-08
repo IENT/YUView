@@ -1,0 +1,142 @@
+name: CI build Linux
+
+on:
+  push:
+  release:
+    types:
+      - created
+
+jobs:
+
+  build-linux:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-16.04
+            qt_version: Qt5
+            qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_xenial.zip
+            ARTIFACT_NAME: YUView.AppImage
+          - os: ubuntu-18.04
+            qt_version: Qt5
+            qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_bionic.zip
+          - os: ubuntu-16.04
+            qt_version: Qt6
+            qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.0.2/qtBase_6.0.2_xenial.zip
+          - os: ubuntu-18.04
+            qt_version: Qt6
+            qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.0.2/qtBase_6.0.2_bionic.zip
+    steps:
+    - uses: actions/checkout@v2
+    - run: git fetch --prune --unshallow
+
+##########################################################################################
+############################### Required packages from distributors ######################
+##########################################################################################
+
+    - name: Install and remove Linux packages
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev
+        # remove installed qt versions if any. they can interfere with the packaging tools
+        sudo apt-get autoremove '.*qt.*'
+
+    - name: Install Newer GCC Ubuntu 16.04
+      if: matrix.os == 'ubuntu-16.04'
+      shell: bash
+      run: |
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+        sudo apt-get update
+        sudo apt-get install gcc-9 g++-9
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+        sudo update-alternatives --config gcc
+
+##########################################################################################
+############################### Packages build by us: Qt, libde265  ######################
+##########################################################################################
+
+    - name: Install Qt base
+      shell: bash
+      run: |
+        cd $HOME
+        mkdir -p YUViewQt/
+        cd YUViewQt
+        curl -L ${{matrix.qt_base_link}} -o Qt.zip
+        unzip -qa Qt.zip
+
+    - name: Install libde265
+      shell: bash
+      run: |
+        curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.so -o libde265-internals.so
+        curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+
+##########################################################################################
+############################### Build YUView #############################################
+##########################################################################################
+
+    - name: Build Linux/Mac
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir build
+        cd build
+        cmake  -DCMAKE_PREFIX_PATH="$HOME/YUViewQt/Qt" -DCMAKE_INSTALL_PREFIX=/usr ..
+        cmake --build . --parallel $(nproc)
+
+##########################################################################################
+############################### Unit tests ###############################################
+##########################################################################################
+
+    - name: Run unit tests
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/build
+        ctest --output-on-failure
+        # ctest --output-on-failure --debug --extra-verbose
+
+##########################################################################################
+############################### Packaging YUView, Installers #############################
+##########################################################################################
+        
+    - name: Build Appimage (Linux)
+      # only run on oldest supported ubuntu:
+      # Please run on a system with a glibc version no newer than what comes with the oldest
+      # currently still-supported mainstream distribution.
+      # This is so that the resulting bundle will work on most still-supported Linux distributions.
+      if: matrix.os == 'ubuntu-16.04' &&  matrix.qt_version == 'Qt5'
+      shell: bash    
+      run: |
+        cd $HOME
+        curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
+        chmod a+x linuxdeployqt-6-x86_64.AppImage
+        cd $GITHUB_WORKSPACE/build
+        make install DESTDIR=appdir
+        $HOME/linuxdeployqt-6-x86_64.AppImage appdir/usr/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -qmake=$HOME/YUViewQt/Qt/bin/qmake -bundle-non-qt-libs -verbose=2
+        mv YUView-*.AppImage YUView.AppImage
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
+        cd $GITHUB_WORKSPACE
+        ls -l
+        cd $GITHUB_WORKSPACE/artifacts
+        ls -l
+
+##########################################################################################
+############################### Upload ###################################################
+##########################################################################################
+
+    - name: Upload Release
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
+        asset_name: ${{matrix.ARTIFACT_NAME}}
+        asset_content_type: application/zip
+      if: github.event_name == 'release' && matrix.os == 'ubuntu-16.04'  &&  matrix.qt_version == 'Qt5'
+
+  # How to upload files to the release:
+  # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
+  # Mime type list
+  # https://www.iana.org/assignments/media-types/media-types.xhtml

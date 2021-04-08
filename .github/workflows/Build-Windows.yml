@@ -1,0 +1,203 @@
+name: CI build Windows
+
+on:
+  push:
+  release:
+    types:
+      - created
+
+jobs:
+
+  build-windows:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-2019
+            qt_version: Qt5
+            qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_win.zip
+            qt_tools_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_win.zip
+            qt_tools_path: Qttools/bin/windeployqt.exe
+            auto_update: true
+            ARTIFACT_NAME: YUView-Win.zip
+          - os: windows-2019
+            qt_version: Qt5
+            qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_win.zip
+            qt_tools_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_win.zip
+            qt_tools_path: Qttools/bin/windeployqt.exe
+            auto_update: false
+            ARTIFACT_NAME: YUView-Win-noautoupdate.zip
+          - os: windows-2019
+            qt_version: Qt6
+            qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.0.2/qtBase_6.0.2_win.zip
+            qt_tools_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-6.0.2/qtTools_6.0.2_win.zip
+            qt_tools_path: build/bin/windeployqt.exe
+            auto_update: true
+          - os: windows-2019
+            qt_version: Qt6
+            qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.0.2/qtBase_6.0.2_win.zip
+            qt_tools_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-6.0.2/qtTools_6.0.2_win.zip
+            qt_tools_path: build/bin/windeployqt.exe
+            auto_update: false
+    steps:
+    - uses: actions/checkout@v2
+    - run: git fetch --prune --unshallow
+
+##########################################################################################
+############################### Setup environment ########################################
+##########################################################################################
+    - name: Setup environment
+      run: |
+        # converts the home path containing "\" to regular path with "/"
+        cd $USERPROFILE
+        export HOME=$(pwd)
+      shell: bash
+
+##########################################################################################
+############################### Required packages from distributors ######################
+##########################################################################################
+
+    - name: Install openSSL
+      run: |
+        cd $HOME
+        mkdir openSSL
+        cd openSSL
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1g/openSSL_1_1_1g_win.zip -o openSSL.zip
+        7z x openSSL.zip
+      shell: bash
+
+##########################################################################################
+############################### Packages build by us: Qt, libde265  ######################
+##########################################################################################
+
+    - name: Install Qt base
+      shell: bash
+      run: |
+        cd $HOME
+        mkdir -p YUViewQt/
+        cd YUViewQt
+        curl -L ${{matrix.qt_base_link}} -o Qt.zip
+        7z x  Qt.zip
+
+    - name: Install Qt deploy tools
+      shell: bash
+      run: |
+        cd $HOME
+        cd YUViewQt
+        curl -L ${{matrix.qt_tools_link}} -o deployQt.zip
+        7z x deployQt.zip
+
+    - name: Install libde265
+      run: |
+        cd $HOME
+        curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
+        curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+      shell: bash
+
+##########################################################################################
+############################### Build YUView #############################################
+##########################################################################################
+
+    - name: Activate auto update
+      run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/typedef.h
+      shell: bash
+      if: matrix.auto_update == true
+
+    - name: Build
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir build
+        cd build
+        cmake  -DCMAKE_PREFIX_PATH="$HOME/YUViewQt/Qt"  ..
+        cmake --build . --parallel $(nproc) --config Release --verbose
+      shell: bash
+
+##########################################################################################
+############################### Unit tests ###############################################
+##########################################################################################
+
+    # test don't work atm. need a windows system to debug it
+    # - name: Run unit tests
+    #   run: |
+    #     cd $GITHUB_WORKSPACE/build
+    #     ctest --output-on-failure --build-config Release
+    #     # ctest --output-on-failure --debug --extra-verbose
+    #   shell: bash
+
+##########################################################################################
+############################### Packaging YUView, Installers #############################
+##########################################################################################
+
+    - name: WindeployQT
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir deploy
+        cd deploy
+        cp ../build/Release/YUView.exe .
+        # PATH seems to be reset in every step (in contrast to HOME). have to modify it here
+        export PATH="$HOME/YUViewQt/Qt/bin:$PATH"
+        $HOME/YUViewQt/${{matrix.qt_tools_path}} --release --dir $GITHUB_WORKSPACE/deploy --no-compiler-runtime YUView.exe
+        cp $HOME/openSSL/*.dll .
+        mkdir decoder
+        cp $HOME/libde265.dll decoder
+        cp $HOME/libde265License.txt decoder
+        cp ../LICENSE.GPL3 .
+        cd ..
+        python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
+        mkdir artifacts
+        7z a artifacts/YUView-Win.zip ./deploy/*
+      shell: bash
+    - name: Wix Windows
+      run: |
+        cd $GITHUB_WORKSPACE/deployment/wix
+        cp /c/Program\ Files\ \(x86\)/Microsoft\ Visual\ Studio/2019/Enterprise/VC/Redist/MSVC/v142/MergeModules/Microsoft_VC142_CRT_x64.msm .
+        "${WIX}\bin\heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
+        "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext "${WIX}\bin\WixUIExtension.dll" YUView.wxs
+        "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
+        "${WIX}\bin\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "${WIX}\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
+        cd $GITHUB_WORKSPACE
+        cp deployment/wix/bin/Release/YUViewSetup.msi ./
+      shell: bash
+      if: matrix.auto_update == true
+
+##########################################################################################
+############################### Upload ###################################################
+##########################################################################################
+
+    - name: Upload Artifact
+      if: matrix.qt_version == 'Qt5'
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{matrix.ARTIFACT_NAME}}
+        path: artifacts
+    - name: Upload Windows installer Artifact
+      if: matrix.qt_version == 'Qt5' && matrix.auto_update == true
+      uses: actions/upload-artifact@v2
+      with:
+        name: YUViewSetup.msi
+        path: ./YUViewSetup.msi
+    - name: Upload Windows zip to Release
+      if: matrix.qt_version == 'Qt5' && github.event_name == 'release'
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: artifacts/YUView-Win.zip
+        asset_name: ${{matrix.ARTIFACT_NAME}}
+        asset_content_type: application/zip
+    - name: Upload Windows installer to Release
+      if: matrix.qt_version == 'Qt5' && github.event_name == 'release' && matrix.auto_update == true
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: YUViewSetup.msi
+        asset_name: YUViewSetup.msi
+        asset_content_type: application/zip
+
+  # How to upload files to the release:
+  # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
+  # Mime type list
+  # https://www.iana.org/assignments/media-types/media-types.xhtml
