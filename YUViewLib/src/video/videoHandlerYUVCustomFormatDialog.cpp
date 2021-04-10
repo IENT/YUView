@@ -207,7 +207,7 @@ YUVPixelFormat videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
   {
     auto supportedPackingFormats = getSupportedPackingFormats(*subsampling);
     idx                          = comboBoxPackingOrder->currentIndex();
-    if (idx < 0 || idx >= supportedPackingFormats.size())
+    if (idx < 0 || idx >= int(supportedPackingFormats.size()))
       return {};
 
     auto packingOrder = supportedPackingFormats.at(idx);

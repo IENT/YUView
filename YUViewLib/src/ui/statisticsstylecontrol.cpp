@@ -35,7 +35,7 @@
 #include <QColorDialog>
 #include <algorithm>
 
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 #include "common/typedef.h"
 #include "statistics/StatisticsType.h"
 #include "statisticsStyleControl_ColorMapEditor.h"
@@ -57,10 +57,10 @@ StatisticsStyleControl::StatisticsStyleControl(QWidget *parent)
     : QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
 {
   ui.setupUi(this);
-  ui.pushButtonEditMinColor->setIcon(functionsGUI::convertIcon(":img_edit.png"));
-  ui.pushButtonEditMaxColor->setIcon(functionsGUI::convertIcon(":img_edit.png"));
-  ui.pushButtonEditVectorColor->setIcon(functionsGUI::convertIcon(":img_edit.png"));
-  ui.pushButtonEditGridColor->setIcon(functionsGUI::convertIcon(":img_edit.png"));
+  ui.pushButtonEditMinColor->setIcon(functionsGui::convertIcon(":img_edit.png"));
+  ui.pushButtonEditMaxColor->setIcon(functionsGui::convertIcon(":img_edit.png"));
+  ui.pushButtonEditVectorColor->setIcon(functionsGui::convertIcon(":img_edit.png"));
+  ui.pushButtonEditGridColor->setIcon(functionsGui::convertIcon(":img_edit.png"));
 
   // The default custom range is black to blue
   ui.frameMinColor->setPlainColor(QColor(0, 0, 0));
@@ -94,11 +94,11 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
       ui.frameMinColor->setEnabled(true);
       ui.pushButtonEditMinColor->setEnabled(true);
       ui.frameMinColor->setPlainColor(
-          functionsGUI::toQColor(currentItem->colorMapper.minColor));
+          functionsGui::toQColor(currentItem->colorMapper.minColor));
       ui.frameMaxColor->setEnabled(true);
       ui.pushButtonEditMaxColor->setEnabled(true);
       ui.frameMaxColor->setPlainColor(
-          functionsGUI::toQColor(currentItem->colorMapper.maxColor));
+          functionsGui::toQColor(currentItem->colorMapper.maxColor));
     }
     else
     {
@@ -126,14 +126,14 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
     ui.checkBoxVectorScaleToZoom->setChecked(currentItem->scaleVectorToZoom);
     ui.comboBoxVectorHeadStyle->setCurrentIndex((int)currentItem->arrowHead);
     ui.checkBoxVectorMapToColor->setChecked(currentItem->mapVectorToColor);
-    ui.colorFrameVectorColor->setPlainColor(functionsGUI::toQColor(currentItem->vectorStyle.color));
+    ui.colorFrameVectorColor->setPlainColor(functionsGui::toQColor(currentItem->vectorStyle.color));
     ui.colorFrameVectorColor->setEnabled(!currentItem->mapVectorToColor);
     ui.pushButtonEditVectorColor->setEnabled(!currentItem->mapVectorToColor);
   }
   else
     ui.groupBoxVector->hide();
 
-  ui.frameGridColor->setPlainColor(functionsGUI::toQColor(currentItem->gridStyle.color));
+  ui.frameGridColor->setPlainColor(functionsGui::toQColor(currentItem->gridStyle.color));
   ui.doubleSpinBoxGridLineWidth->setValue(currentItem->gridStyle.width);
   ui.checkBoxGridScaleToZoom->setChecked(currentItem->scaleGridToZoom);
 
@@ -181,7 +181,7 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
     currentItem->colorMapper.rangeMin    = ui.spinBoxRangeMin->value();
     currentItem->colorMapper.rangeMax    = ui.spinBoxRangeMax->value();
 
-    auto plainColor                   = functionsGUI::toColor(ui.frameMinColor->getPlainColor());
+    auto plainColor                   = functionsGui::toColor(ui.frameMinColor->getPlainColor());
     currentItem->colorMapper.minColor = plainColor;
     currentItem->colorMapper.maxColor = plainColor;
   }
@@ -205,12 +205,12 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
 
 void StatisticsStyleControl::on_frameMinColor_clicked()
 {
-  auto newQColor = QColorDialog::getColor(functionsGUI::toQColor(currentItem->gridStyle.color),
+  auto newQColor = QColorDialog::getColor(functionsGui::toQColor(currentItem->gridStyle.color),
                                             this,
                                             tr("Select color range minimum"),
                                             QColorDialog::ShowAlphaChannel);
 
-  Color newColor = functionsGUI::toColor(newQColor);
+  Color newColor = functionsGui::toColor(newQColor);
   if (newQColor.isValid() && currentItem->colorMapper.minColor != newColor)
   {
     currentItem->colorMapper.minColor = newColor;
@@ -222,12 +222,12 @@ void StatisticsStyleControl::on_frameMinColor_clicked()
 
 void StatisticsStyleControl::on_frameMaxColor_clicked()
 {
-  auto newQColor = QColorDialog::getColor(functionsGUI::toQColor(currentItem->gridStyle.color),
+  auto newQColor = QColorDialog::getColor(functionsGui::toQColor(currentItem->gridStyle.color),
                                             this,
                                             tr("Select color range maximum"),
                                             QColorDialog::ShowAlphaChannel);
 
-  Color newColor = functionsGUI::toColor(newQColor);
+  Color newColor = functionsGui::toColor(newQColor);
   if (newQColor.isValid() && currentItem->colorMapper.maxColor != newColor)
   {
     currentItem->colorMapper.maxColor = newColor;
@@ -317,12 +317,12 @@ void StatisticsStyleControl::on_checkBoxVectorMapToColor_stateChanged(int arg1)
 
 void StatisticsStyleControl::on_colorFrameVectorColor_clicked()
 {
-  auto newQColor = QColorDialog::getColor(functionsGUI::toQColor(currentItem->vectorStyle.color),
+  auto newQColor = QColorDialog::getColor(functionsGui::toQColor(currentItem->vectorStyle.color),
                                            this,
                                            tr("Select vector color"),
                                            QColorDialog::ShowAlphaChannel);
 
-  auto newColor = functionsGUI::toColor(newQColor);
+  auto newColor = functionsGui::toColor(newQColor);
   if (newQColor.isValid() && newColor != currentItem->vectorStyle.color)
   {
     currentItem->vectorStyle.color = newColor;
@@ -340,9 +340,9 @@ void StatisticsStyleControl::on_groupBoxGrid_clicked(bool check)
 void StatisticsStyleControl::on_frameGridColor_clicked()
 {
   auto newQColor = QColorDialog::getColor(
-      functionsGUI::toQColor(currentItem->gridStyle.color), this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
+      functionsGui::toQColor(currentItem->gridStyle.color), this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
 
-  auto newColor = functionsGUI::toColor(newQColor);
+  auto newColor = functionsGui::toColor(newQColor);
   if (newQColor.isValid() && newColor != currentItem->gridStyle.color)
   {
     currentItem->gridStyle.color = newColor;

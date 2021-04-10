@@ -39,6 +39,7 @@
 #include <cstring>
 
 #include "common/typedef.h"
+#include "common/functions.h"
 
 using namespace YUView;
 using namespace YUV_Internals;
@@ -278,7 +279,7 @@ bool decoderDav1d::decodeFrame()
     auto subsampling = curPicture.getSubsampling();
     if (subsampling == Subsampling::UNKNOWN)
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid subsampling");
-    int bitDepth = curPicture.getBitDepth();
+    auto bitDepth = functions::clipToUnsigned(curPicture.getBitDepth());
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid bit depth");
 

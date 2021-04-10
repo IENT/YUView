@@ -36,7 +36,8 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
+#include "common/functions.h"
 #include "handler/itemMemoryHandler.h"
 
 using namespace YUView;
@@ -59,7 +60,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   isY4MFile = false;
 
   // Set the properties of the playlistItem
-  setIcon(0, functionsGUI::convertIcon(":img_video.png"));
+  setIcon(0, functionsGui::convertIcon(":img_video.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   this->prop.isFileSource = true;
@@ -311,7 +312,7 @@ bool playlistItemRawFile::parseY4MFile()
     while (rawData.at(offset) != ' ' && rawData.at(offset) != 10)
     {
       offset++;
-      if (offset >= rawData.count())
+      if (offset >= functions::clipToUnsigned(rawData.count()))
         // End of bufer
         break;
     }

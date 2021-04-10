@@ -34,7 +34,7 @@
 
 #include <QSettings>
 
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 #include "common/typedef.h"
 #include "playlistitem/playlistItem.h"
 
@@ -411,12 +411,12 @@ void PlaybackController::updateSettings()
   waitForCachingOfItem = caching && wait;
 
   // Load the icons for the buttons
-  iconPlay      = functionsGUI::convertIcon(":img_play.png");
-  iconStop      = functionsGUI::convertIcon(":img_stop.png");
-  iconPause     = functionsGUI::convertIcon(":img_pause.png");
-  iconRepeatOff = functionsGUI::convertIcon(":img_repeat.png");
-  iconRepeatAll = functionsGUI::convertIcon(":img_repeat_on.png");
-  iconRepeatOne = functionsGUI::convertIcon(":img_repeat_one.png");
+  iconPlay      = functionsGui::convertIcon(":img_play.png");
+  iconStop      = functionsGui::convertIcon(":img_stop.png");
+  iconPause     = functionsGui::convertIcon(":img_pause.png");
+  iconRepeatOff = functionsGui::convertIcon(":img_repeat.png");
+  iconRepeatAll = functionsGui::convertIcon(":img_repeat_on.png");
+  iconRepeatOne = functionsGui::convertIcon(":img_repeat_one.png");
 
   // Set button icons
   if (playing())

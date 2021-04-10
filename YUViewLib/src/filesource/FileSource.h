@@ -79,7 +79,7 @@ public:
   {
     Size frameSize;
     int frameRate {-1};
-    int bitDepth {-1};
+    unsigned bitDepth {};
     bool packed {false};
   };
   static fileFormat_t formatFromFilename(QFileInfo fileInfo);

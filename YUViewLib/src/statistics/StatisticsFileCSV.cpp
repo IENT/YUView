@@ -32,8 +32,8 @@
 
 #include "StatisticsFileCSV.h"
 
-#include <iostream>
 #include <QTextStream>
+#include <iostream>
 
 namespace stats
 {
@@ -308,13 +308,15 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
 
       // Check if block is within the image range
       if (this->blockOutsideOfFramePOC == -1 &&
-          (posX + int(width) > statisticsData.getFrameSize().width ||
-           posY + int(height) > statisticsData.getFrameSize().height))
+          (posX + int(width) > int(statisticsData.getFrameSize().width) ||
+           posY + int(height) > int(statisticsData.getFrameSize().height)))
         // Block not in image. Warn about this.
         this->blockOutsideOfFramePOC = poc;
 
       auto &statTypes = statisticsData.getStatisticsTypes();
-      auto statIt = std::find_if(statTypes.begin(), statTypes.end(), [type](StatisticsType &t){ return t.typeID == type; });
+      auto  statIt    = std::find_if(statTypes.begin(), statTypes.end(), [type](StatisticsType &t) {
+        return t.typeID == type;
+      });
       Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
 
       if (vectorData && statIt->hasVectorData)
@@ -419,7 +421,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto b = (unsigned char)rowItemList[5].toInt();
         auto a = (unsigned char)rowItemList[6].toInt();
 
-        aType.colorMapper.mappingType = ColorMapper::MappingType::map;
+        aType.colorMapper.mappingType  = ColorMapper::MappingType::map;
         aType.colorMapper.colorMap[id] = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "range")
@@ -452,18 +454,18 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
       }
       else if (rowItemList[1] == "vectorColor")
       {
-        auto r = (unsigned char)rowItemList[2].toInt();
-        auto g = (unsigned char)rowItemList[3].toInt();
-        auto b = (unsigned char)rowItemList[4].toInt();
-        auto a = (unsigned char)rowItemList[5].toInt();
+        auto r                  = (unsigned char)rowItemList[2].toInt();
+        auto g                  = (unsigned char)rowItemList[3].toInt();
+        auto b                  = (unsigned char)rowItemList[4].toInt();
+        auto a                  = (unsigned char)rowItemList[5].toInt();
         aType.vectorStyle.color = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "gridColor")
       {
-        auto r = (unsigned char)rowItemList[2].toInt();
-        auto g = (unsigned char)rowItemList[3].toInt();
-        auto b = (unsigned char)rowItemList[4].toInt();
-        auto a = 255;
+        auto r                = (unsigned char)rowItemList[2].toInt();
+        auto g                = (unsigned char)rowItemList[3].toInt();
+        auto b                = (unsigned char)rowItemList[4].toInt();
+        auto a                = 255;
         aType.gridStyle.color = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "scaleFactor")

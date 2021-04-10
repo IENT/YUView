@@ -456,6 +456,7 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
       {
         auto data                = ByteVector(posInData, avpacketData.end());
         auto [nrBytesRead, name] = subtitle::dvb::parseDVBSubtitleSegment(data, itemTree);
+        (void)name;
         DEBUG_AVFORMAT(
             "AVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
 

@@ -37,7 +37,7 @@
 #include <QPainter>
 #include <QRegularExpression>
 
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMTEXT_DEBUG 0
@@ -50,7 +50,7 @@
 playlistItemText::playlistItemText(const QString &initialText)
   : playlistItem(QString("Text: \"%1\"").arg(initialText), Type::Static)
 {
-  setIcon(0, functionsGUI::convertIcon(":img_text.png"));
+  setIcon(0, functionsGui::convertIcon(":img_text.png"));
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
   this->prop.propertiesWidgetTitle = "Text Properties";

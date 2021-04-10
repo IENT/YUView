@@ -33,7 +33,7 @@
 #include "StatisticsDataPainting.h"
 
 #include "StatisticsType.h"
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -86,7 +86,7 @@ Qt::PenStyle patternToQPenStyle(stats::Pattern &pattern)
 QPen styleToPen(stats::LineDrawStyle &style)
 {
   return QPen(
-      functionsGUI::toQColor(style.color), style.width, patternToQPenStyle(style.pattern));
+      functionsGui::toQColor(style.color), style.width, patternToQPenStyle(style.pattern));
 }
 
 void paintVector(QPainter *                   painter,
@@ -111,7 +111,7 @@ void paintVector(QPainter *                   painter,
   {
     // Set the pen for drawing
     auto vectorStyle = statisticsType.vectorStyle;
-    auto arrowColor  = functionsGUI::toQColor(vectorStyle.color);
+    auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
     if (statisticsType.mapVectorToColor)
       arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
     arrowColor.setAlpha(arrowColor.alpha() * ((float)statisticsType.alphaFactor / 100.0));
@@ -343,7 +343,7 @@ void stats::paintStatisticsData(QPainter *             painter,
           rectColor = it->colorMapper.getColor(value);
         rectColor.setAlpha(rectColor.alpha() * ((float)it->alphaFactor / 100.0));
 
-        auto rectQColor = functionsGUI::toQColor(rectColor);
+        auto rectQColor = functionsGui::toQColor(rectColor);
         painter->setBrush(rectQColor);
         painter->fillRect(displayRect, rectQColor);
       }
@@ -434,7 +434,7 @@ void stats::paintStatisticsData(QPainter *             painter,
           QPainterPath path;
           path.addPolygon(displayPolygon);
 
-          auto qColor = functionsGUI::toQColor(color);
+          auto qColor = functionsGui::toQColor(color);
           painter->setBrush(qColor);
           painter->fillPath(path, qColor);
         }
@@ -549,7 +549,7 @@ void stats::paintStatisticsData(QPainter *             painter,
         {
           // Set the pen for drawing
           auto vectorStyle = it->vectorStyle;
-          auto arrowColor  = functionsGUI::toQColor(vectorStyle.color);
+          auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
           if (it->mapVectorToColor)
             arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));
@@ -866,7 +866,7 @@ void stats::paintStatisticsData(QPainter *             painter,
         {
           // Set the pen for drawing
           auto vectorStyle = it->vectorStyle;
-          auto arrowColor  = functionsGUI::toQColor(vectorStyle.color);
+          auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
           if (it->mapVectorToColor)
             arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));

@@ -180,13 +180,13 @@ public:
   YUVPixelFormat(const std::string &name); // Set the pixel format by name. The name should have the
                                            // format that is returned by getName().
   YUVPixelFormat(Subsampling subsampling,
-                 int         bitsPerSample,
+                 unsigned    bitsPerSample,
                  PlaneOrder  planeOrder    = PlaneOrder::YUV,
                  bool        bigEndian     = false,
                  Offset      chromaOffset  = {},
                  bool        uvInterleaved = false);
   YUVPixelFormat(Subsampling  subsampling,
-                 int          bitsPerSample,
+                 unsigned     bitsPerSample,
                  PackingOrder packingOrder,
                  bool         bytePacking  = false,
                  bool         bigEndian    = false,

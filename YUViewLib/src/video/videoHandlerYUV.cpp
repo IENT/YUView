@@ -44,7 +44,7 @@
 #include "YUVPixelFormatGuess.h"
 #include "common/fileInfo.h"
 #include "common/functions.h"
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 #include "videoHandlerYUVCustomFormatDialog.h"
 
 using namespace YUV_Internals;
@@ -2989,10 +2989,10 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
   // be multiple of 4)
   auto qFrameSize = QSize(int(curFrameSize.width), int(curFrameSize.height));
   if (is_Q_OS_WIN || is_Q_OS_MAC)
-    outputImage = QImage(qFrameSize, functionsGUI::platformImageFormat());
+    outputImage = QImage(qFrameSize, functionsGui::platformImageFormat());
   else if (is_Q_OS_LINUX)
   {
-    QImage::Format f = functionsGUI::platformImageFormat();
+    QImage::Format f = functionsGui::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied || f == QImage::Format_ARGB32)
       outputImage = QImage(qFrameSize, f);
     else
@@ -3001,9 +3001,9 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
 
   // Check the image buffer size before we write to it
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  assert(outputImage.byteCount() >= curFrameSize.width * curFrameSize.height * 4);
+  assert(functions::clipToUnsigned(outputImage.byteCount()) >= curFrameSize.width * curFrameSize.height * 4);
 #else
-  assert(outputImage.sizeInBytes() >= curFrameSize.width * curFrameSize.height * 4);
+  assert(functions::clipToUnsigned(outputImage.sizeInBytes()) >= curFrameSize.width * curFrameSize.height * 4);
 #endif
 
   // Convert the source to RGB
@@ -3042,7 +3042,7 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of
     // the RGBA formats.
-    QImage::Format f = functionsGUI::platformImageFormat();
+    QImage::Format f = functionsGui::platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
         f != QImage::Format_RGB32)
       outputImage = outputImage.convertToFormat(f);
@@ -3561,8 +3561,8 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   // If the bit depth if the two items is different, we will scale the item with the lower bit depth
   // up.
   const unsigned bps_in[2] = {srcPixelFormat.getBitsPerSample(),
-                         yuvItem2->srcPixelFormat.getBitsPerSample()};
-  const auto bps_out   = std::max(bps_in[0], bps_in[1]);
+                              yuvItem2->srcPixelFormat.getBitsPerSample()};
+  const auto     bps_out   = std::max(bps_in[0], bps_in[1]);
   // Which of the two input values has to be scaled up? Only one of these (or neither) can be set.
   const bool bitDepthScaling[2] = {bps_in[0] != bps_out, bps_in[1] != bps_out};
   // Scale the input up by this many bits
@@ -3598,8 +3598,8 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   // part)
   const unsigned w_in[] = {frameSize.width, yuvItem2->frameSize.width};
   const unsigned h_in[] = {frameSize.height, yuvItem2->frameSize.height};
-  const auto w_out   = std::min(w_in[0], w_in[1]);
-  const auto h_out   = std::min(h_in[0], h_in[1]);
+  const auto     w_out  = std::min(w_in[0], w_in[1]);
+  const auto     h_out  = std::min(h_in[0], h_in[1]);
   // Append a warning if the frame sizes are different
   if (frameSize != yuvItem2->frameSize)
     differenceInfoList.append(
@@ -3615,20 +3615,20 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
     return QImage();
 
   // Get subsampling modes (they are identical for both inputs and the output)
-  const int subH = srcPixelFormat.getSubsamplingHor();
-  const int subV = srcPixelFormat.getSubsamplingVer();
+  const auto subH = srcPixelFormat.getSubsamplingHor();
+  const auto subV = srcPixelFormat.getSubsamplingVer();
 
   // Get the endianness of the inputs
   const bool bigEndian[2] = {srcPixelFormat.isBigEndian(), yuvItem2->srcPixelFormat.isBigEndian()};
 
   // Get pointers to the inputs
-  const int componentSizeLuma_In[2]   = {w_in[0] * h_in[0], w_in[1] * h_in[1]};
-  const int componentSizeChroma_In[2] = {(w_in[0] / subH) * (h_in[0] / subV),
-                                         (w_in[1] / subH) * (h_in[1] / subV)};
-  const int nrBytesLumaPlane_In[2]    = {
+  const unsigned componentSizeLuma_In[2]   = {w_in[0] * h_in[0], w_in[1] * h_in[1]};
+  const unsigned componentSizeChroma_In[2] = {(w_in[0] / subH) * (h_in[0] / subV),
+                                              (w_in[1] / subH) * (h_in[1] / subV)};
+  const unsigned nrBytesLumaPlane_In[2]    = {
       bps_in[0] > 8 ? 2 * componentSizeLuma_In[0] : componentSizeLuma_In[0],
       bps_in[1] > 8 ? 2 * componentSizeLuma_In[1] : componentSizeLuma_In[1]};
-  const int nrBytesChromaPlane_In[2] = {
+  const unsigned nrBytesChromaPlane_In[2] = {
       bps_in[0] > 8 ? 2 * componentSizeChroma_In[0] : componentSizeChroma_In[0],
       bps_in[1] > 8 ? 2 * componentSizeChroma_In[1] : componentSizeChroma_In[1]};
   // Current item
@@ -3670,15 +3670,15 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   int64_t mseAdd[3] = {0, 0, 0};
 
   // Calculate Luma sample difference
-  const int stride_in[2] = {bps_in[0] > 8 ? w_in[0] * 2 : w_in[0],
+  const unsigned stride_in[2] = {bps_in[0] > 8 ? w_in[0] * 2 : w_in[0],
                             bps_in[1] > 8 ? w_in[1] * 2
                                           : w_in[1]}; // How many bytes to the next y line?
-  for (int y = 0; y < h_out; y++)
+  for (unsigned y = 0; y < h_out; y++)
   {
-    for (int x = 0; x < w_out; x++)
+    for (unsigned x = 0; x < w_out; x++)
     {
-      int val1 = getValueFromSource(srcY1, x, bps_in[0], bigEndian[0]);
-      int val2 = getValueFromSource(srcY2, x, bps_in[1], bigEndian[1]);
+      auto val1 = getValueFromSource(srcY1, x, bps_in[0], bigEndian[0]);
+      auto val2 = getValueFromSource(srcY2, x, bps_in[1], bigEndian[1]);
 
       // Scale (if necessary)
       if (bitDepthScaling[0])
@@ -3687,7 +3687,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
         val2 = val2 << depthScale;
 
       // Calculate the difference, add MSE, (amplify) and clip the difference value
-      int diff = val1 - val2;
+      auto diff = val1 - val2;
       mseAdd[0] += diff * diff;
       if (amplification)
         diff *= amplificationFactor;
@@ -3703,17 +3703,17 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   }
 
   // Next U/V
-  const int strideC_in[2] = {w_in[0] / subH * (bps_in[0] > 8 ? 2 : 1),
+  const unsigned strideC_in[2] = {w_in[0] / subH * (bps_in[0] > 8 ? 2 : 1),
                              w_in[1] / subH *
                                  (bps_in[1] > 8 ? 2 : 1)}; // How many bytes to the next U/V y line
-  for (int y = 0; y < h_out / subV; y++)
+  for (unsigned y = 0; y < h_out / subV; y++)
   {
-    for (int x = 0; x < w_out / subH; x++)
+    for (unsigned x = 0; x < w_out / subH; x++)
     {
-      int valU1 = getValueFromSource(srcU1, x, bps_in[0], bigEndian[0]);
-      int valU2 = getValueFromSource(srcU2, x, bps_in[1], bigEndian[1]);
-      int valV1 = getValueFromSource(srcV1, x, bps_in[0], bigEndian[0]);
-      int valV2 = getValueFromSource(srcV2, x, bps_in[1], bigEndian[1]);
+      auto valU1 = getValueFromSource(srcU1, x, bps_in[0], bigEndian[0]);
+      auto valU2 = getValueFromSource(srcU2, x, bps_in[1], bigEndian[1]);
+      auto valV1 = getValueFromSource(srcV1, x, bps_in[0], bigEndian[0]);
+      auto valV2 = getValueFromSource(srcV2, x, bps_in[1], bigEndian[1]);
 
       // Scale (if necessary)
       if (bitDepthScaling[0])
@@ -3728,8 +3728,8 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
       }
 
       // Calculate the difference, add MSE, (amplify) and clip the difference value
-      int diffU = valU1 - valU2;
-      int diffV = valV1 - valV2;
+      auto diffU = valU1 - valU2;
+      auto diffV = valV1 - valV2;
       mseAdd[1] += diffU * diffU;
       mseAdd[2] += diffV * diffV;
       if (amplification)
@@ -3766,7 +3766,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
     outputImage = QImage(QSize(w_out, h_out), QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
-    QImage::Format f = functionsGUI::platformImageFormat();
+    auto f = functionsGui::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied)
       outputImage = QImage(QSize(w_out, h_out), QImage::Format_ARGB32_Premultiplied);
     if (f == QImage::Format_ARGB32)
@@ -3802,7 +3802,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of
     // the RGBA formats.
-    auto f = functionsGUI::platformImageFormat();
+    auto f = functionsGui::platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
         f != QImage::Format_RGB32)
       return outputImage.convertToFormat(f);

@@ -35,6 +35,7 @@
 #include <QPainter>
 #include <algorithm>
 
+#include "common/functions.h"
 #include "videoHandlerYUV.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -248,7 +249,8 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
   if (!inputsValid())
     return;
 
-  if (currentImage.width() != frameSize.width || currentImage.height() != frameSize.height)
+  if (functions::clipToUnsigned(currentImage.width()) != frameSize.width ||
+      functions::clipToUnsigned(currentImage.height()) != frameSize.height)
     return;
 
   if (codingOrder == CodingOrder_HEVC)

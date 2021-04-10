@@ -190,7 +190,7 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
   try
   {
     statisticsData.setFrameIndex(poc);
-    
+
     if (this->pocStartList.count(poc) == 0)
     {
       // There are no statistics in the file for the given frame and index.
@@ -207,7 +207,9 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
 
     // prepare regex for selected type
     auto &statTypes = statisticsData.getStatisticsTypes();
-    auto statIt = std::find_if(statTypes.begin(), statTypes.end(), [typeID](StatisticsType &t){ return t.typeID == typeID; });
+    auto  statIt    = std::find_if(statTypes.begin(), statTypes.end(), [typeID](StatisticsType &t) {
+      return t.typeID == typeID;
+    });
     Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
     QRegularExpression typeRegex(" " + statIt->typeName + "="); // for catching lines of the type
 
@@ -256,7 +258,8 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
         auto typeMatch = typeRegex.match(aLine);
         if (typeMatch.hasMatch())
         {
-          int posX, posY, width, height, scalar, vecX, vecY;
+          int      posX, posY, scalar, vecX, vecY;
+          unsigned width, height;
 
           QRegularExpressionMatch statisitcMatch;
           // extract statistics info
@@ -292,8 +295,8 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
           //        QStringList all_captured = statisitcMatch.capturedTexts();
 
           pocRow = statisitcMatch.captured(1).toInt();
-          width  = statisitcMatch.captured(4).toInt();
-          height = statisitcMatch.captured(5).toInt();
+          width  = statisitcMatch.captured(4).toUInt();
+          height = statisitcMatch.captured(5).toUInt();
           // if there is a new POC, we are done here!
           if (poc != pocRow)
             break;
@@ -305,8 +308,9 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
             posY = statisitcMatch.captured(3).toInt();
 
             // Check if block is within the image range
-            if (blockOutsideOfFramePOC == -1 && (posX + width > statisticsData.getFrameSize().width ||
-                                                 posY + height > statisticsData.getFrameSize().height))
+            if (blockOutsideOfFramePOC == -1 &&
+                (posX + int(width) > int(statisticsData.getFrameSize().width) ||
+                 posY + int(height) > int(statisticsData.getFrameSize().height)))
               // Block not in image. Warn about this.
               blockOutsideOfFramePOC = poc;
 
@@ -318,8 +322,7 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
               {
                 auto vecX1 = statisitcMatch.captured(8).toInt();
                 auto vecY1 = statisitcMatch.captured(9).toInt();
-                statisticsData[typeID].addLine(
-                    posX, posY, width, height, vecX, vecY, vecX1, vecY1);
+                statisticsData[typeID].addLine(posX, posY, width, height, vecX, vecY, vecX1, vecY1);
               }
               else
               {
@@ -473,9 +476,9 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
           else
             scale = 1;
 
-          aType.hasAffineTFData  = true;
-          aType.renderVectorData = true;
-          aType.vectorScale      = scale;
+          aType.hasAffineTFData   = true;
+          aType.renderVectorData  = true;
+          aType.vectorScale       = scale;
           aType.vectorStyle.color = Color(255, 0, 0);
         }
         else if (statType.contains("Vector"))
@@ -489,9 +492,9 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
           else
             scale = 1;
 
-          aType.hasVectorData    = true;
-          aType.renderVectorData = true;
-          aType.vectorScale      = scale;
+          aType.hasVectorData     = true;
+          aType.renderVectorData  = true;
+          aType.vectorScale       = scale;
           aType.vectorStyle.color = Color(255, 0, 0);
         }
         else if (statType.contains("Flag"))
@@ -519,11 +522,11 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
         }
         else if (statType.contains("Line"))
         {
-          aType.hasVectorData    = true;
-          aType.renderVectorData = true;
-          aType.vectorScale      = 1;
-          aType.arrowHead        = StatisticsType::ArrowHead::none;
-          aType.gridStyle.color = Color(255, 255, 255);
+          aType.hasVectorData     = true;
+          aType.renderVectorData  = true;
+          aType.vectorScale       = 1;
+          aType.arrowHead         = StatisticsType::ArrowHead::none;
+          aType.gridStyle.color   = Color(255, 255, 255);
           aType.vectorStyle.color = Color(255, 255, 255);
         }
 

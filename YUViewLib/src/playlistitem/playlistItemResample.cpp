@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMRESAMPLE_DEBUG_LOADING 0
@@ -48,7 +48,7 @@
 
 playlistItemResample::playlistItemResample() : playlistItemContainer("Resample Item")
 {
-  this->setIcon(0, functionsGUI::convertIcon(":img_resample.png"));
+  this->setIcon(0, functionsGui::convertIcon(":img_resample.png"));
   this->setFlags(flags() | Qt::ItemIsDropEnabled);
 
   this->prop.propertiesWidgetTitle = "Resample Properties";

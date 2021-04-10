@@ -37,6 +37,7 @@
 #include <QSettings>
 #include <cstring>
 
+#include "common/functions.h"
 #include "common/typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
@@ -259,7 +260,8 @@ bool decoderHM::getNextFrameFromDecoder()
   auto subsampling = convertFromInternalSubsampling(libHMDEC_get_chroma_format(currentHMPic));
   if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
-  int bitDepth = libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA);
+  auto bitDepth =
+      functions::clipToUnsigned(libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA));
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid bit depth");
 

@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 #include "playlistitem/playlistItem.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -63,7 +63,7 @@ public:
 
 private:
   QList<QString> names;
-  QList<Size>   sizes;
+  QList<Size>    sizes;
 };
 
 frameHandler::frameSizePresetList::frameSizePresetList()
@@ -83,9 +83,8 @@ frameHandler::frameSizePresetList::frameSizePresetList()
         << "XGA"
         << "XGA+";
   sizes << Size(0, 0) << Size(176, 144) << Size(320, 240) << Size(416, 240) << Size(352, 288)
-        << Size(640, 480) << Size(832, 480) << Size(704, 576) << Size(720, 576)
-        << Size(1280, 720) << Size(1920, 1080) << Size(3840, 2160) << Size(1024, 768)
-        << Size(1280, 960);
+        << Size(640, 480) << Size(832, 480) << Size(704, 576) << Size(720, 576) << Size(1280, 720)
+        << Size(1920, 1080) << Size(3840, 2160) << Size(1024, 768) << Size(1280, 960);
 }
 
 /* Get all the names of the preset frame sizes in the form "Name (xxx,yyy)" in a QStringList.
@@ -98,7 +97,7 @@ QStringList frameHandler::frameSizePresetList::getFormattedNames() const
 
   for (int i = 1; i < names.count(); i++)
   {
-    QString str = QString("%1 (%2,%3)").arg(names[i]).arg(sizes[i].width).arg(sizes[i].height);
+    auto str = QString("%1 (%2,%3)").arg(names[i]).arg(sizes[i].width).arg(sizes[i].height);
     presetList.append(str);
   }
 
@@ -158,7 +157,7 @@ void frameHandler::setFrameSize(Size newSize)
 bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
 {
   // Load the image and return if loading was successful
-  currentImage = QImage(filePath);
+  currentImage    = QImage(filePath);
   auto qFrameSize = currentImage.size();
   setFrameSize(Size(qFrameSize.width(), qFrameSize.height()));
 
@@ -244,8 +243,8 @@ void frameHandler::drawPixelValues(QPainter *painter,
 
   // First determine which pixels from this item are actually visible, because we only have to draw
   // the pixel values of the pixels that are actually visible
-  QRect      viewport       = painter->viewport();
-  QTransform worldTransform = painter->worldTransform();
+  auto viewport       = painter->viewport();
+  auto worldTransform = painter->worldTransform();
 
   int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
   int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
@@ -260,9 +259,9 @@ void frameHandler::drawPixelValues(QPainter *painter,
   yMax = clip(yMax, 0, int(frameSize.height) - 1);
 
   // The center point of the pixel (0,0).
-  QPoint centerPointZero = (QPoint(-(int(frameSize.width)), -(int(frameSize.height))) * zoomFactor +
-                            QPoint(zoomFactor, zoomFactor)) /
-                           2;
+  auto centerPointZero = (QPoint(-(int(frameSize.width)), -(int(frameSize.height))) * zoomFactor +
+                          QPoint(zoomFactor, zoomFactor)) /
+                         2;
   // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
   pixelRect.setSize(QSize(zoomFactor, zoomFactor));
@@ -282,8 +281,8 @@ void frameHandler::drawPixelValues(QPainter *painter,
       const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
       if (item2 != nullptr)
       {
-        QRgb pixel1 = getPixelVal(x, y);
-        QRgb pixel2 = item2->getPixelVal(x, y);
+        auto pixel1 = getPixelVal(x, y);
+        auto pixel2 = item2->getPixelVal(x, y);
 
         int dR = int(qRed(pixel1)) - int(qRed(pixel2));
         int dG = int(qGreen(pixel1)) - int(qGreen(pixel2));
@@ -331,17 +330,17 @@ QImage frameHandler::calculateDifference(frameHandler *item2,
   auto width  = std::min(frameSize.width, item2->frameSize.width);
   auto height = std::min(frameSize.height, item2->frameSize.height);
 
-  QImage diffImg(width, height, functionsGUI::platformImageFormat());
+  QImage diffImg(width, height, functionsGui::platformImageFormat());
 
   // Also calculate the MSE while we're at it (R,G,B)
   int64_t mseAdd[3] = {0, 0, 0};
 
-  for (int y = 0; y < height; y++)
+  for (unsigned y = 0; y < height; y++)
   {
-    for (int x = 0; x < width; x++)
+    for (unsigned x = 0; x < width; x++)
     {
-      QRgb pixel1 = getPixelVal(x, y);
-      QRgb pixel2 = item2->getPixelVal(x, y);
+      auto pixel1 = getPixelVal(x, y);
+      auto pixel2 = item2->getPixelVal(x, y);
 
       int dR = int(qRed(pixel1)) - int(qRed(pixel2));
       int dG = int(qGreen(pixel1)) - int(qGreen(pixel2));
@@ -371,7 +370,7 @@ QImage frameHandler::calculateDifference(frameHandler *item2,
       mseAdd[1] += dG * dG;
       mseAdd[2] += dB * dB;
 
-      QRgb val = qRgb(r, g, b);
+      auto val = qRgb(r, g, b);
       diffImg.setPixel(x, y, val);
     }
   }
@@ -393,26 +392,24 @@ QImage frameHandler::calculateDifference(frameHandler *item2,
 
 bool frameHandler::isPixelDark(const QPoint &pixelPos)
 {
-  QRgb pixVal = getPixelVal(pixelPos);
+  auto pixVal = getPixelVal(pixelPos);
   return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
 }
 
-QStringPairList frameHandler::getPixelValues(const QPoint &pixelPos,
-                                             int           ,
-                                             frameHandler *item2,
-                                             const int     )
+QStringPairList
+frameHandler::getPixelValues(const QPoint &pixelPos, int, frameHandler *item2, const int)
 {
   auto width  = (item2) ? std::min(frameSize.width, item2->frameSize.width) : frameSize.width;
   auto height = (item2) ? std::min(frameSize.height, item2->frameSize.height) : frameSize.height;
 
-  if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-    return QStringPairList();
+  if (pixelPos.x() < 0 || pixelPos.x() >= int(width) || pixelPos.y() < 0 || pixelPos.y() >= int(height))
+    return {};
 
   // Is the format (of both items) valid?
   if (!isFormatValid())
-    return QStringPairList();
+    return {};
   if (item2 && !item2->isFormatValid())
-    return QStringPairList();
+    return {};
 
   // Get the RGB values from the image
   QStringPairList values;
@@ -420,8 +417,8 @@ QStringPairList frameHandler::getPixelValues(const QPoint &pixelPos,
   if (item2)
   {
     // There is a second item. Return the difference values.
-    QRgb pixel1 = getPixelVal(pixelPos);
-    QRgb pixel2 = item2->getPixelVal(pixelPos);
+    auto pixel1 = getPixelVal(pixelPos);
+    auto pixel2 = item2->getPixelVal(pixelPos);
 
     int r = int(qRed(pixel1)) - int(qRed(pixel2));
     int g = int(qGreen(pixel1)) - int(qGreen(pixel2));
@@ -434,7 +431,7 @@ QStringPairList frameHandler::getPixelValues(const QPoint &pixelPos,
   else
   {
     // No second item. Return the RGB values of this item.
-    QRgb val = getPixelVal(pixelPos);
+    auto val = getPixelVal(pixelPos);
     values.append(QStringPair("R", QString::number(qRed(val))));
     values.append(QStringPair("G", QString::number(qGreen(val))));
     values.append(QStringPair("B", QString::number(qBlue(val))));

@@ -37,6 +37,7 @@
 #include <QSettings>
 #include <cstring>
 
+#include "common/functions.h"
 #include "common/typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
@@ -250,7 +251,8 @@ bool decoderVTM::getNextFrameFromDecoder()
   auto subsampling = convertFromInternalSubsampling(libVTMDec_get_chroma_format(currentVTMPic));
   if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
-  int bitDepth = libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
+  auto bitDepth =
+      functions::clipToUnsigned(libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA));
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
 

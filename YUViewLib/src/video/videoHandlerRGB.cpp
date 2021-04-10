@@ -34,7 +34,7 @@
 
 #include "common/fileInfo.h"
 #include "common/functions.h"
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 #include "videoHandlerRGBCustomFormatDialog.h"
 #include <QPainter>
 #include <QtGlobal>
@@ -510,7 +510,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
     outputImage = QImage(curFrameSize, QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
-    auto f = functionsGUI::platformImageFormat();
+    auto f = functionsGui::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied)
       outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
     if (f == QImage::Format_ARGB32)
@@ -521,9 +521,9 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
 
   // Check the image buffer size before we write to it
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  assert(outputImage.byteCount() >= frameSize.width * frameSize.height * 4);
+  assert(functions::clipToUnsigned(outputImage.byteCount()) >= frameSize.width * frameSize.height * 4);
 #else
-  assert(outputImage.sizeInBytes() >= frameSize.width * frameSize.height * 4);
+  assert(functions::clipToUnsigned(outputImage.sizeInBytes()) >= frameSize.width * frameSize.height * 4);
 #endif
 
   convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits());
@@ -532,7 +532,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of
     // the RGBA formats.
-    auto f = functionsGUI::platformImageFormat();
+    auto f = functionsGui::platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
         f != QImage::Format_RGB32)
       outputImage = outputImage.convertToFormat(f);
@@ -1103,7 +1103,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
     outputImage = QImage(qFrameSize, QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
-    auto f = functionsGUI::platformImageFormat();
+    auto f = functionsGui::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied)
       outputImage = QImage(qFrameSize, QImage::Format_ARGB32_Premultiplied);
     if (f == QImage::Format_ARGB32)
@@ -1316,7 +1316,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of
     // the RGBA formats.
-    auto f = functionsGUI::platformImageFormat();
+    auto f = functionsGui::platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
         f != QImage::Format_RGB32)
       return outputImage.convertToFormat(f);

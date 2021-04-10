@@ -71,4 +71,13 @@ QString formatDataSize(double size, bool isBits = false);
 QStringList toQStringList(const std::vector<std::string> &stringVec);
 std::string toLower(std::string str);
 
+template<typename T>
+unsigned clipToUnsigned(T val)
+{
+  static_assert(std::is_signed<T>::value, "T must must be a signed type");
+  if (val < 0)
+    return 0;
+  return unsigned(val);
+}
+
 } // namespace functions

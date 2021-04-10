@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLER_DEBUG_LOADING 0
@@ -286,7 +286,7 @@ void videoHandler::cacheFrame(int frameIdx, bool testMode)
 
 unsigned int videoHandler::getCachingFrameSize() const
 {
-  auto bytes = functionsGUI::bytesPerPixel(functionsGUI::platformImageFormat());
+  auto bytes = functionsGui::bytesPerPixel(functionsGui::platformImageFormat());
   return frameSize.width * frameSize.height * bytes;
 }
 

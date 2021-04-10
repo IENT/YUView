@@ -37,7 +37,7 @@
 #include <QSettings>
 #include <QUrl>
 
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 #include "filesource/FileSource.h"
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
@@ -46,7 +46,7 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath)
     : playlistItem(filePath, Type::Static), needToLoadImage(true), imageLoading(false)
 {
   // Set the properties of the playlistItem
-  setIcon(0, functionsGUI::convertIcon(":img_television.png"));
+  setIcon(0, functionsGui::convertIcon(":img_television.png"));
   // Nothing can be dropped onto an image file
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 

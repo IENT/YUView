@@ -207,26 +207,26 @@ YUVPixelFormat::YUVPixelFormat(const std::string &name)
 }
 
 YUVPixelFormat::YUVPixelFormat(Subsampling subsampling,
-                               int         bitsPerSample,
+                               unsigned    bitsPerSample,
                                PlaneOrder  planeOrder,
                                bool        bigEndian,
                                Offset      chromaOffset,
                                bool        uvInterleaved)
-    : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian),
-      chromaOffset(chromaOffset), planar(true), planeOrder(planeOrder), uvInterleaved(uvInterleaved)
+    : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true),
+      chromaOffset(chromaOffset), planeOrder(planeOrder), uvInterleaved(uvInterleaved)
 {
   this->setDefaultChromaOffset();
 }
 
 YUVPixelFormat::YUVPixelFormat(Subsampling  subsampling,
-                               int          bitsPerSample,
+                               unsigned     bitsPerSample,
                                PackingOrder packingOrder,
                                bool         bytePacking,
                                bool         bigEndian,
                                Offset       chromaOffset)
     : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false),
-      uvInterleaved(false), packingOrder(packingOrder), bytePacking(bytePacking),
-      chromaOffset(chromaOffset)
+      chromaOffset(chromaOffset), uvInterleaved(false), packingOrder(packingOrder),
+      bytePacking(bytePacking)
 {
   this->setDefaultChromaOffset();
 }
@@ -464,10 +464,10 @@ std::string YUVPixelFormat::getName() const
 
   // Add the endianness (if the bit depth is greater 8)
   if (this->bitsPerSample > 8)
-    ss << (this->bigEndian) ? " BE" : " LE";
+    ss << ((this->bigEndian) ? " BE" : " LE");
 
   if (!this->planar && this->subsampling != Subsampling::YUV_400)
-    ss << this->bytePacking ? " packed-B" : " packed";
+    ss << (this->bytePacking ? " packed-B" : " packed");
 
   // Add the Chroma offsets (if it is not the default offset)
   if (!isDefaultChromaFormat(this->chromaOffset.y, true, this->subsampling))

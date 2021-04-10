@@ -196,7 +196,7 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
 
           auto bitDepthString = match.captured(4);
           if (!bitDepthString.isEmpty())
-            format.bitDepth = bitDepthString.toInt();
+            format.bitDepth = bitDepthString.toUInt();
 
           break; // Don't check the following expressions
         }
@@ -274,9 +274,9 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
     }
 
     // Third, if we were able to get a frame size but no bit depth, we try to get a bit depth.
-    if (format.frameSize.isValid() && format.bitDepth == -1)
+    if (format.frameSize.isValid() && format.bitDepth == 0)
     {
-      for (int bd : {8, 9, 10, 12, 16})
+      for (unsigned bd : {8, 9, 10, 12, 16})
       {
         // Look for: 10bit, 10BIT, 10-bit, 10-BIT
         if (name.contains(QString("%1bit").arg(bd), Qt::CaseInsensitive) ||

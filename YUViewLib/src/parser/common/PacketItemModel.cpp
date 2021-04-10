@@ -94,7 +94,7 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
       return QVariant(QBrush());
     const int idx = item->getStreamIndex();
     if (idx >= 0)
-      return QVariant(QBrush(functionsGUI::toQColor(streamIndexColors.at(idx % streamIndexColors.size()))));
+      return QVariant(QBrush(functionsGui::toQColor(streamIndexColors.at(idx % streamIndexColors.size()))));
     return QVariant(QBrush());
   }
   else if (role == Qt::DisplayRole || role == Qt::ToolTipRole)

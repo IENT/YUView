@@ -40,7 +40,7 @@
 
 #include "common/YUViewDomElement.h"
 #include "common/functions.h"
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 #include "decoder/decoderDav1d.h"
 #include "decoder/decoderFFmpeg.h"
 #include "decoder/decoderHM.h"
@@ -83,7 +83,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 {
   // Set the properties of the playlistItem
   // TODO: should this change with the type of video?
-  setIcon(0, functionsGUI::convertIcon(":img_videoHEVC.png"));
+  setIcon(0, functionsGui::convertIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   this->prop.isFileSource          = true;

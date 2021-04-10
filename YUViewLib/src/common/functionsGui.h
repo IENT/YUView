@@ -46,7 +46,7 @@
   helpful functions that use the `gui` module.
  */
 
-namespace functionsGUI
+namespace functionsGui
 {
 
 QColor toQColor(const Color &color);
@@ -103,4 +103,4 @@ void setupUi(void *ui, void(*setupUi)(void *ui, QWidget *widget));
 QIcon convertIcon(QString iconPath);
 QPixmap convertPixmap(QString pixmapPath);
 
-} // namespace functionsGUI
+} // namespace functionsGui

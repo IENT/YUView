@@ -32,6 +32,8 @@
 
 #include "decoderFFmpeg.h"
 
+#include "common/functions.h"
+
 #define DECODERFFMPEG_DEBUG_OUTPUT 0
 #if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -193,7 +195,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     const auto nrBytes = nrBytesY + 2 * nrBytesC;
 
     // Is the output big enough?
-    if (this->currentOutputBuffer.capacity() < nrBytes)
+    if (auto c = functions::clipToUnsigned(this->currentOutputBuffer.capacity()); c < nrBytes)
       this->currentOutputBuffer.resize(nrBytes);
 
     // Copy line by line. The linesize of the source may be larger than the width of the frame.
@@ -227,7 +229,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     const auto nrBytes = nrBytesPerComponent * pixFmt.nrChannels();
 
     // Is the output big enough?
-    if (this->currentOutputBuffer.capacity() < nrBytes)
+    if (auto c = functions::clipToUnsigned(this->currentOutputBuffer.capacity()); c < nrBytes)
       this->currentOutputBuffer.resize(nrBytes);
 
     char *     dst  = this->currentOutputBuffer.data();

@@ -33,7 +33,7 @@ void YUVPixelFormatGuessTest::testFormatGuessFromFilename_data()
   QTest::addColumn<int>("framerate");
   QTest::addColumn<int>("bitDepth");
   QTest::addColumn<bool>("packed");
-  QTest::addColumn<std::string>("expectedFormatName");
+  QTest::addColumn<QString>("expectedFormatName");
 
   const unsigned bytes1080 = 1920 * 1080 * 3 * 6;  // 12 frames 420
   const unsigned bytes1280 = 1280 * 720 * 3 * 6;  // 6 frames 444
@@ -72,14 +72,14 @@ void YUVPixelFormatGuessTest::testFormatGuessFromFilename()
   QFETCH(int, height);
   QFETCH(int, bitDepth);
   QFETCH(bool, packed);
-  QFETCH(std::string, expectedFormatName);
+  QFETCH(QString, expectedFormatName);
 
   QFileInfo fileInfo(filename);
   auto fmt = YUV_Internals::guessFormatFromSizeAndName(Size(width, height), bitDepth, packed, fileSize, fileInfo);
   auto fmtName = fmt.getName();
   
   QVERIFY(fmt.isValid());
-  QCOMPARE(fmtName, expectedFormatName);
+  QCOMPARE(fmtName, expectedFormatName.toStdString());
 }
 
 QTEST_MAIN(YUVPixelFormatGuessTest)

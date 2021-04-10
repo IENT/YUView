@@ -38,6 +38,7 @@
 #include <cstring>
 
 #include "common/typedef.h"
+#include "common/functions.h"
 
 using namespace YUView;
 
@@ -331,7 +332,7 @@ bool decoderLibde265::decodeFrame()
     auto subsampling = convertFromInternalSubsampling(de265_get_chroma_format(curImage));
     if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid subsampling");
-    int bitDepth = de265_get_bits_per_pixel(curImage, 0);
+    auto bitDepth = functions::clipToUnsigned(de265_get_bits_per_pixel(curImage, 0));
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid bit depth");
 

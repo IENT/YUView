@@ -36,14 +36,14 @@
 #include <QSettings>
 #include <QUrl>
 
-#include "common/functionsGUI.h"
+#include "common/functionsGui.h"
 #include "filesource/FileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
     : playlistItemWithVideo(rawFilePath)
 {
   // Set the properties of the playlistItem
-  setIcon(0, functionsGUI::convertIcon(":img_television.png"));
+  setIcon(0, functionsGui::convertIcon(":img_television.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   this->prop.isFileSource          = true;

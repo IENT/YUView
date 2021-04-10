@@ -30,34 +30,34 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functionsGUI.h"
+#include "functionsGui.h"
 
 #include "functions.h"
 
 #include <QSettings>
 
-QColor functionsGUI::toQColor(const Color &color)
+QColor functionsGui::toQColor(const Color &color)
 {
   if (color.alpha() == -1)
     return QColor(color.R(), color.G(), color.B());
   return QColor(color.R(), color.G(), color.B(), color.A());
 }
 
-Color functionsGUI::toColor(const QColor &color)
+Color functionsGui::toColor(const QColor &color)
 {
   if (color.alpha() == 255)
     return Color(color.red(), color.green(), color.blue());
   return Color(color.red(), color.green(), color.blue(), color.alpha());
 }
 
-QImage::Format functionsGUI::pixmapImageFormat()
+QImage::Format functionsGui::pixmapImageFormat()
 {
   static auto const format = QPixmap(1, 1).toImage().format();
   Q_ASSERT(format != QImage::Format_Invalid);
   return format;
 }
 
-QIcon functionsGUI::convertIcon(QString iconPath)
+QIcon functionsGui::convertIcon(QString iconPath)
 {
   QSettings settings;
   QString   themeName = settings.value("Theme", "Default").toString();
@@ -108,7 +108,7 @@ QIcon functionsGUI::convertIcon(QString iconPath)
   return outIcon;
 }
 
-QPixmap functionsGUI::convertPixmap(QString pixmapPath)
+QPixmap functionsGui::convertPixmap(QString pixmapPath)
 {
   QSettings settings;
   QString   themeName = settings.value("Theme", "Default").toString();
@@ -142,7 +142,7 @@ QPixmap functionsGUI::convertPixmap(QString pixmapPath)
   return QPixmap::fromImage(active);
 }
 
-QString functionsGUI::pixelFormatToString(QImage::Format f)
+QString functionsGui::pixelFormatToString(QImage::Format f)
 {
   if (f == QImage::Format_Invalid)
     return "Format_Invalid";
