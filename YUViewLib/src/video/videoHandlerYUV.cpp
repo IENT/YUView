@@ -41,7 +41,7 @@
 #include <QDir>
 #include <QPainter>
 
-#include "YUVPixelFormatGuess.h"
+#include "yuvPixelFormatGuess.h"
 #include "common/fileInfo.h"
 #include "common/functions.h"
 #include "common/functionsGui.h"

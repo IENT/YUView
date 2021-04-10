@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "YUVPixelFormatGuess.h"
+#include "yuvPixelFormatGuess.h"
 
 #include "common/functions.h"
 

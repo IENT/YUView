@@ -1,6 +1,6 @@
 #include <QtTest>
 
-#include <video/YUVPixelFormatGuess.h>
+#include <video/yuvPixelFormatGuess.h>
 
 class YUVPixelFormatGuessTest : public QObject
 {
