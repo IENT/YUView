@@ -227,7 +227,7 @@ private:
   // If this is set, none of the values below matter.
   std::optional<PredefinedPixelFormat> predefinedPixelFormat;
 
-  Subsampling subsampling{Subsampling::YUV_444};
+  Subsampling subsampling{Subsampling::YUV_420};
   unsigned    bitsPerSample{};
   bool        bigEndian{};
   bool        planar{};

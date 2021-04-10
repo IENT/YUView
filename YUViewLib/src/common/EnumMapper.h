@@ -33,9 +33,10 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
+
 
 template <typename T> class EnumMapper
 {
@@ -52,13 +53,12 @@ public:
   using EntryVector = std::vector<Entry>;
 
   EnumMapper() = default;
-  EnumMapper(const EntryVector &entryVector)
-      : entryVector(entryVector) {};
+  EnumMapper(const EntryVector &entryVector) : entryVector(entryVector){};
 
-  std::optional<T> getValue(std::string name) const
+  std::optional<T> getValue(std::string name, bool isText = false) const
   {
     for (const auto &entry : this->entryVector)
-      if (entry.name == name)
+      if ((!isText && entry.name == name) || (isText && entry.text == name))
         return entry.value;
     return {};
   }

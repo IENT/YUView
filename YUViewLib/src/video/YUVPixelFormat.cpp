@@ -151,7 +151,7 @@ YUVPixelFormat::YUVPixelFormat(const std::string &name)
 
     // Parse the subsampling
     auto subsamplingName = sm.str(2);
-    if (auto ss = SubsamplingMapper.getValue(subsamplingName))
+    if (auto ss = SubsamplingMapper.getValue(subsamplingName, true))
       newFormat.subsampling = *ss;
 
     // Get the bit depth
@@ -470,8 +470,8 @@ std::string YUVPixelFormat::getName() const
     ss << (this->bytePacking ? " packed-B" : " packed");
 
   // Add the Chroma offsets (if it is not the default offset)
-  if (!isDefaultChromaFormat(this->chromaOffset.y, true, this->subsampling))
-    ss << " Cx" << this->chromaOffset.y;
+  if (!isDefaultChromaFormat(this->chromaOffset.x, true, this->subsampling))
+    ss << " Cx" << this->chromaOffset.x;
   if (!isDefaultChromaFormat(this->chromaOffset.y, false, this->subsampling))
     ss << " Cy" << this->chromaOffset.y;
 

@@ -41,5 +41,5 @@ namespace YUV_Internals
 // If you know the frame size of the video, the file size (and optionally the bit depth) we can
 // guess the remaining values. The rate value is set if a matching format could be found.
 YUVPixelFormat guessFormatFromSizeAndName(
-    const Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo);
+    const Size size, unsigned bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo);
 } // namespace YUV_Internals

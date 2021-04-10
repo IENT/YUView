@@ -51,11 +51,11 @@ Subsampling findSubsamplingTypeIndicatorInName(std::string name)
   std::regex strExpr(subsamplingMatcher);
 
   std::smatch sm;
-  if (!std::regex_match(name, sm, strExpr))
+  if (!std::regex_search(name, sm, strExpr))
     return Subsampling::UNKNOWN;
 
   // BEFORE RELEASE: Make sure this is tested
-  auto match = sm.str(0);
+  auto match = sm.str(0).substr(1, 3);
   if (auto format = SubsamplingMapper.getValue(match))
     return *format;
 
@@ -109,7 +109,7 @@ bool checkFormat(const YUV_Internals::YUVPixelFormat pixelFormat,
 
 YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
                                                const Size  size,
-                                               int         bitDepth,
+                                               unsigned         bitDepth,
                                                Subsampling detectedSubsampling,
                                                int64_t     fileSize)
 {
@@ -173,7 +173,7 @@ YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
 
 YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
                                                const Size  size,
-                                               int         bitDepth,
+                                               unsigned         bitDepth,
                                                Subsampling detectedSubsampling,
                                                int64_t     fileSize)
 {
@@ -221,7 +221,7 @@ YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
 }
 
 YUVPixelFormat guessFormatFromSizeAndName(
-    const Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo)
+    const Size size, unsigned bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo)
 {
   // We are going to check two strings (one after the other) for indicators on the YUV format.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -291,9 +291,9 @@ YUVPixelFormat guessFormatFromSizeAndName(
     // the subsampling strings. Further parameters: YUV plane order, little endian. The first format
     // to match the file size wins.
     auto bitDepths = BitDepthList;
-    if (bitDepth != -1)
+    if (bitDepth != 0)
       // We already extracted a bit depth from the name. Only try that.
-      bitDepths = std::vector<unsigned>({unsigned(bitDepth)});
+      bitDepths = {bitDepth};
     for (auto &subsamplingEntry : SubsamplingMapper.entries())
     {
       auto nameLower = functions::toLower(name);
@@ -320,7 +320,7 @@ YUVPixelFormat guessFormatFromSizeAndName(
       std::vector<Subsampling>({Subsampling::YUV_420, Subsampling::YUV_444, Subsampling::YUV_422});
 
   std::vector<int> testBitDepths;
-  if (bitDepth != -1)
+  if (bitDepth != 0)
     // We already extracted a bit depth from the name. Only try that.
     testBitDepths.push_back(bitDepth);
   else
