@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "YUVPixelFormat.h"
+#include "yuvPixelFormat.h"
 
 #include "ui_videoHandlerYUV_CustomFormatDialog.h"
 

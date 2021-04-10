@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "YUVPixelFormat.h"
+#include "yuvPixelFormat.h"
 
 #include <regex>
 
