@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "yuvPixelFormatGuess.h"
+#include "YUVPixelFormatGuess.h"
 
 #include "common/functions.h"
 
@@ -316,7 +316,8 @@ YUVPixelFormat guessFormatFromSizeAndName(
 
   // Nothing using the name worked so far. Check some formats. The first one that matches the file
   // size wins.
-  const auto testSubsamplings = std::vector<Subsampling>({Subsampling::YUV_420, Subsampling::YUV_444, Subsampling::YUV_422});
+  const auto testSubsamplings =
+      std::vector<Subsampling>({Subsampling::YUV_420, Subsampling::YUV_444, Subsampling::YUV_422});
 
   std::vector<int> testBitDepths;
   if (bitDepth != -1)

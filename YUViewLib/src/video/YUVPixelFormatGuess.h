@@ -34,20 +34,12 @@
 
 #include "YUVPixelFormat.h"
 
-#include "ui_videoHandlerYUV_CustomFormatDialog.h"
+#include <QFileInfo>
 
-class videoHandlerYUVCustomFormatDialog : public QDialog, public Ui::CustomYUVFormatDialog
+namespace YUV_Internals
 {
-  Q_OBJECT
-
-public:
-  videoHandlerYUVCustomFormatDialog() = delete;
-  videoHandlerYUVCustomFormatDialog(const YUV_Internals::YUVPixelFormat &yuvFormat);
-  YUV_Internals::YUVPixelFormat getSelectedYUVFormat() const;
-
-private slots:
-  void on_groupBoxPlanar_toggled(bool checked);
-  void on_groupBoxPacked_toggled(bool checked) { groupBoxPlanar->setChecked(!checked); }
-  void on_comboBoxChromaSubsampling_currentIndexChanged(int idx);
-  void on_comboBoxBitDepth_currentIndexChanged(int idx);
-};
+// If you know the frame size of the video, the file size (and optionally the bit depth) we can
+// guess the remaining values. The rate value is set if a matching format could be found.
+YUVPixelFormat guessFormatFromSizeAndName(
+    const Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo);
+} // namespace YUV_Internals

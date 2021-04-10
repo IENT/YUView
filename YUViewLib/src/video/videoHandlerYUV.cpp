@@ -41,7 +41,7 @@
 #include <QDir>
 #include <QPainter>
 
-#include "yuvPixelFormatGuess.h"
+#include "YUVPixelFormatGuess.h"
 #include "common/fileInfo.h"
 #include "common/functions.h"
 #include "common/functionsGui.h"
@@ -3001,9 +3001,11 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
 
   // Check the image buffer size before we write to it
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  assert(functions::clipToUnsigned(outputImage.byteCount()) >= curFrameSize.width * curFrameSize.height * 4);
+  assert(functions::clipToUnsigned(outputImage.byteCount()) >=
+         curFrameSize.width * curFrameSize.height * 4);
 #else
-  assert(functions::clipToUnsigned(outputImage.sizeInBytes()) >= curFrameSize.width * curFrameSize.height * 4);
+  assert(functions::clipToUnsigned(outputImage.sizeInBytes()) >=
+         curFrameSize.width * curFrameSize.height * 4);
 #endif
 
   // Convert the source to RGB
@@ -3671,8 +3673,8 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
 
   // Calculate Luma sample difference
   const unsigned stride_in[2] = {bps_in[0] > 8 ? w_in[0] * 2 : w_in[0],
-                            bps_in[1] > 8 ? w_in[1] * 2
-                                          : w_in[1]}; // How many bytes to the next y line?
+                                 bps_in[1] > 8 ? w_in[1] * 2
+                                               : w_in[1]}; // How many bytes to the next y line?
   for (unsigned y = 0; y < h_out; y++)
   {
     for (unsigned x = 0; x < w_out; x++)
@@ -3703,9 +3705,9 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   }
 
   // Next U/V
-  const unsigned strideC_in[2] = {w_in[0] / subH * (bps_in[0] > 8 ? 2 : 1),
-                             w_in[1] / subH *
-                                 (bps_in[1] > 8 ? 2 : 1)}; // How many bytes to the next U/V y line
+  const unsigned strideC_in[2] = {
+      w_in[0] / subH * (bps_in[0] > 8 ? 2 : 1),
+      w_in[1] / subH * (bps_in[1] > 8 ? 2 : 1)}; // How many bytes to the next U/V y line
   for (unsigned y = 0; y < h_out / subV; y++)
   {
     for (unsigned x = 0; x < w_out / subH; x++)

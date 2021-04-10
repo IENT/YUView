@@ -1,6 +1,6 @@
 #include <QtTest>
 
-#include <video/yuvPixelFormat.h>
+#include <video/YUVPixelFormat.h>
 
 class YUVPixelFormatTest : public QObject
 {
@@ -91,4 +91,4 @@ void YUVPixelFormatTest::testFormatFromToString()
 
 QTEST_MAIN(YUVPixelFormatTest)
 
-#include "yuvPixelFormatTest.moc"
+#include "YUVPixelFormatTest.moc"
