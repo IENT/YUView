@@ -191,6 +191,7 @@ public:
                  bool         bytePacking  = false,
                  bool         bigEndian    = false,
                  Offset       chromaOffset = {});
+  YUVPixelFormat(PredefinedPixelFormat predefinedPixelFormat);
 
   bool        isValid() const;
   bool        canConvertToRGB(Size frameSize, std::string *whyNot = nullptr) const;
