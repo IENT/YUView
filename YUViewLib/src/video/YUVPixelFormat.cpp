@@ -231,6 +231,11 @@ YUVPixelFormat::YUVPixelFormat(Subsampling  subsampling,
   this->setDefaultChromaOffset();
 }
 
+YUVPixelFormat::YUVPixelFormat(PredefinedPixelFormat predefinedPixelFormat)
+    : predefinedPixelFormat(predefinedPixelFormat)
+{
+}
+
 bool YUVPixelFormat::isValid() const
 {
   if (this->predefinedPixelFormat.has_value())

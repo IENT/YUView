@@ -108,6 +108,8 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   presetList.append(YUVPixelFormat(Subsampling::YUV_420, 10, PlaneOrder::YUV)); // YUV 4:2:0 10 bit
   presetList.append(YUVPixelFormat(Subsampling::YUV_422, 8, PlaneOrder::YUV));  // YUV 4:2:2
   presetList.append(YUVPixelFormat(Subsampling::YUV_444, 8, PlaneOrder::YUV));  // YUV 4:4:4
+  for (auto e : PredefinedPixelFormatMapper.getEnums())
+    presetList.append(e);
 }
 
 videoHandlerYUV::~videoHandlerYUV() { DEBUG_YUV("videoHandlerYUV destruction"); }
