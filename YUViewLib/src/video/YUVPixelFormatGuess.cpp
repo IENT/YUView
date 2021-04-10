@@ -54,7 +54,6 @@ Subsampling findSubsamplingTypeIndicatorInName(std::string name)
   if (!std::regex_search(name, sm, strExpr))
     return Subsampling::UNKNOWN;
 
-  // BEFORE RELEASE: Make sure this is tested
   auto match = sm.str(0).substr(1, 3);
   if (auto format = SubsamplingMapper.getValue(match))
     return *format;
