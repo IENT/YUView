@@ -91,4 +91,4 @@ void YUVPixelFormatTest::testFormatFromToString()
 
 QTEST_MAIN(YUVPixelFormatTest)
 
-#include "YUVPixelFormatTest.moc"
+#include "yuvPixelFormatTest.moc"
