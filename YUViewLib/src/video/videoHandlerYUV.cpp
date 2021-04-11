@@ -108,12 +108,12 @@ std::pair<bool, YUVPixelFormat> convertYUVPackedToPlanar(const QByteArray &    s
   const auto h = curFrameSize.height;
 
   // Bytes per sample
-  const int bps = (format.getBitsPerSample() > 8) ? 2 : 1;
+  const auto bps = (format.getBitsPerSample() > 8) ? 2u : 1u;
 
   if (format.getSubsampling() == Subsampling::YUV_422)
   {
     // The data is arranged in blocks of 4 samples. How many of these are there?
-    const int nr4Samples = w * h / 2;
+    const auto nr4Samples = w * h / 2;
 
     // What are the offsets withing the 4 samples for the components?
     const int oY = (packing == PackingOrder::YUYV || packing == PackingOrder::YVYU) ? 0 : 1;
@@ -126,38 +126,73 @@ std::pair<bool, YUVPixelFormat> convertYUVPackedToPlanar(const QByteArray &    s
                    : (packing == PackingOrder::UYVY) ? 2
                                                      : 3;
 
-    if (bps == 1)
+    if (format.getBitsPerSample() == 10 && format.isBytePacking())
     {
-      // One byte per sample.
-      const unsigned char *restrict src  = (unsigned char *)sourceBuffer.data();
-      unsigned char *restrict       dstY = (unsigned char *)targetBuffer.data();
-      unsigned char *restrict       dstU = dstY + w * h;
-      unsigned char *restrict       dstV = dstU + w / 2 * h;
+      // Byte packing in 422 with 10 bit. So for each 2 pixels we have 4 10 bit values which
+      // are exactly 5 bytes (40 bits).
+      auto fmt        = YUVPixelFormat(Subsampling::YUV_422, 10, PlaneOrder::YUV);
+      auto outputSize = fmt.bytesPerFrame(curFrameSize);
+      if (targetBuffer.size() < outputSize)
+        targetBuffer.resize(outputSize);
 
-      for (int i = 0; i < nr4Samples; i++)
+      const unsigned char *restrict src  = (unsigned char *)sourceBuffer.data();
+      unsigned short *restrict      dstY = (unsigned short *)targetBuffer.data();
+      unsigned short *restrict      dstU = dstY + w * h;
+      unsigned short *restrict      dstV = dstU + w / 2 * h;
+
+      for (unsigned i = 0; i < nr4Samples; i++)
       {
-        *dstY++ = src[oY];
-        *dstY++ = src[oY + 2];
-        *dstU++ = src[oU];
-        *dstV++ = src[oV];
-        src += 4; // Goto the next 4 samples
+        unsigned short values[4];
+        values[0] = (src[0] << 2) + (src[1] >> 6);
+        values[1] = ((src[1] & 0x3f) << 4) + (src[2] >> 4);
+        values[2] = ((src[2] & 0x0f) << 6) + (src[3] >> 2);
+        values[3] = ((src[3] & 0x03) << 8) + src[4];
+
+        *dstY++ = values[oY];
+        *dstY++ = values[oY + 2];
+        *dstU++ = values[oU];
+        *dstV++ = values[oV];
+
+        src += 5;
       }
+
+      return {true, fmt};
     }
     else
     {
-      // Two bytes per sample.
-      const unsigned short *restrict src  = (unsigned short *)sourceBuffer.data();
-      unsigned short *restrict       dstY = (unsigned short *)targetBuffer.data();
-      unsigned short *restrict       dstU = dstY + w * h;
-      unsigned short *restrict       dstV = dstU + w / 2 * h;
-
-      for (int i = 0; i < nr4Samples; i++)
+      if (bps == 1)
       {
-        *dstY++ = src[oY];
-        *dstY++ = src[oY + 2];
-        *dstU++ = src[oU];
-        *dstV++ = src[oV];
-        src += 4; // Goto the next 4 samples
+        // One byte per sample.
+        const unsigned char *restrict src  = (unsigned char *)sourceBuffer.data();
+        unsigned char *restrict       dstY = (unsigned char *)targetBuffer.data();
+        unsigned char *restrict       dstU = dstY + w * h;
+        unsigned char *restrict       dstV = dstU + w / 2 * h;
+
+        for (unsigned i = 0; i < nr4Samples; i++)
+        {
+          *dstY++ = src[oY];
+          *dstY++ = src[oY + 2];
+          *dstU++ = src[oU];
+          *dstV++ = src[oV];
+          src += 4; // Goto the next 4 samples
+        }
+      }
+      else
+      {
+        // Two bytes per sample.
+        const unsigned short *restrict src  = (unsigned short *)sourceBuffer.data();
+        unsigned short *restrict       dstY = (unsigned short *)targetBuffer.data();
+        unsigned short *restrict       dstU = dstY + w * h;
+        unsigned short *restrict       dstV = dstU + w / 2 * h;
+
+        for (unsigned i = 0; i < nr4Samples; i++)
+        {
+          *dstY++ = src[oY];
+          *dstY++ = src[oY + 2];
+          *dstU++ = src[oU];
+          *dstV++ = src[oV];
+          src += 4; // Goto the next 4 samples
+        }
       }
     }
   }
@@ -3297,18 +3332,40 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
                      : (packing == PackingOrder::UYVY) ? 2
                                                        : 3;
 
-      // The offset of the pixel in bytes
-      const unsigned int offsetCoordinate4Block =
-          (w * 2 * pixelPos.y() + (pixelPos.x() / 2 * 4)) * (format.getBitsPerSample() > 8 ? 2 : 1);
-      const unsigned char *restrict src =
-          (unsigned char *)currentFrameRawData.data() + offsetCoordinate4Block;
+      if (format.isBytePacking() && format.getBitsPerSample() == 10)
+      {
+        // The format is 4 values in 40 bits (5 bytes) which fits exactly for 422 10 bit.
+        auto offsetInInput = pixelPos.y() * (pixelPos.x() / 2) * 5;
+        const unsigned char *restrict src = (unsigned char *)currentFrameRawData.data() + offsetInInput;
 
-      value.Y = getValueFromSource(src,
-                                   (pixelPos.x() % 2 == 0) ? oY : oY + 2,
-                                   format.getBitsPerSample(),
-                                   format.isBigEndian());
-      value.U = getValueFromSource(src, oU, format.getBitsPerSample(), format.isBigEndian());
-      value.V = getValueFromSource(src, oV, format.getBitsPerSample(), format.isBigEndian());
+        unsigned short values[4];
+        values[0] = (src[0] << 2) + (src[1] >> 6);
+        values[1] = ((src[1] & 0x3f) << 4) + (src[2] >> 4);
+        values[2] = ((src[2] & 0x0f) << 6) + (src[3] >> 2);
+        values[3] = ((src[3] & 0x03) << 8) + src[4];
+
+        if (pixelPos.x() % 2 == 0)
+          value.Y = values[oY];
+        else
+          value.Y = values[oY + 2];
+        value.U = values[oU];
+        value.V = values[oV];
+      }
+      else
+      {
+        // The offset of the pixel in bytes
+        const unsigned offsetCoordinate4Block =
+            (w * 2 * pixelPos.y() + (pixelPos.x() / 2 * 4)) * (format.getBitsPerSample() > 8 ? 2 : 1);
+        const unsigned char *restrict src =
+            (unsigned char *)currentFrameRawData.data() + offsetCoordinate4Block;
+
+        value.Y = getValueFromSource(src,
+                                    (pixelPos.x() % 2 == 0) ? oY : oY + 2,
+                                    format.getBitsPerSample(),
+                                    format.isBigEndian());
+        value.U = getValueFromSource(src, oU, format.getBitsPerSample(), format.isBigEndian());
+        value.V = getValueFromSource(src, oV, format.getBitsPerSample(), format.isBigEndian());
+      }
     }
     else if (format.getSubsampling() == Subsampling::YUV_444)
     {
