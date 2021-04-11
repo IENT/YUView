@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functions.h"
+#include "common/functionsGui.h"
 
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMRESAMPLE_DEBUG_LOADING 0
@@ -48,7 +48,7 @@
 
 playlistItemResample::playlistItemResample() : playlistItemContainer("Resample Item")
 {
-  this->setIcon(0, functions::convertIcon(":img_resample.png"));
+  this->setIcon(0, functionsGui::convertIcon(":img_resample.png"));
   this->setFlags(flags() | Qt::ItemIsDropEnabled);
 
   this->prop.propertiesWidgetTitle = "Resample Properties";
@@ -116,8 +116,8 @@ void playlistItemResample::drawItem(QPainter *painter,
         {
           QSignalBlocker blockerWidth(ui.spinBoxWidth);
           QSignalBlocker blockerHeight(ui.spinBoxHeight);
-          ui.spinBoxWidth->setValue(this->scaledSize.width());
-          ui.spinBoxHeight->setValue(this->scaledSize.height());
+          ui.spinBoxWidth->setValue(this->scaledSize.width);
+          ui.spinBoxHeight->setValue(this->scaledSize.height);
 
           auto nrFramesInput = this->cutRange.second - this->cutRange.first + 1;
 
@@ -176,7 +176,8 @@ QSize playlistItemResample::getSize() const
   if (!this->video.inputValid())
     return playlistItemContainer::getSize();
 
-  return this->video.getFrameSize();
+  auto s = this->video.getFrameSize();
+  return QSize(s.width, s.height);
 }
 
 void playlistItemResample::createPropertiesWidget()
@@ -244,8 +245,8 @@ void playlistItemResample::savePlaylist(QDomElement &root, const QDir &playlistD
   if (ui.created())
   {
     // Append the video handler properties
-    d.appendProperiteChild("width", QString::number(this->scaledSize.width()));
-    d.appendProperiteChild("height", QString::number(this->scaledSize.height()));
+    d.appendProperiteChild("width", QString::number(this->scaledSize.width));
+    d.appendProperiteChild("height", QString::number(this->scaledSize.height));
     d.appendProperiteChild("interpolation", QString::number(this->interpolationIndex));
     d.appendProperiteChild("cutStart", QString::number(this->cutRange.first));
     d.appendProperiteChild("cutEnd", QString::number(this->cutRange.second));
@@ -265,7 +266,7 @@ playlistItemResample *playlistItemResample::newPlaylistItemResample(const YUView
   playlistItem::loadPropertiesFromPlaylist(root, newItemResample);
 
   newItemResample->scaledSize =
-      QSize(root.findChildValueInt("width", 0), root.findChildValueInt("height", 0));
+      Size(root.findChildValueInt("width", 0), root.findChildValueInt("height", 0));
   newItemResample->interpolationIndex = root.findChildValueInt("interpolation", 0);
   newItemResample->cutRange =
       indexRange({root.findChildValueInt("cutStart", 0), root.findChildValueInt("cutEnd", 0)});
@@ -341,7 +342,7 @@ void playlistItemResample::childChanged(bool redraw, recacheIndicator recache)
 
 void playlistItemResample::slotResampleControlChanged(int)
 {
-  this->scaledSize = QSize(ui.spinBoxWidth->value(), ui.spinBoxHeight->value());
+  this->scaledSize = Size(ui.spinBoxWidth->value(), ui.spinBoxHeight->value());
   this->video.setScaledSize(this->scaledSize);
 }
 
@@ -373,10 +374,10 @@ void playlistItemResample::slotButtonSARWidth(bool)
   auto childSize = this->getChildPlaylistItem(0)->getFrameHandler()->getFrameSize();
   auto childSAR  = this->getChildPlaylistItem(0)->properties().sampleAspectRatio;
 
-  auto newHeight = childSize.height();
+  auto newHeight = childSize.height;
   auto newWidth  = newHeight * childSAR.den / childSAR.num;
 
-  this->scaledSize = QSize(newWidth, newHeight);
+  this->scaledSize = Size(newWidth, newHeight);
   this->video.setScaledSize(this->scaledSize);
 }
 
@@ -388,9 +389,9 @@ void playlistItemResample::slotButtonSARHeight(bool)
   auto childSize = this->getChildPlaylistItem(0)->getFrameHandler()->getFrameSize();
   auto childSAR  = this->getChildPlaylistItem(0)->properties().sampleAspectRatio;
 
-  auto newWidth  = childSize.width();
+  auto newWidth  = childSize.width;
   auto newHeight = newWidth * childSAR.num / childSAR.den;
 
-  this->scaledSize = QSize(newWidth, newHeight);
+  this->scaledSize = Size(newWidth, newHeight);
   this->video.setScaledSize(this->scaledSize);
 }

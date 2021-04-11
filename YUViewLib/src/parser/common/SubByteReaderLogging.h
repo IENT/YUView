@@ -67,7 +67,7 @@ public:
   static ByteVector convertToByteVector(QByteArray data);
   static QByteArray convertToQByteArray(ByteVector data);
 
-  uint64_t readBits(const std::string &symbolName, int numBits, const Options &options = {});
+  uint64_t readBits(const std::string &symbolName, size_t numBits, const Options &options = {});
   bool     readFlag(const std::string &symbolName, const Options &options = {});
   uint64_t readUEV(const std::string &symbolName, const Options &options = {});
   int64_t  readSEV(const std::string &symbolName, const Options &options = {});

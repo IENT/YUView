@@ -32,17 +32,10 @@
 
 #pragma once
 
-#include <QImage>
-#include <QColor>
-
 #include "typedef.h"
-#include "Color.h"
 
 namespace functions
 {
-
-QColor convertToQColor(Color color);
-Color  fromQColor(QColor color);
 
 QString getInputFormatName(YUView::inputFormat i);
 YUView::inputFormat getInputFormatFromName(QString name);
@@ -52,53 +45,6 @@ YUView::decoderEngine getDecoderEngineFromName(QString name);
 
 bool isInputFormatTypeAnnexB(YUView::inputFormat format);
 bool isInputFormatTypeFFmpeg(YUView::inputFormat format);
-
-// An image format used internally by QPixmap. On a raster paint backend, the pixmap
-// is backed by an image, and this returns the format of the internal QImage buffer.
-// This will always return the same result as the platformImageFormat when the default
-// raster backend is used.
-// It is faster to call platformImageFormat instead. It will call this function as
-// a fall back.
-// This function is thread-safe.
-QImage::Format pixmapImageFormat();
-
-// Convert the QImage::Format to string
-QString pixelFormatToString(QImage::Format f);
-
-// The platform-specific screen-compatible image format. Using a QImage of this format
-// is fast when drawing on a widget.
-// This function is thread-safe.
-inline QImage::Format platformImageFormat()
-{
-  // see https://code.woboq.org/qt5/qtbase/src/gui/image/qpixmap_raster.cpp.html#97
-  // see https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN21QRasterPlatformPixmap18systemOpaqueFormatEv
-  if (is_Q_OS_MAC)
-    // https://code.woboq.org/qt5/qtbase/src/plugins/platforms/cocoa/qcocoaintegration.mm.html#117
-    // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN12QCocoaScreen14updateGeometryEv
-    // Qt Docs: The image is stored using a 32-bit RGB format (0xffRRGGBB).
-    return QImage::Format_RGB32;
-  if (is_Q_OS_WIN)
-    // https://code.woboq.org/qt5/qtbase/src/plugins/platforms/windows/qwindowsscreen.cpp.html#59
-    // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN18QWindowsScreenDataC1Ev
-    // Qt Docs:
-    // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB), i.e. the red, green, and blue channels 
-    // are multiplied by the alpha component divided by 255. (If RR, GG, or BB has a higher value than the alpha channel, 
-    // the results are undefined.) Certain operations (such as image composition using alpha blending) are faster using 
-    // premultiplied ARGB32 than with plain ARGB32.
-    return QImage::Format_ARGB32_Premultiplied;
-  // Fall back on Linux and other platforms.
-  return pixmapImageFormat();
-}
-
-inline int bytesPerPixel(QPixelFormat format)
-{
-  auto const bits = format.bitsPerPixel();
-  return (bits >= 1) ? ((bits + 7) / 8) : 0;
-}
-
-inline int bytesPerPixel(QImage::Format format) { return bytesPerPixel(QImage::toPixelFormat(format)); }
-
-void setupUi(void *ui, void(*setupUi)(void *ui, QWidget *widget));
 
 // Get the optimal thread count (QThread::optimalThreadCount()-1) or at least 1
 // so that one thread is "reserved" for the main GUI. I don't know if this is optimal.
@@ -117,12 +63,21 @@ QString getThemeFileName(QString themeName);
 // #backgroundColor, #activeColor, #inactiveColor, #highlightColor
 // The values to replace them by are returned in this order.
 QStringList getThemeColors(QString themeName);
-// Return the icon/pixmap from the given file path (inverted if necessary)
-QIcon convertIcon(QString iconPath);
-QPixmap convertPixmap(QString pixmapPath);
 
 // Format the data size as a huma readable string. If isBits is set, assumes bits, oterwise bytes.
 // From Qt 5.10 there is a built in function (QLocale::formattedDataSize). But we want to be 5.9 compatible.
 QString formatDataSize(double size, bool isBits = false);
+
+QStringList toQStringList(const std::vector<std::string> &stringVec);
+std::string toLower(std::string str);
+
+template<typename T>
+unsigned clipToUnsigned(T val)
+{
+  static_assert(std::is_signed<T>::value, "T must must be a signed type");
+  if (val < 0)
+    return 0;
+  return unsigned(val);
+}
 
 } // namespace functions

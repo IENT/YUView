@@ -34,6 +34,7 @@
 
 #include "common/fileInfo.h"
 #include "common/functions.h"
+#include "common/functionsGui.h"
 #include "videoHandlerRGBCustomFormatDialog.h"
 #include <QPainter>
 #include <QtGlobal>
@@ -80,18 +81,18 @@ videoHandlerRGB::RGBFormatList::RGBFormatList()
 
 /* Put all the names of the RGB formats into a list and return it
  */
-QStringList videoHandlerRGB::RGBFormatList::getFormattedNames() const
+std::vector<std::string> videoHandlerRGB::RGBFormatList::getFormattedNames() const
 {
-  QStringList l;
+  std::vector<std::string> l;
   for (int i = 0; i < count(); i++)
-    l.append(at(i).getName());
+    l.push_back(at(i).getName());
   return l;
 }
 
-rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const QString &name) const
+rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const std::string &name) const
 {
   for (int i = 0; i < count(); i++)
-    if (at(i) == name)
+    if (at(i).getName() == name)
       return at(i);
 
   // If the format could not be found, we return the "Unknown Pixel Format" format
@@ -105,18 +106,6 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
   // preset internal values
   setSrcPixelFormat(rgbPixelFormat(8, false));
-
-  // Set the order of the RGB formats in the combo box
-  orderRGBList << "RGB"
-               << "RBG"
-               << "GRB"
-               << "GBR"
-               << "BRG"
-               << "BGR";
-  bitDepthList << "8"
-               << "10"
-               << "12"
-               << "16";
 }
 
 videoHandlerRGB::~videoHandlerRGB()
@@ -145,10 +134,10 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
         rgbItem2->currentFrameRawData_frameIndex != frameIdx1)
       return QStringPairList();
 
-    int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
-    int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
+    auto width  = std::min(frameSize.width, rgbItem2->frameSize.width);
+    auto height = std::min(frameSize.height, rgbItem2->frameSize.height);
 
-    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
+    if (pixelPos.x() < 0 || pixelPos.x() >= int(width) || pixelPos.y() < 0 || pixelPos.y() >= int(height))
       return QStringPairList();
 
     rgba_t valueThis  = getPixelValue(pixelPos);
@@ -173,8 +162,8 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
   }
   else
   {
-    int width  = frameSize.width();
-    int height = frameSize.height();
+    int width  = frameSize.width;
+    int height = frameSize.height;
 
     if (currentFrameRawData_frameIndex != frameIdx)
       return QStringPairList();
@@ -209,7 +198,7 @@ bool videoHandlerRGB::setFormatFromString(QString format)
   if (!frameHandler::setFormatFromString(split[0] + ";" + split[1]))
     return false;
 
-  auto fmt = RGB_Internals::rgbPixelFormat(split[3]);
+  auto fmt = RGB_Internals::rgbPixelFormat(split[3].toStdString());
   if (!fmt.isValid())
     return false;
 
@@ -240,7 +229,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   ui.setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  ui.rgbFormatComboBox->addItems(rgbPresetList.getFormattedNames());
+  ui.rgbFormatComboBox->addItems(functions::toQStringList(rgbPresetList.getFormattedNames()));
   ui.rgbFormatComboBox->addItem("Custom...");
   ui.rgbFormatComboBox->setEnabled(!isSizeFixed);
   int idx = rgbPresetList.indexOf(srcPixelFormat);
@@ -249,7 +238,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
     // Custom pixel format (but a known pixel format). Add and select it.
     rgbPresetList.append(srcPixelFormat);
     int nrItems = ui.rgbFormatComboBox->count();
-    ui.rgbFormatComboBox->insertItem(nrItems - 1, srcPixelFormat.getName());
+    ui.rgbFormatComboBox->insertItem(nrItems - 1, QString::fromStdString(srcPixelFormat.getName()));
     idx = rgbPresetList.indexOf(srcPixelFormat);
     ui.rgbFormatComboBox->setCurrentIndex(idx);
   }
@@ -348,11 +337,13 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
 
     // The user selected the "custom format..." option
     videoHandlerRGBCustomFormatDialog dialog(
-        srcPixelFormat.getRGBFormatString(), srcPixelFormat.bitsPerValue, srcPixelFormat.planar);
+        QString::fromStdString(srcPixelFormat.getRGBFormatString()),
+        srcPixelFormat.bitsPerValue,
+        srcPixelFormat.planar);
     if (dialog.exec() == QDialog::Accepted)
     {
       // Set the custom format
-      srcPixelFormat.setRGBFormatFromString(dialog.getRGBFormat());
+      srcPixelFormat.setRGBFormatFromString(dialog.getRGBFormat().toStdString());
       srcPixelFormat.bitsPerValue = dialog.getBitDepth();
       srcPixelFormat.planar       = dialog.getPlanar();
     }
@@ -365,7 +356,8 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
       rgbPresetList.append(srcPixelFormat);
       int                  nrItems = ui.rgbFormatComboBox->count();
       const QSignalBlocker blocker(ui.rgbFormatComboBox);
-      ui.rgbFormatComboBox->insertItem(nrItems - 1, srcPixelFormat.getName());
+      ui.rgbFormatComboBox->insertItem(nrItems - 1,
+                                       QString::fromStdString(srcPixelFormat.getName()));
       idx = rgbPresetList.indexOf(srcPixelFormat);
     }
 
@@ -505,7 +497,7 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage)
 {
   DEBUG_RGB("videoHandlerRGB::convertRGBToImage");
-  QSize curFrameSize = frameSize;
+  auto curFrameSize = QSize(frameSize.width, frameSize.height);
 
   // Create the output image in the right format.
   // In both cases, we will set the alpha channel to 255. The format of the raw buffer is: BGRA
@@ -518,7 +510,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
     outputImage = QImage(curFrameSize, QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
-    QImage::Format f = functions::platformImageFormat();
+    auto f = functionsGui::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied)
       outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
     if (f == QImage::Format_ARGB32)
@@ -529,9 +521,9 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
 
   // Check the image buffer size before we write to it
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  assert(outputImage.byteCount() >= curFrameSize.width() * curFrameSize.height() * 4);
+  assert(functions::clipToUnsigned(outputImage.byteCount()) >= frameSize.width * frameSize.height * 4);
 #else
-  assert(outputImage.sizeInBytes() >= curFrameSize.width() * curFrameSize.height() * 4);
+  assert(functions::clipToUnsigned(outputImage.sizeInBytes()) >= frameSize.width * frameSize.height * 4);
 #endif
 
   convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits());
@@ -540,7 +532,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of
     // the RGBA formats.
-    QImage::Format f = functions::platformImageFormat();
+    auto f = functionsGui::platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
         f != QImage::Format_RGB32)
       outputImage = outputImage.convertToFormat(f);
@@ -602,13 +594,13 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
       // First get the pointer to the first value that we will need.
       unsigned short *src = (unsigned short *)sourceBuffer.data();
       if (srcPixelFormat.planar)
-        src += displayComponentOffset * frameSize.width() * frameSize.height();
+        src += displayComponentOffset * frameSize.width * frameSize.height;
       else
         src += displayComponentOffset;
 
       // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
       // src and write 3 values in dst.
-      for (int i = 0; i < frameSize.width() * frameSize.height(); i++)
+      for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
       {
         int val = (((int)src[0]) * scale) >> rightShift;
         val     = clip(val, 0, 255);
@@ -630,13 +622,13 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
       // First get the pointer to the first value that we will need.
       unsigned char *src = (unsigned char *)sourceBuffer.data();
       if (srcPixelFormat.planar)
-        src += displayComponentOffset * frameSize.width() * frameSize.height();
+        src += displayComponentOffset * frameSize.width * frameSize.height;
       else
         src += displayComponentOffset;
 
       // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
       // src and write 3 values in dst.
-      for (int i = 0; i < frameSize.width() * frameSize.height(); i++)
+      for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
       {
         int val = ((int)src[0]) * scale;
         val     = clip(val, 0, 255);
@@ -673,11 +665,11 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
       if (srcPixelFormat.planar)
       {
         srcR = (unsigned short *)sourceBuffer.data() +
-               (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+               (srcPixelFormat.posR * frameSize.width * frameSize.height);
         srcG = (unsigned short *)sourceBuffer.data() +
-               (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+               (srcPixelFormat.posG * frameSize.width * frameSize.height);
         srcB = (unsigned short *)sourceBuffer.data() +
-               (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+               (srcPixelFormat.posB * frameSize.width * frameSize.height);
       }
       else
       {
@@ -688,7 +680,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
 
       // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
       // the sources and write 3 values in dst.
-      for (int i = 0; i < frameSize.width() * frameSize.height(); i++)
+      for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
       {
         int valR = (((int)srcR[0]) * componentScale[0]) >> rightShift;
         valR     = clip(valR, 0, 255);
@@ -730,11 +722,11 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
       if (srcPixelFormat.planar)
       {
         srcR = (unsigned char *)sourceBuffer.data() +
-               (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+               (srcPixelFormat.posR * frameSize.width * frameSize.height);
         srcG = (unsigned char *)sourceBuffer.data() +
-               (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+               (srcPixelFormat.posG * frameSize.width * frameSize.height);
         srcB = (unsigned char *)sourceBuffer.data() +
-               (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+               (srcPixelFormat.posB * frameSize.width * frameSize.height);
       }
       else
       {
@@ -745,7 +737,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
 
       // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
       // the sources and write 3 values in dst.
-      for (int i = 0; i < frameSize.width() * frameSize.height(); i++)
+      for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
       {
         int valR = ((int)srcR[0]) * componentScale[0];
         valR     = clip(valR, 0, 255);
@@ -790,7 +782,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
 
 videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) const
 {
-  const unsigned int offsetCoordinate = frameSize.width() * pixelPos.y() + pixelPos.x();
+  const unsigned int offsetCoordinate = frameSize.width * pixelPos.y() + pixelPos.x();
 
   // How many values do we have to skip in src to get to the next input value?
   // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
@@ -807,14 +799,14 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
     if (srcPixelFormat.planar)
     {
       srcR = (unsigned short *)currentFrameRawData.data() +
-             (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+             (srcPixelFormat.posR * frameSize.width * frameSize.height);
       srcG = (unsigned short *)currentFrameRawData.data() +
-             (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+             (srcPixelFormat.posG * frameSize.width * frameSize.height);
       srcB = (unsigned short *)currentFrameRawData.data() +
-             (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+             (srcPixelFormat.posB * frameSize.width * frameSize.height);
       if (srcPixelFormat.hasAlphaChannel())
         srcA = (unsigned short *)currentFrameRawData.data() +
-               (srcPixelFormat.posA * frameSize.width() * frameSize.height());
+               (srcPixelFormat.posA * frameSize.width * frameSize.height);
     }
     else
     {
@@ -838,14 +830,14 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
     if (srcPixelFormat.planar)
     {
       srcR = (unsigned char *)currentFrameRawData.data() +
-             (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+             (srcPixelFormat.posR * frameSize.width * frameSize.height);
       srcG = (unsigned char *)currentFrameRawData.data() +
-             (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+             (srcPixelFormat.posG * frameSize.width * frameSize.height);
       srcB = (unsigned char *)currentFrameRawData.data() +
-             (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+             (srcPixelFormat.posB * frameSize.width * frameSize.height);
       if (srcPixelFormat.hasAlphaChannel())
         srcA = (unsigned char *)currentFrameRawData.data() +
-               (srcPixelFormat.posA * frameSize.width() * frameSize.height());
+               (srcPixelFormat.posA * frameSize.width * frameSize.height);
     }
     else
     {
@@ -870,12 +862,12 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
 }
 
 void videoHandlerRGB::setFormatFromSizeAndName(
-    const QSize size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo)
+    const Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo)
 {
   // Get the file extension
-  QString ext       = fileInfo.suffix().toLower();
-  QString subFormat = "rgb";
-  bool    testAlpha = true;
+  auto     ext       = fileInfo.suffix().toLower().toStdString();
+  std::string subFormat = "rgb";
+  bool        testAlpha = true;
   if (ext == "bgr" || ext == "gbr" || ext == "brg" || ext == "grb" || ext == "rbg")
   {
     subFormat = ext;
@@ -884,19 +876,18 @@ void videoHandlerRGB::setFormatFromSizeAndName(
   else
   {
     // Check if there is a format indicator in the file name
-    QString     f               = fileInfo.fileName().toLower();
-    QStringList rgbCombinations = QStringList() << "rgb"
-                                                << "rgb"
-                                                << "gbr"
-                                                << "grb"
-                                                << "brg"
-                                                << "bgr";
-    QStringList rgbaCombinations;
-    for (QString i : rgbCombinations)
-      rgbaCombinations << "a" + i << i + "a" << i;
-    for (QString i : rgbaCombinations)
+    auto f               = fileInfo.fileName().toLower().toStdString();
+    auto    rgbCombinations = std::vector<std::string>({"rgb", "rgb", "gbr", "grb", "brg", "bgr"});
+    std::vector<std::string> rgbaCombinations;
+    for (auto i : rgbCombinations)
     {
-      if (f.contains("_" + i) || f.contains(" " + i))
+      rgbaCombinations.push_back("a" + i);
+      rgbaCombinations.push_back(i + "a");
+      rgbaCombinations.push_back(i);
+    }
+    for (auto i : rgbaCombinations)
+    {
+      if (f.find("_" + i) != std::string::npos || f.find(" " + i) != std::string::npos)
       {
         subFormat = i;
         testAlpha = false;
@@ -906,13 +897,13 @@ void videoHandlerRGB::setFormatFromSizeAndName(
   }
 
   // If the bit depth could not be determined, check 8 and 10 bit
-  QList<int> testBitDepths;
+  std::vector<int> testBitDepths;
   if (bitDepth > 0)
-    testBitDepths << bitDepth;
+    testBitDepths.push_back(bitDepth);
   else
-    testBitDepths << 8 << 10;
+    testBitDepths = {8, 10};
 
-  for (int bitDepth : testBitDepths)
+  for (auto bitDepth : testBitDepths)
   {
     // If testAlpha is set, we will test with and without alpha channel
     unsigned int nrTests = testAlpha ? 2 : 1;
@@ -962,10 +953,10 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
 
   // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
   // item have to be labeled)
-  xMin = clip(xMin, 0, frameSize.width() - 1);
-  yMin = clip(yMin, 0, frameSize.height() - 1);
-  xMax = clip(xMax, 0, frameSize.width() - 1);
-  yMax = clip(yMax, 0, frameSize.height() - 1);
+  xMin = clip(xMin, 0, int(frameSize.width) - 1);
+  yMin = clip(yMin, 0, int(frameSize.height) - 1);
+  xMax = clip(xMax, 0, int(frameSize.width) - 1);
+  yMax = clip(yMax, 0, int(frameSize.height) - 1);
 
   // Get the other RGB item (if any)
   videoHandlerRGB *rgbItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerRGB *>(item2);
@@ -986,9 +977,9 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
     return;
 
   // The center point of the pixel (0,0).
-  QPoint centerPointZero = (QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor +
-                            QPoint(zoomFactor, zoomFactor)) /
-                           2;
+  QPoint centerPointZero =
+      (QPoint(-(int(frameSize.width)), -(int(frameSize.height))) * zoomFactor + QPoint(zoomFactor, zoomFactor)) /
+      2;
   // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
   pixelRect.setSize(QSize(zoomFactor, zoomFactor));
@@ -1086,8 +1077,8 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
                                              amplificationFactor,
                                              markDifference);
 
-  const int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
-  const int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
+  const int width  = std::min(frameSize.width, rgbItem2->frameSize.width);
+  const int height = std::min(frameSize.height, rgbItem2->frameSize.height);
 
   // Load the right raw RGB data (if not already loaded).
   // This will just update the raw RGB data. No conversion to image (RGB) is performed. This is
@@ -1105,19 +1096,20 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
   // In both cases, we will set the alpha channel to 255. The format of the raw buffer is: BGRA
   // (each 8 bit).
   QImage outputImage;
+  auto qFrameSize = QSize(frameSize.width, frameSize.height);
   if (is_Q_OS_WIN)
-    outputImage = QImage(frameSize, QImage::Format_ARGB32_Premultiplied);
+    outputImage = QImage(qFrameSize, QImage::Format_ARGB32_Premultiplied);
   else if (is_Q_OS_MAC)
-    outputImage = QImage(frameSize, QImage::Format_RGB32);
+    outputImage = QImage(qFrameSize, QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
-    QImage::Format f = functions::platformImageFormat();
+    auto f = functionsGui::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied)
-      outputImage = QImage(frameSize, QImage::Format_ARGB32_Premultiplied);
+      outputImage = QImage(qFrameSize, QImage::Format_ARGB32_Premultiplied);
     if (f == QImage::Format_ARGB32)
-      outputImage = QImage(frameSize, QImage::Format_ARGB32);
+      outputImage = QImage(qFrameSize, QImage::Format_ARGB32);
     else
-      outputImage = QImage(frameSize, QImage::Format_RGB32);
+      outputImage = QImage(qFrameSize, QImage::Format_RGB32);
   }
 
   // We directly write the difference values into the QImage buffer in the right format (ABGR).
@@ -1139,11 +1131,11 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
       if (srcPixelFormat.planar)
       {
         srcR0 = (unsigned short *)currentFrameRawData.data() +
-                (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+                (srcPixelFormat.posR * frameSize.width * frameSize.height);
         srcG0 = (unsigned short *)currentFrameRawData.data() +
-                (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+                (srcPixelFormat.posG * frameSize.width * frameSize.height);
         srcB0 = (unsigned short *)currentFrameRawData.data() +
-                (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+                (srcPixelFormat.posB * frameSize.width * frameSize.height);
       }
       else
       {
@@ -1157,14 +1149,14 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
       if (srcPixelFormat.planar)
       {
         srcR1 = (unsigned short *)rgbItem2->currentFrameRawData.data() +
-                (rgbItem2->srcPixelFormat.posR * rgbItem2->frameSize.width() *
-                 rgbItem2->frameSize.height());
+                (rgbItem2->srcPixelFormat.posR * rgbItem2->frameSize.width *
+                 rgbItem2->frameSize.height);
         srcG1 = (unsigned short *)rgbItem2->currentFrameRawData.data() +
-                (rgbItem2->srcPixelFormat.posG * rgbItem2->frameSize.width() *
-                 rgbItem2->frameSize.height());
+                (rgbItem2->srcPixelFormat.posG * rgbItem2->frameSize.width *
+                 rgbItem2->frameSize.height);
         srcB1 = (unsigned short *)rgbItem2->currentFrameRawData.data() +
-                (rgbItem2->srcPixelFormat.posB * rgbItem2->frameSize.width() *
-                 rgbItem2->frameSize.height());
+                (rgbItem2->srcPixelFormat.posB * rgbItem2->frameSize.width *
+                 rgbItem2->frameSize.height);
       }
       else
       {
@@ -1180,7 +1172,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
       {
         for (int x = 0; x < width; x++)
         {
-          unsigned int offsetCoordinate = frameSize.width() * y + x;
+          unsigned int offsetCoordinate = frameSize.width * y + x;
 
           unsigned int R0 = (unsigned int)(*(srcR0 + offsetToNextValue * offsetCoordinate));
           unsigned int G0 = (unsigned int)(*(srcG0 + offsetToNextValue * offsetCoordinate));
@@ -1224,11 +1216,11 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
       if (srcPixelFormat.planar)
       {
         srcR0 = (unsigned char *)currentFrameRawData.data() +
-                (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+                (srcPixelFormat.posR * frameSize.width * frameSize.height);
         srcG0 = (unsigned char *)currentFrameRawData.data() +
-                (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+                (srcPixelFormat.posG * frameSize.width * frameSize.height);
         srcB0 = (unsigned char *)currentFrameRawData.data() +
-                (srcPixelFormat.posB * frameSize.width() * frameSize.height());
+                (srcPixelFormat.posB * frameSize.width * frameSize.height);
       }
       else
       {
@@ -1242,14 +1234,14 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
       if (srcPixelFormat.planar)
       {
         srcR1 = (unsigned char *)rgbItem2->currentFrameRawData.data() +
-                (rgbItem2->srcPixelFormat.posR * rgbItem2->frameSize.width() *
-                 rgbItem2->frameSize.height());
+                (rgbItem2->srcPixelFormat.posR * rgbItem2->frameSize.width *
+                 rgbItem2->frameSize.height);
         srcG1 = (unsigned char *)rgbItem2->currentFrameRawData.data() +
-                (rgbItem2->srcPixelFormat.posG * rgbItem2->frameSize.width() *
-                 rgbItem2->frameSize.height());
+                (rgbItem2->srcPixelFormat.posG * rgbItem2->frameSize.width *
+                 rgbItem2->frameSize.height);
         srcB1 = (unsigned char *)rgbItem2->currentFrameRawData.data() +
-                (rgbItem2->srcPixelFormat.posB * rgbItem2->frameSize.width() *
-                 rgbItem2->frameSize.height());
+                (rgbItem2->srcPixelFormat.posB * rgbItem2->frameSize.width *
+                 rgbItem2->frameSize.height);
       }
       else
       {
@@ -1265,7 +1257,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
       {
         for (int x = 0; x < width; x++)
         {
-          unsigned int offsetCoordinate = frameSize.width() * y + x;
+          unsigned int offsetCoordinate = frameSize.width * y + x;
 
           unsigned int R0 = (unsigned int)(*(srcR0 + offsetToNextValue * offsetCoordinate));
           unsigned int G0 = (unsigned int)(*(srcG0 + offsetToNextValue * offsetCoordinate));
@@ -1324,7 +1316,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of
     // the RGBA formats.
-    QImage::Format f = functions::platformImageFormat();
+    auto f = functionsGui::platformImageFormat();
     if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
         f != QImage::Format_RGB32)
       return outputImage.convertToFormat(f);

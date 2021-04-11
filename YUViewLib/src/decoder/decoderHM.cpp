@@ -37,6 +37,7 @@
 #include <QSettings>
 #include <cstring>
 
+#include "common/functions.h"
 #include "common/typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
@@ -252,14 +253,15 @@ bool decoderHM::getNextFrameFromDecoder()
   }
 
   // Check the validity of the picture
-  QSize picSize = QSize(libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA),
-                        libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
+  auto picSize = Size(libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA),
+                      libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
   if (!picSize.isValid())
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid size");
   auto subsampling = convertFromInternalSubsampling(libHMDEC_get_chroma_format(currentHMPic));
   if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
-  int bitDepth = libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA);
+  auto bitDepth =
+      functions::clipToUnsigned(libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA));
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid bit depth");
 
@@ -267,16 +269,16 @@ bool decoderHM::getNextFrameFromDecoder()
   {
     // Set the values
     frameSize = picSize;
-    formatYUV = YUV_Internals::yuvPixelFormat(subsampling, bitDepth);
+    formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
   }
   else
   {
     // Check the values against the previously set values
     if (frameSize != picSize)
       return setErrorB("Received a frame of different size");
-    if (formatYUV.subsampling != subsampling)
+    if (formatYUV.getSubsampling() != subsampling)
       return setErrorB("Received a frame with different subsampling");
-    if (formatYUV.bitsPerSample != bitDepth)
+    if (formatYUV.getBitsPerSample() != bitDepth)
       return setErrorB("Received a frame with different bit depth");
   }
 

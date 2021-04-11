@@ -52,9 +52,9 @@ namespace parser
 QString AnnexB::getShortStreamDescription(int) const
 {
   QString info      = "Video";
-  QSize   frameSize = this->getSequenceSizeSamples();
+  auto   frameSize = this->getSequenceSizeSamples();
   if (frameSize.isValid())
-    info += QString(" (%1x%2)").arg(frameSize.width()).arg(frameSize.height());
+    info += QString(" (%1x%2)").arg(frameSize.width).arg(frameSize.height);
   return info;
 }
 

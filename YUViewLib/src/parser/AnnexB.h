@@ -95,8 +95,8 @@ public:
 
   // Get some format properties
   virtual double         getFramerate() const           = 0;
-  virtual QSize          getSequenceSizeSamples() const = 0;
-  virtual yuvPixelFormat getPixelFormat() const         = 0;
+  virtual Size           getSequenceSizeSamples() const = 0;
+  virtual YUVPixelFormat getPixelFormat() const         = 0;
 
   // When we want to seek to a specific frame number, this function return the parameter sets that
   // you need to start decoding (without start codes). If file positions were set for the NAL units,
@@ -165,7 +165,7 @@ private:
   // slice NAL units associated with a frame. POC's don't have to be consecutive, so the only way to
   // know how many pictures are in a sequences is to keep a list of all POCs.
   vector<AnnexBFrame> frameList;
-  bool frameListNeedsParsing{};
+  bool                frameListNeedsParsing{};
 };
 
 } // namespace parser

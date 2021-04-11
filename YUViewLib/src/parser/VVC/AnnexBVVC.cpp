@@ -70,21 +70,21 @@ double AnnexBVVC::getFramerate() const
   return DEFAULT_FRAMERATE;
 }
 
-QSize AnnexBVVC::getSequenceSizeSamples() const
+Size AnnexBVVC::getSequenceSizeSamples() const
 {
   for (const auto &nal : this->nalUnitsForSeeking)
   {
     if (nal->header.nal_unit_type == vvc::NalType::SPS_NUT)
     {
       auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
-      return QSize(sps->get_max_width_cropping(), sps->get_max_height_cropping());
+      return Size(sps->get_max_width_cropping(), sps->get_max_height_cropping());
     }
   }
 
-  return QSize(-1, -1);
+  return {};
 }
 
-yuvPixelFormat AnnexBVVC::getPixelFormat() const
+YUVPixelFormat AnnexBVVC::getPixelFormat() const
 {
   // Get the subsampling and bit-depth from the sps
   int  bitDepthY   = -1;
@@ -115,7 +115,7 @@ yuvPixelFormat AnnexBVVC::getPixelFormat() const
         // Different luma and chroma bit depths currently not supported
         return {};
       }
-      return yuvPixelFormat(subsampling, bitDepthY);
+      return YUVPixelFormat(subsampling, bitDepthY);
     }
   }
 

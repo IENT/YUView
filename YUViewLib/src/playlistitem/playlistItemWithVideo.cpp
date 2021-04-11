@@ -53,6 +53,16 @@ playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName)
   rawFormat = raw_Invalid;
 };
 
+QSize playlistItemWithVideo::getSize() const 
+{ 
+  if (this->video)
+  {
+    auto s = video->getFrameSize();
+    return QSize(s.width, s.height);
+  }
+  return {};
+}
+
 void playlistItemWithVideo::slotVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache)
 {
   this->updateStartEndRange();

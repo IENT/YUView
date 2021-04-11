@@ -41,6 +41,7 @@
 #include <QTextBrowser>
 
 #include "common/functions.h"
+#include "common/functionsGui.h"
 #include "mainwindow_performanceTestDialog.h"
 #include "playlistitem/playlistItems.h"
 #include "settingsDialog.h"
@@ -928,7 +929,7 @@ void MainWindow::performanceTest()
       info.append(QString("VERSION_CHECK %1\n").arg(VERSION_CHECK));
       info.append(QString("UPDATE_FEATURE_ENABLE %1\n").arg(UPDATE_FEATURE_ENABLE));
       info.append(QString("pixmapImageFormat %1\n")
-                      .arg(functions::pixelFormatToString(functions::pixmapImageFormat())));
+                      .arg(functionsGui::pixelFormatToString(functionsGui::pixmapImageFormat())));
       info.append(QString("getOptimalThreadCount %1\n").arg(functions::getOptimalThreadCount()));
       info.append(QString("systemMemorySizeInMB %1\n").arg(functions::systemMemorySizeInMB()));
 

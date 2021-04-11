@@ -64,8 +64,8 @@ void decoderBase::resetDecoder()
 {
   DEBUG_DECODERBASE("decoderBase::resetDecoder");
   decoderState = DecoderState::NeedsMoreData;
-  frameSize = QSize();
-  formatYUV = YUV_Internals::yuvPixelFormat();
+  frameSize = {};
+  formatYUV = YUV_Internals::YUVPixelFormat();
   rawFormat = raw_Invalid;
 }
 

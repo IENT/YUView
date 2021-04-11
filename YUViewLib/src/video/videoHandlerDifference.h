@@ -92,7 +92,7 @@ private:
 
   // Recursively scan the LCU
   bool hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg) const;
-  bool hierarchicalPositionYUV(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QByteArray &diffYUV, const YUV_Internals::yuvPixelFormat &diffYUVFormat) const;
+  bool hierarchicalPositionYUV(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QByteArray &diffYUV, const YUV_Internals::YUVPixelFormat &diffYUVFormat) const;
 
   SafeUi<Ui::videoHandlerDifference> ui;
 

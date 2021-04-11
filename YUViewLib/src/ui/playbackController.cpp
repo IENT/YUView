@@ -34,7 +34,7 @@
 
 #include <QSettings>
 
-#include "common/functions.h"
+#include "common/functionsGui.h"
 #include "common/typedef.h"
 #include "playlistitem/playlistItem.h"
 
@@ -411,12 +411,12 @@ void PlaybackController::updateSettings()
   waitForCachingOfItem = caching && wait;
 
   // Load the icons for the buttons
-  iconPlay      = functions::convertIcon(":img_play.png");
-  iconStop      = functions::convertIcon(":img_stop.png");
-  iconPause     = functions::convertIcon(":img_pause.png");
-  iconRepeatOff = functions::convertIcon(":img_repeat.png");
-  iconRepeatAll = functions::convertIcon(":img_repeat_on.png");
-  iconRepeatOne = functions::convertIcon(":img_repeat_one.png");
+  iconPlay      = functionsGui::convertIcon(":img_play.png");
+  iconStop      = functionsGui::convertIcon(":img_stop.png");
+  iconPause     = functionsGui::convertIcon(":img_pause.png");
+  iconRepeatOff = functionsGui::convertIcon(":img_repeat.png");
+  iconRepeatAll = functionsGui::convertIcon(":img_repeat_on.png");
+  iconRepeatOne = functionsGui::convertIcon(":img_repeat_one.png");
 
   // Set button icons
   if (playing())
@@ -442,7 +442,8 @@ void PlaybackController::updateFrameRange()
   {
     // The index range is that of the longer sequence
     indexRange range2 = currentItem[1]->properties().startEndRange;
-    range = indexRange(qMin(range1.first, range2.first), qMax(range1.second, range2.second));
+    range =
+        indexRange(std::min(range1.first, range2.first), std::max(range1.second, range2.second));
   }
   enableControls(true);
   frameSlider->setEnabled(range != indexRange(-1, -1)); // Disable slider if range == (-1,-1)

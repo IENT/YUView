@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -32,74 +32,14 @@
 
 #pragma once
 
-#include <map>
-#include <string>
-#include <vector>
+#include "YUVPixelFormat.h"
 
-namespace parser
+#include <QFileInfo>
+
+namespace YUV_Internals
 {
-
-template <typename T> class CodingEnum
-{
-public:
-  struct Entry
-  {
-    Entry(unsigned code, T value, std::string name, std::string meaning = "")
-        : code(code), value(value), name(name), meaning(meaning)
-    {
-    }
-    unsigned    code;
-    T           value;
-    std::string name;
-    std::string meaning;
-  };
-
-  using EntryVector = std::vector<Entry>;
-
-  CodingEnum() = default;
-  CodingEnum(const EntryVector &entryVector, const T unknown)
-      : entryVector(entryVector), unknown(unknown){};
-
-  T getValue(unsigned code) const
-  {
-    for (const auto &entry : this->entryVector)
-      if (entry.code == code)
-        return entry.value;
-    return this->unknown;
-  }
-
-  unsigned getCode(T value) const
-  {
-    for (const auto &entry : this->entryVector)
-      if (entry.value == value)
-        return entry.code;
-    return {};
-  }
-
-  std::map<int, std::string> getMeaningMap() const
-  {
-    std::map<int, std::string> m;
-    for (const auto &entry : this->entryVector)
-    {
-      if (entry.meaning.empty())
-        m[int(entry.code)] = entry.name;
-      else
-        m[int(entry.code)] = entry.meaning;
-    }
-    return m;
-  }
-
-  std::string getMeaning(T value) const
-  {
-    for (const auto &entry : this->entryVector)
-      if (entry.value == value)
-        return entry.meaning;
-    return {};
-  }
-
-private:
-  EntryVector entryVector;
-  T           unknown;
-};
-
-} // namespace parser
+// If you know the frame size of the video, the file size (and optionally the bit depth) we can
+// guess the remaining values. The rate value is set if a matching format could be found.
+YUVPixelFormat guessFormatFromSizeAndName(
+    const Size size, unsigned bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo);
+} // namespace YUV_Internals

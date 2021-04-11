@@ -64,7 +64,7 @@ public:
   // The signal signalHandlerChanged will be emitted if a redraw is required.
   void setInputVideo(frameHandler *childVideo);
 
-  void setScaledSize(QSize scaledSize);
+  void setScaledSize(Size scaledSize);
   void setInterpolation(Interpolation interpolation);
   void setCutAndSample(indexRange startEnd, int sampling);
 
@@ -77,7 +77,7 @@ private:
   // The input video we will resample
   QPointer<frameHandler> inputVideo;
 
-  QSize scaledSize {0, 0};
+  Size scaledSize {0, 0};
   Interpolation interpolation {Interpolation::Bilinear};
   indexRange cutRange {0, 0};
   int sampling {1};

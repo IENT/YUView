@@ -90,7 +90,7 @@ private:
 
   videoHandlerResample video;
 
-  QSize scaledSize {0, 0};
+  Size scaledSize {0, 0};
   int interpolationIndex {0};
   indexRange cutRange {0, 0};
   int sampling {1};

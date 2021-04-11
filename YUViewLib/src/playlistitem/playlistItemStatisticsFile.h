@@ -57,7 +57,7 @@ public:
 
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
 
-  virtual QSize getSize() const override { return this->statisticsData.getFrameSize(); }
+  virtual QSize getSize() const override;
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const override;

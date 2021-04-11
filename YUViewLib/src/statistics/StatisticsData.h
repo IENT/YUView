@@ -51,7 +51,7 @@ public:
   StatisticsData() = default;
 
   FrameTypeData       getFrameTypeData(int typeId);
-  QSize               getFrameSize() const { return this->frameSize; }
+  Size                getFrameSize() const { return this->frameSize; }
   int                 getFrameIndex() const { return this->frameIdx; }
   itemLoadingState    needsLoading(int frameIndex) const;
   std::vector<int>    getTypesThatNeedLoading(int frameIndex) const;
@@ -61,7 +61,7 @@ public:
   void                eraseDataForTypeID(int typeID) { this->frameCache.erase(typeID); }
 
   void clear();
-  void setFrameSize(QSize size) { this->frameSize = size; }
+  void setFrameSize(Size size) { this->frameSize = size; }
   void setFrameIndex(int frameIndex);
   void addStatType(const StatisticsType &type);
 
@@ -78,7 +78,7 @@ private:
   std::map<int, FrameTypeData> frameCache;
   int                          frameIdx{-1};
 
-  QSize frameSize;
+  Size frameSize;
 
   StatisticsTypesVec statsTypes;
 };

@@ -525,8 +525,7 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   auto colSpace = this->video_stream.getColorspace();
   auto w        = this->video_stream.getFrameWidth();
   auto h        = this->video_stream.getFrameHeight();
-  this->frameSize.setWidth(w);
-  this->frameSize.setHeight(h);
+  this->frameSize = Size(w, h);
 
   if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
     this->colorConversionType = ColorConversion::BT2020_LimitedRange;

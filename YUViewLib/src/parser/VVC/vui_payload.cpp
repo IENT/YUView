@@ -48,7 +48,7 @@ void vui_payload::parse(reader::SubByteReaderLogging &reader, unsigned payloadSi
     {
       reader.readBits("vui_reserved_payload_extension_data_byte", 8);
     }
-    reader.readBits("vui_reserved_payload_extension_data_byte", nrBits);
+    reader.readBits("vui_reserved_payload_extension_data_byte", int(nrBits));
 
     reader.readBits("vui_payload_bit_equal_to_one", 1, Options().withCheckEqualTo(1));
     while (!reader.byte_aligned())

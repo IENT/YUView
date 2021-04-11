@@ -42,7 +42,7 @@
 
 #include "statistics/StatisticsData.h"
 #include "statistics/StatisticsType.h"
-#include "common/functions.h"
+#include "common/functionsGui.h"
 
 namespace stats
 {
@@ -113,7 +113,7 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
 
     // Append the change style buttons
     QPushButton *pushButton = new QPushButton(
-        functions::convertIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
+        functionsGui::convertIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
     ui.gridLayout->addWidget(pushButton, int(row + 2), 2);
     connect(pushButton, &QPushButton::released, this, [=] { onStyleButtonClicked(row); });
     itemStyleButtons[0].append(pushButton);
@@ -178,7 +178,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
 
       // Append the change style buttons
       QPushButton *pushButton = new QPushButton(
-          functions::convertIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
+          functionsGui::convertIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
       ui2.gridLayout->addWidget(pushButton, int(row + 2), 2);
       connect(pushButton, &QPushButton::released, this, [=] { onStyleButtonClicked(row); });
       itemStyleButtons[1].append(pushButton);
@@ -302,9 +302,9 @@ void StatisticUIHandler::updateSettings()
 {
   for (unsigned row = 0; row < unsigned(itemStyleButtons[0].length()); ++row)
   {
-    itemStyleButtons[0][row]->setIcon(functions::convertIcon(":img_edit.png"));
+    itemStyleButtons[0][row]->setIcon(functionsGui::convertIcon(":img_edit.png"));
     if (secondaryControlsWidget)
-      itemStyleButtons[1][row]->setIcon(functions::convertIcon(":img_edit.png"));
+      itemStyleButtons[1][row]->setIcon(functionsGui::convertIcon(":img_edit.png"));
   }
 }
 

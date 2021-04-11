@@ -69,7 +69,7 @@ public:
   virtual int64_t getBytesPerFrame() const { return -1; }
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
-  virtual void setFrameSize(const QSize &size) override;
+  virtual void setFrameSize(Size size) override;
 
   // Same as the calculateDifference in frameHandler. For a video we have to make sure that the
   // right frame is loaded first.
@@ -92,7 +92,7 @@ public:
   // the format from that. You can override this for a specific raw format. The default
   // implementation does nothing.
   virtual void setFormatFromSizeAndName(
-      const QSize size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo);
+      const Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo);
 
   // The input frame buffer. After the signal signalRequestFrame(int) is emitted, the corresponding
   // frame should be in here and requestedFrame_idx should be set.
@@ -130,7 +130,7 @@ public:
 
   // A buffer with the raw RGB data (this is filled if signalRequestRawData() is emitted)
   QByteArray rawData;
-  int        rawData_frameIndex;
+  int        rawData_frameIndex{-1};
 
   // Scale a value with limited mpeg range (16 ... 245) to the full range (0 ... 255) for output.
   static int convScaleLimitedRange(int value);
@@ -162,7 +162,7 @@ protected:
   // --- Drawing: The current frame is kept in the frameHandler::currentImage. But if
   // currentImageIndex is not identical to the requested frame in the draw event, we will have to
   // update currentImage.
-  int currentImageIndex;
+  int currentImageIndex{-1};
 
   // As the frameHandler implementations, we get the pixel values from currentImage. For a video,
   // however, we have to first check if currentImage contains the correct frame.
@@ -178,20 +178,20 @@ protected:
   QMutex requestDataMutex;
 
   // We might need to update the currentImage
-  int currentImage_frameIndex;
+  int currentImage_frameIndex{-1};
 
   // Don't let the background loading thread set the image while we are drawing it.
   QMutex currentImageSetMutex;
 
   // Double buffering
   QImage doubleBufferImage;
-  int    doubleBufferImageFrameIndex;
+  int    doubleBufferImageFrameIndex{-1};
 
   // The buffer of the raw data (RGB or YUV) of the current frame (and its frame index)
   // Before using the currentFrameRawData, you have to check if the currentFrameRawData_frameIndex
   // is correct. If not, you have to call loadFrame() to load the frame and set it correctly.
   QByteArray currentFrameRawData;
-  int        currentFrameRawData_frameIndex;
+  int        currentFrameRawData_frameIndex{-1};
 
   // Set the cache to be invalid until a call to removefromCache(-1) clears it.
   void setCacheInvalid() { cacheValid = false; }
@@ -206,7 +206,7 @@ protected:
   // video cache will stop, clear the cache of this item and recache everything. Until then,
   // however, the items that are in the cache (or are being put into the cache by the still running
   // threads) are invalid.
-  bool cacheValid;
+  bool cacheValid{true};
 
 private slots:
   // Override the slotVideoControlChanged slot. For a videoHandler, also the number of frames might

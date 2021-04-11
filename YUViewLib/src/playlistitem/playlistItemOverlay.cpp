@@ -39,7 +39,7 @@
 #include <cmath>
 #include <limits>
 
-#include "common/functions.h"
+#include "common/functionsGui.h"
 
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG
@@ -53,7 +53,7 @@
 
 playlistItemOverlay::playlistItemOverlay() : playlistItemContainer("Overlay Item")
 {
-  setIcon(0, functions::convertIcon(":img_overlay.png"));
+  setIcon(0, functionsGui::convertIcon(":img_overlay.png"));
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 

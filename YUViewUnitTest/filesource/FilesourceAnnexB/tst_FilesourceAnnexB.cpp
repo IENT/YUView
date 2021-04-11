@@ -32,29 +32,29 @@ void FileSourceAnnexBTest::testNalUnitParsing_data()
   QTest::addColumn<unsigned>("totalDataLength");
   QTest::addColumn<QList<unsigned>>("startCodePositions");
 
-  QTest::newRow("testNormalPosition1") << unsigned(3) << unsigned(10000) << QList<unsigned>({80, 208, 500});
-  QTest::newRow("testNormalPosition2") << unsigned(3) << unsigned(10000) << QList<unsigned>({0, 80, 208, 500});
-  QTest::newRow("testNormalPosition3") << unsigned(3) << unsigned(10000) << QList<unsigned>({1, 80, 208, 500});
-  QTest::newRow("testNormalPosition4") << unsigned(3) << unsigned(10000) << QList<unsigned>({2, 80, 208, 500});
-  QTest::newRow("testNormalPosition5") << unsigned(3) << unsigned(10000) << QList<unsigned>({3, 80, 208, 500});
-  QTest::newRow("testNormalPosition6") << unsigned(3) << unsigned(10000) << QList<unsigned>({4, 80, 208, 500});
-  QTest::newRow("testNormalPosition7") << unsigned(3) << unsigned(10000) << QList<unsigned>({4, 80, 208, 9990});
-  QTest::newRow("testNormalPosition8") << unsigned(3) << unsigned(10000) << QList<unsigned>({4, 80, 208, 9997});
+  QTest::newRow("testNormalPosition1") << 3u << 10000u << QList<unsigned>({80, 208, 500});
+  QTest::newRow("testNormalPosition2") << 3u << 10000u << QList<unsigned>({0, 80, 208, 500});
+  QTest::newRow("testNormalPosition3") << 3u << 10000u << QList<unsigned>({1, 80, 208, 500});
+  QTest::newRow("testNormalPosition4") << 3u << 10000u << QList<unsigned>({2, 80, 208, 500});
+  QTest::newRow("testNormalPosition5") << 3u << 10000u << QList<unsigned>({3, 80, 208, 500});
+  QTest::newRow("testNormalPosition6") << 3u << 10000u << QList<unsigned>({4, 80, 208, 500});
+  QTest::newRow("testNormalPosition7") << 3u << 10000u << QList<unsigned>({4, 80, 208, 9990});
+  QTest::newRow("testNormalPosition8") << 3u << 10000u << QList<unsigned>({4, 80, 208, 9997});
 
   // Test cases where a buffer reload is needed (the buffer is 500k)
   QTest::newRow("testBufferReload") << unsigned(3) << unsigned(1000000) << QList<unsigned>({80, 208, 500, 50000, 800000});
 
   // The buffer is 500k in size. Test all variations with a start code around this position
-  QTest::newRow("testBufferEdge1") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 499997});
-  QTest::newRow("testBufferEdge2") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 499998});
-  QTest::newRow("testBufferEdge3") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 499999});
-  QTest::newRow("testBufferEdge4") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 500000});
-  QTest::newRow("testBufferEdge5") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 500001});
-  QTest::newRow("testBufferEdge6") << unsigned(3) << unsigned(800000) << QList<unsigned>({80, 208, 500, 50000, 500002});
+  QTest::newRow("testBufferEdge1") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 499997});
+  QTest::newRow("testBufferEdge2") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 499998});
+  QTest::newRow("testBufferEdge3") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 499999});
+  QTest::newRow("testBufferEdge4") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 500000});
+  QTest::newRow("testBufferEdge5") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 500001});
+  QTest::newRow("testBufferEdge6") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 500002});
 
-  QTest::newRow("testBufferEnd1") << unsigned(3) << unsigned(10000) << QList<unsigned>({80, 208, 500, 9995});
-  QTest::newRow("testBufferEnd2") << unsigned(3) << unsigned(10000) << QList<unsigned>({80, 208, 500, 9996});
-  QTest::newRow("testBufferEnd3") << unsigned(3) << unsigned(10000) << QList<unsigned>({80, 208, 500, 9997});
+  QTest::newRow("testBufferEnd1") << 3u << 10000u << QList<unsigned>({80, 208, 500, 9995});
+  QTest::newRow("testBufferEnd2") << 3u << 10000u << QList<unsigned>({80, 208, 500, 9996});
+  QTest::newRow("testBufferEnd3") << 3u << 10000u << QList<unsigned>({80, 208, 500, 9997});
 }
 
 void FileSourceAnnexBTest::testNalUnitParsing()

@@ -63,9 +63,9 @@ public:
 
   // Get properties of the bitstream
   double                        getFramerate() const { return frameRate; }
-  QSize                         getSequenceSizeSamples() const { return frameSize; }
+  Size                          getSequenceSizeSamples() const { return frameSize; }
   YUView::RawFormat             getRawFormat() const { return rawFormat; }
-  YUV_Internals::yuvPixelFormat getPixelFormatYUV() const { return pixelFormat_yuv; }
+  YUV_Internals::YUVPixelFormat getPixelFormatYUV() const { return pixelFormat_yuv; }
   RGB_Internals::rgbPixelFormat getPixelFormatRGB() const { return pixelFormat_rgb; }
 
   /* Get data from the file source. You can either retrive full AVPackets or single units
@@ -107,8 +107,8 @@ public:
   AVCodecParametersWrapper getVideoCodecPar() { return video_stream.getCodecpar(); }
 
   // Get more general information about the streams
-  unsigned int           getNumberOfStreams() { return this->formatCtx ? this->formatCtx.getNbStreams() : 0; }
-  int                    getVideoStreamIndex() { return video_stream.getIndex(); }
+  unsigned int getNumberOfStreams() { return this->formatCtx ? this->formatCtx.getNbStreams() : 0; }
+  int          getVideoStreamIndex() { return video_stream.getIndex(); }
   QList<QStringPairList> getFileInfoForAllStreams();
   QList<AVRational>      getTimeBaseAllStreams();
   QList<QString>         getShortStreamDescriptionAllStreams();
@@ -136,7 +136,7 @@ protected:
   AVRational      timeBase{0, 0};
   AVStreamWrapper video_stream;
   double          frameRate{-1};
-  QSize           frameSize;
+  Size            frameSize;
 
   struct streamIndices_t
   {
@@ -154,7 +154,7 @@ protected:
   streamIndices_t streamIndices;
 
   YUView::RawFormat              rawFormat{YUView::raw_Invalid};
-  YUV_Internals::yuvPixelFormat  pixelFormat_yuv;
+  YUV_Internals::YUVPixelFormat  pixelFormat_yuv;
   RGB_Internals::rgbPixelFormat  pixelFormat_rgb;
   YUV_Internals::ColorConversion colorConversionType{
       YUV_Internals::ColorConversion::BT709_LimitedRange};

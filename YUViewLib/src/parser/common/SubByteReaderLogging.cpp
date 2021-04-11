@@ -187,7 +187,7 @@ void SubByteReaderLogging::removeLogSubLevel()
 }
 
 uint64_t
-SubByteReaderLogging::readBits(const std::string &symbolName, int numBits, const Options &options)
+SubByteReaderLogging::readBits(const std::string &symbolName, size_t numBits, const Options &options)
 {
   try
   {

@@ -88,21 +88,21 @@ double AnnexBHEVC::getFramerate() const
   return DEFAULT_FRAMERATE;
 }
 
-QSize AnnexBHEVC::getSequenceSizeSamples() const
+Size AnnexBHEVC::getSequenceSizeSamples() const
 {
   for (const auto &nal : this->nalUnitsForSeeking)
   {
     if (nal->header.nal_unit_type == NalType::SPS_NUT)
     {
       auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
-      return QSize(sps->get_conformance_cropping_width(), sps->get_conformance_cropping_height());
+      return Size(sps->get_conformance_cropping_width(), sps->get_conformance_cropping_height());
     }
   }
 
-  return QSize(-1, -1);
+  return {};
 }
 
-yuvPixelFormat AnnexBHEVC::getPixelFormat() const
+YUVPixelFormat AnnexBHEVC::getPixelFormat() const
 {
   // Get the subsampling and bit-depth from the sps
   int  bitDepthY   = -1;
@@ -131,13 +131,13 @@ yuvPixelFormat AnnexBHEVC::getPixelFormat() const
       if (bitDepthY != bitDepthC)
       {
         // Different luma and chroma bit depths currently not supported
-        return yuvPixelFormat();
+        return YUVPixelFormat();
       }
-      return yuvPixelFormat(subsampling, bitDepthY);
+      return YUVPixelFormat(subsampling, bitDepthY);
     }
   }
 
-  return yuvPixelFormat();
+  return YUVPixelFormat();
 }
 
 std::optional<AnnexB::SeekData> AnnexBHEVC::getSeekData(int iFrameNr)

@@ -32,7 +32,7 @@
 
 #include "ShowColorFrame.h"
 
-#include "common/functions.h"
+#include "common/functionsGui.h"
 
 #include <QPainter>
 
@@ -111,7 +111,7 @@ void ShowColorWidget::paintEvent(QPaintEvent *event)
 
       auto c = colMapper.getColor(xRange);
       if (isEnabled())
-        painter.setPen(functions::convertToQColor(c));
+        painter.setPen(functionsGui::toQColor(c));
       else
       {
         auto gray = 64 + c.gray() / 2;
