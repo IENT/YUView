@@ -446,10 +446,9 @@ std::string YUVPixelFormat::getName() const
 {
   if (!this->isValid())
     return "Invalid";
-  if (this->predefinedPixelFormat.has_value())
+  if (this->predefinedPixelFormat)
   {
-    auto format = this->predefinedPixelFormat.value();
-    if (format == PredefinedPixelFormat::V210)
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return "V210";
     return "Invalid";
   }
@@ -491,10 +490,9 @@ std::string YUVPixelFormat::getName() const
 
 unsigned YUVPixelFormat::getNrPlanes() const
 {
-  if (this->predefinedPixelFormat.has_value())
+  if (this->predefinedPixelFormat)
   {
-    auto format = this->predefinedPixelFormat.value();
-    if (format == PredefinedPixelFormat::V210)
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return 3;
     return 0;
   }
@@ -509,10 +507,9 @@ unsigned YUVPixelFormat::getNrPlanes() const
 
 Subsampling YUVPixelFormat::getSubsampling() const
 {
-  if (this->predefinedPixelFormat.has_value())
+  if (this->predefinedPixelFormat)
   {
-    auto format = this->predefinedPixelFormat.value();
-    if (format == PredefinedPixelFormat::V210)
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return Subsampling::YUV_422;
     return Subsampling::UNKNOWN;
   }
@@ -561,10 +558,9 @@ bool YUVPixelFormat::isChromaSubsampled() const
 
 unsigned YUVPixelFormat::getBitsPerSample() const
 {
-  if (this->predefinedPixelFormat.has_value())
+  if (this->predefinedPixelFormat)
   {
-    auto format = this->predefinedPixelFormat.value();
-    if (format == PredefinedPixelFormat::V210)
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return 10;
     return 0;
   }
@@ -574,10 +570,9 @@ unsigned YUVPixelFormat::getBitsPerSample() const
 
 bool YUVPixelFormat::isBigEndian() const
 {
-  if (this->predefinedPixelFormat.has_value())
+  if (this->predefinedPixelFormat)
   {
-    auto format = this->predefinedPixelFormat.value();
-    if (format == PredefinedPixelFormat::V210)
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return false;
     return false;
   }
@@ -587,10 +582,9 @@ bool YUVPixelFormat::isBigEndian() const
 
 bool YUVPixelFormat::isPlanar() const
 {
-  if (this->predefinedPixelFormat.has_value())
+  if (this->predefinedPixelFormat)
   {
-    auto format = this->predefinedPixelFormat.value();
-    if (format == PredefinedPixelFormat::V210)
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return false;
     return false;
   }
@@ -600,10 +594,9 @@ bool YUVPixelFormat::isPlanar() const
 
 Offset YUVPixelFormat::getChromaOffset() const
 {
-  if (this->predefinedPixelFormat.has_value())
+  if (this->predefinedPixelFormat)
   {
-    auto format = this->predefinedPixelFormat.value();
-    if (format == PredefinedPixelFormat::V210)
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return Offset({0, 0});
     return Offset({0, 0});
   }
@@ -613,10 +606,9 @@ Offset YUVPixelFormat::getChromaOffset() const
 
 bool YUVPixelFormat::isBytePacking() const
 {
-  if (this->predefinedPixelFormat.has_value())
+  if (this->predefinedPixelFormat)
   {
-    auto format = this->predefinedPixelFormat.value();
-    if (format == PredefinedPixelFormat::V210)
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return true;
     return false;
   }
