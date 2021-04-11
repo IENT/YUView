@@ -354,10 +354,9 @@ bool YUVPixelFormat::canConvertToRGB(Size imageSize, std::string *whyNot) const
 
 int64_t YUVPixelFormat::bytesPerFrame(const Size &frameSize) const
 {
-  if (this->predefinedPixelFormat.has_value())
+  if (this->predefinedPixelFormat)
   {
-    auto format = this->predefinedPixelFormat.value();
-    if (format == PredefinedPixelFormat::V210)
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
     {
       // 422 10 bit with 6 Y values per 16 bytes. Width is rounded up to a multiple of 48.
       // Although there is a weird expception to this in the standard.
