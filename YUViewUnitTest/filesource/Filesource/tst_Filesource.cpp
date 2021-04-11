@@ -84,7 +84,7 @@ void FileSourceTest::testFormatFromFilename_data()
   QTest::newRow("testBitDepthIndicator1") << "something_1920x1080_8Bit.yuv" << 1920u << 1080u << -1 << 8u << false;
   QTest::newRow("testBitDepthIndicator2") << "something_1920x1080_10Bit.yuv" << 1920u << 1080u << -1 << 10u << false;
   QTest::newRow("testBitDepthIndicator3") << "something_1920x1080_12Bit.yuv" << 1920u << 1080u << -1 << 12u << false;
-  QTest::newRow("testBitDepthIndicator4") << "something_1920x1080_16Bit.yuv" << 1920u << 1080u << -1 << 16 << false;
+  QTest::newRow("testBitDepthIndicator4") << "something_1920x1080_16Bit.yuv" << 1920u << 1080u << -1 << 16u << false;
   QTest::newRow("testBitDepthIndicator5") << "something_1920x1080_8bit.yuv" << 1920u << 1080u << -1 << 8u << false;
   QTest::newRow("testBitDepthIndicator6") << "something_1920x1080_8BIT.yuv" << 1920u << 1080u << -1 << 8u << false;
   QTest::newRow("testBitDepthIndicator7") << "something_1920x1080_8-Bit.yuv" << 1920u << 1080u << -1 << 8u << false;
