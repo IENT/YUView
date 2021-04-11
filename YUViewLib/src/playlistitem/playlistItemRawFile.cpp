@@ -167,7 +167,7 @@ void playlistItemRawFile::updateStartEndRange()
     nrFrames = this->dataSource.getFileSize() / bpf;
   }
   
-  this->prop.startEndRange = indexRange(0, nrFrames - 1);
+  this->prop.startEndRange = indexRange(0, std::max(nrFrames - 1, 0));
 }
 
 infoData playlistItemRawFile::getInfo() const

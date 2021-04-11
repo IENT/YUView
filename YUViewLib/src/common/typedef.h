@@ -317,7 +317,7 @@ struct Size
   {
     if (w > 0)
       this->width = unsigned(w);
-    if (h < 0)
+    if (h > 0)
       this->height = unsigned(h);
   }
   Size() = default;

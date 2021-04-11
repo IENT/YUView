@@ -37,6 +37,11 @@
 
 #include "ui_videoHandlerYUV.h"
 
+struct yuv_t
+{
+  unsigned int Y, U, V;
+};
+
 /** The videoHandlerYUV can be used in any playlistItem to read/display YUV data. A playlistItem
  * could even provide multiple YUV videos. A videoHandlerYUV supports handling of YUV data and can
  * return a specific frame as a image by calling getOneFrame. All conversions from the various YUV
@@ -191,10 +196,6 @@ protected:
   // The currently selected YUV format
   YUV_Internals::YUVPixelFormat srcPixelFormat;
 
-  struct yuv_t
-  {
-    unsigned int Y, U, V;
-  };
   virtual yuv_t getPixelValue(const QPoint &pixelPos) const;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawYUVData and
@@ -240,10 +241,6 @@ private:
                           const YUV_Internals::YUVPixelFormat format);
 #endif
 
-  bool convertYUVPackedToPlanar(const QByteArray &             sourceBuffer,
-                                QByteArray &                   targetBuffer,
-                                const Size                     frameSize,
-                                YUV_Internals::YUVPixelFormat &sourceBufferFormat);
   bool convertYUVPlanarToRGB(const QByteArray &                   sourceBuffer,
                              unsigned char *                      targetBuffer,
                              const Size                           frameSize,

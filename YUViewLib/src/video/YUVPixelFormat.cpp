@@ -236,6 +236,11 @@ YUVPixelFormat::YUVPixelFormat(PredefinedPixelFormat predefinedPixelFormat)
 {
 }
 
+std::optional<PredefinedPixelFormat> YUVPixelFormat::getPredefinedFormat() const
+{
+  return this->predefinedPixelFormat;
+}
+
 bool YUVPixelFormat::isValid() const
 {
   if (this->predefinedPixelFormat.has_value())
@@ -354,8 +359,10 @@ int64_t YUVPixelFormat::bytesPerFrame(const Size &frameSize) const
     auto format = this->predefinedPixelFormat.value();
     if (format == PredefinedPixelFormat::V210)
     {
-      // 422 10 bit with 4 Y values per 16 bytes
-      return frameSize.height * frameSize.width * 4;
+      // 422 10 bit with 6 Y values per 16 bytes. Width is rounded up to a multiple of 48.
+      // Although there is a weird expception to this in the standard.
+      auto roundedUpWidth = (((frameSize.width + 48 - 1) / 48) * 48);
+      return frameSize.height * roundedUpWidth * 16 / 6;
     }
     return -1;
   }

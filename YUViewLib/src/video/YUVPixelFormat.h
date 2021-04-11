@@ -193,6 +193,8 @@ public:
                  Offset       chromaOffset = {});
   YUVPixelFormat(PredefinedPixelFormat predefinedPixelFormat);
 
+  std::optional<PredefinedPixelFormat> getPredefinedFormat() const;
+
   bool        isValid() const;
   bool        canConvertToRGB(Size frameSize, std::string *whyNot = nullptr) const;
   int64_t     bytesPerFrame(const Size &frameSize) const;

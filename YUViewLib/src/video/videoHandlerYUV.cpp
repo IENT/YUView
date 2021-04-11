@@ -74,6 +74,9 @@ using namespace YUV_Internals;
 #endif
 #endif
 
+namespace
+{
+
 // Compute the MSE between the given char sources for numPixels bytes
 template <typename T> double computeMSE(T ptr, T ptr2, int numPixels)
 {
@@ -89,6 +92,271 @@ template <typename T> double computeMSE(T ptr, T ptr2, int numPixels)
 
   return (double)sad / numPixels;
 }
+
+std::pair<bool, YUVPixelFormat> convertYUVPackedToPlanar(const QByteArray &    sourceBuffer,
+                                                         QByteArray &          targetBuffer,
+                                                         const Size            curFrameSize,
+                                                         const YUVPixelFormat &format)
+{
+  const auto packing = format.getPackingOrder();
+
+  // Make sure that the target buffer is big enough. It should be as big as the input buffer.
+  if (targetBuffer.size() != sourceBuffer.size())
+    targetBuffer.resize(sourceBuffer.size());
+
+  const auto w = curFrameSize.width;
+  const auto h = curFrameSize.height;
+
+  // Bytes per sample
+  const int bps = (format.getBitsPerSample() > 8) ? 2 : 1;
+
+  if (format.getSubsampling() == Subsampling::YUV_422)
+  {
+    // The data is arranged in blocks of 4 samples. How many of these are there?
+    const int nr4Samples = w * h / 2;
+
+    // What are the offsets withing the 4 samples for the components?
+    const int oY = (packing == PackingOrder::YUYV || packing == PackingOrder::YVYU) ? 0 : 1;
+    const int oU = (packing == PackingOrder::UYVY)   ? 0
+                   : (packing == PackingOrder::YUYV) ? 1
+                   : (packing == PackingOrder::VYUY) ? 2
+                                                     : 3;
+    const int oV = (packing == PackingOrder::VYUY)   ? 0
+                   : (packing == PackingOrder::YVYU) ? 1
+                   : (packing == PackingOrder::UYVY) ? 2
+                                                     : 3;
+
+    if (bps == 1)
+    {
+      // One byte per sample.
+      const unsigned char *restrict src  = (unsigned char *)sourceBuffer.data();
+      unsigned char *restrict       dstY = (unsigned char *)targetBuffer.data();
+      unsigned char *restrict       dstU = dstY + w * h;
+      unsigned char *restrict       dstV = dstU + w / 2 * h;
+
+      for (int i = 0; i < nr4Samples; i++)
+      {
+        *dstY++ = src[oY];
+        *dstY++ = src[oY + 2];
+        *dstU++ = src[oU];
+        *dstV++ = src[oV];
+        src += 4; // Goto the next 4 samples
+      }
+    }
+    else
+    {
+      // Two bytes per sample.
+      const unsigned short *restrict src  = (unsigned short *)sourceBuffer.data();
+      unsigned short *restrict       dstY = (unsigned short *)targetBuffer.data();
+      unsigned short *restrict       dstU = dstY + w * h;
+      unsigned short *restrict       dstV = dstU + w / 2 * h;
+
+      for (int i = 0; i < nr4Samples; i++)
+      {
+        *dstY++ = src[oY];
+        *dstY++ = src[oY + 2];
+        *dstU++ = src[oU];
+        *dstV++ = src[oV];
+        src += 4; // Goto the next 4 samples
+      }
+    }
+  }
+  else if (format.getSubsampling() == Subsampling::YUV_444)
+  {
+    // What are the offsets withing the 3 or 4 bytes per sample?
+    const int oY = (packing == PackingOrder::AYUV) ? 1 : (packing == PackingOrder::VUYA) ? 2 : 0;
+    const int oU = (packing == PackingOrder::YUV || packing == PackingOrder::YUVA ||
+                    packing == PackingOrder::VUYA)
+                       ? 1
+                       : 2;
+    const int oV = (packing == PackingOrder::YVU)    ? 1
+                   : (packing == PackingOrder::AYUV) ? 3
+                   : (packing == PackingOrder::VUYA) ? 0
+                                                     : 2;
+
+    // How many samples to the next sample?
+    const int offsetNext = (packing == PackingOrder::YUV || packing == PackingOrder::YVU ? 3 : 4);
+
+    if (bps == 1)
+    {
+      // One byte per sample.
+      const unsigned char *restrict src  = (unsigned char *)sourceBuffer.data();
+      unsigned char *restrict       dstY = (unsigned char *)targetBuffer.data();
+      unsigned char *restrict       dstU = dstY + w * h;
+      unsigned char *restrict       dstV = dstU + w * h;
+
+      for (unsigned i = 0; i < w * h; i++)
+      {
+        *dstY++ = src[oY];
+        *dstU++ = src[oU];
+        *dstV++ = src[oV];
+        src += offsetNext; // Goto the next sample
+      }
+    }
+    else
+    {
+      // Two bytes per sample.
+      const unsigned short *restrict src  = (unsigned short *)sourceBuffer.data();
+      unsigned short *restrict       dstY = (unsigned short *)targetBuffer.data();
+      unsigned short *restrict       dstU = dstY + w * h;
+      unsigned short *restrict       dstV = dstU + w * h;
+
+      for (unsigned i = 0; i < w * h; i++)
+      {
+        *dstY++ = src[oY];
+        *dstU++ = src[oU];
+        *dstV++ = src[oV];
+        src += offsetNext; // Goto the next sample
+      }
+    }
+  }
+  else
+    return {};
+
+  // The output buffer is planar with the same subsampling as before
+  auto newFormat = YUVPixelFormat(format.getSubsampling(),
+                                  format.getBitsPerSample(),
+                                  PlaneOrder::YUV,
+                                  format.isBigEndian(),
+                                  format.getChromaOffset(),
+                                  format.isUVInterleaved());
+
+  return {true, newFormat};
+}
+
+std::pair<bool, YUVPixelFormat> convertV210PackedToPlanar(const QByteArray &sourceBuffer,
+                                                          QByteArray &      targetBuffer,
+                                                          const Size        curFrameSize)
+{
+  // There are 6 pixels values per 16 bytes in the input.
+  // 6 Values (6 Y, 3 U/V) are packed like this (highest to lowest bit, each value is 10 bit):
+  // Byte 0-3:   (2 zero bytes), Cr0, Y0, Cb0
+  // Byte 4-7:   (2 zero bytes), Y2, Cb1, Y1
+  // Byte 8-11:  (2 zero bytes), Cb2, Y3, Cr1
+  // Byte 12-15: (2 zero bytes), Y5, Cr2, Y4
+
+  // The output format is 422 10 bit planar
+  auto       newFormat        = YUVPixelFormat(Subsampling::YUV_422, 10, PlaneOrder::YUV);
+  const auto bytesPerOutFrame = newFormat.bytesPerFrame(curFrameSize);
+  if (targetBuffer.size() < bytesPerOutFrame)
+    targetBuffer.resize(bytesPerOutFrame);
+
+  const auto w = curFrameSize.width;
+  const auto h = curFrameSize.height;
+
+  auto widthRoundUp = (((w + 48 - 1) / 48) * 48);
+  auto strideIn     = widthRoundUp / 6 * 16;
+
+  const unsigned char *restrict src  = (unsigned char *)sourceBuffer.data();
+  unsigned short *restrict      dstY = (unsigned short *)targetBuffer.data();
+  unsigned short *restrict      dstU = dstY + w * h;
+  unsigned short *restrict      dstV = dstU + w / 2 * h;
+
+  for (unsigned y = 0; y < h; y++)
+  {
+    for (auto [xIn, xOutY, xOutUV] = std::tuple{0u, 0u, 0u}; xOutY < w;
+         xOutY += 6, xOutUV += 3, xIn += 16)
+    {
+      auto           xw0 = xIn;
+      unsigned short Cb0 = src[xw0] + ((src[xw0 + 1] & 0x03) << 8);
+      unsigned short Y0  = ((src[xw0 + 1] >> 2) & 0x3f) + ((src[xw0 + 2] & 0x0f) << 6);
+      unsigned short Cr0 = (src[xw0 + 2] >> 4) + ((src[xw0 + 3] & 0x3f) << 4);
+
+      auto           xw1 = xIn + 4;
+      unsigned short Y1  = src[xw1] + ((src[xw1 + 1] & 0x03) << 8);
+      unsigned short Cb1 = ((src[xw1 + 1] >> 2) & 0x3f) + ((src[xw1 + 2] & 0x0f) << 6);
+      unsigned short Y2  = (src[xw1 + 2] >> 4) + ((src[xw1 + 3] & 0x3f) << 4);
+
+      auto           xw2 = xIn + 8;
+      unsigned short Cr1 = src[xw2] + ((src[xw2 + 1] & 0x03) << 8);
+      unsigned short Y3  = ((src[xw2 + 1] >> 2) & 0x3f) + ((src[xw2 + 2] & 0x0f) << 6);
+      unsigned short Cb2 = (src[xw2 + 2] >> 4) + ((src[xw2 + 3] & 0x3f) << 4);
+
+      auto           xw3 = xIn + 12;
+      unsigned short Y4  = src[xw3] + ((src[xw3 + 1] & 0x03) << 8);
+      unsigned short Cr2 = ((src[xw3 + 1] >> 2) & 0x3f) + ((src[xw3 + 2] & 0x0f) << 6);
+      unsigned short Y5  = (src[xw3 + 2] >> 4) + ((src[xw3 + 3] & 0x3f) << 4);
+
+      dstY[xOutY]     = Y0;
+      dstY[xOutY + 1] = Y1;
+      dstU[xOutUV]    = Cb0;
+      dstV[xOutUV]    = Cr0;
+
+      if (xOutY + 2 < w)
+      {
+        dstY[xOutY + 2]  = Y2;
+        dstY[xOutY + 3]  = Y3;
+        dstU[xOutUV + 1] = Cb1;
+        dstV[xOutUV + 1] = Cr1;
+
+        if (xOutY + 4 < w)
+        {
+          dstY[xOutY + 4]  = Y4;
+          dstY[xOutY + 5]  = Y5;
+          dstU[xOutUV + 2] = Cb2;
+          dstV[xOutUV + 2] = Cr2;
+        }
+      }
+    }
+    src += strideIn;
+    dstY += w;
+    dstU += w / 2;
+    dstV += w / 2;
+  }
+
+  return {true, newFormat};
+}
+
+yuv_t getPixelValueV210(const QByteArray &sourceBuffer,
+                        const Size &      curFrameSize,
+                        const QPoint &    pixelPos)
+{
+  const auto w = curFrameSize.width;
+  const auto h = curFrameSize.height;
+
+  auto widthRoundUp = (((w + 48 - 1) / 48) * 48);
+  auto strideIn     = widthRoundUp / 6 * 16;
+
+  auto startInBuffer = (unsigned(pixelPos.y()) * strideIn) + unsigned(pixelPos.x()) / 6 * 16;
+
+  const unsigned char *restrict src = (unsigned char *)sourceBuffer.data();
+
+  yuv_t ret;
+  auto  xSub = unsigned(pixelPos.x()) % 6;
+  if (xSub == 0)
+    ret.Y = ((src[startInBuffer + 1] >> 2) & 0x3f) + ((src[startInBuffer + 2] & 0x0f) << 6);
+  else if (xSub == 1)
+    ret.Y = src[startInBuffer + 4] + ((src[startInBuffer + 4 + 1] & 0x03) << 8);
+  else if (xSub == 2)
+    ret.Y = (src[startInBuffer + 4 + 2] >> 4) + ((src[startInBuffer + 4 + 3] & 0x3f) << 4);
+  else if (xSub == 3)
+    ret.Y = ((src[startInBuffer + 8 + 1] >> 2) & 0x3f) + ((src[startInBuffer + 8 + 2] & 0x0f) << 6);
+  else if (xSub == 4)
+    ret.Y = src[startInBuffer + 12] + ((src[startInBuffer + 12 + 1] & 0x03) << 8);
+  else
+    ret.Y = (src[startInBuffer + 12 + 2] >> 4) + ((src[startInBuffer + 12 + 3] & 0x3f) << 4);
+
+  if (xSub == 0 || xSub == 1)
+  {
+    ret.U = src[startInBuffer] + ((src[startInBuffer + 1] & 0x03) << 8);
+    ret.V = (src[startInBuffer + 2] >> 4) + ((src[startInBuffer + 3] & 0x3f) << 4);
+  }
+  else if (xSub == 2 || xSub == 3)
+  {
+    ret.U = ((src[startInBuffer + 4 + 1] >> 2) & 0x3f) + ((src[startInBuffer + 4 + 2] & 0x0f) << 6);
+    ret.V = src[startInBuffer + 8] + ((src[startInBuffer + 8 + 1] & 0x03) << 8);
+  }
+  else
+  {
+    ret.U = (src[startInBuffer + 8 + 2] >> 4) + ((src[startInBuffer + 8 + 3] & 0x3f) << 4);
+    ret.V =
+        ((src[startInBuffer + 12 + 1] >> 2) & 0x3f) + ((src[startInBuffer + 12 + 2] & 0x0f) << 6);
+  }
+
+  return ret;
+}
+
+} // namespace
 
 videoHandlerYUV::videoHandlerYUV() : videoHandler()
 {
@@ -2453,138 +2721,6 @@ inline void YUVPlaneToRGB_411(const int                     w,
   }
 }
 
-bool videoHandlerYUV::convertYUVPackedToPlanar(const QByteArray &sourceBuffer,
-                                               QByteArray &      targetBuffer,
-                                               const Size        curFrameSize,
-                                               YUVPixelFormat &  sourceBufferFormat)
-{
-  const auto format  = sourceBufferFormat;
-  const auto packing = format.getPackingOrder();
-
-  // Make sure that the target buffer is big enough. It should be as big as the input buffer.
-  if (targetBuffer.size() != sourceBuffer.size())
-    targetBuffer.resize(sourceBuffer.size());
-
-  const auto w = curFrameSize.width;
-  const auto h = curFrameSize.height;
-
-  // Bytes per sample
-  const int bps = (format.getBitsPerSample() > 8) ? 2 : 1;
-
-  if (format.getSubsampling() == Subsampling::YUV_422)
-  {
-    // The data is arranged in blocks of 4 samples. How many of these are there?
-    const int nr4Samples = w * h / 2;
-
-    // What are the offsets withing the 4 samples for the components?
-    const int oY = (packing == PackingOrder::YUYV || packing == PackingOrder::YVYU) ? 0 : 1;
-    const int oU = (packing == PackingOrder::UYVY)   ? 0
-                   : (packing == PackingOrder::YUYV) ? 1
-                   : (packing == PackingOrder::VYUY) ? 2
-                                                     : 3;
-    const int oV = (packing == PackingOrder::VYUY)   ? 0
-                   : (packing == PackingOrder::YVYU) ? 1
-                   : (packing == PackingOrder::UYVY) ? 2
-                                                     : 3;
-
-    if (bps == 1)
-    {
-      // One byte per sample.
-      const unsigned char *restrict src  = (unsigned char *)sourceBuffer.data();
-      unsigned char *restrict       dstY = (unsigned char *)targetBuffer.data();
-      unsigned char *restrict       dstU = dstY + w * h;
-      unsigned char *restrict       dstV = dstU + w / 2 * h;
-
-      for (int i = 0; i < nr4Samples; i++)
-      {
-        *dstY++ = src[oY];
-        *dstY++ = src[oY + 2];
-        *dstU++ = src[oU];
-        *dstV++ = src[oV];
-        src += 4; // Goto the next 4 samples
-      }
-    }
-    else
-    {
-      // Two bytes per sample.
-      const unsigned short *restrict src  = (unsigned short *)sourceBuffer.data();
-      unsigned short *restrict       dstY = (unsigned short *)targetBuffer.data();
-      unsigned short *restrict       dstU = dstY + w * h;
-      unsigned short *restrict       dstV = dstU + w / 2 * h;
-
-      for (int i = 0; i < nr4Samples; i++)
-      {
-        *dstY++ = src[oY];
-        *dstY++ = src[oY + 2];
-        *dstU++ = src[oU];
-        *dstV++ = src[oV];
-        src += 4; // Goto the next 4 samples
-      }
-    }
-  }
-  else if (format.getSubsampling() == Subsampling::YUV_444)
-  {
-    // What are the offsets withing the 3 or 4 bytes per sample?
-    const int oY = (packing == PackingOrder::AYUV) ? 1 : (packing == PackingOrder::VUYA) ? 2 : 0;
-    const int oU = (packing == PackingOrder::YUV || packing == PackingOrder::YUVA ||
-                    packing == PackingOrder::VUYA)
-                       ? 1
-                       : 2;
-    const int oV = (packing == PackingOrder::YVU)    ? 1
-                   : (packing == PackingOrder::AYUV) ? 3
-                   : (packing == PackingOrder::VUYA) ? 0
-                                                     : 2;
-
-    // How many samples to the next sample?
-    const int offsetNext = (packing == PackingOrder::YUV || packing == PackingOrder::YVU ? 3 : 4);
-
-    if (bps == 1)
-    {
-      // One byte per sample.
-      const unsigned char *restrict src  = (unsigned char *)sourceBuffer.data();
-      unsigned char *restrict       dstY = (unsigned char *)targetBuffer.data();
-      unsigned char *restrict       dstU = dstY + w * h;
-      unsigned char *restrict       dstV = dstU + w * h;
-
-      for (unsigned i = 0; i < w * h; i++)
-      {
-        *dstY++ = src[oY];
-        *dstU++ = src[oU];
-        *dstV++ = src[oV];
-        src += offsetNext; // Goto the next sample
-      }
-    }
-    else
-    {
-      // Two bytes per sample.
-      const unsigned short *restrict src  = (unsigned short *)sourceBuffer.data();
-      unsigned short *restrict       dstY = (unsigned short *)targetBuffer.data();
-      unsigned short *restrict       dstU = dstY + w * h;
-      unsigned short *restrict       dstV = dstU + w * h;
-
-      for (unsigned i = 0; i < w * h; i++)
-      {
-        *dstY++ = src[oY];
-        *dstU++ = src[oU];
-        *dstV++ = src[oV];
-        src += offsetNext; // Goto the next sample
-      }
-    }
-  }
-  else
-    return false;
-
-  // The output buffer is planar with the same subsampling as before
-  sourceBufferFormat = YUVPixelFormat(sourceBufferFormat.getSubsampling(),
-                                      sourceBufferFormat.getBitsPerSample(),
-                                      PlaneOrder::YUV,
-                                      sourceBufferFormat.isBigEndian(),
-                                      sourceBufferFormat.getChromaOffset(),
-                                      sourceBufferFormat.isUVInterleaved());
-
-  return true;
-}
-
 bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &    sourceBuffer,
                                             uchar *               targetBuffer,
                                             const Size            curFrameSize,
@@ -3010,8 +3146,9 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
          curFrameSize.width * curFrameSize.height * 4);
 #endif
 
+  bool convOK;
+
   // Convert the source to RGB
-  bool convOK = true;
   if (yuvFormat.isPlanar())
   {
     if (yuvFormat.getBitsPerSample() == 8 && yuvFormat.getSubsampling() == Subsampling::YUV_420 &&
@@ -3031,13 +3168,23 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
     // Convert to a planar format first
     QByteArray tmpPlanarYUVSource;
     // This is the current format of the buffer. The conversion function will change this.
-    YUVPixelFormat bufferPixelFormat = yuvFormat;
-    convOK &=
-        convertYUVPackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize, bufferPixelFormat);
+    YUVPixelFormat newPixelFormat;
+
+    if (auto predefinedFormat = yuvFormat.getPredefinedFormat())
+    {
+      if (*predefinedFormat == PredefinedPixelFormat::V210)
+        std::tie(convOK, newPixelFormat) =
+            convertV210PackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize);
+      else
+        convOK = false;
+    }
+    else
+      std::tie(convOK, newPixelFormat) =
+          convertYUVPackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize, yuvFormat);
 
     if (convOK)
       convOK &= convertYUVPlanarToRGB(
-          tmpPlanarYUVSource, outputImage.bits(), curFrameSize, bufferPixelFormat);
+          tmpPlanarYUVSource, outputImage.bits(), curFrameSize, newPixelFormat);
   }
 
   assert(convOK);
@@ -3055,7 +3202,7 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
   DEBUG_YUV("videoHandlerYUV::convertYUVToImage Done");
 }
 
-videoHandlerYUV::yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
+yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
 {
   const YUVPixelFormat format = srcPixelFormat;
   const int            w      = frameSize.width;
@@ -3063,7 +3210,12 @@ videoHandlerYUV::yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) co
 
   yuv_t value = {0, 0, 0};
 
-  if (format.isPlanar())
+  if (auto predefinedFormat = format.getPredefinedFormat())
+  {
+    if (predefinedFormat == PredefinedPixelFormat::V210)
+      value = getPixelValueV210(currentFrameRawData, frameSize, pixelPos);
+  }
+  else if (format.isPlanar())
   {
     // The luma component has full resolution. The size of each chroma components depends on the
     // subsampling.
