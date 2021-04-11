@@ -14,35 +14,37 @@ private slots:
   void testFormatFromToString();
 };
 
-std::vector<YUV_Internals::YUVPixelFormat> getAllFormats()
-{
-  std::vector<YUV_Internals::YUVPixelFormat> allFormats;
+using namespace YUV_Internals;
 
-  for (auto subsampling : YUV_Internals::SubsamplingMapper.getEnums())
+std::vector<YUVPixelFormat> getAllFormats()
+{
+  std::vector<YUVPixelFormat> allFormats;
+
+  for (auto subsampling : SubsamplingMapper.getEnums())
   {
-    for (auto bitsPerSample : YUV_Internals::BitDepthList)
+    for (auto bitsPerSample : BitDepthList)
     {
       auto endianList =
           (bitsPerSample > 8) ? std::vector<bool>({false, true}) : std::vector<bool>({false});
 
       // Planar
-      for (auto planeOrder : YUV_Internals::PlaneOrderMapper.getEnums())
+      for (auto planeOrder : PlaneOrderMapper.getEnums())
       {
         for (auto bigEndian : endianList)
         {
           auto pixelFormat =
-              YUV_Internals::YUVPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
+              YUVPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
           allFormats.push_back(pixelFormat);
         }
       }
       // Packet
-      for (auto packingOrder : YUV_Internals::getSupportedPackingFormats(subsampling))
+      for (auto packingOrder : getSupportedPackingFormats(subsampling))
       {
         for (auto bytePacking : {false, true})
         {
           for (auto bigEndian : endianList)
           {
-            auto pixelFormat = YUV_Internals::YUVPixelFormat(
+            auto pixelFormat = YUVPixelFormat(
                 subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian);
             allFormats.push_back(pixelFormat);
           }
@@ -50,6 +52,9 @@ std::vector<YUV_Internals::YUVPixelFormat> getAllFormats()
       }
     }
   }
+
+  for (auto predefinedFormat : PredefinedPixelFormatMapper.getEnums())
+    allFormats.push_back(YUVPixelFormat(predefinedFormat));
 
   return allFormats;
 }
@@ -64,7 +69,7 @@ void YUVPixelFormatTest::testFormatFromToString()
     {
       QFAIL("Name empty");
     }
-    auto fmtNew = YUV_Internals::YUVPixelFormat(name);
+    auto fmtNew = YUVPixelFormat(name);
     if (fmt != fmtNew)
     {
       auto errorStr = "Comparison failed. Names: " + name;

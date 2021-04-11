@@ -108,7 +108,7 @@ bool checkFormat(const YUV_Internals::YUVPixelFormat pixelFormat,
 
 YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
                                                const Size  size,
-                                               unsigned         bitDepth,
+                                               unsigned    bitDepth,
                                                Subsampling detectedSubsampling,
                                                int64_t     fileSize)
 {
@@ -172,10 +172,20 @@ YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
 
 YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
                                                const Size  size,
-                                               unsigned         bitDepth,
+                                               unsigned    bitDepth,
                                                Subsampling detectedSubsampling,
                                                int64_t     fileSize)
 {
+  // Check V210
+  std::regex  strExpr("(?:_|\\.|-)(v210|V210)(?:_|\\.|-)");
+  std::smatch sm;
+  if (std::regex_search(name, sm, strExpr))
+  {
+    auto fmt = YUVPixelFormat(PredefinedPixelFormat::V210);
+    if (checkFormat(fmt, size, fileSize))
+      return fmt;
+  }
+
   auto bitDepthList = getDetectionBitDepthList(bitDepth);
 
   for (auto subsampling : getDetectionSubsamplingList(detectedSubsampling, true))
@@ -216,6 +226,7 @@ YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
       }
     }
   }
+
   return {};
 }
 
@@ -230,7 +241,7 @@ YUVPixelFormat guessFormatFromSizeAndName(
   auto fileName = fileInfo.baseName().toStdString();
   if (fileName.empty())
     return {};
-  checkStrings.push_back(fileName);
+  checkStrings.push_back(fileName + ".");
 
   // The name of the folder that the file is in
   auto dirName = fileInfo.absoluteDir().dirName().toStdString();
@@ -240,12 +251,14 @@ YUVPixelFormat guessFormatFromSizeAndName(
   {
     // This should be a 8 bit planar yuv 4:2:0 file with interleaved UV components and YVU order
     auto fmt = YUVPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YVU, false, {}, true);
-    auto bpf = fmt.bytesPerFrame(size);
-    if (bpf != 0 && (fileSize % bpf) == 0)
-    {
-      // Bits per frame and file size match
+    if (checkFormat(fmt, size, fileSize))
       return fmt;
-    }
+  }
+  if (fileInfo.suffix().toLower() == "v210")
+  {
+    auto fmt = YUVPixelFormat(PredefinedPixelFormat::V210);
+    if (checkFormat(fmt, size, fileSize))
+      return fmt;
   }
 
   for (const auto &name : checkStrings)

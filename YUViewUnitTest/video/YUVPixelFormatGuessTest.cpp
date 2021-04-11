@@ -32,8 +32,8 @@ void YUVPixelFormatGuessTest::testFormatGuessFromFilename_data()
   const unsigned bytes1080 = 1920 * 1080 * 3 * 6; // 12 frames 420
   const unsigned bytes1280 = 1280 * 720 * 3 * 6;  // 6 frames 444
 
-  QTest::newRow("testResolutionOnly1")
-      << "something_1920x1080.yuv" << bytes1080 << 1920u << 1080u << 0u << false << "YUV 4:2:0 8-bit";
+  QTest::newRow("testResolutionOnly1") << "something_1920x1080.yuv" << bytes1080 << 1920u << 1080u
+                                       << 0u << false << "YUV 4:2:0 8-bit";
 
   QTest::newRow("testResolutionAndFPSAndBitDepth1")
       << "something_1920x1080_25_8.yuv" << bytes1080 << 1920u << 1080u << 8u << false
@@ -78,6 +78,13 @@ void YUVPixelFormatGuessTest::testFormatGuessFromFilename_data()
   QTest::newRow("testIssue221_8") << "sample_1280x720_yuv444p16leinnterlaced_114812.yuv"
                                   << bytes1280 << 1280u << 720u << 16u << false
                                   << "YUV 4:4:4 16-bit LE";
+
+  // V210 format (w must be multiple of 48)
+  auto bytes1280V210 = 1296u * 720 / 6 * 16 * 3; // 3 frames
+  QTest::newRow("testIssueV210_1")
+      << "sample_1280x720_v210.yuv" << bytes1280V210 << 1280u << 720u << 10u << true << "V210";
+  QTest::newRow("testIssueV210_2") << "sample_1280x720_v210.something.yuv" << bytes1280V210 << 1280u
+                                   << 720u << 10u << true << "V210";
 
   // We need more tests here ... but I don't want to do this now :)
 }
