@@ -52,6 +52,11 @@
 #include "playlistitem/playlistItemOverlay.h"
 #include "playlistitem/playlistItemResample.h"
 #include "playlistitem/playlistItemText.h"
+#include "playlistitem/playlistItemRawFile.h"
+#include "playlistitem/playlistItemCompressedVideo.h"
+#include "playlistitem/playlistItemStatisticsFile.h"
+#include "playlistitem/playlistItemImageFile.h"
+#include "playlistitem/playlistItemImageFileSequence.h"
 #include "playlistitem/playlistItems.h"
 
 // Activate this if you want to know when which signals/slots are handled
@@ -439,9 +444,53 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent *event)
     menu.addSeparator();
     menu.addAction("Delete Item", this, &PlaylistTreeWidget::deletePlaylistItems);
 
-    playlistItemText *txt = dynamic_cast<playlistItemText *>(itemAtPoint);
-    if (txt)
-      menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
+    {
+      playlistItemText *plItemSource = dynamic_cast<playlistItemText *>(itemAtPoint);
+      if (plItemSource)
+      {
+        menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
+      }
+    }
+
+    {
+      playlistItemRawFile *plItemSource = dynamic_cast<playlistItemRawFile *>(itemAtPoint);
+      if (plItemSource)
+      {
+        menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
+      }
+    }
+
+    {
+      playlistItemCompressedVideo *plItemSource = dynamic_cast<playlistItemCompressedVideo *>(itemAtPoint);
+      if (plItemSource)
+      {
+        menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
+      }
+    }
+
+    {
+      playlistItemImageFile *plItemSource = dynamic_cast<playlistItemImageFile *>(itemAtPoint);
+      if (plItemSource)
+      {
+        menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
+      }
+    }
+
+    {
+      playlistItemImageFileSequence *plItemSource = dynamic_cast<playlistItemImageFileSequence *>(itemAtPoint);
+      if (plItemSource)
+      {
+        menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
+      }
+    }
+
+    {
+      playlistItemStatisticsFile *plItemSource = dynamic_cast<playlistItemStatisticsFile *>(itemAtPoint);
+      if (plItemSource)
+      {
+        menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
+      }
+    }
   }
 
   menu.exec(event->globalPos());
@@ -1057,15 +1106,62 @@ void PlaylistTreeWidget::cloneSelectedItem()
   {
     playlistItem *plItem = dynamic_cast<playlistItem *>(item);
 
-    // Is this is playlistItemText?
-    playlistItemText *plItemTxt = dynamic_cast<playlistItemText *>(plItem);
-    if (plItemTxt)
+    // Clone it
+    for (int i = 0; i < nrClones; i++)
     {
-      // Clone it
-      for (int i = 0; i < nrClones; i++)
       {
-        playlistItemText *newText = new playlistItemText(plItemTxt);
-        appendNewItem(newText);
+        playlistItemText *plItemSource = dynamic_cast<playlistItemText *>(plItem);
+        if (plItemSource)
+        {
+
+          playlistItemText *plItemDuplicate = new playlistItemText(plItemSource);
+          appendNewItem(plItemDuplicate);
+        }
+      }
+
+      {
+        playlistItemRawFile *plItemSource = dynamic_cast<playlistItemRawFile *>(plItem);
+        if (plItemSource)
+        {
+          playlistItemRawFile *plItemDuplicate = new playlistItemRawFile(plItemSource->properties().name);
+          appendNewItem(plItemDuplicate);
+        }
+      }
+
+      {
+        playlistItemCompressedVideo *plItemSource = dynamic_cast<playlistItemCompressedVideo *>(plItem);
+        if (plItemSource)
+        {
+          playlistItemCompressedVideo *plItemDuplicate = new playlistItemCompressedVideo(plItemSource->properties().name, 0);
+          appendNewItem(plItemDuplicate);
+        }
+      }
+
+      {
+        playlistItemImageFile *plItemSource = dynamic_cast<playlistItemImageFile *>(plItem);
+        if (plItemSource)
+        {
+          playlistItemImageFile *plItemDuplicate = new playlistItemImageFile(plItemSource->properties().name);
+          appendNewItem(plItemDuplicate);
+        }
+      }
+
+      {
+        playlistItemImageFileSequence *plItemSource = dynamic_cast<playlistItemImageFileSequence *>(plItem);
+        if (plItemSource)
+        {
+          playlistItemImageFileSequence *plItemDuplicate = new playlistItemImageFileSequence(plItemSource->properties().name);
+          appendNewItem(plItemDuplicate);
+        }
+      }
+
+      {
+        playlistItemStatisticsFile *plItemSource = dynamic_cast<playlistItemStatisticsFile *>(plItem);
+        if (plItemSource)
+        {
+          playlistItemStatisticsFile *plItemDuplicate = new playlistItemStatisticsFile(plItemSource->properties().name);
+          appendNewItem(plItemDuplicate);
+        }
       }
     }
   }
