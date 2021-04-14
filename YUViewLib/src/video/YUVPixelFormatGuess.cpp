@@ -36,6 +36,7 @@
 
 #include <QDir>
 #include <regex>
+#include <QString>
 
 namespace YUV_Internals
 {
@@ -46,7 +47,7 @@ Subsampling findSubsamplingTypeIndicatorInName(std::string name)
   for (auto subsampling : SubsamplingMapper.getNames())
     subsamplingMatcher += subsampling + "|";
   subsamplingMatcher.pop_back();
-  subsamplingMatcher = "(?:_|\\.|-)(" + subsamplingMatcher + ")(?:_|\\.|-)";
+  subsamplingMatcher = "(?:_|\\.|-|yuv|YUV)(" + subsamplingMatcher + ")(?:_|\\.|-|p)";
 
   std::regex strExpr(subsamplingMatcher);
 
@@ -54,7 +55,7 @@ Subsampling findSubsamplingTypeIndicatorInName(std::string name)
   if (!std::regex_search(name, sm, strExpr))
     return Subsampling::UNKNOWN;
 
-  auto match = sm.str(0).substr(1, 3);
+  auto match = sm.str(1);
   if (auto format = SubsamplingMapper.getValue(match))
     return *format;
 
@@ -67,7 +68,9 @@ std::vector<unsigned> getDetectionBitDepthList(unsigned forceAsFirst)
   if (forceAsFirst >= 8 && forceAsFirst <= 16)
     bitDepthList.push_back(forceAsFirst);
 
-  for (auto bitDepth : {8u, 10u, 12u, 14u, 16u, 8u})
+  // 8 bit should be last, since the corresponding format name can be a part of
+  // the names of format, that use more bits. Then those would never be tested.
+  for (auto bitDepth : {16u, 14u, 12u, 10u, 8u})
   {
     if (!vectorContains(bitDepthList, bitDepth))
       bitDepthList.push_back(bitDepth);
@@ -146,7 +149,9 @@ YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
               formatName += interlacedString;
               auto fmt = YUVPixelFormat(
                   subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
-              if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
+              QString qs_name = QString::fromStdString(name);
+              QString qs_formatName = QString::fromStdString(formatName);
+              if (qs_name.contains(qs_formatName, Qt::CaseInsensitive) && checkFormat(fmt, size, fileSize))
                 return fmt;
             }
 
@@ -159,7 +164,9 @@ YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
               formatName += interlacedString;
               auto fmt = YUVPixelFormat(
                   subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
-              if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
+              QString qs_name = QString::fromStdString(name);
+              QString qs_formatName = QString::fromStdString(formatName);
+              if (qs_name.contains(qs_formatName, Qt::CaseInsensitive) && checkFormat(fmt, size, fileSize))
                 return fmt;
             }
           }
