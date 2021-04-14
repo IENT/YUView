@@ -45,6 +45,8 @@ namespace stats
 
 using StatisticsTypesVec = std::vector<StatisticsType>;
 
+QPolygon convertToQPolygon(const stats::Polygon &poly);
+
 class StatisticsData
 {
 public:

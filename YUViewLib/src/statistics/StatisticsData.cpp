@@ -48,6 +48,15 @@
 namespace stats
 {
 
+QPolygon convertToQPolygon(const stats::Polygon &poly)
+{
+  auto qPoly = QPolygon(poly.size());
+  for (int i = 0; i < int(poly.size()); i++)
+    qPoly.setPoint(i, QPoint(poly[i].first, poly[i].second));
+  return qPoly;
+}
+
+
 FrameTypeData StatisticsData::getFrameTypeData(int typeID)
 {
   if (this->frameCache.count(typeID) == 0)
@@ -162,6 +171,60 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
         valueList.append(
             QStringPair(QString("%1[y]").arg(it->typeName), QString::number(vectorValue2)));
         foundStats = true;
+      }
+    }
+
+    for (const auto &affineTFItem : this->frameCache.at(it->typeID).affineTFData)
+    {
+      const auto rect = QRect(
+          affineTFItem.pos[0], affineTFItem.pos[1], affineTFItem.size[0], affineTFItem.size[1]);
+      if (rect.contains(pos))
+      {
+        for( unsigned i=0; i<3; i++)
+        {
+          float vectorValue1, vectorValue2;
+          vectorValue1 = float(affineTFItem.point[i].first / it->vectorScale);
+          vectorValue2 = float(affineTFItem.point[i].second / it->vectorScale);
+          valueList.append(
+              QStringPair(QString("%1_%2[x]").arg(it->typeName).arg(i), QString::number(vectorValue1)));
+          valueList.append(
+              QStringPair(QString("%1_%2[y]").arg(it->typeName).arg(i), QString::number(vectorValue2)));
+        }
+        foundStats = true;
+      }
+    }
+
+    for (const auto &valueItem : this->frameCache.at(it->typeID).polygonValueData)
+    {
+      if (!valueItem.corners.size()) continue;
+      auto vectorPoly          = convertToQPolygon(valueItem.corners);
+      if (vectorPoly.contains(pos))
+      {
+        int  value  = valueItem.value;
+        auto valTxt = it->getValueTxt(value);
+        valueList.append(QStringPair(it->typeName, valTxt));
+        foundStats = true;
+      }
+    }
+
+    for (const auto &polygonVectorItem : this->frameCache.at(it->typeID).polygonVectorData)
+    {
+      if (!polygonVectorItem.corners.size()) continue;
+      auto vectorPoly          = convertToQPolygon(polygonVectorItem.corners);
+      if (vectorPoly.containsPoint(pos, Qt::OddEvenFill))
+      {
+        if (it->renderVectorData)
+        {
+          float vx, vy;
+          // The length of the vector
+          vx = (float)polygonVectorItem.point.first / it->vectorScale;
+          vy = (float)polygonVectorItem.point.second / it->vectorScale;
+          valueList.append(
+              QStringPair(QString("%1[x]").arg(it->typeName), QString::number(vx)));
+          valueList.append(
+              QStringPair(QString("%1[y]").arg(it->typeName), QString::number(vy)));
+          foundStats = true;
+        }
       }
     }
 

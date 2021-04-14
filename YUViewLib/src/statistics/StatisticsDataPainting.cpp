@@ -51,14 +51,6 @@ namespace
 #define DEBUG_PAINT(fmt, ...) ((void)0)
 #endif
 
-QPolygon convertToQPolygon(const stats::Polygon &poly)
-{
-  auto qPoly = QPolygon(poly.size());
-  for (int i = 0; i < int(poly.size()); i++)
-    qPoly.setPoint(i, QPoint(poly[i].first, poly[i].second));
-  return qPoly;
-}
-
 QPoint getPolygonCenter(const QPolygon &polygon)
 {
   auto p = QPoint(0, 0);
@@ -824,6 +816,8 @@ void stats::paintStatisticsData(QPainter *             painter,
     // Go through all the vector data
     for (const auto &vectorItem : statisticsData[it->typeID].polygonVectorData)
     {
+      if (!vectorItem.corners.size()) continue;
+
       // Calculate the size and position of the rectangle to draw (zoomed in)
       auto vectorPoly          = convertToQPolygon(vectorItem.corners);
       auto trans               = QTransform().scale(zoomFactor, zoomFactor);
@@ -853,8 +847,8 @@ void stats::paintStatisticsData(QPainter *             painter,
         center_y /= displayPolygon.size();
 
         // The length of the vector
-        vx = (float)vectorItem.point[0].first / it->vectorScale;
-        vy = (float)vectorItem.point[0].second / it->vectorScale;
+        vx = (float)vectorItem.point.first / it->vectorScale;
+        vy = (float)vectorItem.point.second / it->vectorScale;
 
         // The end point of the vector
         head_x = center_x + zoomFactor * vx;

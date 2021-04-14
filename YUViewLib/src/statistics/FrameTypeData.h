@@ -83,7 +83,7 @@ struct statisticsItemPolygon_Vector
   // The position and size of the item.
   Polygon corners;
 
-  IntPair point[2];
+  IntPair point;
 };
 
 // A collection of statistics data (value and vector) for a certain context (for example for a

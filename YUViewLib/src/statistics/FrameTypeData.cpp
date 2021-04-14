@@ -127,7 +127,7 @@ void FrameTypeData::addPolygonVector(const Polygon &points, int vecX, int vecY)
 {
   statisticsItemPolygon_Vector vec;
   vec.corners  = points;
-  vec.point[0] = IntPair({vecX, vecY});
+  vec.point = IntPair({vecX, vecY});
   polygonVectorData.push_back(vec);
 }
 
