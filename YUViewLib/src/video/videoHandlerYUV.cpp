@@ -346,10 +346,7 @@ yuv_t getPixelValueV210(const QByteArray &sourceBuffer,
                         const Size &      curFrameSize,
                         const QPoint &    pixelPos)
 {
-  const auto w = curFrameSize.width;
-  const auto h = curFrameSize.height;
-
-  auto widthRoundUp = (((w + 48 - 1) / 48) * 48);
+  auto widthRoundUp = (((curFrameSize.width + 48 - 1) / 48) * 48);
   auto strideIn     = widthRoundUp / 6 * 16;
 
   auto startInBuffer = (unsigned(pixelPos.y()) * strideIn) + unsigned(pixelPos.x()) / 6 * 16;
