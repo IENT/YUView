@@ -49,13 +49,61 @@
 namespace stats
 {
 
-// this is defined twice. Could not move it into the header "StatisticsData.h": The header is
-// also used by UnitTest. Adding QPolygon would make UnitTests depend on QtGui
-QPolygon convertToQPolygon(const stats::Polygon &poly)
+
+//same as qt_painterpath_isect_line in qpainterpath.cpp
+static void qt_polygon_isect_line(const QPointF &p1, const QPointF &p2, const QPointF &pos,
+                                  int *winding)
 {
-  auto qPoly = QPolygon(poly.size());
+    qreal x1 = p1.x();
+    qreal y1 = p1.y();
+    qreal x2 = p2.x();
+    qreal y2 = p2.y();
+    qreal y = pos.y();
+    int dir = 1;
+    if (qFuzzyCompare(y1, y2)) {
+        // ignore horizontal lines according to scan conversion rule
+        return;
+    } else if (y2 < y1) {
+        qreal x_tmp = x2; x2 = x1; x1 = x_tmp;
+        qreal y_tmp = y2; y2 = y1; y1 = y_tmp;
+        dir = -1;
+    }
+    if (y >= y1 && y < y2) {
+        qreal x = x1 + ((x2 - x1) / (y2 - y1)) * (y - y1);
+        // count up the winding number if we're
+        if (x<=pos.x()) {
+            (*winding) += dir;
+        }
+    }
+}
+
+
+bool containsPoint(const QVector<QPoint> &polygon, const QPoint &pt, Qt::FillRule fillRule)
+{
+    if (polygon.isEmpty())
+        return false;
+    int winding_number = 0;
+    QPoint last_pt = polygon.at(0);
+    QPoint last_start = polygon.at(0);
+    for (int i = 1; i < polygon.size(); ++i) {
+        const QPoint &e = polygon.at(i);
+        qt_polygon_isect_line(last_pt, e, pt, &winding_number);
+        last_pt = e;
+    }
+    // implicitly close last subpath
+    if (last_pt != last_start)
+        qt_polygon_isect_line(last_pt, last_start, pt, &winding_number);
+    return (fillRule == Qt::WindingFill
+            ? (winding_number != 0)
+            : ((winding_number % 2) != 0));
+}
+
+
+QVector<QPoint> convertToQPointVectorPolygon(const stats::Polygon &poly)
+{
+  auto qPoly = QVector<QPoint>(poly.size());
   for (int i = 0; i < int(poly.size()); i++)
-    qPoly.setPoint(i, QPoint(poly[i].first, poly[i].second));
+    qPoly[i] =  QPoint(poly[i].first, poly[i].second);
   return qPoly;
 }
 
@@ -200,8 +248,8 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
     for (const auto &valueItem : this->frameCache.at(it->typeID).polygonValueData)
     {
       if (!valueItem.corners.size()) continue;
-      auto vectorPoly          = convertToQPolygon(valueItem.corners);
-      if (vectorPoly.contains(pos))
+      auto vectorPoly          = convertToQPointVectorPolygon(valueItem.corners);
+      if (stats::containsPoint( vectorPoly, pos, Qt::OddEvenFill))
       {
         int  value  = valueItem.value;
         auto valTxt = it->getValueTxt(value);
@@ -213,8 +261,8 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
     for (const auto &polygonVectorItem : this->frameCache.at(it->typeID).polygonVectorData)
     {
       if (!polygonVectorItem.corners.size()) continue;
-      auto vectorPoly          = convertToQPolygon(polygonVectorItem.corners);
-      if (vectorPoly.containsPoint(pos, Qt::OddEvenFill))
+      auto vectorPoly          = convertToQPointVectorPolygon(polygonVectorItem.corners);
+      if (stats::containsPoint( vectorPoly, pos, Qt::OddEvenFill))
       {
         if (it->renderVectorData)
         {

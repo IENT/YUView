@@ -45,6 +45,11 @@ namespace stats
 
 using StatisticsTypesVec = std::vector<StatisticsType>;
 
+
+QVector<QPoint> convertToQPointVectorPolygon(const stats::Polygon &poly);
+
+bool containsPoint(const QVector<QPoint> &polygon, const QPoint &pt, Qt::FillRule fillRule);
+
 class StatisticsData
 {
 public:

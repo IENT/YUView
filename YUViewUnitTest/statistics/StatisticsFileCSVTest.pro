@@ -9,7 +9,7 @@ TARGET = StatisticsFileCSVTest
 
 QT += testlib
 QT += xml
-QT += gui
+QT -= gui
 
 INCLUDEPATH += $$top_srcdir/YUViewLib/src
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
