@@ -38,7 +38,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QtMath>
-#include <QPolygon>
+#include <QtGui/QPolygon>
 #include <cmath>
 
 namespace

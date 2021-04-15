@@ -36,7 +36,7 @@
 #include "StatisticsType.h"
 
 #include <QSize>
-#include <QPolygon>
+#include <QtGui/QPolygon>
 #include <map>
 #include <mutex>
 #include <vector>
