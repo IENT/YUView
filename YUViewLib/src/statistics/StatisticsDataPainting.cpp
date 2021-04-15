@@ -52,6 +52,16 @@ namespace
 #define DEBUG_PAINT(fmt, ...) ((void)0)
 #endif
 
+// this is defined twice. Could not move it into the header "StatisticsData.h": The header is
+// also used by UnitTest. Adding QPolygon would make UnitTests depend on QtGui
+QPolygon convertToQPolygon(const stats::Polygon &poly)
+{
+  auto qPoly = QPolygon(poly.size());
+  for (int i = 0; i < int(poly.size()); i++)
+    qPoly.setPoint(i, QPoint(poly[i].first, poly[i].second));
+  return qPoly;
+}
+
 QPoint getPolygonCenter(const QPolygon &polygon)
 {
   auto p = QPoint(0, 0);

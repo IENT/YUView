@@ -36,7 +36,6 @@
 #include "StatisticsType.h"
 
 #include <QSize>
-#include <QtGui/QPolygon>
 #include <map>
 #include <mutex>
 #include <vector>
@@ -45,8 +44,6 @@ namespace stats
 {
 
 using StatisticsTypesVec = std::vector<StatisticsType>;
-
-QPolygon convertToQPolygon(const stats::Polygon &poly);
 
 class StatisticsData
 {

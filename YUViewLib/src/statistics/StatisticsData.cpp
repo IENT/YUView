@@ -35,6 +35,7 @@
 #include "common/functions.h"
 
 #include <QPainterPath>
+#include <QtGui/QPolygon>
 
 // Activate this if you want to know when what is loaded.
 #define STATISTICS_DEBUG_LOADING 0
@@ -48,6 +49,8 @@
 namespace stats
 {
 
+// this is defined twice. Could not move it into the header "StatisticsData.h": The header is
+// also used by UnitTest. Adding QPolygon would make UnitTests depend on QtGui
 QPolygon convertToQPolygon(const stats::Polygon &poly)
 {
   auto qPoly = QPolygon(poly.size());
