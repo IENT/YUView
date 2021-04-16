@@ -108,6 +108,11 @@ frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
 
 frameHandler::frameHandler() {}
 
+frameHandler::frameHandler(frameHandler *clone)
+{
+  this->frameSize = clone->frameSize;
+}
+
 QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!

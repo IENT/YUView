@@ -54,20 +54,11 @@ using namespace YUV_Internals;
 playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize qFrameSize, const QString &sourcePixelFormat, const QString &fmt)
   : playlistItemWithVideo(rawFilePath)
 {
-  // High DPI support for icons:
-  // Set the Qt::AA_UseHighDpiPixmaps attribute and then just use QIcon(":image.png")
-  // If there is also a image@2x.png in the qrc, Qt will use this for high DPI
-  isY4MFile = false;
-
   // Set the properties of the playlistItem
   setIcon(0, functionsGui::convertIcon(":img_video.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  this->prop.isFileSource = true;
-  this->prop.propertiesWidgetTitle = "Raw File Properties";
-
-  dataSource.openFile(rawFilePath);
-
+  dataSource.openFile(this->prop.name);
   if (!dataSource.isOk())
   {
     // Opening the file failed.
@@ -75,21 +66,24 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
     return;
   }
 
+  this->prop.isFileSource = true;
+  this->prop.propertiesWidgetTitle = "Raw File Properties";
+
   auto frameSize = Size(qFrameSize.width(), qFrameSize.height());
 
   // Create a new videoHandler instance depending on the input format
   QFileInfo fi(rawFilePath);
-  QString ext = fi.suffix();
+  auto ext = fi.suffix();
   ext = ext.toLower();
   if (ext == "yuv" || ext == "nv21" || fmt.toLower() == "yuv" || ext == "y4m")
   {
-    video.reset(new videoHandlerYUV);
-    rawFormat = raw_YUV;
+    this->video.reset(new videoHandlerYUV);
+    this->rawFormat = raw_YUV;
   }
   else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg" || fmt.toLower() == "rgb")
   {
-    video.reset(new videoHandlerRGB);
-    rawFormat = raw_RGB;
+    this->video.reset(new videoHandlerRGB);
+    this->rawFormat = raw_RGB;
   }
   else
     Q_ASSERT_X(false, Q_FUNC_INFO, "No video handler for the raw file format found.");
@@ -98,8 +92,8 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   if (ext == "y4m")
   {
     // A y4m file has a header and indicators for ever frame
-    isY4MFile = true;
-    if (!parseY4MFile())
+    this->isY4MFile = true;
+    if (!this->parseY4MFile())
       return;
   }
   else if (!pixelFormatFromMemory.isEmpty())
@@ -110,9 +104,9 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   else if (!frameSize.isValid() && sourcePixelFormat.isEmpty())
   {
     // Try to get the frame format from the file name. The FileSource can guess this.
-    setFormatFromFileName();
+    this->setFormatFromFileName();
 
-    if (!video->isFormatValid())
+    if (!this->video->isFormatValid())
     {
       // Load 24883200 bytes from the input and try to get the format from the correlation.
       QByteArray rawData;
@@ -133,11 +127,55 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   this->updateStartEndRange();
 
   // If the videHandler requests raw data, we provide it from the file
-  connect(video.data(), &videoHandler::signalRequestRawData, this, &playlistItemRawFile::loadRawData, Qt::DirectConnection);
+  connect(video.get(), &videoHandler::signalRequestRawData, this, &playlistItemRawFile::loadRawData, Qt::DirectConnection);
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
-  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemRawFile::slotVideoPropertiesChanged);
+  connect(video.get(), &videoHandler::signalHandlerChanged, this, &playlistItemRawFile::slotVideoPropertiesChanged);
+
+  this->pixelFormatAfterLoading = video->getFormatAsString();
+
+  // A raw file can be cached.
+  this->cachingEnabled = true;
+}
+
+playlistItemRawFile::playlistItemRawFile(playlistItemRawFile *cloneFile) : playlistItemWithVideo(cloneFile)
+{
+  // Set the properties of the playlistItem
+  setIcon(0, functionsGui::convertIcon(":img_video.png"));
+  setFlags(flags() | Qt::ItemIsDropEnabled);
+
+  dataSource.openFile(this->prop.name);
+  if (!dataSource.isOk())
+  {
+    // Opening the file failed.
+    setError("Error opening the input file.");
+    return;
+  }
+
+  this->prop.isFileSource = true;
+  this->prop.propertiesWidgetTitle = "Raw File Properties";
+
+  this->rawFormat = cloneFile->rawFormat;
+  if (this->rawFormat == raw_YUV)
+  {
+    auto h = dynamic_cast<videoHandlerYUV*>(this->video.get());
+    this->video.reset(new videoHandlerYUV(h));
+  }
+  else if (this->rawFormat == raw_RGB)
+  {
+    auto h = dynamic_cast<videoHandlerRGB*>(this->video.get());
+    this->video.reset(new videoHandlerRGB(h));
+  }
+  else
+    return;
+
+  // If the videHandler requests raw data, we provide it from the file
+  connect(video.get(), &videoHandler::signalRequestRawData, this, &playlistItemRawFile::loadRawData, Qt::DirectConnection);
+
+  // Connect the basic signals from the video
+  playlistItemWithVideo::connectVideo();
+  connect(video.get(), &videoHandler::signalHandlerChanged, this, &playlistItemRawFile::slotVideoPropertiesChanged);
 
   this->pixelFormatAfterLoading = video->getFormatAsString();
 

@@ -43,21 +43,28 @@
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
 
 playlistItemImageFile::playlistItemImageFile(const QString &filePath)
-    : playlistItem(filePath, Type::Static), needToLoadImage(true), imageLoading(false)
+    : playlistItem(filePath, Type::Static)
+{
+  this->prop.isFileSource          = true;
+  this->prop.propertiesWidgetTitle = "Image Properties";
+
+  this->initFile();
+}
+
+playlistItemImageFile::playlistItemImageFile(playlistItemImageFile *clone) : playlistItem(clone)
+{
+  this->initFile();
+}
+
+void playlistItemImageFile::initFile()
 {
   // Set the properties of the playlistItem
   setIcon(0, functionsGui::convertIcon(":img_television.png"));
   // Nothing can be dropped onto an image file
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
-  this->prop.isFileSource          = true;
-  this->prop.propertiesWidgetTitle = "Image Properties";
-
-  // The image file is unchanged
-  fileChanged = false;
-
   // Does the file exits?
-  QFileInfo fileInfo(filePath);
+  QFileInfo fileInfo(this->prop.name);
   if (!fileInfo.exists() || !fileInfo.isFile())
     return;
 

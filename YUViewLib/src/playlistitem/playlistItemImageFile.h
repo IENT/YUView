@@ -43,6 +43,7 @@ class playlistItemImageFile : public playlistItem
 
 public:
   playlistItemImageFile(const QString &imagePath);
+  playlistItemImageFile(playlistItemImageFile *clone);
 
   // ------ Overload from playlistItem
 
@@ -99,13 +100,16 @@ private slots:
   void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
 
 private:
+  void initFile();
+
   // The frame handler that draws the frame
   frameHandler frame;
 
   // Watch the loaded file for modifications
   QFileSystemWatcher fileWatcher;
-  bool               fileChanged;
+  bool               fileChanged {};
 
   // Does the image need to be loaded? Is it currently loading?
-  bool needToLoadImage, imageLoading;
+  bool needToLoadImage {true};
+  bool imageLoading {};
 };

@@ -45,6 +45,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -313,7 +314,7 @@ struct Ratio
 struct Size
 {
   Size(unsigned width, unsigned height) : width(width), height(height) {}
-  Size(int w, int h) 
+  Size(int w, int h)
   {
     if (w > 0)
       this->width = unsigned(w);
@@ -338,16 +339,10 @@ struct Offset
 {
   Offset(int x, int y) : x(x), y(y) {}
   Offset() = default;
-  bool operator==(const Offset &other) const
-  {
-    return this->x == other.x && this->x == other.x;
-  }
-  bool operator!=(const Offset &other) const
-  {
-    return this->x != other.x || this->y != other.y;
-  }
-  int x{};
-  int y{};
+  bool operator==(const Offset &other) const { return this->x == other.x && this->x == other.x; }
+  bool operator!=(const Offset &other) const { return this->x != other.x || this->y != other.y; }
+  int  x{};
+  int  y{};
 };
 
 // A list of value pair lists, where every list has a string (title)
@@ -395,6 +390,12 @@ enum recacheIndicator
                  // useless in the cache.
 };
 Q_DECLARE_METATYPE(recacheIndicator)
+
+template <typename CastTo, typename T> inline bool canCastTo(T *c)
+{
+  CastTo *p = dynamic_cast<CastTo*>(c);
+  return p != nullptr;
+}
 
 #if QT_VERSION <= 0x050700
 // copied from newer version of qglobal.h

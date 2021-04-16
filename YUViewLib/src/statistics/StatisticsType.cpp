@@ -318,7 +318,7 @@ QString StatisticsType::getValueTxt(int val) const
 void StatisticsType::setMappingValues(std::vector<QString> values)
 {
   // We assume linear increasing typed IDs
-  for (size_t i = 0; i < values.size(); i++)
+  for (int i = 0; i < int(values.size()); i++)
     this->valMap[i] = values[i];
 }
 

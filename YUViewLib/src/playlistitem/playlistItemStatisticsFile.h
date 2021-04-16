@@ -53,6 +53,7 @@ public:
 
   playlistItemStatisticsFile(const QString &itemNameOrFileName,
                              OpenMode       openMode = OpenMode::Extension);
+  playlistItemStatisticsFile(playlistItemStatisticsFile *clone);
   virtual ~playlistItemStatisticsFile();
 
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
@@ -117,7 +118,7 @@ protected:
   OpenMode                                   openMode;
 
   // Is the loadFrame function currently loading?
-  bool isStatisticsLoading;
+  bool isStatisticsLoading{};
 
   QFuture<void>    backgroundParserFuture;
   std::atomic_bool breakBackgroundAtomic;
@@ -127,5 +128,5 @@ protected:
   virtual void
   timerEvent(QTimerEvent *event) override; // Overloaded from QObject. Called when the timer fires.
 
-  int currentDrawnFrameIdx;
+  int currentDrawnFrameIdx{-1};
 };

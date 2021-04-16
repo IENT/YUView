@@ -49,17 +49,10 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Image Sequence Properties";
 
-  loadPlaylistFrameMissing = false;
-  isFrameLoading           = false;
-
-  // Create the video handler
   video.reset(new videoHandler());
-
-  // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
 
-  // Connect the video signalRequestFrame to this::loadFrame
-  connect(video.data(),
+  connect(video.get(),
           &videoHandler::signalRequestFrame,
           this,
           &playlistItemImageFileSequence::slotFrameRequest);
@@ -67,13 +60,9 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   if (!rawFilePath.isEmpty())
   {
     // Get the frames to use as a sequence
-    fillImageFileList(imageFiles, rawFilePath);
-
-    setInternals(rawFilePath);
+    this->fillImageFileList(imageFiles, rawFilePath);
+    this->setInternals(rawFilePath);
   }
-
-  // No file changed yet
-  fileChanged = false;
 
   connect(&fileWatcher,
           &QFileSystemWatcher::fileChanged,
@@ -81,7 +70,37 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
           &playlistItemImageFileSequence::fileSystemWatcherFileChanged);
 
   // Install a file watcher if file watching is active.
-  updateSettings();
+  this->updateSettings();
+}
+
+playlistItemImageFileSequence::playlistItemImageFileSequence(playlistItemImageFileSequence *clone) : playlistItemWithVideo(clone)
+{
+  // Set the properties of the playlistItem
+  setIcon(0, functionsGui::convertIcon(":img_television.png"));
+  setFlags(flags() | Qt::ItemIsDropEnabled);
+
+  video.reset(new videoHandler(clone->video.get()));
+  playlistItemWithVideo::connectVideo();
+
+  connect(video.get(),
+          &videoHandler::signalRequestFrame,
+          this,
+          &playlistItemImageFileSequence::slotFrameRequest);
+
+  if (!this->prop.name.isEmpty())
+  {
+    // Get the frames to use as a sequence
+    this->fillImageFileList(imageFiles, this->prop.name);
+    this->setInternals(this->prop.name);
+  }
+
+  connect(&fileWatcher,
+          &QFileSystemWatcher::fileChanged,
+          this,
+          &playlistItemImageFileSequence::fileSystemWatcherFileChanged);
+
+  // Install a file watcher if file watching is active.
+  this->updateSettings();
 }
 
 bool playlistItemImageFileSequence::isImageSequence(const QString &filePath)

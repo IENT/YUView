@@ -47,10 +47,15 @@
 #include <QSettings>
 #include <QTextStream>
 
+#include "playlistitem/playlistItemCompressedVideo.h"
 #include "playlistitem/playlistItemContainer.h"
 #include "playlistitem/playlistItemDifference.h"
+#include "playlistitem/playlistItemImageFile.h"
+#include "playlistitem/playlistItemImageFileSequence.h"
 #include "playlistitem/playlistItemOverlay.h"
+#include "playlistitem/playlistItemRawFile.h"
 #include "playlistitem/playlistItemResample.h"
+#include "playlistitem/playlistItemStatisticsFile.h"
 #include "playlistitem/playlistItemText.h"
 #include "playlistitem/playlistItems.h"
 
@@ -433,15 +438,16 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent *event)
   menu.addAction("Add Resampler", this, &PlaylistTreeWidget::addResampleItem);
   menu.addAction("Add Overlay", this, &PlaylistTreeWidget::addOverlayItem);
 
-  QTreeWidgetItem *itemAtPoint = itemAt(event->pos());
-  if (itemAtPoint)
+  auto item = itemAt(event->pos());
+  if (item)
   {
     menu.addSeparator();
     menu.addAction("Delete Item", this, &PlaylistTreeWidget::deletePlaylistItems);
 
-    playlistItemText *txt = dynamic_cast<playlistItemText *>(itemAtPoint);
-    if (txt)
-      menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
+    if (canCastTo<playlistItemText>(item) || canCastTo<playlistItemRawFile>(item) ||
+        canCastTo<playlistItemCompressedVideo>(item) || canCastTo<playlistItemImageFile>(item) ||
+        canCastTo<playlistItemImageFileSequence>(item) || canCastTo<playlistItemStatisticsFile>(item))
+      menu.addAction("Duplicate Item", this, &PlaylistTreeWidget::duplicateSelectedItems);
   }
 
   menu.exec(event->globalPos());
@@ -1040,34 +1046,28 @@ void PlaylistTreeWidget::dropAutosavedPlaylist()
   settings.remove("Autosaveplaylist");
 }
 
-void PlaylistTreeWidget::cloneSelectedItem()
+void PlaylistTreeWidget::duplicateSelectedItems()
 {
-  QList<QTreeWidgetItem *> items = selectedItems();
+  auto items = selectedItems();
   if (items.count() == 0)
     return;
 
-  // Ask the user how many clones he wants to create
-  bool ok;
-  int  nrClones = QInputDialog::getInt(
-      this, "How many clones of each item do you need?", "Number of clones", 1, 1, 100000, 1, &ok);
-  if (!ok)
-    return;
-
-  for (QTreeWidgetItem *item : items)
+  for (auto item : items)
   {
-    playlistItem *plItem = dynamic_cast<playlistItem *>(item);
+    auto plItem = dynamic_cast<playlistItem *>(item);
+    if (!plItem)
+      continue;
 
-    // Is this is playlistItemText?
-    playlistItemText *plItemTxt = dynamic_cast<playlistItemText *>(plItem);
-    if (plItemTxt)
-    {
-      // Clone it
-      for (int i = 0; i < nrClones; i++)
-      {
-        playlistItemText *newText = new playlistItemText(plItemTxt);
-        appendNewItem(newText);
-      }
-    }
+    if (auto txt = dynamic_cast<playlistItemText *>(plItem))
+      this->appendNewItem(new playlistItemText(txt));
+    else if (auto rawFile = dynamic_cast<playlistItemRawFile *>(plItem))
+      this->appendNewItem(new playlistItemRawFile(rawFile));
+    else if (auto image = dynamic_cast<playlistItemImageFile *>(plItem))
+      this->appendNewItem(new playlistItemImageFile(image));
+    else if (auto sequence = dynamic_cast<playlistItemImageFileSequence *>(plItem))
+      this->appendNewItem(new playlistItemImageFileSequence(sequence));
+    else if (auto stats = dynamic_cast<playlistItemStatisticsFile *>(plItem))
+      this->appendNewItem(new playlistItemStatisticsFile(stats));
   }
 }
 

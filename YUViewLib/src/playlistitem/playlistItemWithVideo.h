@@ -44,6 +44,7 @@ class playlistItemWithVideo : public playlistItem
 {
 public:
   playlistItemWithVideo(const QString &itemNameOrFileName);
+  playlistItemWithVideo(playlistItemWithVideo *cloneFrom);
 
   // Draw the item
   virtual void
@@ -51,7 +52,7 @@ public:
 
   // All the functions that we have to overload if we are using a video handler
   virtual QSize         getSize() const override;
-  virtual frameHandler *getFrameHandler() override { return video.data(); }
+  virtual frameHandler *getFrameHandler() override { return video.get(); }
   virtual void          activateDoubleBuffer() override
   {
     if (video)
@@ -111,30 +112,30 @@ private slots:
 
 protected:
   // A pointer to the videHandler. In the derived class, don't foret to set this.
-  QScopedPointer<videoHandler> video;
+  std::unique_ptr<videoHandler> video;
 
   // The videoHandler can be a videoHandlerRGB or a videoHandlerYUV
-  YUView::RawFormat rawFormat;
+  YUView::RawFormat rawFormat {YUView::raw_Invalid};
   // Get a raw pointer to either version of the videoHandler
   videoHandlerYUV *getYUVVideo()
   {
     assert(rawFormat == YUView::raw_YUV);
-    return dynamic_cast<videoHandlerYUV *>(video.data());
+    return dynamic_cast<videoHandlerYUV *>(video.get());
   }
   videoHandlerRGB *getRGBVideo()
   {
     assert(rawFormat == YUView::raw_RGB);
-    return dynamic_cast<videoHandlerRGB *>(video.data());
+    return dynamic_cast<videoHandlerRGB *>(video.get());
   }
   const videoHandlerYUV *getYUVVideo() const
   {
     assert(rawFormat == YUView::raw_YUV);
-    return dynamic_cast<const videoHandlerYUV *>(video.data());
+    return dynamic_cast<const videoHandlerYUV *>(video.get());
   }
   const videoHandlerRGB *getRGBVideo() const
   {
     assert(rawFormat == YUView::raw_RGB);
-    return dynamic_cast<const videoHandlerRGB *>(video.data());
+    return dynamic_cast<const videoHandlerRGB *>(video.get());
   }
 
   // Connect the basic signals from the video
@@ -143,11 +144,11 @@ protected:
   virtual void updateStartEndRange(){};
 
   // Is the loadFrame function currently loading?
-  bool isFrameLoading;
-  bool isFrameLoadingDoubleBuffer;
+  bool isFrameLoading {};
+  bool isFrameLoadingDoubleBuffer {};
 
   // Set if an unresolvable error occurred. In this case, we just draw an error text.
-  bool unresolvableError;
+  bool unresolvableError {};
   bool setError(QString error)
   {
     unresolvableError = true;

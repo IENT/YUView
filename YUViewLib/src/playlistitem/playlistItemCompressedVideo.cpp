@@ -338,7 +338,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     seekToPosition(0, 0, true);
 
   // Connect signals for requesting data and statistics
-  connect(video.data(),
+  connect(video.get(),
           &videoHandler::signalRequestRawData,
           this,
           &playlistItemCompressedVideo::loadRawData,
@@ -1236,7 +1236,7 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a
     // redraw.
-    videoHandlerYUV *yuvVideo       = dynamic_cast<videoHandlerYUV *>(video.data());
+    videoHandlerYUV *yuvVideo       = dynamic_cast<videoHandlerYUV *>(video.get());
     yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();
 
@@ -1255,7 +1255,7 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a
     // redraw.
-    videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV *>(video.data());
+    videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV *>(video.get());
     if (loadingDecoder)
       yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();

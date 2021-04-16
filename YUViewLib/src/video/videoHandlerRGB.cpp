@@ -108,6 +108,18 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler()
   setSrcPixelFormat(rgbPixelFormat(8, false));
 }
 
+videoHandlerRGB::videoHandlerRGB(videoHandlerRGB *clone) : videoHandler(clone)
+{
+  this->componentDisplayMode = clone->componentDisplayMode;
+  this->srcPixelFormat = clone->srcPixelFormat;
+  for (int i = 0; i < 3; i++)
+  {
+    this->componentScale[i] = clone->componentScale[i];
+    this->componentInvert[i] = clone->componentInvert[i];
+  }
+  this->limitedRange = clone->limitedRange;
+}
+
 videoHandlerRGB::~videoHandlerRGB()
 {
   // This will cause a "QMutex: destroying locked mutex" warning by Qt.

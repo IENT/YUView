@@ -53,6 +53,7 @@ class videoHandlerYUV : public videoHandler
 
 public:
   videoHandlerYUV();
+  videoHandlerYUV(videoHandlerYUV *clone);
   ~videoHandlerYUV();
 
   // The format is valid if the frame width/height/pixel format are set
