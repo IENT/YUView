@@ -413,6 +413,9 @@ void PlaylistTreeWidget::addOverlayItem()
 
 void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChanged)
 {
+  if (!item)
+    return;
+
   insertTopLevelItem(topLevelItemCount(), item);
   connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
   connect(item,
@@ -443,11 +446,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent *event)
   {
     menu.addSeparator();
     menu.addAction("Delete Item", this, &PlaylistTreeWidget::deletePlaylistItems);
-
-    if (canCastTo<playlistItemText>(item) || canCastTo<playlistItemRawFile>(item) ||
-        canCastTo<playlistItemCompressedVideo>(item) || canCastTo<playlistItemImageFile>(item) ||
-        canCastTo<playlistItemImageFileSequence>(item) || canCastTo<playlistItemStatisticsFile>(item))
-      menu.addAction("Duplicate Item", this, &PlaylistTreeWidget::duplicateSelectedItems);
+    menu.addAction("Duplicate Item", this, &PlaylistTreeWidget::duplicateSelectedItems);
   }
 
   menu.exec(event->globalPos());
@@ -906,9 +905,9 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   }
 
   // Get the root and parser the header
-  QDomElement root = doc.documentElement();
-  QString     tmp1 = root.tagName();
-  QString     tmp2 = root.attribute("version");
+  auto root = doc.documentElement();
+  auto tmp1 = root.tagName();
+  auto tmp2 = root.attribute("version");
   if (root.tagName() == "plist" && root.attribute("version") == "1.0")
   {
     // This is a playlist file in the old format. This is not supported anymore.
@@ -927,16 +926,11 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   }
 
   // Iterate over all items in the playlist
-  QDomNode n = root.firstChild();
+  auto n = root.firstChild();
   while (!n.isNull())
   {
-    QDomElement elem = n.toElement();
     if (n.isElement())
-    {
-      playlistItem *newItem = playlistItems::loadPlaylistItem(elem, filePath);
-      if (newItem)
-        appendNewItem(newItem, false);
-    }
+      this->appendNewItem(playlistItems::loadPlaylistItem(n.toElement(), filePath), false);
     n = n.nextSibling();
   }
 
@@ -944,14 +938,11 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   n = root.firstChild();
   while (!n.isNull())
   {
-    QDomElement elem = n.toElement();
     if (n.isElement())
     {
+      QDomElement elem = n.toElement();
       if (elem.tagName() == "viewStates")
-      {
-        // These are the view states. Load them
         stateHandler->loadPlaylist(elem);
-      }
     }
     n = n.nextSibling();
   }
@@ -963,7 +954,6 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
     setCurrentItem(0);
   }
 
-  // A new item was appended. The playlist changed.
   emit playlistChanged();
   return true;
 }
@@ -1052,23 +1042,29 @@ void PlaylistTreeWidget::duplicateSelectedItems()
   if (items.count() == 0)
     return;
 
+  // We do this with the same code that we use to save/load playlists.
+  // So we just save all items to a temporary playlist and load them again.
+  QDomDocument document;
+  auto         plist = document.createElement(QStringLiteral("playlistItems"));
+  document.appendChild(plist);
+
   for (auto item : items)
   {
-    auto plItem = dynamic_cast<playlistItem *>(item);
-    if (!plItem)
-      continue;
-
-    if (auto txt = dynamic_cast<playlistItemText *>(plItem))
-      this->appendNewItem(new playlistItemText(txt));
-    else if (auto rawFile = dynamic_cast<playlistItemRawFile *>(plItem))
-      this->appendNewItem(new playlistItemRawFile(rawFile));
-    else if (auto image = dynamic_cast<playlistItemImageFile *>(plItem))
-      this->appendNewItem(new playlistItemImageFile(image));
-    else if (auto sequence = dynamic_cast<playlistItemImageFileSequence *>(plItem))
-      this->appendNewItem(new playlistItemImageFileSequence(sequence));
-    else if (auto stats = dynamic_cast<playlistItemStatisticsFile *>(plItem))
-      this->appendNewItem(new playlistItemStatisticsFile(stats));
+    if (auto plItem = dynamic_cast<playlistItem *>(item))
+      plItem->savePlaylist(plist, QDir::current());
   }
+
+  // Load the temporary playlist
+  auto n = document.documentElement().firstChild();
+  while (!n.isNull())
+  {
+    if (n.isElement())
+      this->appendNewItem(
+          playlistItems::loadPlaylistItem(n.toElement(), QDir::current().absolutePath()), false);
+    n = n.nextSibling();
+  }
+
+  emit playlistChanged();
 }
 
 void PlaylistTreeWidget::autoSavePlaylist()

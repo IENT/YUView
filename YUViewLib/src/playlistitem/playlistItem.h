@@ -102,7 +102,6 @@ public:
    * will then call addPropertiesWidget to add the custom properties panel.
    */
   playlistItem(const QString &itemNameOrFileName, Type type);
-  playlistItem(playlistItem *cloneFrom);
   virtual ~playlistItem();
 
   virtual Properties properties() const { return this->prop; };

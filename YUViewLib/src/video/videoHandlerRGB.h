@@ -47,7 +47,6 @@ class videoHandlerRGB : public videoHandler
 
 public:
   videoHandlerRGB();
-  videoHandlerRGB(videoHandlerRGB *clone);
   virtual ~videoHandlerRGB();
 
   // The format is valid if the frame width/height/pixel format are set

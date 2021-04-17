@@ -61,24 +61,14 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
                                                        OpenMode       openMode)
     : playlistItem(itemNameOrFileName, Type::Indexed), openMode(openMode)
 {
+  // Set default variables
+  currentDrawnFrameIdx = -1;
+  isStatisticsLoading  = false;
+
   this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Statistics File Properties";
   this->prop.providesStatistics    = true;
 
-  // Set statistics icon
-  setIcon(0, functionsGui::convertIcon(":img_stats.png"));
-
-  this->openStatisticsFile();
-  this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
-
-  connect(&this->statisticsUIHandler, &stats::StatisticUIHandler::updateItem, [this](bool redraw) {
-    emit signalItemChanged(redraw, RECACHE_NONE);
-  });
-}
-
-playlistItemStatisticsFile::playlistItemStatisticsFile(playlistItemStatisticsFile *clone)
-    : playlistItem(clone)
-{
   // Set statistics icon
   setIcon(0, functionsGui::convertIcon(":img_stats.png"));
 

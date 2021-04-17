@@ -44,13 +44,6 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, Type type)
   this->prop.id = idCounter++;
 }
 
-playlistItem::playlistItem(playlistItem *cloneFrom)
-{
-  // Copy all properties but give a new ID
-  this->prop = cloneFrom->prop;
-  this->prop.id = idCounter++;
-}
-
 playlistItem::~playlistItem()
 {
 }

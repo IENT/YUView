@@ -391,12 +391,6 @@ enum recacheIndicator
 };
 Q_DECLARE_METATYPE(recacheIndicator)
 
-template <typename CastTo, typename T> inline bool canCastTo(T *c)
-{
-  CastTo *p = dynamic_cast<CastTo*>(c);
-  return p != nullptr;
-}
-
 #if QT_VERSION <= 0x050700
 // copied from newer version of qglobal.h
 template <typename... Args> struct QNonConstOverload

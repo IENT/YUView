@@ -46,8 +46,6 @@
 
 videoHandler::videoHandler() {}
 
-videoHandler::videoHandler(videoHandler *clone) : frameHandler(clone) {}
-
 void videoHandler::slotVideoControlChanged()
 {
   // Update the controls and get the new selected size

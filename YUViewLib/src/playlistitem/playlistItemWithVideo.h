@@ -46,7 +46,6 @@ class playlistItemWithVideo : public playlistItem
 {
 public:
   playlistItemWithVideo(const QString &itemNameOrFileName);
-  playlistItemWithVideo(playlistItemWithVideo *cloneFrom);
 
   // Draw the item
   virtual void

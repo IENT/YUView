@@ -412,19 +412,6 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
     presetList.append(e);
 }
 
-videoHandlerYUV::videoHandlerYUV(videoHandlerYUV *clone) : videoHandler(clone)
-{
-  this->chromaInterpolation = clone->chromaInterpolation;
-  this->componentDisplayMode = clone->componentDisplayMode;
-  this->yuvColorConversionType = clone->yuvColorConversionType;
-
-  this->mathParameters[Component::Luma] = clone->mathParameters[Component::Luma];
-  this->mathParameters[Component::Chroma] = clone->mathParameters[Component::Chroma];
-
-  this->srcPixelFormat = clone->srcPixelFormat;
-  this->presetList = clone->presetList;
-}
-
 videoHandlerYUV::~videoHandlerYUV() { DEBUG_YUV("videoHandlerYUV destruction"); }
 
 void videoHandlerYUV::loadValues(Size newFramesize, const QString &)

@@ -52,7 +52,6 @@ public:
                       const QSize    frameSize         = {},
                       const QString &sourcePixelFormat = {},
                       const QString &fmt               = {});
-  playlistItemRawFile(playlistItemRawFile *cloneFile);
 
   // Overload from playlistItem. Save the raw file item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
@@ -99,8 +98,6 @@ protected:
   void setFormatFromFileName();
 
 private:
-  void initClass();
-
   // Overload from playlistItem. Create a properties widget custom to the RawFile
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() override;
@@ -115,7 +112,7 @@ private:
   // and start indicators for every frame. This file will parse the header and save all the byte
   // offsets for each raw YUV frame.
   bool            parseY4MFile();
-  bool            isY4MFile {};
+  bool            isY4MFile;
   QList<uint64_t> y4mFrameIndices;
 
   QString pixelFormatAfterLoading;

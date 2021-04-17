@@ -57,7 +57,6 @@ public:
   // Create a new blank frameHandler. Don't forget to load an image from file
   // (loadCurrentImageFromFile).
   frameHandler();
-  frameHandler(frameHandler *clone);
 
   // Get the size/bit depth of the (current) frame
   Size getFrameSize() const { return frameSize; }

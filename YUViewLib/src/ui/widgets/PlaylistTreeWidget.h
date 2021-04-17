@@ -198,7 +198,7 @@ private:
   // Append the new item at the end of the playlist and connect signals/slots
   void appendNewItem(playlistItem *item, bool emitplaylistChanged = true);
 
-  // Duplicate the selected item as often as the user wants
+  // Duplicate the selected items
   void duplicateSelectedItems();
 
   // We have a pointer to the ViewStateHandler to load/save the view states to playlist
