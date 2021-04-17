@@ -423,6 +423,19 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   }
 }
 
+void videoHandlerRGB::savePlaylist(YUViewDomElement &element)
+{
+  frameHandler::savePlaylist(element);
+  element.appendProperiteChild("pixelFormat", this->getRawRGBPixelFormatName());
+}
+
+void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
+{
+  frameHandler::loadPlaylist(element);
+  QString sourcePixelFormat = element.findChildValue("pixelFormat");
+  this->setRGBPixelFormatByName(sourcePixelFormat);
+}
+
 void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 {
   DEBUG_RGB("videoHandlerRGB::loadFrameForCaching %d", frameIndex);

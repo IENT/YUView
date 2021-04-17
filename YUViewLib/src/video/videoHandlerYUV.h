@@ -161,6 +161,9 @@ public:
 
   bool getIs_YUV_diff() const;
 
+  virtual void savePlaylist(YUViewDomElement &root);
+  virtual void loadPlaylist(const YUViewDomElement &root);
+
 protected:
   // How do we perform interpolation for the subsampled YUV formats?
   YUV_Internals::ChromaInterpolation chromaInterpolation{

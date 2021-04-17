@@ -84,15 +84,16 @@ const auto ChromaInterpolationMapper =
 class MathParameters
 {
 public:
-  MathParameters() : scale(1), offset(128), invert(false) {}
+  MathParameters() = default;
   MathParameters(int scale, int offset, bool invert) : scale(scale), offset(offset), invert(invert)
   {
   }
   // Do we need to apply any transform to the raw YUV data before conversion to RGB?
   bool mathRequired() const { return scale != 1 || invert; }
 
-  int  scale, offset;
-  bool invert;
+  int  scale{1};
+  int  offset{128};
+  bool invert{};
 };
 
 enum class PredefinedPixelFormat

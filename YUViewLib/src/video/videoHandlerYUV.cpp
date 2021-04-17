@@ -3332,8 +3332,9 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
       if (format.isBytePacking() && format.getBitsPerSample() == 10)
       {
         // The format is 4 values in 40 bits (5 bytes) which fits exactly for 422 10 bit.
-        auto offsetInInput = pixelPos.y() * (pixelPos.x() / 2) * 5;
-        const unsigned char *restrict src = (unsigned char *)currentFrameRawData.data() + offsetInInput;
+        auto                          offsetInInput = pixelPos.y() * (pixelPos.x() / 2) * 5;
+        const unsigned char *restrict src =
+            (unsigned char *)currentFrameRawData.data() + offsetInInput;
 
         unsigned short values[4];
         values[0] = (src[0] << 2) + (src[1] >> 6);
@@ -3351,15 +3352,15 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
       else
       {
         // The offset of the pixel in bytes
-        const unsigned offsetCoordinate4Block =
-            (w * 2 * pixelPos.y() + (pixelPos.x() / 2 * 4)) * (format.getBitsPerSample() > 8 ? 2 : 1);
+        const unsigned offsetCoordinate4Block = (w * 2 * pixelPos.y() + (pixelPos.x() / 2 * 4)) *
+                                                (format.getBitsPerSample() > 8 ? 2 : 1);
         const unsigned char *restrict src =
             (unsigned char *)currentFrameRawData.data() + offsetCoordinate4Block;
 
         value.Y = getValueFromSource(src,
-                                    (pixelPos.x() % 2 == 0) ? oY : oY + 2,
-                                    format.getBitsPerSample(),
-                                    format.isBigEndian());
+                                     (pixelPos.x() % 2 == 0) ? oY : oY + 2,
+                                     format.getBitsPerSample(),
+                                     format.isBigEndian());
         value.U = getValueFromSource(src, oU, format.getBitsPerSample(), format.isBigEndian());
         value.V = getValueFromSource(src, oV, format.getBitsPerSample(), format.isBigEndian());
       }
@@ -4068,4 +4069,46 @@ void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
     if (ui.created())
       ui.colorConversionComboBox->setCurrentIndex(int(yuvColorConversionType));
   }
+}
+
+void videoHandlerYUV::savePlaylist(YUViewDomElement &element)
+{
+  frameHandler::savePlaylist(element);
+  element.appendProperiteChild("pixelFormat", this->getRawYUVPixelFormatName());
+
+  auto ml = this->mathParameters[Component::Luma];
+  element.appendProperiteChild("math.luma.scale", QString::number(ml.scale));
+  element.appendProperiteChild("math.luma.offset", QString::number(ml.offset));
+  element.appendProperiteChild("math.luma.invert", ml.invert ? "True" : "False");
+
+  auto mc = this->mathParameters[Component::Chroma];
+  element.appendProperiteChild("math.chroma.scale", QString::number(mc.scale));
+  element.appendProperiteChild("math.chroma.offset", QString::number(mc.offset));
+  element.appendProperiteChild("math.chroma.invert", mc.invert ? "True" : "False");
+}
+
+void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)
+{
+  frameHandler::loadPlaylist(element);
+
+  auto sourcePixelFormat = element.findChildValue("pixelFormat");
+  this->setYUVPixelFormatByName(sourcePixelFormat);
+
+  auto lumaScale = element.findChildValue("math.luma.scale");
+  if (!lumaScale.isEmpty())
+    this->mathParameters[Component::Luma].scale = lumaScale.toInt();
+  auto lumaOffset = element.findChildValue("math.luma.offset");
+  if (!lumaOffset.isEmpty())
+    this->mathParameters[Component::Luma].offset = lumaOffset.toInt();
+  this->mathParameters[Component::Luma].invert =
+      (element.findChildValue("math.luma.invert") == "True");
+
+  auto chromaScale = element.findChildValue("math.chroma.scale");
+  if (!chromaScale.isEmpty())
+    this->mathParameters[Component::Chroma].scale = chromaScale.toInt();
+  auto chromaOffset = element.findChildValue("math.chroma.offset");
+  if (!chromaOffset.isEmpty())
+    this->mathParameters[Component::Chroma].offset = chromaOffset.toInt();
+  this->mathParameters[Component::Chroma].invert =
+      (element.findChildValue("math.chroma.invert") == "True");
 }

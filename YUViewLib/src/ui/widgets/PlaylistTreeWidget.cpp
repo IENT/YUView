@@ -776,7 +776,7 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
     // Something was added. Select the last added item.
     setCurrentItem(lastAddedItem, 0, QItemSelectionModel::ClearAndSelect);
 
-    // The signal playlistChanged mus not be emitted again here because the setCurrentItem(...)
+    // The signal playlistChanged must not be emitted again here because the setCurrentItem(...)
     // function already did
   }
 }
@@ -1055,16 +1055,24 @@ void PlaylistTreeWidget::duplicateSelectedItems()
   }
 
   // Load the temporary playlist
-  auto n = document.documentElement().firstChild();
+  auto          n                   = document.documentElement().firstChild();
+  playlistItem *firstDuplicatedItem = nullptr;
   while (!n.isNull())
   {
     if (n.isElement())
-      this->appendNewItem(
-          playlistItems::loadPlaylistItem(n.toElement(), QDir::current().absolutePath()), false);
+    {
+      auto newItem = playlistItems::loadPlaylistItem(n.toElement(), QDir::current().absolutePath());
+      if (!firstDuplicatedItem)
+        firstDuplicatedItem = newItem;
+      this->appendNewItem(newItem, false);
+    }
     n = n.nextSibling();
   }
 
-  emit playlistChanged();
+  if (firstDuplicatedItem)
+    setCurrentItem(firstDuplicatedItem, 0, QItemSelectionModel::ClearAndSelect);
+
+  // Do not emit playlistChanged() because setCurrentItem already did.
 }
 
 void PlaylistTreeWidget::autoSavePlaylist()
