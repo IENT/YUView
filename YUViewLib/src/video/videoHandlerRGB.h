@@ -142,14 +142,14 @@ public:
 
 protected:
   // Which components should we display
-  typedef enum
+  enum class ComponentShow
   {
-    DisplayAll,
-    DisplayR,
-    DisplayG,
-    DisplayB
-  } ComponentDisplayMode;
-  ComponentDisplayMode componentDisplayMode{DisplayAll};
+    All,
+    R,
+    G,
+    B
+  };
+  ComponentShow componentDisplayMode{ComponentShow::All};
 
   // A (static) convenience QList class that handles the preset rgbPixelFormats
   class RGBFormatList : public QList<RGB_Internals::rgbPixelFormat>
@@ -170,7 +170,7 @@ protected:
   // Parameters for the RGB transformation (like scaling, invert)
   int  componentScale[3]{1, 1, 1};
   bool componentInvert[3]{false, false, false};
-  bool limitedRange{false};
+  bool limitedRange{};
 
   // Get the RGB values for the given pixel.
   struct rgba_t
