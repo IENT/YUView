@@ -1,34 +1,34 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "playlistItemRawFile.h"
 
@@ -36,8 +36,8 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
-#include "common/functionsGui.h"
 #include "common/functions.h"
+#include "common/functionsGui.h"
 #include "handler/itemMemoryHandler.h"
 
 using namespace YUView;
@@ -48,11 +48,14 @@ using namespace YUV_Internals;
 #if PLAYLISTITEMRAWFILE_DEBUG_LOADING && !NDEBUG
 #define DEBUG_RAWFILE qDebug
 #else
-#define DEBUG_RAWFILE(fmt,...) ((void)0)
+#define DEBUG_RAWFILE(fmt, ...) ((void)0)
 #endif
 
-playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize qFrameSize, const QString &sourcePixelFormat, const QString &fmt)
-  : playlistItemWithVideo(rawFilePath)
+playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
+                                         const QSize    qFrameSize,
+                                         const QString &sourcePixelFormat,
+                                         const QString &fmt)
+    : playlistItemWithVideo(rawFilePath)
 {
   // High DPI support for icons:
   // Set the Qt::AA_UseHighDpiPixmaps attribute and then just use QIcon(":image.png")
@@ -63,7 +66,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   setIcon(0, functionsGui::convertIcon(":img_video.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  this->prop.isFileSource = true;
+  this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Raw File Properties";
 
   dataSource.openFile(rawFilePath);
@@ -79,8 +82,8 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
 
   // Create a new videoHandler instance depending on the input format
   QFileInfo fi(rawFilePath);
-  QString ext = fi.suffix();
-  ext = ext.toLower();
+  QString   ext = fi.suffix();
+  ext           = ext.toLower();
   if (ext == "yuv" || ext == "nv21" || fmt.toLower() == "yuv" || ext == "y4m")
   {
     video.reset(new videoHandlerYUV);
@@ -133,11 +136,18 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   this->updateStartEndRange();
 
   // If the videHandler requests raw data, we provide it from the file
-  connect(video.get(), &videoHandler::signalRequestRawData, this, &playlistItemRawFile::loadRawData, Qt::DirectConnection);
+  connect(video.get(),
+          &videoHandler::signalRequestRawData,
+          this,
+          &playlistItemRawFile::loadRawData,
+          Qt::DirectConnection);
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
-  connect(video.get(), &videoHandler::signalHandlerChanged, this, &playlistItemRawFile::slotVideoPropertiesChanged);
+  connect(video.get(),
+          &videoHandler::signalHandlerChanged,
+          this,
+          &playlistItemRawFile::slotVideoPropertiesChanged);
 
   this->pixelFormatAfterLoading = video->getFormatAsString();
 
@@ -166,7 +176,7 @@ void playlistItemRawFile::updateStartEndRange()
     }
     nrFrames = this->dataSource.getFileSize() / bpf;
   }
-  
+
   this->prop.startEndRange = indexRange(0, std::max(nrFrames - 1, 0));
 }
 
@@ -177,9 +187,11 @@ infoData playlistItemRawFile::getInfo() const
   // At first append the file information part (path, date created, file size...)
   info.items.append(dataSource.getFileInfoList());
 
-  auto nrFrames = (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
+  auto nrFrames =
+      (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
   info.items.append(infoItem("Num Frames", QString::number(nrFrames)));
-  info.items.append(infoItem("Bytes per Frame", QString("%1").arg(this->video->getBytesPerFrame())));
+  info.items.append(
+      infoItem("Bytes per Frame", QString("%1").arg(this->video->getBytesPerFrame())));
 
   if (dataSource.isOk() && video->isFormatValid() && !isY4MFile)
   {
@@ -191,7 +203,8 @@ infoData playlistItemRawFile::getInfo() const
     if ((dataSource.getFileSize() % bpf) != 0)
     {
       // Add a warning
-      info.items.append(infoItem("Warning", "The file size and the given video size and/or raw format do not match."));
+      info.items.append(infoItem(
+          "Warning", "The file size and the given video size and/or raw format do not match."));
     }
   }
 
@@ -200,8 +213,8 @@ infoData playlistItemRawFile::getInfo() const
 
 bool playlistItemRawFile::parseY4MFile()
 {
-  // Read a chunck of data from the file. Thecnically, the header can be arbitrarily long, but in practice, 
-  // 512 bytes should cover the length of all headers
+  // Read a chunck of data from the file. Thecnically, the header can be arbitrarily long, but in
+  // practice, 512 bytes should cover the length of all headers
   QByteArray rawData;
   dataSource.readBytes(rawData, 0, 512);
 
@@ -211,9 +224,9 @@ bool playlistItemRawFile::parseY4MFile()
 
   // Next, there can be any number of parameters. Each paramter starts with a space.
   // The only requirement is, that width, height and framerate are specified.
-  size_t offset = 9;
-  unsigned width = 0;
-  unsigned height = 0;
+  size_t         offset = 9;
+  unsigned       width  = 0;
+  unsigned       height = 0;
   YUVPixelFormat format = YUVPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YUV);
 
   while (rawData.at(offset++) == ' ')
@@ -222,7 +235,7 @@ bool playlistItemRawFile::parseY4MFile()
     if (parameterIndicator == 'W' || parameterIndicator == 'H')
     {
       QByteArray number;
-      auto c = rawData.at(offset);
+      auto       c = rawData.at(offset);
       while (QChar(c).isDigit())
       {
         number.append(c);
@@ -247,14 +260,14 @@ bool playlistItemRawFile::parseY4MFile()
     {
       // The format is: "25:1" (nom:den)
       QByteArray nominator;
-      auto c = rawData.at(offset);
+      auto       c = rawData.at(offset);
       while (QChar(c).isDigit())
       {
         nominator.append(c);
         c = rawData.at(++offset);
       }
-      bool ok = true;
-      int nom = nominator.toInt(&ok);
+      bool ok  = true;
+      int  nom = nominator.toInt(&ok);
       if (!ok)
         return setError("Error parsing the Y4M header: Invalid framerate nominator.");
 
@@ -299,7 +312,8 @@ bool playlistItemRawFile::parseY4MFile()
         subsampling = Subsampling::YUV_444;
 
       unsigned bitsPerSample = 8;
-      if (rawData.at(offset) == 'p' && rawData.at(offset+1) == '1' && rawData.at(offset+2) == '0')
+      if (rawData.at(offset) == 'p' && rawData.at(offset + 1) == '1' &&
+          rawData.at(offset + 2) == '0')
       {
         bitsPerSample = 10;
         offset += 3;
@@ -320,17 +334,18 @@ bool playlistItemRawFile::parseY4MFile()
     // Peek the next byte. If it is 0x0A, the header ends.
     if (rawData.at(offset) == 10)
     {
-      offset++;  // Go to the byte after 0x0A.
+      offset++; // Go to the byte after 0x0A.
       break;
     }
   }
 
   if (width == 0 || height == 0)
-    return setError("Error parsing the Y4M header: The size could not be obtained from the header.");
+    return setError(
+        "Error parsing the Y4M header: The size could not be obtained from the header.");
 
-  // Next, all frames should follow. Each frame starts with the sequence 'FRAME', followed by a set of
-  // paramters for the frame. The 'FRAME' indicator is terminated by a 0x0A. The list of parameters is 
-  // also terminated by 0x0A.
+  // Next, all frames should follow. Each frame starts with the sequence 'FRAME', followed by a set
+  // of paramters for the frame. The 'FRAME' indicator is terminated by a 0x0A. The list of
+  // parameters is also terminated by 0x0A.
 
   // The offset in bytes to the next frame
   auto stride = width * height * 3 / 2;
@@ -340,7 +355,7 @@ bool playlistItemRawFile::parseY4MFile()
     stride = width * height * 3;
   if (format.getBitsPerSample() > 8)
     stride *= 2;
-  
+
   while (true)
   {
     // Seek the file to 'offset' and read a few bytes
@@ -351,8 +366,8 @@ bool playlistItemRawFile::parseY4MFile()
     if (frameIndicator != "FRAME")
       return setError("Error parsing the Y4M header: Could not locate the next 'FRAME' indicator.");
 
-    // We will now ignore all frame parameters by searching for the next 0x0A byte. I don't know what
-    // we could do with these parameters. 
+    // We will now ignore all frame parameters by searching for the next 0x0A byte. I don't know
+    // what we could do with these parameters.
     offset += 5;
     int internalOffset = 5;
     while (rawData.at(internalOffset) != 10 && internalOffset < 20)
@@ -387,13 +402,17 @@ void playlistItemRawFile::setFormatFromFileName()
   // Try to extract info on the width/height/rate/bitDepth from the file name
   auto fileFormat = FileSource::formatFromFilename(dataSource.getFileInfo());
 
-  if(fileFormat.frameSize.isValid())
+  if (fileFormat.frameSize.isValid())
   {
     video->setFrameSize(fileFormat.frameSize);
 
     // We were able to extract width and height from the file name using
     // regular expressions. Try to get the pixel format by checking with the file size.
-    video->setFormatFromSizeAndName(fileFormat.frameSize, fileFormat.bitDepth, fileFormat.packed, dataSource.getFileSize(), dataSource.getFileInfo());
+    video->setFormatFromSizeAndName(fileFormat.frameSize,
+                                    fileFormat.bitDepth,
+                                    fileFormat.packed,
+                                    dataSource.getFileSize(),
+                                    dataSource.getFileInfo());
     if (fileFormat.frameRate != -1)
       this->prop.frameRate = fileFormat.frameRate;
   }
@@ -413,7 +432,8 @@ void playlistItemRawFile::createPropertiesWidget()
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
 
-  // First add the parents controls (first video controls (width/height...) then videoHandler controls (format,...)
+  // First add the parents controls (first video controls (width/height...) then videoHandler
+  // controls (format,...)
   vAllLaout->addLayout(createPlaylistItemControls());
   vAllLaout->addWidget(line);
   vAllLaout->addLayout(video->createVideoHandlerControls());
@@ -428,9 +448,9 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
   // Determine the relative path to the raw file. We save both in the playlist.
   QUrl fileURL(dataSource.getAbsoluteFilePath());
   fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath(dataSource.getAbsoluteFilePath());
+  auto relativePath = playlistDir.relativeFilePath(dataSource.getAbsoluteFilePath());
 
-  YUViewDomElement d = root.ownerDocument().createElement("playlistItemRawFile");
+  auto d = YUViewDomElement(root.ownerDocument().createElement("playlistItemRawFile"));
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -441,39 +461,29 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
   d.appendProperiteChild("type", (rawFormat == raw_YUV) ? "YUV" : "RGB");
 
   // Append the video handler properties
-  d.appendProperiteChild("width", QString::number(video->getFrameSize().width));
-  d.appendProperiteChild("height", QString::number(video->getFrameSize().height));
-
-  // Append the videoHandler properties
-  if (rawFormat == raw_YUV)
-    d.appendProperiteChild("pixelFormat", getYUVVideo()->getRawYUVPixelFormatName());
-  else if (rawFormat == raw_RGB)
-    d.appendProperiteChild("pixelFormat", getRGBVideo()->getRawRGBPixelFormatName());
+  this->video->savePlaylist(d);
 
   root.appendChild(d);
 }
 
 /* Parse the playlist and return a new playlistItemRawFile.
-*/
-playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const YUViewDomElement &root, const QString &playlistFilePath)
+ */
+playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const YUViewDomElement &root,
+                                                                 const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemRawFile
-  QString absolutePath = root.findChildValue("absolutePath");
-  QString relativePath = root.findChildValue("relativePath");
-  QString type = root.findChildValue("type");
+  auto absolutePath = root.findChildValue("absolutePath");
+  auto relativePath = root.findChildValue("relativePath");
+  auto type         = root.findChildValue("type");
 
   // check if file with absolute path exists, otherwise check relative path
-  QString filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+  auto filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
     return nullptr;
 
-  // For a RAW file we can load the following values
-  auto width = unsigned(root.findChildValue("width").toInt());
-  auto height = unsigned(root.findChildValue("height").toInt());
-  QString sourcePixelFormat = root.findChildValue("pixelFormat");
-
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  playlistItemRawFile *newFile = new playlistItemRawFile(filePath, QSize(width,height), sourcePixelFormat, type);
+  auto newFile = new playlistItemRawFile(filePath, {}, {}, type);
+  newFile->video->loadPlaylist(root);
 
   // Load the propertied of the playlistItem
   playlistItem::loadPropertiesFromPlaylist(root, newFile);
@@ -514,10 +524,12 @@ void playlistItemRawFile::slotVideoPropertiesChanged()
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
-  return ValuePairListSets((rawFormat == raw_YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdx));
+  return ValuePairListSets((rawFormat == raw_YUV) ? "YUV" : "RGB",
+                           video->getPixelValues(pixelPos, frameIdx));
 }
 
-void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
+void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
+                                                     QStringList &filters)
 {
   allExtensions.append("yuv");
   allExtensions.append("rgb");
