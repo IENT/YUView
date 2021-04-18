@@ -645,8 +645,8 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
   ui.colorComponentsComboBox->setCurrentIndex((int)componentDisplayMode);
   ui.chromaInterpolationComboBox->addItems(
       functions::toQStringList(ChromaInterpolationMapper.getNames()));
-  if (auto idx = ChromaInterpolationMapper.indexOf(chromaInterpolation))
-    ui.chromaInterpolationComboBox->setCurrentIndex(int(*idx));
+  ui.chromaInterpolationComboBox->setCurrentIndex(
+      int(ChromaInterpolationMapper.indexOf(chromaInterpolation)));
   ui.chromaInterpolationComboBox->setEnabled(srcPixelFormat.isChromaSubsampled());
   ui.colorConversionComboBox->addItems(functions::toQStringList(ColorConversionMapper.getNames()));
   ui.colorConversionComboBox->setCurrentIndex((int)yuvColorConversionType);
@@ -3997,7 +3997,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   differenceInfoList.append(
       infoItem("Difference Type",
                QString("YUV %1").arg(QString::fromStdString(
-                   *SubsamplingMapper.getText(srcPixelFormat.getSubsampling())))));
+                   SubsamplingMapper.getText(srcPixelFormat.getSubsampling())))));
 
   double mse[4];
   mse[0] = double(mseAdd[0]) / (w_out * h_out);
@@ -4079,12 +4079,12 @@ void videoHandlerYUV::savePlaylist(YUViewDomElement &element)
   auto ml = this->mathParameters[Component::Luma];
   element.appendProperiteChild("math.luma.scale", QString::number(ml.scale));
   element.appendProperiteChild("math.luma.offset", QString::number(ml.offset));
-  element.appendProperiteChild("math.luma.invert", ml.invert ? "True" : "False");
+  element.appendProperiteChild("math.luma.invert", functions::booToString(ml.invert));
 
   auto mc = this->mathParameters[Component::Chroma];
   element.appendProperiteChild("math.chroma.scale", QString::number(mc.scale));
   element.appendProperiteChild("math.chroma.offset", QString::number(mc.offset));
-  element.appendProperiteChild("math.chroma.invert", mc.invert ? "True" : "False");
+  element.appendProperiteChild("math.chroma.invert", functions::booToString(mc.invert));
 }
 
 void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)

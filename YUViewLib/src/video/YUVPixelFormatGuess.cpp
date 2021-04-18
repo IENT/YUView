@@ -137,10 +137,7 @@ YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
           {
             const bool interlaced = !interlacedString.empty();
             {
-              auto subsamplingName = SubsamplingMapper.getName(subsampling);
-              if (!subsamplingName)
-                continue;
-              auto formatName = entry.first + *subsamplingName + "p";
+              auto formatName = entry.first + SubsamplingMapper.getName(subsampling) + "p";
               if (bitDepth > 8)
                 formatName += std::to_string(bitDepth) + endianness;
               formatName += interlacedString;
@@ -203,8 +200,8 @@ YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
         for (const auto &endianness : endiannessList)
         {
           {
-            auto packingNameLower = functions::toLower(*PackingOrderMapper.getName(packing));
-            auto formatName       = packingNameLower + *SubsamplingMapper.getName(subsampling);
+            auto packingNameLower = functions::toLower(PackingOrderMapper.getName(packing));
+            auto formatName       = packingNameLower + SubsamplingMapper.getName(subsampling);
             if (bitDepth > 8)
               formatName += std::to_string(bitDepth) + endianness;
             auto fmt = YUVPixelFormat(subsampling, bitDepth, packing, false, endianness == "be");
@@ -215,7 +212,7 @@ YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
           if (subsampling == detectedSubsampling && detectedSubsampling != Subsampling::UNKNOWN)
           {
             // Also try the string without the subsampling indicator (which we already detected)
-            auto formatName = functions::toLower(*PackingOrderMapper.getName(packing));
+            auto formatName = functions::toLower(PackingOrderMapper.getName(packing));
             if (bitDepth > 8)
               formatName += std::to_string(bitDepth) + endianness;
             auto fmt = YUVPixelFormat(subsampling, bitDepth, packing, false, endianness == "be");

@@ -47,58 +47,6 @@
 
 using namespace YUView;
 
-bool functions::isInputFormatTypeAnnexB(inputFormat format)
-{
-  return format == inputAnnexBHEVC || format == inputAnnexBVVC || format == inputAnnexBAVC;
-}
-
-bool functions::isInputFormatTypeFFmpeg(inputFormat format) { return format == inputLibavformat; }
-
-QString functions::getInputFormatName(inputFormat i)
-{
-  if (i == inputInvalid || i == input_NUM)
-    return "";
-  QStringList l = QStringList() << "annexBHEVC"
-                                << "annexBAVC"
-                                << "annexBVVC"
-                                << "FFmpeg";
-  return l.at((int)i);
-}
-
-inputFormat functions::getInputFormatFromName(QString name)
-{
-  QStringList l = QStringList() << "annexBHEVC"
-                                << "annexBAVC"
-                                << "annexBVVC"
-                                << "FFmpeg";
-  int idx = l.indexOf(name);
-  return (idx < 0 || idx >= input_NUM) ? inputInvalid : (inputFormat)idx;
-}
-
-QString functions::getDecoderEngineName(decoderEngine e)
-{
-  if (e <= decoderEngineInvalid || e >= decoderEngineNum)
-    return "";
-  QStringList l = QStringList() << "libDe265"
-                                << "HM"
-                                << "VTM"
-                                << "VVDec"
-                                << "Dav1d"
-                                << "FFmpeg";
-  return l.at((int)e);
-}
-
-decoderEngine functions::getDecoderEngineFromName(QString name)
-{
-  QStringList l = QStringList() << "libDe265"
-                                << "HM"
-                                << "VTM"
-                                << "Dav1d"
-                                << "FFmpeg";
-  int idx = l.indexOf(name);
-  return (idx < 0 || idx >= decoderEngineNum) ? decoderEngineInvalid : (decoderEngine)idx;
-}
-
 unsigned int functions::getOptimalThreadCount()
 {
   int nrThreads = QThread::idealThreadCount() - 1;

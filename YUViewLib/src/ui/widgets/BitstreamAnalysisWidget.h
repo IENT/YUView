@@ -79,7 +79,7 @@ private:
   void stopAndDeleteParserBlocking();
 
   void restartParsingOfCurrentItem();
-  void createAndConnectNewParser(YUView::inputFormat inputFormatType);
+  void createAndConnectNewParser(YUView::InputFormat inputFormatType);
 
   QScopedPointer<parser::Base> parser;
   QFuture<void>                backgroundParserFuture;

@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "common/typedef.h"
 #include "decoder/decoderBase.h"
 #include "filesource/FileSourceFFmpegFile.h"
 #include "parser/AnnexB.h"
@@ -58,8 +59,8 @@ public:
    */
   playlistItemCompressedVideo(const QString &       fileName,
                               int                   displayComponent = 0,
-                              YUView::inputFormat   input            = YUView::inputInvalid,
-                              YUView::decoderEngine decoder = YUView::decoderEngineInvalid);
+                              YUView::InputFormat   input            = YUView::InputFormat::Invalid,
+                              YUView::DecoderEngine decoder = YUView::DecoderEngine::Invalid);
 
   // Save the compressed file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
@@ -113,7 +114,7 @@ public:
   // is performed.
   virtual int cachingThreadLimit() override { return 1; }
 
-  YUView::inputFormat getInputFormat() const { return inputFormatType; }
+  YUView::InputFormat getInputFormat() const { return this->inputFormat; }
 
 protected:
   virtual void createPropertiesWidget() override;
@@ -125,9 +126,9 @@ protected:
   QScopedPointer<decoderBase> cachingDecoder;
 
   // When opening the file, we will fill this list with the possible decoders
-  QList<YUView::decoderEngine> possibleDecoders;
+  std::vector<YUView::DecoderEngine> possibleDecoders;
   // The actual type of the decoder
-  YUView::decoderEngine decoderEngineType;
+  YUView::DecoderEngine decoderEngine{YUView::DecoderEngine::Invalid};
   // Delete existing decoders and allocate decoders for the type "decoderEngineType"
   bool allocateDecoder(int displayComponent = 0);
 
@@ -143,7 +144,7 @@ protected:
   int readAnnexBFrameCounterCodingOrder{-1};
 
   // Which type is the input?
-  YUView::inputFormat inputFormatType;
+  YUView::InputFormat inputFormat;
   AVCodecIDWrapper    ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a

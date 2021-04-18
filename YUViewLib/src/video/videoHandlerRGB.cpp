@@ -456,11 +456,11 @@ void videoHandlerRGB::savePlaylist(YUViewDomElement &element)
   element.appendProperiteChild("scale.G", QString::number(this->componentScale[1]));
   element.appendProperiteChild("scale.B", QString::number(this->componentScale[2]));
 
-  element.appendProperiteChild("invert.R", this->componentInvert[0] ? "True" : "False");
-  element.appendProperiteChild("invert.G", this->componentInvert[1] ? "True" : "False");
-  element.appendProperiteChild("invert.B", this->componentInvert[2] ? "True" : "False");
+  element.appendProperiteChild("invert.R", functions::booToString(this->componentInvert[0]));
+  element.appendProperiteChild("invert.G", functions::booToString(this->componentInvert[1]));
+  element.appendProperiteChild("invert.B", functions::booToString(this->componentInvert[2]));
 
-  element.appendProperiteChild("limitedRange", this->limitedRange ? "True" : "False");
+  element.appendProperiteChild("limitedRange", functions::booToString(this->limitedRange));
 }
 
 void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
@@ -473,7 +473,7 @@ void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
                                                                {"R", ComponentShow::R},
                                                                {"G", ComponentShow::G},
                                                                {"B", ComponentShow::B}});
-  auto showVal = element.findChildValue("componentShow");
+  auto showVal             = element.findChildValue("componentShow");
   if (NameToComponentShow.count(showVal) > 0)
     this->componentDisplayMode = NameToComponentShow[showVal];
 

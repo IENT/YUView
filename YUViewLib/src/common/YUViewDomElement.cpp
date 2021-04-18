@@ -78,3 +78,10 @@ void YUViewDomElement::appendProperiteChild(const QString &        type,
     newChild.setAttribute(attributes[i].first, attributes[i].second);
   appendChild(newChild);
 }
+
+void YUViewDomElement::appendProperiteChild(const std::string &type, const std::string &name)
+{
+  auto newChild = ownerDocument().createElement(QString::fromStdString(type));
+  newChild.appendChild(ownerDocument().createTextNode(QString::fromStdString(name)));
+  appendChild(newChild);
+}

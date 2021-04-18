@@ -49,7 +49,7 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   {
     if (auto index = SubsamplingMapper.indexOf(yuvFormat.getSubsampling()))
     {
-      comboBoxChromaSubsampling->setCurrentIndex(int(*index));
+      comboBoxChromaSubsampling->setCurrentIndex(int(index));
       // The Q_Object auto connection is performed later so call the slot manually.
       // This will fill comboBoxPackingOrder
       this->on_comboBoxChromaSubsampling_currentIndexChanged(
@@ -83,9 +83,7 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   {
     // Set the plane order
     groupBoxPlanar->setChecked(true);
-    auto idx = PlaneOrderMapper.indexOf(yuvFormat.getPlaneOrder());
-    if (idx)
-      comboBoxPlaneOrder->setCurrentIndex(int(*idx));
+    comboBoxPlaneOrder->setCurrentIndex(int(PlaneOrderMapper.indexOf(yuvFormat.getPlaneOrder())));
     // Set UV(A) interleaved
     checkBoxUVInterleaved->setChecked(yuvFormat.isUVInterleaved());
   }
@@ -108,10 +106,7 @@ void videoHandlerYUVCustomFormatDialog::on_comboBoxChromaSubsampling_currentInde
   auto packingTypes = getSupportedPackingFormats(subsampling);
   comboBoxPackingOrder->clear();
   for (auto &packing : packingTypes)
-  {
-    if (auto name = PackingOrderMapper.getName(packing))
-      comboBoxPackingOrder->addItem(QString::fromStdString(*name));
-  }
+    comboBoxPackingOrder->addItem(QString::fromStdString(PackingOrderMapper.getName(packing)));
 
   bool packedSupported = (packingTypes.size() != 0);
   if (!packedSupported)

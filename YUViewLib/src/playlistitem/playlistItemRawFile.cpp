@@ -458,9 +458,8 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
   // Append all the properties of the raw file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
   d.appendProperiteChild("relativePath", relativePath);
-  d.appendProperiteChild("type", (rawFormat == raw_YUV) ? "YUV" : "RGB");
+  d.appendProperiteChild(std::string("type"), (rawFormat == raw_YUV) ? "YUV" : "RGB");
 
-  // Append the video handler properties
   this->video->savePlaylist(d);
 
   root.appendChild(d);
@@ -483,9 +482,8 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const YUViewDom
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   auto newFile = new playlistItemRawFile(filePath, {}, {}, type);
+  
   newFile->video->loadPlaylist(root);
-
-  // Load the propertied of the playlistItem
   playlistItem::loadPropertiesFromPlaylist(root, newFile);
 
   return newFile;
