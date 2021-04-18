@@ -67,7 +67,7 @@ std::vector<unsigned> getDetectionBitDepthList(unsigned forceAsFirst)
   if (forceAsFirst >= 8 && forceAsFirst <= 16)
     bitDepthList.push_back(forceAsFirst);
 
-  for (auto bitDepth : {8u, 10u, 12u, 14u, 16u, 8u})
+  for (auto bitDepth : {10u, 12u, 14u, 16u, 8u})
   {
     if (!vectorContains(bitDepthList, bitDepth))
       bitDepthList.push_back(bitDepth);
@@ -133,7 +133,7 @@ YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
 
         for (const auto &endianness : endiannessList)
         {
-          for (std::string interlacedString : {"UVI", "interlaced", ""})
+          for (std::string interlacedString : {"uvi", "interlaced", ""})
           {
             const bool interlaced = !interlacedString.empty();
             {
@@ -235,13 +235,13 @@ YUVPixelFormat guessFormatFromSizeAndName(
   std::vector<std::string> checkStrings;
 
   // The full name of the file
-  auto fileName = fileInfo.baseName().toStdString();
+  auto fileName = fileInfo.baseName().toLower().toStdString();
   if (fileName.empty())
     return {};
   checkStrings.push_back(fileName + ".");
 
   // The name of the folder that the file is in
-  auto dirName = fileInfo.absoluteDir().dirName().toStdString();
+  auto dirName = fileInfo.absoluteDir().dirName().toLower().toStdString();
   checkStrings.push_back(dirName);
 
   if (fileInfo.suffix().toLower() == "nv21")
@@ -294,6 +294,17 @@ YUVPixelFormat guessFormatFromSizeAndName(
       auto fmt = YUVPixelFormat(Subsampling::YUV_444, 16, PackingOrder::AYUV, false, false);
       if (checkFormat(fmt, size, fileSize))
         return fmt;
+    }
+
+    // Another one are the formaty of "gray8le" to "gray16le" which are planar 400 formats
+    for (auto depth : getDetectionBitDepthList(bitDepth))
+    {
+      if (name.find("gray" + std::to_string(depth) + "le") != std::string::npos)
+      {
+        auto fmt = YUVPixelFormat(Subsampling::YUV_400, depth);
+        if (checkFormat(fmt, size, fileSize))
+          return fmt;
+      }
     }
 
     // OK that did not work so far. Try other things. Just check if the file name contains one of
