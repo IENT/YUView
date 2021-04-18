@@ -67,7 +67,7 @@ std::vector<unsigned> getDetectionBitDepthList(unsigned forceAsFirst)
   if (forceAsFirst >= 8 && forceAsFirst <= 16)
     bitDepthList.push_back(forceAsFirst);
 
-  for (auto bitDepth : {8u, 10u, 12u, 14u, 16u})
+  for (auto bitDepth : {10u, 12u, 14u, 16u, 8u})
   {
     if (!vectorContains(bitDepthList, bitDepth))
       bitDepthList.push_back(bitDepth);
