@@ -57,9 +57,9 @@ playlistItemDifference::playlistItemDifference() : playlistItemContainer("Differ
   this->prop.propertiesWidgetTitle = "Difference Properties";
 
   // For a difference item, only 2 items are allowed.
-  maxItemCount   = 2;
-  frameLimitsMax = false;
-  infoText       = DIFFERENCE_INFO_TEXT;
+  this->maxItemCount   = 2;
+  this->frameLimitsMax = false;
+  this->infoText       = DIFFERENCE_INFO_TEXT;
 
   connect(&difference,
           &videoHandlerDifference::signalHandlerChanged,
@@ -131,6 +131,11 @@ void playlistItemDifference::drawItem(QPainter *painter,
   }
 }
 
+itemLoadingState playlistItemDifference::needsLoading(int frameIdx, bool loadRawData)
+{
+  return this->difference.needsLoading(frameIdx, loadRawData);
+}
+
 QSize playlistItemDifference::getSize() const
 {
   if (!difference.inputsValid())
@@ -163,9 +168,7 @@ void playlistItemDifference::createPropertiesWidget()
   vAllLaout->addWidget(line);
   vAllLaout->addLayout(difference.createDifferenceHandlerControls());
 
-  // Insert a stretch at the bottom of the vertical global layout so that everything
-  // gets 'pushed' to the top
-  vAllLaout->insertStretch(3, 1);
+  vAllLaout->insertStretch(-1, 1); // Push controls up
 }
 
 void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -175,6 +178,7 @@ void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlis
   // Append the indexed item's properties
   playlistItem::appendPropertiesToPlaylist(d);
 
+  this->difference.savePlaylist(d);
   playlistItemContainer::savePlaylistChildren(d, playlistDir);
 
   root.appendChild(d);
@@ -186,6 +190,7 @@ playlistItemDifference::newPlaylistItemDifference(const YUViewDomElement &root)
   playlistItemDifference *newDiff = new playlistItemDifference();
 
   // Load properties from the parent classes
+  newDiff->difference.loadPlaylist(root);
   playlistItem::loadPropertiesFromPlaylist(root, newDiff);
 
   // The difference might just have children that have to be added. After adding the children don't
@@ -212,7 +217,10 @@ ValuePairListSets playlistItemDifference::getPixelValues(const QPoint &pixelPos,
   return newSet;
 }
 
-void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals)
+void playlistItemDifference::loadFrame(int  frameIdx,
+                                       bool playing,
+                                       bool loadRawData,
+                                       bool emitSignals)
 {
   if (childCount() != 2 || !difference.inputsValid())
     return;
@@ -246,6 +254,13 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
         emit signalItemDoubleBufferLoaded();
     }
   }
+}
+
+bool playlistItemDifference::isLoading() const { return this->isDifferenceLoading; }
+
+bool playlistItemDifference::isLoadingDoubleBuffer() const
+{
+  return this->isDifferenceLoadingToDoubleBuffer;
 }
 
 void playlistItemDifference::childChanged(bool redraw, recacheIndicator recache)

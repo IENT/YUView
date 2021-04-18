@@ -34,10 +34,30 @@
 
 #include <QLibrary>
 
-#include "filesource/FileSourceAnnexBFile.h"
-#include "statistics/StatisticsData.h"
-#include "video/videoHandlerRGB.h"
-#include "video/videoHandlerYUV.h"
+#include <common/EnumMapper.h>
+#include <filesource/FileSourceAnnexBFile.h>
+#include <statistics/StatisticsData.h>
+#include <video/videoHandlerRGB.h>
+#include <video/videoHandlerYUV.h>
+
+enum class DecoderEngine
+{
+  Invalid,  // invalid value
+  Libde265, // The libde265 decoder
+  HM,       // The HM reference software decoder
+  VTM,      // The VTM reference software decoder
+  VVDec,    // The VVDec VVC decoder
+  Dav1d,    // The dav1d AV1 decoder
+  FFMpeg    // The FFMpeg decoder
+};
+
+const auto DecoderEngineMapper = EnumMapper<DecoderEngine>({{DecoderEngine::Invalid, "Invalid"},
+                                                            {DecoderEngine::Libde265, "Libde265"},
+                                                            {DecoderEngine::HM, "HM"},
+                                                            {DecoderEngine::VTM, "VTM"},
+                                                            {DecoderEngine::VVDec, "VVDec"},
+                                                            {DecoderEngine::Dav1d, "Dav1d"},
+                                                            {DecoderEngine::FFMpeg, "FFMpeg"}});
 
 /* This class is the abstract base class for all decoders. All decoders work like this:
  * 1. Create an instance and configure it (if required)

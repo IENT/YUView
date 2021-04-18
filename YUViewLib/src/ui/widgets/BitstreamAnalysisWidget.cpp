@@ -258,17 +258,17 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
       "BitstreamAnalysisWidget::restartParsingOfCurrentItem new parser created and started");
 }
 
-void BitstreamAnalysisWidget::createAndConnectNewParser(inputFormat inputFormatType)
+void BitstreamAnalysisWidget::createAndConnectNewParser(InputFormat inputFormat)
 {
   Q_ASSERT_X(
       !this->parser, Q_FUNC_INFO, "Error reinitlaizing parser. The current parser is not null.");
-  if (inputFormatType == inputAnnexBHEVC)
+  if (inputFormat == InputFormat::AnnexBHEVC)
     this->parser.reset(new parser::AnnexBHEVC(this));
-  if (inputFormatType == inputAnnexBVVC)
+  if (inputFormat == InputFormat::AnnexBVVC)
     this->parser.reset(new parser::AnnexBVVC(this));
-  else if (inputFormatType == inputAnnexBAVC)
+  else if (inputFormat == InputFormat::AnnexBAVC)
     this->parser.reset(new parser::AnnexBAVC(this));
-  else if (inputFormatType == inputLibavformat)
+  else if (inputFormat == InputFormat::Libav)
     this->parser.reset(new parser::AVFormat(this));
   this->parser->enableModel();
   const bool parsingLimitSet = !this->ui.parseEntireFileCheckBox->isChecked();

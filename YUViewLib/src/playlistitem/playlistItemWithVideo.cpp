@@ -72,7 +72,7 @@ void playlistItemWithVideo::slotVideoHandlerChanged(bool redrawNeeded, recacheIn
 void playlistItemWithVideo::connectVideo()
 {
   // Forward these signals from the video source up
-  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemWithVideo::slotVideoHandlerChanged);
+  connect(video.get(), &videoHandler::signalHandlerChanged, this, &playlistItemWithVideo::slotVideoHandlerChanged);
 }
 
 void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)

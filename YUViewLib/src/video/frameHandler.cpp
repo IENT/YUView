@@ -164,6 +164,20 @@ bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
   return (!currentImage.isNull());
 }
 
+void frameHandler::savePlaylist(YUViewDomElement &element) const
+{
+  // Append the video handler properties
+  element.appendProperiteChild("width", QString::number(this->frameSize.width));
+  element.appendProperiteChild("height", QString::number(this->frameSize.height));
+}
+
+void frameHandler::loadPlaylist(const YUViewDomElement &root)
+{
+  auto width = unsigned(root.findChildValue("width").toInt());
+  auto height = unsigned(root.findChildValue("height").toInt());
+  this->setFrameSize(Size(width, height));
+}
+
 void frameHandler::slotVideoControlChanged()
 {
   // Update the controls and get the new selected size
