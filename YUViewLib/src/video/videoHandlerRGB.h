@@ -137,8 +137,8 @@ public:
   // currentFrame will contain the frame with the given frame index.
   virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer = false) override;
 
-  virtual void savePlaylist(YUViewDomElement &root);
-  virtual void loadPlaylist(const YUViewDomElement &root);
+  virtual void savePlaylist(YUViewDomElement &root) const override;
+  virtual void loadPlaylist(const YUViewDomElement &root) override;
 
 protected:
   // Which components should we display

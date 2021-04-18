@@ -441,7 +441,7 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   }
 }
 
-void videoHandlerRGB::savePlaylist(YUViewDomElement &element)
+void videoHandlerRGB::savePlaylist(YUViewDomElement &element) const
 {
   frameHandler::savePlaylist(element);
   element.appendProperiteChild("pixelFormat", this->getRawRGBPixelFormatName());

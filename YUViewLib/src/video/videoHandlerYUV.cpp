@@ -4071,7 +4071,7 @@ void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
   }
 }
 
-void videoHandlerYUV::savePlaylist(YUViewDomElement &element)
+void videoHandlerYUV::savePlaylist(YUViewDomElement &element) const
 {
   frameHandler::savePlaylist(element);
   element.appendProperiteChild("pixelFormat", this->getRawYUVPixelFormatName());

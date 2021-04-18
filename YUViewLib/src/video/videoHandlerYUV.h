@@ -161,8 +161,8 @@ public:
 
   bool getIs_YUV_diff() const;
 
-  virtual void savePlaylist(YUViewDomElement &root);
-  virtual void loadPlaylist(const YUViewDomElement &root);
+  virtual void savePlaylist(YUViewDomElement &root) const override;
+  virtual void loadPlaylist(const YUViewDomElement &root) override;
 
 protected:
   // How do we perform interpolation for the subsampled YUV formats?

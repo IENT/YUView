@@ -164,7 +164,7 @@ bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
   return (!currentImage.isNull());
 }
 
-void frameHandler::savePlaylist(YUViewDomElement &element)
+void frameHandler::savePlaylist(YUViewDomElement &element) const
 {
   // Append the video handler properties
   element.appendProperiteChild("width", QString::number(this->frameSize.width));

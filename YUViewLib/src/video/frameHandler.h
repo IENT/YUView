@@ -126,7 +126,7 @@ public:
   // Load the current image from file and set the correct size.
   bool loadCurrentImageFromFile(const QString &filePath);
 
-  virtual void savePlaylist(YUViewDomElement &root);
+  virtual void savePlaylist(YUViewDomElement &root) const;
   virtual void loadPlaylist(const YUViewDomElement &root);
 
 signals:
