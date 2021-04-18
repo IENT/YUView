@@ -459,8 +459,10 @@ std::string YUVPixelFormat::getName() const
     if (this->uvInterleaved)
       ss << "(IL)";
   }
-  ss << PackingOrderMapper.getName(this->packingOrder) << " "
-     << SubsamplingMapper.getText(this->subsampling) << " " << this->bitsPerSample << "-bit";
+  else
+    ss << PackingOrderMapper.getName(this->packingOrder);
+
+  ss << " " << SubsamplingMapper.getText(this->subsampling) << " " << this->bitsPerSample << "-bit";
 
   // Add the endianness (if the bit depth is greater 8)
   if (this->bitsPerSample > 8)
