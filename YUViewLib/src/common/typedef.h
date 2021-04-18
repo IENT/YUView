@@ -32,8 +32,6 @@
 
 #pragma once
 
-#include "EnumMapper.h"
-
 #include <QList>
 #include <QObject>
 #include <QPair>
@@ -61,40 +59,6 @@ typedef enum
   raw_YUV,
   raw_RGB
 } RawFormat;
-
-enum class InputFormat
-{
-  Invalid = -1,
-  AnnexBHEVC, // Raw HEVC annex B file
-  AnnexBAVC,  // Raw AVC annex B file
-  AnnexBVVC,  // Raw VVC annex B file
-  Libav       // This is some sort of container file which we will read using libavformat
-};
-
-const auto InputFormatMapper = EnumMapper<InputFormat>({{InputFormat::Invalid, "Invalid"},
-                                                        {InputFormat::AnnexBHEVC, "AnnexBHEVC"},
-                                                        {InputFormat::AnnexBAVC, "AnnexBAVC"},
-                                                        {InputFormat::AnnexBVVC, "AnnexBVVC"},
-                                                        {InputFormat::Libav, "Libav"}});
-
-enum class DecoderEngine
-{
-  Invalid,  // invalid value
-  Libde265, // The libde265 decoder
-  HM,       // The HM reference software decoder
-  VTM,      // The VTM reference software decoder
-  VVDec,    // The VVDec VVC decoder
-  Dav1d,    // The dav1d AV1 decoder
-  FFMpeg    // The FFMpeg decoder
-};
-
-const auto DecoderEngineMapper = EnumMapper<DecoderEngine>({{DecoderEngine::Invalid, "Invalid"},
-                                                            {DecoderEngine::Libde265, "Libde265"},
-                                                            {DecoderEngine::HM, "HM"},
-                                                            {DecoderEngine::VTM, "VTM"},
-                                                            {DecoderEngine::VVDec, "VVDec"},
-                                                            {DecoderEngine::Dav1d, "Dav1d"},
-                                                            {DecoderEngine::FFMpeg, "FFMpeg"}});
 
 } // namespace YUView
 

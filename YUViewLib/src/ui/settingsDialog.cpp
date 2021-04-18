@@ -132,7 +132,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   settings.beginGroup("Decoders");
   ui.lineEditDecoderPath->setText(settings.value("SearchPath", "").toString());
 
-  for (auto e : YUView::DecoderEngineMapper.getNames())
+  for (auto e : DecoderEngineMapper.getNames())
     ui.comboBoxDefaultDecoder->addItem(QString::fromStdString(e));
   ui.comboBoxDefaultDecoder->setCurrentIndex(settings.value("DefaultDecoder", 0).toInt());
 
