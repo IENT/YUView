@@ -204,6 +204,10 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
       if (init.colorMapper.rangeMax != colorMapper.rangeMax)
         newChild.setAttribute("colorMapperRangeMax", colorMapper.rangeMax);
     }
+    if (colorMapper.mappingType == ColorMapper::MappingType::complex)
+    {
+      newChild.setAttribute("colorMapperComplexType", colorMapper.complexType);
+    }
     if (colorMapper.mappingType == ColorMapper::MappingType::map)
     {
       if (init.colorMapper.colorMap != colorMapper.colorMap)
@@ -272,6 +276,8 @@ void StatisticsType::loadPlaylist(const YUViewDomElement &root)
       colorMapper.rangeMin = attributes[i].second.toInt();
     else if (attributes[i].first == "colorMapperRangeMax")
       colorMapper.rangeMax = attributes[i].second.toInt();
+    else if (attributes[i].first == "colorMapperComplexType")
+      colorMapper.complexType = attributes[i].second;
     else if (attributes[i].first.startsWith("colorMapperMapValue"))
     {
       auto key                  = attributes[i].first.mid(19).toInt();
