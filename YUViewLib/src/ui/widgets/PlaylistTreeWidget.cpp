@@ -46,6 +46,8 @@
 #include <QScopedValueRollback>
 #include <QSettings>
 #include <QTextStream>
+#include <QUuid>
+#include <QProcess>
 
 #include "playlistitem/playlistItemContainer.h"
 #include "playlistitem/playlistItemDifference.h"
@@ -143,10 +145,11 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   header()->setSectionResizeMode(1, QHeaderView::Fixed);
   header()->setSectionResizeMode(0, QHeaderView::Stretch);
 
+  instanceInfo.initializeAsNewInstance();
+
   // This does not work here. Don't know why. Setting it every time a new item is added, however,
   // works.
   // header()->resizeSection(1, 10);
-
   connect(this,
           &PlaylistTreeWidget::itemSelectionChanged,
           this,
@@ -158,9 +161,7 @@ PlaylistTreeWidget::~PlaylistTreeWidget()
 {
   // This is a conventional quit. Remove the automatically saved playlist.
   autosaveTimer.stop();
-  QSettings settings;
-  if (settings.contains("Autosaveplaylist"))
-    settings.remove("Autosaveplaylist");
+  instanceInfo.removeInstanceFromQSettings();
 }
 
 playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
@@ -1015,29 +1016,153 @@ void PlaylistTreeWidget::updateSettings()
   }
 }
 
-bool PlaylistTreeWidget::isAutosaveAvailable()
+bool PlaylistTreeWidget::isAutosaveAvailable(QUuid current_instance_uuid, qint64 current_instance_pid, QStringList &crashedInstances)
 {
   QSettings settings;
-  return settings.contains("Autosaveplaylist");
+
+  // code for getting process ids adopted from https://www.qtcentre.org/threads/44489-Get-Process-ID-for-a-running-application
+  // also mentions checking /proc. However there is no proc on macos, while pgrep should be available.
+
+//  unsigned int System::getProcessIdsByProcessName(const char* processName,
+  QStringList listOfPids;
+//  {
+//      // Clear content of returned list of PIDS
+//      listOfPids.clear();
+
+#if defined(Q_OS_WIN)
+    // Get the list of process identifiers.
+    DWORD aProcesses[1024], cbNeeded, cProcesses;
+    unsigned int i;
+
+    if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded))
+    {
+        return 0;
+    }
+
+    // Calculate how many process identifiers were returned.
+    cProcesses = cbNeeded / sizeof(DWORD);
+
+    // Search for a matching name for each process
+    for (i = 0; i < cProcesses; i++)
+    {
+        if (aProcesses[i] != 0)
+        {
+            char szProcessName[MAX_PATH] = {0};
+
+            DWORD processID = aProcesses[i];
+
+            // Get a handle to the process.
+            HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
+                PROCESS_VM_READ,
+                FALSE, processID);
+
+            // Get the process name
+            if (NULL != hProcess)
+            {
+                HMODULE hMod;
+                DWORD cbNeeded;
+
+                if (EnumProcessModules(hProcess, &hMod, sizeof(hMod), &cbNeeded))
+                {
+                    GetModuleBaseNameA(hProcess, hMod, szProcessName, sizeof(szProcessName)/sizeof(char));
+                }
+
+                // Release the handle to the process.
+                CloseHandle(hProcess);
+
+                if (*szProcessName != 0 && strcmp(processName, szProcessName) == 0)
+                {
+                    listOfPids.append(QString::number(processID));
+                }
+            }
+        }
+    }
+
+    return listOfPids.count();
+
+#else
+
+    // Run pgrep, which looks through the currently running processses and lists the process IDs
+    // which match the selection criteria to stdout.
+    QProcess process;
+    process.start("pgrep",  QStringList() << "YUView");
+    process.waitForReadyRead();
+
+    QByteArray bytes = process.readAllStandardOutput();
+
+    process.terminate();
+    process.waitForFinished();
+    process.kill();
+
+    // Output is something like "2472\n2323" for multiple instances
+    if (bytes.isEmpty())
+        return 0;
+
+    // Remove trailing CR
+    if (bytes.endsWith("\n"))
+        bytes.resize(bytes.size() - 1);
+
+    listOfPids = QString(bytes).split("\n");
+//    return listOfPids.count();
+
+#endif
+
+
+#ifdef Q_OS_LINUX
+
+//  sfsd
+#endif
+#ifdef Q_OS_MAC
+  // todo
+#endif
+#ifdef Q_OS_WIN32
+  // todo
+#endif
+
+  if (settings.contains("YUView-instances"))
+  {
+    QStringList runningInstances = settings.value("YUView-instances").toStringList();
+    for (auto instance : runningInstances)
+    {
+      QStringList instance_uuid_and_pid =  instance.split(';');
+      QUuid instance_uuid =  QUuid(instance.at(0));
+      QString instance_pid_str = instance.at(1);
+      qint64 instance_pid = instance_pid_str.toLongLong();
+
+      if ( instance_pid == current_instance_pid && instance_uuid != current_instance_uuid )
+      {
+        // seems we found a crashed instance and our newly launched instance happens to have gotten the same pid
+        crashedInstances << instance;
+      }
+
+      if(!listOfPids.contains(instance_pid_str))
+      {
+        // pid in list from settings which is not present on the system. must be a crashed instance
+        crashedInstances << instance;
+      }
+    }
+  }
+
+
+  return crashedInstances.length() > 0;
 }
 
-void PlaylistTreeWidget::loadAutosavedPlaylist()
+void PlaylistTreeWidget::loadAutosavedPlaylist(const YUViewInstanceInfo &crashedInstance)
 {
   QSettings settings;
-  if (!settings.contains("Autosaveplaylist"))
-    return;
-
-  QByteArray compressedPlaylist   = settings.value("Autosaveplaylist").toByteArray();
+  QByteArray compressedPlaylist= crashedInstance.getCompressedPlaylist();
   QByteArray uncompressedPlaylist = qUncompress(compressedPlaylist);
   loadPlaylistFromByteArray(uncompressedPlaylist, QDir::current().absolutePath());
-
-  dropAutosavedPlaylist();
 }
 
 void PlaylistTreeWidget::dropAutosavedPlaylist()
 {
-  QSettings settings;
-  settings.remove("Autosaveplaylist");
+//  QSettings settings;
+//  QString playlist_name = "Autosaveplaylist-" + crashedInstance;
+//  settings.remove(crashedInstance);
+//  settings.remove(playlist_name);
+
+  instanceInfo.cleanupRecordedInstances();
 }
 
 void PlaylistTreeWidget::cloneSelectedItem()
@@ -1077,15 +1202,19 @@ void PlaylistTreeWidget::autoSavePlaylist()
   if (topLevelItemCount() == 0)
   {
     // Empty playlist
-    if (settings.contains("Autosaveplaylist"))
-      settings.remove("Autosaveplaylist");
+    instanceInfo.dropAutosavedPlaylist();
   }
   else
   {
     QString    playlistAsString   = getPlaylistString(QDir::current());
     QByteArray compressedPlaylist = qCompress(playlistAsString.toLatin1());
-    settings.setValue("Autosaveplaylist", compressedPlaylist);
+    instanceInfo.autoSavePlaylist(compressedPlaylist);
   }
+}
+
+YUViewInstanceInfo PlaylistTreeWidget::getInstanceInfo() const
+{
+  return instanceInfo;
 }
 
 void PlaylistTreeWidget::startAutosaveTimer()

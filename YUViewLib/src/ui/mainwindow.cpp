@@ -197,7 +197,12 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
   ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
 
-  if (ui.playlistTreeWidget->isAutosaveAvailable())
+  instance_uuid = QUuid::createUuid();
+  instance_pid = QCoreApplication::applicationPid();
+
+  QStringList crashedInstances;
+  YUViewInstanceInfo autosaveCandidateInstance = ui.playlistTreeWidget->getInstanceInfo().getAutosavedPlaylist();
+  if( autosaveCandidateInstance.isValid())
   {
     QMessageBox::StandardButton resBtn =
         QMessageBox::question(this,
@@ -208,7 +213,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
                               QMessageBox::Yes | QMessageBox::No,
                               QMessageBox::No);
     if (resBtn == QMessageBox::Yes)
-      ui.playlistTreeWidget->loadAutosavedPlaylist();
+      ui.playlistTreeWidget->loadAutosavedPlaylist(autosaveCandidateInstance);
     else
       ui.playlistTreeWidget->dropAutosavedPlaylist();
   }
