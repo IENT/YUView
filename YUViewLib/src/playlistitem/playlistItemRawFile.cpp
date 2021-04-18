@@ -438,9 +438,7 @@ void playlistItemRawFile::createPropertiesWidget()
   vAllLaout->addWidget(line);
   vAllLaout->addLayout(video->createVideoHandlerControls());
 
-  // Insert a stretch at the bottom of the vertical global layout so that everything
-  // gets 'pushed' to the top
-  vAllLaout->insertStretch(3, 1);
+  vAllLaout->insertStretch(-1, 1); // Push controls up
 }
 
 void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const

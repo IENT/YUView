@@ -161,9 +161,7 @@ void playlistItemImageFileSequence::createPropertiesWidget()
   // First add the parents controls (first video controls (width/height...)
   vAllLaout->addLayout(createPlaylistItemControls());
 
-  // Insert a stretch at the bottom of the vertical global layout so that everything
-  // gets 'pushed' to the top
-  vAllLaout->insertStretch(2, 1);
+  vAllLaout->insertStretch(-1, 1); // Push controls up
 }
 
 infoData playlistItemImageFileSequence::getInfo() const
