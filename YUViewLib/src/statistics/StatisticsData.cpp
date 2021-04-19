@@ -49,64 +49,56 @@
 namespace stats
 {
 
+//adopted from qFuzzyCompare
+static inline bool fuzzyCompare(double p1, double p2)
+{
+    return (std::abs(p1 - p2) * 1000000000000. <= std::min(std::abs(p1), std::abs(p2)));
+}
 
-//same as qt_painterpath_isect_line in qpainterpath.cpp
-static void qt_polygon_isect_line(const QPointF &p1, const QPointF &p2, const QPointF &pos,
+//adopted from qt_painterpath_isect_line in qpainterpath.cpp
+static void polygon_isect_line(const IntPair &p1, const IntPair &p2, const IntPair &pos,
                                   int *winding)
 {
-    qreal x1 = p1.x();
-    qreal y1 = p1.y();
-    qreal x2 = p2.x();
-    qreal y2 = p2.y();
-    qreal y = pos.y();
+    double x1 = p1.first;
+    double y1 = p1.second;
+    double x2 = p2.first;
+    double y2 = p2.second;
+    double y = pos.second;
     int dir = 1;
-    if (qFuzzyCompare(y1, y2)) {
+    if (fuzzyCompare(y1, y2)) {
         // ignore horizontal lines according to scan conversion rule
         return;
     } else if (y2 < y1) {
-        qreal x_tmp = x2; x2 = x1; x1 = x_tmp;
-        qreal y_tmp = y2; y2 = y1; y1 = y_tmp;
+        double x_tmp = x2; x2 = x1; x1 = x_tmp;
+        double y_tmp = y2; y2 = y1; y1 = y_tmp;
         dir = -1;
     }
     if (y >= y1 && y < y2) {
-        qreal x = x1 + ((x2 - x1) / (y2 - y1)) * (y - y1);
+        double x = x1 + ((x2 - x1) / (y2 - y1)) * (y - y1);
         // count up the winding number if we're
-        if (x<=pos.x()) {
+        if (x<=pos.first) {
             (*winding) += dir;
         }
     }
 }
 
-
-bool containsPoint(const QVector<QPoint> &polygon, const QPoint &pt, Qt::FillRule fillRule)
+bool containsPoint(const stats::Polygon &polygon, const IntPair &pt)
 {
-    if (polygon.isEmpty())
+    if (polygon.empty())
         return false;
     int winding_number = 0;
-    QPoint last_pt = polygon.at(0);
-    QPoint last_start = polygon.at(0);
+    IntPair last_pt = polygon.at(0);
+    IntPair last_start = polygon.at(0);
     for (int i = 1; i < polygon.size(); ++i) {
-        const QPoint &e = polygon.at(i);
-        qt_polygon_isect_line(last_pt, e, pt, &winding_number);
+        const IntPair &e = polygon.at(i);
+        polygon_isect_line(last_pt, e, pt, &winding_number);
         last_pt = e;
     }
     // implicitly close last subpath
     if (last_pt != last_start)
-        qt_polygon_isect_line(last_pt, last_start, pt, &winding_number);
-    return (fillRule == Qt::WindingFill
-            ? (winding_number != 0)
-            : ((winding_number % 2) != 0));
+        polygon_isect_line(last_pt, last_start, pt, &winding_number);
+    return ((winding_number % 2) != 0);
 }
-
-
-QVector<QPoint> convertToQPointVectorPolygon(const stats::Polygon &poly)
-{
-  auto qPoly = QVector<QPoint>(poly.size());
-  for (int i = 0; i < int(poly.size()); i++)
-    qPoly[i] =  QPoint(poly[i].first, poly[i].second);
-  return qPoly;
-}
-
 
 FrameTypeData StatisticsData::getFrameTypeData(int typeID)
 {
@@ -248,8 +240,7 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
     for (const auto &valueItem : this->frameCache.at(it->typeID).polygonValueData)
     {
       if (!valueItem.corners.size()) continue;
-      auto vectorPoly          = convertToQPointVectorPolygon(valueItem.corners);
-      if (stats::containsPoint( vectorPoly, pos, Qt::OddEvenFill))
+      if (stats::containsPoint( valueItem.corners, IntPair(pos.x(), pos.y()) ))
       {
         int  value  = valueItem.value;
         auto valTxt = it->getValueTxt(value);
@@ -261,8 +252,7 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
     for (const auto &polygonVectorItem : this->frameCache.at(it->typeID).polygonVectorData)
     {
       if (!polygonVectorItem.corners.size()) continue;
-      auto vectorPoly          = convertToQPointVectorPolygon(polygonVectorItem.corners);
-      if (stats::containsPoint( vectorPoly, pos, Qt::OddEvenFill))
+      if (stats::containsPoint( polygonVectorItem.corners, IntPair(pos.x(), pos.y())))
       {
         if (it->renderVectorData)
         {
