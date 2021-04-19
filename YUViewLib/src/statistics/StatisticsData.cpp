@@ -34,9 +34,6 @@
 
 #include "common/functions.h"
 
-#include <QPainterPath>
-#include <QtGui/QPolygon>
-
 // Activate this if you want to know when what is loaded.
 #define STATISTICS_DEBUG_LOADING 0
 #if STATISTICS_DEBUG_LOADING && !NDEBUG

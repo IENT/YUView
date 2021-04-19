@@ -35,7 +35,6 @@
 #include "FrameTypeData.h"
 #include "StatisticsType.h"
 
-#include <QSize>
 #include <map>
 #include <mutex>
 #include <vector>
@@ -44,11 +43,6 @@ namespace stats
 {
 
 using StatisticsTypesVec = std::vector<StatisticsType>;
-
-
-//QVector<QPoint> convertToQPointVectorPolygon(const stats::Polygon &poly);
-
-//bool containsPoint(const QVector<QPoint> &polygon, const QPoint &pt, Qt::FillRule fillRule);
 
 class StatisticsData
 {
