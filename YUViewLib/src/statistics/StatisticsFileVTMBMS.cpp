@@ -191,6 +191,8 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
   {
     statisticsData.setFrameIndex(poc);
 
+    std::unique_lock<std::mutex> lock(statisticsData.accessMutex);
+
     if (this->pocStartList.count(poc) == 0)
     {
       // There are no statistics in the file for the given frame and index.
