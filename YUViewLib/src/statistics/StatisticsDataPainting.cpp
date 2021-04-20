@@ -56,7 +56,7 @@ QPolygon convertToQPolygon(const stats::Polygon &poly)
 {
   auto qPoly = QPolygon(poly.size());
   for (int i = 0; i < int(poly.size()); i++)
-    qPoly.setPoint(i, QPoint(poly[i].first, poly[i].second));
+    qPoly.setPoint(i, QPoint(poly[i].x, poly[i].y));
   return qPoly;
 }
 

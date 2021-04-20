@@ -37,7 +37,25 @@
 namespace stats
 {
 
-using Polygon = std::vector<IntPair>;
+struct Point
+{
+  int x;
+  int y;
+  Point() {};
+  Point(int a, int b) {x = a; y = b;};
+};
+inline bool operator==(const Point& lhs, const Point& rhs){ return lhs.x == rhs.x && lhs.y == rhs.y; }
+inline bool operator!=(const Point& lhs, const Point& rhs){ return !(lhs == rhs); }
+
+struct Line
+{
+  Point p1;
+  Point p2;
+
+  Line(Point a, Point b) {p1 = a; p2 = b;};
+};
+
+using Polygon = std::vector<Point>;
 
 struct statisticsItem_Value
 {

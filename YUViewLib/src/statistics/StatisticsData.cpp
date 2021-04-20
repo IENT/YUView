@@ -46,55 +46,93 @@
 namespace stats
 {
 
-//adopted from qFuzzyCompare
-static inline bool fuzzyCompare(double p1, double p2)
+// code for checking if a point is inside a polygon. adapted from
+// https://stackoverflow.com/questions/217578/how-can-i-determine-whether-a-2d-point-is-within-a-polygon
+bool doesLineIntersectWithHorizontalLine(const Line side, const Point pt)
 {
-    return (std::abs(p1 - p2) * 1000000000000. <= std::min(std::abs(p1), std::abs(p2)));
+  bool isSideHorizontal = side.p1.y == side.p2.y;
+  if(isSideHorizontal) return false; // collinear with line defined by pt, cannot intersect
+
+  const float l1x1 = side.p1.x;
+  const float l1y1 = side.p1.y;
+  const float l1x2 = side.p2.x;
+  const float l1y2 = side.p2.y;
+  const float ptx = pt.x;
+  const float pty = pt.y;
+
+  // horizontal line from starting at pt.
+
+  // checking for horizontal intersection, since simpler. do not need
+  // to use linear eq system for it
+  // y of horizontal line has to be between that of the lines pts
+  // else can not intersect
+  bool isIntersectionPossible = (l1y1 <= pty && l1y2 >= pty) || (l1y1 >= pty && l1y2 <= pty);
+  if(!isIntersectionPossible) return false;
+
+  float d1;
+  float a1, b1, c1;
+
+  // Convert vector 1 to a line (line 1) of infinite length.
+  // We want the line in linear equation standard form: A*x + B*y + C = 0
+  // See: http://en.wikipedia.org/wiki/Linear_equation
+  a1 = l1y2 - l1y1;
+  b1 = l1x1 - l1x2;
+  c1 = (l1x2 * l1y1) - (l1x1 * l1y2);
+
+  // Every point (x,y), that solves the equation above, is on the line,
+  // every point that does not solve it, is not. The equation will have a
+  // positive result if it is on one side of the line and a negative one
+  // if is on the other side of it. We insert (x1,y1) and (x2,y2) of vector
+  // 2 into the equation above.
+  d1 = (a1 * ptx) + (b1 * pty) + c1;
+  // we only actually need the signs of d1 and d2
+  bool d1IsPositiv = d1 > 0;
+  // since end-point (l2x2, l2y2) of the semi-infinte line is at infinity,
+  // its sign is given by sign of a1
+  bool d2IsPositiv = a1 > 0;
+
+  bool doLinesIntersect = d1IsPositiv != d2IsPositiv;
+
+  return doLinesIntersect;
 }
 
-//adopted from qt_painterpath_isect_line in qpainterpath.cpp
-static void polygon_isect_line(const IntPair &p1, const IntPair &p2, const IntPair &pos,
-                                  int *winding)
+bool polygonContainsPoint(const stats::Polygon &polygon, const Point &pt)
 {
-    double x1 = p1.first;
-    double y1 = p1.second;
-    double x2 = p2.first;
-    double y2 = p2.second;
-    double y = pos.second;
-    int dir = 1;
-    if (fuzzyCompare(y1, y2)) {
-        // ignore horizontal lines according to scan conversion rule
-        return;
-    } else if (y2 < y1) {
-        double x_tmp = x2; x2 = x1; x1 = x_tmp;
-        double y_tmp = y2; y2 = y1; y1 = y_tmp;
-        dir = -1;
-    }
-    if (y >= y1 && y < y2) {
-        double x = x1 + ((x2 - x1) / (y2 - y1)) * (y - y1);
-        // count up the winding number if we're
-        if (x<=pos.first) {
-            (*winding) += dir;
-        }
-    }
-}
+  if(polygon.empty()) return false;
 
-bool containsPoint(const stats::Polygon &polygon, const IntPair &pt)
-{
-    if (polygon.empty())
-        return false;
-    int winding_number = 0;
-    IntPair last_pt = polygon.at(0);
-    IntPair last_start = polygon.at(0);
-    for (int i = 1; i < polygon.size(); ++i) {
-        const IntPair &e = polygon.at(i);
-        polygon_isect_line(last_pt, e, pt, &winding_number);
-        last_pt = e;
+  unsigned numPts = polygon.size();
+  // Test the ray against all sides
+  unsigned intersections = 0;
+  for(unsigned i = 0; i < numPts - 1; i++)
+  {
+    Line side = Line(polygon.at(i), polygon.at(i+1));
+    // Test if current side intersects with ray.
+    if(doesLineIntersectWithHorizontalLine(side, pt))
+    {
+      intersections++;
     }
-    // implicitly close last subpath
-    if (last_pt != last_start)
-        polygon_isect_line(last_pt, last_start, pt, &winding_number);
-    return ((winding_number % 2) != 0);
+  }
+  // close polygon
+  if( polygon.front() != polygon.back())
+  {
+    Line side = Line(polygon.front(), polygon.back());
+    // Test if current side intersects with ray.
+    if(doesLineIntersectWithHorizontalLine(side, pt))
+    {
+      intersections++;
+    }
+  }
+
+  if ((intersections & 1) == 1)
+  {
+    // Inside of polygon
+    return true;
+  }
+  else
+  {
+    // Outside of polygon
+    return false;
+  }
 }
 
 FrameTypeData StatisticsData::getFrameTypeData(int typeID)
@@ -236,8 +274,8 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
 
     for (const auto &valueItem : this->frameCache.at(it->typeID).polygonValueData)
     {
-      if (!valueItem.corners.size()) continue;
-      if (stats::containsPoint( valueItem.corners, IntPair(pos.x(), pos.y()) ))
+      if (!valueItem.corners.size()) continue;      
+      if (stats::polygonContainsPoint(valueItem.corners, Point(pos.x(), pos.y())))
       {
         int  value  = valueItem.value;
         auto valTxt = it->getValueTxt(value);
@@ -249,7 +287,7 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
     for (const auto &polygonVectorItem : this->frameCache.at(it->typeID).polygonVectorData)
     {
       if (!polygonVectorItem.corners.size()) continue;
-      if (stats::containsPoint( polygonVectorItem.corners, IntPair(pos.x(), pos.y())))
+      if (stats::polygonContainsPoint(polygonVectorItem.corners, Point(pos.x(), pos.y())))
       {
         if (it->renderVectorData)
         {
