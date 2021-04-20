@@ -66,7 +66,7 @@ bool doesLineIntersectWithHorizontalLine(const Line side, const Point pt)
   // to use linear eq system for it
   // y of horizontal line has to be between that of the lines pts
   // else can not intersect
-  bool isIntersectionPossible = (l1y1 <= pty && l1y2 >= pty) || (l1y1 >= pty && l1y2 <= pty);
+  bool isIntersectionPossible = (l1y1 < pty && l1y2 >= pty) || (l1y1 >= pty && l1y2 < pty);
   if(!isIntersectionPossible) return false;
 
   float d1;
