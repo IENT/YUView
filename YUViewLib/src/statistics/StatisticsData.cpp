@@ -96,7 +96,7 @@ bool doesLineIntersectWithHorizontalLine(const Line side, const Point pt)
   return doLinesIntersect;
 }
 
-bool polygonContainsPoint(const stats::Polygon polygon, const Point &pt)
+bool polygonContainsPoint(const stats::Polygon &polygon, const Point &pt)
 {
   if(polygon.empty()) return false;
 
@@ -198,6 +198,8 @@ std::vector<int> StatisticsData::getTypesThatNeedLoading(int frameIndex) const
 QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
 {
   QStringPairList valueList;
+
+  std::unique_lock<std::mutex> lock(this->accessMutex);
 
   for (auto it = this->statsTypes.rbegin(); it != this->statsTypes.rend(); it++)
   {

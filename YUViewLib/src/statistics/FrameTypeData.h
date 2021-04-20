@@ -132,8 +132,8 @@ public:
                int            y1,
                int            x2,
                int            y2);
-  void addPolygonVector(const Polygon points, int vecX, int vecY);
-  void addPolygonValue(const Polygon points, int val);
+  void addPolygonVector(const Polygon &points, int vecX, int vecY);
+  void addPolygonValue(const Polygon &points, int val);
 
   std::vector<statisticsItem_Value>         valueData;
   std::vector<statisticsItem_Vector>        vectorData;

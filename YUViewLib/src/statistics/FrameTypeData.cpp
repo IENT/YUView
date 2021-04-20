@@ -108,7 +108,7 @@ void FrameTypeData::addLine(unsigned short x,
   vectorData.push_back(vec);
 }
 
-void FrameTypeData::addPolygonValue(const Polygon points, int val)
+void FrameTypeData::addPolygonValue(const Polygon &points, int val)
 {
   statisticsItemPolygon_Value value;
   value.corners = points;
@@ -123,7 +123,7 @@ void FrameTypeData::addPolygonValue(const Polygon points, int val)
   polygonValueData.push_back(value);
 }
 
-void FrameTypeData::addPolygonVector(const Polygon points, int vecX, int vecY)
+void FrameTypeData::addPolygonVector(const Polygon &points, int vecX, int vecY)
 {
   statisticsItemPolygon_Vector vec;
   vec.corners  = points;

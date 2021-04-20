@@ -52,7 +52,7 @@ namespace
 #define DEBUG_PAINT(fmt, ...) ((void)0)
 #endif
 
-QPolygon convertToQPolygon(const stats::Polygon poly)
+QPolygon convertToQPolygon(const stats::Polygon &poly)
 {
   if(poly.empty()) return QPolygon();
 
@@ -62,7 +62,7 @@ QPolygon convertToQPolygon(const stats::Polygon poly)
   return qPoly;
 }
 
-QPoint getPolygonCenter(const QPolygon polygon)
+QPoint getPolygonCenter(const QPolygon &polygon)
 {
   auto p = QPoint(0, 0);
   for (int k = 0; k < polygon.count(); k++)
