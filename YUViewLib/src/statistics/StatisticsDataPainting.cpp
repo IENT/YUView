@@ -52,15 +52,17 @@ namespace
 #define DEBUG_PAINT(fmt, ...) ((void)0)
 #endif
 
-QPolygon convertToQPolygon(const stats::Polygon &poly)
+QPolygon convertToQPolygon(const stats::Polygon poly)
 {
+  if(poly.empty()) return QPolygon();
+
   auto qPoly = QPolygon(poly.size());
   for (int i = 0; i < int(poly.size()); i++)
     qPoly.setPoint(i, QPoint(poly[i].x, poly[i].y));
   return qPoly;
 }
 
-QPoint getPolygonCenter(const QPolygon &polygon)
+QPoint getPolygonCenter(const QPolygon polygon)
 {
   auto p = QPoint(0, 0);
   for (int k = 0; k < polygon.count(); k++)
@@ -407,8 +409,7 @@ void stats::paintStatisticsData(QPainter *             painter,
     for (const auto &valueItem : statisticsData[it->typeID].polygonValueData)
     {
       // Calculate the size and position of the rectangle to draw (zoomed in)
-      auto valuePointVector   = convertToQPolygon(valueItem.corners);
-      auto valuePoly = QPolygon(valuePointVector);
+      auto valuePoly           = convertToQPolygon(valueItem.corners);
       auto boundingRect        = valuePoly.boundingRect();
       auto trans               = QTransform().scale(zoomFactor, zoomFactor);
       auto displayPolygon      = trans.map(valuePoly);
@@ -826,7 +827,7 @@ void stats::paintStatisticsData(QPainter *             painter,
     // Go through all the vector data
     for (const auto &vectorItem : statisticsData[it->typeID].polygonVectorData)
     {
-      if (!vectorItem.corners.size()) continue;
+      if (vectorItem.corners.size() < 3) continue; // need at least triangle -- or more corners
 
       // Calculate the size and position of the rectangle to draw (zoomed in)
       auto vectorPoly          = convertToQPolygon(vectorItem.corners);

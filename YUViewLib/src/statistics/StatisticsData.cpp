@@ -96,7 +96,7 @@ bool doesLineIntersectWithHorizontalLine(const Line side, const Point pt)
   return doLinesIntersect;
 }
 
-bool polygonContainsPoint(const stats::Polygon &polygon, const Point &pt)
+bool polygonContainsPoint(const stats::Polygon polygon, const Point &pt)
 {
   if(polygon.empty()) return false;
 
@@ -274,7 +274,7 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
 
     for (const auto &valueItem : this->frameCache.at(it->typeID).polygonValueData)
     {
-      if (!valueItem.corners.size()) continue;      
+      if (valueItem.corners.size() < 3) continue; // need at least triangle -- or more corners
       if (stats::polygonContainsPoint(valueItem.corners, Point(pos.x(), pos.y())))
       {
         int  value  = valueItem.value;
@@ -286,7 +286,7 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
 
     for (const auto &polygonVectorItem : this->frameCache.at(it->typeID).polygonVectorData)
     {
-      if (!polygonVectorItem.corners.size()) continue;
+      if (polygonVectorItem.corners.size() < 3) continue; // need at least triangle -- or more corners
       if (stats::polygonContainsPoint(polygonVectorItem.corners, Point(pos.x(), pos.y())))
       {
         if (it->renderVectorData)
