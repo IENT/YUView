@@ -6,23 +6,64 @@
 
 const QString YUViewInstanceInfo::instanceInfoKey = QString("YUViewInstances");
 
+
+QDataStream& operator<<(QDataStream &ds, const YUViewInstanceInfo &inObj)
+{
+  ds << inObj.uuid;
+  // conversion to string should not be necessary.
+  // but without I get ambiguous overload for operator
+  ds << QString::number(inObj.pid);
+  ds << inObj.compressedPlaylist;
+  return ds;
+}
+
+QDataStream& operator>>(QDataStream &ds, YUViewInstanceInfo &outObj)
+{
+  ds >> outObj.uuid;
+  QString tmp;
+  ds >> tmp;
+  outObj.pid = tmp.toLongLong();
+  ds >> outObj.compressedPlaylist;
+  return ds;
+}
+
+QDataStream& operator<<(QDataStream &ds, const YUViewInstanceInfoList &inObj)
+{
+  const qint64 list_length = inObj.length();
+  // conversion to string should not be necessary.
+  // but without I get ambiguous overload for operator
+  ds <<  QString::number(list_length);
+  for( auto instance : inObj )
+  {
+    ds << instance;
+  }
+  return ds;
+}
+
+QDataStream& operator>>(QDataStream &ds, YUViewInstanceInfoList &outObj)
+{
+  outObj.clear();
+  QString tmp;
+  ds >> tmp;
+  const qint64 list_length = tmp.toLongLong();
+  for(unsigned i = 0; i<list_length; i++)
+  {
+    YUViewInstanceInfo tmp;
+    ds >> tmp;
+    outObj.push_back(tmp);
+  }
+  return ds;
+}
+
 void YUViewInstanceInfo::initializeAsNewInstance()
 {
   QSettings settings;
   uuid = QUuid::createUuid();
   pid = QCoreApplication::applicationPid();
   // append instance to recorded ones
-  QList<QVariant> listOfQSettingInstances = YUViewInstanceInfo::getYUViewInstancesInQSettings();
-  listOfQSettingInstances.append(QVariant::fromValue(*this));
-  listOfQSettingInstances.append(QVariant::fromValue(*this));
-  listOfQSettingInstances.append(QVariant::fromValue(*this));
-  settings.setValue(instanceInfoKey, listOfQSettingInstances);
-  settings.sync();
-  // debug
-  QList<QVariant> test = YUViewInstanceInfo::getYUViewInstancesInQSettings();
-  YUViewInstanceInfo tmp = test.at(0).value<YUViewInstanceInfo>();
-  int a = 42;
-  a++;
+  YUViewInstanceInfoList listOfQSettingInstances = YUViewInstanceInfo::getYUViewInstancesInQSettings();
+  listOfQSettingInstances.append(*this);
+  settings.setValue(instanceInfoKey, QVariant::fromValue(listOfQSettingInstances));
 }
 
 void YUViewInstanceInfo::autoSavePlaylist(const QByteArray &newCompressedPlaylist)
@@ -32,19 +73,17 @@ void YUViewInstanceInfo::autoSavePlaylist(const QByteArray &newCompressedPlaylis
   this->compressedPlaylist = newCompressedPlaylist;
 
   // change the one stored
-  QList<QVariant> listOfQSettingInstances = YUViewInstanceInfo::getYUViewInstancesInQSettings();
-  QVariant thisInstance = QVariant::fromValue(*this);
-  QMutableListIterator<QVariant> it(listOfQSettingInstances);
+  YUViewInstanceInfoList listOfQSettingInstances = YUViewInstanceInfo::getYUViewInstancesInQSettings();
+  QMutableListIterator<YUViewInstanceInfo> it(listOfQSettingInstances);
   while (it.hasNext())
   {
-    YUViewInstanceInfo otherInstance = it.next().value<YUViewInstanceInfo>();
+    YUViewInstanceInfo otherInstance = it.next();
     if(this->uuid == otherInstance.uuid &&
        this->pid == otherInstance.pid )
     {
       // already had a instance, replace its playlist
-      it.setValue(thisInstance);
-      settings.setValue(instanceInfoKey, listOfQSettingInstances);
-      settings.sync();
+      it.setValue(*this);
+      settings.setValue(instanceInfoKey, QVariant::fromValue(listOfQSettingInstances));      
       return;
     }
   }
@@ -52,8 +91,8 @@ void YUViewInstanceInfo::autoSavePlaylist(const QByteArray &newCompressedPlaylis
   // no instance yet, save new one
   // should never be reached, as we create the instance in initializeAsNewInstance,
   // thus there always should be one
-  listOfQSettingInstances.append(thisInstance);
-  settings.setValue(instanceInfoKey, listOfQSettingInstances);
+  listOfQSettingInstances.append(*this);
+  settings.setValue(instanceInfoKey, QVariant::fromValue(listOfQSettingInstances));
   return;
 }
 
@@ -88,18 +127,17 @@ void YUViewInstanceInfo::removeInstanceFromQSettings()
   QSettings settings;
 
   // find and remove current instance from stored ones
-  QList<QVariant> listOfQSettingInstances = YUViewInstanceInfo::getYUViewInstancesInQSettings();
-  QVariant thisInstance = QVariant::fromValue(*this);
-  QMutableListIterator<QVariant> it(listOfQSettingInstances);
+  YUViewInstanceInfoList listOfQSettingInstances = YUViewInstanceInfo::getYUViewInstancesInQSettings();
+  QMutableListIterator<YUViewInstanceInfo> it(listOfQSettingInstances);
   while (it.hasNext())
   {
-    YUViewInstanceInfo otherInstance = it.next().value<YUViewInstanceInfo>();
+    YUViewInstanceInfo otherInstance = it.next();
     if(this->uuid == otherInstance.uuid &&
        this->pid == otherInstance.pid )
     {
       // found it, now remove it
       it.remove();
-      settings.setValue(instanceInfoKey, listOfQSettingInstances);
+      settings.setValue(instanceInfoKey, QVariant::fromValue(listOfQSettingInstances));
       return;
     }
   }
@@ -109,13 +147,13 @@ YUViewInstanceInfo YUViewInstanceInfo::getAutosavedPlaylist()
 {
   QSettings settings;
   QList<qint64> listOfPids = YUViewInstanceInfo::getRunningYUViewInstances();
-  QList<QVariant> listOfQSettingInstances = YUViewInstanceInfo::getYUViewInstancesInQSettings();
+  YUViewInstanceInfoList listOfQSettingInstances = YUViewInstanceInfo::getYUViewInstancesInQSettings();
 
   YUViewInstanceInfo candidateForRestore;
-  QMutableListIterator<QVariant> it(listOfQSettingInstances);
+  QMutableListIterator<YUViewInstanceInfo> it(listOfQSettingInstances);
   while (it.hasNext())
   {
-    YUViewInstanceInfo instanceInSettings = it.next().value<YUViewInstanceInfo>();
+    YUViewInstanceInfo instanceInSettings = it.next();
     bool still_running = false;
     // get known instances, if instance no longer runs, remove it from QSettings
     for( auto pid_running : listOfPids )
@@ -137,12 +175,12 @@ void YUViewInstanceInfo::cleanupRecordedInstances()
 {
   QSettings settings;
   QList<qint64> listOfPids = YUViewInstanceInfo::getRunningYUViewInstances();
-  QList<QVariant> listOfQSettingInstances = YUViewInstanceInfo::getYUViewInstancesInQSettings();
+  YUViewInstanceInfoList listOfQSettingInstances = YUViewInstanceInfo::getYUViewInstancesInQSettings();
 
-  QMutableListIterator<QVariant> it(listOfQSettingInstances);
+  QMutableListIterator<YUViewInstanceInfo> it(listOfQSettingInstances);
   while (it.hasNext())
   {
-    YUViewInstanceInfo instanceInSettings = it.next().value<YUViewInstanceInfo>();
+    YUViewInstanceInfo instanceInSettings = it.next();
     bool still_running = false;
     // get known instances, if instance no longer runs, remove it from QSettings
     for( auto pid_running : listOfPids )
@@ -156,7 +194,7 @@ void YUViewInstanceInfo::cleanupRecordedInstances()
     }
   }
 
-  settings.setValue(instanceInfoKey, listOfQSettingInstances);
+  settings.setValue(instanceInfoKey, QVariant::fromValue(listOfQSettingInstances));
 }
 
 bool YUViewInstanceInfo::isValid()
@@ -255,13 +293,13 @@ QList<qint64> YUViewInstanceInfo::getRunningYUViewInstances()
   return  listOfPids;
 }
 
-QList<QVariant> YUViewInstanceInfo::getYUViewInstancesInQSettings()
+YUViewInstanceInfoList YUViewInstanceInfo::getYUViewInstancesInQSettings()
 {
   QSettings settings;
-  QList<QVariant> instancesInQSettings;
+  YUViewInstanceInfoList instancesInQSettings;
   if (settings.contains(instanceInfoKey))
   {
-    instancesInQSettings = settings.value(instanceInfoKey).toList();
+    instancesInQSettings = settings.value(instanceInfoKey).value<YUViewInstanceInfoList>();
   }
   return instancesInQSettings;
 }

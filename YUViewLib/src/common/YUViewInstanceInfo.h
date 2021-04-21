@@ -27,9 +27,11 @@ public:
 
     QByteArray getCompressedPlaylist() const;
 
+    friend QDataStream& (operator<<) (QDataStream &ds, const YUViewInstanceInfo &inObj);
+    friend QDataStream& (operator>>) (QDataStream &ds, YUViewInstanceInfo &outObj);
 private:
     static QList<qint64> getRunningYUViewInstances();
-    static QList<QVariant> getYUViewInstancesInQSettings();
+    static QList<YUViewInstanceInfo> getYUViewInstancesInQSettings();
 //    const QString getKeyOfInstance();
 //    static YUViewInstanceInfo fromQList(const QList<QVariant> list);
 //    QList<QVariant> toQList();
@@ -42,10 +44,15 @@ private:
     static const QString instanceInfoKey; // key used for QSettings
 };
 
+typedef QList<YUViewInstanceInfo> YUViewInstanceInfoList;
 
+QDataStream& operator<<(QDataStream &ds, const YUViewInstanceInfo &inObj);
+QDataStream& operator>>(QDataStream &ds, YUViewInstanceInfo &outObj);
+QDataStream& operator<<(QDataStream &ds, const YUViewInstanceInfoList &inObj);
+QDataStream& operator>>(QDataStream &ds, YUViewInstanceInfoList &outObj);
 
 Q_DECLARE_METATYPE(YUViewInstanceInfo);
-
+Q_DECLARE_METATYPE(YUViewInstanceInfoList);
 
 
 #endif // YUVIEWINSTANCEINFO_H

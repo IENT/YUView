@@ -1153,11 +1153,6 @@ void PlaylistTreeWidget::loadAutosavedPlaylist(const YUViewInstanceInfo &crashed
 
 void PlaylistTreeWidget::dropAutosavedPlaylist()
 {
-//  QSettings settings;
-//  QString playlist_name = "Autosaveplaylist-" + crashedInstance;
-//  settings.remove(crashedInstance);
-//  settings.remove(playlist_name);
-
   instanceInfo.cleanupRecordedInstances();
 }
 
