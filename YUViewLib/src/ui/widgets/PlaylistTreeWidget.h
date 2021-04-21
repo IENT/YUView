@@ -88,7 +88,6 @@ public:
   // Update the caching status of all items
   void updateCachingStatus() { emit dataChanged(QModelIndex(), QModelIndex()); };
 
-  bool isAutosaveAvailable(QUuid current_instance_uuid, qint64 current_instance_pid, QStringList &crashedInstances);
   void loadAutosavedPlaylist(const YUViewInstanceInfo &crashedInstance);
   void dropAutosavedPlaylist();
   void dropAutosavedPlaylists(QStringList &crashedInstances);
