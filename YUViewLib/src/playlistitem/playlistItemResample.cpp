@@ -193,7 +193,7 @@ void playlistItemResample::createPropertiesWidget()
 
   ui.comboBoxInterpolation->addItems(QStringList() << "Bilinear"
                                                    << "Linear");
-  ui.comboBoxInterpolation->setCurrentIndex(0);
+  ui.comboBoxInterpolation->setCurrentIndex(this->interpolationIndex);
 
   ui.labelSAR->setEnabled(false);
   ui.pushButtonSARWidth->setEnabled(false);
@@ -242,16 +242,13 @@ void playlistItemResample::savePlaylist(QDomElement &root, const QDir &playlistD
   // Append the indexed item's properties
   playlistItem::appendPropertiesToPlaylist(d);
 
-  if (ui.created())
-  {
-    // Append the video handler properties
-    d.appendProperiteChild("width", QString::number(this->scaledSize.width));
-    d.appendProperiteChild("height", QString::number(this->scaledSize.height));
-    d.appendProperiteChild("interpolation", QString::number(this->interpolationIndex));
-    d.appendProperiteChild("cutStart", QString::number(this->cutRange.first));
-    d.appendProperiteChild("cutEnd", QString::number(this->cutRange.second));
-    d.appendProperiteChild("sampling", QString::number(this->sampling));
-  }
+  // Append the video handler properties
+  d.appendProperiteChild("width", QString::number(this->scaledSize.width));
+  d.appendProperiteChild("height", QString::number(this->scaledSize.height));
+  d.appendProperiteChild("interpolation", QString::number(this->interpolationIndex));
+  d.appendProperiteChild("cutStart", QString::number(this->cutRange.first));
+  d.appendProperiteChild("cutEnd", QString::number(this->cutRange.second));
+  d.appendProperiteChild("sampling", QString::number(this->sampling));
 
   playlistItemContainer::savePlaylistChildren(d, playlistDir);
 

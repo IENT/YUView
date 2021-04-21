@@ -71,6 +71,8 @@ If a method doesn't modify the state of the object, it should be marked `const`:
 
 ## Layout
 
+There is a .clang-format file in the root folder. Use it! Rules for formatting are in there. Some are also summarized here:
+
 Parameters: no space between `*`/`&` and parameter name.
 
     Type & foo(int a, int *b, int &c, const int &d);
@@ -107,7 +109,10 @@ closing brackets. Within the brackets, however, whitespaces may highly increase 
     someArray[i+35] = 7;          // Yes
     someArray[i + 35] = 7;        // Yes
 
-## Naming of variables and members
+## Naming
+
+File names should start with an uppercase letter as well as class names. Variable 
+names should start with a lowercase letter.
 
 Since the project already uses a lot of CamelCase styled variables we will 
 stick to this. There are good reasons to use snake_case but that would 
@@ -147,3 +152,11 @@ compared to local variables so there is really no reason to put it in the name:
        void method();
        int member;
     };
+
+## Qt types
+
+Yes this is a Qt based project but for portability of the code it is still a 
+bad idea to rely on the Qt classes too much. So the rule is: Use std equivalents 
+whenever possible. The ultimate goal of this project is to only rely on Qt for 
+the GUI / Widgets. All other code (like the parsers / decoders / testing) should
+compile "Qt free".

@@ -202,8 +202,8 @@ private:
   // Append the new item at the end of the playlist and connect signals/slots
   void appendNewItem(playlistItem *item, bool emitplaylistChanged = true);
 
-  // Clone the selected item as often as the user wants
-  void cloneSelectedItem();
+  // Duplicate the selected items
+  void duplicateSelectedItems();
 
   // We have a pointer to the ViewStateHandler to load/save the view states to playlist
   QPointer<ViewStateHandler> stateHandler;

@@ -473,7 +473,7 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   if (!this->ff.openInput(this->formatCtx, fileName))
     return;
 
-  auto inputFormat = this->formatCtx.getInputFormat();
+  this->formatCtx.getInputFormat();
 
   // Iterate through all streams
   for (unsigned idx = 0; idx < this->formatCtx.getNbStreams(); idx++)

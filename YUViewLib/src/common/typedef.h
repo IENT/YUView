@@ -45,6 +45,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -59,27 +60,6 @@ typedef enum
   raw_RGB
 } RawFormat;
 
-typedef enum
-{
-  inputInvalid = -1,
-  inputAnnexBHEVC,  // Raw HEVC annex B file
-  inputAnnexBAVC,   // Raw AVC annex B file
-  inputAnnexBVVC,   // Raw VVC annex B file
-  inputLibavformat, // This is some sort of container file which we will read using libavformat
-  input_NUM
-} inputFormat;
-
-typedef enum
-{
-  decoderEngineInvalid = -1, // invalid value
-  decoderEngineLibde265,     // The libde265 decoder
-  decoderEngineHM,           // The HM reference software decoder
-  decoderEngineVTM,          // The VTM reference software decoder
-  decoderEngineVVDec,        // The VVDec VVC decoder
-  decoderEngineDav1d,        // The dav1d AV1 decoder
-  decoderEngineFFMpeg,       // The FFMpeg decoder
-  decoderEngineNum
-} decoderEngine;
 } // namespace YUView
 
 // Maximum possible value for int
@@ -313,7 +293,7 @@ struct Ratio
 struct Size
 {
   Size(unsigned width, unsigned height) : width(width), height(height) {}
-  Size(int w, int h) 
+  Size(int w, int h)
   {
     if (w > 0)
       this->width = unsigned(w);
@@ -338,16 +318,10 @@ struct Offset
 {
   Offset(int x, int y) : x(x), y(y) {}
   Offset() = default;
-  bool operator==(const Offset &other) const
-  {
-    return this->x == other.x && this->x == other.x;
-  }
-  bool operator!=(const Offset &other) const
-  {
-    return this->x != other.x || this->y != other.y;
-  }
-  int x{};
-  int y{};
+  bool operator==(const Offset &other) const { return this->x == other.x && this->x == other.x; }
+  bool operator!=(const Offset &other) const { return this->x != other.x || this->y != other.y; }
+  int  x{};
+  int  y{};
 };
 
 // A list of value pair lists, where every list has a string (title)

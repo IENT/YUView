@@ -51,11 +51,8 @@ void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv
       {65536, 96638, -10783, -37444, 123299}   // BT2020_FullRange
   };
   const auto index = ColorConversionMapper.indexOf(colorConversion);
-  if (index)
-  {
-    for (unsigned i = 0; i < 5; i++)
-      RGBConv[i] = yuvRgbConvCoeffs[*index][i];
-  }
+  for (unsigned i = 0; i < 5; i++)
+    RGBConv[i] = yuvRgbConvCoeffs[index][i];
 }
 
 // All values between 0 and this value are possible for the subsampling.
@@ -457,20 +454,15 @@ std::string YUVPixelFormat::getName() const
 
   if (this->planar)
   {
-    if (auto po = PlaneOrderMapper.getName(this->planeOrder))
-      ss << *po;
+    ss << PlaneOrderMapper.getName(this->planeOrder);
 
     if (this->uvInterleaved)
       ss << "(IL)";
   }
-  else if (auto po = PackingOrderMapper.getName(this->packingOrder))
-    ss << *po;
+  else
+    ss << PackingOrderMapper.getName(this->packingOrder);
 
-  ss << " ";
-  if (auto sub = SubsamplingMapper.getText(this->subsampling))
-    ss << *sub;
-
-  ss << " " << this->bitsPerSample << "-bit";
+  ss << " " << SubsamplingMapper.getText(this->subsampling) << " " << this->bitsPerSample << "-bit";
 
   // Add the endianness (if the bit depth is greater 8)
   if (this->bitsPerSample > 8)

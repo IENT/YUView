@@ -149,7 +149,7 @@ void ViewStateHandler::savePlaylist(QDomElement &root)
       state.appendProperiteChild("centerOffsetY", QString::number(viewStates[i].centerOffset.y()));
       if (viewStates[i].splitting)
       {
-        state.appendProperiteChild("splitting", "1");
+        state.appendProperiteChild("splitting", QString("1"));
         state.appendProperiteChild("splittingPoint", QString::number(viewStates[i].splittingPoint));
       }
       state.appendProperiteChild("viewMode", QString::number(viewStates[i].viewMode));
@@ -178,7 +178,7 @@ void ViewStateHandler::savePlaylist(QDomElement &root)
   state.appendProperiteChild("centerOffsetY", QString::number(viewState.centerOffset.y()));
   if (viewState.splitting)
   {
-    state.appendProperiteChild("splitting", "1");
+    state.appendProperiteChild("splitting", QString("1"));
     state.appendProperiteChild("splittingPoint", QString::number(viewState.splittingPoint));
   }
   state.appendProperiteChild("viewMode", QString::number(viewState.viewMode));

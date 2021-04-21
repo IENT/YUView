@@ -49,10 +49,15 @@
 #include <QUuid>
 #include <QProcess>
 
+#include "playlistitem/playlistItemCompressedVideo.h"
 #include "playlistitem/playlistItemContainer.h"
 #include "playlistitem/playlistItemDifference.h"
+#include "playlistitem/playlistItemImageFile.h"
+#include "playlistitem/playlistItemImageFileSequence.h"
 #include "playlistitem/playlistItemOverlay.h"
+#include "playlistitem/playlistItemRawFile.h"
 #include "playlistitem/playlistItemResample.h"
+#include "playlistitem/playlistItemStatisticsFile.h"
 #include "playlistitem/playlistItemText.h"
 #include "playlistitem/playlistItems.h"
 
@@ -409,6 +414,9 @@ void PlaylistTreeWidget::addOverlayItem()
 
 void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChanged)
 {
+  if (!item)
+    return;
+
   insertTopLevelItem(topLevelItemCount(), item);
   connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
   connect(item,
@@ -434,15 +442,12 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent *event)
   menu.addAction("Add Resampler", this, &PlaylistTreeWidget::addResampleItem);
   menu.addAction("Add Overlay", this, &PlaylistTreeWidget::addOverlayItem);
 
-  QTreeWidgetItem *itemAtPoint = itemAt(event->pos());
-  if (itemAtPoint)
+  auto item = itemAt(event->pos());
+  if (item)
   {
     menu.addSeparator();
     menu.addAction("Delete Item", this, &PlaylistTreeWidget::deletePlaylistItems);
-
-    playlistItemText *txt = dynamic_cast<playlistItemText *>(itemAtPoint);
-    if (txt)
-      menu.addAction("Clone Item...", this, &PlaylistTreeWidget::cloneSelectedItem);
+    menu.addAction("Duplicate Item", this, &PlaylistTreeWidget::duplicateSelectedItems);
   }
 
   menu.exec(event->globalPos());
@@ -772,7 +777,7 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
     // Something was added. Select the last added item.
     setCurrentItem(lastAddedItem, 0, QItemSelectionModel::ClearAndSelect);
 
-    // The signal playlistChanged mus not be emitted again here because the setCurrentItem(...)
+    // The signal playlistChanged must not be emitted again here because the setCurrentItem(...)
     // function already did
   }
 }
@@ -901,9 +906,9 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   }
 
   // Get the root and parser the header
-  QDomElement root = doc.documentElement();
-  QString     tmp1 = root.tagName();
-  QString     tmp2 = root.attribute("version");
+  auto root = doc.documentElement();
+  auto tmp1 = root.tagName();
+  auto tmp2 = root.attribute("version");
   if (root.tagName() == "plist" && root.attribute("version") == "1.0")
   {
     // This is a playlist file in the old format. This is not supported anymore.
@@ -922,16 +927,11 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   }
 
   // Iterate over all items in the playlist
-  QDomNode n = root.firstChild();
+  auto n = root.firstChild();
   while (!n.isNull())
   {
-    QDomElement elem = n.toElement();
     if (n.isElement())
-    {
-      playlistItem *newItem = playlistItems::loadPlaylistItem(elem, filePath);
-      if (newItem)
-        appendNewItem(newItem, false);
-    }
+      this->appendNewItem(playlistItems::loadPlaylistItem(n.toElement(), filePath), false);
     n = n.nextSibling();
   }
 
@@ -939,14 +939,11 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   n = root.firstChild();
   while (!n.isNull())
   {
-    QDomElement elem = n.toElement();
     if (n.isElement())
     {
+      QDomElement elem = n.toElement();
       if (elem.tagName() == "viewStates")
-      {
-        // These are the view states. Load them
         stateHandler->loadPlaylist(elem);
-      }
     }
     n = n.nextSibling();
   }
@@ -958,7 +955,6 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
     setCurrentItem(0);
   }
 
-  // A new item was appended. The playlist changed.
   emit playlistChanged();
   return true;
 }
@@ -1165,35 +1161,43 @@ void PlaylistTreeWidget::dropAutosavedPlaylist()
   instanceInfo.cleanupRecordedInstances();
 }
 
-void PlaylistTreeWidget::cloneSelectedItem()
+void PlaylistTreeWidget::duplicateSelectedItems()
 {
-  QList<QTreeWidgetItem *> items = selectedItems();
+  auto items = selectedItems();
   if (items.count() == 0)
     return;
 
-  // Ask the user how many clones he wants to create
-  bool ok;
-  int  nrClones = QInputDialog::getInt(
-      this, "How many clones of each item do you need?", "Number of clones", 1, 1, 100000, 1, &ok);
-  if (!ok)
-    return;
+  // We do this with the same code that we use to save/load playlists.
+  // So we just save all items to a temporary playlist and load them again.
+  QDomDocument document;
+  auto         plist = document.createElement(QStringLiteral("playlistItems"));
+  document.appendChild(plist);
 
-  for (QTreeWidgetItem *item : items)
+  for (auto item : items)
   {
-    playlistItem *plItem = dynamic_cast<playlistItem *>(item);
-
-    // Is this is playlistItemText?
-    playlistItemText *plItemTxt = dynamic_cast<playlistItemText *>(plItem);
-    if (plItemTxt)
-    {
-      // Clone it
-      for (int i = 0; i < nrClones; i++)
-      {
-        playlistItemText *newText = new playlistItemText(plItemTxt);
-        appendNewItem(newText);
-      }
-    }
+    if (auto plItem = dynamic_cast<playlistItem *>(item))
+      plItem->savePlaylist(plist, QDir::current());
   }
+
+  // Load the temporary playlist
+  auto          n                   = document.documentElement().firstChild();
+  playlistItem *firstDuplicatedItem = nullptr;
+  while (!n.isNull())
+  {
+    if (n.isElement())
+    {
+      auto newItem = playlistItems::loadPlaylistItem(n.toElement(), QDir::current().absolutePath());
+      if (!firstDuplicatedItem)
+        firstDuplicatedItem = newItem;
+      this->appendNewItem(newItem, false);
+    }
+    n = n.nextSibling();
+  }
+
+  if (firstDuplicatedItem)
+    setCurrentItem(firstDuplicatedItem, 0, QItemSelectionModel::ClearAndSelect);
+
+  // Do not emit playlistChanged() because setCurrentItem already did.
 }
 
 void PlaylistTreeWidget::autoSavePlaylist()

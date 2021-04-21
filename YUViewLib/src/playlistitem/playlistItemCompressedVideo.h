@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "common/typedef.h"
 #include "decoder/decoderBase.h"
 #include "filesource/FileSourceFFmpegFile.h"
 #include "parser/AnnexB.h"
@@ -56,10 +57,10 @@ public:
    * will then call addPropertiesWidget to add the custom properties panel. 'displayComponent'
    * initializes the component to display (reconstruction/prediction/residual/trCoeff).
    */
-  playlistItemCompressedVideo(const QString &       fileName,
-                              int                   displayComponent = 0,
-                              YUView::inputFormat   input            = YUView::inputInvalid,
-                              YUView::decoderEngine decoder = YUView::decoderEngineInvalid);
+  playlistItemCompressedVideo(const QString &fileName,
+                              int            displayComponent = 0,
+                              InputFormat    input            = InputFormat::Invalid,
+                              DecoderEngine  decoder          = DecoderEngine::Invalid);
 
   // Save the compressed file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
@@ -113,7 +114,7 @@ public:
   // is performed.
   virtual int cachingThreadLimit() override { return 1; }
 
-  YUView::inputFormat getInputFormat() const { return inputFormatType; }
+  InputFormat getInputFormat() const { return this->inputFormat; }
 
 protected:
   virtual void createPropertiesWidget() override;
@@ -125,9 +126,9 @@ protected:
   QScopedPointer<decoderBase> cachingDecoder;
 
   // When opening the file, we will fill this list with the possible decoders
-  QList<YUView::decoderEngine> possibleDecoders;
+  std::vector<DecoderEngine> possibleDecoders;
   // The actual type of the decoder
-  YUView::decoderEngine decoderEngineType;
+  DecoderEngine decoderEngine{DecoderEngine::Invalid};
   // Delete existing decoders and allocate decoders for the type "decoderEngineType"
   bool allocateDecoder(int displayComponent = 0);
 
@@ -143,8 +144,8 @@ protected:
   int readAnnexBFrameCounterCodingOrder{-1};
 
   // Which type is the input?
-  YUView::inputFormat inputFormatType;
-  AVCodecIDWrapper    ffmpegCodec;
+  InputFormat      inputFormat;
+  AVCodecIDWrapper ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a
   // supported format, we can read the NAL units from the compressed file.
