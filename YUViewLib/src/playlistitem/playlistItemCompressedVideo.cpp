@@ -395,7 +395,8 @@ playlistItemCompressedVideo::newPlaylistItemCompressedVideo(const YUViewDomEleme
                                                             const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemRawCodedVideo
-  auto absolutePath  = root.findChildValue("absolutePath");
+  QUrl absoluteUrl = root.findChildValue("absolutePath");
+  auto absolutePath = absoluteUrl.toLocalFile();
   auto relativePath  = root.findChildValue("relativePath");
   int  displaySignal = root.findChildValue("displayComponent").toInt();
 
