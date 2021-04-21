@@ -90,7 +90,6 @@ public:
 
   void loadAutosavedPlaylist(const YUViewInstanceInfo &crashedInstance);
   void dropAutosavedPlaylist();
-  void dropAutosavedPlaylists(QStringList &crashedInstances);
   void startAutosaveTimer();
   
   YUViewInstanceInfo getInstanceInfo() const;

@@ -155,6 +155,7 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   // This does not work here. Don't know why. Setting it every time a new item is added, however,
   // works.
   // header()->resizeSection(1, 10);
+
   connect(this,
           &PlaylistTreeWidget::itemSelectionChanged,
           this,

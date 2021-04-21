@@ -96,26 +96,6 @@ void YUViewInstanceInfo::autoSavePlaylist(const QByteArray &newCompressedPlaylis
   return;
 }
 
-//void YUViewInstanceInfo::loadAutosavedPlaylist()
-//{
-//  QSettings settings;
-
-//  for( auto instance : crashedInstances)
-//  {
-//    // take the first in the list
-//    QString playlist_name = "Autosaveplaylist-" + instance;
-//    if (settings.contains(playlist_name))
-//    {
-//      QByteArray compressedPlaylist   = settings.value(playlist_name).toByteArray();
-//      QByteArray uncompressedPlaylist = qUncompress(compressedPlaylist);
-//      loadPlaylistFromByteArray(uncompressedPlaylist, QDir::current().absolutePath());
-//      dropAutosavedPlaylist(instance);
-//      break;
-//    }
-
-//  }
-//}
-
 void YUViewInstanceInfo::dropAutosavedPlaylist()
 {
   // replace saved on with emtpy playlist
@@ -306,39 +286,9 @@ YUViewInstanceInfoList YUViewInstanceInfo::getYUViewInstancesInQSettings()
   return instancesInQSettings;
 }
 
-//const QString YUViewInstanceInfo::getKeyOfInstance()
-//{
-//  return this->uuid.toString() + ";" + QString::number(this->pid);
-//}
-
-//YUViewInstanceInfo YUViewInstanceInfo::fromQList(const QList<QVariant> list)
-//{
-//  YUViewInstanceInfo instanceInfo;
-//  instanceInfo.uuid = list.at(0).toUuid();
-//  instanceInfo.pid = list.at(1).toLongLong();
-//  instanceInfo.compressedPlaylist = list.at(2).toByteArray();
-//  return instanceInfo;
-//}
-
-//QList<QVariant> YUViewInstanceInfo::toQList()
-//{
-//  QList<QVariant> list;
-//  list.append(this->uuid);
-//  list.append(this->pid);
-//  list.append(this->compressedPlaylist);
-//  return list;
-//}
-
 QByteArray YUViewInstanceInfo::getCompressedPlaylist() const
 {
   return compressedPlaylist;
 }
 
-//void YUViewInstanceInfo::keyToUuidAndPid(const QString key, QUuid &uuid, qint64 &pid)
-//{
-//  QStringList instance_uuid_and_pid =  key.split(';');
-//  uuid =  QUuid(instance_uuid_and_pid.at(0));
-//  QString instance_pid_str = instance_uuid_and_pid.at(1);
-//  pid = instance_pid_str.toLongLong();
-//}
 
