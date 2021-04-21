@@ -109,7 +109,8 @@ playlistItemImageFile::newplaylistItemImageFile(const YUViewDomElement &root,
                                                 const QString &         playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemImageFile
-  QString absolutePath = root.findChildValue("absolutePath");
+  QUrl absoluteUrl = root.findChildValue("absolutePath");
+  auto absolutePath = absoluteUrl.toLocalFile();
   QString relativePath = root.findChildValue("relativePath");
 
   // check if file with absolute path exists, otherwise check relative path

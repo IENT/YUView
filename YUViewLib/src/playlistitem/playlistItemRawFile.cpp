@@ -469,7 +469,8 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const YUViewDom
                                                                  const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemRawFile
-  auto absolutePath = root.findChildValue("absolutePath");
+  QUrl absoluteUrl = root.findChildValue("absolutePath");
+  auto absolutePath = absoluteUrl.toLocalFile();
   auto relativePath = root.findChildValue("relativePath");
   auto type         = root.findChildValue("type");
 
