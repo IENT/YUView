@@ -165,6 +165,8 @@ YUViewInstanceInfo YUViewInstanceInfo::getAutosavedPlaylist()
       // found an instance which is no longer running: candidate for restore
       candidateForRestore = instanceInSettings;
       it.remove();
+      settings.setValue(instanceInfoKey, QVariant::fromValue(listOfQSettingInstances));
+      break; // keep playlist from potential other crashed instances for other new instances
     }
   }
 
