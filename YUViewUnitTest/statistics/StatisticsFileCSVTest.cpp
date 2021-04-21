@@ -68,62 +68,64 @@ void StatisticsFileCSVTest::testCSVFileParsing1()
   TemporaryFile csfFile("csv");
 
   {
+    const std::string stats_str =
+R"(%;syntax-version;v1.2
+%;seq-specs;BasketballDrive_L1_1920x1080_50_encoder+randomaccess+main+B+2x_FTBE9_IBD08_IBD18_IBD08_IBD18_IP48_QPL1022_SEIDPH0_stats;0;1920;1080;0;
+%;type;9;MVDL0;vector;
+%;vectorColor;100;0;0;255
+%;scaleFactor;4
+%;type;10;MVDL1;vector;
+%;vectorColor;0;100;0;255
+%;scaleFactor;4
+%;type;11;MVL0;vector;
+%;vectorColor;200;0;0;255
+%;scaleFactor;4
+%;type;12;MVL1;vector;
+%;vectorColor;0;200;0;255
+%;scaleFactor;4
+%;type;7;MVPIdxL0;range;
+%;defaultRange;0;1;jet
+%;gridColor;255;255;255;
+%;type;8;MVPIdxL1;range;
+%;defaultRange;0;1;jet
+%;gridColor;255;255;255;
+%;type;5;MergeIdxL0;range;
+%;defaultRange;0;5;jet
+%;gridColor;255;255;255;
+%;type;6;MergeIdxL1;range;
+%;defaultRange;0;5;jet
+%;gridColor;255;255;255;
+%;type;0;PredMode;range;
+%;defaultRange;0;1;jet
+%;type;3;RefFrmIdxL0;range;
+%;defaultRange;0;3;jet
+%;gridColor;255;255;255;
+%;type;4;RefFrmIdxL1;range;
+%;defaultRange;0;3;jet
+%;gridColor;255;255;255;
+%;type;1;Skipflag;range;
+%;defaultRange;0;1;jet
+1;0;32;8;16;9;1;0
+1;8;32;8;16;9;0;0
+1;112;56;4;8;9;0;0
+1;116;56;4;8;9;0;0
+1;128;32;32;16;9;0;0
+1;128;48;32;16;9;0;0
+7;0;32;8;16;3;1
+7;128;48;32;16;3;0
+7;384;0;64;64;3;0
+7;520;32;24;32;3;0
+7;576;40;32;24;3;0
+1;0;32;8;16;11;31;0
+1;8;32;8;16;11;-33;0
+1;112;56;4;8;11;-30;0
+1;116;56;4;8;11;-30;0
+1;128;32;32;16;11;-31;0
+1;128;48;32;16;11;-31;0
+1;160;32;32;16;11;-31;0
+)";
     std::ofstream o(csfFile.getFilename());
-    o << "%;syntax-version;v1.2\n";
-    o << "%;seq-specs;BasketballDrive_L1_1920x1080_50_encoder+randomaccess+main+B+2x_FTBE9_IBD08_"
-         "IBD18_IBD08_IBD18_IP48_QPL1022_SEIDPH0_stats;0;1920;1080;0;\n";
-    o << "%;type;9;MVDL0;vector;\n";
-    o << "%;vectorColor;100;0;0;255\n";
-    o << "%;scaleFactor;4\n";
-    o << "%;type;10;MVDL1;vector;\n";
-    o << "%;vectorColor;0;100;0;255\n";
-    o << "%;scaleFactor;4\n";
-    o << "%;type;11;MVL0;vector;\n";
-    o << "%;vectorColor;200;0;0;255\n";
-    o << "%;scaleFactor;4\n";
-    o << "%;type;12;MVL1;vector;\n";
-    o << "%;vectorColor;0;200;0;255\n";
-    o << "%;scaleFactor;4\n";
-    o << "%;type;7;MVPIdxL0;range;\n";
-    o << "%;defaultRange;0;1;jet\n";
-    o << "%;gridColor;255;255;255;\n";
-    o << "%;type;8;MVPIdxL1;range;\n";
-    o << "%;defaultRange;0;1;jet\n";
-    o << "%;gridColor;255;255;255;\n";
-    o << "%;type;5;MergeIdxL0;range;\n";
-    o << "%;defaultRange;0;5;jet\n";
-    o << "%;gridColor;255;255;255;\n";
-    o << "%;type;6;MergeIdxL1;range;\n";
-    o << "%;defaultRange;0;5;jet\n";
-    o << "%;gridColor;255;255;255;\n";
-    o << "%;type;0;PredMode;range;\n";
-    o << "%;defaultRange;0;1;jet\n";
-    o << "%;type;3;RefFrmIdxL0;range;\n";
-    o << "%;defaultRange;0;3;jet\n";
-    o << "%;gridColor;255;255;255;\n";
-    o << "%;type;4;RefFrmIdxL1;range;\n";
-    o << "%;defaultRange;0;3;jet\n";
-    o << "%;gridColor;255;255;255;\n";
-    o << "%;type;1;Skipflag;range;\n";
-    o << "%;defaultRange;0;1;jet\n";
-    o << "1;0;32;8;16;9;1;0\n";
-    o << "1;8;32;8;16;9;0;0\n";
-    o << "1;112;56;4;8;9;0;0\n";
-    o << "1;116;56;4;8;9;0;0\n";
-    o << "1;128;32;32;16;9;0;0\n";
-    o << "1;128;48;32;16;9;0;0\n";
-    o << "7;0;32;8;16;3;1\n";
-    o << "7;128;48;32;16;3;0\n";
-    o << "7;384;0;64;64;3;0\n";
-    o << "7;520;32;24;32;3;0\n";
-    o << "7;576;40;32;24;3;0\n";
-    o << "1;0;32;8;16;11;31;0\n";
-    o << "1;8;32;8;16;11;-33;0\n";
-    o << "1;112;56;4;8;11;-30;0\n";
-    o << "1;116;56;4;8;11;-30;0\n";
-    o << "1;128;32;32;16;11;-31;0\n";
-    o << "1;128;48;32;16;11;-31;0\n";
-    o << "1;160;32;32;16;11;-31;0\n";
+    o << stats_str;
   }
 
   stats::StatisticsData    statData;
