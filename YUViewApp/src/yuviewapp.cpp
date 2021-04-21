@@ -34,6 +34,7 @@
 
 #include "common/typedef.h"
 #include "ui/YUViewApplication.h"
+#include "common/YUViewInstanceInfo.h"
 
 int main(int argc, char *argv[])
 {
@@ -45,7 +46,11 @@ int main(int argc, char *argv[])
   QCoreApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents,false);
 
   qRegisterMetaType<recacheIndicator>("recacheIndicator");
-  
+  qRegisterMetaType<YUViewInstanceInfo>("YUViewInstanceInfo");
+  qRegisterMetaType<YUViewInstanceInfoList>("YUViewInstanceInfoList");
+  qRegisterMetaTypeStreamOperators<YUViewInstanceInfo>("YUViewInstanceInfo");
+  qRegisterMetaTypeStreamOperators<YUViewInstanceInfoList>("YUViewInstanceInfoList");
+
   YUViewApplication app(argc, argv);
 
   return app.returnCode;

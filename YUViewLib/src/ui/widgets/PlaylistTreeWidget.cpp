@@ -46,6 +46,8 @@
 #include <QScopedValueRollback>
 #include <QSettings>
 #include <QTextStream>
+#include <QUuid>
+#include <QProcess>
 
 #include "playlistitem/playlistItemCompressedVideo.h"
 #include "playlistitem/playlistItemContainer.h"
@@ -148,6 +150,8 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   header()->setSectionResizeMode(1, QHeaderView::Fixed);
   header()->setSectionResizeMode(0, QHeaderView::Stretch);
 
+  instanceInfo.initializeAsNewInstance();
+
   // This does not work here. Don't know why. Setting it every time a new item is added, however,
   // works.
   // header()->resizeSection(1, 10);
@@ -163,9 +167,7 @@ PlaylistTreeWidget::~PlaylistTreeWidget()
 {
   // This is a conventional quit. Remove the automatically saved playlist.
   autosaveTimer.stop();
-  QSettings settings;
-  if (settings.contains("Autosaveplaylist"))
-    settings.remove("Autosaveplaylist");
+  instanceInfo.removeInstanceFromQSettings();
 }
 
 playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
@@ -1011,29 +1013,17 @@ void PlaylistTreeWidget::updateSettings()
   }
 }
 
-bool PlaylistTreeWidget::isAutosaveAvailable()
+void PlaylistTreeWidget::loadAutosavedPlaylist(const YUViewInstanceInfo &crashedInstance)
 {
   QSettings settings;
-  return settings.contains("Autosaveplaylist");
-}
-
-void PlaylistTreeWidget::loadAutosavedPlaylist()
-{
-  QSettings settings;
-  if (!settings.contains("Autosaveplaylist"))
-    return;
-
-  QByteArray compressedPlaylist   = settings.value("Autosaveplaylist").toByteArray();
+  QByteArray compressedPlaylist= crashedInstance.getCompressedPlaylist();
   QByteArray uncompressedPlaylist = qUncompress(compressedPlaylist);
   loadPlaylistFromByteArray(uncompressedPlaylist, QDir::current().absolutePath());
-
-  dropAutosavedPlaylist();
 }
 
 void PlaylistTreeWidget::dropAutosavedPlaylist()
 {
-  QSettings settings;
-  settings.remove("Autosaveplaylist");
+  instanceInfo.cleanupRecordedInstances();
 }
 
 void PlaylistTreeWidget::duplicateSelectedItems()
@@ -1081,15 +1071,19 @@ void PlaylistTreeWidget::autoSavePlaylist()
   if (topLevelItemCount() == 0)
   {
     // Empty playlist
-    if (settings.contains("Autosaveplaylist"))
-      settings.remove("Autosaveplaylist");
+    instanceInfo.dropAutosavedPlaylist();
   }
   else
   {
     QString    playlistAsString   = getPlaylistString(QDir::current());
     QByteArray compressedPlaylist = qCompress(playlistAsString.toLatin1());
-    settings.setValue("Autosaveplaylist", compressedPlaylist);
+    instanceInfo.autoSavePlaylist(compressedPlaylist);
   }
+}
+
+YUViewInstanceInfo PlaylistTreeWidget::getInstanceInfo() const
+{
+  return instanceInfo;
 }
 
 void PlaylistTreeWidget::startAutosaveTimer()

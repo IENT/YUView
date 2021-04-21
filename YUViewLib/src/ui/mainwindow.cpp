@@ -197,18 +197,22 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
   ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
 
-  if (ui.playlistTreeWidget->isAutosaveAvailable())
+  QStringList crashedInstances;
+  YUViewInstanceInfo autosaveCandidateInstance = ui.playlistTreeWidget->getInstanceInfo().getAutosavedPlaylist();
+  if( autosaveCandidateInstance.isValid())
   {
     QMessageBox::StandardButton resBtn =
         QMessageBox::question(this,
                               "Restore Playlist",
                               tr("It looks like YUView crashed the last time you used it. We are "
                                  "sorry about that. However, we have an autosave of the playlist "
-                                 "you were working with. Do you want to resotre this playlist?\n"),
+                                 "you were working with. Do you want to restore this playlist? If"
+                                 " you had more than one YUView instance, opening more instances "
+                                 "will allow you to restore other playlists as well.\n"),
                               QMessageBox::Yes | QMessageBox::No,
                               QMessageBox::No);
     if (resBtn == QMessageBox::Yes)
-      ui.playlistTreeWidget->loadAutosavedPlaylist();
+      ui.playlistTreeWidget->loadAutosavedPlaylist(autosaveCandidateInstance);
     else
       ui.playlistTreeWidget->dropAutosavedPlaylist();
   }
