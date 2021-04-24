@@ -16,7 +16,7 @@ jobs:
           - os: ubuntu-16.04
             qt_version: Qt5
             qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_xenial.zip
-            ARTIFACT_NAME: YUView.AppImage
+            ARTIFACT_NAME: YUView-cmake.AppImage
           - os: ubuntu-18.04
             qt_version: Qt5
             qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_bionic.zip
@@ -98,14 +98,14 @@ jobs:
 ##########################################################################################
 ############################### Packaging YUView, Installers #############################
 ##########################################################################################
-        
+
     - name: Build Appimage (Linux)
       # only run on oldest supported ubuntu:
       # Please run on a system with a glibc version no newer than what comes with the oldest
       # currently still-supported mainstream distribution.
       # This is so that the resulting bundle will work on most still-supported Linux distributions.
       if: matrix.os == 'ubuntu-16.04' &&  matrix.qt_version == 'Qt5'
-      shell: bash    
+      shell: bash
       run: |
         cd $HOME
         curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
@@ -113,9 +113,9 @@ jobs:
         cd $GITHUB_WORKSPACE/build
         make install DESTDIR=appdir
         $HOME/linuxdeployqt-6-x86_64.AppImage appdir/usr/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -qmake=$HOME/YUViewQt/Qt/bin/qmake -bundle-non-qt-libs -verbose=2
-        mv YUView-*.AppImage YUView.AppImage
+        mv YUView-*.AppImage ${{matrix.ARTIFACT_NAME}}
         mkdir $GITHUB_WORKSPACE/artifacts
-        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
+        cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
         cd $GITHUB_WORKSPACE
         ls -l
         cd $GITHUB_WORKSPACE/artifacts

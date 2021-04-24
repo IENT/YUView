@@ -19,14 +19,14 @@ jobs:
             qt_tools_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_win.zip
             qt_tools_path: Qttools/bin/windeployqt.exe
             auto_update: true
-            ARTIFACT_NAME: YUView-Win.zip
+            ARTIFACT_NAME: YUView-Win-cmake.zip
           - os: windows-2019
             qt_version: Qt5
             qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_win.zip
             qt_tools_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_win.zip
             qt_tools_path: Qttools/bin/windeployqt.exe
             auto_update: false
-            ARTIFACT_NAME: YUView-Win-noautoupdate.zip
+            ARTIFACT_NAME: YUView-Win-noautoupdate-cmake.zip
           - os: windows-2019
             qt_version: Qt6
             qt_base_link: https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.0.2/qtBase_6.0.2_win.zip
@@ -145,7 +145,7 @@ jobs:
         cd ..
         python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
         mkdir artifacts
-        7z a artifacts/YUView-Win.zip ./deploy/*
+        7z a artifacts/${{matrix.ARTIFACT_NAME}} ./deploy/*
       shell: bash
     - name: Wix Windows
       run: |
@@ -183,7 +183,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: artifacts/YUView-Win.zip
+        asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
         asset_name: ${{matrix.ARTIFACT_NAME}}
         asset_content_type: application/zip
     - name: Upload Windows installer to Release
