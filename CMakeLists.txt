@@ -26,10 +26,59 @@ endif()
 if(MSVC)
     # Make build use multiple threads under MSVC:
     add_compile_options(/MP)
-    
+
     # Make build use Unicode:
     add_compile_definitions(UNICODE _UNICODE)
 endif()
+
+
+#####################################################################################################################################
+# Getting YUView version
+#####################################################################################################################################
+find_package(Git QUIET REQUIRED)
+
+# reconfigure if index changes
+set_property(GLOBAL APPEND
+    PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/.git/index")
+
+# get version from git (tag)
+execute_process(
+    COMMAND "${GIT_EXECUTABLE}" describe --always HEAD
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    RESULT_VARIABLE res
+    OUTPUT_VARIABLE YUVIEW_VERSION
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(${res})
+    message("Git describe failed!")
+else()
+    message("Git describe version: ${YUVIEW_VERSION}")
+endif()
+if(!${YUVIEW_VERSION})
+    message("Do not have YUView version. Setting to 0.")
+    set(YUVIEW_VERSION  0)
+endif()
+add_compile_definitions(YUVIEW_VERSION=\"${YUVIEW_VERSION}\")
+
+# get git hash
+execute_process(
+    COMMAND "${GIT_EXECUTABLE}" rev-parse HEAD
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    RESULT_VARIABLE res
+    OUTPUT_VARIABLE YUVIEW_HASH
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(${res})
+    message("Git rev-parse failed!")
+else()
+    message("Git hash: ${YUVIEW_HASH}")
+endif()
+if(!${YUVIEW_HASH})
+    message("Do not have YUView hash. Setting to 0.")
+    set(YUVIEW_HASH  0)
+endif()
+add_compile_definitions(YUVIEW_HASH=\"${YUVIEW_HASH}\")
 
 #####################################################################################################################################
 # YUViewApp
