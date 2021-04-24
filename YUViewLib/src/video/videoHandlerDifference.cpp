@@ -46,12 +46,7 @@
 #define DEBUG_VIDEO(fmt, ...) ((void)0)
 #endif
 
-videoHandlerDifference::videoHandlerDifference() : videoHandler()
-{
-  markDifference      = false;
-  amplificationFactor = 1;
-  codingOrder         = CodingOrder_HEVC;
-}
+videoHandlerDifference::videoHandlerDifference() : videoHandler() {}
 
 void videoHandlerDifference::drawDifferenceFrame(QPainter *painter,
                                                  int       frameIdx,
@@ -253,7 +248,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
       functions::clipToUnsigned(currentImage.height()) != frameSize.height)
     return;
 
-  if (codingOrder == CodingOrder_HEVC)
+  if (codingOrder == CodingOrder::HEVC)
   {
     // Assume the following:
     // - The picture is split into LCUs of 64x64 pixels which are scanned in raster scan
@@ -311,6 +306,28 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
 
   // No difference was found
   infoList.append(infoItem("Difference", "Frames are identical"));
+}
+
+void videoHandlerDifference::savePlaylist(YUViewDomElement &element) const
+{
+  frameHandler::savePlaylist(element);
+
+  if (this->amplificationFactor != 1)
+    element.appendProperiteChild("amplificationFactor", QString::number(this->amplificationFactor));
+  if (this->markDifference)
+    element.appendProperiteChild("markDifference", functions::booToString(this->markDifference));
+}
+
+void videoHandlerDifference::loadPlaylist(const YUViewDomElement &element)
+{
+  frameHandler::loadPlaylist(element);
+
+  auto amplification = element.findChildValue("amplificationFactor");
+  if (!amplification.isEmpty())
+    this->amplificationFactor = amplification.toInt();
+
+  if (element.findChildValue("markDifference") == "True")
+    this->markDifference = true;
 }
 
 bool videoHandlerDifference::hierarchicalPosition(int           x,

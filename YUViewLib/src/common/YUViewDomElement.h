@@ -51,4 +51,5 @@ public:
   double findChildValueDouble(const QString &tagName, double defaultValue) const;
   
   void appendProperiteChild(const QString &type, const QString &name, const QStringPairList &attributes=QStringPairList());
+  void appendProperiteChild(const std::string &type, const std::string &name);
 };

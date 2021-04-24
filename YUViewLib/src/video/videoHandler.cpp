@@ -51,6 +51,12 @@ void videoHandler::slotVideoControlChanged()
   // Update the controls and get the new selected size
   auto newSize = getNewSizeFromControls();
 
+  // Set the current frame in the buffer to be invalid
+  this->currentImageIndex = -1;
+
+  // The cache is invalid until the item is recached
+  setCacheInvalid();
+
   if (newSize != frameSize && newSize.isValid())
   {
     // Set the new size and update the controls.
@@ -58,20 +64,15 @@ void videoHandler::slotVideoControlChanged()
     // The frame size changed. We need to redraw/re-cache.
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
-
-  // Set the current frame in the buffer to be invalid
-  this->currentImageIndex = -1;
-
-  // The cache is invalid until the item is recached
-  setCacheInvalid();
 }
 
 void videoHandler::setFrameSize(Size size)
 {
   if (size != frameSize)
   {
-    currentFrameRawData_frameIndex = -1;
-    currentImageIndex              = -1;
+    this->currentFrameRawData_frameIndex = -1;
+    this->currentImageIndex              = -1;
+    this->rawData_frameIndex             = -1;
   }
 
   frameHandler::setFrameSize(size);

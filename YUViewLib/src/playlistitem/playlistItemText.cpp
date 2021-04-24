@@ -91,7 +91,7 @@ void playlistItemText::createPropertiesWidget()
   vAllLaout->addLayout(createPlaylistItemControls());
   vAllLaout->addWidget(line);
   vAllLaout->addLayout(createTextController());
-  vAllLaout->insertStretch(3, 1); // Push controls up
+  vAllLaout->insertStretch(-1, 1); // Push controls up
 }
 
 QLayout *playlistItemText::createTextController()

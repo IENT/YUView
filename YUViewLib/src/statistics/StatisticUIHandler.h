@@ -40,7 +40,6 @@
 
 #include <QMutex>
 #include <QPointer>
-#include <QVector>
 
 #include "ui_statisticUIHandler.h"
 
@@ -103,9 +102,9 @@ private:
 
   // Pointers to the primary and (if created) secondary controls that we added to the properties
   // panel per item
-  QList<QCheckBox *>   itemNameCheckBoxes[2];
-  QList<QSlider *>     itemOpacitySliders[2];
-  QList<QPushButton *> itemStyleButtons[2];
+  std::vector<QCheckBox *>   itemNameCheckBoxes[2];
+  std::vector<QSlider *>     itemOpacitySliders[2];
+  std::vector<QPushButton *> itemStyleButtons[2];
   QSpacerItem *        spacerItems[2] {nullptr};
 
 private slots:

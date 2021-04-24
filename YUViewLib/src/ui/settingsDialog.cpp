@@ -132,8 +132,8 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   settings.beginGroup("Decoders");
   ui.lineEditDecoderPath->setText(settings.value("SearchPath", "").toString());
 
-  for (int i=0; i<YUView::decoderEngineNum; i++)
-    ui.comboBoxDefaultDecoder->addItem(functions::getDecoderEngineName((YUView::decoderEngine)i));
+  for (auto e : DecoderEngineMapper.getNames())
+    ui.comboBoxDefaultDecoder->addItem(QString::fromStdString(e));
   ui.comboBoxDefaultDecoder->setCurrentIndex(settings.value("DefaultDecoder", 0).toInt());
 
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());

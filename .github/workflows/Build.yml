@@ -13,6 +13,7 @@ jobs:
       matrix:
         include: 
           - os: ubuntu-18.04
+          - os: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow

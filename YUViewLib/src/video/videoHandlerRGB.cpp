@@ -137,7 +137,8 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
     auto width  = std::min(frameSize.width, rgbItem2->frameSize.width);
     auto height = std::min(frameSize.height, rgbItem2->frameSize.height);
 
-    if (pixelPos.x() < 0 || pixelPos.x() >= int(width) || pixelPos.y() < 0 || pixelPos.y() >= int(height))
+    if (pixelPos.x() < 0 || pixelPos.x() >= int(width) || pixelPos.y() < 0 ||
+        pixelPos.y() >= int(height))
       return QStringPairList();
 
     rgba_t valueThis  = getPixelValue(pixelPos);
@@ -258,6 +259,12 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   ui.BScaleSpinBox->setValue(componentScale[2]);
   ui.BScaleSpinBox->setMaximum(1000);
 
+  ui.RInvertCheckBox->setChecked(this->componentInvert[0]);
+  ui.GInvertCheckBox->setChecked(this->componentInvert[1]);
+  ui.BInvertCheckBox->setChecked(this->componentInvert[2]);
+
+  ui.limitedRangeCheckBox->setChecked(this->limitedRange);
+
   // Connect all the change signals from the controls
   connect(ui.rgbFormatComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -307,14 +314,25 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
 
 void videoHandlerRGB::slotDisplayOptionsChanged()
 {
-  componentDisplayMode = (ComponentDisplayMode)ui.colorComponentsComboBox->currentIndex();
-  componentScale[0]    = ui.RScaleSpinBox->value();
-  componentScale[1]    = ui.GScaleSpinBox->value();
-  componentScale[2]    = ui.BScaleSpinBox->value();
-  componentInvert[0]   = ui.RInvertCheckBox->isChecked();
-  componentInvert[1]   = ui.GInvertCheckBox->isChecked();
-  componentInvert[2]   = ui.BInvertCheckBox->isChecked();
-  limitedRange         = ui.limitedRangeCheckBox->isChecked();
+  {
+    auto idx = ui.colorComponentsComboBox->currentIndex();
+    if (idx == 0)
+      componentDisplayMode = ComponentShow::All;
+    if (idx == 1)
+      componentDisplayMode = ComponentShow::R;
+    if (idx == 2)
+      componentDisplayMode = ComponentShow::G;
+    if (idx == 3)
+      componentDisplayMode = ComponentShow::B;
+  }
+
+  componentScale[0]  = ui.RScaleSpinBox->value();
+  componentScale[1]  = ui.GScaleSpinBox->value();
+  componentScale[2]  = ui.BScaleSpinBox->value();
+  componentInvert[0] = ui.RInvertCheckBox->isChecked();
+  componentInvert[1] = ui.GInvertCheckBox->isChecked();
+  componentInvert[2] = ui.BInvertCheckBox->isChecked();
+  limitedRange       = ui.limitedRangeCheckBox->isChecked();
 
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
@@ -423,6 +441,59 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   }
 }
 
+void videoHandlerRGB::savePlaylist(YUViewDomElement &element) const
+{
+  frameHandler::savePlaylist(element);
+  element.appendProperiteChild("pixelFormat", this->getRawRGBPixelFormatName());
+
+  auto ComponentShowToName = std::map<ComponentShow, QString>({{ComponentShow::All, "All"},
+                                                               {ComponentShow::R, "R"},
+                                                               {ComponentShow::G, "G"},
+                                                               {ComponentShow::B, "B"}});
+  element.appendProperiteChild("componentShow", ComponentShowToName[this->componentDisplayMode]);
+
+  element.appendProperiteChild("scale.R", QString::number(this->componentScale[0]));
+  element.appendProperiteChild("scale.G", QString::number(this->componentScale[1]));
+  element.appendProperiteChild("scale.B", QString::number(this->componentScale[2]));
+
+  element.appendProperiteChild("invert.R", functions::booToString(this->componentInvert[0]));
+  element.appendProperiteChild("invert.G", functions::booToString(this->componentInvert[1]));
+  element.appendProperiteChild("invert.B", functions::booToString(this->componentInvert[2]));
+
+  element.appendProperiteChild("limitedRange", functions::booToString(this->limitedRange));
+}
+
+void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
+{
+  frameHandler::loadPlaylist(element);
+  QString sourcePixelFormat = element.findChildValue("pixelFormat");
+  this->setRGBPixelFormatByName(sourcePixelFormat);
+
+  auto NameToComponentShow = std::map<QString, ComponentShow>({{"All", ComponentShow::All},
+                                                               {"R", ComponentShow::R},
+                                                               {"G", ComponentShow::G},
+                                                               {"B", ComponentShow::B}});
+  auto showVal             = element.findChildValue("componentShow");
+  if (NameToComponentShow.count(showVal) > 0)
+    this->componentDisplayMode = NameToComponentShow[showVal];
+
+  auto scaleR = element.findChildValue("scale.R");
+  if (!scaleR.isEmpty())
+    this->componentScale[0] = scaleR.toInt();
+  auto scaleG = element.findChildValue("scale.G");
+  if (!scaleG.isEmpty())
+    this->componentScale[1] = scaleG.toInt();
+  auto scaleB = element.findChildValue("scale.B");
+  if (!scaleB.isEmpty())
+    this->componentScale[2] = scaleB.toInt();
+
+  this->componentInvert[0] = (element.findChildValue("invert.R") == "True");
+  this->componentInvert[1] = (element.findChildValue("invert.G") == "True");
+  this->componentInvert[2] = (element.findChildValue("invert.B") == "True");
+
+  this->limitedRange = (element.findChildValue("limitedRange") == "True");
+}
+
 void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 {
   DEBUG_RGB("videoHandlerRGB::loadFrameForCaching %d", frameIndex);
@@ -455,7 +526,7 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 {
   DEBUG_RGB("videoHandlerRGB::loadRawRGBData frame %d", frameIndex);
 
-  if (currentFrameRawData_frameIndex == frameIndex)
+  if (currentFrameRawData_frameIndex == frameIndex && cacheValid)
   {
     DEBUG_RGB("videoHandlerRGB::loadRawRGBData frame %d already in the current buffer - Done",
               frameIndex);
@@ -521,9 +592,11 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
 
   // Check the image buffer size before we write to it
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  assert(functions::clipToUnsigned(outputImage.byteCount()) >= frameSize.width * frameSize.height * 4);
+  assert(functions::clipToUnsigned(outputImage.byteCount()) >=
+         frameSize.width * frameSize.height * 4);
 #else
-  assert(functions::clipToUnsigned(outputImage.sizeInBytes()) >= frameSize.width * frameSize.height * 4);
+  assert(functions::clipToUnsigned(outputImage.sizeInBytes()) >=
+         frameSize.width * frameSize.height * 4);
 #endif
 
   convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits());
@@ -565,22 +638,22 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
   if (srcPixelFormat.planar)
     offsetToNextValue = 1;
 
-  if (componentDisplayMode != DisplayAll)
+  if (componentDisplayMode != ComponentShow::All)
   {
     // Only convert one of the components to a gray-scale image.
     // Consider inversion and scale of that component
 
     // Which component of the source do we need?
     int displayComponentOffset = srcPixelFormat.posR;
-    if (componentDisplayMode == DisplayG)
+    if (componentDisplayMode == ComponentShow::G)
       displayComponentOffset = srcPixelFormat.posG;
-    else if (componentDisplayMode == DisplayG)
+    else if (componentDisplayMode == ComponentShow::B)
       displayComponentOffset = srcPixelFormat.posB;
 
     // Get the scale/inversion for the displayed component
-    const int  displayIndex = (componentDisplayMode == DisplayR)   ? 0
-                              : (componentDisplayMode == DisplayG) ? 1
-                                                                   : 2;
+    const int  displayIndex = (componentDisplayMode == ComponentShow::R)   ? 0
+                              : (componentDisplayMode == ComponentShow::G) ? 1
+                                                                           : 2;
     const int  scale        = componentScale[displayIndex];
     const bool invert       = componentInvert[displayIndex];
 
@@ -649,7 +722,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
       Q_ASSERT_X(
           false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
   }
-  else if (componentDisplayMode == DisplayAll)
+  else if (componentDisplayMode == ComponentShow::All)
   {
     // Convert all components from the source RGB format to an RGB 888 array
 
@@ -865,7 +938,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(
     const Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo)
 {
   // Get the file extension
-  auto     ext       = fileInfo.suffix().toLower().toStdString();
+  auto        ext       = fileInfo.suffix().toLower().toStdString();
   std::string subFormat = "rgb";
   bool        testAlpha = true;
   if (ext == "bgr" || ext == "gbr" || ext == "brg" || ext == "grb" || ext == "rbg")
@@ -877,7 +950,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(
   {
     // Check if there is a format indicator in the file name
     auto f               = fileInfo.fileName().toLower().toStdString();
-    auto    rgbCombinations = std::vector<std::string>({"rgb", "rgb", "gbr", "grb", "brg", "bgr"});
+    auto rgbCombinations = std::vector<std::string>({"rgb", "rgb", "gbr", "grb", "brg", "bgr"});
     std::vector<std::string> rgbaCombinations;
     for (auto i : rgbCombinations)
     {
@@ -977,9 +1050,9 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
     return;
 
   // The center point of the pixel (0,0).
-  QPoint centerPointZero =
-      (QPoint(-(int(frameSize.width)), -(int(frameSize.height))) * zoomFactor + QPoint(zoomFactor, zoomFactor)) /
-      2;
+  QPoint centerPointZero = (QPoint(-(int(frameSize.width)), -(int(frameSize.height))) * zoomFactor +
+                            QPoint(zoomFactor, zoomFactor)) /
+                           2;
   // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
   pixelRect.setSize(QSize(zoomFactor, zoomFactor));
@@ -1096,7 +1169,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
   // In both cases, we will set the alpha channel to 255. The format of the raw buffer is: BGRA
   // (each 8 bit).
   QImage outputImage;
-  auto qFrameSize = QSize(frameSize.width, frameSize.height);
+  auto   qFrameSize = QSize(frameSize.width, frameSize.height);
   if (is_Q_OS_WIN)
     outputImage = QImage(qFrameSize, QImage::Format_ARGB32_Premultiplied);
   else if (is_Q_OS_MAC)
