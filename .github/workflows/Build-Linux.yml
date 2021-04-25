@@ -113,10 +113,12 @@ jobs:
         cd $GITHUB_WORKSPACE/build
         make install DESTDIR=appdir
         $HOME/linuxdeployqt-6-x86_64.AppImage appdir/usr/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -qmake=$HOME/YUViewQt/Qt/bin/qmake -bundle-non-qt-libs -verbose=2
+        echo "ls -l appdir"; ls -l appdir
         mv YUView-*.AppImage ${{matrix.ARTIFACT_NAME}}
         mkdir $GITHUB_WORKSPACE/artifacts
         cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
         cd $GITHUB_WORKSPACE
+        echo "ls -l build"; ls -l build
         ls -l
         cd $GITHUB_WORKSPACE/artifacts
         ls -l
