@@ -156,7 +156,8 @@ jobs:
         "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
         "${WIX}\bin\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "${WIX}\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
         cd $GITHUB_WORKSPACE
-        cp deployment/wix/bin/Release/YUViewSetup.msi ./
+        # rename to avoid name conflict with qmake build workflow
+        cp deployment/wix/bin/Release/YUViewSetup.msi ./YUViewSetup-cmake.msi
       shell: bash
       if: matrix.auto_update == true
 
@@ -174,8 +175,8 @@ jobs:
       if: matrix.qt_version == 'Qt5' && matrix.auto_update == true
       uses: actions/upload-artifact@v2
       with:
-        name: YUViewSetup.msi
-        path: ./YUViewSetup.msi
+        name: YUViewSetup-cmake.msi
+        path: ./YUViewSetup-cmake.msi
 
 ##########################################################################################
 ############################### Upload release ###########################################
@@ -198,8 +199,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: YUViewSetup.msi
-        asset_name: YUViewSetup.msi
+        asset_path: YUViewSetup-cmake.msi
+        asset_name: YUViewSetup-cmake.msi
         asset_content_type: application/zip
 
   # How to upload files to the release:
