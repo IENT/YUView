@@ -106,7 +106,7 @@ public:
   // The user changed the frame. Do we need to load something before we can draw it? Do we need to
   // update the double buffer? loadRawValues: Do we also need to update the buffer of the raw values
   // because they will be drawn?
-  virtual itemLoadingState needsLoading(int frameIndex, bool loadRawValues);
+  virtual ItemLoadingState needsLoading(int frameIndex, bool loadRawValues);
 
   // The video handler want's to draw a frame but it's not cached yet and has to be loaded.
   // A sub class can change this implementation to request raw data of a certain format instead of
@@ -135,6 +135,13 @@ public:
   // Scale a value with limited mpeg range (16 ... 245) to the full range (0 ... 255) for output.
   static int convScaleLimitedRange(int value);
 
+  // Do we need to load the raw values (because they are drawn on screen?)
+  // The videoHandler will draw the pixel values (drawPixelValues()) using the 8bit QImage
+  // currentImage so no loading is needed. However, the videoHandlerRGB or YUV may have to load the
+  // raw values from the file. Check if the current buffer for the raw data (currentFrameRawData) is
+  // up to date for the given frame index
+  virtual ItemLoadingState needsLoadingRawValues(int frameIndex);
+
 signals:
 
   // The video handler requests a certain frame to be loaded. After this signal is emitted, the
@@ -149,16 +156,6 @@ signals:
   void signalRequestRawData(int frameIndex, bool caching);
 
 protected:
-  // Do we need to load the raw values (because they are drawn on screen?)
-  // The videoHandler will draw the pixel values (drawPixelValues()) using the 8bit QImage
-  // currentImage so no loading is needed. However, the videoHandlerRGB or YUV may have to load the
-  // raw values from the file. Check if the current buffer for the raw data (currentFrameRawData) is
-  // up to date for the given frame index
-  itemLoadingState needsLoadingRawValues(int frameIndex)
-  {
-    return (currentFrameRawData_frameIndex == frameIndex) ? LoadingNotNeeded : LoadingNeeded;
-  }
-
   // --- Drawing: The current frame is kept in the frameHandler::currentImage. But if
   // currentImageIndex is not identical to the requested frame in the draw event, we will have to
   // update currentImage.

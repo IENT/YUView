@@ -518,18 +518,19 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
   }
 }
 
-itemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool loadRawData)
+ItemLoadingState playlistItemCompressedVideo::needsLoading(int frameIdx, bool loadRawData)
 {
   if (unresolvableError || !decodingEnabled)
-    return LoadingNotNeeded;
+    return ItemLoadingState::LoadingNotNeeded;
 
   auto videoState = video->needsLoading(frameIdx, loadRawData);
-  if (videoState == LoadingNeeded && decodingNotPossibleAfter >= 0 &&
+  if (videoState == ItemLoadingState::LoadingNeeded && decodingNotPossibleAfter >= 0 &&
       frameIdx >= decodingNotPossibleAfter && frameIdx >= currentFrameIdx[0])
     // The decoder can not decode this frame.
-    return LoadingNotNeeded;
-  if (videoState == LoadingNeeded || this->statisticsData.needsLoading(frameIdx) == LoadingNeeded)
-    return LoadingNeeded;
+    return ItemLoadingState::LoadingNotNeeded;
+  if (videoState == ItemLoadingState::LoadingNeeded ||
+      this->statisticsData.needsLoading(frameIdx) == ItemLoadingState::LoadingNeeded)
+    return ItemLoadingState::LoadingNeeded;
   return videoState;
 }
 
@@ -1200,10 +1201,10 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
   auto stateYUV  = video->needsLoading(frameIdx, loadRawdata);
   auto stateStat = this->statisticsData.needsLoading(frameIdx);
 
-  if (stateYUV == LoadingNeeded || stateStat == LoadingNeeded)
+  if (stateYUV == ItemLoadingState::LoadingNeeded || stateStat == ItemLoadingState::LoadingNeeded)
   {
     isFrameLoading = true;
-    if (stateYUV == LoadingNeeded)
+    if (stateYUV == ItemLoadingState::LoadingNeeded)
     {
       // Load the requested current frame
       DEBUG_COMPRESSED("playlistItemCompressedVideo::loadFrame loading frame %d %s",
@@ -1211,7 +1212,7 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
                        playing ? "(playing)" : "");
       video->loadFrame(frameIdx);
     }
-    if (stateStat == LoadingNeeded)
+    if (stateStat == ItemLoadingState::LoadingNeeded)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::loadFrame loading statistics %d %s",
                        frameIdx,
@@ -1224,7 +1225,8 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
       emit signalItemChanged(true, RECACHE_NONE);
   }
 
-  if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))
+  if (playing && (stateYUV == ItemLoadingState::LoadingNeeded ||
+                  stateYUV == ItemLoadingState::LoadingNeededDoubleBuffer))
   {
     // Load the next frame into the double buffer
     int nextFrameIdx = frameIdx + 1;

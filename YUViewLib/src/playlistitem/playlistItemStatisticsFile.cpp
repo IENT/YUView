@@ -134,10 +134,10 @@ void playlistItemStatisticsFile::reloadItemSource()
   this->openStatisticsFile();
 }
 
-itemLoadingState playlistItemStatisticsFile::needsLoading(int frameIdx, bool)
+ItemLoadingState playlistItemStatisticsFile::needsLoading(int frameIdx, bool)
 {
   if (!this->file)
-    return itemLoadingState::LoadingNotNeeded;
+    return ItemLoadingState::LoadingNotNeeded;
 
   auto ret = this->statisticsData.needsLoading(frameIdx);
   DEBUG_STAT("playlistItemStatisticsFile::needsLoading frameIdx %d - %d", frameIdx, ret);
@@ -183,7 +183,7 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool, bool, bool emitSi
 {
   DEBUG_STAT("playlistItemStatisticsFile::loadFrame frameIdx %d", frameIdx);
 
-  if (this->statisticsData.needsLoading(frameIdx) == LoadingNeeded)
+  if (this->statisticsData.needsLoading(frameIdx) == ItemLoadingState::LoadingNeeded)
   {
     this->isStatisticsLoading = true;
     {

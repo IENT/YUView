@@ -55,7 +55,7 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
   // The overlay item itself does not need to load anything. We just pass all of these to the child items.
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
+  virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done. Always called from a thread.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) override;
   
