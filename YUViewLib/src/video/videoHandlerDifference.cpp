@@ -330,6 +330,19 @@ void videoHandlerDifference::loadPlaylist(const YUViewDomElement &element)
     this->markDifference = true;
 }
 
+ItemLoadingState videoHandlerDifference::needsLoadingRawValues(int frameIndex)
+{
+  if (auto video = dynamic_cast<videoHandler *>(inputVideo[0].data()))
+    if (video->needsLoadingRawValues(frameIndex) == ItemLoadingState::LoadingNeeded)
+      return ItemLoadingState::LoadingNeeded;
+  
+  if (auto video = dynamic_cast<videoHandler *>(inputVideo[1].data()))
+    if (video->needsLoadingRawValues(frameIndex) == ItemLoadingState::LoadingNeeded)
+      return ItemLoadingState::LoadingNeeded;
+
+  return ItemLoadingState::LoadingNotNeeded;
+}
+
 bool videoHandlerDifference::hierarchicalPosition(int           x,
                                                   int           y,
                                                   int           blockSize,

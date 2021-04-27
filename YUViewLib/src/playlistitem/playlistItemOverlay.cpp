@@ -123,30 +123,32 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
   return newSet;
 }
 
-itemLoadingState playlistItemOverlay::needsLoading(int frameIdx, bool loadRawdata)
+ItemLoadingState playlistItemOverlay::needsLoading(int frameIdx, bool loadRawdata)
 {
   // The overlay needs to load if one of the child items needs to load
   for (int i = 0; i < childCount(); i++)
   {
-    if (getChildPlaylistItem(i)->needsLoading(frameIdx, loadRawdata) == LoadingNeeded)
+    if (getChildPlaylistItem(i)->needsLoading(frameIdx, loadRawdata) ==
+        ItemLoadingState::LoadingNeeded)
     {
       DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeeded child %s",
                     getChildPlaylistItem(i)->getName().toLatin1().data());
-      return LoadingNeeded;
+      return ItemLoadingState::LoadingNeeded;
     }
   }
   for (int i = 0; i < childCount(); i++)
   {
-    if (getChildPlaylistItem(i)->needsLoading(frameIdx, loadRawdata) == LoadingNeededDoubleBuffer)
+    if (getChildPlaylistItem(i)->needsLoading(frameIdx, loadRawdata) ==
+        ItemLoadingState::LoadingNeededDoubleBuffer)
     {
       DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeededDoubleBuffer child %s",
                     getChildPlaylistItem(i)->getName().toLatin1().data());
-      return LoadingNeededDoubleBuffer;
+      return ItemLoadingState::LoadingNeededDoubleBuffer;
     }
   }
 
   DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNotNeeded");
-  return LoadingNotNeeded;
+  return ItemLoadingState::LoadingNotNeeded;
 }
 
 void playlistItemOverlay::drawItem(QPainter *painter,
@@ -633,7 +635,7 @@ void playlistItemOverlay::loadFrame(int frameIdx, bool playing, bool loadRawData
   {
     playlistItem *item  = getChildPlaylistItem(i);
     auto          state = item->needsLoading(frameIdx, loadRawData);
-    if (state != LoadingNotNeeded)
+    if (state != ItemLoadingState::LoadingNotNeeded)
     {
       // Load the requested current frame (or the double buffer) without emitting any signals.
       // We will emit the signal that loading is complete when all overlay items have loaded.
@@ -644,9 +646,10 @@ void playlistItemOverlay::loadFrame(int frameIdx, bool playing, bool loadRawData
       item->loadFrame(frameIdx, playing, loadRawData, false);
     }
 
-    if (state == LoadingNeeded)
+    if (state == ItemLoadingState::LoadingNeeded)
       itemLoaded = true;
-    if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
+    if (playing && (state == ItemLoadingState::LoadingNeeded ||
+                    state == ItemLoadingState::LoadingNeededDoubleBuffer))
       itemLoadedDoubleBuffer = true;
   }
 

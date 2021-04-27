@@ -352,7 +352,7 @@ Q_DECL_CONSTEXPR inline QPoint centerRoundTL(const QRect &r) Q_DECL_NOTHROW
 }
 
 // When asking the playlist item if it needs loading, there are some states that the item can return
-enum itemLoadingState
+enum class ItemLoadingState
 {
   LoadingNeeded,    ///< The item needs to perform loading before the given frame index can be
                     ///< displayed

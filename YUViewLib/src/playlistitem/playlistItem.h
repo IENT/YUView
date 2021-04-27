@@ -159,7 +159,7 @@ public:
   // When a new frame is selected (by the user or by playback), it will firstly be checked if the
   // playlistitem needs to load the frame. If this returns true, the loadFrame() function will be
   // called in the background. loadRawValues is set if the raw values are also drawn.
-  virtual itemLoadingState needsLoading(int, bool) { return LoadingNotNeeded; }
+  virtual ItemLoadingState needsLoading(int, bool) { return ItemLoadingState::LoadingNotNeeded; }
 
   // If the drawItem() function returned false (a frame needs to be loaded first), this function
   // will be called in a background thread so that the frame is loaded. Then the drawItem() function

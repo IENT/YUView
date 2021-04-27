@@ -279,9 +279,8 @@ ValuePairListSets playlistItemResample::getPixelValues(const QPoint &pixelPos, i
   return ValuePairListSets("RGB", this->video.getPixelValues(pixelPos, frameIdx));
 }
 
-itemLoadingState playlistItemResample::needsLoading(int frameIdx, bool loadRawData)
+ItemLoadingState playlistItemResample::needsLoading(int frameIdx, bool loadRawData)
 {
-
   return this->video.needsLoading(frameIdx, loadRawData);
 }
 
@@ -295,7 +294,7 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
       "playlistItemResample::loadFrame frameIdx %d %s", frameIdx, playing ? "(playing)" : "");
 
   auto state = this->video.needsLoading(frameIdx, loadRawData);
-  if (state == LoadingNeeded)
+  if (state == ItemLoadingState::LoadingNeeded)
   {
     // Load the requested current frame
     DEBUG_RESAMPLE("playlistItemResample::loadFrame loading resampled frame %d", frameIdx);
@@ -306,7 +305,8 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
       emit signalItemChanged(true, RECACHE_NONE);
   }
 
-  if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
+  if (playing && (state == ItemLoadingState::LoadingNeeded ||
+                  state == ItemLoadingState::LoadingNeededDoubleBuffer))
   {
     // Load the next frame into the double buffer
     int nextFrameIdx = frameIdx + 1;

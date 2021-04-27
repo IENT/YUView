@@ -51,7 +51,7 @@ public:
   drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
+  virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
 
   // This is part of the caching interface. The loadFrame function is always called from a different
   // thread.

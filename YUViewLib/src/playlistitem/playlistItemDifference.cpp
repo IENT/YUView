@@ -131,7 +131,7 @@ void playlistItemDifference::drawItem(QPainter *painter,
   }
 }
 
-itemLoadingState playlistItemDifference::needsLoading(int frameIdx, bool loadRawData)
+ItemLoadingState playlistItemDifference::needsLoading(int frameIdx, bool loadRawData)
 {
   return this->difference.needsLoading(frameIdx, loadRawData);
 }
@@ -226,7 +226,7 @@ void playlistItemDifference::loadFrame(int  frameIdx,
     return;
 
   auto state = difference.needsLoading(frameIdx, loadRawData);
-  if (state == LoadingNeeded)
+  if (state == ItemLoadingState::LoadingNeeded)
   {
     // Load the requested current frame
     DEBUG_DIFF("playlistItemDifference::loadFrame loading difference for frame %d", frameIdx);
@@ -238,7 +238,8 @@ void playlistItemDifference::loadFrame(int  frameIdx,
       emit signalItemChanged(true, RECACHE_NONE);
   }
 
-  if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
+  if (playing && (state == ItemLoadingState::LoadingNeeded ||
+                  state == ItemLoadingState::LoadingNeededDoubleBuffer))
   {
     // Load the next frame into the double buffer
     int nextFrameIdx = frameIdx + 1;

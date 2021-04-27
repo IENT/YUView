@@ -96,7 +96,7 @@ public:
   }
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
+  virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
   virtual void
   loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals = true) override;

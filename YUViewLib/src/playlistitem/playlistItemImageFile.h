@@ -64,9 +64,9 @@ public:
   drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int, bool) override
+  virtual ItemLoadingState needsLoading(int, bool) override
   {
-    return needToLoadImage ? LoadingNeeded : LoadingNotNeeded;
+    return needToLoadImage ? ItemLoadingState::LoadingNeeded : ItemLoadingState::LoadingNotNeeded;
   }
 
   // Add the file type filters and the extensions of files that we can load.

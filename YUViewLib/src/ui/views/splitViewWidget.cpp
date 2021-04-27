@@ -1445,7 +1445,7 @@ void splitViewWidget::playbackStarted(int nextFrameIdx)
   int  frameIdx = playback->getCurrentFrame();
   if (item[0])
   {
-    if (item[0]->needsLoading(nextFrameIdx, false) == LoadingNeeded)
+    if (item[0]->needsLoading(nextFrameIdx, false) == ItemLoadingState::LoadingNeeded)
     {
       // The current frame is loaded but the double buffer is not loaded yet. Start loading it.
       DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 0 load frame " << frameIdx);
@@ -1454,7 +1454,7 @@ void splitViewWidget::playbackStarted(int nextFrameIdx)
   }
   if (isSplitting() && item[1])
   {
-    if (item[1]->needsLoading(nextFrameIdx, false) == LoadingNeeded)
+    if (item[1]->needsLoading(nextFrameIdx, false) == ItemLoadingState::LoadingNeeded)
     {
       // The current frame is loaded but the double buffer is not loaded yet. Start loading it.
       DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 1 load frame " << frameIdx);
@@ -1486,14 +1486,14 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw)
     if (item[0])
     {
       auto state = item[0]->needsLoading(frameIdx, loadRawData);
-      if (state == LoadingNeeded)
+      if (state == ItemLoadingState::LoadingNeeded)
       {
         // The frame needs to be loaded first.
         if (this->isMasterView)
           cache->loadFrame(item[0], frameIdx, 0);
         itemLoading[0] = true;
       }
-      else if (playing && state == LoadingNeededDoubleBuffer)
+      else if (playing && state == ItemLoadingState::LoadingNeededDoubleBuffer)
       {
         // We can immediately draw the new frame but then we need to update the double buffer
         if (this->isMasterView)
@@ -1506,14 +1506,14 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw)
     if (isSplitting() && item[1])
     {
       auto state = item[1]->needsLoading(frameIdx, loadRawData);
-      if (state == LoadingNeeded)
+      if (state == ItemLoadingState::LoadingNeeded)
       {
         // The frame needs to be loaded first.
         if (this->isMasterView)
           cache->loadFrame(item[1], frameIdx, 1);
         itemLoading[1] = true;
       }
-      else if (playing && state == LoadingNeededDoubleBuffer)
+      else if (playing && state == ItemLoadingState::LoadingNeededDoubleBuffer)
       {
         // We can immediately draw the new frame but then we need to update the double buffer
         if (this->isMasterView)
