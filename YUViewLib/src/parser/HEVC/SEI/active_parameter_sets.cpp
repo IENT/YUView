@@ -49,8 +49,11 @@ SEIParsingResult active_parameter_sets::parse(SubByteReaderLogging &            
   (void)spsMap;
   (void)associatedSPS;
 
-  if (!reparse)
-    this->subLevel = SubByteReaderLoggingSubLevel(reader, "active_parameter_sets()");
+  std::unique_ptr<SubByteReaderLoggingSubLevel> subLevel;
+  if (reparse)
+    reader.stashAndReplaceCurrentTreeItem(this->reparseTreeItem);
+  else
+    subLevel.reset(new SubByteReaderLoggingSubLevel(reader, "active_parameter_sets()"));
 
   this->active_video_parameter_set_id = reader.readBits("active_video_parameter_set_id", 4);
   this->self_contained_cvs_flag       = reader.readFlag("self_contained_cvs_flag");
@@ -63,7 +66,10 @@ SEIParsingResult active_parameter_sets::parse(SubByteReaderLogging &            
   if (!reparse)
   {
     if (vpsMap.count(this->active_video_parameter_set_id) == 0)
+    {
+      this->reparseTreeItem = reader.getCurrentItemTree();
       return SEIParsingResult::WAIT_FOR_PARAMETER_SETS;
+    }
   }
   else
   {
@@ -76,6 +82,7 @@ SEIParsingResult active_parameter_sets::parse(SubByteReaderLogging &            
   for (unsigned int i = (vps->vps_base_layer_internal_flag ? 1 : 0); i <= MaxLayersMinus1; i++)
     this->layer_sps_idx.push_back(reader.readUEV(formatArray("layer_sps_idx", i)));
 
+  reader.popTreeItem();
   return SEIParsingResult::OK;
 }
 

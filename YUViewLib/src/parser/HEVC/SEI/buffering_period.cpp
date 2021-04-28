@@ -36,13 +36,12 @@
 #include "../seq_parameter_set_rbsp.h"
 #include "parser/common/functions.h"
 
-
 namespace parser::hevc
 {
 
 using namespace reader;
 
-SEIParsingResult buffering_period::parse(SubByteReaderLogging &          reader,
+SEIParsingResult buffering_period::parse(SubByteReaderLogging &                  reader,
                                          bool                                    reparse,
                                          VPSMap &                                vpsMap,
                                          SPSMap &                                spsMap,
@@ -51,15 +50,21 @@ SEIParsingResult buffering_period::parse(SubByteReaderLogging &          reader,
   (void)vpsMap;
   (void)associatedSPS;
 
-  if (!reparse)
-    this->subLevel = SubByteReaderLoggingSubLevel(reader, "buffering_period()");
+  std::unique_ptr<SubByteReaderLoggingSubLevel> subLevel;
+  if (reparse)
+    reader.stashAndReplaceCurrentTreeItem(this->reparseTreeItem);
+  else
+    subLevel.reset(new SubByteReaderLoggingSubLevel(reader, "buffering_period()"));
 
   this->bp_seq_parameter_set_id = reader.readUEV("bp_seq_parameter_set_id");
 
   if (!reparse)
   {
     if (spsMap.count(this->bp_seq_parameter_set_id) == 0)
+    {
+      this->reparseTreeItem = reader.getCurrentItemTree();
       return SEIParsingResult::WAIT_FOR_PARAMETER_SETS;
+    }
   }
   else
   {
@@ -132,6 +137,7 @@ SEIParsingResult buffering_period::parse(SubByteReaderLogging &          reader,
   if (reader.payload_extension_present())
     this->use_alt_cpb_params_flag = reader.readFlag("use_alt_cpb_params_flag");
 
+  reader.popTreeItem();
   return SEIParsingResult::OK;
 }
 
