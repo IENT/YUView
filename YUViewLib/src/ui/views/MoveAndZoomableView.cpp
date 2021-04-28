@@ -413,6 +413,13 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
     if (std::abs(zoomRect.width()) < 2.0 && std::abs(zoomRect.height()) < 2.0)
     {
       // The user just pressed the button without moving the mouse.
+      if (mouse_event->button() == Qt::RightButton)
+      {
+        QMenu menu(this);
+        this->addContextMenuActions(&menu);
+        menu.exec(mouse_event->globalPos());
+      }
+      
       this->viewAction = ViewAction::NONE;
       update();
       return;
