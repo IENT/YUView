@@ -69,7 +69,7 @@ public:
   bool use_alt_cpb_params_flag{};
 
 private:
-  reader::SubByteReaderLoggingSubLevel subLevel;
+  TreeItem *reparseTreeItem{};
 };
 
 } // namespace parser::hevc

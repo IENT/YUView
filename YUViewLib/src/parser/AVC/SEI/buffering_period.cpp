@@ -49,14 +49,20 @@ SEIParsingResult buffering_period::parse(reader::SubByteReaderLogging &         
 {
   (void)associatedSPS;
 
-  if (!reparse)
-    this->subLevel = SubByteReaderLoggingSubLevel(reader, "buffering_period()");
+  std::unique_ptr<SubByteReaderLoggingSubLevel> subLevel;
+  if (reparse)
+    reader.stashAndReplaceCurrentTreeItem(this->reparseTreeItem);
+  else
+    subLevel.reset(new SubByteReaderLoggingSubLevel(reader, "buffering_period()"));
 
   if (!reparse)
   {
     this->seq_parameter_set_id = reader.readUEV("seq_parameter_set_id");
     if (spsMap.count(this->seq_parameter_set_id) == 0)
+    {
+      this->reparseTreeItem = reader.getCurrentItemTree();
       return SEIParsingResult::WAIT_FOR_PARAMETER_SETS;
+    }
   }
   else
   {
@@ -93,6 +99,7 @@ SEIParsingResult buffering_period::parse(reader::SubByteReaderLogging &         
     }
   }
 
+  reader.popTreeItem();
   return SEIParsingResult::OK;
 }
 

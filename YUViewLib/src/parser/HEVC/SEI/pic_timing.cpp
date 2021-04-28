@@ -50,9 +50,6 @@ SEIParsingResult pic_timing::parse(SubByteReaderLogging &                  reade
   (void)spsMap;
 
   if (!reparse)
-    this->subLevel = SubByteReaderLoggingSubLevel(reader, "pic_timing()");
-
-  if (!reparse)
   {
     if (!associatedSPS)
       return SEIParsingResult::WAIT_FOR_PARAMETER_SETS;
@@ -68,6 +65,8 @@ SEIParsingResult pic_timing::parse(SubByteReaderLogging &                  reade
   }
   auto vps = vpsMap.at(associatedSPS->sps_video_parameter_set_id);
   auto sps = associatedSPS;
+
+  auto subLevel = SubByteReaderLoggingSubLevel(reader, "pic_timing()");
 
   if (sps->vuiParameters.frame_field_info_present_flag)
   {
