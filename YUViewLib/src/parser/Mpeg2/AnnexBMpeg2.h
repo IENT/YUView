@@ -62,7 +62,7 @@ public:
                                  const ByteVector &                            data,
                                  std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                  std::optional<pairUint64> nalStartEndPosFile = {},
-                                 TreeItem *                parent             = nullptr) override;
+                                 std::shared_ptr<TreeItem> parent             = {}) override;
 
   // TODO: Reading from raw mpeg2 streams not supported (yet? Is this even defined / possible?)
   virtual std::optional<SeekData> getSeekData(int iFrameNr) override

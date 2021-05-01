@@ -63,7 +63,7 @@ public:
   vector<unsigned> du_cpb_removal_delay_increment_minus1;
 
 private:
-  TreeItem *reparseTreeItem{};
+  std::shared_ptr<TreeItem> reparseTreeItem{};
 };
 
 } // namespace parser::hevc

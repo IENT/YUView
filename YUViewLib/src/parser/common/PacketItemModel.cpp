@@ -125,7 +125,7 @@ QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &paren
 
   auto childItem = parentItem->getChild(row);
   if (childItem)
-    return this->createIndex(row, column, childItem);
+    return this->createIndex(row, column, childItem.get());
   return {};
 }
 
@@ -135,24 +135,24 @@ QModelIndex PacketItemModel::parent(const QModelIndex &index) const
     return {};
 
   auto childItem  = static_cast<TreeItem *>(index.internalPointer());
-  auto parentItem = childItem->getParentItem();
+  auto parentItem = childItem->getParentItem().lock();
 
-  if (parentItem == this->rootItem.get())
+  if (parentItem == this->rootItem)
     return {};
 
   // Get the row of the item in the list of children of the parent item
   int row = 0;
   if (parentItem)
   {
-    auto grandparent = parentItem->getParentItem();
+    auto grandparent = parentItem->getParentItem().lock();
     if (grandparent)
     {
       if (auto rowIndex = grandparent->getIndexOfChildItem(parentItem))
-        row = *rowIndex;
+        row = int(*rowIndex);
     }
   }
 
-  return createIndex(row, 0, parentItem);
+  return createIndex(row, 0, parentItem.get());
 }
 
 int PacketItemModel::rowCount(const QModelIndex &parent) const
@@ -161,9 +161,9 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
     return 0;
 
   if (!parent.isValid())
-    return nrShowChildItems;
+    return this->nrShowChildItems;
   auto p = static_cast<TreeItem *>(parent.internalPointer());
-  return (p == nullptr) ? 0 : p->getNrChildItems();
+  return (p == nullptr) ? 0 : int(p->getNrChildItems());
 }
 
 size_t PacketItemModel::getNumberFirstLevelChildren() const
@@ -176,14 +176,14 @@ size_t PacketItemModel::getNumberFirstLevelChildren() const
 void PacketItemModel::updateNumberModelItems()
 {
   auto n = getNumberFirstLevelChildren();
-  Q_ASSERT_X(n >= nrShowChildItems, Q_FUNC_INFO, "Setting a smaller number of items.");
-  unsigned int nrAddItems = n - nrShowChildItems;
+  Q_ASSERT_X(n >= this->nrShowChildItems, Q_FUNC_INFO, "Setting a smaller number of items.");
+  auto nrAddItems = int(n - this->nrShowChildItems);
   if (nrAddItems == 0)
     return;
 
-  int lastIndex = nrShowChildItems;
+  auto lastIndex = int(nrShowChildItems);
   beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
-  nrShowChildItems = n;
+  this->nrShowChildItems = unsigned(n);
   endInsertRows();
 }
 

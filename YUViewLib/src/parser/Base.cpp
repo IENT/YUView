@@ -79,7 +79,10 @@ void Base::setRedirectPlotModel(HRDPlotModel *plotModel)
 void Base::enableModel()
 {
   if (!this->packetModel->rootItem)
-    this->packetModel->rootItem.reset(new TreeItem("Name", "Value", "Coding", "Code", "Meaning"));
+  {
+    this->packetModel->rootItem = std::make_shared<TreeItem>();
+    this->packetModel->rootItem->setProperties("Name", "Value", "Coding", "Code", "Meaning");
+  }
 }
 
 void Base::updateNumberModelItems()

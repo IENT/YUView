@@ -53,7 +53,7 @@ public:
   vector<unsigned> initial_cpb_removal_delay_offset;
 
 private:
-  TreeItem *reparseTreeItem{};
+  std::shared_ptr<TreeItem> reparseTreeItem;
 };
 
 } // namespace parser::avc

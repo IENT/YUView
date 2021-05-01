@@ -50,12 +50,12 @@ template <typename T> std::string formatCoding(const std::string formatName, T v
   return stringStream.str();
 }
 
-void checkAndLog(TreeItem *         item,
-                 const std::string &formatName,
-                 const std::string &symbolName,
-                 const Options &    options,
-                 int64_t            value,
-                 const std::string &code)
+void checkAndLog(std::shared_ptr<TreeItem> item,
+                 const std::string &       formatName,
+                 const std::string &       symbolName,
+                 const Options &           options,
+                 int64_t                   value,
+                 const std::string &       code)
 {
   CheckResult checkResult;
   for (auto &check : options.checkList)
@@ -74,22 +74,18 @@ void checkAndLog(TreeItem *         item,
     const bool isError = !checkResult;
     if (isError)
       meaning += " " + checkResult.errorMessage;
-    item->addChildItem(TreeItem(symbolName,
-                                std::to_string(value),
-                                formatCoding(formatName, code.size()),
-                                code,
-                                meaning,
-                                isError));
+    item->createChildItem(
+        symbolName, value, formatCoding(formatName, code.size()), code, meaning, isError);
   }
   if (!checkResult)
     throw std::logic_error(checkResult.errorMessage);
 }
 
-void checkAndLog(TreeItem *         item,
-                 const std::string &byteName,
-                 const Options &    options,
-                 ByteVector         value,
-                 const std::string &code)
+void checkAndLog(std::shared_ptr<TreeItem> item,
+                 const std::string &       byteName,
+                 const Options &           options,
+                 ByteVector                value,
+                 const std::string &       code)
 {
   // There are no range checks for ByteVectors. Also the meaningMap does nothing.
   if (item && !options.loggingDisabled)
@@ -104,11 +100,11 @@ void checkAndLog(TreeItem *         item,
       valueStream << "0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(c) << " ("
                   << c << ")";
       auto byteCode = code.substr(i * 8, 8);
-      item->addChildItem(TreeItem(byteName + (value.size() > 1 ? "[" + std::to_string(i) + "]" : ""),
-                   valueStream.str(),
-                   formatCoding("u(8)", code.size()),
-                   byteCode,
-                   options.meaningString));
+      item->createChildItem(byteName + (value.size() > 1 ? "[" + std::to_string(i) + "]" : ""),
+                            valueStream.str(),
+                            formatCoding("u(8)", code.size()),
+                            byteCode,
+                            options.meaningString);
     }
   }
 }
@@ -135,9 +131,9 @@ QByteArray SubByteReaderLogging::convertToQByteArray(ByteVector data)
   return ret;
 }
 
-SubByteReaderLogging::SubByteReaderLogging(SubByteReader &reader,
-                                           TreeItem *     item,
-                                           std::string    new_sub_item_name)
+SubByteReaderLogging::SubByteReaderLogging(SubByteReader &           reader,
+                                           std::shared_ptr<TreeItem> item,
+                                           std::string               new_sub_item_name)
     : SubByteReader(reader)
 {
   if (item)
@@ -145,15 +141,15 @@ SubByteReaderLogging::SubByteReaderLogging(SubByteReader &reader,
     if (new_sub_item_name.empty())
       this->currentTreeLevel = item;
     else
-      item->addChildItem(TreeItem(new_sub_item_name));
+      item->createChildItem(new_sub_item_name);
   }
   this->itemHierarchy.push(this->currentTreeLevel);
 }
 
-SubByteReaderLogging::SubByteReaderLogging(const ByteVector &inArr,
-                                           TreeItem *        item,
-                                           std::string       new_sub_item_name,
-                                           size_t            inOffset)
+SubByteReaderLogging::SubByteReaderLogging(const ByteVector &        inArr,
+                                           std::shared_ptr<TreeItem> item,
+                                           std::string               new_sub_item_name,
+                                           size_t                    inOffset)
     : SubByteReader(inArr, inOffset)
 {
   if (item)
@@ -161,7 +157,7 @@ SubByteReaderLogging::SubByteReaderLogging(const ByteVector &inArr,
     if (new_sub_item_name.empty())
       this->currentTreeLevel = item;
     else
-      item->addChildItem(TreeItem(new_sub_item_name));
+      item->createChildItem(new_sub_item_name);
   }
   this->itemHierarchy.push(this->currentTreeLevel);
 }
@@ -171,7 +167,7 @@ void SubByteReaderLogging::addLogSubLevel(const std::string name)
   assert(!name.empty());
   if (itemHierarchy.top() == nullptr)
     return;
-  this->itemHierarchy.top()->addChildItem(TreeItem(name));
+  this->itemHierarchy.top()->createChildItem(name);
   this->itemHierarchy.push(this->currentTreeLevel);
 }
 
@@ -318,10 +314,11 @@ void SubByteReaderLogging::logArbitrary(const std::string &symbolName,
                                         const std::string &code,
                                         const std::string &meaning)
 {
-  this->currentTreeLevel->addChildItem(TreeItem(symbolName, value, coding, code, meaning));
+  if (this->currentTreeLevel)
+    this->currentTreeLevel->createChildItem(symbolName, value, coding, code, meaning);
 }
 
-void SubByteReaderLogging::stashAndReplaceCurrentTreeItem(TreeItem *newItem)
+void SubByteReaderLogging::stashAndReplaceCurrentTreeItem(std::shared_ptr<TreeItem> newItem)
 {
   this->stashedTreeItem  = this->currentTreeLevel;
   this->currentTreeLevel = newItem;
@@ -339,7 +336,7 @@ void SubByteReaderLogging::logExceptionAndThrowError(const std::exception &ex,
   if (this->currentTreeLevel)
   {
     auto errorMessage = "Reading error " + std::string(ex.what());
-    this->currentTreeLevel->addChildItem(TreeItem("Error", "", "", "", errorMessage, true));
+    this->currentTreeLevel->createChildItem("Error", {}, {}, {}, errorMessage, true);
   }
   throw std::logic_error("Error reading " + when);
 }

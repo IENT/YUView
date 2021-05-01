@@ -61,7 +61,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
                                 const ByteVector &                            data,
                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                 std::optional<pairUint64>                     nalStartEndPosFile,
-                                TreeItem *                                    parent)
+                                std::shared_ptr<TreeItem>                                    parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -87,15 +87,16 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   // We don't set data (a name) for this item yet.
   // We want to parse the item and then set a good description.
   std::string specificDescription;
-  TreeItem *nalRoot {};
+  std::shared_ptr<TreeItem> nalRoot;
   if (parent)
-    nalRoot = parent->addChildItem({});
+    nalRoot = parent->createChildItem();
   else if (packetModel->rootItem)
-    nalRoot = packetModel->rootItem->addChildItem({});
+    nalRoot = packetModel->rootItem->createChildItem();
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 
-  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  if (nalRoot)
+    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   // Create a nal_unit and read the header
   NalUnitMpeg2 nal_mpeg2(nalID, nalStartEndPosFile);

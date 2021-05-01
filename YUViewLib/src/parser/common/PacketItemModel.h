@@ -55,7 +55,7 @@ public:
   virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override { (void)parent; return 5; }
 
   // The root of the tree
-  std::unique_ptr<TreeItem> rootItem;
+  std::shared_ptr<TreeItem> rootItem;
 
   void setUseColorCoding(bool colorCoding);
   void setShowVideoStreamOnly(bool showVideoOnly);

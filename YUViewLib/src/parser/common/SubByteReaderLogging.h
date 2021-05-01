@@ -54,11 +54,13 @@ class SubByteReaderLogging : public SubByteReader
 {
 public:
   SubByteReaderLogging() = default;
-  SubByteReaderLogging(SubByteReader &reader, TreeItem *item, std::string new_sub_item_name = "");
-  SubByteReaderLogging(const ByteVector &inArr,
-                       TreeItem *        item,
-                       std::string       new_sub_item_name = "",
-                       size_t            inOffset          = 0);
+  SubByteReaderLogging(SubByteReader &           reader,
+                       std::shared_ptr<TreeItem> item,
+                       std::string               new_sub_item_name = "");
+  SubByteReaderLogging(const ByteVector &        inArr,
+                       std::shared_ptr<TreeItem> item,
+                       std::string               new_sub_item_name = "",
+                       size_t                    inOffset          = 0);
 
   // DEPRECATED. This is just for backwards compatibility and will be removed once
   // everything is using std types.
@@ -83,10 +85,10 @@ public:
                     const std::string &code    = {},
                     const std::string &meaning = {});
 
-  void stashAndReplaceCurrentTreeItem(TreeItem *newItem);
+  void stashAndReplaceCurrentTreeItem(std::shared_ptr<TreeItem> newItem);
   void popTreeItem();
 
-  [[nodiscard]] TreeItem *getCurrentItemTree() { return currentTreeLevel; }
+  [[nodiscard]] std::shared_ptr<TreeItem> getCurrentItemTree() { return this->currentTreeLevel; }
 
 private:
   friend class SubByteReaderLoggingSubLevel;
@@ -95,9 +97,9 @@ private:
 
   void logExceptionAndThrowError [[noreturn]] (const std::exception &ex, const std::string &when);
 
-  std::stack<TreeItem *> itemHierarchy;
-  TreeItem *             currentTreeLevel{};
-  TreeItem *             stashedTreeItem{};
+  std::stack<std::shared_ptr<TreeItem>> itemHierarchy;
+  std::shared_ptr<TreeItem>             currentTreeLevel{};
+  std::shared_ptr<TreeItem>             stashedTreeItem{};
 };
 
 // A simple wrapper for SubByteReaderLogging->addLogSubLevel /

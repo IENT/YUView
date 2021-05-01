@@ -69,7 +69,7 @@ public:
   bool use_alt_cpb_params_flag{};
 
 private:
-  TreeItem *reparseTreeItem{};
+  std::shared_ptr<TreeItem> reparseTreeItem{};
 };
 
 } // namespace parser::hevc

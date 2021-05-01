@@ -74,7 +74,7 @@ public:
                                  const ByteVector &                            data,
                                  std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                  std::optional<pairUint64> nalStartEndPosFile = {},
-                                 TreeItem *                parent             = nullptr) override;
+                                 std::shared_ptr<TreeItem> parent             = {}) override;
 
 protected:
   struct ActiveParameterSets

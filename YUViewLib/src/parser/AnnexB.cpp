@@ -52,7 +52,7 @@ namespace parser
 QString AnnexB::getShortStreamDescription(int) const
 {
   QString info      = "Video";
-  auto   frameSize = this->getSequenceSizeSamples();
+  auto    frameSize = this->getSequenceSizeSamples();
   if (frameSize.isValid())
     info += QString(" (%1x%2)").arg(frameSize.width).arg(frameSize.height);
   return info;
@@ -82,7 +82,7 @@ bool AnnexB::addFrameToList(int                       poc,
 }
 
 void AnnexB::logNALSize(const ByteVector &        data,
-                        TreeItem *                root,
+                        std::shared_ptr<TreeItem> root,
                         std::optional<pairUint64> nalStartEndPos)
 {
   size_t startCodeSize = 0;
@@ -92,11 +92,11 @@ void AnnexB::logNALSize(const ByteVector &        data,
     startCodeSize = 3;
 
   if (startCodeSize > 0)
-    root->addChildItem(TreeItem("Start code size", startCodeSize));
+    root->createChildItem("Start code size", startCodeSize);
 
-  root->addChildItem(TreeItem("Payload size", data.size() - startCodeSize));
+  root->createChildItem("Payload size", data.size() - startCodeSize);
   if (nalStartEndPos)
-    root->addChildItem(TreeItem("Start/End pos", to_string(*nalStartEndPos)));
+    root->createChildItem("Start/End pos", to_string(*nalStartEndPos));
 }
 
 size_t AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx)

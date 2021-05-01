@@ -148,7 +148,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
                               const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
-                              TreeItem *                                    parent)
+                              std::shared_ptr<TreeItem>                                    parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -161,7 +161,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
               this->curFramePOC, this->curFrameFileStartEndPos, this->curFrameIsRandomAccess))
       {
         if (parent)
-          parent->addChildItem(TreeItem("Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list."));
+          parent->createChildItem("Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list.");
         return parseResult;
       }
       if (this->curFrameFileStartEndPos)
@@ -181,13 +181,14 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet.
   // We want to parse the item and then set a good description.
-  TreeItem *nalRoot = nullptr;
+  std::shared_ptr<TreeItem> nalRoot;
   if (parent)
-    nalRoot = parent->addChildItem({});
+    nalRoot = parent->createChildItem();
   else if (packetModel->rootItem)
-    nalRoot = packetModel->rootItem->addChildItem({});
+    nalRoot = packetModel->rootItem->createChildItem();
 
-  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  if (nalRoot)
+    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", getStartCodeOffset(data));
 

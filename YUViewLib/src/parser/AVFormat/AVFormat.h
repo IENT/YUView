@@ -89,7 +89,7 @@ private:
   parseByteVectorAnnexBStartCodes(ByteVector &                   data,
                                   PacketDataFormat               dataFormat,
                                   BitratePlotModel::BitrateEntry packetBitrateEntry,
-                                  TreeItem *                     item);
+                                  std::shared_ptr<TreeItem>      item);
 
   // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
   // we update this list while parsing the file.
