@@ -360,19 +360,14 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
 {
   auto filename = this->properties().name;
 
-  // Determine the relative path to the HEVC file. We save both in the playlist.
-  QUrl fileURL(filename);
-  fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath(filename);
-
   YUViewDomElement d = root.ownerDocument().createElement("playlistItemCompressedVideo");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
 
   // Append all the properties of the HEVC file (the path to the file. Relative and absolute)
-  d.appendProperiteChild("absolutePath", fileURL.toString());
-  d.appendProperiteChild("relativePath", relativePath);
+  d.appendProperiteChild("absolutePath", playlistDir.absoluteFilePath(filename));
+  d.appendProperiteChild("relativePath", playlistDir.relativeFilePath(filename));
   d.appendProperiteChild("displayComponent",
                          QString::number(loadingDecoder ? loadingDecoder->getDecodeSignal() : -1));
 
@@ -395,8 +390,7 @@ playlistItemCompressedVideo::newPlaylistItemCompressedVideo(const YUViewDomEleme
                                                             const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemRawCodedVideo
-  QUrl absoluteUrl = root.findChildValue("absolutePath");
-  auto absolutePath = absoluteUrl.toLocalFile();
+  auto absolutePath  = root.findChildValue("absolutePath");
   auto relativePath  = root.findChildValue("relativePath");
   int  displaySignal = root.findChildValue("displayComponent").toInt();
 

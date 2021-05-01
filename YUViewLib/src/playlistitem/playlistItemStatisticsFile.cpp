@@ -34,7 +34,6 @@
 
 #include <QDebug>
 #include <QTime>
-#include <QUrl>
 #include <QtConcurrent>
 #include <cassert>
 #include <iostream>
@@ -104,9 +103,8 @@ playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatistic
     const YUViewDomElement &root, const QString &playlistFilePath, OpenMode openMode)
 {
   // Parse the DOM element. It should have all values of a playlistItemStatisticsFile
-  QUrl absoluteUrl = root.findChildValue("absolutePath");
-  auto absolutePath = absoluteUrl.toLocalFile();
-  auto relativePath = root.findChildValue("relativePath");
+  auto absolutePath  = root.findChildValue("absolutePath");
+  auto relativePath  = root.findChildValue("relativePath");
 
   // check if file with absolute path exists, otherwise check relative path
   auto filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
@@ -153,11 +151,7 @@ void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, doubl
 
 void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
-  // Determine the relative path to the YUV file-> We save both in the playlist.
-  auto absolutePath = QFileInfo(this->prop.name).absoluteFilePath();
-  QUrl fileURL(absolutePath);
-  fileURL.setScheme("file");
-  auto relativePath = playlistDir.relativeFilePath(absolutePath);
+  auto filename = this->properties().name;
 
   YUViewDomElement d = root.ownerDocument().createElement("playlistItemStatisticsFile");
 
@@ -165,8 +159,8 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   playlistItem::appendPropertiesToPlaylist(d);
 
   // Append all the properties of the YUV file (the path to the file-> Relative and absolute)
-  d.appendProperiteChild("absolutePath", fileURL.toString());
-  d.appendProperiteChild("relativePath", relativePath);
+  d.appendProperiteChild("absolutePath", playlistDir.absoluteFilePath(filename));
+  d.appendProperiteChild("relativePath", playlistDir.relativeFilePath(filename));
 
   // Save the status of the statistics (which are shown, transparency ...)
   this->statisticsData.savePlaylist(d);

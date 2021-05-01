@@ -34,7 +34,6 @@
 
 #include <QImageReader>
 #include <QSettings>
-#include <QUrl>
 
 #include "common/functionsGui.h"
 #include "filesource/FileSource.h"
@@ -199,14 +198,9 @@ void playlistItemImageFileSequence::savePlaylist(QDomElement &root, const QDir &
   // Put a list of all input files into the playlist
   for (int i = 0; i < imageFiles.length(); i++)
   {
-    // Determine the relative path to the file. We save both in the playlist.
-    QUrl fileURL(imageFiles[i]);
-    fileURL.setScheme("file");
-    QString relativePath = playlistDir.relativeFilePath(imageFiles[i]);
-
     // Append the relative and absolute path to the file
-    d.appendProperiteChild(QString("file%1_absolutePath").arg(i), fileURL.toString());
-    d.appendProperiteChild(QString("file%1_relativePath").arg(i), relativePath);
+    d.appendProperiteChild(QString("file%1_absolutePath").arg(i), playlistDir.absoluteFilePath(imageFiles[i]));
+    d.appendProperiteChild(QString("file%1_relativePath").arg(i), playlistDir.relativeFilePath(imageFiles[i]));
   }
 
   root.appendChild(d);
