@@ -498,9 +498,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
 
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Slice POC "
                  << POC << " - pocCounterOffset " << pocCounterOffset << " maxPOCCount "
-                 << maxPOCCount << (new_slice->isIRAP() ? " - IRAP" : "")
-                 << (new_slice->NoRaslOutputFlag ? "" : " - RASL")
-                 << (parsingSuccess ? "" : " ERROR"));
+                 << maxPOCCount << (nalHEVC->header.isIRAP() ? " - IRAP" : "")
+                 << (newSlice->sliceSegmentHeader.NoRaslOutputFlag ? "" : " - RASL"));
     }
     else if (nalHEVC->header.nal_unit_type == NalType::PREFIX_SEI_NUT ||
              nalHEVC->header.nal_unit_type == NalType::SUFFIX_SEI_NUT)
@@ -579,7 +578,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
         catch (const std::exception &e)
         {
           (void)e;
-          DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Error reparsing SEI message. " + e.what());
+          DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Error reparsing SEI message. " << e.what());
         }
       }
     }

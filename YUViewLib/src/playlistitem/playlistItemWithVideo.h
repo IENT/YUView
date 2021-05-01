@@ -61,7 +61,7 @@ public:
   }
 
   // Do we need to load the frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawValues) override;
+  virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawValues) override;
 
   // -- Caching
   // Cache the given frame

@@ -186,8 +186,9 @@ void SubByteReaderLogging::removeLogSubLevel()
   this->currentTreeLevel = this->itemHierarchy.top();
 }
 
-uint64_t
-SubByteReaderLogging::readBits(const std::string &symbolName, size_t numBits, const Options &options)
+uint64_t SubByteReaderLogging::readBits(const std::string &symbolName,
+                                        size_t             numBits,
+                                        const Options &    options)
 {
   try
   {
@@ -322,6 +323,18 @@ void SubByteReaderLogging::logArbitrary(const std::string &symbolName,
   new TreeItem(this->currentTreeLevel, symbolName, value, coding, code, meaning);
 }
 
+void SubByteReaderLogging::stashAndReplaceCurrentTreeItem(TreeItem *newItem)
+{
+  this->stashedTreeItem  = this->currentTreeLevel;
+  this->currentTreeLevel = newItem;
+}
+
+void SubByteReaderLogging::popTreeItem()
+{
+  this->currentTreeLevel = this->stashedTreeItem;
+  this->stashedTreeItem  = nullptr;
+}
+
 void SubByteReaderLogging::logExceptionAndThrowError(const std::exception &ex,
                                                      const std::string &   when)
 {
@@ -332,6 +345,19 @@ void SubByteReaderLogging::logExceptionAndThrowError(const std::exception &ex,
     item->setError();
   }
   throw std::logic_error("Error reading " + when);
+}
+
+SubByteReaderLoggingSubLevel::SubByteReaderLoggingSubLevel(SubByteReaderLogging &reader,
+                                                           std::string           name)
+{
+  reader.addLogSubLevel(name);
+  this->r = &reader;
+}
+
+SubByteReaderLoggingSubLevel::~SubByteReaderLoggingSubLevel()
+{
+  if (this->r != nullptr)
+    this->r->removeLogSubLevel();
 }
 
 } // namespace parser::reader

@@ -36,8 +36,8 @@
 #include <optional>
 #include <stack>
 
-#include "SubByteReaderLoggingOptions.h"
 #include "SubByteReader.h"
+#include "SubByteReaderLoggingOptions.h"
 #include "TreeItem.h"
 #include "common/typedef.h"
 
@@ -54,9 +54,7 @@ class SubByteReaderLogging : public SubByteReader
 {
 public:
   SubByteReaderLogging() = default;
-  SubByteReaderLogging(SubByteReader &reader,
-                       TreeItem *        item,
-                       std::string       new_sub_item_name = "");
+  SubByteReaderLogging(SubByteReader &reader, TreeItem *item, std::string new_sub_item_name = "");
   SubByteReaderLogging(const ByteVector &inArr,
                        TreeItem *        item,
                        std::string       new_sub_item_name = "",
@@ -85,6 +83,9 @@ public:
                     const std::string &code    = {},
                     const std::string &meaning = {});
 
+  void stashAndReplaceCurrentTreeItem(TreeItem *newItem);
+  void popTreeItem();
+
   [[nodiscard]] TreeItem *getCurrentItemTree() { return currentTreeLevel; }
 
 private:
@@ -95,7 +96,8 @@ private:
   void logExceptionAndThrowError [[noreturn]] (const std::exception &ex, const std::string &when);
 
   std::stack<TreeItem *> itemHierarchy;
-  TreeItem *             currentTreeLevel{nullptr};
+  TreeItem *             currentTreeLevel{};
+  TreeItem *             stashedTreeItem{};
 };
 
 // A simple wrapper for SubByteReaderLogging->addLogSubLevel /
@@ -104,19 +106,11 @@ class SubByteReaderLoggingSubLevel
 {
 public:
   SubByteReaderLoggingSubLevel() = default;
-  SubByteReaderLoggingSubLevel(SubByteReaderLogging &reader, std::string name)
-  {
-    reader.addLogSubLevel(name);
-    this->r = &reader;
-  }
-  ~SubByteReaderLoggingSubLevel()
-  {
-    if (this->r != nullptr)
-      this->r->removeLogSubLevel();
-  }
+  SubByteReaderLoggingSubLevel(SubByteReaderLogging &reader, std::string name);
+  ~SubByteReaderLoggingSubLevel();
 
 private:
-  SubByteReaderLogging *r{nullptr};
+  SubByteReaderLogging *r{};
 };
 
 } // namespace parser::reader

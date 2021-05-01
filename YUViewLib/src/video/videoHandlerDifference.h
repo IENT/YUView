@@ -81,6 +81,8 @@ private slots:
   void slotDifferenceControlChanged();
 
 protected:
+  ItemLoadingState needsLoadingRawValues(int frameIndex) override;
+
   bool markDifference{}; // Mark differences?
   int  amplificationFactor{1};
 

@@ -128,13 +128,13 @@ std::string rgbPixelFormat::getRGBFormatString() const
 
 void rgbPixelFormat::setRGBFormatFromString(const std::string &format)
 {
-  int n = format.length();
+  auto n = format.length();
   if (n < 3)
     return;
   if (n > 4)
     n = 4;
 
-  for (int i = 0; i < n; i++)
+  for (unsigned i = 0; i < n; i++)
   {
     if (format[i] == 'r' || format[i] == 'R')
       posR = i;

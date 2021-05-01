@@ -416,7 +416,7 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   }
 
   // Does the data in currentFrameRawData need to be updated?
-  if (!loadRawRGBData(frameIndex))
+  if (!loadRawRGBData(frameIndex) || currentFrameRawData.isEmpty())
   {
     DEBUG_RGB("videoHandlerRGB::loadFrame Loading faile or is still running in the background");
     return;
