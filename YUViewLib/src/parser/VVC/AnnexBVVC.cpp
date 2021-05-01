@@ -253,11 +253,11 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
-  TreeItem *nalRoot = nullptr;
+  TreeItem *nalRoot {};
   if (parent)
-    nalRoot = new TreeItem(parent);
-  else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = parent->addChildItem({});
+  else if (packetModel->rootItem)
+    nalRoot = packetModel->rootItem->addChildItem({});
 
   parseResult.success = true;
 

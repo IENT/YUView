@@ -109,24 +109,24 @@ bool AVFormat::parseExtradata(ByteVector &extradata)
     return this->parseExtradata_generic(extradata);
 }
 
-bool AVFormat::parseMetadata(QStringPairList &metadata)
+void AVFormat::parseMetadata(const StringPairVec &metadata)
 {
-  if (metadata.isEmpty() || packetModel->isNull())
-    return true;
+  if (metadata.size() == 0 || !packetModel->rootItem)
+    return;
 
   // Log all entries in the metadata list
-  TreeItem *metadataRoot = new TreeItem(packetModel->getRootItem(), "Metadata");
-  for (QStringPair p : metadata)
-    new TreeItem(p.first, p.second, "", "", metadataRoot);
-  return true;
+  TreeItem metadataRoot("Metadata");
+  for (const auto &p : metadata)
+    metadataRoot.addChildItem(TreeItem(p.first, p.second, "", ""));
+  packetModel->rootItem->addChildItem(metadataRoot);
 }
 
 bool AVFormat::parseExtradata_generic(ByteVector &extradata)
 {
-  if (extradata.empty() || packetModel->isNull())
+  if (extradata.empty() || !packetModel->rootItem)
     return true;
 
-  SubByteReaderLogging reader(extradata, packetModel->getRootItem(), "Extradata");
+  SubByteReaderLogging reader(extradata, packetModel->rootItem.get(), "Extradata");
   unsigned             i = 0;
   while (reader.canReadBits(8))
     reader.readBytes(formatArray("raw_byte", i++), 1);
@@ -136,13 +136,13 @@ bool AVFormat::parseExtradata_generic(ByteVector &extradata)
 
 bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
 {
-  if (extradata.empty() || packetModel->isNull())
+  if (extradata.empty() || !packetModel->rootItem)
     return true;
 
   if (extradata.at(0) == 1 && extradata.size() >= 7)
   {
     SubByteReaderLogging reader(
-        extradata, packetModel->getRootItem(), "Extradata (Raw AVC NAL units)");
+        extradata, packetModel->rootItem.get(), "Extradata (Raw AVC NAL units)");
     reader.disableEmulationPrevention();
 
     reader.readBits("Version", 8);
@@ -186,7 +186,7 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
 
 bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
 {
-  if (extradata.empty() || packetModel->isNull())
+  if (extradata.empty() || packetModel->rootItem)
     return true;
 
   if (extradata.at(0) == 1)
@@ -198,7 +198,7 @@ bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
     try
     {
       avformat::HVCC hvcc;
-      hvcc.parse(extradata, packetModel->getRootItem(), hevcParser, this->bitratePlotModel.data());
+      hvcc.parse(extradata, packetModel->rootItem.get(), hevcParser, this->bitratePlotModel.data());
     }
     catch (...)
     {
@@ -208,17 +208,18 @@ bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
   }
   else if (extradata.at(0) == 0)
   {
+    auto item = packetModel->rootItem->addChildItem(TreeItem("Extradata (Raw HEVC NAL units)"));
     this->parseByteVectorAnnexBStartCodes(
         extradata,
         PacketDataFormat::RawNAL,
         {},
-        new TreeItem(packetModel->getRootItem(), "Extradata (Raw HEVC NAL units)"));
+        item);
   }
   else
   {
-    auto t = new TreeItem(packetModel->getRootItem(),
-                          "Unsupported extradata format (configurationVersion != 1)");
-    t->setError();
+    TreeItem item("Unsupported extradata format (configurationVersion != 1)");
+    item.setError();
+    packetModel->rootItem->addChildItem(item);
     return false;
   }
 
@@ -227,7 +228,7 @@ bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
 
 bool AVFormat::parseExtradata_mpeg2(ByteVector &extradata)
 {
-  if (extradata.empty() || !packetModel->isNull())
+  if (extradata.empty() || !packetModel->rootItem)
     return true;
 
   if (extradata.at(0) == 0)
@@ -236,11 +237,10 @@ bool AVFormat::parseExtradata_mpeg2(ByteVector &extradata)
         extradata,
         PacketDataFormat::RawNAL,
         {},
-        new TreeItem(packetModel->getRootItem(), "Extradata (Raw Mpeg2 units)"));
+        packetModel->rootItem->addChildItem(TreeItem("Extradata (Raw Mpeg2 units)")));
   }
   else
-    new TreeItem(packetModel->getRootItem(),
-                 "Unsupported extradata format (configurationVersion != 1)");
+    packetModel->rootItem->addChildItem(TreeItem("Unsupported extradata format (configurationVersion != 1)"));
 
   return true;
 }
@@ -315,14 +315,14 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
 
 bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacketWrapper &packet)
 {
-  if (packetModel->isNull())
+  if (!packetModel->rootItem)
     return true;
 
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
   std::string specificDescription;
-  TreeItem *  itemTree = new TreeItem(packetModel->getRootItem());
+  auto itemTree = packetModel->rootItem->addChildItem({});
 
   ByteVector avpacketData;
   {
@@ -360,15 +360,15 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
   };
 
   // Log all the packet info
-  new TreeItem(itemTree, "stream_index", std::to_string(packet.getStreamIndex()));
-  new TreeItem(itemTree, "Global AVPacket Count", std::to_string(packetID));
-  new TreeItem(itemTree, "pts", formatTimestamp(packet.getPTS(), timeBase));
-  new TreeItem(itemTree, "dts", formatTimestamp(packet.getDTS(), timeBase));
-  new TreeItem(itemTree, "duration", formatTimestamp(packet.getDuration(), timeBase));
-  new TreeItem(itemTree, "flag_keyframe", std::to_string(packet.getFlagKeyframe()));
-  new TreeItem(itemTree, "flag_corrupt", std::to_string(packet.getFlagCorrupt()));
-  new TreeItem(itemTree, "flag_discard", std::to_string(packet.getFlagDiscard()));
-  new TreeItem(itemTree, "data_size", std::to_string(packet.getDataSize()));
+  itemTree->addChildItem(TreeItem("stream_index", packet.getStreamIndex()));
+  itemTree->addChildItem(TreeItem("Global AVPacket Count", packetID));
+  itemTree->addChildItem(TreeItem("pts", formatTimestamp(packet.getPTS(), timeBase)));
+  itemTree->addChildItem(TreeItem("dts", formatTimestamp(packet.getDTS(), timeBase)));
+  itemTree->addChildItem(TreeItem("duration", formatTimestamp(packet.getDuration(), timeBase)));
+  itemTree->addChildItem(TreeItem("flag_keyframe", packet.getFlagKeyframe()));
+  itemTree->addChildItem(TreeItem("flag_corrupt", packet.getFlagCorrupt()));
+  itemTree->addChildItem(TreeItem("flag_discard", packet.getFlagDiscard()));
+  itemTree->addChildItem(TreeItem("data_size", packet.getDataSize()));
 
   itemTree->setStreamIndex(packet.getStreamIndex());
 

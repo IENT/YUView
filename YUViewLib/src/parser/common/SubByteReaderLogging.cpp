@@ -71,16 +71,15 @@ void checkAndLog(TreeItem *         item,
     if (options.meaningMap.count(int64_t(value)) > 0)
       meaning = options.meaningMap.at(value);
 
-    if (!checkResult)
+    const bool isError = !checkResult;
+    if (isError)
       meaning += " " + checkResult.errorMessage;
-    auto newItem = new TreeItem(item,
-                                symbolName,
+    item->addChildItem(TreeItem(symbolName,
                                 std::to_string(value),
                                 formatCoding(formatName, code.size()),
                                 code,
-                                meaning);
-    if (!checkResult)
-      newItem->setError();
+                                meaning,
+                                isError));
   }
   if (!checkResult)
     throw std::logic_error(checkResult.errorMessage);
@@ -105,12 +104,11 @@ void checkAndLog(TreeItem *         item,
       valueStream << "0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(c) << " ("
                   << c << ")";
       auto byteCode = code.substr(i * 8, 8);
-      new TreeItem(item,
-                   byteName + (value.size() > 1 ? "[" + std::to_string(i) + "]" : ""),
+      item->addChildItem(TreeItem(byteName + (value.size() > 1 ? "[" + std::to_string(i) + "]" : ""),
                    valueStream.str(),
                    formatCoding("u(8)", code.size()),
                    byteCode,
-                   options.meaningString);
+                   options.meaningString));
     }
   }
 }
@@ -147,7 +145,7 @@ SubByteReaderLogging::SubByteReaderLogging(SubByteReader &reader,
     if (new_sub_item_name.empty())
       this->currentTreeLevel = item;
     else
-      this->currentTreeLevel = new TreeItem(item, new_sub_item_name);
+      item->addChildItem(TreeItem(new_sub_item_name));
   }
   this->itemHierarchy.push(this->currentTreeLevel);
 }
@@ -163,7 +161,7 @@ SubByteReaderLogging::SubByteReaderLogging(const ByteVector &inArr,
     if (new_sub_item_name.empty())
       this->currentTreeLevel = item;
     else
-      this->currentTreeLevel = new TreeItem(item, new_sub_item_name);
+      item->addChildItem(TreeItem(new_sub_item_name));
   }
   this->itemHierarchy.push(this->currentTreeLevel);
 }
@@ -173,7 +171,7 @@ void SubByteReaderLogging::addLogSubLevel(const std::string name)
   assert(!name.empty());
   if (itemHierarchy.top() == nullptr)
     return;
-  this->currentTreeLevel = new TreeItem(this->itemHierarchy.top(), name);
+  this->itemHierarchy.top()->addChildItem(TreeItem(name));
   this->itemHierarchy.push(this->currentTreeLevel);
 }
 
@@ -320,7 +318,7 @@ void SubByteReaderLogging::logArbitrary(const std::string &symbolName,
                                         const std::string &code,
                                         const std::string &meaning)
 {
-  new TreeItem(this->currentTreeLevel, symbolName, value, coding, code, meaning);
+  this->currentTreeLevel->addChildItem(TreeItem(symbolName, value, coding, code, meaning));
 }
 
 void SubByteReaderLogging::stashAndReplaceCurrentTreeItem(TreeItem *newItem)
@@ -341,8 +339,7 @@ void SubByteReaderLogging::logExceptionAndThrowError(const std::exception &ex,
   if (this->currentTreeLevel)
   {
     auto errorMessage = "Reading error " + std::string(ex.what());
-    auto item         = new TreeItem(this->currentTreeLevel, "Error", "", "", "", errorMessage);
-    item->setError();
+    this->currentTreeLevel->addChildItem(TreeItem("Error", "", "", "", errorMessage, true));
   }
   throw std::logic_error("Error reading " + when);
 }

@@ -87,11 +87,11 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   // We don't set data (a name) for this item yet.
   // We want to parse the item and then set a good description.
   std::string specificDescription;
-  TreeItem *  nalRoot = nullptr;
+  TreeItem *nalRoot {};
   if (parent)
-    nalRoot = new TreeItem(parent);
-  else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = parent->addChildItem({});
+  else if (packetModel->rootItem)
+    nalRoot = packetModel->rootItem->addChildItem({});
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 

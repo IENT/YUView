@@ -78,8 +78,8 @@ void Base::setRedirectPlotModel(HRDPlotModel *plotModel)
 
 void Base::enableModel()
 {
-  if (this->packetModel->isNull())
-    this->packetModel->rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
+  if (!this->packetModel->rootItem)
+    this->packetModel->rootItem.reset(new TreeItem("Name", "Value", "Coding", "Code", "Meaning"));
 }
 
 void Base::updateNumberModelItems()

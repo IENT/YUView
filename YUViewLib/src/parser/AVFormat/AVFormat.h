@@ -71,7 +71,7 @@ private:
   AVCodecIDWrapper codecID;
 
   bool parseExtradata(ByteVector &extradata);
-  bool parseMetadata(QStringPairList &metadata);
+  void parseMetadata(const StringPairVec &metadata);
   bool parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacketWrapper &packet);
 
   // Used for parsing if the packets contain an annexB file that we can parse.

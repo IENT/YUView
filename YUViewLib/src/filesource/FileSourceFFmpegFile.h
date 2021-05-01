@@ -79,8 +79,8 @@ public:
   AVPacketWrapper getNextPacket(bool getLastPackage = false, bool videoPacket = true);
   // Return the raw extradata/metadata (in avformat format containing the parameter sets)
 
-  QByteArray      getExtradata();
-  QStringPairList getMetadata();
+  QByteArray    getExtradata();
+  StringPairVec getMetadata();
   // Return a list containing the raw data of all parameter set NAL units
   QList<QByteArray> getParameterSets();
 

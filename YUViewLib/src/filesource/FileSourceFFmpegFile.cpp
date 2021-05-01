@@ -215,10 +215,10 @@ QByteArray FileSourceFFmpegFile::getExtradata()
   return codec.getExtradata();
 }
 
-QStringPairList FileSourceFFmpegFile::getMetadata()
+StringPairVec FileSourceFFmpegFile::getMetadata()
 {
   if (!formatCtx)
-    return QStringPairList();
+    return {};
   return ff.getDictionaryEntries(formatCtx.getMetadata(), "", 0);
 }
 
