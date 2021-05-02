@@ -223,6 +223,9 @@ typedef std::pair<uint64_t, uint64_t> pairUint64;
 typedef std::pair<int64_t, int64_t>   pairInt64;
 typedef std::pair<int, int>           IntPair;
 
+typedef std::pair<std::string, std::string> StringPair;
+typedef std::vector<StringPair>             StringPairVec;
+
 /// ---- Legacy types that will be replaced
 typedef QPair<QString, QString>           QStringPair;
 typedef QList<QStringPair>                QStringPairList;

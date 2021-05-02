@@ -71,7 +71,7 @@ private:
   AVCodecIDWrapper codecID;
 
   bool parseExtradata(ByteVector &extradata);
-  bool parseMetadata(QStringPairList &metadata);
+  void parseMetadata(const StringPairVec &metadata);
   bool parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacketWrapper &packet);
 
   // Used for parsing if the packets contain an annexB file that we can parse.
@@ -89,7 +89,7 @@ private:
   parseByteVectorAnnexBStartCodes(ByteVector &                   data,
                                   PacketDataFormat               dataFormat,
                                   BitratePlotModel::BitrateEntry packetBitrateEntry,
-                                  TreeItem *                     item);
+                                  std::shared_ptr<TreeItem>      item);
 
   // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
   // we update this list while parsing the file.

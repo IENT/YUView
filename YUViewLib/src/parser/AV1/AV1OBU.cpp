@@ -44,19 +44,19 @@ using namespace av1;
 
 ParserAV1OBU::ParserAV1OBU(QObject *parent) : Base(parent) { decValues.PrevFrameID = -1; }
 
-std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int         obuID,
-                                                            ByteVector &data,
-                                                            TreeItem *  parent,
-                                                            pairUint64  obuStartEndPosFile)
+std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int                       obuID,
+                                                            ByteVector &              data,
+                                                            std::shared_ptr<TreeItem> parent,
+                                                            pairUint64 obuStartEndPosFile)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet.
   // We want to parse the item and then set a good description.
-  TreeItem *obuRoot = nullptr;
+  std::shared_ptr<TreeItem> obuRoot;
   if (parent)
-    obuRoot = new TreeItem(parent);
-  else if (!packetModel->isNull())
-    obuRoot = new TreeItem(packetModel->getRootItem());
+    obuRoot = parent->createChildItem();
+  else if (packetModel->rootItem)
+    obuRoot = packetModel->rootItem->createChildItem();
 
   SubByteReaderLogging reader(data, obuRoot);
 
@@ -70,33 +70,33 @@ std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int         obuID,
   std::string errorText;
   try
   {
-  if (obu.header.obu_type == ObuType::OBU_TEMPORAL_DELIMITER)
-  {
-    decValues.SeenFrameHeader = false;
-  }
-  if (obu.header.obu_type == ObuType::OBU_SEQUENCE_HEADER)
-  {
-    auto new_sequence_header = std::make_shared<sequence_header_obu>();
-    new_sequence_header->parse(reader);
+    if (obu.header.obu_type == ObuType::OBU_TEMPORAL_DELIMITER)
+    {
+      decValues.SeenFrameHeader = false;
+    }
+    if (obu.header.obu_type == ObuType::OBU_SEQUENCE_HEADER)
+    {
+      auto new_sequence_header = std::make_shared<sequence_header_obu>();
+      new_sequence_header->parse(reader);
 
-    this->active_sequence_header = new_sequence_header;
+      this->active_sequence_header = new_sequence_header;
 
-    obuTypeName = "Sequence Header";
-    obu.payload = new_sequence_header;
-  }
-  else if (obu.header.obu_type == ObuType::OBU_FRAME ||
-           obu.header.obu_type == ObuType::OBU_FRAME_HEADER)
-  {
-    auto new_frame_header = std::make_shared<frame_header_obu>();
-    new_frame_header->parse(reader,
-                            this->active_sequence_header,
-                            this->decValues,
-                            obu.header.temporal_id, 
-                            obu.header.spatial_id);
+      obuTypeName = "Sequence Header";
+      obu.payload = new_sequence_header;
+    }
+    else if (obu.header.obu_type == ObuType::OBU_FRAME ||
+             obu.header.obu_type == ObuType::OBU_FRAME_HEADER)
+    {
+      auto new_frame_header = std::make_shared<frame_header_obu>();
+      new_frame_header->parse(reader,
+                              this->active_sequence_header,
+                              this->decValues,
+                              obu.header.temporal_id,
+                              obu.header.spatial_id);
 
-    obuTypeName = "Frame";
-    obu.payload = new_frame_header;
-  }
+      obuTypeName = "Frame";
+      obu.payload = new_frame_header;
+    }
   }
   catch (const std::exception &e)
   {
@@ -105,8 +105,8 @@ std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int         obuID,
 
   if (obuRoot)
   {
-    auto name = "OBU " + std::to_string(obu.obu_idx) + ": " + obuTypeCoding.getMeaning(obu.header.obu_type) + " " +
-                obuTypeName;
+    auto name = "OBU " + std::to_string(obu.obu_idx) + ": " +
+                obuTypeCoding.getMeaning(obu.header.obu_type) + " " + obuTypeName;
     if (!errorText.empty())
     {
       obuRoot->setError();

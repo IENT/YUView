@@ -57,7 +57,7 @@ public:
   vector<unsigned> layer_sps_idx;
 
 private:
-  TreeItem *reparseTreeItem{};
+  std::shared_ptr<TreeItem> reparseTreeItem{};
 };
 
 } // namespace parser::hevc

@@ -1110,7 +1110,7 @@ public:
   // Set info in the dictionary
   int dictSet(AVDictionaryWrapper &dict, const char *key, const char *value, int flags);
   // Get all entries with the given key (leave empty for all)
-  QStringPairList getDictionaryEntries(AVDictionaryWrapper d, QString key, int flags);
+  StringPairVec getDictionaryEntries(AVDictionaryWrapper d, QString key, int flags);
   // Allocate a new set of codec parameters
   AVCodecParametersWrapper allocCodecParameters();
 

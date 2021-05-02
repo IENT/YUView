@@ -82,7 +82,7 @@ public:
                                  const ByteVector &                            data,
                                  std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                  std::optional<pairUint64> nalStartEndPosFile = {},
-                                 TreeItem *                parent             = nullptr) override;
+                                 std::shared_ptr<TreeItem> parent             = nullptr) override;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class

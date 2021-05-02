@@ -32,188 +32,134 @@
 
 #pragma once
 
-#include <QList>
-#include <QString>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <vector>
 
-// The tree item is used to feed the tree view. Each NAL unit can return a representation using
-// TreeItems
-class TreeItem
+// The tree item is used to feed the tree view.
+class TreeItem : public std::enable_shared_from_this<TreeItem>
 {
 public:
-  // Some useful constructors of new Tree items. You must at least specify a parent. The new item is
-  // atomatically added as a child of the parent.
-  TreeItem(QList<QString> &data, TreeItem *parent)
+  TreeItem()  = default;
+  ~TreeItem() = default;
+
+  void setProperties(std::string name    = {},
+                     std::string value   = {},
+                     std::string coding  = {},
+                     std::string code    = {},
+                     std::string meaning = {})
   {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData = data;
-  }
-  TreeItem(const QString &name, int val, TreeItem *parent)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << QString::number(val);
-  }
-  TreeItem(const QString &name, QString val, TreeItem *parent)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << val;
-  }
-  TreeItem(
-      const QString &name, int val, const QString &coding, const QString &code, TreeItem *parent)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << QString::number(val) << coding << code;
-  }
-  TreeItem(const QString &name,
-           unsigned int   val,
-           const QString &coding,
-           const QString &code,
-           TreeItem *     parent)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << QString::number(val) << coding << code;
-  }
-  TreeItem(const QString &name,
-           uint64_t       val,
-           const QString &coding,
-           const QString &code,
-           TreeItem *     parent)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << QString::number(val) << coding << code;
-  }
-  TreeItem(const QString &name,
-           int64_t        val,
-           const QString &coding,
-           const QString &code,
-           TreeItem *     parent)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << QString::number(val) << coding << code;
-  }
-  TreeItem(
-      const QString &name, bool val, const QString &coding, const QString &code, TreeItem *parent)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << (val ? "1" : "0") << coding << code;
-  }
-  TreeItem(
-      const QString &name, double val, const QString &coding, const QString &code, TreeItem *parent)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << QString::number(val) << coding << code;
-  }
-  TreeItem(const QString &name,
-           QString        val,
-           const QString &coding,
-           const QString &code,
-           TreeItem *     parent)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << val << coding << code;
-  }
-  TreeItem(const QString &name,
-           int            val,
-           const QString &coding,
-           const QString &code,
-           QString        meaning,
-           TreeItem *     parent)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << QString::number(val) << coding << code;
-    itemData.append(meaning);
-  }
-  TreeItem(const QString &name,
-           QString        val,
-           const QString &coding,
-           const QString &code,
-           QString        meaning,
-           TreeItem *     parent,
-           bool           isError = false)
-  {
-    parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    itemData << name << val << coding << code;
-    itemData.append(meaning);
-    setError(isError);
+    this->name    = name;
+    this->value   = value;
+    this->coding  = coding;
+    this->code    = code;
+    this->meaning = meaning;
   }
 
-  TreeItem(TreeItem *         parent,
-           const std::string &name    = {},
-           const std::string &value   = {},
-           const std::string &coding  = {},
-           const std::string &code    = {},
-           const std::string &meaning = {})
+  void setError(bool isError = true) { this->error = isError; }
+  bool isError() const { return this->error; }
+
+  std::string getName(bool showStreamIndex) const
   {
-    this->parentItem = parent;
-    if (parent)
-      parent->childItems.append(this);
-    this->setProperties(name, value, coding, code, meaning);
+    std::stringstream ss;
+    if (showStreamIndex && this->streamIndex >= 0)
+      ss << "Stream " << this->streamIndex << " - ";
+    ss << this->name;
+    return ss.str();
   }
 
-  void setProperties(const std::string &name    = {},
-                     const std::string &value   = {},
-                     const std::string &coding  = {},
-                     const std::string &code    = {},
-                     const std::string &meaning = {})
+  int getStreamIndex() const
   {
-    this->itemData.clear();
-    this->itemData << QString::fromStdString(name) << QString::fromStdString(value)
-                   << QString::fromStdString(coding) << QString::fromStdString(code)
-                   << QString::fromStdString(meaning);
-  }
-
-  ~TreeItem() { qDeleteAll(childItems); }
-  void setError(bool isError = true) { error = isError; }
-  bool isError() { return error; }
-
-  QString getName(bool showStreamIndex) const
-  {
-    QString r =
-        (showStreamIndex && streamIndex != -1) ? QString("Stream %1 - ").arg(streamIndex) : "";
-    if (itemData.count() > 0)
-      r += itemData[0];
-    return r;
-  }
-
-  QList<TreeItem *> childItems;
-  QList<QString>    itemData;
-  TreeItem *        parentItem{nullptr};
-
-  int getStreamIndex()
-  {
-    if (streamIndex >= 0)
-      return streamIndex;
-    if (parentItem)
-      return parentItem->getStreamIndex();
+    if (this->streamIndex >= 0)
+      return this->streamIndex;
+    if (auto p = this->parent.lock())
+      return p->getStreamIndex();
     return -1;
   }
-  void setStreamIndex(int idx) { streamIndex = idx; }
+  void setStreamIndex(int idx) { this->streamIndex = idx; }
+
+  template <typename T>
+  std::shared_ptr<TreeItem> createChildItem(std::string name    = {},
+                                            T           value   = {},
+                                            std::string coding  = {},
+                                            std::string code    = {},
+                                            std::string meaning = {},
+                                            bool        isError = false)
+  {
+    auto newItem    = std::make_shared<TreeItem>();
+    newItem->parent = this->weak_from_this();
+    newItem->setProperties(name, std::to_string(value), coding, code, meaning);
+    newItem->error = isError;
+    this->childItems.push_back(newItem);
+    return newItem;
+  }
+
+  std::shared_ptr<TreeItem> createChildItem(std::string name    = {},
+                                            std::string value   = {},
+                                            std::string coding  = {},
+                                            std::string code    = {},
+                                            std::string meaning = {},
+                                            bool        isError = false)
+  {
+    auto newItem    = std::make_shared<TreeItem>();
+    newItem->parent = this->weak_from_this();
+    newItem->setProperties(name, value, coding, code, meaning);
+    newItem->error = isError;
+    this->childItems.push_back(newItem);
+    return newItem;
+  }
+
+  size_t getNrChildItems() const { return this->childItems.size(); }
+
+  std::string getData(unsigned idx) const
+  {
+    switch (idx)
+    {
+    case 0:
+      return this->name;
+    case 1:
+      return this->value;
+    case 2:
+      return this->coding;
+    case 3:
+      return this->code;
+    case 4:
+      return this->meaning;
+    default:
+      return {};
+    }
+  }
+
+  const std::shared_ptr<TreeItem> getChild(unsigned idx) const
+  {
+    if (idx < this->childItems.size())
+      return this->childItems[idx];
+    return {};
+  }
+
+  std::weak_ptr<TreeItem> getParentItem() const { return this->parent; }
+
+  std::optional<size_t> getIndexOfChildItem(std::shared_ptr<TreeItem> child)
+  {
+    for (size_t i = 0; i < this->childItems.size(); i++)
+      if (this->childItems[i] == child)
+        return i;
+    return {};
+  }
 
 private:
-  bool error{false};
+  std::vector<std::shared_ptr<TreeItem>> childItems;
+  std::weak_ptr<TreeItem>                parent{};
+
+  std::string name;
+  std::string value;
+  std::string coding;
+  std::string code;
+  std::string meaning;
+
+  bool error{};
   // This is set for the first layer items in case of AVPackets
   int streamIndex{-1};
 };

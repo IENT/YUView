@@ -272,7 +272,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
                                const ByteVector &                            data,
                                std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                std::optional<pairUint64>                     nalStartEndPosFile,
-                               TreeItem *                                    parent)
+                               std::shared_ptr<TreeItem>                                    parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -283,8 +283,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       // Save the info of the last frame
       if (!this->addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
       {
-        new TreeItem(parent,
-                     "Error - POC " + std::to_string(curFramePOC) + " alread in the POC list.");
+        parent->createChildItem(
+            "Error - POC " + std::to_string(curFramePOC) + " alread in the POC list.");
         return parseResult;
       }
       if (curFrameFileStartEndPos)
@@ -302,13 +302,14 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
-  TreeItem *nalRoot = nullptr;
+  std::shared_ptr<TreeItem> nalRoot;
   if (parent)
-    nalRoot = new TreeItem(parent);
-  else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = parent->createChildItem();
+  else if (packetModel->rootItem)
+    nalRoot = packetModel->rootItem->createChildItem();
 
-  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  if (nalRoot)
+    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", getStartCodeOffset(data));
 

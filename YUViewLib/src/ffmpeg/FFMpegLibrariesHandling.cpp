@@ -1409,17 +1409,17 @@ int FFmpegVersionHandler::dictSet(AVDictionaryWrapper &dict,
   return ret;
 }
 
-QStringPairList
+StringPairVec
 FFmpegVersionHandler::getDictionaryEntries(AVDictionaryWrapper d, QString key, int flags)
 {
-  QStringPairList    ret;
+  StringPairVec     ret;
   AVDictionaryEntry *tag = NULL;
   while ((tag = lib.av_dict_get(d.getDictionary(), key.toLatin1().data(), tag, flags)))
   {
-    QStringPair pair;
-    pair.first  = QString(tag->key);
-    pair.second = QString(tag->value);
-    ret.append(pair);
+    StringPair pair;
+    pair.first  = std::string(tag->key);
+    pair.second = std::string(tag->value);
+    ret.push_back(pair);
   }
   return ret;
 }

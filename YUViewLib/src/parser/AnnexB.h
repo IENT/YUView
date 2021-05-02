@@ -91,7 +91,7 @@ public:
                                          const ByteVector &                            data,
                                          std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                          std::optional<pairUint64> nalStartEndPosFile = {},
-                                         TreeItem *                parent = nullptr) = 0;
+                                         std::shared_ptr<TreeItem> parent = nullptr) = 0;
 
   // Get some format properties
   virtual double         getFramerate() const           = 0;
@@ -141,8 +141,9 @@ protected:
   // Returns false if the POC was already present int the list
   bool addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint);
 
-  static void
-  logNALSize(const ByteVector &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos);
+  static void logNALSize(const ByteVector &        data,
+                         std::shared_ptr<TreeItem> root,
+                         std::optional<pairUint64> nalStartEndPos);
 
   int pocOfFirstRandomAccessFrame{-1};
 

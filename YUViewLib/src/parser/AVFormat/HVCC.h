@@ -75,8 +75,10 @@ class HVCC
 public:
   HVCC() = default;
 
-  void
-  parse(ByteVector &data, TreeItem *root, AnnexBHEVC *hevcParser, BitratePlotModel *bitrateModel);
+  void parse(ByteVector &              data,
+             std::shared_ptr<TreeItem> root,
+             AnnexBHEVC *              hevcParser,
+             BitratePlotModel *        bitrateModel);
 
   unsigned configurationVersion{};
   unsigned general_profile_space{};
