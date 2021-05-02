@@ -38,56 +38,11 @@
 #include <string>
 #include <vector>
 
-// The tree item is used to feed the tree view. Each NAL unit can return a representation using
-// TreeItems
+// The tree item is used to feed the tree view.
 class TreeItem : public std::enable_shared_from_this<TreeItem>
 {
 public:
-  // Some useful constructors of new Tree items. You must at least specify a parent. The new item is
-  // atomatically added as a child of the parent.
-  TreeItem() = default;
-
-  // TreeItem(std::vector<std::string> &data) { this->itemData = data; }
-  // TreeItem(std::string name, int val) { this->itemData = {name, std::to_string(val)}; }
-  // TreeItem(std::string &name, int val, std::string coding, std::string code)
-  // {
-  //   this->itemData = {name, std::to_string(val), coding, code};
-  // }
-  // TreeItem(std::string name, unsigned val, std::string coding, std::string code)
-  // {
-  //   this->itemData = {name, std::to_string(val), coding, code};
-  // }
-  // TreeItem(std::string name, uint64_t val, std::string coding, std::string code)
-  // {
-  //   this->itemData = {name, std::to_string(val), coding, code};
-  // }
-  // TreeItem(std::string name, int64_t val, std::string coding, std::string code)
-  // {
-  //   this->itemData = {name, std::to_string(val), coding, code};
-  // }
-  // TreeItem(std::string name, bool val, std::string coding, std::string code)
-  // {
-  //   this->itemData = {name, (val ? "1" : "0"), coding, code};
-  // }
-  // TreeItem(std::string name, double val, std::string coding, std::string code)
-  // {
-  //   this->itemData = {name, std::to_string(val), coding, code};
-  // }
-  // TreeItem(std::string name, int val, std::string coding, std::string code, std::string meaning)
-  // {
-  //   this->itemData = {name, std::to_string(val), coding, code, meaning};
-  // }
-  // TreeItem(std::string name,
-  //          std::string val     = {},
-  //          std::string coding  = {},
-  //          std::string code    = {},
-  //          std::string meaning = {},
-  //          bool        isError = false)
-  // {
-  //   this->itemData = {name, val, coding, code, meaning};
-  //   this->setError(isError);
-  // }
-
+  TreeItem()  = default;
   ~TreeItem() = default;
 
   void setProperties(std::string name    = {},
@@ -119,14 +74,12 @@ public:
   {
     if (this->streamIndex >= 0)
       return this->streamIndex;
-    auto p = this->parent.lock();
-    if (p)
+    if (auto p = this->parent.lock())
       return p->getStreamIndex();
     return -1;
   }
   void setStreamIndex(int idx) { this->streamIndex = idx; }
 
-  // Return a pointer to the added item
   template <typename T>
   std::shared_ptr<TreeItem> createChildItem(std::string name    = {},
                                             T           value   = {},
@@ -135,14 +88,10 @@ public:
                                             std::string meaning = {},
                                             bool        isError = false)
   {
-    auto newItem     = std::make_shared<TreeItem>();
-    newItem->parent  = this->weak_from_this();
-    newItem->name    = name;
-    newItem->value   = std::to_string(value);
-    newItem->coding  = coding;
-    newItem->code    = code;
-    newItem->meaning = meaning;
-    newItem->error   = isError;
+    auto newItem    = std::make_shared<TreeItem>();
+    newItem->parent = this->weak_from_this();
+    this->setProperties(name, std::to_string(value), coding, code, meaning);
+    newItem->error = isError;
     this->childItems.push_back(newItem);
     return newItem;
   }
@@ -154,14 +103,10 @@ public:
                                             std::string meaning = {},
                                             bool        isError = false)
   {
-    auto newItem     = std::make_shared<TreeItem>();
-    newItem->parent  = this->weak_from_this();
-    newItem->name    = name;
-    newItem->value   = value;
-    newItem->coding  = coding;
-    newItem->code    = code;
-    newItem->meaning = meaning;
-    newItem->error   = isError;
+    auto newItem    = std::make_shared<TreeItem>();
+    newItem->parent = this->weak_from_this();
+    this->setProperties(name, value, coding, code, meaning);
+    newItem->error = isError;
     this->childItems.push_back(newItem);
     return newItem;
   }
@@ -213,12 +158,6 @@ private:
   std::string coding;
   std::string code;
   std::string meaning;
-
-  bool hasParent() const
-  {
-    using wt = std::weak_ptr<TreeItem>;
-    return !this->parent.owner_before(wt{}) && !wt{}.owner_before(this->parent);
-  }
 
   bool error{};
   // This is set for the first layer items in case of AVPackets
