@@ -90,7 +90,7 @@ public:
   {
     auto newItem    = std::make_shared<TreeItem>();
     newItem->parent = this->weak_from_this();
-    this->setProperties(name, std::to_string(value), coding, code, meaning);
+    newItem->setProperties(name, std::to_string(value), coding, code, meaning);
     newItem->error = isError;
     this->childItems.push_back(newItem);
     return newItem;
@@ -105,7 +105,7 @@ public:
   {
     auto newItem    = std::make_shared<TreeItem>();
     newItem->parent = this->weak_from_this();
-    this->setProperties(name, value, coding, code, meaning);
+    newItem->setProperties(name, value, coding, code, meaning);
     newItem->error = isError;
     this->childItems.push_back(newItem);
     return newItem;
