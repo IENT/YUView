@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tabGeneral">
       <attribute name="title">
@@ -777,10 +777,40 @@
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
         <layout class="QGridLayout" name="gridLayout_6">
-         <item row="1" column="0">
-          <widget class="QLabel" name="labelDefaultDecoder">
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="lineEditDecoderPath">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="whatsThis">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="3">
+          <widget class="QPushButton" name="pushButtonDecoderClearPath">
            <property name="text">
-            <string>Default Decoder</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../images/images.qrc">
+             <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="labelDecoderPath">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="whatsThis">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Decoder Search Path</string>
            </property>
           </widget>
          </item>
@@ -801,97 +831,37 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QComboBox" name="comboBoxDefaultDecoder"/>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="lineEditDecoderPath">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="whatsThis">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="labelDecoderPath">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="whatsThis">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select a custom path that will be searched for decoders. If no decoder is found in this path, various other paths (like system directories) will be searched. &lt;span style=&quot; font-weight:600;&quot;&gt;Note&lt;/span&gt;: The given specific directories will be tested before this path.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="text">
-            <string>Decoder Search Path</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="3">
-          <widget class="QPushButton" name="pushButtonDecoderClearPath">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="../images/images.qrc">
-             <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
-           </property>
-          </widget>
-         </item>
         </layout>
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayoutDecoderPath"/>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBoxHEVC">
-         <property name="toolTip">
-          <string>Specify individual decoder libraries to use for HEVC files. These will always be tried first.</string>
-         </property>
-         <property name="whatsThis">
-          <string>Specify individual decoder libraries to use for HEVC files. These will always be tried first.</string>
-         </property>
+        <widget class="QGroupBox" name="groupBoxHEVC_2">
          <property name="title">
-          <string>Specific Decoder Libraries</string>
+          <string>h.265/HEVC</string>
          </property>
-         <layout class="QGridLayout" name="gridLayout">
-          <item row="3" column="1">
-           <widget class="QLineEdit" name="lineEditLibVTMFile">
+         <layout class="QGridLayout" name="gridLayout_8">
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelLibde265">
             <property name="toolTip">
-             <string>Specify a libVTM library file. These will always be tried first.</string>
+             <string>Specify a libde265 library file. These will always be tried first.</string>
             </property>
             <property name="whatsThis">
-             <string>Specify a libVTM library file. These will always be tried first.</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
-           <widget class="QPushButton" name="pushButtonLibVTMSelectFile">
-            <property name="toolTip">
-             <string>Specify a libVTM library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libVTM library file. These will always be tried first.</string>
+             <string>Specify a libde265 library file. These will always be tried first.</string>
             </property>
             <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+             <string>libde265</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="3">
-           <widget class="QPushButton" name="pushButtonLibDav1dClearFile">
+          <item row="0" column="3">
+           <widget class="QPushButton" name="pushButtonLibde265ClearFile">
             <property name="toolTip">
-             <string>Remove the libDav1d path.</string>
+             <string>Remove the libde265 path.</string>
             </property>
             <property name="whatsThis">
-             <string>Remove the libDav1d path.</string>
+             <string>Remove the libde265 path.</string>
             </property>
             <property name="text">
              <string/>
@@ -902,6 +872,62 @@
             </property>
            </widget>
           </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelLibHM">
+            <property name="toolTip">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string>libHM</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="lineEditLibHMFile">
+            <property name="toolTip">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QPushButton" name="pushButtonlibHMClearFile">
+            <property name="toolTip">
+             <string>Remove the libHM path.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the libHM path.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="lineEditLibde265File">
+            <property name="toolTip">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="2">
            <widget class="QPushButton" name="pushButtonlibHMSelectFile">
             <property name="toolTip">
@@ -909,6 +935,133 @@
             </property>
             <property name="whatsThis">
              <string>Specify a libHM library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="pushButtonLibde265SelectFile">
+            <property name="toolTip">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libde265 library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelDefaultHEVC">
+            <property name="text">
+             <string>Default</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="comboBoxDefaultHEVC"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxHEVC">
+         <property name="toolTip">
+          <string>Specify individual decoder libraries to use for HEVC files. These will always be tried first.</string>
+         </property>
+         <property name="whatsThis">
+          <string>Specify individual decoder libraries to use for HEVC files. These will always be tried first.</string>
+         </property>
+         <property name="title">
+          <string>h.266/VVC</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="4" column="3">
+           <widget class="QPushButton" name="pushButtonLibVVDecClearFile">
+            <property name="toolTip">
+             <string>Remove the libVVDec path.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the libVVDec path.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QPushButton" name="pushButtonLibVVDecSelectFile">
+            <property name="toolTip">
+             <string>Specify a libVVDec library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libVVDec library file. These will always be tried first.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QLineEdit" name="lineEditLibVVDecFile">
+            <property name="toolTip">
+             <string>Specify a libVVDec library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libVVDec library file. These will always be tried first.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="lineEditLibVTMFile">
+            <property name="toolTip">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="labelLibVVDec">
+            <property name="text">
+             <string>libvvdec</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labelLibVTM">
+            <property name="text">
+             <string>libVTM</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButtonLibVTMSelectFile">
+            <property name="toolTip">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libVTM library file. These will always be tried first.</string>
             </property>
             <property name="text">
              <string/>
@@ -936,20 +1089,53 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelLibHM">
-            <property name="toolTip">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
+          <item row="5" column="0">
+           <widget class="QLabel" name="labelDefaultVVC">
             <property name="text">
-             <string>libHM</string>
+             <string>Default</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="2">
+          <item row="5" column="1">
+           <widget class="QComboBox" name="comboBoxDefaultVVC"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxAV1">
+         <property name="title">
+          <string>AV1 Decoder</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_9">
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="lineEditLibDav1d">
+            <property name="toolTip">
+             <string>Specify a libDav1d library file. These will always be tried first.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Specify a libDav1d library file. These will always be tried first.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QPushButton" name="pushButtonLibDav1dClearFile">
+            <property name="toolTip">
+             <string>Remove the libDav1d path.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Remove the libDav1d path.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../images/images.qrc">
+              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
            <widget class="QPushButton" name="pushButtonLibDav1dSelectFile">
             <property name="toolTip">
              <string>Specify a libDav1d library file. These will always be tried first.</string>
@@ -967,169 +1153,21 @@
            </widget>
           </item>
           <item row="0" column="0">
-           <widget class="QLabel" name="labelLibde265">
-            <property name="toolTip">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="text">
-             <string>libde265</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="lineEditLibHMFile">
-            <property name="toolTip">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libHM library file. These will always be tried first.</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="lineEditLibDav1d">
-            <property name="toolTip">
-             <string>Specify a libDav1d library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libDav1d library file. These will always be tried first.</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="labelLibVTM">
-            <property name="text">
-             <string>libVTM</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
            <widget class="QLabel" name="labellibDav1d">
             <property name="text">
              <string>libDav1d</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="lineEditLibde265File">
-            <property name="toolTip">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QPushButton" name="pushButtonLibde265SelectFile">
-            <property name="toolTip">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libde265 library file. These will always be tried first.</string>
-            </property>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelAV1Default">
             <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+             <string>Deafult</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="3">
-           <widget class="QPushButton" name="pushButtonLibde265ClearFile">
-            <property name="toolTip">
-             <string>Remove the libde265 path.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Remove the libde265 path.</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <widget class="QPushButton" name="pushButtonlibHMClearFile">
-            <property name="toolTip">
-             <string>Remove the libHM path.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Remove the libHM path.</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="labelLibVVDec">
-            <property name="text">
-             <string>libvvdec</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QLineEdit" name="lineEditLibVVDecFile">
-            <property name="toolTip">
-             <string>Specify a libVVDec library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libVVDec library file. These will always be tried first.</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="2">
-           <widget class="QPushButton" name="pushButtonLibVVDecSelectFile">
-            <property name="toolTip">
-             <string>Specify a libVVDec library file. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify a libVVDec library file. These will always be tried first.</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="3">
-           <widget class="QPushButton" name="pushButtonLibVVDecClearFile">
-            <property name="toolTip">
-             <string>Remove the libVVDec path.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Remove the libVVDec path.</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="../images/images.qrc">
-              <normaloff>:/img_x.png</normaloff>:/img_x.png</iconset>
-            </property>
-           </widget>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="comboBoxDefaultAV1"/>
           </item>
          </layout>
         </widget>
@@ -1143,7 +1181,7 @@
           <string>Specify the individual FFmpeg libraries to use. These will always be tried first.</string>
          </property>
          <property name="title">
-          <string>Specific FFmpeg Libraries</string>
+          <string>FFmpeg Libraries</string>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
@@ -1357,12 +1395,6 @@
   <tabstop>lineEditDecoderPath</tabstop>
   <tabstop>pushButtonDecoderSelectPath</tabstop>
   <tabstop>pushButtonDecoderClearPath</tabstop>
-  <tabstop>lineEditLibde265File</tabstop>
-  <tabstop>pushButtonLibde265SelectFile</tabstop>
-  <tabstop>pushButtonLibde265ClearFile</tabstop>
-  <tabstop>lineEditLibHMFile</tabstop>
-  <tabstop>pushButtonlibHMSelectFile</tabstop>
-  <tabstop>pushButtonlibHMClearFile</tabstop>
   <tabstop>lineEditAVUtil</tabstop>
   <tabstop>lineEditSWResample</tabstop>
   <tabstop>lineEditAVCodec</tabstop>
