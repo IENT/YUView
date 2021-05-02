@@ -970,7 +970,14 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QComboBox" name="comboBoxDefaultHEVC"/>
+           <widget class="QComboBox" name="comboBoxDefaultHEVC">
+            <property name="toolTip">
+             <string>Default HEVC decoder to use.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Default HEVC decoder to use.</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -1097,7 +1104,14 @@
            </widget>
           </item>
           <item row="5" column="1">
-           <widget class="QComboBox" name="comboBoxDefaultVVC"/>
+           <widget class="QComboBox" name="comboBoxDefaultVVC">
+            <property name="toolTip">
+             <string>Default VVC decoder to use.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Default VVC decoder to use.</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -1167,7 +1181,14 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QComboBox" name="comboBoxDefaultAV1"/>
+           <widget class="QComboBox" name="comboBoxDefaultAV1">
+            <property name="toolTip">
+             <string>Default AV1 decoder to use.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Default AV1 decoder to use.</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
