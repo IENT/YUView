@@ -158,14 +158,13 @@ protected:
   };
   stream_info_type stream_info;
 
-  int getFramePOC(int frameIdx);
+  int getFramePOC(int frameIdxDisplayOrder);
 
 private:
   // A list of all frames in the sequence (in coding order) with POC and the file positions of all
   // slice NAL units associated with a frame. POC's don't have to be consecutive, so the only way to
   // know how many pictures are in a sequences is to keep a list of all POCs.
   vector<AnnexBFrame> frameList;
-  bool                frameListNeedsParsing{};
 };
 
 } // namespace parser

@@ -59,6 +59,11 @@ const auto DecoderEngineMapper = EnumMapper<DecoderEngine>({{DecoderEngine::Inva
                                                             {DecoderEngine::Dav1d, "Dav1d"},
                                                             {DecoderEngine::FFMpeg, "FFMpeg"}});
 
+const auto DecodersHEVC =
+    std::vector<DecoderEngine>({DecoderEngine::Libde265, DecoderEngine::HM, DecoderEngine::FFMpeg});
+const auto DecodersVVC = std::vector<DecoderEngine>({DecoderEngine::VVDec, DecoderEngine::VTM});
+const auto DecodersAV1 = std::vector<DecoderEngine>({DecoderEngine::FFMpeg, DecoderEngine::Dav1d});
+
 /* This class is the abstract base class for all decoders. All decoders work like this:
  * 1. Create an instance and configure it (if required)
  * 2. Push data to the decoder until it returns that it can not take any more data.

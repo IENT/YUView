@@ -79,6 +79,14 @@ bool isInputFormatTypeAnnexB(InputFormat format)
 
 bool isInputFormatTypeFFmpeg(InputFormat format) { return format == InputFormat::Libav; }
 
+enum class Codec
+{
+  AV1,
+  HEVC,
+  VVC,
+  Other
+};
+
 } // namespace
 
 // When decoding, it can make sense to seek forward to another random access point.
@@ -126,6 +134,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   YUV_Internals::YUVPixelFormat format_yuv;
   RGB_Internals::rgbPixelFormat format_rgb;
   auto                          mainWindow = MainWindow::getMainWindow();
+  Codec                         codec      = Codec::Other;
   if (isInputFormatTypeAnnexB(this->inputFormat))
   {
     // Open file
@@ -139,20 +148,20 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is HEVC");
       inputFileAnnexBParser.reset(new parser::AnnexBHEVC());
       ffmpegCodec.setTypeHEVC();
-      this->possibleDecoders = {DecoderEngine::Libde265, DecoderEngine::HM, DecoderEngine::FFMpeg};
+      codec = Codec::HEVC;
     }
     else if (this->inputFormat == InputFormat::AnnexBVVC)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is VVC");
       inputFileAnnexBParser.reset(new parser::AnnexBVVC());
-      this->possibleDecoders = {DecoderEngine::VVDec, DecoderEngine::VTM};
+      codec = Codec::VVC;
     }
     else if (this->inputFormat == InputFormat::AnnexBAVC)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is AVC");
       inputFileAnnexBParser.reset(new parser::AnnexBAVC());
       ffmpegCodec.setTypeAVC();
-      this->possibleDecoders = {DecoderEngine::FFMpeg};
+      codec = Codec::Other;
     }
 
     DEBUG_COMPRESSED(
@@ -229,11 +238,11 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
         this->prop.sampleAspectRatio.num,
         this->prop.sampleAspectRatio.den);
     if (!ffmpegCodec.isNone())
-      this->possibleDecoders = {DecoderEngine::FFMpeg};
+      codec = Codec::Other;
     if (ffmpegCodec.isHEVC())
-      this->possibleDecoders = {DecoderEngine::Libde265, DecoderEngine::HM};
+      codec = Codec::HEVC;
     if (ffmpegCodec.isAV1())
-      this->possibleDecoders = {DecoderEngine::Dav1d};
+      codec = Codec::AV1;
 
     if (cachingEnabled)
     {
@@ -281,6 +290,15 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   playlistItemWithVideo::connectVideo();
   this->statisticsData.setFrameSize(this->video->getFrameSize());
 
+  if (codec == Codec::HEVC)
+    this->possibleDecoders = DecodersHEVC;
+  else if (codec == Codec::VVC)
+    this->possibleDecoders = DecodersVVC;
+  else if (codec == Codec::AV1)
+    this->possibleDecoders = DecodersAV1;
+  else
+    this->possibleDecoders = {DecoderEngine::FFMpeg};
+
   if (decoder != DecoderEngine::Invalid && vectorContains(possibleDecoders, decoder))
   {
     this->decoderEngine = decoder;
@@ -294,10 +312,18 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       // Is a default decoder set in the settings?
       QSettings settings;
       settings.beginGroup("Decoders");
-      auto decSettings = DecoderEngineMapper.at(settings.value("DefaultDecoder", -1).toInt());
-      if (decSettings && vectorContains(possibleDecoders, *decSettings))
+      QString defaultDecSetting;
+      if (codec == Codec::HEVC)
+        defaultDecSetting = "DefaultDecoderHEVC";
+      if (codec == Codec::VVC)
+        defaultDecSetting = "DefaultDecoderVVC";
+      if (codec == Codec::AV1)
+        defaultDecSetting = "DefaultDecoderAV1";
+
+      auto defaultDecoder = DecoderEngineMapper.getValue(settings.value(defaultDecSetting, -1).toString().toStdString());
+      if (!defaultDecSetting.isEmpty() && defaultDecoder && vectorContains(possibleDecoders, *defaultDecoder))
       {
-        this->decoderEngine = *decSettings;
+        this->decoderEngine = *defaultDecoder;
       }
       else
       {
@@ -1292,6 +1318,8 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
     // Reset the decoded frame indices so that decoding of the current frame is triggered
     currentFrameIdx[0] = -1;
     currentFrameIdx[1] = -1;
+
+    this->decodingNotPossibleAfter = -1;
 
     // Update the list of display signals
     if (loadingDecoder)

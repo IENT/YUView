@@ -132,9 +132,16 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   settings.beginGroup("Decoders");
   ui.lineEditDecoderPath->setText(settings.value("SearchPath", "").toString());
 
-  for (auto e : DecoderEngineMapper.getNames())
-    ui.comboBoxDefaultDecoder->addItem(QString::fromStdString(e));
-  ui.comboBoxDefaultDecoder->setCurrentIndex(settings.value("DefaultDecoder", 0).toInt());
+  for (const auto &decoder : DecodersHEVC)
+    ui.comboBoxDefaultHEVC->addItem(QString::fromStdString(DecoderEngineMapper.getName(decoder)));
+  for (const auto &decoder : DecodersVVC)
+    ui.comboBoxDefaultVVC->addItem(QString::fromStdString(DecoderEngineMapper.getName(decoder)));
+  for (const auto &decoder : DecodersAV1)
+    ui.comboBoxDefaultAV1->addItem(QString::fromStdString(DecoderEngineMapper.getName(decoder)));
+
+  ui.comboBoxDefaultHEVC->setCurrentText(settings.value("DefaultDecoderHEVC", 0).toString());
+  ui.comboBoxDefaultVVC->setCurrentText(settings.value("DefaultDecoderVVC", 0).toString());
+  ui.comboBoxDefaultAV1->setCurrentText(settings.value("DefaultDecoderAV1", 0).toString());
 
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
@@ -412,7 +419,9 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // "Decoders" tab
   settings.beginGroup("Decoders");
   settings.setValue("SearchPath", ui.lineEditDecoderPath->text());
-  settings.setValue("DefaultDecoder", ui.comboBoxDefaultDecoder->currentIndex());
+  settings.setValue("DefaultDecoderHEVC", ui.comboBoxDefaultHEVC->currentText());
+  settings.setValue("DefaultDecoderVVC", ui.comboBoxDefaultVVC->currentText());
+  settings.setValue("DefaultDecoderAV1", ui.comboBoxDefaultAV1->currentText());
   // Raw coded video files
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
