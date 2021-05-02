@@ -141,9 +141,8 @@ SubByteReaderLogging::SubByteReaderLogging(SubByteReader &           reader,
     if (new_sub_item_name.empty())
       this->currentTreeLevel = item;
     else
-      item->createChildItem(new_sub_item_name);
+      this->currentTreeLevel = item->createChildItem(new_sub_item_name);
   }
-  this->itemHierarchy.push(this->currentTreeLevel);
 }
 
 SubByteReaderLogging::SubByteReaderLogging(const ByteVector &        inArr,
@@ -157,27 +156,25 @@ SubByteReaderLogging::SubByteReaderLogging(const ByteVector &        inArr,
     if (new_sub_item_name.empty())
       this->currentTreeLevel = item;
     else
-      item->createChildItem(new_sub_item_name);
+      this->currentTreeLevel = item->createChildItem(new_sub_item_name);
   }
-  this->itemHierarchy.push(this->currentTreeLevel);
 }
 
 void SubByteReaderLogging::addLogSubLevel(const std::string name)
 {
-  assert(!name.empty());
-  if (itemHierarchy.top() == nullptr)
+  if (!this->currentTreeLevel)
     return;
-  this->itemHierarchy.top()->createChildItem(name);
+  assert(!name.empty());
   this->itemHierarchy.push(this->currentTreeLevel);
+  this->currentTreeLevel = this->itemHierarchy.top()->createChildItem(name);
 }
 
 void SubByteReaderLogging::removeLogSubLevel()
 {
-  if (itemHierarchy.size() <= 1)
-    // Don't remove the root
+  if (this->itemHierarchy.empty())
     return;
-  this->itemHierarchy.pop();
   this->currentTreeLevel = this->itemHierarchy.top();
+  this->itemHierarchy.pop();
 }
 
 uint64_t SubByteReaderLogging::readBits(const std::string &symbolName,
