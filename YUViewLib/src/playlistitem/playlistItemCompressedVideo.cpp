@@ -321,7 +321,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
         defaultDecSetting = "DefaultDecoderAV1";
 
       auto defaultDecoder = DecoderEngineMapper.getValue(settings.value(defaultDecSetting, -1).toString().toStdString());
-      if (defaultDecoder && vectorContains(possibleDecoders, *defaultDecoder))
+      if (!defaultDecSetting.isEmpty() && defaultDecoder && vectorContains(possibleDecoders, *defaultDecoder))
       {
         this->decoderEngine = *defaultDecoder;
       }
