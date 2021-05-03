@@ -160,8 +160,7 @@ bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
   auto extension = QFileInfo(filePath).suffix().toLower();
   if (extension == "tga" || extension == "icb" || extension == "vda" || extension == "vst")
   {
-    std::filesystem::path fp(filePath.toStdString());
-    auto                  image = dec::Targa::loadTgaFromFile(fp);
+    auto image = dec::Targa::loadTgaFromFile(filePath.toStdString());
     if (!image)
       return false;
 
@@ -177,9 +176,9 @@ bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
         auto idx = y * image->size.width * 4 + x * 4;
         // Src is RGBA and output it BGRA
         bits[2] = image->data.at(idx);
-        bits[1] = image->data.at(idx+1);
-        bits[0] = image->data.at(idx+2);
-        bits[3] = image->data.at(idx+3);
+        bits[1] = image->data.at(idx + 1);
+        bits[0] = image->data.at(idx + 2);
+        bits[3] = image->data.at(idx + 3);
         bits += 4;
       }
     }

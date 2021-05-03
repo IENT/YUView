@@ -34,7 +34,6 @@
 
 #include <common/typedef.h>
 
-#include <filesystem>
 #include <optional>
 
 namespace dec::Targa
@@ -47,6 +46,6 @@ struct Image
   Size       size{};
 };
 
-std::optional<Image> loadTgaFromFile(std::filesystem::path filename);
+std::optional<Image> loadTgaFromFile(std::string filename);
 
 } // namespace dec::Targa
