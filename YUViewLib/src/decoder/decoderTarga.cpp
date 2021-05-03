@@ -62,7 +62,7 @@ inline color_t rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255)
 
 static inline uint8_t scale_5bits_to_8bits(uint8_t v)
 {
-  assert(v >= 0 && v < 32);
+  assert(v < 32);
   return (v << 3) | (v >> 2);
 }
 
@@ -179,8 +179,9 @@ struct Header
     case ImageType::UncompressedGray:
     case ImageType::RleGray:
       return (bitsPerPixel == 8);
+    default:
+      return false;
     }
-    return false;
   }
 
   // Returns the number of bytes per pixel needed in an image
