@@ -35,6 +35,7 @@
 #include <QPainter>
 
 #include "common/functionsGui.h"
+#include "decoder/decoderTarga.h"
 #include "playlistitem/playlistItem.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -146,22 +147,51 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
 
 void frameHandler::setFrameSize(Size newSize)
 {
-  if (newSize != frameSize)
+  if (newSize != this->frameSize)
   {
     // Set the new size
     DEBUG_FRAME("frameHandler::setFrameSize %dx%d", newSize.width(), newSize.height());
-    frameSize = newSize;
+    this->frameSize = newSize;
   }
 }
 
 bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
 {
-  // Load the image and return if loading was successful
-  currentImage    = QImage(filePath);
-  auto qFrameSize = currentImage.size();
-  setFrameSize(Size(qFrameSize.width(), qFrameSize.height()));
+  auto extension = QFileInfo(filePath).suffix().toLower();
+  if (extension == "tga" || extension == "icb" || extension == "vda" || extension == "vst")
+  {
+    auto image = dec::Targa::loadTgaFromFile(filePath.toStdString());
+    if (!image)
+      return false;
 
-  return (!currentImage.isNull());
+    // Convert byte array to QImage
+    this->setFrameSize(Size(image->size.width, image->size.height));
+    auto qFrameSize    = QSize(image->size.width, image->size.height);
+    this->currentImage = QImage(qFrameSize, QImage::Format_ARGB32);
+    for (unsigned y = 0; y < image->size.height; y++)
+    {
+      auto bits = this->currentImage.scanLine(y);
+      for (unsigned x = 0; x < image->size.width; x++)
+      {
+        auto idx = y * image->size.width * 4 + x * 4;
+        // Src is RGBA and output it BGRA
+        bits[2] = image->data.at(idx);
+        bits[1] = image->data.at(idx + 1);
+        bits[0] = image->data.at(idx + 2);
+        bits[3] = image->data.at(idx + 3);
+        bits += 4;
+      }
+    }
+  }
+  else
+  {
+    // Load the image and return if loading was successful
+    this->currentImage = QImage(filePath);
+    auto qFrameSize    = currentImage.size();
+    this->setFrameSize(Size(qFrameSize.width(), qFrameSize.height()));
+  }
+
+  return (!this->currentImage.isNull());
 }
 
 void frameHandler::savePlaylist(YUViewDomElement &element) const
@@ -173,7 +203,7 @@ void frameHandler::savePlaylist(YUViewDomElement &element) const
 
 void frameHandler::loadPlaylist(const YUViewDomElement &root)
 {
-  auto width = unsigned(root.findChildValue("width").toInt());
+  auto width  = unsigned(root.findChildValue("width").toInt());
   auto height = unsigned(root.findChildValue("height").toInt());
   this->setFrameSize(Size(width, height));
 }
@@ -233,7 +263,7 @@ void frameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawV
   videoRect.moveCenter(QPoint(0, 0));
 
   // Draw the current image (currentFrame)
-  painter->drawImage(videoRect, currentImage);
+  painter->drawImage(videoRect, this->currentImage);
 
   if (drawRawValues && zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR)
   {
@@ -416,7 +446,8 @@ frameHandler::getPixelValues(const QPoint &pixelPos, int, frameHandler *item2, c
   auto width  = (item2) ? std::min(frameSize.width, item2->frameSize.width) : frameSize.width;
   auto height = (item2) ? std::min(frameSize.height, item2->frameSize.height) : frameSize.height;
 
-  if (pixelPos.x() < 0 || pixelPos.x() >= int(width) || pixelPos.y() < 0 || pixelPos.y() >= int(height))
+  if (pixelPos.x() < 0 || pixelPos.x() >= int(width) || pixelPos.y() < 0 ||
+      pixelPos.y() >= int(height))
     return {};
 
   // Is the format (of both items) valid?

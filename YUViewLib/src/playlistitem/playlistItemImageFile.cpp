@@ -161,6 +161,14 @@ void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtension
     filter += "*." + formatString + " ";
   }
 
+  // Append Targa/TGA extensions
+  for (auto fmt : {"tga", "icb", "vda", "vst"})
+  {
+    QString formatString = QString(fmt);
+    allExtensions.append(formatString);
+    filter += "*." + formatString + " ";
+  }
+
   if (filter.endsWith(' '))
     filter.chop(1);
 
