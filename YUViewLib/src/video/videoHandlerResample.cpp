@@ -66,7 +66,7 @@ QImage videoHandlerResample::calculateDifference(frameHandler *item2, const int 
   return videoHandler::calculateDifference(item2, mappedIndex, frameIndex1, differenceInfoList, amplificationFactor, markDifference);
 }
 
-itemLoadingState videoHandlerResample::needsLoading(int frameIndex, bool loadRawValues)
+ItemLoadingState videoHandlerResample::needsLoading(int frameIndex, bool loadRawValues)
 {
   auto mappedIndex = this->mapFrameIndex(frameIndex);
   return videoHandler::needsLoading(mappedIndex, loadRawValues);
@@ -84,7 +84,8 @@ void videoHandlerResample::loadResampledFrame(int frameIndex, bool loadToDoubleB
     video->loadFrame(mappedIndex);
   
   auto interpolationMode = (this->interpolation == Interpolation::Bilinear) ? Qt::SmoothTransformation : Qt::FastTransformation;
-  auto newFrame = this->inputVideo->getCurrentFrameAsImage().scaled(this->getFrameSize(), Qt::IgnoreAspectRatio, interpolationMode);
+  auto qFrameSize = QSize(this->getFrameSize().width, this->getFrameSize().height);
+  auto newFrame = this->inputVideo->getCurrentFrameAsImage().scaled(qFrameSize, Qt::IgnoreAspectRatio, interpolationMode);
 
   if (newFrame.isNull())
     return;
@@ -128,9 +129,9 @@ void videoHandlerResample::setInputVideo(frameHandler *childVideo)
   }
 }
 
-void videoHandlerResample::setScaledSize(QSize scaledSize)
+void videoHandlerResample::setScaledSize(Size scaledSize)
 {
-  if (scaledSize.width() < 0 || scaledSize.height() < 0)
+  if (!scaledSize.isValid())
     return;
 
   this->scaledSize = scaledSize;

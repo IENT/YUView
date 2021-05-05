@@ -37,10 +37,8 @@ namespace parser::vvc
 
 using namespace reader;
 
-void vui_parameters::parse(reader::SubByteReaderLogging &reader, unsigned payloadSize)
+void vui_parameters::parse(reader::SubByteReaderLogging &reader, unsigned)
 {
-  (void)payloadSize;
-
   this->vui_progressive_source_flag        = reader.readFlag("vui_progressive_source_flag");
   this->vui_interlaced_source_flag         = reader.readFlag("vui_interlaced_source_flag");
   this->vui_non_packed_constraint_flag     = reader.readFlag("vui_non_packed_constraint_flag");

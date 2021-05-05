@@ -87,7 +87,6 @@ public:
         m[int(entry.code)] = entry.meaning;
     }
     return m;
-    return {};
   }
 
   std::string getMeaning(T value) const

@@ -1,89 +1,90 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "PacketItemModel.h"
 
+#include "common/Color.h"
+#include "common/functionsGui.h"
+#include "common/typedef.h"
+
 #include <QBrush>
-#include <QColor>
 
 #if PARSERCOMMON_DEBUG_FILTER_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FILTER qDebug
 #else
-#define DEBUG_FILTER(fmt,...) ((void)0)
+#define DEBUG_FILTER(fmt, ...) ((void)0)
 #endif
 
 // These are form the google material design color chooser (https://material.io/tools/color/)
-QList<QColor> PacketItemModel::streamIndexColors = QList<QColor>()
-  << QColor("#90caf9")  // blue (200)
-  << QColor("#a5d6a7")  // green (200)
-  << QColor("#ffe082")  // amber (200)
-  << QColor("#ef9a9a")  // red (200)
-  << QColor("#fff59d")  // yellow (200)
-  << QColor("#ce93d8")  // purple (200)
-  << QColor("#80cbc4")  // teal (200)
-  << QColor("#bcaaa4")  // brown (200)
-  << QColor("#c5e1a5")  // light green (200)
-  << QColor("#1e88e5")  // blue (600)
-  << QColor("#43a047")  // green (600)
-  << QColor("#ffb300")  // amber (600)
-  << QColor("#fdd835")  // yellow (600)
-  << QColor("#8e24aa")  // purple (600)
-  << QColor("#00897b")  // teal (600)
-  << QColor("#6d4c41")  // brown (600)
-  << QColor("#7cb342"); // light green (600)
+auto streamIndexColors = std::vector<Color>({Color("#90caf9"),   // blue (200)
+                                             Color("#a5d6a7"),   // green (200)
+                                             Color("#ffe082"),   // amber (200)
+                                             Color("#ef9a9a"),   // red (200)
+                                             Color("#fff59d"),   // yellow (200)
+                                             Color("#ce93d8"),   // purple (200)
+                                             Color("#80cbc4"),   // teal (200)
+                                             Color("#bcaaa4"),   // brown (200)
+                                             Color("#c5e1a5"),   // light green (200)
+                                             Color("#1e88e5"),   // blue (600)
+                                             Color("#43a047"),   // green (600)
+                                             Color("#ffb300"),   // amber (600)
+                                             Color("#fdd835"),   // yellow (600)
+                                             Color("#8e24aa"),   // purple (600)
+                                             Color("#00897b"),   // teal (600)
+                                             Color("#6d4c41"),   // brown (600)
+                                             Color("#7cb342")}); // light green (600)
 
-PacketItemModel::PacketItemModel(QObject *parent) : QAbstractItemModel(parent)
-{
-}
+PacketItemModel::PacketItemModel(QObject *parent) : QAbstractItemModel(parent) {}
 
-PacketItemModel::~PacketItemModel()
-{
-}
+PacketItemModel::~PacketItemModel() {}
 
 QVariant PacketItemModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-  if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != nullptr)
-    return rootItem->itemData.value(section, QString());
+  if (orientation == Qt::Horizontal && role == Qt::DisplayRole && this->rootItem)
+  {
+    auto dataStd = rootItem->getData(section);
+    return QVariant(QString::fromStdString(dataStd));
+  }
 
-  return QVariant();
+  return {};
 }
 
 QVariant PacketItemModel::data(const QModelIndex &index, int role) const
 {
   if (!index.isValid())
-    return QVariant();
+    return {};
 
-  TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
+  auto item = static_cast<TreeItem *>(index.internalPointer());
   if (role == Qt::ForegroundRole)
   {
     if (item->isError())
@@ -96,15 +97,16 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
       return QVariant(QBrush());
     const int idx = item->getStreamIndex();
     if (idx >= 0)
-      return QVariant(QBrush(streamIndexColors.at(idx % streamIndexColors.length())));
+      return QVariant(
+          QBrush(functionsGui::toQColor(streamIndexColors.at(idx % streamIndexColors.size()))));
     return QVariant(QBrush());
   }
   else if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
   {
     if (index.column() == 0)
-      return QVariant(item->getName(!showVideoOnly));
+      return QVariant(QString::fromStdString(item->getName(!showVideoOnly)));
     else
-      return QVariant(item->itemData.value(index.column()));
+      return QVariant(QString::fromStdString(item->getData(index.column())));
   }
   return QVariant();
 }
@@ -112,40 +114,45 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
 QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &parent) const
 {
   if (!hasIndex(row, column, parent))
-    return QModelIndex();
+    return {};
 
-  TreeItem *parentItem;
-  if (!parent.isValid())
-    parentItem = rootItem.data();
-  else
-    parentItem = static_cast<TreeItem*>(parent.internalPointer());
+  auto parentItem = this->rootItem.get();
+  if (parent.isValid())
+    parentItem = static_cast<TreeItem *>(parent.internalPointer());
 
-  Q_ASSERT_X(parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
+  Q_ASSERT_X(
+      parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
 
-  TreeItem *childItem = parentItem->childItems.value(row, nullptr);
+  auto childItem = parentItem->getChild(row);
   if (childItem)
-    return createIndex(row, column, childItem);
-  else
-    return QModelIndex();
+    return this->createIndex(row, column, childItem.get());
+  return {};
 }
 
 QModelIndex PacketItemModel::parent(const QModelIndex &index) const
 {
   if (!index.isValid())
-    return QModelIndex();
+    return {};
 
-  TreeItem *childItem = static_cast<TreeItem*>(index.internalPointer());
-  TreeItem *parentItem = childItem->parentItem;
+  auto childItem  = static_cast<TreeItem *>(index.internalPointer());
+  auto parentItem = childItem->getParentItem().lock();
 
-  if (parentItem == rootItem.data())
-    return QModelIndex();
+  if (parentItem == this->rootItem)
+    return {};
 
   // Get the row of the item in the list of children of the parent item
   int row = 0;
   if (parentItem)
-    row = parentItem->parentItem->childItems.indexOf(const_cast<TreeItem*>(parentItem));
+  {
+    auto grandparent = parentItem->getParentItem().lock();
+    if (grandparent)
+    {
+      if (auto rowIndex = grandparent->getIndexOfChildItem(parentItem))
+        row = int(*rowIndex);
+    }
+  }
 
-  return createIndex(row, 0, parentItem);
+  return createIndex(row, 0, parentItem.get());
 }
 
 int PacketItemModel::rowCount(const QModelIndex &parent) const
@@ -154,25 +161,29 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
     return 0;
 
   if (!parent.isValid())
-  {
-    TreeItem *p = rootItem.data();
-    return (p == nullptr) ? 0 : nrShowChildItems;
-  }
-  TreeItem *p = static_cast<TreeItem*>(parent.internalPointer());
-  return (p == nullptr) ? 0 : p->childItems.count();
+    return this->nrShowChildItems;
+  auto p = static_cast<TreeItem *>(parent.internalPointer());
+  return (p == nullptr) ? 0 : int(p->getNrChildItems());
+}
+
+size_t PacketItemModel::getNumberFirstLevelChildren() const
+{ 
+  if (this->rootItem)
+    return rootItem->getNrChildItems();
+  return {};
 }
 
 void PacketItemModel::updateNumberModelItems()
 {
   auto n = getNumberFirstLevelChildren();
-  Q_ASSERT_X(n >= nrShowChildItems, Q_FUNC_INFO, "Setting a smaller number of items.");
-  unsigned int nrAddItems = n - nrShowChildItems;
+  Q_ASSERT_X(n >= this->nrShowChildItems, Q_FUNC_INFO, "Setting a smaller number of items.");
+  auto nrAddItems = int(n - this->nrShowChildItems);
   if (nrAddItems == 0)
     return;
 
-  int lastIndex = nrShowChildItems;
+  auto lastIndex = int(nrShowChildItems);
   beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
-  nrShowChildItems = n;
+  this->nrShowChildItems = unsigned(n);
   endInsertRows();
 }
 
@@ -214,23 +225,25 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
   if (!sourceParent.isValid())
   {
     // Get the root item
-    QAbstractItemModel *s = sourceModel();
-    PacketItemModel *p = static_cast<PacketItemModel*>(s);
+    auto s = sourceModel();
+    auto p = static_cast<PacketItemModel *>(s);
     if (p == nullptr)
     {
-      DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow Unable to get root item");  
+      DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow Unable to get root item");
       return false;
     }
-    parentItem = p->getRootItem();
+    parentItem = p->rootItem.get();
   }
   else
-    parentItem = static_cast<TreeItem*>(sourceParent.internalPointer());
-  Q_ASSERT_X(parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
+    parentItem = static_cast<TreeItem *>(sourceParent.internalPointer());
+  Q_ASSERT_X(
+      parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
 
-  TreeItem *childItem = parentItem->childItems.value(row, nullptr);
+  auto childItem = parentItem->getChild(row);
   if (childItem != nullptr)
   {
-    DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d", childItem->getStreamIndex());
+    DEBUG_FILTER("FilterByStreamIndexProxyModel::filterAcceptsRow item %d",
+                 childItem->getStreamIndex());
     return childItem->getStreamIndex() == streamIndex || childItem->getStreamIndex() == -1;
   }
 

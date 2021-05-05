@@ -1,34 +1,34 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "settingsDialog.h"
 
@@ -49,8 +49,7 @@
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
 
-SettingsDialog::SettingsDialog(QWidget *parent) :
-  QDialog(parent)
+SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent)
 {
   ui.setupUi(this);
 
@@ -64,11 +63,13 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   // "Generals" tab
   ui.checkBoxWatchFiles->setChecked(settings.value("WatchFiles", true).toBool());
   ui.checkBoxAskToSave->setChecked(settings.value("AskToSaveOnExit", true).toBool());
-  ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection", false).toBool());
-  ui.checkBoxSavePositionPerItem->setChecked(settings.value("SavePositionAndZoomPerItem", false).toBool());
+  ui.checkBoxContinuePlaybackNewSelection->setChecked(
+      settings.value("ContinuePlaybackOnSequenceSelection", false).toBool());
+  ui.checkBoxSavePositionPerItem->setChecked(
+      settings.value("SavePositionAndZoomPerItem", false).toBool());
   // UI
-  const auto theme = settings.value("Theme", "Default").toString();
-  int themeIdx = functions::getThemeNameList().indexOf(theme);
+  const auto theme    = settings.value("Theme", "Default").toString();
+  int        themeIdx = functions::getThemeNameList().indexOf(theme);
   if (themeIdx < 0)
     themeIdx = 0;
   ui.comboBoxTheme->addItems(functions::getThemeNameList());
@@ -87,8 +88,10 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.viewBackgroundColor->setPlainColor(settings.value("View/BackgroundColor").value<QColor>());
   ui.viewGridLineColor->setPlainColor(settings.value("View/GridColor").value<QColor>());
   ui.plotBackgroundColor->setPlainColor(settings.value("Plot/BackgroundColor").value<QColor>());
-  ui.checkBoxPlaybackControlFullScreen->setChecked(settings.value("ShowPlaybackControlFullScreen", false).toBool());
-  ui.checkBoxShowFilePathSplitMode->setChecked(settings.value("ShowFilePathInSplitMode", true).toBool());
+  ui.checkBoxPlaybackControlFullScreen->setChecked(
+      settings.value("ShowPlaybackControlFullScreen", false).toBool());
+  ui.checkBoxShowFilePathSplitMode->setChecked(
+      settings.value("ShowFilePathInSplitMode", true).toBool());
   ui.checkBoxPixelValuesHex->setChecked(settings.value("ShowPixelValuesHex", false).toBool());
   // Updates settings
   settings.beginGroup("updates");
@@ -116,12 +119,14 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.sliderThreshold->setValue(settings.value("ThresholdValue", 49).toInt());
   ui.checkBoxNrThreads->setChecked(settings.value("SetNrThreads", false).toBool());
   if (ui.checkBoxNrThreads->isChecked())
-    ui.spinBoxNrThreads->setValue(settings.value("NrThreads", functions::getOptimalThreadCount()).toInt());
+    ui.spinBoxNrThreads->setValue(
+        settings.value("NrThreads", functions::getOptimalThreadCount()).toInt());
   else
     ui.spinBoxNrThreads->setValue(functions::getOptimalThreadCount());
   ui.spinBoxNrThreads->setEnabled(ui.checkBoxNrThreads->isChecked());
   // Playback
-  ui.checkBoxPausPlaybackForCaching->setChecked(settings.value("PlaybackPauseCaching", true).toBool());
+  ui.checkBoxPausPlaybackForCaching->setChecked(
+      settings.value("PlaybackPauseCaching", true).toBool());
   const bool playbackCaching = settings.value("PlaybackCachingEnabled", false).toBool();
   ui.checkBoxEnablePlaybackCaching->setChecked(playbackCaching);
   ui.spinBoxThreadLimit->setValue(settings.value("PlaybackCachingThreadLimit", 1).toInt());
@@ -132,9 +137,19 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   settings.beginGroup("Decoders");
   ui.lineEditDecoderPath->setText(settings.value("SearchPath", "").toString());
 
-  for (int i=0; i<YUView::decoderEngineNum; i++)
-    ui.comboBoxDefaultDecoder->addItem(functions::getDecoderEngineName((YUView::decoderEngine)i));
-  ui.comboBoxDefaultDecoder->setCurrentIndex(settings.value("DefaultDecoder", 0).toInt());
+  for (const auto &decoder : decoder::DecodersHEVC)
+    ui.comboBoxDefaultHEVC->addItem(
+        QString::fromStdString(decoder::DecoderEngineMapper.getName(decoder)));
+  for (const auto &decoder : decoder::DecodersVVC)
+    ui.comboBoxDefaultVVC->addItem(
+        QString::fromStdString(decoder::DecoderEngineMapper.getName(decoder)));
+  for (const auto &decoder : decoder::DecodersAV1)
+    ui.comboBoxDefaultAV1->addItem(
+        QString::fromStdString(decoder::DecoderEngineMapper.getName(decoder)));
+
+  ui.comboBoxDefaultHEVC->setCurrentText(settings.value("DefaultDecoderHEVC", 0).toString());
+  ui.comboBoxDefaultVVC->setCurrentText(settings.value("DefaultDecoderVVC", 0).toString());
+  ui.comboBoxDefaultAV1->setCurrentText(settings.value("DefaultDecoderAV1", 0).toString());
 
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
@@ -164,7 +179,8 @@ unsigned int SettingsDialog::getCacheSizeInMB() const
 {
   if (!ui.groupBoxCaching->isChecked())
     return 0;
-  return std::max(functions::systemMemorySizeInMB() * (ui.sliderThreshold->value()+1) / 100, MIN_CACHE_SIZE_IN_MB);
+  return std::max(functions::systemMemorySizeInMB() * (ui.sliderThreshold->value() + 1) / 100,
+                  MIN_CACHE_SIZE_IN_MB);
 }
 
 void SettingsDialog::on_checkBoxNrThreads_stateChanged(int newState)
@@ -183,7 +199,8 @@ void SettingsDialog::on_checkBoxEnablePlaybackCaching_stateChanged(int state)
 void SettingsDialog::on_pushButtonEditViewBackgroundColor_clicked()
 {
   QColor currentColor = ui.viewBackgroundColor->getPlainColor();
-  QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
+  QColor newColor     = QColorDialog::getColor(
+      currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && currentColor != newColor)
     ui.viewBackgroundColor->setPlainColor(newColor);
 }
@@ -191,7 +208,8 @@ void SettingsDialog::on_pushButtonEditViewBackgroundColor_clicked()
 void SettingsDialog::on_pushButtonEditViewGridLineColor_clicked()
 {
   QColor currentColor = ui.viewGridLineColor->getPlainColor();
-  QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
+  QColor newColor     = QColorDialog::getColor(
+      currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && currentColor != newColor)
     ui.viewGridLineColor->setPlainColor(newColor);
 }
@@ -199,7 +217,8 @@ void SettingsDialog::on_pushButtonEditViewGridLineColor_clicked()
 void SettingsDialog::on_pushButtonEditPlotBackgroundColor_clicked()
 {
   QColor currentColor = ui.plotBackgroundColor->getPlainColor();
-  QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
+  QColor newColor     = QColorDialog::getColor(
+      currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && currentColor != newColor)
     ui.plotBackgroundColor->setPlainColor(newColor);
 }
@@ -227,7 +246,7 @@ QStringList SettingsDialog::getLibraryPath(QString currentFile, QString caption,
 {
   // Use the currently selected dir or the dir to YUView if this one does not exist.
   QFileInfo curFile(currentFile);
-  QDir curDir = curFile.absoluteDir();
+  QDir      curDir = curFile.absoluteDir();
   if (!curDir.exists())
     curDir = QDir::current();
 
@@ -243,76 +262,100 @@ QStringList SettingsDialog::getLibraryPath(QString currentFile, QString caption,
 
   if (fileDialog.exec())
     return fileDialog.selectedFiles();
-  
+
   return {};
 }
 
 void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
 {
-  QStringList newFiles = this->getLibraryPath(ui.lineEditLibde265File->text(), "Please select the libde265 library file to use.");
+  QStringList newFiles = this->getLibraryPath(ui.lineEditLibde265File->text(),
+                                              "Please select the libde265 library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
   if (!decoder::decoderLibde265::checkLibraryFile(newFiles[0], error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libde265 library. Error: " + error);
+    QMessageBox::critical(
+        this,
+        "Error testing the library",
+        "The selected file does not appear to be a usable libde265 library. Error: " + error);
   else
     ui.lineEditLibde265File->setText(newFiles[0]);
 }
 
 void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
 {
-  QStringList newFiles = this->getLibraryPath(ui.lineEditLibHMFile->text(), "Please select the libHMDecoder library file to use.");
+  QStringList newFiles = this->getLibraryPath(
+      ui.lineEditLibHMFile->text(), "Please select the libHMDecoder library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
   if (!decoder::decoderHM::checkLibraryFile(newFiles[0], error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libHMDecoder library. Error: " + error);
+    QMessageBox::critical(
+        this,
+        "Error testing the library",
+        "The selected file does not appear to be a usable libHMDecoder library. Error: " + error);
   else
     ui.lineEditLibHMFile->setText(newFiles[0]);
 }
 
 void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
 {
-  QStringList newFiles = this->getLibraryPath(ui.lineEditLibDav1d->text(), "Please select the libDav1d library file to use.");
+  QStringList newFiles = this->getLibraryPath(ui.lineEditLibDav1d->text(),
+                                              "Please select the libDav1d library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
   if (!decoder::decoderDav1d::checkLibraryFile(newFiles[0], error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libDav1d library. Error: " + error);
+    QMessageBox::critical(
+        this,
+        "Error testing the library",
+        "The selected file does not appear to be a usable libDav1d library. Error: " + error);
   else
     ui.lineEditLibDav1d->setText(newFiles[0]);
 }
 
 void SettingsDialog::on_pushButtonLibVTMSelectFile_clicked()
 {
-  QStringList newFiles = this->getLibraryPath(ui.lineEditLibVTMFile->text(), "Please select the libVTMDecoder library file to use.");
+  QStringList newFiles = this->getLibraryPath(
+      ui.lineEditLibVTMFile->text(), "Please select the libVTMDecoder library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
   if (!decoder::decoderVTM::checkLibraryFile(newFiles[0], error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libVTMDecoder library. Error: " + error);
+    QMessageBox::critical(
+        this,
+        "Error testing the library",
+        "The selected file does not appear to be a usable libVTMDecoder library. Error: " + error);
   else
     ui.lineEditLibVTMFile->setText(newFiles[0]);
 }
 
 void SettingsDialog::on_pushButtonLibVVDecSelectFile_clicked()
 {
-  QStringList newFiles = this->getLibraryPath(ui.lineEditLibVVDecFile->text(), "Please select the libVVDec decoder library file to use.");
+  QStringList newFiles = this->getLibraryPath(
+      ui.lineEditLibVVDecFile->text(), "Please select the libVVDec decoder library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
   if (!decoder::decoderVVDec::checkLibraryFile(newFiles[0], error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libVVDec decoder library. Error: " + error);
+    QMessageBox::critical(
+        this,
+        "Error testing the library",
+        "The selected file does not appear to be a usable libVVDec decoder library. Error: " +
+            error);
   else
     ui.lineEditLibVVDecFile->setText(newFiles[0]);
 }
 
 void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 {
-  QStringList newFiles = this->getLibraryPath(ui.lineEditAVFormat->text(), "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.", true);
+  QStringList newFiles = this->getLibraryPath(
+      ui.lineEditAVFormat->text(),
+      "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.",
+      true);
   if (newFiles.empty())
     return;
-  
+
   // Get the 4 libraries from the list
   QString avCodecLib, avFormatLib, avUtilLib, swResampleLib;
   if (newFiles.count() == 4)
@@ -330,20 +373,30 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
         swResampleLib = file;
     }
   }
-  if (avCodecLib.isEmpty() || avFormatLib.isEmpty() || avUtilLib.isEmpty() || swResampleLib.isEmpty())
+  if (avCodecLib.isEmpty() || avFormatLib.isEmpty() || avUtilLib.isEmpty() ||
+      swResampleLib.isEmpty())
   {
-    QMessageBox::critical(this, "Error in file selection", "Please select the four FFmpeg files AVCodec, AVFormat, AVUtil and SWresample.");
+    QMessageBox::critical(
+        this,
+        "Error in file selection",
+        "Please select the four FFmpeg files AVCodec, AVFormat, AVUtil and SWresample.");
     return;
   }
 
   // Try to open ffmpeg using the four libraries
   QStringList logList;
-  if (!FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, logList))
+  if (!FFmpegVersionHandler::checkLibraryFiles(
+          avCodecLib, avFormatLib, avUtilLib, swResampleLib, logList))
   {
-    QMessageBox::StandardButton b = QMessageBox::question(this, "Error opening the library", "The selected file does not appear to be a usable ffmpeg avFormat library. \nWe have collected a more detailed log. Do you want to save it to disk?");
+    QMessageBox::StandardButton b = QMessageBox::question(
+        this,
+        "Error opening the library",
+        "The selected file does not appear to be a usable ffmpeg avFormat library. \nWe have "
+        "collected a more detailed log. Do you want to save it to disk?");
     if (b == QMessageBox::Yes)
     {
-      const auto filePath = QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
+      const auto filePath =
+          QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
       QFile logFile(filePath);
       logFile.open(QIODevice::WriteOnly);
       if (logFile.isOpen())
@@ -353,7 +406,8 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
           outputStream << l << "\n";
       }
       else
-        QMessageBox::information(this, "Error opening file", "There was an error opening the log file " + filePath);
+        QMessageBox::information(
+            this, "Error opening file", "There was an error opening the log file " + filePath);
     }
   }
   else
@@ -373,7 +427,8 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // "General" tab
   settings.setValue("WatchFiles", ui.checkBoxWatchFiles->isChecked());
   settings.setValue("AskToSaveOnExit", ui.checkBoxAskToSave->isChecked());
-  settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
+  settings.setValue("ContinuePlaybackOnSequenceSelection",
+                    ui.checkBoxContinuePlaybackNewSelection->isChecked());
   settings.setValue("SavePositionAndZoomPerItem", ui.checkBoxSavePositionPerItem->isChecked());
   // UI
   settings.setValue("Theme", ui.comboBoxTheme->currentText());
@@ -382,7 +437,8 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("View/BackgroundColor", ui.viewBackgroundColor->getPlainColor());
   settings.setValue("View/GridColor", ui.viewGridLineColor->getPlainColor());
   settings.setValue("Plot/BackgroundColor", ui.plotBackgroundColor->getPlainColor());
-  settings.setValue("ShowPlaybackControlFullScreen", ui.checkBoxPlaybackControlFullScreen->isChecked());
+  settings.setValue("ShowPlaybackControlFullScreen",
+                    ui.checkBoxPlaybackControlFullScreen->isChecked());
   settings.setValue("ShowFilePathInSplitMode", ui.checkBoxShowFilePathSplitMode->isChecked());
   settings.setValue("ShowPixelValuesHex", ui.checkBoxPixelValuesHex->isChecked());
   // Update settings
@@ -412,7 +468,9 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // "Decoders" tab
   settings.beginGroup("Decoders");
   settings.setValue("SearchPath", ui.lineEditDecoderPath->text());
-  settings.setValue("DefaultDecoder", ui.comboBoxDefaultDecoder->currentIndex());
+  settings.setValue("DefaultDecoderHEVC", ui.comboBoxDefaultHEVC->currentText());
+  settings.setValue("DefaultDecoderVVC", ui.comboBoxDefaultVVC->currentText());
+  settings.setValue("DefaultDecoderAV1", ui.comboBoxDefaultAV1->currentText());
   // Raw coded video files
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
@@ -425,11 +483,12 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("FFmpeg.avutil", ui.lineEditAVUtil->text());
   settings.setValue("FFmpeg.swresample", ui.lineEditSWResample->text());
   settings.endGroup();
-  
+
   accept();
 }
 
 void SettingsDialog::on_sliderThreshold_valueChanged(int value)
 {
-  ui.labelThreshold->setText(QString("Threshold (%1 MB)").arg(functions::systemMemorySizeInMB() * (value+1) / 100));
+  ui.labelThreshold->setText(
+      QString("Threshold (%1 MB)").arg(functions::systemMemorySizeInMB() * (value + 1) / 100));
 }

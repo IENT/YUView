@@ -33,6 +33,7 @@
 #include "AVFormat.h"
 
 #include <QElapsedTimer>
+#include <cmath>
 #include <iomanip>
 
 #include "../AVC/AnnexBAVC.h"
@@ -51,6 +52,8 @@
 #else
 #define DEBUG_AVFORMAT(fmt, ...) ((void)0)
 #endif
+
+using namespace std::string_literals;
 
 namespace parser
 {
@@ -108,24 +111,23 @@ bool AVFormat::parseExtradata(ByteVector &extradata)
     return this->parseExtradata_generic(extradata);
 }
 
-bool AVFormat::parseMetadata(QStringPairList &metadata)
+void AVFormat::parseMetadata(const StringPairVec &metadata)
 {
-  if (metadata.isEmpty() || packetModel->isNull())
-    return true;
+  if (metadata.size() == 0 || !packetModel->rootItem)
+    return;
 
   // Log all entries in the metadata list
-  TreeItem *metadataRoot = new TreeItem(packetModel->getRootItem(), "Metadata");
-  for (QStringPair p : metadata)
-    new TreeItem(p.first, p.second, "", "", metadataRoot);
-  return true;
+  auto metadataRoot = packetModel->rootItem->createChildItem("Metadata");
+  for (const auto &p : metadata)
+    metadataRoot->createChildItem(p.first, p.second);
 }
 
 bool AVFormat::parseExtradata_generic(ByteVector &extradata)
 {
-  if (extradata.empty() || packetModel->isNull())
+  if (extradata.empty() || !packetModel->rootItem)
     return true;
 
-  SubByteReaderLogging reader(extradata, packetModel->getRootItem(), "Extradata");
+  SubByteReaderLogging reader(extradata, packetModel->rootItem, "Extradata");
   unsigned             i = 0;
   while (reader.canReadBits(8))
     reader.readBytes(formatArray("raw_byte", i++), 1);
@@ -135,13 +137,12 @@ bool AVFormat::parseExtradata_generic(ByteVector &extradata)
 
 bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
 {
-  if (extradata.empty() || packetModel->isNull())
+  if (extradata.empty() || !packetModel->rootItem)
     return true;
 
   if (extradata.at(0) == 1 && extradata.size() >= 7)
   {
-    SubByteReaderLogging reader(
-        extradata, packetModel->getRootItem(), "Extradata (Raw AVC NAL units)");
+    SubByteReaderLogging reader(extradata, packetModel->rootItem, "Extradata (Raw AVC NAL units)");
     reader.disableEmulationPrevention();
 
     reader.readBits("Version", 8);
@@ -185,7 +186,7 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
 
 bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
 {
-  if (extradata.empty() || packetModel->isNull())
+  if (extradata.empty() || packetModel->rootItem)
     return true;
 
   if (extradata.at(0) == 1)
@@ -197,7 +198,7 @@ bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
     try
     {
       avformat::HVCC hvcc;
-      hvcc.parse(extradata, packetModel->getRootItem(), hevcParser, this->bitratePlotModel.data());
+      hvcc.parse(extradata, packetModel->rootItem, hevcParser, this->bitratePlotModel.data());
     }
     catch (...)
     {
@@ -207,17 +208,13 @@ bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
   }
   else if (extradata.at(0) == 0)
   {
-    this->parseByteVectorAnnexBStartCodes(
-        extradata,
-        packetDataFormat_t::packetFormatRawNAL,
-        {},
-        new TreeItem(packetModel->getRootItem(), "Extradata (Raw HEVC NAL units)"));
+    auto item = packetModel->rootItem->createChildItem("Extradata (Raw HEVC NAL units)");
+    this->parseByteVectorAnnexBStartCodes(extradata, PacketDataFormat::RawNAL, {}, item);
   }
   else
   {
-    auto t = new TreeItem(packetModel->getRootItem(),
-                          "Unsupported extradata format (configurationVersion != 1)");
-    t->setError();
+    packetModel->rootItem->createChildItem(
+        "Unsupported extradata format (configurationVersion != 1)"s, {}, {}, {}, {}, true);
     return false;
   }
 
@@ -226,39 +223,38 @@ bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
 
 bool AVFormat::parseExtradata_mpeg2(ByteVector &extradata)
 {
-  if (extradata.empty() || !packetModel->isNull())
+  if (extradata.empty() || !packetModel->rootItem)
     return true;
 
   if (extradata.at(0) == 0)
   {
     this->parseByteVectorAnnexBStartCodes(
         extradata,
-        packetDataFormat_t::packetFormatRawNAL,
+        PacketDataFormat::RawNAL,
         {},
-        new TreeItem(packetModel->getRootItem(), "Extradata (Raw Mpeg2 units)"));
+        packetModel->rootItem->createChildItem("Extradata (Raw Mpeg2 units)"));
   }
   else
-    new TreeItem(packetModel->getRootItem(),
-                 "Unsupported extradata format (configurationVersion != 1)");
+    packetModel->rootItem->createChildItem(
+        "Unsupported extradata format (configurationVersion != 1)");
 
   return true;
 }
 
 std::map<std::string, unsigned>
 AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
-                                          packetDataFormat_t             dataFormat,
+                                          PacketDataFormat               dataFormat,
                                           BitratePlotModel::BitrateEntry packetBitrateEntry,
-                                          TreeItem *                     item)
+                                          std::shared_ptr<TreeItem>      item)
 {
-  if (dataFormat != packetDataFormat_t::packetFormatRawNAL &&
-      dataFormat != packetDataFormat_t::packetFormatMP4)
+  if (dataFormat != PacketDataFormat::RawNAL && dataFormat != PacketDataFormat::MP4)
   {
     DEBUG_AVFORMAT("AVFormat::parseByteVectorAnnexBStartCodes Unsupported data format");
     return {};
   }
 
   auto getNextNalStart = [&data, &dataFormat](ByteVector::iterator searchStart) {
-    if (dataFormat == packetDataFormat_t::packetFormatRawNAL)
+    if (dataFormat == PacketDataFormat::RawNAL)
     {
       if (std::distance(searchStart, data.end()) <= 3)
         return data.end();
@@ -268,7 +264,7 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
         return data.end();
       return itStartCode;
     }
-    else if (dataFormat == packetDataFormat_t::packetFormatMP4)
+    else if (dataFormat == PacketDataFormat::MP4)
     {
       unsigned size = 0;
       size += ((*(searchStart++)) << 24);
@@ -283,7 +279,7 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
   };
 
   auto itStartCode = data.begin();
-  if (dataFormat == packetDataFormat_t::packetFormatRawNAL)
+  if (dataFormat == PacketDataFormat::RawNAL)
   {
     itStartCode = getNextNalStart(itStartCode);
     if (itStartCode == data.end())
@@ -294,7 +290,7 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
     }
   }
 
-  const auto sizeStartCode = (dataFormat == packetDataFormat_t::packetFormatRawNAL ? 3u : 4u);
+  const auto sizeStartCode = (dataFormat == PacketDataFormat::RawNAL ? 3u : 4u);
 
   auto                            nalID = 0u;
   std::map<std::string, unsigned> naNames;
@@ -313,16 +309,16 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
   return naNames;
 }
 
-bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
+bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacketWrapper &packet)
 {
-  if (packetModel->isNull())
+  if (!packetModel->rootItem)
     return true;
 
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
   std::string specificDescription;
-  TreeItem *  itemTree = new TreeItem(packetModel->getRootItem());
+  auto        itemTree = packetModel->rootItem->createChildItem();
 
   ByteVector avpacketData;
   {
@@ -346,28 +342,29 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
     auto minutes = time / 1000 / 60;
     time -= minutes * 60 * 1000;
     auto seconds      = time / 1000;
-    auto milliseconds = time - seconds;
+    auto milliseconds = time - (seconds * 1000);
 
     if (hours > 0)
       ss << hours << ":";
     if (hours > 0 || minutes > 0)
       ss << std::setfill('0') << std::setw(2) << minutes << ":";
     ss << std::setfill('0') << std::setw(2) << seconds << ".";
-    ss << std::setfill('0') << std::setw(4) << milliseconds;
+    ss << std::setfill('0') << std::setw(3) << milliseconds;
     ss << ")";
 
     return ss.str();
   };
 
   // Log all the packet info
-  new TreeItem(itemTree, "stream_index", std::to_string(packet.getStreamIndex()));
-  new TreeItem(itemTree, "pts", formatTimestamp(packet.getPTS(), timeBase));
-  new TreeItem(itemTree, "dts", formatTimestamp(packet.getDTS(), timeBase));
-  new TreeItem(itemTree, "duration", formatTimestamp(packet.getDuration(), timeBase));
-  new TreeItem(itemTree, "flag_keyframe", std::to_string(packet.getFlagKeyframe()));
-  new TreeItem(itemTree, "flag_corrupt", std::to_string(packet.getFlagCorrupt()));
-  new TreeItem(itemTree, "flag_discard", std::to_string(packet.getFlagDiscard()));
-  new TreeItem(itemTree, "data_size", std::to_string(packet.getDataSize()));
+  itemTree->createChildItem("stream_index", packet.getStreamIndex());
+  itemTree->createChildItem("Global AVPacket Count", packetID);
+  itemTree->createChildItem("pts", formatTimestamp(packet.getPTS(), timeBase));
+  itemTree->createChildItem("dts", formatTimestamp(packet.getDTS(), timeBase));
+  itemTree->createChildItem("duration", formatTimestamp(packet.getDuration(), timeBase));
+  itemTree->createChildItem("flag_keyframe", packet.getFlagKeyframe());
+  itemTree->createChildItem("flag_corrupt", packet.getFlagCorrupt());
+  itemTree->createChildItem("flag_discard", packet.getFlagDiscard());
+  itemTree->createChildItem("data_size", packet.getDataSize());
 
   itemTree->setStreamIndex(packet.getStreamIndex());
 
@@ -379,7 +376,7 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
     if (this->annexBParser)
     {
       // Colloect the types of NALs to create a good name later
-      packetDataFormat_t             packetFormat = packet.guessDataFormatFromData();
+      auto                           packetFormat = packet.guessDataFormatFromData();
       BitratePlotModel::BitrateEntry packetBitrateEntry;
       packetBitrateEntry.dts      = packet.getDTS();
       packetBitrateEntry.pts      = packet.getPTS();
@@ -505,14 +502,27 @@ bool AVFormat::parseAVPacket(unsigned int packetID, AVPacketWrapper &packet)
     BitratePlotModel::BitrateEntry entry;
     entry.pts      = packet.getPTS();
     entry.dts      = packet.getDTS();
-    entry.duration = packet.getDuration();
     entry.bitrate  = packet.getDataSize();
     entry.keyframe = packet.getFlagKeyframe();
+    entry.duration = packet.getDuration();
+    if (entry.duration == 0)
+    {
+      // Unknown. We have to guess.
+      entry.duration = 10; // The backup guess
+      if (this->framerate > 0 && this->videoStreamIndex >= 0 &&
+          this->videoStreamIndex < this->timeBaseAllStreams.size())
+      {
+        auto videoTimeBase = this->timeBaseAllStreams[this->videoStreamIndex];
+        auto duration      = 1.0 / this->framerate * videoTimeBase.den / videoTimeBase.num;
+        entry.duration     = int(std::round(duration));
+      }
+    }
+
     bitratePlotModel->addBitratePoint(packet.getStreamIndex(), entry);
   }
 
   // Set a useful name of the TreeItem (the root for this NAL)
-  auto name = "AVPacket " + std::to_string(packetID) +
+  auto name = "AVPacket " + std::to_string(streamPacketID) +
               (packet.getFlagKeyframe() ? " - Keyframe" : "") + specificDescription;
   itemTree->setProperties(name);
 
@@ -549,9 +559,6 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   if (this->obuParser)
     this->obuParser->setRedirectPlotModel(this->getHRDPlotModel());
 
-  int max_ts             = ffmpegFile->getMaxTS();
-  this->videoStreamIndex = ffmpegFile->getVideoStreamIndex();
-
   // Don't seek to the beginning here. This causes more problems then it solves.
   // ffmpegFile->seekFileToBeginning();
 
@@ -577,7 +584,9 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     return false;
   }
 
-  // After opening the file, we can get information on it
+  int max_ts                      = ffmpegFile->getMaxTS();
+  this->videoStreamIndex          = ffmpegFile->getVideoStreamIndex();
+  this->framerate                 = ffmpegFile->getFramerate();
   this->streamInfoAllStreams      = ffmpegFile->getFileInfoForAllStreams();
   this->timeBaseAllStreams        = ffmpegFile->getTimeBaseAllStreams();
   this->shortStreamInfoAllStreams = ffmpegFile->getShortStreamDescriptionAllStreams();
@@ -588,8 +597,10 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   AVPacketWrapper packet   = ffmpegFile->getNextPacket(false, false);
   int64_t         start_ts = packet.getDTS();
 
-  unsigned int  packetID          = 0;
-  unsigned int  videoFrameCounter = 0;
+  unsigned                packetID{};
+  std::map<int, unsigned> packetCounterPerStream;
+
+  unsigned      videoFrameCounter = 0;
   bool          abortParsing      = false;
   QElapsedTimer signalEmitTimer;
   signalEmitTimer.start();
@@ -602,16 +613,18 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
       videoFrameCounter++;
     }
 
-    if (!this->parseAVPacket(packetID, packet))
+    auto streamPacketID = packetCounterPerStream[packet.getStreamIndex()];
+    if (!this->parseAVPacket(packetID, streamPacketID, packet))
     {
-      DEBUG_AVFORMAT("AVFormat::parseAVPacket error parsing Packet %d", packetID);
+      DEBUG_AVFORMAT("AVFormat::runParsingOfFile error parsing Packet %d", packetID);
     }
     else
     {
-      DEBUG_AVFORMAT("AVFormat::parseAVPacket Packet %d", packetID);
+      DEBUG_AVFORMAT("AVFormat::runParsingOfFile Packet %d", packetID);
     }
 
     packetID++;
+    packetCounterPerStream[packet.getStreamIndex()]++;
     packet = ffmpegFile->getNextPacket(false, false);
 
     // For signal slot debugging purposes, sleep
@@ -626,11 +639,11 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     if (cancelBackgroundParser)
     {
       abortParsing = true;
-      DEBUG_AVFORMAT("AVFormat::parseAVPacket Abort parsing by user request");
+      DEBUG_AVFORMAT("AVFormat::runParsingOfFile Abort parsing by user request");
     }
     if (parsingLimitEnabled && videoFrameCounter > PARSER_FILE_FRAME_NR_LIMIT)
     {
-      DEBUG_AVFORMAT("AVFormat::parseAVPacket Abort parsing because frame limit was reached.");
+      DEBUG_AVFORMAT("AVFormat::runParsingOfFile Abort parsing because frame limit was reached.");
       abortParsing = true;
     }
   }

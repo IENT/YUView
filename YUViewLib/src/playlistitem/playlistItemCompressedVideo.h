@@ -32,11 +32,13 @@
 
 #pragma once
 
+#include "common/typedef.h"
 #include "decoder/decoderBase.h"
 #include "filesource/FileSourceFFmpegFile.h"
 #include "parser/AnnexB.h"
 #include "playlistItemWithVideo.h"
-#include "statistics/statisticHandler.h"
+#include "statistics/StatisticUIHandler.h"
+#include "statistics/StatisticsData.h"
 #include "ui_playlistItemCompressedFile.h"
 
 class videoHandler;
@@ -55,10 +57,10 @@ public:
    * will then call addPropertiesWidget to add the custom properties panel. 'displayComponent'
    * initializes the component to display (reconstruction/prediction/residual/trCoeff).
    */
-  playlistItemCompressedVideo(const QString &       fileName,
-                              int                   displayComponent = 0,
-                              YUView::inputFormat   input            = YUView::inputInvalid,
-                              YUView::decoderEngine decoder = YUView::decoderEngineInvalid);
+  playlistItemCompressedVideo(const QString &        fileName,
+                              int                    displayComponent = 0,
+                              InputFormat            input            = InputFormat::Invalid,
+                              decoder::DecoderEngine decoder = decoder::DecoderEngine::Invalid);
 
   // Save the compressed file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
@@ -94,7 +96,7 @@ public:
   }
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
+  virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
   virtual void
   loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals = true) override;
@@ -112,7 +114,7 @@ public:
   // is performed.
   virtual int cachingThreadLimit() override { return 1; }
 
-  YUView::inputFormat getInputFormat() const { return inputFormatType; }
+  InputFormat getInputFormat() const { return this->inputFormat; }
 
 protected:
   virtual void createPropertiesWidget() override;
@@ -124,9 +126,9 @@ protected:
   QScopedPointer<decoder::decoderBase> cachingDecoder;
 
   // When opening the file, we will fill this list with the possible decoders
-  QList<YUView::decoderEngine> possibleDecoders;
+  std::vector<decoder::DecoderEngine> possibleDecoders;
   // The actual type of the decoder
-  YUView::decoderEngine decoderEngineType;
+  decoder::DecoderEngine decoderEngine{decoder::DecoderEngine::Invalid};
   // Delete existing decoders and allocate decoders for the type "decoderEngineType"
   bool allocateDecoder(int displayComponent = 0);
 
@@ -142,8 +144,8 @@ protected:
   int readAnnexBFrameCounterCodingOrder{-1};
 
   // Which type is the input?
-  YUView::inputFormat inputFormatType;
-  AVCodecIDWrapper    ffmpegCodec;
+  InputFormat      inputFormat;
+  AVCodecIDWrapper ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a
   // supported format, we can read the NAL units from the compressed file.
@@ -159,10 +161,11 @@ protected:
   // TODO: Could we somehow make shure that caching is always performed in display order?
   QMutex cachingMutex;
 
-  statisticHandler statSource;
+  stats::StatisticUIHandler statisticsUIHandler;
+  stats::StatisticsData     statisticsData;
 
-  // Fill the list of statistic types that we can provide
   void fillStatisticList();
+  void loadStatistics(int frameIdx);
 
   SafeUi<Ui::playlistItemCompressedFile_Widget> ui;
 
@@ -171,7 +174,7 @@ protected:
 
   // Seek the input file to the given position, reset the decoder and prepare it to start decoding
   // from the given position.
-  void seekToPosition(int seekToFrame, int seekToDTS, bool caching);
+  void seekToPosition(int seekToFrame, int64_t seekToDTS, bool caching);
 
   // For certain decoders (FFmpeg or HM), pushing data may fail. The decoder may or may not switch
   // to retrieveing mode. In this case, we must re-push the packet for which pushing failed.
@@ -194,9 +197,6 @@ private slots:
   // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the
   // videoHandler if the frame that is requested to be drawn has not been loaded yet.
   virtual void loadRawData(int frameIdx, bool forceDecodingNow);
-
-  // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
-  virtual void loadStatisticToCache(int frameIdx, int typeIdx);
 
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
   void displaySignalComboBoxChanged(int idx);

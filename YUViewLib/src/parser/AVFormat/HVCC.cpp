@@ -77,10 +77,10 @@ void HVCCNalArray::parse(unsigned              arrayID,
   }
 }
 
-void HVCC::parse(ByteVector &      data,
-                 TreeItem *        root,
-                 AnnexBHEVC *      hevcParser,
-                 BitratePlotModel *bitrateModel)
+void HVCC::parse(ByteVector &              data,
+                 std::shared_ptr<TreeItem> root,
+                 AnnexBHEVC *              hevcParser,
+                 BitratePlotModel *        bitrateModel)
 {
   SubByteReaderLogging reader(data, root, "Extradata (HEVC hvcC format)");
   reader.disableEmulationPrevention();

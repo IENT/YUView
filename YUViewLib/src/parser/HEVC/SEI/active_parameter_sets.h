@@ -57,7 +57,7 @@ public:
   vector<unsigned> layer_sps_idx;
 
 private:
-  reader::SubByteReaderLoggingSubLevel subLevel;
+  std::shared_ptr<TreeItem> reparseTreeItem{};
 };
 
 } // namespace parser::hevc

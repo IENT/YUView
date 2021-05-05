@@ -71,8 +71,8 @@ private:
   AVCodecIDWrapper codecID;
 
   bool parseExtradata(ByteVector &extradata);
-  bool parseMetadata(QStringPairList &metadata);
-  bool parseAVPacket(unsigned int packetID, AVPacketWrapper &packet);
+  void parseMetadata(const StringPairVec &metadata);
+  bool parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacketWrapper &packet);
 
   // Used for parsing if the packets contain an annexB file that we can parse.
   std::unique_ptr<AnnexB> annexBParser;
@@ -87,9 +87,9 @@ private:
   // Parse all NAL units in data using the AnnexB parser
   std::map<std::string, unsigned>
   parseByteVectorAnnexBStartCodes(ByteVector &                   data,
-                                  packetDataFormat_t             dataFormat,
+                                  PacketDataFormat               dataFormat,
                                   BitratePlotModel::BitrateEntry packetBitrateEntry,
-                                  TreeItem *                     item);
+                                  std::shared_ptr<TreeItem>      item);
 
   // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
   // we update this list while parsing the file.
@@ -97,7 +97,8 @@ private:
   QList<AVRational>      timeBaseAllStreams;
   QList<QString>         shortStreamInfoAllStreams;
 
-  int videoStreamIndex{-1};
+  int    videoStreamIndex{-1};
+  double framerate{-1.0};
 };
 
 } // namespace parser

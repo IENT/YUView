@@ -32,16 +32,12 @@
 
 #pragma once
 
-#include "playlistItemCompressedVideo.h"
-#include "playlistItemDifference.h"
-#include "playlistItemResample.h"
-#include "playlistItemStatisticsCSVFile.h"
-#include "playlistItemStatisticsVTMBMSFile.h"
-#include "playlistItemImageFile.h"
-#include "playlistItemImageFileSequence.h"
-#include "playlistItemOverlay.h"
-#include "playlistItemRawFile.h"
-#include "playlistItemText.h"
+#include <QWidget>
+#include <QDomElement>
+#include <QString>
+#include <QStringList>
+
+#include "playlistItem.h"
 
 /* This namespace contains all functions that are needed for creation of playlist Items. This way, no other
    function must know, what types of item's there are. If you implement a new playlistItem, it only has to

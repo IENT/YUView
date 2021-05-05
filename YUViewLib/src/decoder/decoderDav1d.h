@@ -34,6 +34,7 @@
 
 #include <QLibrary>
 
+#include "common/typedef.h"
 #include "decoderBase.h"
 #include "externalHeader/dav1d/blockData.h"
 #include "externalHeader/dav1d/dav1d.h"
@@ -68,7 +69,7 @@ public:
   void setInternalsSupported() { internalsSupported = true; }
 
   void clear() { memset(&curPicture, 0, sizeof(Dav1dPicture)); }
-  Size getFrameSize() const { return Size({size_t(curPicture.p.w), size_t(curPicture.p.h)}); }
+  Size getFrameSize() const { return Size({curPicture.p.w, curPicture.p.h}); }
   Dav1dPicture *             getPicture() const { return (Dav1dPicture *)(&curPicture); }
   YUV_Internals::Subsampling getSubsampling() const;
   int                        getBitDepth() const { return curPicture.p.bpc; }
@@ -180,7 +181,7 @@ private:
 #endif
 
   // Statistics
-  void fillStatisticList(statisticHandler &statSource) const override;
+  void fillStatisticList(stats::StatisticsData &) const override;
   void cacheStatistics(const Dav1dPictureWrapper &img);
   void parseBlockRecursive(
       Av1Block *blockData, unsigned x, unsigned y, BlockLevel level, dav1dFrameInfo &frameInfo);

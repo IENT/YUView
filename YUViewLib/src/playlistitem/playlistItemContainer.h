@@ -44,19 +44,19 @@ public:
   playlistItemContainer(const QString &itemNameOrFileName);
 
   // We accept drops if the maximum number of items is no reached yet
-  virtual bool acceptDrops(playlistItem *draggingItem) const Q_DECL_OVERRIDE;
+  virtual bool acceptDrops(playlistItem *draggingItem) const override;
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
   void updateChildItems() { childLlistUpdateRequired = true; emit signalItemChanged(true, RECACHE_NONE); }
 
   // An item will be deleted. Disconnect the signals/slots of this item and remove it from the QTreeWidgetItem (takeItem)
-  virtual void itemAboutToBeDeleted(playlistItem *item) Q_DECL_OVERRIDE;
+  virtual void itemAboutToBeDeleted(playlistItem *item) override;
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()        Q_DECL_OVERRIDE;  // Return if one of the child item's source changed.
-  virtual void reloadItemSource()       Q_DECL_OVERRIDE;  // Reload all child items
-  virtual void updateSettings()         Q_DECL_OVERRIDE;  // Install/remove the file watchers.
+  virtual bool isSourceChanged()        override;  // Return if one of the child item's source changed.
+  virtual void reloadItemSource()       override;  // Reload all child items
+  virtual void updateSettings()         override;  // Install/remove the file watchers.
 
     // Return a list containing this item and all child items (if any).
   QList<playlistItem*> getAllChildPlaylistItems() const;

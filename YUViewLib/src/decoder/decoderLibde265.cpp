@@ -38,6 +38,7 @@
 #include <cstring>
 
 #include "common/typedef.h"
+#include "common/functions.h"
 
 using namespace YUView;
 
@@ -334,31 +335,30 @@ bool decoderLibde265::decodeFrame()
   if (curImage != nullptr)
   {
     // Get the resolution / yuv format from the frame
-    auto s = Size(
-        {size_t(this->lib.de265_get_image_width(curImage, 0)), size_t(this->lib.de265_get_image_height(curImage, 0))});
-    if (!s)
+    auto s = Size(this->lib.de265_get_image_width(curImage, 0), this->lib.de265_get_image_height(curImage, 0));
+    if (!s.isValid())
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(this->lib.de265_get_chroma_format(curImage));
     if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid subsampling");
-    auto bitDepth = this->lib.de265_get_bits_per_pixel(curImage, 0);
+    auto bitDepth = functions::clipToUnsigned(this->lib.de265_get_bits_per_pixel(curImage, 0));
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid bit depth");
 
-    if (!frameSize && !formatYUV.isValid())
+    if (!frameSize.isValid() && !formatYUV.isValid())
     {
       // Set the values
       frameSize = s;
-      formatYUV = YUV_Internals::yuvPixelFormat(subsampling, bitDepth);
+      formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
     }
     else
     {
       // Check the values against the previously set values
       if (frameSize != s)
         return setErrorB("Received a frame of different size");
-      if (formatYUV.subsampling != subsampling)
+      if (formatYUV.getSubsampling() != subsampling)
         return setErrorB("Received a frame with different subsampling");
-      if (formatYUV.bitsPerSample != bitDepth)
+      if (formatYUV.getBitsPerSample() != bitDepth)
         return setErrorB("Received a frame with different bit depth");
     }
     DEBUG_LIBDE265("decoderLibde265::decodeFrame Picture decoded");
@@ -386,7 +386,7 @@ QByteArray decoderLibde265::getRawFrameData()
     copyImgToByteArray(curImage, currentOutputBuffer);
     DEBUG_LIBDE265("decoderLibde265::getRawFrameData copied frame to buffer");
 
-    if (retrieveStatistics)
+    if (this->statisticsEnabled())
       // Get the statistics from the image and put them into the statistics cache
       cacheStatistics(curImage);
   }
@@ -517,9 +517,6 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
 
   DEBUG_LIBDE265("decoderLibde265::cacheStatistics");
 
-  // Clear the local statistics cache
-  curPOCStats.clear();
-
   /// --- CTB internals/statistics
   int widthInCTB, heightInCTB, log2CTBSize;
   this->lib.de265_internals_get_CTB_Info_Layout(img, &widthInCTB, &heightInCTB, &log2CTBSize);
@@ -533,7 +530,8 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
       for (int x = 0; x < widthInCTB; x++)
       {
         uint16_t val = tmpArr[y * widthInCTB + x];
-        curPOCStats[0].addBlockValue(x * ctb_size, y * ctb_size, ctb_size, ctb_size, (int)val);
+        this->statisticsData->at(0).addBlockValue(
+            x * ctb_size, y * ctb_size, ctb_size, ctb_size, (int)val);
       }
   }
 
@@ -613,16 +611,16 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
         bool    tqBypass  = (val & 512);      // Next bit (TransQuant bypass flag)
 
         // Set part mode (ID 1)
-        curPOCStats[1].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, partMode);
+        this->statisticsData->at(1).addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, partMode);
 
         // Set prediction mode (ID 2)
-        curPOCStats[2].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, predMode);
+        this->statisticsData->at(2).addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, predMode);
 
         // Set PCM flag (ID 3)
-        curPOCStats[3].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, pcmFlag);
+        this->statisticsData->at(3).addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, pcmFlag);
 
         // Set transQuant bypass flag (ID 4)
-        curPOCStats[4].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, tqBypass);
+        this->statisticsData->at(4).addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, tqBypass);
 
         if (predMode != 0)
         {
@@ -643,20 +641,22 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
             // Add ref index 0 (ID 5)
             int16_t ref0 = refPOC0[pbIdx];
             if (ref0 != -1)
-              curPOCStats[5].addBlockValue(pbX, pbY, pbW, pbH, ref0 - iPOC);
+              this->statisticsData->at(5).addBlockValue(pbX, pbY, pbW, pbH, ref0 - iPOC);
 
             // Add ref index 1 (ID 6)
             int16_t ref1 = refPOC1[pbIdx];
             if (ref1 != -1)
-              curPOCStats[6].addBlockValue(pbX, pbY, pbW, pbH, ref1 - iPOC);
+              this->statisticsData->at(6).addBlockValue(pbX, pbY, pbW, pbH, ref1 - iPOC);
 
             // Add motion vector 0 (ID 7)
             if (ref0 != -1)
-              curPOCStats[7].addBlockVector(pbX, pbY, pbW, pbH, vec0_x[pbIdx], vec0_y[pbIdx]);
+              this->statisticsData->at(7).addBlockVector(
+                  pbX, pbY, pbW, pbH, vec0_x[pbIdx], vec0_y[pbIdx]);
 
             // Add motion vector 1 (ID 8)
             if (ref1 != -1)
-              curPOCStats[8].addBlockVector(pbX, pbY, pbW, pbH, vec1_x[pbIdx], vec1_y[pbIdx]);
+              this->statisticsData->at(8).addBlockVector(
+                  pbX, pbY, pbW, pbH, vec1_x[pbIdx], vec1_y[pbIdx]);
           }
         }
 
@@ -824,7 +824,7 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
     int tuWidth = tuWidth_units * tuUnitSizePix;
     int posX    = tuIdx % tuInfoWidth * tuUnitSizePix;
     int posY    = tuIdx / tuInfoWidth * tuUnitSizePix;
-    curPOCStats[11].addBlockValue(posX, posY, tuWidth, tuWidth, trDepth);
+    this->statisticsData->at(11).addBlockValue(posX, posY, tuWidth, tuWidth, trDepth);
 
     if (isIntra)
     {
@@ -847,14 +847,14 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
       int intraDirLuma = intraDirY[intraDirIdx];
       if (intraDirLuma <= 34)
       {
-        curPOCStats[9].addBlockValue(posX, posY, tuWidth, tuWidth, intraDirLuma);
+        this->statisticsData->at(9).addBlockValue(posX, posY, tuWidth, tuWidth, intraDirLuma);
 
         if (intraDirLuma >= 2)
         {
           // Set Intra prediction direction Luma (ID 9) as vector
           int vecX = (float)vectorTable[intraDirLuma][0] * tuWidth / 4;
           int vecY = (float)vectorTable[intraDirLuma][1] * tuWidth / 4;
-          curPOCStats[9].addBlockVector(posX, posY, tuWidth, tuWidth, vecX, vecY);
+          this->statisticsData->at(9).addBlockVector(posX, posY, tuWidth, tuWidth, vecX, vecY);
         }
       }
 
@@ -862,71 +862,69 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
       int intraDirChroma = intraDirC[intraDirIdx];
       if (intraDirChroma <= 34)
       {
-        curPOCStats[10].addBlockValue(posX, posY, tuWidth, tuWidth, intraDirChroma);
+        this->statisticsData->at(10).addBlockValue(posX, posY, tuWidth, tuWidth, intraDirChroma);
 
         if (intraDirChroma >= 2)
         {
           // Set Intra prediction direction Chroma (ID 10) as vector
           int vecX = (float)vectorTable[intraDirChroma][0] * tuWidth / 4;
           int vecY = (float)vectorTable[intraDirChroma][1] * tuWidth / 4;
-          curPOCStats[10].addBlockVector(posX, posY, tuWidth, tuWidth, vecX, vecY);
+          this->statisticsData->at(10).addBlockVector(posX, posY, tuWidth, tuWidth, vecX, vecY);
         }
       }
     }
   }
 }
 
-void decoderLibde265::fillStatisticList(statisticHandler &statSource) const
+void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) const
 {
-  StatisticsType sliceIdx(0, "Slice Index", 0, QColor(0, 0, 0), 10, QColor(255, 0, 0));
+  stats::StatisticsType sliceIdx(0, "Slice Index", 0, Color(0, 0, 0), 10, Color(255, 0, 0));
   sliceIdx.description = "The slice index reported per CTU";
-  statSource.addStatType(sliceIdx);
+  statisticsData.addStatType(sliceIdx);
 
-  StatisticsType partSize(1, "Part Size", "jet", 0, 7);
+  stats::StatisticsType partSize(1, "Part Size", "jet", 0, 7);
   partSize.description = "The partition size of each CU into PUs";
-  partSize.valMap.insert(0, "PART_2Nx2N");
-  partSize.valMap.insert(1, "PART_2NxN");
-  partSize.valMap.insert(2, "PART_Nx2N");
-  partSize.valMap.insert(3, "PART_NxN");
-  partSize.valMap.insert(4, "PART_2NxnU");
-  partSize.valMap.insert(5, "PART_2NxnD");
-  partSize.valMap.insert(6, "PART_nLx2N");
-  partSize.valMap.insert(7, "PART_nRx2N");
-  statSource.addStatType(partSize);
+  partSize.setMappingValues({"PART_2Nx2N",
+                             "PART_2NxN",
+                             "PART_Nx2N",
+                             "PART_NxN",
+                             "PART_2NxnU",
+                             "PART_2NxnD",
+                             "PART_nLx2N",
+                             "PART_nRx2N"});
+  statisticsData.addStatType(partSize);
 
-  StatisticsType predMode(2, "Pred Mode", "jet", 0, 2);
+  stats::StatisticsType predMode(2, "Pred Mode", "jet", 0, 2);
   predMode.description = "The internal libde265 prediction mode (intra/inter/skip) per CU";
-  predMode.valMap.insert(0, "INTRA");
-  predMode.valMap.insert(1, "INTER");
-  predMode.valMap.insert(2, "SKIP");
-  statSource.addStatType(predMode);
+  predMode.setMappingValues({"INTRA", "INTER", "SKIP"});
+  statisticsData.addStatType(predMode);
 
-  StatisticsType pcmFlag(3, "PCM flag", 0, QColor(0, 0, 0), 1, QColor(255, 0, 0));
+  stats::StatisticsType pcmFlag(3, "PCM flag", 0, Color(0, 0, 0), 1, Color(255, 0, 0));
   pcmFlag.description = "The PCM flag per CU";
-  statSource.addStatType(pcmFlag);
+  statisticsData.addStatType(pcmFlag);
 
-  StatisticsType transQuantBypass(
-      4, "Transquant Bypass Flag", 0, QColor(0, 0, 0), 1, QColor(255, 0, 0));
+  stats::StatisticsType transQuantBypass(
+      4, "Transquant Bypass Flag", 0, Color(0, 0, 0), 1, Color(255, 0, 0));
   transQuantBypass.description = "The transquant bypass flag per CU";
-  statSource.addStatType(transQuantBypass);
+  statisticsData.addStatType(transQuantBypass);
 
-  StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
+  stats::StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
   refIdx0.description = "The reference POC in LIST 0 relative to the current POC per PU";
-  statSource.addStatType(refIdx0);
+  statisticsData.addStatType(refIdx0);
 
-  StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
+  stats::StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
   refIdx1.description = "The reference POC in LIST 1 relative to the current POC per PU";
-  statSource.addStatType(refIdx1);
+  statisticsData.addStatType(refIdx1);
 
-  StatisticsType motionVec0(7, "Motion Vector 0", 4);
+  stats::StatisticsType motionVec0(7, "Motion Vector 0", 4);
   motionVec0.description = "The motion vector in LIST 0 per PU";
-  statSource.addStatType(motionVec0);
+  statisticsData.addStatType(motionVec0);
 
-  StatisticsType motionVec1(8, "Motion Vector 1", 4);
+  stats::StatisticsType motionVec1(8, "Motion Vector 1", 4);
   motionVec1.description = "The motion vector in LIST 1 per PU";
-  statSource.addStatType(motionVec1);
+  statisticsData.addStatType(motionVec1);
 
-  StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
+  stats::StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
   intraDirY.description =
       "The intra mode for the luma component per TU (intra prediction is performed on a TU level)";
   intraDirY.hasVectorData    = true;
@@ -934,90 +932,41 @@ void decoderLibde265::fillStatisticList(statisticHandler &statSource) const
   intraDirY.vectorScale      = 32;
   // Don't draw the vector values for the intra dir. They don't have actual meaning.
   intraDirY.renderVectorDataValues = false;
-  intraDirY.valMap.insert(0, "INTRA_PLANAR");
-  intraDirY.valMap.insert(1, "INTRA_DC");
-  intraDirY.valMap.insert(2, "INTRA_ANGULAR_2");
-  intraDirY.valMap.insert(3, "INTRA_ANGULAR_3");
-  intraDirY.valMap.insert(4, "INTRA_ANGULAR_4");
-  intraDirY.valMap.insert(5, "INTRA_ANGULAR_5");
-  intraDirY.valMap.insert(6, "INTRA_ANGULAR_6");
-  intraDirY.valMap.insert(7, "INTRA_ANGULAR_7");
-  intraDirY.valMap.insert(8, "INTRA_ANGULAR_8");
-  intraDirY.valMap.insert(9, "INTRA_ANGULAR_9");
-  intraDirY.valMap.insert(10, "INTRA_ANGULAR_10");
-  intraDirY.valMap.insert(11, "INTRA_ANGULAR_11");
-  intraDirY.valMap.insert(12, "INTRA_ANGULAR_12");
-  intraDirY.valMap.insert(13, "INTRA_ANGULAR_13");
-  intraDirY.valMap.insert(14, "INTRA_ANGULAR_14");
-  intraDirY.valMap.insert(15, "INTRA_ANGULAR_15");
-  intraDirY.valMap.insert(16, "INTRA_ANGULAR_16");
-  intraDirY.valMap.insert(17, "INTRA_ANGULAR_17");
-  intraDirY.valMap.insert(18, "INTRA_ANGULAR_18");
-  intraDirY.valMap.insert(19, "INTRA_ANGULAR_19");
-  intraDirY.valMap.insert(20, "INTRA_ANGULAR_20");
-  intraDirY.valMap.insert(21, "INTRA_ANGULAR_21");
-  intraDirY.valMap.insert(22, "INTRA_ANGULAR_22");
-  intraDirY.valMap.insert(23, "INTRA_ANGULAR_23");
-  intraDirY.valMap.insert(24, "INTRA_ANGULAR_24");
-  intraDirY.valMap.insert(25, "INTRA_ANGULAR_25");
-  intraDirY.valMap.insert(26, "INTRA_ANGULAR_26");
-  intraDirY.valMap.insert(27, "INTRA_ANGULAR_27");
-  intraDirY.valMap.insert(28, "INTRA_ANGULAR_28");
-  intraDirY.valMap.insert(29, "INTRA_ANGULAR_29");
-  intraDirY.valMap.insert(30, "INTRA_ANGULAR_30");
-  intraDirY.valMap.insert(31, "INTRA_ANGULAR_31");
-  intraDirY.valMap.insert(32, "INTRA_ANGULAR_32");
-  intraDirY.valMap.insert(33, "INTRA_ANGULAR_33");
-  intraDirY.valMap.insert(34, "INTRA_ANGULAR_34");
-  statSource.addStatType(intraDirY);
+  intraDirY.setMappingValues(
+      {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+       "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+       "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+       "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+       "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+       "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+       "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+       "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+       "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+  statisticsData.addStatType(intraDirY);
 
-  StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
+  stats::StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
   intraDirC.description = "The intra mode for the chroma component per TU (intra prediction is "
                           "performed on a TU level)";
   intraDirC.hasVectorData          = true;
   intraDirC.renderVectorData       = true;
   intraDirC.renderVectorDataValues = false;
   intraDirC.vectorScale            = 32;
-  intraDirC.valMap.insert(0, "INTRA_PLANAR");
-  intraDirC.valMap.insert(1, "INTRA_DC");
-  intraDirC.valMap.insert(2, "INTRA_ANGULAR_2");
-  intraDirC.valMap.insert(3, "INTRA_ANGULAR_3");
-  intraDirC.valMap.insert(4, "INTRA_ANGULAR_4");
-  intraDirC.valMap.insert(5, "INTRA_ANGULAR_5");
-  intraDirC.valMap.insert(6, "INTRA_ANGULAR_6");
-  intraDirC.valMap.insert(7, "INTRA_ANGULAR_7");
-  intraDirC.valMap.insert(8, "INTRA_ANGULAR_8");
-  intraDirC.valMap.insert(9, "INTRA_ANGULAR_9");
-  intraDirC.valMap.insert(10, "INTRA_ANGULAR_10");
-  intraDirC.valMap.insert(11, "INTRA_ANGULAR_11");
-  intraDirC.valMap.insert(12, "INTRA_ANGULAR_12");
-  intraDirC.valMap.insert(13, "INTRA_ANGULAR_13");
-  intraDirC.valMap.insert(14, "INTRA_ANGULAR_14");
-  intraDirC.valMap.insert(15, "INTRA_ANGULAR_15");
-  intraDirC.valMap.insert(16, "INTRA_ANGULAR_16");
-  intraDirC.valMap.insert(17, "INTRA_ANGULAR_17");
-  intraDirC.valMap.insert(18, "INTRA_ANGULAR_18");
-  intraDirC.valMap.insert(19, "INTRA_ANGULAR_19");
-  intraDirC.valMap.insert(20, "INTRA_ANGULAR_20");
-  intraDirC.valMap.insert(21, "INTRA_ANGULAR_21");
-  intraDirC.valMap.insert(22, "INTRA_ANGULAR_22");
-  intraDirC.valMap.insert(23, "INTRA_ANGULAR_23");
-  intraDirC.valMap.insert(24, "INTRA_ANGULAR_24");
-  intraDirC.valMap.insert(25, "INTRA_ANGULAR_25");
-  intraDirC.valMap.insert(26, "INTRA_ANGULAR_26");
-  intraDirC.valMap.insert(27, "INTRA_ANGULAR_27");
-  intraDirC.valMap.insert(28, "INTRA_ANGULAR_28");
-  intraDirC.valMap.insert(29, "INTRA_ANGULAR_29");
-  intraDirC.valMap.insert(30, "INTRA_ANGULAR_30");
-  intraDirC.valMap.insert(31, "INTRA_ANGULAR_31");
-  intraDirC.valMap.insert(32, "INTRA_ANGULAR_32");
-  intraDirC.valMap.insert(33, "INTRA_ANGULAR_33");
-  intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
-  statSource.addStatType(intraDirC);
+  intraDirC.setMappingValues(
+      {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+       "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+       "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+       "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+       "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+       "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+       "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+       "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+       "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+  statisticsData.addStatType(intraDirC);
 
-  StatisticsType transformDepth(11, "Transform Depth", 0, QColor(0, 0, 0), 3, QColor(0, 255, 0));
+  stats::StatisticsType transformDepth(
+      11, "Transform Depth", 0, Color(0, 0, 0), 3, Color(0, 255, 0));
   transformDepth.description = "The transform depth within the transform tree per TU";
-  statSource.addStatType(transformDepth);
+  statisticsData.addStatType(transformDepth);
 }
 
 bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)

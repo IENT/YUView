@@ -36,8 +36,8 @@
 #include <optional>
 #include <stack>
 
-#include "SubByteReaderLoggingOptions.h"
 #include "SubByteReader.h"
+#include "SubByteReaderLoggingOptions.h"
 #include "TreeItem.h"
 #include "common/typedef.h"
 
@@ -54,20 +54,20 @@ class SubByteReaderLogging : public SubByteReader
 {
 public:
   SubByteReaderLogging() = default;
-  SubByteReaderLogging(SubByteReader &reader,
-                       TreeItem *        item,
-                       std::string       new_sub_item_name = "");
-  SubByteReaderLogging(const ByteVector &inArr,
-                       TreeItem *        item,
-                       std::string       new_sub_item_name = "",
-                       size_t            inOffset          = 0);
+  SubByteReaderLogging(SubByteReader &           reader,
+                       std::shared_ptr<TreeItem> item,
+                       std::string               new_sub_item_name = "");
+  SubByteReaderLogging(const ByteVector &        inArr,
+                       std::shared_ptr<TreeItem> item,
+                       std::string               new_sub_item_name = "",
+                       size_t                    inOffset          = 0);
 
   // DEPRECATED. This is just for backwards compatibility and will be removed once
   // everything is using std types.
   static ByteVector convertToByteVector(QByteArray data);
   static QByteArray convertToQByteArray(ByteVector data);
 
-  uint64_t readBits(const std::string &symbolName, int numBits, const Options &options = {});
+  uint64_t readBits(const std::string &symbolName, size_t numBits, const Options &options = {});
   bool     readFlag(const std::string &symbolName, const Options &options = {});
   uint64_t readUEV(const std::string &symbolName, const Options &options = {});
   int64_t  readSEV(const std::string &symbolName, const Options &options = {});
@@ -85,7 +85,10 @@ public:
                     const std::string &code    = {},
                     const std::string &meaning = {});
 
-  [[nodiscard]] TreeItem *getCurrentItemTree() { return currentTreeLevel; }
+  void stashAndReplaceCurrentTreeItem(std::shared_ptr<TreeItem> newItem);
+  void popTreeItem();
+
+  [[nodiscard]] std::shared_ptr<TreeItem> getCurrentItemTree() { return this->currentTreeLevel; }
 
 private:
   friend class SubByteReaderLoggingSubLevel;
@@ -94,8 +97,9 @@ private:
 
   void logExceptionAndThrowError [[noreturn]] (const std::exception &ex, const std::string &when);
 
-  std::stack<TreeItem *> itemHierarchy;
-  TreeItem *             currentTreeLevel{nullptr};
+  std::stack<std::shared_ptr<TreeItem>> itemHierarchy;
+  std::shared_ptr<TreeItem>             currentTreeLevel{};
+  std::shared_ptr<TreeItem>             stashedTreeItem{};
 };
 
 // A simple wrapper for SubByteReaderLogging->addLogSubLevel /
@@ -104,19 +108,11 @@ class SubByteReaderLoggingSubLevel
 {
 public:
   SubByteReaderLoggingSubLevel() = default;
-  SubByteReaderLoggingSubLevel(SubByteReaderLogging &reader, std::string name)
-  {
-    reader.addLogSubLevel(name);
-    this->r = &reader;
-  }
-  ~SubByteReaderLoggingSubLevel()
-  {
-    if (this->r != nullptr)
-      this->r->removeLogSubLevel();
-  }
+  SubByteReaderLoggingSubLevel(SubByteReaderLogging &reader, std::string name);
+  ~SubByteReaderLoggingSubLevel();
 
 private:
-  SubByteReaderLogging *r{nullptr};
+  SubByteReaderLogging *r{};
 };
 
 } // namespace parser::reader

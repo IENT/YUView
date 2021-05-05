@@ -48,29 +48,29 @@ public:
   playlistItemText(playlistItemText *cloneFromTxt);
   // ------ Overload from playlistItem
 
-  virtual infoData getInfo() const Q_DECL_OVERRIDE { return infoData("Text Info"); }
+  virtual infoData getInfo() const override { return infoData("Text Info"); }
 
   // Get the text size (using the current text, font/text size ...)
-  virtual QSize getSize() const Q_DECL_OVERRIDE;
+  virtual QSize getSize() const override;
 
   // Overload from playlistItem. Save the text item to playlist.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
   // Create a new playlistItemText from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemText *newplaylistItemText(const YUViewDomElement &stringElement);
 
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
   
 protected:
   // Overload from playlistItem. Create a properties widget custom to the text item
   // and set propertiesWidget to point to it.
-  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+  virtual void createPropertiesWidget() override;
 
   // Create the text specific controls (font, color, text)
   QLayout *createTextController();
 
 private:
 
-  QColor  color {Qt::black};
+  QColor  color {};
   QFont   font;
   QString text;
 

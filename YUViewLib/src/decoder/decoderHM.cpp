@@ -37,6 +37,7 @@
 #include <QSettings>
 #include <cstring>
 
+#include "common/functions.h"
 #include "common/typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
@@ -84,9 +85,6 @@ namespace decoder
 
 decoderHM::decoderHM(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
-  // For now we don't support different signals (like prediction, residual)
-  Q_UNUSED(signalID);
-
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");
@@ -208,7 +206,7 @@ void decoderHM::allocateNewDecoder()
   if (decoder != nullptr)
     return;
 
-  DEBUG_DECHM("hevcDecoderHM::allocateNewDecoder - decodeSignal %d", decodeSignal);
+  DEBUG_DECHM("decoderHM::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
   // Create new decoder object
   decoder = this->lib.libHMDec_new_decoder();
@@ -216,6 +214,9 @@ void decoderHM::allocateNewDecoder()
   // Set some decoder parameters
   this->lib.libHMDec_set_SEI_Check(decoder, true);
   this->lib.libHMDec_set_max_temporal_layer(decoder, -1);
+
+  decoderBase::resetDecoder();
+  this->decodedFrameWaiting = false;
 }
 
 bool decoderHM::decodeNextFrame()
@@ -253,31 +254,32 @@ bool decoderHM::getNextFrameFromDecoder()
   }
 
   // Check the validity of the picture
-  auto picSize = Size({size_t(this->lib.libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA)),
-                       size_t(this->lib.libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA))});
-  if (!picSize)
+  auto picSize = Size(this->lib.libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA),
+                      this->lib.libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
+  if (!picSize.isValid())
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid size");
   auto subsampling = convertFromInternalSubsampling(this->lib.libHMDEC_get_chroma_format(currentHMPic));
   if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
-  int bitDepth = this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA);
+  auto bitDepth =
+      functions::clipToUnsigned(this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA));
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid bit depth");
 
-  if (!frameSize && !formatYUV.isValid())
+  if (!frameSize.isValid() && !formatYUV.isValid())
   {
     // Set the values
     frameSize = picSize;
-    formatYUV = YUV_Internals::yuvPixelFormat(subsampling, bitDepth);
+    formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
   }
   else
   {
     // Check the values against the previously set values
     if (frameSize != picSize)
       return setErrorB("Received a frame of different size");
-    if (formatYUV.subsampling != subsampling)
+    if (formatYUV.getSubsampling() != subsampling)
       return setErrorB("Received a frame with different subsampling");
-    if (formatYUV.bitsPerSample != bitDepth)
+    if (formatYUV.getBitsPerSample() != bitDepth)
       return setErrorB("Received a frame with different bit depth");
   }
 
@@ -340,7 +342,7 @@ QByteArray decoderHM::getRawFrameData()
     copyImgToByteArray(currentHMPic, currentOutputBuffer);
     DEBUG_DECHM("decoderHM::getRawFrameData copied frame to buffer");
 
-    if (retrieveStatistics)
+    if (this->statisticsEnabled())
       // Get the statistics from the image and put them into the statistics cache
       cacheStatistics(currentHMPic);
   }
@@ -449,9 +451,6 @@ void decoderHM::cacheStatistics(libHMDec_picture *img)
 
   DEBUG_DECHM("decoderHM::cacheStatistics POC %d", this->lib.libHMDEC_get_POC(img));
 
-  // Clear the local statistics cache
-  curPOCStats.clear();
-
   // Conversion from intra prediction mode to vector.
   // Coordinates are in x,y with the axes going right and down.
   static const int vectorTable[35][2] = {
@@ -480,9 +479,9 @@ void decoderHM::cacheStatistics(libHMDec_picture *img)
           auto b = stats[i];
 
           if (statType == LIBHMDEC_TYPE_VECTOR)
-            curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, b.value, b.value2);
+            this->statisticsData->at(t).addBlockVector(b.x, b.y, b.w, b.h, b.value, b.value2);
           else
-            curPOCStats[t].addBlockValue(b.x, b.y, b.w, b.h, b.value);
+            this->statisticsData->at(t).addBlockValue(b.x, b.y, b.w, b.h, b.value);
           if (statType == LIBHMDEC_TYPE_INTRA_DIR)
           {
             // Also add the vecotr to draw
@@ -490,7 +489,7 @@ void decoderHM::cacheStatistics(libHMDec_picture *img)
             {
               int vecX = (float)vectorTable[b.value][0] * b.w / 4;
               int vecY = (float)vectorTable[b.value][1] * b.w / 4;
-              curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, vecX, vecY);
+              this->statisticsData->at(t).addBlockVector(b.x, b.y, b.w, b.h, vecX, vecY);
             }
           }
         }
@@ -499,7 +498,7 @@ void decoderHM::cacheStatistics(libHMDec_picture *img)
   }
 }
 
-void decoderHM::fillStatisticList(statisticHandler &statSource) const
+void decoderHM::fillStatisticList(stats::StatisticsData &statisticsData) const
 {
   // Ask the decoder how many internals types there are
   unsigned int nrTypes = this->lib.libHMDEC_get_internal_type_number();
@@ -518,74 +517,49 @@ void decoderHM::fillStatisticList(statisticHandler &statSource) const
 
     if (statType == LIBHMDEC_TYPE_FLAG)
     {
-      StatisticsType flag(i, name, "jet", 0, 1);
+      stats::StatisticsType flag(i, name, "jet", 0, 1);
       flag.description = description;
-      statSource.addStatType(flag);
+      statisticsData.addStatType(flag);
     }
     else if (statType == LIBHMDEC_TYPE_RANGE)
     {
-      StatisticsType range(i, name, "jet", 0, max);
+      stats::StatisticsType range(i, name, "jet", 0, max);
       range.description = description;
-      statSource.addStatType(range);
+      statisticsData.addStatType(range);
     }
     else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
     {
-      StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
+      stats::StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
       rangeZero.description = description;
-      statSource.addStatType(rangeZero);
+      statisticsData.addStatType(rangeZero);
     }
     else if (statType == LIBHMDEC_TYPE_VECTOR)
     {
       auto scale = this->lib.libHMDEC_get_internal_type_vector_scaling(i);
-      StatisticsType vec(i, name, scale);
+      stats::StatisticsType vec(i, name, scale);
       vec.description = description;
-      statSource.addStatType(vec);
+      statisticsData.addStatType(vec);
     }
     else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
     {
-      StatisticsType intraDir(i, name, "jet", 0, 34);
+      stats::StatisticsType intraDir(i, name, "jet", 0, 34);
       intraDir.description      = description;
       intraDir.hasVectorData    = true;
       intraDir.renderVectorData = true;
       intraDir.vectorScale      = 32;
       // Don't draw the vector values for the intra dir. They don't have actual meaning.
       intraDir.renderVectorDataValues = false;
-      intraDir.valMap.insert(0, "INTRA_PLANAR");
-      intraDir.valMap.insert(1, "INTRA_DC");
-      intraDir.valMap.insert(2, "INTRA_ANGULAR_2");
-      intraDir.valMap.insert(3, "INTRA_ANGULAR_3");
-      intraDir.valMap.insert(4, "INTRA_ANGULAR_4");
-      intraDir.valMap.insert(5, "INTRA_ANGULAR_5");
-      intraDir.valMap.insert(6, "INTRA_ANGULAR_6");
-      intraDir.valMap.insert(7, "INTRA_ANGULAR_7");
-      intraDir.valMap.insert(8, "INTRA_ANGULAR_8");
-      intraDir.valMap.insert(9, "INTRA_ANGULAR_9");
-      intraDir.valMap.insert(10, "INTRA_ANGULAR_10");
-      intraDir.valMap.insert(11, "INTRA_ANGULAR_11");
-      intraDir.valMap.insert(12, "INTRA_ANGULAR_12");
-      intraDir.valMap.insert(13, "INTRA_ANGULAR_13");
-      intraDir.valMap.insert(14, "INTRA_ANGULAR_14");
-      intraDir.valMap.insert(15, "INTRA_ANGULAR_15");
-      intraDir.valMap.insert(16, "INTRA_ANGULAR_16");
-      intraDir.valMap.insert(17, "INTRA_ANGULAR_17");
-      intraDir.valMap.insert(18, "INTRA_ANGULAR_18");
-      intraDir.valMap.insert(19, "INTRA_ANGULAR_19");
-      intraDir.valMap.insert(20, "INTRA_ANGULAR_20");
-      intraDir.valMap.insert(21, "INTRA_ANGULAR_21");
-      intraDir.valMap.insert(22, "INTRA_ANGULAR_22");
-      intraDir.valMap.insert(23, "INTRA_ANGULAR_23");
-      intraDir.valMap.insert(24, "INTRA_ANGULAR_24");
-      intraDir.valMap.insert(25, "INTRA_ANGULAR_25");
-      intraDir.valMap.insert(26, "INTRA_ANGULAR_26");
-      intraDir.valMap.insert(27, "INTRA_ANGULAR_27");
-      intraDir.valMap.insert(28, "INTRA_ANGULAR_28");
-      intraDir.valMap.insert(29, "INTRA_ANGULAR_29");
-      intraDir.valMap.insert(30, "INTRA_ANGULAR_30");
-      intraDir.valMap.insert(31, "INTRA_ANGULAR_31");
-      intraDir.valMap.insert(32, "INTRA_ANGULAR_32");
-      intraDir.valMap.insert(33, "INTRA_ANGULAR_33");
-      intraDir.valMap.insert(34, "INTRA_ANGULAR_34");
-      statSource.addStatType(intraDir);
+      intraDir.setMappingValues(
+          {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+           "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+           "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+           "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+           "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+           "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+           "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+           "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+           "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+      statisticsData.addStatType(intraDir);
     }
   }
 }

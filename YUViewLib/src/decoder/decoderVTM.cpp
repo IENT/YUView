@@ -37,6 +37,7 @@
 #include <QSettings>
 #include <cstring>
 
+#include "common/functions.h"
 #include "common/typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
@@ -85,7 +86,6 @@ namespace decoder
 decoderVTM::decoderVTM(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
   // For now we don't support different signals (like prediction, residual)
-  Q_UNUSED(signalID);
 
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
@@ -245,31 +245,32 @@ bool decoderVTM::getNextFrameFromDecoder()
   }
 
   // Check the validity of the picture
-  auto picSize = Size({size_t(this->lib.libVTMDec_get_picture_width(currentVTMPic, LIBVTMDEC_LUMA)),
-                       size_t(this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA))});
-  if (!picSize)
+  auto picSize = Size(this->lib.libVTMDec_get_picture_width(currentVTMPic, LIBVTMDEC_LUMA),
+                      this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
+  if (!picSize.isValid())
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
   auto subsampling = convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(currentVTMPic));
   if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
-  int bitDepth = this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
+  auto bitDepth =
+      functions::clipToUnsigned(this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA));
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
 
-  if (!frameSize && !formatYUV.isValid())
+  if (!frameSize.isValid() && !formatYUV.isValid())
   {
     // Set the values
     frameSize = picSize;
-    formatYUV = YUV_Internals::yuvPixelFormat(subsampling, bitDepth);
+    formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
   }
   else
   {
     // Check the values against the previously set values
     if (frameSize != picSize)
       return setErrorB("Received a frame of different size");
-    if (formatYUV.subsampling != subsampling)
+    if (formatYUV.getSubsampling() != subsampling)
       return setErrorB("Received a frame with different subsampling");
-    if (formatYUV.bitsPerSample != bitDepth)
+    if (formatYUV.getBitsPerSample() != bitDepth)
       return setErrorB("Received a frame with different bit depth");
   }
 
@@ -334,9 +335,9 @@ QByteArray decoderVTM::getRawFrameData()
     copyImgToByteArray(currentVTMPic, currentOutputBuffer);
     DEBUG_DECVTM("decoderVTM::getRawFrameData copied frame to buffer");
 
-    if (retrieveStatistics)
+    if (this->statisticsEnabled())
       // Get the statistics from the image and put them into the statistics cache
-      cacheStatistics(currentVTMPic);
+      this->cacheStatistics(currentVTMPic);
   }
 
   return currentOutputBuffer;
@@ -430,17 +431,12 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
   }
 }
 
-void decoderVTM::cacheStatistics(libVTMDec_picture *img)
+void decoderVTM::cacheStatistics(libVTMDec_picture *)
 {
-  Q_UNUSED(img);
-
   if (!internalsSupported)
     return;
 
   DEBUG_DECVTM("decoderVTM::cacheStatistics POC %d", this->lib.libVTMDec_get_POC(img));
-
-  // Clear the local statistics cache
-  curPOCStats.clear();
 
   // // Conversion from intra prediction mode to vector.
   // // Coordinates are in x,y with the axes going right and down.
@@ -498,10 +494,8 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *img)
   //}
 }
 
-void decoderVTM::fillStatisticList(statisticHandler &statSource) const
+void decoderVTM::fillStatisticList(stats::StatisticsData &) const
 {
-  Q_UNUSED(statSource);
-
   // Ask the decoder how many internals types there are
   // unsigned int nrTypes = this->lib.libVTMDec_get_internal_type_number();
 

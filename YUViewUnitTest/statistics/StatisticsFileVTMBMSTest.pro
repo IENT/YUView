@@ -5,12 +5,13 @@ CONFIG += c++1z
 CONFIG -= debug_and_release
 CONFIG -= app_bundled
 
-TARGET = yuvPixelFormatGuessTest
+TARGET = StatisticsFileVTMBMSTest
 
 QT += testlib
+QT += xml
 QT -= gui
 
 INCLUDEPATH += $$top_srcdir/YUViewLib/src
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
 
-SOURCES += yuvPixelFormatGuessTest.cpp
+SOURCES += StatisticsFileVTMBMSTest.cpp

@@ -61,7 +61,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
                                 const ByteVector &                            data,
                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                 std::optional<pairUint64>                     nalStartEndPosFile,
-                                TreeItem *                                    parent)
+                                std::shared_ptr<TreeItem>                                    parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -87,15 +87,16 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   // We don't set data (a name) for this item yet.
   // We want to parse the item and then set a good description.
   std::string specificDescription;
-  TreeItem *  nalRoot = nullptr;
+  std::shared_ptr<TreeItem> nalRoot;
   if (parent)
-    nalRoot = new TreeItem(parent);
-  else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = parent->createChildItem();
+  else if (packetModel->rootItem)
+    nalRoot = packetModel->rootItem->createChildItem();
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 
-  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  if (nalRoot)
+    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   // Create a nal_unit and read the header
   NalUnitMpeg2 nal_mpeg2(nalID, nalStartEndPosFile);
@@ -269,36 +270,35 @@ double AnnexBMpeg2::getFramerate() const
   return frame_rate;
 }
 
-QSize AnnexBMpeg2::getSequenceSizeSamples() const
+Size AnnexBMpeg2::getSequenceSizeSamples() const
 {
-  int w = 0, h = 0;
-  if (firstSequenceHeader)
-  {
-    w = firstSequenceHeader->horizontal_size_value;
-    h = firstSequenceHeader->vertical_size_value;
+  if (!firstSequenceHeader)
+    return {};
 
-    if (firstSequenceExtension)
-    {
-      w += firstSequenceExtension->horizontal_size_extension << 12;
-      h += firstSequenceExtension->vertical_size_extension << 12;
-    }
+  auto w = firstSequenceHeader->horizontal_size_value;
+  auto h = firstSequenceHeader->vertical_size_value;
+
+  if (firstSequenceExtension)
+  {
+    w += firstSequenceExtension->horizontal_size_extension << 12;
+    h += firstSequenceExtension->vertical_size_extension << 12;
   }
-  return QSize(w, h);
+  return Size(w, h);
 }
 
-yuvPixelFormat AnnexBMpeg2::getPixelFormat() const
+YUVPixelFormat AnnexBMpeg2::getPixelFormat() const
 {
   if (firstSequenceExtension)
   {
     int c = firstSequenceExtension->chroma_format;
     if (c == 1)
-      return yuvPixelFormat(Subsampling::YUV_420, 8);
+      return YUVPixelFormat(Subsampling::YUV_420, 8);
     if (c == 2)
-      return yuvPixelFormat(Subsampling::YUV_422, 8);
+      return YUVPixelFormat(Subsampling::YUV_422, 8);
     if (c == 3)
-      return yuvPixelFormat(Subsampling::YUV_444, 8);
+      return YUVPixelFormat(Subsampling::YUV_444, 8);
   }
-  return yuvPixelFormat();
+  return YUVPixelFormat();
 }
 
 Ratio AnnexBMpeg2::getSampleAspectRatio()

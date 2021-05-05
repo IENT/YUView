@@ -39,6 +39,7 @@
 #include <cstring>
 
 #include "common/typedef.h"
+#include "common/functions.h"
 
 namespace decoder
 {
@@ -263,7 +264,7 @@ void decoderDav1d::allocateNewDecoder()
             "decoderDav1d::allocateNewDecoder - Activated export of reconstruction pre-filtering");
       }
     }
-    if (retrieveStatistics)
+    if (this->statisticsEnabled())
     {
       analyzerSettings.export_blkdata = 1;
       DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of block data");
@@ -307,29 +308,29 @@ bool decoderDav1d::decodeFrame()
     // We did get a picture
     // Get the resolution / yuv format from the frame
     auto s = curPicture.getFrameSize();
-    if (!s)
+    if (!s.isValid())
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid frame size");
     auto subsampling = curPicture.getSubsampling();
     if (subsampling == Subsampling::UNKNOWN)
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid subsampling");
-    int bitDepth = curPicture.getBitDepth();
+    auto bitDepth = functions::clipToUnsigned(curPicture.getBitDepth());
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid bit depth");
 
-    if (!frameSize && !formatYUV.isValid())
+    if (!frameSize.isValid() && !formatYUV.isValid())
     {
       // Set the values
       frameSize = s;
-      formatYUV = yuvPixelFormat(subsampling, bitDepth);
+      formatYUV = YUVPixelFormat(subsampling, bitDepth);
     }
     else
     {
       // Check the values against the previously set values
       if (frameSize != s)
         return setErrorB("Received a frame of different size");
-      if (formatYUV.subsampling != subsampling)
+      if (formatYUV.getSubsampling() != subsampling)
         return setErrorB("Received a frame with different subsampling");
-      if (formatYUV.bitsPerSample != bitDepth)
+      if (formatYUV.getBitsPerSample() != bitDepth)
         return setErrorB("Received a frame with different bit depth");
     }
     DEBUG_DAV1D("decoderDav1d::decodeFrame Picture decoded - switching to retrieve frame mode");
@@ -367,9 +368,9 @@ QByteArray decoderDav1d::getRawFrameData()
     copyImgToByteArray(curPicture, currentOutputBuffer);
     DEBUG_DAV1D("decoderDav1d::getRawFrameData copied frame to buffer");
 
-    if (retrieveStatistics)
+    if (this->statisticsEnabled())
       // Get the statistics from the image and put them into the statistics cache
-      cacheStatistics(curPicture);
+      this->cacheStatistics(curPicture);
   }
 
   return currentOutputBuffer;
@@ -406,8 +407,8 @@ bool decoderDav1d::pushData(QByteArray &data)
     {
       sequenceHeaderPushed = true;
 
-      auto s = Size({size_t(seq.max_width), size_t(seq.max_height)});
-      if (!s)
+      auto s = Size(seq.max_width, seq.max_height);
+      if (!s.isValid())
         DEBUG_DAV1D("decoderDav1d::pushData got invalid frame size");
       auto subsampling = convertFromInternalSubsampling(seq.layout);
       if (subsampling == Subsampling::UNKNOWN)
@@ -418,7 +419,7 @@ bool decoderDav1d::pushData(QByteArray &data)
       subBlockSize = (seq.sb128 >= 1) ? 128 : 64;
 
       this->frameSize = s;
-      this->formatYUV = yuvPixelFormat(subsampling, bitDepth);
+      this->formatYUV = YUVPixelFormat(subsampling, bitDepth);
     }
     else
     {
@@ -577,200 +578,165 @@ QStringList decoderDav1d::getLibraryNames()
                          << "libdav1d";
 }
 
-void decoderDav1d::fillStatisticList(statisticHandler &statSource) const
+void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) const
 {
-  StatisticsType predMode(0, "Pred Mode", "jet", 0, 1);
+  stats::StatisticsType predMode(0, "Pred Mode", "jet", 0, 1);
   predMode.description = "The prediction mode (intra/inter) per block";
-  predMode.valMap.insert(0, "INTRA");
-  predMode.valMap.insert(1, "INTER");
-  statSource.addStatType(predMode);
+  predMode.setMappingValues({"INTRA", "INTER"});
+  statisticsData.addStatType(predMode);
 
   // LastActiveSegId indicates the real maximum. But that can also vary per frame.
   // 255 is the maximum maximum.
-  StatisticsType segmentID(1, "Segment ID", "jet", 0, 255);
+  stats::StatisticsType segmentID(1, "Segment ID", "jet", 0, 255);
   segmentID.description =
       "Specifies which segment is associated with the current intra block being decoded";
-  statSource.addStatType(segmentID);
+  statisticsData.addStatType(segmentID);
 
-  StatisticsType skip(2, "skip", 0, QColor(0, 0, 0), 1, QColor(255, 0, 0));
+  stats::StatisticsType skip(2, "skip", 0, Color(0, 0, 0), 1, Color(255, 0, 0));
   skip.description = "Equal to 0 indicates that there may be some transform coefficients for this "
                      "block. 1 Indicates there are none.";
-  statSource.addStatType(skip);
+  statisticsData.addStatType(skip);
 
-  StatisticsType skip_mode(3, "skip_mode", 0, QColor(0, 0, 0), 1, QColor(0, 255, 0));
+  stats::StatisticsType skip_mode(3, "skip_mode", 0, Color(0, 0, 0), 1, Color(0, 255, 0));
   skip_mode.description = "Equal to 1 indicates that signaling of most of the mode info is skipped";
-  statSource.addStatType(skip_mode);
+  statisticsData.addStatType(skip_mode);
 
   // Intra specific values
 
-  StatisticsType intraPredModeLuma(4, "intra pred mode (Y)", "jet", 0, 13);
+  stats::StatisticsType intraPredModeLuma(4, "intra pred mode (Y)", "jet", 0, 13);
   intraPredModeLuma.description = "Intra prediction mode Luma (Y)";
-  intraPredModeLuma.valMap.insert(0, "DC_PRED");
-  intraPredModeLuma.valMap.insert(1, "VERT_PRED");
-  intraPredModeLuma.valMap.insert(2, "HOR_PRED");
-  intraPredModeLuma.valMap.insert(3, "DIAG_DOWN_LEFT_PRED");
-  intraPredModeLuma.valMap.insert(4, "DIAG_DOWN_RIGHT_PRED");
-  intraPredModeLuma.valMap.insert(5, "VERT_RIGHT_PRED");
-  intraPredModeLuma.valMap.insert(6, "HOR_DOWN_PRED");
-  intraPredModeLuma.valMap.insert(7, "HOR_UP_PRED");
-  intraPredModeLuma.valMap.insert(8, "VERT_LEFT_PRED");
-  intraPredModeLuma.valMap.insert(9, "SMOOTH_PRED");
-  intraPredModeLuma.valMap.insert(10, "SMOOTH_V_PRED");
-  intraPredModeLuma.valMap.insert(11, "SMOOTH_H_PRED");
-  intraPredModeLuma.valMap.insert(12, "PAETH_PRED");
-  intraPredModeLuma.valMap.insert(13, "CFL_PRED");
-  statSource.addStatType(intraPredModeLuma);
+  intraPredModeLuma.setMappingValues({"DC_PRED",
+                                      "VERT_PRED",
+                                      "HOR_PRED",
+                                      "DIAG_DOWN_LEFT_PRED",
+                                      "DIAG_DOWN_RIGHT_PRED",
+                                      "VERT_RIGHT_PRED",
+                                      "HOR_DOWN_PRED",
+                                      "HOR_UP_PRED",
+                                      "VERT_LEFT_PRED",
+                                      "SMOOTH_PRED",
+                                      "SMOOTH_V_PRED",
+                                      "SMOOTH_H_PRED",
+                                      "PAETH_PRED",
+                                      "CFL_PRED"});
+  statisticsData.addStatType(intraPredModeLuma);
 
-  StatisticsType intraPredModeChroma(5, "intra pred mode (UV)", "jet", 0, 12);
+  stats::StatisticsType intraPredModeChroma(5, "intra pred mode (UV)", "jet", 0, 12);
   intraPredModeChroma.description = "Intra prediction mode Chroma (UV)";
-  intraPredModeChroma.valMap.insert(0, "DC_PRED");
-  intraPredModeChroma.valMap.insert(1, "VERT_PRED");
-  intraPredModeChroma.valMap.insert(2, "HOR_PRED");
-  intraPredModeChroma.valMap.insert(3, "DIAG_DOWN_LEFT_PRED");
-  intraPredModeChroma.valMap.insert(4, "DIAG_DOWN_RIGHT_PRED");
-  intraPredModeChroma.valMap.insert(5, "VERT_RIGHT_PRED");
-  intraPredModeChroma.valMap.insert(6, "HOR_DOWN_PRED");
-  intraPredModeChroma.valMap.insert(7, "HOR_UP_PRED");
-  intraPredModeChroma.valMap.insert(8, "VERT_LEFT_PRED");
-  intraPredModeChroma.valMap.insert(9, "SMOOTH_PRED");
-  intraPredModeChroma.valMap.insert(10, "SMOOTH_V_PRED");
-  intraPredModeChroma.valMap.insert(11, "SMOOTH_H_PRED");
-  intraPredModeChroma.valMap.insert(12, "PAETH_PRED");
-  statSource.addStatType(intraPredModeChroma);
+  intraPredModeChroma.setMappingValues({"DC_PRED",
+                                        "VERT_PRED",
+                                        "HOR_PRED",
+                                        "DIAG_DOWN_LEFT_PRED",
+                                        "DIAG_DOWN_RIGHT_PRED",
+                                        "VERT_RIGHT_PRED",
+                                        "HOR_DOWN_PRED",
+                                        "HOR_UP_PRED",
+                                        "VERT_LEFT_PRED",
+                                        "SMOOTH_PRED",
+                                        "SMOOTH_V_PRED",
+                                        "SMOOTH_H_PRED",
+                                        "PAETH_PRED"});
 
-  StatisticsType paletteSizeLuma(6, "palette size (Y)", 0, QColor(0, 0, 0), 255, QColor(0, 0, 255));
-  statSource.addStatType(paletteSizeLuma);
+  statisticsData.addStatType(intraPredModeChroma);
 
-  StatisticsType paletteSizeChroma(
-      7, "palette size (U)", 0, QColor(0, 0, 0), 255, QColor(0, 0, 255));
-  statSource.addStatType(paletteSizeChroma);
+  stats::StatisticsType paletteSizeLuma(
+      6, "palette size (Y)", 0, Color(0, 0, 0), 255, Color(0, 0, 255));
+  statisticsData.addStatType(paletteSizeLuma);
 
-  StatisticsType intraAngleDeltaLuma(8, "intra angle delta (Y)", "col3_bblg", -3, 4);
+  stats::StatisticsType paletteSizeChroma(
+      7, "palette size (U)", 0, Color(0, 0, 0), 255, Color(0, 0, 255));
+  statisticsData.addStatType(paletteSizeChroma);
+
+  stats::StatisticsType intraAngleDeltaLuma(8, "intra angle delta (Y)", "col3_bblg", -3, 4);
   intraAngleDeltaLuma.description =
       "Offset to be applied to the intra prediction angle specified by the prediction mode";
-  statSource.addStatType(intraAngleDeltaLuma);
+  statisticsData.addStatType(intraAngleDeltaLuma);
 
-  StatisticsType intraAngleDeltaChroma(9, "intra angle delta (UV)", "col3_bblg", -3, 4);
+  stats::StatisticsType intraAngleDeltaChroma(9, "intra angle delta (UV)", "col3_bblg", -3, 4);
   intraAngleDeltaChroma.description =
       "Offset to be applied to the intra prediction angle specified by the prediction mode";
-  statSource.addStatType(intraAngleDeltaChroma);
+  statisticsData.addStatType(intraAngleDeltaChroma);
 
-  StatisticsType intraDirLuma(10, "Intra direction luma", 4);
+  stats::StatisticsType intraDirLuma(10, "Intra direction luma", 4);
   intraDirLuma.description = "Intra prediction direction luma";
-  statSource.addStatType(intraDirLuma);
+  statisticsData.addStatType(intraDirLuma);
 
-  StatisticsType intraDirChroma(11, "Intra direction chroma", 4);
+  stats::StatisticsType intraDirChroma(11, "Intra direction chroma", 4);
   intraDirChroma.description = "Intra prediction direction chroma";
-  statSource.addStatType(intraDirChroma);
+  statisticsData.addStatType(intraDirChroma);
 
-  StatisticsType chromaFromLumaAlphaU(12, "chroma from luma alpha (U)", "col3_bblg", -128, 128);
+  stats::StatisticsType chromaFromLumaAlphaU(12, "chroma from luma alpha (U)", "col3_bblg", -128, 128);
   chromaFromLumaAlphaU.description =
       "CflAlphaU: contains the signed value of the alpha component for the U component";
-  statSource.addStatType(chromaFromLumaAlphaU);
+  statisticsData.addStatType(chromaFromLumaAlphaU);
 
-  StatisticsType chromaFromLumaAlphaV(13, "chroma from luma alpha (V)", "col3_bblg", -128, 128);
+  stats::StatisticsType chromaFromLumaAlphaV(13, "chroma from luma alpha (V)", "col3_bblg", -128, 128);
   chromaFromLumaAlphaV.description =
       "CflAlphaU: contains the signed value of the alpha component for the U component";
-  statSource.addStatType(chromaFromLumaAlphaV);
+  statisticsData.addStatType(chromaFromLumaAlphaV);
 
   // Inter specific values
 
-  StatisticsType refFrames0(14, "ref frame index 0", "jet", 0, 7);
-  statSource.addStatType(refFrames0);
+  stats::StatisticsType refFrames0(14, "ref frame index 0", "jet", 0, 7);
+  statisticsData.addStatType(refFrames0);
 
-  StatisticsType refFrames1(15, "ref frame index 1", "jet", 0, 7);
-  statSource.addStatType(refFrames1);
+  stats::StatisticsType refFrames1(15, "ref frame index 1", "jet", 0, 7);
+  statisticsData.addStatType(refFrames1);
 
-  StatisticsType compoundPredType(16, "compound prediction type", "jet", 0, 4);
-  compoundPredType.valMap.insert(0, "COMP_INTER_NONE");
-  compoundPredType.valMap.insert(1, "COMP_INTER_WEIGHTED_AVG");
-  compoundPredType.valMap.insert(2, "COMP_INTER_AVG");
-  compoundPredType.valMap.insert(3, "COMP_INTER_SEG");
-  compoundPredType.valMap.insert(4, "COMP_INTER_WEDGE");
-  statSource.addStatType(compoundPredType);
+  stats::StatisticsType compoundPredType(16, "compound prediction type", "jet", 0, 4);
+  compoundPredType.setMappingValues({"COMP_INTER_NONE",
+                                     "COMP_INTER_WEIGHTED_AVG",
+                                     "COMP_INTER_AVG",
+                                     "COMP_INTER_SEG",
+                                     "COMP_INTER_WEDGE"});
+  statisticsData.addStatType(compoundPredType);
 
-  StatisticsType wedgeIndex(17, "wedge index", "jet", 0, 16);
-  statSource.addStatType(wedgeIndex);
+  stats::StatisticsType wedgeIndex(17, "wedge index", "jet", 0, 16);
+  statisticsData.addStatType(wedgeIndex);
 
-  StatisticsType maskSign(18, "mask sign", 0, QColor(0, 0, 0), 1, QColor(0, 255, 255));
-  statSource.addStatType(maskSign);
+  stats::StatisticsType maskSign(18, "mask sign", 0, Color(0, 0, 0), 1, Color(0, 255, 255));
+  statisticsData.addStatType(maskSign);
 
-  StatisticsType interMode(19, "inter mode", "jet", 0, 7);
-  interMode.valMap.insert(0, "NEARESTMV_NEARESTMV");
-  interMode.valMap.insert(1, "NEARMV_NEARMV");
-  interMode.valMap.insert(2, "NEARESTMV_NEWMV");
-  interMode.valMap.insert(3, "NEWMV_NEARESTMV");
-  interMode.valMap.insert(4, "NEARMV_NEWMV");
-  interMode.valMap.insert(5, "NEWMV_NEARMV");
-  interMode.valMap.insert(6, "GLOBALMV_GLOBALMV");
-  interMode.valMap.insert(7, "NEWMV_NEWMV");
-  statSource.addStatType(interMode);
+  stats::StatisticsType interMode(19, "inter mode", "jet", 0, 7);
+  interMode.setMappingValues({"NEARESTMV_NEARESTMV", "NEARMV_NEARMV", "NEARESTMV_NEWMV", "NEWMV_NEARESTMV", "NEARMV_NEWMV", "NEWMV_NEARMV", "GLOBALMV_GLOBALMV", "NEWMV_NEWMV"});
+  statisticsData.addStatType(interMode);
 
-  StatisticsType drlIndex(
-      20, "dynamic reference list index", 0, QColor(0, 0, 0), 16, QColor(0, 255, 255));
-  statSource.addStatType(drlIndex);
+  stats::StatisticsType drlIndex(
+      20, "dynamic reference list index", 0, Color(0, 0, 0), 16, Color(0, 255, 255));
+  statisticsData.addStatType(drlIndex);
 
-  StatisticsType interintraType(21, "inter-intra type", "jet", 0, 2);
-  interintraType.valMap.insert(0, "INTER_INTRA_NONE");
-  interintraType.valMap.insert(1, "INTER_INTRA_BLEND");
-  interintraType.valMap.insert(2, "INTER_INTRA_WEDGE");
-  statSource.addStatType(interintraType);
+  stats::StatisticsType interintraType(21, "inter-intra type", "jet", 0, 2);
+  interintraType.setMappingValues({"INTER_INTRA_NONE", "INTER_INTRA_BLEND", "INTER_INTRA_WEDGE"});
+  statisticsData.addStatType(interintraType);
 
-  StatisticsType interintraMode(22, "inter-intra mode", "jet", 0, 4);
-  interintraMode.valMap.insert(0, "II_DC_PRED");
-  interintraMode.valMap.insert(1, "II_VERT_PRED");
-  interintraMode.valMap.insert(2, "II_HOR_PRED");
-  interintraMode.valMap.insert(3, "II_SMOOTH_PRED");
-  interintraMode.valMap.insert(4, "N_INTER_INTRA_PRED_MODES");
-  statSource.addStatType(interintraMode);
+  stats::StatisticsType interintraMode(22, "inter-intra mode", "jet", 0, 4);
+  interintraMode.setMappingValues({"II_DC_PRED", "II_VERT_PRED", "II_HOR_PRED", "II_SMOOTH_PRED", "N_INTER_INTRA_PRED_MODES"});
+  statisticsData.addStatType(interintraMode);
 
-  StatisticsType motionMode(23, "motion mode", "jet", 0, 2);
-  motionMode.valMap.insert(0, "MM_TRANSLATION");
-  motionMode.valMap.insert(1, "MM_OBMC");
-  motionMode.valMap.insert(2, "MM_WARP");
-  statSource.addStatType(motionMode);
+  stats::StatisticsType motionMode(23, "motion mode", "jet", 0, 2);
+  motionMode.setMappingValues({"MM_TRANSLATION", "MM_OBMC", "MM_WARP"});
+  statisticsData.addStatType(motionMode);
 
-  StatisticsType motionVec0(24, "Motion Vector 0", 4);
+  stats::StatisticsType motionVec0(24, "Motion Vector 0", 4);
   motionVec0.description = "The motion vector for component 0";
-  statSource.addStatType(motionVec0);
+  statisticsData.addStatType(motionVec0);
 
-  StatisticsType motionVec1(25, "Motion Vector 1", 4);
+  stats::StatisticsType motionVec1(25, "Motion Vector 1", 4);
   motionVec1.description = "The motion vector for component 1";
-  statSource.addStatType(motionVec1);
+  statisticsData.addStatType(motionVec1);
 
-  StatisticsType transformDepth(26, "Transform Size", "jet", 0, 19);
+  stats::StatisticsType transformDepth(26, "Transform Size", "jet", 0, 19);
   transformDepth.description = "The transform size";
-  transformDepth.valMap.insert(0, "TX_4X4");
-  transformDepth.valMap.insert(1, "TX_8X8");
-  transformDepth.valMap.insert(2, "TX_16X16");
-  transformDepth.valMap.insert(3, "TX_32X32");
-  transformDepth.valMap.insert(4, "TX_64X64");
-  transformDepth.valMap.insert(5, "RTX_4X8");
-  transformDepth.valMap.insert(6, "RTX_8X4");
-  transformDepth.valMap.insert(7, "RTX_8X16");
-  transformDepth.valMap.insert(8, "RTX_16X8");
-  transformDepth.valMap.insert(9, "RTX_16X32");
-  transformDepth.valMap.insert(10, "RTX_32X16");
-  transformDepth.valMap.insert(11, "RTX_32X64");
-  transformDepth.valMap.insert(12, "RTX_64X32");
-  transformDepth.valMap.insert(13, "RTX_4X16");
-  transformDepth.valMap.insert(14, "RTX_16X4");
-  transformDepth.valMap.insert(15, "RTX_8X32");
-  transformDepth.valMap.insert(16, "RTX_32X8");
-  transformDepth.valMap.insert(17, "RTX_16X64");
-  transformDepth.valMap.insert(18, "RTX_64X16");
-  statSource.addStatType(transformDepth);
+  transformDepth.setMappingValues({"TX_4X4", "TX_8X8", "TX_16X16", "TX_32X32", "TX_64X64", "RTX_4X8", "RTX_8X4", "RTX_8X16", "RTX_16X8", "RTX_16X32", "RTX_32X16", "RTX_32X64", "RTX_64X32", "RTX_4X16", "RTX_16X4", "RTX_8X32", "RTX_32X8", "RTX_16X64", "RTX_64X16"});
+  statisticsData.addStatType(transformDepth);
 }
 
 void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
 {
-  if (!internalsSupported)
+  if (!internalsSupported || !this->statisticsEnabled())
     return;
 
   DEBUG_DAV1D("decoderDav1d::cacheStatistics");
-
-  // Clear the local statistics cache
-  curPOCStats.clear();
 
   Av1Block *        blockData   = img.getBlockData();
   Dav1dFrameHeader *frameHeader = img.getFrameHeader();
@@ -907,35 +873,35 @@ void decoderDav1d::parseBlockPartition(Av1Block *      blockData,
   // Set prediction mode (ID 0)
   const bool isIntra  = (b.intra != 0);
   const int  predMode = isIntra ? 0 : 1;
-  curPOCStats[0].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, predMode);
+  this->statisticsData->at(0).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, predMode);
 
   bool FrameIsIntra = (frameInfo.frameType == DAV1D_FRAME_TYPE_KEY ||
                        frameInfo.frameType == DAV1D_FRAME_TYPE_INTRA);
   if (FrameIsIntra)
   {
     // Set the segment ID (ID 1)
-    curPOCStats[1].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.seg_id);
+    this->statisticsData->at(1).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.seg_id);
   }
 
   // Set the skip "flag" (ID 2)
-  curPOCStats[2].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.skip);
+  this->statisticsData->at(2).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.skip);
 
   // Set the skip_mode (ID 3)
-  curPOCStats[3].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.skip_mode);
+  this->statisticsData->at(3).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.skip_mode);
 
   if (isIntra)
   {
     // Set the intra pred mode luma/chrmoa (ID 4, 5)
-    curPOCStats[4].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.y_mode);
-    curPOCStats[5].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.uv_mode);
+    this->statisticsData->at(4).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.y_mode);
+    this->statisticsData->at(5).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.uv_mode);
 
     // Set the palette size Y/UV (ID 6, 7)
-    curPOCStats[6].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.pal_sz[0]);
-    curPOCStats[7].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.pal_sz[1]);
+    this->statisticsData->at(6).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.pal_sz[0]);
+    this->statisticsData->at(7).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.pal_sz[1]);
 
     // Set the intra angle delta luma/chroma (ID 8, 9)
-    curPOCStats[8].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.y_angle);
-    curPOCStats[9].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.uv_angle);
+    this->statisticsData->at(8).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.y_angle);
+    this->statisticsData->at(9).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.uv_angle);
 
     // Calculate and set the intra prediction direction luma/chroma (ID 10, 11)
     for (int yc = 0; yc < 2; yc++)
@@ -950,14 +916,14 @@ void decoderDav1d::parseBlockPartition(Av1Block *      blockData,
       int vecX       = (float)vec.first * blockScale / 4;
       int vecY       = (float)vec.second * blockScale / 4;
 
-      curPOCStats[10 + yc].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, vecX, vecY);
+      this->statisticsData->at(10 + yc).addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, vecX, vecY);
     }
 
     if (b.y_mode == CFL_PRED)
     {
       // Set the chroma from luma alpha U/V (ID 12, 13)
-      curPOCStats[12].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[0]);
-      curPOCStats[13].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[1]);
+      this->statisticsData->at(12).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[0]);
+      this->statisticsData->at(13).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[1]);
     }
   }
   else // inter
@@ -966,65 +932,66 @@ void decoderDav1d::parseBlockPartition(Av1Block *      blockData,
     bool          isCompound   = (compoundType != COMP_INTER_NONE);
 
     // Set the reference frame indices 0/1 (ID 14, 15)
-    curPOCStats[14].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[0]);
+    this->statisticsData->at(14).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[0]);
     if (isCompound)
-      curPOCStats[15].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[1]);
+      this->statisticsData->at(15).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[1]);
 
     // Set the compound prediction type (ID 16)
-    curPOCStats[16].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.comp_type);
+    this->statisticsData->at(16).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.comp_type);
 
     // Set the wedge index (ID 17)
     if (b.comp_type == COMP_INTER_WEDGE || b.interintra_type == INTER_INTRA_WEDGE)
-      curPOCStats[17].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.wedge_idx);
+      this->statisticsData->at(17).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.wedge_idx);
 
     // Set the mask sign (ID 18)
     if (isCompound) // TODO: This might not be correct
-      curPOCStats[18].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.mask_sign);
+      this->statisticsData->at(18).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.mask_sign);
 
     // Set the inter mode (ID 19)
-    curPOCStats[19].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.inter_mode);
+    this->statisticsData->at(19).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.inter_mode);
 
     // Set the dynamic reference list index (ID 20)
     if (isCompound) // TODO: This might not be correct
-      curPOCStats[20].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.drl_idx);
+      this->statisticsData->at(20).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.drl_idx);
 
     if (isCompound)
     {
       // Set inter intra type (ID 21)
-      curPOCStats[21].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_type);
+      this->statisticsData->at(21).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_type);
       // Set inter intra mode (ID 22)
-      curPOCStats[22].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_mode);
+      this->statisticsData->at(22).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_mode);
     }
 
     // Set motion mode (ID 23)
-    curPOCStats[23].addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.motion_mode);
+    this->statisticsData->at(23).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.motion_mode);
 
     // Set motion vector 0/1 (ID 24, 25)
-    curPOCStats[24].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
+    this->statisticsData->at(24).addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
     if (isCompound)
-      curPOCStats[25].addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
+      this->statisticsData->at(25).addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
   }
 
-  const auto tx_val = TxfmSize(isIntra ? b.tx : b.max_ytx);
-
-  static const unsigned TxfmSizeWidthTable[] = {
+  const TxfmSize   tx_val               = TxfmSize(isIntra ? b.tx : b.max_ytx);
+  static const int TxfmSizeWidthTable[] = {
       4, 8, 16, 32, 64, 4, 8, 8, 16, 16, 32, 32, 64, 4, 16, 8, 32, 16, 64};
-  static const unsigned TxfmSizeHeightTable[] = {
+  static const int TxfmSizeHeightTable[] = {
       4, 8, 16, 32, 64, 8, 4, 16, 8, 32, 16, 64, 32, 16, 4, 32, 8, 64, 16};
-
-  const auto tx_w = TxfmSizeWidthTable[tx_val];
-  const auto tx_h = TxfmSizeHeightTable[tx_val];
-  assert(tx_w <= cbWidth && tx_h <= cbHeight);
+  const int tx_w = TxfmSizeWidthTable[tx_val];
+  const int tx_h = TxfmSizeHeightTable[tx_val];
+  
+  if (tx_w > cbWidth || tx_h > cbHeight)
+    // Transform can not be bigger then the coding block
+    return;
 
   for (unsigned x = 0; x < cbWidth; x += tx_w)
   {
     for (unsigned y = 0; y < cbHeight; y += tx_h)
     {
       // Set the transform size (ID 26)
-      const auto x_abs = cbPosX + x;
-      const auto y_abs = cbPosY + y;
-      if (x_abs < frameInfo.frameSize.width && y_abs < frameInfo.frameSize.height)
-        curPOCStats[26].addBlockValue(x_abs, y_abs, tx_w, tx_h, (int)tx_val);
+      const int x_abs = cbPosX + x;
+      const int y_abs = cbPosY + y;
+      if (x_abs < int(frameInfo.frameSize.width) && y_abs < int(frameInfo.frameSize.height))
+        this->statisticsData->at(26).addBlockValue(x_abs, y_abs, tx_w, tx_h, (int)tx_val);
     }
   }
 }

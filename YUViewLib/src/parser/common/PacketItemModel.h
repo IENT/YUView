@@ -47,17 +47,15 @@ public:
   ~PacketItemModel();
 
   // The functions that must be overridden from the QAbstractItemModel
-  virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-  virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-  virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  virtual QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
-  virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 5; }
+  virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+  virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+  virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+  virtual QModelIndex parent(const QModelIndex &index) const override;
+  virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+  virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override { (void)parent; return 5; }
 
   // The root of the tree
-  QScopedPointer<TreeItem> rootItem;
-  TreeItem *getRootItem() { return rootItem.data(); }
-  bool isNull() { return rootItem.isNull(); }
+  std::shared_ptr<TreeItem> rootItem;
 
   void setUseColorCoding(bool colorCoding);
   void setShowVideoStreamOnly(bool showVideoOnly);
@@ -69,9 +67,8 @@ private:
   // about them. The bitstream analysis window will then update this count and the view to show the new items.
   unsigned int nrShowChildItems {0};
 
-  unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
+  size_t getNumberFirstLevelChildren() const;
 
-  static QList<QColor> streamIndexColors;
   bool useColorCoding { true };
   bool showVideoOnly  { false };
 };

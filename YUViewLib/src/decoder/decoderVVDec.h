@@ -36,8 +36,7 @@
 
 #include "common/fileInfo.h"
 #include "decoderBase.h"
-#include "externalHeader/vvdec.h"
-#include "statistics/statisticsExtensions.h"
+#include "externalHeader/vvdec/vvdec.h"
 #include "video/videoHandlerYUV.h"
 
 namespace decoder

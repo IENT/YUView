@@ -70,21 +70,21 @@ double AnnexBVVC::getFramerate() const
   return DEFAULT_FRAMERATE;
 }
 
-QSize AnnexBVVC::getSequenceSizeSamples() const
+Size AnnexBVVC::getSequenceSizeSamples() const
 {
   for (const auto &nal : this->nalUnitsForSeeking)
   {
     if (nal->header.nal_unit_type == vvc::NalType::SPS_NUT)
     {
       auto sps = std::dynamic_pointer_cast<seq_parameter_set_rbsp>(nal->rbsp);
-      return QSize(sps->get_max_width_cropping(), sps->get_max_height_cropping());
+      return Size(sps->get_max_width_cropping(), sps->get_max_height_cropping());
     }
   }
 
-  return QSize(-1, -1);
+  return {};
 }
 
-yuvPixelFormat AnnexBVVC::getPixelFormat() const
+YUVPixelFormat AnnexBVVC::getPixelFormat() const
 {
   // Get the subsampling and bit-depth from the sps
   int  bitDepthY   = -1;
@@ -115,7 +115,7 @@ yuvPixelFormat AnnexBVVC::getPixelFormat() const
         // Different luma and chroma bit depths currently not supported
         return {};
       }
-      return yuvPixelFormat(subsampling, bitDepthY);
+      return YUVPixelFormat(subsampling, bitDepthY);
     }
   }
 
@@ -235,7 +235,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                               const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
-                              TreeItem *                                    parent)
+                              std::shared_ptr<TreeItem>                                    parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -253,15 +253,16 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
-  TreeItem *nalRoot = nullptr;
+  std::shared_ptr<TreeItem> nalRoot;
   if (parent)
-    nalRoot = new TreeItem(parent);
-  else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = parent->createChildItem();
+  else if (packetModel->rootItem)
+    nalRoot = packetModel->rootItem->createChildItem();
 
   parseResult.success = true;
 
-  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  if (nalRoot)
+    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 

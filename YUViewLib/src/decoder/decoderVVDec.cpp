@@ -360,7 +360,8 @@ bool decoderVVDec::getNextFrameFromDecoder()
   const auto lumaSize = Size({this->currentFrame->width, this->currentFrame->height});
   const auto nrPlanes = (this->currentFrame->colorFormat == VVDEC_CF_YUV400_PLANAR) ? 1u : 3u;
 
-  if (lumaSize.width == 0 || lumaSize.height == 0)
+  // Check the validity of the picture
+  if (!lumaSize.isValid())
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid size");
   auto subsampling = convertFromInternalSubsampling(this->currentFrame->colorFormat);
   if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
@@ -379,20 +380,20 @@ bool decoderVVDec::getNextFrameFromDecoder()
       DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder plane has different size then expected");
   }
 
-  if (!this->frameSize && !this->formatYUV.isValid())
+  if (!this->frameSize.isValid() && !this->formatYUV.isValid())
   {
     // Set the values
     this->frameSize = lumaSize;
-    this->formatYUV = YUV_Internals::yuvPixelFormat(subsampling, bitDepth);
+    this->formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
   }
   else
   {
     // Check the values against the previously set values
     if (this->frameSize != lumaSize)
       return setErrorB("Received a frame of different size");
-    if (this->formatYUV.subsampling != subsampling)
+    if (this->formatYUV.getSubsampling() != subsampling)
       return setErrorB("Received a frame with different subsampling");
-    if (unsigned(this->formatYUV.bitsPerSample) != bitDepth)
+    if (unsigned(this->formatYUV.getBitsPerSample()) != bitDepth)
       return setErrorB("Received a frame with different bit depth");
   }
 

@@ -32,13 +32,13 @@
 
 #pragma once
 
-#include <QLibrary>
+#include <common/EnumMapper.h>
+#include <filesource/FileSourceAnnexBFile.h>
+#include <statistics/StatisticsData.h>
+#include <video/videoHandlerRGB.h>
+#include <video/videoHandlerYUV.h>
 
-#include "filesource/FileSourceAnnexBFile.h"
-#include "statistics/statisticHandler.h"
-#include "statistics/statisticsExtensions.h"
-#include "video/videoHandlerRGB.h"
-#include "video/videoHandlerYUV.h"
+#include <QLibrary>
 
 namespace decoder
 {
@@ -52,6 +52,30 @@ enum class DecoderState
   EndOfBitstream, ///< Decoding has ended.
   Error
 };
+
+enum class DecoderEngine
+{
+  Invalid,  // invalid value
+  Libde265, // The libde265 decoder
+  HM,       // The HM reference software decoder
+  VTM,      // The VTM reference software decoder
+  VVDec,    // The VVDec VVC decoder
+  Dav1d,    // The dav1d AV1 decoder
+  FFMpeg    // The FFMpeg decoder
+};
+
+const auto DecoderEngineMapper = EnumMapper<DecoderEngine>({{DecoderEngine::Invalid, "Invalid"},
+                                                            {DecoderEngine::Libde265, "Libde265"},
+                                                            {DecoderEngine::HM, "HM"},
+                                                            {DecoderEngine::VTM, "VTM"},
+                                                            {DecoderEngine::VVDec, "VVDec"},
+                                                            {DecoderEngine::Dav1d, "Dav1d"},
+                                                            {DecoderEngine::FFMpeg, "FFMpeg"}});
+
+const auto DecodersHEVC =
+    std::vector<DecoderEngine>({DecoderEngine::Libde265, DecoderEngine::HM, DecoderEngine::FFMpeg});
+const auto DecodersVVC = std::vector<DecoderEngine>({DecoderEngine::VVDec, DecoderEngine::VTM});
+const auto DecodersAV1 = std::vector<DecoderEngine>({DecoderEngine::FFMpeg, DecoderEngine::Dav1d});
 
 /* This class is the abstract base class for all decoders. All decoders work like this:
  * 1. Create an instance and configure it (if required)
@@ -88,7 +112,7 @@ public:
   virtual bool                  decodeNextFrame() = 0;
   virtual QByteArray            getRawFrameData() = 0;
   YUView::RawFormat             getRawFormat() const { return this->rawFormat; }
-  YUV_Internals::yuvPixelFormat getYUVPixelFormat() const { return this->formatYUV; }
+  YUV_Internals::YUVPixelFormat getYUVPixelFormat() const { return this->formatYUV; }
   RGB_Internals::rgbPixelFormat getRGBPixelFormat() const { return this->formatRGB; }
   Size                          getFrameSize() { return this->frameSize; }
   // Push data to the decoder (until no more data is needed)
@@ -100,13 +124,14 @@ public:
 
   // Get the statistics values for the current frame. In order to enable statistics retrievel,
   // activate it, reset the decoder and decode to the current frame again.
-  bool           statisticsSupported() const { return internalsSupported; }
-  bool           statisticsEnabled() const { return retrieveStatistics; }
-  void           enableStatisticsRetrieval() { retrieveStatistics = true; }
-  statisticsData getStatisticsData(int typeIdx);
-  virtual void   fillStatisticList(statisticHandler &statSource) const { Q_UNUSED(statSource); };
+  bool statisticsSupported() const { return internalsSupported; }
+  bool statisticsEnabled() const { return statisticsData != nullptr; }
+  void enableStatisticsRetrieval(stats::StatisticsData *s) { this->statisticsData = s; }
+  stats::FrameTypeData getCurrentFrameStatsForType(int typeIdx);
+  virtual void         fillStatisticList(stats::StatisticsData &) const {};
 
   // Error handling
+  bool    errorInDecoder() const { return decoderState == DecoderState::Error; }
   QString decoderErrorString() const { return errorString; }
 
   // Get the name, filename and full path to the decoder library(s) that is/are being used.
@@ -119,19 +144,17 @@ public:
   virtual QString getCodecName()         = 0;
 
 protected:
-  DecoderState decoderState;
+  DecoderState decoderState{DecoderState::NeedsMoreData};
 
-  int  decodeSignal{};   ///< Which signal should be decoded?
+  int  decodeSignal{0};  ///< Which signal should be decoded?
   bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
 
-  bool internalsSupported{}; ///< Enable in the constructor if you support statistics
-  bool retrieveStatistics{}; ///< If enabled, the decoder should also retrive statistics data from
-                             ///< the bitstream
-  Size frameSize{};
+  bool internalsSupported{false}; ///< Enable in the constructor if you support statistics
+  Size frameSize;
 
   // Some decoders are able to handel both YUV and RGB output
   YUView::RawFormat             rawFormat;
-  YUV_Internals::yuvPixelFormat formatYUV;
+  YUV_Internals::YUVPixelFormat formatYUV;
   RGB_Internals::rgbPixelFormat formatRGB;
 
   // Error handling
@@ -147,10 +170,8 @@ protected:
   }
   QString errorString;
 
-  // Statistics caching
-  QHash<int, statisticsData>
-      curPOCStats;      // cache of the statistics for the current POC [statsTypeID]
-  int statsCacheCurPOC; // the POC of the statistics that are in the curPOCStats
+  // If set, fill it (if possible). The playlistItem has ownership of this.
+  stats::StatisticsData *statisticsData{};
 };
 
 // This abstract base class extends the decoderBase class by the ability to load one single library
@@ -177,4 +198,4 @@ protected:
   QString  libraryPath;
 };
 
-}
+} // namespace decoder

@@ -113,7 +113,7 @@ public:
   bool       pushData(QByteArray &data) override;
 
   // Statistics
-  void fillStatisticList(statisticHandler &statSource) const override;
+  void fillStatisticList(stats::StatisticsData &statisticsData) const override;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);

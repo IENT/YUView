@@ -77,7 +77,7 @@ double AnnexBAVC::getFramerate() const
   return 0.0;
 }
 
-QSize AnnexBAVC::getSequenceSizeSamples() const
+Size AnnexBAVC::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
   for (auto &nal : this->nalUnitsForSeeking)
@@ -97,14 +97,14 @@ QSize AnnexBAVC::getSequenceSizeSamples() const
              (sps.CropUnitY * sps.frame_crop_top_offset);
       }
 
-      return QSize(w, h);
+      return Size(w, h);
     }
   }
 
-  return QSize(-1, -1);
+  return {};
 }
 
-yuvPixelFormat AnnexBAVC::getPixelFormat() const
+YUVPixelFormat AnnexBAVC::getPixelFormat() const
 {
   // Get the subsampling and bit-depth from the sps
   int  bitDepthY   = -1;
@@ -136,7 +136,7 @@ yuvPixelFormat AnnexBAVC::getPixelFormat() const
         // Different luma and chroma bit depths currently not supported
         return {};
       }
-      return yuvPixelFormat(subsampling, bitDepthY);
+      return YUVPixelFormat(subsampling, bitDepthY);
     }
   }
 
@@ -148,7 +148,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
                               const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
-                              TreeItem *                                    parent)
+                              std::shared_ptr<TreeItem>                                    parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -160,8 +160,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       if (!this->addFrameToList(
               this->curFramePOC, this->curFrameFileStartEndPos, this->curFrameIsRandomAccess))
       {
-        new TreeItem(
-            parent, "Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list.");
+        if (parent)
+          parent->createChildItem("Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list.");
         return parseResult;
       }
       if (this->curFrameFileStartEndPos)
@@ -181,13 +181,14 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet.
   // We want to parse the item and then set a good description.
-  TreeItem *nalRoot = nullptr;
+  std::shared_ptr<TreeItem> nalRoot;
   if (parent)
-    nalRoot = new TreeItem(parent);
-  else if (!this->packetModel->isNull())
-    nalRoot = new TreeItem(this->packetModel->getRootItem());
+    nalRoot = parent->createChildItem();
+  else if (packetModel->rootItem)
+    nalRoot = packetModel->rootItem->createChildItem();
 
-  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  if (nalRoot)
+    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", getStartCodeOffset(data));
 

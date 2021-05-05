@@ -55,7 +55,7 @@ public:
   virtual void activateDoubleBuffer() override { this->video.activateDoubleBuffer(); }
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
+  virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
   // This is part of the caching interface. The loadFrame function is always called from a different thread.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) override;
   virtual bool isLoading() const override { return this->isFrameLoading; }
@@ -90,7 +90,7 @@ private:
 
   videoHandlerResample video;
 
-  QSize scaledSize {0, 0};
+  Size scaledSize {0, 0};
   int interpolationIndex {0};
   indexRange cutRange {0, 0};
   int sampling {1};

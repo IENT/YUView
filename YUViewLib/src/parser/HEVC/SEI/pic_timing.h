@@ -61,9 +61,6 @@ public:
   unsigned         du_common_cpb_removal_delay_increment_minus1{};
   vector<unsigned> num_nalus_in_du_minus1;
   vector<unsigned> du_cpb_removal_delay_increment_minus1;
-
-private:
-  reader::SubByteReaderLoggingSubLevel subLevel;
 };
 
 } // namespace parser::hevc

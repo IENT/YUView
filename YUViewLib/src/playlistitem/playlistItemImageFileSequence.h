@@ -46,17 +46,17 @@ public:
   playlistItemImageFileSequence(const QString &rawFilePath = QString());
 
   // Overload from playlistItem. Save the raw file item to playlist.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual infoData getInfo() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const override;
 
   // Create a new playlistItemImageFileSequence from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemImageFileSequence *newplaylistItemImageFileSequence(const YUViewDomElement &root, const QString &playlistFilePath);
 
-  virtual bool canBeUsedInProcessing() const Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInProcessing() const override { return true; }
 
-  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video->getPixelValues(pixelPos, frameIdx)); }
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override { return ValuePairListSets("RGB", video->getPixelValues(pixelPos, frameIdx)); }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -66,12 +66,12 @@ public:
   static bool isImageSequence(const QString &filePath);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }
-  virtual void reloadItemSource()       Q_DECL_OVERRIDE;
-  virtual void updateSettings()         Q_DECL_OVERRIDE;
+  virtual bool isSourceChanged()        override { bool b = fileChanged; fileChanged = false; return b; }
+  virtual void reloadItemSource()       override;
+  virtual void updateSettings()         override;
 
   // Is an image currently being loaded?
-  virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
+  virtual bool isLoading() const override { return isFrameLoading; }
 
 private slots:
   // Load the given frame from file. This slot is called by the videoHandler if the frame that is
@@ -79,13 +79,13 @@ private slots:
   virtual void slotFrameRequest(int frameIdx, bool caching);
 
   // The image file that we loaded was changed.
-  void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
+  void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
 
 private:
 
   // Overload from playlistItem. Create a properties widget custom to the playlistItemImageFileSequence
   // and set propertiesWidget to point to it.
-  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+  virtual void createPropertiesWidget() override;
 
   // Set internal values (frame Size, caching, ...). Call this after the imageFiles list has been filled.
   // Get the internal name and set it as text of the playlistItem.

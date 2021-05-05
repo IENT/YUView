@@ -38,19 +38,17 @@ class QLabelClickable : public QLabel
   Q_OBJECT
 
 public:
-  QLabelClickable(QWidget *parent) : QLabel(parent) { pressed = false; }
-  virtual void mousePressEvent(QMouseEvent *event)
+  QLabelClickable(QWidget *parent) : QLabel(parent) { this->pressed = false; }
+  virtual void mousePressEvent(QMouseEvent *)
   {
-    Q_UNUSED(event);
-    pressed = true;
+    this->pressed = true;
   }
-  virtual void mouseReleaseEvent(QMouseEvent *event)
+  virtual void mouseReleaseEvent(QMouseEvent *)
   {
-    Q_UNUSED(event);
-    if (pressed)
+    if (this->pressed)
       // The mouse was pressed and is now released.
       emit clicked();
-    pressed = false;
+    this->pressed = false;
   }
 signals:
   void clicked();

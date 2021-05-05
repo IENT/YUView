@@ -66,8 +66,8 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  QList<QTreeWidgetItem *> getStreamInfo() Q_DECL_OVERRIDE { return stream_info.getStreamInfo(); }
-  unsigned int             getNrStreams() Q_DECL_OVERRIDE { return 1; }
+  QList<QTreeWidgetItem *> getStreamInfo() override { return stream_info.getStreamInfo(); }
+  unsigned int             getNrStreams() override { return 1; }
   QString                  getShortStreamDescription(int streamIndex) const override;
 
   /* Parse the NAL unit and what it contains
@@ -91,12 +91,12 @@ public:
                                          const ByteVector &                            data,
                                          std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                          std::optional<pairUint64> nalStartEndPosFile = {},
-                                         TreeItem *                parent = nullptr) = 0;
+                                         std::shared_ptr<TreeItem> parent = nullptr) = 0;
 
   // Get some format properties
   virtual double         getFramerate() const           = 0;
-  virtual QSize          getSequenceSizeSamples() const = 0;
-  virtual yuvPixelFormat getPixelFormat() const         = 0;
+  virtual Size           getSequenceSizeSamples() const = 0;
+  virtual YUVPixelFormat getPixelFormat() const         = 0;
 
   // When we want to seek to a specific frame number, this function return the parameter sets that
   // you need to start decoding (without start codes). If file positions were set for the NAL units,
@@ -124,7 +124,7 @@ public:
   bool parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
 
   // Called from the bitstream analyzer. This function can run in a background process.
-  bool runParsingOfFile(QString compressedFilePath) Q_DECL_OVERRIDE;
+  bool runParsingOfFile(QString compressedFilePath) override;
 
 protected:
   struct AnnexBFrame
@@ -141,8 +141,9 @@ protected:
   // Returns false if the POC was already present int the list
   bool addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint);
 
-  static void
-  logNALSize(const ByteVector &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos);
+  static void logNALSize(const ByteVector &        data,
+                         std::shared_ptr<TreeItem> root,
+                         std::optional<pairUint64> nalStartEndPos);
 
   int pocOfFirstRandomAccessFrame{-1};
 
@@ -158,14 +159,13 @@ protected:
   };
   stream_info_type stream_info;
 
-  int getFramePOC(int frameIdx);
+  int getFramePOC(int frameIdxDisplayOrder);
 
 private:
   // A list of all frames in the sequence (in coding order) with POC and the file positions of all
   // slice NAL units associated with a frame. POC's don't have to be consecutive, so the only way to
   // know how many pictures are in a sequences is to keep a list of all POCs.
   vector<AnnexBFrame> frameList;
-  bool frameListNeedsParsing{};
 };
 
 } // namespace parser

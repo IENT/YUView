@@ -42,9 +42,9 @@ class decoderFFmpeg : public decoderBase
 {
 public:
   decoderFFmpeg(AVCodecIDWrapper              codec,
-                QSize                         frameSize,
+                Size                          frameSize,
                 QByteArray                    extradata,
-                YUV_Internals::yuvPixelFormat fmt,
+                YUV_Internals::YUVPixelFormat fmt,
                 IntPair                       profileLevel,
                 Ratio                         sampleAspectRatio,
                 bool                          cachingDecoder = false);
@@ -64,7 +64,7 @@ public:
   bool pushData(QByteArray &data) override;
 
   // What statistics do we support?
-  void fillStatisticList(statisticHandler &statSource) const override;
+  void fillStatisticList(stats::StatisticsData &statisticsData) const override;
 
   QStringList getLibraryPaths() const override { return ff.getLibPaths(); }
   QString     getDecoderName() const override { return "FFmpeg"; }

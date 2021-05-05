@@ -35,7 +35,6 @@
 #include "parser/common/functions.h"
 #include "typedef.h"
 
-
 namespace parser::avc
 
 {
@@ -57,13 +56,14 @@ void hrd_parameters::parse(reader::SubByteReaderLogging &reader)
         formatArray("cpb_size_value_minus1", SchedSelIdx), Options().withCheckRange({0, val_max})));
     this->cbr_flag.push_back(reader.readFlag(formatArray("cbr_flag", SchedSelIdx)));
     {
-      auto value =
-          (this->bit_rate_value_minus1[SchedSelIdx] + 1) * (1 << (6 + this->bit_rate_scale));
+      auto value = (this->bit_rate_value_minus1[SchedSelIdx] + 1) *
+                   (uint64_t(1) << (6 + this->bit_rate_scale));
       this->BitRate.push_back(value);
       reader.logCalculatedValue(formatArray("BitRate", SchedSelIdx), this->BitRate[SchedSelIdx]);
     }
     {
-      auto value = (this->cpb_size_value_minus1[SchedSelIdx] + 1) * (1 << (4 + cpb_size_scale));
+      auto value =
+          (this->cpb_size_value_minus1[SchedSelIdx] + 1) * (uint64_t(1) << (4 + cpb_size_scale));
       this->CpbSize.push_back(value);
       reader.logCalculatedValue(formatArray("CpbSize", SchedSelIdx), this->CpbSize[SchedSelIdx]);
     }
@@ -75,4 +75,4 @@ void hrd_parameters::parse(reader::SubByteReaderLogging &reader)
   this->time_offset_length              = reader.readBits("time_offset_length", 5);
 }
 
-} // namespace parser::av1
+} // namespace parser::avc

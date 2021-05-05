@@ -70,8 +70,8 @@ public:
 
   // Get some properties
   double         getFramerate() const override;
-  QSize          getSequenceSizeSamples() const override;
-  yuvPixelFormat getPixelFormat() const override;
+  Size           getSequenceSizeSamples() const override;
+  YUVPixelFormat getPixelFormat() const override;
 
   std::optional<SeekData> getSeekData(int iFrameNr) override;
   QByteArray              getExtradata() override;
@@ -82,7 +82,7 @@ public:
                                  const ByteVector &                            data,
                                  std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                  std::optional<pairUint64> nalStartEndPosFile = {},
-                                 TreeItem *                parent             = nullptr) override;
+                                 std::shared_ptr<TreeItem> parent             = nullptr) override;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class

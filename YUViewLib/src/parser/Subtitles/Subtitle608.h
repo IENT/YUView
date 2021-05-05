@@ -40,9 +40,9 @@ namespace parser::subtitle::sub_608
 {
 
 // Parse the subtitle in an AVPacket
-void parse608SubtitlePacket(ByteVector data, TreeItem *parent);
+void parse608SubtitlePacket(ByteVector data, std::shared_ptr<TreeItem> parent);
 
 // Parse the 608 subtitle encoded in ATSC CC Data packet format with 3 bytes
 unsigned parse608DataPayloadCCDataPacket(reader::SubByteReaderLogging &reader);
 
-} // namespace parser::subtitle_608
+} // namespace parser::subtitle::sub_608

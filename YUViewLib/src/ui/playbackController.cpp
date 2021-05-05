@@ -1,49 +1,49 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "playbackController.h"
 
 #include <QSettings>
 
-#include "playlistitem/playlistItem.h"
-#include "common/functions.h"
+#include "common/functionsGui.h"
 #include "common/typedef.h"
+#include "playlistitem/playlistItem.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYBACKCONTROLLER_DEBUG 0
 #if PLAYBACKCONTROLLER_DEBUG && !NDEBUG
 #define DEBUG_PLAYBACK qDebug
 #else
-#define DEBUG_PLAYBACK(fmt,...) ((void)0)
+#define DEBUG_PLAYBACK(fmt, ...) ((void)0)
 #endif
 
 PlaybackController::PlaybackController()
@@ -60,21 +60,21 @@ PlaybackController::PlaybackController()
 
   // Load current repeat mode from settings
   QSettings settings;
-  int repeatModeIdx = settings.value("RepeatMode", RepeatModeOff).toInt();
-  repeatMode = RepeatModeOff;
+  int       repeatModeIdx = settings.value("RepeatMode", RepeatModeOff).toInt();
+  repeatMode              = RepeatModeOff;
   if (repeatModeIdx >= 0 && repeatModeIdx < 3)
     repeatMode = (RepeatMode)repeatModeIdx;
 
   // Initialize variables
-  currentFrameIdx = -1;
-  lastValidFrameIdx = -1;
-  timerInterval = -1;
-  timerFPSCounter = 0;
-  timerLastFPSTime = QTime::currentTime();
-  playbackMode = PlaybackStopped;
+  currentFrameIdx    = -1;
+  lastValidFrameIdx  = -1;
+  timerInterval      = -1;
+  timerFPSCounter    = 0;
+  timerLastFPSTime   = QTime::currentTime();
+  playbackMode       = PlaybackStopped;
   playbackWasStalled = false;
-  waitingForItem[0] = false;
-  waitingForItem[1] = false;
+  waitingForItem[0]  = false;
+  waitingForItem[1]  = false;
 
   // Update the settings (this will also load the right icons)
   updateSettings();
@@ -114,7 +114,8 @@ void PlaybackController::on_playPauseButton_clicked()
 
   if (playing())
   {
-    // Stop the timer, update the icon and fps label text and unfreeze the primary view (maype it was frozen).
+    // Stop the timer, update the icon and fps label text and unfreeze the primary view (maype it
+    // was frozen).
     DEBUG_PLAYBACK("PlaybackController::on_playPauseButton_clicked Stop");
     timer.stop();
     playbackMode = PlaybackStopped;
@@ -143,7 +144,8 @@ void PlaybackController::on_playPauseButton_clicked()
 
     if (waitForCachingOfItem)
     {
-      // Caching is enabled and we shall wait for caching of the current item to complete before starting playback.
+      // Caching is enabled and we shall wait for caching of the current item to complete before
+      // starting playback.
       DEBUG_PLAYBACK("PlaybackController::on_playPauseButton_clicked waiting for caching...");
       playbackMode = PlaybackWaitingForCache;
       playPauseButton->setIcon(iconPause);
@@ -153,7 +155,8 @@ void PlaybackController::on_playPauseButton_clicked()
 
       if (playbackMode == PlaybackWaitingForCache)
       {
-        // If we are really waiting, ipdate the views so that the "caching loading" hourglass indicator is drawn.
+        // If we are really waiting, ipdate the views so that the "caching loading" hourglass
+        // indicator is drawn.
         splitViewPrimary->update(false, false);
         splitViewSeparate->update(false, false);
       }
@@ -166,9 +169,8 @@ void PlaybackController::on_playPauseButton_clicked()
   }
 }
 
-void PlaybackController::itemCachingFinished(playlistItem *item)
+void PlaybackController::itemCachingFinished(playlistItem *)
 {
-  Q_UNUSED(item);
   if (playbackMode == PlaybackWaitingForCache)
   {
     // We were waiting and playback can now start
@@ -190,29 +192,32 @@ void PlaybackController::startPlayback()
 void PlaybackController::startOrUpdateTimer()
 {
   // Get the frame rate of the current item. Lower limit is 0.01 fps (100 seconds per frame).
-  if (currentItem[0]->properties().isIndexedByFrame() || (currentItem[1] && currentItem[1]->properties().isIndexedByFrame()))
+  if (currentItem[0]->properties().isIndexedByFrame() ||
+      (currentItem[1] && currentItem[1]->properties().isIndexedByFrame()))
   {
     // One (of the possibly two items) is indexed by frame. Get and set the frame rate
-    double frameRate = currentItem[0]->properties().isIndexedByFrame() ? currentItem[0]->properties().frameRate : currentItem[1]->properties().frameRate;
+    double frameRate = currentItem[0]->properties().isIndexedByFrame()
+                           ? currentItem[0]->properties().frameRate
+                           : currentItem[1]->properties().frameRate;
     if (frameRate < 0.01)
       frameRate = 0.01;
     timerStaticItemCountDown = -1;
-    timerInterval = 1000.0 / frameRate;
+    timerInterval            = 1000.0 / frameRate;
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer framerate %f", frameRate);
   }
   else
   {
     // The item (or both items) are not indexed by frame.
     // Use the duration of item 0
-    timerInterval = int(1000 / 10);
+    timerInterval            = int(1000 / 10);
     timerStaticItemCountDown = currentItem[0]->properties().duration * 10;
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer duration %d", timerInterval);
   }
-  
+
   timer.start(timerInterval, Qt::PreciseTimer, this);
-  playbackMode = PlaybackRunning;
+  playbackMode     = PlaybackRunning;
   timerLastFPSTime = QTime::currentTime();
-  timerFPSCounter = 0;
+  timerFPSCounter  = 0;
 }
 
 void PlaybackController::nextFrame()
@@ -239,8 +244,8 @@ void PlaybackController::on_frameSlider_valueChanged(int value)
 }
 
 /** Toggle the repeat mode (loop through the list)
-  * The signal repeatModeButton->clicked() is connected to this slot
-  */
+ * The signal repeatModeButton->clicked() is connected to this slot
+ */
 void PlaybackController::on_repeatModeButton_clicked()
 {
   if (repeatMode == RepeatModeOff)
@@ -251,10 +256,12 @@ void PlaybackController::on_repeatModeButton_clicked()
     setRepeatMode(RepeatModeOff);
 }
 
-void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback)
+void PlaybackController::currentSelectedItemsChanged(playlistItem *item1,
+                                                     playlistItem *item2,
+                                                     bool          chageByPlayback)
 {
   QSettings settings;
-  bool continuePlayback = settings.value("ContinuePlaybackOnSequenceSelection",false).toBool();
+  bool continuePlayback = settings.value("ContinuePlaybackOnSequenceSelection", false).toBool();
 
   if (playing() && !chageByPlayback && !continuePlayback)
     // Stop playback (if running)
@@ -264,9 +271,11 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   currentItem[0] = item1;
   currentItem[1] = item2;
 
-  if (!(item1 && item1->properties().isIndexedByFrame()) && !(item2 && item2->properties().isIndexedByFrame()))
+  if (!(item1 && item1->properties().isIndexedByFrame()) &&
+      !(item2 && item2->properties().isIndexedByFrame()))
   {
-    // No item selected or the selected item(s) is/are not indexed by a frame (there is no navigation in the item)
+    // No item selected or the selected item(s) is/are not indexed by a frame (there is no
+    // navigation in the item)
     enableControls(false);
 
     // Save the last valid frame index. Now the frame index is invalid.
@@ -285,11 +294,17 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
       frameSpinBox->setValue(0);
     }
 
-    if (item1 && (chageByPlayback || (continuePlayback && playing())) && playbackMode != PlaybackWaitingForCache)
+    if (item1 && (chageByPlayback || (continuePlayback && playing())) &&
+        playbackMode != PlaybackWaitingForCache)
       // Update the timer
       startOrUpdateTimer();
 
-    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsChanged No indexed items - currentFrameIdx %d lastValidFrameIdx %d slider %d-%d", currentFrameIdx, lastValidFrameIdx, frameSlider->minimum(), frameSlider->maximum());
+    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsChanged No indexed items - "
+                   "currentFrameIdx %d lastValidFrameIdx %d slider %d-%d",
+                   currentFrameIdx,
+                   lastValidFrameIdx,
+                   frameSlider->minimum(),
+                   frameSlider->maximum());
 
     // Also update the view to display the new frame
     splitViewPrimary->update(true);
@@ -304,11 +319,17 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     updateFrameRange();
 
     if (!chageByPlayback && continuePlayback && currentFrameIdx >= frameSlider->maximum())
-      // The user changed this but we want playback to continue. Unfortunately the new selected sequence does not
-      // have as many frames as the previous one. So we start playback at the start.
+      // The user changed this but we want playback to continue. Unfortunately the new selected
+      // sequence does not have as many frames as the previous one. So we start playback at the
+      // start.
       setCurrentFrame(frameSlider->minimum());
 
-    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsChanged Playback next - currentFrameIdx %d lastValidFrameIdx %d slider %d-%d", currentFrameIdx, lastValidFrameIdx, frameSlider->minimum(), frameSlider->maximum());
+    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsChanged Playback next - "
+                   "currentFrameIdx %d lastValidFrameIdx %d slider %d-%d",
+                   currentFrameIdx,
+                   lastValidFrameIdx,
+                   frameSlider->minimum(),
+                   frameSlider->maximum());
   }
   else
   {
@@ -352,7 +373,12 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     splitViewPrimary->update(true);
     splitViewSeparate->update();
 
-    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsChanged Indexed item - currentFrameIdx %d lastValidFrameIdx %d slider %d-%d", currentFrameIdx, lastValidFrameIdx, frameSlider->minimum(), frameSlider->maximum());
+    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsChanged Indexed item - currentFrameIdx "
+                   "%d lastValidFrameIdx %d slider %d-%d",
+                   currentFrameIdx,
+                   lastValidFrameIdx,
+                   frameSlider->minimum(),
+                   frameSlider->maximum());
   }
 }
 
@@ -367,7 +393,7 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
     updated = setCurrentFrame(frameSlider->maximum());
   else if (currentFrameIdx < frameSlider->minimum())
     updated = setCurrentFrame(frameSlider->minimum());
-  
+
   if (redraw && !updated)
   {
     splitViewPrimary->update(false, true);
@@ -380,17 +406,17 @@ void PlaybackController::updateSettings()
   // Is caching active and do we wait for the caching to complete before playing back?
   QSettings settings;
   settings.beginGroup("VideoCache");
-  bool caching = settings.value("Enabled", true).toBool();
-  bool wait = settings.value("PlaybackPauseCaching", false).toBool();
+  bool caching         = settings.value("Enabled", true).toBool();
+  bool wait            = settings.value("PlaybackPauseCaching", false).toBool();
   waitForCachingOfItem = caching && wait;
 
   // Load the icons for the buttons
-  iconPlay = functions::convertIcon(":img_play.png");
-  iconStop = functions::convertIcon(":img_stop.png");
-  iconPause = functions::convertIcon(":img_pause.png");
-  iconRepeatOff = functions::convertIcon(":img_repeat.png");
-  iconRepeatAll = functions::convertIcon(":img_repeat_on.png");
-  iconRepeatOne = functions::convertIcon(":img_repeat_one.png");
+  iconPlay      = functionsGui::convertIcon(":img_play.png");
+  iconStop      = functionsGui::convertIcon(":img_stop.png");
+  iconPause     = functionsGui::convertIcon(":img_pause.png");
+  iconRepeatOff = functionsGui::convertIcon(":img_repeat.png");
+  iconRepeatAll = functionsGui::convertIcon(":img_repeat_on.png");
+  iconRepeatOne = functionsGui::convertIcon(":img_repeat_one.png");
 
   // Set button icons
   if (playing())
@@ -409,22 +435,26 @@ void PlaybackController::updateFrameRange()
   const QSignalBlocker blocker1(frameSpinBox);
   const QSignalBlocker blocker2(frameSlider);
 
-  indexRange range1 = currentItem[0] ? currentItem[0]->properties().startEndRange : indexRange(-1,-1);
+  indexRange range1 =
+      currentItem[0] ? currentItem[0]->properties().startEndRange : indexRange(-1, -1);
   indexRange range = range1;
   if (currentItem[1])
   {
     // The index range is that of the longer sequence
     indexRange range2 = currentItem[1]->properties().startEndRange;
-    range = indexRange(qMin(range1.first, range2.first), qMax(range1.second, range2.second));
+    range =
+        indexRange(std::min(range1.first, range2.first), std::max(range1.second, range2.second));
   }
   enableControls(true);
-  frameSlider->setEnabled(range != indexRange(-1,-1));    // Disable slider if range == (-1,-1)
+  frameSlider->setEnabled(range != indexRange(-1, -1)); // Disable slider if range == (-1,-1)
   frameSlider->setMaximum(range.second);
   frameSlider->setMinimum(range.first);
   frameSpinBox->setMinimum(range.first);
   frameSpinBox->setMaximum(range.second);
 
-  DEBUG_PLAYBACK("PlaybackController::updateFrameRange - new range %d-%d", frameSlider->minimum(), frameSlider->maximum());
+  DEBUG_PLAYBACK("PlaybackController::updateFrameRange - new range %d-%d",
+                 frameSlider->minimum(),
+                 frameSlider->maximum());
 }
 
 void PlaybackController::enableControls(bool enable)
@@ -447,7 +477,9 @@ void PlaybackController::enableControls(bool enable)
 
 int PlaybackController::getNextFrameIndex()
 {
-  if (currentFrameIdx >= frameSlider->maximum() || (!currentItem[0]->properties().isIndexedByFrame() && (!currentItem[1] || !currentItem[1]->properties().isIndexedByFrame())))
+  if (currentFrameIdx >= frameSlider->maximum() ||
+      (!currentItem[0]->properties().isIndexedByFrame() &&
+       (!currentItem[1] || !currentItem[1]->properties().isIndexedByFrame())))
   {
     // The sequence is at the end. Check the repeat mode to see what the next frame index is
     if (repeatMode == RepeatModeOne)
@@ -506,7 +538,8 @@ void PlaybackController::timerEvent(QTimerEvent *event)
 
         if (playbackMode == PlaybackWaitingForCache)
         {
-          // If we are really waiting, ipdate the views so that the "caching loading" hourglass indicator is drawn.
+          // If we are really waiting, ipdate the views so that the "caching loading" hourglass
+          // indicator is drawn.
           splitViewPrimary->update(false, false);
           splitViewSeparate->update(false, false);
         }
@@ -523,14 +556,15 @@ void PlaybackController::timerEvent(QTimerEvent *event)
   {
     // Do we have to wait for one of the (possibly two) items to load until we can display it/them?
     waitingForItem[0] = currentItem[0]->isLoading() || currentItem[0]->isLoadingDoubleBuffer();
-    waitingForItem[1] = splitViewPrimary->isSplitting() && currentItem[1] && (currentItem[1]->isLoading() || currentItem[1]->isLoadingDoubleBuffer());
+    waitingForItem[1] = splitViewPrimary->isSplitting() && currentItem[1] &&
+                        (currentItem[1]->isLoading() || currentItem[1]->isLoadingDoubleBuffer());
     if (waitingForItem[0] || waitingForItem[1])
     {
-      // The double buffer of the current item or the second item is still loading. Playback is not fast enough.
-      // We must wait until the next frame was loaded (in both items) successfully until we can display it.
-      // We must pause the timer until this happens.
+      // The double buffer of the current item or the second item is still loading. Playback is not
+      // fast enough. We must wait until the next frame was loaded (in both items) successfully
+      // until we can display it. We must pause the timer until this happens.
       timer.stop();
-      playbackMode = PlaybackStalled;
+      playbackMode       = PlaybackStalled;
       playbackWasStalled = true;
       DEBUG_PLAYBACK("PlaybackController::timerEvent playback stalled");
       return;
@@ -544,7 +578,7 @@ void PlaybackController::timerEvent(QTimerEvent *event)
     timerFPSCounter++;
     if (timerFPSCounter >= 50)
     {
-      QTime newFrameTime = QTime::currentTime();
+      QTime  newFrameTime         = QTime::currentTime();
       double msecsSinceLastUpdate = (double)timerLastFPSTime.msecsTo(newFrameTime);
 
       // Print the frames per second as float with one digit after the decimal dot.
@@ -558,14 +592,17 @@ void PlaybackController::timerEvent(QTimerEvent *event)
       playbackWasStalled = false;
 
       timerLastFPSTime = QTime::currentTime();
-      timerFPSCounter = 0;
+      timerFPSCounter  = 0;
     }
 
     // Check if the time interval changed (the user changed the rate of the item)
-    if (currentItem[0]->properties().isIndexedByFrame() || (currentItem[1] && currentItem[1]->properties().isIndexedByFrame()))
+    if (currentItem[0]->properties().isIndexedByFrame() ||
+        (currentItem[1] && currentItem[1]->properties().isIndexedByFrame()))
     {
       // One (of the possibly two items) is indexed by frame. Get and set the frame rate
-      double frameRate = currentItem[0]->properties().isIndexedByFrame() ? currentItem[0]->properties().frameRate : currentItem[1]->properties().frameRate;
+      double frameRate = currentItem[0]->properties().isIndexedByFrame()
+                             ? currentItem[0]->properties().frameRate
+                             : currentItem[1]->properties().frameRate;
       if (frameRate < 0.01)
         frameRate = 0.01;
 
@@ -586,7 +623,8 @@ void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
     {
       // Playback was stalled because we were waiting for the double buffer to load.
       // We can go on now.
-      DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad - timer interval %d", timerInterval);
+      DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad - timer interval %d",
+                     timerInterval);
       timer.start(timerInterval, Qt::PreciseTimer, this);
       timerEvent(nullptr);
       // Playback is not stalled anymore
@@ -597,12 +635,13 @@ void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
 
 /* Set the value currentFrame to frame and update the value in the splinBox and the slider without
  * invoking any events from these controls. Also update the splitView.
-*/
+ */
 bool PlaybackController::setCurrentFrame(int frame, bool updateView)
 {
   if (frame == currentFrameIdx)
     return false;
-  if (!currentItem[0] || (!currentItem[0]->properties().isIndexedByFrame() && (!currentItem[1] || !currentItem[1]->properties().isIndexedByFrame())))
+  if (!currentItem[0] || (!currentItem[0]->properties().isIndexedByFrame() &&
+                          (!currentItem[1] || !currentItem[1]->properties().isIndexedByFrame())))
     // Both items (that are selcted) are not indexed by frame.
     return false;
 

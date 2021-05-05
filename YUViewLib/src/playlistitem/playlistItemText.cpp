@@ -35,8 +35,9 @@
 #include <QColorDialog>
 #include <QFontDialog>
 #include <QPainter>
+#include <QRegularExpression>
 
-#include "common/functions.h"
+#include "common/functionsGui.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMTEXT_DEBUG 0
@@ -49,7 +50,7 @@
 playlistItemText::playlistItemText(const QString &initialText)
   : playlistItem(QString("Text: \"%1\"").arg(initialText), Type::Static)
 {
-  setIcon(0, functions::convertIcon(":img_text.png"));
+  setIcon(0, functionsGui::convertIcon(":img_text.png"));
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
   this->prop.propertiesWidgetTitle = "Text Properties";
@@ -90,7 +91,7 @@ void playlistItemText::createPropertiesWidget()
   vAllLaout->addLayout(createPlaylistItemControls());
   vAllLaout->addWidget(line);
   vAllLaout->addLayout(createTextController());
-  vAllLaout->insertStretch(3, 1); // Push controls up
+  vAllLaout->insertStretch(-1, 1); // Push controls up
 }
 
 QLayout *playlistItemText::createTextController()
@@ -147,7 +148,7 @@ void playlistItemText::on_textEdit_textChanged()
   }
 
   // If there is a newline only show the first line of the text
-  int newlinePos = t.indexOf(QRegExp("[\n\t\r]"));
+  int newlinePos = t.indexOf(QRegularExpression("[\n\t\r]"));
   if (newlinePos != -1)
   {
     t.truncate(newlinePos);
@@ -160,10 +161,8 @@ void playlistItemText::on_textEdit_textChanged()
   emit signalItemChanged(true, RECACHE_NONE);
 }
 
-void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir) const
+void playlistItemText::savePlaylist(QDomElement &root, const QDir &) const
 {
-  Q_UNUSED(playlistDir);
-
   auto d = YUViewDomElement(root.ownerDocument().createElement("playlistItemText"));
 
   playlistItem::appendPropertiesToPlaylist(d);
@@ -194,11 +193,8 @@ playlistItemText *playlistItemText::newplaylistItemText(const YUViewDomElement &
   return newText;
 }
 
-void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
+void playlistItemText::drawItem(QPainter *painter, int, double zoomFactor, bool)
 {
-  Q_UNUSED(frameIdx);
-  Q_UNUSED(drawRawData);
-  
   QTextDocument td;
   td.setHtml(this->text);
 

@@ -58,7 +58,7 @@ public:
              unsigned                      PrevGmParams[8][6]);
 
   MotionType GmType[8]{};
-  unsigned   gm_params[8][6]{};
+  int        gm_params[8][6]{};
   bool       is_global{};
   bool       is_rot_zoom{};
   bool       is_translation{};
