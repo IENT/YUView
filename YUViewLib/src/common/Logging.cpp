@@ -35,14 +35,30 @@
 namespace logging
 {
 
+std::string formatStringVector(const std::vector<std::string> &vec)
+{
+  std::stringstream ss;
+  ss << "[";
+  for (auto it = vec.begin(); it != vec.end(); it++)
+  {
+    if (it != vec.begin())
+      ss << ", ";
+    ss << (*it);
+  }
+  ss << "]";
+  return ss.str();
+}
+
 Logger &Logger::instance()
 {
   static Logger logger;
   return logger;
 }
 
-void Logger::log(LogLevel level, std::string component, std::string message)
+void Logger::log(
+    LogLevel level, std::string file, std::string func, unsigned line, std::string message)
 {
+  std::string component = file + "::" + func + ":" + std::to_string(line);
   this->logEntries.push(LogEntry({level, component, message}));
 }
 

@@ -60,6 +60,7 @@ QStringList getThemeColors(QString themeName);
 QString formatDataSize(double size, bool isBits = false);
 
 QStringList toQStringList(const std::vector<std::string> &stringVec);
+std::vector<std::string> toStringVector(const QStringList &stringList);
 std::string toLower(std::string str);
 
 inline std::string booToString(bool b) { return b ? "True" : "False"; }

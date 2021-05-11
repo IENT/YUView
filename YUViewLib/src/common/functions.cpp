@@ -160,6 +160,14 @@ QStringList functions::toQStringList(const std::vector<std::string> &stringVec)
   return list;
 }
 
+std::vector<std::string> functions::toStringVector(const QStringList &stringList)
+{
+  std::vector<std::string> list;
+  for (const auto &s : stringList)
+    list.push_back(s.toStdString());
+  return list;
+}
+
 std::string functions::toLower(std::string str)
 {
   std::transform(

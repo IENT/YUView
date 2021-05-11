@@ -32,6 +32,9 @@
 
 #pragma once
 
+#include <sstream>
+#include <queue>
+
 // #define DEBUG_LOG(Level, What) \
 //   isEnabled(Level) && scoped_logger(Level, __FILE__, __LINE__).stream() << What
 
@@ -39,8 +42,13 @@
 // do {
 // } while(0)
 
-#include <queue>
-#include <string>
+#define LOG(level, message)                                                                        \
+  do                                                                                               \
+  {                                                                                                \
+    std::stringstream ss;                                                                          \
+    ss << message;                                                                                 \
+    logging::Logger::instance().log(level, __FILE__, __func__, __LINE__, ss.str());                \
+  } while (false)
 
 namespace logging
 {
@@ -59,12 +67,14 @@ struct LogEntry
   std::string message;
 };
 
+std::string formatStringVector(const std::vector<std::string> &vec);
+
 class Logger
 {
 public:
   static Logger &instance();
 
-  void log(LogLevel level, std::string component, std::string message);
+  void log(LogLevel level, std::string file, std::string func, unsigned line, std::string message);
 
 private:
   Logger() = default;
