@@ -35,6 +35,13 @@
 namespace logging
 {
 
+namespace
+{
+
+std::vector<LogLevel> Priorities = {LogLevel::Debug, LogLevel::Info, LogLevel::Error};
+
+}
+
 std::string formatStringVector(const std::vector<std::string> &vec)
 {
   std::stringstream ss;
@@ -55,11 +62,23 @@ Logger &Logger::instance()
   return logger;
 }
 
-void Logger::log(
-    LogLevel level, std::string file, std::string func, unsigned line, std::string message)
+void Logger::log(LogLevel              logLevel,
+                 const std::type_info &info,
+                 std::string           func,
+                 unsigned              line,
+                 std::string           message)
 {
-  std::string component = file + "::" + func + ":" + std::to_string(line);
-  this->logEntries.push(LogEntry({level, component, message}));
+  {
+    auto level    = static_cast<std::underlying_type_t<LogLevel>>(logLevel);
+    auto minLevel = static_cast<std::underlying_type_t<LogLevel>>(this->minLogLevel);
+    if (level < minLevel)
+      return;
+  }
+
+  std::string component = std::string(info.name()) + "::" + func + ":" + std::to_string(line);
+  this->logEntries.push(LogEntry({logLevel, component, message}));
 }
+
+void Logger::setMinLogLevel(LogLevel logLevel) { this->minLogLevel = logLevel; }
 
 } // namespace logging

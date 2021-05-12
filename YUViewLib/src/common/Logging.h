@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include <sstream>
 #include <queue>
+#include <sstream>
 
 // #define DEBUG_LOG(Level, What) \
 //   isEnabled(Level) && scoped_logger(Level, __FILE__, __LINE__).stream() << What
@@ -47,7 +47,7 @@
   {                                                                                                \
     std::stringstream ss;                                                                          \
     ss << message;                                                                                 \
-    logging::Logger::instance().log(level, __FILE__, __func__, __LINE__, ss.str());                \
+    logging::Logger::instance().log(level, typeid(*this), __func__, __LINE__, ss.str());           \
   } while (false)
 
 namespace logging
@@ -74,12 +74,19 @@ class Logger
 public:
   static Logger &instance();
 
-  void log(LogLevel level, std::string file, std::string func, unsigned line, std::string message);
+  void log(LogLevel              level,
+           const std::type_info &info,
+           std::string           func,
+           unsigned              line,
+           std::string           message);
+
+  void setMinLogLevel(LogLevel logLevel);
 
 private:
   Logger() = default;
 
   std::queue<LogEntry> logEntries;
+  LogLevel             minLogLevel{LogLevel::Info};
 };
 
 } // namespace logging
