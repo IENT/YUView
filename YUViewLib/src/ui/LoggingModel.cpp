@@ -47,15 +47,23 @@ int LoggingModel::columnCount(const QModelIndex & /*parent*/) const { return 3; 
 
 QVariant LoggingModel::data(const QModelIndex &index, int role) const
 {
+  const auto col = index.column();
+  const auto row = index.row();
   if (role == Qt::DisplayRole)
   {
-    auto e = Logger::instance().getEntry(index.row());
-    if (index.column() == 0)
+    auto e = Logger::instance().getEntry(row);
+    if (col == 0)
       return QString::fromStdString(LogLevelMapper.getName(e.level));
-    if (index.column() == 1)
+    if (col == 1)
       return QString::fromStdString(e.component);
-    if (index.column() == 2)
+    if (col == 2)
       return QString::fromStdString(e.message);
+  }
+  if (role == Qt::BackgroundRole)
+  {
+    auto e = Logger::instance().getEntry(index.row());
+    if (e.level == LogLevel::Error)
+      return QBrush(Qt::red);
   }
 
   return QVariant();

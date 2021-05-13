@@ -36,4 +36,5 @@ LoggingViewer::LoggingViewer(QWidget *parent) : QWidget(parent)
 {
   this->ui.setupUi(this);
   this->ui.tableView->setModel(&this->loggingModel);
+  this->ui.tableView->resizeColumnsToContents();
 }
