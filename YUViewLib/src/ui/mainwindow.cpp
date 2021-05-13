@@ -378,6 +378,7 @@ void MainWindow::createMenusAndActions()
   helpMenu->addAction("Performance Tests", [this]() { this->performanceTest(); });
   helpMenu->addAction("Reset Window Layout", this, &MainWindow::resetWindowLayout);
   helpMenu->addAction("Clear Settings", this, &MainWindow::closeAndClearSettings);
+  helpMenu->addAction("Show Logs", this, [this]() { this->loggingViewer.show(); });
 
   updateRecentFileActions();
 }
@@ -448,8 +449,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
   event->accept();
 
-  if (!separateViewWindow.isHidden())
-    separateViewWindow.close();
+  if (!this->separateViewWindow.isHidden())
+    this->separateViewWindow.close();
+  if (!this->loggingViewer.isHidden())
+    this->loggingViewer.close();
 }
 
 void MainWindow::openRecentFile()

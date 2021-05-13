@@ -32,8 +32,10 @@
 
 #pragma once
 
-#include <queue>
+#include <deque>
 #include <sstream>
+
+#include <common/EnumMapper.h>
 
 // #define DEBUG_LOG(Level, What) \
 //   isEnabled(Level) && scoped_logger(Level, __FILE__, __LINE__).stream() << What
@@ -60,6 +62,9 @@ enum class LogLevel
   Error
 };
 
+const auto LogLevelMapper = EnumMapper<LogLevel>(
+    {{LogLevel::Debug, "Debug"}, {LogLevel::Info, "Info"}, {LogLevel::Error, "Error"}});
+
 struct LogEntry
 {
   LogLevel    level;
@@ -80,12 +85,16 @@ public:
            unsigned              line,
            std::string           message);
 
+  // Logs with lower level will not me saved
   void setMinLogLevel(LogLevel logLevel);
+
+  size_t   getNrEntries() const;
+  LogEntry getEntry(size_t index) const;
 
 private:
   Logger() = default;
 
-  std::queue<LogEntry> logEntries;
+  std::deque<LogEntry> logEntries;
   LogLevel             minLogLevel{LogLevel::Info};
 };
 

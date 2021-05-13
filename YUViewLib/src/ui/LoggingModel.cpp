@@ -30,64 +30,47 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Logging.h"
+#include "LoggingModel.h"
 
-#include <vector>
+#include <common/Logging.h>
 
-namespace logging
+using namespace logging;
+
+LoggingModel::LoggingModel(QObject *parent) : QAbstractTableModel(parent) {}
+
+int LoggingModel::rowCount(const QModelIndex & /*parent*/) const
 {
-
-namespace
-{
-
-std::vector<LogLevel> Priorities = {LogLevel::Debug, LogLevel::Info, LogLevel::Error};
-
+  return int(Logger::instance().getNrEntries());
 }
 
-std::string formatStringVector(const std::vector<std::string> &vec)
+int LoggingModel::columnCount(const QModelIndex & /*parent*/) const { return 3; }
+
+QVariant LoggingModel::data(const QModelIndex &index, int role) const
 {
-  std::stringstream ss;
-  ss << "[";
-  for (auto it = vec.begin(); it != vec.end(); it++)
+  if (role == Qt::DisplayRole)
   {
-    if (it != vec.begin())
-      ss << ", ";
-    ss << (*it);
-  }
-  ss << "]";
-  return ss.str();
-}
-
-Logger &Logger::instance()
-{
-  static Logger logger;
-  return logger;
-}
-
-void Logger::log(LogLevel              logLevel,
-                 const std::type_info &info,
-                 std::string           func,
-                 unsigned              line,
-                 std::string           message)
-{
-  {
-    auto level    = static_cast<std::underlying_type_t<LogLevel>>(logLevel);
-    auto minLevel = static_cast<std::underlying_type_t<LogLevel>>(this->minLogLevel);
-    if (level < minLevel)
-      return;
+    auto e = Logger::instance().getEntry(index.row());
+    if (index.column() == 0)
+      return QString::fromStdString(LogLevelMapper.getName(e.level));
+    if (index.column() == 1)
+      return QString::fromStdString(e.component);
+    if (index.column() == 2)
+      return QString::fromStdString(e.message);
   }
 
-  std::string component = std::string(info.name()) + "::" + func + ":" + std::to_string(line);
-  this->logEntries.push_back(LogEntry({logLevel, component, message}));
+  return QVariant();
 }
 
-void Logger::setMinLogLevel(LogLevel logLevel) { this->minLogLevel = logLevel; }
-
-size_t Logger::getNrEntries() const { return this->logEntries.size(); }
-
-LogEntry Logger::getEntry(size_t index) const
+QVariant LoggingModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-  return this->logEntries.at(index);
+  if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
+  {
+    if (section == 0)
+      return QString("Level");
+    if (section == 1)
+      return QString("Component");
+    if (section == 2)
+      return QString("Message");
+  }
+  return QVariant();
 }
-
-} // namespace logging
