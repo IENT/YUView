@@ -57,17 +57,23 @@ namespace logging
 
 enum class LogLevel
 {
+  Trace,
   Debug,
   Info,
+  Warning,
   Error
 };
 
-const auto LogLevelMapper = EnumMapper<LogLevel>(
-    {{LogLevel::Debug, "Debug"}, {LogLevel::Info, "Info"}, {LogLevel::Error, "Error"}});
+const auto LogLevelMapper = EnumMapper<LogLevel>({{LogLevel::Trace, "Trace"},
+                                                  {LogLevel::Debug, "Debug"},
+                                                  {LogLevel::Info, "Info"},
+                                                  {LogLevel::Warning, "Warning"},
+                                                  {LogLevel::Error, "Error"}});
 
 struct LogEntry
 {
   LogLevel    level;
+  std::string time;
   std::string component;
   std::string message;
 };

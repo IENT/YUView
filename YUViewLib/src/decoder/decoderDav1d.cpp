@@ -41,7 +41,6 @@
 #include "common/typedef.h"
 #include "common/functions.h"
 
-using namespace YUView;
 using namespace YUV_Internals;
 
 // Debug the decoder (0:off 1:interactive deocder only 2:caching decoder only 3:both)
@@ -88,8 +87,8 @@ decoderDav1d::decoderDav1d(int signalID, bool cachingDecoder) : decoderBaseSingl
 {
   currentOutputBuffer.clear();
 
-  // Libde265 can only decoder HEVC in YUV format
-  rawFormat = raw_YUV;
+  // Dav1d can only decoder AV1 in YUV format
+  this->rawFormat = video::RawFormat::YUV;
 
   QSettings settings;
   settings.beginGroup("Decoders");

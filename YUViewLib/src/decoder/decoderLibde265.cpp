@@ -40,7 +40,7 @@
 #include "common/typedef.h"
 #include "common/functions.h"
 
-using namespace YUView;
+using namespace video;
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define DECODERLIBD265_DEBUG_OUTPUT 0
@@ -74,7 +74,7 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
   currentOutputBuffer.clear();
 
   // Libde265 can only decoder HEVC in YUV format
-  rawFormat = raw_YUV;
+  this->rawFormat = RawFormat::YUV;
 
   QSettings settings;
   settings.beginGroup("Decoders");

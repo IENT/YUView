@@ -36,9 +36,10 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "ffmpeg/FFMpegLibrariesTypes.h"
-#include "video/videoHandlerRGB.h"
-#include "video/videoHandlerYUV.h"
+#include <ffmpeg/FFMpegLibrariesTypes.h>
+#include <video/videoHandlerRGB.h>
+#include <video/videoHandlerYUV.h>
+#include <video/videoTypes.h>
 
 using namespace FFmpeg;
 
@@ -959,7 +960,10 @@ public:
   AVPixFmtDescriptorWrapper(){};
   AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, FFmpegLibraryVersion libVer);
 
-  YUView::RawFormat getRawFormat() { return flagIsRGB() ? YUView::raw_RGB : YUView::raw_YUV; }
+  video::RawFormat getRawFormat()
+  {
+    return this->flagIsRGB() ? video::RawFormat::RGB : video::RawFormat::YUV;
+  }
   YUV_Internals::YUVPixelFormat getYUVPixelFormat();
   RGB_Internals::rgbPixelFormat getRGBPixelFormat();
 

@@ -35,6 +35,7 @@
 #include "FileSource.h"
 #include "ffmpeg/FFMpegLibrariesHandling.h"
 #include "video/videoHandlerYUV.h"
+#include "video/videoTypes.h"
 
 /* This class can use the ffmpeg libraries (libavcodec) to read from any packetized file.
  */
@@ -64,7 +65,7 @@ public:
   // Get properties of the bitstream
   double                        getFramerate() const { return frameRate; }
   Size                          getSequenceSizeSamples() const { return frameSize; }
-  YUView::RawFormat             getRawFormat() const { return rawFormat; }
+  video::RawFormat              getRawFormat() const { return rawFormat; }
   YUV_Internals::YUVPixelFormat getPixelFormatYUV() const { return pixelFormat_yuv; }
   RGB_Internals::rgbPixelFormat getPixelFormatRGB() const { return pixelFormat_rgb; }
 
@@ -153,7 +154,7 @@ protected:
   };
   streamIndices_t streamIndices;
 
-  YUView::RawFormat              rawFormat{YUView::raw_Invalid};
+  video::RawFormat               rawFormat{video::RawFormat::Invalid};
   YUV_Internals::YUVPixelFormat  pixelFormat_yuv;
   RGB_Internals::rgbPixelFormat  pixelFormat_rgb;
   YUV_Internals::ColorConversion colorConversionType{

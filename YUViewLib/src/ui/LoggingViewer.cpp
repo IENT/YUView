@@ -37,4 +37,10 @@ LoggingViewer::LoggingViewer(QWidget *parent) : QWidget(parent)
   this->ui.setupUi(this);
   this->ui.tableView->setModel(&this->loggingModel);
   this->ui.tableView->resizeColumnsToContents();
+
+  connect(
+      &this->modelUpdateTimer, &QTimer::timeout, &this->loggingModel, &LoggingModel::updateNumberModelItems);
 }
+
+void LoggingViewer::showEvent(QShowEvent *event) { this->modelUpdateTimer.start(1000); }
+void LoggingViewer::hideEvent(QHideEvent *event) { this->modelUpdateTimer.stop(); }

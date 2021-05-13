@@ -181,7 +181,7 @@ void PacketItemModel::updateNumberModelItems()
   if (nrAddItems == 0)
     return;
 
-  auto lastIndex = int(nrShowChildItems);
+  auto lastIndex = int(this->nrShowChildItems);
   beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
   this->nrShowChildItems = unsigned(n);
   endInsertRows();

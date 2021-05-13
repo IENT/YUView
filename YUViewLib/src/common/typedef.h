@@ -49,19 +49,6 @@
 #include <utility>
 #include <vector>
 
-namespace YUView
-{
-Q_NAMESPACE;
-
-typedef enum
-{
-  raw_Invalid,
-  raw_YUV,
-  raw_RGB
-} RawFormat;
-
-} // namespace YUView
-
 // Maximum possible value for int
 #ifndef INT_MAX
 #define INT_MAX 2147483647

@@ -33,8 +33,11 @@
 #pragma once
 
 #include "playlistItem.h"
-#include "video/videoHandlerRGB.h"
-#include "video/videoHandlerYUV.h"
+
+#include <video/videoHandlerRGB.h>
+#include <video/videoHandlerYUV.h>
+#include <video/videoTypes.h>
+#include <common/Logging.h>
 
 #include <memory>
 
@@ -116,26 +119,26 @@ protected:
   std::unique_ptr<videoHandler> video;
 
   // The videoHandler can be a videoHandlerRGB or a videoHandlerYUV
-  YUView::RawFormat rawFormat {YUView::raw_Invalid};
+  video::RawFormat rawFormat {video::RawFormat::Invalid};
   // Get a raw pointer to either version of the videoHandler
   videoHandlerYUV *getYUVVideo()
   {
-    assert(rawFormat == YUView::raw_YUV);
+    assert(rawFormat == video::RawFormat::YUV);
     return dynamic_cast<videoHandlerYUV *>(video.get());
   }
   videoHandlerRGB *getRGBVideo()
   {
-    assert(rawFormat == YUView::raw_RGB);
+    assert(rawFormat == video::RawFormat::RGB);
     return dynamic_cast<videoHandlerRGB *>(video.get());
   }
   const videoHandlerYUV *getYUVVideo() const
   {
-    assert(rawFormat == YUView::raw_YUV);
+    assert(rawFormat == video::RawFormat::YUV);
     return dynamic_cast<const videoHandlerYUV *>(video.get());
   }
   const videoHandlerRGB *getRGBVideo() const
   {
-    assert(rawFormat == YUView::raw_RGB);
+    assert(rawFormat == video::RawFormat::RGB);
     return dynamic_cast<const videoHandlerRGB *>(video.get());
   }
 
@@ -152,6 +155,7 @@ protected:
   bool unresolvableError {};
   bool setError(QString error)
   {
+    LOG(logging::LogLevel::Error, error.toStdString());
     unresolvableError = true;
     infoText          = error;
     return false;

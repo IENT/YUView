@@ -32,7 +32,10 @@
 
 #include "Logging.h"
 
+#include <chrono>
+#include <iomanip>
 #include <vector>
+
 
 namespace logging
 {
@@ -42,7 +45,21 @@ namespace
 
 std::vector<LogLevel> Priorities = {LogLevel::Debug, LogLevel::Info, LogLevel::Error};
 
+std::string formatCurrentTime()
+{
+  auto now  = std::chrono::system_clock::now();
+  auto ms   = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+  auto time = std::chrono::system_clock::to_time_t(now);
+  auto bt   = std::localtime(&time);
+
+  std::ostringstream ss;
+  ss << std::put_time(bt, "%H:%M:%S"); // HH:MM:SS
+  ss << '.' << std::setfill('0') << std::setw(3) << ms.count();
+
+  return ss.str();
 }
+
+} // namespace
 
 std::string formatStringVector(const std::vector<std::string> &vec)
 {
@@ -78,16 +95,17 @@ void Logger::log(LogLevel              logLevel,
   }
 
   std::string component = std::string(info.name()) + "::" + func + ":" + std::to_string(line);
-  this->logEntries.push_back(LogEntry({logLevel, component, message}));
+  this->logEntries.push_back(LogEntry({logLevel, formatCurrentTime(), component, message}));
 }
 
 void Logger::setMinLogLevel(LogLevel logLevel) { this->minLogLevel = logLevel; }
 
-size_t Logger::getNrEntries() const { return this->logEntries.size(); }
-
-LogEntry Logger::getEntry(size_t index) const
+size_t Logger::getNrEntries() const
 {
-  return this->logEntries.at(index);
+  auto nrEntries = this->logEntries.size();
+  return nrEntries;
 }
+
+LogEntry Logger::getEntry(size_t index) const { return this->logEntries.at(index); }
 
 } // namespace logging

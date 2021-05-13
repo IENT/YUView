@@ -32,24 +32,19 @@
 
 #pragma once
 
-#include <QAbstractTableModel>
-#include <QWidget>
+#include "common/EnumMapper.h"
 
-#include "ui_LoggingViewer.h"
-
-class LoggingModel : public QAbstractTableModel
+namespace video
 {
-  Q_OBJECT
-public:
-  LoggingModel(QObject *parent = nullptr);
-  int      rowCount(const QModelIndex &parent = QModelIndex()) const override;
-  int      columnCount(const QModelIndex &parent = QModelIndex()) const override;
-  QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-  QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
-public slots:
-  void updateNumberModelItems();
-
-private:
-  size_t nrRows{};
+enum class RawFormat
+{
+  Invalid,
+  YUV,
+  RGB
 };
+
+const auto RawFormatMapper = EnumMapper<RawFormat>(
+    {{RawFormat::Invalid, "Invalid"}, {RawFormat::YUV, "YUV"}, {RawFormat::RGB, "RGB"}});
+
+} // namespace video

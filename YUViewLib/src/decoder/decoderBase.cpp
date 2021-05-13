@@ -35,8 +35,6 @@
 #include <QDir>
 #include <QSettings>
 
-using namespace YUView;
-
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define DECODERBASE_DEBUG_OUTPUT 0
 #if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
@@ -63,10 +61,10 @@ decoderBase::decoderBase(bool cachingDecoder)
 void decoderBase::resetDecoder()
 {
   DEBUG_DECODERBASE("decoderBase::resetDecoder");
-  decoderState = DecoderState::NeedsMoreData;
-  frameSize = {};
-  formatYUV = YUV_Internals::YUVPixelFormat();
-  rawFormat = raw_Invalid;
+  this->decoderState = DecoderState::NeedsMoreData;
+  this->frameSize = {};
+  this->formatYUV = YUV_Internals::YUVPixelFormat();
+  this->rawFormat = video::RawFormat::Invalid;
 }
 
 stats::FrameTypeData decoderBase::getCurrentFrameStatsForType(int typeId)

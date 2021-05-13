@@ -32,7 +32,7 @@
 
 #include "playlistItemWithVideo.h"
 
-using namespace YUView;
+using namespace video;
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMWITHVIDEO_DEBUG_LOADING 0
@@ -46,11 +46,11 @@ playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName)
  : playlistItem(itemNameOrFileName, Type::Indexed)
 {
   // Nothing is currently being loaded
-  isFrameLoading = false;
-  isFrameLoadingDoubleBuffer = false;
-  unresolvableError = false;
+  this->isFrameLoading = false;
+  this->isFrameLoadingDoubleBuffer = false;
+  this->unresolvableError = false;
   // No videoHandler is allocated yet. Don't forget to do this in derived classes.
-  rawFormat = raw_Invalid;
+  this->rawFormat = RawFormat::Invalid;
 };
 
 QSize playlistItemWithVideo::getSize() const 

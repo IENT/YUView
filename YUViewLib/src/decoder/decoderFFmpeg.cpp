@@ -42,7 +42,7 @@
 #define DEBUG_FFMPEG(f) ((void)0)
 #endif
 
-using namespace YUView;
+using namespace video;
 using namespace YUV_Internals;
 using namespace RGB_Internals;
 
@@ -182,7 +182,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
   // AVDictionaryWrapper dict = this->ff.get_metadata(frame);
   // QStringPairList values = this->ff.getDictionary_entries(dict, "", 0);
 
-  if (this->rawFormat == raw_YUV)
+  if (this->rawFormat == RawFormat::YUV)
   {
     // At first get how many bytes we are going to write
     const YUVPixelFormat pixFmt           = this->getYUVPixelFormat();
@@ -218,7 +218,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
       }
     }
   }
-  else if (this->rawFormat == raw_RGB)
+  else if (this->rawFormat == RawFormat::RGB)
   {
     const rgbPixelFormat pixFmt           = this->getRGBPixelFormat();
     const auto           nrBytesPerSample = pixFmt.bitsPerValue <= 8 ? 1 : 2;
@@ -466,9 +466,9 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
   AVPixFmtDescriptorWrapper ffmpegPixFormat =
       this->ff.getAvPixFmtDescriptionFromAvPixelFormat(decCtx.getPixelFormat());
   this->rawFormat = ffmpegPixFormat.getRawFormat();
-  if (this->rawFormat == raw_YUV)
+  if (this->rawFormat == RawFormat::YUV)
     this->formatYUV = ffmpegPixFormat.getYUVPixelFormat();
-  else if (this->rawFormat == raw_RGB)
+  else if (this->rawFormat == RawFormat::RGB)
     this->formatRGB = ffmpegPixFormat.getRGBPixelFormat();
 
   // Ask the decoder to provide motion vectors (if possible)

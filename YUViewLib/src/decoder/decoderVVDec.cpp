@@ -103,7 +103,7 @@ decoderVVDec::decoderVVDec(int signalID, bool cachingDecoder)
   // For now we don't support different signals (like prediction, residual)
   (void)signalID;
 
-  this->rawFormat = YUView::raw_YUV;
+  this->rawFormat = video::RawFormat::YUV;
 
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;

@@ -40,7 +40,7 @@
 #include "common/functionsGui.h"
 #include "handler/itemMemoryHandler.h"
 
-using namespace YUView;
+using namespace video;
 using namespace YUV_Internals;
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -87,12 +87,12 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   if (ext == "yuv" || ext == "nv21" || fmt.toLower() == "yuv" || ext == "y4m")
   {
     video.reset(new videoHandlerYUV);
-    rawFormat = raw_YUV;
+    this->rawFormat = RawFormat::YUV;
   }
   else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg" || fmt.toLower() == "rgb")
   {
     video.reset(new videoHandlerRGB);
-    rawFormat = raw_RGB;
+    this->rawFormat = RawFormat::RGB;
   }
   else
     Q_ASSERT_X(false, Q_FUNC_INFO, "No video handler for the raw file format found.");
@@ -127,9 +127,9 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   {
     // Just set the given values
     video->setFrameSize(frameSize);
-    if (rawFormat == raw_YUV)
+    if (rawFormat == RawFormat::YUV)
       getYUVVideo()->setYUVPixelFormatByName(sourcePixelFormat);
-    else if (rawFormat == raw_RGB)
+    else if (rawFormat == RawFormat::RGB)
       getRGBVideo()->setRGBPixelFormatByName(sourcePixelFormat);
   }
 
@@ -182,7 +182,7 @@ void playlistItemRawFile::updateStartEndRange()
 
 infoData playlistItemRawFile::getInfo() const
 {
-  infoData info((rawFormat == raw_YUV) ? "YUV File Info" : "RGB File Info");
+  infoData info((rawFormat == RawFormat::YUV) ? "YUV File Info" : "RGB File Info");
 
   // At first append the file information part (path, date created, file size...)
   info.items.append(dataSource.getFileInfoList());
@@ -456,7 +456,7 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
   // Append all the properties of the raw file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
   d.appendProperiteChild("relativePath", relativePath);
-  d.appendProperiteChild(std::string("type"), (rawFormat == raw_YUV) ? "YUV" : "RGB");
+  d.appendProperiteChild(std::string("type"), (rawFormat == RawFormat::YUV) ? "YUV" : "RGB");
 
   this->video->savePlaylist(d);
 
@@ -520,7 +520,7 @@ void playlistItemRawFile::slotVideoPropertiesChanged()
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
-  return ValuePairListSets((rawFormat == raw_YUV) ? "YUV" : "RGB",
+  return ValuePairListSets((rawFormat == RawFormat::YUV) ? "YUV" : "RGB",
                            video->getPixelValues(pixelPos, frameIdx));
 }
 

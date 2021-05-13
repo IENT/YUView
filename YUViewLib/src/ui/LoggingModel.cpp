@@ -38,12 +38,12 @@ using namespace logging;
 
 LoggingModel::LoggingModel(QObject *parent) : QAbstractTableModel(parent) {}
 
-int LoggingModel::rowCount(const QModelIndex & /*parent*/) const
+int LoggingModel::rowCount(const QModelIndex &) const
 {
-  return int(Logger::instance().getNrEntries());
+  return int(this->nrRows);
 }
 
-int LoggingModel::columnCount(const QModelIndex & /*parent*/) const { return 3; }
+int LoggingModel::columnCount(const QModelIndex &) const { return 4; }
 
 QVariant LoggingModel::data(const QModelIndex &index, int role) const
 {
@@ -53,15 +53,17 @@ QVariant LoggingModel::data(const QModelIndex &index, int role) const
   {
     auto e = Logger::instance().getEntry(row);
     if (col == 0)
-      return QString::fromStdString(LogLevelMapper.getName(e.level));
+      return QString::fromStdString(e.time);
     if (col == 1)
-      return QString::fromStdString(e.component);
+      return QString::fromStdString(LogLevelMapper.getName(e.level));
     if (col == 2)
+      return QString::fromStdString(e.component);
+    if (col == 3)
       return QString::fromStdString(e.message);
   }
   if (role == Qt::BackgroundRole)
   {
-    auto e = Logger::instance().getEntry(index.row());
+    auto e = Logger::instance().getEntry(row);
     if (e.level == LogLevel::Error)
       return QBrush(Qt::red);
   }
@@ -74,11 +76,27 @@ QVariant LoggingModel::headerData(int section, Qt::Orientation orientation, int 
   if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
   {
     if (section == 0)
-      return QString("Level");
+      return QString("Time");
     if (section == 1)
-      return QString("Component");
+      return QString("Level");
     if (section == 2)
+      return QString("Component");
+    if (section == 3)
       return QString("Message");
   }
   return QVariant();
+}
+
+void LoggingModel::updateNumberModelItems()
+{
+  auto n = Logger::instance().getNrEntries();
+  Q_ASSERT_X(n >= this->nrRows, Q_FUNC_INFO, "Setting a smaller number of rows");
+  auto nrAddItems = int(n - this->nrRows);
+  if (nrAddItems == 0)
+    return;
+
+  auto lastIndex = int(this->nrRows);
+  beginInsertRows(QModelIndex(), lastIndex, lastIndex + nrAddItems - 1);
+  this->nrRows = unsigned(n);
+  endInsertRows();
 }

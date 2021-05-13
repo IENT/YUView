@@ -35,8 +35,8 @@
 #include <QProgressDialog>
 #include <QSettings>
 
-#include "parser/common/SubByteReaderLogging.h"
 #include "parser/AV1/obu_header.h"
+#include "parser/common/SubByteReaderLogging.h"
 
 #define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
@@ -46,7 +46,7 @@
 #define DEBUG_FFMPEG(fmt, ...) ((void)0)
 #endif
 
-using namespace YUView;
+using namespace video;
 using namespace YUV_Internals;
 using namespace parser::reader;
 
@@ -312,8 +312,7 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
   else if (codecID.isAV1())
   {
     // This should be a normal OBU for the seuqence header starting with the OBU header
-    SubByteReaderLogging reader(
-        SubByteReaderLogging::convertToByteVector(extradata), nullptr);
+    SubByteReaderLogging    reader(SubByteReaderLogging::convertToByteVector(extradata), nullptr);
     parser::av1::obu_header header;
     header.parse(reader);
     if (header.obu_type == parser::av1::ObuType::OBU_SEQUENCE_HEADER)
@@ -514,17 +513,17 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   auto ffmpegPixFormat = this->ff.getAvPixFmtDescriptionFromAvPixelFormat(
       this->video_stream.getCodec().getPixelFormat());
   this->rawFormat = ffmpegPixFormat.getRawFormat();
-  if (this->rawFormat == raw_YUV)
+  if (this->rawFormat == RawFormat::YUV)
     this->pixelFormat_yuv = ffmpegPixFormat.getYUVPixelFormat();
-  else if (this->rawFormat == raw_RGB)
+  else if (this->rawFormat == RawFormat::RGB)
     this->pixelFormat_rgb = ffmpegPixFormat.getRGBPixelFormat();
 
   this->duration = this->formatCtx.getDuration();
   this->timeBase = this->video_stream.getTimeBase();
 
-  auto colSpace = this->video_stream.getColorspace();
-  auto w        = this->video_stream.getFrameWidth();
-  auto h        = this->video_stream.getFrameHeight();
+  auto colSpace   = this->video_stream.getColorspace();
+  auto w          = this->video_stream.getFrameWidth();
+  auto h          = this->video_stream.getFrameHeight();
   this->frameSize = Size(w, h);
 
   if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)

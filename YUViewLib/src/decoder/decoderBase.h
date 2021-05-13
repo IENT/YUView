@@ -39,6 +39,7 @@
 #include <statistics/StatisticsData.h>
 #include <video/videoHandlerRGB.h>
 #include <video/videoHandlerYUV.h>
+#include <video/videoTypes.h>
 
 enum class DecoderEngine
 {
@@ -103,7 +104,7 @@ public:
   // is probably needed.
   virtual bool                  decodeNextFrame() = 0;
   virtual QByteArray            getRawFrameData() = 0;
-  YUView::RawFormat             getRawFormat() const { return this->rawFormat; }
+  video::RawFormat              getRawFormat() const { return this->rawFormat; }
   YUV_Internals::YUVPixelFormat getYUVPixelFormat() const { return this->formatYUV; }
   RGB_Internals::rgbPixelFormat getRGBPixelFormat() const { return this->formatRGB; }
   Size                          getFrameSize() { return this->frameSize; }
@@ -156,7 +157,7 @@ protected:
   Size frameSize;
 
   // Some decoders are able to handel both YUV and RGB output
-  YUView::RawFormat             rawFormat;
+  video::RawFormat              rawFormat;
   YUV_Internals::YUVPixelFormat formatYUV;
   RGB_Internals::rgbPixelFormat formatRGB;
 

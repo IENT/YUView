@@ -41,6 +41,8 @@
 #include "statistics/StatisticsData.h"
 #include "ui_playlistItemCompressedFile.h"
 
+#include <mutex>
+
 class videoHandler;
 
 /* This playlist item encapsulates all compressed video sequences.
@@ -158,8 +160,7 @@ protected:
 
   // Only cache one frame at a time. Caching should also always be done in display order of the
   // frames.
-  // TODO: Could we somehow make shure that caching is always performed in display order?
-  QMutex cachingMutex;
+  std::mutex cachingMutex;
 
   stats::StatisticUIHandler statisticsUIHandler;
   stats::StatisticsData     statisticsData;

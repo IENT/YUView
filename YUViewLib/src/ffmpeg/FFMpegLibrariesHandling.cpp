@@ -53,7 +53,6 @@
 #define LOG(x) log(__func__, x)
 #endif
 
-using namespace YUView;
 using namespace parser::reader;
 
 namespace
@@ -1646,7 +1645,7 @@ FFmpegVersionHandler::getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixF
 
 YUV_Internals::YUVPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
 {
-  if (getRawFormat() == raw_RGB || !flagsSupported())
+  if (this->getRawFormat() == video::RawFormat::YUV || !flagsSupported())
     return YUV_Internals::YUVPixelFormat();
 
   YUV_Internals::Subsampling subsampling;
@@ -1695,19 +1694,19 @@ YUV_Internals::YUVPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
 
 RGB_Internals::rgbPixelFormat AVPixFmtDescriptorWrapper::getRGBPixelFormat()
 {
-  if (getRawFormat() == raw_YUV || !flagsSupported())
-    return RGB_Internals::rgbPixelFormat();
+  if (this->getRawFormat() == video::RawFormat::YUV || !flagsSupported())
+    return {};
 
   int bitsPerSample = comp[0].depth;
   for (int i = 1; i < nb_components; i++)
     if (comp[i].depth != bitsPerSample)
       // Varying bit depths for components is not supported
-      return RGB_Internals::rgbPixelFormat();
+      return {};
 
   if (this->flagIsBitWisePacked())
     // Maybe this could be supported but I don't think that any decoder actually uses this.
     // If you encounter a format that does not work because of this check please let us know.
-    return RGB_Internals::rgbPixelFormat();
+    return {};
 
   // The only possible order of planes seems to be RGB(A)
   return RGB_Internals::rgbPixelFormat(
