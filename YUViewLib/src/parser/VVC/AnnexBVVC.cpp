@@ -39,6 +39,7 @@
 #include "SEI/sei_message.h"
 #include "access_unit_delimiter_rbsp.h"
 #include "adaptation_parameter_set_rbsp.h"
+#include "common/Logging.h"
 #include "decoding_capability_information_rbsp.h"
 #include "end_of_bitstream_rbsp.h"
 #include "end_of_seq_rbsp.h"
@@ -51,18 +52,11 @@
 #include "slice_layer_rbsp.h"
 #include "video_parameter_set_rbsp.h"
 
-#define PARSER_VVC_DEBUG_OUTPUT 0
-#if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_VVC(msg) qDebug() << msg
-#else
-#define DEBUG_VVC(msg) ((void)0)
-#endif
-
 namespace parser
 {
 
 using namespace vvc;
+using namespace logging;
 
 double AnnexBVVC::getFramerate() const
 {
@@ -145,7 +139,7 @@ std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
       auto picHeader = slice->slice_header_instance.picture_header_structure_instance;
       if (!picHeader)
       {
-        DEBUG_VVC("Error - Slice has no picture header");
+        LOG(LogLevel::Error, "Slice has no picture header");
         continue;
       }
 
@@ -235,7 +229,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                               const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
-                              std::shared_ptr<TreeItem>                                    parent)
+                              std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -467,7 +461,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     parseResult.success = false;
   }
 
-  DEBUG_VVC("AnnexBVVC::parseAndAddNALUnit NAL " + QString::fromStdString(specificDescription));
+  LOG(LogLevel::Debug, "NAL " << specificDescription);
 
   updatedParsingState.lastFrameIsKeyframe = (nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
                                              nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
@@ -480,9 +474,10 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
   if (auDelimiterDetector.isStartOfNewAU(nalVVC, updatedParsingState.currentPictureHeaderStructure))
   {
-    DEBUG_VVC("Start of new AU. Adding bitrate " << this->parsingState.sizeCurrentAU << " POC "
-                                                 << this->parsingState.lastFramePOC << " AU "
-                                                 << this->parsingState.counterAU);
+    LOG(LogLevel::Debug,
+        "Start of new AU. Adding bitrate " << this->parsingState.sizeCurrentAU << " POC "
+                                           << this->parsingState.lastFramePOC << " AU "
+                                           << this->parsingState.counterAU);
 
     BitratePlotModel::BitrateEntry entry;
     if (bitrateEntry)
@@ -510,13 +505,15 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       parseResult.success = false;
     }
     if (this->parsingState.curFrameFileStartEndPos)
-      DEBUG_VVC("Adding start/end " << this->parsingState.curFrameFileStartEndPos->first << "/"
-                                    << this->parsingState.curFrameFileStartEndPos->second
-                                    << " - AU " << this->parsingState.counterAU
-                                    << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
+      LOG(LogLevel::Debug,
+          "Adding start/end " << this->parsingState.curFrameFileStartEndPos->first << "/"
+                              << this->parsingState.curFrameFileStartEndPos->second << " - AU "
+                              << this->parsingState.counterAU
+                              << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
     else
-      DEBUG_VVC("Adding start/end %d/%d - POC NA/NA"
-                << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
+      LOG(LogLevel::Debug,
+          "Adding start/end %d/%d - POC NA/NA"
+              << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
 
     updatedParsingState.curFrameFileStartEndPos = nalStartEndPosFile;
     updatedParsingState.sizeCurrentAU           = 0;
