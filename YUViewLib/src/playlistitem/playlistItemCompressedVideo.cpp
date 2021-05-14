@@ -572,7 +572,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
   if (caching && cachingDecoder->errorInDecoder())
     return;
 
-  LOG(LogLevel::Trace, "Load Raw data frame " << frameIdx << caching ? " caching" : "");
+  LOG(LogLevel::Trace, "Load Raw data frame " << frameIdx << (caching ? " caching" : ""));
 
   if (frameIdx > this->properties().startEndRange.second || frameIdx < 0)
   {
@@ -616,7 +616,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       // currentFrameIdx[] indices
       this->readAnnexBFrameCounterCodingOrder = int(seekToFrame);
       LOG(LogLevel::Debug,
-          "Seeking to frame " << seekToFrame << " DTS " << seekToDTS << caching ? " caching" : "");
+          "Seeking to frame " << seekToFrame << " DTS " << seekToDTS << (caching ? " caching" : ""));
       this->seekToPosition(this->readAnnexBFrameCounterCodingOrder, seekToDTS, caching);
     }
   }
@@ -728,7 +728,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
           currentFrameIdx[0]++;
 
         LOG(LogLevel::Debug,
-            "Decoded frame " << caching ? this->currentFrameIdx[1] : this->currentFrameIdx[0]);
+            "Decoded frame " << (caching ? this->currentFrameIdx[1] : this->currentFrameIdx[0]));
         rightFrame = caching ? currentFrameIdx[1] == frameIdx : currentFrameIdx[0] == frameIdx;
         if (rightFrame)
         {
@@ -1134,12 +1134,12 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
     if (stateYUV == ItemLoadingState::LoadingNeeded)
     {
       // Load the requested current frame
-      LOG(LogLevel::Debug, "Loading frame " << frameIdx << playing ? " (playing)" : "");
+      LOG(LogLevel::Debug, "Loading frame " << frameIdx << (playing ? " (playing)" : ""));
       this->video->loadFrame(frameIdx);
     }
     if (stateStat == ItemLoadingState::LoadingNeeded)
     {
-      LOG(LogLevel::Debug, "Loading statistics " << frameIdx << playing ? " (playing)" : "");
+      LOG(LogLevel::Debug, "Loading statistics " << frameIdx << (playing ? " (playing)" : ""));
       this->loadStatistics(frameIdx);
     }
 
@@ -1155,7 +1155,7 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
     auto nextFrameIdx = frameIdx + 1;
     if (nextFrameIdx <= this->properties().startEndRange.second)
     {
-      LOG(LogLevel::Debug, "Loading frame " << nextFrameIdx << playing ? " (playing)" : "");
+      LOG(LogLevel::Debug, "Loading frame " << nextFrameIdx << (playing ? " (playing)" : ""));
       this->isFrameLoadingDoubleBuffer = true;
       this->video->loadFrame(nextFrameIdx, true);
       this->isFrameLoadingDoubleBuffer = false;
