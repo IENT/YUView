@@ -37,13 +37,6 @@
 
 #include <common/EnumMapper.h>
 
-// #define DEBUG_LOG(Level, What) \
-//   isEnabled(Level) && scoped_logger(Level, __FILE__, __LINE__).stream() << What
-
-// define...
-// do {
-// } while(0)
-
 #define LOG(level, message)                                                                        \
   do                                                                                               \
   {                                                                                                \
