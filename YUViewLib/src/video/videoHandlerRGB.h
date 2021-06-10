@@ -36,6 +36,15 @@
 #include "ui_videoHandlerRGB.h"
 #include "videoHandler.h"
 
+enum class ComponentShow
+{
+  All,
+  R,
+  G,
+  B,
+  A
+};
+
 /** The videoHandlerRGB can be used in any playlistItem to read/display RGB data. A playlistItem
  * could even provide multiple RGB videos. A videoHandlerRGB supports handling of RGB data and can
  * return a specific frame as a image by calling getOneFrame. All conversions from the various raw
@@ -74,7 +83,8 @@ public:
 
   virtual QString getFormatAsString() const override
   {
-    return frameHandler::getFormatAsString() + ";RGB;" + QString::fromStdString(this->srcPixelFormat.getName());
+    return frameHandler::getFormatAsString() + ";RGB;" +
+           QString::fromStdString(this->srcPixelFormat.getName());
   }
   virtual bool setFormatFromString(QString format) override;
 
@@ -82,6 +92,8 @@ public:
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change.
   virtual QLayout *createVideoHandlerControls(bool isSizeFixed = false) override;
+  // Enable / disable controls if pixel format has alpha component
+  void updateControlsForNewPixelFormat();
 
   // Get the name of the currently selected RGB pixel format
   virtual QString getRawRGBPixelFormatName() const
@@ -141,14 +153,6 @@ public:
   virtual void loadPlaylist(const YUViewDomElement &root) override;
 
 protected:
-  // Which components should we display
-  enum class ComponentShow
-  {
-    All,
-    R,
-    G,
-    B
-  };
   ComponentShow componentDisplayMode{ComponentShow::All};
 
   // A (static) convenience QList class that handles the preset rgbPixelFormats
@@ -167,9 +171,9 @@ protected:
   // The currently selected RGB format
   RGB_Internals::rgbPixelFormat srcPixelFormat;
 
-  // Parameters for the RGB transformation (like scaling, invert)
-  int  componentScale[3]{1, 1, 1};
-  bool componentInvert[3]{false, false, false};
+  // Parameters for the RGBA transformation (like scaling, invert)
+  int  componentScale[4]{1, 1, 1, 1};
+  bool componentInvert[4]{};
   bool limitedRange{};
 
   // Get the RGB values for the given pixel.

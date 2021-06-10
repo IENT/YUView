@@ -32,6 +32,7 @@
 
 #include "videoHandlerRGB.h"
 
+#include "common/EnumMapper.h"
 #include "common/fileInfo.h"
 #include "common/functions.h"
 #include "common/functionsGui.h"
@@ -40,6 +41,17 @@
 #include <QtGlobal>
 
 using namespace RGB_Internals;
+
+namespace
+{
+
+const auto componentShowMapper = EnumMapper<ComponentShow>({{ComponentShow::All, "All", "RGB(A)"},
+                                                            {ComponentShow::R, "R", "Red Only"},
+                                                            {ComponentShow::G, "G", "Green Only"},
+                                                            {ComponentShow::B, "B", "Blue Only"},
+                                                            {ComponentShow::A, "A", "Alpha Only"}});
+
+}
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0
@@ -246,26 +258,22 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   else if (idx > 0)
     ui.rgbFormatComboBox->setCurrentIndex(idx);
 
-  ui.colorComponentsComboBox->addItems(QStringList() << "RGB"
-                                                     << "Red Only"
-                                                     << "Green only"
-                                                     << "Blue only");
-  ui.colorComponentsComboBox->setCurrentIndex((int)componentDisplayMode);
-
   ui.RScaleSpinBox->setValue(componentScale[0]);
   ui.RScaleSpinBox->setMaximum(1000);
   ui.GScaleSpinBox->setValue(componentScale[1]);
   ui.GScaleSpinBox->setMaximum(1000);
   ui.BScaleSpinBox->setValue(componentScale[2]);
   ui.BScaleSpinBox->setMaximum(1000);
+  ui.AScaleSpinBox->setValue(componentScale[3]);
+  ui.AScaleSpinBox->setMaximum(1000);
 
   ui.RInvertCheckBox->setChecked(this->componentInvert[0]);
   ui.GInvertCheckBox->setChecked(this->componentInvert[1]);
   ui.BInvertCheckBox->setChecked(this->componentInvert[2]);
+  ui.AInvertCheckBox->setChecked(this->componentInvert[3]);
 
   ui.limitedRangeCheckBox->setChecked(this->limitedRange);
 
-  // Connect all the change signals from the controls
   connect(ui.rgbFormatComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
@@ -274,34 +282,19 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
           &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.RScaleSpinBox,
-          QOverload<int>::of(&QSpinBox::valueChanged),
-          this,
-          &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.GScaleSpinBox,
-          QOverload<int>::of(&QSpinBox::valueChanged),
-          this,
-          &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.BScaleSpinBox,
-          QOverload<int>::of(&QSpinBox::valueChanged),
-          this,
-          &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.RInvertCheckBox,
-          &QCheckBox::stateChanged,
-          this,
-          &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.GInvertCheckBox,
-          &QCheckBox::stateChanged,
-          this,
-          &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.BInvertCheckBox,
-          &QCheckBox::stateChanged,
-          this,
-          &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.limitedRangeCheckBox,
-          &QCheckBox::stateChanged,
-          this,
-          &videoHandlerRGB::slotDisplayOptionsChanged);
+  for (auto spinBox : {ui.RScaleSpinBox, ui.GScaleSpinBox, ui.BScaleSpinBox, ui.AScaleSpinBox})
+    connect(spinBox,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this,
+            &videoHandlerRGB::slotDisplayOptionsChanged);
+  for (auto checkBox : {ui.RInvertCheckBox,
+                        ui.GInvertCheckBox,
+                        ui.BInvertCheckBox,
+                        ui.AInvertCheckBox,
+                        ui.limitedRangeCheckBox})
+    connect(checkBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+
+  this->updateControlsForNewPixelFormat();
 
   if (!isSizeFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui.topVerticalLayout);
@@ -316,22 +309,18 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
 {
   {
     auto idx = ui.colorComponentsComboBox->currentIndex();
-    if (idx == 0)
-      componentDisplayMode = ComponentShow::All;
-    if (idx == 1)
-      componentDisplayMode = ComponentShow::R;
-    if (idx == 2)
-      componentDisplayMode = ComponentShow::G;
-    if (idx == 3)
-      componentDisplayMode = ComponentShow::B;
+    if (auto c = componentShowMapper.at(idx))
+      this->componentDisplayMode = *c;
   }
 
   componentScale[0]  = ui.RScaleSpinBox->value();
   componentScale[1]  = ui.GScaleSpinBox->value();
   componentScale[2]  = ui.BScaleSpinBox->value();
+  componentScale[3]  = ui.AScaleSpinBox->value();
   componentInvert[0] = ui.RInvertCheckBox->isChecked();
   componentInvert[1] = ui.GInvertCheckBox->isChecked();
   componentInvert[2] = ui.BInvertCheckBox->isChecked();
+  componentInvert[3] = ui.AInvertCheckBox->isChecked();
   limitedRange       = ui.limitedRangeCheckBox->isChecked();
 
   // Set the current frame in the buffer to be invalid and clear the cache.
@@ -339,6 +328,41 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
   currentImageIndex = -1;
   setCacheInvalid();
   emit signalHandlerChanged(true, RECACHE_CLEAR);
+}
+
+void videoHandlerRGB::updateControlsForNewPixelFormat()
+{
+  if (!ui.created())
+    return;
+
+  auto valid         = this->srcPixelFormat.isValid();
+  auto validAndAlpha = valid & this->srcPixelFormat.hasAlphaChannel();
+
+  ui.RScaleSpinBox->setEnabled(valid);
+  ui.GScaleSpinBox->setEnabled(valid);
+  ui.BScaleSpinBox->setEnabled(valid);
+  ui.AScaleSpinBox->setEnabled(validAndAlpha);
+  ui.RInvertCheckBox->setEnabled(valid);
+  ui.GInvertCheckBox->setEnabled(valid);
+  ui.BInvertCheckBox->setEnabled(valid);
+  ui.AInvertCheckBox->setEnabled(validAndAlpha);
+
+  QSignalBlocker block(ui.colorComponentsComboBox);
+  ui.colorComponentsComboBox->setEnabled(valid);
+  ui.colorComponentsComboBox->clear();
+  if (valid)
+  {
+    auto listItems = componentShowMapper.getTextEntries();
+    if (!this->srcPixelFormat.hasAlphaChannel())
+    {
+      listItems.pop_back();
+      if (this->componentDisplayMode == ComponentShow::A)
+        this->componentDisplayMode = ComponentShow::All;
+    }
+    ui.colorComponentsComboBox->addItems(functions::toQStringList(listItems));
+    ui.colorComponentsComboBox->setCurrentIndex(
+        componentShowMapper.indexOf(this->componentDisplayMode));
+  }
 }
 
 void videoHandlerRGB::slotRGBFormatControlChanged()
@@ -446,19 +470,18 @@ void videoHandlerRGB::savePlaylist(YUViewDomElement &element) const
   frameHandler::savePlaylist(element);
   element.appendProperiteChild("pixelFormat", this->getRawRGBPixelFormatName());
 
-  auto ComponentShowToName = std::map<ComponentShow, QString>({{ComponentShow::All, "All"},
-                                                               {ComponentShow::R, "R"},
-                                                               {ComponentShow::G, "G"},
-                                                               {ComponentShow::B, "B"}});
-  element.appendProperiteChild("componentShow", ComponentShowToName[this->componentDisplayMode]);
+  element.appendProperiteChild("componentShow",
+                               componentShowMapper.getName(this->componentDisplayMode));
 
   element.appendProperiteChild("scale.R", QString::number(this->componentScale[0]));
   element.appendProperiteChild("scale.G", QString::number(this->componentScale[1]));
   element.appendProperiteChild("scale.B", QString::number(this->componentScale[2]));
+  element.appendProperiteChild("scale.A", QString::number(this->componentScale[3]));
 
   element.appendProperiteChild("invert.R", functions::booToString(this->componentInvert[0]));
   element.appendProperiteChild("invert.G", functions::booToString(this->componentInvert[1]));
   element.appendProperiteChild("invert.B", functions::booToString(this->componentInvert[2]));
+  element.appendProperiteChild("invert.A", functions::booToString(this->componentInvert[3]));
 
   element.appendProperiteChild("limitedRange", functions::booToString(this->limitedRange));
 }
@@ -469,13 +492,9 @@ void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
   QString sourcePixelFormat = element.findChildValue("pixelFormat");
   this->setRGBPixelFormatByName(sourcePixelFormat);
 
-  auto NameToComponentShow = std::map<QString, ComponentShow>({{"All", ComponentShow::All},
-                                                               {"R", ComponentShow::R},
-                                                               {"G", ComponentShow::G},
-                                                               {"B", ComponentShow::B}});
-  auto showVal             = element.findChildValue("componentShow");
-  if (NameToComponentShow.count(showVal) > 0)
-    this->componentDisplayMode = NameToComponentShow[showVal];
+  auto showVal = element.findChildValue("componentShow");
+  if (auto c = componentShowMapper.getValue(showVal.toStdString()))
+    this->componentDisplayMode = *c;
 
   auto scaleR = element.findChildValue("scale.R");
   if (!scaleR.isEmpty())
@@ -486,10 +505,14 @@ void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
   auto scaleB = element.findChildValue("scale.B");
   if (!scaleB.isEmpty())
     this->componentScale[2] = scaleB.toInt();
+  auto scaleA = element.findChildValue("scale.A");
+  if (!scaleA.isEmpty())
+    this->componentScale[3] = scaleA.toInt();
 
   this->componentInvert[0] = (element.findChildValue("invert.R") == "True");
   this->componentInvert[1] = (element.findChildValue("invert.G") == "True");
   this->componentInvert[2] = (element.findChildValue("invert.B") == "True");
+  this->componentInvert[3] = (element.findChildValue("invert.A") == "True");
 
   this->limitedRange = (element.findChildValue("limitedRange") == "True");
 }
@@ -614,9 +637,10 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
 
 void videoHandlerRGB::setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &newFormat)
 {
-  rgbFormatMutex.lock();
-  srcPixelFormat = newFormat;
-  rgbFormatMutex.unlock();
+  this->rgbFormatMutex.lock();
+  this->srcPixelFormat = newFormat;
+  this->updateControlsForNewPixelFormat();
+  this->rgbFormatMutex.unlock();
 }
 
 // Convert the data in "sourceBuffer" from the format "srcPixelFormat" to RGB 888. While doing so,
@@ -643,19 +667,11 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
     // Only convert one of the components to a gray-scale image.
     // Consider inversion and scale of that component
 
-    // Which component of the source do we need?
-    int displayComponentOffset = srcPixelFormat.posR;
-    if (componentDisplayMode == ComponentShow::G)
-      displayComponentOffset = srcPixelFormat.posG;
-    else if (componentDisplayMode == ComponentShow::B)
-      displayComponentOffset = srcPixelFormat.posB;
+    const auto displayIndex = componentShowMapper.indexOf(this->componentDisplayMode) - 1;
 
-    // Get the scale/inversion for the displayed component
-    const int  displayIndex = (componentDisplayMode == ComponentShow::R)   ? 0
-                              : (componentDisplayMode == ComponentShow::G) ? 1
-                                                                           : 2;
-    const int  scale        = componentScale[displayIndex];
-    const bool invert       = componentInvert[displayIndex];
+    const auto displayComponentOffset = srcPixelFormat.getComponentPosition(displayIndex);
+    const auto scale                  = componentScale[displayIndex];
+    const auto invert                 = componentInvert[displayIndex];
 
     if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
     {
