@@ -38,7 +38,8 @@
 
 enum class ComponentShow
 {
-  All,
+  RGBA,
+  RGB,
   R,
   G,
   B,
@@ -153,7 +154,7 @@ public:
   virtual void loadPlaylist(const YUViewDomElement &root) override;
 
 protected:
-  ComponentShow componentDisplayMode{ComponentShow::All};
+  ComponentShow componentDisplayMode{ComponentShow::RGBA};
 
   // A (static) convenience QList class that handles the preset rgbPixelFormats
   class RGBFormatList : public QList<RGB_Internals::rgbPixelFormat>
@@ -200,7 +201,9 @@ private:
   void setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &newFormat);
 
   // Convert one frame from the current pixel format to RGB888
-  void       convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, unsigned char *targetBuffer);
+  void       convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
+                                      unsigned char *   targetBuffer,
+                                      bool              convertSourceToRGBA32Bit);
   QByteArray tmpBufferRawRGBDataCaching;
 
   // When a caching job is running in the background it will lock this mutex, so that

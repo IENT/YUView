@@ -45,7 +45,8 @@ using namespace RGB_Internals;
 namespace
 {
 
-const auto componentShowMapper = EnumMapper<ComponentShow>({{ComponentShow::All, "All", "RGB(A)"},
+const auto componentShowMapper = EnumMapper<ComponentShow>({{ComponentShow::RGBA, "RGBA", "RGBA"},
+                                                            {ComponentShow::RGB, "RGB", "RGB"},
                                                             {ComponentShow::R, "R", "Red Only"},
                                                             {ComponentShow::G, "G", "Green Only"},
                                                             {ComponentShow::B, "B", "Blue Only"},
@@ -308,8 +309,8 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
 void videoHandlerRGB::slotDisplayOptionsChanged()
 {
   {
-    auto idx = ui.colorComponentsComboBox->currentIndex();
-    if (auto c = componentShowMapper.at(idx))
+    auto selection = ui.colorComponentsComboBox->currentText().toStdString();
+    if (auto c = componentShowMapper.getValue(selection, true))
       this->componentDisplayMode = *c;
   }
 
@@ -336,7 +337,8 @@ void videoHandlerRGB::updateControlsForNewPixelFormat()
     return;
 
   auto valid         = this->srcPixelFormat.isValid();
-  auto validAndAlpha = valid & this->srcPixelFormat.hasAlphaChannel();
+  auto hasAlpha      = this->srcPixelFormat.hasAlphaChannel();
+  auto validAndAlpha = valid & hasAlpha;
 
   ui.RScaleSpinBox->setEnabled(valid);
   ui.GScaleSpinBox->setEnabled(valid);
@@ -352,16 +354,27 @@ void videoHandlerRGB::updateControlsForNewPixelFormat()
   ui.colorComponentsComboBox->clear();
   if (valid)
   {
-    auto listItems = componentShowMapper.getTextEntries();
-    if (!this->srcPixelFormat.hasAlphaChannel())
+    std::vector<ComponentShow> listItems;
+    if (hasAlpha)
+      listItems = {ComponentShow::RGBA,
+                   ComponentShow::RGB,
+                   ComponentShow::R,
+                   ComponentShow::G,
+                   ComponentShow::B,
+                   ComponentShow::A};
+    else
+      listItems = {ComponentShow::RGB, ComponentShow::R, ComponentShow::G, ComponentShow::B};
+
+    if (!hasAlpha && (this->componentDisplayMode == ComponentShow::A ||
+                      this->componentDisplayMode == ComponentShow::RGBA))
     {
-      listItems.pop_back();
-      if (this->componentDisplayMode == ComponentShow::A)
-        this->componentDisplayMode = ComponentShow::All;
+      this->componentDisplayMode = ComponentShow::RGB;
     }
-    ui.colorComponentsComboBox->addItems(functions::toQStringList(listItems));
-    ui.colorComponentsComboBox->setCurrentIndex(
-        componentShowMapper.indexOf(this->componentDisplayMode));
+    for (const auto &item : listItems)
+      ui.colorComponentsComboBox->addItem(
+          QString::fromStdString(componentShowMapper.getText(item)));
+    ui.colorComponentsComboBox->setCurrentText(
+        QString::fromStdString(componentShowMapper.getText(this->componentDisplayMode)));
   }
 }
 
@@ -594,19 +607,26 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   auto curFrameSize = QSize(frameSize.width, frameSize.height);
 
   // Create the output image in the right format.
-  // In both cases, we will set the alpha channel to 255. The format of the raw buffer is: BGRA
+  // Check if we have to premultiply alpha. The format of the raw buffer is: BGRA
   // (each 8 bit). Internally, this is how QImage allocates the number of bytes per line (with depth
   // = 32): const int bytes_per_line = ((width * depth + 31) >> 5) << 2; // bytes per scanline (must
   // be multiple of 4)
+  bool premultiplyAlpha = false;
   if (is_Q_OS_WIN)
-    outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
+  {
+    outputImage      = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
+    premultiplyAlpha = true;
+  }
   else if (is_Q_OS_MAC)
     outputImage = QImage(curFrameSize, QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
     auto f = functionsGui::platformImageFormat();
     if (f == QImage::Format_ARGB32_Premultiplied)
-      outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
+    {
+      outputImage      = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
+      premultiplyAlpha = true;
+    }
     if (f == QImage::Format_ARGB32)
       outputImage = QImage(curFrameSize, QImage::Format_ARGB32);
     else
@@ -622,7 +642,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
          frameSize.width * frameSize.height * 4);
 #endif
 
-  convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits());
+  this->convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits(), premultiplyAlpha);
 
   if (is_Q_OS_LINUX)
   {
@@ -646,7 +666,8 @@ void videoHandlerRGB::setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &new
 // Convert the data in "sourceBuffer" from the format "srcPixelFormat" to RGB 888. While doing so,
 // apply the scaling factors, inversions and only convert the selected color components.
 void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
-                                               unsigned char *   targetBuffer)
+                                               unsigned char *   targetBuffer,
+                                               bool              premultiplyAlpha)
 {
   // Check if the source buffer is of the correct size
   Q_ASSERT_X(sourceBuffer.size() >= getBytesPerFrame(),
@@ -662,12 +683,16 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
   if (srcPixelFormat.planar)
     offsetToNextValue = 1;
 
-  if (componentDisplayMode != ComponentShow::All)
+  if (componentDisplayMode != ComponentShow::RGB && componentDisplayMode != ComponentShow::RGBA)
   {
     // Only convert one of the components to a gray-scale image.
     // Consider inversion and scale of that component
 
-    const auto displayIndex = componentShowMapper.indexOf(this->componentDisplayMode) - 1;
+    auto       displayIndexMap = std::map<ComponentShow, unsigned>({{ComponentShow::R, 0},
+                                                              {ComponentShow::G, 1},
+                                                              {ComponentShow::B, 2},
+                                                              {ComponentShow::A, 3}});
+    const auto displayIndex    = displayIndexMap[componentDisplayMode];
 
     const auto displayComponentOffset = srcPixelFormat.getComponentPosition(displayIndex);
     const auto scale                  = componentScale[displayIndex];
@@ -738,10 +763,12 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
       Q_ASSERT_X(
           false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
   }
-  else if (componentDisplayMode == ComponentShow::All)
+  else if (componentDisplayMode == ComponentShow::RGB ||
+           componentDisplayMode == ComponentShow::RGBA)
   {
     // Convert all components from the source RGB format to an RGB 888 array
 
+    const auto renderAlpha = componentDisplayMode == ComponentShow::RGBA;
     if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
     {
       // 9 to 16 bits per component. We assume two bytes per value.
@@ -750,7 +777,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
       const int rightShift = srcPixelFormat.bitsPerValue - 8;
 
       // First get the pointer to the first value of each channel.
-      unsigned short *srcR, *srcG, *srcB;
+      unsigned short *srcR, *srcG, *srcB, *srcA;
       if (srcPixelFormat.planar)
       {
         srcR = (unsigned short *)sourceBuffer.data() +
@@ -759,12 +786,15 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
                (srcPixelFormat.posG * frameSize.width * frameSize.height);
         srcB = (unsigned short *)sourceBuffer.data() +
                (srcPixelFormat.posB * frameSize.width * frameSize.height);
+        srcA = (unsigned short *)sourceBuffer.data() +
+               (srcPixelFormat.posA * frameSize.width * frameSize.height);
       }
       else
       {
         srcR = (unsigned short *)sourceBuffer.data() + srcPixelFormat.posR;
         srcG = (unsigned short *)sourceBuffer.data() + srcPixelFormat.posG;
         srcB = (unsigned short *)sourceBuffer.data() + srcPixelFormat.posB;
+        srcA = (unsigned short *)sourceBuffer.data() + srcPixelFormat.posA;
       }
 
       // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
@@ -786,28 +816,46 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
         if (componentInvert[2])
           valB = 255 - valB;
 
+        int valA = 255;
+        if (renderAlpha)
+        {
+          valA = (((int)srcA[0]) * componentScale[3]) >> rightShift;
+          valA = clip(valA, 0, 255);
+          if (componentInvert[3])
+            valA = 255 - valA;
+        }
+
         if (limitedRange)
         {
           valR = videoHandler::convScaleLimitedRange(valR);
           valG = videoHandler::convScaleLimitedRange(valG);
           valB = videoHandler::convScaleLimitedRange(valB);
+          // No limited range for alpha
+        }
+
+        if (renderAlpha && premultiplyAlpha)
+        {
+          valR = ((valR * 255) * valA) / (255 * 255);
+          valG = ((valG * 255) * valA) / (255 * 255);
+          valB = ((valB * 255) * valA) / (255 * 255);
         }
 
         srcR += offsetToNextValue;
         srcG += offsetToNextValue;
         srcB += offsetToNextValue;
+        srcA += offsetToNextValue;
 
         dst[0] = valB;
         dst[1] = valG;
         dst[2] = valR;
-        dst[3] = 255;
+        dst[3] = valA;
         dst += 4;
       }
     }
     else if (srcPixelFormat.bitsPerValue == 8)
     {
       // First get the pointer to the first value of each channel.
-      unsigned char *srcR, *srcG, *srcB;
+      unsigned char *srcR, *srcG, *srcB, *srcA;
       if (srcPixelFormat.planar)
       {
         srcR = (unsigned char *)sourceBuffer.data() +
@@ -816,12 +864,15 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
                (srcPixelFormat.posG * frameSize.width * frameSize.height);
         srcB = (unsigned char *)sourceBuffer.data() +
                (srcPixelFormat.posB * frameSize.width * frameSize.height);
+        srcA = (unsigned char *)sourceBuffer.data() +
+               (srcPixelFormat.posA * frameSize.width * frameSize.height);
       }
       else
       {
         srcR = (unsigned char *)sourceBuffer.data() + srcPixelFormat.posR;
         srcG = (unsigned char *)sourceBuffer.data() + srcPixelFormat.posG;
         srcB = (unsigned char *)sourceBuffer.data() + srcPixelFormat.posB;
+        srcA = (unsigned char *)sourceBuffer.data() + srcPixelFormat.posA;
       }
 
       // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
@@ -843,21 +894,39 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
         if (componentInvert[2])
           valB = 255 - valB;
 
+        int valA = 255;
+        if (renderAlpha)
+        {
+          valA = ((int)srcA[0]) * componentScale[3];
+          valA = clip(valA, 0, 255);
+          if (componentInvert[3])
+            valA = 255 - valA;
+        }
+
         if (limitedRange)
         {
           valR = videoHandler::convScaleLimitedRange(valR);
           valG = videoHandler::convScaleLimitedRange(valG);
           valB = videoHandler::convScaleLimitedRange(valB);
+          // No limited range for alpha
+        }
+
+        if (renderAlpha && premultiplyAlpha)
+        {
+          valR = ((valR * 255) * valA) / (255 * 255);
+          valG = ((valG * 255) * valA) / (255 * 255);
+          valB = ((valB * 255) * valA) / (255 * 255);
         }
 
         srcR += offsetToNextValue;
         srcG += offsetToNextValue;
         srcB += offsetToNextValue;
+        srcA += offsetToNextValue;
 
         dst[0] = valB;
         dst[1] = valG;
         dst[2] = valR;
-        dst[3] = 255;
+        dst[3] = valA;
         dst += 4;
       }
     }
