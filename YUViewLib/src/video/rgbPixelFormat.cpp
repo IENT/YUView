@@ -163,4 +163,17 @@ int64_t rgbPixelFormat::bytesPerFrame(Size frameSize) const
   return nrBytes;
 }
 
+int rgbPixelFormat::getComponentPosition(unsigned channel) const
+{
+  if (channel == 0)
+    return this->posR;
+  if (channel == 1)
+    return this->posG;
+  if (channel == 2)
+    return this->posB;
+  if (channel == 3)
+    return this->posA;
+  return -1;
+}
+
 } // namespace RGB_Internals

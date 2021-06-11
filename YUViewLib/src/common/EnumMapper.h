@@ -115,6 +115,14 @@ public:
     return l;
   }
 
+  std::vector<std::string> getTextEntries() const
+  {
+    std::vector<std::string> l;
+    for (const auto &entry : this->entryVector)
+      l.push_back(entry.text);
+    return l;
+  }
+
   size_t size() const { return this->entryVector.size(); }
 
   const EntryVector &entries() const { return this->entryVector; }
