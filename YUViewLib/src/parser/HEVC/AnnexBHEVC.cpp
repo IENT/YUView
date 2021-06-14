@@ -142,10 +142,10 @@ YUVPixelFormat AnnexBHEVC::getPixelFormat() const
 
 std::optional<AnnexB::SeekData> AnnexBHEVC::getSeekData(int iFrameNr)
 {
-  if (iFrameNr >= int(this->getNumberPOCs()))
+  if (iFrameNr >= int(this->getNumberPOCs()) || iFrameNr < 0)
     return {};
 
-  auto seekPOC = this->getFramePOC(iFrameNr);
+  auto seekPOC = this->getFramePOC(unsigned(iFrameNr));
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitHEVC>>;

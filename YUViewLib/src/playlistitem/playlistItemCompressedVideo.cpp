@@ -627,13 +627,19 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       frameIdx > curFrameIdx + FORWARD_SEEK_THRESHOLD)
   {
     // Definitely seek when we have to go backwards
-    bool seek = (frameIdx < curFrameIdx);
+    bool seek = curFrameIdx == -1 || (frameIdx < curFrameIdx);
 
     // Get the closest possible seek position
     size_t  seekToFrame = 0;
     int64_t seekToDTS   = -1;
     if (isInputFormatTypeAnnexB(this->inputFormat))
-      seekToFrame = inputFileAnnexBParser->getClosestSeekableFrameNumberBefore(frameIdx);
+    {
+      auto curIdx   = unsigned(std::max(curFrameIdx, 0));
+      auto seekInfo = inputFileAnnexBParser->getClosestSeekPoint(unsigned(frameIdx), curIdx);
+      if (seekInfo.frameDistanceInCodingOrder > FORWARD_SEEK_THRESHOLD)
+        seek = true;
+      seekToFrame = seekInfo.frameIndex;
+    }
     else
     {
       if (caching)
@@ -642,12 +648,12 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       else
         std::tie(seekToDTS, seekToFrame) =
             inputFileFFmpegLoading->getClosestSeekableFrameBefore(frameIdx);
-    }
 
-    if (curFrameIdx < 0 || seekToFrame > unsigned(curFrameIdx) + FORWARD_SEEK_THRESHOLD)
-    {
-      // A seek forward makes sense
-      seek = true;
+      // The distance in the display order unfortunately does not tell us
+      // too much about the number of frames that must be decoded to seek
+      // so this is more of a guess.
+      if (seekToFrame > unsigned(curFrameIdx) + FORWARD_SEEK_THRESHOLD)
+        seek = true;
     }
 
     if (seek)

@@ -61,7 +61,7 @@ public:
   virtual ~AnnexB(){};
 
   // How many POC's have been found in the file
-  size_t getNumberPOCs() const { return this->frameList.size(); }
+  size_t getNumberPOCs() const { return this->frameListCodingOrder.size(); }
 
   // Clear all knowledge about the bitstream.
   void clearData();
@@ -111,7 +111,14 @@ public:
   // Look through the random access points and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
   // frameIdx: The frame index in display order that we want to seek to
-  size_t getClosestSeekableFrameNumberBefore(int frameIdx);
+  using FrameIndexDisplayOrder = unsigned;
+  struct SeekPointInfo
+  {
+    FrameIndexDisplayOrder frameIndex{};
+    unsigned               frameDistanceInCodingOrder{};
+  };
+  auto getClosestSeekPoint(FrameIndexDisplayOrder targetFrame, FrameIndexDisplayOrder currentFrame)
+      -> SeekPointInfo;
 
   // Get the parameters sets as extradata. The format of this depends on the underlying codec.
   virtual QByteArray getExtradata() = 0;
@@ -119,7 +126,7 @@ public:
   virtual IntPair getProfileLevel()      = 0;
   virtual Ratio   getSampleAspectRatio() = 0;
 
-  std::optional<pairUint64> getFrameStartEndPos(int codingOrderFrameIdx);
+  std::optional<pairUint64> getFrameStartEndPos(FrameIndexDisplayOrder idx);
 
   bool parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
 
@@ -136,6 +143,7 @@ protected:
     bool randomAccessPoint{false}; //< Can we start decoding here?
 
     bool operator<(AnnexBFrame const &b) const { return (this->poc < b.poc); }
+    bool operator==(AnnexBFrame const &b) const { return (this->poc == b.poc); }
   };
 
   // Returns false if the POC was already present int the list
@@ -159,13 +167,17 @@ protected:
   };
   stream_info_type stream_info;
 
-  int getFramePOC(int frameIdxDisplayOrder);
+  int getFramePOC(FrameIndexDisplayOrder frameIdx);
 
 private:
   // A list of all frames in the sequence (in coding order) with POC and the file positions of all
   // slice NAL units associated with a frame. POC's don't have to be consecutive, so the only way to
   // know how many pictures are in a sequences is to keep a list of all POCs.
-  vector<AnnexBFrame> frameList;
+  vector<AnnexBFrame> frameListCodingOrder;
+  // The same list of frames but sorted in display order. Generated from the list above whenever
+  // needed.
+  vector<AnnexBFrame> frameListDisplayOder;
+  void                updateFrameListDisplayOrder();
 };
 
 } // namespace parser
