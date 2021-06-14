@@ -49,6 +49,8 @@ using namespace YUV_Internals;
 namespace parser
 {
 
+using FrameIndexDisplayOrder = unsigned;
+
 /* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, VVC) that we can
  * parse.
  */
@@ -111,7 +113,6 @@ public:
   // Look through the random access points and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
   // frameIdx: The frame index in display order that we want to seek to
-  using FrameIndexDisplayOrder = unsigned;
   struct SeekPointInfo
   {
     FrameIndexDisplayOrder frameIndex{};

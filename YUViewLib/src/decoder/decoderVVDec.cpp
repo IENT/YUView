@@ -277,6 +277,7 @@ void decoderVVDec::allocateNewDecoder()
   this->flushing = false;
   this->currentOutputBuffer.clear();
   this->decoderState = DecoderState::NeedsMoreData;
+  this->currentFrameReadyForRetrieval = false;
 
   auto ret = this->lib.vvdec_set_logging_callback(this->decoder, loggingCallback);
   if (ret != VVDEC_OK)

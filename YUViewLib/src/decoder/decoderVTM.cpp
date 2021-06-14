@@ -83,7 +83,7 @@
 namespace decoder
 {
 
-decoderVTM::decoderVTM(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
+decoderVTM::decoderVTM(int, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
   // For now we don't support different signals (like prediction, residual)
 
@@ -436,7 +436,7 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *)
   if (!internalsSupported)
     return;
 
-  DEBUG_DECVTM("decoderVTM::cacheStatistics POC %d", this->lib.libVTMDec_get_POC(img));
+  DEBUG_DECVTM("decoderVTM::cacheStatistics ...");
 
   // // Conversion from intra prediction mode to vector.
   // // Coordinates are in x,y with the axes going right and down.
