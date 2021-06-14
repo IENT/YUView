@@ -278,6 +278,7 @@ void decoderVVDec::allocateNewDecoder()
   this->currentOutputBuffer.clear();
   this->decoderState = DecoderState::NeedsMoreData;
   this->currentFrameReadyForRetrieval = false;
+  this->currentFrame = nullptr;
 
   auto ret = this->lib.vvdec_set_logging_callback(this->decoder, loggingCallback);
   if (ret != VVDEC_OK)
@@ -420,6 +421,9 @@ bool decoderVVDec::pushData(QByteArray &data)
   {
     DEBUG_vvdec("decoderVVDec::pushData: Setting flushing mode");
     this->flushing = true;
+    this->decoderState = DecoderState::RetrieveFrames;
+    this->currentOutputBuffer.clear();
+    return true;
   }
   else
   {
