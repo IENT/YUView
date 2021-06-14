@@ -418,11 +418,8 @@ bool decoderVVDec::pushData(QByteArray &data)
   bool endOfFile = (data.length() == 0);
   if (endOfFile)
   {
-    auto ret = this->lib.vvdec_flush(this->decoder, &this->currentFrame);
-    if (ret != VVDEC_OK)
-      return setErrorB("Error sendling flush to decoder");
-    DEBUG_vvdec("decoderVVDec::pushData: Received empty packet. Sending EOF. %s",
-                this->currentFrame != nullptr ? " frameAvailable" : "");
+    DEBUG_vvdec("decoderVVDec::pushData: Setting flushing mode");
+    this->flushing = true;
   }
   else
   {
@@ -455,9 +452,6 @@ bool decoderVVDec::pushData(QByteArray &data)
     this->decoderState = DecoderState::RetrieveFrames;
     this->currentOutputBuffer.clear();
   }
-
-  if (endOfFile)
-    this->flushing = true;
 
   return true;
 }
