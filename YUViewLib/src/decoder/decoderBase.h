@@ -43,11 +43,11 @@
 namespace decoder
 {
 
-// Each decoder is in one of two states:
+// Each decoder is in one of these states
 enum class DecoderState
 {
-  NeedsMoreData,  ///< The decoder needs more data (pushData). When there is no more data, push an
-                  ///< empty QByteArray.
+  NeedsMoreData,  ///< The decoder needs more data (pushData). When there is no more data,
+                  ///< push an empty array to flush out frames.
   RetrieveFrames, ///< Retrieve frames from the decoder (decodeNextFrame)
   EndOfBitstream, ///< Decoding has ended.
   Error
@@ -55,7 +55,7 @@ enum class DecoderState
 
 enum class DecoderEngine
 {
-  Invalid,  // invalid value
+  Invalid,
   Libde265, // The libde265 decoder
   HM,       // The HM reference software decoder
   VTM,      // The VTM reference software decoder
@@ -103,7 +103,7 @@ public:
   virtual QStringList getSignalNames() const { return QStringList() << "Reconstruction"; }
   virtual bool        isSignalDifference(int signalID) const;
   virtual void        setDecodeSignal(int signalID, bool &decoderResetNeeded);
-  int                 getDecodeSignal() { return this->decodeSignal; }
+  int                 getDecodeSignal() const { return this->decodeSignal; }
 
   // -- The decoding interface
   // If the current frame is valid, the current frame can be retrieved using getRawFrameData.
@@ -114,7 +114,7 @@ public:
   YUView::RawFormat             getRawFormat() const { return this->rawFormat; }
   YUV_Internals::YUVPixelFormat getYUVPixelFormat() const { return this->formatYUV; }
   RGB_Internals::rgbPixelFormat getRGBPixelFormat() const { return this->formatRGB; }
-  Size                          getFrameSize() { return this->frameSize; }
+  Size                          getFrameSize() const { return this->frameSize; }
   // Push data to the decoder (until no more data is needed)
   // In order to make the interface generic, the pushData function accepts data only without start
   // codes
@@ -127,7 +127,7 @@ public:
   bool statisticsSupported() const { return internalsSupported; }
   bool statisticsEnabled() const { return statisticsData != nullptr; }
   void enableStatisticsRetrieval(stats::StatisticsData *s) { this->statisticsData = s; }
-  stats::FrameTypeData getCurrentFrameStatsForType(int typeIdx);
+  stats::FrameTypeData getCurrentFrameStatsForType(int typeIdx) const;
   virtual void         fillStatisticList(stats::StatisticsData &) const {};
 
   // Error handling
@@ -141,7 +141,7 @@ public:
   // Get the deocder name (everyting that is needed to identify the deocder library) and the codec
   // that is being decoded. If needed, also version information (like HM 16.4)
   virtual QString getDecoderName() const = 0;
-  virtual QString getCodecName()         = 0;
+  virtual QString getCodecName() const   = 0;
 
 protected:
   DecoderState decoderState{DecoderState::NeedsMoreData};
@@ -192,7 +192,7 @@ protected:
   void         loadDecoderLibrary(QString specificLibrary);
 
   // Get all possible names of the library that we will load
-  virtual QStringList getLibraryNames() = 0;
+  virtual QStringList getLibraryNames() const = 0;
 
   QLibrary library;
   QString  libraryPath;

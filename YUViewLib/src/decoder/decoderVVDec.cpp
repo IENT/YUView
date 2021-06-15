@@ -163,7 +163,7 @@ decoderVVDec::~decoderVVDec()
   }
 }
 
-QStringList decoderVVDec::getLibraryNames()
+QStringList decoderVVDec::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open the .so file first.
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.

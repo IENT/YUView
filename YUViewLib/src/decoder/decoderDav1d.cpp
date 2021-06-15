@@ -561,7 +561,7 @@ QString decoderDav1d::getDecoderName() const
   return "Dav1d decoder";
 }
 
-QStringList decoderDav1d::getLibraryNames()
+QStringList decoderDav1d::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux

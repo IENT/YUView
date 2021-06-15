@@ -100,7 +100,7 @@ public:
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
   QString getDecoderName() const override;
-  QString getCodecName() override { return "hevc"; }
+  QString getCodecName() const override { return "hevc"; }
 
   int nrSignalsSupported() const override { return nrSignals; }
 
@@ -110,7 +110,7 @@ private:
   decoderHM(){};
 
   // Return the possible names of the HM library
-  QStringList getLibraryNames() override;
+  QStringList getLibraryNames() const override;
 
   // Try to resolve all the required function pointers from the library
   void resolveLibraryFunctionPointers() override;

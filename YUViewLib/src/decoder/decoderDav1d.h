@@ -130,7 +130,7 @@ public:
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
   QString getDecoderName() const override;
-  QString getCodecName() override { return "AV1"; }
+  QString getCodecName() const override { return "AV1"; }
 
 private:
   // A private constructor that creates an uninitialized decoder library.
@@ -141,7 +141,7 @@ private:
   void resolveLibraryFunctionPointers() override;
 
   // Return the possible names of the dav1d library
-  QStringList getLibraryNames() override;
+  QStringList getLibraryNames() const override;
 
   // The function template for resolving the functions.
   // This can not go into the base class because then the template

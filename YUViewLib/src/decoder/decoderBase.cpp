@@ -85,7 +85,7 @@ void decoderBase::setDecodeSignal(int signalID, bool &decoderResetNeeded)
     decoderResetNeeded = false;
   }
 
-stats::FrameTypeData decoderBase::getCurrentFrameStatsForType(int typeId)
+stats::FrameTypeData decoderBase::getCurrentFrameStatsForType(int typeId) const
 {
   if (!this->statisticsEnabled())
     return {};
@@ -113,7 +113,7 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
     // the decLibXXX.so file first. Since this has been compiled for linux
     // it will fail and not even try to open the decLixXXX.dylib.
     // On windows and linux ommitting the extension works
-    QStringList libNames = getLibraryNames();
+    auto libNames = getLibraryNames();
 
     // Get the additional search path from the settings
     QSettings settings;
@@ -154,7 +154,7 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
     libraryPath.clear();
     QString error = "Error loading library: " + library.errorString() + "\n";
     error += "We could not load one of the supported decoder library (";
-    QStringList libNames = getLibraryNames();
+    auto libNames = getLibraryNames();
     for (int i = 0; i < libNames.count(); i++)
     {
       if (i == 0)

@@ -103,7 +103,7 @@ decoderVTM::~decoderVTM()
     this->lib.libVTMDec_free_decoder(decoder);
 }
 
-QStringList decoderVTM::getLibraryNames()
+QStringList decoderVTM::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open the .so file first.
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.

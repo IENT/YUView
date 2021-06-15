@@ -106,6 +106,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
     return;
 
   AVCodecIDWrapper codecID = this->ff.getCodecIDWrapper(codecpar.getCodecID());
+  this->codecName = codecID.getCodecName();
   if (!this->createDecoder(codecID, codecpar))
   {
     this->setError("Error creating the needed decoder.");
@@ -492,14 +493,6 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
     return this->setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 
   return true;
-}
-
-QString decoderFFmpeg::getCodecName()
-{
-  if (!this->decCtx)
-    return "";
-
-  return this->ff.getCodecIDWrapper(this->decCtx.getCodecID()).getCodecName();
 }
 
 } // namespace decoder

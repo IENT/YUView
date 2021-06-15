@@ -988,7 +988,7 @@ bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
   return testDecoder.state() != DecoderState::Error;
 }
 
-QStringList decoderLibde265::getLibraryNames()
+QStringList decoderLibde265::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux

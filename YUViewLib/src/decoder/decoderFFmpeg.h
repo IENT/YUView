@@ -68,7 +68,7 @@ public:
 
   QStringList getLibraryPaths() const override { return ff.getLibPaths(); }
   QString     getDecoderName() const override { return "FFmpeg"; }
-  QString     getCodecName() override;
+  QString     getCodecName() const override { return this->codecName; }
 
   static QStringList getLogMessages() { return FFmpegVersionHandler::getFFmpegLog(); }
 
@@ -102,6 +102,8 @@ protected:
 
   // An array of AV_INPUT_BUFFER_PADDING_SIZE zeros to be added as padding in pushData
   QByteArray avPacketPaddingData;
+
+  QString codecName;
 };
 
 } // namespace decoder
