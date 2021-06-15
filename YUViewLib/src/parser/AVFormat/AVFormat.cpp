@@ -434,7 +434,7 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
       specificDescription = " - OBUs:";
     }
 
-    for (auto &entry : unitNames)
+    for (const auto &entry : unitNames)
     {
       specificDescription += " " + entry.first;
       if (entry.second > 1)

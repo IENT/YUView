@@ -62,7 +62,7 @@ bool AnnexB::addFrameToList(int                       poc,
                             std::optional<pairUint64> fileStartEndPos,
                             bool                      randomAccessPoint)
 {
-  for (const auto &f : this->frameList)
+  for (const auto &f : this->frameListCodingOrder)
     if (f.poc == poc)
       return false;
 
@@ -75,7 +75,8 @@ bool AnnexB::addFrameToList(int                       poc,
     newFrame.poc               = poc;
     newFrame.fileStartEndPos   = fileStartEndPos;
     newFrame.randomAccessPoint = randomAccessPoint;
-    this->frameList.push_back(newFrame);
+    this->frameListCodingOrder.push_back(newFrame);
+    this->frameListDisplayOder.clear();
   }
   return true;
 }
@@ -98,49 +99,51 @@ void AnnexB::logNALSize(const ByteVector &        data,
     root->createChildItem("Start/End pos", to_string(*nalStartEndPos));
 }
 
-size_t AnnexB::getClosestSeekableFrameNumberBefore(int frameIdxDisplayOrder)
+auto AnnexB::getClosestSeekPoint(FrameIndexDisplayOrder targetFrame,
+                                 FrameIndexDisplayOrder currentFrame) -> SeekPointInfo
 {
-  if (frameIdxDisplayOrder < 0 || unsigned(frameIdxDisplayOrder) >= this->frameList.size())
+  if (targetFrame >= this->frameListCodingOrder.size())
     return {};
 
-  auto seekPOC = this->getFramePOC(frameIdxDisplayOrder);
+  this->updateFrameListDisplayOrder();
+  auto frameTarget  = this->frameListDisplayOder[targetFrame];
+  auto frameCurrent = this->frameListDisplayOder[currentFrame];
 
-  int    bestSeekPOC      = -1;
-  size_t bestSeekPocIndex = 0;
-  for (size_t i = 0; i < this->frameList.size(); i++)
+  auto bestSeekFrame            = this->frameListCodingOrder.begin();
+  for (auto it = this->frameListCodingOrder.begin(); it != this->frameListCodingOrder.end(); it++)
   {
-    const auto &f = this->frameList[i];
-    if (f.randomAccessPoint)
-    {
-      if (bestSeekPOC == -1)
-      {
-        bestSeekPOC      = f.poc;
-        bestSeekPocIndex = i;
-      }
-      else
-      {
-        if (f.poc <= seekPOC)
-        {
-          // We could seek here
-          bestSeekPOC      = f.poc;
-          bestSeekPocIndex = i;
-        }
-        else
-          break;
-      }
-    }
+    if (it->randomAccessPoint && it->poc < frameTarget.poc)
+      bestSeekFrame = it;
+    if (it->poc == frameTarget.poc)
+      break;
   }
 
-  DEBUG_ANNEXB("AnnexB::getClosestSeekableFrameNumberBefore franeIdx " << frameIdx << " seekPoc "
-                                                                       << bestSeekPocIndex);
-  return bestSeekPocIndex;
+  SeekPointInfo seekPointInfo;
+  {
+    auto itInDisplayOrder = std::find(
+        this->frameListDisplayOder.begin(), this->frameListDisplayOder.end(), *bestSeekFrame);
+    seekPointInfo.frameIndex = std::distance(this->frameListDisplayOder.begin(), itInDisplayOrder);
+  }
+  {
+    auto itCurrentFrameCodingOrder = std::find(
+        this->frameListCodingOrder.begin(), this->frameListCodingOrder.end(), frameCurrent);
+    seekPointInfo.frameDistanceInCodingOrder =
+        std::distance(itCurrentFrameCodingOrder, bestSeekFrame);
+  }
+
+  DEBUG_ANNEXB("AnnexB::getClosestSeekPoint targetFrame "
+               << targetFrame << "(POC " << frameTarget.poc << " seek to "
+               << seekPointInfo.frameIndex << " (POC " << bestSeekFrame->poc
+               << ") distance in coding order " << seekPointInfo.frameDistanceInCodingOrder);
+  return seekPointInfo;
 }
 
-std::optional<pairUint64> AnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
+std::optional<pairUint64> AnnexB::getFrameStartEndPos(FrameIndexCodingOrder idx)
 {
-  if (codingOrderFrameIdx < 0 || unsigned(codingOrderFrameIdx) >= this->frameList.size())
+  if (idx >= this->frameListCodingOrder.size())
     return {};
-  return this->frameList[codingOrderFrameIdx].fileStartEndPos;
+  this->updateFrameListDisplayOrder();
+  return this->frameListCodingOrder[idx].fileStartEndPos;
 }
 
 bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow)
@@ -237,7 +240,7 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
       DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Abort parsing by user request.");
       abortParsing = true;
     }
-    if (this->parsingLimitEnabled && this->frameList.size() > PARSER_FILE_FRAME_NR_LIMIT)
+    if (this->parsingLimitEnabled && this->frameListCodingOrder.size() > PARSER_FILE_FRAME_NR_LIMIT)
     {
       DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Abort parsing because frame limit was reached.");
       abortParsing = true;
@@ -256,7 +259,7 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
 
   stream_info.parsing      = false;
   stream_info.nr_nal_units = nalID;
-  stream_info.nr_frames    = unsigned(this->frameList.size());
+  stream_info.nr_frames    = unsigned(this->frameListCodingOrder.size());
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 
@@ -292,13 +295,19 @@ QList<QTreeWidgetItem *> AnnexB::stream_info_type::getStreamInfo()
   return infoList;
 }
 
-int AnnexB::getFramePOC(int frameIdxDisplayOrder)
+int AnnexB::getFramePOC(FrameIndexDisplayOrder frameIdx)
 {
-  std::vector<int> pocList;
-  for (const auto &frame : this->frameList)
-    pocList.push_back(frame.poc);
-  std::sort(pocList.begin(), pocList.end());
-  return pocList[frameIdxDisplayOrder];
+  this->updateFrameListDisplayOrder();
+  return this->frameListDisplayOder[frameIdx].poc;
+}
+
+void AnnexB::updateFrameListDisplayOrder()
+{
+  if (this->frameListCodingOrder.size() == 0 || this->frameListDisplayOder.size() > 0)
+    return;
+
+  this->frameListDisplayOder = this->frameListCodingOrder;
+  std::sort(frameListDisplayOder.begin(), frameListDisplayOder.end());
 }
 
 } // namespace parser

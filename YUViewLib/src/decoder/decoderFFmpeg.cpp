@@ -42,6 +42,9 @@
 #define DEBUG_FFMPEG(f) ((void)0)
 #endif
 
+namespace decoder
+{
+
 using namespace YUView;
 using namespace YUV_Internals;
 using namespace RGB_Internals;
@@ -103,6 +106,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
     return;
 
   AVCodecIDWrapper codecID = this->ff.getCodecIDWrapper(codecpar.getCodecID());
+  this->codecName = codecID.getCodecName();
   if (!this->createDecoder(codecID, codecpar))
   {
     this->setError("Error creating the needed decoder.");
@@ -185,10 +189,10 @@ void decoderFFmpeg::copyCurImageToBuffer()
   if (this->rawFormat == raw_YUV)
   {
     // At first get how many bytes we are going to write
-    const YUVPixelFormat pixFmt           = this->getYUVPixelFormat();
-    const auto           nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
-    const auto nrBytesY = this->frameSize.width * this->frameSize.height * nrBytesPerSample;
-    const auto nrBytesC = this->frameSize.width / pixFmt.getSubsamplingHor() *
+    const auto pixFmt           = this->getYUVPixelFormat();
+    const auto nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
+    const auto nrBytesY         = this->frameSize.width * this->frameSize.height * nrBytesPerSample;
+    const auto nrBytesC         = this->frameSize.width / pixFmt.getSubsamplingHor() *
                           this->frameSize.height / pixFmt.getSubsamplingVer() * nrBytesPerSample;
     const auto nrBytes = nrBytesY + 2 * nrBytesC;
 
@@ -491,10 +495,4 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
   return true;
 }
 
-QString decoderFFmpeg::getCodecName()
-{
-  if (!this->decCtx)
-    return "";
-
-  return this->ff.getCodecIDWrapper(this->decCtx.getCodecID()).getCodecName();
-}
+} // namespace decoder

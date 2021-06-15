@@ -44,15 +44,15 @@
 #if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if decoderVVDec_DEBUG_OUTPUT == 1
-#define DEBUG_vvdec                                                                               \
+#define DEBUG_vvdec                                                                                \
   if (!isCachingDecoder)                                                                           \
   qDebug
 #elif decoderVVDec_DEBUG_OUTPUT == 2
-#define DEBUG_vvdec                                                                               \
+#define DEBUG_vvdec                                                                                \
   if (isCachingDecoder)                                                                            \
   qDebug
 #elif decoderVVDec_DEBUG_OUTPUT == 3
-#define DEBUG_vvdec                                                                               \
+#define DEBUG_vvdec                                                                                \
   if (isCachingDecoder)                                                                            \
     qDebug("c:");                                                                                  \
   else                                                                                             \
@@ -79,26 +79,58 @@
 #endif
 #endif
 
+namespace decoder
+{
+
 namespace
 {
 
-const std::vector<libvvdec_ColorComponent>
-    colorComponentMap({LIBvvdec_LUMA, LIBvvdec_CHROMA_U, LIBvvdec_CHROMA_V});
+const auto MAX_CODED_PICTURE_SIZE = 800000;
 
-void loggingCallback(void *ptr, int level, const char *msg)
+void loggingCallback(void *ptr, int level, const char *msg, va_list list)
 {
   (void)ptr;
   (void)level;
   (void)msg;
+  (void)list;
 #if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
-  qDebug() << "decoderVVDec::decoderVVDec vvdeclog(" << level << "): " << msg;
+  char buf[200];
+  vsnprintf( buf, 200, msg, list );
+  qDebug() << "decoderVVDec::decoderVVDec vvdeclog(" << level << "): " << buf;
 #endif
+}
+
+YUV_Internals::Subsampling convertFromInternalSubsampling(vvdecColorFormat fmt)
+{
+  if (fmt == VVDEC_CF_YUV400_PLANAR)
+    return YUV_Internals::Subsampling::YUV_400;
+  if (fmt == VVDEC_CF_YUV420_PLANAR)
+    return YUV_Internals::Subsampling::YUV_420;
+  if (fmt == VVDEC_CF_YUV422_PLANAR)
+    return YUV_Internals::Subsampling::YUV_422;
+  if (fmt == VVDEC_CF_YUV444_PLANAR)
+    return YUV_Internals::Subsampling::YUV_444;
+
+  return YUV_Internals::Subsampling::UNKNOWN;
+}
+
+Size calculateChromaSize(Size lumaSize, vvdecColorFormat fmt)
+{
+  if (fmt == VVDEC_CF_YUV400_PLANAR)
+    return {};
+  if (fmt == VVDEC_CF_YUV420_PLANAR)
+    return {lumaSize.width / 2, lumaSize.height / 2};
+  if (fmt == VVDEC_CF_YUV422_PLANAR)
+    return {lumaSize.width / 2, lumaSize.height};
+  if (fmt == VVDEC_CF_YUV444_PLANAR)
+    return lumaSize;
+
+  return {};
 }
 
 } // namespace
 
-decoderVVDec::decoderVVDec(int signalID, bool cachingDecoder)
-    : decoderBaseSingleLib(cachingDecoder)
+decoderVVDec::decoderVVDec(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
   // For now we don't support different signals (like prediction, residual)
   (void)signalID;
@@ -118,10 +150,20 @@ decoderVVDec::decoderVVDec(int signalID, bool cachingDecoder)
 decoderVVDec::~decoderVVDec()
 {
   if (this->decoder != nullptr)
-    this->lib.libvvdec_free_decoder(this->decoder);
+  {
+    auto ret = this->lib.vvdec_decoder_close(this->decoder);
+    if (ret != VVDEC_OK)
+      DEBUG_vvdec("decoderVVDec::~decoderVVDec - error freeing decoder");
+    this->decoder = nullptr;
+  }
+  if (this->accessUnit != nullptr)
+  {
+    this->lib.vvdec_accessUnit_free(this->accessUnit);
+    this->accessUnit = nullptr;
+  }
 }
 
-QStringList decoderVVDec::getLibraryNames()
+QStringList decoderVVDec::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open the .so file first.
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
@@ -139,32 +181,52 @@ QStringList decoderVVDec::getLibraryNames()
 
 void decoderVVDec::resolveLibraryFunctionPointers()
 {
-  // Get/check function pointers
-  if (!resolve(this->lib.libvvdec_get_version, "libvvdec_get_version"))
-    return;
-  if (!resolve(this->lib.libvvdec_new_decoder, "libvvdec_new_decoder"))
-    return;
-  if (!resolve(this->lib.libvvdec_set_logging_callback, "libvvdec_set_logging_callback"))
-    return;
-  if (!resolve(this->lib.libvvdec_free_decoder, "libvvdec_free_decoder"))
-    return;
-  if (!resolve(this->lib.libvvdec_push_nal_unit, "libvvdec_push_nal_unit"))
+  if (!resolve(this->lib.vvdec_get_version, "vvdec_get_version"))
     return;
 
-  if (!resolve(this->lib.libvvdec_get_picture_POC, "libvvdec_get_picture_POC"))
+  if (!resolve(this->lib.vvdec_accessUnit_alloc, "vvdec_accessUnit_alloc"))
     return;
-  if (!resolve(this->lib.libvvdec_get_picture_width, "libvvdec_get_picture_width"))
+  if (!resolve(this->lib.vvdec_accessUnit_free, "vvdec_accessUnit_free"))
     return;
-  if (!resolve(this->lib.libvvdec_get_picture_height, "libvvdec_get_picture_height"))
+  if (!resolve(this->lib.vvdec_accessUnit_alloc_payload, "vvdec_accessUnit_alloc_payload"))
     return;
-  if (!resolve(this->lib.libvvdec_get_picture_stride, "libvvdec_get_picture_stride"))
+  if (!resolve(this->lib.vvdec_accessUnit_free_payload, "vvdec_accessUnit_free_payload"))
     return;
-  if (!resolve(this->lib.libvvdec_get_picture_plane, "libvvdec_get_picture_plane"))
+  if (!resolve(this->lib.vvdec_accessUnit_default, "vvdec_accessUnit_default"))
     return;
-  if (!resolve(this->lib.libvvdec_get_picture_chroma_format,
-               "libvvdec_get_picture_chroma_format"))
+
+  if (!resolve(this->lib.vvdec_params_default, "vvdec_params_default"))
     return;
-  if (!resolve(this->lib.libvvdec_get_picture_bit_depth, "libvvdec_get_picture_bit_depth"))
+  if (!resolve(this->lib.vvdec_params_alloc, "vvdec_params_alloc"))
+    return;
+  if (!resolve(this->lib.vvdec_params_alloc, "vvdec_params_alloc"))
+    return;
+  if (!resolve(this->lib.vvdec_params_free, "vvdec_params_free"))
+    return;
+
+  if (!resolve(this->lib.vvdec_decoder_open, "vvdec_decoder_open"))
+    return;
+  if (!resolve(this->lib.vvdec_decoder_close, "vvdec_decoder_close"))
+    return;
+
+  if (!resolve(this->lib.vvdec_set_logging_callback, "vvdec_set_logging_callback"))
+    return;
+  if (!resolve(this->lib.vvdec_decode, "vvdec_decode"))
+    return;
+  if (!resolve(this->lib.vvdec_flush, "vvdec_flush"))
+    return;
+  if (!resolve(this->lib.vvdec_frame_unref, "vvdec_frame_unref"))
+    return;
+
+  if (!resolve(this->lib.vvdec_get_hash_error_count, "vvdec_get_hash_error_count"))
+    return;
+  if (!resolve(this->lib.vvdec_get_dec_information, "vvdec_get_dec_information"))
+    return;
+  if (!resolve(this->lib.vvdec_get_last_error, "vvdec_get_last_error"))
+    return;
+  if (!resolve(this->lib.vvdec_get_last_additional_error, "vvdec_get_last_additional_error"))
+    return;
+  if (!resolve(this->lib.vvdec_get_error_msg, "vvdec_get_error_msg"))
     return;
 }
 
@@ -174,8 +236,8 @@ template <typename T> T decoderVVDec::resolve(T &fun, const char *symbol, bool o
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the libvvdec library: Can't find function %1.")
-                   .arg(symbol));
+      this->setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
+                         .arg(symbol));
     return nullptr;
   }
 
@@ -185,7 +247,7 @@ template <typename T> T decoderVVDec::resolve(T &fun, const char *symbol, bool o
 void decoderVVDec::resetDecoder()
 {
   if (this->decoder != nullptr)
-    if (this->lib.libvvdec_free_decoder(decoder) != LIBvvdec_OK)
+    if (this->lib.vvdec_decoder_close(decoder) != VVDEC_OK)
       return setError("Reset: Freeing the decoder failded.");
 
   this->decoder = nullptr;
@@ -200,14 +262,40 @@ void decoderVVDec::allocateNewDecoder()
 
   DEBUG_vvdec("decoderVVDec::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
-  // Create new decoder object
-  this->decoder  = this->lib.libvvdec_new_decoder();
+  vvdecParams params;
+  this->lib.vvdec_params_default(&params);
+
+  params.logLevel = VVDEC_INFO;
+
+  this->decoder = this->lib.vvdec_decoder_open(&params);
+  if (this->decoder == nullptr)
+  {
+    this->setError("Error allocating deocder");
+    return;
+  }
+
   this->flushing = false;
   this->currentOutputBuffer.clear();
   this->decoderState = DecoderState::NeedsMoreData;
+  this->currentFrameReadyForRetrieval = false;
+  this->currentFrame = nullptr;
 
-  this->lib.libvvdec_set_logging_callback(
-      this->decoder, &loggingCallback, this, LIBvvdec_LOGLEVEL_INFO);
+  auto ret = this->lib.vvdec_set_logging_callback(this->decoder, loggingCallback);
+  if (ret != VVDEC_OK)
+    DEBUG_vvdec("decoderVVDec::allocateNewDecoder - error setting logging callback");
+
+  if (this->accessUnit == nullptr)
+  {
+    this->accessUnit = this->lib.vvdec_accessUnit_alloc();
+    if (this->accessUnit == nullptr)
+    {
+      this->setError("Error allocating access unit");
+      return;
+    }
+    this->lib.vvdec_accessUnit_alloc_payload(this->accessUnit, MAX_CODED_PICTURE_SIZE);
+    if (this->accessUnit->payload == nullptr)
+      this->setError("Error allocating AU payload buffer");
+  }
 }
 
 bool decoderVVDec::decodeNextFrame()
@@ -221,19 +309,25 @@ bool decoderVVDec::decodeNextFrame()
   if (this->flushing)
   {
     // This is our way of moving the decoder to the next picture when flushing.
-    bool checkOutputPictures = false;
-    auto err = this->lib.libvvdec_push_nal_unit(this->decoder, nullptr, 0, checkOutputPictures);
-    if (err == LIBvvdec_ERROR)
+    auto ret = this->lib.vvdec_flush(this->decoder, &this->currentFrame);
+    if (ret == VVDEC_EOF)
     {
-      DEBUG_vvdec("decoderVVDec::decodeNextFrame Error getting next flushed frame from decoder.");
+      DEBUG_vvdec("decoderVVDec::pushData: Flushing returned EOF");
+      this->decoderState = DecoderState::EndOfBitstream;
       return false;
     }
-    if (!checkOutputPictures)
+    else if (ret != VVDEC_OK)
+      return setErrorB("Error sendling flush to decoder");
+    DEBUG_vvdec("decoderVVDec::pushData: Flushing to next pixture. %s",
+                this->currentFrame != nullptr ? " frameAvailable" : "");
+
+    if (this->currentFrame == nullptr)
     {
       DEBUG_vvdec("decoderVVDec::decodeNextFrame No more frames to flush. EOF.");
       this->decoderState = DecoderState::EndOfBitstream;
       return false;
     }
+
     this->currentOutputBuffer.clear();
     DEBUG_vvdec("decoderVVDec::decodeNextFrame Flushing - Invalidate buffer");
   }
@@ -261,29 +355,43 @@ bool decoderVVDec::getNextFrameFromDecoder()
 {
   DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder");
 
+  if (this->currentFrame == nullptr)
+    return false;
+
   // Check the validity of the picture
-  auto picSize = Size(this->lib.libvvdec_get_picture_width(this->decoder, LIBvvdec_LUMA),
-                       this->lib.libvvdec_get_picture_height(this->decoder, LIBvvdec_LUMA));
-  if (picSize.isValid())
+  const auto lumaSize = Size({this->currentFrame->width, this->currentFrame->height});
+  const auto nrPlanes = (this->currentFrame->colorFormat == VVDEC_CF_YUV400_PLANAR) ? 1u : 3u;
+
+  // Check the validity of the picture
+  if (!lumaSize.isValid())
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid size");
-  auto subsampling =
-      convertFromInternalSubsampling(this->lib.libvvdec_get_picture_chroma_format(this->decoder));
+  auto subsampling = convertFromInternalSubsampling(this->currentFrame->colorFormat);
   if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth = this->lib.libvvdec_get_picture_bit_depth(this->decoder, LIBvvdec_LUMA);
+  auto bitDepth = this->currentFrame->bitDepth;
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid bit depth");
+  if (nrPlanes != this->currentFrame->numPlanes)
+    DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got non expected number of planes");
+
+  for (unsigned i = 1; i < this->currentFrame->numPlanes; i++)
+  {
+    const auto &plane = this->currentFrame->planes[i];
+    auto expectedSize = calculateChromaSize(lumaSize, this->currentFrame->colorFormat);
+    if (expectedSize.width != plane.width || expectedSize.height != plane.height)
+      DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder plane has different size then expected");
+  }
 
   if (!this->frameSize.isValid() && !this->formatYUV.isValid())
   {
     // Set the values
-    this->frameSize = picSize;
+    this->frameSize = lumaSize;
     this->formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
   }
   else
   {
     // Check the values against the previously set values
-    if (this->frameSize != picSize)
+    if (this->frameSize != lumaSize)
       return setErrorB("Received a frame of different size");
     if (this->formatYUV.getSubsampling() != subsampling)
       return setErrorB("Received a frame with different subsampling");
@@ -308,38 +416,46 @@ bool decoderVVDec::pushData(QByteArray &data)
     return false;
   }
 
-  bool endOfFile           = (data.length() == 0);
-  int  err                 = 0;
-  bool checkOutputPictures = false;
+  bool endOfFile = (data.length() == 0);
   if (endOfFile)
   {
-    DEBUG_vvdec("decoderVVDec::pushData: Received empty packet. Sending EOF.");
-    err = this->lib.libvvdec_push_nal_unit(this->decoder, nullptr, 0, checkOutputPictures);
+    DEBUG_vvdec("decoderVVDec::pushData: Setting flushing mode");
+    this->flushing = true;
+    this->decoderState = DecoderState::RetrieveFrames;
+    this->currentOutputBuffer.clear();
+    return true;
   }
   else
   {
-    err = this->lib.libvvdec_push_nal_unit(
-        this->decoder, (const unsigned char *)data.data(), data.length(), checkOutputPictures);
+    if (data.size() > this->accessUnit->payloadSize)
+      return setErrorB("Access unit too big to push");
+
+    std::memcpy(this->accessUnit->payload, data.constData(), data.size());
+    this->accessUnit->payloadUsedSize = data.size();
+
+    auto ret = this->lib.vvdec_decode(this->decoder, this->accessUnit, &this->currentFrame);
+    if (ret == VVDEC_EOF)
+      endOfFile = true;
+    else if (ret != VVDEC_TRY_AGAIN && ret != VVDEC_OK)
+    {
+      auto cErr    = this->lib.vvdec_get_last_error(this->decoder);
+      auto cErrAdd = this->lib.vvdec_get_last_additional_error(this->decoder);
+      return setErrorB(QString("Error pushing data to decoder length %1 - %2 - %3")
+                           .arg(data.length())
+                           .arg(cErr)
+                           .arg(cErrAdd));
+    }
+
     DEBUG_vvdec("decoderVVDec::pushData pushed NAL length %d%s",
-                 data.length(),
-                 checkOutputPictures ? " checkOutputPictures" : "");
+                data.length(),
+                this->currentFrame != nullptr ? " frameAvailable" : "");
   }
 
-  if (err != LIBvvdec_OK)
-  {
-    DEBUG_vvdec("decoderVVDec::pushData Error pushing data");
-    return setErrorB(QString("Error pushing data to decoder (libvvdec_push_nal_unit) length %1")
-                         .arg(data.length()));
-  }
-
-  if (checkOutputPictures && this->getNextFrameFromDecoder())
+  if (this->getNextFrameFromDecoder())
   {
     this->decoderState = DecoderState::RetrieveFrames;
     this->currentOutputBuffer.clear();
   }
-
-  if (endOfFile)
-    this->flushing = true;
 
   return true;
 }
@@ -364,63 +480,35 @@ QByteArray decoderVVDec::getRawFrameData()
 
 void decoderVVDec::copyImgToByteArray(QByteArray &dst)
 {
-  auto fmt = this->lib.libvvdec_get_picture_chroma_format(this->decoder);
-  if (fmt == LIBvvdec_CHROMA_UNKNOWN)
+  auto fmt = this->currentFrame->colorFormat;
+  if (fmt == VVDEC_CF_INVALID)
   {
     DEBUG_vvdec("decoderVVDec::copyImgToByteArray picture format is unknown");
     return;
   }
-  auto nrPlanes = (fmt == LIBvvdec_CHROMA_400) ? 1u : 3u;
+  const auto nrPlanes      = this->currentFrame->numPlanes;
+  const auto bytesPerSample = this->currentFrame->bitDepth > 8 ? 2 : 1;
+  const auto lumaSize      = Size({this->currentFrame->width, this->currentFrame->height});
+  const auto chromaSize    = calculateChromaSize(lumaSize, fmt);
 
-  bool outputTwoByte =
-      (this->lib.libvvdec_get_picture_bit_depth(this->decoder, LIBvvdec_LUMA) > 8);
-  if (nrPlanes > 1)
-  {
-    auto bitDepthU = this->lib.libvvdec_get_picture_bit_depth(this->decoder, LIBvvdec_CHROMA_U);
-    auto bitDepthV = this->lib.libvvdec_get_picture_bit_depth(this->decoder, LIBvvdec_CHROMA_V);
-    if ((outputTwoByte != (bitDepthU > 8)) || (outputTwoByte != (bitDepthV > 8)))
-    {
-      DEBUG_vvdec("decoderVVDec::copyImgToByteArray different bit depth in YUV components. This "
-                   "is not supported.");
-      return;
-    }
-  }
-
-  // How many samples are in each component?
-  const uint32_t width[2] = {
-      this->lib.libvvdec_get_picture_width(this->decoder, LIBvvdec_LUMA),
-      this->lib.libvvdec_get_picture_width(this->decoder, LIBvvdec_CHROMA_U)};
-  const uint32_t height[2] = {
-      this->lib.libvvdec_get_picture_height(this->decoder, LIBvvdec_LUMA),
-      this->lib.libvvdec_get_picture_height(this->decoder, LIBvvdec_CHROMA_U)};
-
-  if (this->lib.libvvdec_get_picture_width(this->decoder, LIBvvdec_CHROMA_V) != width[1] ||
-      this->lib.libvvdec_get_picture_height(this->decoder, LIBvvdec_CHROMA_V) != height[1])
-  {
-    DEBUG_vvdec("decoderVVDec::copyImgToByteArray chroma components have different size");
-    return;
-  }
-
-  auto outSizeLumaBytes   = width[0] * height[0] * (outputTwoByte ? 2 : 1);
-  auto outSizeChromaBytes = (nrPlanes == 1) ? 0u : (width[1] * height[1] * (outputTwoByte ? 2 : 1));
+  auto outSizeLumaBytes   = lumaSize.width * lumaSize.height * bytesPerSample;
+  auto outSizeChromaBytes = chromaSize.width * chromaSize.height * bytesPerSample;
   // How many bytes do we need in the output buffer?
   auto nrBytesOutput = (outSizeLumaBytes + outSizeChromaBytes * 2);
   DEBUG_vvdec("decoderVVDec::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
 
   // Is the output big enough?
   if (dst.capacity() < int(nrBytesOutput))
-    dst.resize(nrBytesOutput);
+    dst.resize(int(nrBytesOutput));
 
   for (unsigned c = 0; c < nrPlanes; c++)
   {
-    auto component = colorComponentMap[c];
-    auto cIdx      = (c == 0 ? 0 : 1);
+    auto &component = this->currentFrame->planes[c];
 
-    auto plane      = this->lib.libvvdec_get_picture_plane(this->decoder, component);
-    auto stride     = this->lib.libvvdec_get_picture_stride(this->decoder, component);
-    auto widthBytes = width[cIdx] * (outputTwoByte ? 2 : 1);
+    auto widthBytes = component.width * bytesPerSample;
+    auto plane = component.ptr;
 
-    if (plane == nullptr)
+    if (component.ptr == nullptr)
     {
       DEBUG_vvdec("decoderVVDec::copyImgToByteArray unable to get plane for component %d", c);
       return;
@@ -432,10 +520,10 @@ void decoderVVDec::copyImgToByteArray(QByteArray &dst)
     if (c == 2)
       d += outSizeChromaBytes;
 
-    for (unsigned y = 0; y < height[cIdx]; y++)
+    for (unsigned y = 0; y < component.height; y++)
     {
       std::memcpy(d, plane, widthBytes);
-      plane += stride;
+      plane += component.stride;
       d += widthBytes;
     }
   }
@@ -443,7 +531,7 @@ void decoderVVDec::copyImgToByteArray(QByteArray &dst)
 
 QString decoderVVDec::getDecoderName() const
 {
-  return (decoderState == DecoderState::Error) ? "vvdec" : this->lib.libvvdec_get_version();
+  return (decoderState == DecoderState::Error) ? "vvdec" : this->lib.vvdec_get_version();
 }
 
 bool decoderVVDec::checkLibraryFile(QString libFilePath, QString &error)
@@ -462,19 +550,7 @@ bool decoderVVDec::checkLibraryFile(QString libFilePath, QString &error)
   // If this works, we can be fairly certain that this is a valid library.
   testDecoder.resolveLibraryFunctionPointers();
   error = testDecoder.decoderErrorString();
-  return !testDecoder.errorInDecoder();
+  return testDecoder.state() != DecoderState::Error;
 }
 
-YUV_Internals::Subsampling decoderVVDec::convertFromInternalSubsampling(libvvdec_ChromaFormat fmt)
-{
-  if (fmt == LIBvvdec_CHROMA_400)
-    return YUV_Internals::Subsampling::YUV_400;
-  if (fmt == LIBvvdec_CHROMA_420)
-    return YUV_Internals::Subsampling::YUV_420;
-  if (fmt == LIBvvdec_CHROMA_422)
-    return YUV_Internals::Subsampling::YUV_422;
-  if (fmt == LIBvvdec_CHROMA_444)
-    return YUV_Internals::Subsampling::YUV_444;
-
-  return YUV_Internals::Subsampling::UNKNOWN;
 }

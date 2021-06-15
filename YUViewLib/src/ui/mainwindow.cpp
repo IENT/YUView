@@ -39,6 +39,7 @@
 #include <QShortcut>
 #include <QStringList>
 #include <QTextBrowser>
+#include <QTextStream>
 
 #include "common/functions.h"
 #include "common/functionsGui.h"

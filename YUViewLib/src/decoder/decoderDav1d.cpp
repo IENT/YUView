@@ -38,8 +38,11 @@
 #include <cassert>
 #include <cstring>
 
-#include "common/typedef.h"
 #include "common/functions.h"
+#include "common/typedef.h"
+
+namespace decoder
+{
 
 using namespace YUView;
 using namespace YUV_Internals;
@@ -68,21 +71,43 @@ using namespace YUV_Internals;
 #define DEBUG_DAV1D(fmt, ...) ((void)0)
 #endif
 
-decoderDav1d::dav1dFrameInfo::dav1dFrameInfo(Size frameSize, Dav1dFrameType frameType)
-    : frameSize(frameSize), frameType(frameType)
+namespace
 {
-  const auto aligned_w = (frameSize.width + 127) & ~127;
-  const auto aligned_h = (frameSize.height + 127) & ~127;
-  frameSizeAligned    = Size(aligned_w, aligned_h);
 
-  sizeInBlocks        = Size(frameSize.width / 4, frameSize.height / 4);
-  sizeInBlocksAligned = Size(aligned_w / 4, aligned_h / 4);
+Subsampling convertFromInternalSubsampling(Dav1dPixelLayout layout)
+{
+  if (layout == DAV1D_PIXEL_LAYOUT_I400)
+    return Subsampling::YUV_400;
+  else if (layout == DAV1D_PIXEL_LAYOUT_I420)
+    return Subsampling::YUV_420;
+  else if (layout == DAV1D_PIXEL_LAYOUT_I422)
+    return Subsampling::YUV_422;
+  else if (layout == DAV1D_PIXEL_LAYOUT_I444)
+    return Subsampling::YUV_444;
 
-  const int bw = ((frameSize.width + 7) >> 3) << 1;
-  b4_stride    = (bw + 31) & ~31;
+  return Subsampling::UNKNOWN;
 }
 
-decoderDav1d_Functions::decoderDav1d_Functions() { memset(this, 0, sizeof(*this)); }
+} // namespace
+
+YUV_Internals::Subsampling Dav1dPictureWrapper::getSubsampling() const
+{
+  return convertFromInternalSubsampling(curPicture.p.layout);
+}
+
+dav1dFrameInfo::dav1dFrameInfo(Size frameSize, Dav1dFrameType frameType)
+    : frameSize(frameSize), frameType(frameType)
+{
+  const auto aligned_w   = (frameSize.width + 127) & ~127;
+  const auto aligned_h   = (frameSize.height + 127) & ~127;
+  this->frameSizeAligned = Size({aligned_w, aligned_h});
+
+  this->sizeInBlocks        = Size({frameSize.width / 4, frameSize.height / 4});
+  this->sizeInBlocksAligned = Size({aligned_w / 4, aligned_h / 4});
+
+  const auto bw = ((frameSize.width + 7) >> 3) << 1;
+  b4_stride     = (bw + 31) & ~31;
+}
 
 decoderDav1d::decoderDav1d(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
@@ -106,7 +131,7 @@ decoderDav1d::~decoderDav1d()
   if (decoder != nullptr)
   {
     // Free the decoder
-    dav1d_close(&decoder);
+    this->lib.dav1d_close(&decoder);
     if (decoder != nullptr)
       DEBUG_DAV1D(
           "Error closing the decoder. The close function should set the decoder pointer to NULL");
@@ -119,13 +144,22 @@ void decoderDav1d::resetDecoder()
   if (!decoder)
     return setError("Resetting the decoder failed. No decoder allocated.");
 
-  dav1d_close(&decoder);
+  this->lib.dav1d_close(&decoder);
   if (decoder != nullptr)
     DEBUG_DAV1D(
         "Error closing the decoder. The close function should set the decoder pointer to NULL");
   decoder = nullptr;
 
   allocateNewDecoder();
+}
+
+bool decoderDav1d::isSignalDifference(int signalID) const { return signalID == 2 || signalID == 3; }
+
+QStringList decoderDav1d::getSignalNames() const
+{
+  return QStringList() << "Reconstruction"
+                       << "Prediction"
+                       << "Reconstruction pre-filter";
 }
 
 void decoderDav1d::setDecodeSignal(int signalID, bool &decoderResetNeeded)
@@ -141,32 +175,32 @@ void decoderDav1d::setDecodeSignal(int signalID, bool &decoderResetNeeded)
 void decoderDav1d::resolveLibraryFunctionPointers()
 {
   // Get/check function pointers
-  if (!resolve(dav1d_version, "dav1d_version"))
+  if (!resolve(this->lib.dav1d_version, "dav1d_version"))
     return;
-  if (!resolve(dav1d_default_settings, "dav1d_default_settings"))
+  if (!resolve(this->lib.dav1d_default_settings, "dav1d_default_settings"))
     return;
-  if (!resolve(dav1d_open, "dav1d_open"))
+  if (!resolve(this->lib.dav1d_open, "dav1d_open"))
     return;
-  if (!resolve(dav1d_parse_sequence_header, "dav1d_parse_sequence_header"))
+  if (!resolve(this->lib.dav1d_parse_sequence_header, "dav1d_parse_sequence_header"))
     return;
-  if (!resolve(dav1d_send_data, "dav1d_send_data"))
+  if (!resolve(this->lib.dav1d_send_data, "dav1d_send_data"))
     return;
-  if (!resolve(dav1d_get_picture, "dav1d_get_picture"))
+  if (!resolve(this->lib.dav1d_get_picture, "dav1d_get_picture"))
     return;
-  if (!resolve(dav1d_close, "dav1d_close"))
+  if (!resolve(this->lib.dav1d_close, "dav1d_close"))
     return;
-  if (!resolve(dav1d_flush, "dav1d_flush"))
+  if (!resolve(this->lib.dav1d_flush, "dav1d_flush"))
     return;
 
-  if (!resolve(dav1d_data_create, "dav1d_data_create"))
+  if (!resolve(this->lib.dav1d_data_create, "dav1d_data_create"))
     return;
 
   DEBUG_DAV1D("decoderDav1d::resolveLibraryFunctionPointers - decoding functions found");
 
   // This means that
-  if (!resolve(dav1d_default_analyzer_settings, "dav1d_default_analyzer_flags", true))
+  if (!resolve(this->lib.dav1d_default_analyzer_settings, "dav1d_default_analyzer_flags", true))
     return;
-  if (!resolve(dav1d_set_analyzer_settings, "dav1d_set_analyzer_flags", true))
+  if (!resolve(this->lib.dav1d_set_analyzer_settings, "dav1d_set_analyzer_flags", true))
     return;
 
   DEBUG_DAV1D("decoderDav1d::resolveLibraryFunctionPointers - analyzer functions found");
@@ -177,7 +211,7 @@ void decoderDav1d::resolveLibraryFunctionPointers()
 
 template <typename T> T decoderDav1d::resolve(T &fun, const char *symbol, bool optional)
 {
-  QFunctionPointer ptr = library.resolve(symbol);
+  QFunctionPointer ptr = this->library.resolve(symbol);
   if (!ptr)
   {
     if (!optional)
@@ -201,10 +235,10 @@ void decoderDav1d::allocateNewDecoder()
 
   DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
-  dav1d_default_settings(&settings);
+  this->lib.dav1d_default_settings(&settings);
 
   // Create new decoder object
-  int err = dav1d_open(&decoder, &settings);
+  int err = this->lib.dav1d_open(&decoder, &settings);
   if (err != 0)
   {
     decoderState = DecoderState::Error;
@@ -215,7 +249,7 @@ void decoderDav1d::allocateNewDecoder()
   if (internalsSupported)
   {
     // Apply the analizer settings
-    dav1d_default_analyzer_settings(&analyzerSettings);
+    this->lib.dav1d_default_analyzer_settings(&analyzerSettings);
     if (nrSignals > 0)
     {
       if (decodeSignal == 1)
@@ -235,7 +269,7 @@ void decoderDav1d::allocateNewDecoder()
       analyzerSettings.export_blkdata = 1;
       DEBUG_DAV1D("decoderDav1d::allocateNewDecoder - Activated export of block data");
     }
-    dav1d_set_analyzer_settings(decoder, &analyzerSettings);
+    this->lib.dav1d_set_analyzer_settings(decoder, &analyzerSettings);
   }
 
   // The decoder is ready to receive data
@@ -268,7 +302,7 @@ bool decoderDav1d::decodeFrame()
 
   curPicture.clear();
 
-  int res = dav1d_get_picture(decoder, curPicture.getPicture());
+  int res = this->lib.dav1d_get_picture(decoder, curPicture.getPicture());
   if (res >= 0)
   {
     // We did get a picture
@@ -367,7 +401,8 @@ bool decoderDav1d::pushData(QByteArray &data)
     }
 
     Dav1dSequenceHeader seq;
-    int err = dav1d_parse_sequence_header(&seq, (const uint8_t *)data.data(), data.size());
+    int                 err =
+        this->lib.dav1d_parse_sequence_header(&seq, (const uint8_t *)data.data(), data.size());
     if (err == 0)
     {
       sequenceHeaderPushed = true;
@@ -383,8 +418,8 @@ bool decoderDav1d::pushData(QByteArray &data)
         DEBUG_DAV1D("decoderDav1d::pushData got invalid bit depth");
       subBlockSize = (seq.sb128 >= 1) ? 128 : 64;
 
-      frameSize = s;
-      formatYUV = YUVPixelFormat(subsampling, bitDepth);
+      this->frameSize = s;
+      this->formatYUV = YUVPixelFormat(subsampling, bitDepth);
     }
     else
     {
@@ -404,11 +439,11 @@ bool decoderDav1d::pushData(QByteArray &data)
   {
     // Since dav1d consumes the data (takes ownership), we need to copy it to a new buffer from
     // dav1d
-    auto dav1dData      = new Dav1dData;
-    auto rawDataPointer = dav1d_data_create(dav1dData, data.size());
+    Dav1dData *dav1dData      = new Dav1dData;
+    uint8_t *  rawDataPointer = this->lib.dav1d_data_create(dav1dData, data.size());
     memcpy(rawDataPointer, data.data(), data.size());
 
-    int err = dav1d_send_data(decoder, dav1dData);
+    int err = this->lib.dav1d_send_data(decoder, dav1dData);
     if (err == -EAGAIN)
     {
       // The data was not consumed and must be pushed again after retrieving some frames
@@ -444,7 +479,7 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
   // At first get how many bytes we are going to write
   const auto nrBytesPerSample = (src.getBitDepth() > 8) ? 2 : 1;
   const auto framSize         = src.getFrameSize();
-  int        nrBytes          = frameSize.width * frameSize.height * nrBytesPerSample;
+  auto       nrBytes          = frameSize.width * frameSize.height * nrBytesPerSample;
   auto       layout           = src.getSubsampling();
   if (layout == Subsampling::YUV_420)
     nrBytes += (frameSize.width / 2) * (frameSize.height / 2) * 2 * nrBytesPerSample;
@@ -456,16 +491,16 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
   DEBUG_DAV1D("decoderDav1d::copyImgToByteArray nrBytes %d", nrBytes);
 
   // Is the output big enough?
-  if (dst.capacity() < nrBytes)
-    dst.resize(nrBytes);
+  if (dst.capacity() < int(nrBytes))
+    dst.resize(int(nrBytes));
 
   uint8_t *dst_c = (uint8_t *)dst.data();
 
   // We can now copy from src to dst
   for (int c = 0; c < nrPlanes; c++)
   {
-    int width  = framSize.width;
-    int height = framSize.height;
+    auto width  = framSize.width;
+    auto height = framSize.height;
     if (c != 0)
     {
       if (layout == Subsampling::YUV_420 || layout == Subsampling::YUV_422)
@@ -487,7 +522,7 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
       return;
 
     const int stride = (c == 0) ? curPicture.getStride(0) : curPicture.getStride(1);
-    for (int y = 0; y < height; y++)
+    for (size_t y = 0; y < height; y++)
     {
       memcpy(dst_c, img_c, widthInBytes);
       img_c += stride;
@@ -513,20 +548,20 @@ bool decoderDav1d::checkLibraryFile(QString libFilePath, QString &error)
   testDecoder.resolveLibraryFunctionPointers();
 
   error = testDecoder.decoderErrorString();
-  return !testDecoder.errorInDecoder();
+  return testDecoder.state() != DecoderState::Error;
 }
 
 QString decoderDav1d::getDecoderName() const
 {
   if (decoder)
   {
-    QString ver = QString(dav1d_version());
+    QString ver = QString(this->lib.dav1d_version());
     return "Dav1d deoder Version " + ver;
   }
   return "Dav1d decoder";
 }
 
-QStringList decoderDav1d::getLibraryNames()
+QStringList decoderDav1d::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux
@@ -541,20 +576,6 @@ QStringList decoderDav1d::getLibraryNames()
   if (is_Q_OS_LINUX)
     return QStringList() << "libdav1d-internals"
                          << "libdav1d";
-}
-
-Subsampling decoderDav1d::convertFromInternalSubsampling(Dav1dPixelLayout layout)
-{
-  if (layout == DAV1D_PIXEL_LAYOUT_I400)
-    return Subsampling::YUV_400;
-  else if (layout == DAV1D_PIXEL_LAYOUT_I420)
-    return Subsampling::YUV_420;
-  else if (layout == DAV1D_PIXEL_LAYOUT_I422)
-    return Subsampling::YUV_422;
-  else if (layout == DAV1D_PIXEL_LAYOUT_I444)
-    return Subsampling::YUV_444;
-
-  return Subsampling::UNKNOWN;
 }
 
 void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) const
@@ -679,7 +700,14 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(maskSign);
 
   stats::StatisticsType interMode(19, "inter mode", "jet", 0, 7);
-  interMode.setMappingValues({"NEARESTMV_NEARESTMV", "NEARMV_NEARMV", "NEARESTMV_NEWMV", "NEWMV_NEARESTMV", "NEARMV_NEWMV", "NEWMV_NEARMV", "GLOBALMV_GLOBALMV", "NEWMV_NEWMV"});
+  interMode.setMappingValues({"NEARESTMV_NEARESTMV",
+                              "NEARMV_NEARMV",
+                              "NEARESTMV_NEWMV",
+                              "NEWMV_NEARESTMV",
+                              "NEARMV_NEWMV",
+                              "NEWMV_NEARMV",
+                              "GLOBALMV_GLOBALMV",
+                              "NEWMV_NEWMV"});
   statisticsData.addStatType(interMode);
 
   stats::StatisticsType drlIndex(
@@ -691,7 +719,8 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(interintraType);
 
   stats::StatisticsType interintraMode(22, "inter-intra mode", "jet", 0, 4);
-  interintraMode.setMappingValues({"II_DC_PRED", "II_VERT_PRED", "II_HOR_PRED", "II_SMOOTH_PRED", "N_INTER_INTRA_PRED_MODES"});
+  interintraMode.setMappingValues(
+      {"II_DC_PRED", "II_VERT_PRED", "II_HOR_PRED", "II_SMOOTH_PRED", "N_INTER_INTRA_PRED_MODES"});
   statisticsData.addStatType(interintraMode);
 
   stats::StatisticsType motionMode(23, "motion mode", "jet", 0, 2);
@@ -708,7 +737,25 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
 
   stats::StatisticsType transformDepth(26, "Transform Size", "jet", 0, 19);
   transformDepth.description = "The transform size";
-  transformDepth.setMappingValues({"TX_4X4", "TX_8X8", "TX_16X16", "TX_32X32", "TX_64X64", "RTX_4X8", "RTX_8X4", "RTX_8X16", "RTX_16X8", "RTX_16X32", "RTX_32X16", "RTX_32X64", "RTX_64X32", "RTX_4X16", "RTX_16X4", "RTX_8X32", "RTX_32X8", "RTX_16X64", "RTX_64X16"});
+  transformDepth.setMappingValues({"TX_4X4",
+                                   "TX_8X8",
+                                   "TX_16X16",
+                                   "TX_32X32",
+                                   "TX_64X64",
+                                   "RTX_4X8",
+                                   "RTX_8X4",
+                                   "RTX_8X16",
+                                   "RTX_16X8",
+                                   "RTX_16X32",
+                                   "RTX_32X16",
+                                   "RTX_32X64",
+                                   "RTX_64X32",
+                                   "RTX_4X16",
+                                   "RTX_16X4",
+                                   "RTX_8X32",
+                                   "RTX_32X8",
+                                   "RTX_16X64",
+                                   "RTX_64X16"});
   statisticsData.addStatType(transformDepth);
 }
 
@@ -735,9 +782,9 @@ void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
 }
 
 void decoderDav1d::parseBlockRecursive(
-    Av1Block *blockData, int x, int y, BlockLevel level, dav1dFrameInfo &frameInfo)
+    Av1Block *blockData, unsigned x, unsigned y, BlockLevel level, dav1dFrameInfo &frameInfo)
 {
-  if (y >= int(frameInfo.sizeInBlocks.height))
+  if (y >= frameInfo.sizeInBlocks.height)
     return;
 
   Av1Block         b          = blockData[y * frameInfo.b4_stride + x];
@@ -834,18 +881,22 @@ void decoderDav1d::parseBlockRecursive(
   }
 }
 
-void decoderDav1d::parseBlockPartition(
-    Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, dav1dFrameInfo &frameInfo)
+void decoderDav1d::parseBlockPartition(Av1Block *      blockData,
+                                       unsigned        x,
+                                       unsigned        y,
+                                       unsigned        blockWidth4,
+                                       unsigned        blockHeight4,
+                                       dav1dFrameInfo &frameInfo)
 {
-  if (y >= int(frameInfo.sizeInBlocks.height) || x >= int(frameInfo.sizeInBlocks.width))
+  if (y >= frameInfo.sizeInBlocks.height || x >= frameInfo.sizeInBlocks.width)
     return;
 
   Av1Block b = blockData[y * frameInfo.b4_stride + x];
 
-  const int cbPosX   = x * 4;
-  const int cbPosY   = y * 4;
-  const int cbWidth  = blockWidth4 * 4;
-  const int cbHeight = blockHeight4 * 4;
+  const auto cbPosX   = x * 4;
+  const auto cbPosY   = y * 4;
+  const auto cbWidth  = blockWidth4 * 4;
+  const auto cbHeight = blockHeight4 * 4;
 
   // Set prediction mode (ID 0)
   const bool isIntra  = (b.intra != 0);
@@ -893,7 +944,8 @@ void decoderDav1d::parseBlockPartition(
       int vecX       = (float)vec.first * blockScale / 4;
       int vecY       = (float)vec.second * blockScale / 4;
 
-      this->statisticsData->at(10 + yc).addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, vecX, vecY);
+      this->statisticsData->at(10 + yc).addBlockVector(
+          cbPosX, cbPosY, cbWidth, cbHeight, vecX, vecY);
     }
 
     if (b.y_mode == CFL_PRED)
@@ -934,35 +986,39 @@ void decoderDav1d::parseBlockPartition(
     if (isCompound)
     {
       // Set inter intra type (ID 21)
-      this->statisticsData->at(21).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_type);
+      this->statisticsData->at(21).addBlockValue(
+          cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_type);
       // Set inter intra mode (ID 22)
-      this->statisticsData->at(22).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_mode);
+      this->statisticsData->at(22).addBlockValue(
+          cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_mode);
     }
 
     // Set motion mode (ID 23)
     this->statisticsData->at(23).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.motion_mode);
 
     // Set motion vector 0/1 (ID 24, 25)
-    this->statisticsData->at(24).addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
+    this->statisticsData->at(24).addBlockVector(
+        cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
     if (isCompound)
-      this->statisticsData->at(25).addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
+      this->statisticsData->at(25).addBlockVector(
+          cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
   }
 
-  const TxfmSize   tx_val               = TxfmSize(isIntra ? b.tx : b.max_ytx);
-  static const int TxfmSizeWidthTable[] = {
+  const TxfmSize        tx_val               = TxfmSize(isIntra ? b.tx : b.max_ytx);
+  static const unsigned TxfmSizeWidthTable[] = {
       4, 8, 16, 32, 64, 4, 8, 8, 16, 16, 32, 32, 64, 4, 16, 8, 32, 16, 64};
-  static const int TxfmSizeHeightTable[] = {
+  static const unsigned TxfmSizeHeightTable[] = {
       4, 8, 16, 32, 64, 8, 4, 16, 8, 32, 16, 64, 32, 16, 4, 32, 8, 64, 16};
-  const int tx_w = TxfmSizeWidthTable[tx_val];
-  const int tx_h = TxfmSizeHeightTable[tx_val];
-  
+  const unsigned tx_w = TxfmSizeWidthTable[tx_val];
+  const unsigned tx_h = TxfmSizeHeightTable[tx_val];
+
   if (tx_w > cbWidth || tx_h > cbHeight)
     // Transform can not be bigger then the coding block
     return;
 
-  for (int x = 0; x < cbWidth; x += tx_w)
+  for (unsigned x = 0; x < cbWidth; x += tx_w)
   {
-    for (int y = 0; y < cbHeight; y += tx_h)
+    for (unsigned y = 0; y < cbHeight; y += tx_h)
     {
       // Set the transform size (ID 26)
       const int x_abs = cbPosX + x;
@@ -1015,3 +1071,5 @@ IntPair decoderDav1d::calculateIntraPredDirection(IntraPredMode predMode, int an
 
   return {vectorTable[modeIndex][deltaIndex][0], vectorTable[modeIndex][deltaIndex][1]};
 }
+
+} // namespace decoder
