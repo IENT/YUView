@@ -36,6 +36,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 /* This class implement mapping of "enum class" values to and from names (string).
  */
@@ -111,6 +112,14 @@ public:
     std::vector<std::string> l;
     for (const auto &entry : this->entryVector)
       l.push_back(entry.name);
+    return l;
+  }
+
+  std::vector<std::string> getTextEntries() const
+  {
+    std::vector<std::string> l;
+    for (const auto &entry : this->entryVector)
+      l.push_back(entry.text);
     return l;
   }
 

@@ -186,7 +186,7 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
 
 bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
 {
-  if (extradata.empty() || packetModel->rootItem)
+  if (extradata.empty() || !packetModel->rootItem)
     return true;
 
   if (extradata.at(0) == 1)
