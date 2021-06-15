@@ -50,6 +50,7 @@ namespace parser
 {
 
 using FrameIndexDisplayOrder = unsigned;
+using FrameIndexCodingOrder = unsigned;
 
 /* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, VVC) that we can
  * parse.
@@ -127,7 +128,7 @@ public:
   virtual IntPair getProfileLevel()      = 0;
   virtual Ratio   getSampleAspectRatio() = 0;
 
-  std::optional<pairUint64> getFrameStartEndPos(FrameIndexDisplayOrder idx);
+  std::optional<pairUint64> getFrameStartEndPos(FrameIndexCodingOrder idx);
 
   bool parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
 

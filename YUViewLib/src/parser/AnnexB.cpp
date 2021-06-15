@@ -138,12 +138,12 @@ auto AnnexB::getClosestSeekPoint(FrameIndexDisplayOrder targetFrame,
   return seekPointInfo;
 }
 
-std::optional<pairUint64> AnnexB::getFrameStartEndPos(FrameIndexDisplayOrder idx)
+std::optional<pairUint64> AnnexB::getFrameStartEndPos(FrameIndexCodingOrder idx)
 {
-  if (idx >= this->frameListDisplayOder.size())
+  if (idx >= this->frameListCodingOrder.size())
     return {};
   this->updateFrameListDisplayOrder();
-  return this->frameListDisplayOder[idx].fileStartEndPos;
+  return this->frameListCodingOrder[idx].fileStartEndPos;
 }
 
 bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow)
