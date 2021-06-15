@@ -38,8 +38,8 @@
 #include <cassert>
 #include <cstring>
 
-#include "common/typedef.h"
 #include "common/functions.h"
+#include "common/typedef.h"
 
 namespace decoder
 {
@@ -665,12 +665,14 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   intraDirChroma.description = "Intra prediction direction chroma";
   statisticsData.addStatType(intraDirChroma);
 
-  stats::StatisticsType chromaFromLumaAlphaU(12, "chroma from luma alpha (U)", "col3_bblg", -128, 128);
+  stats::StatisticsType chromaFromLumaAlphaU(
+      12, "chroma from luma alpha (U)", "col3_bblg", -128, 128);
   chromaFromLumaAlphaU.description =
       "CflAlphaU: contains the signed value of the alpha component for the U component";
   statisticsData.addStatType(chromaFromLumaAlphaU);
 
-  stats::StatisticsType chromaFromLumaAlphaV(13, "chroma from luma alpha (V)", "col3_bblg", -128, 128);
+  stats::StatisticsType chromaFromLumaAlphaV(
+      13, "chroma from luma alpha (V)", "col3_bblg", -128, 128);
   chromaFromLumaAlphaV.description =
       "CflAlphaU: contains the signed value of the alpha component for the U component";
   statisticsData.addStatType(chromaFromLumaAlphaV);
@@ -698,7 +700,14 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(maskSign);
 
   stats::StatisticsType interMode(19, "inter mode", "jet", 0, 7);
-  interMode.setMappingValues({"NEARESTMV_NEARESTMV", "NEARMV_NEARMV", "NEARESTMV_NEWMV", "NEWMV_NEARESTMV", "NEARMV_NEWMV", "NEWMV_NEARMV", "GLOBALMV_GLOBALMV", "NEWMV_NEWMV"});
+  interMode.setMappingValues({"NEARESTMV_NEARESTMV",
+                              "NEARMV_NEARMV",
+                              "NEARESTMV_NEWMV",
+                              "NEWMV_NEARESTMV",
+                              "NEARMV_NEWMV",
+                              "NEWMV_NEARMV",
+                              "GLOBALMV_GLOBALMV",
+                              "NEWMV_NEWMV"});
   statisticsData.addStatType(interMode);
 
   stats::StatisticsType drlIndex(
@@ -710,7 +719,8 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(interintraType);
 
   stats::StatisticsType interintraMode(22, "inter-intra mode", "jet", 0, 4);
-  interintraMode.setMappingValues({"II_DC_PRED", "II_VERT_PRED", "II_HOR_PRED", "II_SMOOTH_PRED", "N_INTER_INTRA_PRED_MODES"});
+  interintraMode.setMappingValues(
+      {"II_DC_PRED", "II_VERT_PRED", "II_HOR_PRED", "II_SMOOTH_PRED", "N_INTER_INTRA_PRED_MODES"});
   statisticsData.addStatType(interintraMode);
 
   stats::StatisticsType motionMode(23, "motion mode", "jet", 0, 2);
@@ -727,7 +737,25 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
 
   stats::StatisticsType transformDepth(26, "Transform Size", "jet", 0, 19);
   transformDepth.description = "The transform size";
-  transformDepth.setMappingValues({"TX_4X4", "TX_8X8", "TX_16X16", "TX_32X32", "TX_64X64", "RTX_4X8", "RTX_8X4", "RTX_8X16", "RTX_16X8", "RTX_16X32", "RTX_32X16", "RTX_32X64", "RTX_64X32", "RTX_4X16", "RTX_16X4", "RTX_8X32", "RTX_32X8", "RTX_16X64", "RTX_64X16"});
+  transformDepth.setMappingValues({"TX_4X4",
+                                   "TX_8X8",
+                                   "TX_16X16",
+                                   "TX_32X32",
+                                   "TX_64X64",
+                                   "RTX_4X8",
+                                   "RTX_8X4",
+                                   "RTX_8X16",
+                                   "RTX_16X8",
+                                   "RTX_16X32",
+                                   "RTX_32X16",
+                                   "RTX_32X64",
+                                   "RTX_64X32",
+                                   "RTX_4X16",
+                                   "RTX_16X4",
+                                   "RTX_8X32",
+                                   "RTX_32X8",
+                                   "RTX_16X64",
+                                   "RTX_64X16"});
   statisticsData.addStatType(transformDepth);
 }
 
@@ -916,7 +944,8 @@ void decoderDav1d::parseBlockPartition(Av1Block *      blockData,
       int vecX       = (float)vec.first * blockScale / 4;
       int vecY       = (float)vec.second * blockScale / 4;
 
-      this->statisticsData->at(10 + yc).addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, vecX, vecY);
+      this->statisticsData->at(10 + yc).addBlockVector(
+          cbPosX, cbPosY, cbWidth, cbHeight, vecX, vecY);
     }
 
     if (b.y_mode == CFL_PRED)
@@ -957,28 +986,32 @@ void decoderDav1d::parseBlockPartition(Av1Block *      blockData,
     if (isCompound)
     {
       // Set inter intra type (ID 21)
-      this->statisticsData->at(21).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_type);
+      this->statisticsData->at(21).addBlockValue(
+          cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_type);
       // Set inter intra mode (ID 22)
-      this->statisticsData->at(22).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_mode);
+      this->statisticsData->at(22).addBlockValue(
+          cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_mode);
     }
 
     // Set motion mode (ID 23)
     this->statisticsData->at(23).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.motion_mode);
 
     // Set motion vector 0/1 (ID 24, 25)
-    this->statisticsData->at(24).addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
+    this->statisticsData->at(24).addBlockVector(
+        cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
     if (isCompound)
-      this->statisticsData->at(25).addBlockVector(cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
+      this->statisticsData->at(25).addBlockVector(
+          cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
   }
 
-  const TxfmSize   tx_val               = TxfmSize(isIntra ? b.tx : b.max_ytx);
-  static const int TxfmSizeWidthTable[] = {
+  const TxfmSize        tx_val               = TxfmSize(isIntra ? b.tx : b.max_ytx);
+  static const unsigned TxfmSizeWidthTable[] = {
       4, 8, 16, 32, 64, 4, 8, 8, 16, 16, 32, 32, 64, 4, 16, 8, 32, 16, 64};
-  static const int TxfmSizeHeightTable[] = {
+  static const unsigned TxfmSizeHeightTable[] = {
       4, 8, 16, 32, 64, 8, 4, 16, 8, 32, 16, 64, 32, 16, 4, 32, 8, 64, 16};
-  const int tx_w = TxfmSizeWidthTable[tx_val];
-  const int tx_h = TxfmSizeHeightTable[tx_val];
-  
+  const unsigned tx_w = TxfmSizeWidthTable[tx_val];
+  const unsigned tx_h = TxfmSizeHeightTable[tx_val];
+
   if (tx_w > cbWidth || tx_h > cbHeight)
     // Transform can not be bigger then the coding block
     return;

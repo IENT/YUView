@@ -83,7 +83,7 @@
 namespace decoder
 {
 
-decoderHM::decoderHM(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
+decoderHM::decoderHM(int, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
