@@ -28,8 +28,8 @@ void checkVectorList(const std::vector<stats::statisticsItem_Vector> &vectors,
     QCOMPARE(unsigned(vec.pos[1]), chk.y);
     QCOMPARE(unsigned(vec.size[0]), chk.w);
     QCOMPARE(unsigned(vec.size[1]), chk.h);
-    QCOMPARE(vec.point[0].first, chk.v0);
-    QCOMPARE(vec.point[0].second, chk.v1);
+    QCOMPARE(vec.point[0].x, chk.v0);
+    QCOMPARE(vec.point[0].y, chk.v1);
   }
 }
 
