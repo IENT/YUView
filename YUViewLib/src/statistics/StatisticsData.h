@@ -35,7 +35,6 @@
 #include "FrameTypeData.h"
 #include "StatisticsType.h"
 
-#include <QSize>
 #include <map>
 #include <mutex>
 #include <vector>

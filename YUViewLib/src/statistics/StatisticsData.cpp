@@ -34,8 +34,6 @@
 
 #include "common/functions.h"
 
-#include <QPainterPath>
-
 // Activate this if you want to know when what is loaded.
 #define STATISTICS_DEBUG_LOADING 0
 #if STATISTICS_DEBUG_LOADING && !NDEBUG
@@ -47,6 +45,98 @@
 
 namespace stats
 {
+
+// code for checking if a point is inside a polygon. adapted from
+// https://stackoverflow.com/questions/217578/how-can-i-determine-whether-a-2d-point-is-within-a-polygon
+bool doesLineIntersectWithHorizontalLine(const Line side, const Point pt)
+{
+  bool isSideHorizontal = side.p1.y == side.p2.y;
+  if (isSideHorizontal)
+    return false; // collinear with line defined by pt, cannot intersect
+
+  const float l1x1 = side.p1.x;
+  const float l1y1 = side.p1.y;
+  const float l1x2 = side.p2.x;
+  const float l1y2 = side.p2.y;
+  const float ptx  = pt.x;
+  const float pty  = pt.y;
+
+  // horizontal line from starting at pt.
+
+  // checking for horizontal intersection, since simpler. do not need
+  // to use linear eq system for it
+  // y of horizontal line has to be between that of the lines pts
+  // else can not intersect
+  bool isIntersectionPossible = (l1y1 < pty && l1y2 >= pty) || (l1y1 >= pty && l1y2 < pty);
+  if (!isIntersectionPossible)
+    return false;
+
+  float d1;
+  float a1, b1, c1;
+
+  // Convert vector 1 to a line (line 1) of infinite length.
+  // We want the line in linear equation standard form: A*x + B*y + C = 0
+  // See: http://en.wikipedia.org/wiki/Linear_equation
+  a1 = l1y2 - l1y1;
+  b1 = l1x1 - l1x2;
+  c1 = (l1x2 * l1y1) - (l1x1 * l1y2);
+
+  // Every point (x,y), that solves the equation above, is on the line,
+  // every point that does not solve it, is not. The equation will have a
+  // positive result if it is on one side of the line and a negative one
+  // if is on the other side of it. We insert (x1,y1) and (x2,y2) of vector
+  // 2 into the equation above.
+  d1 = (a1 * ptx) + (b1 * pty) + c1;
+  // we only actually need the signs of d1 and d2
+  bool d1IsPositiv = d1 > 0;
+  // since end-point (l2x2, l2y2) of the semi-infinte line is at infinity,
+  // its sign is given by sign of a1
+  bool d2IsPositiv = a1 > 0;
+
+  bool doLinesIntersect = d1IsPositiv != d2IsPositiv;
+
+  return doLinesIntersect;
+}
+
+bool polygonContainsPoint(const stats::Polygon &polygon, const Point &pt)
+{
+  if (polygon.empty())
+    return false;
+
+  unsigned numPts = polygon.size();
+  // Test the ray against all sides
+  unsigned intersections = 0;
+  for (unsigned i = 0; i < numPts - 1; i++)
+  {
+    Line side = Line(polygon.at(i), polygon.at(i + 1));
+    // Test if current side intersects with ray.
+    if (doesLineIntersectWithHorizontalLine(side, pt))
+    {
+      intersections++;
+    }
+  }
+  // close polygon
+  if (polygon.front() != polygon.back())
+  {
+    Line side = Line(polygon.front(), polygon.back());
+    // Test if current side intersects with ray.
+    if (doesLineIntersectWithHorizontalLine(side, pt))
+    {
+      intersections++;
+    }
+  }
+
+  if ((intersections & 1) == 1)
+  {
+    // Inside of polygon
+    return true;
+  }
+  else
+  {
+    // Outside of polygon
+    return false;
+  }
+}
 
 FrameTypeData StatisticsData::getFrameTypeData(int typeID)
 {
@@ -112,6 +202,8 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
 {
   QStringPairList valueList;
 
+  std::unique_lock<std::mutex> lock(this->accessMutex);
+
   for (auto it = this->statsTypes.rbegin(); it != this->statsTypes.rend(); it++)
   {
     if (!it->renderGrid)
@@ -147,21 +239,71 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
         float vectorValue1, vectorValue2;
         if (vectorItem.isLine)
         {
-          vectorValue1 =
-              float(vectorItem.point[1].first - vectorItem.point[0].first) / it->vectorScale;
-          vectorValue2 =
-              float(vectorItem.point[1].second - vectorItem.point[0].second) / it->vectorScale;
+          vectorValue1 = float(vectorItem.point[1].x - vectorItem.point[0].x) / it->vectorScale;
+          vectorValue2 = float(vectorItem.point[1].y - vectorItem.point[0].y) / it->vectorScale;
         }
         else
         {
-          vectorValue1 = float(vectorItem.point[0].first / it->vectorScale);
-          vectorValue2 = float(vectorItem.point[0].second / it->vectorScale);
+          vectorValue1 = float(vectorItem.point[0].x / it->vectorScale);
+          vectorValue2 = float(vectorItem.point[0].y / it->vectorScale);
         }
         valueList.append(
             QStringPair(QString("%1[x]").arg(it->typeName), QString::number(vectorValue1)));
         valueList.append(
             QStringPair(QString("%1[y]").arg(it->typeName), QString::number(vectorValue2)));
         foundStats = true;
+      }
+    }
+
+    for (const auto &affineTFItem : this->frameCache.at(it->typeID).affineTFData)
+    {
+      const auto rect = QRect(
+          affineTFItem.pos[0], affineTFItem.pos[1], affineTFItem.size[0], affineTFItem.size[1]);
+      if (rect.contains(pos))
+      {
+        for (unsigned i = 0; i < 3; i++)
+        {
+          auto xScaled = float(affineTFItem.point[i].x / it->vectorScale);
+          auto yScaled = float(affineTFItem.point[i].y / it->vectorScale);
+          valueList.append(
+              QStringPair(QString("%1_%2[x]").arg(it->typeName).arg(i), QString::number(xScaled)));
+          valueList.append(
+              QStringPair(QString("%1_%2[y]").arg(it->typeName).arg(i), QString::number(yScaled)));
+        }
+        foundStats = true;
+      }
+    }
+
+    for (const auto &valueItem : this->frameCache.at(it->typeID).polygonValueData)
+    {
+      if (valueItem.corners.size() < 3)
+        continue; // need at least triangle -- or more corners
+      if (stats::polygonContainsPoint(valueItem.corners, Point(pos.x(), pos.y())))
+      {
+        int  value  = valueItem.value;
+        auto valTxt = it->getValueTxt(value);
+        valueList.append(QStringPair(it->typeName, valTxt));
+        foundStats = true;
+      }
+    }
+
+    for (const auto &polygonVectorItem : this->frameCache.at(it->typeID).polygonVectorData)
+    {
+      if (polygonVectorItem.corners.size() < 3)
+        continue; // need at least triangle -- or more corners
+      if (stats::polygonContainsPoint(polygonVectorItem.corners, Point(pos.x(), pos.y())))
+      {
+        if (it->renderVectorData)
+        {
+          // The length of the vector
+          auto xScaled = (float)polygonVectorItem.point.x / it->vectorScale;
+          auto yScaled = (float)polygonVectorItem.point.y / it->vectorScale;
+          valueList.append(
+              QStringPair(QString("%1[x]").arg(it->typeName), QString::number(xScaled)));
+          valueList.append(
+              QStringPair(QString("%1[y]").arg(it->typeName), QString::number(yScaled)));
+          foundStats = true;
+        }
       }
     }
 
