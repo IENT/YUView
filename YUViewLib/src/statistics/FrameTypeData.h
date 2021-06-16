@@ -37,7 +37,34 @@
 namespace stats
 {
 
-using Polygon = std::vector<IntPair>;
+struct Point
+{
+  int x;
+  int y;
+  Point(){};
+  Point(int a, int b)
+  {
+    x = a;
+    y = b;
+  };
+
+  bool operator==(const Point &other) const { return this->x == other.x && this->y == other.y; }
+  bool operator!=(const Point &other) const { return this->x != other.x || this->y != other.y; }
+};
+
+struct Line
+{
+  Point p1;
+  Point p2;
+
+  Line(Point a, Point b)
+  {
+    p1 = a;
+    p2 = b;
+  };
+};
+
+using Polygon = std::vector<Point>;
 
 struct statisticsItem_Value
 {
@@ -56,7 +83,7 @@ struct statisticsItem_Vector
   unsigned short size[2];
 
   bool    isLine; // the vector is specified by two points
-  IntPair point[2];
+  Point point[2];
 };
 
 struct statisticsItem_AffineTF
@@ -66,7 +93,7 @@ struct statisticsItem_AffineTF
   unsigned short size[2];
 
   // the vector is specified by two points
-  IntPair point[3];
+  Point point[3];
 };
 
 struct statisticsItemPolygon_Value
@@ -83,7 +110,7 @@ struct statisticsItemPolygon_Vector
   // The position and size of the item.
   Polygon corners;
 
-  IntPair point[2];
+  Point point;
 };
 
 // A collection of statistics data (value and vector) for a certain context (for example for a
