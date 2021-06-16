@@ -35,7 +35,6 @@ struct CheckPolygonVectorItem
   unsigned y[5];
 };
 
-
 void checkVectorList(const std::vector<stats::statisticsItem_Vector> &vectors,
                      const std::vector<CheckStatsItem> &              checkItems)
 {
@@ -48,13 +47,13 @@ void checkVectorList(const std::vector<stats::statisticsItem_Vector> &vectors,
     QCOMPARE(unsigned(vec.pos[1]), chk.y);
     QCOMPARE(unsigned(vec.size[0]), chk.w);
     QCOMPARE(unsigned(vec.size[1]), chk.h);
-    QCOMPARE(vec.point[0].first, chk.v0);
-    QCOMPARE(vec.point[0].second, chk.v1);
+    QCOMPARE(vec.point[0].x, chk.v0);
+    QCOMPARE(vec.point[0].y, chk.v1);
   }
 }
 
 void checkAffineTFVectorList(const std::vector<stats::statisticsItem_AffineTF> &affineTFvectors,
-                     const std::vector<CheckAffineTFItem> &              checkItems)
+                             const std::vector<CheckAffineTFItem> &             checkItems)
 {
   QCOMPARE(affineTFvectors.size(), checkItems.size());
   for (unsigned i = 0; i < affineTFvectors.size(); i++)
@@ -65,17 +64,17 @@ void checkAffineTFVectorList(const std::vector<stats::statisticsItem_AffineTF> &
     QCOMPARE(unsigned(vec.pos[1]), chk.y);
     QCOMPARE(unsigned(vec.size[0]), chk.w);
     QCOMPARE(unsigned(vec.size[1]), chk.h);
-    QCOMPARE(vec.point[0].first, chk.v0);
-    QCOMPARE(vec.point[0].second, chk.v1);
-    QCOMPARE(vec.point[1].first, chk.v2);
-    QCOMPARE(vec.point[1].second, chk.v3);
-    QCOMPARE(vec.point[2].first, chk.v4);
-    QCOMPARE(vec.point[2].second, chk.v5);
+    QCOMPARE(vec.point[0].x, chk.v0);
+    QCOMPARE(vec.point[0].y, chk.v1);
+    QCOMPARE(vec.point[1].x, chk.v2);
+    QCOMPARE(vec.point[1].y, chk.v3);
+    QCOMPARE(vec.point[2].x, chk.v4);
+    QCOMPARE(vec.point[2].y, chk.v5);
   }
 }
 
 void checkLineList(const std::vector<stats::statisticsItem_Vector> &lines,
-                     const std::vector<CheckLineItem> &              checkItems)
+                   const std::vector<CheckLineItem> &               checkItems)
 {
   QCOMPARE(lines.size(), checkItems.size());
   for (unsigned i = 0; i < lines.size(); i++)
@@ -86,29 +85,29 @@ void checkLineList(const std::vector<stats::statisticsItem_Vector> &lines,
     QCOMPARE(unsigned(vec.pos[1]), chk.y);
     QCOMPARE(unsigned(vec.size[0]), chk.w);
     QCOMPARE(unsigned(vec.size[1]), chk.h);
-    QCOMPARE(vec.point[0].first, chk.v0);
-    QCOMPARE(vec.point[0].second, chk.v1);
-    QCOMPARE(vec.point[1].first, chk.v2);
-    QCOMPARE(vec.point[1].second, chk.v3);
+    QCOMPARE(vec.point[0].x, chk.v0);
+    QCOMPARE(vec.point[0].y, chk.v1);
+    QCOMPARE(vec.point[1].x, chk.v2);
+    QCOMPARE(vec.point[1].y, chk.v3);
   }
 }
 
 void checkPolygonvectorList(const std::vector<stats::statisticsItemPolygon_Vector> &polygonList,
-                     const std::vector<CheckPolygonVectorItem> &              checkItems)
+                            const std::vector<CheckPolygonVectorItem> &             checkItems)
 {
   QCOMPARE(polygonList.size(), checkItems.size());
   for (unsigned i = 0; i < polygonList.size(); i++)
   {
     auto polygon = polygonList[i];
-    auto chk = checkItems[i];
-    for(unsigned i = 0; i < polygon.corners.size(); i++)
+    auto chk     = checkItems[i];
+    for (unsigned i = 0; i < polygon.corners.size(); i++)
     {
       auto corner = polygon.corners[i];
       QCOMPARE(unsigned(corner.x), chk.x[i]);
       QCOMPARE(unsigned(corner.y), chk.y[i]);
     }
-    QCOMPARE(polygon.point.first, chk.v0);
-    QCOMPARE(polygon.point.second, chk.v1);
+    QCOMPARE(polygon.point.x, chk.v0);
+    QCOMPARE(polygon.point.y, chk.v1);
   }
 }
 
@@ -148,7 +147,7 @@ void StatisticsFileVTMBMSTest::testVTMBMSParsing()
 
   {
     const std::string stats_str =
-R"(# VTMBMS Block Statistics
+        R"(# VTMBMS Block Statistics
 # Sequence size: [2048x 872]
 # Block Statistic Type: PredMode; Integer; [0, 4]
 # Block Statistic Type: MVDL0; Vector; Scale: 4
@@ -282,28 +281,37 @@ BlockStat: POC 8 @[(544, 760)--(545, 768)--(544, 768)--] GeoMVL0={ 180,  38}
 
   statFile.loadStatisticData(statData, 8, 3);
   QCOMPARE(statData.getFrameIndex(), 8);
-  checkAffineTFVectorList(statData[3].affineTFData, {
-                  {640,  128, 128, 128, -61,-128, -53,-101, -99,-139},
-                  {1296, 128, 32,  64 , -68,  32, -65,  39, -79,  25},
-                  {1328, 128, 16,  64 , -64,  40, -63,  43, -75,  33},
-  });
+  checkAffineTFVectorList(statData[3].affineTFData,
+                          {
+                              {640, 128, 128, 128, -61, -128, -53, -101, -99, -139},
+                              {1296, 128, 32, 64, -68, 32, -65, 39, -79, 25},
+                              {1328, 128, 16, 64, -64, 40, -63, 43, -75, 33},
+                          });
 
   statFile.loadStatisticData(statData, 8, 4);
   QCOMPARE(statData.getFrameIndex(), 8);
-  checkLineList(statData[4].vectorData, {
-                  { 288, 544, 16, 32, 5,   0,   6,  32},
-                  {1156, 592,  8,  8, 1,   0,   8,   5},
-                  { 276, 672,  8, 16, 5,   0,   3,  16},
-  });
+  checkLineList(statData[4].vectorData,
+                {
+                    {288, 544, 16, 32, 5, 0, 6, 32},
+                    {1156, 592, 8, 8, 1, 0, 8, 5},
+                    {276, 672, 8, 16, 5, 0, 3, 16},
+                });
 
   statFile.loadStatisticData(statData, 8, 5);
   QCOMPARE(statData.getFrameIndex(), 8);
-  checkPolygonvectorList(statData[5].polygonVectorData, {
-                  { 291, 233, {240, 256, 256,240, 0}, {384, 384, 430, 416, 0 }}, // 4 pt polygon, zeros for padding test struct
-                  { 152,  24, {1156, 1157, 1164, 1164, 1156}, {592, 592, 597, 600, 600}},
-                  { 180,  38, {544, 545, 544, 0, 0 }, {760, 768, 768, 0, 0}} // 3 pt polygon, zeros for padding test struct
-  });
-
+  checkPolygonvectorList(
+      statData[5].polygonVectorData,
+      {
+          {291,
+           233,
+           {240, 256, 256, 240, 0},
+           {384, 384, 430, 416, 0}}, // 4 pt polygon, zeros for padding test struct
+          {152, 24, {1156, 1157, 1164, 1164, 1156}, {592, 592, 597, 600, 600}},
+          {180,
+           38,
+           {544, 545, 544, 0, 0},
+           {760, 768, 768, 0, 0}} // 3 pt polygon, zeros for padding test struct
+      });
 }
 
 QTEST_MAIN(StatisticsFileVTMBMSTest)

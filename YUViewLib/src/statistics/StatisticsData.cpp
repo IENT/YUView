@@ -51,14 +51,15 @@ namespace stats
 bool doesLineIntersectWithHorizontalLine(const Line side, const Point pt)
 {
   bool isSideHorizontal = side.p1.y == side.p2.y;
-  if(isSideHorizontal) return false; // collinear with line defined by pt, cannot intersect
+  if (isSideHorizontal)
+    return false; // collinear with line defined by pt, cannot intersect
 
   const float l1x1 = side.p1.x;
   const float l1y1 = side.p1.y;
   const float l1x2 = side.p2.x;
   const float l1y2 = side.p2.y;
-  const float ptx = pt.x;
-  const float pty = pt.y;
+  const float ptx  = pt.x;
+  const float pty  = pt.y;
 
   // horizontal line from starting at pt.
 
@@ -67,7 +68,8 @@ bool doesLineIntersectWithHorizontalLine(const Line side, const Point pt)
   // y of horizontal line has to be between that of the lines pts
   // else can not intersect
   bool isIntersectionPossible = (l1y1 < pty && l1y2 >= pty) || (l1y1 >= pty && l1y2 < pty);
-  if(!isIntersectionPossible) return false;
+  if (!isIntersectionPossible)
+    return false;
 
   float d1;
   float a1, b1, c1;
@@ -98,26 +100,27 @@ bool doesLineIntersectWithHorizontalLine(const Line side, const Point pt)
 
 bool polygonContainsPoint(const stats::Polygon &polygon, const Point &pt)
 {
-  if(polygon.empty()) return false;
+  if (polygon.empty())
+    return false;
 
   unsigned numPts = polygon.size();
   // Test the ray against all sides
   unsigned intersections = 0;
-  for(unsigned i = 0; i < numPts - 1; i++)
+  for (unsigned i = 0; i < numPts - 1; i++)
   {
-    Line side = Line(polygon.at(i), polygon.at(i+1));
+    Line side = Line(polygon.at(i), polygon.at(i + 1));
     // Test if current side intersects with ray.
-    if(doesLineIntersectWithHorizontalLine(side, pt))
+    if (doesLineIntersectWithHorizontalLine(side, pt))
     {
       intersections++;
     }
   }
   // close polygon
-  if( polygon.front() != polygon.back())
+  if (polygon.front() != polygon.back())
   {
     Line side = Line(polygon.front(), polygon.back());
     // Test if current side intersects with ray.
-    if(doesLineIntersectWithHorizontalLine(side, pt))
+    if (doesLineIntersectWithHorizontalLine(side, pt))
     {
       intersections++;
     }
@@ -236,15 +239,13 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
         float vectorValue1, vectorValue2;
         if (vectorItem.isLine)
         {
-          vectorValue1 =
-              float(vectorItem.point[1].first - vectorItem.point[0].first) / it->vectorScale;
-          vectorValue2 =
-              float(vectorItem.point[1].second - vectorItem.point[0].second) / it->vectorScale;
+          vectorValue1 = float(vectorItem.point[1].x - vectorItem.point[0].x) / it->vectorScale;
+          vectorValue2 = float(vectorItem.point[1].y - vectorItem.point[0].y) / it->vectorScale;
         }
         else
         {
-          vectorValue1 = float(vectorItem.point[0].first / it->vectorScale);
-          vectorValue2 = float(vectorItem.point[0].second / it->vectorScale);
+          vectorValue1 = float(vectorItem.point[0].x / it->vectorScale);
+          vectorValue2 = float(vectorItem.point[0].y / it->vectorScale);
         }
         valueList.append(
             QStringPair(QString("%1[x]").arg(it->typeName), QString::number(vectorValue1)));
@@ -260,15 +261,14 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
           affineTFItem.pos[0], affineTFItem.pos[1], affineTFItem.size[0], affineTFItem.size[1]);
       if (rect.contains(pos))
       {
-        for( unsigned i=0; i<3; i++)
+        for (unsigned i = 0; i < 3; i++)
         {
-          float vectorValue1, vectorValue2;
-          vectorValue1 = float(affineTFItem.point[i].first / it->vectorScale);
-          vectorValue2 = float(affineTFItem.point[i].second / it->vectorScale);
+          auto xScaled = float(affineTFItem.point[i].x / it->vectorScale);
+          auto yScaled = float(affineTFItem.point[i].y / it->vectorScale);
           valueList.append(
-              QStringPair(QString("%1_%2[x]").arg(it->typeName).arg(i), QString::number(vectorValue1)));
+              QStringPair(QString("%1_%2[x]").arg(it->typeName).arg(i), QString::number(xScaled)));
           valueList.append(
-              QStringPair(QString("%1_%2[y]").arg(it->typeName).arg(i), QString::number(vectorValue2)));
+              QStringPair(QString("%1_%2[y]").arg(it->typeName).arg(i), QString::number(yScaled)));
         }
         foundStats = true;
       }
@@ -276,7 +276,8 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
 
     for (const auto &valueItem : this->frameCache.at(it->typeID).polygonValueData)
     {
-      if (valueItem.corners.size() < 3) continue; // need at least triangle -- or more corners
+      if (valueItem.corners.size() < 3)
+        continue; // need at least triangle -- or more corners
       if (stats::polygonContainsPoint(valueItem.corners, Point(pos.x(), pos.y())))
       {
         int  value  = valueItem.value;
@@ -288,19 +289,19 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
 
     for (const auto &polygonVectorItem : this->frameCache.at(it->typeID).polygonVectorData)
     {
-      if (polygonVectorItem.corners.size() < 3) continue; // need at least triangle -- or more corners
+      if (polygonVectorItem.corners.size() < 3)
+        continue; // need at least triangle -- or more corners
       if (stats::polygonContainsPoint(polygonVectorItem.corners, Point(pos.x(), pos.y())))
       {
         if (it->renderVectorData)
         {
-          float vx, vy;
           // The length of the vector
-          vx = (float)polygonVectorItem.point.first / it->vectorScale;
-          vy = (float)polygonVectorItem.point.second / it->vectorScale;
+          auto xScaled = (float)polygonVectorItem.point.x / it->vectorScale;
+          auto yScaled = (float)polygonVectorItem.point.y / it->vectorScale;
           valueList.append(
-              QStringPair(QString("%1[x]").arg(it->typeName), QString::number(vx)));
+              QStringPair(QString("%1[x]").arg(it->typeName), QString::number(xScaled)));
           valueList.append(
-              QStringPair(QString("%1[y]").arg(it->typeName), QString::number(vy)));
+              QStringPair(QString("%1[y]").arg(it->typeName), QString::number(yScaled)));
           foundStats = true;
         }
       }

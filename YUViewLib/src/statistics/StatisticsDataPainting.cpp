@@ -37,8 +37,8 @@
 
 #include <QPainter>
 #include <QPainterPath>
-#include <QtMath>
 #include <QtGui/QPolygon>
+#include <QtMath>
 #include <cmath>
 
 namespace
@@ -54,7 +54,8 @@ namespace
 
 QPolygon convertToQPolygon(const stats::Polygon &poly)
 {
-  if(poly.empty()) return QPolygon();
+  if (poly.empty())
+    return QPolygon();
 
   auto qPoly = QPolygon(poly.size());
   for (int i = 0; i < int(poly.size()); i++)
@@ -88,8 +89,7 @@ Qt::PenStyle patternToQPenStyle(stats::Pattern &pattern)
 
 QPen styleToPen(stats::LineDrawStyle &style)
 {
-  return QPen(
-      functionsGui::toQColor(style.color), style.width, patternToQPenStyle(style.pattern));
+  return QPen(functionsGui::toQColor(style.color), style.width, patternToQPenStyle(style.pattern));
 }
 
 void paintVector(QPainter *                   painter,
@@ -523,10 +523,10 @@ void stats::paintStatisticsData(QPainter *             painter,
         float vx, vy;
         if (vectorItem.isLine)
         {
-          x1 = displayRect.left() + zoomFactor * vectorItem.point[0].first;
-          y1 = displayRect.top() + zoomFactor * vectorItem.point[0].second;
-          x2 = displayRect.left() + zoomFactor * vectorItem.point[1].first;
-          y2 = displayRect.top() + zoomFactor * vectorItem.point[1].second;
+          x1 = displayRect.left() + zoomFactor * vectorItem.point[0].x;
+          y1 = displayRect.top() + zoomFactor * vectorItem.point[0].y;
+          x2 = displayRect.left() + zoomFactor * vectorItem.point[1].x;
+          y2 = displayRect.top() + zoomFactor * vectorItem.point[1].y;
           vx = (float)(x2 - x1) / it->vectorScale;
           vy = (float)(y2 - y1) / it->vectorScale;
         }
@@ -536,8 +536,8 @@ void stats::paintStatisticsData(QPainter *             painter,
           y1 = displayRect.top() + displayRect.height() / 2;
 
           // The length of the vector
-          vx = (float)vectorItem.point[0].first / it->vectorScale;
-          vy = (float)vectorItem.point[0].second / it->vectorScale;
+          vx = (float)vectorItem.point[0].x / it->vectorScale;
+          vy = (float)vectorItem.point[0].y / it->vectorScale;
 
           // The end point of the vector
           x2 = x1 + zoomFactor * vx;
@@ -743,12 +743,12 @@ void stats::paintStatisticsData(QPainter *             painter,
         yLBstart = displayRect.bottom();
 
         // The length of the vectors
-        vxLT = (float)affineTFItem.point[0].first / it->vectorScale;
-        vyLT = (float)affineTFItem.point[0].second / it->vectorScale;
-        vxRT = (float)affineTFItem.point[1].first / it->vectorScale;
-        vyRT = (float)affineTFItem.point[1].second / it->vectorScale;
-        vxLB = (float)affineTFItem.point[2].first / it->vectorScale;
-        vyLB = (float)affineTFItem.point[2].second / it->vectorScale;
+        vxLT = (float)affineTFItem.point[0].x / it->vectorScale;
+        vyLT = (float)affineTFItem.point[0].y / it->vectorScale;
+        vxRT = (float)affineTFItem.point[1].x / it->vectorScale;
+        vyRT = (float)affineTFItem.point[1].y / it->vectorScale;
+        vxLB = (float)affineTFItem.point[2].x / it->vectorScale;
+        vyLB = (float)affineTFItem.point[2].y / it->vectorScale;
 
         // The end point of the vectors
         xLTend = xLTstart + zoomFactor * vxLT;
@@ -827,7 +827,8 @@ void stats::paintStatisticsData(QPainter *             painter,
     // Go through all the vector data
     for (const auto &vectorItem : statisticsData[it->typeID].polygonVectorData)
     {
-      if (vectorItem.corners.size() < 3) continue; // need at least triangle -- or more corners
+      if (vectorItem.corners.size() < 3)
+        continue; // need at least triangle -- or more corners
 
       // Calculate the size and position of the rectangle to draw (zoomed in)
       auto vectorPoly          = convertToQPolygon(vectorItem.corners);
@@ -858,8 +859,8 @@ void stats::paintStatisticsData(QPainter *             painter,
         center_y /= displayPolygon.size();
 
         // The length of the vector
-        vx = (float)vectorItem.point.first / it->vectorScale;
-        vy = (float)vectorItem.point.second / it->vectorScale;
+        vx = (float)vectorItem.point.x / it->vectorScale;
+        vy = (float)vectorItem.point.y / it->vectorScale;
 
         // The end point of the vector
         head_x = center_x + zoomFactor * vx;
